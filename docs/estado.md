@@ -34,6 +34,12 @@ Nada a medias. La 2.1.0 cierra el círculo de la distribución: la aplicación c
 nueva, se descarga el instalador de su sistema y lo abre. Con eso, el que la tiene instalada deja de
 depender de que alguien le avise.
 
+## Comprobado en un Mac de verdad
+
+El doble clic en un `.esf`, en los dos momentos —con Esfinge cerrada y con Esfinge abierta— y con las
+dos clases de contenedor: el que lleva un fichero abre la pantalla de ficheros y el que lleva un
+texto abre la de texto, con la línea puesta.
+
 ## Siguiente acción concreta
 
 **Actualizar de verdad, desde dentro de la aplicación.** Instalar la 2.0.3 en el Mac, publicar la
@@ -50,5 +56,6 @@ Ninguno.
 - **¿La ventana ya pasa por nativa?** La 2.0.1 rehízo el aspecto siguiendo macOS —barra translúcida,
   radios generosos, controles de 28 px— pero eso solo se juzga con la aplicación abierta en un Mac.
   Las capturas salen de un navegador y ahí la transparencia no se ve.
-- **¿Merece la pena cerrar el `.esf` en macOS del todo?** Ya abre la aplicación con el fichero
-  puesto. Falta comprobar que el Finder enseña el icono correcto.
+- **¿Merece la pena que el Finder enseñe el icono propio de los `.esf`?** La asociación funciona y el
+  doble clic abre lo que toca —comprobado en el Mac—, pero el icono del documento no se ha mirado. Es
+  lo único que queda de ese frente, y es cosmético.

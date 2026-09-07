@@ -41,7 +41,9 @@ saber qué se hizo.
 
 - ~~Convertir la herramienta de terminal en aplicación de escritorio~~ → hecho en la 2.0.0 (2026-09-07).
 - ~~Arreglar el arrastrar y soltar~~ → hecho en la 2.0.1 (2026-09-07).
-- ~~Doble clic en un `.esf` en macOS~~ → hecho en la 2.0.1 (2026-09-07).
+- ~~Doble clic en un `.esf` en macOS~~ → la 2.0.1 lo dio por hecho y estaba a medias: nadie escuchaba
+  el evento. Cerrado de verdad en la 2.3.1, y en la 2.4.0 cada `.esf` abre además la pantalla que le
+  toca según lo que lleve dentro. Comprobado en el Mac (2026-09-07).
 - ~~Que la aplicación avise de las versiones nuevas~~ → hecho en la 2.1.0, con descarga comprobada y
   entrega al instalador (2026-09-07).
 - ~~Instaladores de los tres sistemas~~ → DMG, NSIS y `.deb`, publicados por `publicar.yml` al
