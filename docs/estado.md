@@ -75,9 +75,10 @@ venían de atrás.** Lo que espera son comprobaciones sueltas del humano, ningun
 estructura en máquinas Windows y GNOME de verdad, el icono del documento `.esf` en el Finder y si
 Gatekeeper aparece al actualizarse desde dentro.
 
-De lo que se puede hacer sin nadie delante, lo único anotado es darle a `compilar.yml` una entrada
-para pedir una compilación con `wails build -devtools` (`docs/deuda.md`). Ya no hace falta para el
-vidrio, pero el siguiente problema de macOS que no se pueda reproducir aquí lo va a agradecer.
+De lo que se puede hacer sin nadie delante, lo único anotado es **darle a `compilar.yml` una entrada
+para pedir una compilación con `wails build -devtools`**, descrito en `siguiente.md` (Media) con su
+porqué. Ya no hace falta para el vidrio —se resolvió leyendo el código de Wails—, así que no es
+urgente: es la red para el siguiente problema de macOS que no se pueda reproducir aquí.
 
 ## Bloqueantes
 

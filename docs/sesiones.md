@@ -31,8 +31,18 @@ Plantilla al final.
   razonando sobre lo que Wails «debería» hacer en una plataforma que no puedo ejecutar aquí. Su código
   estaba todo el tiempo en `~/go/pkg/mod/`, y la causa se leyó en dos minutos el día que fui a mirar.
   **Leer la biblioteca va antes que razonar sobre ella.**
-- Queda anotado en `docs/deuda.md`, ya sin urgencia: darle a `compilar.yml` una entrada para pedir
-  `wails build -devtools`. El siguiente problema de macOS que no se reproduzca aquí lo agradecerá.
+- Queda anotado, ya sin urgencia, en `docs/deuda.md` y con su forma concreta en `siguiente.md`
+  (Media): darle a `compilar.yml` una entrada `workflow_dispatch` para pedir `wails build -devtools`.
+  El siguiente problema de macOS que no se reproduzca aquí lo agradecerá.
+- **Al cerrar se puso al día `siguiente.md`**, que se había quedado atrás: se cerraron la barra de
+  menús, el montaje del DMG y el reemplazo automático del binario —que además estaba **mal
+  descartado**, porque se dio por hecho que exigía firmar con Apple y no tiene nada que ver (ADR
+  0016)—, y se añadieron el vidrio y las estructuras de Windows y GNOME pendientes de ver en máquinas
+  de verdad.
+
+**Estado al cerrar:** 2.10.0 publicada e instalada por el cliente, sin nada a medias en el código y
+sin frentes abiertos de los que venían de atrás. Lo que espera son comprobaciones suyas, ninguna
+bloqueante.
 
 ## 2026-09-08 · Vidrio, carpetas recordadas y tandas en paralelo
 
