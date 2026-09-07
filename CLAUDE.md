@@ -117,6 +117,13 @@ tras la etiqueta `dev`. Es una petición GET al día a `api.github.com`, y está
 `docs/seguridad.md` porque la portada prometía lo contrario. Cualquier conexión nueva pasa por ahí
 antes que por el código.
 
+**Wails deja el vidrio de macOS a medias.** Crea el `NSVisualEffectView` con mezcla «BehindWindow»
+pero **no pone la ventana como no opaca**, y una `NSWindow` opaca compone como opaca aunque su color
+tenga alfa cero: el material no tiene nada que mezclar y sale un **gris plano**. Desde macOS 12 se
+suma el `underPageBackgroundColor` del `WKWebView`, que tapa igual. Las dos cosas las remata
+`vidrio_darwin.go` con cgo (ADR 0017), y **ese fichero no se puede compilar en esta máquina**: lo
+comprueba el trabajo de macOS de la publicación.
+
 **El vidrio del sistema obliga a que el CSS pinte el fondo.** Al pedir una ventana translúcida
 —macOS siempre, Windows 11 con Mica— el webview deja pasar la luz, así que el color lo pone la
 página. Donde no hay vidrio, un `body` transparente no enseña el escritorio: enseña un agujero. De

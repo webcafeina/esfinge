@@ -92,6 +92,13 @@ func main() {
 			ctx = c
 			escritorio.Arrancar(c)
 			aplicacion.Arrancar(c)
+
+			// El remate del vidrio en macOS, que Wails deja a medias: la ventana
+			// se queda opaca y el material no tiene nada que mezclar. Va aquí
+			// porque hasta ahora no existía la ventana. Ver vidrio_darwin.go.
+			if vidrio {
+				ponerElVidrio()
+			}
 		},
 
 		Bind: []any{aplicacion},

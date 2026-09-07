@@ -42,6 +42,21 @@ describía un caso que el sistema nunca produce, y calibrar contra ella fue el e
 - **Acrylic en vez de Mica** en Windows. Desenfoca en tiempo real y se parece más a macOS, pero
   Microsoft lo desaconseja para ventanas de trabajo porque consume y distrae.
 
+## Lo que Wails deja a medias, y hay que rematar
+
+Pedir `WindowIsTranslucent` no basta. Wails crea el `NSVisualEffectView` con mezcla «BehindWindow»,
+que es lo correcto, pero **nunca pone la ventana como no opaca**: le cambia el color de fondo a
+transparente y ya. Una `NSWindow` con `opaque = YES` compone como opaca por mucho que su color tenga
+alfa cero, así que el material no tiene nada detrás que mezclar y **se dibuja como un gris plano**.
+Ése era el síntoma: vidrio puesto, efecto ninguno.
+
+Y hay una segunda capa: desde macOS 12, `WKWebView` pinta su `underPageBackgroundColor` por debajo
+de la página aunque `drawsBackground` esté a `NO`. Si no se aclara, tapa el material igual.
+
+Las dos son una línea de AppKit cada una y no hay forma de pedirlas desde la API de Wails, así que
+las hace `vidrio_darwin.go` con cgo, en el arranque. Si algún día Wails las hace, ese fichero sobra
+entero.
+
 ## Consecuencias
 
 - **Las parejas que mide `make contraste` siguen midiéndose contra el color opaco de la barra.** Un
@@ -60,5 +75,7 @@ describía un caso que el sistema nunca produce, y calibrar contra ella fue el e
 - Ajustes dice si la ventana está usando el vidrio del sistema. No es adorno: la primera vez que el
   efecto no se vio, no había forma de distinguir «no llega la señal» de «el tinte tapa demasiado».
 
-**Lo que no se ha comprobado:** cómo queda el material a 0,55. La simulación de aquí no tiene el
-desenfoque del sistema, así que no sirve para juzgarlo —es justamente lo que enseñó este ADR—.
+**Lo que no se ha comprobado:** el Objective-C de `vidrio_darwin.go`. En esta máquina no hay clang ni
+SDK de macOS, así que ni siquiera compila aquí; lo compila el trabajo de macOS de la publicación, y
+si estuviera mal la publicación fallaría. Cómo queda el material tampoco: la simulación de aquí no
+tiene el desenfoque del sistema y ya engañó una vez.

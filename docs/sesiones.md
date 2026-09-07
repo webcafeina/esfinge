@@ -30,6 +30,13 @@ Plantilla al final.
   el 18 % de eso es no tener efecto. Bajado a 0,55.
 - Y Ajustes pasa a decir si la ventana usa el vidrio del sistema: la primera vez no había forma de
   distinguir «no llega la señal» de «el tinte tapa demasiado», y eso costó una versión.
+- **2.5.2, y aquí estaba el fallo de verdad**: seguía sin verse, «solo un gris». Ese gris plano es la
+  pinta exacta de un `NSVisualEffectView` cuya ventana sigue siendo opaca. Wails crea el efecto con
+  mezcla «BehindWindow» pero **nunca pone la ventana como no opaca**, y una `NSWindow` opaca compone
+  como opaca aunque su color tenga alfa cero. Se remata desde `vidrio_darwin.go` con cgo, junto con
+  el `underPageBackgroundColor` del `WKWebView`, que desde macOS 12 tapa igual.
+- Lección: bajar el tinte dos veces sin entender el síntoma era el camino equivocado. El «gris plano»
+  no era un tinte de más, era el material sin nada que mezclar.
 
 ## 2026-09-08 · Lo que dijo el Mac
 
