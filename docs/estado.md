@@ -47,6 +47,8 @@ máquina sin Mac ni Windows, y publicado.
 - El doble clic en un `.esf`, en los dos momentos —con Esfinge cerrada y con Esfinge abierta— y con
   las dos clases de contenedor: el que lleva un fichero abre la pantalla de ficheros y el que lleva
   un texto abre la de texto, con la línea puesta.
+- **Copiar y pegar con los atajos de ⌘**, que era lo que más riesgo tenía: al construir los menús a
+  mano se perdieron los selectores nativos y esas acciones pasan por código propio.
 
 ## Siguiente acción concreta
 
@@ -60,14 +62,9 @@ Ninguno técnico. Lo único pendiente son dos comprobaciones que solo puede hace
 
 ## Preguntas abiertas para el humano
 
-**Las dos primeras son las que hay que resolver al volver.** Son de código escrito y publicado que
-nunca se ha ejecutado aquí: en esta máquina no hay ni Mac ni Windows.
+**La primera es la que queda de código publicado que nunca se ha ejecutado aquí**: en esta máquina no
+hay ni Mac ni Windows.
 
-- **¿Copiar y pegar siguen bien dentro de los campos?** Al construir los menús a mano (ADR 0015) se
-  perdieron los selectores nativos, así que ⌘C, ⌘X, ⌘V y ⌘A pasan ahora por código propio: el menú
-  manda una orden y la interfaz la ejecuta sobre el campo con el foco. El pegar es el más delicado,
-  porque el portapapeles lo lee Go y el texto lo coloca la interfaz en el cursor. **Si algo falla
-  ahí, falla pegar una contraseña**, que es lo que más se hace con Esfinge.
 - **¿Salta el aviso de Gatekeeper al actualizarse desde dentro?** El guion le quita la cuarentena al
   paquete antes de ponerlo, y como el DMG lo descarga Go y no un navegador, es posible que no salte.
   Si no salta, hay que quitarlo del LÉEME del DMG para las actualizaciones y dejarlo solo para la

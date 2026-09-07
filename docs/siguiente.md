@@ -7,9 +7,6 @@ saber qué se hizo.
 
 ## Alta
 
-- **Que el humano pruebe copiar y pegar en su Mac.** Los menús construidos a mano dejaron ⌘C, ⌘X, ⌘V
-  y ⌘A en manos de código propio (ADR 0015). Es el trozo con más riesgo de todo lo escrito estos
-  días, y no se puede ejercitar sin un escritorio.
 - **Que el humano vea si salta el aviso de Gatekeeper** al actualizarse desde dentro. Si no salta,
   hay que quitarlo del LÉEME del DMG para el caso de la actualización.
 - **Probar la aplicación en un Mac de verdad.** Nunca se ha abierto en un escritorio, solo
@@ -40,6 +37,9 @@ saber qué se hizo.
 - **Empaquetar para Homebrew** (`brew install --cask esfinge`), que exige una URL estable y firma.
 
 ## Cerrado
+
+- ~~Copiar y pegar con los menús construidos a mano~~ → comprobado en el Mac: los atajos de ⌘ van
+  bien (2026-09-08).
 
 - ~~Convertir la herramienta de terminal en aplicación de escritorio~~ → hecho en la 2.0.0 (2026-09-07).
 - ~~Arreglar el arrastrar y soltar~~ → hecho en la 2.0.1 (2026-09-07).

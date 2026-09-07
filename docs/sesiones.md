@@ -5,6 +5,14 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-08 · Lo que dijo el Mac
+
+- **Copiar y pegar funcionan** con los atajos de ⌘. Era el trozo con más riesgo de todo lo escrito
+  el día anterior: al construir los menús a mano (ADR 0015) se perdieron los selectores nativos y
+  esas acciones pasan por código propio, con el pegar repartido entre Go —que lee el portapapeles— y
+  la interfaz —que coloca el texto en el cursor—.
+- Queda abierto lo del aviso de Gatekeeper al actualizarse desde dentro.
+
 ## 2026-09-07 · Cierre de la jornada
 
 De la 2.0.3 a la **2.4.0** en una sesión, todas publicadas y todas con su ficha cuando la decisión lo
