@@ -38,8 +38,10 @@ func main() {
 	// argumento, y con eso la aplicación abre directamente en descifrar. En macOS
 	// no llega así sino por un evento de Apple, que se recoge más abajo en
 	// Mac.OnFileOpen.
-	if len(os.Args) > 1 && !strings.HasPrefix(os.Args[1], "-") {
-		aplicacion.AlAbrirCon(os.Args[1])
+	for _, arg := range os.Args[1:] {
+		if !strings.HasPrefix(arg, "-") {
+			aplicacion.AlAbrirCon(arg)
+		}
 	}
 
 	// El contexto no existe hasta que Wails arranca, y el menú se construye

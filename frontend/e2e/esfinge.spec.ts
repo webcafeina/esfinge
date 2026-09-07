@@ -137,11 +137,14 @@ test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page 
   const errores = vigilarConsola(page);
   await page.goto("/");
 
-  // No se comprueba sola al abrir la ventana: en desarrollo eso saldría a la red
-  // en cada recarga. Se pide desde Ajustes, que es el mismo camino que recorre
-  // el arranque de la aplicación de verdad.
-  await expect(page.locator(".novedad")).toHaveCount(0);
-
+  // Se pide desde Ajustes, que recorre el mismo camino que la comprobación del
+  // arranque en la aplicación de verdad. Aquí no se comprueba sola al abrir: en
+  // desarrollo eso saldría a la red en cada recarga.
+  //
+  // Y no se afirma que la banda no esté antes de pedirlo: el servidor de
+  // desarrollo es uno solo para todas las pruebas y se acuerda de la novedad que
+  // encontró la anterior, así que al recargar puede salir sola. Eso es correcto
+  // en la aplicación; aquí solo haría la prueba dependiente del orden.
   await page.getByRole("tab", { name: "Ajustes" }).click();
   await page.getByRole("button", { name: "Buscar ahora" }).click();
 
@@ -240,6 +243,31 @@ test("el menú del sistema cambia de pantalla y edita el campo con el foco", asy
       });
     }, { timeout: 15_000 })
     .toBe("un secreto cualquiera".length);
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});
+
+test("un .esf que manda el sistema abre la pantalla de descifrar con él puesto", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // Es lo que hace macOS al hacer doble clic en un .esf con Esfinge ya abierta:
+  // no llega como argumento, llega por un evento. Antes se emitía y nadie lo
+  // escuchaba, así que la ventana se quedaba como estaba.
+  await expect
+    .poll(async () => {
+      await page.evaluate(() =>
+        fetch("/api/AlAbrirCon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(["/tmp/credenciales.env.esf"]),
+        }),
+      );
+      return page.getByRole("tab", { name: "Descifrar" }).getAttribute("aria-selected");
+    }, { timeout: 15_000 })
+    .toBe("true");
+
+  await expect(page.locator(".lista-ficheros li")).toContainText("credenciales.env.esf");
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });

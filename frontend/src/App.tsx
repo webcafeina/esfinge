@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { obedecerEdicion } from "./ordenes";
 import {
+  alAbrirFichero,
   alDescargar,
   alHaberNovedad,
   alOrdenar,
@@ -36,6 +37,9 @@ export default function App() {
   const [tarea, setTarea] = useState<Tarea>("cifrar");
   const [version, setVersion] = useState("");
   const [alArrancar, setAlArrancar] = useState<string[]>([]);
+  // Cambia cada vez que el sistema manda ficheros, para que la pantalla de
+  // descifrar se rehaga con ellos aunque ya estuviera abierta.
+  const [tanda, setTanda] = useState(0);
 
   const [novedad, setNovedad] = useState<Novedad | null>(null);
   const [avance, setAvance] = useState<Avance | undefined>();
@@ -76,18 +80,26 @@ export default function App() {
     // Doble clic en un .esf: la aplicación se abre directamente en descifrar,
     // con el fichero puesto. Quien hace ese gesto quiere abrir ese fichero, no
     // buscarlo otra vez desde dentro.
-    esfinge
-      .ficheroDeArranque()
-      .then((ruta) => {
-        if (!ruta) return;
-        setAlArrancar([ruta]);
-        setTarea("descifrar");
-      })
-      .catch(() => {});
+    //
+    // El orden importa. Primero se escucha, porque un fichero puede llegar en
+    // cualquier momento —doble clic con Esfinge ya abierta—, y solo después se
+    // pregunta por los que llegaron antes de que hubiera nadie escuchando. Al
+    // revés queda un hueco por el que se pierde el fichero, que es lo que hacía
+    // que la ventana se abriera vacía.
+    const abrir = (rutas: string[]) => {
+      if (!rutas.length) return;
+      setAlArrancar(rutas);
+      setTanda((n) => n + 1);
+      setTarea("descifrar");
+    };
+
+    const dejarDeAbrir = alAbrirFichero((ruta) => abrir([ruta]));
+    esfinge.ficherosDeArranque().then(abrir).catch(() => {});
 
     return () => {
       dejarDeEscuchar();
       dejarDeObedecer();
+      dejarDeAbrir();
     };
   }, []);
 
@@ -143,7 +155,10 @@ export default function App() {
       <main className="contenido">
         {tarea === "cifrar" && <Trabajo key="cifrar" accion="cifrar" />}
         {tarea === "descifrar" && (
-          <Trabajo key="descifrar" accion="descifrar" alArrancar={alArrancar} />
+          // La clave lleva el número de tanda: si el sistema manda otro fichero
+          // con la pantalla ya abierta, se rehace con él en vez de quedarse con
+          // el de antes.
+          <Trabajo key={`descifrar-${tanda}`} accion="descifrar" alArrancar={alArrancar} />
         )}
         {tarea === "generar" && <Generar />}
         {tarea === "historial" && <Historial />}

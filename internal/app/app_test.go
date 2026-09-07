@@ -19,6 +19,7 @@ type sistemaFalso struct {
 	novedades []Novedad
 	ordenes   []Orden
 	cerrada   bool
+	ficheros_ []string
 }
 
 func (s *sistemaFalso) Cerrar() {
@@ -51,6 +52,10 @@ func (s *sistemaFalso) Avisar(evento string, datos any) {
 		if o, ok := datos.(Orden); ok {
 			s.ordenes = append(s.ordenes, o)
 		}
+	case EventoFicheroAbierto:
+		if ruta, ok := datos.(string); ok {
+			s.ficheros_ = append(s.ficheros_, ruta)
+		}
 	}
 }
 
@@ -58,6 +63,16 @@ func (s *sistemaFalso) verNovedades() []Novedad {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return append([]Novedad(nil), s.novedades...)
+}
+
+// avisosDe devuelve las rutas avisadas por un evento de fichero abierto.
+func (s *sistemaFalso) avisosDe(evento string) []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if evento != EventoFicheroAbierto {
+		return nil
+	}
+	return append([]string(nil), s.ficheros_...)
 }
 
 func (s *sistemaFalso) verOrdenes() []Orden {

@@ -5,6 +5,22 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-07 · El doble clic en un .esf, arreglado de verdad
+
+- **2.3.1**: la 2.0.1 dio por cerrado el doble clic en un `.esf` porque enganchó `Mac.OnFileOpen`.
+  Estaba a medias: el evento se emitía y **la interfaz no lo escuchaba**. Con la ventana ya abierta
+  el doble clic no hacía nada, y al abrir la aplicación con un fichero había una carrera —si la
+  ventana preguntaba antes de que macOS entregara el fichero, se perdía—.
+- Son dos momentos distintos y hay que tratarlos distinto: lo que llega **antes** de que haya alguien
+  escuchando se guarda, y lo que llega **después** se avisa. Y la interfaz **se suscribe antes de
+  preguntar**, que al revés deja el hueco por el que se colaba el fallo.
+- De paso: varios ficheros a la vez —macOS manda un evento por cada uno— y la pantalla de descifrar
+  se rehace si llega otro con ella ya abierta.
+- Verificado: cuatro pruebas de Go de los dos momentos, con `-race`, y una de interfaz que recorre el
+  camino entero. Una prueba anterior dependía del orden —el servidor de desarrollo es uno solo y se
+  acuerda de la novedad—, y se ha quitado esa dependencia; tres tandas seguidas en verde.
+- **Sin comprobar**: si el Finder enseña el icono propio del documento. Anotado en la deuda.
+
 ## 2026-09-07 · Actualizarse de verdad, sin arrastrar nada
 
 - Probada la 2.2.0 en el Mac: la descarga va, pero al instalar salía la ventana de arrastrar a

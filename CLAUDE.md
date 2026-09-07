@@ -128,10 +128,14 @@ a `internal/interfaz/dist`, y no se embebe directamente desde `frontend/dist`.
 el tipo declarado (`tipo.Out(i)`), no el valor: preguntándole al valor se acaba tomando el error por
 resultado y devolviendo `null` cuando todo ha ido bien.
 
-**Doble clic en un `.esf` en macOS.** No llega como argumento, sino por un evento de Apple. Wails v2
-**sí** lo entrega, en `options.Mac.OnFileOpen`, que es lo que usa `main.go`; en Windows y Linux el
-fichero llega por `os.Args` y no hace falta. Lo que queda sin comprobar es si el Finder enseña el
-icono del documento.
+**Doble clic en un `.esf` en macOS: hay dos momentos, y confundirlos es lo que abría la ventana
+vacía.** El fichero no llega como argumento sino por un evento de Apple, que Wails **sí** entrega en
+`options.Mac.OnFileOpen` (en Windows y Linux llega por `os.Args`). Puede llegar **antes** de que la
+interfaz esté escuchando —abrir la aplicación con doble clic— o **después** —doble clic con Esfinge
+ya abierta—. El primero hay que guardarlo, porque no hay a quién avisar; el segundo hay que
+avisarlo, porque nadie va a volver a preguntar. `AlAbrirCon` distingue los dos, y la interfaz **se
+suscribe antes de preguntar**: al revés queda un hueco por el que el fichero se pierde. Sin
+comprobar todavía: si el Finder enseña el icono del documento.
 
 **El fondo del DMG y los nombres de los iconos.** El Finder centra cada icono en la posición que le
 da `create-dmg` y **escribe su nombre debajo**: con iconos de 96 px, el pie del nombre queda unos 64

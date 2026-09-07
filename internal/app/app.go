@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/webcafeina/esfinge/internal/actualizacion"
 	"github.com/webcafeina/esfinge/internal/cripto"
@@ -30,8 +31,15 @@ type App struct {
 	sistema Sistema
 	act     *actualizador
 
-	// abiertoCon es el fichero con el que se arrancó, si se arrancó con uno.
-	abiertoCon string
+	// mu guarda lo de abajo: los ficheros con los que se abre la aplicación
+	// llegan desde una gorrutina de Wails, no desde la ventana.
+	mu sync.Mutex
+	// pendientes son los ficheros que ha mandado el sistema y que la ventana
+	// todavía no ha recogido.
+	pendientes []string
+	// ventanaLista se pone en cuanto la interfaz pregunta por primera vez. Antes
+	// de eso no sirve de nada mandarle eventos: no hay nadie escuchando.
+	ventanaLista bool
 }
 
 // Sistema es lo que la aplicación necesita del escritorio: los diálogos de
@@ -79,18 +87,48 @@ func (a *App) Arrancar(ctx context.Context) {
 // Version es la que se enseña en «Acerca de».
 func (a *App) Version() string { return a.version }
 
-// AlAbrirCon guarda el fichero con el que se ha arrancado la aplicación, que es
-// lo que llega al hacer doble clic en un .esf.
-func (a *App) AlAbrirCon(ruta string) { a.abiertoCon = ruta }
+// AlAbrirCon recoge un fichero que manda el sistema: doble clic en un .esf, o
+// «Abrir con Esfinge».
+//
+// Puede llegar en dos momentos muy distintos, y de no distinguirlos venía que el
+// doble clic abriera la ventana vacía:
+//
+//   - **Antes de que la ventana esté escuchando**, que es el caso de abrir la
+//     aplicación haciendo doble clic. Aquí no hay a quién avisar, así que se
+//     guarda y se entrega cuando la interfaz pregunte.
+//   - **Con la ventana ya abierta**, que es el caso de un doble clic mientras
+//     Esfinge corre. Aquí hay que avisar, porque nadie va a volver a preguntar.
+func (a *App) AlAbrirCon(ruta string) {
+	if ruta == "" {
+		return
+	}
 
-// FicheroDeArranque lo consulta la interfaz al empezar para saber si tiene que
-// abrirse directamente en descifrar, con el fichero ya puesto. Se entrega una
-// sola vez: si se devolviera siempre, volver al menú y cambiar de pestaña
-// repondría el fichero una y otra vez.
-func (a *App) FicheroDeArranque() string {
-	ruta := a.abiertoCon
-	a.abiertoCon = ""
-	return ruta
+	a.mu.Lock()
+	lista := a.ventanaLista
+	if !lista {
+		a.pendientes = append(a.pendientes, ruta)
+	}
+	a.mu.Unlock()
+
+	if lista {
+		a.sistema.Avisar(EventoFicheroAbierto, ruta)
+	}
+}
+
+// FicherosDeArranque los consulta la interfaz al montarse, para abrirse
+// directamente en descifrar con lo que haya llegado.
+//
+// Se entregan una sola vez —si se devolvieran siempre, cambiar de pestaña
+// repondría el fichero una y otra vez— y la llamada deja constancia de que ya
+// hay alguien escuchando: a partir de aquí, lo que llegue se manda por evento.
+func (a *App) FicherosDeArranque() []string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	fuera := a.pendientes
+	a.pendientes = nil
+	a.ventanaLista = true
+	return fuera
 }
 
 // Resultado es lo que sale de cifrar o descifrar un texto.

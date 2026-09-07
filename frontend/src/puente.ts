@@ -164,7 +164,7 @@ export const esfinge = {
 
   version: () => llamar<string>("Version"),
 
-  ficheroDeArranque: () => llamar<string>("FicheroDeArranque"),
+  ficherosDeArranque: () => llamar<string[]>("FicherosDeArranque"),
 
   medirPorCaracteres: (caracteres: number, alfabeto: string) =>
     llamar<Medida>("MedirPorCaracteres", caracteres, alfabeto),
@@ -198,6 +198,18 @@ export const CARACTERES_MAXIMO = 96;
  */
 export function alHaberNovedad(cb: (n: Novedad) => void): () => void {
   return escuchar("novedad", cb);
+}
+
+/**
+ * alAbrirFichero escucha los ficheros que manda el sistema con la ventana ya
+ * abierta: doble clic en un .esf mientras Esfinge corre.
+ *
+ * Los que llegan **antes** de que la interfaz esté escuchando no vienen por
+ * aquí: ésos los guarda Go y se recogen con «ficherosDeArranque». Por eso hay
+ * que suscribirse antes de preguntar, y no al revés.
+ */
+export function alAbrirFichero(cb: (ruta: string) => void): () => void {
+  return escuchar("fichero-abierto", cb);
 }
 
 /** alOrdenar escucha lo que se pide desde el menú del sistema. */
