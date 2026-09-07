@@ -118,11 +118,19 @@ body {
   transition: background 0.1s;
 }
 
-.lateral button:hover {
+/* El resaltado al pasar por encima, **menos en la fila que ya está activa**: ahí
+ * el color de selección es la respuesta, y pintarle otro encima al pasar el ratón
+ * es decir dos cosas a la vez.
+ *
+ * Los dos selectores llevan «nav» a propósito. La regla general de
+ * «button:hover» vive más abajo en este fichero y **empata en peso** con
+ * «.lateral button», así que sin esto ganaría ella por ir después y la fila
+ * activa se volvería gris al pasar por encima. */
+.lateral nav button:hover:not([aria-current="page"]) {
   background: var(--boton-encima);
 }
 
-.lateral button[aria-current="page"] {
+.lateral nav button[aria-current="page"] {
   background: var(--relleno);
   color: var(--sobre-acento);
   font-weight: 500;

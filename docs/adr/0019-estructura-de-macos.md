@@ -22,9 +22,12 @@ borde de arriba.
 Dos columnas: barra lateral con la navegación a la izquierda, y a la derecha el título de la sección
 y su contenido.
 
-- **La ventana pierde su barra de título** (`mac.TitleBarHiddenInset`): el contenido llega hasta
-  arriba y los semáforos quedan metidos hacia dentro, encima de la barra lateral, como en Finder o
-  Correo.
+- **La ventana pierde su barra de título** (`mac.TitleBarHidden`): el contenido llega hasta arriba y
+  los semáforos quedan encima de la barra lateral, como en Finder o Correo.
+
+  Con `TitleBarHiddenInset`, que fue el primer intento, macOS dibuja **su propia banda de barra de
+  herramientas** —el preajuste activa `UseToolbar`— justo donde va nuestro título, y se ve un fondo
+  que no cuadra con el resto de la ventana. Aquí la barra de herramientas la dibujamos nosotros.
 - **La barra lateral sustituye a las pestañas.** Ajustes va separado abajo, que es donde el sistema
   pone lo que configura la aplicación en vez de lo que se hace con ella.
 - **El pie desaparece.** La versión ya estaba en Ajustes y «Modo desarrollo» se va a la esquina de la

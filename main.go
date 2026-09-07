@@ -112,13 +112,19 @@ func main() {
 				escritorio.Avisar(app.EventoFicheroAbierto, ruta)
 			},
 			// Sin barra de título propia: el contenido llega hasta arriba y los
-			// semáforos quedan metidos hacia dentro, encima de la barra lateral.
-			// Es lo que hacen Finder, Correo y los Ajustes del sistema.
+			// semáforos quedan encima de la barra lateral. Es lo que hacen Finder,
+			// Correo y los Ajustes del sistema.
+			//
+			// **Hidden y no HiddenInset.** El «Inset» activa `UseToolbar`, y
+			// entonces macOS dibuja **su propia banda de barra de herramientas**
+			// justo donde va nuestro título: se ve un fondo que no cuadra con el
+			// resto de la ventana. Aquí la barra de herramientas la dibujamos
+			// nosotros, así que no queremos la del sistema.
 			//
 			// A cambio, **hay que declarar por dónde se arrastra la ventana** o se
 			// queda clavada en la pantalla. Eso va en el CSS, con
 			// «--wails-draggable» en la barra lateral y la de herramientas.
-			TitleBar: mac.TitleBarHiddenInset(),
+			TitleBar: mac.TitleBarHidden(),
 
 			// El vidrio de macOS. WebviewIsTransparent deja pasar la luz a través
 			// de la página, y WindowIsTranslucent pone detrás la vista de efecto

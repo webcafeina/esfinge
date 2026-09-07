@@ -185,6 +185,19 @@ test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
 
+  // El fichero de preferencias del servidor de desarrollo es de verdad y dura
+  // entre tandas, así que la prueba **se prepara su propio punto de partida** en
+  // vez de darlo por hecho: una tanda interrumpida a mitad lo deja apagado y a
+  // partir de ahí fallaría siempre.
+  await page.evaluate(() =>
+    fetch("/api/GuardarPreferencias", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify([{ buscarActualizaciones: true }]),
+    }),
+  );
+  await page.reload();
+
   await seccion(page, "Ajustes").click();
   const interruptor = page.getByRole("checkbox", { name: /versión nueva/ });
   await expect(interruptor).toBeChecked();
@@ -353,6 +366,35 @@ test("sin el vidrio del sistema la ventana se pinta como siempre", async ({ page
   const fondo = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   expect(fondo).not.toBe("rgba(0, 0, 0, 0)");
   expect(fondo).not.toBe("transparent");
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});
+
+test("la fila activa de la barra lateral no cambia al pasar el ratón", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // La fila activa ya dice lo que tiene que decir con su color de selección;
+  // pintarle otro encima al pasar por encima es decir dos cosas a la vez.
+  //
+  // Esto tiene prueba porque la causa era un empate de especificidad con la
+  // regla general de «button:hover», y esos empates vuelven solos en cuanto
+  // alguien añade una regla más abajo en el fichero.
+  const activa = seccion(page, "Cifrar");
+  const antes = await activa.evaluate((e) => getComputedStyle(e).backgroundColor);
+
+  await activa.hover();
+  await page.waitForTimeout(250);
+  const despues = await activa.evaluate((e) => getComputedStyle(e).backgroundColor);
+  expect(despues).toBe(antes);
+
+  // Y en una que no está activa sí tiene que notarse, o el resaltado no existe.
+  const otra = seccion(page, "Generar");
+  const otraAntes = await otra.evaluate((e) => getComputedStyle(e).backgroundColor);
+  await otra.hover();
+  await page.waitForTimeout(250);
+  const otraDespues = await otra.evaluate((e) => getComputedStyle(e).backgroundColor);
+  expect(otraDespues).not.toBe(otraAntes);
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });

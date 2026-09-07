@@ -140,6 +140,15 @@ derivación ya usa cuatro hilos por dentro y 64 MiB mientras dura, así que pasa
 0018). Los resultados conservan el orden de entrada y el progreso se cuenta al **terminar** cada
 fichero. Desde aquí, `go test -race` deja de ser una cortesía.
 
+**`TitleBarHidden`, no `TitleBarHiddenInset`.** El preajuste «Inset» activa `UseToolbar`, y entonces
+macOS dibuja su propia banda de barra de herramientas justo donde va nuestro título: se ve un fondo
+que no cuadra con el resto de la ventana. La barra de herramientas la dibujamos nosotros.
+
+**En la barra lateral, la fila activa no se resalta al pasar por encima**, y hace falta escribirlo:
+`.lateral button` **empata en peso** con la regla general de `button:hover`, que vive más abajo en el
+fichero y por eso ganaba. Los selectores de la barra lateral llevan `nav` para desempatar, y hay una
+prueba que lo vigila porque esos empates vuelven solos.
+
 **Sin barra de título, arrastrar la ventana deja de ser gratis.** Con `TitleBarHiddenInset` el
 contenido llega hasta arriba y ya no hay nada que agarrar: hay que declarar las zonas con
 `--wails-draggable: drag` —la barra lateral y la de herramientas— y desmarcar los botones con

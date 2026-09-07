@@ -55,6 +55,17 @@ Plantilla al final.
   cifra**, así que los selectores se acotan a `.lateral` o a `.contenido`.
 - Verificado: 26 pruebas de interfaz actualizadas y en verde en los dos temas, dos tandas seguidas;
   `make comprobar` y `make contraste`. Capturas de la portada rehechas.
+- **2.6.1**, con lo primero que dijo el Mac: el título se veía con fondo y el resaltado del ratón
+  pisaba la fila activa.
+  - Lo del fondo no era CSS sino macOS: `TitleBarHiddenInset` activa `UseToolbar` y el sistema dibuja
+    **su propia banda** justo donde va nuestro título. Con `TitleBarHidden` desaparece.
+  - Lo del hover era un **empate de especificidad**: `.lateral button` pesa lo mismo que la regla
+    general de `button:hover`, que va más abajo en el fichero y por eso ganaba. Los selectores llevan
+    ahora `nav` para desempatar, y tiene prueba: esos empates vuelven solos en cuanto alguien añade
+    una regla al final.
+  - De paso, la prueba del interruptor de Ajustes **se prepara su propio punto de partida**. Daba por
+    hecho que arrancaba encendido, y el fichero de preferencias del servidor de desarrollo es de
+    verdad: una tanda interrumpida lo dejaba apagado y a partir de ahí fallaba siempre.
 - **Sin comprobar, y es lo que decide lo siguiente**: cómo queda en un Mac. De eso depende si Windows
   y Linux se hacen igual.
 
