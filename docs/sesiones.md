@@ -33,6 +33,13 @@ Plantilla al final.
   KB, que es la señal de que `create-dmg` sí habló con el Finder y guardó la colocación.
 - Del `.deb`: los dos binarios con su bit de ejecución, el lanzador, la asociación de los `.esf`, el
   icono, el copyright y las dependencias del webview.
+- El instalador de Windows costó tres intentos y cada uno enseñó algo distinto: que Chocolatey no
+  deja NSIS en el `PATH`, que `GITHUB_PATH` quiere la ruta como la entiende Windows y no la de Git
+  bash —con la de bash el fichero está y la comprobación pasa, pero wails sigue sin encontrarlo—, y
+  que Git bash convierte los argumentos que empiezan por «/», así que `makensis /VERSION` hay que
+  ejecutarlo en PowerShell. Comprobado del `.exe` publicado: es un NSIS-3 Unicode y lleva dentro la
+  aplicación, el `esf.ico`, el instalador de WebView2 por si el sistema no lo trae, y en su cabecera
+  las claves que registran el `.esf` —`Software\Classes`, `DefaultIcon`, `shell\open\command`—.
 - Queda abierto: montar el DMG en un Mac y ver cómo queda la ventana. Desde aquí solo se puede leer
   su contenido, no verlo.
 
