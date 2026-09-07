@@ -94,17 +94,29 @@ func TestContrasteDeLosDosTemas(t *testing.T) {
 	}
 }
 
-// El amarillo de ClickHouse no vale como texto sobre claro, y el tema claro tiene
-// que haberlo sustituido. Si alguien «simplifica» poniendo el original, esto salta.
-func TestElAmarilloNoSeUsaComoTextoSobreClaro(t *testing.T) {
-	if TemaClaro.Acento == chPrimario {
-		t.Error("el tema claro usa #faff69 como texto: sobre blanco da 1,1:1 y es invisible")
+// El azul de botón del sistema no cumple AA con texto blanco encima: hay que
+// oscurecerlo. Si alguien «corrige» el relleno poniendo el azul original, esto
+// salta.
+func TestElRellenoDeAccionSeLee(t *testing.T) {
+	for _, tm := range []Tema{TemaClaro, TemaOscuro} {
+		if r := Contraste(tm.SobreAcento, tm.Relleno); r < AANormal {
+			t.Errorf("tema %s: el texto del botón de acción da %.2f:1", tm.Nombre, r)
+		}
 	}
-	if TemaClaro.Relleno != chPrimario {
-		t.Error("el tema claro ha perdido el amarillo original como relleno, que es donde sí funciona")
+
+	// Y el supuesto de partida: los azules del sistema, tal cual, no llegan.
+	if r := Contraste(MustParseHex("#ffffff"), azulClaro); r >= AANormal {
+		t.Errorf("el supuesto ha cambiado: blanco sobre #007aff da %.2f:1", r)
 	}
-	if r := Contraste(chPrimario, TemaClaro.Lienzo); r > 2 {
-		t.Errorf("el supuesto del test ha cambiado: #faff69 sobre blanco da %.2f:1", r)
+}
+
+func TestRellenoLegible(t *testing.T) {
+	blanco := RGB{255, 255, 255}
+	for _, base := range []string{"#007aff", "#0a84ff", "#34c759", "#ff3b30"} {
+		fondo := RellenoLegible(MustParseHex(base), blanco, AANormal)
+		if r := Contraste(blanco, fondo); r < AANormal {
+			t.Errorf("sobre %s ajustado a %s, el blanco da %.2f:1", base, fondo.Hex(), r)
+		}
 	}
 }
 
@@ -115,9 +127,10 @@ func TestAcentoLegible(t *testing.T) {
 		acento, fondo RGB
 		nombre        string
 	}{
-		{chPrimario, blanco, "amarillo de ClickHouse sobre blanco"},
+		{MustParseHex("#faff69"), blanco, "un amarillo sobre blanco"},
 		{MustParseHex("#b1f100"), blanco, "lima de Webcafeína sobre blanco"},
-		{chError, blanco, "rojo sobre blanco"},
+		{rojoSistema, blanco, "el rojo del sistema sobre blanco"},
+		{azulClaro, blanco, "el azul del sistema sobre blanco"},
 		{MustParseHex("#5a3519"), negro, "marrón de Webcafeína sobre negro"},
 		{MustParseHex("#171009"), negro, "tinta de Webcafeína sobre negro"},
 	}
@@ -132,8 +145,9 @@ func TestAcentoLegible(t *testing.T) {
 // Un color que ya cumple no se toca: corregir de más aguaría la identidad del
 // sistema sin motivo.
 func TestAcentoLegibleNoTocaLoQueYaCumple(t *testing.T) {
-	if got := AcentoLegible(chPrimario, chLienzo, AANormal); got != chPrimario {
-		t.Errorf("el amarillo sobre el lienzo oscuro ya cumple y lo ha cambiado a %s", got.Hex())
+	amarillo := MustParseHex("#faff69")
+	if got := AcentoLegible(amarillo, MustParseHex("#0a0a0a"), AANormal); got != amarillo {
+		t.Errorf("un amarillo sobre negro ya cumple y lo ha cambiado a %s", got.Hex())
 	}
 }
 
@@ -161,7 +175,7 @@ func TestLuminanciaRelativa(t *testing.T) {
 
 func TestParseHex(t *testing.T) {
 	for _, s := range []string{"#faff69", "faff69", "  #FAFF69  "} {
-		if c, err := ParseHex(s); err != nil || c != chPrimario {
+		if c, err := ParseHex(s); err != nil || c != MustParseHex("#faff69") {
 			t.Errorf("ParseHex(%q) = %v, %v", s, c, err)
 		}
 	}

@@ -1,24 +1,27 @@
 package tema
 
-// Tema es la paleta resuelta para un fondo de terminal concreto.
+// Tema es la paleta resuelta para un modo de apariencia.
 //
-// Los valores del tema oscuro salen tal cual de
-// ~/sistemas-diseno-empresas/sistemas/clickhouse/variables.css. ClickHouse es un
-// sistema declarado «dark» y no trae variante clara, así que la de aquí está
-// derivada: se conserva su gesto —lienzo casi neutro, tres superficies, filete de
-// 1px, un único acento eléctrico— y se recalculan los colores de texto para que
-// cumplan AA sobre fondo claro.
+// La 1.x vestía a Esfinge con la identidad de ClickHouse, que era una decisión
+// para el terminal: allí no hay convenciones que seguir y una identidad fuerte
+// ayuda a que la herramienta se reconozca. En una aplicación de escritorio la
+// convención sí existe, y saltársela hace que la ventana se sienta ajena al
+// sistema. Así que estos valores siguen las apariencias de macOS y Windows —gris
+// neutro, azul de acción, tipografía del sistema— y la marca queda en el icono.
+//
+// Lo que no ha cambiado es el mecanismo: el mismo tipo, el mismo cálculo de
+// contraste y el mismo test que falla si una pareja no cumple.
 type Tema struct {
 	Nombre string
 	Oscuro bool
 
 	// Superficies, de la más al fondo a la más elevada.
-	Lienzo    RGB
-	Suave     RGB
-	Tarjeta   RGB
-	Elevada   RGB
+	Lienzo  RGB
+	Suave   RGB
+	Tarjeta RGB
+	Elevada RGB
 
-	// Filetes: la única separación que usa ClickHouse.
+	// Separaciones.
 	Filete       RGB
 	FileteFuerte RGB
 
@@ -27,13 +30,8 @@ type Tema struct {
 	Cuerpo  RGB
 	Apagado RGB
 
-	// Acento. Relleno es el amarillo de ClickHouse intacto y solo vale como fondo,
-	// con SobreAcento encima. Acento es la variante legible: en tema oscuro es el
-	// mismo amarillo, y en claro una versión oscurecida hasta cumplir AA.
-	//
-	// Todo lo que se dibuja en primer plano —el foco de un campo, la barra ▍ de la
-	// marca, los medidores, el resultado cifrado— usa Acento, nunca Relleno. Sobre
-	// blanco el amarillo da 1,07:1 y la barra de marca desaparecería de la pantalla.
+	// Acento. Relleno es el fondo de un botón de acción, con SobreAcento encima;
+	// Acento es el mismo color en su versión legible como texto.
 	Relleno     RGB
 	RellenoVivo RGB
 	SobreAcento RGB
@@ -45,88 +43,74 @@ type Tema struct {
 	Error RGB
 }
 
-// Colores de ClickHouse, con el nombre del token de origen al lado.
-var (
-	chPrimario     = MustParseHex("#faff69") // --color-primary
-	chPrimarioVivo = MustParseHex("#e6eb52") // --color-primary-active
-	chTinta        = MustParseHex("#ffffff") // --color-ink
-	chCuerpo       = MustParseHex("#cccccc") // --color-body
-	chApagado      = MustParseHex("#888888") // --color-muted
-	chFilete       = MustParseHex("#2a2a2a") // --color-hairline
-	chFileteFuerte = MustParseHex("#3a3a3a") // --color-hairline-strong
-	chLienzo       = MustParseHex("#0a0a0a") // --color-canvas
-	chSuave        = MustParseHex("#121212") // --color-surface-soft
-	chTarjeta      = MustParseHex("#1a1a1a") // --color-surface-card
-	chElevada      = MustParseHex("#242424") // --color-surface-elevated
-	chSobreAcento  = MustParseHex("#0a0a0a") // --color-on-primary
-	chExito        = MustParseHex("#22c55e") // --color-success
-	chAviso        = MustParseHex("#f59e0b") // --color-warning
-	chError        = MustParseHex("#ef4444") // --color-error
-)
-
-// TemaOscuro es ClickHouse sin tocar: sobre su lienzo #0a0a0a los tres colores de
-// estado y el amarillo pasan AA de sobra, así que no hay nada que corregir.
-var TemaOscuro = Tema{
-	Nombre:       "oscuro",
-	Oscuro:       true,
-	Lienzo:       chLienzo,
-	Suave:        chSuave,
-	Tarjeta:      chTarjeta,
-	Elevada:      chElevada,
-	Filete:       chFilete,
-	FileteFuerte: chFileteFuerte,
-	Tinta:        chTinta,
-	Cuerpo:       chCuerpo,
-	Apagado:      chApagado,
-	Relleno:      chPrimario,
-	RellenoVivo:  chPrimarioVivo,
-	SobreAcento:  chSobreAcento,
-	Acento:       chPrimario,
-	Exito:        chExito,
-	Aviso:        chAviso,
-	Error:        chError,
-}
-
-// claroMasOscuro es la superficie de menos contraste del tema claro. Los colores
-// de texto se derivan contra ella y no contra el blanco: un acento calculado
-// contra #ffffff cumple sobre el lienzo y se queda corto en cuanto cae dentro de
-// un panel, que es donde más se usa.
-var claroMasOscuro = MustParseHex("#e6e6e6")
-
-// TemaClaro invierte la escala de superficies y recalcula los colores de texto.
+// Azules de acción del sistema, de donde parte el acento antes de ajustarlo.
 //
-// Sobre blanco, el amarillo de ClickHouse da 1,07:1, el naranja de aviso 2,2:1 y
-// el verde de éxito 2,3:1: los tres son ilegibles y los tres se arreglan igual,
-// oscureciéndolos hasta AA. El amarillo original sigue vivo en Relleno, que es
-// donde funciona: como fondo, con la tinta encima.
-var TemaClaro = Tema{
-	Nombre:       "claro",
-	Oscuro:       false,
-	Lienzo:       MustParseHex("#ffffff"),
-	Suave:        MustParseHex("#f7f7f7"),
-	Tarjeta:      MustParseHex("#f0f0f0"),
-	Elevada:      MustParseHex("#e6e6e6"),
-	Filete:       MustParseHex("#d4d4d4"),
-	FileteFuerte: MustParseHex("#a8a8a8"),
-	Tinta:        MustParseHex("#0a0a0a"),
-	Cuerpo:       MustParseHex("#3a3a3a"),
-	Apagado:      MustParseHex("#6b6b6b"),
-	Relleno:      chPrimario,
-	RellenoVivo:  chPrimarioVivo,
-	SobreAcento:  chSobreAcento,
-	Acento:       AcentoLegible(chPrimario, claroMasOscuro, AANormal),
-	Exito:        AcentoLegible(chExito, claroMasOscuro, AANormal),
-	Aviso:        AcentoLegible(chAviso, claroMasOscuro, AANormal),
-	Error:        AcentoLegible(chError, claroMasOscuro, AANormal),
-}
+// Ni Apple ni Microsoft cumplen AA con su azul de botón y texto blanco encima:
+// el #007aff de macOS da 3,6:1. Aquí se oscurece hasta cumplir, con
+// RellenoLegible, porque un botón que no se lee no es un botón bonito, es un
+// botón roto.
+var (
+	azulClaro  = MustParseHex("#007aff") // el de macOS
+	azulOscuro = MustParseHex("#0a84ff") // su variante para modo oscuro
+	blanco     = MustParseHex("#ffffff")
 
-// Glifos de estado. Se imprimen siempre, con color y sin él: cuando el terminal
-// no tiene color —NO_COLOR, una tubería, un ConHost antiguo— el glifo es lo
-// único que distingue un acierto de un fallo.
-const (
-	GlifoExito = "✓"
-	GlifoAviso = "!"
-	GlifoError = "✕"
-	GlifoInfo  = "·"
-	GlifoBarra = "▍"
+	verdeSistema = MustParseHex("#34c759")
+	ambarSistema = MustParseHex("#ff9500")
+	rojoSistema  = MustParseHex("#ff3b30")
 )
+
+// TemaClaro sigue la apariencia clara del sistema.
+var TemaClaro = func() Tema {
+	lienzo := MustParseHex("#ffffff")
+	// Los colores de texto se derivan contra la superficie de menos contraste, no
+	// contra el lienzo: un acento calculado contra blanco cumple sobre el lienzo y
+	// se queda corto en cuanto cae dentro de una tarjeta, que es donde más se usa.
+	masOscura := MustParseHex("#e8e8ed")
+
+	return Tema{
+		Nombre:       "claro",
+		Lienzo:       lienzo,
+		Suave:        MustParseHex("#f7f7f9"),
+		Tarjeta:      MustParseHex("#f2f2f7"),
+		Elevada:      masOscura,
+		Filete:       MustParseHex("#d8d8de"),
+		FileteFuerte: MustParseHex("#8e8e93"),
+		Tinta:        MustParseHex("#1c1c1e"),
+		Cuerpo:       MustParseHex("#3c3c43"),
+		Apagado:      MustParseHex("#6c6c72"),
+		Relleno:      RellenoLegible(azulClaro, blanco, AANormal),
+		RellenoVivo:  Oscurecer(RellenoLegible(azulClaro, blanco, AANormal), 0.85),
+		SobreAcento:  blanco,
+		Acento:       AcentoLegible(azulClaro, masOscura, AANormal),
+		Exito:        AcentoLegible(verdeSistema, masOscura, AANormal),
+		Aviso:        AcentoLegible(ambarSistema, masOscura, AANormal),
+		Error:        AcentoLegible(rojoSistema, masOscura, AANormal),
+	}
+}()
+
+// TemaOscuro sigue la apariencia oscura del sistema.
+var TemaOscuro = func() Tema {
+	lienzo := MustParseHex("#1e1e1e")
+
+	return Tema{
+		Nombre:       "oscuro",
+		Oscuro:       true,
+		Lienzo:       lienzo,
+		Suave:        MustParseHex("#252527"),
+		Tarjeta:      MustParseHex("#2c2c2e"),
+		Elevada:      MustParseHex("#3a3a3c"),
+		Filete:       MustParseHex("#3f3f42"),
+		FileteFuerte: MustParseHex("#5a5a5f"),
+		Tinta:        MustParseHex("#ffffff"),
+		Cuerpo:       MustParseHex("#e3e3e6"),
+		Apagado:      MustParseHex("#a1a1a8"),
+		Relleno:      RellenoLegible(azulOscuro, blanco, AANormal),
+		RellenoVivo:  Oscurecer(RellenoLegible(azulOscuro, blanco, AANormal), 0.85),
+		SobreAcento:  blanco,
+		// Sobre fondo oscuro el azul del sistema ya se lee, así que se queda.
+		Acento: AcentoLegible(azulOscuro, MustParseHex("#3a3a3c"), AANormal),
+		Exito:  AcentoLegible(verdeSistema, MustParseHex("#3a3a3c"), AANormal),
+		Aviso:  AcentoLegible(ambarSistema, MustParseHex("#3a3a3c"), AANormal),
+		Error:  AcentoLegible(rojoSistema, MustParseHex("#3a3a3c"), AANormal),
+	}
+}()

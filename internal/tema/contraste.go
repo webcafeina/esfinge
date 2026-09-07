@@ -111,6 +111,28 @@ func AcentoLegible(acento, fondo RGB, minimo float64) RGB {
 	return RGB{255, 255, 255}
 }
 
+// RellenoLegible oscurece un color de fondo hasta que el texto que va encima se
+// lee sobre él.
+//
+// Es el reverso de AcentoLegible: allí se mueve la tinta, aquí el fondo. Hace
+// falta para los botones de acción, donde el color viene dado por la convención
+// del sistema y lo que se puede mover es el fondo. El azul de botón de macOS con
+// texto blanco da 3,6:1; para cumplir AA hay que bajarlo un par de escalones, y
+// el resultado sigue leyéndose como el azul del sistema.
+func RellenoLegible(fondo, encima RGB, minimo float64) RGB {
+	c := fondo
+	for i := 0; i < 24 && Contraste(encima, c) < minimo; i++ {
+		c = Oscurecer(c, 0.92)
+	}
+	return c
+}
+
+// Oscurecer multiplica los tres canales por un factor. Con 0,85 se obtiene el
+// estado «pulsado» de un botón, que es como lo resuelven los dos sistemas.
+func Oscurecer(c RGB, factor float64) RGB {
+	return RGB{escalar(c.R, factor), escalar(c.G, factor), escalar(c.B, factor)}
+}
+
 func escalar(v uint8, f float64) uint8 {
 	return uint8(math.Round(float64(v) * f))
 }
