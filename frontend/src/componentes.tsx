@@ -149,6 +149,7 @@ export function CampoClave({
   medir = true,
   alEnviar,
   alGenerar,
+  id = "clave",
 }: {
   valor: string;
   alCambiar: (v: string) => void;
@@ -163,6 +164,12 @@ export function CampoClave({
    * recuerda, y un botón de generar ahí no significa nada.
    */
   alGenerar?: () => void;
+  /**
+   * Distinto en cada pantalla: cifrar y descifrar están montadas a la vez —para
+   * que cambiar de sección no borre lo escrito— y dos campos con el mismo
+   * identificador dejarían la etiqueta apuntando a cualquiera de los dos.
+   */
+  id?: string;
 }) {
   const [fuerza, setFuerza] = useState<Fuerza | null>(null);
 
@@ -184,7 +191,7 @@ export function CampoClave({
   return (
     <div>
       <div className="fila">
-        <label htmlFor="clave" style={{ marginBottom: 0 }}>
+        <label htmlFor={id} style={{ marginBottom: 0 }}>
           {etiqueta}
         </label>
         {alGenerar && (
@@ -194,7 +201,7 @@ export function CampoClave({
         )}
       </div>
       <input
-        id="clave"
+        id={id}
         type="password"
         value={valor}
         autoComplete="off"

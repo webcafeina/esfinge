@@ -37,6 +37,13 @@ type Modo = "texto" | "ficheros";
 
 export default function App() {
   const [tarea, setTarea] = useState<Tarea>("cifrar");
+  // Lo que se ha visitado alguna vez. Una sección se monta la primera vez que se
+  // entra en ella y a partir de ahí se queda, solo que escondida.
+  const [visitadas, setVisitadas] = useState<Set<Tarea>>(() => new Set<Tarea>(["cifrar"]));
+
+  useEffect(() => {
+    setVisitadas((antes) => (antes.has(tarea) ? antes : new Set(antes).add(tarea)));
+  }, [tarea]);
   const [version, setVersion] = useState("");
   const [alArrancar, setAlArrancar] = useState<Apertura | null>(null);
   // Cambia cada vez que el sistema manda ficheros, para que la pantalla de
@@ -176,33 +183,74 @@ export default function App() {
         )}
 
         <main className="contenido">
-          {tarea === "cifrar" && (
-            <Trabajo key="cifrar" accion="cifrar" claveGenerada={claveGenerada} />
-          )}
-          {tarea === "descifrar" && (
-            // La clave lleva el número de tanda: si el sistema manda otro fichero
-            // con la pantalla ya abierta, se rehace con él en vez de quedarse con
-            // el de antes.
+          {/* Cada sección se queda montada desde la primera vez que se visita, y
+              lo que hace se esconde en vez de desmontarse.
+
+              Antes se desmontaba al salir, y con ella se iba lo escrito: se
+              tecleaba el secreto, se iba uno a Generar a por una clave, y al
+              volver el campo estaba vacío. Justo el camino que la propia
+              aplicación propone desde que existe «Usar como clave».
+
+              **Montadas la primera vez, no todas de golpe**: Generar saca una
+              contraseña nada más montarse, y una herramienta que cifra no debería
+              fabricar un secreto que nadie ha pedido solo por si acaso. */}
+          <Panel activo={tarea === "cifrar"} visitado={visitadas.has("cifrar")}>
+            <Trabajo accion="cifrar" claveGenerada={claveGenerada} />
+          </Panel>
+
+          <Panel activo={tarea === "descifrar"} visitado={visitadas.has("descifrar")}>
+            {/* La clave lleva el número de tanda: si el sistema manda otro fichero
+                con la pantalla ya abierta, se rehace con él en vez de quedarse con
+                el de antes. */}
             <Trabajo
               key={`descifrar-${tanda}`}
               accion="descifrar"
               alArrancar={alArrancar ?? undefined}
             />
-          )}
-          {tarea === "generar" && (
+          </Panel>
+
+          <Panel activo={tarea === "generar"} visitado={visitadas.has("generar")}>
             <Generar
               alUsarComoClave={(valor) => {
                 setClaveGenerada((antes) => ({ valor, sello: (antes?.sello ?? 0) + 1 }));
                 setTarea("cifrar");
               }}
             />
-          )}
-          {tarea === "historial" && <Historial />}
-          {tarea === "ajustes" && <Ajustes version={version} alEncontrar={setNovedad} />}
+          </Panel>
+
+          <Panel activo={tarea === "historial"} visitado={visitadas.has("historial")}>
+            <Historial recargar={tarea === "historial"} />
+          </Panel>
+
+          <Panel activo={tarea === "ajustes"} visitado={visitadas.has("ajustes")}>
+            <Ajustes version={version} alEncontrar={setNovedad} />
+          </Panel>
         </main>
       </div>
     </div>
   );
+}
+
+/**
+ * Panel guarda una sección: la monta la primera vez que se visita y luego la
+ * esconde en vez de quitarla, para que no se pierda lo que hubiera dentro.
+ *
+ * El «hidden» necesita ayuda del CSS: la hoja del navegador lo resuelve con
+ * «display: none», pero «.panel» declara «display: flex» y gana por ser de
+ * autor. En estilos.css hay un «[hidden] { display: none !important }» que lo
+ * arregla, y sin él esconder no escondería nada.
+ */
+function Panel({
+  activo,
+  visitado,
+  children,
+}: {
+  activo: boolean;
+  visitado: boolean;
+  children: React.ReactNode;
+}) {
+  if (!visitado) return null;
+  return <div hidden={!activo}>{children}</div>;
 }
 
 /** El nombre de cada sección, que es lo que pone la barra de herramientas. */
@@ -371,11 +419,11 @@ function Trabajo({
 
         {modo === "texto" ? (
           <div>
-            <label htmlFor="texto">
+            <label htmlFor={`texto-${accion}`}>
               {cifrando ? "Qué quieres cifrar" : "El texto cifrado"}
             </label>
             <textarea
-              id="texto"
+              id={`texto-${accion}`}
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
               placeholder={
@@ -411,6 +459,7 @@ function Trabajo({
           }}
           alEnviar={() => listo && ejecutar()}
           alGenerar={cifrando ? generarClave : undefined}
+          id={`clave-${accion}`}
         />
       </div>
 
@@ -733,7 +782,7 @@ function Ajustes({
   );
 }
 
-function Historial() {
+function Historial({ recargar: aLaVista }: { recargar: boolean }) {
   const [entradas, setEntradas] = useState<Entrada[]>([]);
   const [donde, setDonde] = useState("");
 
@@ -742,7 +791,13 @@ function Historial() {
     esfinge.dondeVive().then(setDonde).catch(() => {});
   }, []);
 
-  useEffect(recargar, [recargar]);
+  // Se recarga cada vez que se entra, no solo al montarse. Desde que las
+  // secciones se quedan montadas, montarse pasa una sola vez: sin esto, el
+  // historial enseñaría lo que había la primera vez que se miró y no lo que se
+  // acaba de cifrar.
+  useEffect(() => {
+    if (aLaVista) recargar();
+  }, [aLaVista, recargar]);
 
   async function vaciar() {
     await esfinge.vaciarHistorial();

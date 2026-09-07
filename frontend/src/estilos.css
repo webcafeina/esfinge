@@ -805,3 +805,12 @@ p {
   border-radius: 12px;
   border-width: 1px;
 }
+
+/* Las secciones que no están a la vista se esconden en vez de desmontarse, para
+ * que no se pierda lo escrito al cambiar de una a otra. La hoja del navegador ya
+ * resuelve «hidden» con «display: none», pero cualquier «display» de autor
+ * —«.panel» declara flex— le gana. De ahí el !important, que aquí no es pereza
+ * sino la única forma de que esconder esconda. */
+[hidden] {
+  display: none !important;
+}

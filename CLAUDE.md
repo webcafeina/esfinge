@@ -166,6 +166,15 @@ contenido llega hasta arriba y ya no hay nada que agarrar: hay que declarar las 
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de
 `.contenido`. Sin acotar, Playwright encuentra dos y falla por modo estricto.
 
+**Las secciones se esconden, no se desmontan.** Desde la 2.9.0 cada una se monta la primera vez que
+se visita y luego se oculta, para que cambiar de pantalla no borre lo escrito. Tres cosas que eso
+arrastra: los identificadores de los campos llevan el nombre de la pantalla —`clave-cifrar`,
+`clave-descifrar`— porque si no habría dos elementos con el mismo `id`; el `[hidden]` necesita un
+`display: none !important` en el CSS, porque el `display: flex` de `.panel` le gana por ser de autor;
+y lo que se cargaba al montarse hay que recargarlo **al entrar**, que es lo que hace el historial.
+En las pruebas, cualquier selector por clase dentro de un panel se acota con `:visible`, o encuentra
+también los escondidos.
+
 **El color se genera, no se escribe.** `internal/tema` es la fuente de verdad y produce
 `frontend/src/tokens.css` con `make tokens`. Editar el CSS a mano no sirve: hay un test que compara
 el fichero con lo que dice Go y falla. Y `make contraste` mide las parejas reales de los dos temas.

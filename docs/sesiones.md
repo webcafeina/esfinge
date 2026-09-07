@@ -38,6 +38,30 @@ Plantilla al final.
 - Lección: bajar el tinte dos veces sin entender el síntoma era el camino equivocado. El «gris plano»
   no era un tinte de más, era el material sin nada que mezclar.
 
+## 2026-09-08 · Cambiar de sección deja de borrar lo escrito
+
+- **2.9.0**, y era la deuda que dejó la versión anterior: cada sección se desmontaba al salir, así
+  que escribir el secreto, ir a Generar a por una clave y volver dejaba el campo vacío. Justo el
+  camino que la propia aplicación propone desde que existe «Usar como clave».
+- Ahora cada sección **se monta la primera vez que se visita y luego se esconde**. Montarlas todas de
+  golpe habría sido más simple y peor: Generar saca una contraseña nada más montarse, y una
+  herramienta que cifra no debería fabricar un secreto que nadie ha pedido por si acaso.
+- Tres cosas que arrastró el cambio, y ninguna era evidente:
+  - **Los identificadores de los campos** pasan a llevar el nombre de la pantalla. Con cifrar y
+    descifrar montadas a la vez, dos `id="clave"` dejan la etiqueta apuntando a cualquiera.
+  - **`hidden` no esconde nada por sí solo** aquí: el `display: flex` de `.panel` le gana por ser de
+    autor. Hace falta un `display: none !important`.
+  - **Lo que se cargaba al montarse hay que recargarlo al entrar.** El historial enseñaba lo que
+    había la primera vez que se miró, no lo recién cifrado.
+- Las pruebas costaron más que el cambio, y por una razón que conviene recordar: **los paneles
+  escondidos siguen en el DOM**, así que cualquier selector por clase encontraba dos. Van acotados
+  con `:visible`.
+- Dos pruebas propias resultaron mentirosas y se rehicieron: una contaba el historial **antes de que
+  cargara** —veía cero y daba por hecho un vaciado que no había ocurrido— y otra leía la contraseña
+  generada mientras React montaba los efectos dos veces en desarrollo, comparando la primera contra
+  la segunda.
+- Verificado: 36 pruebas en los dos temas, tres tandas seguidas.
+
 ## 2026-09-08 · La contraseña generada, usable como clave
 
 - **2.8.0**: en Generar aparece «Usar como clave», que lleva a Cifrar con la contraseña puesta y de

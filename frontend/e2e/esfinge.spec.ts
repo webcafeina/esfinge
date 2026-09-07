@@ -19,7 +19,20 @@ function seccion(page: Page, nombre: string) {
  * «Cifrar» nombra la sección y el botón que cifra.
  */
 function accion(page: Page, nombre: string) {
-  return page.locator(".contenido").getByRole("button", { name: nombre, exact: true });
+  return page.locator(".contenido").getByRole("button", { name: nombre, exact: true }).and(
+    page.locator("button:visible"),
+  );
+}
+
+/**
+ * El campo de la clave de la pantalla que se está viendo.
+ *
+ * Cifrar y descifrar están montadas a la vez —para que cambiar de sección no
+ * borre lo escrito— así que cada una tiene su propio campo y hay que quedarse
+ * con el visible. Buscarlo por identificador fijo encontraría los dos.
+ */
+function clave(page: Page) {
+  return page.locator("input[type=password]:visible");
 }
 
 /** Ningún error de la consola pasa desapercibido. */
@@ -35,10 +48,10 @@ test("cifra un texto y lo vuelve a abrir", async ({ page }) => {
   await page.goto("/");
 
   await page.getByLabel("Qué quieres cifrar").fill(SECRETO);
-  await page.locator("#clave").fill(CLAVE);
+  await clave(page).fill(CLAVE);
   await accion(page, "Cifrar").click();
 
-  const resultado = page.locator(".resultado");
+  const resultado = page.locator(".resultado:visible");
   await expect(resultado).toBeVisible({ timeout: 20_000 });
   const cifrado = (await resultado.innerText()).trim();
   expect(cifrado.startsWith("ESF1.")).toBe(true);
@@ -47,15 +60,15 @@ test("cifra un texto y lo vuelve a abrir", async ({ page }) => {
   // que entender de esta herramienta, y tiene que estar delante cuando toca
   // decidir si se guarda o se cierra. Uno solo: el del formulario se retira al
   // aparecer el resultado, para no decir dos veces lo mismo en la misma pantalla.
-  await expect(page.locator(".aviso")).toHaveCount(1);
-  await expect(page.locator(".aviso")).toContainText("no lo abre nadie");
+  await expect(page.locator(".aviso:visible")).toHaveCount(1);
+  await expect(page.locator(".aviso:visible")).toContainText("no lo abre nadie");
 
   await seccion(page, "Descifrar").click();
   await page.getByLabel("El texto cifrado").fill(cifrado);
-  await page.locator("#clave").fill(CLAVE);
+  await clave(page).fill(CLAVE);
   await accion(page, "Descifrar").click();
 
-  await expect(page.locator(".resultado")).toHaveText(SECRETO, { timeout: 20_000 });
+  await expect(page.locator(".resultado:visible")).toHaveText(SECRETO, { timeout: 20_000 });
   expect(errores, errores.join(' | ')).toEqual([]);
 });
 
@@ -64,11 +77,11 @@ test("con la clave equivocada lo dice, y no revienta", async ({ page }) => {
 
   await seccion(page, "Descifrar").click();
   await page.getByLabel("El texto cifrado").fill("ESF1.esto-no-es-un-contenedor");
-  await page.locator("#clave").fill("cualquiera");
+  await clave(page).fill("cualquiera");
   await accion(page, "Descifrar").click();
 
-  await expect(page.locator(".error")).toBeVisible({ timeout: 20_000 });
-  await expect(page.locator(".error")).toContainText("Esfinge");
+  await expect(page.locator(".error:visible")).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".error:visible")).toContainText("Esfinge");
 });
 
 test("el botón de cifrar no se puede pulsar sin lo que hace falta", async ({ page }) => {
@@ -80,26 +93,26 @@ test("el botón de cifrar no se puede pulsar sin lo que hace falta", async ({ pa
   await page.getByLabel("Qué quieres cifrar").fill("algo");
   await expect(boton).toBeDisabled(); // todavía falta la clave
 
-  await page.locator("#clave").fill("una clave");
+  await clave(page).fill("una clave");
   await expect(boton).toBeEnabled();
 });
 
 test("el medidor valora la clave mientras se teclea", async ({ page }) => {
   await page.goto("/");
 
-  await page.locator("#clave").fill("1234");
-  await expect(page.locator(".medidor")).toHaveAttribute("data-nivel", "0", { timeout: 10_000 });
+  await clave(page).fill("1234");
+  await expect(page.locator(".medidor:visible")).toHaveAttribute("data-nivel", "0", { timeout: 10_000 });
   await expect(page.getByText("Muy débil")).toBeVisible();
 
-  await page.locator("#clave").fill("caballo grapa batería correcto");
-  await expect(page.locator(".medidor")).not.toHaveAttribute("data-nivel", "0");
+  await clave(page).fill("caballo grapa batería correcto");
+  await expect(page.locator(".medidor:visible")).not.toHaveAttribute("data-nivel", "0");
 });
 
 test("genera contraseñas y avisa de las que rompen una URL", async ({ page }) => {
   await page.goto("/");
   await seccion(page, "Generar").click();
 
-  const resultado = page.locator(".resultado");
+  const resultado = page.locator(".resultado:visible");
   await expect(resultado).toBeVisible({ timeout: 20_000 });
 
   const hex = (await resultado.innerText()).trim();
@@ -114,36 +127,36 @@ test("genera contraseñas y avisa de las que rompen una URL", async ({ page }) =
 
   // Y el alfabeto con símbolos avisa, que es el que rompe cadenas de conexión.
   await page.getByRole("tab", { name: "Con símbolos" }).click();
-  await expect(page.locator(".aviso")).toContainText("URL");
+  await expect(page.locator(".aviso:visible")).toContainText("URL");
 });
 
 test("cifra una tanda de ficheros", async ({ page }) => {
   await page.goto("/");
 
   await page.getByRole("tab", { name: "Ficheros" }).click();
-  await page.locator(".soltar").click(); // el diálogo del sistema
+  await page.locator(".soltar:visible").click(); // el diálogo del sistema
 
-  await expect(page.locator(".lista-ficheros li").first()).toBeVisible({ timeout: 10_000 });
-  const cuantos = await page.locator(".lista-ficheros li").count();
+  await expect(page.locator(".lista-ficheros li:visible").first()).toBeVisible({ timeout: 10_000 });
+  const cuantos = await page.locator(".lista-ficheros li:visible").count();
   expect(cuantos).toBeGreaterThan(0);
 
-  await page.locator("#clave").fill(CLAVE);
+  await clave(page).fill(CLAVE);
   await accion(page, "Cifrar").click();
 
-  await expect(page.locator(".exito")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator(".exito")).toContainText("listo");
+  await expect(page.locator(".exito:visible")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".exito:visible")).toContainText("listo");
 });
 
 test("el historial enseña lo hecho y se puede vaciar", async ({ page }) => {
   await page.goto("/");
 
   await page.getByLabel("Qué quieres cifrar").fill("algo que dejará rastro");
-  await page.locator("#clave").fill(CLAVE);
+  await clave(page).fill(CLAVE);
   await accion(page, "Cifrar").click();
-  await expect(page.locator(".resultado")).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".resultado:visible")).toBeVisible({ timeout: 20_000 });
 
   await seccion(page, "Historial").click();
-  await expect(page.locator(".historial li").first()).toBeVisible();
+  await expect(page.locator(".historial li:visible").first()).toBeVisible();
 
   // Y dice dónde vive, para que no haya que fiarse de la palabra de nadie.
   await expect(page.getByText("Se guarda en")).toBeVisible();
@@ -173,7 +186,7 @@ test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page 
 
   // El aviso no puede confundirse con los avisos del propio trabajo, que llevan
   // la clase «aviso» y hablan de lo que se está cifrando.
-  await expect(page.locator(".aviso")).toHaveCount(0);
+  await expect(page.locator(".aviso:visible")).toHaveCount(0);
 
   await banda.getByRole("button", { name: "Ahora no" }).click();
   await expect(banda).toHaveCount(0);
@@ -299,7 +312,7 @@ test("un .esf de fichero abre descifrar en modo ficheros", async ({ page }) => {
     }, { timeout: 15_000 })
     .toBe("page");
 
-  await expect(page.locator(".lista-ficheros li")).toContainText("credenciales.env.esf");
+  await expect(page.locator(".lista-ficheros li:visible")).toContainText("credenciales.env.esf");
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });
@@ -311,10 +324,10 @@ test("un .esf que lleva un texto abre descifrar en modo texto, con la línea pue
   // Primero se fabrica uno de verdad: se cifra un texto y se guarda, que es
   // exactamente como aparece un .esf de esta clase en el disco de alguien.
   await page.getByLabel("Qué quieres cifrar").fill(SECRETO);
-  await page.locator("#clave").fill(CLAVE);
+  await clave(page).fill(CLAVE);
   await accion(page, "Cifrar").click();
 
-  const resultado = page.locator(".resultado");
+  const resultado = page.locator(".resultado:visible");
   await expect(resultado).toBeVisible({ timeout: 20_000 });
   const cifrado = (await resultado.innerText()).trim();
 
@@ -346,9 +359,9 @@ test("un .esf que lleva un texto abre descifrar en modo texto, con la línea pue
   await expect(page.getByLabel("El texto cifrado")).toHaveValue(cifrado);
 
   // Y se descifra desde ahí, que es lo que se quería hacer al abrirlo.
-  await page.locator("#clave").fill(CLAVE);
+  await clave(page).fill(CLAVE);
   await accion(page, "Descifrar").click();
-  await expect(page.locator(".resultado")).toHaveText(SECRETO, { timeout: 20_000 });
+  await expect(page.locator(".resultado:visible")).toHaveText(SECRETO, { timeout: 20_000 });
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });
@@ -406,24 +419,38 @@ test("la contraseña generada se puede usar como clave, avisando de que no está
   await page.goto("/");
 
   await seccion(page, "Generar").click();
-  const generada = (await page.locator(".resultado").innerText({ timeout: 20_000 })).trim();
+
+  // Se espera a que la contraseña deje de cambiar antes de leerla. En desarrollo
+  // React monta los efectos dos veces —StrictMode—, así que el generador puede
+  // producir una y sustituirla un instante después; leer sin más pilla a veces
+  // la primera y compara contra la segunda. En la aplicación empaquetada esto no
+  // pasa, pero la prueba corre en desarrollo.
+  let generada = "";
+  await expect
+    .poll(async () => {
+      const ahora = (await page.locator(".resultado:visible").innerText()).trim();
+      const estable = ahora !== "" && ahora === generada;
+      generada = ahora;
+      return estable;
+    }, { timeout: 15_000 })
+    .toBe(true);
   expect(generada.length).toBeGreaterThan(16);
 
   await accion(page, "Usar como clave").click();
 
   await expect(seccion(page, "Cifrar")).toHaveAttribute("aria-current", "page");
-  await expect(page.locator("#clave")).toHaveValue(generada);
+  await expect(clave(page)).toHaveValue(generada);
 
   // Una clave recién generada no está en ningún sitio, y eso se dice con todas
   // las letras. Pero **sigue habiendo un solo aviso**: sustituye al de siempre
   // en vez de sumarse, que dos avisos diciendo lo mismo se leen menos que uno.
-  await expect(page.locator(".aviso")).toHaveCount(1);
-  await expect(page.locator(".aviso")).toContainText("no está guardada");
+  await expect(page.locator(".aviso:visible")).toHaveCount(1);
+  await expect(page.locator(".aviso:visible")).toContainText("no está guardada");
 
   // Y al teclear encima ya es otra clave, así que vuelve el aviso de siempre.
-  await page.locator("#clave").fill("una clave que me sé");
-  await expect(page.locator(".aviso")).toHaveCount(1);
-  await expect(page.locator(".aviso")).toContainText("Si pierdes la clave");
+  await clave(page).fill("una clave que me sé");
+  await expect(page.locator(".aviso:visible")).toHaveCount(1);
+  await expect(page.locator(".aviso:visible")).toContainText("Si pierdes la clave");
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });
@@ -437,18 +464,79 @@ test("se puede generar una clave desde la propia pantalla de cifrar", async ({ p
   // rehaciendo la pantalla en vez de aplicando la clave sobre la que hay.
   await page.getByLabel("Qué quieres cifrar").fill(SECRETO);
 
-  await page.locator(".contenido").getByRole("button", { name: "Generar una" }).click();
+  await page.locator(".contenido div:not([hidden])").getByRole("button", { name: "Generar una" }).click();
 
   await expect(page.getByLabel("Qué quieres cifrar")).toHaveValue(SECRETO);
 
-  await expect(page.locator("#clave")).not.toHaveValue("", { timeout: 20_000 });
-  await expect(page.locator(".aviso")).toContainText("no está guardada");
+  await expect(clave(page)).not.toHaveValue("", { timeout: 20_000 });
+  await expect(page.locator(".aviso:visible")).toContainText("no está guardada");
 
   // En descifrar la clave no se elige, se recuerda: ahí el botón no pinta nada.
   await seccion(page, "Descifrar").click();
   await expect(
-    page.locator(".contenido").getByRole("button", { name: "Generar una" }),
+    page.locator(".contenido div:not([hidden])").getByRole("button", { name: "Generar una" }),
   ).toHaveCount(0);
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});
+
+test("cambiar de sección ya no borra lo escrito", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // Era la deuda: se tecleaba el secreto, se iba uno a Generar a por una clave
+  // —el camino que la propia aplicación propone con «Usar como clave»— y al
+  // volver el campo estaba vacío, porque cada sección se desmontaba al salir.
+  await page.getByLabel("Qué quieres cifrar").fill(SECRETO);
+  await clave(page).fill(CLAVE);
+
+  await seccion(page, "Generar").click();
+  await seccion(page, "Historial").click();
+  await seccion(page, "Cifrar").click();
+
+  await expect(page.getByLabel("Qué quieres cifrar")).toHaveValue(SECRETO);
+  await expect(clave(page)).toHaveValue(CLAVE);
+
+  // Y lo de cada pantalla se queda en la suya: el texto cifrado de descifrar no
+  // aparece en cifrar ni al revés.
+  await seccion(page, "Descifrar").click();
+  await expect(page.getByLabel("El texto cifrado")).toHaveValue("");
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});
+
+test("el historial se refresca al volver a entrar, no solo la primera vez", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // Desde que las secciones se quedan montadas, montarse pasa una sola vez. Sin
+  // recargar al entrar, el historial enseñaría lo que había la primera vez que se
+  // miró y no lo que se acaba de cifrar.
+  //
+  // La prueba **no da por buena la lista que encuentre**: el historial del
+  // servidor de desarrollo es de verdad y lo comparten las demás pruebas, y
+  // contar antes de que cargue da cero y engaña. Así que primero se cifra —para
+  // asegurar que hay algo—, luego se vacía, y solo entonces las cuentas son
+  // exactas.
+  const cifrarUnaVez = async () => {
+    await seccion(page, "Cifrar").click();
+    await page.getByLabel("Qué quieres cifrar").fill(SECRETO);
+    await clave(page).fill(CLAVE);
+    await accion(page, "Cifrar").click();
+    await expect(page.locator(".resultado:visible")).toBeVisible({ timeout: 20_000 });
+  };
+
+  await cifrarUnaVez();
+
+  await seccion(page, "Historial").click();
+  await expect(page.locator(".historial li:visible").first()).toBeVisible({ timeout: 10_000 });
+  await accion(page, "Vaciar historial").click();
+  await expect(page.locator(".historial li:visible")).toHaveCount(0, { timeout: 10_000 });
+
+  await cifrarUnaVez();
+
+  await seccion(page, "Historial").click();
+  await expect(page.locator(".historial li:visible")).toHaveCount(1, { timeout: 10_000 });
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });

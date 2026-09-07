@@ -15,6 +15,8 @@ test.describe("Capturas", () => {
   test("recorrido", async ({ page }, info) => {
     const tema = info.project.name;
     const donde = process.env.CAPTURAS_EN ?? "capturas";
+    const clave = (p: typeof page) => p.locator("input[type=password]:visible");
+
     const foto = (n: string) => page.screenshot({ path: `${donde}/${n}-${tema}.png` });
 
     await page.setViewportSize({ width: 980, height: 680 });
@@ -27,7 +29,7 @@ test.describe("Capturas", () => {
     }
 
     await page.getByLabel("Qué quieres cifrar").fill("postgres://usuario:secreto@host/basededatos");
-    await page.locator("#clave").fill("caballo grapa batería correcto");
+    await clave(page).fill("caballo grapa batería correcto");
     await page.waitForTimeout(500);
     await foto("1-cifrar");
 
