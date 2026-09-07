@@ -1,11 +1,13 @@
 # Esfinge
 
-Herramienta de terminal de **Webcafeína** para cifrar y descifrar contraseñas y ficheros con una
-clave. La usan dos perfiles: quien la encarga —desde la terminal, en tuberías y scripts— y un
-cliente, que necesita menús, ratón y que la cosa se explique sola.
+Cifra y descifra contraseñas y ficheros con una clave. De **Webcafeína**.
 
-Un binario por plataforma, sin dependencias. Sin argumentos abre la interfaz de menús; con
-argumentos es un comando pipeable.
+Dos caras sobre el mismo núcleo y el mismo formato de contenedor:
+
+- **La aplicación** (`cmd/esfinge-gui`), con ventana propia, para el cliente.
+- **La línea de comandos** (`cmd/esfinge`), para tuberías y scripts.
+
+Lo cifrado por una lo abre la otra. El formato `ESF1` no ha cambiado desde la 1.x.
 
 ## Cómo se compila
 
@@ -14,59 +16,75 @@ argumentos es un comando pipeable.
 `export PATH="$HOME/.local/go/bin:$PATH"`.
 
 ```sh
-make comprobar    # go vet y toda la batería
+make comprobar    # vet, tests de Go y tipos de la interfaz
 make contraste    # mide las parejas de color de los dos temas
-make esfinge      # binario de esta máquina
-make instalar     # lo instala en esta máquina Linux
-make paquetes     # el ZIP de macOS y el tar.gz de Linux, con instaladores
+make tokens       # regenera frontend/src/tokens.css desde Go
+make e2e          # mueve la interfaz de verdad contra el Go de verdad
+make esfinge      # la línea de comandos, para esta máquina
+make publicar     # la línea de comandos para los seis objetivos
+make app          # la aplicación con ventana (necesita wails; ver abajo)
+make ayuda        # todos los objetivos
 ```
 
-`make macos` y `make linux` por separado también valen: `publicar` ya no vacía `dist/`, solo borra
-los binarios sueltos, para que uno no se lleve por delante el paquete del otro.
+**La aplicación con ventana no se puede compilar en esta máquina.** Falta `webkit2gtk` y
+`pkg-config`, y no hay `sudo` sin contraseña. La compila **GitHub Actions** en los tres sistemas
+(`.github/workflows/compilar.yml`, se dispara a mano o con una etiqueta `v*`). La línea de comandos
+sí cruza de plataforma desde aquí, porque no usa cgo.
+
+## Cómo se prueba lo que no se puede ejecutar
+
+Aquí no hay entorno gráfico, así que la interfaz se ejercita en un navegador contra el mismo Go que
+llevará la ventana:
+
+- `internal/app` es lo que la ventana puede pedir. Los diálogos del escritorio entran por la
+  interfaz `Sistema`, que en producción implementa Wails (`escritorio.go`) y en desarrollo un
+  servidor HTTP (`dev.go`, tras la etiqueta `dev` para que no acabe en el binario del cliente).
+- `frontend/src/puente.ts` llama a Wails si está y, si no, por HTTP. La interfaz no distingue.
+- `make e2e` levanta los dos servidores y recorre cifrar, descifrar, generar, tandas de ficheros e
+  historial, en tema claro y oscuro.
+
+Lo que **no** se puede comprobar aquí: la aplicación ensamblada. Eso se ve en el Mac.
 
 ## Decisiones tomadas con el cliente
 
 No se cambian sin preguntar.
 
-- **Go**, binario único por plataforma. Nada de pedirle a nadie que instale un intérprete.
-- **Cifrado suelto**, sin bóveda ni estado persistente. Texto y ficheros.
-- **Interfaz híbrida**: menús sin argumentos, comando con ellos.
-- **Identidad de ClickHouse completa, con su acento amarillo**, tomada de
-  `~/sistemas-diseno-empresas/sistemas/clickhouse`. No se sustituye por el lima de Webcafeína: la
-  marca está en el wordmark, la barra `▍` y el pie.
+- **Wails** (Go + React + TypeScript), el stack de los demás proyectos de la casa.
+- **Se conserva la línea de comandos** y se retiraron los menús de terminal de la 1.x.
+- **Aspecto de aplicación del sistema**, no una identidad propia: tipografía y controles de macOS y
+  Windows. La marca queda en el icono y en «Acerca de».
 - **Español**, y **todas las frases empiezan en mayúscula**, aunque sean de una palabra. Va contra
-  la costumbre de Go para los errores; manda lo que se ve en pantalla. Hay tests que lo vigilan en
-  `internal/cripto/textos_test.go` e `internal/tui/textos_test.go`.
-- **Ratón y botones** en igualdad con el teclado, no como añadido.
-- **Guardar va a la carpeta de Descargas**, no al directorio de trabajo.
+  la costumbre de Go para los errores; manda lo que se ve en pantalla. Lo vigila
+  `internal/cripto/textos_test.go`.
+- **El historial guarda solo qué y cuándo**: nunca el contenido, la clave ni el texto cifrado. Vive
+  en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar.
 - **Al cifrar un texto se copia solo al portapapeles**; al descifrar no, porque ahí lo que sale es
   el secreto en claro.
-- **Sin firmar ni notarizar para macOS**: los 99 $/año de Apple Developer no compensan para un
-  cliente. El instalador quita la cuarentena con `xattr`.
+- **Guardar usa el diálogo del sistema.**
+- **Sin firmar ni notarizar para macOS**: los 99 $/año de Apple no compensan para un cliente.
 
-## Tres trampas que ya costaron encontrarse
+## Trampas que ya costaron encontrarse
 
-**El arranque de 5 segundos.** Bubble Tea llama a `lipgloss.HasDarkBackground()` en su `init()`,
-antes de que corra una sola línea propia. En un terminal que no conteste al `OSC 11`, eso cuesta
-cinco segundos, y `termenv.OSCTimeout` es una **constante**: no hay forma de tocarla desde fuera.
-Escape documentado: `CI=1` o `TERM=dumb`. Bubble Tea marca ese `init` como provisional («will be
-removed in v2»), así que al actualizar conviene volver a `internal/ui/estilos.go`.
+**El color se genera, no se escribe.** `internal/tema` es la fuente de verdad y produce
+`frontend/src/tokens.css` con `make tokens`. Editar el CSS a mano no sirve: hay un test que compara
+el fichero con lo que dice Go y falla. Y `make contraste` mide las parejas reales de los dos temas.
+El azul de botón del sistema no cumple AA con texto blanco encima —3,6:1—, así que `RellenoLegible`
+lo oscurece hasta que se lee.
 
-**El ratón y el alto de la ventana.** Si la vista tiene más líneas que el terminal, el terminal la
-desplaza y las coordenadas del ratón dejan de corresponderse con el mapa de zonas: los clics caen en
-cualquier sitio. Por eso la pantalla va en tres bandas —cabecera fija, contenido desplazable, pie
-fijo— y **nunca se emiten más líneas de las que caben**. Todo lo que tenga que estar siempre a mano
-—conmutador Texto/Fichero, botones, mensajes de error— va en las bandas fijas, no en el contenido.
-`TestLaVistaNuncaSePasaDelAlto` recorre 40 combinaciones de tamaño.
+**`go:embed` no puede salir del directorio de su paquete.** Por eso la interfaz construida se copia
+a `internal/interfaz/dist`, y no se embebe directamente desde `frontend/dist`.
 
-**El amarillo como texto.** `#faff69` sobre blanco da 1,07:1. En tema claro queda reservado a
-rellenos y el texto usa una variante oscurecida hasta AA, con el mismo procedimiento que
-`readableAccent` del paquete `design-tokens`. Todo lo que se dibuja en primer plano usa `Acento`,
-nunca `Relleno`. `make contraste` mide las parejas reales de los dos temas y falla el build si una
-no cumple.
+**Un `error` nulo devuelto por reflexión no supera una aserción de tipo.** En `dev.go` hay que mirar
+el tipo declarado (`tipo.Out(i)`), no el valor: preguntándole al valor se acaba tomando el error por
+resultado y devolviendo `null` cuando todo ha ido bien.
+
+**Doble clic en un `.esf` en macOS.** La asociación está declarada en `wails.json` y el Finder la
+respeta, pero el fichero llega por un evento de Apple que Wails v2 no expone. En Windows y Linux
+llega como argumento y funciona. Ahí hay trabajo pendiente si se quiere cerrar del todo.
 
 ## Lo que nunca se ha probado
 
-Los binarios de **macOS y Windows se compilan pero no se ejecutan** desde aquí: no hay Wine ni Mac.
-Sin verificar en un Mac real: el arrastrar-y-soltar desde el Finder, `pbcopy`, el diálogo de
-Gatekeeper y si el terminal atiende la petición de agrandar la ventana.
+La aplicación **solo se ha ejecutado en la cabeza de CI, no en un escritorio de verdad**. Sin
+verificar en un Mac: el arrastrar y soltar desde el Finder, el diálogo de guardar, el portapapeles
+del sistema, el aviso de Gatekeeper —que con una `.app` sin firmar es más aparatoso que con un
+binario de terminal— y si el doble clic en un `.esf` hace algo útil.

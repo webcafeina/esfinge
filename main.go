@@ -5,6 +5,11 @@
 // La misma herramienta que la línea de comandos, el mismo núcleo y el mismo
 // formato de contenedor; lo único distinto es que aquí hay ratón, diálogos del
 // sistema y sitio donde soltar ficheros.
+//
+// Está en la raíz del proyecto y no en cmd/, que sería lo idiomático en Go,
+// porque Wails genera los enlaces con la interfaz buscando el paquete main
+// justo donde está wails.json. Con el punto de entrada en cmd/esfinge-gui, la
+// compilación falla con «no Go files». La línea de comandos sí vive en cmd/.
 package main
 
 import (
