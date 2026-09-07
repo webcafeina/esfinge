@@ -137,3 +137,23 @@ func TestSinNovedadNoHayNadaQueDescargarNiInstalar(t *testing.T) {
 		t.Error("no hay nada descargado y ha intentado instalar")
 	}
 }
+
+// Las órdenes del menú del sistema llegan a la ventana por el mismo camino que
+// el progreso: si esto se rompe, el menú queda de adorno.
+func TestLasOrdenesDelMenuLleganALaVentana(t *testing.T) {
+	a, s := paraActualizar(t, "v2.0.3", nil)
+
+	a.Ordenar(OrdenIrAAjustes)
+	a.OrdenarPegar("una contraseña")
+
+	ordenes := s.verOrdenes()
+	if len(ordenes) != 2 {
+		t.Fatalf("quiero 2 órdenes, tengo %d", len(ordenes))
+	}
+	if ordenes[0].Que != OrdenIrAAjustes {
+		t.Errorf("la primera: quiero %q, tengo %q", OrdenIrAAjustes, ordenes[0].Que)
+	}
+	if ordenes[1].Que != OrdenPegar || ordenes[1].Texto != "una contraseña" {
+		t.Errorf("la segunda: quiero pegar «una contraseña», tengo %+v", ordenes[1])
+	}
+}

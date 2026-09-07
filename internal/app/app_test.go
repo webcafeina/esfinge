@@ -17,12 +17,14 @@ type sistemaFalso struct {
 	guardaEn  string
 	avisos    []Progreso
 	novedades []Novedad
+	ordenes   []Orden
 }
 
 func (s *sistemaFalso) ElegirFicheros(string, bool) ([]string, error) { return s.ficheros, nil }
 func (s *sistemaFalso) ElegirDondeGuardar(string, string) (string, error) {
 	return s.guardaEn, nil
 }
+
 // Avisar apunta los eventos. El candado hace falta porque la comprobación de
 // actualizaciones avisa desde su propia gorrutina.
 func (s *sistemaFalso) Avisar(evento string, datos any) {
@@ -38,6 +40,10 @@ func (s *sistemaFalso) Avisar(evento string, datos any) {
 		if n, ok := datos.(Novedad); ok {
 			s.novedades = append(s.novedades, n)
 		}
+	case EventoOrden:
+		if o, ok := datos.(Orden); ok {
+			s.ordenes = append(s.ordenes, o)
+		}
 	}
 }
 
@@ -45,6 +51,12 @@ func (s *sistemaFalso) verNovedades() []Novedad {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return append([]Novedad(nil), s.novedades...)
+}
+
+func (s *sistemaFalso) verOrdenes() []Orden {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]Orden(nil), s.ordenes...)
 }
 
 // nuevaDePrueba monta la aplicación con una carpeta de configuración propia,
@@ -370,13 +382,14 @@ func TestLoQueCruzaElPuenteEsSerializable(t *testing.T) {
 
 	r, _ := a.CifrarTexto("algo", "clave")
 	for nombre, v := range map[string]any{
-		"Resultado": r,
-		"Fuerza":    a.EvaluarClave("clave"),
-		"Alfabetos": a.Alfabetos(),
+		"Resultado":    r,
+		"Fuerza":       a.EvaluarClave("clave"),
+		"Alfabetos":    a.Alfabetos(),
 		"Historial":    a.VerHistorial(),
 		"Progreso":     Progreso{Hechos: 1, Total: 2, Actual: "x"},
 		"Novedad":      a.NovedadPendiente(),
 		"Preferencias": a.VerPreferencias(),
+		"Orden":        Orden{Que: OrdenIrAAjustes},
 	} {
 		if _, err := json.Marshal(v); err != nil {
 			t.Errorf("%s no se puede serializar: %v", nombre, err)

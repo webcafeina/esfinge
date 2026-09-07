@@ -5,6 +5,22 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-07 · La barra de menús, en español
+
+- Probada la 2.1.0 en el Mac: la comprobación funciona —con la última instalada no sale la banda y
+  «Buscar ahora» dice que ya se está al día—, que es exactamente lo que tenía que pasar.
+- **2.2.0**: la barra de menús del sistema salía en inglés. No se podía traducir: los roles de Wails
+  llevan los rótulos escritos a fuego en su Objective-C y no son los que localiza macOS. Se construye
+  entera (ADR 0015), igual en los tres sistemas.
+- Eso obliga a hacer las acciones de edición por nuestra cuenta, porque sin roles no hay selectores
+  nativos: el menú manda una orden y la ventana la ejecuta sobre el campo que tiene el foco. El pegar
+  necesita las dos mitades —el portapapeles lo lee Go, el texto lo coloca la interfaz—, que es el
+  camino de más riesgo de todo esto: si falla, falla pegar una contraseña.
+- De paso, atajos a las cinco pantallas (⌘1 a ⌘5), que antes no había forma de alcanzar sin ratón.
+- Verificado: prueba de interfaz en los dos temas que recorre el camino entero desde que Go manda la
+  orden, y prueba de Go de que salen por el mismo canal de eventos que el progreso. **Sin verificar**:
+  los menús dibujados de verdad, que no hay Mac ni Windows aquí.
+
 ## 2026-09-07 · Que la aplicación se entere de sus propias versiones
 
 - **2.1.0**: Esfinge comprueba una vez al día si hay versión nueva, se descarga el instalador de su

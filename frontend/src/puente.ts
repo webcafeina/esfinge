@@ -71,6 +71,13 @@ export type Avance = {
   hecho: boolean;
 };
 
+/** Lo que pide el menú del sistema. Los valores los fija Go, en ordenes.go. */
+export type Orden = {
+  que: string;
+  /** Solo lo lleva «editar:pegar»: el portapapeles lo lee Go. */
+  texto: string;
+};
+
 export type Preferencias = {
   buscarActualizaciones: boolean;
   ultimaComprobacion: string;
@@ -170,6 +177,9 @@ export const esfinge = {
 
   verPreferencias: () => llamar<Preferencias>("VerPreferencias"),
 
+  /** Lo dispara el menú del sistema; aquí está para poder probarlo sin menú. */
+  ordenar: (que: string) => llamar<void>("Ordenar", que),
+
   guardarPreferencias: (p: Preferencias) => llamar<void>("GuardarPreferencias", p),
 };
 
@@ -186,6 +196,11 @@ export const CARACTERES_MAXIMO = 96;
  */
 export function alHaberNovedad(cb: (n: Novedad) => void): () => void {
   return escuchar("novedad", cb);
+}
+
+/** alOrdenar escucha lo que se pide desde el menú del sistema. */
+export function alOrdenar(cb: (o: Orden) => void): () => void {
+  return escuchar("orden", cb);
 }
 
 /** alDescargar escucha el avance de la descarga de la actualización. */

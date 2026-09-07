@@ -81,6 +81,10 @@ No se cambian sin preguntar.
 - **Se conserva la línea de comandos** y se retiraron los menús de terminal de la 1.x.
 - **Aspecto de aplicación del sistema**, no una identidad propia: tipografía y controles de macOS y
   Windows. La marca queda en el icono y en «Acerca de».
+- **La barra de menús se construye entera** (`menu.go`), en español y en los tres sistemas: los roles
+  de Wails traen los rótulos en inglés escritos a fuego en su Objective-C y no hay forma de
+  traducirlos. Como sin roles no hay selectores nativos, las acciones de edición las hace la ventana
+  con una orden (ADR 0015).
 - **Español**, y **todas las frases empiezan en mayúscula**, aunque sean de una palabra. Va contra
   la costumbre de Go para los errores; manda lo que se ve en pantalla. Lo vigila
   `internal/cripto/textos_test.go`.

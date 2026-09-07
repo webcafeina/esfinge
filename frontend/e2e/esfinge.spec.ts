@@ -180,3 +180,46 @@ test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });
+
+test("el menú del sistema cambia de pantalla y edita el campo con el foco", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // El menú no se puede pulsar desde un navegador: lo dibuja el sistema. Lo que
+  // sí se puede recorrer es el camino entero desde que Go manda la orden, que es
+  // exactamente lo que hace el menú al pulsarlo.
+  await page.evaluate(() => fetch("/api/Ordenar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(["ir:generar"]),
+  }));
+  await expect(page.getByRole("tab", { name: "Generar" })).toHaveAttribute(
+    "aria-selected", "true", { timeout: 10_000 });
+
+  await page.evaluate(() => fetch("/api/Ordenar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(["ir:cifrar"]),
+  }));
+  const campo = page.getByLabel("Qué quieres cifrar");
+  await expect(campo).toBeVisible({ timeout: 10_000 });
+
+  // Seleccionar todo tiene que actuar sobre el campo que tiene el foco, que es
+  // lo que Go no puede saber y por eso la orden se resuelve en la interfaz.
+  await campo.fill("un secreto cualquiera");
+  await campo.focus();
+  await page.evaluate(() => fetch("/api/Ordenar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(["editar:seleccionar-todo"]),
+  }));
+
+  await expect
+    .poll(() => page.evaluate(() => {
+      const e = document.activeElement as HTMLTextAreaElement | null;
+      return e ? e.selectionEnd! - e.selectionStart! : 0;
+    }), { timeout: 10_000 })
+    .toBe("un secreto cualquiera".length);
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});

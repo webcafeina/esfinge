@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
+import { obedecerEdicion } from "./ordenes";
 import {
   alDescargar,
   alHaberNovedad,
+  alOrdenar,
   alProgresar,
   alSoltarFicheros,
   enWails,
@@ -47,6 +49,24 @@ export default function App() {
     // eso se escucha el evento y además se pregunta: quien llega tarde al primero
     // se entera por lo segundo.
     const dejarDeEscuchar = alHaberNovedad((n) => n.hay && setNovedad(n));
+
+    // Lo que se pide desde el menú del sistema. Las órdenes de edición las
+    // resuelve ordenes.ts, que es quien sabe mirar el campo con el foco; aquí
+    // quedan las que cambian de pantalla.
+    const dejarDeObedecer = alOrdenar((o) => {
+      if (obedecerEdicion(o)) return;
+      if (o.que.startsWith("ir:")) {
+        setTarea(o.que.slice("ir:".length) as Tarea);
+        return;
+      }
+      if (o.que === "actualizar:buscar") {
+        setTarea("ajustes");
+        esfinge
+          .comprobarActualizacion()
+          .then((n) => n.hay && setNovedad(n))
+          .catch(() => {});
+      }
+    });
     esfinge
       .novedadPendiente()
       .then((n) => n.hay && setNovedad(n))
@@ -64,7 +84,10 @@ export default function App() {
       })
       .catch(() => {});
 
-    return dejarDeEscuchar;
+    return () => {
+      dejarDeEscuchar();
+      dejarDeObedecer();
+    };
   }, []);
 
   async function descargar() {

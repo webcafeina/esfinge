@@ -35,18 +35,24 @@ func main() {
 	aplicacion := app.Nueva(version, escritorio)
 
 	// Doble clic en un .esf: en Windows y en Linux el sistema pasa la ruta como
-	// argumento, y con eso la aplicación abre directamente en descifrar.
-	//
-	// En macOS no llega así, sino por un evento de Apple que Wails v2 no expone.
-	// Ahí la asociación queda declarada —el Finder enseña el icono y ofrece abrir
-	// con Esfinge— pero el fichero hay que arrastrarlo o elegirlo. Está dicho en
-	// el README para no prometer lo que no hace.
+	// argumento, y con eso la aplicación abre directamente en descifrar. En macOS
+	// no llega así sino por un evento de Apple, que se recoge más abajo en
+	// Mac.OnFileOpen.
 	if len(os.Args) > 1 && !strings.HasPrefix(os.Args[1], "-") {
 		aplicacion.AlAbrirCon(os.Args[1])
 	}
 
+	// El contexto no existe hasta que Wails arranca, y el menú se construye
+	// antes: se le pasa una función que lo consulta cuando hace falta, que es
+	// siempre después de que la ventana esté abierta.
+	var ctx context.Context
+
 	err := wails.Run(&options.App{
 		Title: "Esfinge",
+
+		// La barra de menús, en español. Ver menu.go: los roles de Wails traen
+		// los rótulos en inglés escritos a fuego, así que se construye entera.
+		Menu: menuEnEspanol(func() context.Context { return ctx }, aplicacion),
 
 		// La ventana arranca con sitio para lo más alto que hay —cifrar con sus
 		// tres campos y el resultado— sin obligar a desplazarse nada más abrir.
@@ -65,9 +71,10 @@ func main() {
 			DisableWebViewDrop: true,
 		},
 
-		OnStartup: func(ctx context.Context) {
-			escritorio.Arrancar(ctx)
-			aplicacion.Arrancar(ctx)
+		OnStartup: func(c context.Context) {
+			ctx = c
+			escritorio.Arrancar(c)
+			aplicacion.Arrancar(c)
 		},
 
 		Bind: []any{aplicacion},
