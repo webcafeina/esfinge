@@ -44,3 +44,5 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
   `init()` de Bubble Tea, que se fue con la interfaz de terminal (2026-09-07, 2.0.0).
 
 | ~~Cambiar de sección borra lo escrito~~ | Media | Cada sección se desmontaba al salir y con ella se iba lo escrito | **Saldada en la 2.9.0**: las secciones se quedan montadas desde la primera visita y se esconden en vez de quitarse (2026-09-08) |
+
+| Medir el vidrio sin romper la aplicación | Alta | El diagnóstico de la 2.9.1 dejaba la aplicación cerrándose sola al arrancar. Tres cosas de ese Objective-C pueden reventar y ninguna avisa al compilar: devolver el `UTF8String` de una cadena autoliberada, que `alphaComponent` lanza excepción sobre un color de patrón, y que `valueForKey:@"drawsBackground"` puede no existir para lectura. Revertido en la 2.9.2 | Abierto: hay que medir de otra forma |

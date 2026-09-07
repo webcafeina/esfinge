@@ -125,6 +125,13 @@ tras la etiqueta `dev`. Es una petición GET al día a `api.github.com`, y está
 `docs/seguridad.md` porque la portada prometía lo contrario. Cualquier conexión nueva pasa por ahí
 antes que por el código.
 
+**El Objective-C de `vidrio_darwin.go` no se puede probar aquí, y eso ya costó una versión rota.** La
+2.9.1 añadió un diagnóstico que compilaba en el Mac de la publicación y **cerraba la aplicación al
+arrancar**; hubo que revertirlo. Tres trampas que no avisan al compilar: devolver el `UTF8String` de
+una cadena autoliberada deja un puntero colgando; `alphaComponent` **lanza excepción** sobre un color
+de patrón; y `valueForKey:` puede no existir para leer una propiedad que sí se puede escribir. Que
+el trabajo de macOS pase en verde solo dice que compila, **no que arranque**.
+
 **Wails deja el vidrio de macOS a medias.** Crea el `NSVisualEffectView` con mezcla «BehindWindow»
 pero **no pone la ventana como no opaca**, y una `NSWindow` opaca compone como opaca aunque su color
 tenga alfa cero: el material no tiene nada que mezclar y sale un **gris plano**. Desde macOS 12 se

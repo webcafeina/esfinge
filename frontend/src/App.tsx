@@ -689,7 +689,6 @@ function Ajustes({
 }) {
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
   const [vidrio, setVidrio] = useState<boolean | null>(null);
-  const [estadoVidrio, setEstadoVidrio] = useState("");
   const [buscando, setBuscando] = useState(false);
   const [dicho, setDicho] = useState("");
   const [error, setError] = useState("");
@@ -697,12 +696,6 @@ function Ajustes({
   useEffect(() => {
     esfinge.verPreferencias().then(setPrefs).catch(() => {});
     esfinge.vidrio().then(setVidrio).catch(() => {});
-    // Se pregunta con un respiro: el estado se anota medio segundo después de
-    // arrancar, cuando AppKit ya ha aplicado lo que se le pidió.
-    const t = setTimeout(() => {
-      esfinge.estadoVidrio().then(setEstadoVidrio).catch(() => {});
-    }, 1200);
-    return () => clearTimeout(t);
   }, []);
 
   async function cambiar(buscarActualizaciones: boolean) {
@@ -775,15 +768,10 @@ function Ajustes({
       {vidrio !== null && (
         <p className="nota">
           {vidrio
-            ? "Esta ventana usa el vidrio del sistema: la barra lateral deja ver lo que hay detrás."
+            ? "Esta ventana usa el vidrio del sistema: la barra y el pie dejan ver lo que hay detrás."
             : "Esta ventana es opaca: tu sistema no ofrece el vidrio, o esta versión no lo trae."}
         </p>
       )}
-
-      {/* Lo que AppKit dice de la ventana de verdad, no lo que se le pidió. Está
-          a la vista porque el vidrio no se veía y hubo que dejar de razonar y
-          empezar a medir. */}
-      {estadoVidrio && <p className="nota seleccionable">Ventana: {estadoVidrio}</p>}
 
       <p className="nota">
         Al actualizar no hay que desinstalar nada: en macOS se arrastra encima de la anterior,

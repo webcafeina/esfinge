@@ -38,19 +38,6 @@ Plantilla al final.
 - Lección: bajar el tinte dos veces sin entender el síntoma era el camino equivocado. El «gris plano»
   no era un tinte de más, era el material sin nada que mezclar.
 
-## 2026-09-08 · El vidrio: dejar de razonar y medir
-
-- Retomado el vidrio, que llevaba aparcado desde la 2.5.2. Descartadas dos cosas antes de tocar
-  nada: Ajustes dice que la ventana **sí** lo usa, y «Reducir transparencia» del sistema está
-  **desactivado**. Y leyendo Wails se comprobó que la ventana existe antes de `OnStartup`, así que el
-  remate de AppKit sí la encuentra.
-- Con eso, las tres explicaciones que quedaban eran otra vez razonamientos. **Ya me equivoqué dos
-  veces razonando** —el tinte, y luego la ventana opaca—, así que la 2.9.1 no arregla nada: **mide**.
-- `EstadoDelVidrio` pregunta a AppKit lo que hay puesto de verdad —si la ventana es opaca, el alfa de
-  su color de fondo, si detrás hay una vista de efecto y si el webview pinta su propio fondo— y lo
-  enseña en Ajustes, para poder leerlo sin abrir la consola del sistema.
-- Cuatro hechos bastan para saber dónde se corta la cadena. Lo que salga decide el arreglo.
-
 ## 2026-09-08 · Cambiar de sección deja de borrar lo escrito
 
 - **2.9.0**, y era la deuda que dejó la versión anterior: cada sección se desmontaba al salir, así
