@@ -14,8 +14,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/webcafeina/esfinge/internal/actualizacion"
 	"github.com/webcafeina/esfinge/internal/cripto"
@@ -40,6 +42,9 @@ type App struct {
 	// ventanaLista se pone en cuanto la interfaz pregunta por primera vez. Antes
 	// de eso no sirve de nada mandarle eventos: no hay nadie escuchando.
 	ventanaLista bool
+
+	// vidrio dice si el sistema ha puesto una ventana translúcida detrás.
+	vidrio bool
 }
 
 // Sistema es lo que la aplicación necesita del escritorio: los diálogos de
@@ -50,8 +55,10 @@ type App struct {
 // interfaz exigiría un entorno gráfico completo, y en la máquina donde se
 // desarrolla no lo hay.
 type Sistema interface {
-	ElegirFicheros(titulo string, varios bool) ([]string, error)
-	ElegirDondeGuardar(titulo, nombreSugerido string) (string, error)
+	// El «desde» es la carpeta en la que abrir el diálogo. Puede ir vacío, y
+	// entonces manda el sistema.
+	ElegirFicheros(titulo, desde string, varios bool) ([]string, error)
+	ElegirDondeGuardar(titulo, nombreSugerido, desde string) (string, error)
 	Avisar(evento string, datos any)
 	// Cerrar cierra la ventana. Hace falta para actualizarse: el cambiazo lo da
 	// un guion que espera a que este proceso muera.
@@ -77,6 +84,21 @@ func Nueva(version string, sistema Sistema) *App {
 // los publica por reflexión—, y dejar que la ventana pueda apuntar la
 // actualización a donde quiera sería abrir una puerta por comodidad.
 func ApuntarAAPI(a *App, raiz string) { a.act.comprobador.API = raiz }
+
+// MarcarVidrio deja constancia de que la ventana se ha creado translúcida.
+//
+// La llama main.go, que es quien decide según el sistema. Función y no método
+// por lo de siempre: lo que se exporta como método cruza el puente, y esto es
+// una decisión de arranque, no algo que la ventana deba poder cambiar.
+func MarcarVidrio(a *App, si bool) { a.vidrio = si }
+
+// Vidrio lo consulta la interfaz al montarse.
+//
+// Sin vidrio, el fondo lo pinta el CSS de siempre. Con vidrio, el fondo de la
+// ventana es transparente y la interfaz tiene que dejar pasar el escritorio por
+// la barra y el pie, pero **no** por la zona de trabajo, que es donde se lee.
+// En Linux nunca es cierto: Wails no lo ofrece.
+func (a *App) Vidrio() bool { return a.vidrio }
 
 // Arrancar la llama Wails cuando la ventana está lista.
 func (a *App) Arrancar(ctx context.Context) {
@@ -285,30 +307,68 @@ func (a *App) porTanda(
 	k := []byte(clave)
 	defer cripto.Borrar(k)
 
-	out := make([]ResultadoFichero, 0, len(rutas))
-	for i, ruta := range rutas {
-		a.sistema.Avisar(EventoProgreso, Progreso{
-			Hechos: i, Total: len(rutas), Actual: filepath.Base(ruta),
-		})
+	// Varios a la vez, con tope. Lo caro de cada fichero es derivar la clave
+	// —64 MiB y 4 hilos, a propósito— así que repartirlos gana tiempo de verdad;
+	// pero pasarse es peor que no repartir: se pisan entre ellos y la memoria se
+	// multiplica. Ver cuantosALaVez.
+	out := make([]ResultadoFichero, len(rutas))
+	var hechos atomic.Int64
+	var enFila sync.WaitGroup
 
-		r := ResultadoFichero{Origen: ruta}
-		destino, err := trabajo(ruta, k)
-		switch {
-		case err != nil:
-			// Un fichero que falla no detiene la tanda: se anota y se sigue. Parar
-			// en el primer error dejaría el resto sin hacer y sin explicación.
-			r.Error = err.Error()
-		default:
-			r.Destino = destino
-			a.hist.Anotar(accion, filepath.Base(ruta), destino)
-		}
-		out = append(out, r)
+	turnos := make(chan struct{}, cuantosALaVez())
+	for i, ruta := range rutas {
+		enFila.Add(1)
+		go func(i int, ruta string) {
+			defer enFila.Done()
+
+			turnos <- struct{}{}
+			defer func() { <-turnos }()
+
+			r := ResultadoFichero{Origen: ruta}
+			destino, err := trabajo(ruta, k)
+			switch {
+			case err != nil:
+				// Un fichero que falla no detiene la tanda: se anota y se sigue. Parar
+				// en el primer error dejaría el resto sin hacer y sin explicación.
+				r.Error = err.Error()
+			default:
+				r.Destino = destino
+				a.hist.Anotar(accion, filepath.Base(ruta), destino)
+			}
+			// Cada uno en su hueco: terminan desordenados, pero la lista que se ve
+			// tiene que corresponderse con la que se soltó.
+			out[i] = r
+
+			// El progreso se cuenta al **terminar**, no al empezar: con varios a la
+			// vez, «empezando el 3 de 50» no significa nada.
+			a.sistema.Avisar(EventoProgreso, Progreso{
+				Hechos: int(hechos.Add(1)), Total: len(rutas), Actual: filepath.Base(ruta),
+			})
+		}(i, ruta)
 	}
+	enFila.Wait()
 
 	a.sistema.Avisar(EventoProgreso, Progreso{
 		Hechos: len(rutas), Total: len(rutas),
 	})
 	return out, nil
+}
+
+// cuantosALaVez es cuántos ficheros se cifran a la vez.
+//
+// La mitad de los núcleos, con un máximo de cuatro y un mínimo de uno. El tope
+// no es prudencia vaga: cada derivación ya usa cuatro hilos por dentro, así que
+// más de cuatro tandas simultáneas es repartirse los mismos núcleos, y cada una
+// se lleva 64 MiB mientras dura.
+func cuantosALaVez() int {
+	n := runtime.NumCPU() / 2
+	if n > 4 {
+		n = 4
+	}
+	if n < 1 {
+		n = 1
+	}
+	return n
 }
 
 // Fuerza es la valoración de una clave, para el medidor.
@@ -401,24 +461,40 @@ func (a *App) GenerarContrasena(bytes int, alfabeto string) (string, error) {
 
 // ElegirFicheros abre el diálogo del sistema.
 func (a *App) ElegirFicheros(varios bool) ([]string, error) {
-	return a.sistema.ElegirFicheros("Elige qué cifrar", varios)
+	return a.elegir("Elige qué cifrar", varios)
 }
 
 // ElegirCifrados abre el diálogo del sistema filtrando por contenedores.
 func (a *App) ElegirCifrados() ([]string, error) {
-	return a.sistema.ElegirFicheros("Elige qué descifrar", true)
+	return a.elegir("Elige qué descifrar", true)
+}
+
+// elegir abre el diálogo donde se quedó la última vez y recuerda dónde acaba.
+//
+// Abrir y guardar se recuerdan por separado porque son gestos distintos: se abre
+// de donde están los ficheros y se guarda donde va el resultado, que casi nunca
+// es el mismo sitio.
+func (a *App) elegir(titulo string, varios bool) ([]string, error) {
+	rutas, err := a.sistema.ElegirFicheros(titulo, a.ajustes.CarpetaDeAbrir(), varios)
+	if err != nil || len(rutas) == 0 {
+		return rutas, err
+	}
+	a.ajustes.RecordarCarpetaDeAbrir(filepath.Dir(rutas[0]))
+	return rutas, nil
 }
 
 // GuardarTexto deja un texto donde diga el diálogo del sistema, y devuelve dónde
 // ha quedado.
 func (a *App) GuardarTexto(nombreSugerido, contenido string) (string, error) {
-	destino, err := a.sistema.ElegirDondeGuardar("Guardar", nombreSugerido)
+	destino, err := a.sistema.ElegirDondeGuardar("Guardar", nombreSugerido,
+		a.ajustes.CarpetaDeGuardar())
 	if err != nil {
 		return "", err
 	}
 	if destino == "" {
 		return "", nil // lo ha cancelado, que no es un error
 	}
+	a.ajustes.RecordarCarpetaDeGuardar(filepath.Dir(destino))
 	// 0600 desde el principio: entre crear el fichero y ajustar los permisos hay
 	// una ventana en la que un secreto sería legible por cualquiera de la máquina.
 	if err := os.WriteFile(destino, []byte(contenido+"\n"), 0o600); err != nil {

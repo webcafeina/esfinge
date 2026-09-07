@@ -1,0 +1,57 @@
+# ADR 0017 — El vidrio del sistema va en el marco, no en la zona de trabajo
+
+**Fecha:** 2026-09-08 · **Estado:** aceptada · **Revisar si** Wails ofrece translucidez en Linux
+
+## Contexto
+
+La barra y el pie fingían el vidrio con `backdrop-filter`, que desenfoca lo que hay **dentro** de la
+página. El de verdad toma lo que hay **detrás de la ventana**, y eso solo lo puede dar el sistema:
+en macOS con `NSVisualEffectView`, en Windows 11 con Mica. Wails los expone; Linux no tiene nada.
+
+Pedirlos obliga a una cosa que no es evidente: **el fondo deja de pintarlo el sistema y pasa a
+pintarlo el CSS**. Un webview transparente sobre una ventana sin efecto no enseña el escritorio,
+enseña un agujero.
+
+## Decisión
+
+Vidrio **solo en la barra y el pie**. La zona de trabajo se queda opaca.
+
+Es lo que hacen las aplicaciones del sistema, y aquí hay una razón de más: es donde se lee y se
+teclea, y un fondo que cambia según lo que haya detrás de la ventana no es sitio para un campo de
+texto ni para un secreto en claro.
+
+La interfaz **pregunta a Go si hay vidrio** (`App.Vidrio()`) y pone `data-vidrio="si"` en la raíz.
+Todo el CSS del efecto cuelga de ese atributo, así que donde no lo hay la ventana queda exactamente
+como antes. `MarcarVidrio` va como función y no como método, por la trampa ya conocida de que lo que
+se exporta como método de `*App` cruza el puente.
+
+El tinte es **0,82**, un número en `internal/tema` (`alfaDelVidrio`). Se subió desde 0,72 después de
+mirar la ventana sobre un escritorio saturado: el texto apagado del pie se lavaba.
+
+## Alternativas descartadas
+
+- **La ventana entera translúcida.** Más vistoso y peor: el contraste deja de poder medirse —depende
+  del escritorio de cada uno— y `make contraste` existe justamente para que eso no pase.
+- **Dejar el `backdrop-filter` de CSS.** Funciona igual en los tres sistemas y no es lo mismo: no ve
+  lo que hay detrás de la ventana, que es el efecto entero.
+- **Acrylic en vez de Mica** en Windows. Desenfoca en tiempo real y se parece más a macOS, pero
+  Microsoft lo desaconseja para ventanas de trabajo porque consume y distrae.
+
+## Consecuencias
+
+- **Las parejas que mide `make contraste` siguen midiéndose contra el color opaco de la barra.** Un
+  fondo translúcido no se puede medir, y fingir que sí sería peor que no medirlo.
+- Linux se queda como estaba, y hay una prueba de interfaz que lo vigila: sin el atributo, el `body`
+  no puede quedar transparente.
+- En Windows 10 no hay Mica: la ventana sale opaca, sin error y sin aviso.
+
+## Verificación
+
+- Prueba de interfaz en los dos temas: sin `data-vidrio`, el fondo del `body` **no** es transparente.
+  Ésa es la garantía de que Linux no se rompe.
+- `make contraste` en verde con el token nuevo.
+- Compila para macOS, Windows y Linux.
+
+**Lo que no se ha comprobado:** el efecto de verdad. Aquí no hay Mac ni Windows. Lo que sí se hizo
+fue simularlo —forzando el atributo con un degradado saturado detrás— y con eso se ajustó el tinte;
+pero esa simulación **no tiene el desenfoque del sistema**, así que es un caso peor que el real.

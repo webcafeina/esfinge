@@ -96,6 +96,9 @@ export type Preferencias = {
   buscarActualizaciones: boolean;
   ultimaComprobacion: string;
   versionVista: string;
+  /** Las últimas carpetas de cada diálogo. Las lleva Go; la interfaz no las toca. */
+  carpetaAbrir: string;
+  carpetaGuardar: string;
 };
 
 type MetodosGo = Record<string, (...args: unknown[]) => Promise<unknown>>;
@@ -175,6 +178,9 @@ export const esfinge = {
   dondeVive: () => llamar<string>("DondeVive"),
 
   version: () => llamar<string>("Version"),
+
+  /** Si el sistema ha puesto una ventana translúcida detrás. */
+  vidrio: () => llamar<boolean>("Vidrio"),
 
   aperturaDeArranque: () => llamar<Apertura>("AperturaDeArranque"),
 

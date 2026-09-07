@@ -546,3 +546,39 @@ p {
   gap: var(--espacio-3);
   cursor: pointer;
 }
+
+/* ------------------------------------------------------------------ vidrio */
+
+/* Cuando el sistema pone una ventana translúcida detrás —macOS siempre,
+ * Windows 11 con Mica—, el fondo deja de pintarlo el sistema y lo pinta esto.
+ *
+ * El reparto es el de las aplicaciones del sistema: **el marco deja pasar el
+ * escritorio y la zona de trabajo no**. Ahí es donde se lee y se teclea, y un
+ * fondo que cambia según lo que haya detrás de la ventana no es sitio para un
+ * campo de texto.
+ *
+ * Todo cuelga del atributo porque donde no hay vidrio un fondo transparente no
+ * enseña el escritorio: enseña un agujero. Lo pone la interfaz al arrancar,
+ * preguntándole a Go. */
+:root[data-vidrio="si"] body {
+  background: transparent;
+}
+
+:root[data-vidrio="si"] .contenido {
+  background: var(--lienzo);
+}
+
+:root[data-vidrio="si"] .barra,
+:root[data-vidrio="si"] .pie {
+  background: var(--barra-vidrio);
+  /* El desenfoque lo pone el sistema, que toma lo que hay detrás de la ventana.
+   * El de CSS solo veía lo de dentro de la página, así que aquí sobra y encima
+   * cuesta. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* La banda de novedad va pegada a la barra, así que la acompaña. */
+:root[data-vidrio="si"] .novedad {
+  background: var(--barra-vidrio);
+}

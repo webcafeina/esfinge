@@ -1,11 +1,11 @@
 # Estado
 
-Última actualización: **2026-09-07**
+Última actualización: **2026-09-08**
 
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.4.0**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.5.0**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, guarda un historial de qué y cuándo, y se compila sola para macOS,
 Windows y Linux en GitHub Actions.
 
@@ -31,13 +31,18 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
 - **Color generado desde Go** (`internal/tema`), con el contraste de los dos temas medido en cada
   compilación.
 - **Compilación automática** de los tres sistemas, más los seis binarios de la línea de comandos.
+- **El vidrio del sistema en la barra y el pie** —macOS siempre, Windows 11 con Mica—, con la zona
+  de trabajo opaca (ADR 0017). En Linux no lo hay, y ahí la ventana queda como estaba.
+- **Los diálogos recuerdan su carpeta**, una para abrir y otra para guardar.
+- **Las tandas se cifran en paralelo**, con tope: veinte ficheros pasaron de 4,42 s a 1,29 s en una
+  máquina de cuatro núcleos (ADR 0018).
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
   máquina sin entorno gráfico.
 
 ## En curso
 
-Nada a medias. El código de las 2.1.0 a 2.4.0 está escrito, probado hasta donde se puede desde una
-máquina sin Mac ni Windows, y publicado.
+Nada a medias. El código de las 2.1.0 a la 2.5.0 está escrito, probado hasta donde se puede desde
+una máquina sin Mac ni Windows, y publicado.
 
 ## Comprobado en un Mac de verdad
 
@@ -52,26 +57,28 @@ máquina sin Mac ni Windows, y publicado.
 
 ## Siguiente acción concreta
 
-**Esperar a que el humano pruebe dos cosas en su Mac**, que son el código nuevo con más riesgo y no
-se pueden ejercitar desde aquí. Están abajo, en las preguntas abiertas. Hasta entonces no hay nada
-que empezar: lo que venga después depende de lo que salga de ahí.
+**Ver el vidrio en el Mac.** Es lo único de la 2.5.0 que no se ha podido ejecutar aquí, y lo que hay
+que juzgar es si la barra y el pie se siguen leyendo sobre un escritorio cualquiera. Si no, el tinte
+es un número: `alfaDelVidrio` en `internal/tema/tokens.go`.
 
 ## Bloqueantes
 
-Ninguno técnico. Lo único pendiente son dos comprobaciones que solo puede hacer el humano.
+Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano.
 
 ## Preguntas abiertas para el humano
 
-**La primera es la que queda de código publicado que nunca se ha ejecutado aquí**: en esta máquina no
-hay ni Mac ni Windows.
+**Las dos primeras son de código publicado que nunca se ha ejecutado aquí**: en esta máquina no hay
+ni Mac ni Windows.
 
+- **¿Cómo queda el vidrio?** El tinte se ajustó a 0,82 simulándolo con un degradado saturado detrás,
+  pero esa simulación **no tiene el desenfoque del sistema**, así que es un caso peor que el real. Si
+  algo se lava, se sube el número.
 - **¿Salta el aviso de Gatekeeper al actualizarse desde dentro?** El guion le quita la cuarentena al
   paquete antes de ponerlo, y como el DMG lo descarga Go y no un navegador, es posible que no salte.
   Si no salta, hay que quitarlo del LÉEME del DMG para las actualizaciones y dejarlo solo para la
   primera instalación.
-- **¿La ventana ya pasa por nativa?** La 2.0.1 rehízo el aspecto siguiendo macOS —barra translúcida,
-  radios generosos, controles de 28 px— pero eso solo se juzga con la aplicación abierta en un Mac.
-  Las capturas salen de un navegador y ahí la transparencia no se ve.
+- **¿La ventana ya pasa por nativa?** Con el vidrio de la 2.5.0 debería acercarse bastante más, pero
+  eso solo se juzga con la aplicación abierta en un Mac.
 - **¿Merece la pena que el Finder enseñe el icono propio de los `.esf`?** La asociación funciona y el
   doble clic abre lo que toca —comprobado en el Mac—, pero el icono del documento no se ha mirado. Es
   lo único que queda de ese frente, y es cosmético.

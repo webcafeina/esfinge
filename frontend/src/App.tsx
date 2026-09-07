@@ -50,6 +50,17 @@ export default function App() {
   useEffect(() => {
     esfinge.version().then(setVersion).catch(() => setVersion("?"));
 
+    // El vidrio del sistema. Cuando lo hay, la ventana es transparente y el
+    // fondo lo pinta el CSS; cuando no —Linux, o una versión de Windows sin
+    // Mica—, todo se queda como siempre. De ahí que sea un atributo y no un
+    // estilo suelto: el CSS entero del vidrio cuelga de él.
+    esfinge
+      .vidrio()
+      .then((hay) => {
+        if (hay) document.documentElement.dataset.vidrio = "si";
+      })
+      .catch(() => {});
+
     // La comprobación de versiones sale a la red desde Go, en su propia
     // gorrutina, y puede contestar segundos después de abrirse la ventana. Por
     // eso se escucha el evento y además se pregunta: quien llega tarde al primero

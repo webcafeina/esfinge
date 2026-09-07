@@ -5,6 +5,27 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-08 · Vidrio, carpetas recordadas y tandas en paralelo
+
+- **2.5.0**, tres cosas que llevaban días anotadas en `siguiente.md` y no dependían de nadie.
+- **El vidrio del sistema** en la barra y el pie, con la zona de trabajo opaca (ADR 0017). Lo que no
+  era evidente: pedirlo hace que el fondo lo tenga que pintar el CSS, y donde no hay vidrio —Linux,
+  o un Windows sin Mica— un `body` transparente no enseña el escritorio, enseña un agujero. De ahí
+  el atributo `data-vidrio` y una prueba que vigila que sin él nada cambia.
+- El tinte se ajustó **mirando**: se simuló la ventana con un degradado saturado detrás y a 0,72 el
+  texto apagado del pie se lavaba. Subido a 0,82. La simulación no tiene el desenfoque del sistema,
+  así que es un caso peor que el real.
+- **Los diálogos recuerdan su carpeta**, una para abrir y otra para guardar. Con una trampa que
+  habría dejado el diálogo sin abrir: Wails **falla la llamada entera** si el directorio por defecto
+  ya no existe, así que se comprueba antes de proponerlo.
+- **Las tandas, en paralelo** con tope de la mitad de los núcleos, máximo cuatro (ADR 0018). Medido
+  antes y después en la misma máquina: **veinte ficheros de 4,42 s a 1,29 s**. El tope no es
+  prudencia vaga: cada derivación ya usa cuatro hilos y 64 MiB por dentro.
+- Verificado: `make comprobar`, `make contraste`, **`go test -race` sobre todo**, que aquí importa
+  porque es la primera vez que se cifra desde varias gorrutinas, y 26 pruebas de interfaz en los dos
+  temas.
+- **Sin comprobar**: cómo queda el vidrio de verdad. No hay Mac ni Windows aquí.
+
 ## 2026-09-08 · Lo que dijo el Mac
 
 - **Copiar y pegar funcionan** con los atajos de ⌘. Era el trozo con más riesgo de todo lo escrito

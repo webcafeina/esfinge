@@ -19,14 +19,8 @@ saber qué se hizo.
 
 ## Media
 
-- **Ventana con vibrancy de verdad.** Wails permite pedir ventana translúcida al sistema
-  (`WindowIsTranslucent`, `WebviewIsTransparent`). Ahora la barra imita el efecto con CSS, que no es
-  lo mismo: el desenfoque de macOS toma lo que hay detrás de la ventana, no dentro.
 - **Barra de menús propia.** Ahora solo está el menú de fábrica. Faltan las órdenes de siempre:
   cifrar, descifrar, y sus atajos de teclado.
-- **Recordar la última carpeta usada** en los diálogos de abrir y guardar.
-- **Un modo para tandas grandes**: cifrar cincuenta ficheros son cincuenta derivaciones de clave,
-  medio segundo cada una. Se puede hacer en paralelo.
 
 ## Baja
 
@@ -37,6 +31,12 @@ saber qué se hizo.
 - **Empaquetar para Homebrew** (`brew install --cask esfinge`), que exige una URL estable y firma.
 
 ## Cerrado
+
+- ~~Ventana con vibrancy de verdad~~ → hecho en la 2.5.0, en la barra y el pie (2026-09-08).
+- ~~Recordar la última carpeta de los diálogos~~ → hecho en la 2.5.0, una para abrir y otra para
+  guardar (2026-09-08).
+- ~~Un modo para tandas grandes~~ → en paralelo con tope desde la 2.5.0: veinte ficheros de 4,42 s a
+  1,29 s (2026-09-08).
 
 - ~~Copiar y pegar con los menús construidos a mano~~ → comprobado en el Mac: los atajos de ⌘ van
   bien (2026-09-08).

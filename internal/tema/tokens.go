@@ -30,6 +30,13 @@ var Medidas = map[string]string{
 	"fuente-mono":  `ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace`,
 }
 
+// alfaDelVidrio es cuánto tapa la barra cuando el sistema pone el vidrio detrás.
+//
+// Ni opaco —entonces no se vería el efecto— ni demasiado transparente: por
+// debajo de esto, el texto de la barra flota sobre lo que haya en el escritorio
+// y deja de leerse. Es el número que hay que tocar si en un Mac se lee mal.
+const alfaDelVidrio = 0.82
+
 // conAlfa escribe un color con transparencia, para el anillo de foco.
 func conAlfa(c RGB, alfa float64) string {
 	return fmt.Sprintf("rgb(%d %d %d / %.2f)", c.R, c.G, c.B, alfa)
@@ -85,6 +92,10 @@ func GenerarCSS() string {
 	// El anillo de foco es el color de acción a media tinta: así se ve sobre
 	// cualquier superficie sin tener que inventar un color por cada una.
 	fmt.Fprintf(&b, "  --anillo: %s;\n", conAlfa(TemaClaro.Relleno, 0.35))
+	// La barra translúcida, para cuando el sistema pone el vidrio detrás de la
+	// ventana. El color opaco se queda: es el que se mide en «make contraste», y
+	// un fondo translúcido no se puede medir porque depende de lo que haya detrás.
+	fmt.Fprintf(&b, "  --barra-vidrio: %s;\n", conAlfa(TemaClaro.Barra, alfaDelVidrio))
 	b.WriteString("\n")
 
 	claves := make([]string, 0, len(Medidas))
@@ -104,6 +115,7 @@ func GenerarCSS() string {
 			fmt.Fprintf(&s, "  --%s: %s;\n", c.nombre, c.de(TemaOscuro).Hex())
 		}
 		fmt.Fprintf(&s, "  --anillo: %s;\n", conAlfa(TemaOscuro.Relleno, 0.45))
+		fmt.Fprintf(&s, "  --barra-vidrio: %s;\n", conAlfa(TemaOscuro.Barra, alfaDelVidrio))
 		s.WriteString("}\n")
 		return s.String()
 	}

@@ -20,6 +20,9 @@ type sistemaFalso struct {
 	ordenes   []Orden
 	cerrada   bool
 	aperturas []Apertura
+
+	desdeAbrir   string
+	desdeGuardar string
 }
 
 func (s *sistemaFalso) Cerrar() {
@@ -28,8 +31,19 @@ func (s *sistemaFalso) Cerrar() {
 	s.cerrada = true
 }
 
-func (s *sistemaFalso) ElegirFicheros(string, bool) ([]string, error) { return s.ficheros, nil }
-func (s *sistemaFalso) ElegirDondeGuardar(string, string) (string, error) {
+// Las dos apuntan el «desde» que se les pasa, que es lo que se quiere vigilar:
+// que el diálogo se abre donde se quedó la última vez.
+func (s *sistemaFalso) ElegirFicheros(_, desde string, _ bool) ([]string, error) {
+	s.mu.Lock()
+	s.desdeAbrir = desde
+	s.mu.Unlock()
+	return s.ficheros, nil
+}
+
+func (s *sistemaFalso) ElegirDondeGuardar(_, _, desde string) (string, error) {
+	s.mu.Lock()
+	s.desdeGuardar = desde
+	s.mu.Unlock()
 	return s.guardaEn, nil
 }
 

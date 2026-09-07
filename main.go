@@ -16,12 +16,14 @@ import (
 	"context"
 	"log"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
+	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
 	"github.com/webcafeina/esfinge/internal/app"
 	"github.com/webcafeina/esfinge/internal/interfaz"
@@ -49,6 +51,15 @@ func main() {
 	// siempre después de que la ventana esté abierta.
 	var ctx context.Context
 
+	// El vidrio del sistema: macOS lo da con NSVisualEffectView y Windows 11 con
+	// Mica. Linux no lo ofrece en Wails, y ahí la ventana se queda opaca.
+	//
+	// Va acompañado de un fondo transparente, porque si el webview deja pasar la
+	// luz el color lo tiene que poner el CSS. Eso es lo que la interfaz consulta
+	// con Vidrio(): sin él dejaría la ventana vacía justo donde no hay efecto.
+	vidrio := runtime.GOOS == "darwin" || runtime.GOOS == "windows"
+	app.MarcarVidrio(aplicacion, vidrio)
+
 	err := wails.Run(&options.App{
 		Title: "Esfinge",
 
@@ -64,6 +75,10 @@ func main() {
 		MinHeight: 480,
 
 		AssetServer: &assetserver.Options{Assets: interfaz.Recursos},
+
+		// Transparente para que se vea el vidrio de detrás. Donde no hay vidrio
+		// esto no se llega a poner: ver más abajo.
+		BackgroundColour: fondoDeLaVentana(vidrio),
 
 		// EnableFileDrop entrega las rutas absolutas de lo que se suelte, que es
 		// lo único que sirve: el arrastrar y soltar del navegador da un objeto sin
@@ -89,13 +104,39 @@ func main() {
 				escritorio.Avisar(app.EventoFicheroAbierto, ruta)
 			},
 			TitleBar: mac.TitleBarDefault(),
+
+			// El vidrio de macOS. WebviewIsTransparent deja pasar la luz a través
+			// de la página, y WindowIsTranslucent pone detrás la vista de efecto
+			// del sistema, que es la que desenfoca el escritorio de verdad.
+			WebviewIsTransparent: vidrio,
+			WindowIsTranslucent:  vidrio,
 			About: &mac.AboutInfo{
 				Title:   "Esfinge",
 				Message: "Cifra y descifra secretos con una clave.\nDe Webcafeína.",
 			},
 		},
+		Windows: &windows.Options{
+			// Mica es el equivalente en Windows 11: toma el fondo de escritorio,
+			// muy desenfocado y quieto. En Windows 10 no existe y la ventana se
+			// queda opaca, sin error y sin aviso, que es lo correcto.
+			WebviewIsTransparent: vidrio,
+			WindowIsTranslucent:  vidrio,
+			BackdropType:         windows.Mica,
+		},
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+// fondoDeLaVentana es transparente cuando hay vidrio y nada cuando no lo hay.
+//
+// Devolver nil deja que Wails ponga el fondo de siempre, que es justo lo que
+// tiene que pasar en Linux: un fondo transparente sin vidrio detrás no enseña el
+// escritorio, enseña un agujero.
+func fondoDeLaVentana(vidrio bool) *options.RGBA {
+	if !vidrio {
+		return nil
+	}
+	return options.NewRGBA(0, 0, 0, 0)
 }

@@ -25,6 +25,11 @@ type Preferencias struct {
 	// VersionVista es la última que se ofreció. Sirve para no repetir el mismo
 	// aviso en cada arranque cuando ya se dijo «ahora no».
 	VersionVista string `json:"versionVista"`
+	// CarpetaAbrir y CarpetaGuardar son las últimas que se usaron en cada
+	// diálogo. Van separadas porque son gestos distintos: se abre de donde están
+	// los ficheros y se guarda donde va el resultado.
+	CarpetaAbrir   string `json:"carpetaAbrir"`
+	CarpetaGuardar string `json:"carpetaGuardar"`
 }
 
 // Ajustes guarda las preferencias en la carpeta de configuración.
@@ -79,6 +84,8 @@ func (a *Ajustes) Guardar(p Preferencias) error {
 
 	p.UltimaComprobacion = a.p.UltimaComprobacion
 	p.VersionVista = a.p.VersionVista
+	p.CarpetaAbrir = a.p.CarpetaAbrir
+	p.CarpetaGuardar = a.p.CarpetaGuardar
 	a.p = p
 	return a.guardar()
 }
@@ -115,6 +122,51 @@ func (a *Ajustes) AnotarComprobacion(version string) {
 	if version != "" {
 		a.p.VersionVista = version
 	}
+	_ = a.guardar()
+}
+
+// CarpetaDeAbrir y CarpetaDeGuardar devuelven la última que se usó, **si todavía
+// existe**.
+//
+// La comprobación no es cosmética: Wails **falla la llamada entera** si el
+// directorio por defecto no existe, así que una carpeta borrada o en un disco
+// desconectado dejaría el diálogo sin abrir. Recordar de más no puede salir más
+// caro que no recordar nada.
+func (a *Ajustes) CarpetaDeAbrir() string   { return siSigueAhi(a.Ver().CarpetaAbrir) }
+func (a *Ajustes) CarpetaDeGuardar() string { return siSigueAhi(a.Ver().CarpetaGuardar) }
+
+func siSigueAhi(carpeta string) string {
+	if carpeta == "" {
+		return ""
+	}
+	if info, err := os.Stat(carpeta); err != nil || !info.IsDir() {
+		return ""
+	}
+	return carpeta
+}
+
+// RecordarCarpetaDeAbrir y RecordarCarpetaDeGuardar anotan dónde se quedó el
+// diálogo. No devuelven error: no poder escribir una comodidad no puede
+// estropear la operación que acaba de salir bien.
+func (a *Ajustes) RecordarCarpetaDeAbrir(carpeta string) {
+	a.recordar(&a.p.CarpetaAbrir, carpeta)
+}
+
+func (a *Ajustes) RecordarCarpetaDeGuardar(carpeta string) {
+	a.recordar(&a.p.CarpetaGuardar, carpeta)
+}
+
+func (a *Ajustes) recordar(donde *string, carpeta string) {
+	if carpeta == "" {
+		return
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if *donde == carpeta {
+		return
+	}
+	*donde = carpeta
 	_ = a.guardar()
 }
 

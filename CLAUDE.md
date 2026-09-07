@@ -92,7 +92,9 @@ No se cambian sin preguntar.
   en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar.
 - **Al cifrar un texto se copia solo al portapapeles**; al descifrar no, porque ahí lo que sale es
   el secreto en claro.
-- **Guardar usa el diálogo del sistema.**
+- **Guardar usa el diálogo del sistema**, y los diálogos **recuerdan su carpeta**: una para abrir y
+  otra para guardar, porque son gestos distintos. Ojo: Wails falla la llamada entera si el directorio
+  por defecto ya no existe, así que se comprueba antes de proponerlo.
 - **Sin firmar ni notarizar para macOS**: los 99 $/año de Apple no compensan para un cliente.
 - **Comprueba actualizaciones sola**, una vez al día, y se descarga el instalador de su sistema
   comprobando el SHA256. Es la única conexión que hace el programa, se cuenta en Ajustes y se apaga
@@ -114,6 +116,17 @@ donde quiera sería abrir una puerta por comodidad.
 tras la etiqueta `dev`. Es una petición GET al día a `api.github.com`, y está documentada en
 `docs/seguridad.md` porque la portada prometía lo contrario. Cualquier conexión nueva pasa por ahí
 antes que por el código.
+
+**El vidrio del sistema obliga a que el CSS pinte el fondo.** Al pedir una ventana translúcida
+—macOS siempre, Windows 11 con Mica— el webview deja pasar la luz, así que el color lo pone la
+página. Donde no hay vidrio, un `body` transparente no enseña el escritorio: enseña un agujero. De
+ahí que la interfaz pregunte con `Vidrio()` y ponga `data-vidrio="si"`, y que **todo el CSS del
+efecto cuelgue de ese atributo** (ADR 0017). Hay una prueba de interfaz que lo vigila.
+
+**Las tandas se cifran en paralelo, con tope.** La mitad de los núcleos, máximo cuatro: cada
+derivación ya usa cuatro hilos por dentro y 64 MiB mientras dura, así que pasarse es pisarse (ADR
+0018). Los resultados conservan el orden de entrada y el progreso se cuenta al **terminar** cada
+fichero. Desde aquí, `go test -race` deja de ser una cortesía.
 
 **El color se genera, no se escribe.** `internal/tema` es la fuente de verdad y produce
 `frontend/src/tokens.css` con `make tokens`. Editar el CSS a mano no sirve: hay un test que compara

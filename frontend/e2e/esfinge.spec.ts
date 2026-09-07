@@ -320,3 +320,20 @@ test("un .esf que lleva un texto abre descifrar en modo texto, con la línea pue
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });
+
+test("sin el vidrio del sistema la ventana se pinta como siempre", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // El servidor de desarrollo no da vidrio, igual que Linux o un Windows sin
+  // Mica. Ahí el fondo lo tiene que seguir pintando el CSS de siempre: un body
+  // transparente sin nada detrás no enseña el escritorio, enseña un agujero.
+  await expect(page.locator(".barra")).toBeVisible();
+  await expect(page.locator("html")).not.toHaveAttribute("data-vidrio", "si");
+
+  const fondo = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(fondo).not.toBe("rgba(0, 0, 0, 0)");
+  expect(fondo).not.toBe("transparent");
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});

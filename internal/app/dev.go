@@ -46,7 +46,7 @@ func NuevoSistemaDeDesarrollo(carpeta string) *SistemaDeDesarrollo {
 	return &SistemaDeDesarrollo{Carpeta: carpeta, oyentes: map[chan []byte]bool{}}
 }
 
-func (s *SistemaDeDesarrollo) ElegirFicheros(_ string, varios bool) ([]string, error) {
+func (s *SistemaDeDesarrollo) ElegirFicheros(_, _ string, varios bool) ([]string, error) {
 	entradas, err := os.ReadDir(s.Carpeta)
 	if err != nil {
 		return nil, fmt.Errorf("No puedo leer %s: %w", s.Carpeta, err)
@@ -65,7 +65,7 @@ func (s *SistemaDeDesarrollo) ElegirFicheros(_ string, varios bool) ([]string, e
 	return rutas, nil
 }
 
-func (s *SistemaDeDesarrollo) ElegirDondeGuardar(_, nombreSugerido string) (string, error) {
+func (s *SistemaDeDesarrollo) ElegirDondeGuardar(_, nombreSugerido, _ string) (string, error) {
 	return filepath.Join(s.Carpeta, nombreSugerido), nil
 }
 

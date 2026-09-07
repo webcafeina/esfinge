@@ -28,10 +28,11 @@ var (
 	filtroCifrados = runtime.FileFilter{DisplayName: "Cifrados de Esfinge (*.esf)", Pattern: "*.esf"}
 )
 
-func (e *Escritorio) ElegirFicheros(titulo string, varios bool) ([]string, error) {
+func (e *Escritorio) ElegirFicheros(titulo, desde string, varios bool) ([]string, error) {
 	opciones := runtime.OpenDialogOptions{
-		Title:   titulo,
-		Filters: []runtime.FileFilter{filtroTodos},
+		Title:            titulo,
+		DefaultDirectory: desde,
+		Filters:          []runtime.FileFilter{filtroTodos},
 	}
 	// Al descifrar se ofrece primero el filtro de contenedores, que es lo que se
 	// va a buscar el noventa y nueve por ciento de las veces.
@@ -49,10 +50,11 @@ func (e *Escritorio) ElegirFicheros(titulo string, varios bool) ([]string, error
 	return runtime.OpenMultipleFilesDialog(e.ctx, opciones)
 }
 
-func (e *Escritorio) ElegirDondeGuardar(titulo, nombreSugerido string) (string, error) {
+func (e *Escritorio) ElegirDondeGuardar(titulo, nombreSugerido, desde string) (string, error) {
 	return runtime.SaveFileDialog(e.ctx, runtime.SaveDialogOptions{
-		Title:           titulo,
-		DefaultFilename: nombreSugerido,
+		Title:            titulo,
+		DefaultFilename:  nombreSugerido,
+		DefaultDirectory: desde,
 	})
 }
 
