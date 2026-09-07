@@ -1,4 +1,4 @@
-# ADR 0017 — El vidrio del sistema va en el marco, no en la zona de trabajo
+# ADR 0017 — El vidrio del sistema va en la barra lateral, no en la zona de trabajo
 
 **Fecha:** 2026-09-08 · **Estado:** aceptada · **Revisar si** Wails ofrece translucidez en Linux
 

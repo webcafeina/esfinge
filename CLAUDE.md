@@ -135,6 +135,11 @@ página. Donde no hay vidrio, un `body` transparente no enseña el escritorio: e
 ahí que la interfaz pregunte con `Vidrio()` y ponga `data-vidrio="si"`, y que **todo el CSS del
 efecto cuelgue de ese atributo** (ADR 0017). Hay una prueba de interfaz que lo vigila.
 
+Y el corolario, que costó una versión: **lo que no declara fondo se vuelve transparente y enseña el
+material**. Al reestructurar, la barra de herramientas se quedó sin declararlo y aparecía una banda de
+otro color encima del contenido. Por eso el fondo se pone en la columna entera (`.zona`) y no en cada
+pieza. El material va en la barra lateral, que es donde lo pone macOS.
+
 **Las tandas se cifran en paralelo, con tope.** La mitad de los núcleos, máximo cuatro: cada
 derivación ya usa cuatro hilos por dentro y 64 MiB mientras dura, así que pasarse es pisarse (ADR
 0018). Los resultados conservan el orden de entrada y el progreso se cuenta al **terminar** cada

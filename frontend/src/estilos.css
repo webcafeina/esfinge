@@ -569,21 +569,6 @@ input[type="range"]::-webkit-slider-thumb {
   font-variant-numeric: tabular-nums;
 }
 
-/* -------------------------------------------------------------------- pie */
-
-.pie {
-  padding: var(--espacio-2) var(--espacio-4);
-  border-top: 0.5px solid var(--filete);
-  background: var(--barra);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  color: var(--apagado);
-  font-size: var(--texto-chico);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 /* ------------------------------------------------------------------- texto */
 
 h1 {
@@ -678,10 +663,17 @@ p {
 /* Cuando el sistema pone una ventana translúcida detrás —macOS siempre,
  * Windows 11 con Mica—, el fondo deja de pintarlo el sistema y lo pinta esto.
  *
- * El reparto es el de las aplicaciones del sistema: **el marco deja pasar el
- * escritorio y la zona de trabajo no**. Ahí es donde se lee y se teclea, y un
- * fondo que cambia según lo que haya detrás de la ventana no es sitio para un
- * campo de texto.
+ * **El reparto es por columnas, y va donde lo pone el sistema: la barra lateral
+ * deja pasar el material y la zona de trabajo no.** En macOS la vibrancia vive
+ * justamente ahí, en las barras laterales; y la zona de trabajo tiene que ser
+ * opaca porque es donde se lee y se teclea, y un fondo que cambia según lo que
+ * haya detrás de la ventana no es sitio para un campo de texto.
+ *
+ * Ojo con lo que **no** se declara: cualquier trozo de la columna derecha que se
+ * quede sin fondo se vuelve transparente y enseña el material, que es lo que
+ * pasaba con la barra de herramientas —se veía una banda de otro color encima
+ * del contenido—. Por eso el fondo se pone en «.zona», que las cubre todas, y no
+ * en cada pieza.
  *
  * Todo cuelga del atributo porque donde no hay vidrio un fondo transparente no
  * enseña el escritorio: enseña un agujero. Lo pone la interfaz al arrancar,
@@ -690,21 +682,10 @@ p {
   background: transparent;
 }
 
-:root[data-vidrio="si"] .contenido {
+:root[data-vidrio="si"] .lateral {
+  background: var(--barra-vidrio);
+}
+
+:root[data-vidrio="si"] .zona {
   background: var(--lienzo);
-}
-
-:root[data-vidrio="si"] .barra,
-:root[data-vidrio="si"] .pie {
-  background: var(--barra-vidrio);
-  /* El desenfoque lo pone el sistema, que toma lo que hay detrás de la ventana.
-   * El de CSS solo veía lo de dentro de la página, así que aquí sobra y encima
-   * cuesta. */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-/* La banda de novedad va pegada a la barra, así que la acompaña. */
-:root[data-vidrio="si"] .novedad {
-  background: var(--barra-vidrio);
 }

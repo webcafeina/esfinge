@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.6.1**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.6.2**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, guarda un historial de qué y cuándo, y se compila sola para macOS,
 Windows y Linux en GitHub Actions.
 
@@ -31,8 +31,9 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
 - **Color generado desde Go** (`internal/tema`), con el contraste de los dos temas medido en cada
   compilación.
 - **Compilación automática** de los tres sistemas, más los seis binarios de la línea de comandos.
-- **El vidrio del sistema en la barra y el pie** —macOS siempre, Windows 11 con Mica—, con la zona
-  de trabajo opaca (ADR 0017). En Linux no lo hay, y ahí la ventana queda como estaba.
+- **El vidrio del sistema en la barra lateral** —macOS siempre, Windows 11 con Mica—, con la zona de
+  trabajo opaca (ADR 0017). Es donde el sistema pone la vibrancia. En Linux no lo hay, y ahí la
+  ventana queda como estaba.
 - **Los diálogos recuerdan su carpeta**, una para abrir y otra para guardar.
 - **Las tandas se cifran en paralelo**, con tope: veinte ficheros pasaron de 4,42 s a 1,29 s en una
   máquina de cuatro núcleos (ADR 0018).

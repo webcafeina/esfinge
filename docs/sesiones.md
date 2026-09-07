@@ -66,6 +66,14 @@ Plantilla al final.
   - De paso, la prueba del interruptor de Ajustes **se prepara su propio punto de partida**. Daba por
     hecho que arrancaba encendido, y el fichero de preferencias del servidor de desarrollo es de
     verdad: una tanda interrumpida lo dejaba apagado y a partir de ahí fallaba siempre.
+- **2.6.2**: el fondo del título seguía ahí, y esta vez sí era CSS mío. Bajo el vidrio, **lo que no
+  declara fondo se vuelve transparente y enseña el material**; la barra de herramientas se había
+  quedado sin declararlo al reestructurar, así que se veía una banda encima del contenido. El fondo
+  pasa a la columna entera.
+- De paso, el reparto del vidrio se rehace por columnas: **el material va en la barra lateral**, que
+  es donde lo pone macOS, y la zona de trabajo se queda opaca. Puede que además resuelva lo de que el
+  vidrio no se apreciaba: la barra lateral es una superficie grande, y hasta ahora el material solo
+  tenía dos franjas finas donde asomar.
 - **Sin comprobar, y es lo que decide lo siguiente**: cómo queda en un Mac. De eso depende si Windows
   y Linux se hacen igual.
 
