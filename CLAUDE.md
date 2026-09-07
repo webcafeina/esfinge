@@ -46,6 +46,7 @@ make esfinge      # la línea de comandos, para esta máquina
 make publicar     # comprueba y compila la línea de comandos para los seis objetivos
 make app          # la aplicación con ventana (necesita wails; ver abajo)
 make dmg          # la imagen de disco de macOS (solo en un Mac, con create-dmg)
+make ventana-dmg  # dibuja cómo quedará esa ventana, sin necesidad de Mac
 make ayuda        # todos los objetivos
 ```
 
@@ -129,7 +130,8 @@ la imagen en un Mac. `make ventana-dmg` la dibuja antes, leyendo las posiciones 
 
 ## Lo que nunca se ha probado
 
-La aplicación **solo se ha ejecutado en la cabeza de CI, no en un escritorio de verdad**. Sin
-verificar en un Mac: el arrastrar y soltar desde el Finder, el diálogo de guardar, el portapapeles
-del sistema, el aviso de Gatekeeper —que con una `.app` sin firmar es más aparatoso que con un
-binario de terminal— y si el doble clic en un `.esf` hace algo útil.
+Comprobado ya en un Mac de verdad: el arrastrar y soltar desde el Finder, el diálogo de guardar, el
+doble clic en un `.esf` y la imagen de disco, que se monta y se arrastra sin más.
+
+Sin verificar todavía: si el Finder enseña el icono propio en los ficheros `.esf`, y qué tan
+aparatoso resulta el aviso de Gatekeeper con una `.app` sin firmar la primera vez.
