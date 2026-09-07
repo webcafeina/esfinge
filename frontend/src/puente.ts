@@ -182,6 +182,9 @@ export const esfinge = {
   /** Si el sistema ha puesto una ventana translúcida detrás. */
   vidrio: () => llamar<boolean>("Vidrio"),
 
+  /** Lo que AppKit dice de la ventana. Vacío fuera de macOS. */
+  estadoVidrio: () => llamar<string>("EstadoVidrio"),
+
   /** «darwin», «windows» o «linux»: lo que devuelve Go. */
   plataforma: () => llamar<string>("Plataforma"),
 

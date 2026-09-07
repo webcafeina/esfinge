@@ -18,6 +18,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -99,6 +100,12 @@ func main() {
 			// porque hasta ahora no existía la ventana. Ver vidrio_darwin.go.
 			if vidrio {
 				ponerElVidrio()
+				// Se mira después de ponerlo, no antes: lo que interesa es lo que
+				// quedó, y el guion de AppKit corre en la cola principal.
+				go func() {
+					time.Sleep(500 * time.Millisecond)
+					app.AnotarEstadoDelVidrio(aplicacion, estadoDelVidrio())
+				}()
 			}
 		},
 

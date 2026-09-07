@@ -45,6 +45,8 @@ type App struct {
 
 	// vidrio dice si el sistema ha puesto una ventana translúcida detrás.
 	vidrio bool
+	// estadoVidrio es lo que AppKit contesta al preguntarle por la ventana.
+	estadoVidrio string
 }
 
 // Sistema es lo que la aplicación necesita del escritorio: los diálogos de
@@ -92,6 +94,17 @@ func ApuntarAAPI(a *App, raiz string) { a.act.comprobador.API = raiz }
 // una decisión de arranque, no algo que la ventana deba poder cambiar.
 func MarcarVidrio(a *App, si bool) { a.vidrio = si }
 
+// AnotarEstadoDelVidrio guarda lo que AppKit dice de la ventana una vez puesta.
+//
+// No es un adorno: el vidrio no se veía y las primeras explicaciones fueron
+// razonamientos que resultaron falsos. Esto es lo que hay de verdad, y se enseña
+// en Ajustes para poder mirarlo sin abrir la consola del sistema.
+func AnotarEstadoDelVidrio(a *App, estado string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.estadoVidrio = estado
+}
+
 // Plataforma dice en qué sistema corre, para que la interfaz se organice como
 // se organizan las aplicaciones de ese sistema.
 //
@@ -112,6 +125,14 @@ func (a *App) Plataforma() string { return runtime.GOOS }
 // la transparencia de GTK enseña el escritorio a pelo. Eso no es vibrancia: es
 // un agujero.
 func (a *App) Vidrio() bool { return a.vidrio }
+
+// EstadoVidrio es lo que dice AppKit de la ventana, para poder mirarlo en
+// Ajustes. Fuera de macOS va vacío.
+func (a *App) EstadoVidrio() string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.estadoVidrio
+}
 
 // Arrancar la llama Wails cuando la ventana está lista.
 func (a *App) Arrancar(ctx context.Context) {
