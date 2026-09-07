@@ -6,3 +6,9 @@
 # Ficheros cifrados y temporales de la propia herramienta
 *.esf
 .esfinge-*
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/

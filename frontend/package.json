@@ -1,0 +1,25 @@
+{
+  "name": "esfinge-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "previa": "vite preview",
+    "comprobar": "tsc -b --noEmit",
+    "e2e": "playwright test",
+    "icono": "node herramientas/rasterizar.mjs"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "typescript": "^5.9.0",
+    "vite": "^6.0.0"
+  }
+}

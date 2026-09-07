@@ -1,0 +1,383 @@
+/* Aspecto de aplicación del sistema.
+ *
+ * Los colores y las medidas salen de tokens.css, que genera Go. Aquí solo hay
+ * forma: alturas de control, radios y comportamiento, siguiendo lo que hacen
+ * macOS y Windows en vez de inventar una identidad propia. Es lo que hace que la
+ * ventana se sienta parte del escritorio y no una página web dentro de un marco.
+ */
+
+@import "./tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#raiz {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--fuente);
+  font-size: var(--texto);
+  color: var(--tinta);
+  background: var(--lienzo);
+  -webkit-font-smoothing: antialiased;
+
+  /* La ventana de una aplicación no se selecciona con el ratón como una página:
+   * seleccionar se reserva a lo que es contenido, que se marca aparte. */
+  user-select: none;
+  cursor: default;
+}
+
+/* Lo que sí se puede seleccionar y copiar a mano. */
+.seleccionable {
+  user-select: text;
+  cursor: auto;
+}
+
+/* ---------------------------------------------------------------- estructura */
+
+.ventana {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pestanas {
+  display: flex;
+  gap: 2px;
+  padding: var(--espacio-3) var(--espacio-4) 0;
+  background: var(--suave);
+  border-bottom: 1px solid var(--filete);
+}
+
+/* Control segmentado, que es como los dos sistemas agrupan modos. */
+.segmentado {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--elevada);
+  border-radius: var(--radio);
+}
+
+.segmentado button {
+  border: 0;
+  background: transparent;
+  color: var(--cuerpo);
+  font: inherit;
+  padding: 5px var(--espacio-4);
+  border-radius: calc(var(--radio) - 2px);
+  cursor: default;
+}
+
+.segmentado button[aria-selected="true"] {
+  background: var(--lienzo);
+  color: var(--tinta);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+}
+
+.contenido {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--espacio-5) var(--espacio-4);
+}
+
+.panel {
+  max-width: 620px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+}
+
+/* ------------------------------------------------------------------ controles */
+
+label {
+  display: block;
+  font-size: var(--texto-chico);
+  color: var(--apagado);
+  margin-bottom: var(--espacio-1);
+}
+
+input[type="text"],
+input[type="password"],
+textarea,
+select {
+  width: 100%;
+  font: inherit;
+  font-size: var(--texto);
+  color: var(--tinta);
+  background: var(--lienzo);
+  border: 1px solid var(--filete-fuerte);
+  border-radius: var(--radio-chico);
+  padding: 0 var(--espacio-3);
+  height: var(--alto-control);
+  user-select: text;
+  cursor: auto;
+}
+
+textarea {
+  height: auto;
+  min-height: 88px;
+  padding: var(--espacio-2) var(--espacio-3);
+  resize: vertical;
+  font-family: var(--fuente-mono);
+  line-height: 1.5;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--acento);
+  outline-offset: -1px;
+  border-color: var(--acento);
+}
+
+button {
+  font: inherit;
+  font-size: var(--texto);
+  height: var(--alto-control);
+  padding: 0 var(--espacio-4);
+  border-radius: var(--radio-chico);
+  border: 1px solid var(--filete-fuerte);
+  background: var(--lienzo);
+  color: var(--tinta);
+  cursor: default;
+}
+
+button:hover:not(:disabled) {
+  background: var(--elevada);
+}
+
+button:disabled {
+  opacity: 0.45;
+}
+
+button.principal {
+  background: var(--relleno);
+  border-color: transparent;
+  color: var(--sobre-acento);
+  font-weight: 500;
+}
+
+button.principal:hover:not(:disabled) {
+  background: var(--relleno-vivo);
+}
+
+button.discreto {
+  border-color: transparent;
+  background: transparent;
+  color: var(--acento);
+}
+
+.botones {
+  display: flex;
+  gap: var(--espacio-2);
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------- soltar ficheros */
+
+.soltar {
+  border: 2px dashed var(--filete-fuerte);
+  border-radius: var(--radio-grande);
+  padding: var(--espacio-6) var(--espacio-4);
+  text-align: center;
+  color: var(--apagado);
+  background: var(--suave);
+  transition: border-color 0.12s, background 0.12s;
+}
+
+/* Wails pone esta propiedad en el elemento sobre el que se está soltando. */
+.soltar[style*="--wails-drop-target"],
+.soltar.encima {
+  border-color: var(--acento);
+  background: var(--tarjeta);
+  color: var(--tinta);
+}
+
+.lista-ficheros {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--filete);
+  border-radius: var(--radio);
+  overflow: hidden;
+}
+
+.lista-ficheros li {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  padding: var(--espacio-2) var(--espacio-3);
+  border-bottom: 1px solid var(--filete);
+  font-size: var(--texto);
+}
+
+.lista-ficheros li:last-child {
+  border-bottom: 0;
+}
+
+.lista-ficheros .nombre {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ estados */
+
+.resultado {
+  background: var(--tarjeta);
+  border: 1px solid var(--filete);
+  border-radius: var(--radio);
+  padding: var(--espacio-3);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto);
+  line-height: 1.5;
+  word-break: break-all;
+  user-select: text;
+  cursor: auto;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.aviso,
+.error,
+.exito,
+.nota {
+  display: flex;
+  gap: var(--espacio-2);
+  align-items: baseline;
+  font-size: var(--texto);
+  margin: 0;
+}
+
+.aviso {
+  color: var(--aviso);
+}
+.error {
+  color: var(--error);
+}
+.exito {
+  color: var(--exito);
+}
+.nota {
+  color: var(--apagado);
+}
+
+/* El glifo delante no es adorno: distingue el estado sin depender del color,
+ * que es lo que necesita quien no separa bien el rojo del verde. En las notas
+ * no se pone: ahí no hay ningún estado que distinguir, y un punto delante de
+ * cada frase es ruido que venía del terminal. */
+.aviso::before {
+  content: "!";
+  font-weight: 700;
+}
+.error::before {
+  content: "✕";
+}
+.exito::before {
+  content: "✓";
+}
+
+/* Medidor de fuerza de la clave. */
+.medidor {
+  display: flex;
+  gap: 3px;
+  margin-top: var(--espacio-2);
+}
+
+.medidor span {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--filete);
+}
+
+.medidor[data-nivel="0"] span:nth-child(-n + 1),
+.medidor[data-nivel="1"] span:nth-child(-n + 2) {
+  background: var(--error);
+}
+.medidor[data-nivel="2"] span:nth-child(-n + 3) {
+  background: var(--aviso);
+}
+.medidor[data-nivel="3"] span:nth-child(-n + 4),
+.medidor[data-nivel="4"] span {
+  background: var(--exito);
+}
+
+.barra-progreso {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--filete);
+  overflow: hidden;
+}
+
+.barra-progreso i {
+  display: block;
+  height: 100%;
+  background: var(--acento);
+  transition: width 0.15s;
+}
+
+/* ---------------------------------------------------------------- historial */
+
+.historial {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.historial li {
+  display: flex;
+  gap: var(--espacio-3);
+  align-items: baseline;
+  padding: var(--espacio-2) 0;
+  border-bottom: 1px solid var(--filete);
+}
+
+.historial .cuando {
+  color: var(--apagado);
+  font-size: var(--texto-chico);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------------- pie */
+
+.pie {
+  padding: var(--espacio-2) var(--espacio-4);
+  border-top: 1px solid var(--filete);
+  background: var(--suave);
+  color: var(--apagado);
+  font-size: var(--texto-chico);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+h1 {
+  font-size: var(--titulo);
+  margin: 0 0 var(--espacio-1);
+}
+
+h2 {
+  font-size: var(--texto-grande);
+  margin: 0;
+}
+
+p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Quien haya pedido menos movimiento, que lo tenga. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

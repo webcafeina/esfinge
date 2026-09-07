@@ -1,0 +1,181 @@
+// El puente entre la interfaz y Go.
+//
+// En la aplicación empaquetada, Wails cuelga los métodos de Go en window.go y la
+// llamada no sale del proceso. Durante el desarrollo eso no existe —haría falta
+// un entorno gráfico y webkit, que en la máquina donde se escribe esto no hay—,
+// así que las mismas llamadas se hacen por HTTP contra el servidor que levanta
+// «make dev».
+//
+// La interfaz no distingue entre los dos casos: llama a estas funciones y ya.
+// Eso es lo que permite probar la interfaz entera de verdad, con un navegador,
+// sin compilar la aplicación.
+
+export type Resultado = {
+  texto: string;
+  aviso: string;
+};
+
+export type ResultadoFichero = {
+  origen: string;
+  destino: string;
+  error: string;
+};
+
+export type Fuerza = {
+  nivel: number;
+  bits: number;
+  etiqueta: string;
+  sugerencia: string;
+};
+
+export type Alfabeto = {
+  nombre: string;
+  etiqueta: string;
+  seguroURL: boolean;
+  aviso: string;
+};
+
+export type Entrada = {
+  accion: "cifrar" | "descifrar";
+  nombre: string;
+  destino: string;
+  cuando: string;
+};
+
+export type Progreso = {
+  hechos: number;
+  total: number;
+  actual: string;
+};
+
+type MetodosGo = Record<string, (...args: unknown[]) => Promise<unknown>>;
+
+declare global {
+  interface Window {
+    go?: { app?: { App?: MetodosGo } };
+    runtime?: {
+      EventsOn: (evento: string, cb: (...datos: unknown[]) => void) => void;
+    };
+  }
+}
+
+/** Dice si estamos dentro de la aplicación de verdad o en el navegador. */
+export function enWails(): boolean {
+  return typeof window.go?.app?.App?.CifrarTexto === "function";
+}
+
+/**
+ * llamar ejecuta un método de Go por el camino que haya disponible.
+ *
+ * Los errores de Go llegan aquí como promesa rechazada en Wails y como respuesta
+ * con estado 400 por HTTP; los dos acaban siendo un Error con el mismo mensaje,
+ * que es lo que la interfaz enseña tal cual. Los mensajes ya vienen escritos
+ * para leerse: no hay que adornarlos.
+ */
+async function llamar<T>(metodo: string, ...args: unknown[]): Promise<T> {
+  const go = window.go?.app?.App;
+  if (go && typeof go[metodo] === "function") {
+    return (await go[metodo](...args)) as T;
+  }
+
+  const respuesta = await fetch(`/api/${metodo}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(args),
+  });
+
+  const cuerpo = await respuesta.json();
+  if (!respuesta.ok) {
+    throw new Error(cuerpo?.error ?? "Algo ha fallado y no sé decir qué");
+  }
+  return cuerpo as T;
+}
+
+export const esfinge = {
+  cifrarTexto: (texto: string, clave: string) =>
+    llamar<Resultado>("CifrarTexto", texto, clave),
+
+  descifrarTexto: (texto: string, clave: string) =>
+    llamar<Resultado>("DescifrarTexto", texto, clave),
+
+  cifrarFicheros: (rutas: string[], clave: string) =>
+    llamar<ResultadoFichero[]>("CifrarFicheros", rutas, clave),
+
+  descifrarFicheros: (rutas: string[], clave: string) =>
+    llamar<ResultadoFichero[]>("DescifrarFicheros", rutas, clave),
+
+  generarContrasena: (bytes: number, alfabeto: string) =>
+    llamar<string>("GenerarContrasena", bytes, alfabeto),
+
+  evaluarClave: (clave: string) => llamar<Fuerza>("EvaluarClave", clave),
+
+  alfabetos: () => llamar<Alfabeto[]>("Alfabetos"),
+
+  elegirFicheros: (varios: boolean) => llamar<string[]>("ElegirFicheros", varios),
+
+  elegirCifrados: () => llamar<string[]>("ElegirCifrados"),
+
+  guardarTexto: (nombre: string, contenido: string) =>
+    llamar<string>("GuardarTexto", nombre, contenido),
+
+  verHistorial: () => llamar<Entrada[]>("VerHistorial"),
+
+  vaciarHistorial: () => llamar<void>("VaciarHistorial"),
+
+  dondeVive: () => llamar<string>("DondeVive"),
+
+  version: () => llamar<string>("Version"),
+};
+
+/**
+ * alEmpezarProgreso escucha cómo va una tanda de ficheros.
+ *
+ * Wails lo entrega por su sistema de eventos; el servidor de desarrollo, por un
+ * flujo de eventos del servidor. Devuelve la función que deja de escuchar.
+ */
+export function alProgresar(cb: (p: Progreso) => void): () => void {
+  if (window.runtime?.EventsOn) {
+    window.runtime.EventsOn("progreso", (datos) => cb(datos as Progreso));
+    return () => {};
+  }
+
+  const fuente = new EventSource("/api/eventos");
+  fuente.addEventListener("progreso", (e) => {
+    cb(JSON.parse((e as MessageEvent).data) as Progreso);
+  });
+  return () => fuente.close();
+}
+
+/**
+ * alSoltarFicheros escucha lo que se arrastre encima de la ventana.
+ *
+ * Wails entrega las rutas absolutas de lo que se ha soltado, que es lo que hace
+ * falta para poder cifrarlo: el arrastrar y soltar del navegador da un objeto
+ * File sin ruta, y por ahí no se llega al fichero desde Go.
+ */
+export function alSoltarFicheros(cb: (rutas: string[]) => void): () => void {
+  const runtime = window.runtime as
+    | { OnFileDrop?: (cb: (x: number, y: number, rutas: string[]) => void, usarCSS: boolean) => void }
+    | undefined;
+
+  if (runtime?.OnFileDrop) {
+    runtime.OnFileDrop((_x, _y, rutas) => cb(rutas), true);
+    return () => {};
+  }
+
+  // En el navegador no hay rutas absolutas, así que solo se usa para poder
+  // ejercitar la interfaz: se entregan los nombres y la propia interfaz avisa
+  // de que ahí no se puede trabajar.
+  const evitar = (e: DragEvent) => e.preventDefault();
+  const soltar = (e: DragEvent) => {
+    e.preventDefault();
+    const nombres = Array.from(e.dataTransfer?.files ?? []).map((f) => f.name);
+    if (nombres.length) cb(nombres);
+  };
+  window.addEventListener("dragover", evitar);
+  window.addEventListener("drop", soltar);
+  return () => {
+    window.removeEventListener("dragover", evitar);
+    window.removeEventListener("drop", soltar);
+  };
+}

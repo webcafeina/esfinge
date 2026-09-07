@@ -1,0 +1,56 @@
+<!--
+  Icono de Esfinge.
+
+  Una esfinge de perfil reducida a lo que la hace reconocible: el tocado nemes
+  con sus bandas y el rostro. Debajo, el ojal de una llave, que es lo que la
+  herramienta hace.
+
+  Está dibujado con formas grandes y pocos detalles a propósito: un icono de
+  aplicación se ve a 32 píxeles la mayor parte del tiempo, y ahí todo lo que sea
+  fino desaparece. La silueta tiene que aguantar a ese tamaño.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="piedra" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a4a52"/>
+      <stop offset="1" stop-color="#2b2b31"/>
+    </linearGradient>
+    <linearGradient id="oro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2c14e"/>
+      <stop offset="1" stop-color="#d99a28"/>
+    </linearGradient>
+
+    <!-- El tocado, definido una vez para poder recortar las bandas contra él:
+         si no, los rectángulos se salen por los lados y el contorno se ensucia. -->
+    <path id="tocado"
+          d="M512 150c-140 0-236 94-236 218v74l-62 228c-6 22 10 44 33 44h104l38-236h246l38 236h104c23 0 39-22 33-44l-62-228v-74c0-124-96-218-236-218z"/>
+    <clipPath id="soloTocado"><use href="#tocado"/></clipPath>
+  </defs>
+
+  <rect width="1024" height="1024" rx="228" fill="url(#piedra)"/>
+
+  <use href="#tocado" fill="url(#oro)"/>
+
+  <!-- Bandas del nemes, lo que lo hace inconfundible aun en pequeño. Recortadas
+       contra el propio tocado. -->
+  <g clip-path="url(#soloTocado)" fill="#2b2b31" opacity="0.5">
+    <rect x="180" y="452" width="680" height="30"/>
+    <rect x="180" y="524" width="680" height="30"/>
+  </g>
+
+  <!-- Rostro y barba en una sola pieza: separados, la barba parece flotar. -->
+  <path d="M512 232c-86 0-156 62-156 142v90c0 62 38 116 92 138v76c0 35 29 64 64 64s64-29 64-64v-76c54-22 92-76 92-138v-90c0-80-70-142-156-142z"
+        fill="#e8dcc4"/>
+
+  <!-- Ojos: dos trazos horizontales, que a 32 píxeles siguen leyéndose. -->
+  <g fill="#2b2b31">
+    <rect x="408" y="386" width="80" height="32" rx="16"/>
+    <rect x="536" y="386" width="80" height="32" rx="16"/>
+  </g>
+
+  <!-- Ojal de llave: lo que hace la herramienta, sin escribirlo. -->
+  <g fill="#e8dcc4">
+    <circle cx="512" cy="808" r="54"/>
+    <path d="M484 840h56l14 106H470z"/>
+  </g>
+</svg>
