@@ -7,9 +7,11 @@ saber qué se hizo.
 
 ## Alta
 
-- **Probar una actualización de verdad, de punta a punta.** La 2.1.0 se descarga sola y abre el
-  instalador, pero eso solo se ve instalando una versión vieja y publicando una nueva. Depende del
-  humano.
+- **Que el humano pruebe copiar y pegar en su Mac.** Los menús construidos a mano dejaron ⌘C, ⌘X, ⌘V
+  y ⌘A en manos de código propio (ADR 0015). Es el trozo con más riesgo de todo lo escrito estos
+  días, y no se puede ejercitar sin un escritorio.
+- **Que el humano vea si salta el aviso de Gatekeeper** al actualizarse desde dentro. Si no salta,
+  hay que quitarlo del LÉEME del DMG para el caso de la actualización.
 - **Probar la aplicación en un Mac de verdad.** Nunca se ha abierto en un escritorio, solo
   compilado. Sin esto, todo lo visual es una suposición. Depende del humano.
 - **Montar el DMG en un Mac.** Está armado y el flujo lo publica, pero cómo queda la ventana al

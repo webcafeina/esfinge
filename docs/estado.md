@@ -19,8 +19,14 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   byte alterado, el truncado y la reordenación de segmentos.
 - **Aplicación con ventana** (Wails, React 19 + TypeScript): cifrar y descifrar textos o tandas de
   ficheros, arrastrar y soltar, diálogos del sistema, historial e generador de contraseñas.
-- **Actualizaciones dentro de la aplicación**: aviso, descarga comprobada con SHA256 y entrega al
-  instalador de cada sistema. La única conexión que hace el programa, dicha y apagable en Ajustes.
+- **Actualizaciones dentro de la aplicación**: aviso, descarga comprobada con SHA256 y, en macOS y
+  Windows, **reemplazo y reinicio sin que nadie arrastre nada** (ADR 0016). En Linux se le pasa al
+  gestor de paquetes, que instala como root. Es la única conexión que hace el programa, dicha y
+  apagable en Ajustes.
+- **Menús del sistema en español** en los tres sistemas, construidos a mano porque los roles de Wails
+  traen los rótulos en inglés escritos a fuego (ADR 0015). Con atajos ⌘1…⌘5 a las cinco pantallas.
+- **Apertura de un `.esf`** por doble clic o «Abrir con», que abre la pantalla que le toca según lo
+  que lleve dentro: ficheros o texto.
 - **Línea de comandos**: intacta desde la 1.5.0, con sus códigos de salida distintos por caso.
 - **Color generado desde Go** (`internal/tema`), con el contraste de los dos temas medido en cada
   compilación.
@@ -30,29 +36,42 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
 
 ## En curso
 
-Nada a medias. La 2.1.0 cierra el círculo de la distribución: la aplicación comprueba si hay versión
-nueva, se descarga el instalador de su sistema y lo abre. Con eso, el que la tiene instalada deja de
-depender de que alguien le avise.
+Nada a medias. El código de las 2.1.0 a 2.4.0 está escrito, probado hasta donde se puede desde una
+máquina sin Mac ni Windows, y publicado.
 
 ## Comprobado en un Mac de verdad
 
-El doble clic en un `.esf`, en los dos momentos —con Esfinge cerrada y con Esfinge abierta— y con las
-dos clases de contenedor: el que lleva un fichero abre la pantalla de ficheros y el que lleva un
-texto abre la de texto, con la línea puesta.
+- Que la comprobación de versiones funciona: con la última instalada no sale la banda, y «Buscar
+  ahora» dice que ya se está al día.
+- La descarga de una actualización, con su barra.
+- El doble clic en un `.esf`, en los dos momentos —con Esfinge cerrada y con Esfinge abierta— y con
+  las dos clases de contenedor: el que lleva un fichero abre la pantalla de ficheros y el que lleva
+  un texto abre la de texto, con la línea puesta.
 
 ## Siguiente acción concreta
 
-**Actualizar de verdad, desde dentro de la aplicación.** Instalar la 2.0.3 en el Mac, publicar la
-2.1.0 y ver el camino entero: que salga la banda, que la descarga llegue, que el DMG se monte solo y
-—esto es lo interesante— si la copia instalada así se libra del aviso de Gatekeeper, porque la
-cuarentena la pone quien descarga y aquí descarga Go. No se puede comprobar desde esta máquina.
+**Esperar a que el humano pruebe dos cosas en su Mac**, que son el código nuevo con más riesgo y no
+se pueden ejercitar desde aquí. Están abajo, en las preguntas abiertas. Hasta entonces no hay nada
+que empezar: lo que venga después depende de lo que salga de ahí.
 
 ## Bloqueantes
 
-Ninguno.
+Ninguno técnico. Lo único pendiente son dos comprobaciones que solo puede hacer el humano.
 
 ## Preguntas abiertas para el humano
 
+**Las dos primeras son las que hay que resolver al volver.** Son de código escrito y publicado que
+nunca se ha ejecutado aquí: en esta máquina no hay ni Mac ni Windows.
+
+- **¿Copiar y pegar siguen bien dentro de los campos?** Al construir los menús a mano (ADR 0015) se
+  perdieron los selectores nativos, así que ⌘C, ⌘X, ⌘V y ⌘A pasan ahora por código propio: el menú
+  manda una orden y la interfaz la ejecuta sobre el campo con el foco. El pegar es el más delicado,
+  porque el portapapeles lo lee Go y el texto lo coloca la interfaz en el cursor. **Si algo falla
+  ahí, falla pegar una contraseña**, que es lo que más se hace con Esfinge.
+- **¿Salta el aviso de Gatekeeper al actualizarse desde dentro?** El guion le quita la cuarentena al
+  paquete antes de ponerlo, y como el DMG lo descarga Go y no un navegador, es posible que no salte.
+  Si no salta, hay que quitarlo del LÉEME del DMG para las actualizaciones y dejarlo solo para la
+  primera instalación.
 - **¿La ventana ya pasa por nativa?** La 2.0.1 rehízo el aspecto siguiendo macOS —barra translúcida,
   radios generosos, controles de 28 px— pero eso solo se juzga con la aplicación abierta en un Mac.
   Las capturas salen de un navegador y ahí la transparencia no se ve.

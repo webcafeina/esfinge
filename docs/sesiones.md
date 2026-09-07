@@ -5,6 +5,27 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-07 · Cierre de la jornada
+
+De la 2.0.3 a la **2.4.0** en una sesión, todas publicadas y todas con su ficha cuando la decisión lo
+merecía. El orden en que salieron cuenta bien lo que pasó: primero la distribución, luego enterarse
+de que hay versión nueva, luego traérsela, luego instalarla sin que nadie arrastre nada, y por el
+camino dos cosas que se daban por cerradas y no lo estaban.
+
+**Lo que se corrigió de decisiones anteriores**, que es lo que más vale conservar:
+
+- La **0014** daba por hecho que reemplazarse a sí misma exige firmar con Apple. No es cierto: la
+  firma evita el aviso de Gatekeeper, no habilita el reemplazo. Lo arregla la **0016**.
+- La **2.0.1** dio por cerrado el doble clic en un `.esf` porque enganchó `Mac.OnFileOpen`. Estaba a
+  medias: nadie escuchaba el evento. Cerrado en la **2.3.1**.
+- El `SHA256SUMS` publicado tuvo **dos fallos seguidos**: primero solo cubría los binarios de la
+  línea de comandos, y luego se incluía a sí mismo con un resumen calculado a medio escribir.
+
+**Al volver, lo primero es leer las preguntas abiertas de `estado.md`**: hay dos comprobaciones que
+solo puede hacer el humano en su Mac —copiar y pegar con los menús nuevos, y si el aviso de
+Gatekeeper desaparece al actualizarse desde dentro— y lo que venga después depende de lo que salga
+de ahí.
+
 ## 2026-09-07 · Un .esf se abre en la pantalla que le toca
 
 - **2.4.0**: abrir un `.esf` llevaba siempre a la pantalla de ficheros, y eso es un lío cuando lo que
