@@ -110,6 +110,12 @@ resultado y devolviendo `null` cuando todo ha ido bien.
 fichero llega por `os.Args` y no hace falta. Lo que queda sin comprobar es si el Finder enseña el
 icono del documento.
 
+**El fondo del DMG y los nombres de los iconos.** El Finder centra cada icono en la posición que le
+da `create-dmg` y **escribe su nombre debajo**: con iconos de 96 px, el pie del nombre queda unos 64
+px por debajo del centro. Todo lo que el fondo dibuje ahí queda tapado, y eso no se ve hasta montar
+la imagen en un Mac. `make ventana-dmg` la dibuja antes, leyendo las posiciones de
+`empaquetado/macos/armar-dmg.sh` para que fondo y guion no se separen.
+
 **Cuatro cosas que solo se descubren compilando de verdad**, todas encontradas en GitHub Actions:
 
 - El `main.go` de la aplicación **tiene que estar en la raíz**, junto a `wails.json`. Wails genera

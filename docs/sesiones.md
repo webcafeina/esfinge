@@ -40,8 +40,14 @@ Plantilla al final.
   ejecutarlo en PowerShell. Comprobado del `.exe` publicado: es un NSIS-3 Unicode y lleva dentro la
   aplicación, el `esf.ico`, el instalador de WebView2 por si el sistema no lo trae, y en su cabecera
   las claves que registran el `.esf` —`Software\Classes`, `DefaultIcon`, `shell\open\command`—.
-- Queda abierto: montar el DMG en un Mac y ver cómo queda la ventana. Desde aquí solo se puede leer
-  su contenido, no verlo.
+- **2.0.3**: montado el DMG en el Mac, la imagen estaba bien salvo el `LÉEME.txt`, cuyo nombre caía
+  encima del aviso de Gatekeeper del fondo. El Finder centra cada icono en la posición que se le da
+  y **escribe el nombre debajo**, unos 64 px más abajo con iconos de 96: ese espacio no se puede
+  usar para dibujar. La ventana pasa a 660×470 y el LÉEME baja a su propia banda, con el aviso a su
+  derecha en vez de debajo.
+- De ahí sale `make ventana-dmg`, que dibuja la ventana con los iconos donde los pondrá el Finder
+  **leyendo las posiciones del propio `armar-dmg.sh`**, para que no puedan separarse. Es la forma de
+  ver esto sin un Mac, que era justo lo que faltaba.
 
 ## 2026-09-07 · La aplicación de escritorio, y arreglarla con lo que dijo el Mac
 

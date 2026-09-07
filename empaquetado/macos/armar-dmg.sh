@@ -27,6 +27,10 @@ if ! command -v create-dmg >/dev/null; then
   exit 1
 fi
 
+# Las posiciones de arriba tienen que cuadrar con build/darwin/fondo-dmg.svg, que
+# reserva los huecos. El Finder centra cada icono en su posición y escribe el
+# nombre debajo, unos 64 px más abajo: lo que se dibuje ahí queda tapado.
+#
 # El fondo, en las dos resoluciones dentro del mismo TIFF. Es la única forma de
 # que macOS use el doble en pantallas Retina: si se le da un PNG suelto lo
 # escala, y el texto queda borroso justo en la primera pantalla que se ve.
@@ -54,12 +58,12 @@ create-dmg \
   --volicon "$app/Contents/Resources/iconfile.icns" \
   --background "$fondo" \
   --window-pos 200 120 \
-  --window-size 660 420 \
+  --window-size 660 470 \
   --icon-size 96 \
   --text-size 12 \
-  --icon "Esfinge.app" 165 225 \
-  --icon "LÉEME.txt" 330 340 \
-  --app-drop-link 495 225 \
+  --icon "Esfinge.app" 165 215 \
+  --app-drop-link 495 215 \
+  --icon "LÉEME.txt" 108 392 \
   --hide-extension "Esfinge.app" \
   --no-internet-enable \
   "$salida" \

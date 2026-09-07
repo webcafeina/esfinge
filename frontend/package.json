@@ -8,7 +8,8 @@
     "previa": "vite preview",
     "comprobar": "tsc -b --noEmit",
     "e2e": "playwright test",
-    "icono": "node herramientas/rasterizar.mjs"
+    "icono": "node herramientas/rasterizar.mjs",
+    "ventana-dmg": "node herramientas/ventana-dmg.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",

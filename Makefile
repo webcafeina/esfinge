@@ -36,6 +36,11 @@ tokens:
 icono:
 	cd $(FRONT) && $(PNPM) run icono
 
+## ventana-dmg: dibuja cómo quedará la ventana del DMG, sin necesidad de un Mac
+.PHONY: ventana-dmg
+ventana-dmg:
+	cd $(FRONT) && node herramientas/ventana-dmg.mjs
+
 ## dmg: la imagen de disco de macOS. Solo funciona en un Mac con create-dmg
 .PHONY: dmg
 dmg: app
