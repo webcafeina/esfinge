@@ -2,49 +2,84 @@
 #
 # Go no está en el PATH del sistema: se instaló en ~/.local/go para no tocar
 # nada fuera del $HOME.
-GO ?= $(HOME)/.local/go/bin/go
+GO   ?= $(HOME)/.local/go/bin/go
+PNPM ?= pnpm
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
 DIST    := dist
-
-# Sin cgo no hay nada que enlazar del sistema, y por eso los binarios cruzan de
-# plataforma sin un compilador de C por medio.
-export CGO_ENABLED = 0
-
-PLATAFORMAS := \
-	linux/amd64 \
-	linux/arm64 \
-	darwin/amd64 \
-	darwin/arm64 \
-	windows/amd64 \
-	windows/arm64
+FRONT   := frontend
 
 .PHONY: todo
 todo: comprobar esfinge
 
-## esfinge: compila el binario para esta máquina
-.PHONY: esfinge
-esfinge:
-	$(GO) build -ldflags "$(LDFLAGS)" -o esfinge ./cmd/esfinge
-
-## comprobar: vet y toda la batería de pruebas, contraste incluido
+## comprobar: vet, los tests de Go y los tipos de la interfaz
 .PHONY: comprobar
 comprobar:
 	$(GO) vet ./...
+	$(GO) vet -tags dev ./...
 	$(GO) test ./...
+	cd $(FRONT) && $(PNPM) exec tsc -b --noEmit
 
 ## contraste: mide las parejas de color de los dos temas y las lista
 .PHONY: contraste
 contraste:
-	$(GO) test ./internal/ui/ -run TestContrasteDeLosDosTemas -v
+	$(GO) test ./internal/tema/ -run TestContrasteDeLosDosTemas -v
 
-## publicar: los seis binarios en dist/
+## tokens: regenera los colores y medidas que consume la interfaz
+.PHONY: tokens
+tokens:
+	$(GO) run ./cmd/tokens
+
+## icono: rasteriza build/icono.svg a los PNG que piden los sistemas
+.PHONY: icono
+icono:
+	cd $(FRONT) && $(PNPM) run icono
+
+## e2e: mueve la interfaz de verdad contra el Go de verdad, en los dos temas
+.PHONY: e2e
+e2e:
+	cd $(FRONT) && $(PNPM) exec playwright test
+
+## frontend: construye la interfaz y la deja donde la aplicación la embebe
+.PHONY: frontend
+frontend: tokens
+	cd $(FRONT) && $(PNPM) install --frozen-lockfile && $(PNPM) run build
+	@rm -rf internal/interfaz/dist && mkdir -p internal/interfaz/dist
+	@cp -r $(FRONT)/dist/. internal/interfaz/dist/
+
+## app: la aplicación con ventana, para este sistema
+##
+## Necesita la herramienta wails y, en Linux, webkit2gtk y pkg-config. En la
+## máquina de desarrollo no están, así que esto se ejecuta en integración
+## continua o en el Mac. La parte de Go sí compila en cualquier sitio.
+.PHONY: app
+app: frontend
+	wails build -ldflags "$(LDFLAGS)"
+
+## esfinge: la línea de comandos, para este sistema
+.PHONY: esfinge
+esfinge:
+	CGO_ENABLED=0 $(GO) build -ldflags "$(LDFLAGS)" -o esfinge ./cmd/esfinge
+
+## dev: levanta el Go de verdad para poder mover la interfaz en el navegador
+.PHONY: dev
+dev:
+	@echo "Interfaz en http://127.0.0.1:5173 — en otra terminal: cd frontend && pnpm dev"
+	$(GO) run -tags dev ./cmd/dev
+
+PLATAFORMAS := \
+	linux/amd64 linux/arm64 \
+	darwin/amd64 darwin/arm64 \
+	windows/amd64 windows/arm64
+
+## publicar: la línea de comandos para los seis objetivos
+##
+## Sin cgo no hay nada que enlazar del sistema, y por eso estos sí cruzan de
+## plataforma desde aquí. La aplicación con ventana no puede: necesita el
+## webview de cada sistema.
 .PHONY: publicar
 publicar: comprobar
-	@# Se borran los binarios sueltos, no el directorio entero: si se vaciara,
-	@# «make linux» detrás de «make macos» se llevaría por delante el ZIP que
-	@# acaba de crearse. Para dejarlo todo limpio está «make limpiar».
 	@mkdir -p $(DIST)
 	@rm -f $(DIST)/esfinge-*-linux-* $(DIST)/esfinge-*-darwin-* \
 	       $(DIST)/esfinge-*-windows-* $(DIST)/SHA256SUMS
@@ -53,54 +88,24 @@ publicar: comprobar
 		ext=""; [ "$$os" = "windows" ] && ext=".exe"; \
 		nombre="esfinge-$(VERSION)-$$os-$$arch$$ext"; \
 		echo "  $$nombre"; \
-		GOOS=$$os GOARCH=$$arch $(GO) build -ldflags "$(LDFLAGS)" \
+		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build -ldflags "$(LDFLAGS)" \
 			-o "$(DIST)/$$nombre" ./cmd/esfinge || exit 1; \
 	done
-	@cd $(DIST) && sha256sum * > SHA256SUMS
-	@echo
+	@cd $(DIST) && sha256sum esfinge-* > SHA256SUMS
 	@ls -lh $(DIST)
 
-## paquetes: los dos paquetes con instalador, macOS y Linux
-.PHONY: paquetes
-paquetes: macos linux
-
-## instalar: compila e instala en esta máquina Linux
+## instalar: compila e instala la línea de comandos en esta máquina Linux
 .PHONY: instalar
 instalar: esfinge
 	@chmod +x empaquetado/linux/instalar.sh
 	@cp esfinge empaquetado/linux/esfinge
 	@empaquetado/linux/instalar.sh; estado=$$?; rm -f empaquetado/linux/esfinge; exit $$estado
 
-## linux: el tar.gz con instalador para Linux
-.PHONY: linux
-linux: publicar
-	@rm -rf $(DIST)/linux && mkdir -p "$(DIST)/linux/esfinge-$(VERSION)"
-	@cp "$(DIST)/esfinge-$(VERSION)-linux-amd64" "$(DIST)/linux/esfinge-$(VERSION)/esfinge-linux-amd64"
-	@cp "$(DIST)/esfinge-$(VERSION)-linux-arm64" "$(DIST)/linux/esfinge-$(VERSION)/esfinge-linux-arm64"
-	@cp empaquetado/linux/instalar.sh "$(DIST)/linux/esfinge-$(VERSION)/"
-	@chmod +x "$(DIST)/linux/esfinge-$(VERSION)/"*
-	@tar -C $(DIST)/linux -czf "$(DIST)/esfinge-$(VERSION)-linux.tar.gz" "esfinge-$(VERSION)"
-	@rm -rf $(DIST)/linux
-	@ls -lh "$(DIST)/esfinge-$(VERSION)-linux.tar.gz"
-
-## macos: el ZIP con instalador de doble clic para el cliente
-.PHONY: macos
-macos: publicar
-	@rm -rf $(DIST)/macos && mkdir -p "$(DIST)/macos/Esfinge $(VERSION)"
-	@cp "$(DIST)/esfinge-$(VERSION)-darwin-arm64" "$(DIST)/macos/Esfinge $(VERSION)/esfinge-apple-silicon"
-	@cp "$(DIST)/esfinge-$(VERSION)-darwin-amd64" "$(DIST)/macos/Esfinge $(VERSION)/esfinge-intel"
-	@cp empaquetado/macos/* "$(DIST)/macos/Esfinge $(VERSION)/"
-	@chmod +x "$(DIST)/macos/Esfinge $(VERSION)/Instalar Esfinge.command" \
-	          "$(DIST)/macos/Esfinge $(VERSION)/esfinge-apple-silicon" \
-	          "$(DIST)/macos/Esfinge $(VERSION)/esfinge-intel"
-	@cd $(DIST)/macos && zip -r -q "../Esfinge-$(VERSION)-macOS.zip" "Esfinge $(VERSION)"
-	@rm -rf $(DIST)/macos
-	@ls -lh $(DIST)/Esfinge-$(VERSION)-macOS.zip
-
-## limpiar: borra los binarios
+## limpiar: borra lo construido
 .PHONY: limpiar
 limpiar:
-	rm -rf $(DIST) esfinge
+	rm -rf $(DIST) esfinge $(FRONT)/dist internal/interfaz/dist/assets
+	rm -rf $(FRONT)/test-results $(FRONT)/playwright-report
 
 ## ayuda: esta lista
 .PHONY: ayuda

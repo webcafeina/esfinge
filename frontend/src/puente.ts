@@ -125,6 +125,8 @@ export const esfinge = {
   dondeVive: () => llamar<string>("DondeVive"),
 
   version: () => llamar<string>("Version"),
+
+  ficheroDeArranque: () => llamar<string>("FicheroDeArranque"),
 };
 
 /**

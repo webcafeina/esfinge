@@ -1,0 +1,33 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "Esfinge",
+  "outputfilename": "Esfinge",
+
+  "//": [
+    "La interfaz no la construye Wails: la construye 'make frontend', que antes",
+    "regenera los tokens de color desde Go y copia el resultado a",
+    "internal/interfaz/dist, que es de donde la aplicación lo embebe. Por eso",
+    "estos dos comandos están vacíos: el orden lo controla el Makefile."
+  ],
+  "frontend:dir": "frontend",
+  "frontend:install": "",
+  "frontend:build": "",
+
+  "info": {
+    "companyName": "Webcafeína",
+    "productName": "Esfinge",
+    "productVersion": "2.0.0",
+    "copyright": "© Webcafeína",
+    "comments": "Cifra y descifra secretos con una clave"
+  },
+
+  "fileAssociations": [
+    {
+      "ext": "esf",
+      "name": "Contenedor de Esfinge",
+      "description": "Secreto o fichero cifrado con Esfinge",
+      "iconName": "esf",
+      "role": "Editor"
+    }
+  ]
+}

@@ -91,6 +91,13 @@ func (s *SistemaDeDesarrollo) Avisar(evento string, datos any) {
 func Servir(a *App, s *SistemaDeDesarrollo, direccion string) error {
 	mux := http.NewServeMux()
 
+	// Responde enseguida y sirve para saber que el servidor está en pie. El flujo
+	// de eventos no vale para eso: no termina nunca, por diseño.
+	mux.HandleFunc("/api/salud", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"listo":true}`))
+	})
+
 	mux.HandleFunc("/api/eventos", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")

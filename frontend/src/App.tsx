@@ -24,9 +24,22 @@ type Modo = "texto" | "ficheros";
 export default function App() {
   const [tarea, setTarea] = useState<Tarea>("cifrar");
   const [version, setVersion] = useState("");
+  const [alArrancar, setAlArrancar] = useState<string[]>([]);
 
   useEffect(() => {
     esfinge.version().then(setVersion).catch(() => setVersion("?"));
+
+    // Doble clic en un .esf: la aplicación se abre directamente en descifrar,
+    // con el fichero puesto. Quien hace ese gesto quiere abrir ese fichero, no
+    // buscarlo otra vez desde dentro.
+    esfinge
+      .ficheroDeArranque()
+      .then((ruta) => {
+        if (!ruta) return;
+        setAlArrancar([ruta]);
+        setTarea("descifrar");
+      })
+      .catch(() => {});
   }, []);
 
   return (
@@ -46,7 +59,9 @@ export default function App() {
 
       <main className="contenido">
         {tarea === "cifrar" && <Trabajo key="cifrar" accion="cifrar" />}
-        {tarea === "descifrar" && <Trabajo key="descifrar" accion="descifrar" />}
+        {tarea === "descifrar" && (
+          <Trabajo key="descifrar" accion="descifrar" alArrancar={alArrancar} />
+        )}
         {tarea === "generar" && <Generar />}
         {tarea === "historial" && <Historial />}
       </main>
@@ -64,13 +79,19 @@ export default function App() {
  * verbos cambiados. Tenerlas separadas duplicaría el manejo de ficheros, el de
  * la clave y el de los errores para ganar dos palabras distintas.
  */
-function Trabajo({ accion }: { accion: "cifrar" | "descifrar" }) {
+function Trabajo({
+  accion,
+  alArrancar,
+}: {
+  accion: "cifrar" | "descifrar";
+  alArrancar?: string[];
+}) {
   const cifrando = accion === "cifrar";
 
-  const [modo, setModo] = useState<Modo>("texto");
+  const [modo, setModo] = useState<Modo>(alArrancar?.length ? "ficheros" : "texto");
   const [texto, setTexto] = useState("");
   const [clave, setClave] = useState("");
-  const [ficheros, setFicheros] = useState<string[]>([]);
+  const [ficheros, setFicheros] = useState<string[]>(alArrancar ?? []);
 
   const [trabajando, setTrabajando] = useState(false);
   const [progreso, setProgreso] = useState<TipoProgreso | null>(null);

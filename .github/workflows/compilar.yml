@@ -1,0 +1,197 @@
+# Compila Esfinge en los tres sistemas.
+#
+# Una aplicación con ventana necesita el webview de cada sistema operativo, y
+# eso no cruza de plataforma: la de macOS solo se puede construir en un Mac. Por
+# eso está esto. La línea de comandos, que no usa cgo, sí cruza y se compila
+# entera en Linux.
+#
+# Se dispara a mano o al publicar una etiqueta, no en cada empujón: los minutos
+# de macOS se cuentan diez veces más caros en repositorios privados, y compilar
+# una aplicación de escritorio en cada commit es tirarlos.
+
+name: Compilar
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  comprobar:
+    name: Comprobaciones
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache-dependency-path: go.sum
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Instalar la interfaz
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Vet y tests de Go
+        run: |
+          go vet ./...
+          go vet -tags dev ./...
+          go test ./...
+
+      # Mide el contraste de las parejas de color que la interfaz usa de verdad,
+      # en los dos temas, y falla si una no llega a AA.
+      - name: Contraste
+        run: go test ./internal/tema/ -run TestContrasteDeLosDosTemas -v
+
+      # Los tokens los genera Go: si el CSS del repositorio se ha quedado atrás,
+      # la interfaz estaría pintando los colores de ayer.
+      - name: Los tokens están al día
+        run: go test ./internal/tema/ -run TestLosTokensEstanAlDia
+
+      - name: Tipos de la interfaz
+        working-directory: frontend
+        run: pnpm exec tsc -b --noEmit
+
+      # Mueve la interfaz de verdad contra el Go de verdad, en claro y en oscuro.
+      - name: Pruebas de la interfaz
+        working-directory: frontend
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm exec playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: informe-pruebas
+          path: frontend/playwright-report/
+          retention-days: 7
+
+  aplicacion:
+    name: Aplicación · ${{ matrix.nombre }}
+    needs: comprobar
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nombre: macOS
+            os: macos-latest
+            # Universal cubre Apple Silicon e Intel en un solo paquete.
+            plataforma: darwin/universal
+            artefacto: Esfinge-macOS
+          - nombre: Windows
+            os: windows-latest
+            plataforma: windows/amd64
+            artefacto: Esfinge-Windows
+          - nombre: Linux
+            os: ubuntu-latest
+            plataforma: linux/amd64
+            artefacto: Esfinge-Linux
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache-dependency-path: go.sum
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      # El webview de Linux no viene en el runner.
+      - name: Dependencias de Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Instalar wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+
+      - name: Construir la interfaz
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      # go:embed no puede salir del directorio de su paquete, así que la interfaz
+      # construida se copia a donde la aplicación la embebe.
+      - name: Colocar la interfaz
+        shell: bash
+        run: |
+          rm -rf internal/interfaz/dist
+          mkdir -p internal/interfaz/dist
+          cp -r frontend/dist/. internal/interfaz/dist/
+
+      - name: Compilar la aplicación
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          [ "$version" = "$GITHUB_REF_NAME" ] && version="dev-${GITHUB_SHA::7}"
+          wails build -platform ${{ matrix.plataforma }} -clean \
+            -ldflags "-X main.version=$version"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artefacto }}
+          path: build/bin/
+          retention-days: 30
+
+  linea-de-comandos:
+    name: Línea de comandos
+    needs: comprobar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache-dependency-path: go.sum
+
+      # «make publicar» comprueba antes de compilar, y comprobar incluye los
+      # tipos de la interfaz.
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Instalar la interfaz
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      # Sin cgo cruza de plataforma desde aquí, así que los seis salen de una vez.
+      - name: Compilar los seis objetivos
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          [ "$version" = "$GITHUB_REF_NAME" ] && version="dev-${GITHUB_SHA::7}"
+          make publicar VERSION="$version" GO=go
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esfinge-cli
+          path: dist/
+          retention-days: 30

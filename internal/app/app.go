@@ -26,6 +26,9 @@ type App struct {
 
 	hist    *Historial
 	sistema Sistema
+
+	// abiertoCon es el fichero con el que se arrancó, si se arrancó con uno.
+	abiertoCon string
 }
 
 // Sistema es lo que la aplicación necesita del escritorio: los diálogos de
@@ -55,6 +58,20 @@ func (a *App) Arrancar(ctx context.Context) { a.ctx = ctx }
 
 // Version es la que se enseña en «Acerca de».
 func (a *App) Version() string { return a.version }
+
+// AlAbrirCon guarda el fichero con el que se ha arrancado la aplicación, que es
+// lo que llega al hacer doble clic en un .esf.
+func (a *App) AlAbrirCon(ruta string) { a.abiertoCon = ruta }
+
+// FicheroDeArranque lo consulta la interfaz al empezar para saber si tiene que
+// abrirse directamente en descifrar, con el fichero ya puesto. Se entrega una
+// sola vez: si se devolviera siempre, volver al menú y cambiar de pestaña
+// repondría el fichero una y otra vez.
+func (a *App) FicheroDeArranque() string {
+	ruta := a.abiertoCon
+	a.abiertoCon = ""
+	return ruta
+}
 
 // Resultado es lo que sale de cifrar o descifrar un texto.
 type Resultado struct {

@@ -27,4 +27,23 @@ export default defineConfig({
     { name: "claro", use: { ...devices["Desktop Chrome"], colorScheme: "light" } },
     { name: "oscuro", use: { ...devices["Desktop Chrome"], colorScheme: "dark" } },
   ],
+
+  // Las pruebas levantan lo que necesitan: el Go de verdad y Vite. Así «pnpm
+  // e2e» funciona de una sola orden, aquí y en integración continua, sin que
+  // nadie tenga que acordarse de arrancar dos servidores en el orden correcto.
+  webServer: [
+    {
+      command: "go run -tags dev ../cmd/dev",
+      url: "http://127.0.0.1:34443/api/salud",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: { PATH: `${process.env.HOME}/.local/go/bin:${process.env.PATH}` },
+    },
+    {
+      command: "vite --port 5173 --host 127.0.0.1",
+      url: "http://127.0.0.1:5173",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
 });
