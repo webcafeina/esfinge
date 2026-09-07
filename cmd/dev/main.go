@@ -19,6 +19,7 @@ import (
 func main() {
 	direccion := flag.String("direccion", "127.0.0.1:34443", "Dónde escuchar")
 	carpeta := flag.String("carpeta", "", "Carpeta que hace de diálogo de ficheros")
+	version := flag.String("version", "dev", "Versión que enseña la interfaz")
 	flag.Parse()
 
 	if *carpeta == "" {
@@ -35,5 +36,5 @@ func main() {
 	}
 
 	sistema := app.NuevoSistemaDeDesarrollo(*carpeta)
-	log.Fatal(app.Servir(app.Nueva("dev", sistema), sistema, *direccion))
+	log.Fatal(app.Servir(app.Nueva(*version, sistema), sistema, *direccion))
 }

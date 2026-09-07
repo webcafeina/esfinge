@@ -31,10 +31,15 @@ contraste:
 tokens:
 	$(GO) run ./cmd/tokens
 
-## icono: rasteriza build/icono.svg a los PNG que piden los sistemas
+## icono: rasteriza los SVG a los PNG que piden los sistemas y la portada
 .PHONY: icono
 icono:
 	cd $(FRONT) && $(PNPM) run icono
+
+## dmg: la imagen de disco de macOS. Solo funciona en un Mac con create-dmg
+.PHONY: dmg
+dmg: app
+	@empaquetado/macos/armar-dmg.sh "$(VERSION)"
 
 ## e2e: mueve la interfaz de verdad contra el Go de verdad, en los dos temas
 .PHONY: e2e
@@ -73,13 +78,18 @@ PLATAFORMAS := \
 	darwin/amd64 darwin/arm64 \
 	windows/amd64 windows/arm64
 
-## publicar: la línea de comandos para los seis objetivos
+## publicar: comprueba y compila la línea de comandos para los seis objetivos
+.PHONY: publicar
+publicar: comprobar publicar-cli
+
+## publicar-cli: los seis binarios de la línea de comandos, sin comprobar antes
 ##
 ## Sin cgo no hay nada que enlazar del sistema, y por eso estos sí cruzan de
-## plataforma desde aquí. La aplicación con ventana no puede: necesita el
-## webview de cada sistema.
-.PHONY: publicar
-publicar: comprobar
+## plataforma desde aquí. La aplicación con ventana no puede: necesita el webview
+## de cada sistema. Va separado de «publicar» para que la publicación automática
+## no repita las comprobaciones, que ya corren en su propio flujo.
+.PHONY: publicar-cli
+publicar-cli:
 	@mkdir -p $(DIST)
 	@rm -f $(DIST)/esfinge-*-linux-* $(DIST)/esfinge-*-darwin-* \
 	       $(DIST)/esfinge-*-windows-* $(DIST)/SHA256SUMS

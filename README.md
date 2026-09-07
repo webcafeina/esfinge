@@ -1,142 +1,100 @@
+<div align="center">
+
+<img src="docs/imagenes/icono.png" width="128" alt="">
+
 # Esfinge
 
-Cifra y descifra contraseñas, ficheros de credenciales y cualquier otro secreto con una clave que
-solo conocen las dos partes. De **Webcafeína**.
+**Cifra y descifra contraseñas y ficheros con una clave.**
+Sin cuentas, sin servidores, sin que nada salga de tu ordenador.
 
-Viene en dos formas, y lo cifrado por una lo abre la otra:
+[![Compilación](https://github.com/webcafeina/esfinge/actions/workflows/compilar.yml/badge.svg)](https://github.com/webcafeina/esfinge/actions/workflows/compilar.yml)
+[![Última versión](https://img.shields.io/github/v/release/webcafeina/esfinge?label=versión&color=0070eb)](https://github.com/webcafeina/esfinge/releases/latest)
+[![Licencia](https://img.shields.io/badge/licencia-propietaria-lightgrey)](LICENSE)
 
-- **La aplicación**, con su ventana y su icono, para usarla con el ratón.
-- **La línea de comandos**, para meterla en un script o en una tubería.
+<img src="docs/imagenes/portada-claro.png" width="820" alt="Esfinge en tema claro">
 
-## Aviso primero
+<img src="docs/imagenes/portada-oscuro.png" width="820" alt="Esfinge en tema oscuro">
 
-**Sin la clave no hay forma de recuperar nada.** Esto no es una cuenta con «he olvidado mi
-contraseña»: si se pierde la clave, el contenido se ha perdido, y no hay nadie —tampoco Webcafeína—
-que pueda abrirlo. Guarda la clave antes de cifrar, no después.
+</div>
 
-Y manda el resultado y la clave por caminos distintos. Si van en el mismo correo, quien lea ese
-correo lo tiene todo.
+## Descargar
 
-## La aplicación
+| Sistema | Descarga | Notas |
+|---|---|---|
+| **macOS** | [Esfinge.dmg](https://github.com/webcafeina/esfinge/releases/latest) | Universal: Apple Silicon e Intel |
+| **Windows** | [Esfinge-instalador.exe](https://github.com/webcafeina/esfinge/releases/latest) | Asistente de instalación |
+| **Linux** | [.deb o .tar.gz](https://github.com/webcafeina/esfinge/releases/latest) | Debian y Ubuntu, o el binario suelto |
+| **Línea de comandos** | [esfinge](https://github.com/webcafeina/esfinge/releases/latest) | Los seis objetivos, para tuberías y scripts |
 
-Se abre con doble clic. Cuatro pestañas: **Cifrar**, **Descifrar**, **Generar** e **Historial**.
+Los enlaces llevan siempre a la publicación más reciente.
 
-**Cifrar y descifrar** trabajan con un texto o con ficheros, según el botón de arriba. Con ficheros,
-se pueden **arrastrar a la ventana** —incluso varios a la vez, que se cifran todos con la misma
-clave y con su barra de progreso— o elegirlos con el diálogo de siempre del sistema. El original
-nunca se toca: el cifrado aparece al lado con `.esf` al final.
+> **La primera vez, el sistema avisará de que Esfinge no está firmada.** Es cierto: firmar cuesta
+> 99 $ al año y se decidió no hacerlo ([por qué](docs/adr/0012-sin-firmar.md)). En macOS, si el
+> aviso no te deja abrirla, ve a **Ajustes del Sistema → Privacidad y seguridad** y pulsa «Abrir de
+> todos modos». En Windows, «Más información» → «Ejecutar de todas formas».
 
-**Al cifrar un texto, el resultado se copia solo al portapapeles** y la pantalla lo confirma. Al
-descifrar no se copia nada por su cuenta: lo que sale ahí es el secreto en claro, y dejarlo en el
-portapapeles sin que nadie lo pida es meterlo donde puede leerlo cualquier cosa.
+## Qué hace
 
-**El historial** dice qué se cifró o descifró y cuándo. Nunca el contenido, ni la clave, ni el texto
-cifrado. Vive en la carpeta de configuración del usuario, con permisos que solo dejan leerlo a su
-dueño, y la propia pantalla enseña la ruta y el botón de vaciarlo.
-
-**Los ficheros `.esf` quedan asociados a Esfinge.** En Windows y en Linux, hacer doble clic en uno
-abre la aplicación directamente en descifrar con el fichero puesto. En macOS el Finder los reconoce
-y ofrece abrirlos con Esfinge, pero el fichero hay que arrastrarlo o elegirlo desde dentro: macOS
-entrega el fichero por una vía que la librería de la ventana todavía no expone.
-
-### Instalar
-
-Los paquetes salen de la compilación automática, en la pestaña Actions del repositorio.
-
-En **macOS**, la aplicación no está firmada con una cuenta de desarrollador de Apple, así que el
-sistema la bloquea la primera vez. Se quita con:
-
-```sh
-xattr -dr com.apple.quarantine /Applications/Esfinge.app
-```
-
-O desde **Ajustes del Sistema → Privacidad y seguridad**, buscando el aviso sobre Esfinge y pulsando
-«Abrir de todos modos». Con una aplicación sin firmar el aviso es más aparatoso que con un programa
-de terminal, y no hay forma de evitarlo sin pagar los 99 $ al año de Apple.
-
-En **Windows**, si aparece «Windows protegió su PC», hay que pulsar «Más información» → «Ejecutar de
-todas formas», por el mismo motivo.
-
-## La línea de comandos
-
-```sh
-esfinge cifrar                                        # pregunta el secreto y la clave
-echo -n 'secreto' | esfinge cifrar --clave-env CLAVE  # sin preguntar nada
-esfinge cifrar    -i credenciales.env -o credenciales.env.esf
-esfinge descifrar -i credenciales.env.esf
-esfinge generar --bytes 32 -n 5
-esfinge --help
-```
-
-De cifrar un texto sale una línea así:
+**Cifra un texto** —una contraseña, un token, una cadena de conexión— y devuelve una línea como
+esta, que se puede pegar en un correo, en un chat o dentro de una URL sin escapar nada:
 
 ```
 ESF1.RVNGMQEAAAEAAAAAAAMEW77N6LiWIRQM4fm0l8P6mt8PbFAz4GJC-C0icDTG7h7iJWpBo
 ```
 
-Se puede pegar en un correo, en un chat, en un `.env` o dentro de una URL sin escapar nada: no lleva
-`/`, ni `+`, ni `=`. **Hay que copiarla entera, con el `ESF1.` de delante.**
+**Cifra ficheros**, arrastrándolos a la ventana. Varios a la vez, con la misma clave. El original no
+se toca.
 
-Con ficheros aguanta cualquier tamaño sin cargarlos enteros en memoria, escribe con permisos `600` y
-de forma atómica, y no sobrescribe nada sin `--forzar`.
+**Genera contraseñas** en hexadecimal por defecto, que es el único alfabeto que se puede meter en
+una cadena de conexión sin que se rompa por un `/` ([por qué](docs/adr/0004-contrasenas-en-hexadecimal.md)).
 
-La clave **nunca** se pasa como argumento: ahí quedaría en el historial del shell y la vería
-cualquiera con un `ps`. Se lee de `--clave-env`, de `--clave-fichero` o preguntándola.
+**Lleva un historial** de qué se cifró y cuándo. Nunca el contenido, ni la clave, ni el texto
+cifrado.
 
-Cuando la salida no es un terminal sale el dato pelado, sin colores ni marca. Los códigos de salida
-distinguen qué ha pasado:
+Y trae **línea de comandos** para lo mismo, pensada para tuberías y scripts:
 
-| Código | Qué ha pasado |
-|---|---|
-| `0` | bien |
-| `1` | error general |
-| `2` | el comando está mal escrito |
-| `3` | la clave no es correcta |
-| `4` | el contenedor está dañado, cortado o no es de Esfinge |
+```sh
+echo -n 'secreto' | esfinge cifrar --clave-env CLAVE
+esfinge cifrar -i credenciales.env -o credenciales.env.esf
+esfinge generar --bytes 32
+```
 
-### Generar contraseñas
+## Lo único que hay que tener claro
 
-Por defecto **hexadecimal**, y es a propósito. Una contraseña con `/` parte una cadena de conexión
-—`postgres://usuario:pa/ss@host` deja de ser una URL— y el error que sale por el otro lado no
-menciona la contraseña por ninguna parte, así que se pierden horas buscando donde no es. Los
-alfabetos con símbolos están disponibles y avisan cada vez.
+**Sin la clave no hay forma de recuperar nada.** Esto no es una cuenta con «he olvidado mi
+contraseña»: si se pierde la clave, el contenido se ha perdido, y no hay nadie —tampoco
+Webcafeína— que pueda abrirlo.
 
-## Cómo está hecho
+Y manda el resultado y la clave por caminos distintos. Si van en el mismo correo, quien lea ese
+correo lo tiene todo.
 
-- **Cifrado:** XChaCha20-Poly1305, con nonce de 24 bytes al azar y la cabecera autenticada.
-- **Derivación de la clave:** Argon2id con 64 MiB, 3 pasadas y paralelismo 4. Los parámetros viajan
-  dentro del contenedor, de modo que subir el coste más adelante no rompe lo ya cifrado.
-- **Ficheros:** troceados en segmentos de 64 KiB, cada uno con su etiqueta, su número de orden y una
-  marca en el último. Eso es lo que hace que un fichero cortado por la mitad se detecte en vez de
-  descifrarse a medias y en silencio.
-- **Formato:** `ESF1`, versionado y compatible con la 1.x.
+## Por dentro
 
-Nada de esto sale de la máquina. Esfinge no habla con internet.
+XChaCha20-Poly1305 con Argon2id, en un contenedor versionado. Los ficheros van por segmentos, cada
+uno con su etiqueta y una marca en el último, que es lo que hace que un fichero cortado por la mitad
+se detecte en vez de descifrarse a medias y en silencio.
+
+El código está publicado para poder auditarse: en algo que cifra, eso es parte del argumento.
+[Qué protege y qué no](docs/seguridad.md) · [Las decisiones, con su porqué](docs/decisiones.md)
 
 ## Desarrollo
 
-Go 1.27, Node 22 y pnpm 11. En esta máquina Go vive en `~/.local/go`.
+Go 1.27, Node 22 y pnpm 11.
 
 ```sh
 make comprobar   # vet, tests de Go y tipos de la interfaz
 make contraste   # mide el contraste de los dos temas
 make e2e         # mueve la interfaz de verdad contra el Go de verdad
-make esfinge     # la línea de comandos
 make ayuda       # el resto
 ```
 
-La aplicación con ventana la compila GitHub Actions en los tres sistemas: una ventana necesita el
-webview de cada sistema operativo y eso no cruza de plataforma. La línea de comandos sí, y sale para
-los seis objetivos desde cualquier sitio.
-
-**El color se genera desde Go.** `internal/tema` es la fuente de verdad y escribe
-`frontend/src/tokens.css`; hay un test que falla si el fichero se queda atrás, y otro que mide el
-contraste de las parejas que la interfaz usa de verdad, en los dos temas.
-
-**La interfaz se prueba sin entorno gráfico.** El puente entre React y Go tiene dos caminos —Wails
-en la aplicación, HTTP durante el desarrollo— y la interfaz no distingue cuál usa, así que
-Playwright puede recorrerla entera contra el mismo Go que llevará la ventana.
+La documentación de trabajo está en **[docs/](docs/)**: dónde está el proyecto, qué viene después,
+qué se decidió y por qué, y qué está a medias.
 
 ---
 
+<div align="center">
+
 ▍ **webcafeína**
+
+</div>

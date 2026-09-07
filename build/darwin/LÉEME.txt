@@ -1,0 +1,67 @@
+ESFINGE · webcafeína
+Cifra y descifra secretos con una clave.
+
+
+INSTALAR
+────────
+
+Arrastra Esfinge a la carpeta Aplicaciones, que está aquí mismo a la derecha.
+Ya está.
+
+
+LA PRIMERA VEZ QUE LA ABRAS
+───────────────────────────
+
+macOS dirá que no se puede comprobar el desarrollador. No es que la aplicación
+tenga nada malo: es que no está firmada con una cuenta de pago de Apple, y se
+decidió no pagarla.
+
+Para abrirla:
+
+  Ve a  Ajustes del Sistema → Privacidad y seguridad, baja hasta el aviso sobre
+  Esfinge y pulsa «Abrir de todos modos». Solo hace falta la primera vez.
+
+Si prefieres quitarlo de golpe, abre el Terminal y pega esto:
+
+  xattr -dr com.apple.quarantine /Applications/Esfinge.app
+
+
+CÓMO SE USA
+───────────
+
+Cuatro pestañas arriba: Cifrar, Descifrar, Generar e Historial.
+
+Para cifrar un texto —una contraseña, un token— escríbelo, pon una clave y pulsa
+Cifrar. El resultado se copia solo al portapapeles: ya lo puedes pegar donde te
+haga falta.
+
+Para cifrar ficheros, pulsa «Ficheros» y arrástralos a la ventana. Puedes soltar
+varios a la vez y se cifran todos con la misma clave. El original no se toca: al
+lado aparece otro con «.esf» al final.
+
+Para recuperarlos, haz doble clic en el «.esf» y Esfinge se abrirá con el
+fichero puesto. Solo tendrás que poner la clave.
+
+
+LO ÚNICO QUE HAY QUE TENER CLARO
+────────────────────────────────
+
+Lo que cifres solo se abre con la clave que hayas usado.
+
+No existe «he olvidado mi contraseña». Si se pierde la clave, el contenido se ha
+perdido, y no hay nadie —tampoco Webcafeína— que pueda recuperarlo. Guarda la
+clave en sitio seguro ANTES de cifrar nada importante.
+
+Y hazle llegar la clave a la otra persona por un camino distinto del que uses
+para mandar lo cifrado. Si mandas los dos por el mismo correo, quien lea ese
+correo lo tiene todo.
+
+
+SI ALGO NO VA
+─────────────
+
+github.com/webcafeina/esfinge  ·  info@webcafeina.com
+
+
+───────────────────────────────────────────────────────────────────────────────
+▍ webcafeína

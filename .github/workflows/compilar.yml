@@ -173,27 +173,12 @@ jobs:
           go-version: "1.27"
           cache-dependency-path: go.sum
 
-      # «make publicar» comprueba antes de compilar, y comprobar incluye los
-      # tipos de la interfaz.
-      - uses: pnpm/action-setup@v4
-        with: { version: 11 }
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      - name: Instalar la interfaz
-        working-directory: frontend
-        run: pnpm install --frozen-lockfile
-
       # Sin cgo cruza de plataforma desde aquí, así que los seis salen de una vez.
       - name: Compilar los seis objetivos
         run: |
           version="${GITHUB_REF_NAME#v}"
           [ "$version" = "$GITHUB_REF_NAME" ] && version="dev-${GITHUB_SHA::7}"
-          make publicar VERSION="$version" GO=go
+          make publicar-cli VERSION="$version" GO=go
 
       - uses: actions/upload-artifact@v4
         with:

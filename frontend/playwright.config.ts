@@ -33,7 +33,7 @@ export default defineConfig({
   // nadie tenga que acordarse de arrancar dos servidores en el orden correcto.
   webServer: [
     {
-      command: "go run -tags dev ../cmd/dev",
+      command: `go run -tags dev ../cmd/dev -version ${process.env.VERSION_CAPTURAS ?? "dev"}`,
       url: "http://127.0.0.1:34443/api/salud",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

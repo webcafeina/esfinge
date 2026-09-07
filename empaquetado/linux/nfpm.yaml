@@ -1,0 +1,41 @@
+# Paquete .deb de Esfinge.
+#
+# Lleva la aplicación con ventana, la línea de comandos, el lanzador para el menú
+# de aplicaciones y la declaración de qué es un fichero .esf.
+name: esfinge
+arch: amd64
+platform: linux
+version: ${VERSION}
+section: utils
+priority: optional
+maintainer: Webcafeína <info@webcafeina.com>
+description: |
+  Cifra y descifra contraseñas y ficheros con una clave.
+  Con ventana propia y con línea de comandos, sobre el mismo núcleo.
+  Nada sale de la máquina.
+vendor: Webcafeína
+homepage: https://github.com/webcafeina/esfinge
+license: Propietaria
+
+contents:
+  - src: build/bin/Esfinge
+    dst: /usr/bin/esfinge-gui
+  - src: esfinge
+    dst: /usr/bin/esfinge
+  - src: empaquetado/linux/esfinge.desktop
+    dst: /usr/share/applications/esfinge.desktop
+  - src: empaquetado/linux/esfinge-mime.xml
+    dst: /usr/share/mime/packages/esfinge.xml
+  - src: build/appicon.png
+    dst: /usr/share/icons/hicolor/512x512/apps/esfinge.png
+  - src: LICENSE
+    dst: /usr/share/doc/esfinge/copyright
+
+# El webview lo pone el sistema, no el paquete: son las mismas bibliotecas que
+# usa cualquier navegador del escritorio.
+depends:
+  - libwebkit2gtk-4.1-0
+  - libgtk-3-0
+
+scripts:
+  postinstall: empaquetado/linux/postinstall.sh

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Declara qué es un fichero .esf, para que el escritorio le ponga su icono y
+     lo abra con Esfinge al hacer doble clic. -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-esfinge">
+    <comment>Contenedor de Esfinge</comment>
+    <comment xml:lang="en">Esfinge encrypted container</comment>
+    <glob pattern="*.esf"/>
+    <!-- Todo contenedor empieza por estos cuatro bytes. -->
+    <magic priority="60">
+      <match type="string" value="ESF1" offset="0"/>
+    </magic>
+    <icon name="esfinge"/>
+  </mime-type>
+</mime-info>

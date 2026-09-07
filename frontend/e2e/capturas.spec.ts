@@ -20,6 +20,12 @@ test.describe("Capturas", () => {
     await page.setViewportSize({ width: 840, height: 640 });
     await page.goto("/");
 
+    // El rótulo de «Modo desarrollo» es cierto aquí y mentira en la portada del
+    // repositorio, que es donde acaban estas capturas.
+    if (process.env.CAPTURAS_SIN_DEV) {
+      await page.addStyleTag({ content: ".pie span:last-child{visibility:hidden}" });
+    }
+
     await page.getByLabel("Qué quieres cifrar").fill("postgres://usuario:secreto@host/basededatos");
     await page.locator("#clave").fill("caballo grapa batería correcto");
     await page.waitForTimeout(500);

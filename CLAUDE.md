@@ -2,6 +2,28 @@
 
 Cifra y descifra contraseñas y ficheros con una clave. De **Webcafeína**.
 
+## Protocolo de sesión
+
+La documentación viva está en [docs/](docs/). Se mantiene con disciplina, no con un control
+automático: un validador de documentación se acaba sorteando, y lo que hay que sostener es el hábito.
+
+**Al empezar**, leer [docs/estado.md](docs/estado.md). Dice dónde está el proyecto y cuál es la
+siguiente acción concreta.
+
+**Al tomar una decisión** que costaría volver a discutir, o que deja el código raro sin explicación,
+o que descarta lo que parecía la opción evidente: una ficha en [docs/adr/](docs/adr/) y su línea en
+[docs/decisiones.md](docs/decisiones.md). Las secciones son fijas —Contexto, Decisión, Alternativas
+descartadas, Consecuencias, Verificación— y la última es la que más se agradece: dice qué se
+comprobó de verdad y **qué no**.
+
+**Al encontrar algo a medias o mal**, aunque no se arregle: a [docs/deuda.md](docs/deuda.md), con su
+severidad y su impacto. Lo que no está escrito solo lo sabe quien lo dejó así.
+
+**Al cerrar**, actualizar [docs/estado.md](docs/estado.md) y añadir la entrada en
+[docs/sesiones.md](docs/sesiones.md), que tiene su plantilla al final.
+
+Lo que se cierra no se borra: se tacha y se queda, con la fecha.
+
 Dos caras sobre el mismo núcleo y el mismo formato de contenedor:
 
 - **La aplicación** (`cmd/esfinge-gui`), con ventana propia, para el cliente.
@@ -21,15 +43,20 @@ make contraste    # mide las parejas de color de los dos temas
 make tokens       # regenera frontend/src/tokens.css desde Go
 make e2e          # mueve la interfaz de verdad contra el Go de verdad
 make esfinge      # la línea de comandos, para esta máquina
-make publicar     # la línea de comandos para los seis objetivos
+make publicar     # comprueba y compila la línea de comandos para los seis objetivos
 make app          # la aplicación con ventana (necesita wails; ver abajo)
+make dmg          # la imagen de disco de macOS (solo en un Mac, con create-dmg)
 make ayuda        # todos los objetivos
 ```
 
 **La aplicación con ventana no se puede compilar en esta máquina.** Falta `webkit2gtk` y
 `pkg-config`, y no hay `sudo` sin contraseña. La compila **GitHub Actions** en los tres sistemas
-(`.github/workflows/compilar.yml`, se dispara a mano o con una etiqueta `v*`). La línea de comandos
-sí cruza de plataforma desde aquí, porque no usa cgo.
+(`.github/workflows/compilar.yml`, se dispara a mano). La línea de comandos sí cruza de plataforma
+desde aquí, porque no usa cgo.
+
+**Publicar es empujar una etiqueta `v*`.** Eso dispara `.github/workflows/publicar.yml`, que compila
+en los tres sistemas, arma el DMG, el instalador de Windows y el `.deb`, y cuelga todo de la
+publicación de GitHub. Los empaquetados viven en `empaquetado/`, uno por sistema.
 
 ## Cómo se prueba lo que no se puede ejecutar
 

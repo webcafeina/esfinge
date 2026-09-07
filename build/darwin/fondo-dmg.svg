@@ -1,0 +1,67 @@
+<!--
+  Fondo de la imagen de disco de macOS.
+
+  Es lo primero que se ve de Esfinge, antes incluso de instalarla, así que el
+  trabajo aquí es sencillo: decir qué es, decir qué hacer, y quitarse de en
+  medio. Los dos iconos —la aplicación y la carpeta Aplicaciones— los coloca
+  create-dmg encima de este fondo, en las posiciones que reserva el hueco de la
+  izquierda y el de la derecha.
+
+  Se dibuja a 660×420, que es el tamaño de la ventana, y se rasteriza al doble
+  para las pantallas Retina.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 420" width="660" height="420">
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#3a3a42"/>
+      <stop offset="1" stop-color="#232329"/>
+    </linearGradient>
+    <linearGradient id="oro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2c14e"/>
+      <stop offset="1" stop-color="#d99a28"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="660" height="420" fill="url(#fondo)"/>
+
+  <!-- Nombre y qué hace. Arriba, fuera del camino de los iconos. -->
+  <text x="330" y="62" text-anchor="middle"
+        font-family="-apple-system, BlinkMacSystemFont, Helvetica Neue, sans-serif"
+        font-size="27" font-weight="600" fill="#f0ece2" letter-spacing="-0.3">Esfinge</text>
+  <text x="330" y="88" text-anchor="middle"
+        font-family="-apple-system, BlinkMacSystemFont, Helvetica Neue, sans-serif"
+        font-size="13" fill="#a8a49c">Cifra y descifra secretos con una clave</text>
+
+  <!-- La instrucción, entre los dos iconos: arrastra de aquí a allá. Los iconos
+       van centrados en x=165 y x=495, a la altura y=225. -->
+  <g stroke="#6a6a74" stroke-width="2" fill="none" stroke-linecap="round">
+    <path d="M258 232 H392" stroke-dasharray="7 7"/>
+    <path d="M384 224 l10 8 -10 8"/>
+  </g>
+
+  <text x="330" y="212" text-anchor="middle"
+        font-family="-apple-system, BlinkMacSystemFont, Helvetica Neue, sans-serif"
+        font-size="12" font-weight="500" fill="#c9c5bd">Arrastra</text>
+
+  <!-- Pies de cada icono, debajo de donde los coloca create-dmg. -->
+  <text x="165" y="318" text-anchor="middle"
+        font-family="-apple-system, BlinkMacSystemFont, Helvetica Neue, sans-serif"
+        font-size="11" fill="#8e8a84">La aplicación</text>
+  <text x="495" y="318" text-anchor="middle"
+        font-family="-apple-system, BlinkMacSystemFont, Helvetica Neue, sans-serif"
+        font-size="11" fill="#8e8a84">Tus aplicaciones</text>
+
+  <!-- Aviso de Gatekeeper: sale sí o sí la primera vez, y más vale decirlo aquí
+       que dejar que parezca que la aplicación está rota. -->
+  <text x="330" y="372" text-anchor="middle"
+        font-family="-apple-system, BlinkMacSystemFont, Helvetica Neue, sans-serif"
+        font-size="11" fill="#8e8a84">La primera vez macOS avisará de que no está firmada · lee el LÉEME</text>
+
+  <!-- Marca, discreta, abajo a la izquierda. -->
+  <g transform="translate(24 392)">
+    <rect width="3" height="12" rx="1.5" y="-9" fill="url(#oro)"/>
+    <text x="10" y="0"
+          font-family="-apple-system, BlinkMacSystemFont, Helvetica Neue, sans-serif"
+          font-size="11" fill="#7a766f">webcafeína</text>
+  </g>
+</svg>

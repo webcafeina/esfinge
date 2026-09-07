@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Esfinge
+GenericName=Cifrado de secretos
+Comment=Cifra y descifra contraseñas y ficheros con una clave
+Exec=/usr/bin/esfinge-gui %f
+Icon=esfinge
+Terminal=false
+Categories=Utility;Security;
+Keywords=cifrar;descifrar;contraseña;seguridad;
+# Los .esf se abren con doble clic desde el explorador de ficheros.
+MimeType=application/x-esfinge;
+StartupWMClass=Esfinge

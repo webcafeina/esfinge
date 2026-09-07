@@ -9,31 +9,44 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 const raiz = resolve(import.meta.dirname, "..", "..");
-const svg = readFileSync(resolve(raiz, "build/icono.svg"), "utf8");
-
-const salidas = [
-  ["build/appicon.png", 1024],
-  ["frontend/public/icono-256.png", 256],
-  ["frontend/public/favicon.png", 64],
+// Cada entrada: fichero SVG de origen, destino, y ancho en píxeles. El alto sale
+// de la proporción del propio SVG.
+const trabajos = [
+  ["build/icono.svg", "build/appicon.png", 1024],
+  ["build/icono.svg", "frontend/public/icono-256.png", 256],
+  ["build/icono.svg", "frontend/public/favicon.png", 64],
+  ["build/icono.svg", "docs/imagenes/icono.png", 256],
+  // El fondo del DMG va al doble de la ventana, para pantallas Retina: macOS lo
+  // reduce a la mitad y así no se ve borroso.
+  ["build/darwin/fondo-dmg.svg", "build/darwin/fondo-dmg.png", 660],
+  ["build/darwin/fondo-dmg.svg", "build/darwin/fondo-dmg@2x.png", 1320],
 ];
 
 const navegador = await chromium.launch(
   process.env.PLAYWRIGHT_CHROMIUM ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM } : {},
 );
 
-for (const [destino, tamano] of salidas) {
+for (const [origen, destino, ancho] of trabajos) {
+  const svg = readFileSync(resolve(raiz, origen), "utf8");
+
+  // La proporción se lee del viewBox, para no tener que repetirla aquí.
+  const [, , anchoSvg, altoSvg] = (svg.match(/viewBox="([^"]+)"/)?.[1] ?? "0 0 1 1")
+    .split(/\s+/)
+    .map(Number);
+  const alto = Math.round((ancho * altoSvg) / anchoSvg);
+
   const pagina = await navegador.newPage({
-    viewport: { width: tamano, height: tamano },
+    viewport: { width: ancho, height: alto },
     deviceScaleFactor: 1,
   });
   await pagina.setContent(
-    `<style>html,body{margin:0;padding:0}svg{display:block;width:${tamano}px;height:${tamano}px}</style>${svg}`,
+    `<style>html,body{margin:0;padding:0}svg{display:block;width:${ancho}px;height:${alto}px}</style>${svg}`,
   );
   const png = await pagina.locator("svg").screenshot({ omitBackground: true });
   const ruta = resolve(raiz, destino);
   mkdirSync(dirname(ruta), { recursive: true });
   writeFileSync(ruta, png);
-  console.log(`${destino} · ${tamano}×${tamano} · ${(png.length / 1024).toFixed(1)} kB`);
+  console.log(`${destino} · ${ancho}×${alto} · ${(png.length / 1024).toFixed(1)} kB`);
   await pagina.close();
 }
 

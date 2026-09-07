@@ -1,0 +1,268 @@
+# Publica una versión de Esfinge.
+#
+# Se dispara al empujar una etiqueta «v*». Compila la aplicación en cada sistema
+# —una ventana necesita el webview del suyo y eso no cruza de plataforma—, la
+# empaqueta como espera cada uno, y lo cuelga todo de la publicación.
+#
+# La línea de comandos, que no usa cgo, sale entera desde Linux.
+
+name: Publicar
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión de prueba, sin crear publicación"
+        required: false
+        default: "0.0.0-prueba"
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    name: macOS · imagen de disco
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.27", cache-dependency-path: go.sum }
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      # Con etiqueta, la versión es la etiqueta sin la «v». A mano, lo que se
+      # haya escrito en el formulario.
+      - name: Averiguar la versión
+        id: v
+        shell: bash
+        run: |
+          n="${{ github.event.inputs.version }}"
+          [ -n "$n" ] || n="${GITHUB_REF_NAME#v}"
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+
+      - name: Instalar wails y create-dmg
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          brew install create-dmg
+
+      - name: Construir la interfaz
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Colocar la interfaz
+        run: |
+          rm -rf internal/interfaz/dist && mkdir -p internal/interfaz/dist
+          cp -r frontend/dist/. internal/interfaz/dist/
+
+      - name: Compilar la aplicación
+        run: |
+          wails build -platform darwin/universal -clean \
+            -ldflags "-X main.version=${{ steps.v.outputs.n }}"
+
+      # La receta de la imagen vive en el guion, para que sea la misma aquí y en
+      # un Mac con «make dmg».
+      - name: Armar la imagen de disco
+        run: empaquetado/macos/armar-dmg.sh "${{ steps.v.outputs.n }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: "*.dmg"
+
+  windows:
+    name: Windows · instalador
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.27", cache-dependency-path: go.sum }
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      # Con etiqueta, la versión es la etiqueta sin la «v». A mano, lo que se
+      # haya escrito en el formulario.
+      - name: Averiguar la versión
+        id: v
+        shell: bash
+        run: |
+          n="${{ github.event.inputs.version }}"
+          [ -n "$n" ] || n="${GITHUB_REF_NAME#v}"
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+
+      - name: Instalar wails y NSIS
+        shell: bash
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          choco install nsis -y --no-progress
+
+      - name: Construir la interfaz
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Colocar la interfaz
+        shell: bash
+        run: |
+          rm -rf internal/interfaz/dist && mkdir -p internal/interfaz/dist
+          cp -r frontend/dist/. internal/interfaz/dist/
+
+      # -nsis produce el asistente de instalación de siempre, que además registra
+      # los ficheros .esf declarados en wails.json.
+      - name: Compilar la aplicación y su instalador
+        shell: bash
+        run: |
+          wails build -platform windows/amd64 -clean -nsis \
+            -ldflags "-X main.version=${{ steps.v.outputs.n }}"
+          ls -lh build/bin/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            build/bin/*.exe
+
+  linux:
+    name: Linux · paquete
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.27", cache-dependency-path: go.sum }
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      # Con etiqueta, la versión es la etiqueta sin la «v». A mano, lo que se
+      # haya escrito en el formulario.
+      - name: Averiguar la versión
+        id: v
+        shell: bash
+        run: |
+          n="${{ github.event.inputs.version }}"
+          [ -n "$n" ] || n="${GITHUB_REF_NAME#v}"
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+
+      - name: Dependencias del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Instalar wails y nfpm
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+
+      - name: Construir la interfaz
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Colocar la interfaz
+        run: |
+          rm -rf internal/interfaz/dist && mkdir -p internal/interfaz/dist
+          cp -r frontend/dist/. internal/interfaz/dist/
+
+      # Ubuntu reciente ya no trae webkit2gtk-4.0, que es lo que Wails busca de
+      # serie. La 4.1 se pide con su etiqueta.
+      - name: Compilar la aplicación
+        run: |
+          wails build -platform linux/amd64 -clean -tags webkit2_41 \
+            -ldflags "-X main.version=${{ steps.v.outputs.n }}"
+
+      # El paquete lleva las dos caras: la ventana y la línea de comandos.
+      - name: Compilar la línea de comandos
+        run: |
+          CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${{ steps.v.outputs.n }}" \
+            -o esfinge ./cmd/esfinge
+
+      - name: Armar el .deb y el .tar.gz
+        run: |
+          export VERSION="${{ steps.v.outputs.n }}"
+          nfpm package -f empaquetado/linux/nfpm.yaml -p deb -t .
+          tar -czf "esfinge-${VERSION}-linux-amd64.tar.gz" \
+            -C build/bin Esfinge \
+            -C "$GITHUB_WORKSPACE" esfinge LICENSE
+          ls -lh *.deb *.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            *.deb
+            *.tar.gz
+
+  linea-de-comandos:
+    name: Línea de comandos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.27", cache-dependency-path: go.sum }
+
+      - name: Compilar los seis objetivos
+        shell: bash
+        run: |
+          version="${{ github.event.inputs.version }}"
+          [ -n "$version" ] || version="${GITHUB_REF_NAME#v}"
+          make publicar-cli VERSION="$version" GO=go
+          ls -lh dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli
+          path: dist/
+
+  publicar:
+    name: Publicar
+    needs: [macos, windows, linux, linea-de-comandos]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: adjuntos, merge-multiple: true }
+
+      - name: Qué se va a publicar
+        run: ls -lhR adjuntos
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: adjuntos/*
+          generate_release_notes: true
+          body: |
+            ## Descargar
+
+            | Sistema | Fichero |
+            |---|---|
+            | macOS (Apple Silicon e Intel) | `Esfinge-*.dmg` |
+            | Windows | `Esfinge-*-installer.exe` |
+            | Linux (Debian, Ubuntu) | `esfinge_*.deb` |
+            | Linux (cualquiera) | `esfinge-*-linux-amd64.tar.gz` |
+            | Línea de comandos | `esfinge-*-<sistema>-<arquitectura>` |
+
+            **La primera vez el sistema avisará de que Esfinge no está firmada.** Es cierto:
+            firmar cuesta 99 $ al año y se decidió no hacerlo. En macOS, si el aviso no te
+            deja abrirla, ve a Ajustes del Sistema → Privacidad y seguridad y pulsa «Abrir de
+            todos modos».
+
+            **Sin la clave no hay forma de recuperar nada.** Guárdala antes de cifrar.
