@@ -689,3 +689,119 @@ p {
 :root[data-vidrio="si"] .zona {
   background: var(--lienzo);
 }
+
+/* ------------------------------------------------- cada sistema, a lo suyo */
+
+/* La estructura de fondo es la misma en los tres —barra lateral y contenido—
+ * porque los tres escritorios modernos se organizan así. Lo que cambia son las
+ * formas, las densidades y quién dibuja el marco, y eso sí es de cada casa.
+ *
+ * Lo de arriba es macOS, que es donde se juzga esto. Aquí van las diferencias.
+ * El atributo lo pone la interfaz al arrancar, preguntándole a Go. */
+
+/* El hueco de los semáforos es de macOS: en Windows y en GNOME la ventana tiene
+ * su barra de título del sistema, así que arriba de la barra lateral no hay nada
+ * que esquivar. */
+:root[data-sistema="windows"] .lateral .semaforos,
+:root[data-sistema="linux"] .lateral .semaforos {
+  height: var(--espacio-3);
+}
+
+/* Y con marco del sistema no hay que declarar zonas de arrastre: la ventana ya
+ * tiene de dónde agarrarse. */
+:root[data-sistema="windows"] .lateral,
+:root[data-sistema="linux"] .lateral,
+:root[data-sistema="windows"] .herramientas,
+:root[data-sistema="linux"] .herramientas {
+  --wails-draggable: no-drag;
+}
+
+/* ------------------------------------------------------------------ Windows */
+
+/* El panel de navegación de Windows 11. Lo que lo distingue de una barra lateral
+ * cualquiera es la **barra de acento a la izquierda** de la fila activa: en
+ * Fluent el relleno es tenue y quien dice «estás aquí» es esa marca. */
+:root[data-sistema="windows"] .lateral nav button {
+  height: 40px;
+  border-radius: 4px;
+  position: relative;
+}
+
+:root[data-sistema="windows"] .lateral nav button[aria-current="page"] {
+  background: var(--elevada);
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+:root[data-sistema="windows"] .lateral nav button[aria-current="page"] .icono {
+  color: var(--acento);
+}
+
+:root[data-sistema="windows"] .lateral nav button[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--relleno);
+}
+
+/* Fluent redondea menos que macOS: 4 px en los controles, 8 en las tarjetas. */
+:root[data-sistema="windows"] .grupo {
+  border-radius: 8px;
+}
+
+:root[data-sistema="windows"] button,
+:root[data-sistema="windows"] input,
+:root[data-sistema="windows"] textarea {
+  border-radius: 4px;
+}
+
+/* -------------------------------------------------------------------- GNOME */
+
+/* La cabecera de GNOME: el título va centrado, en negrita y pequeño, con una
+ * línea debajo que la separa del contenido. Es lo primero que se reconoce de una
+ * aplicación de GNOME. */
+:root[data-sistema="linux"] .herramientas {
+  position: relative;
+  justify-content: center;
+  border-bottom: 1px solid var(--filete);
+}
+
+:root[data-sistema="linux"] .herramientas h1 {
+  font-size: var(--texto-grande);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+:root[data-sistema="linux"] .herramientas .aparte {
+  position: absolute;
+  right: var(--espacio-5);
+}
+
+/* Con la línea de la cabecera, el contenido necesita separarse de ella. En macOS
+ * no hace falta porque la barra de herramientas y el contenido son la misma
+ * superficie. */
+:root[data-sistema="linux"] .contenido {
+  padding-top: var(--espacio-4);
+}
+
+/* La barra lateral de GNOME lleva su propia línea, no un filete de medio píxel:
+ * el escritorio no dibuja a media resolución como hace macOS. */
+:root[data-sistema="linux"] .lateral {
+  border-right: 1px solid var(--filete);
+}
+
+:root[data-sistema="linux"] .lateral nav button {
+  border-radius: 6px;
+  height: 36px;
+}
+
+/* Y libadwaita redondea las tarjetas a 12. */
+:root[data-sistema="linux"] .grupo {
+  border-radius: 12px;
+  border-width: 1px;
+}

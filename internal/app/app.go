@@ -92,12 +92,25 @@ func ApuntarAAPI(a *App, raiz string) { a.act.comprobador.API = raiz }
 // una decisión de arranque, no algo que la ventana deba poder cambiar.
 func MarcarVidrio(a *App, si bool) { a.vidrio = si }
 
+// Plataforma dice en qué sistema corre, para que la interfaz se organice como
+// se organizan las aplicaciones de ese sistema.
+//
+// Devuelve lo que devuelve Go: «darwin», «windows» o «linux». La estructura de
+// fondo es la misma en los tres —barra lateral y contenido— y lo que cambia son
+// las formas, las densidades y el marco: cada escritorio tiene sus costumbres y
+// una ventana que no las sigue se nota enseguida.
+func (a *App) Plataforma() string { return runtime.GOOS }
+
 // Vidrio lo consulta la interfaz al montarse.
 //
 // Sin vidrio, el fondo lo pinta el CSS de siempre. Con vidrio, el fondo de la
-// ventana es transparente y la interfaz tiene que dejar pasar el escritorio por
-// la barra y el pie, pero **no** por la zona de trabajo, que es donde se lee.
-// En Linux nunca es cierto: Wails no lo ofrece.
+// ventana es transparente y la interfaz deja pasar el material por la barra
+// lateral, pero **no** por la zona de trabajo, que es donde se lee.
+//
+// En Linux no se pide, y no porque Wails no lo ofrezca —sí lo hace, con
+// linux.Options.WindowIsTranslucent— sino porque sin desenfoque del compositor
+// la transparencia de GTK enseña el escritorio a pelo. Eso no es vibrancia: es
+// un agujero.
 func (a *App) Vidrio() bool { return a.vidrio }
 
 // Arrancar la llama Wails cuando la ventana está lista.

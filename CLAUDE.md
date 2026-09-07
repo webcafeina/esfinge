@@ -84,8 +84,11 @@ No se cambian sin preguntar.
 - **Y estructura del sistema**: barra lateral a la izquierda, título en la barra de herramientas y
   formularios en tarjetas, sin barra de título propia (ADR 0019). Las medidas salen de capturas de
   macOS 26 que están en `referencias/` —carpeta ignorada por git—, usando los semáforos como regla:
-  miden 12 pt clavados y con eso se saca la escala de cualquier captura. **Windows y Linux siguen con
-  esta misma estructura**; lo suyo va después.
+  miden 12 pt clavados y con eso se saca la escala de cualquier captura.
+- **Cada sistema, con su forma y con su marco** (ADR 0020): la estructura de fondo es la misma en los
+  tres, y lo que cambia son densidades, radios y quién dibuja la barra de título —solo macOS se queda
+  sin ella—. Windows lleva el panel de Fluent con su barra de acento a la izquierda; Linux, la
+  cabecera centrada de GNOME. Cuelga todo de `data-sistema`, que pone la interfaz preguntando a Go.
 - **La barra de menús se construye entera** (`menu.go`), en español y en los tres sistemas: los roles
   de Wails traen los rótulos en inglés escritos a fuego en su Objective-C y no hay forma de
   traducirlos. Como sin roles no hay selectores nativos, las acciones de edición las hace la ventana

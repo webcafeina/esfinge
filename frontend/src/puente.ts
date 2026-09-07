@@ -182,6 +182,9 @@ export const esfinge = {
   /** Si el sistema ha puesto una ventana translúcida detrás. */
   vidrio: () => llamar<boolean>("Vidrio"),
 
+  /** «darwin», «windows» o «linux»: lo que devuelve Go. */
+  plataforma: () => llamar<string>("Plataforma"),
+
   aperturaDeArranque: () => llamar<Apertura>("AperturaDeArranque"),
 
   medirPorCaracteres: (caracteres: number, alfabeto: string) =>

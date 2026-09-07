@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.6.2**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.7.0**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, guarda un historial de qué y cuándo, y se compila sola para macOS,
 Windows y Linux en GitHub Actions.
 
@@ -37,16 +37,17 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
 - **Los diálogos recuerdan su carpeta**, una para abrir y otra para guardar.
 - **Las tandas se cifran en paralelo**, con tope: veinte ficheros pasaron de 4,42 s a 1,29 s en una
   máquina de cuatro núcleos (ADR 0018).
-- **Estructura de aplicación de macOS**: barra lateral, título en la barra de herramientas,
-  formularios en tarjetas y sin barra de título propia (ADR 0019). Windows y Linux van después.
+- **Estructura nativa en los tres sistemas**: barra lateral y contenido en todos, y luego lo de cada
+  casa —macOS sin barra de título (ADR 0019), el panel de Fluent en Windows y la cabecera de GNOME en
+  Linux (ADR 0020)—.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
   máquina sin entorno gráfico.
 
 ## En curso
 
-Nada a medias en macOS. La estructura de la 2.6.0 está escrita y probada hasta donde se puede desde
-una máquina sin Mac. **Windows y Linux siguen con la estructura de macOS**: lo suyo se hará cuando
-ésta esté afinada.
+Nada a medias. Los tres sistemas tienen ya su estructura. La de macOS está probada en un Mac; la de
+GNOME se puede mirar aquí, porque el servidor de desarrollo corre en Linux; la de Windows no la ha
+visto nadie.
 
 ## Comprobado en un Mac de verdad
 

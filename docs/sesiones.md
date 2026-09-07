@@ -38,6 +38,26 @@ Plantilla al final.
 - Lección: bajar el tinte dos veces sin entender el síntoma era el camino equivocado. El «gris plano»
   no era un tinte de más, era el material sin nada que mezclar.
 
+## 2026-09-08 · Windows y GNOME, cada uno a lo suyo
+
+- **2.7.0**: los tres sistemas tienen ya su estructura. La de fondo es la misma —navegación a un
+  lado, contenido al otro, que es como se organizan los tres escritorios modernos— y lo que cambia
+  son las formas, las densidades y quién dibuja el marco (ADR 0020).
+- **El marco lo dibuja el sistema** en Windows y Linux; solo macOS se queda sin barra de título.
+  Hacerlo a mano en los tres se parecería más, pero cerrar, maximizar y redimensionar pasarían a ser
+  código nuestro y **aquí no hay dónde probarlo**.
+- Windows lleva el panel de Fluent, con **la barra de acento a la izquierda de la fila activa**, que
+  es lo que distingue un `NavigationView` de una barra lateral cualquiera. Linux va a lo GNOME:
+  título centrado en negrita con su línea debajo.
+- Aparece `App.Plataforma()` y un `data-sistema` en la raíz, igual que el `data-vidrio`. Con eso, el
+  CSS de cada sistema cuelga de un sitio y no se mezcla.
+- **Corregido un error que había escrito en la 0017**: dije que Wails no ofrecía translucidez en
+  Linux, y sí la ofrece. No se usa por otra razón —sin desenfoque del compositor, la transparencia de
+  GTK enseña el escritorio a pelo— pero la ficha decía algo falso.
+- Verificado: 28 pruebas en los dos temas, dos tandas seguidas —y ahora ejercitan la variante de
+  GNOME, porque el servidor de desarrollo corre en Linux—, más las tres variantes miradas una a una.
+  **Sin comprobar**: Windows y GNOME de verdad.
+
 ## 2026-09-08 · La estructura de una aplicación de macOS
 
 - **2.6.0**: la ventana deja de ser una página web dentro de un marco. Barra lateral con la

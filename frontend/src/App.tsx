@@ -51,10 +51,21 @@ export default function App() {
   useEffect(() => {
     esfinge.version().then(setVersion).catch(() => setVersion("?"));
 
+    // En qué sistema estamos. La estructura de fondo es la misma en los tres
+    // —barra lateral y contenido— y lo que cambia son las formas y las
+    // densidades, que en cada escritorio son las suyas. Como con el vidrio, va
+    // en un atributo de la raíz y el CSS cuelga de él.
+    esfinge
+      .plataforma()
+      .then((s) => {
+        document.documentElement.dataset.sistema = s;
+      })
+      .catch(() => {});
+
     // El vidrio del sistema. Cuando lo hay, la ventana es transparente y el
-    // fondo lo pinta el CSS; cuando no —Linux, o una versión de Windows sin
-    // Mica—, todo se queda como siempre. De ahí que sea un atributo y no un
-    // estilo suelto: el CSS entero del vidrio cuelga de él.
+    // fondo lo pinta el CSS; cuando no —una versión de Windows sin Mica—, todo
+    // se queda como siempre. De ahí que sea un atributo y no un estilo suelto:
+    // el CSS entero del vidrio cuelga de él.
     esfinge
       .vidrio()
       .then((hay) => {

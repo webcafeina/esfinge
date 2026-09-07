@@ -7,9 +7,6 @@ saber qué se hizo.
 
 ## Alta
 
-- **Windows y Linux, a su estructura.** La 2.6.0 llevó macOS a barra lateral y los otros dos siguen
-  con esa misma forma. Toca el panel de navegación de Windows 11 y la cabecera de GNOME. Depende de
-  que la de macOS se dé por buena en el Mac.
 - **Que el humano vea si salta el aviso de Gatekeeper** al actualizarse desde dentro. Si no salta,
   hay que quitarlo del LÉEME del DMG para el caso de la actualización.
 - **Montar el DMG en un Mac.** Está armado y el flujo lo publica, pero cómo queda la ventana al
@@ -32,6 +29,9 @@ saber qué se hizo.
 - **Empaquetar para Homebrew** (`brew install --cask esfinge`), que exige una URL estable y firma.
 
 ## Cerrado
+
+- ~~Windows y Linux, a su estructura~~ → hecho en la 2.7.0: panel de Fluent y cabecera de GNOME, con
+  el marco del sistema en los dos (2026-09-08).
 
 - ~~Ventana con vibrancy de verdad~~ → hecho en la 2.5.0, en la barra y el pie (2026-09-08).
 - ~~Recordar la última carpeta de los diálogos~~ → hecho en la 2.5.0, una para abrir y otra para

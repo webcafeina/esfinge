@@ -6,7 +6,12 @@
 
 La barra y el pie fingían el vidrio con `backdrop-filter`, que desenfoca lo que hay **dentro** de la
 página. El de verdad toma lo que hay **detrás de la ventana**, y eso solo lo puede dar el sistema:
-en macOS con `NSVisualEffectView`, en Windows 11 con Mica. Wails los expone; Linux no tiene nada.
+en macOS con `NSVisualEffectView`, en Windows 11 con Mica. Wails los expone.
+
+> **Corrección (2026-09-08):** aquí se dijo que Linux no tenía nada, y **es falso**: Wails ofrece
+> `linux.Options.WindowIsTranslucent`, que llama a `SetWindowTransparency` sobre la ventana GTK. No se
+> usa por otra razón —sin desenfoque del compositor, la transparencia enseña el escritorio a pelo, y
+> eso no es vibrancia sino un agujero— pero la opción existe.
 
 Pedirlos obliga a una cosa que no es evidente: **el fondo deja de pintarlo el sistema y pasa a
 pintarlo el CSS**. Un webview transparente sobre una ventana sin efecto no enseña el escritorio,
