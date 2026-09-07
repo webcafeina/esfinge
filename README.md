@@ -19,14 +19,19 @@ Sin cuentas, sin servidores, sin que nada salga de tu ordenador.
 
 ## Descargar
 
+<!-- descargas:inicio · las escribe herramientas/actualizar-descargas.sh -->
+
 | Sistema | Descarga | Notas |
 |---|---|---|
-| **macOS** | [Esfinge.dmg](https://github.com/webcafeina/esfinge/releases/latest) | Universal: Apple Silicon e Intel |
-| **Windows** | [Esfinge-windows-instalador.exe](https://github.com/webcafeina/esfinge/releases/latest) | Asistente de instalación |
-| **Linux** | [.deb o .tar.gz](https://github.com/webcafeina/esfinge/releases/latest) | Debian y Ubuntu, o el binario suelto |
-| **Línea de comandos** | [esfinge](https://github.com/webcafeina/esfinge/releases/latest) | Los seis objetivos, para tuberías y scripts |
+| **macOS** | [Esfinge-2.0.3.dmg](https://github.com/webcafeina/esfinge/releases/download/v2.0.3/Esfinge-2.0.3.dmg) | Universal: Apple Silicon e Intel |
+| **Windows** | [Esfinge-2.0.3-windows-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.0.3/Esfinge-2.0.3-windows-instalador.exe) | Asistente de instalación |
+| **Linux · Debian y Ubuntu** | [esfinge_2.0.3_amd64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.0.3/esfinge_2.0.3_amd64.deb) | Aplicación y línea de comandos |
+| **Linux · cualquiera** | [esfinge-2.0.3-linux-amd64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.0.3/esfinge-2.0.3-linux-amd64.tar.gz) | Los binarios sueltos |
+| **Línea de comandos** | [todos los sistemas](https://github.com/webcafeina/esfinge/releases/latest) | Seis objetivos, con sus SHA256 |
 
-Los enlaces llevan siempre a la publicación más reciente.
+Versión **2.0.3**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
+
+<!-- descargas:fin -->
 
 > **La primera vez, el sistema avisará de que Esfinge no está firmada.** Es cierto: firmar cuesta
 > 99 $ al año y se decidió no hacerlo ([por qué](docs/adr/0012-sin-firmar.md)). En macOS, si el

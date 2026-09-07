@@ -36,6 +36,11 @@ tokens:
 icono:
 	cd $(FRONT) && $(PNPM) run icono
 
+## descargas: reescribe la tabla de descargas del README para una versión
+.PHONY: descargas
+descargas:
+	@herramientas/actualizar-descargas.sh "$(VERSION)"
+
 ## ventana-dmg: dibuja cómo quedará la ventana del DMG, sin necesidad de un Mac
 .PHONY: ventana-dmg
 ventana-dmg:

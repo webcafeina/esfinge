@@ -295,3 +295,24 @@ jobs:
             todos modos».
 
             **Sin la clave no hay forma de recuperar nada.** Guárdala antes de cifrar.
+
+      # La tabla del README enlaza los ficheros de esta versión, que llevan el
+      # número en el nombre. Se reescribe aquí para que no se quede vieja: a mano
+      # se olvida en la segunda publicación. Va sobre «main», no sobre la
+      # etiqueta, que es lo que se ve al entrar al repositorio.
+      - name: Poner al día la tabla de descargas del README
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" \
+            portada
+          cd portada
+          herramientas/actualizar-descargas.sh "$version"
+          if git diff --quiet; then
+            echo "La portada ya estaba al día"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Tabla de descargas de la $version"
+          git push
