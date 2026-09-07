@@ -10,7 +10,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/webcafeina/esfinge/internal/cripto"
-	"github.com/webcafeina/esfinge/internal/ui"
+	"github.com/webcafeina/esfinge/internal/salida"
 )
 
 // OrigenClave reúne las tres formas de dar la clave, en orden de precedencia.
@@ -25,7 +25,7 @@ type OrigenClave struct {
 
 // Leer obtiene la clave. Cuando toca preguntar y se está cifrando, la pide dos
 // veces: una errata al cifrar no da error, da un contenedor que no se abre nunca.
-func (o OrigenClave) Leer(e ui.Estilos, confirmar bool) ([]byte, error) {
+func (o OrigenClave) Leer(e salida.Estilos, confirmar bool) ([]byte, error) {
 	switch {
 	case o.Variable != "":
 		v, ok := os.LookupEnv(o.Variable)
@@ -58,7 +58,7 @@ func (o OrigenClave) Leer(e ui.Estilos, confirmar bool) ([]byte, error) {
 	return preguntar(e, confirmar)
 }
 
-func preguntar(e ui.Estilos, confirmar bool) ([]byte, error) {
+func preguntar(e salida.Estilos, confirmar bool) ([]byte, error) {
 	clave, err := leerOculta(e, "Clave")
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func preguntar(e ui.Estilos, confirmar bool) ([]byte, error) {
 
 	if confirmar {
 		f := cripto.Evaluar(string(clave))
-		fmt.Fprintln(os.Stderr, "  "+e.Medidor(f.Nivel, 4, 16)+" "+e.Apagado.Render(f.Etiqueta))
+		fmt.Fprintln(os.Stderr, "  "+e.Medidor(f.Nivel, 4)+" "+e.Apagado.Render(f.Etiqueta))
 		if f.Sugerencia != "" {
 			fmt.Fprintln(os.Stderr, "  "+e.Ojo(f.Sugerencia))
 		}
@@ -85,10 +85,10 @@ func preguntar(e ui.Estilos, confirmar bool) ([]byte, error) {
 	return clave, nil
 }
 
-func leerOculta(e ui.Estilos, etiqueta string) ([]byte, error) {
+func leerOculta(e salida.Estilos, etiqueta string) ([]byte, error) {
 	// El prompt va a stderr para no contaminar la salida cuando stdout es una
 	// tubería.
-	fmt.Fprint(os.Stderr, e.Acento.Render(ui.GlifoBarra)+" "+e.Cuerpo.Render(etiqueta)+e.Apagado.Render(": "))
+	fmt.Fprint(os.Stderr, e.Acento.Render(salida.GlifoBarra)+" "+e.Cuerpo.Render(etiqueta)+e.Apagado.Render(": "))
 
 	b, err := term.ReadPassword(int(os.Stdin.Fd()))
 	fmt.Fprintln(os.Stderr)

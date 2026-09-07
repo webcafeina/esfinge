@@ -16,7 +16,8 @@ import (
 	"golang.org/x/term"
 
 	"github.com/webcafeina/esfinge/internal/cripto"
-	"github.com/webcafeina/esfinge/internal/ui"
+	"github.com/webcafeina/esfinge/internal/salida"
+	"github.com/webcafeina/esfinge/internal/tema"
 )
 
 // Códigos de salida. Que «la clave es incorrecta» y «esto no es un contenedor»
@@ -38,13 +39,10 @@ type opciones struct {
 	clave    OrigenClave
 	forzar   bool
 	silencio bool
-	// sinRedimensionar deja la ventana del terminal como está, aunque haya que
-	// desplazar el contenido para verlo entero.
-	sinRedimensionar bool
 }
 
 // Ejecutar corre la línea de comandos y devuelve el código de salida.
-func Ejecutar(version string, abrirTUI func(e ui.Estilos, redimensionar bool) error) int {
+func Ejecutar(version string) int {
 	var o opciones
 
 	raiz := &cobra.Command{
@@ -52,24 +50,20 @@ func Ejecutar(version string, abrirTUI func(e ui.Estilos, redimensionar bool) er
 		Short: "Cifra y descifra secretos con una clave",
 		Long: "Esfinge cifra contraseñas, ficheros de credenciales y cualquier otro\n" +
 			"secreto con una clave que solo conocen las dos partes.\n\n" +
-			"Sin argumentos abre la interfaz de menús. Con argumentos se comporta\n" +
-			"como un comando normal y se deja meter en una tubería.",
+			"Esto es la línea de comandos, pensada para tuberías y scripts. Si lo\n" +
+			"que buscas son menús y ratón, abre la aplicación Esfinge.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       version,
 		Args:          soloArgumentosConocidos,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			e, err := estilos(o.tema)
-			if err != nil {
-				return err
-			}
-			return abrirTUI(e, !o.sinRedimensionar)
+			// Sin subcomando no hay nada que ejecutar: se enseña la ayuda, que es
+			// lo que espera quien escribe el nombre del programa a secas.
+			return cmd.Help()
 		},
 	}
 	raiz.PersistentFlags().StringVar(&o.tema, "tema", "auto",
 		"Paleta: claro, oscuro o auto")
-	raiz.Flags().BoolVar(&o.sinRedimensionar, "sin-redimensionar", false,
-		"No pedirle al terminal que agrande la ventana")
 
 	raiz.AddCommand(
 		comandoCifrar(&o),
@@ -124,12 +118,12 @@ func codigoDe(err error) int {
 	}
 }
 
-func estilos(tema string) (ui.Estilos, error) {
-	t, err := ui.TemaPorNombre(tema)
+func estilos(nombre string) (salida.Estilos, error) {
+	t, err := salida.TemaPorNombre(nombre)
 	if err != nil {
-		return ui.NuevosEstilos(ui.TemaOscuro), err
+		return salida.NuevosEstilos(tema.TemaOscuro), err
 	}
-	return ui.NuevosEstilos(t), nil
+	return salida.NuevosEstilos(t), nil
 }
 
 func banderasComunes(cmd *cobra.Command, o *opciones) {
@@ -215,7 +209,7 @@ func cifrar(o *opciones) error {
 	return escribirTexto(e, o, texto)
 }
 
-func cifrarFichero(e ui.Estilos, o *opciones, clave []byte) error {
+func cifrarFichero(e salida.Estilos, o *opciones, clave []byte) error {
 	entrada, err := os.Open(o.entrada)
 	if err != nil {
 		return fmt.Errorf("No puedo abrir %s: %w", o.entrada, err)
@@ -290,7 +284,7 @@ func descifrar(o *opciones) error {
 
 // escribirTexto saca el contenedor de texto. Si va a un terminal se presenta en
 // un panel; si va a una tubería sale desnudo, sin una sola secuencia de color.
-func escribirTexto(e ui.Estilos, o *opciones, texto string) error {
+func escribirTexto(e salida.Estilos, o *opciones, texto string) error {
 	if o.salida != "" {
 		return escribirDatos(e, o, o.salida, []byte(texto+"\n"))
 	}
@@ -309,7 +303,7 @@ func escribirTexto(e ui.Estilos, o *opciones, texto string) error {
 	return nil
 }
 
-func escribirDatos(e ui.Estilos, o *opciones, destino string, datos []byte) error {
+func escribirDatos(e salida.Estilos, o *opciones, destino string, datos []byte) error {
 	if destino == "" {
 		if _, err := os.Stdout.Write(datos); err != nil {
 			return err
@@ -330,7 +324,7 @@ func escribirDatos(e ui.Estilos, o *opciones, destino string, datos []byte) erro
 // al terminar. Así una interrupción a mitad no deja un fichero a medias con el
 // nombre del bueno, que en un fichero de credenciales es la diferencia entre un
 // susto y una pérdida.
-func conSalida(e ui.Estilos, o *opciones, destino string, escribir func(io.Writer) error) error {
+func conSalida(e salida.Estilos, o *opciones, destino string, escribir func(io.Writer) error) error {
 	if destino == "" || destino == "-" {
 		if err := escribir(os.Stdout); err != nil {
 			return err
@@ -421,16 +415,16 @@ func aTerminal(f *os.File) bool {
 // marca imprime la firma de la casa. Dentro de una tubería no se imprime en la
 // salida —un banner ahí contamina el dato— pero sí en stderr, que la persona
 // sigue viendo. Así la marca está en todas partes sin estorbar en ninguna.
-func marca(e ui.Estilos, o *opciones, f *os.File) {
+func marca(e salida.Estilos, o *opciones, f *os.File) {
 	if o.silencio || !aTerminal(f) {
 		return
 	}
-	fmt.Fprintln(f, "\n"+ui.Firma(e))
+	fmt.Fprintln(f, "\n"+salida.Firma(e))
 }
 
-func marcaEnStderr(e ui.Estilos, o *opciones) {
+func marcaEnStderr(e salida.Estilos, o *opciones) {
 	if o.silencio || !aTerminal(os.Stderr) {
 		return
 	}
-	fmt.Fprintln(os.Stderr, ui.Firma(e))
+	fmt.Fprintln(os.Stderr, salida.Firma(e))
 }

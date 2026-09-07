@@ -1,6 +1,10 @@
-// Package ui aplica al terminal la identidad de ClickHouse tomada del catálogo
-// de ~/sistemas-diseno-empresas, y la marca de Webcafeína.
-package ui
+// Package tema es la fuente de verdad del color de Esfinge: la paleta, el
+// cálculo de contraste y la generación de los tokens que consume la interfaz.
+//
+// No depende de ninguna tecnología de presentación. Nació sirviendo a una
+// interfaz de terminal y ahora sirve a una de escritorio sin cambiar una línea,
+// que es exactamente lo que se le pide a esta capa.
+package tema
 
 import (
 	"fmt"

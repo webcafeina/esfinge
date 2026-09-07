@@ -1,4 +1,4 @@
-package ui
+package tema
 
 // Tema es la paleta resuelta para un fondo de terminal concreto.
 //
