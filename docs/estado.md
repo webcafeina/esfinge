@@ -64,17 +64,20 @@ visto nadie.
 - **El disco del DMG**, después de tres intentos y de que llegaran capturas de discos de verdad.
 - **Usar la contraseña generada como clave**, y que **cambiar de sección ya no borra lo escrito**
   (2.9.0), que era la deuda que dejó abierta la versión anterior.
+- **El vidrio, por fin, en la 2.10.0.** «Ahora sí se ve». Y comparado con la barra lateral del Finder
+  al lado, **se ve igual**: el desenfoque que parecía excesivo es el que macOS 26 pone en todas las
+  barras laterales del sistema. No hay nada que calibrar.
 
 ## Siguiente acción concreta
 
-**Abrir la 2.10.0 en el Mac y mirar la barra lateral.** Es la única pregunta que importa ahora: si se
-ve el escritorio desenfocado a través de ella, el vidrio está resuelto después de tres intentos
-fallidos; si sigue saliendo un gris plano, **no se toca más Objective-C a ciegas** y se monta la
-compilación con `wails build -devtools` para poder probar en vivo.
+**Ninguna urgente: con el vidrio resuelto en la 2.10.0 no queda ningún frente abierto de los que
+venían de atrás.** Lo que espera son comprobaciones sueltas del humano, ninguna bloqueante: la
+estructura en máquinas Windows y GNOME de verdad, el icono del documento `.esf` en el Finder y si
+Gatekeeper aparece al actualizarse desde dentro.
 
-Lo demás que espera al humano son comprobaciones sueltas, ninguna bloqueante: la estructura en
-máquinas Windows y GNOME de verdad, el icono del documento `.esf` en el Finder y si Gatekeeper
-aparece al actualizarse desde dentro.
+De lo que se puede hacer sin nadie delante, lo único anotado es darle a `compilar.yml` una entrada
+para pedir una compilación con `wails build -devtools` (`docs/deuda.md`). Ya no hace falta para el
+vidrio, pero el siguiente problema de macOS que no se pueda reproducir aquí lo va a agradecer.
 
 ## Bloqueantes
 
@@ -85,14 +88,6 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 **Las dos primeras son de código publicado que nunca se ha ejecutado aquí**: en esta máquina no hay
 ni Mac ni Windows.
 
-- **¿Se ve por fin el vidrio?** Es *la* pregunta de la 2.10.0. Se encontró leyendo el código de Wails
-  que hay en el caché de módulos de esta máquina: **nunca le pone material a su
-  `NSVisualEffectView`**, así que se queda con `AppearanceBased`, obsoleto desde macOS 10.14 y que hoy
-  se dibuja plano. Había vidrio y estaba desenfocando nada. Ahora se le pone el material de barra
-  lateral y se ha quitado el tinte que la barra pintaba por delante, porque en macOS el material *es*
-  el fondo (ADR 0017). Si aun así no se ve, **el siguiente paso no es otra corazonada**: una
-  compilación con `wails build -devtools` abre el inspector en la aplicación de verdad y deja probar
-  hipótesis en vivo, sin publicar una versión por cada una.
 - **¿Salta el aviso de Gatekeeper al actualizarse desde dentro?** El guion le quita la cuarentena al
   paquete antes de ponerlo, y como el DMG lo descarga Go y no un navegador, es posible que no salte.
   Si no salta, hay que quitarlo del LÉEME del DMG para las actualizaciones y dejarlo solo para la

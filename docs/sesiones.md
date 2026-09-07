@@ -23,10 +23,16 @@ Plantilla al final.
   El Objective-C, como siempre, solo lo comprueba el trabajo de macOS, **y eso solo dice que compila**.
 - De paso: Playwright se había actualizado a 1.63 con `^`, y pedía un navegador que no estaba en el
   caché. Las 40 pruebas fallaban en 3 ms por eso, no por el cambio. Descargado el que toca.
-- **Lo que queda abierto y es lo importante**: si esta vez tampoco se ve, se acabó el Objective-C a
-  ciegas. La salida es `wails build -devtools`, que deja el inspector en la aplicación de verdad y
-  convierte cada hipótesis en una prueba en vivo en lugar de en una versión publicada. Anotado en
-  `docs/deuda.md`.
+- **Comprobado en el Mac: «ahora sí se ve».** El desenfoque pareció excesivo a primera vista, pero
+  puesto al lado de la barra lateral del Finder **se ve igual**: es el estándar de macOS 26. Como el
+  radio del desenfoque no es ajustable —lo fija el material—, comparar con una aplicación de Apple era
+  la única forma de distinguir «nos hemos pasado» de «esto es el sistema». No se tocó nada.
+- **La lección, que costó tres versiones y una aplicación rota:** las tres veces deduje la causa
+  razonando sobre lo que Wails «debería» hacer en una plataforma que no puedo ejecutar aquí. Su código
+  estaba todo el tiempo en `~/go/pkg/mod/`, y la causa se leyó en dos minutos el día que fui a mirar.
+  **Leer la biblioteca va antes que razonar sobre ella.**
+- Queda anotado en `docs/deuda.md`, ya sin urgencia: darle a `compilar.yml` una entrada para pedir
+  `wails build -devtools`. El siguiente problema de macOS que no se reproduzca aquí lo agradecerá.
 
 ## 2026-09-08 · Vidrio, carpetas recordadas y tandas en paralelo
 

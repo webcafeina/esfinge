@@ -114,13 +114,20 @@ color de patrón—. Solo asignaciones a propiedades públicas, preguntando ante
 - Ajustes dice si la ventana está usando el vidrio del sistema. No es adorno: la primera vez que el
   efecto no se vio, no había forma de distinguir «no llega la señal» de «el tinte tapa demasiado».
 
-**Lo que no se ha comprobado:** el Objective-C de `vidrio_darwin.go`. En esta máquina no hay clang ni
-SDK de macOS, así que ni siquiera compila aquí; lo compila el trabajo de macOS de la publicación.
-Y **que ese trabajo pase en verde solo dice que compila, no que arranque** —lo aprendimos con la
-2.9.1—. Cómo queda el material tampoco se puede ver aquí: la simulación de esta máquina no tiene el
-desenfoque del sistema y ya engañó dos veces.
+**Comprobado en un Mac (2.10.0, 2026-09-07): el vidrio se ve.** Y puesto al lado de la barra lateral
+del Finder, **se ve igual**: el desenfoque, que a primera vista parecía excesivo, es el que macOS 26
+pone en todas las barras laterales del sistema. Como el radio del desenfoque no es ajustable en
+AppKit —lo fija el material— la comparación con una aplicación de Apple es la única forma de saber si
+sobra o si es el estándar. Aquí era el estándar, y no había nada que calibrar.
 
-**Y si esta vez tampoco se ve, el siguiente paso no es otra corazonada.** Wails admite compilar con
-devtools en producción (`wails build -devtools`, que añade la etiqueta `devtools`). Con eso el
-inspector se abre en la aplicación de verdad y se pueden probar hipótesis en vivo, sin publicar una
-versión por cada una. Es más lento de montar y mucho más barato que seguir adivinando.
+**Lo que sigue sin poder comprobarse aquí:** el Objective-C de `vidrio_darwin.go`. En esta máquina no
+hay clang ni SDK de macOS, así que ni siquiera compila; lo compila el trabajo de macOS de la
+publicación, y **que ese trabajo pase en verde solo dice que compila, no que arranque** —lo aprendimos
+con la 2.9.1—.
+
+**Y la lección que costó tres versiones:** las tres veces se dedujo la causa razonando sobre lo que
+Wails «debería» hacer, y las tres se falló. El código de Wails estaba todo el tiempo en el caché de
+módulos de esta máquina, y la causa se leyó en dos minutos el día que se fue a mirar. Cuando el fallo
+está en una plataforma que no se puede ejecutar aquí, **leer la biblioteca va antes que razonar sobre
+ella**. Y si ni así, Wails admite `wails build -devtools`, que deja el inspector en la aplicación de
+verdad: cada hipótesis pasa a ser una prueba en vivo en lugar de una versión publicada.

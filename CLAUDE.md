@@ -253,7 +253,9 @@ la imagen en un Mac. `make ventana-dmg` la dibuja antes, leyendo las posiciones 
 ## Lo que nunca se ha probado
 
 Comprobado ya en un Mac de verdad: el arrastrar y soltar desde el Finder, el diálogo de guardar, el
-doble clic en un `.esf` y la imagen de disco, que se monta y se arrastra sin más.
+doble clic en un `.esf`, la imagen de disco —que se monta y se arrastra sin más—, la estructura de la
+barra lateral y, desde la 2.10.0, **el vidrio**: se ve, y comparado con el Finder al lado se ve
+igual, así que el desenfoque es el estándar de macOS 26 y no hay nada que calibrar.
 
 Sin verificar todavía: si el Finder enseña el icono propio en los ficheros `.esf`, y qué tan
 aparatoso resulta el aviso de Gatekeeper con una `.app` sin firmar la primera vez.
