@@ -24,7 +24,12 @@ Plantilla al final.
 - Verificado: `make comprobar`, `make contraste`, **`go test -race` sobre todo**, que aquí importa
   porque es la primera vez que se cifra desde varias gorrutinas, y 26 pruebas de interfaz en los dos
   temas.
-- **Sin comprobar**: cómo queda el vidrio de verdad. No hay Mac ni Windows aquí.
+- **2.5.1**, al probarlo: el vidrio **no se notaba**. La cañería estaba bien —Wails mete un
+  `NSVisualEffectView` detrás de la ventana—; el error fue calibrar el tinte contra una simulación
+  sin desenfoque. macOS no enseña el escritorio, enseña un material ya suavizado, así que dejar pasar
+  el 18 % de eso es no tener efecto. Bajado a 0,55.
+- Y Ajustes pasa a decir si la ventana usa el vidrio del sistema: la primera vez no había forma de
+  distinguir «no llega la señal» de «el tinte tapa demasiado», y eso costó una versión.
 
 ## 2026-09-08 · Lo que dijo el Mac
 

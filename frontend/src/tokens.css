@@ -24,7 +24,7 @@
   --boton: #ffffff;
   --boton-encima: #f2f2f5;
   --anillo: rgb(0 112 235 / 0.35);
-  --barra-vidrio: rgb(246 246 248 / 0.82);
+  --barra-vidrio: rgb(246 246 248 / 0.55);
 
   --alto-control: 28px;
   --espacio-1: 4px;
@@ -67,7 +67,7 @@
     --boton: #3a3a3c;
     --boton-encima: #48484a;
     --anillo: rgb(8 111 216 / 0.45);
-    --barra-vidrio: rgb(36 36 38 / 0.82);
+    --barra-vidrio: rgb(36 36 38 / 0.55);
   }
 }
 
@@ -93,5 +93,5 @@
   --boton: #3a3a3c;
   --boton-encima: #48484a;
   --anillo: rgb(8 111 216 / 0.45);
-  --barra-vidrio: rgb(36 36 38 / 0.82);
+  --barra-vidrio: rgb(36 36 38 / 0.55);
 }

@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.5.0**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.5.1**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, guarda un historial de qué y cuándo, y se compila sola para macOS,
 Windows y Linux en GitHub Actions.
 
@@ -70,9 +70,9 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 **Las dos primeras son de código publicado que nunca se ha ejecutado aquí**: en esta máquina no hay
 ni Mac ni Windows.
 
-- **¿Cómo queda el vidrio?** El tinte se ajustó a 0,82 simulándolo con un degradado saturado detrás,
-  pero esa simulación **no tiene el desenfoque del sistema**, así que es un caso peor que el real. Si
-  algo se lava, se sube el número.
+- **¿Se nota ya el vidrio, y se sigue leyendo?** A 0,82 no se notaba —la simulación de aquí no tiene
+  el desenfoque del sistema y calibró de más—; está en 0,55. Ajustes dice si la ventana lo está
+  usando, para distinguir «no llega» de «tapa demasiado».
 - **¿Salta el aviso de Gatekeeper al actualizarse desde dentro?** El guion le quita la cuarentena al
   paquete antes de ponerlo, y como el DMG lo descarga Go y no un navegador, es posible que no salte.
   Si no salta, hay que quitarlo del LÉEME del DMG para las actualizaciones y dejarlo solo para la

@@ -32,10 +32,17 @@ var Medidas = map[string]string{
 
 // alfaDelVidrio es cuánto tapa la barra cuando el sistema pone el vidrio detrás.
 //
-// Ni opaco —entonces no se vería el efecto— ni demasiado transparente: por
-// debajo de esto, el texto de la barra flota sobre lo que haya en el escritorio
-// y deja de leerse. Es el número que hay que tocar si en un Mac se lee mal.
-const alfaDelVidrio = 0.82
+// **Este número se calibró mal la primera vez y conviene saber por qué.** Se
+// ajustó a 0,82 mirando una simulación con un degradado saturado detrás, sin
+// desenfoque; y ahí, en efecto, el texto se lavaba. Pero macOS no enseña el
+// escritorio: enseña un material ya desenfocado y desaturado, así que dejar
+// pasar solo el 18 % de eso equivale a no tener efecto. Probado en un Mac: no se
+// notaba.
+//
+// A 0,55 el material se ve y el texto se sigue leyendo, porque el desenfoque del
+// sistema hace la mitad del trabajo. Las aplicaciones del sistema van aún más
+// abajo: en ellas el material *es* el fondo.
+const alfaDelVidrio = 0.55
 
 // conAlfa escribe un color con transparencia, para el anillo de foco.
 func conAlfa(c RGB, alfa float64) string {

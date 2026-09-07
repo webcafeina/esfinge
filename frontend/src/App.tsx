@@ -558,12 +558,14 @@ function Ajustes({
   alEncontrar: (n: Novedad) => void;
 }) {
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
+  const [vidrio, setVidrio] = useState<boolean | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [dicho, setDicho] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     esfinge.verPreferencias().then(setPrefs).catch(() => {});
+    esfinge.vidrio().then(setVidrio).catch(() => {});
   }, []);
 
   async function cambiar(buscarActualizaciones: boolean) {
@@ -635,6 +637,14 @@ function Ajustes({
         {dicho && <p className="exito">{dicho}</p>}
         {error && <p className="error">{error}</p>}
       </div>
+
+      {vidrio !== null && (
+        <p className="nota">
+          {vidrio
+            ? "Esta ventana usa el vidrio del sistema: la barra y el pie dejan ver lo que hay detrás."
+            : "Esta ventana es opaca: tu sistema no ofrece el vidrio, o esta versión no lo trae."}
+        </p>
+      )}
 
       <p className="nota">
         Al actualizar no hay que desinstalar nada: en macOS se arrastra encima de la anterior,

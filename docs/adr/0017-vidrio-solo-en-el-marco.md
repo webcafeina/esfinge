@@ -25,8 +25,13 @@ Todo el CSS del efecto cuelga de ese atributo, así que donde no lo hay la venta
 como antes. `MarcarVidrio` va como función y no como método, por la trampa ya conocida de que lo que
 se exporta como método de `*App` cruza el puente.
 
-El tinte es **0,82**, un número en `internal/tema` (`alfaDelVidrio`). Se subió desde 0,72 después de
-mirar la ventana sobre un escritorio saturado: el texto apagado del pie se lavaba.
+El tinte es **0,55**, un número en `internal/tema` (`alfaDelVidrio`).
+
+**Llegar ahí costó equivocarse, y conviene que quede escrito.** Se puso en 0,82 tras simular la
+ventana con un degradado saturado detrás, sin desenfoque, donde el texto del pie se lavaba. Probado
+en un Mac, el efecto **no se notaba**: macOS no enseña el escritorio, enseña un material ya
+desenfocado y desaturado, así que dejar pasar el 18 % de eso es no tener efecto. La simulación
+describía un caso que el sistema nunca produce, y calibrar contra ella fue el error.
 
 ## Alternativas descartadas
 
@@ -52,6 +57,8 @@ mirar la ventana sobre un escritorio saturado: el texto apagado del pie se lavab
 - `make contraste` en verde con el token nuevo.
 - Compila para macOS, Windows y Linux.
 
-**Lo que no se ha comprobado:** el efecto de verdad. Aquí no hay Mac ni Windows. Lo que sí se hizo
-fue simularlo —forzando el atributo con un degradado saturado detrás— y con eso se ajustó el tinte;
-pero esa simulación **no tiene el desenfoque del sistema**, así que es un caso peor que el real.
+- Ajustes dice si la ventana está usando el vidrio del sistema. No es adorno: la primera vez que el
+  efecto no se vio, no había forma de distinguir «no llega la señal» de «el tinte tapa demasiado».
+
+**Lo que no se ha comprobado:** cómo queda el material a 0,55. La simulación de aquí no tiene el
+desenfoque del sistema, así que no sirve para juzgarlo —es justamente lo que enseñó este ADR—.
