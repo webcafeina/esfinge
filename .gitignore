@@ -1,0 +1,8 @@
+# Binarios
+/esfinge
+/esfinge.exe
+/dist/
+
+# Ficheros cifrados y temporales de la propia herramienta
+*.esf
+.esfinge-*

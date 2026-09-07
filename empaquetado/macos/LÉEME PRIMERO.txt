@@ -1,0 +1,118 @@
+ESFINGE 1.0.0 · webcafeína
+Cifra y descifra contraseñas con una clave.
+
+
+CÓMO INSTALARLO
+───────────────
+
+Haz doble clic en «Instalar Esfinge.command».
+
+Se abre una ventana negra, hace su trabajo y te dice cuándo ha terminado. Puede
+pedirte la contraseña del Mac: es la misma con la que lo enciendes, y al
+escribirla no se ve nada en pantalla. Es normal, teclea y pulsa intro.
+
+
+SI MACOS NO TE DEJA ABRIRLO
+───────────────────────────
+
+Es probable que salga un aviso diciendo que no se puede abrir porque procede de
+un desarrollador no identificado. No es que el programa tenga nada malo: es que
+no está firmado con una cuenta de pago de Apple.
+
+Hay dos formas de seguir. Con cualquiera de las dos basta.
+
+  A) Ve a  Ajustes del Sistema → Privacidad y seguridad, baja hasta el aviso
+     sobre «Instalar Esfinge.command» y pulsa «Abrir de todos modos». Luego
+     vuelve a hacer doble clic.
+
+  B) Abre la aplicación Terminal (búscala con ⌘+espacio, escribe «Terminal»),
+     arrastra el fichero «Instalar Esfinge.command» hasta la ventana, escribe
+     la palabra bash y un espacio DELANTE de lo que aparezca, y pulsa intro.
+     Debería quedarte algo así:
+
+         bash /Users/tunombre/Downloads/Esfinge 1.0.0/Instalar Esfinge.command
+
+     Por esta vía macOS no pregunta nada.
+
+
+CÓMO SE USA
+───────────
+
+Abre el Terminal y escribe:
+
+    esfinge
+
+Salen unos menús: cifrar, descifrar, generar una contraseña y ayuda.
+
+Se puede usar con el ratón: pasa el puntero por encima y haz clic, igual que en
+cualquier ventana. También con el teclado, si lo prefieres: flechas para moverte,
+intro para elegir, esc para volver y la tecla q para salir.
+
+Cuando cifras algo, el resultado se copia solo al portapapeles: ya lo puedes
+pegar donde te haga falta, y la pantalla te lo confirma con un ✓.
+
+También tienes los botones «Copiar», por si quieres repetirlo, y «Guardar en un
+fichero», que lo escribe en tu carpeta de Descargas y te dice el nombre exacto.
+
+Si cierras con algo en pantalla que no has guardado ni copiado, Esfinge te
+pregunta antes. Lo que se pierde ahí no se recupera.
+
+
+CIFRAR UN FICHERO ENTERO
+────────────────────────
+
+Dentro de «Cifrar» y de «Descifrar» hay dos botones arriba: «Texto» y «Fichero».
+
+Pulsa «Fichero» y luego, en vez de escribir la ruta a mano, **arrastra el
+fichero desde el Finder hasta la ventana del Terminal**: la ruta se escribe
+sola. Pon la clave y listo.
+
+El fichero original no se toca. El cifrado aparece a su lado con «.esf» al
+final. Para recuperarlo, «Descifrar» → «Fichero» → arrastra el «.esf».
+
+
+LA VENTANA SE AGRANDA SOLA
+──────────────────────────
+
+Al abrir Esfinge, la ventana del Terminal se hace un poco más alta para que
+todo quepa sin tener que desplazarse. Al cerrarlo vuelve a su tamaño.
+
+Si prefieres que no la toque, ábrelo así:
+
+    esfinge --sin-redimensionar
+
+
+UN DETALLE DEL RATÓN
+────────────────────
+
+Mientras Esfinge está abierto, el ratón es suyo. Si quieres seleccionar texto de
+la pantalla para copiarlo a mano, mantén pulsada la tecla ⌥ Option mientras
+arrastras. Aunque para eso está el botón «Copiar», que es más cómodo.
+
+
+LO ÚNICO QUE HAY QUE TENER CLARO
+────────────────────────────────
+
+Lo que cifres solo se abre con la clave que hayas usado.
+
+No existe «he olvidado mi contraseña». Si se pierde la clave, el contenido se ha
+perdido, y no hay nadie —tampoco Webcafeína— que pueda recuperarlo. Guarda la
+clave en sitio seguro ANTES de cifrar nada importante.
+
+La clave hay que hacérsela llegar a la otra persona por un camino distinto del
+que uses para mandar el texto cifrado. Si mandas los dos por el mismo correo,
+quien lea ese correo lo tiene todo.
+
+
+SI ALGO NO VA
+─────────────
+
+Escribe a Webcafeína contando qué has hecho y qué ha salido. Si puedes, añade
+lo que devuelvan estas dos líneas escritas en el Terminal:
+
+    uname -m
+    sw_vers -productVersion
+
+
+───────────────────────────────────────────────────────────────────────────────
+▍ webcafeína · esfinge 1.0.0
