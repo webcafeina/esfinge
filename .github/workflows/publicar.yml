@@ -117,7 +117,15 @@ jobs:
             echo "::error::No aparece makensis después de instalar NSIS"
             exit 1
           fi
-          echo "${nsis}" >> "$GITHUB_PATH"
+          # GITHUB_PATH quiere la ruta como la entiende Windows. Con la de Git
+          # bash —«/c/Program Files (x86)/NSIS»— el fichero está y el paso pasa,
+          # pero wails sigue sin encontrar makensis, que es lo que ocurrió en la
+          # 2.0.2.
+          cygpath -w "$nsis" >> "$GITHUB_PATH"
+
+      - name: Comprobar que makensis está donde wails lo busca
+        shell: bash
+        run: makensis /VERSION
 
       - name: Construir la interfaz
         working-directory: frontend
