@@ -59,6 +59,11 @@ visto nadie.
   un texto abre la de texto, con la línea puesta.
 - **Copiar y pegar con los atajos de ⌘**, que era lo que más riesgo tenía: al construir los menús a
   mano se perdieron los selectores nativos y esas acciones pasan por código propio.
+- **La estructura de macOS** de la 2.6.x: barra lateral, título sin banda y el resaltado del ratón
+  respetando la fila activa.
+- **El disco del DMG**, después de tres intentos y de que llegaran capturas de discos de verdad.
+- **Usar la contraseña generada como clave**, y que **cambiar de sección ya no borra lo escrito**
+  (2.9.0), que era la deuda que dejó abierta la versión anterior.
 
 ## Siguiente acción concreta
 

@@ -60,7 +60,8 @@ Plantilla al final.
   cargara** —veía cero y daba por hecho un vaciado que no había ocurrido— y otra leía la contraseña
   generada mientras React montaba los efectos dos veces en desarrollo, comparando la primera contra
   la segunda.
-- Verificado: 36 pruebas en los dos temas, tres tandas seguidas.
+- Verificado: 36 pruebas en los dos temas, tres tandas seguidas, **y comprobado en el Mac**: lo
+  escrito sobrevive al cambiar de sección.
 
 ## 2026-09-08 · La contraseña generada, usable como clave
 
