@@ -54,6 +54,29 @@ export type Medida = {
   bits: number;
 };
 
+/** Lo que se sabe de una versión más nueva que la instalada. */
+export type Novedad = {
+  hay: boolean;
+  version: string;
+  pagina: string;
+  /** El fichero que le toca a este sistema. Vacío si no hay ninguno. */
+  fichero: string;
+  bytes: number;
+};
+
+/** Cómo va la descarga de la actualización. */
+export type Avance = {
+  bytes: number;
+  total: number;
+  hecho: boolean;
+};
+
+export type Preferencias = {
+  buscarActualizaciones: boolean;
+  ultimaComprobacion: string;
+  versionVista: string;
+};
+
 type MetodosGo = Record<string, (...args: unknown[]) => Promise<unknown>>;
 
 declare global {
@@ -136,11 +159,56 @@ export const esfinge = {
 
   medirPorCaracteres: (caracteres: number, alfabeto: string) =>
     llamar<Medida>("MedirPorCaracteres", caracteres, alfabeto),
+
+  novedadPendiente: () => llamar<Novedad>("NovedadPendiente"),
+
+  comprobarActualizacion: () => llamar<Novedad>("ComprobarActualizacion"),
+
+  descargarActualizacion: () => llamar<string>("DescargarActualizacion"),
+
+  instalarActualizacion: () => llamar<void>("InstalarActualizacion"),
+
+  verPreferencias: () => llamar<Preferencias>("VerPreferencias"),
+
+  guardarPreferencias: (p: Preferencias) => llamar<void>("GuardarPreferencias", p),
 };
 
 /** Los límites de longitud los pone Go, no la interfaz. */
 export const CARACTERES_MINIMO = 16;
 export const CARACTERES_MAXIMO = 96;
+
+/**
+ * alHaberNovedad escucha el aviso de que hay una versión nueva.
+ *
+ * Llega tarde a propósito: la comprobación sale a la red en su propia gorrutina
+ * para no retrasar la ventana, así que este evento puede caer segundos después
+ * de abrir. Quien se monte más tarde puede preguntar por «novedadPendiente».
+ */
+export function alHaberNovedad(cb: (n: Novedad) => void): () => void {
+  return escuchar("novedad", cb);
+}
+
+/** alDescargar escucha el avance de la descarga de la actualización. */
+export function alDescargar(cb: (a: Avance) => void): () => void {
+  return escuchar("descarga", cb);
+}
+
+/**
+ * escuchar es el camino de dos vías de siempre: los eventos de Wails cuando hay
+ * ventana, y el flujo del servidor de desarrollo cuando hay navegador.
+ */
+function escuchar<T>(evento: string, cb: (datos: T) => void): () => void {
+  if (window.runtime?.EventsOn) {
+    window.runtime.EventsOn(evento, (datos) => cb(datos as T));
+    return () => {};
+  }
+
+  const fuente = new EventSource("/api/eventos");
+  fuente.addEventListener(evento, (e) => {
+    cb(JSON.parse((e as MessageEvent).data) as T);
+  });
+  return () => fuente.close();
+}
 
 /**
  * alEmpezarProgreso escucha cómo va una tanda de ficheros.
@@ -149,16 +217,7 @@ export const CARACTERES_MAXIMO = 96;
  * flujo de eventos del servidor. Devuelve la función que deja de escuchar.
  */
 export function alProgresar(cb: (p: Progreso) => void): () => void {
-  if (window.runtime?.EventsOn) {
-    window.runtime.EventsOn("progreso", (datos) => cb(datos as Progreso));
-    return () => {};
-  }
-
-  const fuente = new EventSource("/api/eventos");
-  fuente.addEventListener("progreso", (e) => {
-    cb(JSON.parse((e as MessageEvent).data) as Progreso);
-  });
-  return () => fuente.close();
+  return escuchar("progreso", cb);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { esfinge, type Fuerza } from "./puente";
+import { esfinge, type Avance, type Fuerza, type Novedad } from "./puente";
 
 /** Control segmentado, que es como los dos sistemas agrupan modos excluyentes. */
 export function Segmentado<T extends string>({
@@ -259,4 +259,96 @@ export function usaMontado() {
     };
   }, []);
   return montado;
+}
+
+/**
+ * BandaNovedad es el aviso de que hay una versión nueva.
+ *
+ * Va entre la barra y el contenido, no dentro del panel: dentro se repetiría en
+ * las cuatro pestañas y se mezclaría con los avisos de lo que se está cifrando,
+ * que son de otra cosa. Y no se llama «aviso» porque esa clase ya es la de los
+ * avisos del propio trabajo.
+ *
+ * Los tres estados son el mismo sitio contando tres momentos: hay algo nuevo,
+ * se está bajando, está listo para instalar.
+ */
+export function BandaNovedad({
+  novedad,
+  avance,
+  error,
+  alDescargar,
+  alInstalar,
+  alCerrar,
+}: {
+  novedad: Novedad;
+  avance?: Avance;
+  error?: string;
+  alDescargar: () => void;
+  alInstalar: () => void;
+  alCerrar: () => void;
+}) {
+  const bajando = avance !== undefined && !avance.hecho;
+  const lista = avance?.hecho === true;
+
+  return (
+    <div className="novedad" role="status">
+      <div className="dice">
+        {error ? (
+          <span className="error">{error}</span>
+        ) : lista ? (
+          <span>Esfinge {novedad.version} está lista para instalarse.</span>
+        ) : bajando ? (
+          <span>
+            Descargando Esfinge {novedad.version}
+            {avance.total > 0 && ` · ${Math.round((avance.bytes / avance.total) * 100)} %`}
+          </span>
+        ) : (
+          <span>
+            Hay una versión nueva: <strong>Esfinge {novedad.version}</strong>
+          </span>
+        )}
+
+        {bajando && (
+          <div className="barra-progreso">
+            <i style={{ width: anchoDe(avance) }} />
+          </div>
+        )}
+      </div>
+
+      <div className="botones">
+        {lista ? (
+          <button className="principal" onClick={alInstalar}>
+            Cerrar Esfinge e instalar
+          </button>
+        ) : (
+          !bajando && (
+            <>
+              {novedad.fichero ? (
+                <button className="principal" onClick={alDescargar}>
+                  Descargar
+                </button>
+              ) : (
+                <a className="discreto" href={novedad.pagina} target="_blank" rel="noreferrer">
+                  Ver la publicación
+                </a>
+              )}
+              <button className="discreto" onClick={alCerrar}>
+                Ahora no
+              </button>
+            </>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * anchoDe evita la barra vacía cuando todavía no se sabe el tamaño total: sin
+ * esto, una descarga sin «Content-Length» se vería como una barra que no avanza,
+ * que se lee como que algo va mal.
+ */
+function anchoDe(a: Avance): string {
+  if (a.total <= 0) return "100%";
+  return `${Math.min(100, (a.bytes / a.total) * 100)}%`;
 }

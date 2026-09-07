@@ -20,6 +20,7 @@ func main() {
 	direccion := flag.String("direccion", "127.0.0.1:34443", "Dónde escuchar")
 	carpeta := flag.String("carpeta", "", "Carpeta que hace de diálogo de ficheros")
 	version := flag.String("version", "dev", "Versión que enseña la interfaz")
+	api := flag.String("api", "", "API de publicaciones de mentira, para probar el aviso de versión nueva")
 	flag.Parse()
 
 	if *carpeta == "" {
@@ -36,5 +37,16 @@ func main() {
 	}
 
 	sistema := app.NuevoSistemaDeDesarrollo(*carpeta)
-	log.Fatal(app.Servir(app.Nueva(*version, sistema), sistema, *direccion))
+	aplicacion := app.Nueva(*version, sistema)
+
+	// Con -api se apunta la comprobación de versiones a un servidor de mentira.
+	// Sin él no se toca: nadie quiere que levantar la interfaz para desarrollar
+	// salga a internet.
+	if *api != "" {
+		app.ApuntarAAPI(aplicacion, *api)
+	} else {
+		app.ApuntarAAPI(aplicacion, "http://127.0.0.1:1") // a ninguna parte
+	}
+
+	log.Fatal(app.Servir(aplicacion, sistema, *direccion))
 }

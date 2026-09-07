@@ -496,3 +496,53 @@ p {
     animation: none !important;
   }
 }
+
+/* ------------------------------------------------------------- actualizar */
+
+/* La banda de versión nueva. Va entre la barra y el contenido, con el mismo
+   material que la barra para que se lea como parte del marco de la ventana y no
+   como un mensaje del trabajo que se está haciendo. */
+.novedad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-4);
+  padding: var(--espacio-2) var(--espacio-4);
+  background: var(--suave);
+  border-bottom: 0.5px solid var(--filete);
+  font-size: var(--texto-chico);
+}
+
+.novedad .dice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  min-width: 0;
+  flex: 1;
+}
+
+.novedad .barra-progreso {
+  max-width: 320px;
+}
+
+.novedad .botones {
+  flex-shrink: 0;
+}
+
+/* El enlace a la publicación tiene que verse como los botones discretos de al
+   lado, aunque sea un ancla. */
+.novedad a.discreto {
+  display: inline-flex;
+  align-items: center;
+  height: var(--alto-control);
+  padding: 0 var(--espacio-3);
+  color: var(--acento);
+  text-decoration: none;
+}
+
+.fila-ajuste {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  cursor: pointer;
+}

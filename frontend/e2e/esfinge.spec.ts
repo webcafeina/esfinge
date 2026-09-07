@@ -132,3 +132,51 @@ test("el historial enseña lo hecho y se puede vaciar", async ({ page }) => {
   await page.getByRole("button", { name: "Vaciar historial" }).click();
   await expect(page.getByText("Todavía no has hecho nada.")).toBeVisible();
 });
+
+test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // No se comprueba sola al abrir la ventana: en desarrollo eso saldría a la red
+  // en cada recarga. Se pide desde Ajustes, que es el mismo camino que recorre
+  // el arranque de la aplicación de verdad.
+  await expect(page.locator(".novedad")).toHaveCount(0);
+
+  await page.getByRole("tab", { name: "Ajustes" }).click();
+  await page.getByRole("button", { name: "Buscar ahora" }).click();
+
+  const banda = page.locator(".novedad");
+  await expect(banda).toBeVisible({ timeout: 20_000 });
+  await expect(banda).toContainText("9.9.9");
+
+  // El aviso no puede confundirse con los avisos del propio trabajo, que llevan
+  // la clase «aviso» y hablan de lo que se está cifrando.
+  await expect(page.locator(".aviso")).toHaveCount(0);
+
+  await banda.getByRole("button", { name: "Ahora no" }).click();
+  await expect(banda).toHaveCount(0);
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});
+
+test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  await page.getByRole("tab", { name: "Ajustes" }).click();
+  const interruptor = page.getByRole("checkbox", { name: /versión nueva/ });
+  await expect(interruptor).toBeChecked();
+
+  // Apagarlo es lo que corta la única salida a la red del programa, así que
+  // tiene que sobrevivir a cerrar y abrir la ventana.
+  await interruptor.uncheck();
+  await page.reload();
+  await page.getByRole("tab", { name: "Ajustes" }).click();
+  await expect(page.getByRole("checkbox", { name: /versión nueva/ })).not.toBeChecked();
+
+  // Y se deja como estaba, que el fichero de preferencias es de verdad y lo
+  // comparten las demás pruebas.
+  await page.getByRole("checkbox", { name: /versión nueva/ }).check();
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});

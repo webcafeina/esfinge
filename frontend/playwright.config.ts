@@ -33,7 +33,19 @@ export default defineConfig({
   // nadie tenga que acordarse de arrancar dos servidores en el orden correcto.
   webServer: [
     {
-      command: `go run -tags dev ../cmd/dev -version ${process.env.VERSION_CAPTURAS ?? "dev"}`,
+      command: "node e2e/api-falsa.mjs",
+      url: "http://127.0.0.1:34444/salud",
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
+      // La versión tiene que poder compararse para que el aviso de actualización
+      // sea comprobable: con «dev» el propio Go se calla a propósito, que es lo
+      // que se quiere en una compilación de trabajo.
+      command:
+        `go run -tags dev ../cmd/dev` +
+        ` -version ${process.env.VERSION_CAPTURAS ?? "2.0.3"}` +
+        ` -api http://127.0.0.1:34444`,
       url: "http://127.0.0.1:34443/api/salud",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

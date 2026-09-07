@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/webcafeina/esfinge/internal/actualizacion"
 	"github.com/webcafeina/esfinge/internal/cripto"
 )
 
@@ -25,7 +26,9 @@ type App struct {
 	version string
 
 	hist    *Historial
+	ajustes *Ajustes
 	sistema Sistema
+	act     *actualizador
 
 	// abiertoCon es el fichero con el que se arrancó, si se arrancó con uno.
 	abiertoCon string
@@ -49,12 +52,26 @@ func Nueva(version string, sistema Sistema) *App {
 	return &App{
 		version: version,
 		hist:    AbrirHistorial(),
+		ajustes: AbrirAjustes(),
 		sistema: sistema,
+		act:     &actualizador{comprobador: actualizacion.Nuevo(version)},
 	}
 }
 
+// ApuntarAAPI cambia a dónde se pregunta por versiones nuevas. Lo usan el
+// servidor de desarrollo y las pruebas, que levantan una API de mentira.
+//
+// Va como función y no como método a propósito: todo método exportado de *App
+// queda expuesto a la interfaz —Wails los enlaza, y el servidor de desarrollo
+// los publica por reflexión—, y dejar que la ventana pueda apuntar la
+// actualización a donde quiera sería abrir una puerta por comodidad.
+func ApuntarAAPI(a *App, raiz string) { a.act.comprobador.API = raiz }
+
 // Arrancar la llama Wails cuando la ventana está lista.
-func (a *App) Arrancar(ctx context.Context) { a.ctx = ctx }
+func (a *App) Arrancar(ctx context.Context) {
+	a.ctx = ctx
+	a.comprobarAlArrancar()
+}
 
 // Version es la que se enseña en «Acerca de».
 func (a *App) Version() string { return a.version }

@@ -5,7 +5,7 @@
 # Esfinge
 
 **Cifra y descifra contraseñas y ficheros con una clave.**
-Sin cuentas, sin servidores, sin que nada salga de tu ordenador.
+Sin cuentas y sin servidores: lo que cifras no sale de tu ordenador.
 
 [![Compilación](https://github.com/webcafeina/esfinge/actions/workflows/compilar.yml/badge.svg)](https://github.com/webcafeina/esfinge/actions/workflows/compilar.yml)
 [![Última versión](https://img.shields.io/github/v/release/webcafeina/esfinge?label=versión&color=0070eb)](https://github.com/webcafeina/esfinge/releases/latest)
@@ -55,6 +55,11 @@ una cadena de conexión sin que se rompa por un `/` ([por qué](docs/adr/0004-co
 
 **Lleva un historial** de qué se cifró y cuándo. Nunca el contenido, ni la clave, ni el texto
 cifrado.
+
+**Se actualiza sola**, o casi: avisa cuando hay versión nueva, se descarga el instalador de tu
+sistema comprobando que llegó entero, y lo abre. No hay que desinstalar nada. Es lo único que Esfinge
+hace fuera de tu ordenador —una consulta al día a GitHub, sin mandar nada— y se apaga en Ajustes
+([qué se envía, exactamente](docs/seguridad.md#lo-único-que-sale-de-la-máquina)).
 
 Y trae **línea de comandos** para lo mismo, pensada para tuberías y scripts:
 

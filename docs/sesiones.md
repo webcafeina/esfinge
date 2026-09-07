@@ -5,6 +5,37 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-07 · Que la aplicación se entere de sus propias versiones
+
+- **2.1.0**: Esfinge comprueba una vez al día si hay versión nueva, se descarga el instalador de su
+  sistema comprobando el SHA256 mientras baja, y lo abre. No se reemplaza a sí misma: eso exige
+  firmar con Apple, que está descartado desde la 0012. Ninguno de los tres sistemas pide desinstalar
+  antes.
+- Paquete nuevo `internal/actualizacion`, sin dependencias fuera de la biblioteca estándar y sin
+  saber nada de Wails, para poder usarlo también desde la línea de comandos y probarlo entero contra
+  un servidor de mentira.
+- **Lo primero que hubo que arreglar no estaba en el plan**: el `SHA256SUMS` que se publicaba solo
+  cubría los seis binarios de la línea de comandos. El DMG, el instalador y el `.deb` salían sin
+  resumen, así que no había contra qué comparar una descarga. Ahora se rehace en el trabajo de
+  publicar, sobre todos los adjuntos.
+- Aparecen dos cosas que no existían: un fichero de preferencias —junto al historial, con sus mismos
+  permisos— y una quinta pestaña, **Ajustes**, que es donde se cuenta con todas las letras qué se
+  envía y dónde se apaga. Eso es la contrapartida de haber elegido comprobación automática: la
+  portada decía que nada salía del ordenador y ha habido que matizarlo, en el README y en
+  `seguridad.md`.
+- En la línea de comandos el aviso va por la salida de error, nunca por la estándar, **solo si esa
+  salida es un terminal** —en una tubería o un cron no se escribe ni se pregunta— y con un plazo de
+  cortesía: si la red no contesta, el comando no espera.
+- Una trampa del diseño de Wails que conviene recordar: **todo método exportado de `*App` queda
+  expuesto a la interfaz**, así que `ApuntarAAPI` tuvo que ser función y no método, para que la
+  ventana no pueda apuntar la comprobación a donde quiera.
+- Verificado: 21 tests de Go nuevos contra un `httptest.Server` —incluido que con el interruptor
+  apagado no se hace **ni una** petición, que se cuenta en vez de suponerse—, `make comprobar` en
+  verde con y sin `-tags dev`, `-race` limpio, y 10 pruebas de interfaz en los dos temas contra una
+  API de mentira.
+- Queda abierto lo que no se puede ver desde aquí: una actualización de verdad, y si al descargar el
+  DMG desde Go la copia instalada se libra del aviso de Gatekeeper.
+
 ## 2026-09-07 · Infraestructura: documentos, repositorio e instaladores
 
 - Se montó este sistema de documentos vivos siguiendo la convención de Tempero, con trece decisiones

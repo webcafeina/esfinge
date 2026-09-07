@@ -271,6 +271,17 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { path: adjuntos, merge-multiple: true }
 
+      # El SHA256SUMS que trae el trabajo de la línea de comandos solo cubre sus
+      # seis binarios. Aquí se rehace sobre todo lo que se publica —el DMG, el
+      # instalador, el .deb— porque es contra estas líneas contra lo que compara
+      # la aplicación cuando se descarga su propia actualización.
+      - name: Resumir todo lo que se publica
+        working-directory: adjuntos
+        run: |
+          rm -f SHA256SUMS
+          find . -maxdepth 1 -type f -printf '%f\n' | sort | xargs sha256sum > SHA256SUMS
+          cat SHA256SUMS
+
       - name: Qué se va a publicar
         run: ls -lhR adjuntos
 

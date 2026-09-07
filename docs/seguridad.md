@@ -50,11 +50,32 @@ Esto es lo importante de este documento.
 | Qué | Dónde | Permisos |
 |---|---|---|
 | Historial | Carpeta de configuración del usuario, `Esfinge/historial.json` | `600` |
+| Preferencias | La misma carpeta, `Esfinge/preferencias.json` | `600` |
+| La actualización descargada | Carpeta de caché del usuario, `Esfinge/descargas/` | `600` |
 | Ficheros cifrados | Junto al original, con `.esf` al final | `600` |
 | Lo que se guarda desde la ventana | Donde diga el diálogo del sistema | `600` |
 
-**Nada sale de la máquina.** Esfinge no habla con internet: no hay telemetría, ni comprobación de
-versiones, ni informes de fallos.
+## Lo único que sale de la máquina
+
+Desde la 2.1.0 Esfinge hace **una** conexión, y conviene saber exactamente cuál
+([ADR 0014](adr/0014-comprobacion-de-actualizaciones.md)):
+
+**Una petición `GET` a `api.github.com`, una vez al día**, para preguntar cuál es la última versión
+publicada. Eso es todo. En ella viaja el número de versión instalada, dentro del `User-Agent`, que es
+lo que se compara; y GitHub ve la dirección IP, como cualquier página que se visite.
+
+**No hay telemetría, ni informes de fallos, ni identificadores.** Nada de lo que se cifra, ni los
+nombres de los ficheros, ni cuántas veces se usa el programa, ni nada que permita distinguir una
+instalación de otra.
+
+Se apaga en **Ajustes**, donde está dicho con estas mismas palabras. En la línea de comandos, con
+`ESFINGE_SIN_RED=1`; y ahí, además, no se pregunta nunca si la salida de error no es un terminal, que
+es el caso de cualquier script.
+
+Si se descarga una actualización, se comprueba su SHA256 contra el publicado. **Eso protege de una
+descarga rota, no de una publicación manipulada**: el resumen sale del mismo sitio que el fichero. Lo
+que sostiene la confianza es el TLS contra GitHub, y que la aplicación no se instala sola —el
+instalador lo abre quien esté delante—.
 
 ## Decisiones que afectan a la seguridad
 

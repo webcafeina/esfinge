@@ -1,18 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  alDescargar,
+  alHaberNovedad,
   alProgresar,
   alSoltarFicheros,
   enWails,
   esfinge,
   type Alfabeto,
+  type Avance,
   type Entrada,
   type Medida,
+  type Novedad,
+  type Preferencias,
   type Progreso as TipoProgreso,
   type ResultadoFichero,
   CARACTERES_MINIMO,
   CARACTERES_MAXIMO,
 } from "./puente";
 import {
+  BandaNovedad,
   CampoClave,
   nombreDe,
   PanelResultado,
@@ -21,7 +27,7 @@ import {
   ZonaFicheros,
 } from "./componentes";
 
-type Tarea = "cifrar" | "descifrar" | "generar" | "historial";
+type Tarea = "cifrar" | "descifrar" | "generar" | "historial" | "ajustes";
 type Modo = "texto" | "ficheros";
 
 export default function App() {
@@ -29,8 +35,22 @@ export default function App() {
   const [version, setVersion] = useState("");
   const [alArrancar, setAlArrancar] = useState<string[]>([]);
 
+  const [novedad, setNovedad] = useState<Novedad | null>(null);
+  const [avance, setAvance] = useState<Avance | undefined>();
+  const [falloAlBajar, setFalloAlBajar] = useState("");
+
   useEffect(() => {
     esfinge.version().then(setVersion).catch(() => setVersion("?"));
+
+    // La comprobación de versiones sale a la red desde Go, en su propia
+    // gorrutina, y puede contestar segundos después de abrirse la ventana. Por
+    // eso se escucha el evento y además se pregunta: quien llega tarde al primero
+    // se entera por lo segundo.
+    const dejarDeEscuchar = alHaberNovedad((n) => n.hay && setNovedad(n));
+    esfinge
+      .novedadPendiente()
+      .then((n) => n.hay && setNovedad(n))
+      .catch(() => {});
 
     // Doble clic en un .esf: la aplicación se abre directamente en descifrar,
     // con el fichero puesto. Quien hace ese gesto quiere abrir ese fichero, no
@@ -43,7 +63,24 @@ export default function App() {
         setTarea("descifrar");
       })
       .catch(() => {});
+
+    return dejarDeEscuchar;
   }, []);
+
+  async function descargar() {
+    setFalloAlBajar("");
+    setAvance({ bytes: 0, total: novedad?.bytes ?? 0, hecho: false });
+
+    const dejarDeEscuchar = alDescargar(setAvance);
+    try {
+      await esfinge.descargarActualizacion();
+    } catch (e) {
+      setAvance(undefined);
+      setFalloAlBajar(mensaje(e));
+    } finally {
+      dejarDeEscuchar();
+    }
+  }
 
   return (
     <div className="ventana">
@@ -56,9 +93,21 @@ export default function App() {
             { valor: "descifrar", etiqueta: "Descifrar" },
             { valor: "generar", etiqueta: "Generar" },
             { valor: "historial", etiqueta: "Historial" },
+            { valor: "ajustes", etiqueta: "Ajustes" },
           ]}
         />
       </nav>
+
+      {novedad && (
+        <BandaNovedad
+          novedad={novedad}
+          avance={avance}
+          error={falloAlBajar}
+          alDescargar={descargar}
+          alInstalar={() => esfinge.instalarActualizacion().catch((e) => setFalloAlBajar(mensaje(e)))}
+          alCerrar={() => setNovedad(null)}
+        />
+      )}
 
       <main className="contenido">
         {tarea === "cifrar" && <Trabajo key="cifrar" accion="cifrar" />}
@@ -67,6 +116,7 @@ export default function App() {
         )}
         {tarea === "generar" && <Generar />}
         {tarea === "historial" && <Historial />}
+        {tarea === "ajustes" && <Ajustes version={version} alEncontrar={setNovedad} />}
       </main>
 
       <footer className="pie">
@@ -422,6 +472,109 @@ function Generar() {
           extra={<button onClick={generar}>Generar otra</button>}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Ajustes es donde se cuenta la única cosa que Esfinge hace fuera de esta
+ * máquina, y donde se apaga.
+ *
+ * Que esté a la vista no es cortesía: la portada dice que nada sale del
+ * ordenador, y a partir de la comprobación de versiones sale una petición. Si se
+ * hace, se dice, y se deja apagar.
+ */
+function Ajustes({
+  version,
+  alEncontrar,
+}: {
+  version: string;
+  alEncontrar: (n: Novedad) => void;
+}) {
+  const [prefs, setPrefs] = useState<Preferencias | null>(null);
+  const [buscando, setBuscando] = useState(false);
+  const [dicho, setDicho] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    esfinge.verPreferencias().then(setPrefs).catch(() => {});
+  }, []);
+
+  async function cambiar(buscarActualizaciones: boolean) {
+    if (!prefs) return;
+    const siguiente = { ...prefs, buscarActualizaciones };
+    setPrefs(siguiente);
+    try {
+      await esfinge.guardarPreferencias(siguiente);
+    } catch (e) {
+      setError(mensaje(e));
+    }
+  }
+
+  async function buscarAhora() {
+    setBuscando(true);
+    setError("");
+    setDicho("");
+    try {
+      const n = await esfinge.comprobarActualizacion();
+      if (n.hay) {
+        alEncontrar(n);
+        setDicho(`Hay una versión nueva: Esfinge ${n.version}.`);
+      } else {
+        setDicho("Ya tienes la última versión.");
+      }
+      esfinge.verPreferencias().then(setPrefs).catch(() => {});
+    } catch (e) {
+      setError(mensaje(e));
+    } finally {
+      setBuscando(false);
+    }
+  }
+
+  return (
+    <div className="panel">
+      <div>
+        <h1>Ajustes</h1>
+        <p className="nota">Tienes instalada la versión {version}.</p>
+      </div>
+
+      <div className="grupo">
+        <label className="fila-ajuste">
+          <input
+            type="checkbox"
+            checked={prefs?.buscarActualizaciones ?? true}
+            onChange={(e) => cambiar(e.target.checked)}
+          />
+          <span>Avisarme cuando haya una versión nueva</span>
+        </label>
+
+        <p className="nota">
+          Es lo único que Esfinge hace fuera de tu ordenador: una vez al día le pregunta a
+          GitHub cuál es la última versión publicada. No manda nada de lo que cifras, ni quién
+          eres, ni cuántas veces la usas. En la petición viaja el número de versión que tienes,
+          que es lo que se compara, y GitHub ve tu dirección IP, como cualquier página que
+          visites.
+        </p>
+
+        {prefs?.ultimaComprobacion && (
+          <p className="nota">Se miró por última vez el {fecha(prefs.ultimaComprobacion)}.</p>
+        )}
+
+        <div className="botones">
+          <button onClick={buscarAhora} disabled={buscando}>
+            {buscando ? "Buscando…" : "Buscar ahora"}
+          </button>
+        </div>
+
+        {dicho && <p className="exito">{dicho}</p>}
+        {error && <p className="error">{error}</p>}
+      </div>
+
+      <p className="nota">
+        Al actualizar no hay que desinstalar nada: en macOS se arrastra encima de la anterior,
+        en Windows el asistente la sustituye y en Linux lo hace el paquete. Tu historial y estos
+        ajustes se quedan donde están.
+      </p>
     </div>
   );
 }

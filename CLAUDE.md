@@ -90,8 +90,22 @@ No se cambian sin preguntar.
   el secreto en claro.
 - **Guardar usa el diálogo del sistema.**
 - **Sin firmar ni notarizar para macOS**: los 99 $/año de Apple no compensan para un cliente.
+- **Comprueba actualizaciones sola**, una vez al día, y se descarga el instalador de su sistema
+  comprobando el SHA256. **No se reemplaza a sí misma**: eso exige firma. Es la única conexión que
+  hace el programa, se cuenta en Ajustes y se apaga ahí (ADR 0014).
 
 ## Trampas que ya costaron encontrarse
+
+**Todo método exportado de `*App` queda expuesto a la interfaz.** Wails los enlaza por `Bind` y el
+servidor de desarrollo los publica por reflexión, sin listas que mantener — que es cómodo hasta que
+se exporta algo que no debería poder pedirse desde la ventana. Por eso `comprobarAlArrancar` va en
+minúscula y `ApuntarAAPI` es función y no método: dejar que la interfaz apunte la actualización a
+donde quiera sería abrir una puerta por comodidad.
+
+**Ahora hay red en el binario del cliente.** Hasta la 2.0.3 no la había: el único `net/http` estaba
+tras la etiqueta `dev`. Es una petición GET al día a `api.github.com`, y está documentada en
+`docs/seguridad.md` porque la portada prometía lo contrario. Cualquier conexión nueva pasa por ahí
+antes que por el código.
 
 **El color se genera, no se escribe.** `internal/tema` es la fuente de verdad y produce
 `frontend/src/tokens.css` con `make tokens`. Editar el CSS a mano no sirve: hay un test que compara

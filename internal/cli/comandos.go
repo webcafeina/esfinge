@@ -51,7 +51,10 @@ func Ejecutar(version string) int {
 		Long: "Esfinge cifra contraseñas, ficheros de credenciales y cualquier otro\n" +
 			"secreto con una clave que solo conocen las dos partes.\n\n" +
 			"Esto es la línea de comandos, pensada para tuberías y scripts. Si lo\n" +
-			"que buscas son menús y ratón, abre la aplicación Esfinge.",
+			"que buscas son menús y ratón, abre la aplicación Esfinge.\n\n" +
+			"Una vez al día comprueba si hay una versión nueva y lo dice por la\n" +
+			"salida de error, nunca por la estándar, y solo si estás en un terminal.\n" +
+			"Con ESFINGE_SIN_RED=1 no sale a la red en ningún caso.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       version,
@@ -76,11 +79,19 @@ func Ejecutar(version string) int {
 	// Va después de AddCommand porque también reescribe los subcomandos.
 	castellanizar(raiz)
 
+	// La consulta de versiones nuevas sale ya, para que le dé tiempo mientras se
+	// cifra. Lo que no hace nunca es retrasar el resultado: ver novedad.go.
+	v := vigilar(version)
+
 	if err := raiz.Execute(); err != nil {
 		e, _ := estilos(o.tema)
 		fmt.Fprintln(os.Stderr, e.Mal(err.Error()))
+		v.contar(e)
 		return codigoDe(err)
 	}
+
+	e, _ := estilos(o.tema)
+	v.contar(e)
 	return SalidaOK
 }
 

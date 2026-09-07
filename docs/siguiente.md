@@ -7,6 +7,9 @@ saber qué se hizo.
 
 ## Alta
 
+- **Probar una actualización de verdad, de punta a punta.** La 2.1.0 se descarga sola y abre el
+  instalador, pero eso solo se ve instalando una versión vieja y publicando una nueva. Depende del
+  humano.
 - **Probar la aplicación en un Mac de verdad.** Nunca se ha abierto en un escritorio, solo
   compilado. Sin esto, todo lo visual es una suposición. Depende del humano.
 - **Montar el DMG en un Mac.** Está armado y el flujo lo publica, pero cómo queda la ventana al
@@ -30,7 +33,8 @@ saber qué se hizo.
 
 - **Traducción al inglés.** Hoy está todo en español, a propósito. Solo hace falta si el programa
   sale de la casa.
-- **Actualización automática.** Requiere firmar, que está descartado.
+- **Reemplazo automático del binario**, sin pasar por el instalador. Requiere firmar, que está
+  descartado (ADR 0014).
 - **Empaquetar para Homebrew** (`brew install --cask esfinge`), que exige una URL estable y firma.
 
 ## Cerrado
@@ -38,6 +42,8 @@ saber qué se hizo.
 - ~~Convertir la herramienta de terminal en aplicación de escritorio~~ → hecho en la 2.0.0 (2026-09-07).
 - ~~Arreglar el arrastrar y soltar~~ → hecho en la 2.0.1 (2026-09-07).
 - ~~Doble clic en un `.esf` en macOS~~ → hecho en la 2.0.1 (2026-09-07).
+- ~~Que la aplicación avise de las versiones nuevas~~ → hecho en la 2.1.0, con descarga comprobada y
+  entrega al instalador (2026-09-07).
 - ~~Instaladores de los tres sistemas~~ → DMG, NSIS y `.deb`, publicados por `publicar.yml` al
   empujar una etiqueta (2026-09-07).
 - ~~El arranque de cinco segundos en terminales que no contestan~~ → desapareció al retirar la
