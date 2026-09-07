@@ -23,10 +23,12 @@ const (
 // El historial sirve para reencontrar un fichero, no para recuperar un secreto,
 // y guardar de más convertiría un fichero de conveniencia en un objetivo.
 type Entrada struct {
-	Accion  Accion    `json:"accion"`
-	Nombre  string    `json:"nombre"`
-	Destino string    `json:"destino"`
-	Cuando  time.Time `json:"cuando"`
+	Accion  Accion `json:"accion"`
+	Nombre  string `json:"nombre"`
+	Destino string `json:"destino"`
+	// Cuando va como texto ISO y no como time.Time: al otro lado del puente no
+	// existe ese tipo, y el generador de Wails no sabe qué hacer con él.
+	Cuando string `json:"cuando"`
 }
 
 // maximo de entradas que se conservan. Pasado eso se tiran las más viejas: un
@@ -78,7 +80,7 @@ func (h *Historial) Anotar(accion Accion, nombre, destino string) {
 		Accion:  accion,
 		Nombre:  nombre,
 		Destino: destino,
-		Cuando:  time.Now(),
+		Cuando:  time.Now().Format(time.RFC3339),
 	}}, h.entradas...)
 
 	if len(h.entradas) > maximo {

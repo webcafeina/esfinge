@@ -98,6 +98,9 @@ jobs:
             os: ubuntu-latest
             plataforma: linux/amd64
             artefacto: Esfinge-Linux
+            # Ubuntu reciente ya no trae webkit2gtk-4.0, que es lo que Wails
+            # busca de serie. La 4.1 se pide con su etiqueta.
+            etiquetas: webkit2_41
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -147,7 +150,9 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           [ "$version" = "$GITHUB_REF_NAME" ] && version="dev-${GITHUB_SHA::7}"
+          etiquetas="${{ matrix.etiquetas }}"
           wails build -platform ${{ matrix.plataforma }} -clean \
+            ${etiquetas:+-tags "$etiquetas"} \
             -ldflags "-X main.version=$version"
 
       - uses: actions/upload-artifact@v4
