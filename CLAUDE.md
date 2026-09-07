@@ -195,6 +195,11 @@ que los separa es el byte siguiente —la versión en el binario, el punto en el
 puesta; en la de ficheros, con las rutas. Abrir un texto en la pantalla de ficheros era un lío,
 porque ahí lo que se quiere ver es el secreto, no otro fichero al lado.
 
+**El icono del volumen no es el de la aplicación.** Con el mismo icono, el disco montado y lo que hay
+dentro se ven igual y en la barra lateral del Finder no se distinguen. El volumen lleva un disco con
+la marca encima (`build/darwin/disco.svg`), y su `.icns` lo arma `armar-dmg.sh` con `iconutil`, que
+**solo existe en macOS**: aquí solo se pueden rasterizar los PNG del `.iconset` con `make icono`.
+
 **El fondo del DMG y los nombres de los iconos.** El Finder centra cada icono en la posición que le
 da `create-dmg` y **escribe su nombre debajo**: con iconos de 96 px, el pie del nombre queda unos 64
 px por debajo del centro. Todo lo que el fondo dibuje ahí queda tapado, y eso no se ve hasta montar

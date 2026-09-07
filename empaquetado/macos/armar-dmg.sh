@@ -27,6 +27,19 @@ if ! command -v create-dmg >/dev/null; then
   exit 1
 fi
 
+# El icono del volumen: un disco con la marca encima, no el icono de la
+# aplicación. Con el de la aplicación, el volumen montado y lo que hay dentro se
+# ven igual y en la barra lateral del Finder no se distinguen.
+#
+# El .icns se arma aquí porque «iconutil» solo existe en macOS; los PNG vienen
+# hechos del repositorio, que se rasterizan con «make icono».
+volicon="$app/Contents/Resources/iconfile.icns"
+if command -v iconutil >/dev/null && [ -d "build/darwin/disco.iconset" ]; then
+  if iconutil -c icns "build/darwin/disco.iconset" -o "build/darwin/disco.icns"; then
+    volicon="build/darwin/disco.icns"
+  fi
+fi
+
 # Las posiciones de arriba tienen que cuadrar con build/darwin/fondo-dmg.svg, que
 # reserva los huecos. El Finder centra cada icono en su posición y escribe el
 # nombre debajo, unos 64 px más abajo: lo que se dibuje ahí queda tapado.
@@ -55,7 +68,7 @@ rm -f "$salida"
 # esté hecha. Por eso lo que se comprueba es que el fichero exista.
 create-dmg \
   --volname "Esfinge" \
-  --volicon "$app/Contents/Resources/iconfile.icns" \
+  --volicon "$volicon" \
   --background "$fondo" \
   --window-pos 200 120 \
   --window-size 660 470 \

@@ -20,6 +20,14 @@ const trabajos = [
   // reduce a la mitad y así no se ve borroso.
   ["build/darwin/fondo-dmg.svg", "build/darwin/fondo-dmg.png", 660],
   ["build/darwin/fondo-dmg.svg", "build/darwin/fondo-dmg@2x.png", 1320],
+
+  // El icono del volumen montado, en los tamaños que pide «iconutil» para armar
+  // el .icns. Los nombres son los suyos y no se pueden cambiar: si uno falta o
+  // se llama distinto, iconutil se niega a construir el fichero.
+  ...[16, 32, 128, 256, 512].flatMap((n) => [
+    [`build/darwin/disco.svg`, `build/darwin/disco.iconset/icon_${n}x${n}.png`, n],
+    [`build/darwin/disco.svg`, `build/darwin/disco.iconset/icon_${n}x${n}@2x.png`, n * 2],
+  ]),
 ];
 
 const navegador = await chromium.launch(

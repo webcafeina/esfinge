@@ -38,6 +38,16 @@ Plantilla al final.
 - Lección: bajar el tinte dos veces sin entender el síntoma era el camino equivocado. El «gris plano»
   no era un tinte de más, era el material sin nada que mezclar.
 
+## 2026-09-08 · El icono del disco montado
+
+- **2.7.1**: el volumen del DMG usaba el icono de la aplicación, así que el disco montado y lo que
+  hay dentro se veían **exactamente igual** —en la barra lateral del Finder no había forma de
+  distinguirlos—. Ahora es un disco con la marca encima.
+- El `.icns` se arma en el trabajo de macOS con `iconutil`, que solo existe allí; aquí se rasterizan
+  los PNG del `.iconset` con `make icono`, y el guion vuelve al icono de antes si algo falla.
+- Los nombres de los ficheros del `.iconset` los impone `iconutil`: si falta uno o se llama distinto,
+  se niega a construir el fichero.
+
 ## 2026-09-08 · Windows y GNOME, cada uno a lo suyo
 
 - **2.7.0**: los tres sistemas tienen ya su estructura. La de fondo es la misma —navegación a un

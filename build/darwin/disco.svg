@@ -1,0 +1,74 @@
+<!--
+  Icono del volumen: lo que se ve en el escritorio y en la barra lateral del
+  Finder cuando la imagen de disco está montada.
+
+  **Por qué no vale el icono de la aplicación.** Antes se usaba ése, y entonces
+  el volumen montado y la aplicación que hay dentro se veían exactamente igual:
+  en la barra lateral del Finder no había forma de distinguir «el disco» de «lo
+  que hay en el disco». Un disco con la marca encima dice las dos cosas.
+
+  La forma es la de un disco externo de macOS —cuerpo claro, cara superior más
+  clara, hombro biselado— y encima va la esfinge del icono de la aplicación, la
+  misma silueta reducida a lo que se reconoce a 32 píxeles: el tocado nemes y el
+  rostro. Se pinta en oro sobre gris para que aguante contra el fondo claro del
+  disco, que es donde el icono de la aplicación —que es oscuro— se perdería.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- El cuerpo del disco: metal claro, con la luz cayendo desde arriba. -->
+    <linearGradient id="metal" x1="0" y1="0" x2="0.15" y2="1">
+      <stop offset="0" stop-color="#fdfdfe"/>
+      <stop offset="0.45" stop-color="#e9eaee"/>
+      <stop offset="1" stop-color="#c9cbd2"/>
+    </linearGradient>
+    <linearGradient id="canto" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b8bac2"/>
+      <stop offset="1" stop-color="#9a9ca5"/>
+    </linearGradient>
+    <linearGradient id="oro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2c14e"/>
+      <stop offset="1" stop-color="#c98f1e"/>
+    </linearGradient>
+
+    <path id="tocado"
+          d="M512 150c-140 0-236 94-236 218v74l-62 228c-6 22 10 44 33 44h104l38-236h246l38 236h104c23 0 39-22 33-44l-62-228v-74c0-124-96-218-236-218z"/>
+    <clipPath id="soloTocado"><use href="#tocado"/></clipPath>
+  </defs>
+
+  <!-- El disco. Un rectángulo ancho y bajo, como los discos externos del
+       sistema: a 32 píxeles lo que se reconoce es esa proporción, no el detalle. -->
+  <g>
+    <!-- Canto inferior, que es lo que le da grosor. -->
+    <rect x="84" y="266" width="856" height="516" rx="96" fill="url(#canto)"/>
+    <!-- Cara. -->
+    <rect x="84" y="242" width="856" height="516" rx="96" fill="url(#metal)"/>
+    <!-- Filo de luz en el borde de arriba. -->
+    <path d="M180 252h664a96 96 0 0 1 82 46H98a96 96 0 0 1 82-46z" fill="#ffffff" opacity="0.85"/>
+    <!-- Contorno, para que el disco no se disuelva sobre un escritorio claro. -->
+    <rect x="84" y="242" width="856" height="516" rx="96"
+          fill="none" stroke="#8f919b" stroke-width="7" opacity="0.55"/>
+
+    <!-- La marca, centrada en la cara del disco. -->
+    <g transform="translate(512 500) scale(0.54) translate(-512 -512)">
+      <use href="#tocado" fill="url(#oro)"/>
+
+      <g clip-path="url(#soloTocado)" fill="#8a6412" opacity="0.45">
+        <rect x="180" y="452" width="680" height="30"/>
+        <rect x="180" y="524" width="680" height="30"/>
+      </g>
+
+      <path d="M512 232c-86 0-156 62-156 142v90c0 62 38 116 92 138v76c0 35 29 64 64 64s64-29 64-64v-76c54-22 92-76 92-138v-90c0-80-70-142-156-142z"
+            fill="#5a5c66"/>
+
+      <g fill="#e9eaee">
+        <rect x="408" y="386" width="80" height="32" rx="16"/>
+        <rect x="536" y="386" width="80" height="32" rx="16"/>
+      </g>
+
+      <g fill="#5a5c66">
+        <circle cx="512" cy="808" r="54"/>
+        <path d="M484 840h56l14 106H470z"/>
+      </g>
+    </g>
+  </g>
+</svg>
