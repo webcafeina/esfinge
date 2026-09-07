@@ -279,8 +279,14 @@ jobs:
         working-directory: adjuntos
         run: |
           rm -f SHA256SUMS
-          find . -maxdepth 1 -type f -printf '%f\n' | sort | xargs sha256sum > SHA256SUMS
+          # El propio fichero queda fuera de la lista. La redirección lo crea
+          # antes de que corra «find», así que se colaría con el resumen de sí
+          # mismo a medio escribir: un «sha256sum -c» daría FAILED justo en el
+          # fichero que sirve para confiar.
+          find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' \
+            | sort | xargs sha256sum > SHA256SUMS
           cat SHA256SUMS
+          sha256sum -c SHA256SUMS
 
       - name: Qué se va a publicar
         run: ls -lhR adjuntos

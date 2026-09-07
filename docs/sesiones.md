@@ -33,6 +33,11 @@ Plantilla al final.
   apagado no se hace **ni una** petición, que se cuenta en vez de suponerse—, `make comprobar` en
   verde con y sin `-tags dev`, `-race` limpio, y 10 pruebas de interfaz en los dos temas contra una
   API de mentira.
+- Publicada la 2.1.0, se vio otro fallo del `SHA256SUMS`: se incluía **a sí mismo**, con el resumen
+  del fichero a medio escribir —la redirección lo crea antes de que corra `find`—. Un
+  `sha256sum -c` daba FAILED justo en el fichero que sirve para confiar. Corregido en el flujo, que
+  además ahora lo verifica, y reemplazado en la publicación ya hecha: las demás líneas eran buenas,
+  comprobado descargando el `.deb`.
 - Queda abierto lo que no se puede ver desde aquí: una actualización de verdad, y si al descargar el
   DMG desde Go la copia instalada se libra del aviso de Gatekeeper.
 
