@@ -73,6 +73,12 @@ func main() {
 		Bind: []any{aplicacion},
 
 		Mac: &mac.Options{
+			// Doble clic en un .esf. macOS no pasa el fichero como argumento
+			// —lo entrega por un evento de Apple— y esto es lo que lo recoge.
+			OnFileOpen: func(ruta string) {
+				aplicacion.AlAbrirCon(ruta)
+				escritorio.Avisar(app.EventoFicheroAbierto, ruta)
+			},
 			TitleBar: mac.TitleBarDefault(),
 			About: &mac.AboutInfo{
 				Title:   "Esfinge",

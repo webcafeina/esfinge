@@ -100,18 +100,48 @@ export function ZonaFicheros({
   alElegir,
   alQuitar,
   texto,
+  admite,
 }: {
   ficheros: string[];
   alElegir: () => void;
   alQuitar: (ruta: string) => void;
   texto: string;
+  admite: string;
 }) {
+  // El resaltado al arrastrar por encima lo lleva el navegador. Wails entrega
+  // las rutas cuando se suelta, pero no avisa de que hay algo encima, y sin esa
+  // señal no se sabe si la ventana va a aceptar lo que se lleva en la mano.
+  const [encima, setEncima] = useState(false);
+
+  useEffect(() => {
+    const entra = (e: DragEvent) => {
+      e.preventDefault();
+      setEncima(true);
+    };
+    const sale = (e: DragEvent) => {
+      if (e.relatedTarget === null) setEncima(false);
+    };
+    const soltar = () => setEncima(false);
+
+    window.addEventListener("dragover", entra);
+    window.addEventListener("dragleave", sale);
+    window.addEventListener("drop", soltar);
+    return () => {
+      window.removeEventListener("dragover", entra);
+      window.removeEventListener("dragleave", sale);
+      window.removeEventListener("drop", soltar);
+    };
+  }, []);
+
   return (
     <div>
-      <div className="soltar" onClick={alElegir}>
+      <div className={`soltar${encima ? " encima" : ""}`} onClick={alElegir}>
+        <p className="icono" aria-hidden="true">
+          ⇱
+        </p>
         <p>{texto}</p>
-        <p className="nota" style={{ justifyContent: "center", marginTop: 8 }}>
-          O haz clic para elegirlos
+        <p className="nota" style={{ justifyContent: "center", marginTop: 4 }}>
+          O haz clic para elegirlos · {admite}
         </p>
       </div>
 
@@ -180,7 +210,7 @@ export function PanelResultado({
   }
 
   return (
-    <div ref={caja}>
+    <div className="bloque-resultado" ref={caja}>
       <div className="resultado seleccionable">{texto}</div>
       {exito && <p className="exito">{exito}</p>}
       {copiado && <p className="exito">Copiado al portapapeles</p>}

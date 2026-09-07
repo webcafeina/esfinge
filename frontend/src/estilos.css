@@ -1,9 +1,13 @@
-/* Aspecto de aplicación del sistema.
+/* Aspecto de aplicación de macOS.
  *
- * Los colores y las medidas salen de tokens.css, que genera Go. Aquí solo hay
- * forma: alturas de control, radios y comportamiento, siguiendo lo que hacen
- * macOS y Windows en vez de inventar una identidad propia. Es lo que hace que la
- * ventana se sienta parte del escritorio y no una página web dentro de un marco.
+ * Los colores y las medidas salen de tokens.css, que genera Go. Aquí hay forma:
+ * lo que separa una ventana que se siente del sistema de una página web dentro
+ * de un marco.
+ *
+ * Lo que macOS hace y esto imita: barra de herramientas translúcida pegada
+ * arriba, radios generosos —el sistema pasó a esquinas mucho más redondeadas—,
+ * controles de 28 px con relleno suave en vez de borde, foco con anillo de
+ * acento separado del control, y jerarquía por superficie y no por líneas.
  */
 
 @import "./tokens.css";
@@ -22,17 +26,18 @@ body,
 body {
   font-family: var(--fuente);
   font-size: var(--texto);
+  line-height: 1.45;
   color: var(--tinta);
   background: var(--lienzo);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 
-  /* La ventana de una aplicación no se selecciona con el ratón como una página:
-   * seleccionar se reserva a lo que es contenido, que se marca aparte. */
+  /* Una ventana no se selecciona como una página: seleccionar se reserva a lo
+   * que es contenido, que se marca aparte. */
   user-select: none;
   cursor: default;
 }
 
-/* Lo que sí se puede seleccionar y copiar a mano. */
 .seleccionable {
   user-select: text;
   cursor: auto;
@@ -46,21 +51,54 @@ body {
   height: 100%;
 }
 
-.pestanas {
+/* Barra de herramientas: translúcida y con desenfoque, como las del sistema.
+ * Es lo que más delata a una ventana ajena cuando falta. */
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
-  gap: 2px;
-  padding: var(--espacio-3) var(--espacio-4) 0;
-  background: var(--suave);
-  border-bottom: 1px solid var(--filete);
+  justify-content: center;
+  padding: var(--espacio-3) var(--espacio-4);
+  background: var(--barra);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--filete);
 }
 
-/* Control segmentado, que es como los dos sistemas agrupan modos. */
+.contenido {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--espacio-5) var(--espacio-4) var(--espacio-6);
+}
+
+.panel {
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+}
+
+/* Bloque de contenido agrupado, como las tarjetas de los Ajustes del sistema. */
+.grupo {
+  background: var(--tarjeta);
+  border: 0.5px solid var(--filete);
+  border-radius: var(--radio-grande);
+  padding: var(--espacio-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+}
+
+/* ------------------------------------------------------------ segmentado */
+
 .segmentado {
   display: inline-flex;
   padding: 2px;
   gap: 2px;
   background: var(--elevada);
-  border-radius: var(--radio);
+  border-radius: 9px;
 }
 
 .segmentado button {
@@ -68,99 +106,110 @@ body {
   background: transparent;
   color: var(--cuerpo);
   font: inherit;
-  padding: 5px var(--espacio-4);
-  border-radius: calc(var(--radio) - 2px);
+  font-size: var(--texto);
+  font-weight: 500;
+  height: 24px;
+  padding: 0 var(--espacio-3);
+  border-radius: 7px;
   cursor: default;
+  transition: background 0.12s, color 0.12s;
 }
 
 .segmentado button[aria-selected="true"] {
   background: var(--lienzo);
   color: var(--tinta);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
-}
-
-.contenido {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--espacio-5) var(--espacio-4);
-}
-
-.panel {
-  max-width: 620px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--espacio-4);
+  box-shadow:
+    0 0 0 0.5px rgb(0 0 0 / 0.06),
+    0 1px 2px rgb(0 0 0 / 0.14);
 }
 
 /* ------------------------------------------------------------------ controles */
 
 label {
   display: block;
-  font-size: var(--texto-chico);
-  color: var(--apagado);
-  margin-bottom: var(--espacio-1);
+  font-size: var(--texto);
+  font-weight: 500;
+  color: var(--tinta);
+  margin-bottom: var(--espacio-2);
 }
 
 input[type="text"],
 input[type="password"],
-textarea,
-select {
+textarea {
   width: 100%;
   font: inherit;
-  font-size: var(--texto);
+  font-size: var(--texto-grande);
   color: var(--tinta);
-  background: var(--lienzo);
-  border: 1px solid var(--filete-fuerte);
-  border-radius: var(--radio-chico);
+  background: var(--campo);
+  /* Los campos del sistema no llevan borde marcado: llevan un relleno un punto
+   * distinto del fondo y una línea casi invisible. */
+  border: 0.5px solid var(--filete-fuerte);
+  border-radius: var(--radio);
   padding: 0 var(--espacio-3);
-  height: var(--alto-control);
+  height: 30px;
   user-select: text;
   cursor: auto;
+  transition: box-shadow 0.12s, border-color 0.12s;
 }
 
 textarea {
   height: auto;
-  min-height: 88px;
-  padding: var(--espacio-2) var(--espacio-3);
+  min-height: 92px;
+  padding: var(--espacio-3);
   resize: vertical;
   font-family: var(--fuente-mono);
-  line-height: 1.5;
+  font-size: var(--texto);
+  line-height: 1.55;
 }
 
-input:focus,
-textarea:focus,
-select:focus {
-  outline: 2px solid var(--acento);
-  outline-offset: -1px;
-  border-color: var(--acento);
+input::placeholder,
+textarea::placeholder {
+  color: var(--apagado);
+}
+
+/* El foco es un anillo separado del control, no un borde grueso. */
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--relleno);
+  box-shadow: 0 0 0 3.5px var(--anillo);
 }
 
 button {
   font: inherit;
   font-size: var(--texto);
-  height: var(--alto-control);
+  font-weight: 500;
+  height: 28px;
   padding: 0 var(--espacio-4);
-  border-radius: var(--radio-chico);
-  border: 1px solid var(--filete-fuerte);
-  background: var(--lienzo);
+  border-radius: var(--radio);
+  border: 0.5px solid var(--filete-fuerte);
+  background: var(--boton);
   color: var(--tinta);
   cursor: default;
+  box-shadow: 0 0.5px 1px rgb(0 0 0 / 0.06);
+  transition: background 0.1s, box-shadow 0.1s;
 }
 
 button:hover:not(:disabled) {
+  background: var(--boton-encima);
+}
+
+button:active:not(:disabled) {
   background: var(--elevada);
+  box-shadow: none;
 }
 
 button:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
+  box-shadow: none;
 }
 
 button.principal {
   background: var(--relleno);
   border-color: transparent;
   color: var(--sobre-acento);
-  font-weight: 500;
 }
 
 button.principal:hover:not(:disabled) {
@@ -171,6 +220,12 @@ button.discreto {
   border-color: transparent;
   background: transparent;
   color: var(--acento);
+  box-shadow: none;
+  padding: 0 var(--espacio-2);
+}
+
+button.discreto:hover:not(:disabled) {
+  background: var(--elevada);
 }
 
 .botones {
@@ -179,31 +234,73 @@ button.discreto {
   flex-wrap: wrap;
 }
 
+/* Deslizador al estilo del sistema. */
+input[type="range"] {
+  width: 100%;
+  appearance: none;
+  background: transparent;
+  height: 20px;
+  cursor: default;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--elevada);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 0.5px rgb(0 0 0 / 0.12),
+    0 1px 3px rgb(0 0 0 / 0.28);
+}
+
 /* --------------------------------------------------------- soltar ficheros */
 
 .soltar {
-  border: 2px dashed var(--filete-fuerte);
+  border: 1.5px dashed var(--filete-fuerte);
   border-radius: var(--radio-grande);
   padding: var(--espacio-6) var(--espacio-4);
   text-align: center;
   color: var(--apagado);
   background: var(--suave);
-  transition: border-color 0.12s, background 0.12s;
+  transition: border-color 0.12s, background 0.12s, transform 0.12s;
 }
 
-/* Wails pone esta propiedad en el elemento sobre el que se está soltando. */
-.soltar[style*="--wails-drop-target"],
+.soltar:hover {
+  border-color: var(--apagado);
+  color: var(--cuerpo);
+}
+
 .soltar.encima {
-  border-color: var(--acento);
-  background: var(--tarjeta);
+  border-color: var(--relleno);
+  background: var(--elevada);
   color: var(--tinta);
+}
+
+.soltar.encima {
+  transform: scale(1.01);
+}
+
+.soltar .icono {
+  font-size: 26px;
+  line-height: 1;
+  margin-bottom: var(--espacio-2);
+  opacity: 0.55;
 }
 
 .lista-ficheros {
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--filete);
+  background: var(--suave);
+  border: 0.5px solid var(--filete);
   border-radius: var(--radio);
   overflow: hidden;
 }
@@ -211,10 +308,9 @@ button.discreto {
 .lista-ficheros li {
   display: flex;
   align-items: center;
-  gap: var(--espacio-2);
+  gap: var(--espacio-3);
   padding: var(--espacio-2) var(--espacio-3);
-  border-bottom: 1px solid var(--filete);
-  font-size: var(--texto);
+  border-bottom: 0.5px solid var(--filete);
 }
 
 .lista-ficheros li:last-child {
@@ -230,18 +326,27 @@ button.discreto {
 
 /* ------------------------------------------------------------------ estados */
 
+/* Al aparecer el resultado, la vista se desplaza hasta él. Sin este margen, el
+ * final del bloque queda justo debajo del pie y los botones se ven cortados. */
+.bloque-resultado {
+  scroll-margin-bottom: var(--espacio-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+}
+
 .resultado {
-  background: var(--tarjeta);
-  border: 1px solid var(--filete);
+  background: var(--suave);
+  border: 0.5px solid var(--filete);
   border-radius: var(--radio);
   padding: var(--espacio-3);
   font-family: var(--fuente-mono);
   font-size: var(--texto);
-  line-height: 1.5;
+  line-height: 1.55;
   word-break: break-all;
   user-select: text;
   cursor: auto;
-  max-height: 180px;
+  max-height: 170px;
   overflow-y: auto;
 }
 
@@ -256,35 +361,18 @@ button.discreto {
   margin: 0;
 }
 
-.aviso {
-  color: var(--aviso);
-}
-.error {
-  color: var(--error);
-}
-.exito {
-  color: var(--exito);
-}
-.nota {
-  color: var(--apagado);
-}
+.aviso { color: var(--aviso); }
+.error { color: var(--error); }
+.exito { color: var(--exito); }
+.nota  { color: var(--apagado); }
 
-/* El glifo delante no es adorno: distingue el estado sin depender del color,
- * que es lo que necesita quien no separa bien el rojo del verde. En las notas
- * no se pone: ahí no hay ningún estado que distinguir, y un punto delante de
- * cada frase es ruido que venía del terminal. */
-.aviso::before {
-  content: "!";
-  font-weight: 700;
-}
-.error::before {
-  content: "✕";
-}
-.exito::before {
-  content: "✓";
-}
+/* El glifo delante distingue el estado sin depender del color, que es lo que
+ * necesita quien no separa bien el rojo del verde. En las notas no se pone:
+ * ahí no hay ningún estado que distinguir. */
+.aviso::before { content: "⚠"; }
+.error::before { content: "✕"; }
+.exito::before { content: "✓"; }
 
-/* Medidor de fuerza de la clave. */
 .medidor {
   display: flex;
   gap: 3px;
@@ -295,7 +383,8 @@ button.discreto {
   height: 4px;
   flex: 1;
   border-radius: 2px;
-  background: var(--filete);
+  background: var(--elevada);
+  transition: background 0.15s;
 }
 
 .medidor[data-nivel="0"] span:nth-child(-n + 1),
@@ -313,14 +402,14 @@ button.discreto {
 .barra-progreso {
   height: 4px;
   border-radius: 2px;
-  background: var(--filete);
+  background: var(--elevada);
   overflow: hidden;
 }
 
 .barra-progreso i {
   display: block;
   height: 100%;
-  background: var(--acento);
+  background: var(--relleno);
   transition: width 0.15s;
 }
 
@@ -330,14 +419,22 @@ button.discreto {
   list-style: none;
   margin: 0;
   padding: 0;
+  background: var(--suave);
+  border: 0.5px solid var(--filete);
+  border-radius: var(--radio);
+  overflow: hidden;
 }
 
 .historial li {
   display: flex;
   gap: var(--espacio-3);
   align-items: baseline;
-  padding: var(--espacio-2) 0;
-  border-bottom: 1px solid var(--filete);
+  padding: var(--espacio-3);
+  border-bottom: 0.5px solid var(--filete);
+}
+
+.historial li:last-child {
+  border-bottom: 0;
 }
 
 .historial .cuando {
@@ -350,8 +447,10 @@ button.discreto {
 
 .pie {
   padding: var(--espacio-2) var(--espacio-4);
-  border-top: 1px solid var(--filete);
-  background: var(--suave);
+  border-top: 0.5px solid var(--filete);
+  background: var(--barra);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   color: var(--apagado);
   font-size: var(--texto-chico);
   display: flex;
@@ -359,22 +458,38 @@ button.discreto {
   align-items: center;
 }
 
+/* ------------------------------------------------------------------- texto */
+
 h1 {
   font-size: var(--titulo);
+  font-weight: 600;
+  letter-spacing: -0.01em;
   margin: 0 0 var(--espacio-1);
 }
 
 h2 {
   font-size: var(--texto-grande);
+  font-weight: 600;
   margin: 0;
 }
 
 p {
   margin: 0;
-  line-height: 1.5;
 }
 
-/* Quien haya pedido menos movimiento, que lo tenga. */
+.fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+}
+
+.cifra {
+  font-variant-numeric: tabular-nums;
+  color: var(--apagado);
+  font-size: var(--texto-chico);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

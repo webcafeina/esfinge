@@ -10,10 +10,10 @@ import (
 
 // Alfabeto es el juego de caracteres con el que se genera una contraseña.
 type Alfabeto struct {
-	Nombre  string
-	Runas   string // vacío en hexadecimal, que se genera aparte
+	Nombre    string
+	Runas     string // vacío en hexadecimal, que se genera aparte
 	SeguroURL bool
-	Aviso   string
+	Aviso     string
 }
 
 // Los tres alfabetos disponibles. El hexadecimal es el que va primero por un
@@ -43,6 +43,36 @@ var Alfabetos = map[string]Alfabeto{
 	AlfHex.Nombre:      AlfHex,
 	AlfAlnum.Nombre:    AlfAlnum,
 	AlfSimbolos.Nombre: AlfSimbolos,
+}
+
+// Caracteres devuelve cuántos caracteres salen de pedir esos bytes de entropía,
+// que en hexadecimal son dos por byte y en los demás alfabetos dependen de su
+// tamaño.
+func Caracteres(a Alfabeto, bytes int) int {
+	if a.Runas == "" {
+		return bytes * 2
+	}
+	bits := float64(bytes) * 8
+	return int(math.Ceil(bits / math.Log2(float64(len([]rune(a.Runas))))))
+}
+
+// BytesParaCaracteres es el camino de vuelta: cuántos bytes de entropía hay que
+// pedir para que salga esa cantidad de caracteres.
+//
+// Existe porque una contraseña se mide en caracteres cuando se va a pegar en un
+// formulario que limita la longitud, y en bits cuando lo que importa es lo cara
+// que sea de adivinar. Los dos números son el mismo dato mirado de dos maneras,
+// y la interfaz deja mover cualquiera de los dos.
+func BytesParaCaracteres(a Alfabeto, caracteres int) int {
+	if a.Runas == "" {
+		return (caracteres + 1) / 2
+	}
+	bits := float64(caracteres) * math.Log2(float64(len([]rune(a.Runas))))
+	bytes := int(bits / 8)
+	if bytes < 1 {
+		bytes = 1
+	}
+	return bytes
 }
 
 // Generar devuelve una contraseña con la entropía de bytes indicados.

@@ -84,7 +84,9 @@ test("genera contraseñas y avisa de las que rompen una URL", async ({ page }) =
   await expect(resultado).toBeVisible({ timeout: 20_000 });
 
   const hex = (await resultado.innerText()).trim();
-  expect(hex).toMatch(/^[0-9a-f]{48}$/);
+  expect(hex).toMatch(/^[0-9a-f]+$/);
+  // La longitud se pide en caracteres, y sale la que se pide.
+  expect(hex.length).toBe(32);
   await expect(page.locator(".nota", { hasText: "Segura dentro de una URL" })).toBeVisible();
 
   // Otra distinta.

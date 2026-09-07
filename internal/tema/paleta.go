@@ -37,6 +37,13 @@ type Tema struct {
 	SobreAcento RGB
 	Acento      RGB
 
+	// Superficies con nombre propio, porque en el sistema no son intercambiables:
+	// la barra es translúcida, un campo se hunde y un botón se levanta.
+	Barra       RGB
+	Campo       RGB
+	Boton       RGB
+	BotonEncima RGB
+
 	// Estados. Los tres se usan como texto, así que van pasados por AcentoLegible.
 	Exito RGB
 	Aviso RGB
@@ -82,6 +89,10 @@ var TemaClaro = func() Tema {
 		RellenoVivo:  Oscurecer(RellenoLegible(azulClaro, blanco, AANormal), 0.85),
 		SobreAcento:  blanco,
 		Acento:       AcentoLegible(azulClaro, masOscura, AANormal),
+		Barra:        MustParseHex("#f6f6f8"),
+		Campo:        lienzo,
+		Boton:        lienzo,
+		BotonEncima:  MustParseHex("#f2f2f5"),
 		Exito:        AcentoLegible(verdeSistema, masOscura, AANormal),
 		Aviso:        AcentoLegible(ambarSistema, masOscura, AANormal),
 		Error:        AcentoLegible(rojoSistema, masOscura, AANormal),
@@ -107,6 +118,10 @@ var TemaOscuro = func() Tema {
 		Relleno:      RellenoLegible(azulOscuro, blanco, AANormal),
 		RellenoVivo:  Oscurecer(RellenoLegible(azulOscuro, blanco, AANormal), 0.85),
 		SobreAcento:  blanco,
+		Barra:        MustParseHex("#242426"),
+		Campo:        MustParseHex("#1a1a1c"),
+		Boton:        MustParseHex("#3a3a3c"),
+		BotonEncima:  MustParseHex("#48484a"),
 		// Sobre fondo oscuro el azul del sistema ya se lee, así que se queda.
 		Acento: AcentoLegible(azulOscuro, MustParseHex("#3a3a3c"), AANormal),
 		Exito:  AcentoLegible(verdeSistema, MustParseHex("#3a3a3c"), AANormal),

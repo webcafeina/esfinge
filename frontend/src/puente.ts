@@ -48,6 +48,12 @@ export type Progreso = {
   actual: string;
 };
 
+export type Medida = {
+  bytes: number;
+  caracteres: number;
+  bits: number;
+};
+
 type MetodosGo = Record<string, (...args: unknown[]) => Promise<unknown>>;
 
 declare global {
@@ -127,7 +133,14 @@ export const esfinge = {
   version: () => llamar<string>("Version"),
 
   ficheroDeArranque: () => llamar<string>("FicheroDeArranque"),
+
+  medirPorCaracteres: (caracteres: number, alfabeto: string) =>
+    llamar<Medida>("MedirPorCaracteres", caracteres, alfabeto),
 };
+
+/** Los límites de longitud los pone Go, no la interfaz. */
+export const CARACTERES_MINIMO = 16;
+export const CARACTERES_MAXIMO = 96;
 
 /**
  * alEmpezarProgreso escucha cómo va una tanda de ficheros.
@@ -161,7 +174,11 @@ export function alSoltarFicheros(cb: (rutas: string[]) => void): () => void {
     | undefined;
 
   if (runtime?.OnFileDrop) {
-    runtime.OnFileDrop((_x, _y, rutas) => cb(rutas), true);
+    // El segundo argumento es «solo sobre zonas marcadas». Va en false: se
+    // acepta en toda la ventana. Con true, Wails exige que el elemento declare
+    // la propiedad CSS --wails-drop-target, y soltar fuera de ella no hace nada
+    // ni avisa de por qué.
+    runtime.OnFileDrop((_x, _y, rutas) => cb(rutas), false);
     return () => {};
   }
 

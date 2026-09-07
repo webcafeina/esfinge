@@ -6,8 +6,11 @@ import {
   esfinge,
   type Alfabeto,
   type Entrada,
+  type Medida,
   type Progreso as TipoProgreso,
   type ResultadoFichero,
+  CARACTERES_MINIMO,
+  CARACTERES_MAXIMO,
 } from "./puente";
 import {
   CampoClave,
@@ -44,7 +47,7 @@ export default function App() {
 
   return (
     <div className="ventana">
-      <nav className="pestanas">
+      <nav className="barra">
         <Segmentado<Tarea>
           valor={tarea}
           alCambiar={setTarea}
@@ -180,7 +183,7 @@ function Trabajo({
         <h1>{verbo}</h1>
         <p className="nota">
           {cifrando
-            ? "Lo que salga solo se abre con la clave que pongas."
+            ? "Lo que salga solo se abre con la clave que pongas. Vale cualquier fichero."
             : "Hace falta la misma clave con la que se cifró."}
         </p>
       </div>
@@ -222,6 +225,11 @@ function Trabajo({
             cifrando
               ? "Arrastra aquí los ficheros que quieras cifrar"
               : "Arrastra aquí los ficheros cifrados"
+          }
+          admite={
+            cifrando
+              ? "vale cualquier fichero"
+              : "ficheros .esf, o de texto con un ESF1.…"
           }
         />
       )}
@@ -306,7 +314,15 @@ function Tanda({ hechos }: { hechos: ResultadoFichero[] }) {
 function Generar() {
   const [alfabetos, setAlfabetos] = useState<Alfabeto[]>([]);
   const [alfabeto, setAlfabeto] = useState("hex");
-  const [bytes, setBytes] = useState(24);
+
+  // Una contraseña se mide de dos maneras: en caracteres, cuando hay que
+  // pegarla en un formulario que limita la longitud, y en bits, cuando lo que
+  // importa es lo cara que sea de adivinar. Se puede mover cualquiera de las
+  // dos, y la otra se recalcula: quien conoce una no tiene por qué conocer la
+  // otra. Las cuentas las hace Go, que es quien genera la contraseña.
+  const [caracteres, setCaracteres] = useState(32);
+  const [medida, setMedida] = useState<Medida | null>(null);
+
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState("");
   const [guardadoEn, setGuardadoEn] = useState("");
@@ -319,17 +335,27 @@ function Generar() {
     setError("");
     setGuardadoEn("");
     try {
-      setContrasena(await esfinge.generarContrasena(bytes, alfabeto));
+      const m = await esfinge.medirPorCaracteres(caracteres, alfabeto);
+      setMedida(m);
+      setContrasena(await esfinge.generarContrasena(m.bytes, alfabeto));
     } catch (e) {
       setError(mensaje(e));
     }
-  }, [bytes, alfabeto]);
+  }, [caracteres, alfabeto]);
 
   useEffect(() => {
     generar();
   }, [generar]);
 
   const elegido = alfabetos.find((a) => a.nombre === alfabeto);
+  const bits = medida?.bits ?? 0;
+  const salen = medida?.caracteres ?? caracteres;
+
+  // La misma escala que el medidor de claves, para no dar dos opiniones
+  // distintas sobre lo mismo.
+  const nivel = bits >= 128 ? 4 : bits >= 100 ? 3 : bits >= 80 ? 2 : bits >= 60 ? 1 : 0;
+  const juicio =
+    nivel >= 4 ? "Excelente" : nivel === 3 ? "Buena" : nivel === 2 ? "Aceptable" : "Corta";
 
   return (
     <div className="panel">
@@ -338,33 +364,52 @@ function Generar() {
         <p className="nota">Al azar, con la entropía del sistema.</p>
       </div>
 
-      <div>
-        <label>Alfabeto</label>
-        <Segmentado
-          valor={alfabeto}
-          alCambiar={setAlfabeto}
-          opciones={alfabetos.map((a) => ({ valor: a.nombre, etiqueta: a.etiqueta }))}
-        />
-      </div>
+      <div className="grupo">
+        <div>
+          <label>Qué caracteres</label>
+          <Segmentado
+            valor={alfabeto}
+            alCambiar={setAlfabeto}
+            opciones={alfabetos.map((a) => ({ valor: a.nombre, etiqueta: a.etiqueta }))}
+          />
+        </div>
 
-      <div>
-        <label htmlFor="bytes">Fuerza · {bytes * 8} bits</label>
-        <input
-          id="bytes"
-          type="range"
-          min={16}
-          max={64}
-          step={8}
-          value={bytes}
-          onChange={(e) => setBytes(Number(e.target.value))}
-        />
-      </div>
+        <div>
+          <div className="fila">
+            <label htmlFor="largo" style={{ marginBottom: 0 }}>
+              Longitud
+            </label>
+            <span className="cifra">
+              {salen} caracteres · {bits} bits
+            </span>
+          </div>
+          <input
+            id="largo"
+            type="range"
+            min={CARACTERES_MINIMO}
+            max={CARACTERES_MAXIMO}
+            step={2}
+            value={caracteres}
+            onChange={(e) => setCaracteres(Number(e.target.value))}
+          />
+          <div className="medidor" data-nivel={nivel} aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
+          <p className="nota" style={{ marginTop: 6 }}>
+            {juicio} · cuantos más caracteres, más cara de adivinar
+          </p>
+        </div>
 
-      {elegido?.aviso ? (
-        <p className="aviso">{elegido.aviso}</p>
-      ) : (
-        <p className="nota">Segura dentro de una URL</p>
-      )}
+        {elegido?.aviso ? (
+          <p className="aviso">{elegido.aviso}</p>
+        ) : (
+          <p className="nota">Segura dentro de una URL</p>
+        )}
+      </div>
 
       {error && <p className="error">{error}</p>}
 

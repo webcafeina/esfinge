@@ -236,3 +236,31 @@ func TestGenerarLimites(t *testing.T) {
 		t.Error("1000 bytes debería rechazarse")
 	}
 }
+
+// Las dos formas de medir una contraseña tienen que cuadrar entre sí: pedir por
+// caracteres y volver a contarlos no puede dar otra cifra.
+func TestMedirEnCaracteresYEnBytesCuadran(t *testing.T) {
+	for _, a := range []Alfabeto{AlfHex, AlfAlnum, AlfSimbolos} {
+		t.Run(a.Nombre, func(t *testing.T) {
+			for caracteres := 16; caracteres <= 96; caracteres += 4 {
+				bytes := BytesParaCaracteres(a, caracteres)
+				salen := Caracteres(a, bytes)
+
+				// Se acepta perder algún carácter por el redondeo —los bits no son
+				// divisibles a voluntad—, pero no alejarse.
+				if salen < caracteres-2 || salen > caracteres+2 {
+					t.Errorf("pedir %d caracteres da %d bytes, que producen %d",
+						caracteres, bytes, salen)
+				}
+
+				p, err := Generar(a, bytes)
+				if err != nil {
+					t.Fatalf("con %d bytes: %v", bytes, err)
+				}
+				if n := len([]rune(p)); n != salen {
+					t.Errorf("Caracteres dice %d y la contraseña tiene %d", salen, n)
+				}
+			}
+		})
+	}
+}

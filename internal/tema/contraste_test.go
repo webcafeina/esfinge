@@ -64,6 +64,15 @@ func parejasDe(t Tema) []pareja {
 		{t.Apagado, t.Lienzo, AANormal, "tramo anterior de las migas"},
 		{t.Acento, t.Lienzo, AANormal, "tramo actual de las migas"},
 
+		// Superficies con nombre propio del sistema.
+		{t.Tinta, t.Barra, AANormal, "texto en la barra de herramientas"},
+		{t.Apagado, t.Barra, AANormal, "texto secundario en la barra"},
+		{t.Tinta, t.Campo, AANormal, "lo que se teclea en un campo"},
+		{t.Apagado, t.Campo, AANormal, "el texto de ejemplo de un campo"},
+		{t.Tinta, t.Boton, AANormal, "texto de un botón normal"},
+		{t.Tinta, t.BotonEncima, AANormal, "texto de un botón con el puntero encima"},
+		{t.Acento, t.Boton, AANormal, "botón discreto"},
+
 		// Elementos que no son texto: les basta 3:1.
 		//
 		// El foco de un campo lo marca el acento y no un gris más fuerte. Es lo que

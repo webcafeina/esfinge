@@ -145,8 +145,13 @@ type Progreso struct {
 	Actual string `json:"actual"`
 }
 
-// EventoProgreso es el nombre con el que viaja el progreso hasta la ventana.
-const EventoProgreso = "progreso"
+// Nombres de los eventos que viajan hasta la ventana.
+const (
+	EventoProgreso = "progreso"
+	// EventoFicheroAbierto llega cuando el sistema manda un fichero con la
+	// ventana ya abierta: en macOS, doble clic en un .esf mientras Esfinge corre.
+	EventoFicheroAbierto = "fichero-abierto"
+)
 
 // CifrarFicheros sella una tanda con la misma clave.
 func (a *App) CifrarFicheros(rutas []string, clave string) ([]ResultadoFichero, error) {
@@ -240,6 +245,41 @@ func (a *App) Alfabetos() []Alfabeto {
 		})
 	}
 	return out
+}
+
+// MedidaContrasena traduce entre las dos formas de pedir una contraseña.
+type MedidaContrasena struct {
+	Bytes      int `json:"bytes"`
+	Caracteres int `json:"caracteres"`
+	Bits       int `json:"bits"`
+}
+
+// Límites de longitud, en caracteres. El mínimo no es una opinión: por debajo de
+// ahí una contraseña se adivina, y Generar ya los rechaza.
+const (
+	CaracteresMinimo = 16
+	CaracteresMaximo = 96
+)
+
+// MedirPorCaracteres dice qué sale de pedir esa cantidad de caracteres.
+func (a *App) MedirPorCaracteres(caracteres int, alfabeto string) (MedidaContrasena, error) {
+	al, ok := cripto.Alfabetos[alfabeto]
+	if !ok {
+		return MedidaContrasena{}, fmt.Errorf("El alfabeto «%s» no existe", alfabeto)
+	}
+	if caracteres < CaracteresMinimo {
+		caracteres = CaracteresMinimo
+	}
+	if caracteres > CaracteresMaximo {
+		caracteres = CaracteresMaximo
+	}
+
+	bytes := cripto.BytesParaCaracteres(al, caracteres)
+	return MedidaContrasena{
+		Bytes:      bytes,
+		Caracteres: cripto.Caracteres(al, bytes),
+		Bits:       bytes * 8,
+	}, nil
 }
 
 // GenerarContrasena devuelve una contraseña al azar.

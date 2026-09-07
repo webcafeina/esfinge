@@ -10,22 +10,29 @@ import (
 // Van aquí y no en una hoja de estilos suelta por el mismo motivo que los
 // colores: una sola fuente de verdad, y del lado que tiene los tests.
 var Medidas = map[string]string{
-	"espacio-1":     "4px",
-	"espacio-2":     "8px",
-	"espacio-3":     "12px",
-	"espacio-4":     "16px",
-	"espacio-5":     "24px",
-	"espacio-6":     "32px",
-	"radio-chico":   "6px",
-	"radio":         "8px",
-	"radio-grande":  "12px",
-	"alto-control":  "32px",
-	"texto-chico":   "12px",
-	"texto":         "13px",
-	"texto-grande":  "15px",
-	"titulo":        "20px",
-	"fuente":        `-apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif`,
-	"fuente-mono":   `ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace`,
+	"espacio-1": "4px",
+	"espacio-2": "8px",
+	"espacio-3": "12px",
+	"espacio-4": "16px",
+	"espacio-5": "24px",
+	"espacio-6": "32px",
+	// macOS pasó a esquinas mucho más redondeadas, y una ventana con radios de
+	// hace diez años canta enseguida.
+	"radio-chico":  "6px",
+	"radio":        "9px",
+	"radio-grande": "14px",
+	"alto-control": "28px",
+	"texto-chico":  "12px",
+	"texto":        "13px",
+	"texto-grande": "15px",
+	"titulo":       "20px",
+	"fuente":       `-apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif`,
+	"fuente-mono":  `ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace`,
+}
+
+// conAlfa escribe un color con transparencia, para el anillo de foco.
+func conAlfa(c RGB, alfa float64) string {
+	return fmt.Sprintf("rgb(%d %d %d / %.2f)", c.R, c.G, c.B, alfa)
 }
 
 // campos del tema que se publican como variables de color, en el orden en que se
@@ -51,6 +58,10 @@ var campos = []struct {
 	{"exito", func(t Tema) RGB { return t.Exito }},
 	{"aviso", func(t Tema) RGB { return t.Aviso }},
 	{"error", func(t Tema) RGB { return t.Error }},
+	{"barra", func(t Tema) RGB { return t.Barra }},
+	{"campo", func(t Tema) RGB { return t.Campo }},
+	{"boton", func(t Tema) RGB { return t.Boton }},
+	{"boton-encima", func(t Tema) RGB { return t.BotonEncima }},
 }
 
 // GenerarCSS escribe los tokens que consume la interfaz.
@@ -71,6 +82,9 @@ func GenerarCSS() string {
 	for _, c := range campos {
 		fmt.Fprintf(&b, "  --%s: %s;\n", c.nombre, c.de(TemaClaro).Hex())
 	}
+	// El anillo de foco es el color de acción a media tinta: así se ve sobre
+	// cualquier superficie sin tener que inventar un color por cada una.
+	fmt.Fprintf(&b, "  --anillo: %s;\n", conAlfa(TemaClaro.Relleno, 0.35))
 	b.WriteString("\n")
 
 	claves := make([]string, 0, len(Medidas))
@@ -89,6 +103,7 @@ func GenerarCSS() string {
 		for _, c := range campos {
 			fmt.Fprintf(&s, "  --%s: %s;\n", c.nombre, c.de(TemaOscuro).Hex())
 		}
+		fmt.Fprintf(&s, "  --anillo: %s;\n", conAlfa(TemaOscuro.Relleno, 0.45))
 		s.WriteString("}\n")
 		return s.String()
 	}
