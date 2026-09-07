@@ -47,6 +47,11 @@ Plantilla al final.
   los PNG del `.iconset` con `make icono`, y el guion vuelve al icono de antes si algo falla.
 - Los nombres de los ficheros del `.iconset` los impone `iconutil`: si falta uno o se llama distinto,
   se niega a construir el fichero.
+- **2.7.2, con dos correcciones del humano mirando su Mac**: el disco estaba **apaisado** y los del
+  sistema van **de pie**; y la marca repintada en dorado sobre gris quedaba desvaída, así que va el
+  icono de la aplicación **tal cual**, que lleva su propio fondo oscuro y se sostiene contra la cara
+  clara del disco. Buscar la forma en la web no sirvió —los resultados hablan de iconos de
+  aplicación, no de volúmenes—: lo resolvió quien tenía el sistema delante.
 
 ## 2026-09-08 · Windows y GNOME, cada uno a lo suyo
 
