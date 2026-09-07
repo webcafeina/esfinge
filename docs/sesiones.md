@@ -52,6 +52,13 @@ Plantilla al final.
   icono de la aplicación **tal cual**, que lleva su propio fondo oscuro y se sostiene contra la cara
   clara del disco. Buscar la forma en la web no sirvió —los resultados hablan de iconos de
   aplicación, no de volúmenes—: lo resolvió quien tenía el sistema delante.
+- **2.7.3, y aquí estaba lo de fondo**: con capturas de discos de verdad —una unidad del sistema y
+  los volúmenes de FUSE y de Affinity— se vio que **un disco no se dibuja de frente**. Va en
+  perspectiva, mirado desde arriba: carcasa que se estrecha hacia el fondo, placa en color con el
+  logo grande arriba, banda con su piloto abajo. Y casi cuadrado, no alargado.
+- Tres intentos: apaisado, vertical y plano, y por fin en perspectiva. Los dos primeros salieron de
+  imaginar cómo era; el tercero, de mirar tres discos de verdad. La diferencia entre uno y otro
+  método está en el resultado.
 
 ## 2026-09-08 · Windows y GNOME, cada uno a lo suyo
 

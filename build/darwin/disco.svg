@@ -5,35 +5,37 @@
   **Por qué no vale el icono de la aplicación a secas.** Antes se usaba ése, y
   entonces el volumen montado y la aplicación que hay dentro se veían exactamente
   igual: en la barra lateral del Finder no había forma de distinguir «el disco»
-  de «lo que hay en el disco». Un disco con el icono encima dice las dos cosas.
+  de «lo que hay en el disco».
 
-  **El disco va vertical.** El primer intento lo puso apaisado y no se reconocía:
-  los discos del sistema son rectángulos de pie, más altos que anchos, como una
-  unidad externa apoyada. Corregido mirando un Mac de verdad.
+  **La forma sale de discos de verdad**, no de la imaginación: las capturas que
+  hay en referencias/ —una unidad externa del sistema y los volúmenes de FUSE y
+  de Affinity— enseñan siempre lo mismo, y costó dos intentos llegar aquí.
 
-  **Y el icono va tal cual**, con sus colores, no repintado en otro tono. Lleva su
-  propio fondo oscuro, así que se sostiene solo contra la cara clara del disco;
-  redibujarlo en dorado sobre gris —que fue el segundo intento— lo dejaba
-  desvaído y ya no parecía la misma marca.
+    1. Un rectángulo apaisado. Mal: los discos van de pie.
+    2. Un rectángulo vertical y plano, de frente. Mal otra vez, y ésta era la de
+       fondo: **no se dibujan de frente sino en perspectiva**, mirando la unidad
+       un poco desde arriba.
+
+  Lo que los hace reconocibles son tres cosas, y están todas aquí: la **carcasa
+  de aluminio** que se estrecha hacia arriba, la **placa frontal en color con el
+  logo grande** encima, y la **banda de abajo con su piloto**.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
-    <!-- El cuerpo del disco: metal claro, con la luz cayendo desde arriba. -->
-    <linearGradient id="metal" x1="0" y1="0" x2="0.25" y2="1">
-      <stop offset="0" stop-color="#fdfdfe"/>
-      <stop offset="0.5" stop-color="#e6e7ec"/>
-      <stop offset="1" stop-color="#c4c6ce"/>
+    <!-- Aluminio: la luz cae desde arriba y a la izquierda. -->
+    <linearGradient id="aluminio" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#fbfbfc"/>
+      <stop offset="0.35" stop-color="#e4e5ea"/>
+      <stop offset="1" stop-color="#b9bbc4"/>
     </linearGradient>
-    <linearGradient id="canto" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#b4b6bf"/>
-      <stop offset="1" stop-color="#93959e"/>
+    <!-- La banda de abajo es la cara frontal: recibe menos luz que la de arriba. -->
+    <linearGradient id="frente" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eceef2"/>
+      <stop offset="1" stop-color="#c2c4cd"/>
     </linearGradient>
-
-    <!-- Lo de dentro es el icono de la aplicación, el mismo de build/icono.svg.
-         Va copiado y no enlazado porque el rasterizador carga un SVG suelto y no
-         resolvería una referencia a otro fichero. -->
-    <linearGradient id="piedra" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#4a4a52"/>
+    <!-- La placa, con el gris de piedra del icono de la aplicación. -->
+    <linearGradient id="piedra" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#54545d"/>
       <stop offset="1" stop-color="#2b2b31"/>
     </linearGradient>
     <linearGradient id="oro" x1="0" y1="0" x2="0" y2="1">
@@ -46,42 +48,52 @@
     <clipPath id="soloTocado"><use href="#tocado"/></clipPath>
   </defs>
 
-  <!-- El disco, de pie. La proporción es lo que lo hace reconocible a 32
-       píxeles: más alto que ancho. -->
-  <g>
-    <!-- Canto, que es lo que le da grosor. -->
-    <rect x="268" y="140" width="488" height="776" rx="76" fill="url(#canto)"/>
-    <!-- Cara. -->
-    <rect x="268" y="120" width="488" height="776" rx="76" fill="url(#metal)"/>
-    <!-- Filo de luz arriba. -->
-    <path d="M344 130h336a76 76 0 0 1 65 38H279a76 76 0 0 1 65-38z" fill="#ffffff" opacity="0.9"/>
-    <!-- Contorno, para que el disco no se disuelva sobre un escritorio claro. -->
-    <rect x="268" y="120" width="488" height="776" rx="76"
-          fill="none" stroke="#8b8d97" stroke-width="7" opacity="0.6"/>
+  <!-- La carcasa. Se estrecha hacia arriba: eso es lo que da la sensación de
+       estar mirando la unidad desde arriba, y sin ello vuelve a parecer una
+       tarjeta plana. -->
+  <path d="M298 160 H726 a58 58 0 0 1 58 60 L819 810 a58 58 0 0 1 -58 60 H263
+           a58 58 0 0 1 -58 -60 L240 220 a58 58 0 0 1 58 -60 Z"
+        fill="url(#aluminio)"/>
 
-    <!-- El icono de la aplicación, tal cual, centrado en la cara. -->
-    <g transform="translate(512 508) scale(0.39) translate(-512 -512)">
-      <rect width="1024" height="1024" rx="228" fill="url(#piedra)"/>
+  <!-- La banda de abajo, que es la cara frontal de la unidad. -->
+  <path d="M216 628 H808 L819 810 a58 58 0 0 1 -58 60 H263 a58 58 0 0 1 -58 -60 Z"
+        fill="url(#frente)"/>
 
-      <use href="#tocado" fill="url(#oro)"/>
+  <!-- La placa con el logo, encajada en la cara de arriba. -->
+  <path d="M301 190 H723 a30 30 0 0 1 30 32 L778 628 H246 L271 222 a30 30 0 0 1 30 -32 Z"
+        fill="url(#piedra)"/>
 
-      <g clip-path="url(#soloTocado)" fill="#2b2b31" opacity="0.5">
-        <rect x="180" y="452" width="680" height="30"/>
-        <rect x="180" y="524" width="680" height="30"/>
-      </g>
+  <!-- La esfinge, grande sobre la placa: es lo único que hay que reconocer a 32
+       píxeles. -->
+  <g transform="translate(512 405) scale(0.43) translate(-512 -512)">
+    <use href="#tocado" fill="url(#oro)"/>
 
-      <path d="M512 232c-86 0-156 62-156 142v90c0 62 38 116 92 138v76c0 35 29 64 64 64s64-29 64-64v-76c54-22 92-76 92-138v-90c0-80-70-142-156-142z"
-            fill="#e8dcc4"/>
+    <g clip-path="url(#soloTocado)" fill="#2b2b31" opacity="0.5">
+      <rect x="180" y="452" width="680" height="30"/>
+      <rect x="180" y="524" width="680" height="30"/>
+    </g>
 
-      <g fill="#2b2b31">
-        <rect x="408" y="386" width="80" height="32" rx="16"/>
-        <rect x="536" y="386" width="80" height="32" rx="16"/>
-      </g>
+    <path d="M512 232c-86 0-156 62-156 142v90c0 62 38 116 92 138v76c0 35 29 64 64 64s64-29 64-64v-76c54-22 92-76 92-138v-90c0-80-70-142-156-142z"
+          fill="#e8dcc4"/>
 
-      <g fill="#e8dcc4">
-        <circle cx="512" cy="808" r="54"/>
-        <path d="M484 840h56l14 106H470z"/>
-      </g>
+    <g fill="#2b2b31">
+      <rect x="408" y="386" width="80" height="32" rx="16"/>
+      <rect x="536" y="386" width="80" height="32" rx="16"/>
+    </g>
+
+    <g fill="#e8dcc4">
+      <circle cx="512" cy="808" r="54"/>
+      <path d="M484 840h56l14 106H470z"/>
     </g>
   </g>
+
+  <!-- El piloto de la unidad, abajo a la derecha. Un detalle pequeño, pero es de
+       los que hacen que la cosa se lea como un disco y no como una caja. -->
+  <circle cx="706" cy="762" r="19" fill="#8fd18a"/>
+  <circle cx="706" cy="762" r="19" fill="none" stroke="#6aa867" stroke-width="4" opacity="0.7"/>
+
+  <!-- Contorno, para que no se disuelva sobre un escritorio claro. -->
+  <path d="M298 160 H726 a58 58 0 0 1 58 60 L819 810 a58 58 0 0 1 -58 60 H263
+           a58 58 0 0 1 -58 -60 L240 220 a58 58 0 0 1 58 -60 Z"
+        fill="none" stroke="#8b8d97" stroke-width="7" opacity="0.55"/>
 </svg>

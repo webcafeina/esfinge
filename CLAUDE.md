@@ -195,6 +195,12 @@ que los separa es el byte siguiente —la versión en el binario, el punto en el
 puesta; en la de ficheros, con las rutas. Abrir un texto en la pantalla de ficheros era un lío,
 porque ahí lo que se quiere ver es el secreto, no otro fichero al lado.
 
+**Un icono de disco no se dibuja de frente.** Costó tres intentos: apaisado, luego vertical pero
+plano, y solo al tercero salió. Los discos de macOS van **en perspectiva**, mirados un poco desde
+arriba, con la carcasa estrechándose hacia el fondo, una **placa en color con el logo grande** en la
+cara de arriba y una **banda con su piloto** debajo. Y son casi cuadrados, no alargados. Las
+capturas de referencia están en `referencias/`, que no se sube.
+
 **El icono del volumen no es el de la aplicación.** Con el mismo icono, el disco montado y lo que hay
 dentro se ven igual y en la barra lateral del Finder no se distinguen. El volumen lleva un disco con
 la marca encima (`build/darwin/disco.svg`), y su `.icns` lo arma `armar-dmg.sh` con `iconutil`, que
