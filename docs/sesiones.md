@@ -5,6 +5,21 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-07 · Un .esf se abre en la pantalla que le toca
+
+- **2.4.0**: abrir un `.esf` llevaba siempre a la pantalla de ficheros, y eso es un lío cuando lo que
+  lleva dentro es un texto: ahí lo que se quiere ver es el secreto, no otro fichero al lado.
+- Un `.esf` puede ser dos cosas y la extensión no lo dice: un fichero cifrado, o la línea `ESF1.…`
+  que sale de cifrar un texto y que alguien guardó. **Los dos empiezan por la misma magia**; lo que
+  los separa es el byte siguiente —la versión en el binario, el punto en el de texto—. De ahí sale
+  `cripto.FormaDe`, que es donde tiene que vivir porque es el formato quien lo sabe.
+- `AperturaDe` mira dentro y decide la pantalla. Con varios ficheros van todos como ficheros: en la
+  pantalla de texto no cabe más que uno y elegir cuál sería adivinar.
+- Verificado: seis casos de la detección de formato, cinco de la apertura, y dos pruebas de interfaz
+  —una fabrica un `.esf` de texto de verdad, cifrando y guardando, y comprueba que al abrirlo sale
+  en la pantalla de texto y se descifra desde ahí—. 24 pruebas de interfaz en los dos temas, dos
+  tandas seguidas.
+
 ## 2026-09-07 · El doble clic en un .esf, arreglado de verdad
 
 - **2.3.1**: la 2.0.1 dio por cerrado el doble clic en un `.esf` porque enganchó `Mac.OnFileOpen`.

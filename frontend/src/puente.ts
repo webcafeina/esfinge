@@ -73,6 +73,18 @@ export type Avance = {
   hecho: boolean;
 };
 
+/**
+ * Lo que hay que enseñar cuando el sistema manda ficheros.
+ *
+ * Un .esf puede llevar un fichero cifrado o el contenedor de una línea que sale
+ * de cifrar un texto. Lo decide Go mirando dentro, no la extensión.
+ */
+export type Apertura = {
+  modo: "texto" | "ficheros" | "";
+  texto: string;
+  rutas: string[] | null;
+};
+
 /** Lo que pide el menú del sistema. Los valores los fija Go, en ordenes.go. */
 export type Orden = {
   que: string;
@@ -164,7 +176,7 @@ export const esfinge = {
 
   version: () => llamar<string>("Version"),
 
-  ficherosDeArranque: () => llamar<string[]>("FicherosDeArranque"),
+  aperturaDeArranque: () => llamar<Apertura>("AperturaDeArranque"),
 
   medirPorCaracteres: (caracteres: number, alfabeto: string) =>
     llamar<Medida>("MedirPorCaracteres", caracteres, alfabeto),
@@ -208,7 +220,7 @@ export function alHaberNovedad(cb: (n: Novedad) => void): () => void {
  * aquí: ésos los guarda Go y se recogen con «ficherosDeArranque». Por eso hay
  * que suscribirse antes de preguntar, y no al revés.
  */
-export function alAbrirFichero(cb: (ruta: string) => void): () => void {
+export function alAbrirFichero(cb: (a: Apertura) => void): () => void {
   return escuchar("fichero-abierto", cb);
 }
 

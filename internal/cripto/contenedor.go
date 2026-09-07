@@ -1,6 +1,7 @@
 package cripto
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/binary"
 	"errors"
@@ -31,10 +32,10 @@ var (
 //
 //	"ESF1" | versión(1) | modo(1) | memoria(4 BE) | pasadas(4 BE) | paralelismo(1) | sal(16) | nonce(24)
 const (
-	magia      = "ESF1"
-	version    = 1
-	tamNonce   = chacha20poly1305.NonceSizeX // 24
-	tamEtiqueta = chacha20poly1305.Overhead   // 16
+	magia       = "ESF1"
+	version     = 1
+	tamNonce    = chacha20poly1305.NonceSizeX               // 24
+	tamEtiqueta = chacha20poly1305.Overhead                 // 16
 	tamCabecera = 4 + 1 + 1 + 4 + 4 + 1 + tamSal + tamNonce // 55
 )
 
@@ -56,6 +57,37 @@ const (
 const Prefijo = magia + "."
 
 var codificacion = base64.RawURLEncoding
+
+// Forma dice en cuál de los dos formatos viene un contenedor.
+//
+// Los dos empiezan por «ESF1», así que la magia sola no distingue. Lo que los
+// separa es el byte siguiente: en el binario es el número de versión, y en el de
+// texto es el punto de «ESF1.». Con eso basta y no hace falta leer el fichero
+// entero.
+type Forma int
+
+const (
+	FormaDesconocida Forma = iota
+	// FormaBinaria es el contenedor de un fichero cifrado.
+	FormaBinaria
+	// FormaTexto es la línea «ESF1.<base64url>», que es lo que sale de cifrar un
+	// texto y lo que se guarda si se manda a un fichero.
+	FormaTexto
+)
+
+// FormaDe mira los primeros bytes y dice qué son. Con cinco basta.
+func FormaDe(b []byte) Forma {
+	// El de texto puede venir con espacios o saltos de línea delante: sale de
+	// copiar y pegar de un correo tanto como de un fichero.
+	limpio := bytes.TrimLeft(b, " \t\r\n")
+	if bytes.HasPrefix(limpio, []byte(Prefijo)) {
+		return FormaTexto
+	}
+	if len(b) > 4 && string(b[:4]) == magia && b[4] != '.' {
+		return FormaBinaria
+	}
+	return FormaDesconocida
+}
 
 type cabecera struct {
 	Modo  Modo

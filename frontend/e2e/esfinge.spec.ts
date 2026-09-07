@@ -247,7 +247,7 @@ test("el menú del sistema cambia de pantalla y edita el campo con el foco", asy
   expect(errores, errores.join(' | ')).toEqual([]);
 });
 
-test("un .esf que manda el sistema abre la pantalla de descifrar con él puesto", async ({ page }) => {
+test("un .esf de fichero abre descifrar en modo ficheros", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
 
@@ -268,6 +268,55 @@ test("un .esf que manda el sistema abre la pantalla de descifrar con él puesto"
     .toBe("true");
 
   await expect(page.locator(".lista-ficheros li")).toContainText("credenciales.env.esf");
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});
+
+test("un .esf que lleva un texto abre descifrar en modo texto, con la línea puesta", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // Primero se fabrica uno de verdad: se cifra un texto y se guarda, que es
+  // exactamente como aparece un .esf de esta clase en el disco de alguien.
+  await page.getByLabel("Qué quieres cifrar").fill(SECRETO);
+  await page.locator("#clave").fill(CLAVE);
+  await page.getByRole("button", { name: "Cifrar", exact: true }).click();
+
+  const resultado = page.locator(".resultado");
+  await expect(resultado).toBeVisible({ timeout: 20_000 });
+  const cifrado = (await resultado.innerText()).trim();
+
+  const donde = await page.evaluate(async (contenido) => {
+    const r = await fetch("/api/GuardarTexto", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(["secreto.esf", contenido]),
+    });
+    return (await r.json()) as string;
+  }, cifrado);
+  expect(donde).toBeTruthy();
+
+  // Y ahora se abre como lo abriría el Finder. Lo que tiene que salir no es la
+  // pantalla de ficheros con otro fichero al lado: es el texto, para poder verlo.
+  await expect
+    .poll(async () => {
+      await page.evaluate(async (ruta) => {
+        await fetch("/api/AlAbrirCon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify([ruta]),
+        });
+      }, donde);
+      return page.getByRole("tab", { name: "Texto" }).getAttribute("aria-selected");
+    }, { timeout: 15_000 })
+    .toBe("true");
+
+  await expect(page.getByLabel("El texto cifrado")).toHaveValue(cifrado);
+
+  // Y se descifra desde ahí, que es lo que se quería hacer al abrirlo.
+  await page.locator("#clave").fill(CLAVE);
+  await page.getByRole("button", { name: "Descifrar", exact: true }).click();
+  await expect(page.locator(".resultado")).toHaveText(SECRETO, { timeout: 20_000 });
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });

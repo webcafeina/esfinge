@@ -10,6 +10,7 @@ import {
   enWails,
   esfinge,
   type Alfabeto,
+  type Apertura,
   type Avance,
   type Entrada,
   type Medida,
@@ -36,7 +37,7 @@ type Modo = "texto" | "ficheros";
 export default function App() {
   const [tarea, setTarea] = useState<Tarea>("cifrar");
   const [version, setVersion] = useState("");
-  const [alArrancar, setAlArrancar] = useState<string[]>([]);
+  const [alArrancar, setAlArrancar] = useState<Apertura | null>(null);
   // Cambia cada vez que el sistema manda ficheros, para que la pantalla de
   // descifrar se rehaga con ellos aunque ya estuviera abierta.
   const [tanda, setTanda] = useState(0);
@@ -86,15 +87,15 @@ export default function App() {
     // pregunta por los que llegaron antes de que hubiera nadie escuchando. Al
     // revés queda un hueco por el que se pierde el fichero, que es lo que hacía
     // que la ventana se abriera vacía.
-    const abrir = (rutas: string[]) => {
-      if (!rutas.length) return;
-      setAlArrancar(rutas);
+    const abrir = (a: Apertura) => {
+      if (!a.modo) return;
+      setAlArrancar(a);
       setTanda((n) => n + 1);
       setTarea("descifrar");
     };
 
-    const dejarDeAbrir = alAbrirFichero((ruta) => abrir([ruta]));
-    esfinge.ficherosDeArranque().then(abrir).catch(() => {});
+    const dejarDeAbrir = alAbrirFichero(abrir);
+    esfinge.aperturaDeArranque().then(abrir).catch(() => {});
 
     return () => {
       dejarDeEscuchar();
@@ -158,7 +159,11 @@ export default function App() {
           // La clave lleva el número de tanda: si el sistema manda otro fichero
           // con la pantalla ya abierta, se rehace con él en vez de quedarse con
           // el de antes.
-          <Trabajo key={`descifrar-${tanda}`} accion="descifrar" alArrancar={alArrancar} />
+          <Trabajo
+            key={`descifrar-${tanda}`}
+            accion="descifrar"
+            alArrancar={alArrancar ?? undefined}
+          />
         )}
         {tarea === "generar" && <Generar />}
         {tarea === "historial" && <Historial />}
@@ -183,14 +188,18 @@ function Trabajo({
   alArrancar,
 }: {
   accion: "cifrar" | "descifrar";
-  alArrancar?: string[];
+  alArrancar?: Apertura;
 }) {
   const cifrando = accion === "cifrar";
 
-  const [modo, setModo] = useState<Modo>(alArrancar?.length ? "ficheros" : "texto");
-  const [texto, setTexto] = useState("");
+  // Lo que manda el sistema decide en qué modo se abre esta pantalla: un .esf
+  // que lleva un fichero cifrado se abre en ficheros, y uno que lleva el
+  // contenedor de una línea se abre en texto, con la línea puesta. Lo mira Go
+  // por dentro; aquí solo se obedece.
+  const [modo, setModo] = useState<Modo>(alArrancar?.modo === "ficheros" ? "ficheros" : "texto");
+  const [texto, setTexto] = useState(alArrancar?.texto ?? "");
   const [clave, setClave] = useState("");
-  const [ficheros, setFicheros] = useState<string[]>(alArrancar ?? []);
+  const [ficheros, setFicheros] = useState<string[]>(alArrancar?.rutas ?? []);
 
   const [trabajando, setTrabajando] = useState(false);
   const [progreso, setProgreso] = useState<TipoProgreso | null>(null);

@@ -27,13 +27,13 @@ func idaYVueltaFlujo(t *testing.T, contenido []byte) {
 
 func TestFlujoIdaYVuelta(t *testing.T) {
 	casos := map[string][]byte{
-		"vacío":              {},
-		"un byte":            {0x00},
+		"vacío":                {},
+		"un byte":              {0x00},
 		"menos de un segmento": []byte("DATABASE_URL=postgres://u:p@h/db\nAPI_KEY=abc\n"),
-		"justo un segmento":  bytes.Repeat([]byte("x"), TamSegmento),
-		"segmento y pico":    bytes.Repeat([]byte("y"), TamSegmento+1),
-		"dos segmentos":      bytes.Repeat([]byte("z"), TamSegmento*2),
-		"varios segmentos":   bytes.Repeat([]byte("abcd"), TamSegmento),
+		"justo un segmento":    bytes.Repeat([]byte("x"), TamSegmento),
+		"segmento y pico":      bytes.Repeat([]byte("y"), TamSegmento+1),
+		"dos segmentos":        bytes.Repeat([]byte("z"), TamSegmento*2),
+		"varios segmentos":     bytes.Repeat([]byte("abcd"), TamSegmento),
 	}
 	for nombre, contenido := range casos {
 		t.Run(nombre, func(t *testing.T) { idaYVueltaFlujo(t, contenido) })
@@ -98,7 +98,7 @@ func TestFlujoCortadoNoCulpaALaClave(t *testing.T) {
 	// el primero ya se abrió con ella.
 	for _, corte := range []int{
 		tamCabecera + TamSegmento + tamEtiqueta + 1000, // dentro del segundo segmento
-		len(entero) - 1,                                // le falta un byte al final
+		len(entero) - 1, // le falta un byte al final
 	} {
 		var claro bytes.Buffer
 		err := AbrirFlujo(&claro, bytes.NewReader(entero[:corte]), clave)

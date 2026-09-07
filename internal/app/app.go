@@ -111,24 +111,74 @@ func (a *App) AlAbrirCon(ruta string) {
 	a.mu.Unlock()
 
 	if lista {
-		a.sistema.Avisar(EventoFicheroAbierto, ruta)
+		a.sistema.Avisar(EventoFicheroAbierto, AperturaDe([]string{ruta}))
 	}
 }
 
-// FicherosDeArranque los consulta la interfaz al montarse, para abrirse
+// Apertura dice qué hay que enseñar cuando el sistema manda ficheros.
+//
+// Un .esf puede llevar dos cosas muy distintas: un fichero cifrado, o el
+// contenedor de una línea que sale de cifrar un texto y que alguien guardó. Que
+// las dos acaben en la pantalla de ficheros es un lío, porque en la segunda lo
+// que se quiere ver es el secreto, no otro fichero al lado.
+type Apertura struct {
+	// Modo es «texto» o «ficheros».
+	Modo string `json:"modo"`
+	// Texto es el contenedor de una línea, cuando lo que se abre es eso.
+	Texto string `json:"texto"`
+	// Rutas son los ficheros, cuando lo que se abre son ficheros.
+	Rutas []string `json:"rutas"`
+}
+
+// loQueCabeDeUnTexto es hasta dónde se lee un fichero para tratarlo como texto.
+// Un contenedor de una línea de más de esto no es un secreto corto, es otra cosa.
+const loQueCabeDeUnTexto = 1 << 20
+
+// AperturaDe mira lo que hay dentro para decidir en qué pantalla se abre.
+//
+// Solo se trata como texto **un** fichero: si llegan varios, aunque todos lleven
+// texto, en la pantalla de texto no cabe más que uno y elegir cuál sería
+// adivinar.
+func AperturaDe(rutas []string) Apertura {
+	if len(rutas) == 1 {
+		if texto, vale := textoDe(rutas[0]); vale {
+			return Apertura{Modo: "texto", Texto: texto}
+		}
+	}
+	return Apertura{Modo: "ficheros", Rutas: rutas}
+}
+
+// textoDe devuelve el contenedor de una línea que haya en el fichero, si lo hay.
+func textoDe(ruta string) (string, bool) {
+	info, err := os.Stat(ruta)
+	if err != nil || info.IsDir() || info.Size() > loQueCabeDeUnTexto {
+		return "", false
+	}
+
+	datos, err := os.ReadFile(ruta)
+	if err != nil || cripto.FormaDe(datos) != cripto.FormaTexto {
+		return "", false
+	}
+	return strings.TrimSpace(string(datos)), true
+}
+
+// AperturaDeArranque la consulta la interfaz al montarse, para abrirse
 // directamente en descifrar con lo que haya llegado.
 //
-// Se entregan una sola vez —si se devolvieran siempre, cambiar de pestaña
-// repondría el fichero una y otra vez— y la llamada deja constancia de que ya
-// hay alguien escuchando: a partir de aquí, lo que llegue se manda por evento.
-func (a *App) FicherosDeArranque() []string {
+// Se entrega una sola vez —si se devolviera siempre, cambiar de pestaña repondría
+// el fichero una y otra vez— y la llamada deja constancia de que ya hay alguien
+// escuchando: a partir de aquí, lo que llegue se manda por evento.
+func (a *App) AperturaDeArranque() Apertura {
 	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	fuera := a.pendientes
+	pendientes := a.pendientes
 	a.pendientes = nil
 	a.ventanaLista = true
-	return fuera
+	a.mu.Unlock()
+
+	if len(pendientes) == 0 {
+		return Apertura{}
+	}
+	return AperturaDe(pendientes)
 }
 
 // Resultado es lo que sale de cifrar o descifrar un texto.

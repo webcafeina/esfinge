@@ -74,9 +74,9 @@ func azar(n int) ([]byte, error) {
 
 // Fuerza es la valoración de una clave tecleada por una persona.
 type Fuerza struct {
-	Bits      float64 // entropía estimada, en bits
-	Nivel     int     // 0 muy débil · 1 débil · 2 aceptable · 3 buena · 4 excelente
-	Etiqueta  string
+	Bits       float64 // entropía estimada, en bits
+	Nivel      int     // 0 muy débil · 1 débil · 2 aceptable · 3 buena · 4 excelente
+	Etiqueta   string
 	Sugerencia string
 }
 

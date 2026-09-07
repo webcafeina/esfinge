@@ -19,7 +19,7 @@ type sistemaFalso struct {
 	novedades []Novedad
 	ordenes   []Orden
 	cerrada   bool
-	ficheros_ []string
+	aperturas []Apertura
 }
 
 func (s *sistemaFalso) Cerrar() {
@@ -53,8 +53,8 @@ func (s *sistemaFalso) Avisar(evento string, datos any) {
 			s.ordenes = append(s.ordenes, o)
 		}
 	case EventoFicheroAbierto:
-		if ruta, ok := datos.(string); ok {
-			s.ficheros_ = append(s.ficheros_, ruta)
+		if ap, ok := datos.(Apertura); ok {
+			s.aperturas = append(s.aperturas, ap)
 		}
 	}
 }
@@ -65,14 +65,14 @@ func (s *sistemaFalso) verNovedades() []Novedad {
 	return append([]Novedad(nil), s.novedades...)
 }
 
-// avisosDe devuelve las rutas avisadas por un evento de fichero abierto.
-func (s *sistemaFalso) avisosDe(evento string) []string {
+// avisosDe devuelve las aperturas avisadas por un evento de fichero abierto.
+func (s *sistemaFalso) avisosDe(evento string) []Apertura {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if evento != EventoFicheroAbierto {
 		return nil
 	}
-	return append([]string(nil), s.ficheros_...)
+	return append([]Apertura(nil), s.aperturas...)
 }
 
 func (s *sistemaFalso) verOrdenes() []Orden {
@@ -412,6 +412,7 @@ func TestLoQueCruzaElPuenteEsSerializable(t *testing.T) {
 		"Novedad":      a.NovedadPendiente(),
 		"Preferencias": a.VerPreferencias(),
 		"Orden":        Orden{Que: OrdenIrAAjustes},
+		"Apertura":     Apertura{Modo: "texto", Texto: "ESF1.x"},
 	} {
 		if _, err := json.Marshal(v); err != nil {
 			t.Errorf("%s no se puede serializar: %v", nombre, err)

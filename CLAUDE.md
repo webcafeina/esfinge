@@ -137,6 +137,13 @@ avisarlo, porque nadie va a volver a preguntar. `AlAbrirCon` distingue los dos, 
 suscribe antes de preguntar**: al revés queda un hueco por el que el fichero se pierde. Sin
 comprobar todavía: si el Finder enseña el icono del documento.
 
+**Un `.esf` no dice qué lleva dentro por la extensión.** Puede ser un fichero cifrado o la línea
+`ESF1.…` que sale de cifrar un texto y que alguien guardó. Los dos empiezan por la misma magia; lo
+que los separa es el byte siguiente —la versión en el binario, el punto en el de texto—, y eso es
+`cripto.FormaDe`. `AperturaDe` lo mira para abrir la pantalla que toca: en la de texto, con la línea
+puesta; en la de ficheros, con las rutas. Abrir un texto en la pantalla de ficheros era un lío,
+porque ahí lo que se quiere ver es el secreto, no otro fichero al lado.
+
 **El fondo del DMG y los nombres de los iconos.** El Finder centra cada icono en la posición que le
 da `create-dmg` y **escribe su nombre debajo**: con iconos de 96 px, el pie del nombre queda unos 64
 px por debajo del centro. Todo lo que el fondo dibuje ahí queda tapado, y eso no se ve hasta montar

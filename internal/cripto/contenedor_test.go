@@ -235,9 +235,9 @@ func TestSalYNonceCambianSiempre(t *testing.T) {
 
 func TestEvaluar(t *testing.T) {
 	casos := []struct {
-		clave     string
-		nivelMax  int
-		nivelMin  int
+		clave    string
+		nivelMax int
+		nivelMin int
 	}{
 		{"", 0, 0},
 		{"1234", 0, 0},
