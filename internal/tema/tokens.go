@@ -42,19 +42,17 @@ var Medidas = map[string]string{
 	"fuente-mono":     `ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace`,
 }
 
-// alfaDelVidrio es cuánto tapa la barra cuando el sistema pone el vidrio detrás.
+// Aquí vivía «alfaDelVidrio», el tinte que la barra lateral pintaba encima del
+// material del sistema. **Ya no hay tinte**, y la historia merece quedarse.
 //
-// **Este número se calibró mal la primera vez y conviene saber por qué.** Se
-// ajustó a 0,82 mirando una simulación con un degradado saturado detrás, sin
-// desenfoque; y ahí, en efecto, el texto se lavaba. Pero macOS no enseña el
-// escritorio: enseña un material ya desenfocado y desaturado, así que dejar
-// pasar solo el 18 % de eso equivale a no tener efecto. Probado en un Mac: no se
-// notaba.
+// Se probó a 0,82 y no se notaba; se bajó a 0,55 y tampoco. Las dos veces se
+// eligió el número mirando una simulación, y las dos veces se estaba resolviendo
+// el problema equivocado: el material no se veía porque Wails nunca le pone
+// material a su NSVisualEffectView, no porque lo tapase el tinte.
 //
-// A 0,55 el material se ve y el texto se sigue leyendo, porque el desenfoque del
-// sistema hace la mitad del trabajo. Las aplicaciones del sistema van aún más
-// abajo: en ellas el material *es* el fondo.
-const alfaDelVidrio = 0.55
+// Y con eso resuelto, el tinte sobra por definición: en una barra lateral de
+// macOS **el material es el fondo**, no lleva otra capa encima. Pintar cualquier
+// cosa por delante es volver a la casilla de salida. Ver vidrio_darwin.go.
 
 // conAlfa escribe un color con transparencia, para el anillo de foco.
 func conAlfa(c RGB, alfa float64) string {
@@ -111,10 +109,6 @@ func GenerarCSS() string {
 	// El anillo de foco es el color de acción a media tinta: así se ve sobre
 	// cualquier superficie sin tener que inventar un color por cada una.
 	fmt.Fprintf(&b, "  --anillo: %s;\n", conAlfa(TemaClaro.Relleno, 0.35))
-	// La barra translúcida, para cuando el sistema pone el vidrio detrás de la
-	// ventana. El color opaco se queda: es el que se mide en «make contraste», y
-	// un fondo translúcido no se puede medir porque depende de lo que haya detrás.
-	fmt.Fprintf(&b, "  --barra-vidrio: %s;\n", conAlfa(TemaClaro.Barra, alfaDelVidrio))
 	b.WriteString("\n")
 
 	claves := make([]string, 0, len(Medidas))
@@ -134,7 +128,6 @@ func GenerarCSS() string {
 			fmt.Fprintf(&s, "  --%s: %s;\n", c.nombre, c.de(TemaOscuro).Hex())
 		}
 		fmt.Fprintf(&s, "  --anillo: %s;\n", conAlfa(TemaOscuro.Relleno, 0.45))
-		fmt.Fprintf(&s, "  --barra-vidrio: %s;\n", conAlfa(TemaOscuro.Barra, alfaDelVidrio))
 		s.WriteString("}\n")
 		return s.String()
 	}

@@ -30,13 +30,23 @@ Todo el CSS del efecto cuelga de ese atributo, así que donde no lo hay la venta
 como antes. `MarcarVidrio` va como función y no como método, por la trampa ya conocida de que lo que
 se exporta como método de `*App` cruza el puente.
 
-El tinte es **0,55**, un número en `internal/tema` (`alfaDelVidrio`).
+**La barra lateral no lleva tinte: el material del sistema *es* su fondo.**
 
-**Llegar ahí costó equivocarse, y conviene que quede escrito.** Se puso en 0,82 tras simular la
-ventana con un degradado saturado detrás, sin desenfoque, donde el texto del pie se lavaba. Probado
-en un Mac, el efecto **no se notaba**: macOS no enseña el escritorio, enseña un material ya
-desenfocado y desaturado, así que dejar pasar el 18 % de eso es no tener efecto. La simulación
-describía un caso que el sistema nunca produce, y calibrar contra ella fue el error.
+> **Corrección (2026-09-07), y es la tercera de esta ficha.** Aquí se decía que el tinte era 0,55,
+> un número en `internal/tema` (`alfaDelVidrio`). Ese número ya no existe, y la historia de cómo se
+> eligió es el mejor aviso que tiene este documento.
+>
+> Se puso primero en **0,82**, calibrado contra una simulación con un degradado saturado detrás y
+> **sin desenfoque**. En un Mac no se notaba. Se razonó que el problema era el tinte —macOS no enseña
+> el escritorio sino un material ya desenfocado y desaturado, así que dejar pasar el 18 % de eso es
+> no tener efecto— y se bajó a **0,55**. En un Mac **tampoco se notaba**: «sigue sin apreciarse, solo
+> es un gris».
+>
+> Las dos veces se eligió el número mirando algo, y las dos veces se estaba arreglando el problema
+> equivocado. La causa estaba en el material, no en lo que había por delante (abajo). Y con la causa
+> resuelta el tinte sobra por definición: en una barra lateral de macOS no hay ninguna capa entre el
+> material y el texto. Cualquier alfa que se ponga ahí reproduce exactamente el síntoma del que se
+> venía.
 
 ## Alternativas descartadas
 
@@ -58,14 +68,35 @@ alfa cero, así que el material no tiene nada detrás que mezclar y **se dibuja 
 Y hay una segunda capa: desde macOS 12, `WKWebView` pinta su `underPageBackgroundColor` por debajo
 de la página aunque `drawsBackground` esté a `NO`. Si no se aclara, tapa el material igual.
 
-Las dos son una línea de AppKit cada una y no hay forma de pedirlas desde la API de Wails, así que
+**Y una tercera, que es la que costó tres versiones y la que de verdad explicaba el gris.** Wails
+crea el `NSVisualEffectView`, le pone la mezcla y el estado, y **nunca le pone el material**. Se
+comprobó leyendo su código, que está en el caché de módulos de esta máquina: en
+`internal/frontend/desktop/darwin/WailsContext.m` solo hay `setBlendingMode` y `setState`, y
+`setMaterial` no aparece en todo el directorio. Sin material, la vista se queda con el de por
+defecto, `NSVisualEffectMaterialAppearanceBased`, que Apple dejó **obsoleto en macOS 10.14** y que en
+macOS moderno se dibuja como una superficie plana.
+
+Es decir: había vidrio, y estaba desenfocando nada. `vidrio_darwin.go` le pone
+`NSVisualEffectMaterialSidebar`, que es el de las barras laterales del Finder y de Correo, y fuerza
+`NSVisualEffectStateActive` para que el efecto no se apague al perder el foco.
+
+Las tres son una línea de AppKit cada una y no hay forma de pedirlas desde la API de Wails, así que
 las hace `vidrio_darwin.go` con cgo, en el arranque. Si algún día Wails las hace, ese fichero sobra
 entero.
+
+**Cómo se escribe ese fichero después de haberlo roto.** La 2.9.1 metió aquí un diagnóstico que
+compilaba en verde y **cerraba la aplicación al arrancar**; hubo que revertirlo y publicar la 2.9.2
+para devolverle la herramienta al cliente. Las reglas que salieron de aquello: nada de devolver
+cadenas a Go —un `UTF8String` autoliberado deja un puntero colgando—, nada de `valueForKey:` —se
+puede escribir una propiedad que no se deja leer—, nada de `alphaComponent` —lanza excepción sobre un
+color de patrón—. Solo asignaciones a propiedades públicas, preguntando antes si existen.
 
 ## Consecuencias
 
 - **Las parejas que mide `make contraste` siguen midiéndose contra el color opaco de la barra.** Un
-  fondo translúcido no se puede medir, y fingir que sí sería peor que no medirlo.
+  fondo translúcido no se puede medir, y fingir que sí sería peor que no medirlo. Con el tinte
+  retirado esto es más cierto que antes: bajo vidrio, el contraste de la barra lateral lo sostiene el
+  material del sistema, que es lo que hace cualquier barra lateral nativa, y no un color nuestro.
 - Linux se queda como estaba, y hay una prueba de interfaz que lo vigila: sin el atributo, el `body`
   no puede quedar transparente.
 - En Windows 10 no hay Mica: la ventana sale opaca, sin error y sin aviso.
@@ -74,13 +105,22 @@ entero.
 
 - Prueba de interfaz en los dos temas: sin `data-vidrio`, el fondo del `body` **no** es transparente.
   Ésa es la garantía de que Linux no se rompe.
-- `make contraste` en verde con el token nuevo.
+- Prueba de interfaz en los dos temas, nueva: **con** `data-vidrio`, el fondo de `.lateral` es
+  transparente y el de `.zona` no. Existe porque el tinte ya ha vuelto dos veces, y la tercera que lo
+  haga que falle una prueba y no un cliente.
+- `make contraste` en verde después de quitar el token.
 - Compila para macOS, Windows y Linux.
 
 - Ajustes dice si la ventana está usando el vidrio del sistema. No es adorno: la primera vez que el
   efecto no se vio, no había forma de distinguir «no llega la señal» de «el tinte tapa demasiado».
 
 **Lo que no se ha comprobado:** el Objective-C de `vidrio_darwin.go`. En esta máquina no hay clang ni
-SDK de macOS, así que ni siquiera compila aquí; lo compila el trabajo de macOS de la publicación, y
-si estuviera mal la publicación fallaría. Cómo queda el material tampoco: la simulación de aquí no
-tiene el desenfoque del sistema y ya engañó una vez.
+SDK de macOS, así que ni siquiera compila aquí; lo compila el trabajo de macOS de la publicación.
+Y **que ese trabajo pase en verde solo dice que compila, no que arranque** —lo aprendimos con la
+2.9.1—. Cómo queda el material tampoco se puede ver aquí: la simulación de esta máquina no tiene el
+desenfoque del sistema y ya engañó dos veces.
+
+**Y si esta vez tampoco se ve, el siguiente paso no es otra corazonada.** Wails admite compilar con
+devtools en producción (`wails build -devtools`, que añade la etiqueta `devtools`). Con eso el
+inspector se abre en la aplicación de verdad y se pueden probar hipótesis en vivo, sin publicar una
+versión por cada una. Es más lento de montar y mucho más barato que seguir adivinando.

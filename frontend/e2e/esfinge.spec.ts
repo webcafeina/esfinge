@@ -383,6 +383,35 @@ test("sin el vidrio del sistema la ventana se pinta como siempre", async ({ page
   expect(errores, errores.join(' | ')).toEqual([]);
 });
 
+test("con vidrio, nada se pinta por delante del material del sistema", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await expect(page.locator(".lateral")).toBeVisible();
+
+  // El servidor de desarrollo nunca da vidrio, así que se pone el atributo a
+  // mano: lo que se prueba es el CSS que cuelga de él, no quién lo pone.
+  await page.evaluate(() => document.documentElement.setAttribute("data-vidrio", "si"));
+
+  // **La barra lateral no lleva fondo propio.** En macOS el material *es* el
+  // fondo de la barra, y cualquier capa por delante lo apaga: ése fue el fallo
+  // que se arrastró tres versiones, con un tinte que se bajó dos veces sin que
+  // se notara nunca. Si alguien vuelve a poner un color aquí, que falle esto.
+  const barra = await page.evaluate(
+    () => getComputedStyle(document.querySelector(".lateral")!).backgroundColor,
+  );
+  expect(barra).toBe("rgba(0, 0, 0, 0)");
+
+  // La columna de trabajo, al revés: opaca siempre. Ahí se lee y se teclea, y un
+  // fondo que cambia con lo que haya detrás de la ventana no sirve.
+  const zona = await page.evaluate(
+    () => getComputedStyle(document.querySelector(".zona")!).backgroundColor,
+  );
+  expect(zona).not.toBe("rgba(0, 0, 0, 0)");
+  expect(zona).not.toBe("transparent");
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});
+
 test("la fila activa de la barra lateral no cambia al pasar el ratón", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");

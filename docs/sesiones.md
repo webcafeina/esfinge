@@ -5,6 +5,29 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-07 · El vidrio, resuelto leyendo el código de Wails en vez de adivinando
+
+- **2.9.2**: revertido entero el diagnóstico de la 2.9.1, que cerraba la aplicación al arrancar.
+  Publicada y confirmada por el cliente: «ya arranca». **Restaurar la herramienta fue primero**; el
+  porqué, después.
+- **2.10.0, y la causa del gris de tres versiones.** El código de Wails está en el caché de módulos de
+  esta máquina, y en `internal/frontend/desktop/darwin/WailsContext.m` se lee que crea el
+  `NSVisualEffectView`, le pone `setBlendingMode` y `setState`… y **nunca `setMaterial`**. Se queda
+  con `NSVisualEffectMaterialAppearanceBased`, obsoleto desde macOS 10.14 y que hoy se dibuja plano.
+  Había vidrio y estaba desenfocando nada.
+- **Y encima lo tapábamos.** La barra lateral pintaba un tinte por delante del material, cuyo alfa se
+  había bajado dos veces (0,82 → 0,55) persiguiendo el síntoma. Retirado: en una barra lateral de
+  macOS el material *es* el fondo. `alfaDelVidrio` y `--barra-vidrio` ya no existen.
+- Verificado aquí: `make comprobar`, `make contraste` en AA, cruce a darwin sin cgo y **38 pruebas de
+  interfaz** en los dos temas —dos nuevas: que bajo vidrio `.lateral` queda transparente y `.zona` no—.
+  El Objective-C, como siempre, solo lo comprueba el trabajo de macOS, **y eso solo dice que compila**.
+- De paso: Playwright se había actualizado a 1.63 con `^`, y pedía un navegador que no estaba en el
+  caché. Las 40 pruebas fallaban en 3 ms por eso, no por el cambio. Descargado el que toca.
+- **Lo que queda abierto y es lo importante**: si esta vez tampoco se ve, se acabó el Objective-C a
+  ciegas. La salida es `wails build -devtools`, que deja el inspector en la aplicación de verdad y
+  convierte cada hipótesis en una prueba en vivo en lugar de en una versión publicada. Anotado en
+  `docs/deuda.md`.
+
 ## 2026-09-08 · Vidrio, carpetas recordadas y tandas en paralelo
 
 - **2.5.0**, tres cosas que llevaban días anotadas en `siguiente.md` y no dependían de nadie.

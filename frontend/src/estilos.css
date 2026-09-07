@@ -669,6 +669,14 @@ p {
  * opaca porque es donde se lee y se teclea, y un fondo que cambia según lo que
  * haya detrás de la ventana no es sitio para un campo de texto.
  *
+ * **La barra lateral no lleva fondo propio, y esto costó tres versiones.** Aquí
+ * se pintaba «--barra-vidrio», el color de la barra a media tinta, encima del
+ * material; se bajó dos veces el alfa y nunca se notó la diferencia. El fallo
+ * estaba en otro sitio —Wails no le pone material a su NSVisualEffectView, ver
+ * vidrio_darwin.go—, y una vez puesto, el tinte sobra: en una barra lateral de
+ * macOS **el material es el fondo**. Cualquier capa por delante lo apaga, que es
+ * exactamente el síntoma del que se venía.
+ *
  * Ojo con lo que **no** se declara: cualquier trozo de la columna derecha que se
  * quede sin fondo se vuelve transparente y enseña el material, que es lo que
  * pasaba con la barra de herramientas —se veía una banda de otro color encima
@@ -683,7 +691,7 @@ p {
 }
 
 :root[data-vidrio="si"] .lateral {
-  background: var(--barra-vidrio);
+  background: transparent;
 }
 
 :root[data-vidrio="si"] .zona {

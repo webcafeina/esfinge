@@ -132,12 +132,23 @@ una cadena autoliberada deja un puntero colgando; `alphaComponent` **lanza excep
 de patrón; y `valueForKey:` puede no existir para leer una propiedad que sí se puede escribir. Que
 el trabajo de macOS pase en verde solo dice que compila, **no que arranque**.
 
-**Wails deja el vidrio de macOS a medias.** Crea el `NSVisualEffectView` con mezcla «BehindWindow»
-pero **no pone la ventana como no opaca**, y una `NSWindow` opaca compone como opaca aunque su color
-tenga alfa cero: el material no tiene nada que mezclar y sale un **gris plano**. Desde macOS 12 se
-suma el `underPageBackgroundColor` del `WKWebView`, que tapa igual. Las dos cosas las remata
-`vidrio_darwin.go` con cgo (ADR 0017), y **ese fichero no se puede compilar en esta máquina**: lo
-comprueba el trabajo de macOS de la publicación.
+**Wails deja el vidrio de macOS a medias, y son tres cosas, no una.** Crea el `NSVisualEffectView`
+con mezcla «BehindWindow» pero (1) **no pone la ventana como no opaca**, y una `NSWindow` opaca
+compone como opaca aunque su color tenga alfa cero; (2) desde macOS 12 se suma el
+`underPageBackgroundColor` del `WKWebView`, que tapa igual; y (3) —la que costó tres versiones—
+**nunca le pone el material** a esa vista, que se queda con `AppearanceBased`, obsoleto desde macOS
+10.14 y que hoy se dibuja plano. Las tres las remata `vidrio_darwin.go` con cgo (ADR 0017), y **ese
+fichero no se puede compilar en esta máquina**: lo comprueba el trabajo de macOS de la publicación.
+
+**Y el atajo que se tardó demasiado en usar: el código de Wails está aquí**, en
+`~/go/pkg/mod/github.com/wailsapp/wails/v2@v2.15.0`. Las tres carencias de arriba se leen en
+`internal/frontend/desktop/darwin/WailsContext.m` en dos minutos. Antes de razonar sobre lo que Wails
+«debería» hacer en una plataforma que no se puede ejecutar aquí, se mira lo que hace.
+
+**Bajo vidrio, la barra lateral no lleva fondo propio.** El material del sistema *es* el fondo, como
+en cualquier barra lateral nativa. Aquí se pintó un tinte por delante y se bajó su alfa dos veces
+—0,82 y 0,55— persiguiendo un síntoma cuya causa estaba en el material; con la causa arreglada, el
+tinte solo puede volver a apagarlo. Hay una prueba de interfaz que lo vigila.
 
 **El vidrio del sistema obliga a que el CSS pinte el fondo.** Al pedir una ventana translúcida
 —macOS siempre, Windows 11 con Mica— el webview deja pasar la luz, así que el color lo pone la
