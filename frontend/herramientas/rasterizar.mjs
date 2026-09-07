@@ -16,6 +16,15 @@ const trabajos = [
   ["build/icono.svg", "frontend/public/icono-256.png", 256],
   ["build/icono.svg", "frontend/public/favicon.png", 64],
   ["build/icono.svg", "docs/imagenes/icono.png", 256],
+
+  // Los tamaños que espera el tema de iconos de Linux. Con uno solo, cada
+  // entorno se lo reescala como puede y en el menú de aplicaciones se nota;
+  // dárselos hechos es lo que hace cualquier paquete del sistema.
+  ...[16, 24, 32, 48, 64, 128, 256, 512].map((n) => [
+    "build/icono.svg",
+    `build/linux/hicolor/${n}x${n}.png`,
+    n,
+  ]),
   // El fondo del DMG va al doble de la ventana, para pantallas Retina: macOS lo
   // reduce a la mitad y así no se ve borroso.
   ["build/darwin/fondo-dmg.svg", "build/darwin/fondo-dmg.png", 660],

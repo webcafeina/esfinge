@@ -26,7 +26,23 @@ contents:
     dst: /usr/share/applications/esfinge.desktop
   - src: empaquetado/linux/esfinge-mime.xml
     dst: /usr/share/mime/packages/esfinge.xml
-  - src: build/appicon.png
+  # Todos los tamaños del tema, no solo el grande: con uno solo cada entorno se
+  # lo reescala como puede, y en el menú de aplicaciones se nota.
+  - src: build/linux/hicolor/16x16.png
+    dst: /usr/share/icons/hicolor/16x16/apps/esfinge.png
+  - src: build/linux/hicolor/24x24.png
+    dst: /usr/share/icons/hicolor/24x24/apps/esfinge.png
+  - src: build/linux/hicolor/32x32.png
+    dst: /usr/share/icons/hicolor/32x32/apps/esfinge.png
+  - src: build/linux/hicolor/48x48.png
+    dst: /usr/share/icons/hicolor/48x48/apps/esfinge.png
+  - src: build/linux/hicolor/64x64.png
+    dst: /usr/share/icons/hicolor/64x64/apps/esfinge.png
+  - src: build/linux/hicolor/128x128.png
+    dst: /usr/share/icons/hicolor/128x128/apps/esfinge.png
+  - src: build/linux/hicolor/256x256.png
+    dst: /usr/share/icons/hicolor/256x256/apps/esfinge.png
+  - src: build/linux/hicolor/512x512.png
     dst: /usr/share/icons/hicolor/512x512/apps/esfinge.png
   - src: LICENSE
     dst: /usr/share/doc/esfinge/copyright

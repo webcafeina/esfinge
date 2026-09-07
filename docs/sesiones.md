@@ -59,6 +59,11 @@ Plantilla al final.
 - Tres intentos: apaisado, vertical y plano, y por fin en perspectiva. Los dos primeros salieron de
   imaginar cómo era; el tercero, de mirar tres discos de verdad. La diferencia entre uno y otro
   método está en el resultado.
+- **2.7.4**: preguntado si el disco valía también para Windows y Linux, la respuesta es que no —el
+  icono de volumen existe porque en macOS se **monta** un disco, y ni el instalador de Windows ni el
+  `.deb` montan nada—, pero de mirarlo salió una carencia de verdad: el `.deb` instalaba **un solo
+  tamaño de icono**, el de 512. Ahora van los ocho del tema hicolor. En Windows no había nada que
+  arreglar: Wails ya genera el `icon.ico` del instalador desde `appicon.png`.
 
 ## 2026-09-08 · Windows y GNOME, cada uno a lo suyo
 
