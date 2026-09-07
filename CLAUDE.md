@@ -78,9 +78,20 @@ a `internal/interfaz/dist`, y no se embebe directamente desde `frontend/dist`.
 el tipo declarado (`tipo.Out(i)`), no el valor: preguntándole al valor se acaba tomando el error por
 resultado y devolviendo `null` cuando todo ha ido bien.
 
-**Doble clic en un `.esf` en macOS.** La asociación está declarada en `wails.json` y el Finder la
-respeta, pero el fichero llega por un evento de Apple que Wails v2 no expone. En Windows y Linux
-llega como argumento y funciona. Ahí hay trabajo pendiente si se quiere cerrar del todo.
+**Doble clic en un `.esf` en macOS.** La asociación está declarada y el `Info.plist` del paquete la
+lleva, pero el fichero llega por un evento de Apple que Wails v2 no expone. En Windows y Linux llega
+como argumento y funciona. Ahí hay trabajo pendiente si se quiere cerrar del todo.
+
+**Cuatro cosas que solo se descubren compilando de verdad**, todas encontradas en GitHub Actions:
+
+- El `main.go` de la aplicación **tiene que estar en la raíz**, junto a `wails.json`. Wails genera
+  los enlaces buscando el paquete main ahí; en `cmd/` falla con «no Go files».
+- `fileAssociations` va **dentro de `info`** en `wails.json`. Fuera no da error: simplemente el
+  paquete sale sin asociaciones, y eso solo se ve mirando el `Info.plist` del artefacto.
+- En Linux, Wails busca `webkit2gtk-4.0` y Ubuntu reciente solo trae la 4.1: hace falta compilar con
+  `-tags webkit2_41`.
+- Los artefactos de GitHub **no conservan el bit de ejecución**. Una `.app` descargada de ahí no
+  arranca hasta que se le devuelve con `chmod +x Contents/MacOS/Esfinge`.
 
 ## Lo que nunca se ha probado
 
