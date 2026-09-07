@@ -5,6 +5,29 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-07 · Actualizarse de verdad, sin arrastrar nada
+
+- Probada la 2.2.0 en el Mac: la descarga va, pero al instalar salía la ventana de arrastrar a
+  Aplicaciones. Es decir, el trabajo se lo acababa haciendo el usuario, que es lo que se quería
+  quitar.
+- **La 0014 estaba mal en un punto y hay que decirlo**: daba por hecho que reemplazarse exige firmar
+  con Apple. No es cierto. La firma evita el aviso de Gatekeeper; el reemplazo solo necesita permiso
+  de escritura donde vive la aplicación y hacer el cambiazo desde fuera del proceso. Corregido en la
+  0016.
+- **2.3.0**: Esfinge se sustituye y se reinicia sola. Lo hace un guion que ella escribe, lanza fuera
+  de su grupo de procesos —para que cerrar la ventana no se lo lleve por delante— y que espera a que
+  el proceso muera antes de tocar nada. En macOS monta el DMG, saca el `.app` con `ditto` y lo
+  cambia; en Windows lanza el NSIS en silencio; en Linux no, porque el `.deb` instala como root.
+- Quién puede hacerlo no lo decide el sistema sino **si se puede escribir donde vive la aplicación**,
+  y eso se comprueba escribiendo: los permisos de `Stat` no valen en macOS, que tiene listas de
+  control de acceso.
+- El botón dice ahora «Instalar y reiniciar» o «Abrir el instalador» según lo que se pueda hacer en
+  esa máquina, con el modo viajando dentro de la novedad.
+- Verificado: tests del reparto, compilación para los tres sistemas, y las 22 pruebas de interfaz.
+  Una de ellas era inestable —la orden del menú se emitía antes de que el navegador enganchara el
+  flujo de eventos— y se hizo robusta reintentando; se comprobó con tres tandas seguidas.
+- **Sin verificar, y es lo que importa**: el cambiazo de verdad. Aquí no hay Mac ni Windows.
+
 ## 2026-09-07 · La barra de menús, en español
 
 - Probada la 2.1.0 en el Mac: la comprobación funciona —con la última instalada no sale la banda y

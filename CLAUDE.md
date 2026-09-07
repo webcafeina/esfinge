@@ -95,8 +95,12 @@ No se cambian sin preguntar.
 - **Guardar usa el diálogo del sistema.**
 - **Sin firmar ni notarizar para macOS**: los 99 $/año de Apple no compensan para un cliente.
 - **Comprueba actualizaciones sola**, una vez al día, y se descarga el instalador de su sistema
-  comprobando el SHA256. **No se reemplaza a sí misma**: eso exige firma. Es la única conexión que
-  hace el programa, se cuenta en Ajustes y se apaga ahí (ADR 0014).
+  comprobando el SHA256. Es la única conexión que hace el programa, se cuenta en Ajustes y se apaga
+  ahí (ADR 0014).
+- **Y se reemplaza a sí misma y se reinicia** en macOS y Windows, con un guion que espera a que el
+  proceso muera. En Linux no: el `.deb` instala como root (ADR 0016). Firmar con Apple no tiene nada
+  que ver con esto —evita el aviso de Gatekeeper, no habilita el reemplazo—, y darlo por hecho fue
+  el error de la 0014.
 
 ## Trampas que ya costaron encontrarse
 

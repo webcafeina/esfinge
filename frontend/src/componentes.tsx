@@ -276,6 +276,7 @@ export function BandaNovedad({
   novedad,
   avance,
   error,
+  instalando,
   alDescargar,
   alInstalar,
   alCerrar,
@@ -283,20 +284,30 @@ export function BandaNovedad({
   novedad: Novedad;
   avance?: Avance;
   error?: string;
+  instalando?: boolean;
   alDescargar: () => void;
   alInstalar: () => void;
   alCerrar: () => void;
 }) {
   const bajando = avance !== undefined && !avance.hecho;
   const lista = avance?.hecho === true;
+  // Donde Esfinge puede reemplazarse sola no hay nada que arrastrar, y el botón
+  // no puede prometer lo contrario.
+  const sola = novedad.comoSeInstala === "sola";
 
   return (
     <div className="novedad" role="status">
       <div className="dice">
         {error ? (
           <span className="error">{error}</span>
+        ) : instalando ? (
+          <span>Instalando Esfinge {novedad.version}. La ventana se cerrará y volverá a abrirse…</span>
         ) : lista ? (
-          <span>Esfinge {novedad.version} está lista para instalarse.</span>
+          <span>
+            {sola
+              ? `Esfinge ${novedad.version} está lista. Se instalará y volverá a abrirse.`
+              : `Esfinge ${novedad.version} está lista para instalarse.`}
+          </span>
         ) : bajando ? (
           <span>
             Descargando Esfinge {novedad.version}
@@ -316,9 +327,9 @@ export function BandaNovedad({
       </div>
 
       <div className="botones">
-        {lista ? (
+        {instalando ? null : lista ? (
           <button className="principal" onClick={alInstalar}>
-            Cerrar Esfinge e instalar
+            {sola ? "Instalar y reiniciar" : "Abrir el instalador"}
           </button>
         ) : (
           !bajando && (

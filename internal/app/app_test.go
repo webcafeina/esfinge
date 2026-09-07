@@ -18,6 +18,13 @@ type sistemaFalso struct {
 	avisos    []Progreso
 	novedades []Novedad
 	ordenes   []Orden
+	cerrada   bool
+}
+
+func (s *sistemaFalso) Cerrar() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cerrada = true
 }
 
 func (s *sistemaFalso) ElegirFicheros(string, bool) ([]string, error) { return s.ficheros, nil }

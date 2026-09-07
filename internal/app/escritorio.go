@@ -56,6 +56,15 @@ func (e *Escritorio) ElegirDondeGuardar(titulo, nombreSugerido string) (string, 
 	})
 }
 
+// Cerrar pide a Wails que termine, que es lo que deja libre el paquete para que
+// el guion de actualización pueda reemplazarlo.
+func (e *Escritorio) Cerrar() {
+	if e.ctx == nil {
+		return
+	}
+	runtime.Quit(e.ctx)
+}
+
 // Avisar manda un evento a la ventana.
 func (e *Escritorio) Avisar(evento string, datos any) {
 	if e.ctx == nil {

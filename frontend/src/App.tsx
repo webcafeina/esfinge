@@ -40,6 +40,7 @@ export default function App() {
   const [novedad, setNovedad] = useState<Novedad | null>(null);
   const [avance, setAvance] = useState<Avance | undefined>();
   const [falloAlBajar, setFalloAlBajar] = useState("");
+  const [instalando, setInstalando] = useState(false);
 
   useEffect(() => {
     esfinge.version().then(setVersion).catch(() => setVersion("?"));
@@ -127,7 +128,14 @@ export default function App() {
           avance={avance}
           error={falloAlBajar}
           alDescargar={descargar}
-          alInstalar={() => esfinge.instalarActualizacion().catch((e) => setFalloAlBajar(mensaje(e)))}
+          instalando={instalando}
+          alInstalar={() => {
+            setInstalando(true);
+            esfinge.instalarActualizacion().catch((e) => {
+              setInstalando(false);
+              setFalloAlBajar(mensaje(e));
+            });
+          }}
           alCerrar={() => setNovedad(null)}
         />
       )}

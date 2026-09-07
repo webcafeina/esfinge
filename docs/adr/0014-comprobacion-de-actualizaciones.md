@@ -1,6 +1,12 @@
 # ADR 0014 — Esfinge comprueba si hay versión nueva, y se la descarga
 
-**Fecha:** 2026-09-07 · **Estado:** aceptada · **Revisar si** algún día se firma con Apple
+**Fecha:** 2026-09-07 · **Estado:** aceptada, con una parte sustituida por la
+[0016](0016-actualizarse-sola.md) · **Revisar si** algún día se firma con Apple
+
+> **Lo que aquí se decidió sobre no reemplazarse a sí misma dejó de valer el mismo día.** Daba por
+> hecho que hacía falta firmar con Apple, y no es cierto: la firma evita el aviso de Gatekeeper, no
+> habilita el reemplazo. Lo corrige la [0016](0016-actualizarse-sola.md). El resto de esta ficha
+> —qué se envía, cada cuánto, qué protege el SHA256— sigue en pie.
 
 ## Contexto
 

@@ -45,6 +45,9 @@ type Sistema interface {
 	ElegirFicheros(titulo string, varios bool) ([]string, error)
 	ElegirDondeGuardar(titulo, nombreSugerido string) (string, error)
 	Avisar(evento string, datos any)
+	// Cerrar cierra la ventana. Hace falta para actualizarse: el cambiazo lo da
+	// un guion que espera a que este proceso muera.
+	Cerrar()
 }
 
 // Nueva construye la aplicación.

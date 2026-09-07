@@ -62,6 +62,8 @@ export type Novedad = {
   /** El fichero que le toca a este sistema. Vacío si no hay ninguno. */
   fichero: string;
   bytes: number;
+  /** «sola» si se reemplaza y reinicia; «instalador» si hace falta el del sistema. */
+  comoSeInstala: "sola" | "instalador" | "";
 };
 
 /** Cómo va la descarga de la actualización. */

@@ -31,6 +31,10 @@ type Novedad struct {
 	Pagina  string `json:"pagina"`
 	Fichero string `json:"fichero"`
 	Bytes   int64  `json:"bytes"`
+	// ComoSeInstala vale «sola» cuando Esfinge puede reemplazarse y reiniciarse
+	// sin que nadie arrastre nada, e «instalador» cuando hace falta el del
+	// sistema. El botón dice una cosa u otra según esto.
+	ComoSeInstala string `json:"comoSeInstala"`
 }
 
 // actualizador reúne el estado de la comprobación, que vive aparte del resto.
@@ -119,8 +123,13 @@ func (a *App) DescargarActualizacion() (string, error) {
 	return ruta, nil
 }
 
-// InstalarActualizacion entrega lo descargado al sistema. A partir de ahí manda
-// el instalador de cada uno, no Esfinge.
+// InstalarActualizacion pone la versión descargada en su sitio.
+//
+// Donde Esfinge puede reemplazarse sola, esto **cierra la ventana**: el cambiazo
+// lo da un guion que espera a que este proceso muera y luego vuelve a abrir la
+// aplicación. El cierre va con un respiro para que la llamada llegue a
+// contestar; si se cerrara aquí mismo, la interfaz vería un error de puente roto
+// en lugar de una actualización que va bien.
 func (a *App) InstalarActualizacion() error {
 	a.act.mu.Lock()
 	ruta := a.act.descargado
@@ -129,7 +138,17 @@ func (a *App) InstalarActualizacion() error {
 	if ruta == "" {
 		return fmt.Errorf("Todavía no hay nada descargado")
 	}
-	return actualizacion.Instalar(ruta)
+	if err := actualizacion.Instalar(ruta); err != nil {
+		return err
+	}
+
+	if actualizacion.ComoSeInstala() == actualizacion.ModoSolo {
+		go func() {
+			time.Sleep(400 * time.Millisecond)
+			a.sistema.Cerrar()
+		}()
+	}
+	return nil
 }
 
 // VerPreferencias son los ajustes tal como están guardados.
@@ -142,10 +161,11 @@ func (a *App) GuardarPreferencias(p Preferencias) error { return a.ajustes.Guard
 // ventana. El resumen SHA256 no cruza el puente: no es asunto de la interfaz.
 func deNovedad(n actualizacion.Novedad) Novedad {
 	return Novedad{
-		Hay:     n.Hay,
-		Version: n.Version,
-		Pagina:  n.Pagina,
-		Fichero: n.Fichero,
-		Bytes:   n.Bytes,
+		Hay:           n.Hay,
+		Version:       n.Version,
+		Pagina:        n.Pagina,
+		Fichero:       n.Fichero,
+		Bytes:         n.Bytes,
+		ComoSeInstala: string(actualizacion.ComoSeInstala()),
 	}
 }

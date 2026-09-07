@@ -25,6 +25,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0013](adr/0013-repositorio-publico.md) | Repositorio público, licencia propietaria | 2026-09-07 | aceptada |
 | [0014](adr/0014-comprobacion-de-actualizaciones.md) | Comprueba y descarga actualizaciones | 2026-09-07 | aceptada · revisar si se firma con Apple |
 | [0015](adr/0015-menus-en-espanol.md) | La barra de menús se construye entera, en español | 2026-09-07 | aceptada · revisar si Wails localiza sus roles |
+| [0016](adr/0016-actualizarse-sola.md) | Se reemplaza a sí misma y se reinicia | 2026-09-07 | aceptada · sustituye parte de la 0014 |
 
 ## Cuándo escribir una
 

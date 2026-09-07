@@ -70,6 +70,12 @@ func (s *SistemaDeDesarrollo) ElegirDondeGuardar(_, nombreSugerido string) (stri
 }
 
 // Avisar reparte el evento entre los navegadores conectados.
+// Cerrar no cierra nada aquí: el servidor de desarrollo no es una ventana, y
+// matarlo dejaría las pruebas sin con qué hablar. Se anota y se sigue.
+func (s *SistemaDeDesarrollo) Cerrar() {
+	log.Println("La aplicación pediría cerrarse ahora para actualizarse")
+}
+
 func (s *SistemaDeDesarrollo) Avisar(evento string, datos any) {
 	cuerpo, err := json.Marshal(datos)
 	if err != nil {
