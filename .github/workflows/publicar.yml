@@ -123,8 +123,11 @@ jobs:
           # 2.0.2.
           cygpath -w "$nsis" >> "$GITHUB_PATH"
 
+      # En PowerShell y no en bash: Git bash convierte los argumentos que empiezan
+      # por «/» en rutas, y «/VERSION» le llega a makensis como
+      # «C:/Program Files/Git/VERSION», que intenta abrir como guion.
       - name: Comprobar que makensis está donde wails lo busca
-        shell: bash
+        shell: pwsh
         run: makensis /VERSION
 
       - name: Construir la interfaz
