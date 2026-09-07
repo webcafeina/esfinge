@@ -40,7 +40,6 @@ saber qué se hizo.
 
 - ~~Copiar y pegar con los menús construidos a mano~~ → comprobado en el Mac: los atajos de ⌘ van
   bien (2026-09-08).
-
 - ~~Convertir la herramienta de terminal en aplicación de escritorio~~ → hecho en la 2.0.0 (2026-09-07).
 - ~~Arreglar el arrastrar y soltar~~ → hecho en la 2.0.1 (2026-09-07).
 - ~~Doble clic en un `.esf` en macOS~~ → la 2.0.1 lo dio por hecho y estaba a medias: nadie escuchaba
