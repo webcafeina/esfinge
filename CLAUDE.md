@@ -105,9 +105,10 @@ a `internal/interfaz/dist`, y no se embebe directamente desde `frontend/dist`.
 el tipo declarado (`tipo.Out(i)`), no el valor: preguntándole al valor se acaba tomando el error por
 resultado y devolviendo `null` cuando todo ha ido bien.
 
-**Doble clic en un `.esf` en macOS.** La asociación está declarada y el `Info.plist` del paquete la
-lleva, pero el fichero llega por un evento de Apple que Wails v2 no expone. En Windows y Linux llega
-como argumento y funciona. Ahí hay trabajo pendiente si se quiere cerrar del todo.
+**Doble clic en un `.esf` en macOS.** No llega como argumento, sino por un evento de Apple. Wails v2
+**sí** lo entrega, en `options.Mac.OnFileOpen`, que es lo que usa `main.go`; en Windows y Linux el
+fichero llega por `os.Args` y no hace falta. Lo que queda sin comprobar es si el Finder enseña el
+icono del documento.
 
 **Cuatro cosas que solo se descubren compilando de verdad**, todas encontradas en GitHub Actions:
 

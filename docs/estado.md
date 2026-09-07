@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.0.1**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.0.2**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, guarda un historial de qué y cuándo, y se compila sola para macOS,
 Windows y Linux en GitHub Actions.
 
@@ -30,6 +30,7 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
 
 Nada a medias. La infraestructura —documentación, portada, licencia, instaladores de los tres
 sistemas y el flujo que publica— está escrita y comprobada hasta donde se puede desde esta máquina.
+El repositorio ya es público y la publicación de GitHub lleva sus adjuntos.
 
 ## Siguiente acción concreta
 

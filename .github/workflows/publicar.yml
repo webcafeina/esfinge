@@ -103,11 +103,21 @@ jobs:
           [ -n "$n" ] || n="${GITHUB_REF_NAME#v}"
           echo "n=$n" >> "$GITHUB_OUTPUT"
 
+      # Chocolatey instala NSIS pero no lo deja en el PATH, y wails no lo busca
+      # en ningún otro sitio: sin esto avisa de que no encuentra «makensis» y
+      # sale con código cero, dejando el trabajo en verde y sin instalador.
       - name: Instalar wails y NSIS
         shell: bash
         run: |
           go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
           choco install nsis -y --no-progress
+          nsis="/c/Program Files (x86)/NSIS"
+          [ -x "$nsis/makensis.exe" ] || nsis="/c/Program Files/NSIS"
+          if [ ! -x "$nsis/makensis.exe" ]; then
+            echo "::error::No aparece makensis después de instalar NSIS"
+            exit 1
+          fi
+          echo "${nsis}" >> "$GITHUB_PATH"
 
       - name: Construir la interfaz
         working-directory: frontend
@@ -122,19 +132,27 @@ jobs:
           cp -r frontend/dist/. internal/interfaz/dist/
 
       # -nsis produce el asistente de instalación de siempre, que además registra
-      # los ficheros .esf declarados en wails.json.
+      # los ficheros .esf declarados en wails.json. Si no puede, avisa y sigue
+      # como si nada, así que aquí se comprueba que el instalador existe de
+      # verdad en vez de fiarse del código de salida.
       - name: Compilar la aplicación y su instalador
         shell: bash
         run: |
           wails build -platform windows/amd64 -clean -nsis \
             -ldflags "-X main.version=${{ steps.v.outputs.n }}"
           ls -lh build/bin/
+          if ! ls build/bin/*installer*.exe >/dev/null 2>&1; then
+            echo "::error::wails no ha producido el instalador NSIS"
+            exit 1
+          fi
+          nombre="Esfinge-${{ steps.v.outputs.n }}-windows-instalador.exe"
+          mv build/bin/*installer*.exe "$nombre"
+          ls -lh "$nombre"
 
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: |
-            build/bin/*.exe
+          path: "*-windows-instalador.exe"
 
   linux:
     name: Linux · paquete
@@ -255,7 +273,7 @@ jobs:
             | Sistema | Fichero |
             |---|---|
             | macOS (Apple Silicon e Intel) | `Esfinge-*.dmg` |
-            | Windows | `Esfinge-*-installer.exe` |
+            | Windows | `Esfinge-*-windows-instalador.exe` |
             | Linux (Debian, Ubuntu) | `esfinge_*.deb` |
             | Linux (cualquiera) | `esfinge-*-linux-amd64.tar.gz` |
             | Línea de comandos | `esfinge-*-<sistema>-<arquitectura>` |

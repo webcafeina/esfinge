@@ -22,8 +22,19 @@ Plantilla al final.
 - Flujo `publicar.yml`: se dispara con una etiqueta `v*`, compila en los tres sistemas y cuelga todo
   de la publicación de GitHub.
 - Verificado: `make comprobar` en verde, `gitleaks` sin filtraciones, los tres YAML válidos.
+- **2.0.1** publicada: el flujo entero de punta a punta, con sus adjuntos. Salió en verde con un
+  fallo escondido: Chocolatey instala NSIS pero no lo deja en el `PATH`, y `wails -nsis` avisa de que
+  no encuentra `makensis` y **sale con código cero**. El trabajo pasó y la publicación se quedó sin
+  instalador de Windows. **2.0.2** lo arregla: se añade NSIS al `PATH` y se comprueba que el fichero
+  existe, que es la misma lección que ya estaba escrita para `create-dmg`.
+- Del `.dmg` publicado, leído desde Linux con 7-Zip: `Esfinge.app` con el binario universal —x86_64
+  y arm64—, el enlace a `/Applications`, el `LÉEME.txt` idéntico al del repositorio, el fondo en
+  `.background/fondo-dmg.tiff` con las dos resoluciones, el icono de volumen y un `.DS_Store` de 10
+  KB, que es la señal de que `create-dmg` sí habló con el Finder y guardó la colocación.
+- Del `.deb`: los dos binarios con su bit de ejecución, el lanzador, la asociación de los `.esf`, el
+  icono, el copyright y las dependencias del webview.
 - Queda abierto: montar el DMG en un Mac y ver cómo queda la ventana. Desde aquí solo se puede leer
-  su contenido.
+  su contenido, no verlo.
 
 ## 2026-09-07 · La aplicación de escritorio, y arreglarla con lo que dijo el Mac
 

@@ -22,7 +22,7 @@ Sin cuentas, sin servidores, sin que nada salga de tu ordenador.
 | Sistema | Descarga | Notas |
 |---|---|---|
 | **macOS** | [Esfinge.dmg](https://github.com/webcafeina/esfinge/releases/latest) | Universal: Apple Silicon e Intel |
-| **Windows** | [Esfinge-instalador.exe](https://github.com/webcafeina/esfinge/releases/latest) | Asistente de instalación |
+| **Windows** | [Esfinge-windows-instalador.exe](https://github.com/webcafeina/esfinge/releases/latest) | Asistente de instalación |
 | **Linux** | [.deb o .tar.gz](https://github.com/webcafeina/esfinge/releases/latest) | Debian y Ubuntu, o el binario suelto |
 | **Línea de comandos** | [esfinge](https://github.com/webcafeina/esfinge/releases/latest) | Los seis objetivos, para tuberías y scripts |
 
