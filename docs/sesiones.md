@@ -38,6 +38,21 @@ Plantilla al final.
 - Lección: bajar el tinte dos veces sin entender el síntoma era el camino equivocado. El «gris plano»
   no era un tinte de más, era el material sin nada que mezclar.
 
+## 2026-09-08 · La contraseña generada, usable como clave
+
+- **2.8.0**: en Generar aparece «Usar como clave», que lleva a Cifrar con la contraseña puesta y de
+  paso la copia; y en Cifrar, un «Generar una» junto al campo de la clave. Nada de esto toca Go: las
+  dos llamadas ya existían.
+- **Lo que mandó el diseño fue el riesgo**, no la comodidad. Una clave generada al azar no se
+  recuerda, así que cuando la clave viene del generador el aviso de Cifrar **cambia de texto** y dice
+  que esa clave no está guardada en ninguna parte. **Sustituye al genérico en vez de sumarse**: dos
+  avisos diciendo lo mismo se leen menos que uno, y además hay una prueba que exige que haya
+  exactamente uno.
+- **Encontrado de paso, y es anterior a este cambio**: cambiar de sección borra lo escrito, porque
+  cada panel se desmonta al salir. Se nota justo aquí —lo natural es escribir el secreto y luego ir a
+  por la clave— pero pasaba igual antes. Comprobado volviendo atrás el código y midiéndolo. A la
+  deuda.
+
 ## 2026-09-08 · El icono del disco montado
 
 - **2.7.1**: el volumen del DMG usaba el icono de la aplicación, así que el disco montado y lo que

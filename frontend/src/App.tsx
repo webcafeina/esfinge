@@ -43,6 +43,11 @@ export default function App() {
   // descifrar se rehaga con ellos aunque ya estuviera abierta.
   const [tanda, setTanda] = useState(0);
 
+  // La clave que viene del generador. El sello es un contador y no el valor:
+  // lo que dispara el efecto de abajo es que **cambie**, y pedir dos veces
+  // seguidas la misma contraseña es perfectamente posible.
+  const [claveGenerada, setClaveGenerada] = useState<{ valor: string; sello: number } | null>(null);
+
   const [novedad, setNovedad] = useState<Novedad | null>(null);
   const [avance, setAvance] = useState<Avance | undefined>();
   const [falloAlBajar, setFalloAlBajar] = useState("");
@@ -171,7 +176,9 @@ export default function App() {
         )}
 
         <main className="contenido">
-          {tarea === "cifrar" && <Trabajo key="cifrar" accion="cifrar" />}
+          {tarea === "cifrar" && (
+            <Trabajo key="cifrar" accion="cifrar" claveGenerada={claveGenerada} />
+          )}
           {tarea === "descifrar" && (
             // La clave lleva el número de tanda: si el sistema manda otro fichero
             // con la pantalla ya abierta, se rehace con él en vez de quedarse con
@@ -182,7 +189,14 @@ export default function App() {
               alArrancar={alArrancar ?? undefined}
             />
           )}
-          {tarea === "generar" && <Generar />}
+          {tarea === "generar" && (
+            <Generar
+              alUsarComoClave={(valor) => {
+                setClaveGenerada((antes) => ({ valor, sello: (antes?.sello ?? 0) + 1 }));
+                setTarea("cifrar");
+              }}
+            />
+          )}
           {tarea === "historial" && <Historial />}
           {tarea === "ajustes" && <Ajustes version={version} alEncontrar={setNovedad} />}
         </main>
@@ -208,9 +222,12 @@ const TITULOS: Record<Tarea, string> = {
 function Trabajo({
   accion,
   alArrancar,
+  claveGenerada,
 }: {
   accion: "cifrar" | "descifrar";
   alArrancar?: Apertura;
+  /** Lo que manda el generador. Ver el efecto de más abajo. */
+  claveGenerada?: { valor: string; sello: number } | null;
 }) {
   const cifrando = accion === "cifrar";
 
@@ -222,6 +239,33 @@ function Trabajo({
   const [texto, setTexto] = useState(alArrancar?.texto ?? "");
   const [clave, setClave] = useState("");
   const [ficheros, setFicheros] = useState<string[]>(alArrancar?.rutas ?? []);
+
+  // Si la clave viene del generador hay que decirlo, porque es distinta de una
+  // que la persona sabe: ésta no está en ninguna parte. Se apaga en cuanto se
+  // teclea encima, que entonces ya es otra cosa.
+  const [claveDelGenerador, setClaveDelGenerador] = useState(false);
+
+  // La clave que llega del generador se aplica **sin rehacer la pantalla**. El
+  // patrón de remontar con «key» que usan los ficheros del sistema aquí borraría
+  // el texto que se estuviera escribiendo, que es justo lo que se iba a cifrar.
+  useEffect(() => {
+    if (!claveGenerada) return;
+    setClave(claveGenerada.valor);
+    setClaveDelGenerador(true);
+  }, [claveGenerada?.sello]);
+
+  // Sacar una clave al azar sin salir de aquí. Los valores por defecto son los
+  // de la pantalla de Generar: 32 caracteres en hexadecimal, que es el único
+  // alfabeto que sobrevive dentro de una URL (ADR 0004).
+  const generarClave = useCallback(async () => {
+    try {
+      const m = await esfinge.medirPorCaracteres(32, "hex");
+      setClave(await esfinge.generarContrasena(m.bytes, "hex"));
+      setClaveDelGenerador(true);
+    } catch (e) {
+      setError(mensaje(e));
+    }
+  }, []);
 
   const [trabajando, setTrabajando] = useState(false);
   const [progreso, setProgreso] = useState<TipoProgreso | null>(null);
@@ -359,7 +403,15 @@ function Trabajo({
           />
         )}
 
-        <CampoClave valor={clave} alCambiar={setClave} alEnviar={() => listo && ejecutar()} />
+        <CampoClave
+          valor={clave}
+          alCambiar={(v) => {
+            setClave(v);
+            setClaveDelGenerador(false);
+          }}
+          alEnviar={() => listo && ejecutar()}
+          alGenerar={cifrando ? generarClave : undefined}
+        />
       </div>
 
       {/* El aviso desaparece cuando ya hay resultado: el propio resultado trae
@@ -367,7 +419,9 @@ function Trabajo({
           vez diciendo lo mismo. */}
       {cifrando && !resultado && hechos.length === 0 && (
         <p className="aviso">
-          Si pierdes la clave, se pierde el contenido. No hay forma de recuperarlo.
+          {claveDelGenerador
+            ? "Esta clave acaba de generarse y no está guardada en ninguna parte. Cópiala o guárdala antes de cifrar, o el contenido se perderá."
+            : "Si pierdes la clave, se pierde el contenido. No hay forma de recuperarlo."}
         </p>
       )}
 
@@ -437,7 +491,7 @@ function Tanda({ hechos }: { hechos: ResultadoFichero[] }) {
   );
 }
 
-function Generar() {
+function Generar({ alUsarComoClave }: { alUsarComoClave: (clave: string) => void }) {
   const [alfabetos, setAlfabetos] = useState<Alfabeto[]>([]);
   const [alfabeto, setAlfabeto] = useState("hex");
 
@@ -542,7 +596,27 @@ function Generar() {
           exito={guardadoEn ? `Guardado en ${guardadoEn}` : undefined}
           nombreSugerido="contrasena.txt"
           alGuardar={setGuardadoEn}
-          extra={<button onClick={generar}>Generar otra</button>}
+          extra={
+            <>
+              <button
+                onClick={async () => {
+                  // Se copia además de llevarla, para que quepa pegarla en un
+                  // gestor de contraseñas sin volver atrás. Es la misma decisión
+                  // que al cifrar un texto (ADR 0011), con la misma pega: el
+                  // portapapeles lo ve cualquier programa que lo vigile.
+                  try {
+                    await navigator.clipboard.writeText(contrasena);
+                  } catch {
+                    // Si el portapapeles falla, llevarla sigue valiendo.
+                  }
+                  alUsarComoClave(contrasena);
+                }}
+              >
+                Usar como clave
+              </button>
+              <button onClick={generar}>Generar otra</button>
+            </>
+          }
         />
       )}
     </div>

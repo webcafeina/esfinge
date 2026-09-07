@@ -45,6 +45,11 @@ Esto es lo importante de este documento.
   Cualquier programa que vigile el portapapeles lo verá. Sin la clave no le sirve, pero conviene
   saberlo. Al descifrar no se copia nada por su cuenta, justamente por esto.
 
+  **Y desde la 2.8.0, «Usar como clave» copia también la contraseña generada**, que sí es un secreto
+  aprovechable por sí mismo. Va en la misma línea que lo anterior —se copia para poder pegarla en un
+  gestor de contraseñas sin dar un rodeo— pero la diferencia importa: lo que queda en el portapapeles
+  es la llave, no el candado.
+
 ## Dónde queda algo en disco
 
 | Qué | Dónde | Permisos |

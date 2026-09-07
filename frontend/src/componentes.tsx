@@ -148,12 +148,21 @@ export function CampoClave({
   etiqueta = "Clave",
   medir = true,
   alEnviar,
+  alGenerar,
 }: {
   valor: string;
   alCambiar: (v: string) => void;
   etiqueta?: string;
   medir?: boolean;
   alEnviar?: () => void;
+  /**
+   * Si se pasa, aparece un botón para sacar una clave al azar sin salir de esta
+   * pantalla.
+   *
+   * Solo tiene sentido al cifrar: al descifrar la clave no se elige, se
+   * recuerda, y un botón de generar ahí no significa nada.
+   */
+  alGenerar?: () => void;
 }) {
   const [fuerza, setFuerza] = useState<Fuerza | null>(null);
 
@@ -174,7 +183,16 @@ export function CampoClave({
 
   return (
     <div>
-      <label htmlFor="clave">{etiqueta}</label>
+      <div className="fila">
+        <label htmlFor="clave" style={{ marginBottom: 0 }}>
+          {etiqueta}
+        </label>
+        {alGenerar && (
+          <button className="discreto" onClick={alGenerar}>
+            Generar una
+          </button>
+        )}
+      </div>
       <input
         id="clave"
         type="password"

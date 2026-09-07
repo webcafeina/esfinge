@@ -42,3 +42,5 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
   detectar fuentes; se volvió a caracteres normales (2026-09-07, 2.0.1).
 - ~~El arranque tardaba cinco segundos en terminales que no contestan al OSC 11~~ → lo causaba el
   `init()` de Bubble Tea, que se fue con la interfaz de terminal (2026-09-07, 2.0.0).
+
+| Cambiar de sección borra lo escrito | Media | Escribes el secreto, vas a Generar a por una clave y al volver el texto ya no está. Cada sección se desmonta al salir de ella, así que su estado se pierde. Se descubrió al añadir «Usar como clave» —el camino natural es escribir primero y buscar la clave después—, y **es anterior a ese cambio**: pasaba igual antes | Abierto |

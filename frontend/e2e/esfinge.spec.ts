@@ -398,3 +398,57 @@ test("la fila activa de la barra lateral no cambia al pasar el ratón", async ({
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });
+
+test("la contraseña generada se puede usar como clave, avisando de que no está guardada", async ({
+  page,
+}) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  await seccion(page, "Generar").click();
+  const generada = (await page.locator(".resultado").innerText({ timeout: 20_000 })).trim();
+  expect(generada.length).toBeGreaterThan(16);
+
+  await accion(page, "Usar como clave").click();
+
+  await expect(seccion(page, "Cifrar")).toHaveAttribute("aria-current", "page");
+  await expect(page.locator("#clave")).toHaveValue(generada);
+
+  // Una clave recién generada no está en ningún sitio, y eso se dice con todas
+  // las letras. Pero **sigue habiendo un solo aviso**: sustituye al de siempre
+  // en vez de sumarse, que dos avisos diciendo lo mismo se leen menos que uno.
+  await expect(page.locator(".aviso")).toHaveCount(1);
+  await expect(page.locator(".aviso")).toContainText("no está guardada");
+
+  // Y al teclear encima ya es otra clave, así que vuelve el aviso de siempre.
+  await page.locator("#clave").fill("una clave que me sé");
+  await expect(page.locator(".aviso")).toHaveCount(1);
+  await expect(page.locator(".aviso")).toContainText("Si pierdes la clave");
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});
+
+test("se puede generar una clave desde la propia pantalla de cifrar", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // Se escribe primero lo que se va a cifrar: sacar una clave **no puede
+  // llevarse por delante el texto**. Es lo que pasaría si esto se resolviera
+  // rehaciendo la pantalla en vez de aplicando la clave sobre la que hay.
+  await page.getByLabel("Qué quieres cifrar").fill(SECRETO);
+
+  await page.locator(".contenido").getByRole("button", { name: "Generar una" }).click();
+
+  await expect(page.getByLabel("Qué quieres cifrar")).toHaveValue(SECRETO);
+
+  await expect(page.locator("#clave")).not.toHaveValue("", { timeout: 20_000 });
+  await expect(page.locator(".aviso")).toContainText("no está guardada");
+
+  // En descifrar la clave no se elige, se recuerda: ahí el botón no pinta nada.
+  await seccion(page, "Descifrar").click();
+  await expect(
+    page.locator(".contenido").getByRole("button", { name: "Generar una" }),
+  ).toHaveCount(0);
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});
