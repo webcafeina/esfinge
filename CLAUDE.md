@@ -81,6 +81,11 @@ No se cambian sin preguntar.
 - **Se conserva la línea de comandos** y se retiraron los menús de terminal de la 1.x.
 - **Aspecto de aplicación del sistema**, no una identidad propia: tipografía y controles de macOS y
   Windows. La marca queda en el icono y en «Acerca de».
+- **Y estructura del sistema**: barra lateral a la izquierda, título en la barra de herramientas y
+  formularios en tarjetas, sin barra de título propia (ADR 0019). Las medidas salen de capturas de
+  macOS 26 que están en `referencias/` —carpeta ignorada por git—, usando los semáforos como regla:
+  miden 12 pt clavados y con eso se saca la escala de cualquier captura. **Windows y Linux siguen con
+  esta misma estructura**; lo suyo va después.
 - **La barra de menús se construye entera** (`menu.go`), en español y en los tres sistemas: los roles
   de Wails traen los rótulos en inglés escritos a fuego en su Objective-C y no hay forma de
   traducirlos. Como sin roles no hay selectores nativos, las acciones de edición las hace la ventana
@@ -134,6 +139,15 @@ efecto cuelgue de ese atributo** (ADR 0017). Hay una prueba de interfaz que lo v
 derivación ya usa cuatro hilos por dentro y 64 MiB mientras dura, así que pasarse es pisarse (ADR
 0018). Los resultados conservan el orden de entrada y el progreso se cuenta al **terminar** cada
 fichero. Desde aquí, `go test -race` deja de ser una cortesía.
+
+**Sin barra de título, arrastrar la ventana deja de ser gratis.** Con `TitleBarHiddenInset` el
+contenido llega hasta arriba y ya no hay nada que agarrar: hay que declarar las zonas con
+`--wails-draggable: drag` —la barra lateral y la de herramientas— y desmarcar los botones con
+`no-drag`. Si se olvida, la ventana se queda clavada en la pantalla.
+
+**En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
+cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de
+`.contenido`. Sin acotar, Playwright encuentra dos y falla por modo estricto.
 
 **El color se genera, no se escribe.** `internal/tema` es la fuente de verdad y produce
 `frontend/src/tokens.css` con `make tokens`. Editar el CSS a mano no sirve: hay un test que compara

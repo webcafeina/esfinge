@@ -67,12 +67,13 @@ func main() {
 		// los rótulos en inglés escritos a fuego, así que se construye entera.
 		Menu: menuEnEspanol(func() context.Context { return ctx }, aplicacion),
 
-		// La ventana arranca con sitio para lo más alto que hay —cifrar con sus
-		// tres campos y el resultado— sin obligar a desplazarse nada más abrir.
-		Width:     900,
+		// Con barra lateral la ventana ya no puede encogerse tanto: 225 px se los
+		// lleva la navegación, y al contenido hay que dejarle sitio para el panel
+		// de 560 sin que se estruje.
+		Width:     980,
 		Height:    720,
-		MinWidth:  560,
-		MinHeight: 480,
+		MinWidth:  760,
+		MinHeight: 520,
 
 		AssetServer: &assetserver.Options{Assets: interfaz.Recursos},
 
@@ -110,7 +111,14 @@ func main() {
 				aplicacion.AlAbrirCon(ruta)
 				escritorio.Avisar(app.EventoFicheroAbierto, ruta)
 			},
-			TitleBar: mac.TitleBarDefault(),
+			// Sin barra de título propia: el contenido llega hasta arriba y los
+			// semáforos quedan metidos hacia dentro, encima de la barra lateral.
+			// Es lo que hacen Finder, Correo y los Ajustes del sistema.
+			//
+			// A cambio, **hay que declarar por dónde se arrastra la ventana** o se
+			// queda clavada en la pantalla. Eso va en el CSS, con
+			// «--wails-draggable» en la barra lateral y la de herramientas.
+			TitleBar: mac.TitleBarHiddenInset(),
 
 			// El vidrio de macOS. WebviewIsTransparent deja pasar la luz a través
 			// de la página, y WindowIsTranslucent pone detrás la vista de efecto

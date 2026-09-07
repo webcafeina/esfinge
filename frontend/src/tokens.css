@@ -27,6 +27,8 @@
   --barra-vidrio: rgb(246 246 248 / 0.55);
 
   --alto-control: 28px;
+  --alto-fila: 38px;
+  --barra-lateral: 225px;
   --espacio-1: 4px;
   --espacio-2: 8px;
   --espacio-3: 12px;
@@ -35,6 +37,7 @@
   --espacio-6: 32px;
   --fuente: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   --fuente-mono: ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --hueco-semaforos: 52px;
   --radio: 9px;
   --radio-chico: 6px;
   --radio-grande: 14px;

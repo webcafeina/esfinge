@@ -1,16 +1,17 @@
 # Lo siguiente
 
-Última actualización: **2026-09-07**
+Última actualización: **2026-09-08**
 
 Por prioridad. Lo cerrado se tacha y se queda, con la fecha: saber qué se descartó vale tanto como
 saber qué se hizo.
 
 ## Alta
 
+- **Windows y Linux, a su estructura.** La 2.6.0 llevó macOS a barra lateral y los otros dos siguen
+  con esa misma forma. Toca el panel de navegación de Windows 11 y la cabecera de GNOME. Depende de
+  que la de macOS se dé por buena en el Mac.
 - **Que el humano vea si salta el aviso de Gatekeeper** al actualizarse desde dentro. Si no salta,
   hay que quitarlo del LÉEME del DMG para el caso de la actualización.
-- **Probar la aplicación en un Mac de verdad.** Nunca se ha abierto en un escritorio, solo
-  compilado. Sin esto, todo lo visual es una suposición. Depende del humano.
 - **Montar el DMG en un Mac.** Está armado y el flujo lo publica, pero cómo queda la ventana al
   montarla solo se ve allí: `create-dmg` coloca los iconos hablando con el Finder y eso puede salir
   distinto en un runner sin sesión gráfica.

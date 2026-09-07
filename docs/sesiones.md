@@ -38,6 +38,26 @@ Plantilla al final.
 - Lección: bajar el tinte dos veces sin entender el síntoma era el camino equivocado. El «gris plano»
   no era un tinte de más, era el material sin nada que mezclar.
 
+## 2026-09-08 · La estructura de una aplicación de macOS
+
+- **2.6.0**: la ventana deja de ser una página web dentro de un marco. Barra lateral con la
+  navegación, título en la barra de herramientas, formularios en tarjetas agrupadas y sin barra de
+  título propia —los semáforos caen sobre la barra lateral, como en Finder— (ADR 0019).
+- **Las medidas no se inventaron.** El humano dejó cuatro capturas de macOS 26 en `referencias/`, y
+  de ahí salen: los semáforos miden 12 pt clavados, así que sirven de regla para sacar la escala de
+  cualquier captura. Medido: barra lateral **224,6 pt**, paso entre filas **38,5 pt**, semáforos a
+  **21 pt** del borde. Esa técnica vale para cualquier captura futura.
+- Dos cosas se vieron al primer render y no antes: las filas de la barra lateral salían con una
+  **línea separadora** que era la sombra del botón de acción heredada, y los **emoji de color**
+  desentonaban —el sistema usa trazo monocromo—. Los iconos se dibujan ahora en SVG, que además
+  esquiva lo de los SF Symbols, que no se pueden detectar desde CSS.
+- En las pruebas apareció una colisión nueva: **«Cifrar» nombra a la vez la sección y el botón que
+  cifra**, así que los selectores se acotan a `.lateral` o a `.contenido`.
+- Verificado: 26 pruebas de interfaz actualizadas y en verde en los dos temas, dos tandas seguidas;
+  `make comprobar` y `make contraste`. Capturas de la portada rehechas.
+- **Sin comprobar, y es lo que decide lo siguiente**: cómo queda en un Mac. De eso depende si Windows
+  y Linux se hacen igual.
+
 ## 2026-09-08 · Lo que dijo el Mac
 
 - **Copiar y pegar funcionan** con los atajos de ⌘. Era el trozo con más riesgo de todo lo escrito

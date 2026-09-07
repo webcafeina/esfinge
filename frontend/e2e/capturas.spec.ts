@@ -17,13 +17,13 @@ test.describe("Capturas", () => {
     const donde = process.env.CAPTURAS_EN ?? "capturas";
     const foto = (n: string) => page.screenshot({ path: `${donde}/${n}-${tema}.png` });
 
-    await page.setViewportSize({ width: 840, height: 640 });
+    await page.setViewportSize({ width: 980, height: 680 });
     await page.goto("/");
 
     // El rótulo de «Modo desarrollo» es cierto aquí y mentira en la portada del
     // repositorio, que es donde acaban estas capturas.
     if (process.env.CAPTURAS_SIN_DEV) {
-      await page.addStyleTag({ content: ".pie span:last-child{visibility:hidden}" });
+      await page.addStyleTag({ content: ".herramientas .aparte{visibility:hidden}" });
     }
 
     await page.getByLabel("Qué quieres cifrar").fill("postgres://usuario:secreto@host/basededatos");
@@ -31,7 +31,7 @@ test.describe("Capturas", () => {
     await page.waitForTimeout(500);
     await foto("1-cifrar");
 
-    await page.getByRole("button", { name: "Cifrar", exact: true }).click();
+    await page.locator(".contenido").getByRole("button", { name: "Cifrar", exact: true }).click();
     await page.waitForSelector(".resultado", { timeout: 20_000 });
     await page.waitForTimeout(600);
     await foto("2-resultado");
@@ -41,12 +41,12 @@ test.describe("Capturas", () => {
     await page.waitForTimeout(700);
     await foto("3-ficheros");
 
-    await page.getByRole("tab", { name: "Generar" }).click();
+    await page.locator(".lateral").getByRole("button", { name: "Generar", exact: true }).click();
     await page.waitForSelector(".resultado", { timeout: 20_000 });
     await page.waitForTimeout(400);
     await foto("4-generar");
 
-    await page.getByRole("tab", { name: "Historial" }).click();
+    await page.locator(".lateral").getByRole("button", { name: "Historial", exact: true }).click();
     await page.waitForTimeout(500);
     await foto("5-historial");
   });

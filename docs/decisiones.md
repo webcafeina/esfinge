@@ -28,6 +28,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0016](adr/0016-actualizarse-sola.md) | Se reemplaza a sí misma y se reinicia | 2026-09-07 | aceptada · sustituye parte de la 0014 |
 | [0017](adr/0017-vidrio-solo-en-el-marco.md) | El vidrio va en el marco, no en la zona de trabajo | 2026-09-08 | aceptada · revisar si Wails lo ofrece en Linux |
 | [0018](adr/0018-tandas-en-paralelo.md) | Las tandas se cifran en paralelo, con tope | 2026-09-08 | aceptada · revisar si cambia el perfil |
+| [0019](adr/0019-estructura-de-macos.md) | La ventana se organiza como una aplicación de macOS | 2026-09-08 | aceptada · Windows y Linux van después |
 
 ## Cuándo escribir una
 

@@ -3,6 +3,25 @@ import { expect, test, type Page } from "@playwright/test";
 const SECRETO = "postgres://usuario:secreto@host/db";
 const CLAVE = "una clave larga de prueba";
 
+/**
+ * La sección, que desde la estructura de macOS es una fila de la barra lateral y
+ * ya no una pestaña.
+ *
+ * Se acota a la barra lateral a propósito: «Cifrar» es a la vez el nombre de una
+ * sección y el del botón que cifra, y sin acotar el selector encuentra los dos.
+ */
+function seccion(page: Page, nombre: string) {
+  return page.locator(".lateral").getByRole("button", { name: nombre, exact: true });
+}
+
+/**
+ * El botón de acción de la pantalla, acotado al contenido por la misma razón:
+ * «Cifrar» nombra la sección y el botón que cifra.
+ */
+function accion(page: Page, nombre: string) {
+  return page.locator(".contenido").getByRole("button", { name: nombre, exact: true });
+}
+
 /** Ningún error de la consola pasa desapercibido. */
 function vigilarConsola(page: Page): string[] {
   const errores: string[] = [];
@@ -17,7 +36,7 @@ test("cifra un texto y lo vuelve a abrir", async ({ page }) => {
 
   await page.getByLabel("Qué quieres cifrar").fill(SECRETO);
   await page.locator("#clave").fill(CLAVE);
-  await page.getByRole("button", { name: "Cifrar", exact: true }).click();
+  await accion(page, "Cifrar").click();
 
   const resultado = page.locator(".resultado");
   await expect(resultado).toBeVisible({ timeout: 20_000 });
@@ -31,10 +50,10 @@ test("cifra un texto y lo vuelve a abrir", async ({ page }) => {
   await expect(page.locator(".aviso")).toHaveCount(1);
   await expect(page.locator(".aviso")).toContainText("no lo abre nadie");
 
-  await page.getByRole("tab", { name: "Descifrar" }).click();
+  await seccion(page, "Descifrar").click();
   await page.getByLabel("El texto cifrado").fill(cifrado);
   await page.locator("#clave").fill(CLAVE);
-  await page.getByRole("button", { name: "Descifrar", exact: true }).click();
+  await accion(page, "Descifrar").click();
 
   await expect(page.locator(".resultado")).toHaveText(SECRETO, { timeout: 20_000 });
   expect(errores, errores.join(' | ')).toEqual([]);
@@ -43,10 +62,10 @@ test("cifra un texto y lo vuelve a abrir", async ({ page }) => {
 test("con la clave equivocada lo dice, y no revienta", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("tab", { name: "Descifrar" }).click();
+  await seccion(page, "Descifrar").click();
   await page.getByLabel("El texto cifrado").fill("ESF1.esto-no-es-un-contenedor");
   await page.locator("#clave").fill("cualquiera");
-  await page.getByRole("button", { name: "Descifrar", exact: true }).click();
+  await accion(page, "Descifrar").click();
 
   await expect(page.locator(".error")).toBeVisible({ timeout: 20_000 });
   await expect(page.locator(".error")).toContainText("Esfinge");
@@ -54,7 +73,7 @@ test("con la clave equivocada lo dice, y no revienta", async ({ page }) => {
 
 test("el botón de cifrar no se puede pulsar sin lo que hace falta", async ({ page }) => {
   await page.goto("/");
-  const boton = page.getByRole("button", { name: "Cifrar", exact: true });
+  const boton = accion(page, "Cifrar");
 
   await expect(boton).toBeDisabled();
 
@@ -78,7 +97,7 @@ test("el medidor valora la clave mientras se teclea", async ({ page }) => {
 
 test("genera contraseñas y avisa de las que rompen una URL", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("tab", { name: "Generar" }).click();
+  await seccion(page, "Generar").click();
 
   const resultado = page.locator(".resultado");
   await expect(resultado).toBeVisible({ timeout: 20_000 });
@@ -109,7 +128,7 @@ test("cifra una tanda de ficheros", async ({ page }) => {
   expect(cuantos).toBeGreaterThan(0);
 
   await page.locator("#clave").fill(CLAVE);
-  await page.getByRole("button", { name: "Cifrar", exact: true }).click();
+  await accion(page, "Cifrar").click();
 
   await expect(page.locator(".exito")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".exito")).toContainText("listo");
@@ -120,10 +139,10 @@ test("el historial enseña lo hecho y se puede vaciar", async ({ page }) => {
 
   await page.getByLabel("Qué quieres cifrar").fill("algo que dejará rastro");
   await page.locator("#clave").fill(CLAVE);
-  await page.getByRole("button", { name: "Cifrar", exact: true }).click();
+  await accion(page, "Cifrar").click();
   await expect(page.locator(".resultado")).toBeVisible({ timeout: 20_000 });
 
-  await page.getByRole("tab", { name: "Historial" }).click();
+  await seccion(page, "Historial").click();
   await expect(page.locator(".historial li").first()).toBeVisible();
 
   // Y dice dónde vive, para que no haya que fiarse de la palabra de nadie.
@@ -145,7 +164,7 @@ test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page 
   // desarrollo es uno solo para todas las pruebas y se acuerda de la novedad que
   // encontró la anterior, así que al recargar puede salir sola. Eso es correcto
   // en la aplicación; aquí solo haría la prueba dependiente del orden.
-  await page.getByRole("tab", { name: "Ajustes" }).click();
+  await seccion(page, "Ajustes").click();
   await page.getByRole("button", { name: "Buscar ahora" }).click();
 
   const banda = page.locator(".novedad");
@@ -166,7 +185,7 @@ test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
 
-  await page.getByRole("tab", { name: "Ajustes" }).click();
+  await seccion(page, "Ajustes").click();
   const interruptor = page.getByRole("checkbox", { name: /versión nueva/ });
   await expect(interruptor).toBeChecked();
 
@@ -174,7 +193,7 @@ test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
   // tiene que sobrevivir a cerrar y abrir la ventana.
   await interruptor.uncheck();
   await page.reload();
-  await page.getByRole("tab", { name: "Ajustes" }).click();
+  await seccion(page, "Ajustes").click();
   await expect(page.getByRole("checkbox", { name: /versión nueva/ })).not.toBeChecked();
 
   // Y se deja como estaba, que el fichero de preferencias es de verdad y lo
@@ -215,16 +234,16 @@ test("el menú del sistema cambia de pantalla y edita el campo con el foco", asy
   await expect
     .poll(async () => {
       await ordenar(page, "ir:generar");
-      return page.getByRole("tab", { name: "Generar" }).getAttribute("aria-selected");
+      return seccion(page, "Generar").getAttribute("aria-current");
     }, { timeout: 15_000 })
-    .toBe("true");
+    .toBe("page");
 
   await expect
     .poll(async () => {
       await ordenar(page, "ir:cifrar");
-      return page.getByRole("tab", { name: "Cifrar", exact: true }).getAttribute("aria-selected");
+      return seccion(page, "Cifrar").getAttribute("aria-current");
     }, { timeout: 15_000 })
-    .toBe("true");
+    .toBe("page");
 
   // Seleccionar todo tiene que actuar sobre el campo que tiene el foco, que es
   // lo que Go no puede saber y por eso la orden se resuelve en la interfaz.
@@ -263,9 +282,9 @@ test("un .esf de fichero abre descifrar en modo ficheros", async ({ page }) => {
           body: JSON.stringify(["/tmp/credenciales.env.esf"]),
         }),
       );
-      return page.getByRole("tab", { name: "Descifrar" }).getAttribute("aria-selected");
+      return seccion(page, "Descifrar").getAttribute("aria-current");
     }, { timeout: 15_000 })
-    .toBe("true");
+    .toBe("page");
 
   await expect(page.locator(".lista-ficheros li")).toContainText("credenciales.env.esf");
 
@@ -280,7 +299,7 @@ test("un .esf que lleva un texto abre descifrar en modo texto, con la línea pue
   // exactamente como aparece un .esf de esta clase en el disco de alguien.
   await page.getByLabel("Qué quieres cifrar").fill(SECRETO);
   await page.locator("#clave").fill(CLAVE);
-  await page.getByRole("button", { name: "Cifrar", exact: true }).click();
+  await accion(page, "Cifrar").click();
 
   const resultado = page.locator(".resultado");
   await expect(resultado).toBeVisible({ timeout: 20_000 });
@@ -315,7 +334,7 @@ test("un .esf que lleva un texto abre descifrar en modo texto, con la línea pue
 
   // Y se descifra desde ahí, que es lo que se quería hacer al abrirlo.
   await page.locator("#clave").fill(CLAVE);
-  await page.getByRole("button", { name: "Descifrar", exact: true }).click();
+  await accion(page, "Descifrar").click();
   await expect(page.locator(".resultado")).toHaveText(SECRETO, { timeout: 20_000 });
 
   expect(errores, errores.join(' | ')).toEqual([]);
@@ -328,7 +347,7 @@ test("sin el vidrio del sistema la ventana se pinta como siempre", async ({ page
   // El servidor de desarrollo no da vidrio, igual que Linux o un Windows sin
   // Mica. Ahí el fondo lo tiene que seguir pintando el CSS de siempre: un body
   // transparente sin nada detrás no enseña el escritorio, enseña un agujero.
-  await expect(page.locator(".barra")).toBeVisible();
+  await expect(page.locator(".lateral")).toBeVisible();
   await expect(page.locator("html")).not.toHaveAttribute("data-vidrio", "si");
 
   const fondo = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);

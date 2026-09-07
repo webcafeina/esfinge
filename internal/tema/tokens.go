@@ -22,12 +22,24 @@ var Medidas = map[string]string{
 	"radio":        "9px",
 	"radio-grande": "14px",
 	"alto-control": "28px",
-	"texto-chico":  "12px",
-	"texto":        "13px",
-	"texto-grande": "15px",
-	"titulo":       "20px",
-	"fuente":       `-apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif`,
-	"fuente-mono":  `ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace`,
+	// La estructura de una aplicación con barra lateral. Los tres primeros están
+	// medidos sobre capturas de macOS 26, usando los semáforos como regla: miden
+	// 12 pt clavados, así que sirven para sacar la escala de cualquier captura.
+	//
+	//	barra lateral ....... 224,6 pt
+	//	paso entre filas .... 38,5 pt
+	//	semáforos ........... a 21 pt del borde de arriba
+	"barra-lateral": "225px",
+	"alto-fila":     "38px",
+	// El hueco que hay que dejar libre arriba de la barra lateral para los
+	// semáforos. Sin barra de título son ellos los que mandan.
+	"hueco-semaforos": "52px",
+	"texto-chico":     "12px",
+	"texto":           "13px",
+	"texto-grande":    "15px",
+	"titulo":          "20px",
+	"fuente":          `-apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif`,
+	"fuente-mono":     `ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace`,
 }
 
 // alfaDelVidrio es cuánto tapa la barra cuando el sistema pone el vidrio detrás.

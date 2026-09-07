@@ -23,6 +23,7 @@ import {
 } from "./puente";
 import {
   BandaNovedad,
+  BarraLateral,
   CampoClave,
   nombreDe,
   PanelResultado,
@@ -132,62 +133,61 @@ export default function App() {
 
   return (
     <div className="ventana">
-      <nav className="barra">
-        <Segmentado<Tarea>
-          valor={tarea}
-          alCambiar={setTarea}
-          opciones={[
-            { valor: "cifrar", etiqueta: "Cifrar" },
-            { valor: "descifrar", etiqueta: "Descifrar" },
-            { valor: "generar", etiqueta: "Generar" },
-            { valor: "historial", etiqueta: "Historial" },
-            { valor: "ajustes", etiqueta: "Ajustes" },
-          ]}
-        />
-      </nav>
+      <BarraLateral valor={tarea} alCambiar={setTarea} />
 
-      {novedad && (
-        <BandaNovedad
-          novedad={novedad}
-          avance={avance}
-          error={falloAlBajar}
-          alDescargar={descargar}
-          instalando={instalando}
-          alInstalar={() => {
-            setInstalando(true);
-            esfinge.instalarActualizacion().catch((e) => {
-              setInstalando(false);
-              setFalloAlBajar(mensaje(e));
-            });
-          }}
-          alCerrar={() => setNovedad(null)}
-        />
-      )}
+      <div className="zona">
+        <header className="herramientas">
+          <h1>{TITULOS[tarea]}</h1>
+          {!enWails() && <span className="aparte">Modo desarrollo</span>}
+        </header>
 
-      <main className="contenido">
-        {tarea === "cifrar" && <Trabajo key="cifrar" accion="cifrar" />}
-        {tarea === "descifrar" && (
-          // La clave lleva el número de tanda: si el sistema manda otro fichero
-          // con la pantalla ya abierta, se rehace con él en vez de quedarse con
-          // el de antes.
-          <Trabajo
-            key={`descifrar-${tanda}`}
-            accion="descifrar"
-            alArrancar={alArrancar ?? undefined}
+        {novedad && (
+          <BandaNovedad
+            novedad={novedad}
+            avance={avance}
+            error={falloAlBajar}
+            instalando={instalando}
+            alDescargar={descargar}
+            alInstalar={() => {
+              setInstalando(true);
+              esfinge.instalarActualizacion().catch((e) => {
+                setInstalando(false);
+                setFalloAlBajar(mensaje(e));
+              });
+            }}
+            alCerrar={() => setNovedad(null)}
           />
         )}
-        {tarea === "generar" && <Generar />}
-        {tarea === "historial" && <Historial />}
-        {tarea === "ajustes" && <Ajustes version={version} alEncontrar={setNovedad} />}
-      </main>
 
-      <footer className="pie">
-        <span>Esfinge {version} · webcafeína</span>
-        {!enWails() && <span>Modo desarrollo</span>}
-      </footer>
+        <main className="contenido">
+          {tarea === "cifrar" && <Trabajo key="cifrar" accion="cifrar" />}
+          {tarea === "descifrar" && (
+            // La clave lleva el número de tanda: si el sistema manda otro fichero
+            // con la pantalla ya abierta, se rehace con él en vez de quedarse con
+            // el de antes.
+            <Trabajo
+              key={`descifrar-${tanda}`}
+              accion="descifrar"
+              alArrancar={alArrancar ?? undefined}
+            />
+          )}
+          {tarea === "generar" && <Generar />}
+          {tarea === "historial" && <Historial />}
+          {tarea === "ajustes" && <Ajustes version={version} alEncontrar={setNovedad} />}
+        </main>
+      </div>
     </div>
   );
 }
+
+/** El nombre de cada sección, que es lo que pone la barra de herramientas. */
+const TITULOS: Record<Tarea, string> = {
+  cifrar: "Cifrar",
+  descifrar: "Descifrar",
+  generar: "Generar una contraseña",
+  historial: "Historial",
+  ajustes: "Ajustes",
+};
 
 /**
  * Trabajo sirve para cifrar y para descifrar, que son la misma pantalla con los
@@ -295,62 +295,61 @@ function Trabajo({
 
   return (
     <div className="panel">
-      <div>
-        <h1>{verbo}</h1>
-        <p className="nota">
-          {cifrando
-            ? "Lo que salga solo se abre con la clave que pongas. Vale cualquier fichero."
-            : "Hace falta la misma clave con la que se cifró."}
-        </p>
-      </div>
+      <p className="entradilla">
+        {cifrando
+          ? "Lo que salga solo se abre con la clave que pongas. Vale cualquier fichero."
+          : "Hace falta la misma clave con la que se cifró."}
+      </p>
 
-      <Segmentado<Modo>
-        valor={modo}
-        alCambiar={(m) => {
-          setModo(m);
-          limpiar();
-        }}
-        opciones={[
-          { valor: "texto", etiqueta: "Texto" },
-          { valor: "ficheros", etiqueta: "Ficheros" },
-        ]}
-      />
+      <div className="grupo">
+        <Segmentado<Modo>
+          valor={modo}
+          alCambiar={(m) => {
+            setModo(m);
+            limpiar();
+          }}
+          opciones={[
+            { valor: "texto", etiqueta: "Texto" },
+            { valor: "ficheros", etiqueta: "Ficheros" },
+          ]}
+        />
 
-      {modo === "texto" ? (
-        <div>
-          <label htmlFor="texto">
-            {cifrando ? "Qué quieres cifrar" : "El texto cifrado"}
-          </label>
-          <textarea
-            id="texto"
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-            placeholder={
+        {modo === "texto" ? (
+          <div>
+            <label htmlFor="texto">
+              {cifrando ? "Qué quieres cifrar" : "El texto cifrado"}
+            </label>
+            <textarea
+              id="texto"
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              placeholder={
+                cifrando
+                  ? "Una contraseña, un token, lo que sea"
+                  : "Pega aquí el ESF1.… que te han pasado"
+              }
+            />
+          </div>
+        ) : (
+          <ZonaFicheros
+            ficheros={ficheros}
+            alElegir={elegir}
+            alQuitar={(r) => setFicheros((a) => a.filter((x) => x !== r))}
+            texto={
               cifrando
-                ? "Una contraseña, un token, lo que sea"
-                : "Pega aquí el ESF1.… que te han pasado"
+                ? "Arrastra aquí los ficheros que quieras cifrar"
+                : "Arrastra aquí los ficheros cifrados"
+            }
+            admite={
+              cifrando
+                ? "vale cualquier fichero"
+                : "ficheros .esf, o de texto con un ESF1.…"
             }
           />
-        </div>
-      ) : (
-        <ZonaFicheros
-          ficheros={ficheros}
-          alElegir={elegir}
-          alQuitar={(r) => setFicheros((a) => a.filter((x) => x !== r))}
-          texto={
-            cifrando
-              ? "Arrastra aquí los ficheros que quieras cifrar"
-              : "Arrastra aquí los ficheros cifrados"
-          }
-          admite={
-            cifrando
-              ? "vale cualquier fichero"
-              : "ficheros .esf, o de texto con un ESF1.…"
-          }
-        />
-      )}
+        )}
 
-      <CampoClave valor={clave} alCambiar={setClave} alEnviar={() => listo && ejecutar()} />
+        <CampoClave valor={clave} alCambiar={setClave} alEnviar={() => listo && ejecutar()} />
+      </div>
 
       {/* El aviso desaparece cuando ya hay resultado: el propio resultado trae
           el suyo, y aquí no cambiamos de pantalla, así que se verían los dos a la
@@ -475,10 +474,7 @@ function Generar() {
 
   return (
     <div className="panel">
-      <div>
-        <h1>Generar una contraseña</h1>
-        <p className="nota">Al azar, con la entropía del sistema.</p>
-      </div>
+      <p className="entradilla">Al azar, con la entropía del sistema.</p>
 
       <div className="grupo">
         <div>
@@ -601,10 +597,7 @@ function Ajustes({
 
   return (
     <div className="panel">
-      <div>
-        <h1>Ajustes</h1>
-        <p className="nota">Tienes instalada la versión {version}.</p>
-      </div>
+      <p className="entradilla">Tienes instalada la versión {version}.</p>
 
       <div className="grupo">
         <label className="fila-ajuste">
@@ -673,12 +666,9 @@ function Historial() {
 
   return (
     <div className="panel">
-      <div>
-        <h1>Historial</h1>
-        <p className="nota">
-          Solo qué fichero y cuándo. Nunca el contenido, ni la clave, ni el texto cifrado.
-        </p>
-      </div>
+      <p className="entradilla">
+        Solo qué fichero y cuándo. Nunca el contenido, ni la clave, ni el texto cifrado.
+      </p>
 
       {entradas.length === 0 ? (
         <p className="nota">Todavía no has hecho nada.</p>

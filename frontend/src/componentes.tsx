@@ -1,6 +1,114 @@
 import { useEffect, useRef, useState } from "react";
 import { esfinge, type Avance, type Fuerza, type Novedad } from "./puente";
 
+/**
+ * BarraLateral es la navegación de la ventana, a la izquierda.
+ *
+ * Es la estructura de cualquier aplicación de macOS con secciones —Ajustes,
+ * Correo, App Store—: una columna con las secciones, la activa resaltada, y lo
+ * que configura la aplicación separado abajo del todo.
+ *
+ * Arriba queda un hueco vacío a propósito: es el de los semáforos. Como la
+ * ventana no tiene barra de título, los botones del sistema caen ahí encima.
+ */
+export function BarraLateral<T extends string>({
+  valor,
+  alCambiar,
+}: {
+  valor: T;
+  alCambiar: (v: T) => void;
+}) {
+  const fila = (v: string, etiqueta: string) => (
+    <button
+      key={v}
+      onClick={() => alCambiar(v as T)}
+      aria-current={v === valor ? "page" : undefined}
+    >
+      <Icono nombre={v} />
+      {etiqueta}
+    </button>
+  );
+
+  return (
+    <aside className="lateral">
+      <div className="semaforos" />
+
+      <nav aria-label="Secciones">
+        {fila("cifrar", "Cifrar")}
+        {fila("descifrar", "Descifrar")}
+        {fila("generar", "Generar")}
+        {fila("historial", "Historial")}
+      </nav>
+
+      <nav className="abajo" aria-label="Configuración">
+        {fila("ajustes", "Ajustes")}
+      </nav>
+    </aside>
+  );
+}
+
+/**
+ * Icono dibuja los glifos de la barra lateral.
+ *
+ * Van en SVG y no como emoji ni como SF Symbols. Los emoji son de color y
+ * desentonan —las aplicaciones del sistema usan trazo monocromo— y de los SF
+ * Symbols ya se sabe lo que pasa: no se puede comprobar desde CSS si la fuente
+ * está, y cuando no lo está salen cuadrados vacíos. Dibujarlos es lo único que
+ * se ve igual en los tres sistemas.
+ */
+function Icono({ nombre }: { nombre: string }) {
+  const trazos: Record<string, React.ReactNode> = {
+    // Candado cerrado.
+    cifrar: (
+      <>
+        <rect x="3.5" y="7" width="11" height="7.5" rx="2" />
+        <path d="M6 7V5a3 3 0 0 1 6 0v2" />
+      </>
+    ),
+    // El mismo, con el arco abierto hacia un lado.
+    descifrar: (
+      <>
+        <rect x="3.5" y="7" width="11" height="7.5" rx="2" />
+        <path d="M12 7V5a3 3 0 0 0-6 0" />
+      </>
+    ),
+    // Chispa: lo que se genera sale de la nada.
+    generar: (
+      <path d="M9 2.5v13M2.5 9h13M4.6 4.6l8.8 8.8M13.4 4.6l-8.8 8.8" />
+    ),
+    // Reloj.
+    historial: (
+      <>
+        <circle cx="9" cy="9" r="6.2" />
+        <path d="M9 5.4V9l2.6 1.8" />
+      </>
+    ),
+    // Deslizadores, que es como el sistema dibuja los ajustes.
+    ajustes: (
+      <>
+        <path d="M3 5.5h12M3 12.5h12" />
+        <circle cx="7" cy="5.5" r="1.8" />
+        <circle cx="11.5" cy="12.5" r="1.8" />
+      </>
+    ),
+  };
+
+  return (
+    <svg
+      className="icono"
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {trazos[nombre]}
+    </svg>
+  );
+}
+
 /** Control segmentado, que es como los dos sistemas agrupan modos excluyentes. */
 export function Segmentado<T extends string>({
   opciones,

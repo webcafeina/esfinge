@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.5.2**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.6.0**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, guarda un historial de qué y cuándo, y se compila sola para macOS,
 Windows y Linux en GitHub Actions.
 
@@ -36,13 +36,16 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
 - **Los diálogos recuerdan su carpeta**, una para abrir y otra para guardar.
 - **Las tandas se cifran en paralelo**, con tope: veinte ficheros pasaron de 4,42 s a 1,29 s en una
   máquina de cuatro núcleos (ADR 0018).
+- **Estructura de aplicación de macOS**: barra lateral, título en la barra de herramientas,
+  formularios en tarjetas y sin barra de título propia (ADR 0019). Windows y Linux van después.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
   máquina sin entorno gráfico.
 
 ## En curso
 
-Nada a medias. El código de las 2.1.0 a la 2.5.0 está escrito, probado hasta donde se puede desde
-una máquina sin Mac ni Windows, y publicado.
+Nada a medias en macOS. La estructura de la 2.6.0 está escrita y probada hasta donde se puede desde
+una máquina sin Mac. **Windows y Linux siguen con la estructura de macOS**: lo suyo se hará cuando
+ésta esté afinada.
 
 ## Comprobado en un Mac de verdad
 
@@ -57,9 +60,9 @@ una máquina sin Mac ni Windows, y publicado.
 
 ## Siguiente acción concreta
 
-**Ver el vidrio en el Mac.** Es lo único de la 2.5.0 que no se ha podido ejecutar aquí, y lo que hay
-que juzgar es si la barra y el pie se siguen leyendo sobre un escritorio cualquiera. Si no, el tinte
-es un número: `alfaDelVidrio` en `internal/tema/tokens.go`.
+**Abrir la 2.6.0 en el Mac y juzgar la estructura.** Si los semáforos caen donde deben sobre la barra
+lateral, si la ventana se arrastra por donde se espera, y si la barra lateral pasa por una del
+sistema. De eso depende lo siguiente, que es llevar Windows y Linux a lo suyo.
 
 ## Bloqueantes
 
@@ -70,15 +73,16 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 **Las dos primeras son de código publicado que nunca se ha ejecutado aquí**: en esta máquina no hay
 ni Mac ni Windows.
 
-- **¿Se nota ya el vidrio, y se sigue leyendo?** A 0,82 no se notaba —la simulación de aquí no tiene
-  el desenfoque del sistema y calibró de más—; está en 0,55. Ajustes dice si la ventana lo está
-  usando, para distinguir «no llega» de «tapa demasiado».
+- **El vidrio sigue sin verse**, y queda aparcado a propósito. La 2.5.2 arregló lo que sí estaba mal
+  —Wails deja la ventana opaca y el material no tenía nada que mezclar— y aun así no se apreciaba. La
+  estructura nueva toca la misma zona, así que conviene volver a mirarlo con la 2.6.0 puesta antes de
+  seguir tirando del hilo.
 - **¿Salta el aviso de Gatekeeper al actualizarse desde dentro?** El guion le quita la cuarentena al
   paquete antes de ponerlo, y como el DMG lo descarga Go y no un navegador, es posible que no salte.
   Si no salta, hay que quitarlo del LÉEME del DMG para las actualizaciones y dejarlo solo para la
   primera instalación.
-- **¿La ventana ya pasa por nativa?** Con el vidrio de la 2.5.0 debería acercarse bastante más, pero
-  eso solo se juzga con la aplicación abierta en un Mac.
+- **¿La estructura pasa por nativa?** Es la pregunta de la 2.6.0, y de la respuesta depende si
+  Windows y Linux se hacen igual o distinto.
 - **¿Merece la pena que el Finder enseñe el icono propio de los `.esf`?** La asociación funciona y el
   doble clic abre lo que toca —comprobado en el Mac—, pero el icono del documento no se ha mirado. Es
   lo único que queda de ese frente, y es cosmético.

@@ -10,8 +10,13 @@
 # Frontend
 frontend/node_modules/
 frontend/dist/
+frontend/capturas/
 frontend/test-results/
 frontend/playwright-report/
 internal/interfaz/dist/assets/
 build/bin/
 build/darwin/ventana-dmg.png
+
+# Capturas del sistema que sirven de referencia visual. No se suben: son de
+# Apple y el repositorio es público.
+referencias/

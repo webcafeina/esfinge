@@ -45,39 +45,157 @@ body {
 
 /* ---------------------------------------------------------------- estructura */
 
+/* La ventana es una aplicación de macOS: barra lateral a la izquierda con la
+ * navegación, y a la derecha el título de la sección y su contenido.
+ *
+ * Las medidas salen de las capturas de macOS 26 que hay en referencias/,
+ * usando los semáforos como regla —miden 12 pt clavados—. De ahí: barra lateral
+ * de 225 pt, filas de 38 y los semáforos a 21 pt del borde de arriba.
+ *
+ * Como la ventana no tiene barra de título propia, el contenido llega hasta
+ * arriba y **hay que declarar por dónde se arrastra**, o la ventana se queda
+ * clavada en la pantalla. Eso es «--wails-draggable». */
+
 .ventana {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: var(--barra-lateral) 1fr;
   height: 100%;
 }
 
-/* Barra de herramientas: translúcida y con desenfoque, como las del sistema.
- * Es lo que más delata a una ventana ajena cuando falta. */
-.barra {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+/* -------------------------------------------------------------- barra lateral */
+
+.lateral {
   display: flex;
-  justify-content: center;
-  padding: var(--espacio-3) var(--espacio-4);
+  flex-direction: column;
   background: var(--barra);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 0.5px solid var(--filete);
+  border-right: 0.5px solid var(--filete);
+  padding: 0 10px var(--espacio-3);
+  overflow-y: auto;
+
+  /* Toda la banda arrastra la ventana; los botones se desmarcan más abajo. Es lo
+   * que hace el sistema: la barra lateral es zona de agarre. */
+  --wails-draggable: drag;
+}
+
+/* El hueco de los semáforos. No lleva nada dentro a propósito: es de ellos. */
+.lateral .semaforos {
+  height: var(--hueco-semaforos);
+  flex-shrink: 0;
+}
+
+.lateral nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* El grupo de abajo —Ajustes— separado del resto, como en las aplicaciones del
+ * sistema: lo que configura la aplicación no va con lo que se hace con ella. */
+.lateral .abajo {
+  margin-top: auto;
+  padding-top: var(--espacio-3);
+}
+
+.lateral button {
+  --wails-draggable: no-drag;
+  /* Sin la sombra del botón de acción, que aquí se lee como una línea
+   * separadora entre filas. Una fila de barra lateral es plana. */
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: var(--alto-fila);
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tinta);
+  font: inherit;
+  font-size: var(--texto-grande);
+  text-align: left;
+  cursor: default;
+  transition: background 0.1s;
+}
+
+.lateral button:hover {
+  background: var(--boton-encima);
+}
+
+.lateral button[aria-current="page"] {
+  background: var(--relleno);
+  color: var(--sobre-acento);
+  font-weight: 500;
+}
+
+/* El icono va en su hueco fijo para que los nombres queden alineados aunque los
+ * glifos midan distinto. */
+.lateral .icono {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--apagado);
+}
+
+.lateral button[aria-current="page"] .icono {
+  color: currentColor;
+}
+
+/* ------------------------------------------------------------------ contenido */
+
+/* La columna de la derecha. No se llama «principal» porque esa clase ya es la
+ * del botón de acción, y un selector suelto las pisaría. */
+.zona {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* La barra de herramientas: sin línea debajo y con el título a la izquierda,
+ * como el App Store. Arrastra la ventana. */
+.herramientas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-4);
+  height: var(--hueco-semaforos);
+  padding: 0 var(--espacio-5);
+  flex-shrink: 0;
+  --wails-draggable: drag;
+}
+
+.herramientas h1 {
+  margin: 0;
+  font-size: var(--titulo);
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.herramientas .aparte {
+  --wails-draggable: no-drag;
+  color: var(--apagado);
+  font-size: var(--texto-chico);
 }
 
 .contenido {
   flex: 1;
   overflow-y: auto;
-  padding: var(--espacio-5) var(--espacio-4) var(--espacio-6);
+  padding: 0 var(--espacio-5) var(--espacio-6);
 }
 
 .panel {
   max-width: 560px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: var(--espacio-5);
+}
+
+/* El panel ya no lleva su propio título: lo pone la barra de herramientas. Lo
+ * que queda aquí es la frase que explica la pantalla. */
+.panel > .entradilla {
+  color: var(--apagado);
+  margin: 0;
 }
 
 /* Bloque de contenido agrupado, como las tarjetas de los Ajustes del sistema. */
