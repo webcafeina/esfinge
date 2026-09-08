@@ -75,15 +75,20 @@ visto nadie.
   LaunchServices. De mirarlo puesto salió la corrección de la 2.10.2: la placa estaba centrada en 636
   y la hoja tiene su centro en 512, así que caía 124 px baja. Se había bajado a propósito, creyendo
   que macOS pone ahí el emblema de los documentos; no era cierto.
+- Y de preguntar si ese icono valía para los otros dos sistemas salió la 2.10.3: en **Windows** sí,
+  del mismo PNG y sin tocar nada, pero en **Linux** no llegaba y seguía saliendo el de la aplicación.
+  El `.deb` instala ahora `application-x-esfinge.png` en `hicolor/<tamaño>/mimetypes/`, verificado
+  aquí con `dpkg -c`. Verlo puesto en un escritorio de verdad sigue pendiente.
 
 ## Siguiente acción concreta
 
 **Ninguna: no queda nada que se pueda hacer sin alguien delante.** Los frentes que venían de atrás
-están cerrados —el vidrio en la 2.10.0, y en la 2.10.1 el icono del documento y la respuesta sobre
-Gatekeeper—, y `siguiente.md` no tiene nada en Media.
+están cerrados —el vidrio en la 2.10.0; el icono del documento y la respuesta sobre Gatekeeper entre
+la 2.10.1 y la 2.10.3—, y `siguiente.md` no tiene nada en Media.
 
-Quedan dos comprobaciones del humano, ninguna bloqueante, y están abajo: el icono del `.esf` en el
-Finder y las estructuras de Windows y de GNOME en máquinas de verdad.
+Queda **una sola comprobación del humano**, no bloqueante, y está abajo: abrir la aplicación en
+Windows y en GNOME de verdad. Ahí se juzgan dos cosas de una vez, la estructura de cada sistema y el
+icono de los `.esf`.
 
 Para lo que venga: la **compilación con inspector** ya existe.
 `gh workflow run compilar.yml -f inspector=true` da un paquete con el Web Inspector abierto, en el
@@ -100,6 +105,8 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 Queda una, y es de código publicado que nunca se ha ejecutado aquí: en esta máquina no hay ni Windows
 ni GNOME con la aplicación puesta, y lo visual no se puede afirmar desde una compilación en verde.
 
-- **¿Cómo queda la estructura en Windows y en GNOME?** La de macOS está juzgada en un Mac; las otras
-  dos se escribieron a partir de las convenciones de cada sistema y nadie las ha visto corriendo. Es
-  lo único que queda por mirar.
+- **¿Cómo queda la aplicación en Windows y en GNOME?** La de macOS está juzgada en un Mac; las otras
+  dos se escribieron a partir de las convenciones de cada sistema y nadie las ha visto corriendo. Hay
+  dos cosas que mirar de una vez: **la estructura** —el panel de Fluent con su barra de acento, la
+  cabecera de GNOME— y **el icono de los `.esf`** en el explorador de ficheros, que en Windows sale
+  del instalador y en Linux del `.deb`. Es lo único que queda por mirar en todo el proyecto.

@@ -7,9 +7,12 @@ saber qué se hizo.
 
 ## Alta
 
-- **Ver la estructura en máquinas Windows y GNOME de verdad.** La de macOS está juzgada en un Mac;
-  las otras dos se escribieron a partir de las convenciones de cada sistema y no las ha visto nadie
-  corriendo (ADR 0020).
+- **Abrir la aplicación en máquinas Windows y GNOME de verdad**, y mirar ahí dos cosas: la estructura
+  de cada sistema y el icono de los `.esf` en el explorador de ficheros. En Windows el icono lo pone
+  el instalador, en Linux el `.deb`; los dos están comprobados por dentro pero no puestos.
+  La estructura de macOS está juzgada en un Mac; las otras dos se escribieron a partir de las
+  convenciones de cada sistema y no las ha visto nadie corriendo (ADR 0020). **Es lo único que queda
+  abierto en todo el proyecto.**
 
 ## Media
 

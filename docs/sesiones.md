@@ -41,8 +41,19 @@ Plantilla al final.
   es el de la aplicación. O sea, el mismo fallo recién corregido en macOS, vivo en el otro sistema.
   Ahora el paquete instala `application-x-esfinge.png` en `hicolor/<tamaño>/mimetypes/` —por nombre y
   carpeta, que es como lo busca el escritorio— y el XML apunta ahí.
-- Queda abierto, y solo depende del humano: las estructuras de Windows y GNOME en máquinas de verdad,
-  y de paso ver ahí los iconos de los `.esf`.
+- Verificado sin escritorio Linux, con `dpkg -c` sobre el `.deb` publicado: los ocho tamaños de
+  `application-x-esfinge.png` están en `mimetypes/`, y el `esfinge.xml` que los nombra también.
+
+**Estado al cerrar:** 2.10.3 publicada. Nada a medias en el código y ningún frente abierto de los que
+venían de atrás. Queda **una sola comprobación**, y solo la puede hacer el humano: abrir la
+aplicación en Windows y en GNOME de verdad, y mirar ahí la estructura de cada sistema y el icono de
+los `.esf`.
+
+**Lo que se llevó esta sesión, y vale más que las versiones:** dos veces se dio por buena una
+convención inventada —que macOS baja el emblema de los documentos a la mitad inferior, que el icono
+del documento llegaría solo a los tres sistemas— y las dos se cayeron en cuanto alguien miró o
+preguntó. La primera la corrigió el cliente al ver el icono; la segunda, su pregunta de si valía para
+Windows y Linux. Sin esa pregunta el fallo quedaba corregido en macOS y vivo en Linux.
 
 ## 2026-09-08 · La red para lo que no se puede probar aquí
 
