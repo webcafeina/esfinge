@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.10.0**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.10.1**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, guarda un historial de qué y cuándo, y se compila sola para macOS,
 Windows y Linux en GitHub Actions.
 
@@ -74,16 +74,18 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Ninguna urgente: con el vidrio resuelto en la 2.10.0 no queda ningún frente abierto de los que
-venían de atrás.** Lo que espera son comprobaciones sueltas del humano, ninguna bloqueante: la
-estructura en máquinas Windows y GNOME de verdad, el icono del documento `.esf` en el Finder y si
-Gatekeeper aparece al actualizarse desde dentro.
+**Ninguna: no queda nada que se pueda hacer sin alguien delante.** Los frentes que venían de atrás
+están cerrados —el vidrio en la 2.10.0, y en la 2.10.1 el icono del documento y la respuesta sobre
+Gatekeeper—, y `siguiente.md` no tiene nada en Media.
 
-De lo que se podía hacer sin nadie delante no queda nada: la **compilación con inspector** se hizo el
-8 de septiembre. `gh workflow run compilar.yml -f inspector=true` da un paquete con el Web Inspector
-abierto, en el sistema de verdad, para probar hipótesis en vivo sin publicar una versión por cada
-una. Va marcado por tres sitios —nombre del artefacto, retención y sufijo en la versión— para que no
-se confunda con una compilación normal.
+Quedan dos comprobaciones del humano, ninguna bloqueante, y están abajo: el icono del `.esf` en el
+Finder y las estructuras de Windows y de GNOME en máquinas de verdad.
+
+Para lo que venga: la **compilación con inspector** ya existe.
+`gh workflow run compilar.yml -f inspector=true` da un paquete con el Web Inspector abierto, en el
+sistema de verdad, para probar hipótesis en vivo sin publicar una versión por cada una. Va marcado
+por tres sitios —nombre del artefacto, retención y sufijo en la versión— para que no se confunda con
+una compilación normal.
 
 ## Bloqueantes
 
@@ -91,8 +93,8 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 
 ## Preguntas abiertas para el humano
 
-**Las dos primeras son de código publicado que nunca se ha ejecutado aquí**: en esta máquina no hay
-ni Mac ni Windows.
+**Las dos son de código publicado que nunca se ha ejecutado aquí**: en esta máquina no hay ni Mac ni
+Windows, y lo visual no se puede afirmar desde una compilación en verde.
 
 - **¿Enseña el Finder el icono nuevo de los `.esf`?** El icono estaba desde el principio, pero **era
   el de la aplicación**: `build/esf.png` era una copia byte a byte de `appicon.png`, así que el

@@ -5,6 +5,31 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-08 · El icono del documento, y Gatekeeper respondido
+
+- **2.10.1.** Dos frentes que llevaban semanas como «sin comprobar», y uno de los dos escondía un
+  fallo.
+- **El icono del `.esf` no faltaba: era el de la aplicación.** `build/esf.png` resultó ser una copia
+  **byte a byte** de `build/appicon.png`, así que el Finder sí enseñaba un icono propio… el del
+  programa. Un documento cifrado y la aplicación que lo abre se veían igual. Es el mismo error que ya
+  se corrigió en el icono del volumen del DMG, cometido dos veces.
+- Ahora lo dibuja `build/documento.svg`, con la forma del sistema: hoja vertical, esquina de arriba a
+  la derecha doblada con el dorso del papel a la vista, y la marca sobre una placa oscura. **Con el
+  logo tal cual y no en negativo**, que fue la decisión al dibujar el disco.
+- Un ajuste tras mirarlo: la placa ocupaba dos tercios del ancho y el papel casi no se veía, con lo
+  que volvía a parecer el icono de la aplicación. Bajada a poco más de la mitad. **Lo que dice
+  «documento» es el papel, no el emblema.** Comprobado a 16, 32, 48, 64 y 128 px.
+- **Verificado sin Mac, abriendo el artefacto**: en el paquete, `esf.icns` (270.907 bytes) y
+  `iconfile.icns` (113.518 bytes) ya son ficheros distintos, y el `Info.plist` declara la extensión,
+  el nombre, `CFBundleTypeIconFile: esf` y el rol. Que el Finder lo enseñe ya es cosa del humano.
+- **Gatekeeper no salta al actualizarse desde dentro**, confirmado tras varias actualizaciones de
+  verdad. Confirma el razonamiento de la ADR 0016: la cuarentena la pone quien descarga, y aquí
+  descarga Go. No hubo nada que quitar del LÉEME —ya acotaba el aviso a la primera vez—; lo que
+  faltaba era decir lo contrario, que las actualizaciones no vuelven a preguntar. La deuda baja de
+  Media a Baja.
+- Queda abierto, y solo depende del humano: ver el icono puesto en el Finder, y las estructuras de
+  Windows y GNOME en máquinas de verdad.
+
 ## 2026-09-08 · La red para lo que no se puede probar aquí
 
 - **`compilar.yml` acepta pedir compilación con inspector**: una entrada booleana en el disparador
