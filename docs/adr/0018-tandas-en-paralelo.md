@@ -1,6 +1,6 @@
 # ADR 0018 — Las tandas de ficheros se cifran en paralelo, con tope
 
-**Fecha:** 2026-09-08 · **Estado:** aceptada · **Revisar si** cambia el perfil de derivación
+**Fecha:** 2026-09-07 · **Estado:** aceptada · **Revisar si** cambia el perfil de derivación
 
 ## Contexto
 

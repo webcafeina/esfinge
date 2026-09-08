@@ -55,16 +55,16 @@ saber qué se hizo.
   del nombre del icono pisando el fondo, que ahora se dibuja aquí con `make ventana-dmg`
   (2026-09-07).
 - ~~Windows y Linux, a su estructura~~ → hecho en la 2.7.0: panel de Fluent y cabecera de GNOME, con
-  el marco del sistema en los dos (2026-09-08).
+  el marco del sistema en los dos (2026-09-07).
 
-- ~~Ventana con vibrancy de verdad~~ → hecho en la 2.5.0, en la barra y el pie (2026-09-08).
+- ~~Ventana con vibrancy de verdad~~ → hecho en la 2.5.0, en la barra y el pie (2026-09-07).
 - ~~Recordar la última carpeta de los diálogos~~ → hecho en la 2.5.0, una para abrir y otra para
-  guardar (2026-09-08).
+  guardar (2026-09-07).
 - ~~Un modo para tandas grandes~~ → en paralelo con tope desde la 2.5.0: veinte ficheros de 4,42 s a
-  1,29 s (2026-09-08).
+  1,29 s (2026-09-07).
 
 - ~~Copiar y pegar con los menús construidos a mano~~ → comprobado en el Mac: los atajos de ⌘ van
-  bien (2026-09-08).
+  bien (2026-09-07).
 - ~~Convertir la herramienta de terminal en aplicación de escritorio~~ → hecho en la 2.0.0 (2026-09-07).
 - ~~Arreglar el arrastrar y soltar~~ → hecho en la 2.0.1 (2026-09-07).
 - ~~Doble clic en un `.esf` en macOS~~ → la 2.0.1 lo dio por hecho y estaba a medias: nadie escuchaba

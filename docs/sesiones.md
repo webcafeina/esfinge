@@ -44,7 +44,7 @@ Plantilla al final.
 sin frentes abiertos de los que venían de atrás. Lo que espera son comprobaciones suyas, ninguna
 bloqueante.
 
-## 2026-09-08 · Vidrio, carpetas recordadas y tandas en paralelo
+## 2026-09-07 · Vidrio, carpetas recordadas y tandas en paralelo
 
 - **2.5.0**, tres cosas que llevaban días anotadas en `siguiente.md` y no dependían de nadie.
 - **El vidrio del sistema** en la barra y el pie, con la zona de trabajo opaca (ADR 0017). Lo que no
@@ -77,7 +77,7 @@ bloqueante.
 - Lección: bajar el tinte dos veces sin entender el síntoma era el camino equivocado. El «gris plano»
   no era un tinte de más, era el material sin nada que mezclar.
 
-## 2026-09-08 · Cambiar de sección deja de borrar lo escrito
+## 2026-09-07 · Cambiar de sección deja de borrar lo escrito
 
 - **2.9.0**, y era la deuda que dejó la versión anterior: cada sección se desmontaba al salir, así
   que escribir el secreto, ir a Generar a por una clave y volver dejaba el campo vacío. Justo el
@@ -102,7 +102,7 @@ bloqueante.
 - Verificado: 36 pruebas en los dos temas, tres tandas seguidas, **y comprobado en el Mac**: lo
   escrito sobrevive al cambiar de sección.
 
-## 2026-09-08 · La contraseña generada, usable como clave
+## 2026-09-07 · La contraseña generada, usable como clave
 
 - **2.8.0**: en Generar aparece «Usar como clave», que lleva a Cifrar con la contraseña puesta y de
   paso la copia; y en Cifrar, un «Generar una» junto al campo de la clave. Nada de esto toca Go: las
@@ -117,7 +117,7 @@ bloqueante.
   por la clave— pero pasaba igual antes. Comprobado volviendo atrás el código y midiéndolo. A la
   deuda.
 
-## 2026-09-08 · El icono del disco montado
+## 2026-09-07 · El icono del disco montado
 
 - **2.7.1**: el volumen del DMG usaba el icono de la aplicación, así que el disco montado y lo que
   hay dentro se veían **exactamente igual** —en la barra lateral del Finder no había forma de
@@ -144,7 +144,7 @@ bloqueante.
   tamaño de icono**, el de 512. Ahora van los ocho del tema hicolor. En Windows no había nada que
   arreglar: Wails ya genera el `icon.ico` del instalador desde `appicon.png`.
 
-## 2026-09-08 · Windows y GNOME, cada uno a lo suyo
+## 2026-09-07 · Windows y GNOME, cada uno a lo suyo
 
 - **2.7.0**: los tres sistemas tienen ya su estructura. La de fondo es la misma —navegación a un
   lado, contenido al otro, que es como se organizan los tres escritorios modernos— y lo que cambia
@@ -164,7 +164,7 @@ bloqueante.
   GNOME, porque el servidor de desarrollo corre en Linux—, más las tres variantes miradas una a una.
   **Sin comprobar**: Windows y GNOME de verdad.
 
-## 2026-09-08 · La estructura de una aplicación de macOS
+## 2026-09-07 · La estructura de una aplicación de macOS
 
 - **2.6.0**: la ventana deja de ser una página web dentro de un marco. Barra lateral con la
   navegación, título en la barra de herramientas, formularios en tarjetas agrupadas y sin barra de
@@ -203,7 +203,7 @@ bloqueante.
 - **Sin comprobar, y es lo que decide lo siguiente**: cómo queda en un Mac. De eso depende si Windows
   y Linux se hacen igual.
 
-## 2026-09-08 · Lo que dijo el Mac
+## 2026-09-07 · Lo que dijo el Mac
 
 - **Copiar y pegar funcionan** con los atajos de ⌘. Era el trozo con más riesgo de todo lo escrito
   el día anterior: al construir los menús a mano (ADR 0015) se perdieron los selectores nativos y

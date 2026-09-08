@@ -1,6 +1,6 @@
 # ADR 0017 — El vidrio del sistema va en la barra lateral, no en la zona de trabajo
 
-**Fecha:** 2026-09-08 · **Estado:** aceptada · **Revisar si** Wails ofrece translucidez en Linux
+**Fecha:** 2026-09-07 · **Estado:** aceptada · **Revisar si** Wails ofrece translucidez en Linux
 
 ## Contexto
 
@@ -8,7 +8,7 @@ La barra y el pie fingían el vidrio con `backdrop-filter`, que desenfoca lo que
 página. El de verdad toma lo que hay **detrás de la ventana**, y eso solo lo puede dar el sistema:
 en macOS con `NSVisualEffectView`, en Windows 11 con Mica. Wails los expone.
 
-> **Corrección (2026-09-08):** aquí se dijo que Linux no tenía nada, y **es falso**: Wails ofrece
+> **Corrección (2026-09-07):** aquí se dijo que Linux no tenía nada, y **es falso**: Wails ofrece
 > `linux.Options.WindowIsTranslucent`, que llama a `SetWindowTransparency` sobre la ventana GTK. No se
 > usa por otra razón —sin desenfoque del compositor, la transparencia enseña el escritorio a pelo, y
 > eso no es vibrancia sino un agujero— pero la opción existe.

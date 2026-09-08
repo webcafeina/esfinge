@@ -1,6 +1,6 @@
 # ADR 0020 — Windows y Linux, con el marco del sistema y su propia forma
 
-**Fecha:** 2026-09-08 · **Estado:** aceptada · **Revisar si** aparece un cliente en Windows o Linux
+**Fecha:** 2026-09-07 · **Estado:** aceptada · **Revisar si** aparece un cliente en Windows o Linux
 
 ## Contexto
 

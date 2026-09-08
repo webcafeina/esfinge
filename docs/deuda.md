@@ -11,7 +11,7 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 | Elemento | Severidad | Impacto | Estado |
 |---|---|---|---|
-| La aplicación nunca se ha ejecutado en un escritorio | Alta | Todo lo visual y todos los diálogos son una suposición hasta que alguien la abra | Abierto · depende del humano |
+| La aplicación no se ha ejecutado en Windows ni en Linux | Media | En macOS está probada de sobra —diálogos, arrastrar y soltar, doble clic en un `.esf`, menús, estructura y vidrio—, pero en los otros dos sistemas todo lo visual sigue siendo una suposición | Abierto · depende del humano. Bajó de Alta a Media cuando la 2.10.0 cerró el frente de macOS |
 | El `.deb` no se puede instalar aquí | Media | Se puede inspeccionar con `dpkg -c`, pero instalarlo exige permisos que esta máquina no da | Abierto |
 | El instalador de Windows | Media | Se compila, pero nadie lo ha ejecutado | Abierto |
 | El portapapeles en Windows y Linux | Baja | Va por la API del navegador dentro del webview; en macOS está comprobado | Abierto |
@@ -24,7 +24,7 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | La interfaz construida se copia a `internal/interfaz/dist` | Baja | Un paso más en la compilación. `go:embed` no puede salir del directorio de su paquete | Aceptado |
 | El servidor de desarrollo publica los métodos por reflexión | Baja | Si un método cambia de firma, el fallo sale en tiempo de ejecución y no al compilar | Aceptado · solo existe tras la etiqueta `dev` |
 | No hay pruebas de la línea de comandos | Media | `internal/cli` no tiene tests: se comprueba a mano en cada cambio | Abierto |
-| Cifrar una tanda deriva la clave una vez por fichero | Baja | Cincuenta ficheros son veinticinco segundos. Es el precio de que cada contenedor lleve su sal, y se puede paralelizar | Abierto → [siguiente.md](siguiente.md) |
+| Cifrar una tanda deriva la clave una vez por fichero | Baja | Es el precio de que cada contenedor lleve su sal, y no se va a quitar: compartir la derivación entre ficheros sería compartir la sal | Aceptado. Lo que sí se hizo es paralelizarlo, con tope de la mitad de los núcleos y máximo cuatro: veinte ficheros pasaron de 4,42 s a 1,29 s ([ADR 0018](adr/0018-tandas-en-paralelo.md)) |
 
 ## De producto
 
@@ -32,7 +32,7 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 |---|---|---|---|
 | Gatekeeper avisa en macOS y Windows | Media | El cliente ve un aviso de programa no identificado. Firmar cuesta 99 $/año y se decidió no hacerlo | Aceptado · [ADR 0012](adr/0012-sin-firmar.md) |
 | El icono del documento `.esf` no está comprobado | Baja | El Finder puede enseñar un icono genérico | Abierto |
-| No hay barra de menús propia | Baja | Sin atajos de teclado ni órdenes en la barra del sistema | Abierto → [siguiente.md](siguiente.md) |
+| ~~No hay barra de menús propia~~ | Baja | Sin atajos de teclado ni órdenes en la barra del sistema | **Saldada**: se construye entera y en español en los tres sistemas, con atajos ⌘1…⌘5. Los roles de Wails no servían porque traen los rótulos en inglés escritos a fuego, así que las acciones de edición las hace la ventana con una orden ([ADR 0015](adr/0015-menus-en-espanol.md)). Comprobado en el Mac, que era donde más riesgo había (2026-09-07) |
 
 ## Saldada
 
@@ -43,7 +43,7 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 - ~~El arranque tardaba cinco segundos en terminales que no contestan al OSC 11~~ → lo causaba el
   `init()` de Bubble Tea, que se fue con la interfaz de terminal (2026-09-07, 2.0.0).
 
-| ~~Cambiar de sección borra lo escrito~~ | Media | Cada sección se desmontaba al salir y con ella se iba lo escrito | **Saldada en la 2.9.0**: las secciones se quedan montadas desde la primera visita y se esconden en vez de quitarse (2026-09-08) |
+| ~~Cambiar de sección borra lo escrito~~ | Media | Cada sección se desmontaba al salir y con ella se iba lo escrito | **Saldada en la 2.9.0**: las secciones se quedan montadas desde la primera visita y se esconden en vez de quitarse (2026-09-07) |
 
 | ~~Medir el vidrio sin romper la aplicación~~ | Alta | El diagnóstico de la 2.9.1 dejaba la aplicación cerrándose sola al arrancar. Tres cosas de ese Objective-C pueden reventar y ninguna avisa al compilar: devolver el `UTF8String` de una cadena autoliberada, que `alphaComponent` lanza excepción sobre un color de patrón, y que `valueForKey:@"drawsBackground"` puede no existir para lectura. Revertido en la 2.9.2 | **Saldada en la 2.10.0, y no midiendo sino leyendo**: el código de Wails está en el caché de módulos de esta máquina, y ahí se ve que nunca le pone material al `NSVisualEffectView`. No hacía falta instrumentar la aplicación del cliente para averiguarlo (2026-09-07) |
 

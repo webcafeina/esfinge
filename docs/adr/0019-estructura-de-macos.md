@@ -1,6 +1,6 @@
 # ADR 0019 — La ventana se organiza como una aplicación de macOS
 
-**Fecha:** 2026-09-08 · **Estado:** aceptada · **Revisar si** se hace lo mismo en Windows y Linux
+**Fecha:** 2026-09-07 · **Estado:** aceptada · **Revisar si** se hace lo mismo en Windows y Linux
 
 ## Contexto
 
