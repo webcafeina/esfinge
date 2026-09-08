@@ -116,7 +116,10 @@ func (a *App) Vidrio() bool { return a.vidrio }
 // Arrancar la llama Wails cuando la ventana está lista.
 func (a *App) Arrancar(ctx context.Context) {
 	a.ctx = ctx
-	a.comprobarAlArrancar()
+	a.mirarSiToca()
+	// Y se queda un reloj mirando, porque comprobar solo al arrancar dejaba sin
+	// enterarse a quien no cierra la ventana. Ver vigilar.
+	a.vigilar(ctx, cadaCuantoSeAsoma)
 }
 
 // Version es la que se enseña en «Acerca de».

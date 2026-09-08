@@ -104,9 +104,9 @@ No se cambian sin preguntar.
   otra para guardar, porque son gestos distintos. Ojo: Wails falla la llamada entera si el directorio
   por defecto ya no existe, así que se comprueba antes de proponerlo.
 - **Sin firmar ni notarizar para macOS**: los 99 $/año de Apple no compensan para un cliente.
-- **Comprueba actualizaciones sola**, una vez al día, y se descarga el instalador de su sistema
-  comprobando el SHA256. Es la única conexión que hace el programa, se cuenta en Ajustes y se apaga
-  ahí (ADR 0014).
+- **Comprueba actualizaciones sola**, una vez al día **y también con la ventana abierta**, y se
+  descarga el instalador de su sistema comprobando el SHA256. Es la única conexión que hace el
+  programa, se cuenta en Ajustes y se apaga ahí (ADR 0014).
 - **Y se reemplaza a sí misma y se reinicia** en macOS y Windows, con un guion que espera a que el
   proceso muera. En Linux no: el `.deb` instala como root (ADR 0016). Firmar con Apple no tiene nada
   que ver con esto —evita el aviso de Gatekeeper, no habilita el reemplazo—, y darlo por hecho fue
@@ -124,6 +124,20 @@ donde quiera sería abrir una puerta por comodidad.
 tras la etiqueta `dev`. Es una petición GET al día a `api.github.com`, y está documentada en
 `docs/seguridad.md` porque la portada prometía lo contrario. Cualquier conexión nueva pasa por ahí
 antes que por el código.
+
+**«Comprobar al arrancar» no es «comprobar una vez al día», y así estuvo hasta la 2.10.4.** La
+comprobación la disparaba solo `Arrancar`, sin ningún reloj: quien dejaba la ventana abierta no se
+enteraba nunca de una versión nueva, mientras la portada y la ADR 0014 prometían lo contrario. Lo
+descubrió el cliente diciendo que no le salía la banda de aviso, no una prueba. Ahora `vigilar` deja
+un reloj que se asoma cada hora, y **la puerta de las 24 horas sigue siendo quien decide**: asomarse
+a menudo no es preguntar a menudo.
+
+Y el detalle que costó una prueba en rojo: **hay que reservar el turno, no solo preguntar por él**
+(`ReservarComprobacion`). Preguntando con `TocaMirar` y anotando al volver de la red, entre las dos
+cosas cabe toda la ida y vuelta a GitHub, y por ese hueco pasan varias comprobaciones a la vez. Con
+la comprobación solo al arrancar no había dos; con el reloj, sí. Lo mismo vale para el cierre: cuando
+las dos ramas de un `select` están listas, **Go elige al azar**, así que el bucle vuelve a preguntar
+por `ctx.Err()` antes de trabajar.
 
 **El Objective-C de `vidrio_darwin.go` no se puede probar aquí, y eso ya costó una versión rota.** La
 2.9.1 añadió un diagnóstico que compilaba en el Mac de la publicación y **cerraba la aplicación al

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -12,6 +13,17 @@ import (
 // versión el mismo día que sale es de sobra, y así abrir y cerrar la ventana no
 // son cinco peticiones.
 const cadaCuanto = 24 * time.Hour
+
+// cadaCuantoSeAsoma es cada cuánto el reloj pregunta **si toca** mirar. No es lo
+// mismo que cadaCuanto y no hay que confundirlos: el reloj se asoma a menudo y
+// quien decide sigue siendo la puerta de las 24 horas, así que asomarse más no
+// significa pedir más.
+//
+// Hace falta porque hasta la 2.10.3 la comprobación ocurría **solo al arrancar**:
+// quien dejaba Esfinge abierta no volvía a enterarse de nada, ni al día siguiente
+// ni a la semana, mientras la portada prometía «una vez al día». Lo dijo el
+// cliente, que nunca había visto la banda de aviso.
+const cadaCuantoSeAsoma = time.Hour
 
 // Nombres de los eventos de la actualización que viajan hasta la ventana.
 const (
@@ -47,20 +59,55 @@ type actualizador struct {
 	descargado string
 }
 
-// comprobarAlArrancar sale a mirar en segundo plano, si toca.
+// vigilar deja un reloj mirando si toca comprobar, mientras la ventana viva.
 //
-// La llama Arrancar. No devuelve nada y no bloquea: cuando termina, y solo si
-// hay algo que decir, manda EventoNovedad. Va en minúscula porque no es algo que
-// la ventana deba poder pedir: todo método exportado de *App cruza el puente.
-func (a *App) comprobarAlArrancar() {
-	if !a.ajustes.TocaMirar(cadaCuanto) {
+// **No basta con comprobar al arrancar**, que es lo que se hacía hasta la
+// 2.10.3: una herramienta como ésta se deja abierta, y así no se enteraba nunca.
+// El reloj se asoma cada poco y la puerta de las 24 horas es la que decide, de
+// modo que esto no aumenta las peticiones: solo hace que la de cada día llegue
+// también a quien no cierra la ventana.
+//
+// Se va con el contexto de Wails, que es el de la ventana.
+func (a *App) vigilar(ctx context.Context, cada time.Duration) {
+	go func() {
+		reloj := time.NewTicker(cada)
+		defer reloj.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-reloj.C:
+				// Y se vuelve a preguntar: cuando las dos ramas están listas,
+				// «select» elige al azar, así que el cierre de la ventana puede
+				// perder varias veces seguidas frente al reloj. Con un reloj de
+				// una hora no se notaría nunca; el código no debe depender de eso.
+				if ctx.Err() != nil {
+					return
+				}
+				a.mirarSiToca()
+			}
+		}
+	}()
+}
+
+// mirarSiToca sale a mirar en segundo plano, si la puerta de las 24 horas deja.
+//
+// La llaman Arrancar y el reloj de vigilar. No devuelve nada y no bloquea:
+// cuando termina, y solo si hay algo que decir, manda EventoNovedad. Va en
+// minúscula porque no es algo que la ventana deba poder pedir: todo método
+// exportado de *App cruza el puente.
+func (a *App) mirarSiToca() {
+	// Reservar y no solo preguntar: ver ReservarComprobacion. Preguntando, dos
+	// vueltas del reloj pueden colarse las dos mientras la primera está en la red.
+	if !a.ajustes.ReservarComprobacion(cadaCuanto) {
 		return
 	}
 	go func() {
 		n, err := a.act.comprobador.Mirar()
 		if err != nil {
 			// Un fallo de red no se le cuenta a nadie: no se ha pedido esto, es
-			// una cortesía. Se anota la fecha igual para no reintentar en bucle.
+			// una cortesía. Se anota la fecha igual para no reintentar en bucle
+			// —con el reloj puesto, eso sería una petición cada hora—.
 			a.ajustes.AnotarComprobacion("")
 			return
 		}

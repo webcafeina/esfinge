@@ -44,7 +44,30 @@ Plantilla al final.
 - Verificado sin escritorio Linux, con `dpkg -c` sobre el `.deb` publicado: los ocho tamaños de
   `application-x-esfinge.png` están en `mimetypes/`, y el `esfinge.xml` que los nombra también.
 
-**Estado al cerrar:** 2.10.3 publicada. Nada a medias en el código y ningún frente abierto de los que
+## 2026-09-08 · El aviso de versión nueva no llegaba nunca
+
+- **2.10.4, y salió de una confusión de nombres.** El cliente llevaba toda la sesión diciendo que «no
+  salta el aviso», y yo lo entendí como el de Gatekeeper. Al explicarle qué era Gatekeeper, aclaró:
+  se refería a **la banda de versión nueva**, que no le había salido jamás.
+- **El fallo era real.** `comprobarAlArrancar` la llamaba `Arrancar` una sola vez y **no había ningún
+  reloj en todo el código**: solo se comprobaba al abrir la ventana. Quien deja Esfinge abierta —lo
+  normal en una herramienta así— no se enteraba nunca. La portada y la ADR 0014 decían «comprueba una
+  vez al día»; lo que hacía era «comprueba al arrancar, y como mucho una vez al día». Esa frase la
+  escribí yo y no era cierta.
+- Ahora `vigilar` deja un reloj que se asoma cada hora y aplica **la misma puerta de las 24 horas**,
+  así que el techo de una petición al día no se mueve: asomarse a menudo no es preguntar a menudo.
+- **Dos fallos míos los encontraron las pruebas, no yo.** Preguntar con `TocaMirar` y anotar al volver
+  de la red deja el hueco de toda la petición en medio: con el reloj, cuatro comprobaciones donde
+  debía haber una. De ahí `ReservarComprobacion`, que decide y anota **sin soltar el cerrojo**. Y al
+  cerrar la ventana el reloj seguía: cuando las dos ramas de un `select` están listas Go elige al
+  azar, así que el bucle vuelve a mirar `ctx.Err()` antes de trabajar.
+- Verificado: tres pruebas nuevas con `-race` —avisa sin reiniciar, respeta el techo diario, se para
+  con la ventana—, toda la suite con `-race`, y las 38 de interfaz.
+- **La lección, que es la de la sesión entera por tercera vez:** esto lo encontró el cliente usando la
+  aplicación, no una prueba ni una lectura del código. Las pruebas cubrían el arranque, que era
+  justamente el único caso que funcionaba.
+
+**Estado al cerrar:** 2.10.4 publicada. Nada a medias en el código y ningún frente abierto de los que
 venían de atrás. Queda **una sola comprobación**, y solo la puede hacer el humano: abrir la
 aplicación en Windows y en GNOME de verdad, y mirar ahí la estructura de cada sistema y el icono de
 los `.esf`.

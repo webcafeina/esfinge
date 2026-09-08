@@ -25,6 +25,16 @@ binario del cliente no tenía ni `net/http`, y el único que había estaba tras 
 La aplicación **comprueba una vez al día** si hay versión nueva, **se descarga el fichero** que le
 toca a ese sistema comprobando su SHA256, y **abre el instalador**. No se sustituye a sí misma.
 
+> **Corrección (2026-09-08).** «Una vez al día» **no fue verdad hasta la 2.10.4**. Lo implementado
+> era «comprueba al arrancar, y como mucho una vez al día»: `comprobarAlArrancar` la llamaba
+> `Arrancar` una sola vez y no había ningún reloj, así que quien dejaba la ventana abierta —que es lo
+> normal en una herramienta como ésta— no se enteraba nunca de una versión nueva. Lo dijo el cliente:
+> no le había salido la banda de aviso ni una vez. Ahora hay un reloj (`vigilar`) que se asoma cada
+> hora y aplica la misma puerta de las 24 horas, así que la frase de arriba describe lo que pasa.
+>
+> Lo que sí era cierto desde el principio, y sigue siéndolo, es el techo: **una petición al día**. El
+> reloj se asoma a menudo pero quien decide es la puerta, y hay una prueba que lo vigila.
+
 - **Automática y desactivable**, no manual: un botón «Buscar actualizaciones» que nadie pulsa no
   resuelve el problema. La contrapartida es que **se cuenta en Ajustes**, con lo que se envía escrito
   a la vista: una petición GET a `api.github.com` que lleva la versión instalada en el `User-Agent`,

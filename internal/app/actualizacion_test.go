@@ -157,3 +157,80 @@ func TestLasOrdenesDelMenuLleganALaVentana(t *testing.T) {
 		t.Errorf("la segunda: quiero pegar «una contraseña», tengo %+v", ordenes[1])
 	}
 }
+
+// El reloj es la diferencia entre «comprueba una vez al día», que es lo que
+// promete la portada, y «comprueba al abrir la ventana», que es lo que hacía
+// hasta la 2.10.3. Quien deja Esfinge abierta —que es lo normal— no se enteraba
+// nunca de una versión nueva. Lo dijo el cliente: no le salía la banda.
+func TestElRelojAvisaSinReiniciarLaVentana(t *testing.T) {
+	a, s := paraActualizar(t, "v2.1.0", nil)
+
+	// Nada de Arrancar: aquí lo que se prueba es que el aviso llega **sin** que
+	// nadie vuelva a abrir la ventana. Si esto pasara solo por el arranque, la
+	// prueba no diría nada.
+	ctx, parar := context.WithCancel(context.Background())
+	defer parar()
+	a.vigilar(ctx, 5*time.Millisecond)
+
+	novedades := esperarNovedad(t, s)
+	if len(novedades) == 0 {
+		t.Fatal("el reloj no ha avisado de la 2.1.0 con la ventana ya abierta")
+	}
+	if novedades[0].Version != "2.1.0" {
+		t.Errorf("versión: quiero 2.1.0, tengo %q", novedades[0].Version)
+	}
+}
+
+// Asomarse a menudo no es preguntar a menudo: quien decide sigue siendo la
+// puerta de las 24 horas. Sin esto, un reloj de una hora serían veinticuatro
+// peticiones al día en vez de una.
+func TestElRelojNoDisparaMasPeticionesQueLaPuertaDeLasVeinticuatroHoras(t *testing.T) {
+	var peticiones atomic.Int32
+	a, s := paraActualizar(t, "v2.1.0", &peticiones)
+
+	ctx, parar := context.WithCancel(context.Background())
+	defer parar()
+	a.vigilar(ctx, time.Millisecond)
+
+	if len(esperarNovedad(t, s)) == 0 {
+		t.Fatal("el reloj no ha llegado a comprobar ni una vez")
+	}
+	// Con un reloj de 1 ms, aquí caben cientos de vueltas. Si la puerta no
+	// funcionara, se notaría de sobra.
+	time.Sleep(150 * time.Millisecond)
+
+	if n := peticiones.Load(); n != 1 {
+		t.Errorf("quiero exactamente 1 petición, tengo %d: la puerta de las 24 h no está frenando al reloj", n)
+	}
+}
+
+// Y el reloj se va con la ventana: si no, cada ventana abierta dejaría una
+// gorrutina viva pidiendo a GitHub para siempre.
+func TestElRelojSeParaConLaVentana(t *testing.T) {
+	var peticiones atomic.Int32
+	a, s := paraActualizar(t, "v2.1.0", &peticiones)
+
+	ctx, parar := context.WithCancel(context.Background())
+	a.vigilar(ctx, time.Millisecond)
+	if len(esperarNovedad(t, s)) == 0 {
+		t.Fatal("el reloj no ha llegado a comprobar")
+	}
+
+	parar()
+	// Un respiro para que termine lo que ya estuviera en la red cuando se cerró:
+	// lo que se prueba es que no empiece nada nuevo, no que se corte a media
+	// petición.
+	time.Sleep(50 * time.Millisecond)
+
+	// Se le borra la fecha, así que la puerta dejaría pasar: lo único que puede
+	// frenarlo ya es que el reloj esté parado de verdad.
+	a.ajustes.mu.Lock()
+	a.ajustes.p.UltimaComprobacion = ""
+	a.ajustes.mu.Unlock()
+
+	antes := peticiones.Load()
+	time.Sleep(100 * time.Millisecond)
+	if despues := peticiones.Load(); despues != antes {
+		t.Errorf("la ventana se cerró y el reloj siguió pidiendo: %d → %d", antes, despues)
+	}
+}

@@ -98,7 +98,12 @@ func (a *Ajustes) Guardar(p Preferencias) error {
 func (a *Ajustes) TocaMirar(cada time.Duration) bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	return a.tocaMirar(cada)
+}
 
+// tocaMirar es lo mismo, con el cerrojo ya tomado: lo comparten TocaMirar y
+// ReservarComprobacion, que necesita decidir y anotar sin soltarlo.
+func (a *Ajustes) tocaMirar(cada time.Duration) bool {
 	if !a.p.BuscarActualizaciones {
 		return false
 	}
@@ -110,6 +115,30 @@ func (a *Ajustes) TocaMirar(cada time.Duration) bool {
 		return true
 	}
 	return time.Since(cuando) >= cada
+}
+
+// ReservarComprobacion dice si toca mirar y, si toca, **se queda el turno en el
+// mismo cerrojo**: anota la fecha antes de que nadie salga a la red.
+//
+// Esa unión es el detalle que importa. Preguntar con TocaMirar y anotar al
+// volver deja en medio toda la ida y vuelta a GitHub, y por ese hueco pasan
+// varias comprobaciones a la vez. Con la comprobación solo al arrancar daba
+// igual, porque no había dos; con el reloj de vigilar sí las hay, y una prueba
+// lo pilló haciendo cuatro peticiones donde debía hacer una.
+//
+// Anotar antes de saber el resultado es a propósito: si la red falla, el turno
+// se ha gastado igual. Es lo mismo que ya hacía el camino de error, y evita
+// reintentar en bucle.
+func (a *Ajustes) ReservarComprobacion(cada time.Duration) bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if !a.tocaMirar(cada) {
+		return false
+	}
+	a.p.UltimaComprobacion = time.Now().Format(time.RFC3339)
+	_ = a.guardar()
+	return true
 }
 
 // AnotarComprobacion deja constancia de que se acaba de mirar, y de qué versión
