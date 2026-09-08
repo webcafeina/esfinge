@@ -23,13 +23,13 @@ Sin cuentas y sin servidores: lo que cifras no sale de tu ordenador.
 
 | Sistema | Descarga | Notas |
 |---|---|---|
-| **macOS** | [Esfinge-2.10.0.dmg](https://github.com/webcafeina/esfinge/releases/download/v2.10.0/Esfinge-2.10.0.dmg) | Universal: Apple Silicon e Intel |
-| **Windows** | [Esfinge-2.10.0-windows-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.10.0/Esfinge-2.10.0-windows-instalador.exe) | Asistente de instalación |
-| **Linux · Debian y Ubuntu** | [esfinge_2.10.0_amd64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.10.0/esfinge_2.10.0_amd64.deb) | Aplicación y línea de comandos |
-| **Linux · cualquiera** | [esfinge-2.10.0-linux-amd64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.10.0/esfinge-2.10.0-linux-amd64.tar.gz) | Los binarios sueltos |
+| **macOS** | [Esfinge-2.10.1.dmg](https://github.com/webcafeina/esfinge/releases/download/v2.10.1/Esfinge-2.10.1.dmg) | Universal: Apple Silicon e Intel |
+| **Windows** | [Esfinge-2.10.1-windows-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.10.1/Esfinge-2.10.1-windows-instalador.exe) | Asistente de instalación |
+| **Linux · Debian y Ubuntu** | [esfinge_2.10.1_amd64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.10.1/esfinge_2.10.1_amd64.deb) | Aplicación y línea de comandos |
+| **Linux · cualquiera** | [esfinge-2.10.1-linux-amd64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.10.1/esfinge-2.10.1-linux-amd64.tar.gz) | Los binarios sueltos |
 | **Línea de comandos** | [todos los sistemas](https://github.com/webcafeina/esfinge/releases/latest) | Seis objetivos, con sus SHA256 |
 
-Versión **2.10.0**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
+Versión **2.10.1**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
 
 <!-- descargas:fin -->
 
