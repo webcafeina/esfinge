@@ -7,12 +7,17 @@ saber qué se hizo.
 
 ## Alta
 
+- **Ver que la banda de versión nueva sale sola**, con la primera versión que se publique a partir de
+  la 2.10.4. Es lo que arregla esa versión, y hasta entonces no se puede dar por bueno: la
+  comprobación ocurría solo al arrancar y el cliente no había visto la banda nunca. La prueba es
+  dejar Esfinge abierta. El plazo importa: el reloj se asoma cada hora pero la puerta es de 24 h
+  **desde la última comprobación**, así que después de actualizar a mano hay que esperar al día
+  siguiente.
 - **Abrir la aplicación en máquinas Windows y GNOME de verdad**, y mirar ahí dos cosas: la estructura
   de cada sistema y el icono de los `.esf` en el explorador de ficheros. En Windows el icono lo pone
   el instalador, en Linux el `.deb`; los dos están comprobados por dentro pero no puestos.
   La estructura de macOS está juzgada en un Mac; las otras dos se escribieron a partir de las
-  convenciones de cada sistema y no las ha visto nadie corriendo (ADR 0020). **Es lo único que queda
-  abierto en todo el proyecto.**
+  convenciones de cada sistema y no las ha visto nadie corriendo (ADR 0020).
 
 ## Media
 

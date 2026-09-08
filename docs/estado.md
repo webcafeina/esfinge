@@ -83,12 +83,12 @@ visto nadie.
 ## Siguiente acción concreta
 
 **Ninguna: no queda nada que se pueda hacer sin alguien delante.** Los frentes que venían de atrás
-están cerrados —el vidrio en la 2.10.0; el icono del documento y la respuesta sobre Gatekeeper entre
-la 2.10.1 y la 2.10.3—, y `siguiente.md` no tiene nada en Media.
+están cerrados —el vidrio en la 2.10.0; el icono del documento y Gatekeeper entre la 2.10.1 y la
+2.10.3; el aviso de versión nueva en la 2.10.4—, y `siguiente.md` no tiene nada en Media.
 
-Queda **una sola comprobación del humano**, no bloqueante, y está abajo: abrir la aplicación en
-Windows y en GNOME de verdad. Ahí se juzgan dos cosas de una vez, la estructura de cada sistema y el
-icono de los `.esf`.
+Quedan **dos comprobaciones del humano**, ninguna bloqueante, y están abajo: que la banda de versión
+nueva salga sola —lo dirá la primera versión que se publique a partir de ahora— y abrir la aplicación
+en Windows y en GNOME de verdad.
 
 Para lo que venga: la **compilación con inspector** ya existe.
 `gh workflow run compilar.yml -f inspector=true` da un paquete con el Web Inspector abierto, en el
@@ -102,9 +102,15 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 
 ## Preguntas abiertas para el humano
 
-Queda una, y es de código publicado que nunca se ha ejecutado aquí: en esta máquina no hay ni Windows
-ni GNOME con la aplicación puesta, y lo visual no se puede afirmar desde una compilación en verde.
+Quedan dos, y las dos son de código publicado que no se puede ejercitar aquí: en esta máquina no hay
+Windows ni GNOME con la aplicación puesta, y una comprobación que solo ocurre una vez al día no se
+observa en una compilación en verde.
 
+- **¿Sale sola la banda de versión nueva?** Es lo que arregla la 2.10.4, y **no se puede dar por
+  bueno hasta que salga la siguiente versión**: hasta ahora la comprobación solo ocurría al arrancar
+  y el cliente no la había visto nunca. La prueba es dejar Esfinge abierta y que aparezca sin tocar
+  nada. Ojo al plazo: el reloj se asoma cada hora pero la puerta sigue siendo de 24 h **desde la
+  última comprobación**, así que tras actualizar a mano toca esperar a mañana.
 - **¿Cómo queda la aplicación en Windows y en GNOME?** La de macOS está juzgada en un Mac; las otras
   dos se escribieron a partir de las convenciones de cada sistema y nadie las ha visto corriendo. Hay
   dos cosas que mirar de una vez: **la estructura** —el panel de Fluent con su barra de acento, la
