@@ -7,10 +7,6 @@ saber qué se hizo.
 
 ## Alta
 
-- **Que el humano vea si salta el aviso de Gatekeeper** al actualizarse desde dentro. Si no salta,
-  hay que quitarlo del LÉEME del DMG para el caso de la actualización.
-- **Que el Finder enseñe el icono de los `.esf`.** La asociación está declarada y la aplicación
-  abre con el fichero, pero falta ver si el icono del documento sale.
 - **Ver la estructura en máquinas Windows y GNOME de verdad.** La de macOS está juzgada en un Mac;
   las otras dos se escribieron a partir de las convenciones de cada sistema y no las ha visto nadie
   corriendo (ADR 0020).
@@ -27,6 +23,13 @@ Nada por ahora.
 
 ## Cerrado
 
+- ~~Que el humano vea si salta el aviso de Gatekeeper al actualizarse desde dentro~~ → **no salta**.
+  La cuarentena la pone quien descarga, y ahí descarga Go y no un navegador; el guion además la quita
+  explícitamente. El aviso es cosa solo de la primera instalación, y el LÉEME del DMG lo dice ahora
+  (2026-09-08).
+- ~~Que el Finder enseñe el icono de los `.esf`~~ → el icono estaba, pero **era el de la aplicación**:
+  `build/esf.png` era una copia byte a byte de `appicon.png`. Ahora hay un documento de verdad,
+  `build/documento.svg`. Falta que el humano lo vea en el Finder (2026-09-08).
 - ~~Una entrada en `compilar.yml` para pedir compilación con inspector~~ → hecha: el disparador
   manual acepta `inspector`, que compila con `wails build -devtools`
   (`gh workflow run compilar.yml -f inspector=true`). El artefacto sale como `-CON-INSPECTOR`, dura

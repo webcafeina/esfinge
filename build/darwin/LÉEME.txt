@@ -25,6 +25,10 @@ Si prefieres quitarlo de golpe, abre el Terminal y pega esto:
 
   xattr -dr com.apple.quarantine /Applications/Esfinge.app
 
+Y esto es solo para esta primera instalación: cuando salga una versión nueva,
+Esfinge te avisa y se actualiza sola desde Ajustes, sin volver a preguntar nada
+y sin que tengas que arrastrar nada.
+
 
 CÓMO SE USA
 ───────────

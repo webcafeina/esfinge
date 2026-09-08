@@ -30,8 +30,8 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 | Elemento | Severidad | Impacto | Estado |
 |---|---|---|---|
-| Gatekeeper avisa en macOS y Windows | Media | El cliente ve un aviso de programa no identificado. Firmar cuesta 99 $/año y se decidió no hacerlo | Aceptado · [ADR 0012](adr/0012-sin-firmar.md) |
-| El icono del documento `.esf` no está comprobado | Baja | El Finder puede enseñar un icono genérico | Abierto |
+| Gatekeeper avisa en macOS y Windows | Baja | El cliente ve un aviso de programa no identificado. Firmar cuesta 99 $/año y se decidió no hacerlo | Aceptado · [ADR 0012](adr/0012-sin-firmar.md). Bajó de Media a Baja al comprobarse que es **solo de la primera instalación**: al actualizarse desde dentro no aparece, porque la cuarentena la pone quien descarga y ahí descarga Go (2026-09-08) |
+| ~~El icono del documento `.esf` era el de la aplicación~~ | Baja | En el Finder, un fichero cifrado y el programa que lo abre se veían igual: `build/esf.png` era una copia byte a byte de `build/appicon.png` | **Saldada (2026-09-08)**: `build/documento.svg` dibuja una hoja con la esquina doblada y la marca sobre una placa, que es la forma de un documento en macOS. Falta que el humano confirme que el Finder lo enseña |
 | ~~No hay barra de menús propia~~ | Baja | Sin atajos de teclado ni órdenes en la barra del sistema | **Saldada**: se construye entera y en español en los tres sistemas, con atajos ⌘1…⌘5. Los roles de Wails no servían porque traen los rótulos en inglés escritos a fuego, así que las acciones de edición las hace la ventana con una orden ([ADR 0015](adr/0015-menus-en-espanol.md)). Comprobado en el Mac, que era donde más riesgo había (2026-09-07) |
 
 ## Saldada

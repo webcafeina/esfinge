@@ -68,6 +68,15 @@ una copia en una carpeta ajena tiene que caer en el camino del instalador aunque
 - Compila para los tres sistemas, que aquí es lo único que se puede afirmar del código específico de
   cada uno.
 
-**Lo que no se ha comprobado, y es la parte que importa:** el cambiazo de verdad. No hay Mac ni
-Windows en esta máquina. Falta ver que el paquete se reemplaza, que la aplicación vuelve a abrirse
-sola, y si al haber descargado el DMG desde Go la copia nueva se libra del aviso de Gatekeeper.
+**Comprobado en un Mac (2026-09-08), y era la parte que importaba:** el cambiazo funciona. El paquete
+se reemplaza, la aplicación vuelve a abrirse sola, y **Gatekeeper no aparece**. Se ha usado ya para
+actualizar de verdad, varias versiones seguidas.
+
+Eso confirma el razonamiento que sostenía la decisión: la cuarentena la pone **quien descarga**, y
+aquí descarga Go, no un navegador. El guion además la quita explícitamente por si la imagen viniera
+marcada, que es la línea `xattr -dr com.apple.quarantine` de `reemplazar.go`. El resultado práctico
+es que el aviso de programa no identificado es cosa **solo de la primera instalación**, la que se
+hace arrastrando desde el DMG; y así lo dice ahora el LÉEME de la imagen.
+
+**Lo que sigue sin comprobarse:** el camino equivalente en Windows. No hay ninguno en esta máquina, y
+nadie lo ha ejecutado todavía.

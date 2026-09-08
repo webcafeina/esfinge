@@ -67,6 +67,10 @@ visto nadie.
 - **El vidrio, por fin, en la 2.10.0.** «Ahora sí se ve». Y comparado con la barra lateral del Finder
   al lado, **se ve igual**: el desenfoque que parecía excesivo es el que macOS 26 pone en todas las
   barras laterales del sistema. No hay nada que calibrar.
+- **La actualización desde dentro, y que Gatekeeper no aparece.** Se ha usado de verdad, varias
+  versiones seguidas: se descarga, se reemplaza y se reinicia sola sin preguntar nada. Confirma lo
+  que sostenía la ADR 0016: la cuarentena la pone quien descarga, y aquí descarga Go. El aviso de
+  programa no identificado es cosa **solo de la primera instalación**.
 
 ## Siguiente acción concreta
 
@@ -90,12 +94,9 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 **Las dos primeras son de código publicado que nunca se ha ejecutado aquí**: en esta máquina no hay
 ni Mac ni Windows.
 
-- **¿Salta el aviso de Gatekeeper al actualizarse desde dentro?** El guion le quita la cuarentena al
-  paquete antes de ponerlo, y como el DMG lo descarga Go y no un navegador, es posible que no salte.
-  Si no salta, hay que quitarlo del LÉEME del DMG para las actualizaciones y dejarlo solo para la
-  primera instalación.
-- **¿La estructura pasa por nativa?** Es la pregunta de la 2.6.0, y de la respuesta depende si
-  Windows y Linux se hacen igual o distinto.
-- **¿Merece la pena que el Finder enseñe el icono propio de los `.esf`?** La asociación funciona y el
-  doble clic abre lo que toca —comprobado en el Mac—, pero el icono del documento no se ha mirado. Es
-  lo único que queda de ese frente, y es cosmético.
+- **¿Enseña el Finder el icono nuevo de los `.esf`?** El icono estaba desde el principio, pero **era
+  el de la aplicación**: `build/esf.png` era una copia byte a byte de `appicon.png`, así que el
+  documento y el programa se veían igual. Desde la 2.10.1 hay un documento de verdad —hoja con la
+  esquina doblada y la marca sobre una placa—, y falta verlo puesto.
+- **¿Cómo queda la estructura en Windows y en GNOME?** La de macOS está juzgada en un Mac; las otras
+  dos se escribieron a partir de las convenciones de cada sistema y nadie las ha visto corriendo.

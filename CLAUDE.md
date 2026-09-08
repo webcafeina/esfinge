@@ -242,6 +242,14 @@ dentro se ven igual y en la barra lateral del Finder no se distinguen. El volume
 la marca encima (`build/darwin/disco.svg`), y su `.icns` lo arma `armar-dmg.sh` con `iconutil`, que
 **solo existe en macOS**: aquí solo se pueden rasterizar los PNG del `.iconset` con `make icono`.
 
+**Y el del documento tampoco, que es el mismo error cometido dos veces.** `build/esf.png` —el icono
+de los `.esf`, cuyo nombre lo fija `iconName` en `wails.json` y que Wails busca en `build/<nombre>.png`—
+era una **copia byte a byte de `build/appicon.png`** hasta la 2.10.1. Ahora lo dibuja
+`build/documento.svg`: hoja vertical con la esquina de arriba a la derecha doblada, el dorso del
+papel a la vista y la marca sobre una placa oscura, que es la forma de un documento en macOS. La
+placa ocupa poco más de la mitad del ancho: con ella más grande el papel no se veía y volvía a
+parecer el icono de la aplicación. **Lo que dice «documento» es el papel, no el emblema.**
+
 **El fondo del DMG y los nombres de los iconos.** El Finder centra cada icono en la posición que le
 da `create-dmg` y **escribe su nombre debajo**: con iconos de 96 px, el pie del nombre queda unos 64
 px por debajo del centro. Todo lo que el fondo dibuje ahí queda tapado, y eso no se ve hasta montar
@@ -266,5 +274,10 @@ doble clic en un `.esf`, la imagen de disco —que se monta y se arrastra sin m�
 barra lateral y, desde la 2.10.0, **el vidrio**: se ve, y comparado con el Finder al lado se ve
 igual, así que el desenfoque es el estándar de macOS 26 y no hay nada que calibrar.
 
-Sin verificar todavía: si el Finder enseña el icono propio en los ficheros `.esf`, y qué tan
-aparatoso resulta el aviso de Gatekeeper con una `.app` sin firmar la primera vez.
+Y **la actualización desde dentro**, usada de verdad varias versiones seguidas: se descarga, se
+reemplaza y se reinicia sola. **Gatekeeper no aparece al actualizar**, lo que confirma el
+razonamiento de la ADR 0016 —la cuarentena la pone quien descarga, y ahí descarga Go, no un
+navegador—. El aviso de programa no identificado es cosa solo de la primera instalación.
+
+Sin verificar todavía: si el Finder enseña el icono nuevo de los `.esf`, y cómo quedan las
+estructuras de Windows y de GNOME en máquinas de verdad.
