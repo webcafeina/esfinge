@@ -13,6 +13,13 @@ const raiz = resolve(import.meta.dirname, "..", "..");
 // de la proporción del propio SVG.
 const trabajos = [
   ["build/icono.svg", "build/appicon.png", 1024],
+
+  // El icono del documento .esf. Va aparte del de la aplicación a propósito:
+  // hasta la 2.10.0 esto era una copia byte a byte de appicon.png y en el Finder
+  // el documento y el programa se veían igual. El nombre del destino lo fija
+  // «iconName» en wails.json, que es donde Wails lo busca (build/<nombre>.png).
+  ["build/documento.svg", "build/esf.png", 1024],
+
   ["build/icono.svg", "frontend/public/icono-256.png", 256],
   ["build/icono.svg", "frontend/public/favicon.png", 64],
   ["build/icono.svg", "docs/imagenes/icono.png", 256],
