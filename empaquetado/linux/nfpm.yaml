@@ -44,6 +44,26 @@ contents:
     dst: /usr/share/icons/hicolor/256x256/apps/esfinge.png
   - src: build/linux/hicolor/512x512.png
     dst: /usr/share/icons/hicolor/512x512/apps/esfinge.png
+  # El icono del tipo de fichero, que no es el de la aplicación: si fuera el
+  # mismo, un .esf y Esfinge se verían igual en el explorador de ficheros. Va en
+  # «mimetypes/» y con el nombre del tipo —la barra cambiada por un guion—, que
+  # es donde y como lo busca el escritorio.
+  - src: build/linux/mimetypes/16x16.png
+    dst: /usr/share/icons/hicolor/16x16/mimetypes/application-x-esfinge.png
+  - src: build/linux/mimetypes/24x24.png
+    dst: /usr/share/icons/hicolor/24x24/mimetypes/application-x-esfinge.png
+  - src: build/linux/mimetypes/32x32.png
+    dst: /usr/share/icons/hicolor/32x32/mimetypes/application-x-esfinge.png
+  - src: build/linux/mimetypes/48x48.png
+    dst: /usr/share/icons/hicolor/48x48/mimetypes/application-x-esfinge.png
+  - src: build/linux/mimetypes/64x64.png
+    dst: /usr/share/icons/hicolor/64x64/mimetypes/application-x-esfinge.png
+  - src: build/linux/mimetypes/128x128.png
+    dst: /usr/share/icons/hicolor/128x128/mimetypes/application-x-esfinge.png
+  - src: build/linux/mimetypes/256x256.png
+    dst: /usr/share/icons/hicolor/256x256/mimetypes/application-x-esfinge.png
+  - src: build/linux/mimetypes/512x512.png
+    dst: /usr/share/icons/hicolor/512x512/mimetypes/application-x-esfinge.png
   - src: LICENSE
     dst: /usr/share/doc/esfinge/copyright
 

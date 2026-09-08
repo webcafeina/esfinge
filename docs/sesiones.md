@@ -32,8 +32,17 @@ Plantilla al final.
   su centro en 512, así que caía 124 px baja. La había bajado a propósito, dando por hecho que macOS
   pone el emblema en la mitad inferior de los documentos; no era cierto, y mirándolo se notaba.
   Centrada, quedan 282 px de margen arriba y abajo.
-- Queda abierto, y solo depende del humano: las estructuras de Windows y GNOME en máquinas de verdad.
-  Es lo único.
+- **2.10.3, de preguntar si el icono también valía para Windows y Linux.** En Windows sí, y solo, y
+  no había nada que hacer: Wails genera `build/windows/esf.ico` desde el mismo `build/esf.png` y su
+  plantilla NSIS lo copia al directorio de instalación y registra ahí la asociación. Además no está
+  en git, así que se regenera en cada compilación y no puede quedarse viejo.
+- **En Linux no llegaba.** `packageApplicationForLinux` de Wails **devuelve `nil`**: allí las
+  asociaciones las pone nuestro `.deb`, y `esfinge-mime.xml` apuntaba a `<icon name="esfinge"/>`, que
+  es el de la aplicación. O sea, el mismo fallo recién corregido en macOS, vivo en el otro sistema.
+  Ahora el paquete instala `application-x-esfinge.png` en `hicolor/<tamaño>/mimetypes/` —por nombre y
+  carpeta, que es como lo busca el escritorio— y el XML apunta ahí.
+- Queda abierto, y solo depende del humano: las estructuras de Windows y GNOME en máquinas de verdad,
+  y de paso ver ahí los iconos de los `.esf`.
 
 ## 2026-09-08 · La red para lo que no se puede probar aquí
 

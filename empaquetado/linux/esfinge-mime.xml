@@ -10,6 +10,12 @@
     <magic priority="60">
       <match type="string" value="ESF1" offset="0"/>
     </magic>
-    <icon name="esfinge"/>
+    <!-- El icono del documento, no el de la aplicación. Aquí ponía «esfinge»,
+         que es el del programa, así que un .esf y Esfinge se veían igual en el
+         explorador de ficheros: el mismo fallo que hubo en macOS.
+         El nombre es el del tipo con la barra cambiada por un guion, que es la
+         convención de freedesktop, y el paquete instala el fichero con ese
+         nombre en hicolor/<tamaño>/mimetypes/. -->
+    <icon name="application-x-esfinge"/>
   </mime-type>
 </mime-info>

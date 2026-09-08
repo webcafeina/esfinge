@@ -247,8 +247,18 @@ de los `.esf`, cuyo nombre lo fija `iconName` en `wails.json` y que Wails busca 
 era una **copia byte a byte de `build/appicon.png`** hasta la 2.10.1. Ahora lo dibuja
 `build/documento.svg`: hoja vertical con la esquina de arriba a la derecha doblada, el dorso del
 papel a la vista y la marca sobre una placa oscura, que es la forma de un documento en macOS. La
-placa ocupa poco más de la mitad del ancho: con ella más grande el papel no se veía y volvía a
-parecer el icono de la aplicación. **Lo que dice «documento» es el papel, no el emblema.**
+placa ocupa poco más de la mitad del ancho y va **centrada en la hoja**: con ella más grande el papel
+no se veía, y bajada a la mitad inferior se notaba caída. **Lo que dice «documento» es el papel, no
+el emblema.**
+
+**El icono del documento llega a cada sistema por un camino distinto, y a Linux no llegaba solo.**
+De `build/esf.png` salen dos: Wails arma el `esf.icns` del paquete de macOS y el `esf.ico` que el
+instalador de Windows copia y registra (`File "..\esf.ico"` en su plantilla NSIS). Pero
+`packageApplicationForLinux` **devuelve `nil`**: en Linux Wails no toca las asociaciones, y las pone
+el `.deb`. Ahí el escritorio busca el icono del tipo **por su nombre y en su carpeta** —el tipo con
+la barra cambiada por un guion, en `hicolor/<tamaño>/mimetypes/`, no en `apps/`—, así que hace falta
+instalar `application-x-esfinge.png` aparte. Hasta la 2.10.3, `esfinge-mime.xml` apuntaba al icono de
+la aplicación y un `.esf` se veía igual que Esfinge.
 
 **El fondo del DMG y los nombres de los iconos.** El Finder centra cada icono en la posición que le
 da `create-dmg` y **escribe su nombre debajo**: con iconos de 96 px, el pie del nombre queda unos 64

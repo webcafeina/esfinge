@@ -18,7 +18,23 @@ const trabajos = [
   // hasta la 2.10.0 esto era una copia byte a byte de appicon.png y en el Finder
   // el documento y el programa se veían igual. El nombre del destino lo fija
   // «iconName» en wails.json, que es donde Wails lo busca (build/<nombre>.png).
+  //
+  // De este único PNG salen macOS y Windows: Wails arma con él el «esf.icns» del
+  // paquete y el «esf.ico» que el instalador registra. Linux no, porque ahí Wails
+  // no hace nada con las asociaciones —«packageApplicationForLinux» devuelve nil—
+  // y el escritorio pide los iconos de tipo por su nombre y en su carpeta. Ésos
+  // son los de abajo.
   ["build/documento.svg", "build/esf.png", 1024],
+
+  // El icono del tipo de fichero en Linux. Van a «mimetypes/» y no a «apps/»,
+  // que es donde el escritorio los busca, y el paquete los instala con el nombre
+  // del tipo: application-x-esfinge.png. Si no, el .esf hereda el icono de la
+  // aplicación, que es justo lo que se vino a arreglar.
+  ...[16, 24, 32, 48, 64, 128, 256, 512].map((n) => [
+    "build/documento.svg",
+    `build/linux/mimetypes/${n}x${n}.png`,
+    n,
+  ]),
 
   ["build/icono.svg", "frontend/public/icono-256.png", 256],
   ["build/icono.svg", "frontend/public/favicon.png", 64],
