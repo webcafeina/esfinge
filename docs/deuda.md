@@ -1,6 +1,6 @@
 # Deuda y cabos sueltos
 
-Última actualización: **2026-09-07**
+Última actualización: **2026-09-08**
 
 Lo que sabemos que está a medias, mal o sin comprobar. Los bloqueantes primero. Lo saldado se tacha
 y se queda.
@@ -47,4 +47,4 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 | ~~Medir el vidrio sin romper la aplicación~~ | Alta | El diagnóstico de la 2.9.1 dejaba la aplicación cerrándose sola al arrancar. Tres cosas de ese Objective-C pueden reventar y ninguna avisa al compilar: devolver el `UTF8String` de una cadena autoliberada, que `alphaComponent` lanza excepción sobre un color de patrón, y que `valueForKey:@"drawsBackground"` puede no existir para lectura. Revertido en la 2.9.2 | **Saldada en la 2.10.0, y no midiendo sino leyendo**: el código de Wails está en el caché de módulos de esta máquina, y ahí se ve que nunca le pone material al `NSVisualEffectView`. No hacía falta instrumentar la aplicación del cliente para averiguarlo (2026-09-07) |
 
-| Adivinar en macOS sale caro y no hay banco de pruebas | Media | Tres versiones seguidas —2.5.1, 2.9.0 y 2.9.1— salieron con un cambio de macOS que no se podía probar aquí, y las tres fallaron: dos no hicieron nada visible y la tercera cerró la aplicación, dejando al cliente sin herramienta hasta la 2.9.2. El ciclo «publicar para ver qué pasa» lo sufre él, no yo | Abierto, **sin urgencia**: el vidrio acabó resolviéndose leyendo el código de Wails y no hizo falta. Queda como red para el siguiente problema de macOS que no se reproduzca aquí. La salida conocida es `wails build -devtools`, que deja el inspector en la aplicación empaquetada y convierte cada corazonada en una prueba en vivo en vez de en una versión. Anotado con su forma concreta en `siguiente.md` (Media) |
+| ~~Adivinar en macOS sale caro y no hay banco de pruebas~~ | Media | Tres versiones seguidas —2.5.1, 2.9.0 y 2.9.1— salieron con un cambio de macOS que no se podía probar aquí, y las tres fallaron: dos no hicieron nada visible y la tercera cerró la aplicación, dejando al cliente sin herramienta hasta la 2.9.2. El ciclo «publicar para ver qué pasa» lo sufre él, no yo | **Saldada (2026-09-08)**: `compilar.yml` acepta `inspector` en su disparador manual y compila con `wails build -devtools`, que deja el Web Inspector en el paquete. Cada hipótesis pasa a costar una línea en una consola en vez de una versión publicada. Marcada por tres sitios para que no se confunda con una compilación normal: nombre del artefacto, retención y sufijo en la versión |

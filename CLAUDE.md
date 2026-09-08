@@ -145,6 +145,15 @@ fichero no se puede compilar en esta máquina**: lo comprueba el trabajo de macO
 `internal/frontend/desktop/darwin/WailsContext.m` en dos minutos. Antes de razonar sobre lo que Wails
 «debería» hacer en una plataforma que no se puede ejecutar aquí, se mira lo que hace.
 
+**Cuando ni leyendo se resuelve, hay compilación con inspector.** `compilar.yml` tiene una entrada
+`inspector` en su disparador manual (`gh workflow run compilar.yml -f inspector=true`) que compila
+con `wails build -devtools`: en el paquete resultante se abre el Web Inspector y se pueden probar
+hipótesis en vivo, en el sistema de verdad, sin publicar una versión por cada una. **No es para
+publicar**, y está hecho para que no se pueda confundir: el artefacto se llama `-CON-INSPECTOR`, dura
+siete días en vez de treinta y la versión lleva sufijo —lo que además hace que la comprobación de
+actualizaciones se calle, porque no son tres números—. Existe porque adivinar costó tres versiones y
+una aplicación que no arrancaba.
+
 **Bajo vidrio, la barra lateral no lleva fondo propio.** El material del sistema *es* el fondo, como
 en cualquier barra lateral nativa. Aquí se pintó un tinte por delante y se bajó su alfa dos veces
 —0,82 y 0,55— persiguiendo un síntoma cuya causa estaba en el material; con la causa arreglada, el

@@ -1,6 +1,6 @@
 # Lo siguiente
 
-Última actualización: **2026-09-07**
+Última actualización: **2026-09-08**
 
 Por prioridad. Lo cerrado se tacha y se queda, con la fecha: saber qué se descartó vale tanto como
 saber qué se hizo.
@@ -17,20 +17,7 @@ saber qué se hizo.
 
 ## Media
 
-- **Una entrada en `compilar.yml` para pedir compilación con inspector.** Wails admite
-  `wails build -devtools`, que añade la etiqueta `devtools` y deja abrir el Web Inspector en la
-  aplicación empaquetada; en el binario que se publica no va, y así debe seguir.
-
-  **Por qué merece existir:** el vidrio de macOS estuvo roto tres versiones —2.5.1, 2.9.0 y 2.9.1— y
-  las tres salieron con un cambio que aquí no se podía probar. Dos no hicieron nada visible y la
-  tercera **cerró la aplicación al arrancar**, con el cliente sin herramienta hasta publicar la
-  2.9.2. Cada corazonada costaba una versión publicada. Con el inspector, cada corazonada cuesta una
-  línea en una consola.
-
-  Al final el vidrio se resolvió leyendo el código de Wails y no hizo falta, así que esto **no es
-  urgente**: es la red para el siguiente problema de macOS que no se reproduzca aquí. Sería una
-  entrada `workflow_dispatch` de tipo booleano que se pase al `wails build` del trabajo de macOS, y
-  conviene que el artefacto salga marcado para que no se confunda nunca con uno de publicación.
+Nada por ahora.
 
 ## Baja
 
@@ -40,6 +27,11 @@ saber qué se hizo.
 
 ## Cerrado
 
+- ~~Una entrada en `compilar.yml` para pedir compilación con inspector~~ → hecha: el disparador
+  manual acepta `inspector`, que compila con `wails build -devtools`
+  (`gh workflow run compilar.yml -f inspector=true`). El artefacto sale como `-CON-INSPECTOR`, dura
+  siete días y la versión lleva sufijo, que además calla la comprobación de actualizaciones. Probada
+  disparándola de verdad, no solo leyendo el YAML (2026-09-08).
 - ~~El vidrio de macOS, que no se veía~~ → resuelto en la 2.10.0, y no calibrando sino leyendo el
   código de Wails: nunca le pone material a su `NSVisualEffectView`, así que se quedaba con uno
   obsoleto que se dibuja plano. Comprobado en el Mac, y comparado con el Finder al lado se ve igual

@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-09-07**
+Última actualización: **2026-09-08**
 
 ## Dónde estamos
 
@@ -75,10 +75,11 @@ venían de atrás.** Lo que espera son comprobaciones sueltas del humano, ningun
 estructura en máquinas Windows y GNOME de verdad, el icono del documento `.esf` en el Finder y si
 Gatekeeper aparece al actualizarse desde dentro.
 
-De lo que se puede hacer sin nadie delante, lo único anotado es **darle a `compilar.yml` una entrada
-para pedir una compilación con `wails build -devtools`**, descrito en `siguiente.md` (Media) con su
-porqué. Ya no hace falta para el vidrio —se resolvió leyendo el código de Wails—, así que no es
-urgente: es la red para el siguiente problema de macOS que no se pueda reproducir aquí.
+De lo que se podía hacer sin nadie delante no queda nada: la **compilación con inspector** se hizo el
+8 de septiembre. `gh workflow run compilar.yml -f inspector=true` da un paquete con el Web Inspector
+abierto, en el sistema de verdad, para probar hipótesis en vivo sin publicar una versión por cada
+una. Va marcado por tres sitios —nombre del artefacto, retención y sufijo en la versión— para que no
+se confunda con una compilación normal.
 
 ## Bloqueantes
 

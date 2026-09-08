@@ -5,6 +5,30 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-08 · La red para lo que no se puede probar aquí
+
+- **`compilar.yml` acepta pedir compilación con inspector**: una entrada booleana en el disparador
+  manual que se traduce en `wails build -devtools`
+  (`gh workflow run compilar.yml -f inspector=true`). Es lo último que quedaba de la deuda que dejó
+  el vidrio: adivinar en un sistema que no se puede ejecutar aquí costó tres versiones y una
+  aplicación que no arrancaba.
+- **Marcada por tres sitios para que no se confunda con una normal**: el artefacto sale como
+  `-CON-INSPECTOR`, dura siete días en vez de treinta, y la versión lleva sufijo. Lo del sufijo no es
+  cosmético: una versión que no son tres números hace que la comprobación de actualizaciones se calle
+  —está escrito así a propósito en `internal/actualizacion`—, que es justo lo que quiere una
+  compilación de diagnóstico. Al dispararse por etiqueta `inputs` viene vacío, así que una
+  publicación no puede salir con inspector; y publicar va por `publicar.yml`, que ni tiene la entrada.
+- Leyendo el código de Wails antes de escribir: el flag `-devtools` solo añade la etiqueta del mismo
+  nombre, y en macOS imprime un aviso de que el paquete usa APIs privadas y no pasaría la App Store.
+  No publicamos ahí, pero es una razón más para que no se confunda con un paquete de publicación.
+- **Verificado disparándola de verdad**, no solo validando el YAML: una red de seguridad sin probar
+  no es una red.
+- De paso, se pusieron al día los documentos vivos: varias entradas llevaban `2026-09-08` cuando se
+  escribieron el 7 —el git lo confirma—, y `deuda.md` tenía tres apuntes que los hechos ya
+  desmentían: que la aplicación nunca se hubiera ejecutado en un escritorio, que no hubiera barra de
+  menús propia, y que la derivación por fichero siguiera pendiente cuando se aceptó y lo que se hizo
+  fue paralelizar.
+
 ## 2026-09-07 · El vidrio, resuelto leyendo el código de Wails en vez de adivinando
 
 - **2.9.2**: revertido entero el diagnóstico de la 2.9.1, que cerraba la aplicación al arrancar.
