@@ -8,11 +8,20 @@
 # Se dispara a mano o al publicar una etiqueta, no en cada empujón: los minutos
 # de macOS se cuentan diez veces más caros en repositorios privados, y compilar
 # una aplicación de escritorio en cada commit es tirarlos.
+#
+# **Y se puede pedir con inspector**, que es la red para los fallos que solo se
+# dan en un sistema que no se puede ejecutar en la máquina de desarrollo. Ver la
+# entrada «inspector» de abajo.
 
 name: Compilar
 
 on:
   workflow_dispatch:
+    inputs:
+      inspector:
+        description: "Con inspector, para diagnosticar. NO es una compilación para publicar."
+        type: boolean
+        default: false
   push:
     tags: ["v*"]
 
@@ -145,21 +154,48 @@ jobs:
           mkdir -p internal/interfaz/dist
           cp -r frontend/dist/. internal/interfaz/dist/
 
+      # El inspector se pide con «-devtools», que añade la etiqueta del mismo
+      # nombre. En macOS eso hace que Wails avise de que el paquete usa APIs
+      # privadas y no pasaría la revisión de la App Store: a nosotros nos da
+      # igual —no publicamos ahí— pero es una razón más para que un paquete así
+      # no se confunda nunca con uno de publicación.
+      #
+      # **A la versión se le pone un sufijo, y no es cosmético.** Una versión que
+      # no son tres números hace que la comprobación de actualizaciones se calle
+      # («no sé comparar», en internal/actualizacion). Es justo lo que quiere una
+      # compilación de diagnóstico: que no se ofrezca a actualizarse a sí misma
+      # en mitad del diagnóstico. Además queda a la vista en «Acerca de».
       - name: Compilar la aplicación
         shell: bash
+        env:
+          INSPECTOR: ${{ inputs.inspector }}
         run: |
           version="${GITHUB_REF_NAME#v}"
           [ "$version" = "$GITHUB_REF_NAME" ] && version="dev-${GITHUB_SHA::7}"
           etiquetas="${{ matrix.etiquetas }}"
+          inspector=""
+          if [ "$INSPECTOR" = "true" ]; then
+            inspector="-devtools"
+            version="$version-inspector"
+            echo "::warning::Compilación CON INSPECTOR ($version). Para diagnosticar, no para publicar."
+          fi
           wails build -platform ${{ matrix.plataforma }} -clean \
             ${etiquetas:+-tags "$etiquetas"} \
+            $inspector \
             -ldflags "-X main.version=$version"
 
+      # El nombre del artefacto lleva la marca, para que no haya forma de bajarse
+      # uno de diagnóstico creyendo que es normal. Y dura menos: no tiene por qué
+      # sobrevivir al problema que vino a resolver.
+      #
+      # Al dispararse por etiqueta, «inputs» viene vacío, así que una publicación
+      # nunca puede salir con inspector. Publicar va por publicar.yml, que ni
+      # siquiera tiene esta entrada.
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artefacto }}
+          name: ${{ matrix.artefacto }}${{ inputs.inspector && '-CON-INSPECTOR' || '' }}
           path: build/bin/
-          retention-days: 30
+          retention-days: ${{ inputs.inspector && 7 || 30 }}
 
   linea-de-comandos:
     name: Línea de comandos
