@@ -27,8 +27,13 @@ Plantilla al final.
   descarga Go. No hubo nada que quitar del LÉEME —ya acotaba el aviso a la primera vez—; lo que
   faltaba era decir lo contrario, que las actualizaciones no vuelven a preguntar. La deuda baja de
   Media a Baja.
-- Queda abierto, y solo depende del humano: ver el icono puesto en el Finder, y las estructuras de
-  Windows y GNOME en máquinas de verdad.
+- **Comprobado en el Mac: el Finder lo enseña**, y sin forzar la caché de LaunchServices. Pero de
+  verlo puesto salió una corrección, la **2.10.2**: la placa estaba centrada en y=636 y la hoja tiene
+  su centro en 512, así que caía 124 px baja. La había bajado a propósito, dando por hecho que macOS
+  pone el emblema en la mitad inferior de los documentos; no era cierto, y mirándolo se notaba.
+  Centrada, quedan 282 px de margen arriba y abajo.
+- Queda abierto, y solo depende del humano: las estructuras de Windows y GNOME en máquinas de verdad.
+  Es lo único.
 
 ## 2026-09-08 · La red para lo que no se puede probar aquí
 

@@ -68,18 +68,23 @@
            V66 a26 26 0 0 1 26 -26 Z"
         fill="none" stroke="#b9bcc6" stroke-width="7" opacity="0.75"/>
 
-  <!-- La placa con la marca, en la mitad de abajo, que es donde macOS pone el
-       emblema de los documentos.
+  <!-- La placa con la marca, **centrada en la hoja**.
+       La hoja va de y=40 a y=984, así que su centro está en 512 —el mismo número
+       que el horizontal, por casualidad—. Aquí primero se puso en 636, bajándola
+       a la mitad inferior porque se dio por hecho que macOS pone ahí el emblema
+       de los documentos; visto en el Finder se notaba caída y no había tal
+       convención que la justificara. Centrada y ya.
+
        **Mide algo más de la mitad del ancho de la hoja, no dos tercios.** Con la
        placa grande el papel casi no se veía y el icono volvía a parecer el de la
        aplicación, que es exactamente lo que se venía a arreglar: lo que dice
        «documento» es el papel, no el emblema. -->
-  <rect x="322" y="446" width="380" height="380" rx="82" fill="url(#piedraDoc)"/>
+  <rect x="322" y="322" width="380" height="380" rx="82" fill="url(#piedraDoc)"/>
 
   <!-- El logo de siempre, centrado en la placa. El desplazamiento vertical
        (-548) es el centro real del dibujo, que no es 512: el ojal de la llave
        lo baja. -->
-  <g transform="translate(512 636) scale(0.345) translate(-512 -548)">
+  <g transform="translate(512 512) scale(0.345) translate(-512 -548)">
     <use href="#tocadoDoc" fill="url(#oroDoc)"/>
 
     <g clip-path="url(#soloTocadoDoc)" fill="#2b2b31" opacity="0.5">

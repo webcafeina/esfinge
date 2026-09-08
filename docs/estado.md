@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.10.1**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.10.2**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, guarda un historial de qué y cuándo, y se compila sola para macOS,
 Windows y Linux en GitHub Actions.
 
@@ -71,6 +71,10 @@ visto nadie.
   versiones seguidas: se descarga, se reemplaza y se reinicia sola sin preguntar nada. Confirma lo
   que sostenía la ADR 0016: la cuarentena la pone quien descarga, y aquí descarga Go. El aviso de
   programa no identificado es cosa **solo de la primera instalación**.
+- **El icono del documento `.esf` en el Finder** (2.10.1): sale, y sin tener que forzar la caché de
+  LaunchServices. De mirarlo puesto salió la corrección de la 2.10.2: la placa estaba centrada en 636
+  y la hoja tiene su centro en 512, así que caía 124 px baja. Se había bajado a propósito, creyendo
+  que macOS pone ahí el emblema de los documentos; no era cierto.
 
 ## Siguiente acción concreta
 
@@ -93,12 +97,9 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 
 ## Preguntas abiertas para el humano
 
-**Las dos son de código publicado que nunca se ha ejecutado aquí**: en esta máquina no hay ni Mac ni
-Windows, y lo visual no se puede afirmar desde una compilación en verde.
+Queda una, y es de código publicado que nunca se ha ejecutado aquí: en esta máquina no hay ni Windows
+ni GNOME con la aplicación puesta, y lo visual no se puede afirmar desde una compilación en verde.
 
-- **¿Enseña el Finder el icono nuevo de los `.esf`?** El icono estaba desde el principio, pero **era
-  el de la aplicación**: `build/esf.png` era una copia byte a byte de `appicon.png`, así que el
-  documento y el programa se veían igual. Desde la 2.10.1 hay un documento de verdad —hoja con la
-  esquina doblada y la marca sobre una placa—, y falta verlo puesto.
 - **¿Cómo queda la estructura en Windows y en GNOME?** La de macOS está juzgada en un Mac; las otras
-  dos se escribieron a partir de las convenciones de cada sistema y nadie las ha visto corriendo.
+  dos se escribieron a partir de las convenciones de cada sistema y nadie las ha visto corriendo. Es
+  lo único que queda por mirar.
