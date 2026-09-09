@@ -171,7 +171,10 @@ export type EstadoBoveda = {
 /** Lo que se cuenta después de traer un CSV de otro gestor. */
 export type ResumenImportacion = {
   metidas: number;
-  duplicadas: number;
+  /** Ya estaban **exactamente igual**, así que no se han vuelto a meter. */
+  repetidas: number;
+  /** Ya estaban **con otra contraseña**: ésas sí entran, marcadas. */
+  conflictos: number;
   deDonde: string;
   /** El CSV del que se importó, para poder ofrecer borrarlo. */
   fichero: string;

@@ -920,12 +920,26 @@ function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
 
       {resumen && (
         <>
+          {/* Tres cuentas y no una, porque son tres cosas distintas y la persona
+              tiene que poder distinguirlas: lo que ha entrado, lo que ya estaba
+              igual —y por tanto no se ha tocado— y lo que ya estaba **con otra
+              contraseña**, que sí entra marcado porque una de las dos está mal. */}
           <p className="exito">
-            {resumen.metidas === 1 ? "Una entrada" : `${resumen.metidas} entradas`} de{" "}
-            {resumen.deDonde}
-            {resumen.duplicadas > 0 &&
-              ` · ${resumen.duplicadas} ya estaban y se han dejado como estaban`}
+            {resumen.metidas === 0
+              ? "No había nada nuevo que traer"
+              : `${resumen.metidas === 1 ? "Una entrada" : `${resumen.metidas} entradas`} de ${resumen.deDonde}`}
+            {resumen.repetidas > 0 &&
+              ` · ${resumen.repetidas} ya estaban igual y no se han vuelto a meter`}
           </p>
+          {resumen.conflictos > 0 && (
+            <p className="aviso">
+              {resumen.conflictos === 1
+                ? "Una cuenta ya estaba con otra contraseña"
+                : `${resumen.conflictos} cuentas ya estaban con otra contraseña`}
+              . Se han metido igual y marcadas como «duplicada», porque una de las dos está mal y
+              eso no lo decide un importador: búscalas por esa palabra y quédate con la buena.
+            </p>
+          )}
           {!borrado && (
             <>
               {/* Se ofrece con insistencia porque ese fichero es una lista de

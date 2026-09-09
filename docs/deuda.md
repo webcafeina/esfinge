@@ -45,6 +45,14 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~Reimportar el mismo fichero duplicaba la bóveda entera~~ → los repetidos se marcaban pero se
+  metían igual, así que pasar dos veces el `credentials.csv` dejaba 130 entradas donde había 65. Lo
+  contó el cliente después de hacerlo. Ahora una entrada idéntica no se mete, y solo entra —marcada—
+  la cuenta que ya estaba **con otra contraseña** (2026-09-09, 2.12.6).
+- ~~Una lectura de preferencias que llegaba tarde deshacía un cambio~~ → la respuesta de una lectura
+  pedida antes de un cambio llegaba después y se aplicaba encima, con lo que el cambio siguiente
+  partía de lo viejo y borraba el anterior. Cambiar dos ajustes seguidos dejaba el primero como
+  estaba (2026-09-09, 2.12.6).
 - ~~Un `<strong>` dentro de un aviso partía la frase en columnas~~ → los avisos y las notas eran
   contenedores flexibles, para colocar el glifo delante, así que cada trozo del párrafo se convertía
   en un elemento por su cuenta. Era así desde el principio y no se notó mientras todos fueron texto

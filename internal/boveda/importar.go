@@ -459,39 +459,87 @@ func separadorDe(texto string) rune {
 // Los duplicados —mismo sitio y mismo usuario— se marcan pero no se fusionan
 // solos: dos contraseñas distintas para la misma cuenta significan que una de
 // las dos está mal, y adivinar cuál no es cosa de un importador.
-func (b *Boveda) Importar(entradas []Entrada, deDonde string) (metidas, duplicadas int, err error) {
+func (b *Boveda) Importar(entradas []Entrada, deDonde string) (r Resumen, err error) {
 	if b.llave == nil {
-		return 0, 0, ErrCerrada
+		return Resumen{}, ErrCerrada
 	}
 	carpeta := fmt.Sprintf("Importado de %s · %s", deDonde, time.Now().Format("2006-01-02"))
 	ahora := time.Now().UTC().Format(time.RFC3339)
 
-	conocidas := map[string]bool{}
+	// Dos índices, y son dos preguntas distintas: «¿es esta misma entrada?» y
+	// «¿es esta misma cuenta con otra contraseña?».
+	iguales := map[string]bool{}
+	cuentas := map[string]bool{}
 	for _, e := range b.cont.Entradas {
-		conocidas[huellaDeCuenta(e)] = true
+		iguales[huellaDeContenido(e)] = true
+		cuentas[huellaDeCuenta(e)] = true
 	}
 
 	for _, e := range entradas {
+		// **Idéntica: no se mete, y esto es lo que hace que reimportar el mismo
+		// fichero no cambie nada.** Antes se metía marcada, así que pasar dos veces
+		// el CSV dejaba la bóveda con el doble de entradas y sesenta y cinco copias
+		// que había que borrar a mano. Lo contó el cliente después de hacerlo.
+		if iguales[huellaDeContenido(e)] {
+			r.Repetidas++
+			continue
+		}
 		if e.Carpeta == "" {
 			e.Carpeta = carpeta
 		}
-		if conocidas[huellaDeCuenta(e)] {
-			duplicadas++
+		// Misma cuenta y distinta contraseña **sí** entra, y marcada. Aquí sigue
+		// valiendo el argumento de siempre: dos contraseñas distintas para la misma
+		// cuenta significan que una de las dos está mal, y adivinar cuál no es cosa
+		// de un importador.
+		if cuentas[huellaDeCuenta(e)] {
+			r.Conflictos++
 			e.Etiquetas = append(e.Etiquetas, "duplicada")
 		}
+
 		id, err := azarHex()
 		if err != nil {
-			return metidas, duplicadas, err
+			return r, err
 		}
 		e.ID = id
 		e.Creada, e.Cambiada = ahora, ahora
 		b.cont.Entradas = append(b.cont.Entradas, e)
-		conocidas[huellaDeCuenta(e)] = true
-		metidas++
+		iguales[huellaDeContenido(e)] = true
+		cuentas[huellaDeCuenta(e)] = true
+		r.Metidas++
 	}
 
+	if r.Metidas == 0 {
+		return r, nil // no hay nada que guardar, y guardar de más es reescribir la bóveda
+	}
 	b.cuerpoSucio = true
-	return metidas, duplicadas, b.Guardar()
+	return r, b.Guardar()
+}
+
+// Resumen es lo que se cuenta después de importar.
+type Resumen struct {
+	// Metidas son las que han entrado.
+	Metidas int
+	// Repetidas son las que ya estaban **exactamente igual** y no se han metido.
+	Repetidas int
+	// Conflictos son las de una cuenta que ya estaba **con otra contraseña**: esas
+	// sí entran, marcadas, porque una de las dos está mal y no es el importador
+	// quien decide cuál.
+	Conflictos int
+}
+
+// huellaDeContenido dice si dos entradas son la misma cosa, no solo la misma
+// cuenta.
+//
+// Se comparan **los campos que vienen del fichero**, nunca el identificador, las
+// fechas ni la carpeta: esos los pone el importador, y con ellos dentro dos
+// pasadas del mismo CSV no se parecerían en nada.
+func huellaDeContenido(e Entrada) string {
+	return strings.Join([]string{
+		e.Titulo, e.Usuario, e.Secreto, e.Notas, e.TOTP,
+		strings.Join(e.Sitios, "\x1f"),
+		e.Titular, soloCifras(e.Numero), e.Caduca, e.Verificacion,
+		e.NombreCompleto, e.Documento, e.NumeroDocumento,
+	}, "\x00")
 }
 
 // huellaDeCuenta es lo que hace que dos entradas sean «la misma cuenta».

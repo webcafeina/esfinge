@@ -36,8 +36,13 @@ type EstadoBoveda struct {
 
 // ResumenImportacion es lo que se cuenta después de traer un CSV de otro gestor.
 type ResumenImportacion struct {
-	Metidas    int    `json:"metidas"`
-	Duplicadas int    `json:"duplicadas"`
+	Metidas int `json:"metidas"`
+	// Repetidas ya estaban exactamente igual y **no se han metido**: es lo que
+	// hace que pasar dos veces el mismo fichero no cambie nada.
+	Repetidas int `json:"repetidas"`
+	// Conflictos son cuentas que ya estaban con otra contraseña. Ésas sí entran,
+	// marcadas, porque una de las dos está mal y no lo decide un importador.
+	Conflictos int    `json:"conflictos"`
 	DeDonde    string `json:"deDonde"`
 	// Fichero es el CSV del que se importó. Se devuelve para poder ofrecer
 	// borrarlo: **es una lista de contraseñas en claro en el disco**.
@@ -256,7 +261,7 @@ func (a *App) ImportarEnBoveda(deDonde string) (ResumenImportacion, error) {
 		return ResumenImportacion{}, err
 	}
 
-	metidas, duplicadas, err := a.bov.Importar(entradas, deDonde)
+	r, err := a.bov.Importar(entradas, deDonde)
 	if err != nil {
 		return ResumenImportacion{}, err
 	}
@@ -265,7 +270,7 @@ func (a *App) ImportarEnBoveda(deDonde string) (ResumenImportacion, error) {
 	// nombres de fichero (ADR 0010), y «credenciales-dashlane.csv» sería una
 	// señal de tráfico apuntando a lo que alguien acaba de exportar en claro.
 	return ResumenImportacion{
-		Metidas: metidas, Duplicadas: duplicadas,
+		Metidas: r.Metidas, Repetidas: r.Repetidas, Conflictos: r.Conflictos,
 		DeDonde: deDonde, Fichero: rutas[0],
 	}, nil
 }

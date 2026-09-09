@@ -5,6 +5,30 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · Reimportar duplicaba la bóveda entera
+
+- **2.12.6.** El cliente pasó dos veces su `credentials.csv` y se encontró con **130 entradas donde
+  había 65**. Los repetidos se marcaban —esa parte funcionaba— pero **se metían igual**, y marcar no
+  sirve de nada cuando lo que hay que hacer es no meterlos.
+- La regla de antes venía de un argumento correcto —«dos contraseñas distintas para la misma cuenta
+  significan que una está mal, y adivinar cuál no es cosa de un importador»— aplicado donde no tocaba.
+  Ese argumento vale para una cuenta **con otra contraseña**; para una entrada idéntica no hay nada
+  que decidir. Ahora son dos preguntas distintas: si es la misma entrada no se mete, y si es la misma
+  cuenta con otro secreto entra marcada.
+- Con eso **pasar dos veces el mismo fichero no cambia nada**, que es la prueba que faltaba y que se
+  echó de menos de la peor forma posible.
+- **Y de perseguir una prueba frágil salió otro fallo de verdad**, que llevaba oculto detrás: las
+  preferencias se leen más de una vez, y **una lectura pedida antes de un cambio puede llegar
+  después**, traer lo viejo y aplicarlo encima; el cambio siguiente parte de ahí y borra el anterior.
+  Se veía como que bajar el bloqueo a cinco minutos y acto seguido el portapapeles a diez dejaba el
+  bloqueo otra vez en quince. La prueba lo enseñó cuatro veces sin que yo supiera leerlo hasta que
+  puse a imprimir las peticiones y las respuestas en orden.
+- La lección de método: **una prueba que falla una de cada cinco veces está diciendo algo**, y lo
+  barato —subirle el tiempo de espera— es lo que la calla. Aquí decía dos cosas, y las dos eran del
+  programa.
+- Verificado: `make comprobar` y **68 pruebas de interfaz**, con la tanda entera repetida **seis
+  veces seguidas** en verde.
+
 ## 2026-09-09 · Borrar la bóveda, y una negrita que partía los avisos
 
 - **2.12.5.** Se puede borrar la bóveda desde el programa, que hasta ahora exigía ir al Finder y

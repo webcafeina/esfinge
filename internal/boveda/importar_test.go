@@ -172,12 +172,12 @@ func TestIdaYVueltaDeLaImportacion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	metidas, duplicadas, err := b.Importar(es, "Dashlane")
+	r, err := b.Importar(es, "Dashlane")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if metidas != 2 || duplicadas != 0 {
-		t.Fatalf("metidas %d, duplicadas %d", metidas, duplicadas)
+	if r.Metidas != 2 || r.Repetidas != 0 || r.Conflictos != 0 {
+		t.Fatalf("%+v", r)
 	}
 
 	var salida bytes.Buffer
@@ -212,18 +212,18 @@ func TestLosDuplicadosSeMarcanPeroNoSeFusionan(t *testing.T) {
 	b, _, _ := nueva(t)
 	csv := "title,url,username,password\nBanco,https://banco.es,yo@x.com,primera\n"
 	es, _, _ := Leer([]byte(csv), nil)
-	if _, _, err := b.Importar(es, "Dashlane"); err != nil {
+	if _, err := b.Importar(es, "Dashlane"); err != nil {
 		t.Fatal(err)
 	}
 
 	csv2 := "title,url,username,password\nBanco,https://banco.es,yo@x.com,segunda\n"
 	es2, _, _ := Leer([]byte(csv2), nil)
-	metidas, duplicadas, err := b.Importar(es2, "Chrome")
+	r, err := b.Importar(es2, "Chrome")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if metidas != 1 || duplicadas != 1 {
-		t.Errorf("metidas %d, duplicadas %d", metidas, duplicadas)
+	if r.Metidas != 1 || r.Conflictos != 1 || r.Repetidas != 0 {
+		t.Errorf("%+v", r)
 	}
 	if b.Cuantas() != 2 {
 		t.Errorf("ha fusionado: quedan %d entradas", b.Cuantas())
@@ -236,7 +236,7 @@ func TestLosDuplicadosSeMarcanPeroNoSeFusionan(t *testing.T) {
 func TestImportarNoDejaRastroEnElHistorial(t *testing.T) {
 	b, _, ruta := nueva(t)
 	es, _, _ := Leer([]byte("title,password\nBanco,s3cr3t0\n"), nil)
-	if _, _, err := b.Importar(es, "Dashlane"); err != nil {
+	if _, err := b.Importar(es, "Dashlane"); err != nil {
 		t.Fatal(err)
 	}
 	// El paquete de la bóveda no conoce siquiera al del historial: la garantía es
@@ -365,12 +365,12 @@ func TestVariasTarjetasYVariasNotasNoSonDuplicadas(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	metidas, duplicadas, err := b.Importar(entradas, "Dashlane")
+	r, err := b.Importar(entradas, "Dashlane")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if metidas != 3 || duplicadas != 0 {
-		t.Errorf("metidas %d, duplicadas %d; y son tres tarjetas distintas", metidas, duplicadas)
+	if r.Metidas != 3 || r.Repetidas != 0 || r.Conflictos != 0 {
+		t.Errorf("%+v; y son tres tarjetas distintas", r)
 	}
 
 	notas := "title,note\nUna,lo que sea\nOtra,otra cosa\n"
@@ -378,11 +378,11 @@ func TestVariasTarjetasYVariasNotasNoSonDuplicadas(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, duplicadas, err = b.Importar(entradas, "Dashlane"); err != nil {
+	if r, err = b.Importar(entradas, "Dashlane"); err != nil {
 		t.Fatal(err)
 	}
-	if duplicadas != 0 {
-		t.Errorf("%d notas dadas por duplicadas, y son distintas", duplicadas)
+	if r.Repetidas != 0 || r.Conflictos != 0 {
+		t.Errorf("%+v: son dos notas distintas", r)
 	}
 
 	// Y la misma tarjeta escrita de otra forma **sí** es la misma.
@@ -392,11 +392,11 @@ func TestVariasTarjetasYVariasNotasNoSonDuplicadas(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, duplicadas, err = b.Importar(entradas, "Dashlane"); err != nil {
+	if r, err = b.Importar(entradas, "Dashlane"); err != nil {
 		t.Fatal(err)
 	}
-	if duplicadas != 1 {
-		t.Error("la misma tarjeta con espacios no se ha reconocido como la misma")
+	if r.Repetidas != 1 || r.Metidas != 0 {
+		t.Errorf("%+v: la misma tarjeta con espacios es la misma tarjeta", r)
 	}
 }
 
@@ -414,7 +414,7 @@ func TestLoExportadoVuelveAEntrarConTodo(t *testing.T) {
 			Documento: "passport", NumeroDocumento: "ABC123456"},
 		{Tipo: TipoNota, Titulo: "La caja fuerte", Notas: "la combinación es 1234"},
 	}
-	if _, _, err := b.Importar(todo, "una prueba"); err != nil {
+	if _, err := b.Importar(todo, "una prueba"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -454,5 +454,102 @@ func TestLoExportadoVuelveAEntrarConTodo(t *testing.T) {
 			tengo.NumeroDocumento != quiero.NumeroDocumento || tengo.Notas != quiero.Notas {
 			t.Errorf("«%s» ha vuelto distinta: %+v", quiero.Titulo, tengo)
 		}
+	}
+}
+
+// **Pasar el mismo fichero dos veces no puede cambiar nada.**
+//
+// Es la prueba que faltaba y la que se echó de menos de la peor forma: el cliente
+// importó su `credentials.csv`, lo volvió a importar por si acaso, y se encontró
+// con ciento treinta entradas donde había sesenta y cinco. Los repetidos se
+// marcaban —esa parte funcionaba— pero se metían igual, y marcar no sirve de nada
+// cuando lo que hay que hacer es no meterlos.
+func TestPasarElMismoFicheroDosVecesNoCambiaNada(t *testing.T) {
+	b, _, _ := nueva(t)
+
+	csv := "username,title,password,note,url,category\n" +
+		"yo@ejemplo.com,Banco,s3cr3t0,una nota,https://banco.es,Finanzas\n" +
+		"otro@ejemplo.com,Correo,otra clave,,https://correo.es,\n" +
+		"tercero@ejemplo.com,Tienda,y otra más,,https://tienda.es,Compras\n"
+
+	entradas, _, err := Leer([]byte(csv), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	primera, err := b.Importar(entradas, "Dashlane")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if primera.Metidas != 3 {
+		t.Fatalf("la primera pasada: %+v", primera)
+	}
+
+	// La segunda, con el mismo fichero recién leído otra vez, como haría una
+	// persona: mismo CSV, mismo botón.
+	entradas, _, err = Leer([]byte(csv), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	segunda, err := b.Importar(entradas, "Dashlane")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if segunda.Metidas != 0 || segunda.Repetidas != 3 || segunda.Conflictos != 0 {
+		t.Errorf("la segunda pasada: %+v", segunda)
+	}
+	if b.Cuantas() != 3 {
+		t.Errorf("quedan %d entradas donde hay tres", b.Cuantas())
+	}
+
+	// Y una tercera con **una contraseña cambiada** sí entra, marcada: eso no es
+	// una repetición, es una cuenta con dos contraseñas y una de las dos está mal.
+	cambiado := strings.Replace(csv, "s3cr3t0", "la nueva", 1)
+	entradas, _, err = Leer([]byte(cambiado), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tercera, err := b.Importar(entradas, "Dashlane")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tercera.Metidas != 1 || tercera.Conflictos != 1 || tercera.Repetidas != 2 {
+		t.Errorf("con una contraseña cambiada: %+v", tercera)
+	}
+	if b.Cuantas() != 4 {
+		t.Errorf("quedan %d entradas donde hay cuatro", b.Cuantas())
+	}
+}
+
+// Y lo mismo con las otras clases, que se identifican por otra cosa: una tarjeta
+// por su número y un documento por el suyo.
+func TestReimportarTarjetasYDocumentosTampocoDuplica(t *testing.T) {
+	b, _, _ := nueva(t)
+
+	ficheros := []string{
+		"type,account_name,account_holder,cc_number,code,expiration_month,expiration_year\n" +
+			"credit_card,La azul,Yo Mismo,4111111111111111,111,01,2030\n",
+		"type,number,name,issue_date,expiration_date,place_of_issue\n" +
+			"passport,ABC123456,Yo Mismo,2020-01-01,2030-01-01,Madrid\n",
+		"title,note\nLa caja fuerte,la combinación es 1234\n",
+	}
+
+	for vuelta := 1; vuelta <= 2; vuelta++ {
+		for _, csv := range ficheros {
+			entradas, _, err := Leer([]byte(csv), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r, err := b.Importar(entradas, "Dashlane")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if vuelta == 2 && (r.Metidas != 0 || r.Repetidas != 1) {
+				t.Errorf("segunda vuelta de un fichero: %+v", r)
+			}
+		}
+	}
+	if b.Cuantas() != 3 {
+		t.Errorf("quedan %d entradas donde hay tres", b.Cuantas())
 	}
 }

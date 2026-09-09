@@ -716,21 +716,39 @@ function Ajustes({
   // la bóveda eso no puede quedarse así.
   const ultimasPrefs = useRef<Preferencias | null>(null);
 
-  useEffect(() => {
+  // Cuántos cambios se han hecho aquí dentro. **Es lo que impide que una lectura
+  // que llega tarde deshaga uno de ellos.**
+  //
+  // Las preferencias se leen más de una vez —al montar el panel, y otra vez
+  // después de buscar actualizaciones— y una respuesta pedida antes de un cambio
+  // puede llegar después: trae lo que había, se aplica encima, y **el cambio
+  // siguiente parte de ahí y borra el anterior sin que nada lo diga**. Pasó
+  // exactamente así: bajar el bloqueo a cinco minutos y acto seguido el
+  // portapapeles a diez dejaba el bloqueo otra vez en quince.
+  const cambiosHechos = useRef(0);
+
+  const leerPreferencias = useCallback(() => {
+    const cuandoSePidio = cambiosHechos.current;
     esfinge
       .verPreferencias()
       .then((p) => {
+        if (cambiosHechos.current !== cuandoSePidio) return; // lo leído ya es viejo
         ultimasPrefs.current = p;
         setPrefs(p);
       })
       .catch(() => {});
-    esfinge.vidrio().then(setVidrio).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    leerPreferencias();
+    esfinge.vidrio().then(setVidrio).catch(() => {});
+  }, [leerPreferencias]);
 
   async function cambiar(cambio: Partial<Preferencias>) {
     const base = ultimasPrefs.current ?? prefs;
     if (!base) return;
     const siguiente = { ...base, ...cambio };
+    cambiosHechos.current++;
     ultimasPrefs.current = siguiente;
     setPrefs(siguiente);
     try {
@@ -752,19 +770,22 @@ function Ajustes({
       } else {
         setDicho("Ya tienes la última versión.");
       }
-      esfinge
-        .verPreferencias()
-        .then((p) => {
-          ultimasPrefs.current = p;
-          setPrefs(p);
-        })
-        .catch(() => {});
+      leerPreferencias();
     } catch (e) {
       setError(mensaje(e));
     } finally {
       setBuscando(false);
     }
   }
+
+  // **Mientras no hayan llegado, los controles no se pueden tocar.**
+  //
+  // Se dibujan con su valor de siempre —la casilla marcada, quince minutos— para
+  // que la pantalla no dé un salto al cargar, y eso está bien; lo que no vale es
+  // dejar que se pulsen, porque `cambiar` no tiene de dónde partir y **el clic no
+  // hace nada, en silencio**: la casilla vuelve sola a como estaba. Dura lo que
+  // tarda una llamada al proceso de al lado, pero una prueba lo pilló.
+  const cargando = prefs === null;
 
   return (
     <div className="panel">
@@ -789,6 +810,7 @@ function Ajustes({
           <input
             type="checkbox"
             checked={prefs?.buscarActualizaciones ?? true}
+            disabled={cargando}
             onChange={(e) => cambiar({ buscarActualizaciones: e.target.checked })}
           />
           <span>Avisarme cuando haya una versión nueva</span>
@@ -831,6 +853,7 @@ function Ajustes({
           <label htmlFor="bloqueo">Cerrar la bóveda sola</label>
           <select
             id="bloqueo"
+            disabled={cargando}
             value={prefs?.minutosParaBloquear ?? 15}
             onChange={(e) => cambiar({ minutosParaBloquear: Number(e.target.value) })}
           >
@@ -850,6 +873,7 @@ function Ajustes({
           <label htmlFor="portapapeles">Borrar del portapapeles lo que se copie</label>
           <select
             id="portapapeles"
+            disabled={cargando}
             value={prefs?.segundosDePortapapeles ?? 30}
             onChange={(e) => cambiar({ segundosDePortapapeles: Number(e.target.value) })}
           >

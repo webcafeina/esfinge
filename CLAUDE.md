@@ -289,6 +289,18 @@ en vertical, partida en pedazos. No se notó mientras todos los avisos fueron te
 mirando una captura, no en una prueba en verde. Lo que se quería es una sangría francesa
 —`padding-left` más `text-indent` negativo—, y hay una prueba de interfaz que lo vigila.
 
+**Una respuesta que llega tarde puede deshacer lo que ya se decidió.** Las preferencias se leen más
+de una vez —al montar Ajustes y otra vez al terminar de buscar actualizaciones— y una lectura pedida
+**antes** de un cambio puede llegar **después**: trae lo de antes, se aplica encima, y el cambio
+siguiente parte de ahí y borra el anterior sin que nada lo diga. Se veía como que bajar el bloqueo a
+cinco minutos y acto seguido el portapapeles a diez dejaba el bloqueo otra vez en quince. Se resuelve
+contando los cambios locales (`cambiosHechos`) y **descartando la lectura si ha habido alguno desde
+que se pidió**. Vale para cualquier pantalla que lea y escriba lo mismo.
+
+Y el corolario: **mientras las preferencias no hayan llegado, sus controles van desactivados**. Se
+dibujan con su valor de siempre para que la pantalla no dé un salto, pero dejarlos pulsables hace que
+el clic no haga nada en silencio, porque `cambiar` no tiene de dónde partir.
+
 **En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de
 `.contenido`. Sin acotar, Playwright encuentra dos y falla por modo estricto.
