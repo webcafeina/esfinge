@@ -5,6 +5,19 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · La banda sale sola
+
+- **Confirmado en el Mac: la banda de versión nueva aparece con la ventana abierta**, sin reiniciar y
+  sin tocar nada. Es la prueba buena del reloj de la 2.10.4, y la que no se podía hacer aquí: una
+  comprobación que ocurre una vez al día no se observa en una compilación en verde.
+- Con eso se cierra un frente que llevaba abierto desde la 2.1.0 **sin que nadie lo supiera**: la
+  ficha decía «comprueba una vez al día» y lo implementado era «comprueba al arrancar». La ADR 0014
+  ya lleva su corrección y ahora también su verificación.
+- De paso, dos frases de `CLAUDE.md` que se habían quedado atrás: seguían dando por no comprobado el
+  icono del `.esf` en el Finder, visto el día anterior.
+- **Queda una sola cosa en todo el proyecto**, y solo la puede hacer el humano: abrir la aplicación en
+  Windows y en GNOME de verdad, y mirar ahí la estructura de cada sistema y el icono de los `.esf`.
+
 ## 2026-09-08 · El aviso de versión nueva no llegaba nunca
 
 - **2.10.4, y salió de una confusión de nombres.** El cliente llevaba toda la sesión diciendo que «no

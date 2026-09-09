@@ -305,9 +305,9 @@ navegador—. El aviso de programa no identificado es cosa solo de la primera in
 Y **el icono del documento `.esf`**, que el Finder enseña sin necesidad de forzar la caché de
 LaunchServices. De verlo puesto salió su corrección: la marca caía baja en la hoja.
 
-Sin verificar todavía, y las dos cosas dependen del cliente:
+Y **la banda de versión nueva sale sola**, con la ventana abierta y sin tocar nada: la prueba buena
+del reloj de la 2.10.4, porque hasta entonces solo se comprobaba al arrancar.
 
-- **Que la banda de versión nueva salga sola.** Es lo que arregla la 2.10.4 —hasta entonces solo se
-  comprobaba al arrancar— y no se puede dar por bueno hasta que se publique una versión más.
-- **Cómo quedan las estructuras de Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono
-  de los `.esf`, que en Windows lo pone el instalador y en Linux el `.deb`.
+Sin verificar todavía, y es lo único que queda en todo el proyecto: **cómo quedan las estructuras de
+Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono de los `.esf`, que en Windows lo
+pone el instalador y en Linux el `.deb`.

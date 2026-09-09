@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-09-08**
+Última actualización: **2026-09-09**
 
 ## Dónde estamos
 
@@ -75,6 +75,9 @@ visto nadie.
   LaunchServices. De mirarlo puesto salió la corrección de la 2.10.2: la placa estaba centrada en 636
   y la hoja tiene su centro en 512, así que caía 124 px baja. Se había bajado a propósito, creyendo
   que macOS pone ahí el emblema de los documentos; no era cierto.
+- **La banda de versión nueva sale sola** (2026-09-09), con la ventana abierta y sin tocar nada. Es
+  la prueba buena de la 2.10.4: antes la comprobación ocurría **solo al arrancar** y esa banda no
+  había aparecido nunca, aunque la portada llevara desde la 2.1.0 prometiendo «una vez al día».
 - Y de preguntar si ese icono valía para los otros dos sistemas salió la 2.10.3: en **Windows** sí,
   del mismo PNG y sin tocar nada, pero en **Linux** no llegaba y seguía saliendo el de la aplicación.
   El `.deb` instala ahora `application-x-esfinge.png` en `hicolor/<tamaño>/mimetypes/`, verificado
@@ -86,9 +89,8 @@ visto nadie.
 están cerrados —el vidrio en la 2.10.0; el icono del documento y Gatekeeper entre la 2.10.1 y la
 2.10.3; el aviso de versión nueva en la 2.10.4—, y `siguiente.md` no tiene nada en Media.
 
-Quedan **dos comprobaciones del humano**, ninguna bloqueante, y están abajo: que la banda de versión
-nueva salga sola —lo dirá la primera versión que se publique a partir de ahora— y abrir la aplicación
-en Windows y en GNOME de verdad.
+Queda **una sola comprobación del humano**, no bloqueante, y está abajo: abrir la aplicación en
+Windows y en GNOME de verdad.
 
 Para lo que venga: la **compilación con inspector** ya existe.
 `gh workflow run compilar.yml -f inspector=true` da un paquete con el Web Inspector abierto, en el
@@ -102,15 +104,9 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 
 ## Preguntas abiertas para el humano
 
-Quedan dos, y las dos son de código publicado que no se puede ejercitar aquí: en esta máquina no hay
-Windows ni GNOME con la aplicación puesta, y una comprobación que solo ocurre una vez al día no se
-observa en una compilación en verde.
+Queda una, y es de código publicado que no se puede ejercitar aquí: en esta máquina no hay Windows ni
+GNOME con la aplicación puesta, y lo visual no se afirma desde una compilación en verde.
 
-- **¿Sale sola la banda de versión nueva?** Es lo que arregla la 2.10.4, y **no se puede dar por
-  bueno hasta que salga la siguiente versión**: hasta ahora la comprobación solo ocurría al arrancar
-  y el cliente no la había visto nunca. La prueba es dejar Esfinge abierta y que aparezca sin tocar
-  nada. Ojo al plazo: el reloj se asoma cada hora pero la puerta sigue siendo de 24 h **desde la
-  última comprobación**, así que tras actualizar a mano toca esperar a mañana.
 - **¿Cómo queda la aplicación en Windows y en GNOME?** La de macOS está juzgada en un Mac; las otras
   dos se escribieron a partir de las convenciones de cada sistema y nadie las ha visto corriendo. Hay
   dos cosas que mirar de una vez: **la estructura** —el panel de Fluent con su barra de acento, la

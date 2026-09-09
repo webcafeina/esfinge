@@ -1,18 +1,12 @@
 # Lo siguiente
 
-Última actualización: **2026-09-08**
+Última actualización: **2026-09-09**
 
 Por prioridad. Lo cerrado se tacha y se queda, con la fecha: saber qué se descartó vale tanto como
 saber qué se hizo.
 
 ## Alta
 
-- **Ver que la banda de versión nueva sale sola**, con la primera versión que se publique a partir de
-  la 2.10.4. Es lo que arregla esa versión, y hasta entonces no se puede dar por bueno: la
-  comprobación ocurría solo al arrancar y el cliente no había visto la banda nunca. La prueba es
-  dejar Esfinge abierta. El plazo importa: el reloj se asoma cada hora pero la puerta es de 24 h
-  **desde la última comprobación**, así que después de actualizar a mano hay que esperar al día
-  siguiente.
 - **Abrir la aplicación en máquinas Windows y GNOME de verdad**, y mirar ahí dos cosas: la estructura
   de cada sistema y el icono de los `.esf` en el explorador de ficheros. En Windows el icono lo pone
   el instalador, en Linux el `.deb`; los dos están comprobados por dentro pero no puestos.
@@ -31,6 +25,10 @@ Nada por ahora.
 
 ## Cerrado
 
+- ~~Ver que la banda de versión nueva sale sola~~ → **sale**, con la ventana abierta y sin tocar nada
+  (2026-09-09). Es la prueba buena del reloj de la 2.10.4: hasta entonces solo se comprobaba al
+  arrancar y esa banda no había aparecido nunca, con la portada prometiendo «una vez al día» desde la
+  2.1.0.
 - ~~Que el humano vea si salta el aviso de Gatekeeper al actualizarse desde dentro~~ → **no salta**.
   La cuarentena la pone quien descarga, y ahí descarga Go y no un navegador; el guion además la quita
   explícitamente. El aviso es cosa solo de la primera instalación, y el LÉEME del DMG lo dice ahora

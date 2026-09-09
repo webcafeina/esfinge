@@ -87,6 +87,16 @@ toca a ese sistema comprobando su SHA256, y **abre el instalador**. No se sustit
 - En la línea de comandos se comprueba que, con la salida de error redirigida —que es el caso de un
   script—, **no se arranca ninguna consulta**.
 
-**Lo que no se ha comprobado:** la instalación de verdad desde la propia aplicación, en ninguno de
-los tres sistemas. Queda por ver si al descargar el DMG desde Go —y no desde un navegador— la copia
-instalada se libra del aviso de Gatekeeper, porque la cuarentena la pone quien descarga.
+- Del reloj de la 2.10.4, tres pruebas más con `-race`: que avisa **sin reiniciar la ventana**, que el
+  techo de una petición al día se mantiene aunque el reloj se asome cada hora, y que el reloj se para
+  al cerrarse la ventana.
+
+**Comprobado en un Mac (2026-09-09): la banda sale sola.** Con Esfinge abierta y sin tocar nada, que
+es justo lo que no ocurría hasta la 2.10.4 y lo que esta ficha llevaba prometiendo desde la 2.1.0.
+
+**Comprobado también (2026-09-08): la instalación de verdad desde la propia aplicación en macOS**,
+usada varias versiones seguidas, y que **Gatekeeper no aparece**: la cuarentena la pone quien
+descarga, y aquí descarga Go. Ver la ADR 0016, que es donde vive el reemplazo.
+
+**Lo que sigue sin comprobarse:** ese mismo camino en Windows. Y en Linux no aplica, porque ahí se le
+pasa al gestor de paquetes.
