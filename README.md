@@ -64,8 +64,11 @@ enseña una sola vez, al crearla, para apuntarla en papel
 cifrado, ni nada de lo que haya en la bóveda.
 
 **Se actualiza sola**, o casi: avisa cuando hay versión nueva, se descarga el instalador de tu
-sistema comprobando que llegó entero, y lo abre. No hay que desinstalar nada. Es lo único que Esfinge
-hace fuera de tu ordenador —una consulta al día a GitHub, sin mandar nada— y se apaga en Ajustes
+sistema comprobando que llegó entero, y lo abre. No hay que desinstalar nada.
+
+Esas son las **dos únicas cosas** que Esfinge hace fuera de tu ordenador: una consulta al día a
+GitHub, y el icono de cada sitio de tu bóveda pedido al propio sitio, nunca a un intermediario. Las
+dos se apagan en Ajustes, y `ESFINGE_SIN_RED=1` las apaga todas
 ([qué se envía, exactamente](docs/seguridad.md#lo-único-que-sale-de-la-máquina)).
 
 Y trae **línea de comandos** para lo mismo, pensada para tuberías y scripts:

@@ -108,6 +108,13 @@ export type Preferencias = {
    */
   minutosParaBloquear: number;
   segundosDePortapapeles: number;
+  /**
+   * Trae el icono de cada sitio de la bóveda, pidiéndoselo al propio sitio.
+   * **Es la segunda salida a la red del programa.**
+   */
+  descargarIconos: boolean;
+  /** Si ya se dijo lo que eso hace. El aviso se da una vez. */
+  iconosAvisados: boolean;
 };
 
 /** Lo que se manda para apagar uno de los dos relojes de la bóveda. */
@@ -336,6 +343,16 @@ export const esfinge = {
    */
   borrarBoveda: (maestra: string) => llamar<void>("BorrarBoveda", maestra),
 
+  /**
+   * Los iconos de los sitios, por anfitrión.
+   *
+   * **Van por su propio método y no dentro de la lista de entradas**: la lista se
+   * vuelve a pedir en cada tecla del buscador, y meterlos ahí sería mandarlos
+   * todos por el puente en cada pulsación.
+   */
+  iconosDeBoveda: () =>
+    llamar<Record<string, string> | null>("IconosDeBoveda").then((m) => m ?? {}),
+
   importarEnBoveda: (deDonde: string) =>
     llamar<ResumenImportacion>("ImportarEnBoveda", deDonde),
 
@@ -391,6 +408,11 @@ export function alDescargar(cb: (a: Avance) => void): () => void {
  */
 export function alBloquearseLaBoveda(cb: () => void): () => void {
   return escuchar("boveda-bloqueada", cb);
+}
+
+/** alHaberIconos avisa de que la tanda de fondo ha traído alguno nuevo. */
+export function alHaberIconos(cb: () => void): () => void {
+  return escuchar("iconos", cb);
 }
 
 /**

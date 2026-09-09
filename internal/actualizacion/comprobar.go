@@ -1,7 +1,9 @@
 // Package actualizacion mira si hay una versión más nueva publicada, se la trae
 // y se la entrega al sistema para que la instale.
 //
-// Es la única parte de Esfinge que sale a la red, y lo hace de una forma: una
+// Es una de las dos partes de Esfinge que salen a la red —la otra es
+// internal/iconos, desde la 2.14.0— y la única que habla con un destino fijo. Lo
+// hace de una forma, y lo hace de una forma: una
 // petición GET a la API de GitHub que no lleva nada más que la versión instalada
 // en el «User-Agent». Ni identificadores, ni contadores, ni nada de lo que se
 // cifra. Está contado en docs/adr/0014-comprobacion-de-actualizaciones.md.

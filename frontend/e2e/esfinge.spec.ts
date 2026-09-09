@@ -186,7 +186,11 @@ test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page 
 
   // El aviso no puede confundirse con los avisos del propio trabajo, que llevan
   // la clase «aviso» y hablan de lo que se está cifrando.
-  await expect(page.locator(".aviso:visible")).toHaveCount(0);
+  //
+  // Acotado a la banda: desde la 2.14.0, Ajustes tiene su propio aviso —el de que
+  // los iconos salen a la red— y es legítimo que esté ahí. Lo que esta prueba
+  // vigila es que **la banda de versión** no sea uno de ésos.
+  await expect(banda.locator(".aviso")).toHaveCount(0);
 
   await banda.getByRole("button", { name: "Ahora no" }).click();
   await expect(banda).toHaveCount(0);
@@ -1143,16 +1147,18 @@ test("la lista sale ordenada por nombre, y el orden se puede cambiar", async ({ 
 
   expect(await enPantalla()).toEqual([`Áaa ${sello}`, `Mmm ${sello}`, `Yyy ${sello}`]);
 
-  // Por lo último cambiado. **Las tres se han creado en el mismo segundo**, y la
-  // fecha se guarda con esa precisión, así que empatan: lo que las separa es el
-  // desempate por nombre. Se toca una y tiene que subir sola.
+  // Por lo último cambiado: lo que se acaba de tocar sube arriba.
+  //
+  // **No se afirma en qué orden quedan las otras dos**, y es a propósito: la fecha
+  // se guarda con precisión de segundo, así que según lo rápida que vaya la
+  // máquina las tres caen en el mismo segundo —y manda el desempate por nombre— o
+  // en segundos distintos —y manda la fecha—. Afirmar una de las dos cosas es
+  // escribir una prueba que falla una de cada cinco veces por el reloj.
   await page.locator("#boveda-orden").selectOption("cambiada");
-  expect(await enPantalla()).toEqual([`Áaa ${sello}`, `Mmm ${sello}`, `Yyy ${sello}`]);
 
-  // **Un segundo de espera, y hace falta**: la fecha se guarda con precisión de
-  // segundo, así que tocar una entrada dentro del mismo segundo en que se creó no
-  // la mueve. Para una persona eso da igual —«lo último que toqué» se mide en
-  // días—; para una prueba que hace tres cosas en 200 ms, no.
+  // **Un segundo de espera, y hace falta**: tocar una entrada dentro del mismo
+  // segundo en que se creó no la mueve. Para una persona eso da igual —«lo último
+  // que toqué» se mide en días—; para una prueba que hace tres cosas en 200 ms, no.
   await page.waitForTimeout(1100);
   await page.locator(".lista-boveda").getByRole("button", { name: `Yyy ${sello}` }).click();
   await accion(page, "Editar").click();
@@ -1161,7 +1167,7 @@ test("la lista sale ordenada por nombre, y el orden se puede cambiar", async ({ 
   // Guardar vuelve a la lista y **la vuelve a pedir**: hay que esperar a que esté
   // otra vez, o se lee la pantalla a medio dibujar.
   await expect(nombres.filter({ hasText: String(sello) })).toHaveCount(3);
-  expect(await enPantalla()).toEqual([`Yyy ${sello}`, `Áaa ${sello}`, `Mmm ${sello}`]);
+  expect((await enPantalla())[0]).toBe(`Yyy ${sello}`);
 
   await page.locator("#boveda-orden").selectOption("nombre");
   expect(await enPantalla()).toEqual([`Áaa ${sello}`, `Mmm ${sello}`, `Yyy ${sello}`]);

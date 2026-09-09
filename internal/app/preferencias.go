@@ -45,6 +45,23 @@ type Preferencias struct {
 	// lo he dicho, deja lo que había», el descuido es inofensivo. Ver fundir.
 	MinutosParaBloquear    int `json:"minutosParaBloquear"`
 	SegundosDePortapapeles int `json:"segundosDePortapapeles"`
+
+	// DescargarIconos trae el icono de cada sitio de la bóveda, pidiéndoselo al
+	// propio sitio. **Es la segunda salida a la red del programa.**
+	//
+	// Va encendida, decidido con el cliente y sabiendo lo que cuesta: quien mire
+	// la red ve a qué sitios se pregunta —el nombre viaja en claro en el DNS y en
+	// el saludo TLS— así que la lista de sitios de la bóveda deja de ser privada
+	// frente a quien observe la conexión. Por eso se avisa la primera vez y se
+	// puede apagar aquí mismo, como se hizo con la comprobación de versiones.
+	//
+	// Es un `bool` y no un número con la regla del cero de más arriba porque aquí
+	// un guardado a medias solo deja la lista sin dibujos: molesto y visible, no
+	// silencioso y peligroso como lo sería apagar el bloqueo de la bóveda.
+	DescargarIconos bool `json:"descargarIconos"`
+	// IconosAvisados marca que ya se dijo lo que esto hace. El aviso se da una vez,
+	// no en cada arranque.
+	IconosAvisados bool `json:"iconosAvisados"`
 }
 
 // Nunca es lo que se manda para apagar uno de los dos relojes.
@@ -109,6 +126,7 @@ func AbrirAjustes() *Ajustes {
 			BuscarActualizaciones:  true,
 			MinutosParaBloquear:    minutosBloqueoPorDefecto,
 			SegundosDePortapapeles: segundosPortapapelesPorDefecto,
+			DescargarIconos:        true,
 		},
 	}
 	if a.ruta == "" {

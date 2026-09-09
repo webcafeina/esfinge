@@ -478,6 +478,8 @@ func separadorDe(texto string) rune {
 // solos: dos contraseñas distintas para la misma cuenta significan que una de
 // las dos está mal, y adivinar cuál no es cosa de un importador.
 func (b *Boveda) Importar(entradas []Entrada, deDonde string) (r Resumen, err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	if b.llave == nil {
 		return Resumen{}, ErrCerrada
 	}
@@ -530,7 +532,7 @@ func (b *Boveda) Importar(entradas []Entrada, deDonde string) (r Resumen, err er
 		return r, nil // no hay nada que guardar, y guardar de más es reescribir la bóveda
 	}
 	b.cuerpoSucio = true
-	return r, b.Guardar()
+	return r, b.guardar()
 }
 
 // Resumen es lo que se cuenta después de importar.
@@ -606,6 +608,8 @@ func soloCifras(s string) string {
 // es lo que permite probar esto sin apostar nada. Quien llame a esto tiene que
 // haber avisado antes, en grande: lo que sale por aquí no está cifrado.
 func (b *Boveda) Exportar(w io.Writer) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	if b.llave == nil {
 		return ErrCerrada
 	}

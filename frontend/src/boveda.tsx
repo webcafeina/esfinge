@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   alBloquearseLaBoveda,
   alCambiarElPortapapeles,
+  alHaberIconos,
   esfinge,
   type EntradaBoveda,
   type EstadoBoveda,
   type ResumenImportacion,
   type TipoEntrada,
 } from "./puente";
-import { CampoClave, Icono, Monograma, Segmentado } from "./componentes";
+import { CampoClave, dominioDe, Icono, Monograma, Segmentado } from "./componentes";
 
 /**
  * La bóveda, asomada a la ventana.
@@ -365,6 +366,7 @@ function Dentro({
   const [tipo, setTipo] = useState<Filtro>("todo");
   const [orden, setOrden] = useState<Orden>("nombre");
   const [lista, setLista] = useState<EntradaBoveda[]>([]);
+  const [iconos, setIconos] = useState<Record<string, string>>({});
   const [mirando, setMirando] = useState<EntradaBoveda | null>(null);
   const [editando, setEditando] = useState<EntradaBoveda | null>(null);
   const [error, setError] = useState("");
@@ -376,6 +378,17 @@ function Dentro({
       setError(mensaje(e));
     }
   }, []);
+
+  // Los iconos se piden **una vez** al entrar y cuando la tanda de fondo avisa de
+  // que hay alguno nuevo. Nunca con la lista: ésa se vuelve a pedir en cada tecla.
+  const traerIconos = useCallback(() => {
+    esfinge.iconosDeBoveda().then(setIconos).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    traerIconos();
+    return alHaberIconos(traerIconos);
+  }, [traerIconos]);
 
   // La búsqueda cruza el puente, así que se espera a que se deje de teclear. No
   // es por coste: es que cada pulsación devolvería una lista y las respuestas
@@ -504,7 +517,11 @@ function Dentro({
           {visibles.map((e) => (
             <li key={e.id}>
               <button onClick={() => ver(e.id)}>
-                <Monograma sitio={e.sitios?.[0]} titulo={e.titulo || "Sin título"} />
+                <Monograma
+                  sitio={e.sitios?.[0]}
+                  titulo={e.titulo || "Sin título"}
+                  icono={iconoDe(e, iconos)}
+                />
                 <span className="nombre">{e.titulo || "Sin título"}</span>
                 <span className="nota">{deQuien(e)}</span>
                 {/* La clase solo en «Todo»: dentro de «Tarjetas» todas son
@@ -544,6 +561,30 @@ const NOMBRE_TIPO: Record<TipoEntrada, string> = {
   tarjeta: "Tarjeta",
   identidad: "Identidad",
 };
+
+/**
+ * iconoDe busca el icono que le toca a una entrada.
+ *
+ * Por anfitrión y no por entrada: dos cuentas del mismo sitio comparten icono, y
+ * guardarlo dos veces sería guardar dos veces lo mismo.
+ */
+function iconoDe(e: EntradaBoveda, iconos: Record<string, string>): string | undefined {
+  for (const sitio of e.sitios ?? []) {
+    const icono = iconos[dominioDe(sitio)] ?? iconos[anfitrionCrudo(sitio)];
+    if (icono) return icono;
+  }
+  return undefined;
+}
+
+/** El anfitrión tal cual, con «www.» incluido: Go lo guarda así. */
+function anfitrionCrudo(sitio: string): string {
+  try {
+    const limpio = sitio.trim().toLowerCase();
+    return new URL(limpio.includes("://") ? limpio : `https://${limpio}`).hostname;
+  } catch {
+    return "";
+  }
+}
 
 /** Lo que va debajo del título en la lista: de quién es esta entrada. */
 function deQuien(e: EntradaBoveda): string {

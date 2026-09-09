@@ -8,6 +8,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/webcafeina/esfinge/internal/actualizacion"
+	"github.com/webcafeina/esfinge/internal/red"
 	"github.com/webcafeina/esfinge/internal/app"
 	"github.com/webcafeina/esfinge/internal/salida"
 )
@@ -41,7 +42,12 @@ type vigilante struct {
 func vigilar(version string) *vigilante {
 	// ESFINGE_SIN_RED la apaga entera, para quien no quiera ni la posibilidad.
 	// Es lo que se pone en una imagen de contenedor o en un servidor de compilación.
-	if os.Getenv("ESFINGE_SIN_RED") != "" {
+	//
+	// Va por internal/red y no por un os.Getenv aquí: **antes esto era lo único que
+	// la miraba**, así que quien la ponía creyendo que apagaba la red apagaba la
+	// mitad —la ventana no la consultaba nunca—. Con dos salidas a la red eso deja
+	// de ser un descuido pequeño.
+	if red.SinRed() {
 		return nil
 	}
 	if !term.IsTerminal(int(os.Stderr.Fd())) {

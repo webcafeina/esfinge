@@ -125,6 +125,7 @@ func (a *App) AbrirBoveda(llave string) error {
 	}
 	a.bov = b
 	a.Actividad()
+	a.buscarIconosSiProcede(a.ctx)
 	return nil
 }
 
@@ -233,6 +234,9 @@ func (a *App) BorrarBoveda(maestra string) error {
 	// El resto es limpieza: que falte alguno no invalida el borrado, que ya está
 	// hecho, y devolver un error aquí haría creer que no se ha borrado nada.
 	_ = os.Remove(ruta + ".anterior")
+	// Y la caché de iconos, que es la lista de sitios: dejarla detrás sería dejar
+	// escrito en el disco qué había dentro de la bóveda que se acaba de borrar.
+	_ = os.Remove(boveda.RutaDeIconos(ruta))
 	escritura.LimpiarHuerfanos(filepath.Dir(ruta), 0)
 	return nil
 }
@@ -273,6 +277,7 @@ func (a *App) ImportarEnBoveda(deDonde string) (ResumenImportacion, error) {
 		return ResumenImportacion{}, err
 	}
 	a.Actividad()
+	a.buscarIconosSiProcede(a.ctx)
 	// **Nada de esto pasa por el historial**, y es una regla absoluta: ahí van
 	// nombres de fichero (ADR 0010), y «credenciales-dashlane.csv» sería una
 	// señal de tráfico apuntando a lo que alguien acaba de exportar en claro.

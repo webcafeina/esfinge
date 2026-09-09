@@ -249,7 +249,27 @@ export function Icono({ nombre }: { nombre: string }) {
  * en texto, y quien lea la pantalla en voz alta no necesita oír una letra suelta
  * antes de cada fila.
  */
-export function Monograma({ sitio, titulo }: { sitio?: string; titulo: string }) {
+export function Monograma({
+  sitio,
+  titulo,
+  icono,
+}: {
+  sitio?: string;
+  titulo: string;
+  /** El icono del sitio, si se ha podido traer. Va como URI de datos. */
+  icono?: string;
+}) {
+  // **El icono se pinta con una URI de datos y nunca con la dirección del sitio.**
+  // Un `<img src="https://…">` haría que el propio webview saliera a internet, sin
+  // pasar por el filtro de direcciones privadas ni por los topes de tamaño, y con
+  // las cabeceras que le diera la gana. Los bytes los trae Go, ya comprobados.
+  if (icono) {
+    return <img className="monograma" src={icono} alt="" aria-hidden="true" />;
+  }
+  return <MonogramaDeLetra sitio={sitio} titulo={titulo} />;
+}
+
+function MonogramaDeLetra({ sitio, titulo }: { sitio?: string; titulo: string }) {
   // **La letra sale del nombre y el color del sitio**, y son dos cosas a
   // propósito. El color identifica el sitio y tiene que ser estable: dos entradas
   // del mismo banco salen del mismo color aunque se llamen distinto. La letra, en

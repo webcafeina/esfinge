@@ -79,6 +79,9 @@ un fallo perdía un fichero; ahora puede perderlas todas. Lo que hay que tener c
   la misma limitación de siempre —Go no permite borrar una cadena— pero aquí la ventana es mucho más
   larga. Se acorta con el bloqueo por inactividad, que va a quince minutos por defecto, y
   mandando a la ventana **una contraseña cada vez**, solo cuando se pide, en vez de la lista entera.
+- **Los iconos van cifrados aunque un icono sea público.** Lo que hay que ocultar no es el dibujo: es
+  **la lista de sitios**. Una carpeta con `banco.es.png` y `hacienda.es.png` diría qué hay dentro de
+  la bóveda, y hashear los nombres no salvaría nada.
 - **El fichero de la bóveda es JSON en claro por fuera.** Lo cifrado son los campos. Quien pueda
   escribirlo no puede leer nada ni fabricar una bóveda que abra, pero sí puede estropearla o
   revertirla a una copia vieja. **Se detecta al abrir** —hay un sello por dentro que no cuadraría—
@@ -90,6 +93,7 @@ un fallo perdía un fichero; ahora puede perderlas todas. Lo que hay que tener c
 |---|---|---|
 | Historial | Carpeta de configuración del usuario, `Esfinge/historial.json` | `600` |
 | **La bóveda** | La misma carpeta, `Esfinge/boveda.esfinge`, más `.anterior` con la copia previa | `600` |
+| Los iconos de los sitios | `Esfinge/boveda.esfinge.iconos`, **cifrado con la clave de la bóveda** | `600` |
 | Preferencias | La misma carpeta, `Esfinge/preferencias.json` | `600` |
 | La actualización descargada | Carpeta de caché del usuario, `Esfinge/descargas/` | `600` |
 | Ficheros cifrados | Junto al original, con `.esf` al final | `600` |
@@ -97,20 +101,38 @@ un fallo perdía un fichero; ahora puede perderlas todas. Lo que hay que tener c
 
 ## Lo único que sale de la máquina
 
-Desde la 2.1.0 Esfinge hace **una** conexión, y conviene saber exactamente cuál
-([ADR 0014](adr/0014-comprobacion-de-actualizaciones.md)):
+Desde la 2.14.0 son **dos**, y conviene saber exactamente cuáles.
 
-**Una petición `GET` a `api.github.com`, una vez al día**, para preguntar cuál es la última versión
-publicada. Eso es todo. En ella viaja el número de versión instalada, dentro del `User-Agent`, que es
-lo que se compara; y GitHub ve la dirección IP, como cualquier página que se visite.
+**1 · Una petición `GET` a `api.github.com`, una vez al día**, para preguntar cuál es la última
+versión publicada ([ADR 0014](adr/0014-comprobacion-de-actualizaciones.md)). En ella viaja el número
+de versión instalada, dentro del `User-Agent`, que es lo que se compara; y GitHub ve la dirección IP,
+como cualquier página que se visite.
+
+**2 · El icono de cada sitio de la bóveda, pedido al propio sitio**
+([ADR 0024](adr/0024-iconos-de-los-sitios.md)). Se piden poco a poco, espaciados y en orden
+aleatorio, unos pocos por sesión. **Nunca a un intermediario**: un servicio de iconos recibiría la
+lista completa de sitios donde tienes cuenta.
+
+Y aquí hay que decir algo que no es evidente: **ir directo no oculta esa lista, la reparte**. El
+nombre del sitio viaja en claro en la consulta de DNS y en el saludo TLS, antes de que empiece el
+cifrado, así que **quien pueda mirar tu red ve a qué sitios se pregunta**. Lo que se gana yendo
+directo es no meter a una empresa de por medio, que es otra cosa. Al sitio no se le dice quién
+pregunta: la petición no lleva el nombre ni la versión de Esfinge.
+
+Viene **encendido**, se avisa la primera vez y se apaga en Ajustes. Sin él, cada entrada sale con un
+cuadro de color y su inicial, que no sale de esta máquina.
 
 **No hay telemetría, ni informes de fallos, ni identificadores.** Nada de lo que se cifra, ni los
 nombres de los ficheros, ni cuántas veces se usa el programa, ni nada que permita distinguir una
 instalación de otra.
 
-Se apaga en **Ajustes**, donde está dicho con estas mismas palabras. En la línea de comandos, con
-`ESFINGE_SIN_RED=1`; y ahí, además, no se pregunta nunca si la salida de error no es un terminal, que
-es el caso de cualquier script.
+Las dos se apagan en **Ajustes**, donde está dicho con estas mismas palabras.
+
+**Y `ESFINGE_SIN_RED=1` las apaga todas, sin excepción.** Hasta la 2.14.0 esa variable solo la miraba
+la línea de comandos —la ventana no la consultaba nunca—, así que quien la ponía creyendo que apagaba
+la red apagaba la mitad. Ahora vive en un sitio y la consultan las dos salidas, con una prueba por
+cada una. En la línea de comandos, además, no se pregunta nunca si la salida de error no es un
+terminal, que es el caso de cualquier script.
 
 Si se descarga una actualización, se comprueba su SHA256 contra el publicado. **Eso protege de una
 descarga rota, no de una publicación manipulada**: el resumen sale del mismo sitio que el fichero. Lo

@@ -72,6 +72,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/webcafeina/esfinge/internal/cripto"
@@ -167,6 +168,16 @@ const avisoDelFichero = "Bóveda de Esfinge. Las contraseñas van cifradas; " +
 // `docs/seguridad.md`. Lo que sí se hace es no mandar secretos a la ventana
 // hasta que se piden.
 type Boveda struct {
+	// mu guarda todo lo de abajo.
+	//
+	// **No estaba, y hacía falta desde antes de que se notara.** Ya había dos
+	// gorrutinas tocando esto: la que atiende a la ventana y el tic del bloqueo por
+	// inactividad, que llama a `Cerrar()` —y `Cerrar` pone `llave` a nil y vacía el
+	// contenido justo mientras `Guardar` puede estar serializándolo—. Era una
+	// ventana estrecha que nadie había pillado; con la descarga de iconos
+	// trabajando de fondo se vuelve ancha y reproducible.
+	mu sync.Mutex
+
 	ruta  string
 	doc   documento
 	sel   sello
@@ -437,6 +448,14 @@ func (b *Boveda) ranura(tipo string) int {
 // `PerfilLlave`, no con el coste de una contraseña humana— así que el límite no
 // es la CPU sino no llamar aquí en cada tecla.
 func (b *Boveda) Guardar() error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.guardar()
+}
+
+// guardar es lo mismo con el cerrojo ya cogido, para los métodos de aquí que
+// terminan guardando sin soltarlo.
+func (b *Boveda) guardar() error {
 	if b.llave == nil {
 		return ErrCerrada
 	}
@@ -539,6 +558,8 @@ func (b *Boveda) comprobarSerieEnDisco() error {
 // que exista la jerarquía de claves, y hay un test que lo comprueba comparando
 // el cuerpo antes y después.
 func (b *Boveda) CambiarMaestra(nueva string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	if b.llave == nil {
 		return ErrCerrada
 	}
@@ -554,12 +575,14 @@ func (b *Boveda) CambiarMaestra(nueva string) error {
 	} else {
 		b.doc.Sobres = append(b.doc.Sobres, s)
 	}
-	return b.Guardar()
+	return b.guardar()
 }
 
 // RotarRecuperacion genera una clave de recuperación nueva y deja la anterior
 // inservible. Exige la bóveda abierta, que es lo que la hace segura.
 func (b *Boveda) RotarRecuperacion() (string, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	if b.llave == nil {
 		return "", ErrCerrada
 	}
@@ -576,24 +599,32 @@ func (b *Boveda) RotarRecuperacion() (string, error) {
 	} else {
 		b.doc.Sobres = append(b.doc.Sobres, s)
 	}
-	return nueva, b.Guardar()
+	return nueva, b.guardar()
 }
 
 // Cerrar borra de memoria lo que se pueda.
 func (b *Boveda) Cerrar() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	cripto.Borrar(b.llave)
 	b.llave = nil
 	b.cont = contenido{}
 }
 
 // Abierta dice si se puede trabajar.
-func (b *Boveda) Abierta() bool { return b.llave != nil }
+func (b *Boveda) Abierta() bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.llave != nil
+}
 
 // SoloLectura dice si la bóveda viene de un formato que no entendemos del todo.
 func (b *Boveda) SoloLectura() bool { return b.soloLectura }
 
 // Buscar devuelve las entradas que encajan, **sin secretos**.
 func (b *Boveda) Buscar(q string) []Entrada {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	var out []Entrada
 	for _, e := range b.cont.Entradas {
 		if e.Papelera || !e.Coincide(q) {
@@ -607,6 +638,8 @@ func (b *Boveda) Buscar(q string) []Entrada {
 // Ver devuelve una entrada entera, con sus secretos. Se pide de una en una a
 // propósito: ver §SinSecretos.
 func (b *Boveda) Ver(id string) (Entrada, bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	for _, e := range b.cont.Entradas {
 		if e.ID == id {
 			return e, true
@@ -617,6 +650,8 @@ func (b *Boveda) Ver(id string) (Entrada, bool) {
 
 // Poner añade o sustituye una entrada y guarda.
 func (b *Boveda) Poner(e Entrada) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	if b.llave == nil {
 		return ErrCerrada
 	}
@@ -641,17 +676,19 @@ func (b *Boveda) Poner(e Entrada) error {
 			}
 			b.cont.Entradas[i] = e
 			b.cuerpoSucio = true
-			return b.Guardar()
+			return b.guardar()
 		}
 	}
 	b.cont.Entradas = append(b.cont.Entradas, e)
 	b.cuerpoSucio = true
-	return b.Guardar()
+	return b.guardar()
 }
 
 // Borrar manda una entrada a la papelera. El borrado es suave a propósito: sin
 // él, «borrada aquí» y «nunca existió allí» son indistinguibles al sincronizar.
 func (b *Boveda) Borrar(id string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	if b.llave == nil {
 		return ErrCerrada
 	}
@@ -665,7 +702,7 @@ func (b *Boveda) Borrar(id string) error {
 			b.cont.Entradas[i].TOTP = ""
 			b.cont.Entradas[i].Historial = nil
 			b.cuerpoSucio = true
-			return b.Guardar()
+			return b.guardar()
 		}
 	}
 	return nil
@@ -673,6 +710,8 @@ func (b *Boveda) Borrar(id string) error {
 
 // Cuantas devuelve el número de entradas vivas.
 func (b *Boveda) Cuantas() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	n := 0
 	for _, e := range b.cont.Entradas {
 		if !e.Papelera {

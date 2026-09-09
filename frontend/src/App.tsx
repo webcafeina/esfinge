@@ -838,6 +838,40 @@ function Ajustes({
         {error && <p className="error">{error}</p>}
       </div>
 
+      {/* **El aviso de los iconos, una vez.**
+       *
+       * Es la segunda cosa que Esfinge hace fuera de este ordenador y viene
+       * encendida, así que quien actualice empezará a preguntar por sus sitios sin
+       * haber pedido nada. La costumbre de esta casa para eso está escrita desde la
+       * ADR 0014: si se hace, se dice, y se deja apagar. Aquí se dice una vez, con
+       * el «no, gracias» al lado y con el dato incómodo delante —que el nombre del
+       * sitio viaja en claro aunque el icono venga cifrado—. */}
+      {prefs && prefs.descargarIconos && !prefs.iconosAvisados && (
+        <div className="grupo peligro">
+          <label>Esfinge va a pedir el icono de cada sitio de tu bóveda</label>
+          <p className="aviso">
+            Se lo pide <strong>a cada sitio directamente</strong>, nunca a un intermediario. Aun
+            así, quien pueda mirar tu red verá <strong>a qué sitios pregunta</strong>: el nombre
+            viaja en claro antes de que empiece el cifrado.
+          </p>
+          <p className="nota">
+            Va poco a poco y espaciado, no de golpe. Los iconos se guardan cifrados, junto a la
+            bóveda.
+          </p>
+          <div className="botones">
+            <button
+              className="principal"
+              onClick={() => cambiar({ iconosAvisados: true })}
+            >
+              De acuerdo
+            </button>
+            <button onClick={() => cambiar({ descargarIconos: false, iconosAvisados: true })}>
+              No, gracias
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Los dos relojes de la bóveda.
        *
        * Van aquí y no dentro de la bóveda porque son ajustes de la aplicación y
@@ -868,6 +902,23 @@ function Ajustes({
             abierta hasta que se cierre a mano o se cierre la aplicación.
           </p>
         </div>
+
+        <label className="fila-ajuste">
+          <input
+            type="checkbox"
+            checked={prefs?.descargarIconos ?? true}
+            disabled={cargando}
+            onChange={(e) => cambiar({ descargarIconos: e.target.checked, iconosAvisados: true })}
+          />
+          <span>Descargar el icono de cada sitio de la bóveda</span>
+        </label>
+
+        <p className="nota">
+          Es la segunda cosa que Esfinge hace fuera de tu ordenador. Le pide el icono a cada sitio
+          de tu bóveda, directamente y nunca a un intermediario, y lo guarda cifrado junto a ella.
+          Quien pueda mirar tu red verá a qué sitios pregunta. Sin esto, cada entrada sale con un
+          cuadro de color y su inicial.
+        </p>
 
         <div>
           <label htmlFor="portapapeles">Borrar del portapapeles lo que se copie</label>

@@ -52,6 +52,10 @@ var loQuePuedeCruzarElPuente = []string{
 	"BuscarEnBoveda", "VerDeBoveda", "GuardarEnBoveda", "BorrarDeBoveda",
 	"CambiarMaestraDeBoveda", "RotarRecuperacionDeBoveda", "BorrarBoveda",
 	"ImportarEnBoveda", "ExportarBoveda", "BorrarElCSVImportado",
+	// Los iconos van por su propio método y no dentro de la lista de entradas: la
+	// lista se vuelve a pedir en cada tecla del buscador, y meterlos ahí sería
+	// mandarlos todos por el puente en cada pulsación.
+	"IconosDeBoveda",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

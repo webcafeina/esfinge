@@ -2,11 +2,13 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/webcafeina/esfinge/internal/actualizacion"
+	"github.com/webcafeina/esfinge/internal/red"
 )
 
 // cadaCuanto se mira si hay versión nueva. Una vez al día: enterarse de una
@@ -97,6 +99,12 @@ func (a *App) vigilar(ctx context.Context, cada time.Duration) {
 // minúscula porque no es algo que la ventana deba poder pedir: todo método
 // exportado de *App cruza el puente.
 func (a *App) mirarSiToca() {
+	// **El freno de red va antes que nada**, incluso antes de reservar el turno:
+	// con ESFINGE_SIN_RED puesto no se sale, y da igual lo que digan los ajustes.
+	// Hasta la 2.14.0 esta variable solo la miraba la línea de comandos.
+	if red.SinRed() {
+		return
+	}
 	// Reservar y no solo preguntar: ver ReservarComprobacion. Preguntando, dos
 	// vueltas del reloj pueden colarse las dos mientras la primera está en la red.
 	if !a.ajustes.ReservarComprobacion(cadaCuanto) {
@@ -125,6 +133,9 @@ func (a *App) mirarSiToca() {
 // ComprobarActualizacion mira ahora mismo, lo diga la fecha o no. Es el botón
 // «Buscar ahora» de Ajustes.
 func (a *App) ComprobarActualizacion() (Novedad, error) {
+	if red.SinRed() {
+		return Novedad{}, errors.New("Esta copia de Esfinge tiene la red apagada con ESFINGE_SIN_RED")
+	}
 	n, err := a.act.comprobador.Mirar()
 	if err != nil {
 		return Novedad{}, fmt.Errorf("No se ha podido preguntar a GitHub: %w", err)

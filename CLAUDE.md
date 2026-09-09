@@ -147,6 +147,23 @@ descuido **apagaría el bloqueo de la bóveda y el borrado del portapapeles en s
 «nunca» viaja como `-1` (`app.Nunca`) y el cero conserva lo que hubiera. Vale para cualquier campo
 numérico que se añada.
 
+**Y desde la 2.14.0 son dos salidas a la red, no una** (ADR 0024): la de versiones y **el icono de
+cada sitio de la bóveda, pedido al propio sitio**. Tres cosas que hay que tener presentes al tocar
+eso:
+
+- **El destino lo elige el mundo exterior**, no nosotros: sale de un CSV que alguien importó. Por eso
+  `internal/iconos` filtra las direcciones privadas **en el momento de conectar** y no mirando el
+  nombre —cualquier dominio público resuelve a lo que quiera—, limita los saltos de redirección y
+  prohíbe bajar a `http://`, que si no el filtro se esquiva con un `Location:`.
+- **Ir directo no oculta la lista de sitios, la reparte**: el nombre viaja en claro en el DNS y en el
+  saludo TLS. Lo que se gana es no meter un tercero de confianza. Está dicho así en la ventana, en
+  `docs/seguridad.md` y en la ADR, y no se debe escribir de otra forma.
+- **El goteo no llama a `Actividad()`.** Si lo hiciera, la bóveda no se cerraría nunca mientras baja
+  iconos y el bloqueo por inactividad dejaría de significar lo que dice.
+
+**Y `ESFINGE_SIN_RED` es ahora un freno de verdad** (`internal/red`). Antes lo miraba solo la línea de
+comandos y la ventana no lo consultaba nunca, así que quien lo ponía apagaba media red.
+
 **Ahora hay red en el binario del cliente.** Hasta la 2.0.3 no la había: el único `net/http` estaba
 tras la etiqueta `dev`. Es una petición GET al día a `api.github.com`, y está documentada en
 `docs/seguridad.md` porque la portada prometía lo contrario. Cualquier conexión nueva pasa por ahí

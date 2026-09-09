@@ -5,6 +5,41 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · Los iconos de los sitios, y la segunda conexión
+
+- **2.14.0**, segunda mitad de lo que pidió el cliente. Ahora cada entrada enseña el icono real del
+  sitio, pedido **al propio sitio** y nunca a un intermediario, con el ajuste **encendido**, decidido
+  por el cliente (ADR 0024).
+- **Se le corrigió un dato antes de decidir, y era importante.** Al plantear las opciones se dijo que
+  ir directo hacía que «el que se entera es el sitio». Eso se queda corto: el nombre viaja en claro
+  en la consulta de DNS y en el saludo TLS, así que **quien mire la red ve la lista entera igual**.
+  Lo que se gana yendo directo es no meter un tercero de confianza, que es una razón distinta. Está
+  escrito así en la ventana, en `docs/seguridad.md` y en la ADR.
+- Como viene encendido, **la ventana lo dice una vez** antes de que ocurra, con el «No, gracias» al
+  lado. Es la costumbre de la ADR 0014: si se hace, se dice, y se deja apagar.
+- **El grueso del trabajo no es bajar un PNG: es no fiarse de él.** El destino lo elige un CSV que
+  alguien importó, así que hay filtro de direcciones privadas **en el momento de conectar** —el
+  nombre no vale, cualquier dominio resuelve a lo que quiera—, tope de saltos, prohibición de bajar a
+  texto claro, tope de bytes, la cabecera mirada **antes** de decodificar —un PNG de 30 KB puede
+  declarar 30.000×30.000, que son 3,6 GB— y re-codificado propio, para que lo que se guarde no sean
+  bytes de un tercero.
+- **Los iconos van en un fichero satélite cifrado, no dentro de la bóveda.** Dentro habrían
+  multiplicado por diez un fichero que se lee, se copia y se reescribe entero al confirmar **cada
+  edición de una contraseña**, y habrían viajado por el puente en **cada tecla del buscador**. Y en
+  claro no podían ir: la lista de dominios es justo lo que la bóveda oculta.
+- **Dos cosas que estaban mal desde antes y que esto obligó a arreglar:** `ESFINGE_SIN_RED` solo la
+  miraba la línea de comandos —la ventana no la consultaba nunca, así que quien la ponía apagaba
+  media red— y **la bóveda no tenía cerrojo**, con dos gorrutinas ya tocándola. Las dos eran ventanas
+  estrechas que nadie había pillado y que el trabajo de fondo volvía anchas.
+- Y una que se decidió a conciencia: **al sitio no se le dice quién pregunta**. A GitHub se le manda
+  «Esfinge/versión» porque es lo que se compara; a un sitio cualquiera sería contarle que quien
+  pregunta usa este gestor, en esta versión, con los fallos que esa versión tenga.
+- Verificado: `make comprobar`, todo el paquete de la bóveda con `-race`, **74 pruebas de interfaz** y
+  quince nuevas en Go, entre ellas las ocho del descargador. `/favicon.ico` **no** está en la lista de
+  rutas: la biblioteca estándar de Go no sabe decodificar ICO.
+- **Lo que no se ha comprobado:** nada de esto se ha ejecutado contra sitios de verdad. Cuántos de los
+  sesenta y cinco dan icono con solo tres rutas conocidas lo dirá el uso.
+
 ## 2026-09-09 · Cada entrada con su cuadro, y la lista ordenada
 
 - **2.13.0**, primera mitad de lo que pidió el cliente: que cada entrada se reconozca sin leerla.
