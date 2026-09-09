@@ -5,6 +5,37 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · La identidad entra en la ventana
+
+- **2.11.0.** La aplicación no tenía una sola marca en ningún píxel, y ahora la tiene: lockup de
+  Esfinge en la barra lateral, firma `▍ webcafeína` al fondo, la esfinge tenue en el historial vacío
+  y la ficha de producto en Ajustes. **El acento pasa a ser el oro del tocado** en vez del azul del
+  sistema (ADR 0021, que matiza la 0007).
+- **Se midió antes de dibujar, y la medida decidió el diseño.** Blanco sobre el oro da 1,68:1 y no
+  tiene arreglo: oscurecer el oro hasta que el blanco cumpla lo deja en un marrón. Piedra sobre oro
+  da 8,38:1. De ahí la regla —**el oro rellena, la piedra escribe**— que resultó ser la gramática del
+  propio icono: tocado dorado sobre placa oscura. La identidad no se le puso encima, se le sacó.
+- **Un hallazgo que casi se cuela, y es el que más vale de la sesión.** `--relleno` servía para dos
+  cosas que el azul cumplía y el oro no: rellenar superficies y dibujar líneas finas. El oro como
+  línea sobre fondo claro da 1,37-1,68:1 y es invisible. **`make contraste` habría pasado en verde
+  con el foco de los campos roto**, porque mide parejas de tokens y no sitios. Cuatro reglas pasaron
+  a `--acento` y hay una prueba de interfaz que lo vigila.
+- Un daño colateral que se vio mirando la captura, no razonando: **«Generar una» dejó de parecer un
+  botón** al perder el azul. Lleva subrayado, que devuelve la señal sin gastar color.
+- **La marca es una pieza nueva, no una copia**: `build/marca.svg`, la esfinge a trazo y en
+  `currentColor`. Se probó maciza y era un borrón —en monocromo el rostro y el tocado se funden— y se
+  probó con `evenodd` y salía una herradura. A trazo se lee, y rima con los iconos de la barra
+  lateral. El grosor salió de mirarla a 18, 20, 24, 48 y 96 px.
+- Verificado: `make contraste` con ocho parejas nuevas, dos tests de Go reescritos —uno afirma ahora
+  que el blanco sobre el oro **no** llega, que es el supuesto que sostiene todo—, y **50 pruebas de
+  interfaz** en los dos temas, seis de ellas nuevas. Capturas de la portada regeneradas.
+- Dos fallos míos en las pruebas nuevas, los dos por leer demasiado pronto: `.focus()` no dispara
+  `:focus-visible`, y el borde va con transición, así que hubo que medirlo con `poll`. Y el historial
+  se carga al entrar, o sea que preguntar en el acto si «Vaciar» está activo es la trampa que este
+  fichero ya había pisado dos veces.
+- **Queda por juzgar con el ojo**: la pastilla dorada de la fila activa, que es lo más visible, y si
+  el ámbar de los avisos se estorba con el oro. Medido no es visto.
+
 ## 2026-09-09 · La banda sale sola
 
 - **Confirmado en el Mac: la banda de versión nueva aparece con la ventana abierta**, sin reiniciar y

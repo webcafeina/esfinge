@@ -83,6 +83,22 @@ func parejasDe(t Tema) []pareja {
 		{t.Acento, t.Lienzo, AAGrande, "barra de marca ▍ y medidores"},
 		{t.Filete, t.Lienzo, 1.2, "filete de separación sobre el lienzo"},
 		{t.FileteFuerte, t.Lienzo, 1.5, "separador de sección, más presente que el filete"},
+
+		// La marca en la ventana (ADR 0021).
+		//
+		// **Estas parejas no se miden por gusto: son los sitios donde el oro no
+		// vale.** Un indicador fino sobre fondo claro necesita 3:1 y el oro da
+		// 1,37-1,68:1, así que lo pintan el acento —la piedra— y no el relleno. Si
+		// alguien devuelve alguno de estos sitios a «--relleno», la interfaz seguirá
+		// compilando y el foco será invisible en tema claro.
+		{t.SobreAcento, t.Relleno, AANormal, "la fila activa de la barra lateral"},
+		{t.Tinta, t.Barra, AANormal, "el nombre «Esfinge» del lockup"},
+		{t.Acento, t.Barra, AAGrande, "el glifo ▍ de la firma de webcafeína"},
+		{t.Apagado, t.Barra, AANormal, "el wordmark «webcafeína» de la firma"},
+		{t.Acento, t.Elevada, AAGrande, "el relleno de la barra de progreso"},
+		{t.Acento, t.Elevada, AAGrande, "la barra de acento de la fila activa en Windows"},
+		{t.Acento, t.Suave, AAGrande, "el borde de la zona de soltar al arrastrar encima"},
+		{t.Filete, t.Lienzo, 1.2, "la esfinge tenue del historial vacío"},
 	}
 }
 
@@ -103,19 +119,43 @@ func TestContrasteDeLosDosTemas(t *testing.T) {
 	}
 }
 
-// El azul de botón del sistema no cumple AA con texto blanco encima: hay que
-// oscurecerlo. Si alguien «corrige» el relleno poniendo el azul original, esto
-// salta.
-func TestElRellenoDeAccionSeLee(t *testing.T) {
+// Sobre el oro escribe la piedra, y esto es lo que impide deshacerlo.
+//
+// El instinto de cualquiera que toque esto es poner texto blanco sobre el botón
+// de acción, porque es lo que hacen todos los botones de acción del mundo y es lo
+// que hacía éste hasta la 2.11.0. Sobre el oro, el blanco da **1,68:1**.
+func TestSobreElOroEscribeLaPiedra(t *testing.T) {
 	for _, tm := range []Tema{TemaClaro, TemaOscuro} {
 		if r := Contraste(tm.SobreAcento, tm.Relleno); r < AANormal {
 			t.Errorf("tema %s: el texto del botón de acción da %.2f:1", tm.Nombre, r)
 		}
 	}
 
-	// Y el supuesto de partida: los azules del sistema, tal cual, no llegan.
-	if r := Contraste(MustParseHex("#ffffff"), azulClaro); r >= AANormal {
-		t.Errorf("el supuesto ha cambiado: blanco sobre #007aff da %.2f:1", r)
+	// El supuesto que sostiene la decisión: el blanco sobre el oro **no llega**.
+	// Si algún día llegara sería porque alguien ha cambiado el oro, y entonces
+	// habría que volver a mirar de qué color se escribe encima.
+	if r := Contraste(blanco, oroMarca); r >= AANormal {
+		t.Errorf("el supuesto ha cambiado: blanco sobre el oro da %.2f:1", r)
+	}
+
+	// Y el porqué de haber movido la tinta en vez del fondo: ajustar el oro hasta
+	// que admita blanco lo deja en un marrón que ya no es la marca.
+	if ajustado := RellenoLegible(oroMarca, blanco, AANormal); ajustado == oroMarca {
+		t.Error("RellenoLegible no ha tenido que tocar el oro para el blanco; el supuesto ha cambiado")
+	} else if r := Contraste(oroMarca, ajustado); r < 1.5 {
+		t.Errorf("oscurecer el oro para el blanco lo dejó en %s, que apenas se distingue del oro; se esperaba que se alejara", ajustado.Hex())
+	}
+}
+
+// El azul del sistema ya no es el acento (ADR 0021), pero su problema sigue
+// siendo el porqué de RellenoLegible. Se queda medido para que la función no
+// parezca un adorno el día que alguien se pregunte para qué existe.
+func TestElAzulDelSistemaSeguiriaSinCumplir(t *testing.T) {
+	if r := Contraste(blanco, azulClaro); r >= AANormal {
+		t.Errorf("blanco sobre #007aff da %.2f:1: si ahora cumple, RellenoLegible sobra", r)
+	}
+	if r := Contraste(blanco, RellenoLegible(azulClaro, blanco, AANormal)); r < AANormal {
+		t.Errorf("RellenoLegible ya no arregla el azul del sistema: %.2f:1", r)
 	}
 }
 
@@ -126,6 +166,13 @@ func TestRellenoLegible(t *testing.T) {
 		if r := Contraste(blanco, fondo); r < AANormal {
 			t.Errorf("sobre %s ajustado a %s, el blanco da %.2f:1", base, fondo.Hex(), r)
 		}
+	}
+
+	// El caso que de verdad se usa hoy: el oro con la piedra encima ya cumple, así
+	// que la función tiene que devolverlo **sin tocar**. Si empezara a oscurecerlo,
+	// el acento se iría apagando sin que nadie lo pidiera.
+	if got := RellenoLegible(oroMarca, piedra, AANormal); got != oroMarca {
+		t.Errorf("el oro con la piedra encima ya cumple y aun así se ajustó a %s", got.Hex())
 	}
 }
 

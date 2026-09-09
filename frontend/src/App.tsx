@@ -25,6 +25,7 @@ import {
   BandaNovedad,
   BarraLateral,
   CampoClave,
+  Marca,
   nombreDe,
   PanelResultado,
   Progreso,
@@ -731,7 +732,26 @@ function Ajustes({
 
   return (
     <div className="panel">
-      <p className="entradilla">Tienes instalada la versión {version}.</p>
+      {/* La ficha de producto. Aquí es donde la ADR 0007 prometía que estaría la
+          marca —«en el icono y en Acerca de»— y donde el menú «Acerca de
+          Esfinge» lleva desde siempre, porque no hay diálogo aparte: la orden
+          navega a esta pantalla. Hasta la 2.11.0 lo que había era una línea con
+          el número de versión, así que la promesa estaba a medias.
+
+          Sustituye a la entradilla, que decía lo mismo con menos. */}
+      <div className="ficha">
+        <Marca lado={44} />
+        <div>
+          <h2>Esfinge</h2>
+          <p className="nota">Versión {version}</p>
+          <p className="firma">
+            <span className="barra" aria-hidden="true">
+              ▍
+            </span>
+            webcafeína
+          </p>
+        </div>
+      </div>
 
       <div className="grupo">
         <label className="fila-ajuste">
@@ -811,7 +831,17 @@ function Historial({ recargar: aLaVista }: { recargar: boolean }) {
       </p>
 
       {entradas.length === 0 ? (
-        <p className="nota">Todavía no has hecho nada.</p>
+        // El único sitio de la aplicación donde la marca se permite ser grande,
+        // y solo porque aquí no hay nada que estorbar (ADR 0021). En cuanto haya
+        // una entrada, desaparece.
+        //
+        // Se tiñe con «--filete», que es un color que ya existe y que ya está
+        // medido contra el lienzo en los dos temas. Con «opacity» habría que
+        // inventar dos valores, uno por tema, y ninguno tendría prueba.
+        <div className="vacio">
+          <Marca lado={112} />
+          <p className="nota">Todavía no has hecho nada.</p>
+        </div>
       ) : (
         <ul className="historial">
           {entradas.map((e, i) => (

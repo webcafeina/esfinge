@@ -1,6 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { esfinge, type Avance, type Fuerza, type Novedad } from "./puente";
 
+// La marca se importa **en crudo desde build/**, donde vive el resto del dibujo
+// de la casa, y no se copia a frontend/: una segunda copia del logotipo es
+// exactamente lo que este proyecto ya ha pagado caro tres veces —el icono del
+// volumen y el del documento salieron los dos de duplicar sin querer—.
+//
+// Va en línea y no como <img> porque así hereda «currentColor», que es lo que
+// permite que la misma pieza sea la tinta en el lockup y el filete en el vacío
+// del historial. Ver build/marca.svg, que explica cómo está dibujada.
+import marcaSVG from "../../build/marca.svg?raw";
+
+/**
+ * Marca dibuja la esfinge, monocroma y del color que herede.
+ *
+ * El tamaño se pasa en píxeles; el grosor del trazo lo puede ajustar el CSS de
+ * cada sitio, porque en el SVG es un atributo y no está clavado.
+ */
+export function Marca({ lado, clase }: { lado: number; clase?: string }) {
+  return (
+    <span
+      className={clase ? `marca-esfinge ${clase}` : "marca-esfinge"}
+      style={{ width: lado, height: lado }}
+      dangerouslySetInnerHTML={{ __html: marcaSVG }}
+    />
+  );
+}
+
 /**
  * BarraLateral es la navegación de la ventana, a la izquierda.
  *
@@ -10,6 +36,18 @@ import { esfinge, type Avance, type Fuerza, type Novedad } from "./puente";
  *
  * Arriba queda un hueco vacío a propósito: es el de los semáforos. Como la
  * ventana no tiene barra de título, los botones del sistema caen ahí encima.
+ *
+ * **Y aquí vive la marca** (ADR 0021): el lockup de Esfinge debajo de ese hueco
+ * y la firma de la casa al fondo. Ninguna de las dos es interactiva, y eso no es
+ * pereza sino dos decisiones:
+ *
+ * - `.lateral` es zona de arrastre de la ventana. Un enlace ahí obligaría a
+ *   marcarlo `no-drag` y dejaría una tira muerta justo donde la gente agarra la
+ *   ventana. El enlace a la casa va en la ficha de Ajustes, que no tiene ese
+ *   problema.
+ * - Las pruebas localizan las secciones con «.lateral + getByRole("button")».
+ *   Un botón o un enlace de más aquí rompería ese localizador en todo el fichero
+ *   de pruebas, y hay una prueba que cuenta que siguen siendo cinco.
  */
 export function BarraLateral<T extends string>({
   valor,
@@ -33,6 +71,11 @@ export function BarraLateral<T extends string>({
     <aside className="lateral">
       <div className="semaforos" />
 
+      <div className="marca">
+        <Marca lado={20} />
+        <span>Esfinge</span>
+      </div>
+
       <nav aria-label="Secciones">
         {fila("cifrar", "Cifrar")}
         {fila("descifrar", "Descifrar")}
@@ -43,7 +86,37 @@ export function BarraLateral<T extends string>({
       <nav className="abajo" aria-label="Configuración">
         {fila("ajustes", "Ajustes")}
       </nav>
+
+      <Firma />
     </aside>
+  );
+}
+
+/**
+ * Firma es la marca de la casa: «▍ webcafeína».
+ *
+ * Es la misma que sale en el pie del LÉEME del DMG, en el README y en la línea
+ * de comandos, donde está definida en Go (`internal/salida`: `GlifoBarra` y
+ * `Wordmark`). Se repite aquí en vez de pedírsela a Go porque es un rótulo, no
+ * un dato: cruzar el puente para traer dos cadenas constantes sería un viaje
+ * para nada.
+ *
+ * **Va en minúscula, y eso contradice a la ADR 0005** —«todas las frases
+ * empiezan en mayúscula»—. No es un descuido: no es una frase, es un logotipo, y
+ * la casa se escribe así en todas partes. Si alguna vez el test de textos llega
+ * hasta aquí, ésta es la excepción y éste es el porqué.
+ *
+ * El glifo va aparte y marcado como decorativo para que quien lea la pantalla en
+ * voz alta diga «webcafeína» y no el nombre del carácter de bloque.
+ */
+function Firma() {
+  return (
+    <p className="firma">
+      <span className="barra" aria-hidden="true">
+        ▍
+      </span>
+      webcafeína
+    </p>
   );
 }
 

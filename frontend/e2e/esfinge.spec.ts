@@ -569,3 +569,139 @@ test("el historial se refresca al volver a entrar, no solo la primera vez", asyn
 
   expect(errores, errores.join(' | ')).toEqual([]);
 });
+
+// ------------------------------------------------------------ la marca (0021)
+
+test("la marca está en la barra lateral y no estorba a la navegación", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // Arriba, el producto.
+  const marca = page.locator(".lateral .marca");
+  await expect(marca).toContainText("Esfinge");
+  await expect(marca.locator("svg")).toBeVisible();
+
+  // Abajo, la casa.
+  await expect(page.locator(".lateral .firma")).toContainText("webcafeína");
+
+  // **Y siguen siendo cinco botones.** Todo el fichero de pruebas localiza las
+  // secciones con «.lateral + getByRole("button")»: si el lockup o la firma
+  // fueran interactivos, entrarían en ese localizador y romperían de golpe
+  // media suite. Por eso son texto, y por eso esto se cuenta.
+  await expect(page.locator(".lateral").getByRole("button")).toHaveCount(5);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("la firma de la casa va al fondo, debajo de Ajustes", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // Lo sostiene el «margin-top: auto» del grupo de abajo. Comparar las
+  // posiciones es la única forma de comprobar que sigue haciendo su trabajo:
+  // el orden en el DOM no dice dónde acaba pintado.
+  const ajustes = await seccion(page, "Ajustes").boundingBox();
+  const firma = await page.locator(".lateral .firma").boundingBox();
+  expect(firma!.y).toBeGreaterThan(ajustes!.y);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("sobre el oro de la fila activa escribe la piedra, no el blanco", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // El instinto de cualquiera que toque esto es poner texto blanco encima, que
+  // es lo que hacía cuando el acento era el azul del sistema. Sobre el oro, el
+  // blanco da 1,68:1. El test de Go mide los tokens; esto mide lo que se pinta.
+  const activa = page.locator('.lateral nav button[aria-current="page"]');
+  const estilo = await activa.evaluate((el) => {
+    const c = getComputedStyle(el);
+    return { fondo: c.backgroundColor, texto: c.color };
+  });
+
+  const claro = (c: string) => {
+    const [r, g, b] = c.match(/\d+/g)!.map(Number);
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  };
+  // El fondo tiene que ser claro —el oro lo es— y el texto oscuro encima.
+  expect(claro(estilo.fondo)).toBeGreaterThan(0.5);
+  expect(claro(estilo.texto)).toBeLessThan(0.35);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("el foco de un campo se sigue viendo con el acento dorado", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // **Esta prueba existe por un fallo que casi se cuela.** «make contraste» mide
+  // parejas de tokens, no sitios: con el filete de foco pintado del oro habría
+  // pasado en verde y el foco habría sido invisible en tema claro, porque el oro
+  // sobre blanco da 1,68:1. El filete lo pinta el acento y esto lo vigila.
+  const campo = clave(page);
+  const borde = () => campo.evaluate((el) => getComputedStyle(el).borderColor);
+  const antes = await borde();
+
+  // Con «click» y no con «focus»: la regla es «:focus-visible» y el foco puesto
+  // por código no la dispara.
+  await campo.click();
+
+  // Y con «poll», porque el borde va con transición: leerlo justo después del
+  // clic lo pilla en el fotograma cero y parece que no ha cambiado nada.
+  await expect.poll(borde, { timeout: 2000 }).not.toBe(antes);
+
+  // El halo es lo que pone el oro en el foco: el filete se ve y la marca
+  // asoma. Si alguien lo cambia por un gris, esto lo dice.
+  const halo = await campo.evaluate((el) => getComputedStyle(el).boxShadow);
+  expect(halo).toContain("242, 193, 78");
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("el historial vacío enseña la esfinge, y desaparece al haber algo", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // **Se cifra primero a propósito.** Entrar en Historial y preguntar en el acto
+  // si «Vaciar» está activo es la trampa que este fichero ya ha pisado dos
+  // veces: la lista se carga al entrar, así que en ese instante todavía está
+  // vacía y el botón sale desactivado aunque haya entradas. Cifrando antes y
+  // esperando a que aparezca la primera fila, el estado deja de ser una
+  // suposición.
+  await page.getByLabel("Qué quieres cifrar").fill(SECRETO);
+  await clave(page).fill(CLAVE);
+  await accion(page, "Cifrar").click();
+  await expect(page.locator(".resultado:visible")).toContainText("ESF1", { timeout: 20_000 });
+
+  await seccion(page, "Historial").click();
+  await expect(page.locator(".historial li:visible").first()).toBeVisible();
+  // Con una entrada dentro, la marca no está.
+  await expect(page.locator(".contenido .vacio:visible")).toHaveCount(0);
+
+  await accion(page, "Vaciar historial").click();
+
+  // Y al quedarse vacío aparece. Con «:visible», que las secciones se esconden
+  // con «hidden» y el bloque existiría igual en las que no se están viendo.
+  await expect(page.locator(".contenido .vacio:visible")).toBeVisible();
+  await expect(page.locator(".contenido .vacio:visible svg")).toBeVisible();
+  await expect(page.getByText("Todavía no has hecho nada.")).toBeVisible();
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("Ajustes dice qué es esto, de qué versión y de quién", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await seccion(page, "Ajustes").click();
+
+  // Acotada a «.contenido»: «Esfinge» está también en el lockup de la barra
+  // lateral, que es la trampa de siempre de este fichero.
+  const ficha = page.locator(".contenido .ficha:visible");
+  await expect(ficha).toContainText("Esfinge");
+  await expect(ficha).toContainText("Versión");
+  await expect(ficha).toContainText("webcafeína");
+  await expect(ficha.locator("svg")).toBeVisible();
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});

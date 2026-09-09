@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.10.4**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.11.0**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, guarda un historial de qué y cuándo, y se compila sola para macOS,
 Windows y Linux en GitHub Actions.
 
@@ -40,8 +40,12 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
 - **Estructura nativa en los tres sistemas**: barra lateral y contenido en todos, y luego lo de cada
   casa —macOS sin barra de título (ADR 0019), el panel de Fluent en Windows y la cabecera de GNOME en
   Linux (ADR 0020)—.
+- **La marca, dentro de la ventana** (ADR 0021): el lockup de Esfinge en la barra lateral, la firma
+  `▍ webcafeína` al fondo, la esfinge tenue en el historial vacío y la ficha de producto en Ajustes
+  —que es lo que la ADR 0007 prometía y nunca se había construido—. Y el acento de la interfaz pasa a
+  ser el oro del tocado en vez del azul del sistema.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
-  máquina sin entorno gráfico.
+  máquina sin entorno gráfico. Son **50**.
 
 ## En curso
 
@@ -85,12 +89,12 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Ninguna: no queda nada que se pueda hacer sin alguien delante.** Los frentes que venían de atrás
-están cerrados —el vidrio en la 2.10.0; el icono del documento y Gatekeeper entre la 2.10.1 y la
-2.10.3; el aviso de versión nueva en la 2.10.4—, y `siguiente.md` no tiene nada en Media.
+**Mirar la 2.11.0 puesta en el Mac, y juzgar el oro.** Es lo único que importa ahora: la identidad
+entró en la ventana y todo lo que la sostiene está medido, pero medido no es visto. Lo primero que
+hay que juzgar es **la pastilla dorada de la fila activa**, que es el cambio más visible; y si el
+ámbar de los avisos y el oro de la marca se estorban en la pantalla de cifrar.
 
-Queda **una sola comprobación del humano**, no bloqueante, y está abajo: abrir la aplicación en
-Windows y en GNOME de verdad.
+Después, y sin prisa, sigue pendiente abrir la aplicación en **Windows** y en **GNOME** de verdad.
 
 Para lo que venga: la **compilación con inspector** ya existe.
 `gh workflow run compilar.yml -f inspector=true` da un paquete con el Web Inspector abierto, en el
@@ -107,8 +111,13 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 Queda una, y es de código publicado que no se puede ejercitar aquí: en esta máquina no hay Windows ni
 GNOME con la aplicación puesta, y lo visual no se afirma desde una compilación en verde.
 
+- **¿Cómo queda el oro puesto, en un Mac?** Es la pregunta de la 2.11.0, y sobre todo por **la
+  pastilla dorada de la fila activa**: es el cambio más visible de todos, cumple de sobra —8,38:1— y
+  es la gramática del icono, pero eso lo dice el cálculo y no el ojo. Si canta, el repliegue está
+  pensado: fondo dorado tenue y texto de tinta, como hace Fluent. Mirar también si el ámbar de los
+  avisos y el oro se estorban en la pantalla de cifrar, que son vecinos.
 - **¿Cómo queda la aplicación en Windows y en GNOME?** La de macOS está juzgada en un Mac; las otras
   dos se escribieron a partir de las convenciones de cada sistema y nadie las ha visto corriendo. Hay
-  dos cosas que mirar de una vez: **la estructura** —el panel de Fluent con su barra de acento, la
-  cabecera de GNOME— y **el icono de los `.esf`** en el explorador de ficheros, que en Windows sale
-  del instalador y en Linux del `.deb`. Es lo único que queda por mirar en todo el proyecto.
+  tres cosas que mirar de una vez: **la estructura** —el panel de Fluent con su barra de acento, la
+  cabecera de GNOME—, **el icono de los `.esf`** en el explorador de ficheros, y ahora **el lockup**,
+  que ahí sube hasta el borde porque no hay semáforos que esquivar.

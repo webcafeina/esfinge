@@ -1,6 +1,6 @@
 # Deuda y cabos sueltos
 
-Última actualización: **2026-09-08**
+Última actualización: **2026-09-09**
 
 Lo que sabemos que está a medias, mal o sin comprobar. Los bloqueantes primero. Lo saldado se tacha
 y se queda.
@@ -31,6 +31,7 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | Elemento | Severidad | Impacto | Estado |
 |---|---|---|---|
 | ~~La comprobación de actualizaciones solo ocurre al arrancar~~ | Media | `comprobarAlArrancar` la llamaba `Arrancar` **una sola vez** y no había ningún reloj: con Esfinge abierta no volvía a mirar nunca, mientras la portada y la [ADR 0014](adr/0014-comprobacion-de-actualizaciones.md) prometían «una vez al día». Lo dijo el cliente: nunca le había salido la banda de aviso | **Saldada en la 2.10.4**: `vigilar` deja un reloj que se asoma cada hora y aplica la misma puerta de las 24 h. Tres pruebas con `-race`: que avisa sin reiniciar, que el techo de una petición al día se mantiene, y que el reloj se para al cerrar la ventana (2026-09-08) |
+| `frontend/public/icono-256.png` no lo usa nadie | Baja | Se genera, se copia a `dist/` y se embebe en el binario, y no lo referencia ni una línea de código. La marca de dentro de la ventana sale de `build/marca.svg`, así que este PNG solo vale como favicon —que en un webview de Wails tampoco se pinta—. O se usa o sobra | Abierto |
 | `VersionVista` se escribe y no se lee | Baja | Se guarda en las preferencias «para no repetir el mismo aviso», y no hay ni un sitio que la consulte: el descarte de la banda es solo de la interfaz y no sobrevive al reinicio. O se usa o sobra | Abierto |
 | Gatekeeper avisa en macOS y Windows | Baja | El cliente ve un aviso de programa no identificado. Firmar cuesta 99 $/año y se decidió no hacerlo | Aceptado · [ADR 0012](adr/0012-sin-firmar.md). Bajó de Media a Baja al comprobarse que es **solo de la primera instalación**: al actualizarse desde dentro no aparece, porque la cuarentena la pone quien descarga y ahí descarga Go (2026-09-08) |
 | ~~El icono del documento `.esf` era el de la aplicación~~ | Baja | Un fichero cifrado y el programa que lo abre se veían igual: `build/esf.png` era una copia byte a byte de `build/appicon.png`, y en Linux el `.deb` apuntaba al icono de la aplicación | **Saldada (2026-09-08)**: `build/documento.svg` dibuja una hoja con la esquina doblada y la marca sobre una placa. **Comprobado en el Mac**, y la marca se centró en la hoja tras verlo puesto (2.10.2). En Windows sale del mismo PNG sin tocar nada; en Linux hizo falta instalar `application-x-esfinge.png` en `mimetypes/`, comprobado con `dpkg -c` (2.10.3). Sin ver todavía en Windows ni en GNOME de verdad |

@@ -83,6 +83,63 @@ body {
   flex-shrink: 0;
 }
 
+/* La esfinge monocroma, dondequiera que se use. El SVG viene de build/marca.svg
+ * y hereda el color del sitio donde caiga; aquí solo se le da caja. */
+.marca-esfinge {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.marca-esfinge svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* El lockup: la esfinge y el nombre, debajo del hueco de los semáforos.
+ *
+ * **No lleva «no-drag» a propósito.** El resto de la barra lateral sí, porque
+ * son botones; esto es texto, y en macOS cae justo debajo de los semáforos, que
+ * es donde la mano va a agarrar la ventana. Marcarlo sería quitar agarre.
+ *
+ * La sangría de 10 px es la misma que llevan las filas, para que la esfinge y
+ * los iconos de navegación caigan en la misma columna. Si se cambia una hay que
+ * cambiar la otra: es lo único que las alinea. */
+.lateral .marca {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  padding: 0 10px;
+  margin-bottom: var(--espacio-3);
+  color: var(--tinta);
+  flex-shrink: 0;
+}
+
+.lateral .marca span {
+  font-size: var(--texto-grande);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* La firma de la casa, al fondo del todo. El «margin-top: auto» de «.abajo»
+ * empuja el bloque de Ajustes hacia abajo y esto queda debajo de él. */
+.lateral .firma {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-1);
+  margin: var(--espacio-3) 0 0;
+  padding: 0 10px;
+  font-size: var(--texto-chico);
+  color: var(--apagado);
+  flex-shrink: 0;
+}
+
+/* El glifo va del color de la tinta y no del oro: sobre la barra lateral clara
+ * el oro da 1,55:1 y no se vería. Lo mismo que el filete de foco. */
+.lateral .firma .barra {
+  color: var(--acento);
+}
+
 .lateral nav {
   display: flex;
   flex-direction: column;
@@ -299,7 +356,15 @@ textarea:focus-visible,
 button:focus-visible,
 select:focus-visible {
   outline: none;
-  border-color: var(--relleno);
+  /* **El filete es de piedra y el halo de oro, y no al revés.** El oro sobre un
+   * fondo claro da 1,68:1 y no llega al 3:1 que pide una línea: como indicador
+   * sería invisible. Quien dice «estás aquí» es el filete —la piedra da 14:1— y
+   * el halo dorado va de adorno, que es lo que puede permitirse serlo.
+   *
+   * Ojo: «make contraste» mide roles y no sitios, así que esto pasaría en verde
+   * aunque el filete fuera de oro y no se viera. Lo vigila una prueba de
+   * interfaz. */
+  border-color: var(--acento);
   box-shadow: 0 0 0 3.5px var(--anillo);
 }
 
@@ -342,12 +407,29 @@ button.principal:hover:not(:disabled) {
   background: var(--relleno-vivo);
 }
 
+/* El botón discreto: texto y nada más.
+ *
+ * **Va subrayado, y es culpa del oro.** Antes su texto era el azul de acción y
+ * el color solo ya decía «esto se pulsa». Con la marca dentro, el oro no puede
+ * escribir —1,68:1 sobre fondo claro— y el texto pasó a ser la tinta, con lo que
+ * «Generar una» se leía como una etiqueta más. El subrayado devuelve la señal
+ * sin gastar color, que es lo único que aquí no se puede gastar.
+ *
+ * Fino y separado, para que no parezca un enlace de página web. */
 button.discreto {
   border-color: transparent;
   background: transparent;
   color: var(--acento);
   box-shadow: none;
   padding: 0 var(--espacio-2);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--filete-fuerte);
+}
+
+button.discreto:hover:not(:disabled) {
+  text-decoration-color: currentColor;
 }
 
 button.discreto:hover:not(:disabled) {
@@ -405,7 +487,9 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .soltar.encima {
-  border-color: var(--relleno);
+  /* De piedra y no de oro, por lo mismo que el filete de foco: es una línea
+   * sobre fondo claro, y ahí el oro no se ve. */
+  border-color: var(--acento);
   background: var(--elevada);
   color: var(--tinta);
 }
@@ -525,6 +609,69 @@ input[type="range"]::-webkit-slider-thumb {
   background: var(--exito);
 }
 
+/* El estado vacío: la esfinge grande y tenue, centrada en el hueco.
+ *
+ * Es el único sitio donde la marca es grande, y solo porque aquí no hay nada
+ * que estorbar. Con una sola entrada en el historial desaparece. */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-3);
+  padding: var(--espacio-6) 0;
+  color: var(--filete);
+}
+
+/* Trazo más fino que el de serie: a 112 px el grosor pensado para 18 px se ve
+ * basto, y aquí lo que se quiere es una filigrana, no un dibujo. */
+.vacio .marca-esfinge svg {
+  stroke-width: 34;
+}
+
+/* La frase vuelve al color de siempre: la esfinge es lo tenue, el texto no. */
+.vacio .nota {
+  color: var(--apagado);
+}
+
+/* La ficha de producto de Ajustes: quién hizo esto y qué versión es. */
+.ficha {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-4);
+  color: var(--tinta);
+}
+
+/* Igual que en el vacío del historial: el grosor de serie está pensado para los
+ * 20 px del lockup y a este tamaño se empasta. */
+.ficha .marca-esfinge svg {
+  stroke-width: 44;
+}
+
+.ficha h2 {
+  margin: 0;
+  font-size: var(--texto-grande);
+  font-weight: 600;
+}
+
+.ficha .nota,
+.ficha .firma {
+  margin: 2px 0 0;
+}
+
+/* La firma, igual que en la barra lateral. Vive en dos sitios porque son dos
+ * momentos distintos: ahí firma la ventana, aquí firma el producto. */
+.firma {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-1);
+  font-size: var(--texto-chico);
+  color: var(--apagado);
+}
+
+.firma .barra {
+  color: var(--acento);
+}
+
 .barra-progreso {
   height: 4px;
   border-radius: 2px;
@@ -535,7 +682,9 @@ input[type="range"]::-webkit-slider-thumb {
 .barra-progreso i {
   display: block;
   height: 100%;
-  background: var(--relleno);
+  /* Cuatro píxeles de alto sobre una pista clara: aquí manda verse, no lucir.
+   * El oro sobre «--elevada» da 1,37:1 y la barra desaparecería. */
+  background: var(--acento);
   transition: width 0.15s;
 }
 
@@ -710,6 +859,14 @@ p {
 /* El hueco de los semáforos es de macOS: en Windows y en GNOME la ventana tiene
  * su barra de título del sistema, así que arriba de la barra lateral no hay nada
  * que esquivar. */
+/* Sin semáforos que esquivar, el lockup queda pegado al marco del sistema. Se le
+ * da aire para que no lo toque: en Windows y en GNOME la barra de título la
+ * dibuja el sistema y el nombre de la aplicación va justo debajo. */
+:root[data-sistema="windows"] .lateral .marca,
+:root[data-sistema="linux"] .lateral .marca {
+  padding-top: var(--espacio-2);
+}
+
 :root[data-sistema="windows"] .lateral .semaforos,
 :root[data-sistema="linux"] .lateral .semaforos {
   height: var(--espacio-3);
@@ -754,7 +911,13 @@ p {
   width: 3px;
   height: 16px;
   border-radius: 2px;
-  background: var(--relleno);
+  /* En Fluent el fondo de la selección es tenue y **quien dice «estás aquí» es
+   * esta barra**: si no se ve, la fila activa deja de distinguirse. Sobre
+   * «--elevada» el oro da 1,37:1, así que aquí manda la piedra.
+   *
+   * Es la consecuencia de respetar la casa de cada sistema: en macOS la fila
+   * activa se rellena de oro y en Windows no, porque ahí la convención es otra. */
+  background: var(--acento);
 }
 
 /* Fluent redondea menos que macOS: 4 px en los controles, 8 en las tarjetas. */

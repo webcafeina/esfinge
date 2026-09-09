@@ -79,8 +79,12 @@ No se cambian sin preguntar.
 
 - **Wails** (Go + React + TypeScript), el stack de los demás proyectos de la casa.
 - **Se conserva la línea de comandos** y se retiraron los menús de terminal de la 1.x.
-- **Aspecto de aplicación del sistema**, no una identidad propia: tipografía y controles de macOS y
-  Windows. La marca queda en el icono y en «Acerca de».
+- **Aspecto de aplicación del sistema**: tipografía, controles y formas de macOS y de Windows, sin
+  identidad ajena (ADR 0007). La tipografía no se toca nunca.
+- **Pero el acento sí es nuestro, y la marca está dentro de la ventana** (ADR 0021): el oro del
+  tocado en vez del azul del sistema, el lockup de Esfinge arriba en la barra lateral, la firma
+  `▍ webcafeína` abajo y la esfinge grande y tenue en el historial vacío. **Nunca en las pantallas de
+  trabajo**: ahí se trabaja.
 - **Y estructura del sistema**: barra lateral a la izquierda, título en la barra de herramientas y
   formularios en tarjetas, sin barra de título propia (ADR 0019). Las medidas salen de capturas de
   macOS 26 que están en `referencias/` —carpeta ignorada por git—, usando los semáforos como regla:
@@ -219,8 +223,26 @@ también los escondidos.
 **El color se genera, no se escribe.** `internal/tema` es la fuente de verdad y produce
 `frontend/src/tokens.css` con `make tokens`. Editar el CSS a mano no sirve: hay un test que compara
 el fichero con lo que dice Go y falla. Y `make contraste` mide las parejas reales de los dos temas.
-El azul de botón del sistema no cumple AA con texto blanco encima —3,6:1—, así que `RellenoLegible`
-lo oscurece hasta que se lee.
+
+**El oro rellena, la piedra escribe** (ADR 0021). Sobre el oro de marca, el blanco da **1,68:1** y no
+hay arreglo: oscurecerlo hasta que el blanco cumpla lo convierte en un marrón y se pierde la marca.
+Así que `SobreAcento` es la piedra `#2b2b31` —8,38:1— y `Acento`, el rol de *texto*, es la tinta
+fuerte del tema. En oscuro el oro sí se leería, y aun así no se usa: una regla que solo vale en un
+tema no es una regla.
+
+**Y la trampa que casi se cuela con eso: `make contraste` mide parejas de tokens, no sitios.** El oro
+vale para rellenar superficies con texto encima, pero como línea sobre fondo claro da 1,37-1,68:1 y
+es invisible. El filete de foco, el borde de la zona de soltar, la barra de progreso y la barra de
+acento de Windows van de `--acento` por eso, y si alguien los devuelve a `--relleno` **el test de
+color seguirá en verde**. Lo vigila una prueba de interfaz, que enfoca un campo y comprueba que el
+borde cambia.
+
+Y un daño colateral que conviene conocer: sin color que gastar, **el botón discreto va subrayado**.
+Antes su texto era azul y el color solo decía «esto se pulsa».
+
+Los azules del sistema siguen en `paleta.go` sin usarse, a propósito: son el porqué de
+`RellenoLegible` —el `#007aff` de macOS da 3,6:1 con blanco— y borrarlos dejaría esa función
+pareciendo un adorno.
 
 **`go:embed` no puede salir del directorio de su paquete.** Por eso la interfaz construida se copia
 a `internal/interfaz/dist`, y no se embebe directamente desde `frontend/dist`.
@@ -263,6 +285,14 @@ papel a la vista y la marca sobre una placa oscura, que es la forma de un docume
 placa ocupa poco más de la mitad del ancho y va **centrada en la hoja**: con ella más grande el papel
 no se veía, y bajada a la mitad inferior se notaba caída. **Lo que dice «documento» es el papel, no
 el emblema.**
+
+**El icono es la placa; la marca es la silueta; la silueta es una.** Dentro de la ventana no se usa
+`icono.svg`: lleva su placa y sus colores dentro, así que no se puede teñir y en miniatura se lee
+como un pegote. Lo que se usa es `build/marca.svg` —la esfinge a trazo, en `currentColor`— importada
+en línea con `?raw` desde `build/`, **sin copiarla a `frontend/`**. Dos reglas que ese fichero tiene
+que cumplir: nada de `id`, `clipPath` ni `mask`, porque se inserta hasta tres veces en la misma
+página y los identificadores chocarían; y el grosor del trazo va como atributo, para poder afinarlo
+desde CSS en cada tamaño. Maciza no vale: en monocromo el rostro y el tocado se funden en un borrón.
 
 **El icono del documento llega a cada sistema por un camino distinto, y a Linux no llegaba solo.**
 De `build/esf.png` salen dos: Wails arma el `esf.icns` del paquete de macOS y el `esf.ico` que el

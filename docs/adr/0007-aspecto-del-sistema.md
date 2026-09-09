@@ -1,6 +1,14 @@
 # ADR 0007 — La ventana sigue la apariencia del sistema, no una identidad propia
 
-**Fecha:** 2026-09-07 · **Estado:** aceptada · **Sustituye a** la identidad de ClickHouse de la 1.x
+**Fecha:** 2026-09-07 · **Estado:** aceptada · **Sustituye a** la identidad de ClickHouse de la 1.x ·
+**Matizada por la [0021](0021-la-marca-en-la-interfaz.md)**
+
+> **Corrección (2026-09-09).** Lo de fondo de esta ficha sigue en pie: tipografía, controles,
+> estructura y apariencia del sistema, sin identidad ajena. Lo que decae es la frase «la marca queda
+> en el icono y en *Acerca de*», por dos motivos. Uno, que **ese «Acerca de» nunca se construyó**: el
+> menú navega a Ajustes y allí solo había una línea con el número de versión, así que media promesa
+> llevaba sin cumplirse desde la 2.0.0. Y dos, que desde la 2.11.0 **el acento de la interfaz es el
+> oro de la esfinge y no el azul del sistema**. La 0021 lo cuenta entero, con los números.
 
 ## Contexto
 
