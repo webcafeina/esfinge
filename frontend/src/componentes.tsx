@@ -289,36 +289,46 @@ export function CampoClave({
         <label htmlFor={id} style={{ marginBottom: 0 }}>
           {etiqueta}
         </label>
-        <span>
-          {alGenerar && (
-            <button className="discreto" onClick={alGenerar}>
-              Generar una
-            </button>
-          )}
-          <button
-            className="discreto"
-            onClick={() => setALaVista(!aLaVista)}
-            aria-controls={id}
-            aria-pressed={aLaVista}
-          >
-            {aLaVista ? "Ocultar" : "Ver"}
+        {alGenerar && (
+          <button className="discreto" onClick={alGenerar}>
+            Generar una
           </button>
-        </span>
+        )}
       </div>
-      <input
-        id={id}
-        type={aLaVista ? "text" : "password"}
-        value={valor}
-        autoComplete="off"
-        /* Con la clave a la vista, el corrector y el autocompletado del sistema
-           dejan de ser inocentes: los dos leen lo que hay escrito. */
-        spellCheck={false}
-        autoCorrect="off"
-        autoCapitalize="off"
-        className={aLaVista ? "a-la-vista" : undefined}
-        onChange={(e) => alCambiar(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && alEnviar?.()}
-      />
+
+      {/* El ojo va **dentro del campo**, a la derecha, que es donde lo pone todo
+          el mundo y donde se busca sin pensar. Fuera competía con «Generar una»
+          por el mismo sitio y parecía otra acción del formulario, cuando no es
+          una acción: es una propiedad de lo que se está mirando. */}
+      <div className="campo-con-ojo">
+        <input
+          id={id}
+          type={aLaVista ? "text" : "password"}
+          value={valor}
+          autoComplete="off"
+          /* Con la clave a la vista, el corrector y el autocompletado del sistema
+             dejan de ser inocentes: los dos leen lo que hay escrito. */
+          spellCheck={false}
+          autoCorrect="off"
+          autoCapitalize="off"
+          className={aLaVista ? "a-la-vista" : undefined}
+          onChange={(e) => alCambiar(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && alEnviar?.()}
+        />
+        {/* Con nombre de verdad y no solo un dibujo: quien lea la pantalla en voz
+            alta tiene que oír qué hace, y «botón» a secas no lo dice. */}
+        <button
+          className="ojo"
+          onClick={() => setALaVista(!aLaVista)}
+          aria-controls={id}
+          aria-pressed={aLaVista}
+          aria-label={aLaVista ? "Ocultar la clave" : "Ver la clave"}
+          title={aLaVista ? "Ocultar la clave" : "Ver la clave"}
+        >
+          <Ojo tachado={aLaVista} />
+        </button>
+      </div>
+
       {fuerza && (
         <>
           <div className="medidor" data-nivel={fuerza.nivel} aria-hidden="true">
@@ -335,6 +345,38 @@ export function CampoClave({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Ojo dibuja el interruptor de ver la clave: el ojo abierto para destaparla y el
+ * ojo tachado cuando ya se ve.
+ *
+ * El tachado va **por delante y con su propia línea de fondo**, del color del
+ * campo: sin esa línea, la barra oblicua se confunde con el contorno del ojo y a
+ * 18 px los dos estados se parecen demasiado.
+ */
+function Ojo({ tachado }: { tachado: boolean }) {
+  return (
+    <svg
+      className="icono"
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M1.7 9S4.6 4.3 9 4.3 16.3 9 16.3 9s-2.9 4.7-7.3 4.7S1.7 9 1.7 9Z" />
+      <circle cx="9" cy="9" r="2.2" />
+      {tachado && (
+        <>
+          <path d="M3.4 15.2 14.6 2.8" stroke="var(--campo)" strokeWidth="3.2" />
+          <path d="M3.4 15.2 14.6 2.8" />
+        </>
+      )}
+    </svg>
   );
 }
 

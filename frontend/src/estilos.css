@@ -349,6 +349,47 @@ textarea {
   transition: box-shadow 0.12s, border-color 0.12s;
 }
 
+/* El campo de la clave, con su ojo dentro. El hueco de la derecha se reserva en
+ * el propio campo: sin él, una clave larga pasa por debajo del icono. */
+.campo-con-ojo {
+  position: relative;
+}
+
+.campo-con-ojo input {
+  padding-right: 34px;
+}
+
+.campo-con-ojo .ojo {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: transparent;
+  box-shadow: none;
+  color: var(--apagado);
+}
+
+.campo-con-ojo .ojo:hover:not(:disabled) {
+  background: var(--elevada);
+  color: var(--tinta);
+}
+
+.campo-con-ojo .ojo[aria-pressed="true"] {
+  color: var(--tinta);
+}
+
+.campo-con-ojo .ojo .icono {
+  width: 17px;
+  height: 17px;
+}
+
 /* La clave destapada va en monoespaciada, que es donde se distingue un cero de
  * una O y un uno de una ele. Es para leerla y copiarla a mano; si no, no se
  * habría destapado. */

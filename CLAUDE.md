@@ -251,7 +251,9 @@ Nunca se notó porque la prueba del menú ejercitaba «seleccionar todo» y no p
 propósito: `execCommand("copy")` dice que sí y el portapapeles se queda como estaba. Eso dejaba la
 clave recién fabricada por «Generar una» sin forma de salir de ahí, que es justo la que no está
 apuntada en ningún otro sitio. Se copia por Go —que además arma el borrado del portapapeles— y el
-campo tiene un ojo para destaparla.
+campo tiene un ojo para destaparla, **dentro del campo y a la derecha**: fuera competía con «Generar
+una» por el mismo sitio y se leía como otra acción del formulario. Su nombre accesible es lo único
+por lo que se puede localizar, así que no puede faltar.
 
 **En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de

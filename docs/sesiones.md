@@ -22,6 +22,11 @@ Plantilla al final.
 - **El campo de la clave tiene un ojo** para verla y volver a taparla, que es lo que pidió el
   cliente. Tapada de partida, siempre: quien teclea con alguien detrás no tiene que acordarse de
   esconderla primero. Destapada va en monoespaciada, para distinguir un cero de una O.
+- **2.12.2**: ese ojo pasa a ir **dentro del campo**, a la derecha, en vez de ser un botón con rótulo
+  encima. Lo pidió el cliente al verlo y tiene razón: fuera competía con «Generar una» por el mismo
+  sitio y se leía como otra acción del formulario, cuando no es una acción sino una propiedad de lo
+  que se está mirando. El icono lleva nombre accesible —«Ver la clave» / «Ocultar la clave»—, que es
+  además por donde lo localiza la prueba: si alguien deja el dibujo sin nombre, se pone roja.
 - **Lo que enseña esta pareja**: la prueba que había del menú ejercitaba «seleccionar todo» —lo fácil
   de mirar— y no pegar, que es lo que la gente hace todos los días. Las tres pruebas nuevas van por
   el camino de verdad, y la de pegar **se comprobó en rojo** quitando el arreglo antes de darla por

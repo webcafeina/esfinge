@@ -947,10 +947,14 @@ test("la clave se puede destapar para leerla y volver a tapar", async ({ page })
   // Sin esto, la contraseña que acaba de fabricarse no se puede sacar de aquí: de
   // un campo de contraseña el navegador se niega a copiar, y ésta no está
   // apuntada en ningún otro sitio.
-  await accion(page, "Ver").click();
+  //
+  // El interruptor es un ojo dentro del campo, así que solo se puede localizar
+  // por su nombre accesible: si alguien deja el icono sin nombre, esto se pone
+  // rojo, que es exactamente lo que tiene que pasar.
+  await accion(page, "Ver la clave").click();
   await expect(campo).toHaveAttribute("type", "text");
 
-  await accion(page, "Ocultar").click();
+  await accion(page, "Ocultar la clave").click();
   await expect(campo).toHaveAttribute("type", "password");
 
   expect(errores, errores.join(" | ")).toEqual([]);
