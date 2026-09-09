@@ -22,6 +22,7 @@ import (
 	"github.com/webcafeina/esfinge/internal/actualizacion"
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/cripto"
+	"github.com/webcafeina/esfinge/internal/iconos"
 )
 
 // App reúne el estado que dura lo que dura la aplicación abierta.
@@ -52,6 +53,12 @@ type App struct {
 	// vig lleva los dos relojes: el del bloqueo por inactividad y el del borrado
 	// del portapapeles.
 	vig *vigilante
+
+	// descargador de iconos y el ritmo al que gotea. Se pueden sustituir con
+	// ApuntarIconosA, que es la costura que permite probar el camino entero sin
+	// esperar minutos ni salir a internet.
+	descargador *iconos.Descargador
+	ritmo       ritmo
 }
 
 // Sistema es lo que la aplicación necesita del escritorio: los diálogos de
@@ -91,6 +98,7 @@ func Nueva(version string, sistema Sistema) *App {
 		sistema: sistema,
 		act:     &actualizador{comprobador: actualizacion.Nuevo(version)},
 		vig:     nuevoVigilante(),
+		ritmo:   ritmoNormal(),
 	}
 	a.aplicarPreferencias(a.ajustes.Ver())
 	return a

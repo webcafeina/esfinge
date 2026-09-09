@@ -162,6 +162,11 @@ eso:
 - **Ir directo no oculta la lista de sitios, la reparte**: el nombre viaja en claro en el DNS y en el
   saludo TLS. Lo que se gana es no meter un tercero de confianza. Está dicho así en la ventana, en
   `docs/seguridad.md` y en la ADR, y no se debe escribir de otra forma.
+- **El goteo guarda y avisa icono a icono, no al terminar la tanda.** Guardando al final, el primero
+  no aparecía hasta pasados minutos y quien cerraba antes no se llevaba ninguno. Y hay una prueba que
+  recorre **la tubería entera** —de la bóveda al almacén pasando por la red—, que es la que faltaba:
+  las piezas estaban probadas una a una y por eso sobrevivieron dos fallos seguidos que el cliente vio
+  a la primera.
 - **El goteo no llama a `Actividad()`.** Si lo hiciera, la bóveda no se cerraría nunca mientras baja
   iconos y el bloqueo por inactividad dejaría de significar lo que dice.
 

@@ -13,14 +13,15 @@ import (
 // sistemaFalso hace de escritorio durante los tests: apunta lo que se le pide en
 // vez de abrir diálogos de verdad.
 type sistemaFalso struct {
-	mu        sync.Mutex
-	ficheros  []string
-	guardaEn  string
-	avisos    []Progreso
-	novedades []Novedad
-	ordenes   []Orden
-	cerrada   bool
-	aperturas []Apertura
+	mu               sync.Mutex
+	ficheros         []string
+	guardaEn         string
+	avisos           []Progreso
+	nombresDeEventos []string
+	novedades        []Novedad
+	ordenes          []Orden
+	cerrada          bool
+	aperturas        []Apertura
 
 	desdeAbrir   string
 	desdeGuardar string
@@ -100,6 +101,20 @@ func (s *sistemaFalso) Avisar(evento string, datos any) {
 			s.aperturas = append(s.aperturas, ap)
 		}
 	}
+	s.nombresDeEventos = append(s.nombresDeEventos, evento)
+}
+
+// hanAvisadoDe dice si ha pasado por aquí un evento con ese nombre, sin mirar lo
+// que llevaba dentro. Sirve para los que no llevan nada.
+func (s *sistemaFalso) hanAvisadoDe(evento string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, e := range s.nombresDeEventos {
+		if e == evento {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *sistemaFalso) verNovedades() []Novedad {

@@ -17,26 +17,41 @@ import (
 // sesenta y cinco peticiones seguidas dibujan un pico muy reconocible para quien
 // mire la red, y no hay ninguna prisa. Los iconos van apareciendo.
 
-const (
-	// entreIconos es lo que se espera entre una petición y la siguiente.
+// Los tres números del goteo. Son campos y no constantes para poder acortarlos
+// en las pruebas: sin eso, comprobar el camino entero costaría minutos y no se
+// comprobaría nunca. Que es justo lo que pasó.
+type ritmo struct {
+	// entre es lo que se espera de una petición a la siguiente.
 	//
-	// **Es lento a propósito.** Bajarlos de golpe sería la firma más nítida
-	// posible: «esta máquina acaba de abrir una bóveda con estos sesenta y cinco
-	// sitios dentro». Espaciado, se confunde con la navegación de cualquiera.
-	entreIconos = 20 * time.Second
+	// **Espaciado a propósito**: bajarlos de golpe sería la firma más nítida
+	// posible —«esta máquina acaba de abrir una bóveda con estos sesenta y cinco
+	// sitios dentro»—. Pero no tanto como para que no se vea nada: con veinte
+	// segundos, y guardando solo al final, el primer icono tardaba casi cuatro
+	// minutos en aparecer y quien cerraba antes no se llevaba ninguno.
+	entre time.Duration
+	// alPrincipio, para no encadenar la primera petición con la apertura.
+	alPrincipio time.Duration
+	// cuantos por sesión. Una bóveda de sesenta y cinco se llena en tres.
+	cuantos int
+}
 
-	// porTanda es cuántos se traen cada vez que se abre la bóveda. Con esto una
-	// bóveda de sesenta y cinco tarda unas cuantas sesiones en llenarse, que es
-	// exactamente lo que se quiere.
-	porTanda = 12
-
-	// alPrincipio es lo que se espera antes de empezar, para no encadenar la
-	// primera petición con la apertura de la bóveda.
-	alPrincipio = 10 * time.Second
-)
+func ritmoNormal() ritmo {
+	return ritmo{entre: 5 * time.Second, alPrincipio: 3 * time.Second, cuantos: 25}
+}
 
 // EventoIconos avisa a la ventana de que hay iconos nuevos que enseñar.
 const EventoIconos = "iconos"
+
+// ApuntarIconosA cambia quién baja los iconos. Lo usan las pruebas, que levantan
+// un sitio de mentira.
+//
+// Función y no método, por lo de siempre: todo método exportado de *App cruza el
+// puente, y dejar que la ventana eligiera a quién se le piden los iconos sería
+// abrir justo la puerta que este paquete cierra.
+func ApuntarIconosA(a *App, d *iconos.Descargador, r ritmo) {
+	a.descargador = d
+	a.ritmo = r
+}
 
 // IconosDeBoveda devuelve lo que hay, por anfitrión.
 //
@@ -80,7 +95,12 @@ func (a *App) buscarIconosSiProcede(ctx context.Context) {
 }
 
 func (a *App) gotearIconos(ctx context.Context) {
-	pendientes := a.loQueFaltaPorMirar()
+	a.gotearIconosDesde(ctx, a.loQueFaltaPorMirar())
+}
+
+// gotearIconosDesde es lo mismo con la lista dada, que es como se puede probar el
+// camino entero sin depender de lo que haya en la bóveda.
+func (a *App) gotearIconosDesde(ctx context.Context, pendientes []string) {
 	if len(pendientes) == 0 {
 		return
 	}
@@ -90,19 +110,21 @@ func (a *App) gotearIconos(ctx context.Context) {
 	rand.Shuffle(len(pendientes), func(i, j int) {
 		pendientes[i], pendientes[j] = pendientes[j], pendientes[i]
 	})
-	if len(pendientes) > porTanda {
-		pendientes = pendientes[:porTanda]
+	if len(pendientes) > a.ritmo.cuantos {
+		pendientes = pendientes[:a.ritmo.cuantos]
 	}
 
-	if !esperar(ctx, alPrincipio) {
+	if !esperar(ctx, a.ritmo.alPrincipio) {
 		return
 	}
 
-	d := iconos.Nuevo()
-	traidos := map[string]boveda.Icono{}
+	d := a.descargador
+	if d == nil {
+		d = iconos.Nuevo()
+	}
 	for i, anfitrion := range pendientes {
-		if i > 0 && !esperar(ctx, entreIconos) {
-			break
+		if i > 0 && !esperar(ctx, a.ritmo.entre) {
+			return
 		}
 		// La bóveda puede haberse bloqueado mientras se esperaba. Si es así se
 		// abandona **y se tira lo traído**: mantenerla viva para poder guardar sería
@@ -111,27 +133,30 @@ func (a *App) gotearIconos(ctx context.Context) {
 			return
 		}
 
-		uri, err := d.De(ctx, anfitrion)
+		uri, _ := d.De(ctx, anfitrion)
+
+		// **Se guarda y se avisa uno a uno, no al terminar la tanda.**
+		//
+		// Guardando al final, el primer icono no aparecía hasta que habían caído los
+		// doce —minutos— y quien cerraba la bóveda antes no se llevaba ninguno, ni
+		// siquiera los que ya se habían bajado. Uno a uno, cada icono que llega se
+		// queda, se ve, y el trabajo hecho no depende de llegar al final.
+		//
 		// Tanto el acierto como el fallo se apuntan: lo segundo es lo que evita
 		// volver a preguntar mañana por un sitio que no tiene icono.
-		traidos[anfitrion] = boveda.Icono{
-			URI:    uri,
-			Mirado: time.Now().UTC().Format(time.RFC3339),
+		if err := a.bov.PonerIconos(map[string]boveda.Icono{
+			anfitrion: {URI: uri, Mirado: time.Now().UTC().Format(time.RFC3339)},
+		}); err != nil {
+			return
 		}
-		_ = err
+		if uri != "" {
+			// **Sin llamar a Actividad().** Todo método de bóveda la llama para
+			// aplazar el bloqueo, y aquí sería el programa aplazándoselo a sí mismo:
+			// una bóveda que no se cierra nunca porque está bajando iconos de fondo.
+			// El plazo lo mueve quien está delante, no el trabajo de fondo.
+			a.sistema.Avisar(EventoIconos, nil)
+		}
 	}
-
-	if len(traidos) == 0 || a.bov == nil || !a.bov.Abierta() {
-		return
-	}
-	if err := a.bov.PonerIconos(traidos); err != nil {
-		return
-	}
-	// **Sin llamar a Actividad().** Todo método de bóveda la llama para aplazar el
-	// bloqueo, y aquí sería el programa aplazándoselo a sí mismo: una bóveda que no
-	// se cierra nunca porque está bajando iconos de fondo. El plazo lo mueve quien
-	// está delante, no el trabajo de fondo.
-	a.sistema.Avisar(EventoIconos, nil)
 }
 
 // loQueFaltaPorMirar son los anfitriones de la bóveda que no tienen icono ni un

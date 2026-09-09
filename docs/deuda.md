@@ -46,6 +46,9 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~El goteo de iconos no guardaba nada hasta terminar la tanda~~ → casi cuatro minutos antes de que
+  apareciera el primero, y quien cerraba la bóveda antes no se llevaba ninguno ni de los ya
+  descargados. Se guarda y se avisa uno a uno (2026-09-09, 2.14.2).
 - ~~La descarga de iconos no funcionaba en absoluto~~ → el filtro de direcciones privadas estaba en
   `DialContext`, que recibe el nombre sin resolver: `ParseIP("github.com")` da nulo y se rechazaban
   todos los sitios del mundo. La 2.14.0 salió así y no descargó ni un icono. Lo dijo el cliente

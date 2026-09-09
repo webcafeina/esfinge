@@ -2,7 +2,6 @@ package iconos
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"errors"
 	"image"
@@ -34,29 +33,17 @@ func unPNG(t *testing.T, lado int) []byte {
 // conServidor levanta un sitio de mentira y devuelve un descargador que sí puede
 // hablar con él: el filtro de direcciones privadas rechazaría 127.0.0.1, que es
 // justo lo que tiene que hacer en producción.
+// **Con TLS y no en claro**, y no es un detalle: el descargador solo habla https
+// y no se rebaja. Un servidor en claro obligaría a escribir un ayudante que
+// repitiera lo que hace `De()` con otro esquema, y entonces lo que se probaría
+// sería el ayudante. Así se ejercita el camino de verdad.
 func conServidor(t *testing.T, h http.HandlerFunc) (*Descargador, string) {
 	t.Helper()
-	s := httptest.NewServer(h)
+	s := httptest.NewTLSServer(h)
 	t.Cleanup(s.Close)
 
 	d := &Descargador{PermitirPrivadas: true, Cliente: s.Client()}
-	return d, strings.TrimPrefix(s.URL, "http://")
-}
-
-// deEsteSitio pide el icono por HTTP, que es lo que sirve httptest.
-func (d *Descargador) deEsteSitio(ctx context.Context, base string) (string, error) {
-	for _, ruta := range dondeMirar {
-		datos, err := d.bajar(ctx, "http://"+base+ruta)
-		if err != nil {
-			continue
-		}
-		png, err := aPNGPequeño(datos)
-		if err != nil {
-			continue
-		}
-		return "data:image/png;base64," + enBase64(png), nil
-	}
-	return "", ErrNoHay
+	return d, strings.TrimPrefix(s.URL, "https://")
 }
 
 func TestTraeElIconoYLoDejaPequeño(t *testing.T) {
@@ -69,7 +56,7 @@ func TestTraeElIconoYLoDejaPequeño(t *testing.T) {
 		w.Write(grande)
 	})
 
-	uri, err := d.deEsteSitio(t.Context(), base)
+	uri, err := d.De(t.Context(), base)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +91,7 @@ func TestUnaPaginaDeErrorNoEsUnIcono(t *testing.T) {
 		w.Write([]byte("<!doctype html><html><body>No existe</body></html>"))
 	})
 
-	if _, err := d.deEsteSitio(t.Context(), base); err == nil {
+	if _, err := d.De(t.Context(), base); err == nil {
 		t.Error("ha dado por bueno un trozo de HTML")
 	}
 }
@@ -136,7 +123,7 @@ func TestLoQueLlegaSeLeeConTope(t *testing.T) {
 		}
 	})
 
-	datos, err := d.bajar(t.Context(), "http://"+base+"/apple-touch-icon.png")
+	datos, err := d.bajar(t.Context(), "https://"+base+"/apple-touch-icon.png")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +220,7 @@ func TestNoSeDiceQuienPregunta(t *testing.T) {
 		}
 		http.NotFound(w, r)
 	})
-	d.deEsteSitio(t.Context(), base)
+	d.De(t.Context(), base)
 
 	ua := <-visto
 	if strings.Contains(strings.ToLower(ua), "esfinge") {
@@ -245,7 +232,7 @@ func TestNoSeDiceQuienPregunta(t *testing.T) {
 // es un fallo: es la respuesta correcta y hay que poder recordarla.
 func TestUnSitioSinIconoLoDiceComoTal(t *testing.T) {
 	d, base := conServidor(t, http.NotFound)
-	if _, err := d.deEsteSitio(t.Context(), base); !errors.Is(err, ErrNoHay) {
+	if _, err := d.De(t.Context(), base); !errors.Is(err, ErrNoHay) {
 		t.Errorf("quiero ErrNoHay, tengo %v", err)
 	}
 }

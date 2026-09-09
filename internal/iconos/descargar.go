@@ -262,7 +262,11 @@ func Anfitrion(sitio string) string {
 // De trae el icono de un anfitrión, ya reducido y re-codificado, como URI de
 // datos listo para pintarse.
 func (d *Descargador) De(ctx context.Context, anfitrion string) (string, error) {
-	if Anfitrion(anfitrion) == "" {
+	// La criba por nombre es un atajo barato —descarta lo que ni hay que resolver—
+	// y **no es el filtro**: el que manda es el de `Control`, que mira la dirección
+	// ya resuelta. Los dos obedecen a `PermitirPrivadas`, o las pruebas no podrían
+	// hablar ni con su propio servidor.
+	if !d.PermitirPrivadas && Anfitrion(anfitrion) == "" {
 		return "", ErrNoHay
 	}
 
@@ -280,10 +284,16 @@ func (d *Descargador) De(ctx context.Context, anfitrion string) (string, error) 
 		}
 		return "data:image/png;base64," + enBase64(png), nil
 	}
+	// **Todo lo que sale de aquí es un ErrNoHay**, con el detalle detrás.
+	//
+	// Para quien llama no hay diferencia entre «contestó 404», «no era una imagen»
+	// y «no contestó»: en los tres casos no hay icono que enseñar y toca apuntarlo
+	// para no volver a preguntar mañana. El detalle se conserva en el mensaje, que
+	// es donde sirve.
 	if ultimo == nil {
-		ultimo = ErrNoHay
+		return "", ErrNoHay
 	}
-	return "", ultimo
+	return "", fmt.Errorf("%w: %v", ErrNoHay, ultimo)
 }
 
 func (d *Descargador) bajar(ctx context.Context, donde string) ([]byte, error) {

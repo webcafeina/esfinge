@@ -5,6 +5,29 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · Y aun arreglado, no aparecía ninguno
+
+- **2.14.2.** El cliente actualizó a la 2.14.1 —con el filtro ya corregido— y seguía sin ver un solo
+  icono. Segundo fallo, distinto del primero y también mío.
+- **El goteo guardaba y avisaba solo al terminar la tanda entera.** Diez segundos de espera más
+  veinte entre cada uno son **casi cuatro minutos** antes de que se guardara nada, y quien cerraba la
+  bóveda antes no se llevaba ninguno **ni siquiera de los ya descargados**. Ahora se guarda y se
+  avisa **uno a uno**: cada icono que llega se queda y se ve.
+- Y el ritmo, más razonable: tres segundos para empezar y cinco entre cada uno, veinticinco por
+  sesión. Sigue sin ser una ráfaga —que es lo que la ADR quiere evitar— pero se ve avanzar.
+- **Lo que de verdad hay que aprender de estos dos fallos seguidos:** las piezas estaban probadas una
+  a una y **la tubería no lo estaba**. El descargador tenía ocho pruebas, el almacén cuatro, los
+  frenos tres… y no había ni una que fuera de la bóveda al almacén pasando por la red. Ahora la hay,
+  con su costura para inyectar un descargador y acortar los tiempos —sin eso costaría minutos y no se
+  ejecutaría nunca—.
+- De escribirla salieron dos cosas más: las pruebas del descargador usaban un servidor **en claro** y
+  un ayudante que repetía lo que hace `De()` con otro esquema, así que **lo que se probaba era el
+  ayudante**; ahora son servidores con TLS y se llama al camino de verdad. Y todo lo que devuelve el
+  descargador es ya un `ErrNoHay` con el detalle detrás: para quien llama, «404», «no era una imagen»
+  y «no contestó» son lo mismo.
+- Verificado: `make comprobar`, todo con `-race`, **74 pruebas de interfaz**, y la medida contra doce
+  dominios reales repetida —sigue en nueve—.
+
 ## 2026-09-09 · La descarga de iconos no funcionaba en absoluto
 
 - **2.14.1.** El cliente actualizó y dijo que **ninguna entrada tenía icono**. Tenía razón, y no era
