@@ -7,11 +7,11 @@ saber qué se hizo.
 
 ## Alta
 
-- **Usar la bóveda con datos de verdad, en el Mac, una semana.** Es la puerta de decisión del plan:
-  si no se usa a diario, las fases 2 a 4 —autorrelleno, cuentas, compartir— no se empiezan, porque su
-  coste solo se justifica si la primera funcionó. Lo que hay que hacer es exportar de Dashlane,
-  importar, apuntar la clave de recuperación y vivir con ella. Nada de la bóveda se ha ejercitado con
-  datos reales ni fuera de un navegador (ADR 0023).
+- **Vivir con la bóveda una semana.** Los datos ya están dentro —la exportación de Dashlane entra
+  entera— y la clave de recuperación ya se ha usado de verdad, así que lo que queda no es una
+  comprobación sino uso. Es la puerta de decisión del plan: si no se abre Esfinge para buscar una
+  contraseña, las fases 2 a 4 —autorrelleno, cuentas, compartir— no se empiezan, porque su coste solo
+  se justifica si la primera funcionó (ADR 0023).
 - **Abrir la aplicación en máquinas Windows y GNOME de verdad**, y mirar ahí dos cosas: la estructura
   de cada sistema y el icono de los `.esf` en el explorador de ficheros. En Windows el icono lo pone
   el instalador, en Linux el `.deb`; los dos están comprobados por dentro pero no puestos.
@@ -23,7 +23,8 @@ saber qué se hizo.
 - **Códigos de un solo uso (TOTP) de verdad.** La bóveda ya guarda la semilla y la trae al importar,
   pero **nadie calcula el código de seis cifras todavía**: se enseña la semilla y ya. Mientras eso no
   esté, los segundos factores se quedan en Dashlane, y con ellos la mitad de la razón para no
-  dejarlo. Es un algoritmo estándar y sin dependencias raras.
+  dejarlo. Es un algoritmo estándar y sin dependencias raras. **Es lo primero que haría** si al vivir
+  con la bóveda resulta que eso es lo que frena.
 - **La papelera no se puede vaciar desde la ventana.** Borrar es borrado suave —hace falta para
   sincronizar después— así que una entrada borrada sigue en el fichero con su contraseña dentro. Hoy
   la única forma de quitarla de verdad es no tenerla.

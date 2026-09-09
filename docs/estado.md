@@ -55,16 +55,21 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   habría pasado en verde dejando de abrir lo ya emitido.
 - **La bóveda** (ADR 0023): local, cifrada, con clave de recuperación, cuatro clases de entrada,
   historial de contraseñas anteriores, importación desde Dashlane, Bitwarden, 1Password, LastPass y
-  Chrome, exportación en claro para poder salir, bloqueo por inactividad y borrado del portapapeles.
-  Con su sección en la ventana, sus dos plazos en Ajustes y `esfinge boveda listar|ver|exportar` en
-  la línea de comandos. **No toca `internal/cripto`**, así que los `.esf` y las claves ya emitidos
-  siguen valiendo.
+  Chrome —cada gestor exporta **varios ficheros** y cada uno se reconoce por su forma—, exportación
+  en claro para poder salir, bloqueo por inactividad, borrado del portapapeles y borrado de la bóveda
+  entera pidiendo la maestra. Con su sección en la ventana, sus dos plazos en Ajustes y
+  `esfinge boveda listar|ver|exportar` en la línea de comandos. **No toca `internal/cripto`**, así que
+  los `.esf` y las claves ya emitidos siguen valiendo.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
   máquina sin entorno gráfico. Son **68**.
 
 ## En curso
 
-Nada a medias. Los tres sistemas tienen ya su estructura. La de macOS está probada en un Mac; la de
+Nada a medias. La 2.12.0 salió con la bóveda y de usarla salieron cinco versiones seguidas de
+correcciones —2.12.1 a 2.12.5—, todas de cosas que **solo aparecen usando la aplicación en un Mac**:
+pegar con ⌘V, copiar de un campo de contraseña, el filtro del diálogo de abrir, el importador que
+solo entendía una forma de fichero y una negrita que partía los avisos en columnas. Ninguna se
+habría encontrado desde esta máquina. Los tres sistemas tienen ya su estructura. La de macOS está probada en un Mac; la de
 GNOME se puede mirar aquí, porque el servidor de desarrollo corre en Linux; la de Windows no la ha
 visto nadie.
 
