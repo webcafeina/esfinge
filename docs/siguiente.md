@@ -35,7 +35,8 @@ Nada por ahora.
   (2026-09-08).
 - ~~Que el Finder enseñe el icono de los `.esf`~~ → el icono estaba, pero **era el de la aplicación**:
   `build/esf.png` era una copia byte a byte de `appicon.png`. Ahora hay un documento de verdad,
-  `build/documento.svg`. Falta que el humano lo vea en el Finder (2026-09-08).
+  `build/documento.svg`, y el Finder lo enseña sin forzar la caché. De verlo puesto salió la 2.10.2,
+  que lo centró en la hoja (2026-09-08).
 - ~~Una entrada en `compilar.yml` para pedir compilación con inspector~~ → hecha: el disparador
   manual acepta `inspector`, que compila con `wails build -devtools`
   (`gh workflow run compilar.yml -f inspector=true`). El artefacto sale como `-CON-INSPECTOR`, dura
