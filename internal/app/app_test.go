@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,6 +24,34 @@ type sistemaFalso struct {
 
 	desdeAbrir   string
 	desdeGuardar string
+
+	portapapeles string
+	// leerFalla simula un escritorio que no deja leer el portapapeles: ahí lo
+	// correcto es no borrar nada, porque no se puede saber si sigue siendo
+	// nuestro lo que hay.
+	leerFalla bool
+}
+
+func (s *sistemaFalso) PonerEnPortapapeles(texto string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.portapapeles = texto
+	return nil
+}
+
+func (s *sistemaFalso) LeerPortapapeles() (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.leerFalla {
+		return "", errors.New("aquí no se puede leer el portapapeles")
+	}
+	return s.portapapeles, nil
+}
+
+func (s *sistemaFalso) verPortapapeles() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.portapapeles
 }
 
 func (s *sistemaFalso) Cerrar() {

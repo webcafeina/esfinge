@@ -74,3 +74,20 @@ func (e *Escritorio) Avisar(evento string, datos any) {
 	}
 	runtime.EventsEmit(e.ctx, evento, datos)
 }
+
+// PonerEnPortapapeles y LeerPortapapeles usan el runtime de Wails, que es quien
+// habla con el portapapeles del sistema. La interfaz no puede: el navegador sabe
+// copiar, pero no borrar pasado un rato de forma fiable.
+func (e *Escritorio) PonerEnPortapapeles(texto string) error {
+	if e.ctx == nil {
+		return nil
+	}
+	return runtime.ClipboardSetText(e.ctx, texto)
+}
+
+func (e *Escritorio) LeerPortapapeles() (string, error) {
+	if e.ctx == nil {
+		return "", nil
+	}
+	return runtime.ClipboardGetText(e.ctx)
+}

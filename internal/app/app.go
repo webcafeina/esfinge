@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 
 	"github.com/webcafeina/esfinge/internal/actualizacion"
+	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/cripto"
 )
 
@@ -45,6 +46,12 @@ type App struct {
 
 	// vidrio dice si el sistema ha puesto una ventana translúcida detrás.
 	vidrio bool
+
+	// bov es la bóveda, si está abierta. Nil mientras nadie la haya desbloqueado.
+	bov *boveda.Boveda
+	// vig lleva los dos relojes: el del bloqueo por inactividad y el del borrado
+	// del portapapeles.
+	vig *vigilante
 }
 
 // Sistema es lo que la aplicación necesita del escritorio: los diálogos de
@@ -63,6 +70,15 @@ type Sistema interface {
 	// Cerrar cierra la ventana. Hace falta para actualizarse: el cambiazo lo da
 	// un guion que espera a que este proceso muera.
 	Cerrar()
+
+	// El portapapeles, y **entra por aquí porque tiene que hacerlo desde Go**.
+	//
+	// Copiar sabe hacerlo el navegador; borrar pasado un rato, no: el temporizador
+	// de un webview muere al recargar y el sistema lo puede pausar, y entonces un
+	// secreto se queda en el portapapeles para siempre creyendo que se limpió. Lo
+	// mismo por lo que el menú Pegar ya lee el portapapeles desde Go.
+	PonerEnPortapapeles(texto string) error
+	LeerPortapapeles() (string, error)
 }
 
 // Nueva construye la aplicación.
@@ -73,6 +89,7 @@ func Nueva(version string, sistema Sistema) *App {
 		ajustes: AbrirAjustes(),
 		sistema: sistema,
 		act:     &actualizador{comprobador: actualizacion.Nuevo(version)},
+		vig:     nuevoVigilante(),
 	}
 }
 
@@ -120,6 +137,8 @@ func (a *App) Arrancar(ctx context.Context) {
 	// Y se queda un reloj mirando, porque comprobar solo al arrancar dejaba sin
 	// enterarse a quien no cierra la ventana. Ver vigilar.
 	a.vigilar(ctx, cadaCuantoSeAsoma)
+	// Y el reloj de la bóveda: bloquear por inactividad y borrar el portapapeles.
+	a.vigilarBoveda(ctx, cadaCuantoSeMira)
 }
 
 // Version es la que se enseña en «Acerca de».

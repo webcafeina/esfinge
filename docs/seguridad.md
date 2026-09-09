@@ -32,8 +32,13 @@ Esto es lo importante de este documento.
 - **De quien ya está dentro de la máquina.** Mientras la ventana está abierta, la clave vive en
   memoria. Quien pueda leer la memoria del proceso, poner un registrador de teclas o hacerse pasar
   por el usuario, no necesita romper nada.
-- **De perder la clave.** No hay recuperación, ni puerta trasera, ni copia en ninguna parte. Si se
-  pierde la clave, el contenido se ha perdido. Esto no es un fallo: es lo que significa cifrar.
+- **De perder la clave de un `.esf`.** No hay recuperación, ni puerta trasera, ni copia en ninguna
+  parte. Si se pierde la clave, el contenido se ha perdido. Esto no es un fallo: es lo que significa
+  cifrar.
+
+  **La bóveda es la excepción, y es deliberada.** Ahí sí hay una segunda llave —la clave de
+  recuperación— porque perder la contraseña maestra no puede significar perder *todas* las
+  contraseñas de golpe. Eso trae su propia contrapartida, y va abajo.
 - **De que se sepa qué has cifrado.** El historial guarda nombres de fichero y fechas
   ([ADR 0010](adr/0010-que-guarda-el-historial.md)). No guarda contenidos ni claves, pero saber que
   el martes cifraste `credenciales-banco.env` ya dice algo. Se puede vaciar desde la propia ventana.
@@ -50,11 +55,41 @@ Esto es lo importante de este documento.
   gestor de contraseñas sin dar un rodeo— pero la diferencia importa: lo que queda en el portapapeles
   es la llave, no el candado.
 
+  **Desde la 3.0 el portapapeles se borra solo** pasado el plazo que diga Ajustes, y eso arregla ese
+  agujero. Con dos límites que conviene saber: solo se borra **si sigue conteniendo lo que Esfinge
+  puso** —nunca se pisa lo que se haya copiado después—, y un gestor de portapapeles del sistema, o
+  el Portapapeles Universal de Apple, ya se lo pueden haber llevado a otro sitio. Eso no lo puede
+  borrar nadie.
+
+## Lo que cambia con la bóveda
+
+La bóveda guarda contraseñas, así que **cambia el modelo de amenazas del propio programa**. Antes,
+un fallo perdía un fichero; ahora puede perderlas todas. Lo que hay que tener claro:
+
+- **La clave de recuperación es una segunda puerta a todo.** Quien la consiga tiene la bóveda
+  entera, y no caduca: hasta que no se rote —lo que genera una clave nueva y deja la anterior
+  inservible— sigue abriendo. Se enseña **una sola vez** al crear la bóveda, no se guarda en ninguna
+  parte, y no se puede volver a ver. Guardarla es tan importante como guardar la maestra, y en otro
+  sitio distinto.
+- **El historial de contraseñas conserva las anteriores.** Cambiar una contraseña no borra la vieja:
+  se guarda para el caso de «cambié la contraseña y el servicio no se enteró». Eso significa que un
+  secreto sustituido **sigue dentro de la bóveda** hasta que se borre a mano.
+- **La bóveda está abierta durante horas**, y mientras lo está, todas las contraseñas viven
+  descifradas en memoria. Un volcado de memoria o el fichero de intercambio pueden contenerlas. Es
+  la misma limitación de siempre —Go no permite borrar una cadena— pero aquí la ventana es mucho más
+  larga. Se acorta con el bloqueo por inactividad, que va a quince minutos por defecto, y
+  mandando a la ventana **una contraseña cada vez**, solo cuando se pide, en vez de la lista entera.
+- **El fichero de la bóveda es JSON en claro por fuera.** Lo cifrado son los campos. Quien pueda
+  escribirlo no puede leer nada ni fabricar una bóveda que abra, pero sí puede estropearla o
+  revertirla a una copia vieja. **Se detecta al abrir** —hay un sello por dentro que no cuadraría—
+  pero no se impide.
+
 ## Dónde queda algo en disco
 
 | Qué | Dónde | Permisos |
 |---|---|---|
 | Historial | Carpeta de configuración del usuario, `Esfinge/historial.json` | `600` |
+| **La bóveda** | La misma carpeta, `Esfinge/boveda.esfinge`, más `.anterior` con la copia previa | `600` |
 | Preferencias | La misma carpeta, `Esfinge/preferencias.json` | `600` |
 | La actualización descargada | Carpeta de caché del usuario, `Esfinge/descargas/` | `600` |
 | Ficheros cifrados | Junto al original, con `.esf` al final | `600` |

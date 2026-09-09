@@ -36,7 +36,8 @@ import (
 // el camino entero —elegir, cifrar, ver el resultado— sin fingir nada del lado
 // de Go.
 type SistemaDeDesarrollo struct {
-	Carpeta string
+	portapapeles string
+	Carpeta      string
 
 	mu      sync.Mutex
 	oyentes map[chan []byte]bool
@@ -72,6 +73,23 @@ func (s *SistemaDeDesarrollo) ElegirDondeGuardar(_, nombreSugerido, _ string) (s
 // Avisar reparte el evento entre los navegadores conectados.
 // Cerrar no cierra nada aquí: el servidor de desarrollo no es una ventana, y
 // matarlo dejaría las pruebas sin con qué hablar. Se anota y se sigue.
+// El portapapeles del servidor de desarrollo es una variable: aquí no hay
+// escritorio al que pedírselo, y lo que se prueba es la lógica del borrado —que
+// caduca, y que no pisa lo que se haya copiado después—, no el portapapeles del
+// sistema.
+func (s *SistemaDeDesarrollo) PonerEnPortapapeles(texto string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.portapapeles = texto
+	return nil
+}
+
+func (s *SistemaDeDesarrollo) LeerPortapapeles() (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.portapapeles, nil
+}
+
 func (s *SistemaDeDesarrollo) Cerrar() {
 	log.Println("La aplicación pediría cerrarse ahora para actualizarse")
 }
