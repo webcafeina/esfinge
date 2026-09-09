@@ -213,6 +213,74 @@ func TestLosVectoresRotosDanElErrorQueToca(t *testing.T) {
 	}
 }
 
+// La retrocompatibilidad, demostrada en vez de afirmada.
+//
+// **Estos tres no los selló el Esfinge de hoy.** Se sellaron con el código de la
+// 1.5.0 —`git archive` del commit donde nació el contenedor, compilado y
+// ejecutado tal cual— y se guardaron aquí. Que hoy se abran es la prueba de lo
+// que la ADR 0002 llevaba afirmando desde el principio sin que nada lo
+// comprobara: que un contenedor de la 1.x se abre con la versión de ahora.
+//
+// La clave es la de entonces, tecleada tal cual. Si algún día se tocara la
+// codificación de la clave —normalizar acentos, recortar espacios— esto se
+// pondría rojo, que es justo lo que se quiere: las claves ya emitidas tienen que
+// seguir valiendo.
+//
+// Se comprueba **solo que se abren**, y es deliberado: se sellaron con sal y
+// nonce de verdad, así que no se pueden reproducir. Son vectores de lectura, que
+// es lo único que la retrocompatibilidad significa.
+func TestLosContenedoresDeLa150SeSiguenAbriendo(t *testing.T) {
+	const clave = "clave de la 1.5.0"
+	const claro = "un secreto de la 1.x"
+
+	t.Run("binario", func(t *testing.T) {
+		b, err := os.ReadFile(filepath.Join("testdata", "v15-unico.esf"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		salido, err := Abrir(b, []byte(clave))
+		if err != nil {
+			t.Fatalf("un .esf de la 1.5.0 ya no se abre: %v", err)
+		}
+		if string(salido) != claro {
+			t.Errorf("claro: %q, se esperaba %q", salido, claro)
+		}
+	})
+
+	t.Run("texto", func(t *testing.T) {
+		b, err := os.ReadFile(filepath.Join("testdata", "v15-texto.esf1"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if f := FormaDe(b); f != FormaTexto {
+			t.Errorf("FormaDe ya no reconoce la línea de la 1.5.0: %v", f)
+		}
+		salido, err := AbrirTexto(string(b), []byte(clave))
+		if err != nil {
+			t.Fatalf("una línea ESF1. de la 1.5.0 ya no se abre: %v", err)
+		}
+		if string(salido) != claro {
+			t.Errorf("claro: %q, se esperaba %q", salido, claro)
+		}
+	})
+
+	t.Run("flujo", func(t *testing.T) {
+		b, err := os.ReadFile(filepath.Join("testdata", "v15-flujo.esf"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var w bytes.Buffer
+		if err := AbrirFlujo(&w, bytes.NewReader(b), []byte(clave)); err != nil {
+			t.Fatalf("un fichero por segmentos de la 1.5.0 ya no se abre: %v", err)
+		}
+		// Tres segmentos: el contador y la marca de final tienen que seguir donde
+		// estaban dentro del nonce.
+		if quiero := patronDe(2*TamSegmento + 77); !bytes.Equal(w.Bytes(), quiero) {
+			t.Errorf("claro: %d bytes, se esperaban %d", w.Len(), len(quiero))
+		}
+	})
+}
+
 // Subir el coste de la derivación es una decisión, no un descuido. Los
 // parámetros viajan dentro del contenedor, así que subirlos no rompe nada ya
 // cifrado —y por eso es fácil hacerlo sin querer—. Esto pone un test en rojo

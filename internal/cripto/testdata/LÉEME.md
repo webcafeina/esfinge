@@ -57,6 +57,20 @@ borró** en el mismo commit: no hay un botón que apretar.
 | `flujo-dos-segmentos.esf` | 64 KiB + 1: el primer cruce del contador |
 | `flujo-tres-segmentos.esf` | El contador más allá de 1, que es donde vive el error de índice |
 | `roto-truncado.esf`, `roto-bit.esf`, `roto-version99.esf` | La **clasificación** del error, no solo que falle. De ahí salen los códigos de salida 3 y 4 de la línea de comandos |
+| `v15-unico.esf`, `v15-texto.esf1`, `v15-flujo.esf` | **La retrocompatibilidad.** Ver abajo |
+
+## Los tres de la 1.5.0 son distintos
+
+`v15-*` **no los selló el Esfinge de hoy.** Se sacó con `git archive` el commit donde nació el
+contenedor, se compiló el código de la 1.5.0 tal cual y se sellaron con él. Que hoy se abran es la
+prueba de lo que la ADR 0002 llevaba afirmando sin que nada lo comprobara.
+
+De ésos se verifica **solo que se abren**, no que se sellen igual: llevan sal y nonce de verdad y no
+se pueden reproducir. Son vectores de lectura, que es lo único que significa la retrocompatibilidad.
+
+Y la clave se teclea tal cual era entonces. Si alguien tocara la codificación de la clave
+—normalizar acentos, recortar espacios—, ese test se pondría rojo: **las claves ya emitidas tienen
+que seguir valiendo tanto como los ficheros**.
 
 El claro de los vectores de flujo no se guarda: se reconstruye con una fórmula fija en el test, para
 no duplicar 130 KiB en el repositorio.

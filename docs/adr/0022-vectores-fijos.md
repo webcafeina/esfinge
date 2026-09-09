@@ -89,6 +89,26 @@ Cambiando el orden de bytes de los parámetros a la vez al escribir y al leer:
 Y lo de siempre: los 11 vectores se abren y se vuelven a sellar idénticos, los 3 rotos dan el error
 que les toca, y `make comprobar` y `go test -race` en verde.
 
-**Lo que no cubre:** que los contenedores de la **1.x** se abran. Los vectores se grabaron con la
-2.11.2, así que congelan de aquí en adelante. Si aparece un `.esf` de la 1.x de verdad, merece la
-pena grabarlo como vector más.
+### Y la retrocompatibilidad, demostrada en vez de afirmada
+
+Los once vectores de arriba se grabaron con la 2.11.2, así que congelan de aquí en adelante. Eso
+dejaba sin comprobar justo lo que la ADR 0002 lleva prometiendo desde el principio: **que un
+contenedor de la 1.x se abre con la versión de ahora**.
+
+Se comprobó de verdad. El historial dice que el contenedor nació en el commit de la **1.5.0** y que
+desde entonces `contenedor.go` solo se tocó una vez, para añadir `FormaDe`, que solo lee. Pero eso es
+creerse un diff, así que se sacó ese commit con `git archive`, se compiló **el código de la 1.5.0 tal
+cual** y se sellaron con él tres contenedores —binario, línea de texto y fichero por segmentos— que
+viven ahora en `testdata/v15-*`.
+
+`TestLosContenedoresDeLa150SeSiguenAbriendo` los abre con el código de hoy, **con la clave de
+entonces tecleada tal cual**. Si algún día alguien tocara la codificación de la clave —normalizar
+acentos, recortar espacios—, ese test se pondría rojo: las claves ya emitidas tienen que seguir
+valiendo tanto como los ficheros.
+
+De esos tres se comprueba **solo que se abren**, y es deliberado: se sellaron con sal y nonce de
+verdad, así que no se pueden reproducir. Son vectores de lectura, que es lo único que significa la
+retrocompatibilidad.
+
+**Lo que sigue sin cubrirse:** contenedores de la 1.0 a la 1.4, si es que llegaron a existir con este
+formato. El commit de la 1.5.0 es el primero que lo tiene.
