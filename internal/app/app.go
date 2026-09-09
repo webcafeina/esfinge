@@ -63,8 +63,9 @@ type App struct {
 // desarrolla no lo hay.
 type Sistema interface {
 	// El «desde» es la carpeta en la que abrir el diálogo. Puede ir vacío, y
-	// entonces manda el sistema.
-	ElegirFicheros(titulo, desde string, varios bool) ([]string, error)
+	// entonces manda el sistema. El filtro dice qué se espera encontrar; nunca
+	// impide elegir otra cosa.
+	ElegirFicheros(titulo, desde string, varios bool, filtro Filtro) ([]string, error)
 	ElegirDondeGuardar(titulo, nombreSugerido, desde string) (string, error)
 	Avisar(evento string, datos any)
 	// Cerrar cierra la ventana. Hace falta para actualizarse: el cambiazo lo da
@@ -496,14 +497,32 @@ func (a *App) GenerarContrasena(bytes int, alfabeto string) (string, error) {
 	return cripto.Generar(al, bytes)
 }
 
+// Filtro dice qué clase de fichero se está buscando.
+//
+// **Es una sugerencia y nunca una reja.** Lo que hay detrás de esta decisión:
+// un `.esf` puede ser un fichero cifrado o un `.txt` en el que alguien guardó la
+// línea `ESF1.…`, y una exportación de contraseñas puede llegar con cualquier
+// extensión. Un diálogo que solo deje elegir lo que esperábamos es un diálogo
+// que un día no deja trabajar.
+type Filtro int
+
+const (
+	// FiltroCualquiera no estrecha nada: vale cualquier fichero.
+	FiltroCualquiera Filtro = iota
+	// FiltroCifrados propone los .esf, sin excluir lo demás.
+	FiltroCifrados
+	// FiltroTablas propone los CSV de otros gestores, sin excluir lo demás.
+	FiltroTablas
+)
+
 // ElegirFicheros abre el diálogo del sistema.
 func (a *App) ElegirFicheros(varios bool) ([]string, error) {
-	return a.elegir("Elige qué cifrar", varios)
+	return a.elegir("Elige qué cifrar", varios, FiltroCualquiera)
 }
 
-// ElegirCifrados abre el diálogo del sistema filtrando por contenedores.
+// ElegirCifrados abre el diálogo del sistema proponiendo contenedores.
 func (a *App) ElegirCifrados() ([]string, error) {
-	return a.elegir("Elige qué descifrar", true)
+	return a.elegir("Elige qué descifrar", true, FiltroCifrados)
 }
 
 // elegir abre el diálogo donde se quedó la última vez y recuerda dónde acaba.
@@ -511,8 +530,8 @@ func (a *App) ElegirCifrados() ([]string, error) {
 // Abrir y guardar se recuerdan por separado porque son gestos distintos: se abre
 // de donde están los ficheros y se guarda donde va el resultado, que casi nunca
 // es el mismo sitio.
-func (a *App) elegir(titulo string, varios bool) ([]string, error) {
-	rutas, err := a.sistema.ElegirFicheros(titulo, a.ajustes.CarpetaDeAbrir(), varios)
+func (a *App) elegir(titulo string, varios bool, filtro Filtro) ([]string, error) {
+	rutas, err := a.sistema.ElegirFicheros(titulo, a.ajustes.CarpetaDeAbrir(), varios, filtro)
 	if err != nil || len(rutas) == 0 {
 		return rutas, err
 	}

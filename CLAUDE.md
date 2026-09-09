@@ -255,6 +255,20 @@ campo tiene un ojo para destaparla, **dentro del campo y a la derecha**: fuera c
 una» por el mismo sitio y se leía como otra acción del formulario. Su nombre accesible es lo único
 por lo que se puede localizar, así que no puede faltar.
 
+**Un filtro de fichero no significa lo mismo en los tres sistemas.** En Windows y en GTK es una
+lista desplegable: proponer los `.esf` primero es una comodidad y no impide elegir otra cosa. En
+macOS **no**: lo que se manda es la única lista de extensiones que el panel deja seleccionar y todo
+lo demás sale en gris. Encima Wails les quita el `*.` de delante antes de dárselos al panel
+(`WailsContext.m`), así que el `*.*` de «todos los ficheros» —idiomático en Windows, donde funciona—
+llegaba convertido en una extensión llamada literalmente `*`, que no tiene ningún fichero: **el
+diálogo se abría sin dejar elegir nada**. En macOS no se manda ningún filtro, y entonces Wails llama
+a `setAllowsOtherFileTypes:true`. Lo aguanta `filtrosPara`, que toma el sistema como argumento para
+poder comprobar los tres desde aquí.
+
+Y la otra mitad: **un filtro nunca puede impedir elegir**, ni donde hay desplegable. Un `.esf` puede
+ser un `.txt` con la línea `ESF1.…` dentro, y una exportación de contraseñas llega con la extensión
+que le dé la gana al gestor que la escribió.
+
 **En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de
 `.contenido`. Sin acotar, Playwright encuentra dos y falla por modo estricto.
@@ -397,6 +411,10 @@ la imagen en un Mac. `make ventana-dmg` la dibuja antes, leyendo las posiciones 
   arranca hasta que se le devuelve con `chmod +x Contents/MacOS/Esfinge`.
 
 ## Lo que nunca se ha probado
+
+Y ojo con qué se ha comprobado de verdad: **el diálogo de abrir no**, porque en macOS los ficheros se
+arrastran a la ventana y ese camino no pasa por él. Ahí estuvo escondido el fallo del filtro hasta
+que llegó importar de otro gestor, que es lo primero que no tiene arrastrar y soltar.
 
 Comprobado ya en un Mac de verdad: el arrastrar y soltar desde el Finder, el diálogo de guardar, el
 doble clic en un `.esf`, la imagen de disco —que se monta y se arrastra sin más—, la estructura de la

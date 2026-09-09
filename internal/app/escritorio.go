@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+	goruntime "runtime"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -21,23 +22,66 @@ func NuevoEscritorio() *Escritorio { return &Escritorio{} }
 
 func (e *Escritorio) Arrancar(ctx context.Context) { e.ctx = ctx }
 
-// filtros de los diálogos. Se ofrecen, no se imponen: quien quiera cifrar un
-// fichero sin extensión conocida tiene que poder.
-var (
-	filtroTodos    = runtime.FileFilter{DisplayName: "Todos los ficheros", Pattern: "*.*"}
-	filtroCifrados = runtime.FileFilter{DisplayName: "Cifrados de Esfinge (*.esf)", Pattern: "*.esf"}
-)
+// filtrosDe traduce lo que se busca a lo que entiende el diálogo de cada
+// sistema, **que no es lo mismo en los tres y ahí estaba el fallo**.
+//
+// En macOS los filtros no son una lista desplegable: son la única lista de
+// extensiones que el panel deja seleccionar, y todo lo demás sale en gris. Y
+// Wails los prepara quitándoles el `*.` por delante, así que el `*.*` de «todos
+// los ficheros» —que en Windows es lo idiomático y ahí funciona— llegaba a macOS
+// convertido en una extensión llamada literalmente `*`, que no tiene ningún
+// fichero. Resultado: el panel se abría **sin dejar elegir nada**.
+//
+// Nadie lo había visto porque en macOS los ficheros se arrastran a la ventana, y
+// ese camino no pasa por aquí. Importar de otro gestor no tiene arrastrar y
+// soltar, así que fue lo primero que se dio de bruces con ello.
+//
+// Por eso en macOS **no se manda ningún filtro**: sin filtros Wails llama a
+// `setAllowsOtherFileTypes:true` y el panel acepta lo que sea, que es lo que hace
+// falta. Se pierde el resaltado de los `.esf`, que era una comodidad; no se
+// pierde poder trabajar, que no lo es.
+func filtrosDe(filtro Filtro) []runtime.FileFilter {
+	return filtrosPara(goruntime.GOOS, filtro)
+}
 
-func (e *Escritorio) ElegirFicheros(titulo, desde string, varios bool) ([]string, error) {
+// filtrosPara es lo mismo con el sistema como argumento, que es lo único que
+// permite comprobar los tres desde una sola máquina. Sin esta costura, la regla
+// de macOS —la que estaba mal— no se puede probar en ninguna parte.
+func filtrosPara(sistema string, filtro Filtro) []runtime.FileFilter {
+	if sistema == "darwin" {
+		return nil
+	}
+
+	// El patrón de «cualquier fichero» tampoco es el mismo: en Windows es `*.*` y
+	// en GTK hace falta `*`, porque `*.*` deja fuera los que no tienen extensión.
+	todos := runtime.FileFilter{DisplayName: "Todos los ficheros", Pattern: "*"}
+	if sistema == "windows" {
+		todos.Pattern = "*.*"
+	}
+
+	// Y en los dos el filtro es una lista desplegable, así que ofrecer lo probable
+	// primero no le quita a nadie la posibilidad de elegir otra cosa.
+	switch filtro {
+	case FiltroCifrados:
+		return []runtime.FileFilter{
+			{DisplayName: "Cifrados de Esfinge (*.esf)", Pattern: "*.esf"},
+			todos,
+		}
+	case FiltroTablas:
+		return []runtime.FileFilter{
+			{DisplayName: "Exportaciones (*.csv)", Pattern: "*.csv"},
+			todos,
+		}
+	default:
+		return []runtime.FileFilter{todos}
+	}
+}
+
+func (e *Escritorio) ElegirFicheros(titulo, desde string, varios bool, filtro Filtro) ([]string, error) {
 	opciones := runtime.OpenDialogOptions{
 		Title:            titulo,
 		DefaultDirectory: desde,
-		Filters:          []runtime.FileFilter{filtroTodos},
-	}
-	// Al descifrar se ofrece primero el filtro de contenedores, que es lo que se
-	// va a buscar el noventa y nueve por ciento de las veces.
-	if titulo == "Elige qué descifrar" {
-		opciones.Filters = []runtime.FileFilter{filtroCifrados, filtroTodos}
+		Filters:          filtrosDe(filtro),
 	}
 
 	if !varios {

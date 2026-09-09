@@ -5,6 +5,25 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · Tres cosas que solo aparecen usando la aplicación
+
+- **2.12.3: el diálogo de abrir no dejaba elegir ningún fichero en macOS.** El filtro «todos los
+  ficheros» llevaba el patrón `*.*`, que es lo idiomático en Windows y ahí funciona. Wails le quita
+  el `*.` de delante antes de pasárselo al `NSOpenPanel`, así que llegaba como **una extensión
+  llamada literalmente `*`**, que no tiene ningún fichero: el panel se abría y estaba todo en gris.
+  En macOS los filtros no son una lista desplegable, son la única lista que el panel acepta.
+- **Estuvo así desde que existen los diálogos.** No se vio nunca porque en macOS los ficheros se
+  arrastran a la ventana y ese camino no pasa por ahí; salió a la primera con importar de otro
+  gestor, que es lo primero que no tiene arrastrar y soltar. Está anotado en `CLAUDE.md` junto a lo
+  que sí se ha comprobado en el Mac, para que no vuelva a parecer que ese diálogo estaba visto.
+- El arreglo: en macOS **no se manda ningún filtro** —y entonces Wails llama a
+  `setAllowsOtherFileTypes:true`—; en Windows `*.*` y en GTK `*`, que ahí sí son listas desplegables.
+  La regla vive en `filtrosPara`, que **toma el sistema como argumento** para poder comprobar los
+  tres desde esta máquina; sin esa costura, la regla de macOS no se puede probar en ninguna parte.
+- Y la segunda mitad, que es la lección: **un filtro nunca puede impedir elegir**. Un `.esf` puede
+  ser un `.txt` con la línea `ESF1.…` dentro, y una exportación de contraseñas llega con la extensión
+  que le dé la gana al gestor que la escribió. Hay una prueba que lo vigila para los tres sistemas.
+
 ## 2026-09-09 · Dos bugs del campo de la clave, contados por el cliente
 
 - **2.12.1**, antes de que llegara a probar la bóveda. Los dos eran de la pantalla de cifrar y los

@@ -62,7 +62,7 @@ func (s *sistemaFalso) Cerrar() {
 
 // Las dos apuntan el «desde» que se les pasa, que es lo que se quiere vigilar:
 // que el diálogo se abre donde se quedó la última vez.
-func (s *sistemaFalso) ElegirFicheros(_, desde string, _ bool) ([]string, error) {
+func (s *sistemaFalso) ElegirFicheros(_, desde string, _ bool, _ Filtro) ([]string, error) {
 	s.mu.Lock()
 	s.desdeAbrir = desde
 	s.mu.Unlock()

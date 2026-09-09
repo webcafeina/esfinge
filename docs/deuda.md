@@ -44,6 +44,12 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~El diálogo de abrir no dejaba elegir nada en macOS~~ → el filtro «todos los ficheros» iba con el
+  patrón `*.*`, que es lo idiomático en Windows; Wails le quita el `*.` de delante antes de dárselo
+  al `NSOpenPanel`, así que llegaba como una extensión llamada `*` y el panel lo dejaba todo en gris.
+  En macOS no se manda ya ningún filtro. Estuvo así desde que existen los diálogos y no se vio nunca
+  porque allí los ficheros se arrastran; lo encontró el cliente al ir a importar de Dashlane, que es
+  lo primero que no tiene arrastrar y soltar (2026-09-09, 2.12.3).
 - ~~Pegar con ⌘V no activaba el botón de cifrar~~ → React no ve un `campo.value = …`: mantiene su
   propio registro del valor en un accesor del elemento, así que al asignar directamente el evento
   `input` posterior no le parece un cambio y no llama a `onChange`. La clave se veía en pantalla y

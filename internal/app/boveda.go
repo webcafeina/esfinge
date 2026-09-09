@@ -198,7 +198,7 @@ func (a *App) ImportarEnBoveda(deDonde string) (ResumenImportacion, error) {
 		return ResumenImportacion{}, boveda.ErrCerrada
 	}
 	rutas, err := a.sistema.ElegirFicheros("Elige la exportación de "+deDonde,
-		a.ajustes.CarpetaDeAbrir(), false)
+		a.ajustes.CarpetaDeAbrir(), false, FiltroTablas)
 	if err != nil || len(rutas) == 0 {
 		return ResumenImportacion{}, err
 	}
