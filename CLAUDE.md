@@ -235,8 +235,7 @@ vacía.** El fichero no llega como argumento sino por un evento de Apple, que Wa
 interfaz esté escuchando —abrir la aplicación con doble clic— o **después** —doble clic con Esfinge
 ya abierta—. El primero hay que guardarlo, porque no hay a quién avisar; el segundo hay que
 avisarlo, porque nadie va a volver a preguntar. `AlAbrirCon` distingue los dos, y la interfaz **se
-suscribe antes de preguntar**: al revés queda un hueco por el que el fichero se pierde. Sin
-comprobar todavía: si el Finder enseña el icono del documento.
+suscribe antes de preguntar**: al revés queda un hueco por el que el fichero se pierde.
 
 **Un `.esf` no dice qué lleva dentro por la extensión.** Puede ser un fichero cifrado o la línea
 `ESF1.…` que sale de cifrar un texto y que alguien guardó. Los dos empiezan por la misma magia; lo
@@ -303,5 +302,12 @@ reemplaza y se reinicia sola. **Gatekeeper no aparece al actualizar**, lo que co
 razonamiento de la ADR 0016 —la cuarentena la pone quien descarga, y ahí descarga Go, no un
 navegador—. El aviso de programa no identificado es cosa solo de la primera instalación.
 
-Sin verificar todavía: si el Finder enseña el icono nuevo de los `.esf`, y cómo quedan las
-estructuras de Windows y de GNOME en máquinas de verdad.
+Y **el icono del documento `.esf`**, que el Finder enseña sin necesidad de forzar la caché de
+LaunchServices. De verlo puesto salió su corrección: la marca caía baja en la hoja.
+
+Sin verificar todavía, y las dos cosas dependen del cliente:
+
+- **Que la banda de versión nueva salga sola.** Es lo que arregla la 2.10.4 —hasta entonces solo se
+  comprobaba al arrancar— y no se puede dar por bueno hasta que se publique una versión más.
+- **Cómo quedan las estructuras de Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono
+  de los `.esf`, que en Windows lo pone el instalador y en Linux el `.deb`.
