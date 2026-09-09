@@ -2,10 +2,13 @@ package app
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/webcafeina/esfinge/internal/escritura"
 )
 
 // Accion es lo que se hizo.
@@ -123,12 +126,17 @@ func (h *Historial) guardar() {
 	if h.ruta == "" {
 		return
 	}
-	if err := os.MkdirAll(filepath.Dir(h.ruta), 0o700); err != nil {
-		return
-	}
 	datos, err := json.MarshalIndent(h.entradas, "", "  ")
 	if err != nil {
 		return
 	}
-	_ = os.WriteFile(h.ruta, datos, 0o600)
+	// Atómica y no os.WriteFile: una caída a media escritura dejaba el historial
+	// truncado, y un JSON a medias no se lee, así que se perdía entero. Aquí el
+	// daño era pequeño —es un fichero de conveniencia— pero es la misma receta
+	// que necesita la bóveda y no hay motivo para tener dos.
+	_ = escritura.Atomica(h.ruta, escritura.Opciones{CrearCarpeta: true},
+		func(w io.Writer) error {
+			_, err := w.Write(datos)
+			return err
+		})
 }

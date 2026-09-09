@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
 	"github.com/webcafeina/esfinge/internal/cripto"
+	"github.com/webcafeina/esfinge/internal/escritura"
 	"github.com/webcafeina/esfinge/internal/salida"
 	"github.com/webcafeina/esfinge/internal/tema"
 )
@@ -365,35 +365,13 @@ func conSalida(e salida.Estilos, o *opciones, destino string, escribir func(io.W
 		}
 	}
 
-	dir := filepath.Dir(destino)
-	tmp, err := os.CreateTemp(dir, ".esfinge-*")
-	if err != nil {
-		return fmt.Errorf("No puedo escribir en %s: %w", dir, err)
-	}
-	tmpNombre := tmp.Name()
-	defer os.Remove(tmpNombre) // no hace nada si el renombrado ha funcionado
-
-	// 0600 desde el principio: entre crear el fichero y ajustar los permisos hay
-	// una ventana en la que un secreto sería legible por cualquiera de la máquina.
-	if err := tmp.Chmod(0o600); err != nil {
-		tmp.Close()
+	// La receta vive ahora en internal/escritura, porque la bóveda necesita
+	// exactamente la misma y con más motivo. Allí gana además el «Sync» antes de
+	// cerrar, que aquí faltaba: sin él, el renombrado puede llegar al disco antes
+	// que los datos y un corte de luz deja un fichero de cero bytes con el nombre
+	// del bueno.
+	if err := escritura.Atomica(destino, escritura.Opciones{}, escribir); err != nil {
 		return err
-	}
-
-	w := bufio.NewWriter(tmp)
-	if err := escribir(w); err != nil {
-		tmp.Close()
-		return err
-	}
-	if err := w.Flush(); err != nil {
-		tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	if err := os.Rename(tmpNombre, destino); err != nil {
-		return fmt.Errorf("No puedo dejar el resultado en %s: %w", destino, err)
 	}
 
 	if !o.silencio {

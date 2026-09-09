@@ -2,10 +2,13 @@ package app
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/webcafeina/esfinge/internal/escritura"
 )
 
 // Preferencias es lo poco que Esfinge recuerda entre arranques además del
@@ -207,12 +210,15 @@ func (a *Ajustes) guardar() error {
 	if a.ruta == "" {
 		return nil
 	}
-	if err := os.MkdirAll(filepath.Dir(a.ruta), 0o700); err != nil {
-		return err
-	}
 	datos, err := json.MarshalIndent(a.p, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(a.ruta, datos, 0o600)
+	// Igual que el historial: atómica, para que una caída a media escritura no
+	// deje las preferencias truncadas y por tanto ilegibles.
+	return escritura.Atomica(a.ruta, escritura.Opciones{CrearCarpeta: true},
+		func(w io.Writer) error {
+			_, err := w.Write(datos)
+			return err
+		})
 }

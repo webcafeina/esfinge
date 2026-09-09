@@ -23,7 +23,7 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | El `main.go` de la aplicación vive en la raíz, no en `cmd/` | Baja | Rompe la organización idiomática de Go. Lo impone Wails, que busca el paquete main junto a `wails.json` | Aceptado · [ADR 0006](adr/0006-de-terminal-a-ventana.md) |
 | La interfaz construida se copia a `internal/interfaz/dist` | Baja | Un paso más en la compilación. `go:embed` no puede salir del directorio de su paquete | Aceptado |
 | El servidor de desarrollo publica los métodos por reflexión | Baja | Si un método cambia de firma, el fallo sale en tiempo de ejecución y no al compilar | Aceptado · solo existe tras la etiqueta `dev` |
-| No hay pruebas de la línea de comandos | Media | `internal/cli` no tiene tests: se comprueba a mano en cada cambio | Abierto |
+| No hay pruebas de la línea de comandos | Media | `internal/cli` no tenía ni un test: se comprobaba a mano en cada cambio | **Parcialmente saldada (2026-09-09)**: `conSalida` sí tiene pruebas —escribe con 0600, no pisa sin `--forzar`, no deja el fichero a medias, acepta `/dev/null`—, porque se le movieron las tripas a `internal/escritura` y hacer eso sin red es como se rompen las cosas en silencio. El resto de subcomandos sigue sin cubrir |
 | Cifrar una tanda deriva la clave una vez por fichero | Baja | Es el precio de que cada contenedor lleve su sal, y no se va a quitar: compartir la derivación entre ficheros sería compartir la sal | Aceptado. Lo que sí se hizo es paralelizarlo, con tope de la mitad de los núcleos y máximo cuatro: veinte ficheros pasaron de 4,42 s a 1,29 s ([ADR 0018](adr/0018-tandas-en-paralelo.md)) |
 
 ## De producto
