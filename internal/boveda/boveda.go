@@ -42,10 +42,10 @@
 // No hay actualización parcial: cada cambio descifra la bóveda entera y la
 // vuelve a sellar. Medido en esta máquina, con entradas de tamaño realista:
 //
-//	    100 entradas ·  11 ms guardar ·  133 ms abrir
-//	  1.000 entradas ·  35 ms guardar ·   71 ms abrir
-//	  5.000 entradas ·  59 ms guardar ·   88 ms abrir
-//	 20.000 entradas ·  92 ms guardar ·  276 ms abrir
+//	   100 entradas ·  11 ms guardar ·  133 ms abrir
+//	 1.000 entradas ·  35 ms guardar ·   71 ms abrir
+//	 5.000 entradas ·  59 ms guardar ·   88 ms abrir
+//	20.000 entradas ·  92 ms guardar ·  276 ms abrir
 //
 // El tiempo de abrir lo domina el Argon2id de la contraseña maestra, que es
 // constante; el de guardar apenas crece porque el cuerpo va con `PerfilLlave`.
@@ -396,6 +396,16 @@ func (b *Boveda) comprobarCoherencia() error {
 	return nil
 }
 
+// azarHex da un identificador nuevo. Va aquí y no en cada sitio porque lo usan
+// tanto Poner como Importar, y un id repetido sería un estropicio silencioso.
+func azarHex() (string, error) {
+	b, err := cripto.Azar(16)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
 func huellaDe(s string) string {
 	h := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(h[:])
@@ -602,11 +612,11 @@ func (b *Boveda) Poner(e Entrada) error {
 	}
 	ahora := time.Now().UTC().Format(time.RFC3339)
 	if e.ID == "" {
-		id, err := cripto.Azar(16)
+		id, err := azarHex()
 		if err != nil {
 			return err
 		}
-		e.ID = hex.EncodeToString(id)
+		e.ID = id
 		e.Creada = ahora
 	}
 	e.Cambiada = ahora
