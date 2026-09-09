@@ -43,6 +43,15 @@ var loQuePuedeCruzarElPuente = []string{
 
 	// La bóveda: el portapapeles con borrado y el aviso de que hay alguien ahí.
 	"Copiar", "Actividad",
+
+	// La bóveda propiamente dicha. **Aquí es donde esta lista gana su sueldo**:
+	// por estos métodos viajan contraseñas, y la regla es que los secretos salen
+	// de uno en uno y solo cuando se piden. VerDeBoveda devuelve una entrada;
+	// BuscarEnBoveda devuelve la lista sin secretos.
+	"EstadoBoveda", "CrearBoveda", "AbrirBoveda", "CerrarBoveda",
+	"BuscarEnBoveda", "VerDeBoveda", "GuardarEnBoveda", "BorrarDeBoveda",
+	"CambiarMaestraDeBoveda", "RotarRecuperacionDeBoveda",
+	"ImportarEnBoveda", "ExportarBoveda", "BorrarElCSVImportado",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {
