@@ -87,6 +87,19 @@ var campos = []struct {
 	{"campo", func(t Tema) RGB { return t.Campo }},
 	{"boton", func(t Tema) RGB { return t.Boton }},
 	{"boton-encima", func(t Tema) RGB { return t.BotonEncima }},
+	{"tinta-icono", func(t Tema) RGB { return t.TintaDeIcono }},
+}
+
+// Y los ocho tintes de los cuadros de la bóveda, que no caben en la tabla de
+// arriba porque son una lista y no un campo. Van aparte y no se mezclan: la
+// tabla existe para que añadir **un** color sea una decisión visible, y meterle
+// un bucle dentro la volvería difícil de leer de un vistazo.
+func tintesDe(t Tema) string {
+	var b strings.Builder
+	for i, tinte := range t.TintesDeIcono {
+		fmt.Fprintf(&b, "  --tinte-icono-%d: %s;\n", i+1, tinte.Hex())
+	}
+	return b.String()
 }
 
 // GenerarCSS escribe los tokens que consume la interfaz.
@@ -107,6 +120,7 @@ func GenerarCSS() string {
 	for _, c := range campos {
 		fmt.Fprintf(&b, "  --%s: %s;\n", c.nombre, c.de(TemaClaro).Hex())
 	}
+	b.WriteString(tintesDe(TemaClaro))
 	// El anillo de foco es el color de acción a media tinta: así se ve sobre
 	// cualquier superficie sin tener que inventar un color por cada una.
 	fmt.Fprintf(&b, "  --anillo: %s;\n", conAlfa(TemaClaro.Relleno, 0.35))
@@ -132,6 +146,7 @@ func GenerarCSS() string {
 		for _, c := range campos {
 			fmt.Fprintf(&s, "  --%s: %s;\n", c.nombre, c.de(TemaOscuro).Hex())
 		}
+		s.WriteString(tintesDe(TemaOscuro))
 		fmt.Fprintf(&s, "  --anillo: %s;\n", conAlfa(TemaOscuro.Relleno, 0.45))
 		fmt.Fprintf(&s, "  --relleno-tenue: %s;\n", conAlfa(TemaOscuro.Relleno, 0.22))
 		s.WriteString("}\n")

@@ -1,6 +1,7 @@
 package tema
 
 import (
+	"fmt"
 	"math"
 	"testing"
 )
@@ -20,7 +21,7 @@ type pareja struct {
 }
 
 func parejasDe(t Tema) []pareja {
-	return []pareja{
+	p := []pareja{
 		// Texto sobre las cuatro superficies.
 		{t.Tinta, t.Lienzo, AANormal, "títulos sobre el lienzo"},
 		{t.Cuerpo, t.Lienzo, AANormal, "texto corriente sobre el lienzo"},
@@ -100,6 +101,30 @@ func parejasDe(t Tema) []pareja {
 		{t.Acento, t.Suave, AAGrande, "el borde de la zona de soltar al arrastrar encima"},
 		{t.Filete, t.Lienzo, 1.2, "la esfinge tenue del historial vacío"},
 	}
+
+	// **Los ocho cuadros de la bóveda, uno a uno.**
+	//
+	// Es el único color propio que hay en una pantalla de trabajo, y entra con la
+	// condición de estar medido: la inicial del sitio se lee encima de cada tinte,
+	// o el tinte no vale. Un tinte que no cumpla no se «ajusta a ojo», se cambia.
+	for i, tinte := range t.TintesDeIcono {
+		p = append(p, pareja{
+			t.TintaDeIcono, tinte, AANormal,
+			fmt.Sprintf("la inicial del sitio sobre el cuadro %d", i+1),
+		})
+	}
+
+	// Y el propio cuadro contra el fondo de la lista: tiene que verse **que hay un
+	// cuadro**, o los de los tintes más pálidos desaparecen sobre el lienzo y la
+	// fila se queda con una letra suelta flotando.
+	for i, tinte := range t.TintesDeIcono {
+		p = append(p, pareja{
+			tinte, t.Lienzo, 1.1,
+			fmt.Sprintf("el borde del cuadro %d contra la lista", i+1),
+		})
+	}
+
+	return p
 }
 
 func TestContrasteDeLosDosTemas(t *testing.T) {

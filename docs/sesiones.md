@@ -5,6 +5,33 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · Cada entrada con su cuadro, y la lista ordenada
+
+- **2.13.0**, primera mitad de lo que pidió el cliente: que cada entrada se reconozca sin leerla.
+  Cuadro con la inicial y color propio, iconos de trazo en las pestañas, la clase al final de la
+  fila **solo en «Todo»** —dentro de «Tarjetas» todas son tarjetas— y la lista ordenada.
+- **Ocho tintes, generados en Go y medidos uno a uno.** Es el único color propio que entra en una
+  pantalla de trabajo, y la ADR 0021 decía que ahí no entra ninguno; entra porque el problema
+  cambió, con sesenta y cinco entradas dentro. La condición es la de siempre: **32 parejas nuevas
+  en `make contraste`** —la letra sobre cada cuadro y cada cuadro contra la lista, en los dos
+  temas—. Salen entre 8,7:1 y 11,3:1.
+- El tinte lo elige el dominio con **FNV-1a y no con el hash del motor**: el color de un sitio tiene
+  que ser el mismo mañana y en la otra máquina, o la lista cambia de colores sola y se lee como un
+  fallo.
+- **Y los emoji fuera.** `ICONO_TIPO` usaba 🔑📝💳🪪, que es exactamente lo que el comentario de
+  `Icono` prohíbe desde que existe: «los emoji son de color y desentonan». Cuatro trazos nuevos con
+  el mismo molde que los seis de la barra lateral, y `Icono` pasa a estar exportada.
+- **Dos fallos que solo se vieron en la captura**, no en las pruebas: el selector de orden **se
+  salía del panel** y quedaba cortado —ahora la fila se parte en dos antes que cortar un control— y
+  **«Hacienda» salía con una «A»**, porque la letra se sacaba del dominio y no del nombre que se lee
+  justo al lado. Ahora la letra sale del nombre y **el color del dominio**, que son dos cosas: el
+  color identifica el sitio y la letra tiene que cuadrar con lo que se ve.
+- **Y uno que encontró una prueba**: ordenar por «cambiada la última» salía en orden aleatorio,
+  porque la fecha se guarda con precisión de segundo y una importación deja las sesenta y cinco
+  entradas con la misma. Lleva desempate por nombre.
+- Verificado: `make comprobar`, `make contraste` con las 32 parejas nuevas y **74 pruebas de
+  interfaz** —cuatro más—, la tanda repetida dos veces.
+
 ## 2026-09-09 · La bóveda, separada por clases
 
 - **2.12.8.** Con sesenta y cinco entradas dentro, el listado único deja de navegarse. Ahora hay

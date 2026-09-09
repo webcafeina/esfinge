@@ -24,6 +24,15 @@
   --campo: #ffffff;
   --boton: #ffffff;
   --boton-encima: #f2f2f5;
+  --tinta-icono: #2b2b31;
+  --tinte-icono-1: #d6e2f0;
+  --tinte-icono-2: #d3e8e2;
+  --tinte-icono-3: #dde8d2;
+  --tinte-icono-4: #f0e6cf;
+  --tinte-icono-5: #f2ddd4;
+  --tinte-icono-6: #f0dae2;
+  --tinte-icono-7: #e4dcf0;
+  --tinte-icono-8: #d3e4ec;
   --anillo: rgb(242 193 78 / 0.35);
   --relleno-tenue: rgb(242 193 78 / 0.18);
 
@@ -71,6 +80,15 @@
     --campo: #1a1a1c;
     --boton: #3a3a3c;
     --boton-encima: #48484a;
+    --tinta-icono: #ebebf0;
+    --tinte-icono-1: #2d3b4d;
+    --tinte-icono-2: #2a423b;
+    --tinte-icono-3: #38442e;
+    --tinte-icono-4: #493d2b;
+    --tinte-icono-5: #4a342b;
+    --tinte-icono-6: #48303c;
+    --tinte-icono-7: #3a3350;
+    --tinte-icono-8: #2b4149;
     --anillo: rgb(242 193 78 / 0.45);
     --relleno-tenue: rgb(242 193 78 / 0.22);
   }
@@ -98,6 +116,15 @@
   --campo: #1a1a1c;
   --boton: #3a3a3c;
   --boton-encima: #48484a;
+  --tinta-icono: #ebebf0;
+  --tinte-icono-1: #2d3b4d;
+  --tinte-icono-2: #2a423b;
+  --tinte-icono-3: #38442e;
+  --tinte-icono-4: #493d2b;
+  --tinte-icono-5: #4a342b;
+  --tinte-icono-6: #48303c;
+  --tinte-icono-7: #3a3350;
+  --tinte-icono-8: #2b4149;
   --anillo: rgb(242 193 78 / 0.45);
   --relleno-tenue: rgb(242 193 78 / 0.22);
 }

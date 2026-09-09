@@ -301,6 +301,13 @@ Y el corolario: **mientras las preferencias no hayan llegado, sus controles van 
 dibujan con su valor de siempre para que la pantalla no dé un salto, pero dejarlos pulsables hace que
 el clic no haga nada en silencio, porque `cambiar` no tiene de dónde partir.
 
+**Los ocho cuadros de la bóveda son el único color propio en una pantalla de trabajo**, y entran
+matizando la ADR 0021 con una condición: **las 32 parejas están medidas** en `contraste_test.go` —la
+letra sobre cada cuadro y cada cuadro contra la lista, en los dos temas—. El tinte lo elige el
+dominio con **FNV-1a**, nunca con el hash del motor: tiene que dar lo mismo mañana y en otra máquina,
+o la lista cambia de colores sola. Y **la letra sale del nombre, no del dominio**: sacándola del
+dominio, «Hacienda» salía con la «A» de agenciatributaria.gob.es.
+
 **En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de
 `.contenido`. Sin acotar, Playwright encuentra dos y falla por modo estricto.

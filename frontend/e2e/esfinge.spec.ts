@@ -1072,6 +1072,103 @@ test("la lista se separa por clases, y «Todo» las junta", async ({ page }) => 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+test("cada entrada lleva su cuadro, y la clase solo aparece en «Todo»", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const sello = Date.now();
+  const banco = `Zzz Banco ${sello}`;
+  const nota = `Zzz Nota ${sello}`;
+
+  // Una credencial con sitio y una nota sin él: el cuadro tiene que salir en las
+  // dos, porque una fila sin cuadro rompe la columna y se nota más que el cuadro.
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(banco);
+  await page.locator("#boveda-sitios").fill("https://www.santander.es/particulares");
+  await accion(page, "Guardar").click();
+
+  await accion(page, "Nueva").click();
+  await page.getByRole("tab", { name: "Nota", exact: true }).click();
+  await page.locator("#boveda-titulo").fill(nota);
+  await page.locator("#boveda-notas").fill("algo que guardar");
+  await accion(page, "Guardar").click();
+
+  const lista = page.locator(".lista-boveda");
+  const filaBanco = lista.locator("li", { has: page.getByText(banco, { exact: true }) });
+  const filaNota = lista.locator("li", { has: page.getByText(nota, { exact: true }) });
+
+  // **La letra sale del nombre, no del dominio.** Sacándola del dominio,
+  // «Hacienda» salía con la «A» de agenciatributaria.gob.es y parecía un fallo.
+  await expect(filaBanco.locator(".monograma")).toHaveText("Z");
+  await expect(filaNota.locator(".monograma")).toHaveText("Z");
+
+  // Y el color sale del sitio, así que la credencial y la nota —que no tiene
+  // sitio— no tienen por qué coincidir; lo que sí tiene que pasar es que el
+  // cuadro lleve uno de los ocho tintes y no se quede sin ninguno.
+  await expect(filaBanco.locator(".monograma")).toHaveAttribute("data-tinte", /^[1-8]$/);
+
+  // La clase, solo en «Todo».
+  await expect(filaBanco.locator(".clase")).toBeVisible();
+  await page.getByRole("tab", { name: "Credenciales", exact: true }).click();
+  await expect(lista.locator("li", { has: page.getByText(banco, { exact: true }) })).toBeVisible();
+  await expect(
+    lista.locator("li", { has: page.getByText(banco, { exact: true }) }).locator(".clase"),
+  ).toHaveCount(0);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("la lista sale ordenada por nombre, y el orden se puede cambiar", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  // Tres títulos que se ordenan al revés de como se meten, con un acento por
+  // medio: comparar cadenas a pelo pone «Ángel» detrás de «Zulo», y en castellano
+  // va delante.
+  const sello = Date.now();
+  for (const t of [`Yyy ${sello}`, `Áaa ${sello}`, `Mmm ${sello}`]) {
+    await accion(page, "Nueva").click();
+    await page.locator("#boveda-titulo").fill(t);
+    await page.locator("#boveda-secreto").fill("s3cr3t0");
+    await accion(page, "Guardar").click();
+  }
+
+  const nombres = page.locator(".lista-boveda .nombre");
+  await expect(nombres.filter({ hasText: String(sello) })).toHaveCount(3);
+
+  const enPantalla = async () =>
+    (await nombres.allInnerTexts()).filter((n) => n.includes(String(sello)));
+
+  expect(await enPantalla()).toEqual([`Áaa ${sello}`, `Mmm ${sello}`, `Yyy ${sello}`]);
+
+  // Por lo último cambiado. **Las tres se han creado en el mismo segundo**, y la
+  // fecha se guarda con esa precisión, así que empatan: lo que las separa es el
+  // desempate por nombre. Se toca una y tiene que subir sola.
+  await page.locator("#boveda-orden").selectOption("cambiada");
+  expect(await enPantalla()).toEqual([`Áaa ${sello}`, `Mmm ${sello}`, `Yyy ${sello}`]);
+
+  // **Un segundo de espera, y hace falta**: la fecha se guarda con precisión de
+  // segundo, así que tocar una entrada dentro del mismo segundo en que se creó no
+  // la mueve. Para una persona eso da igual —«lo último que toqué» se mide en
+  // días—; para una prueba que hace tres cosas en 200 ms, no.
+  await page.waitForTimeout(1100);
+  await page.locator(".lista-boveda").getByRole("button", { name: `Yyy ${sello}` }).click();
+  await accion(page, "Editar").click();
+  await page.locator("#boveda-notas").fill("tocada la última");
+  await accion(page, "Guardar").click();
+  // Guardar vuelve a la lista y **la vuelve a pedir**: hay que esperar a que esté
+  // otra vez, o se lee la pantalla a medio dibujar.
+  await expect(nombres.filter({ hasText: String(sello) })).toHaveCount(3);
+  expect(await enPantalla()).toEqual([`Yyy ${sello}`, `Áaa ${sello}`, `Mmm ${sello}`]);
+
+  await page.locator("#boveda-orden").selectOption("nombre");
+  expect(await enPantalla()).toEqual([`Áaa ${sello}`, `Mmm ${sello}`, `Yyy ${sello}`]);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 // **Va la última del fichero a propósito**: deja la bóveda borrada, y quien venga
 // detrás —el otro tema— la crea otra vez con `conLaBovedaAbierta`. Ponerla antes
 // obligaría a todas las demás a saber si les toca crear o abrir, que es

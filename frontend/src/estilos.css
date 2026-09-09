@@ -298,6 +298,49 @@ body {
   border-radius: 9px;
 }
 
+/* Con iconos, cada opción es un glifo y su rótulo en fila. */
+.segmentado.con-iconos button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.segmentado .icono {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* Cuando la ventana se estrecha se quedan los iconos y el rótulo **se recorta
+ * sin salir del DOM**.
+ *
+ * Con «display: none» desaparecería también el nombre accesible del botón, y con
+ * él lo que oye quien lee la pantalla en voz alta y lo que buscan las pruebas.
+ * Esta técnica lo deja de un píxel y fuera de la vista, que es distinto de no
+ * estar. */
+.solo-se-oye,
+.segmentado.con-iconos .rotulo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (min-width: 740px) {
+  .segmentado.con-iconos .rotulo {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+  }
+}
+
 .segmentado button {
   border: 0;
   background: transparent;
@@ -953,6 +996,12 @@ p {
   display: flex;
   align-items: center;
   gap: var(--espacio-2);
+  /* **Se parte en dos líneas antes que salirse.** Con cinco pestañas y el
+   * selector de orden en la misma fila, a partir de cierto ancho el selector se
+   * salía del panel y quedaba cortado por la mitad. Envolver es feo un momento;
+   * cortar un control es feo siempre. */
+  flex-wrap: wrap;
+  row-gap: var(--espacio-3);
 }
 
 .boveda-barra input[type="text"] {
@@ -984,7 +1033,9 @@ p {
  * del sistema. Por eso hay que desmontarle el aspecto de botón. */
 .lista-boveda button {
   display: flex;
-  align-items: baseline;
+  /* Al centro y no a la línea base: lo primero de la fila ya no es un glifo de
+   * texto sino un cuadro, y una caja no tiene línea base que valga. */
+  align-items: center;
   gap: var(--espacio-3);
   width: 100%;
   height: auto;
@@ -1005,9 +1056,43 @@ p {
   background: var(--barra-encima);
 }
 
-.lista-boveda .que {
+/* El cuadro de cada entrada: el sitio cuando se sabe cuál es, y si no la
+ * inicial. El color sale de los tokens —ocho tintes generados en Go y medidos
+ * uno a uno— y lo elige el propio sitio, así que es estable. */
+.monograma {
   flex-shrink: 0;
-  font-size: var(--texto-grande);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radio-chico);
+  background: var(--tinte-icono-1);
+  color: var(--tinta-icono);
+  font-size: var(--texto-chico);
+  font-weight: 600;
+  /* La inicial se lee mejor un poco apretada, y así una «W» no toca los bordes. */
+  letter-spacing: -0.01em;
+}
+
+.monograma[data-tinte="2"] { background: var(--tinte-icono-2); }
+.monograma[data-tinte="3"] { background: var(--tinte-icono-3); }
+.monograma[data-tinte="4"] { background: var(--tinte-icono-4); }
+.monograma[data-tinte="5"] { background: var(--tinte-icono-5); }
+.monograma[data-tinte="6"] { background: var(--tinte-icono-6); }
+.monograma[data-tinte="7"] { background: var(--tinte-icono-7); }
+.monograma[data-tinte="8"] { background: var(--tinte-icono-8); }
+
+/* La clase, al final de la fila y solo en «Todo». Apagada: dice de qué es la
+ * entrada sin competir con su nombre. */
+.lista-boveda .clase {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--apagado);
+}
+
+.lista-boveda .icono {
+  width: 16px;
+  height: 16px;
 }
 
 .lista-boveda .nombre {
@@ -1019,6 +1104,7 @@ p {
 
 .lista-boveda .nota {
   margin-left: auto;
+  margin-right: var(--espacio-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1057,6 +1143,24 @@ p {
   border: 0.5px solid var(--filete);
   user-select: text;
   cursor: auto;
+}
+
+/* La lista desplegable discreta: la del orden, que va en una barra y no en un
+ * formulario. Sin borde ni fondo hasta que se pasa por encima. */
+select.discreto {
+  width: auto;
+  flex-shrink: 0;
+  margin-left: auto;
+  border-color: transparent;
+  background-color: transparent;
+  font-size: var(--texto);
+  height: var(--alto-control);
+  color: var(--cuerpo);
+}
+
+select.discreto:hover {
+  background-color: var(--boton-encima);
+  border-color: var(--filete);
 }
 
 /* La lista desplegable, con la misma anatomía que un campo. La flecha va dibujada

@@ -133,7 +133,7 @@ export function Firma({ version }: { version: string }) {
  * está, y cuando no lo está salen cuadrados vacíos. Dibujarlos es lo único que
  * se ve igual en los tres sistemas.
  */
-function Icono({ nombre }: { nombre: string }) {
+export function Icono({ nombre }: { nombre: string }) {
   const trazos: Record<string, React.ReactNode> = {
     // Candado cerrado.
     cifrar: (
@@ -168,6 +168,50 @@ function Icono({ nombre }: { nombre: string }) {
         <path d="M9 5.4V9l2.6 1.8" />
       </>
     ),
+    // Las cuatro clases de la bóveda, más el «todo» que las junta.
+    //
+    // **Sustituyen a unos emoji**, que es lo que había y lo que este mismo
+    // comentario prohibía cuatro líneas más arriba: son de color, no se tiñen, y
+    // cada sistema los dibuja a su manera. Al lado de los seis de la barra
+    // lateral se veía enseguida que no eran de la misma familia.
+    todo: (
+      <>
+        <path d="M3 5.5h12M3 9h12M3 12.5h12" />
+      </>
+    ),
+    // Una llave: el ojo y el paletón.
+    credencial: (
+      <>
+        <circle cx="5.6" cy="8.6" r="2.9" />
+        <path d="M8.2 7.2 15 4.6M13.2 5.4l1 2.1M11 6.2l.9 2" />
+      </>
+    ),
+    // Una hoja con renglones y la esquina doblada, como el icono del documento.
+    nota: (
+      <>
+        <path d="M4 2.8h6.4L14 6.4v8.8H4Z" />
+        <path d="M10.2 3v3.4h3.4" />
+        <path d="M6.4 9.4h5M6.4 12h3.4" />
+      </>
+    ),
+    // Una tarjeta: el plástico y su banda.
+    tarjeta: (
+      <>
+        <rect x="2.2" y="4.4" width="13.6" height="9.2" rx="1.8" />
+        <path d="M2.2 7.6h13.6" />
+        <path d="M5 11h2.6" />
+      </>
+    ),
+    // Un documento con la foto de quien es, que es lo que distingue un carné de
+    // una tarjeta: el retrato a un lado y los datos al otro.
+    identidad: (
+      <>
+        <rect x="2.2" y="4" width="13.6" height="10" rx="1.8" />
+        <circle cx="6.4" cy="7.9" r="1.5" />
+        <path d="M4.2 11.6c.5-1.1 1.3-1.6 2.2-1.6s1.7.5 2.2 1.6" />
+        <path d="M11 7.6h2.8M11 10.4h2.8" />
+      </>
+    ),
     // Deslizadores, que es como el sistema dibuja los ajustes.
     ajustes: (
       <>
@@ -194,18 +238,114 @@ function Icono({ nombre }: { nombre: string }) {
   );
 }
 
-/** Control segmentado, que es como los dos sistemas agrupan modos excluyentes. */
+/**
+ * Monograma es el cuadro que identifica una entrada de la bóveda.
+ *
+ * La inicial del sitio sobre uno de los ocho tintes, elegido por el propio sitio:
+ * `banco.es` sale siempre del mismo color, y ese color es lo que permite recorrer
+ * sesenta y cinco filas sin leerlas.
+ *
+ * Va `aria-hidden` porque **no añade nada**: el nombre de la entrada está al lado
+ * en texto, y quien lea la pantalla en voz alta no necesita oír una letra suelta
+ * antes de cada fila.
+ */
+export function Monograma({ sitio, titulo }: { sitio?: string; titulo: string }) {
+  // **La letra sale del nombre y el color del sitio**, y son dos cosas a
+  // propósito. El color identifica el sitio y tiene que ser estable: dos entradas
+  // del mismo banco salen del mismo color aunque se llamen distinto. La letra, en
+  // cambio, tiene que cuadrar con lo que se lee justo al lado: sacándola del
+  // dominio, «Hacienda» salía con una «A» —de agenciatributaria.gob.es— y parecía
+  // un fallo. Se vio en una captura, no en una prueba.
+  const dominio = dominioDe(sitio);
+  return (
+    <span
+      className="monograma"
+      data-tinte={tinteDe(dominio || titulo.trim().toLowerCase())}
+      aria-hidden="true"
+    >
+      {inicialDe(titulo)}
+    </span>
+  );
+}
+
+/**
+ * dominioDe saca el anfitrión de lo que haya escrito en el campo del sitio, que
+ * es texto libre: llegan `https://www.banco.es/login?x=1`, `banco.es`, con
+ * espacios y con mayúsculas, según quién lo escribiera o qué gestor lo exportara.
+ *
+ * Se queda con el anfitrión completo y **no reduce a dominio de segundo nivel**:
+ * eso exigiría la lista de sufijos públicos —una dependencia más en un programa
+ * que guarda contraseñas— para que `mail.google.com` y `drive.google.com`
+ * compartieran color. No compensa: que dos subdominios salgan distintos es
+ * inocuo, y con el nombre al lado nadie se pierde.
+ */
+export function dominioDe(sitio?: string): string {
+  if (!sitio) return "";
+  const limpio = sitio.trim().toLowerCase();
+  if (!limpio) return "";
+  try {
+    const url = new URL(limpio.includes("://") ? limpio : `https://${limpio}`);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return limpio.replace(/^www\./, "").split("/")[0];
+  }
+}
+
+/**
+ * inicialDe se queda con la primera **letra o cifra**, en mayúscula.
+ *
+ * Por runas y no por bytes: un título que empiece por «Á» o por «Ñ» tiene que
+ * salir entero, y `cadena[0]` de un carácter de dos unidades devuelve medio
+ * carácter. Y saltándose lo que no es letra ni cifra, que en un título escrito a
+ * mano hay comillas, guiones y corchetes de sobra.
+ */
+export function inicialDe(texto: string): string {
+  for (const c of texto) {
+    if (/\p{L}|\p{N}/u.test(c)) return c.toUpperCase();
+  }
+  return "•";
+}
+
+/**
+ * tinteDe elige uno de los ocho cuadros, del 1 al 8.
+ *
+ * Con FNV-1a y **no con el hash que traiga el motor**: el color de un sitio tiene
+ * que ser el mismo hoy, mañana y en la otra máquina. Un hash que cambie entre
+ * versiones haría que la lista entera cambiara de colores sola, y eso se lee como
+ * un fallo aunque no lo sea.
+ */
+export function tinteDe(clave: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < clave.length; i++) {
+    h ^= clave.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return (h % 8) + 1;
+}
+
+/**
+ * Control segmentado, que es como los dos sistemas agrupan modos excluyentes.
+ *
+ * Con `icono`, cada opción lleva un glifo delante del rótulo. **El rótulo sigue
+ * estando en el DOM aunque la ventana lo esconda**: se recorta con `.solo-se-oye`
+ * y no con `display: none`, porque `display: none` se lleva por delante el nombre
+ * accesible del botón —y con él a quien lee la pantalla en voz alta y a los
+ * localizadores de las pruebas, que buscan las pestañas por su nombre—.
+ */
 export function Segmentado<T extends string>({
   opciones,
   valor,
   alCambiar,
+  conIconos,
 }: {
-  opciones: { valor: T; etiqueta: string }[];
+  opciones: { valor: T; etiqueta: string; icono?: string }[];
   valor: T;
   alCambiar: (v: T) => void;
+  /** Encoge los rótulos cuando no caben, en vez de desbordar. */
+  conIconos?: boolean;
 }) {
   return (
-    <div className="segmentado" role="tablist">
+    <div className={conIconos ? "segmentado con-iconos" : "segmentado"} role="tablist">
       {opciones.map((o) => (
         <button
           key={o.valor}
@@ -213,7 +353,8 @@ export function Segmentado<T extends string>({
           aria-selected={o.valor === valor}
           onClick={() => alCambiar(o.valor)}
         >
-          {o.etiqueta}
+          {o.icono && <Icono nombre={o.icono} />}
+          <span className="rotulo">{o.etiqueta}</span>
         </button>
       ))}
     </div>

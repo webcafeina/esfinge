@@ -74,6 +74,22 @@ type Tema struct {
 	Exito RGB
 	Aviso RGB
 	Error RGB
+
+	// Los cuadros de las entradas de la bóveda: el fondo de cada uno y la tinta
+	// que va encima.
+	//
+	// **Son el único color propio que entra en una pantalla de trabajo**, y la ADR
+	// 0021 dejó dicho que ahí no entra ninguno. Entran porque el problema cambió:
+	// con sesenta y cinco entradas dentro, una lista de un solo color no se
+	// recorre con el ojo y hay que leerla entera. El tinte lo elige el dominio, así
+	// que es estable —el mismo sitio, el mismo color siempre— y sirve de ancla.
+	//
+	// La condición para que eso no se convierta en una feria: **apagados**, muy
+	// por debajo del oro en saturación, y con **todas las parejas medidas**. Son
+	// ocho para que dos sitios cualesquiera se distingan sin que el ojo tenga que
+	// nombrar el color.
+	TintesDeIcono []RGB
+	TintaDeIcono  RGB
 }
 
 // Los colores de la marca, sacados tal cual de build/icono.svg. No son
@@ -104,6 +120,40 @@ var (
 	verdeSistema = MustParseHex("#34c759")
 	ambarSistema = MustParseHex("#ff9500")
 	rojoSistema  = MustParseHex("#ff3b30")
+)
+
+// Los ocho tintes de los cuadros de la bóveda, recorriendo el círculo de color a
+// saltos parejos para que dos cualesquiera se distingan.
+//
+// **Van muy desaturados a propósito.** El oro de la marca es lo único que puede
+// llamar la atención en la ventana, y ocho colores vivos al lado lo apagarían.
+// Éstos son lavados: dicen «esta fila no es aquella» y no dicen nada más.
+//
+// En claro son casi blancos, para que escriba la piedra; en oscuro son casi
+// negros, para que escriba la tinta clara. Los dos juegos están medidos en
+// contraste_test.go, uno a uno.
+var (
+	tintesClaros = []RGB{
+		MustParseHex("#d6e2f0"), // azulado
+		MustParseHex("#d3e8e2"), // verde agua
+		MustParseHex("#dde8d2"), // oliva
+		MustParseHex("#f0e6cf"), // arena
+		MustParseHex("#f2ddd4"), // terracota
+		MustParseHex("#f0dae2"), // rosa
+		MustParseHex("#e4dcf0"), // malva
+		MustParseHex("#d3e4ec"), // turquesa
+	}
+
+	tintesOscuros = []RGB{
+		MustParseHex("#2d3b4d"), // azulado
+		MustParseHex("#2a423b"), // verde agua
+		MustParseHex("#38442e"), // oliva
+		MustParseHex("#493d2b"), // arena
+		MustParseHex("#4a342b"), // terracota
+		MustParseHex("#48303c"), // rosa
+		MustParseHex("#3a3350"), // malva
+		MustParseHex("#2b4149"), // turquesa
+	}
 )
 
 // TemaClaro sigue la apariencia clara del sistema.
@@ -142,6 +192,10 @@ var TemaClaro = func() Tema {
 		Exito:       AcentoLegible(verdeSistema, masOscura, AANormal),
 		Aviso:       AcentoLegible(ambarSistema, masOscura, AANormal),
 		Error:       AcentoLegible(rojoSistema, masOscura, AANormal),
+		// La misma piedra que escribe sobre el oro: en la ventana solo hay una
+		// tinta oscura, y los cuadros no son una excepción.
+		TintesDeIcono: tintesClaros,
+		TintaDeIcono:  piedra,
 	}
 }()
 
@@ -180,5 +234,9 @@ var TemaOscuro = func() Tema {
 		Exito:  AcentoLegible(verdeSistema, MustParseHex("#3a3a3c"), AANormal),
 		Aviso:  AcentoLegible(ambarSistema, MustParseHex("#3a3a3c"), AANormal),
 		Error:  AcentoLegible(rojoSistema, MustParseHex("#3a3a3c"), AANormal),
+		// No el blanco puro: una inicial en blanco sobre ocho cuadros oscuros es
+		// ocho destellos en una lista que se recorre de arriba abajo.
+		TintesDeIcono: tintesOscuros,
+		TintaDeIcono:  MustParseHex("#ebebf0"),
 	}
 }()

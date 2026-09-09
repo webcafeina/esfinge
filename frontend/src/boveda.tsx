@@ -8,7 +8,7 @@ import {
   type ResumenImportacion,
   type TipoEntrada,
 } from "./puente";
-import { CampoClave, Segmentado } from "./componentes";
+import { CampoClave, Icono, Monograma, Segmentado } from "./componentes";
 
 /**
  * La bóveda, asomada a la ventana.
@@ -363,6 +363,7 @@ function Dentro({
 }) {
   const [q, setQ] = useState("");
   const [tipo, setTipo] = useState<Filtro>("todo");
+  const [orden, setOrden] = useState<Orden>("nombre");
   const [lista, setLista] = useState<EntradaBoveda[]>([]);
   const [mirando, setMirando] = useState<EntradaBoveda | null>(null);
   const [editando, setEditando] = useState<EntradaBoveda | null>(null);
@@ -384,10 +385,14 @@ function Dentro({
     return () => clearTimeout(t);
   }, [q, buscar]);
 
-  // El filtro por clase se aplica aquí y no en Go: la lista ya ha cruzado el
+  // El filtro y el orden se aplican aquí y no en Go: la lista ya ha cruzado el
   // puente entera —viene sin secretos— y volver a pedirla por cada pestaña sería
-  // un viaje para nada.
-  const visibles = tipo === "todo" ? lista : lista.filter((e) => e.tipo === tipo);
+  // un viaje para nada. Y el orden es cosa de quien mira, no del almacén: la
+  // bóveda guarda las entradas como entraron y no tiene por qué opinar.
+  const visibles = ordenar(
+    tipo === "todo" ? lista : lista.filter((e) => e.tipo === tipo),
+    orden,
+  );
 
   async function ver(id: string) {
     setError("");
@@ -457,17 +462,38 @@ function Dentro({
           buscan escribiendo: se buscan mirando, porque son cuatro y se sabe cuáles
           son. Las pestañas están siempre, incluso vacías: que la de tarjetas
           exista es lo que dice que se pueden guardar tarjetas. */}
-      <Segmentado<Filtro>
-        valor={tipo}
-        alCambiar={setTipo}
-        opciones={[
-          { valor: "todo", etiqueta: "Todo" },
-          { valor: "credencial", etiqueta: "Credenciales" },
-          { valor: "nota", etiqueta: "Notas" },
-          { valor: "tarjeta", etiqueta: "Tarjetas" },
-          { valor: "identidad", etiqueta: "Identidades" },
-        ]}
-      />
+      <div className="boveda-barra">
+        <Segmentado<Filtro>
+          conIconos
+          valor={tipo}
+          alCambiar={setTipo}
+          opciones={[
+            { valor: "todo", etiqueta: "Todo", icono: "todo" },
+            { valor: "credencial", etiqueta: "Credenciales", icono: "credencial" },
+            { valor: "nota", etiqueta: "Notas", icono: "nota" },
+            { valor: "tarjeta", etiqueta: "Tarjetas", icono: "tarjeta" },
+            { valor: "identidad", etiqueta: "Identidades", icono: "identidad" },
+          ]}
+        />
+        {/* A la derecha, porque son dos preguntas distintas: las pestañas dicen
+            qué se mira y esto en qué orden. Se aparta con «margin-left: auto» y
+            no con un separador elástico: cuando la fila se parte en dos, el
+            separador se queda arriba y esto caería a la izquierda de la segunda
+            línea, descolgado. */}
+        <label htmlFor="boveda-orden" className="solo-se-oye">
+          Ordenar por
+        </label>
+        <select
+          id="boveda-orden"
+          className="discreto"
+          value={orden}
+          onChange={(e) => setOrden(e.target.value as Orden)}
+        >
+          <option value="nombre">Por nombre</option>
+          <option value="cambiada">Cambiada la última</option>
+          <option value="carpeta">Por carpeta</option>
+        </select>
+      </div>
 
       {error && <p className="error">{error}</p>}
 
@@ -478,9 +504,17 @@ function Dentro({
           {visibles.map((e) => (
             <li key={e.id}>
               <button onClick={() => ver(e.id)}>
-                <span className="que">{ICONO_TIPO[e.tipo] ?? "•"}</span>
+                <Monograma sitio={e.sitios?.[0]} titulo={e.titulo || "Sin título"} />
                 <span className="nombre">{e.titulo || "Sin título"}</span>
                 <span className="nota">{deQuien(e)}</span>
+                {/* La clase solo en «Todo»: dentro de «Tarjetas» todas son
+                    tarjetas y repetirlo no dice nada. Decorativo, que el nombre
+                    de la fila ya está en su sitio. */}
+                {tipo === "todo" && (
+                  <span className="clase" title={NOMBRE_TIPO[e.tipo]}>
+                    <Icono nombre={e.tipo} />
+                  </span>
+                )}
               </button>
             </li>
           ))}
@@ -504,14 +538,6 @@ function Dentro({
   );
 }
 
-/** El glifo de cada clase de entrada, para distinguirlas de un vistazo. */
-const ICONO_TIPO: Record<TipoEntrada, string> = {
-  credencial: "🔑",
-  nota: "📝",
-  tarjeta: "💳",
-  identidad: "🪪",
-};
-
 const NOMBRE_TIPO: Record<TipoEntrada, string> = {
   credencial: "Credencial",
   nota: "Nota",
@@ -526,6 +552,44 @@ function deQuien(e: EntradaBoveda): string {
 
 /** Lo que se puede estar mirando: una clase concreta o todas. */
 type Filtro = TipoEntrada | "todo";
+
+/** Y en qué orden. */
+type Orden = "nombre" | "cambiada" | "carpeta";
+
+/**
+ * ordenar deja la lista como se pide, **sin tocar la original**.
+ *
+ * Por nombre con `localeCompare`, que es lo único que pone la «ñ» entre la n y la
+ * o y trata «Ángel» como empieza por A. Comparar cadenas a pelo deja el
+ * castellano ordenado como no lo ordena nadie.
+ */
+function ordenar(lista: EntradaBoveda[], orden: Orden): EntradaBoveda[] {
+  const porNombre = (a: EntradaBoveda, b: EntradaBoveda) =>
+    a.titulo.localeCompare(b.titulo, undefined, { sensitivity: "base", numeric: true });
+
+  const copia = [...lista];
+  switch (orden) {
+    case "cambiada":
+      // Lo más reciente arriba, y **con desempate por nombre**, que no es un
+      // adorno: la fecha se guarda con precisión de segundo, así que una
+      // importación de sesenta y cinco entradas las deja a todas con la misma. Sin
+      // desempate, esta vista sale en el orden en que entraron —o sea, aleatorio—
+      // justo en el caso en que más entradas hay.
+      return copia.sort(
+        (a, b) => (b.cambiada ?? "").localeCompare(a.cambiada ?? "") || porNombre(a, b),
+      );
+    case "carpeta":
+      // Y dentro de cada carpeta, por nombre: una carpeta desordenada por dentro
+      // no es mejor que una lista desordenada.
+      return copia.sort(
+        (a, b) =>
+          (a.carpeta ?? "").localeCompare(b.carpeta ?? "", undefined, { sensitivity: "base" }) ||
+          porNombre(a, b),
+      );
+    default:
+      return copia.sort(porNombre);
+  }
+}
 
 function entradaNueva(tipo: Filtro): EntradaBoveda {
   return {
