@@ -152,9 +152,13 @@ cada sitio de la bóveda, pedido al propio sitio**. Tres cosas que hay que tener
 eso:
 
 - **El destino lo elige el mundo exterior**, no nosotros: sale de un CSV que alguien importó. Por eso
-  `internal/iconos` filtra las direcciones privadas **en el momento de conectar** y no mirando el
-  nombre —cualquier dominio público resuelve a lo que quiera—, limita los saltos de redirección y
-  prohíbe bajar a `http://`, que si no el filtro se esquiva con un `Location:`.
+  `internal/iconos` filtra las direcciones privadas, limita los saltos de redirección y prohíbe bajar
+  a `http://`, que si no el filtro se esquiva con un `Location:`.
+- **Y ese filtro va en `Control`, no en `DialContext`.** Es la diferencia entre filtrar y no hacer
+  nada: `DialContext` recibe **el nombre sin resolver**, así que `ParseIP("github.com")` da nulo y la
+  regla «si no se sabe qué es, no se va» rechaza todos los sitios del mundo. La 2.14.0 salió así y no
+  descargó ni un icono. `Control` corre después de resolver y recibe la IP de verdad, que es lo que
+  hay que mirar porque cualquier dominio público resuelve a donde quiera.
 - **Ir directo no oculta la lista de sitios, la reparte**: el nombre viaja en claro en el DNS y en el
   saludo TLS. Lo que se gana es no meter un tercero de confianza. Está dicho así en la ventana, en
   `docs/seguridad.md` y en la ADR, y no se debe escribir de otra forma.

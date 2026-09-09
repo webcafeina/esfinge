@@ -86,10 +86,20 @@ es el fichero del sitio**, son píxeles re-emitidos por nuestro codificador.
 - **Analizar el HTML** de cada sitio para encontrar el `<link rel="icon">`. Sería
   lo completo, y obligaría a bajarse la portada de cada sitio de la bóveda —mucho
   más tráfico y mucha más superficie— y a meter un analizador de HTML en el
-  binario. Se prueban tres rutas conocidas y ya.
-- **`/favicon.ico`.** No está en la lista y no es un olvido: **la biblioteca
-  estándar de Go no sabe decodificar ICO**, así que aceptarlo obligaría a analizar
-  a mano un formato de los noventa sobre datos de un tercero.
+  binario. Sigue descartado, y ahora con un número al lado: sin él se cubren
+  **nueve de doce** sitios de prueba, y los dos que faltan de verdad declaran su
+  icono ahí.
+- ~~**`/favicon.ico`**~~ → **entró después de medir**, y es la corrección más
+  interesante de esta ficha. El argumento para dejarlo fuera era bueno —la
+  biblioteca estándar de Go no lo sabe decodificar— pero al probar contra sitios
+  reales solo cuatro de doce daban icono, y varios de los que faltaban lo tenían
+  justo ahí. Se lee como **el contenedor que es**: se saca la imagen más grande
+  del índice y, si es un PNG, se le pasa al decodificador de siempre.
+- ~~**Descodificar el mapa de bits que llevan algunos ICO**~~ → **también entró
+  después de medir**. Google, Amazon y Netflix sirven exactamente eso, y los tres
+  lo hacen con la misma variante: **32 bits sin comprimir**. Se lee solo ésa, que
+  es la única que no necesita paletas ni descompresión, y todo lo demás se deja
+  pasar. La aritmética se comprueba contra el tamaño real antes de tocar un byte.
 - **`golang.org/x/image` para reescalar.** Sería un módulo nuevo de verdad en un
   binario que hoy tiene cuatro dependencias directas. El promediador son cuarenta
   líneas.
@@ -129,7 +139,25 @@ es el fichero del sitio**, son píxeles re-emitidos por nuestro codificador.
   siquiera en la lista de candidatos**.
 - Todo el paquete de la bóveda con `-race`, ahora que hay trabajo de fondo.
 
-**Lo que no se ha comprobado:** nada de esto se ha ejecutado contra sitios de
-verdad. Cuántos de los sesenta y cinco dan icono con solo tres rutas conocidas es
-una pregunta que solo contesta el uso, y de su respuesta depende si algún día hay
-que analizar el HTML.
+## Lo que enseñó medirlo contra sitios de verdad
+
+La primera versión **no funcionó en absoluto**, y ninguna prueba lo vio: el filtro
+de direcciones privadas estaba en `DialContext`, que recibe **el nombre sin
+resolver**, así que `ParseIP("github.com")` daba nulo, la regla «si no se sabe qué
+es, no se va» se cumplía y **se rechazaban todos los sitios del mundo**. Lo dijo
+el cliente —ninguna entrada tenía icono— y se encontró en un minuto probando el
+descargador contra doce dominios reales. El filtro vive ahora en `Control`, que
+corre después de resolver.
+
+Las pruebas no lo cazaron por una razón que conviene recordar: las que hablaban
+con un servidor llevaban el filtro aflojado, y la que sí lo ejercitaba usaba
+`127.0.0.1`, que **sí** es una dirección. Pasaba por el motivo correcto y por la
+razón equivocada. Hay una prueba nueva que pide por un nombre y comprueba que el
+rechazo habla de la dirección resuelta.
+
+Y con el camino ya funcionando, la medida decidió dos cosas que estaban
+descartadas de antemano —el `.ico` y su mapa de bits—: de **4 de 12** se pasó a
+**9 de 12**.
+
+**Lo que sigue sin comprobarse:** cuántos de los sesenta y cinco sitios del
+cliente dan icono. Doce dominios conocidos no son una bóveda real.

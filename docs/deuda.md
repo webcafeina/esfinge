@@ -14,7 +14,7 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | La aplicación no se ha ejecutado en Windows ni en Linux | Media | En macOS está probada de sobra —diálogos, arrastrar y soltar, doble clic en un `.esf`, menús, estructura y vidrio—, pero en los otros dos sistemas todo lo visual sigue siendo una suposición | Abierto · depende del humano. Bajó de Alta a Media cuando la 2.10.0 cerró el frente de macOS |
 | El `.deb` no se puede instalar aquí | Media | Se puede inspeccionar con `dpkg -c`, pero instalarlo exige permisos que esta máquina no da | Abierto |
 | El instalador de Windows | Media | Se compila, pero nadie lo ha ejecutado | Abierto |
-| Los iconos con sitios de verdad | Media | Todo el camino está probado contra servidores de mentira —incluidos los casos malos— pero **ningún sitio real ha contestado todavía**. Con solo tres rutas conocidas y sin analizar el HTML, cuántos de los 65 dan icono es una pregunta que contesta el uso, y de ella depende si algún día hay que analizar el HTML ([ADR 0024](adr/0024-iconos-de-los-sitios.md)) | Abierto · depende del humano |
+| Los iconos con la bóveda de verdad | Baja | Medido contra doce dominios conocidos: **nueve dan icono**. Los que faltan lo declaran en el HTML, que sigue descartado. Cuántos de los 65 del cliente lo darán es otra cosa, y de eso depende si algún día hay que leer el HTML ([ADR 0024](adr/0024-iconos-de-los-sitios.md)) | Abierto · depende del humano |
 | El portapapeles en Windows y Linux | Baja | Va por la API del navegador dentro del webview; en macOS está comprobado. Desde la bóveda, además, **el borrado pasa por Go** (`Sistema.PonerEnPortapapeles`), que en Wails usa la API del sistema | Abierto |
 | La bóveda con datos de verdad | Baja | **Comprobado (2026-09-09)**: en un Mac, con una exportación real de Dashlane que entra entera —los cuatro ficheros— y con la clave de recuperación abriendo la bóveda, que era lo único que ninguna prueba podía decir. Lo que queda no es una comprobación sino **uso**: vivir con ella lo bastante para saber si los plazos estorban y si se abre Esfinge o se sigue abriendo Dashlane. De eso depende seguir o parar ([ADR 0023](adr/0023-la-boveda.md)) | Abierto · depende del humano |
 | **Nadie de fuera ha auditado esto** | **Alta** | Para un cifrador puntual era una nota al pie; para un gestor de contraseñas publicado en GitHub es la primera pregunta que hará cualquiera. Está dicho en `docs/seguridad.md` | Abierto · decisión de producto |
@@ -46,6 +46,10 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~La descarga de iconos no funcionaba en absoluto~~ → el filtro de direcciones privadas estaba en
+  `DialContext`, que recibe el nombre sin resolver: `ParseIP("github.com")` da nulo y se rechazaban
+  todos los sitios del mundo. La 2.14.0 salió así y no descargó ni un icono. Lo dijo el cliente
+  (2026-09-09, 2.14.1).
 - ~~Un repositorio de terceros roto dejaba sin publicar~~ → la máquina de GitHub trae listas de apt
   que esta compilación no necesita, y `apt-get update` falla entero si cualquiera sirve un índice
   caducado. Un problema en un servidor de Google dejó sin publicar la 2.14.0. Ahora se quitan antes

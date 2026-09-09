@@ -37,6 +37,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -61,6 +62,10 @@ const (
 	saltos = 3
 )
 
+// navegador es lo que se dice ser al pedir un icono. Ver bajar().
+const navegador = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
+	"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+
 // ErrNoHay dice que ese sitio no tiene icono que valga. No es un fallo: la
 // mayoría de las veces es la respuesta correcta y hay que recordarla para no
 // volver a preguntar.
@@ -81,6 +86,11 @@ var dondeMirar = []string{
 	"/apple-touch-icon.png",
 	"/apple-touch-icon-precomposed.png",
 	"/favicon.png",
+	// **El `.ico` entró después de medir.** Estaba fuera por un argumento bueno —Go
+	// no lo sabe decodificar— y al probar contra sitios de verdad resultó que sin
+	// él solo cuatro de doce daban icono. Se lee como el contenedor que es, y solo
+	// si dentro hay un PNG: ver ico.go.
+	"/favicon.ico",
 }
 
 // Descargador trae iconos. Se construye una vez y se reutiliza.
@@ -108,26 +118,33 @@ func (d *Descargador) cliente() *http.Client {
 		return d.Cliente
 	}
 
-	dial := &net.Dialer{Timeout: 5 * time.Second}
+	dial := &net.Dialer{
+		Timeout: 5 * time.Second,
+		// **El filtro va en Control y no en DialContext**, y la diferencia no es de
+		// estilo: es que en uno funciona y en el otro no.
+		//
+		// `DialContext` recibe la dirección **tal como se pidió**, o sea el nombre
+		// sin resolver. Puesto ahí, `ParseIP("github.com")` da nulo, la regla «si no
+		// se sabe qué es, no se va» se cumple, y **se rechazan todos los sitios del
+		// mundo**. Así salió la 2.14.0: ninguna entrada llegó a tener icono nunca, y
+		// lo dijo el cliente. Las pruebas no lo vieron porque las que hablaban con un
+		// servidor llevaban el filtro aflojado, y la que sí lo ejercitaba usaba
+		// «127.0.0.1», que **sí** es una dirección y por eso se rechazaba bien: pasaba
+		// por el motivo correcto y por la razón equivocada.
+		//
+		// `Control` corre **después de resolver**, una vez por cada dirección que se
+		// vaya a intentar, y recibe la IP de verdad. Que es justo lo que hay que
+		// mirar, porque cualquier dominio público puede resolver a la red de casa.
+		Control: func(_, direccion string, _ syscall.RawConn) error {
+			return d.permitir(direccion)
+		},
+	}
 	return &http.Client{
 		// Corto a propósito: esto es un adorno, no una función. Si un sitio tarda
 		// diez segundos en dar su favicon, no lo tiene.
 		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, red, direccion string) (net.Conn, error) {
-				// **El filtro va aquí y no antes**, y es la diferencia entre filtrar y
-				// aparentar que se filtra: comprobar el nombre no sirve de nada porque
-				// cualquier dominio público puede resolver a una dirección de la red de
-				// casa. Lo que hay que mirar es la dirección con la que se va a hablar.
-				anfitrion, _, err := net.SplitHostPort(direccion)
-				if err != nil {
-					return nil, err
-				}
-				if !d.PermitirPrivadas && esPrivada(net.ParseIP(anfitrion)) {
-					return nil, fmt.Errorf("%s es una dirección de una red privada", anfitrion)
-				}
-				return dial.DialContext(ctx, red, direccion)
-			},
+			DialContext:         dial.DialContext,
 			TLSHandshakeTimeout: 5 * time.Second,
 			DisableKeepAlives:   true,
 		},
@@ -144,6 +161,27 @@ func (d *Descargador) cliente() *http.Client {
 			return nil
 		},
 	}
+}
+
+// permitir dice si se puede hablar con esa dirección **ya resuelta**.
+//
+// Se llama desde `Control`, así que lo que llega es «ip:puerto» y nunca un
+// nombre. Si aquí llegara un nombre sería un error de programación, y por eso se
+// rechaza: preferir el corte a la duda es lo que corresponde en un programa que
+// guarda contraseñas.
+func (d *Descargador) permitir(direccion string) error {
+	anfitrion, _, err := net.SplitHostPort(direccion)
+	if err != nil {
+		return err
+	}
+	ip := net.ParseIP(anfitrion)
+	if ip == nil {
+		return fmt.Errorf("%q no es una dirección resuelta", anfitrion)
+	}
+	if !d.PermitirPrivadas && esPrivada(ip) {
+		return fmt.Errorf("%s es una dirección de una red privada", ip)
+	}
+	return nil
 }
 
 // esPrivada dice si una dirección es de una red que no hay que tocar.
@@ -259,7 +297,12 @@ func (d *Descargador) bajar(ctx context.Context, donde string) ([]byte, error) {
 	// contraseñas concreto, en su versión exacta —con los fallos que esa versión
 	// tenga— y que tiene cuenta allí. Es el único dato identificativo que saldría
 	// de la máquina, y no sale.
-	pet.Header.Set("User-Agent", "Mozilla/5.0")
+	//
+	// Va uno de navegador corriente y completo, no un «Mozilla/5.0» a secas: al
+	// medir contra sitios de verdad, tres de doce contestaban 403 al segundo, y con
+	// éste dejan de hacerlo. No es disfrazarse de nadie —lo que se pide es un
+	// fichero público de la portada— es no parecer un robot roto.
+	pet.Header.Set("User-Agent", navegador)
 	pet.Header.Set("Accept", "image/png,image/*")
 
 	resp, err := d.cliente().Do(pet)
@@ -283,6 +326,14 @@ func (d *Descargador) bajar(ctx context.Context, donde string) ([]byte, error) {
 // guarda son píxeles nuestros, sin los metadatos ni los trozos accesorios que
 // trajera el original.
 func aPNGPequeño(datos []byte) ([]byte, error) {
+	// Un ICO es un contenedor: puede traer un PNG dentro —lo normal hoy— o un mapa
+	// de bits de los de Windows, que es lo que sirven todavía los sitios grandes.
+	if png, img, err := deUnICO(datos); err == nil {
+		if img != nil {
+			return aPNG(reducir(img, ladoGuardado))
+		}
+		datos = png
+	}
 	// Primero la cabecera, que dice el tamaño sin reservar un solo píxel.
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(datos))
 	if err != nil {
@@ -297,8 +348,12 @@ func aPNGPequeño(datos []byte) ([]byte, error) {
 		return nil, ErrNoHay
 	}
 
+	return aPNG(reducir(img, ladoGuardado))
+}
+
+func aPNG(img image.Image) ([]byte, error) {
 	var b bytes.Buffer
-	if err := png.Encode(&b, reducir(img, ladoGuardado)); err != nil {
+	if err := png.Encode(&b, img); err != nil {
 		return nil, err
 	}
 	return b.Bytes(), nil

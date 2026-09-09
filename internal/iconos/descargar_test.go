@@ -3,6 +3,7 @@ package iconos
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"image"
 	"image/color"
@@ -256,4 +257,134 @@ func mustIP(t *testing.T, s string) net.IP {
 		t.Fatalf("%q no es una dirección", s)
 	}
 	return ip
+}
+
+// **La prueba que faltaba, y que habría ahorrado una versión entera.**
+//
+// El filtro de direcciones privadas estaba en `DialContext`, que recibe el
+// **nombre sin resolver**: `ParseIP("github.com")` da nulo, la regla «si no se
+// sabe qué es, no se va» se cumplía, y se rechazaban todos los sitios del mundo.
+// La 2.14.0 salió así y ninguna entrada llegó a tener icono nunca.
+//
+// Lo que se comprueba aquí es que el rechazo llega **después de resolver**: se
+// pide por un nombre —«localhost», que resuelve sin DNS— y el motivo del rechazo
+// tiene que hablar de la dirección, no del nombre. Si el filtro volviera a
+// mirarlo antes de resolver, esto se pondría rojo.
+func TestElFiltroMiraLaDireccionResueltaYNoElNombre(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Write(unPNG(t, 32))
+	}))
+	defer s.Close()
+	_, puerto, _ := net.SplitHostPort(strings.TrimPrefix(s.URL, "http://"))
+
+	d := &Descargador{} // con el filtro puesto
+	_, err := d.bajar(t.Context(), "http://localhost:"+puerto+"/favicon.png")
+	if err == nil {
+		t.Fatal("ha entrado en una dirección privada por su nombre")
+	}
+	if !strings.Contains(err.Error(), "127.0.0.1") && !strings.Contains(err.Error(), "::1") {
+		t.Errorf("el rechazo no habla de la dirección resuelta: %v", err)
+	}
+	if strings.Contains(err.Error(), "\"localhost\" no es una dirección resuelta") {
+		t.Error("el filtro está mirando el nombre en vez de la dirección")
+	}
+}
+
+// Un nombre que no resuelve tampoco puede colarse.
+func TestUnNombreQueNoResuelveNoConecta(t *testing.T) {
+	d := &Descargador{}
+	if _, err := d.bajar(t.Context(), "https://esto.no.existe.invalid/favicon.png"); err == nil {
+		t.Error("ha conectado con un nombre que no existe")
+	}
+}
+
+// --------------------------------------------------------------------- el ICO
+
+// unICO monta un icono con lo que se le dé dentro.
+func unICO(ancho, alto byte, dentro []byte) []byte {
+	var b []byte
+	b = append(b, 0, 0, 1, 0, 1, 0) // reservado, tipo 1, una entrada
+	entrada := make([]byte, 16)
+	entrada[0], entrada[1] = ancho, alto
+	binary.LittleEndian.PutUint32(entrada[8:12], uint32(len(dentro)))
+	binary.LittleEndian.PutUint32(entrada[12:16], 22) // 6 de cabecera + 16 de índice
+	b = append(b, entrada...)
+	return append(b, dentro...)
+}
+
+// unBMPde32 monta el mapa de bits que llevan dentro los ICO de los sitios
+// grandes: cabecera de cuarenta bytes, cuatro bytes por píxel y el alto doblado.
+func unBMPde32(lado int) []byte {
+	b := make([]byte, 40)
+	binary.LittleEndian.PutUint32(b[0:4], 40)
+	binary.LittleEndian.PutUint32(b[4:8], uint32(lado))
+	binary.LittleEndian.PutUint32(b[8:12], uint32(lado*2)) // doblado, con su máscara
+	binary.LittleEndian.PutUint16(b[12:14], 1)
+	binary.LittleEndian.PutUint16(b[14:16], 32)
+	for i := 0; i < lado*lado; i++ {
+		b = append(b, 10, 20, 30, 255) // azul, verde, rojo, alfa
+	}
+	return b
+}
+
+// Los dos contenidos posibles de un ICO. El primero es lo normal hoy; el segundo
+// es lo que sirven todavía Google, Amazon y Netflix, y por eso está.
+func TestUnICOSeLeeConPNGYConMapaDeBits(t *testing.T) {
+	t.Run("con un PNG dentro", func(t *testing.T) {
+		png, img, err := deUnICO(unICO(32, 32, unPNG(t, 32)))
+		if err != nil || img != nil || png == nil {
+			t.Fatalf("png=%d img=%v err=%v", len(png), img != nil, err)
+		}
+	})
+
+	t.Run("con un mapa de bits de 32 dentro", func(t *testing.T) {
+		_, img, err := deUnICO(unICO(32, 32, unBMPde32(32)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if img == nil || img.Bounds().Dx() != 32 {
+			t.Fatalf("img=%v", img)
+		}
+		// Los componentes van en orden azul, verde, rojo: si se leen al revés, el
+		// icono sale con los colores cambiados y nadie lo nota hasta verlo.
+		r, g, b, _ := img.At(0, 0).RGBA()
+		if r>>8 != 30 || g>>8 != 20 || b>>8 != 10 {
+			t.Errorf("colores del revés: %d %d %d", r>>8, g>>8, b>>8)
+		}
+	})
+
+	t.Run("con un mapa de bits de otra profundidad se deja", func(t *testing.T) {
+		malo := unBMPde32(8)
+		binary.LittleEndian.PutUint16(malo[14:16], 8) // 8 bits, con paleta
+		if _, _, err := deUnICO(unICO(8, 8, malo)); err == nil {
+			t.Error("ha intentado leer un mapa de bits con paleta")
+		}
+	})
+}
+
+// **Un ICO es un fichero de un tercero**, así que sus números no se creen: un
+// desplazamiento inventado no puede tumbar el programa.
+func TestUnICOInventadoNoRompeNada(t *testing.T) {
+	malos := [][]byte{
+		{0, 0, 1, 0, 1, 0},                    // dice tener una entrada y no la trae
+		{0, 0, 1, 0, 200, 0},                  // dice tener doscientas
+		append(unICO(32, 32, unPNG(t, 4)), 0), // con un byte de más
+		{0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0},  // tipo 2, que es un cursor
+	}
+	// Y uno con el desplazamiento apuntando fuera del fichero.
+	fuera := unICO(32, 32, unPNG(t, 4))
+	binary.LittleEndian.PutUint32(fuera[6+12:6+16], 999999)
+	malos = append(malos, fuera)
+
+	for i, m := range malos {
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					t.Errorf("el caso %d ha reventado: %v", i, r)
+				}
+			}()
+			deUnICO(m)     // no puede entrar en pánico
+			aPNGPequeño(m) // ni por este camino
+		}()
+	}
 }

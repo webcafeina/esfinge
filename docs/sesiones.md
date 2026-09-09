@@ -5,6 +5,33 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · La descarga de iconos no funcionaba en absoluto
+
+- **2.14.1.** El cliente actualizó y dijo que **ninguna entrada tenía icono**. Tenía razón, y no era
+  que los sitios no dieran: **no se llegaba a pedir ni uno**.
+- **La causa, y es de las buenas:** el filtro de direcciones privadas estaba en `DialContext`, que
+  recibe la dirección **tal como se pidió** —o sea, el nombre sin resolver—. `ParseIP("github.com")`
+  da nulo, la regla «si no se sabe qué es, no se va» se cumplía, y **se rechazaban todos los sitios
+  del mundo** con el mensaje «github.com es una dirección de una red privada». El filtro vive ahora
+  en `Control`, que corre **después** de resolver y recibe la IP de verdad.
+- **Por qué las pruebas no lo vieron**, que es lo que hay que recordar: las que hablaban con un
+  servidor llevaban el filtro aflojado, y la única que lo ejercitaba de verdad usaba `127.0.0.1`,
+  que **sí** es una dirección y por eso se rechazaba bien. Pasaba por el motivo correcto y por la
+  razón equivocada. La prueba nueva pide por un **nombre** y exige que el rechazo hable de la
+  dirección resuelta.
+- Se encontró en un minuto **probando el descargador contra doce dominios reales** desde aquí, que es
+  algo que no se me había ocurrido hacer y que estaba a una prueba de usar y tirar.
+- **Y con eso funcionando, medir cambió dos decisiones que estaban tomadas.** Con las tres rutas
+  previstas salían **4 de 12**. Añadiendo `/favicon.ico` —leído como el contenedor que es— y un
+  navegador de verdad en la cabecera —tres sitios contestaban 403— subió a 6. Y leyendo el **mapa de
+  bits de 32 bits** que llevan dentro Google, Amazon y Netflix, a **9 de 12**. Las dos cosas estaban
+  descartadas en la ADR por buenos argumentos; los datos las desmintieron y la ficha lo dice.
+- Solo se lee la variante de 32 bits sin comprimir, que es la única que no necesita paletas ni
+  descompresión, y la aritmética se comprueba contra el tamaño real antes de tocar un byte: son datos
+  de un tercero.
+- Verificado: `make comprobar`, todo con `-race`, **74 pruebas de interfaz** y siete nuevas en Go,
+  entre ellas la de un ICO con números inventados que no puede tumbar el programa.
+
 ## 2026-09-09 · Los iconos de los sitios, y la segunda conexión
 
 - **2.14.0**, segunda mitad de lo que pidió el cliente. Ahora cada entrada enseña el icono real del
