@@ -47,7 +47,8 @@ export function Marca({ lado, clase }: { lado: number; clase?: string }) {
  *   problema.
  * - Las pruebas localizan las secciones con «.lateral + getByRole("button")».
  *   Un botón o un enlace de más aquí rompería ese localizador en todo el fichero
- *   de pruebas, y hay una prueba que cuenta que siguen siendo cinco.
+ *   de pruebas, y hay una prueba que cuenta cuántos hay. Son seis desde que está
+ *   la bóveda.
  */
 export function BarraLateral<T extends string>({
   valor,
@@ -82,6 +83,7 @@ export function BarraLateral<T extends string>({
         {fila("cifrar", "Cifrar")}
         {fila("descifrar", "Descifrar")}
         {fila("generar", "Generar")}
+        {fila("boveda", "Bóveda")}
         {fila("historial", "Historial")}
       </nav>
 
@@ -150,6 +152,14 @@ function Icono({ nombre }: { nombre: string }) {
     // Chispa: lo que se genera sale de la nada.
     generar: (
       <path d="M9 2.5v13M2.5 9h13M4.6 4.6l8.8 8.8M13.4 4.6l-8.8 8.8" />
+    ),
+    // Una caja fuerte: el cuerpo, el disco y la manilla.
+    boveda: (
+      <>
+        <rect x="2.8" y="3.6" width="12.4" height="10.8" rx="2" />
+        <circle cx="8.2" cy="9" r="2.4" />
+        <path d="M12.8 7.7v2.6" />
+      </>
     ),
     // Reloj.
     historial: (

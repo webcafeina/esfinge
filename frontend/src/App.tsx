@@ -20,6 +20,7 @@ import {
   type ResultadoFichero,
   CARACTERES_MINIMO,
   CARACTERES_MAXIMO,
+  NUNCA,
 } from "./puente";
 import {
   BandaNovedad,
@@ -33,8 +34,9 @@ import {
   Segmentado,
   ZonaFicheros,
 } from "./componentes";
+import { Boveda } from "./boveda";
 
-type Tarea = "cifrar" | "descifrar" | "generar" | "historial" | "ajustes";
+type Tarea = "cifrar" | "descifrar" | "generar" | "boveda" | "historial" | "ajustes";
 type Modo = "texto" | "ficheros";
 
 export default function App() {
@@ -220,6 +222,13 @@ export default function App() {
             />
           </Panel>
 
+          {/* La bóveda se entera de que la están mirando, y no le da igual: es lo
+              que aplaza el bloqueo por inactividad y lo que hace que al volver se
+              vea el estado de ahora y no el de hace media hora. */}
+          <Panel activo={tarea === "boveda"} visitado={visitadas.has("boveda")}>
+            <Boveda activo={tarea === "boveda"} />
+          </Panel>
+
           <Panel activo={tarea === "historial"} visitado={visitadas.has("historial")}>
             <Historial recargar={tarea === "historial"} />
           </Panel>
@@ -260,6 +269,7 @@ const TITULOS: Record<Tarea, string> = {
   cifrar: "Cifrar",
   descifrar: "Descifrar",
   generar: "Generar una contraseña",
+  boveda: "Bóveda",
   historial: "Historial",
   ajustes: "Ajustes",
 };
@@ -700,9 +710,9 @@ function Ajustes({
     esfinge.vidrio().then(setVidrio).catch(() => {});
   }, []);
 
-  async function cambiar(buscarActualizaciones: boolean) {
+  async function cambiar(cambio: Partial<Preferencias>) {
     if (!prefs) return;
-    const siguiente = { ...prefs, buscarActualizaciones };
+    const siguiente = { ...prefs, ...cambio };
     setPrefs(siguiente);
     try {
       await esfinge.guardarPreferencias(siguiente);
@@ -754,7 +764,7 @@ function Ajustes({
           <input
             type="checkbox"
             checked={prefs?.buscarActualizaciones ?? true}
-            onChange={(e) => cambiar(e.target.checked)}
+            onChange={(e) => cambiar({ buscarActualizaciones: e.target.checked })}
           />
           <span>Avisarme cuando haya una versión nueva</span>
         </label>
@@ -779,6 +789,56 @@ function Ajustes({
 
         {dicho && <p className="exito">{dicho}</p>}
         {error && <p className="error">{error}</p>}
+      </div>
+
+      {/* Los dos relojes de la bóveda.
+       *
+       * Van aquí y no dentro de la bóveda porque son ajustes de la aplicación y
+       * porque el del portapapeles no es solo de la bóveda: también borra lo que
+       * copia «Usar como clave», que hasta la 2.11.x se quedaba ahí para siempre.
+       *
+       * «Nunca» viaja como -1 y no como 0. El cero es «no lo he dicho», que es lo
+       * que llega cuando alguien guarda un objeto a medias: si significara
+       * «nunca», ese descuido apagaría el bloqueo de la bóveda sin que nadie lo
+       * pidiera. Lo cuenta entero internal/app/preferencias.go. */}
+      <div className="grupo">
+        <div>
+          <label htmlFor="bloqueo">Cerrar la bóveda sola</label>
+          <select
+            id="bloqueo"
+            value={prefs?.minutosParaBloquear ?? 15}
+            onChange={(e) => cambiar({ minutosParaBloquear: Number(e.target.value) })}
+          >
+            {[1, 5, 15, 30, 60, 240, NUNCA].map((m) => (
+              <option key={m} value={m}>
+                {m === NUNCA ? "Nunca" : `Tras ${m} ${m === 1 ? "minuto" : "minutos"} sin tocar nada`}
+              </option>
+            ))}
+          </select>
+          <p className="nota">
+            Cerrarla obliga a volver a escribir la contraseña maestra. Con «nunca» se queda
+            abierta hasta que se cierre a mano o se cierre la aplicación.
+          </p>
+        </div>
+
+        <div>
+          <label htmlFor="portapapeles">Borrar del portapapeles lo que se copie</label>
+          <select
+            id="portapapeles"
+            value={prefs?.segundosDePortapapeles ?? 30}
+            onChange={(e) => cambiar({ segundosDePortapapeles: Number(e.target.value) })}
+          >
+            {[10, 30, 60, 120, NUNCA].map((s) => (
+              <option key={s} value={s}>
+                {s === NUNCA ? "Nunca" : `A los ${s} segundos`}
+              </option>
+            ))}
+          </select>
+          <p className="nota">
+            Vale para las contraseñas de la bóveda y para las que se generan aquí. Nunca se pisa
+            lo que hayas copiado tú después.
+          </p>
+        </div>
       </div>
 
       {vidrio !== null && (

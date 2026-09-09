@@ -308,10 +308,12 @@ func AbrirBytes(ruta string, datos []byte, llaveTecleada string) (*Boveda, error
 		return nil, ErrFormatoNuevo
 	}
 
-	// Si parece una clave de recuperación, se normaliza: así una errata se
-	// distingue de «no abre» **antes** de gastar medio segundo derivando.
+	// Si parece una clave de recuperación, se normaliza: así se acepta lo que la
+	// gente escribe de verdad —minúsculas, sin guiones, con «O» donde va un cero—
+	// y la suma de control queda comprobada antes de derivar nada.
 	candidatas := []string{llaveTecleada}
-	if norm, err := Normalizar(llaveTecleada); err == nil {
+	norm, errRecuperacion := Normalizar(llaveTecleada)
+	if errRecuperacion == nil {
 		candidatas = append([]string{norm}, candidatas...)
 	}
 
@@ -330,6 +332,14 @@ func AbrirBytes(ruta string, datos []byte, llaveTecleada string) (*Boveda, error
 		}
 	}
 	if llave == nil {
+		// **«Te has equivocado al copiarla» y «has perdido la bóveda» son cosas
+		// muy distintas**, y ésta es la diferencia. Se mira al final y no al
+		// principio a propósito: una contraseña maestra que empiece por ESF es rara
+		// pero legítima, así que primero se intenta abrir con lo que sea que hayan
+		// escrito y solo si no abre nada se dice que la clave viene mal copiada.
+		if errRecuperacion != nil && PareceRecuperacion(llaveTecleada) {
+			return nil, errRecuperacion
+		}
 		return nil, ErrSinRanura
 	}
 	b.llave = llave

@@ -587,11 +587,12 @@ test("la marca está en la barra lateral y no estorba a la navegación", async (
   await expect(firma).toContainText("Webcafeína");
   await expect(firma).toContainText(/\d+\.\d+\.\d+/);
 
-  // **Y siguen siendo cinco botones.** Todo el fichero de pruebas localiza las
-  // secciones con «.lateral + getByRole("button")»: si el lockup o la firma
-  // fueran interactivos, entrarían en ese localizador y romperían de golpe
-  // media suite. Por eso son texto, y por eso esto se cuenta.
-  await expect(page.locator(".lateral").getByRole("button")).toHaveCount(5);
+  // **Y siguen siendo seis botones** —cinco hasta que llegó la bóveda—. Todo el
+  // fichero de pruebas localiza las secciones con «.lateral +
+  // getByRole("button")»: si el lockup o la firma fueran interactivos, entrarían
+  // en ese localizador y romperían de golpe media suite. Por eso son texto, y
+  // por eso esto se cuenta.
+  await expect(page.locator(".lateral").getByRole("button")).toHaveCount(6);
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
@@ -707,6 +708,181 @@ test("Ajustes dice qué es esto, de qué versión y de quién", async ({ page })
   await expect(ficha.locator(".firma")).toContainText(/\d+\.\d+\.\d+/);
   await expect(ficha).toContainText("Webcafeína");
   await expect(ficha.locator("svg")).toBeVisible();
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+// ------------------------------------------------------------- la bóveda (0023)
+
+const MAESTRA = "una maestra de prueba";
+
+/**
+ * Deja la bóveda abierta, venga de donde venga.
+ *
+ * **El estado sobrevive a las pruebas, y eso no se puede fingir.** El servidor
+ * de desarrollo guarda la bóveda en una carpeta de configuración aislada —de ahí
+ * el `-config` de `cmd/dev`, que evita que estas pruebas escriban una bóveda con
+ * una contraseña pública en la carpeta de verdad de quien desarrolla— pero esa
+ * carpeta la comparten los dos temas y todas las pruebas del fichero. Así que la
+ * primera que llega la crea y las demás la abren, y hay que saber estar en los
+ * dos casos.
+ */
+async function conLaBovedaAbierta(page: Page) {
+  await seccion(page, "Bóveda").click();
+
+  const crear = accion(page, "Crear la bóveda");
+  const abrir = accion(page, "Abrir la bóveda");
+  await expect(crear.or(abrir).or(page.locator("#boveda-buscar"))).toBeVisible({
+    timeout: 20_000,
+  });
+
+  if (await crear.isVisible()) {
+    await page.locator("#boveda-maestra").fill(MAESTRA);
+    await page.locator("#boveda-maestra-2").fill(MAESTRA);
+    await crear.click();
+
+    // La ceremonia: la clave se enseña una vez y hay que decir que se ha
+    // apuntado para poder seguir.
+    const clave = page.locator(".clave-recuperacion");
+    await expect(clave).toBeVisible({ timeout: 20_000 });
+    await expect(clave).toHaveText(/^ESF(-[0-9A-HJKMNP-TV-Z]{4})+$/);
+
+    const seguir = accion(page, "Continuar");
+    await expect(seguir).toBeDisabled();
+    await page.getByText("La he apuntado en un sitio seguro").click();
+    await seguir.click();
+  } else if (await abrir.isVisible()) {
+    await page.locator("#boveda-llave").fill(MAESTRA);
+    await abrir.click();
+  }
+
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+}
+
+test("guarda una entrada y no enseña la contraseña hasta que se pide", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  // Título distinto en cada pasada: la bóveda sobrevive a la prueba, y dos
+  // entradas iguales dejarían el localizador ambiguo.
+  const titulo = `Banco ${Date.now()}`;
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(titulo);
+  await page.locator("#boveda-usuario").fill("yo@ejemplo.com");
+  await page.locator("#boveda-secreto").fill("s3cr3t0");
+  await accion(page, "Guardar").click();
+
+  // **La lista viaja sin contraseñas.** Que el secreto no esté en el HTML de la
+  // lista no es un detalle de presentación: es la regla del puente.
+  const fila = page.locator(".lista-boveda").getByRole("button", { name: titulo });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
+  expect(await page.locator(".lista-boveda").innerText()).not.toContain("s3cr3t0");
+
+  await fila.click();
+  const dato = page.locator(".dato.secreto").first();
+  await expect(dato).toHaveText("••••••••••••");
+  await page.getByRole("button", { name: "Ver", exact: true }).first().click();
+  await expect(dato).toHaveText("s3cr3t0");
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("copiar un secreto dice cuándo va a borrarse solo", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const titulo = `Correo ${Date.now()}`;
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(titulo);
+  await page.locator("#boveda-secreto").fill("otra clave");
+  await accion(page, "Guardar").click();
+
+  await page.locator(".lista-boveda").getByRole("button", { name: titulo }).click();
+  await page.getByRole("button", { name: "Copiar", exact: true }).first().click();
+
+  // El plazo lo dice Go por un evento, no un temporizador de la pantalla: el de
+  // un webview se pausa y muere al recargar, y un borrado que a veces no ocurre
+  // no es un borrado.
+  await expect(page.locator(".exito:visible").first()).toContainText(
+    /se borra del portapapeles en \d+ s/,
+    // El plazo llega por el flujo de eventos, que puede tardar más que la
+    // respuesta de la llamada: son dos caminos distintos.
+    { timeout: 15_000 },
+  );
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("la clave de recuperación abre la bóveda", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  // Se genera una nueva en vez de usar la del principio, porque la del principio
+  // solo se ve si esta pasada fue la que creó la bóveda. Y de paso se comprueba
+  // lo que hace rotar: que la de antes deja de valer y sale otra.
+  await page.getByRole("button", { name: "Contraseña maestra y clave de recuperación" }).click();
+  await page.getByRole("button", { name: "Generar otra…" }).click();
+
+  const clave = page.locator(".clave-recuperacion");
+  await expect(clave).toBeVisible({ timeout: 20_000 });
+  const recuperacion = (await clave.innerText()).trim();
+
+  await page.getByText("La he apuntado en un sitio seguro").click();
+  await accion(page, "Continuar").click();
+
+  await accion(page, "Cerrar la bóveda").click();
+  await expect(accion(page, "Abrir la bóveda")).toBeVisible();
+
+  await page.locator("#boveda-llave").fill(recuperacion);
+  await accion(page, "Abrir la bóveda").click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("una clave de recuperación con una errata se distingue de una que no abre", async ({ page }) => {
+  // Sin vigilar la consola: aquí se piden dos aperturas que tienen que fallar, y
+  // el navegador anota cada respuesta 400 como error suyo.
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await accion(page, "Cerrar la bóveda").click();
+
+  // La suma de control es la diferencia entre «te has equivocado al copiarla» y
+  // «has perdido la bóveda», y se ve antes de gastar medio segundo derivando.
+  await page.locator("#boveda-llave").fill("ESF-ABCD-EFGH-JKMN-PQRS-TVWX-YZ01-2345-6789");
+  await accion(page, "Abrir la bóveda").click();
+  await expect(page.locator(".error:visible")).toContainText("revísala");
+
+  await page.locator("#boveda-llave").fill("esta no es la contraseña");
+  await accion(page, "Abrir la bóveda").click();
+  await expect(page.locator(".error:visible")).toContainText("no abre esta bóveda");
+});
+
+test("Ajustes manda sobre los dos relojes de la bóveda", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await seccion(page, "Ajustes").click();
+
+  await page.locator("#bloqueo").selectOption("5");
+  await page.locator("#portapapeles").selectOption("10");
+
+  // Que se guarde de verdad, no solo en la pantalla: se recarga y se mira.
+  await page.reload();
+  await seccion(page, "Ajustes").click();
+  await expect(page.locator("#bloqueo")).toHaveValue("5");
+  await expect(page.locator("#portapapeles")).toHaveValue("10");
+
+  // Y la bóveda lo cuenta donde toca, que es donde se decide si dejarla abierta.
+  await conLaBovedaAbierta(page);
+  await expect(page.locator(".contenido")).toContainText(/5 minutos/);
+
+  // Se deja como estaba, que las pruebas de después comparten servidor.
+  await seccion(page, "Ajustes").click();
+  await page.locator("#bloqueo").selectOption("15");
+  await page.locator("#portapapeles").selectOption("30");
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });

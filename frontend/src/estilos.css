@@ -859,6 +859,143 @@ p {
   border-color: var(--acento);
 }
 
+/* ------------------------------------------------------------------- bóveda */
+
+/* La fila de arriba de la bóveda: buscar a la izquierda y las acciones a la
+ * derecha. Es la anatomía de cualquier lista del sistema. */
+.boveda-barra {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.boveda-barra input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.boveda-barra button {
+  flex-shrink: 0;
+}
+
+/* El separador elástico de las barras que no llevan buscador. */
+.crece {
+  flex: 1;
+}
+
+.lista-boveda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 0.5px solid var(--filete);
+  border-radius: var(--radio);
+  overflow: hidden;
+  background: var(--lienzo);
+}
+
+/* Cada entrada es un botón que ocupa la fila entera, no un elemento con un
+ * botón dentro: se pulsa en cualquier parte, que es como se comporta una lista
+ * del sistema. Por eso hay que desmontarle el aspecto de botón. */
+.lista-boveda button {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espacio-3);
+  width: 100%;
+  height: auto;
+  min-height: var(--alto-fila);
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  text-align: left;
+}
+
+.lista-boveda li + li button {
+  border-top: 0.5px solid var(--filete);
+}
+
+.lista-boveda button:hover:not(:disabled) {
+  background: var(--barra-encima);
+}
+
+.lista-boveda .que {
+  flex-shrink: 0;
+  font-size: var(--texto-grande);
+}
+
+.lista-boveda .nombre {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lista-boveda .nota {
+  margin-left: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%;
+}
+
+/* Un dato de una entrada. No es un campo: no se edita aquí, se lee. Por eso no
+ * lleva el relleno ni el borde de un input, que prometerían lo contrario. */
+.dato {
+  font-size: var(--texto-grande);
+  color: var(--tinta);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dato.secreto {
+  font-family: var(--fuente-mono);
+  font-size: var(--texto);
+  letter-spacing: 0.02em;
+}
+
+/* La clave de recuperación se enseña una sola vez, así que se enseña **grande y
+ * en monoespaciada**: hay que poder copiarla a mano en un papel sin dudar entre
+ * un cero y una O. El alfabeto de Crockford ya quita las letras que se
+ * confunden; esto hace el resto. */
+.clave-recuperacion {
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-grande);
+  line-height: 1.8;
+  letter-spacing: 0.06em;
+  text-align: center;
+  word-break: break-word;
+  padding: var(--espacio-4);
+  border-radius: var(--radio-grande);
+  background: var(--suave);
+  border: 0.5px solid var(--filete);
+  user-select: text;
+  cursor: auto;
+}
+
+/* La lista desplegable, con la misma anatomía que un campo. La flecha va dibujada
+ * porque la del navegador es de su propio sistema de formularios y desentona con
+ * el resto de controles. */
+select {
+  width: 100%;
+  font: inherit;
+  font-size: var(--texto-grande);
+  color: var(--tinta);
+  background: var(--campo);
+  border: 0.5px solid var(--filete-fuerte);
+  border-radius: var(--radio);
+  padding: 0 var(--espacio-6) 0 var(--espacio-3);
+  height: 30px;
+  cursor: default;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%236c6c72' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--espacio-3) center;
+  background-size: 12px;
+  transition: box-shadow 0.12s, border-color 0.12s;
+}
+
 /* ------------------------------------------------------------------ vidrio */
 
 /* Cuando el sistema pone una ventana translúcida detrás —macOS siempre,

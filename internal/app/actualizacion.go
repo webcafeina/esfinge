@@ -202,7 +202,17 @@ func (a *App) InstalarActualizacion() error {
 func (a *App) VerPreferencias() Preferencias { return a.ajustes.Ver() }
 
 // GuardarPreferencias las cambia. La ventana manda el objeto entero.
-func (a *App) GuardarPreferencias(p Preferencias) error { return a.ajustes.Guardar(p) }
+//
+// Los dos plazos de la bóveda se aplican en el momento, y se leen de vuelta de
+// los ajustes en vez de usar lo que mandó la ventana: ahí ya han pasado por el
+// recorte de `normalizar`, y el reloj tiene que ir con el número que se guardó.
+func (a *App) GuardarPreferencias(p Preferencias) error {
+	if err := a.ajustes.Guardar(p); err != nil {
+		return err
+	}
+	a.aplicarPreferencias(a.ajustes.Ver())
+	return nil
+}
 
 // deNovedad recorta lo que sabe el paquete de actualización a lo que necesita la
 // ventana. El resumen SHA256 no cruza el puente: no es asunto de la interfaz.

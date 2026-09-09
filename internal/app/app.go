@@ -83,7 +83,7 @@ type Sistema interface {
 
 // Nueva construye la aplicación.
 func Nueva(version string, sistema Sistema) *App {
-	return &App{
+	a := &App{
 		version: version,
 		hist:    AbrirHistorial(),
 		ajustes: AbrirAjustes(),
@@ -91,6 +91,8 @@ func Nueva(version string, sistema Sistema) *App {
 		act:     &actualizador{comprobador: actualizacion.Nuevo(version)},
 		vig:     nuevoVigilante(),
 	}
+	a.aplicarPreferencias(a.ajustes.Ver())
+	return a
 }
 
 // ApuntarAAPI cambia a dónde se pregunta por versiones nuevas. Lo usan el

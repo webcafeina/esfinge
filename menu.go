@@ -79,8 +79,9 @@ func menuEnEspanol(ctx func() context.Context, aplicacion *app.App) *menu.Menu {
 	ver.AddText("Cifrar", keys.CmdOrCtrl("1"), pedir(app.OrdenIrACifrar))
 	ver.AddText("Descifrar", keys.CmdOrCtrl("2"), pedir(app.OrdenIrADescifrar))
 	ver.AddText("Generar", keys.CmdOrCtrl("3"), pedir(app.OrdenIrAGenerar))
-	ver.AddText("Historial", keys.CmdOrCtrl("4"), pedir(app.OrdenIrAHistorial))
-	ver.AddText("Ajustes", keys.CmdOrCtrl("5"), pedir(app.OrdenIrAAjustes))
+	ver.AddText("Bóveda", keys.CmdOrCtrl("4"), pedir(app.OrdenIrABoveda))
+	ver.AddText("Historial", keys.CmdOrCtrl("5"), pedir(app.OrdenIrAHistorial))
+	ver.AddText("Ajustes", keys.CmdOrCtrl("6"), pedir(app.OrdenIrAAjustes))
 
 	ventana := barra.AddSubmenu("Ventana")
 	ventana.AddText("Minimizar", keys.CmdOrCtrl("m"), func(*menu.CallbackData) {

@@ -25,10 +25,12 @@ const (
 	cadaCuantoSeMira = 15 * time.Second
 
 	// bloqueoPorDefecto son los minutos sin tocar nada antes de cerrar la bóveda.
-	bloqueoPorDefecto = 15 * time.Minute
+	// Lo de verdad lo dicen las preferencias; esto es con lo que se arranca antes
+	// de leerlas y lo que usan las pruebas que no las tocan.
+	bloqueoPorDefecto = minutosBloqueoPorDefecto * time.Minute
 
 	// portapapelesPorDefecto es lo que tarda en borrarse un secreto copiado.
-	portapapelesPorDefecto = 30 * time.Second
+	portapapelesPorDefecto = segundosPortapapelesPorDefecto * time.Second
 )
 
 // EventoBloqueada avisa a la ventana de que la bóveda se ha cerrado sola.
@@ -45,6 +47,7 @@ type vigilante struct {
 
 	ultimaActividad time.Time
 	espera          time.Duration
+	esperaCopiado   time.Duration
 
 	// loCopiado es lo último que Esfinge puso en el portapapeles, y cuándo caduca.
 	loCopiado string
@@ -58,9 +61,31 @@ type vigilante struct {
 func nuevoVigilante() *vigilante {
 	return &vigilante{
 		espera:          bloqueoPorDefecto,
+		esperaCopiado:   portapapelesPorDefecto,
 		ahora:           time.Now,
 		ultimaActividad: time.Now(),
 	}
+}
+
+// aplicarPreferencias pone los dos relojes en hora.
+//
+// Se llama al arrancar y cada vez que se guardan los ajustes, porque los dos
+// plazos tienen que valer **desde ya**: quien acaba de bajar el bloqueo a un
+// minuto porque se va de la mesa no puede tener que reiniciar para que sirva.
+func (a *App) aplicarPreferencias(p Preferencias) {
+	a.vig.mu.Lock()
+	defer a.vig.mu.Unlock()
+	// «Nunca» viaja como -1 y aquí es una duración de cero, que es lo que los dos
+	// relojes entienden como «no cuentes».
+	a.vig.espera = duracion(p.MinutosParaBloquear, time.Minute)
+	a.vig.esperaCopiado = duracion(p.SegundosDePortapapeles, time.Second)
+}
+
+func duracion(cuantos int, unidad time.Duration) time.Duration {
+	if cuantos <= 0 {
+		return 0
+	}
+	return time.Duration(cuantos) * unidad
 }
 
 // Actividad la llama la interfaz cuando alguien está usando la aplicación.
@@ -100,15 +125,27 @@ func (a *App) Copiar(texto string) error {
 	if err := a.sistema.PonerEnPortapapeles(texto); err != nil {
 		return err
 	}
+
 	a.vig.mu.Lock()
-	a.vig.loCopiado = texto
-	a.vig.caducaEn = a.vig.ahora().Add(a.esperaDePortapapeles())
-	a.vig.ultimaActividad = a.vig.ahora()
+	espera := a.vig.esperaCopiado
+	ahora := a.vig.ahora()
+	a.vig.ultimaActividad = ahora
+	// Con el borrado apagado no se apunta lo copiado: lo que no se va a borrar no
+	// hace falta recordarlo, y guardar el secreto en memoria «por si acaso» sería
+	// justo lo contrario de lo que hace este fichero.
+	if espera > 0 {
+		a.vig.loCopiado = texto
+		a.vig.caducaEn = ahora.Add(espera)
+	} else {
+		a.vig.loCopiado = ""
+	}
 	a.vig.mu.Unlock()
+
+	// La cuenta atrás se enseña. Un secreto en el portapapeles sin decir cuánto
+	// va a estar ahí es peor que no borrarlo: quien no lo sabe, no pega a tiempo.
+	a.sistema.Avisar(EventoPortapapeles, int(espera/time.Second))
 	return nil
 }
-
-func (a *App) esperaDePortapapeles() time.Duration { return portapapelesPorDefecto }
 
 // borrarPortapapelesSiSigueSiendoNuestro es el detalle que hace esto aceptable.
 //

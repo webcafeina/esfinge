@@ -23,6 +23,7 @@ const (
 	OrdenIrACifrar    = "ir:cifrar"
 	OrdenIrADescifrar = "ir:descifrar"
 	OrdenIrAGenerar   = "ir:generar"
+	OrdenIrABoveda    = "ir:boveda"
 	OrdenIrAHistorial = "ir:historial"
 	OrdenIrAAjustes   = "ir:ajustes"
 

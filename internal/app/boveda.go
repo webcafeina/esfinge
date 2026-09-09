@@ -56,8 +56,10 @@ func rutaBoveda() string {
 func (a *App) EstadoBoveda() EstadoBoveda {
 	ruta := rutaBoveda()
 	e := EstadoBoveda{
-		Ruta:                ruta,
-		MinutosParaBloquear: int(a.vig.espera / time.Minute),
+		Ruta: ruta,
+		// De los ajustes y no del vigilante: el vigilante lo lleva un cerrojo que
+		// no es de aquí, y el número que hay que enseñar es el que está guardado.
+		MinutosParaBloquear: a.ajustes.Ver().MinutosParaBloquear,
 	}
 	if _, err := os.Stat(ruta); err == nil {
 		e.Existe = true

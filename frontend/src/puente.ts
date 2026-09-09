@@ -99,6 +99,82 @@ export type Preferencias = {
   /** Las últimas carpetas de cada diálogo. Las lleva Go; la interfaz no las toca. */
   carpetaAbrir: string;
   carpetaGuardar: string;
+  /**
+   * Los dos relojes de la bóveda. **«Nunca» es NUNCA, no cero.**
+   *
+   * El cero significa «no lo he dicho, deja lo que había», porque es lo que
+   * llega cuando alguien guarda un objeto a medias. Lo explica entero
+   * internal/app/preferencias.go.
+   */
+  minutosParaBloquear: number;
+  segundosDePortapapeles: number;
+};
+
+/** Lo que se manda para apagar uno de los dos relojes de la bóveda. */
+export const NUNCA = -1;
+
+/** Las cuatro clases de cosa que caben en la bóveda. Los nombres los fija Go. */
+export type TipoEntrada = "credencial" | "nota" | "tarjeta" | "identidad";
+
+/** Una contraseña que se sustituyó, con la fecha en que dejó de valer. */
+export type Antigua = {
+  secreto: string;
+  hasta: string;
+};
+
+/**
+ * Una entrada de la bóveda.
+ *
+ * **Llega de dos formas y hay que saber cuál se tiene.** La lista viaja sin
+ * contraseñas —`buscarEnBoveda`— y la entrada entera solo cuando se pide una
+ * concreta —`verDeBoveda`—. Es la regla del puente: los secretos salen de uno en
+ * uno. Por eso todo lo sensible es opcional aquí.
+ */
+export type EntradaBoveda = {
+  id: string;
+  tipo: TipoEntrada;
+  titulo: string;
+  notas?: string;
+  etiquetas?: string[];
+  carpeta?: string;
+  creada: string;
+  cambiada: string;
+  papelera?: boolean;
+  borradaEn?: string;
+
+  usuario?: string;
+  secreto?: string;
+  sitios?: string[];
+  totp?: string;
+  historial?: Antigua[];
+
+  titular?: string;
+  numero?: string;
+  caduca?: string;
+  verificacion?: string;
+
+  nombreCompleto?: string;
+  documento?: string;
+  numeroDocumento?: string;
+};
+
+/** Lo que hace falta saber para decidir qué pantalla de la bóveda se enseña. */
+export type EstadoBoveda = {
+  existe: boolean;
+  abierta: boolean;
+  ruta: string;
+  cuantas: number;
+  soloLectura: boolean;
+  minutosParaBloquear: number;
+};
+
+/** Lo que se cuenta después de traer un CSV de otro gestor. */
+export type ResumenImportacion = {
+  metidas: number;
+  duplicadas: number;
+  deDonde: string;
+  /** El CSV del que se importó, para poder ofrecer borrarlo. */
+  fichero: string;
 };
 
 type MetodosGo = Record<string, (...args: unknown[]) => Promise<unknown>>;
@@ -204,6 +280,56 @@ export const esfinge = {
   ordenar: (que: string) => llamar<void>("Ordenar", que),
 
   guardarPreferencias: (p: Preferencias) => llamar<void>("GuardarPreferencias", p),
+
+  // --------------------------------------------------------------- la bóveda
+
+  /**
+   * copiar pone algo en el portapapeles **desde Go**, que es lo que arma el
+   * borrado pasado el plazo.
+   *
+   * Copiar sabe hacerlo el navegador; borrar pasado un rato, no: el temporizador
+   * de un webview muere al recargar y el sistema lo puede pausar, y entonces un
+   * secreto se queda ahí para siempre creyendo que se limpió.
+   */
+  copiar: (texto: string) => llamar<void>("Copiar", texto),
+
+  /** Dice que alguien está usando la aplicación, para aplazar el bloqueo. */
+  actividad: () => llamar<void>("Actividad"),
+
+  estadoBoveda: () => llamar<EstadoBoveda>("EstadoBoveda"),
+
+  /** Devuelve la clave de recuperación, **y es la única vez que se ve**. */
+  crearBoveda: (maestra: string) => llamar<string>("CrearBoveda", maestra),
+
+  /** Vale la contraseña maestra o la clave de recuperación; no hay que decir cuál. */
+  abrirBoveda: (llave: string) => llamar<void>("AbrirBoveda", llave),
+
+  cerrarBoveda: () => llamar<void>("CerrarBoveda"),
+
+  /** La lista, **sin contraseñas**. */
+  buscarEnBoveda: (q: string) =>
+    llamar<EntradaBoveda[] | null>("BuscarEnBoveda", q).then((l) => l ?? []),
+
+  /** Una entrada entera, con su secreto. De una en una a propósito. */
+  verDeBoveda: (id: string) => llamar<EntradaBoveda>("VerDeBoveda", id),
+
+  guardarEnBoveda: (e: EntradaBoveda) => llamar<void>("GuardarEnBoveda", e),
+
+  borrarDeBoveda: (id: string) => llamar<void>("BorrarDeBoveda", id),
+
+  cambiarMaestraDeBoveda: (vieja: string, nueva: string) =>
+    llamar<void>("CambiarMaestraDeBoveda", vieja, nueva),
+
+  /** Genera otra clave de recuperación y deja la anterior inservible. */
+  rotarRecuperacionDeBoveda: () => llamar<string>("RotarRecuperacionDeBoveda"),
+
+  importarEnBoveda: (deDonde: string) =>
+    llamar<ResumenImportacion>("ImportarEnBoveda", deDonde),
+
+  /** Escribe las entradas **en claro**, por el diálogo del sistema. */
+  exportarBoveda: () => llamar<string>("ExportarBoveda"),
+
+  borrarElCSVImportado: (ruta: string) => llamar<void>("BorrarElCSVImportado", ruta),
 };
 
 /** Los límites de longitud los pone Go, no la interfaz. */
@@ -244,6 +370,25 @@ export function alDescargar(cb: (a: Avance) => void): () => void {
 }
 
 /**
+ * alBloquearseLaBoveda avisa de que la bóveda se ha cerrado sola.
+ *
+ * Lo decide un reloj de Go y no uno de aquí, y por la misma razón por la que el
+ * portapapeles se borra desde allí: los temporizadores de un webview se pausan y
+ * se pierden al recargar, y un bloqueo que a veces no ocurre no es un bloqueo.
+ */
+export function alBloquearseLaBoveda(cb: () => void): () => void {
+  return escuchar("boveda-bloqueada", cb);
+}
+
+/**
+ * alCambiarElPortapapeles trae los segundos que le quedan a lo copiado, o cero
+ * cuando ya se ha borrado.
+ */
+export function alCambiarElPortapapeles(cb: (segundos: number) => void): () => void {
+  return escuchar("portapapeles", cb);
+}
+
+/**
  * escuchar es el camino de dos vías de siempre: los eventos de Wails cuando hay
  * ventana, y el flujo del servidor de desarrollo cuando hay navegador.
  */
@@ -253,11 +398,30 @@ function escuchar<T>(evento: string, cb: (datos: T) => void): () => void {
     return () => {};
   }
 
-  const fuente = new EventSource("/api/eventos");
-  fuente.addEventListener(evento, (e) => {
-    cb(JSON.parse((e as MessageEvent).data) as T);
-  });
-  return () => fuente.close();
+  const oyente = (e: Event) => cb(JSON.parse((e as MessageEvent).data) as T);
+  const fuente = laFuente();
+  fuente.addEventListener(evento, oyente);
+  return () => fuente.removeEventListener(evento, oyente);
+}
+
+/**
+ * laFuente es **una sola conexión de eventos para todos los oyentes**.
+ *
+ * Un EventSource por suscripción parece inocente y no lo es. El navegador solo
+ * abre seis conexiones a la vez contra el mismo origen, y un flujo de eventos no
+ * termina nunca: a partir del sexto oyente **toda llamada al puente se queda
+ * esperando para siempre**, sin error, sin petición en la red y sin nada que
+ * mirar. Con cinco oyentes la aplicación funcionaba; la bóveda trajo el sexto y
+ * el síntoma fue un botón de copiar que no hacía nada.
+ *
+ * Esto solo pasa en el navegador. En la ventana los eventos los reparte Wails
+ * por dentro y no hay ninguna conexión de por medio.
+ */
+let fuenteUnica: EventSource | null = null;
+
+function laFuente(): EventSource {
+  if (!fuenteUnica) fuenteUnica = new EventSource("/api/eventos");
+  return fuenteUnica;
 }
 
 /**

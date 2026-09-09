@@ -74,8 +74,13 @@ func TestLaDeRecuperacionAbreIgual(t *testing.T) {
 }
 
 // La diferencia entre «te has equivocado copiando» y «has perdido la bóveda».
+//
+// **Y se comprueba por donde pasa la persona, que es Abrir.** Preguntándole solo
+// a Normalizar esto pasaba en verde mientras Abrir contestaba «esa llave no abre
+// esta bóveda» a una errata: el comentario prometía la distinción y el código se
+// la comía. Lo pilló una prueba de interfaz, no ésta.
 func TestUnaErrataSeDistingueDeUnaClaveQueNoAbre(t *testing.T) {
-	_, rec, _ := nueva(t)
+	_, rec, ruta := nueva(t)
 
 	// Cambiar un carácter rompe la suma de control.
 	roto := []rune(rec)
@@ -94,6 +99,28 @@ func TestUnaErrataSeDistingueDeUnaClaveQueNoAbre(t *testing.T) {
 	}
 	if _, err := Normalizar(rec); err != nil {
 		t.Errorf("la buena no pasa la comprobación: %v", err)
+	}
+
+	if _, err := Abrir(ruta, string(roto)); !errors.Is(err, ErrChecksum) {
+		t.Errorf("al abrir, una errata se cuenta como «no abre»: %v", err)
+	}
+	// Y lo que no pretendía ser una clave de recuperación sigue diciendo lo suyo,
+	// aunque empiece por las mismas tres letras.
+	if _, err := Abrir(ruta, "una contraseña cualquiera"); !errors.Is(err, ErrSinRanura) {
+		t.Errorf("una contraseña que no abre: quiero ErrSinRanura, tengo %v", err)
+	}
+}
+
+// Una contraseña maestra que empiece por ESF es rara, pero es legítima: no puede
+// quedarse fuera por parecerse a una clave de recuperación.
+func TestUnaMaestraQueEmpiezaPorESFSigueAbriendo(t *testing.T) {
+	ruta := filepath.Join(t.TempDir(), "boveda.esfinge")
+	maestra := "ESFINGE es mi contraseña"
+	if _, _, err := Crear(ruta, maestra); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Abrir(ruta, maestra); err != nil {
+		t.Errorf("no abre con su propia maestra: %v", err)
 	}
 }
 

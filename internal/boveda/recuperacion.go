@@ -77,6 +77,16 @@ func presentar(b []byte) string {
 	return sb.String()
 }
 
+// PareceRecuperacion dice si lo tecleado pretendía ser una clave de recuperación.
+//
+// Es lo que permite contestar «revísala» en vez de «no abre» cuando hay una
+// errata. No decide nada por sí solo: primero se intenta abrir con lo que sea que
+// hayan escrito —una contraseña maestra que empiece por ESF es rara pero
+// legítima— y esto solo se mira cuando ya no ha abierto nada.
+func PareceRecuperacion(tecleado string) bool {
+	return strings.HasPrefix(strings.ToUpper(strings.TrimSpace(tecleado)), prefijo)
+}
+
 // Normalizar convierte lo que alguien teclea en la forma canónica, y comprueba
 // la suma.
 //

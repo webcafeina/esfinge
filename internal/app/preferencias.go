@@ -33,6 +33,62 @@ type Preferencias struct {
 	// los ficheros y se guarda donde va el resultado.
 	CarpetaAbrir   string `json:"carpetaAbrir"`
 	CarpetaGuardar string `json:"carpetaGuardar"`
+
+	// Los dos relojes de la bóveda. **«Nunca» es -1 y no 0**, y eso es lo único
+	// importante de este par de campos.
+	//
+	// GuardarPreferencias recibe el objeto entero, así que el cero es lo que llega
+	// cuando alguien manda un objeto a medias: un `{"buscarActualizaciones":true}`
+	// deja los dos campos a cero al deserializar. Si el cero significara «nunca»,
+	// ese guardado apagaría el bloqueo de la bóveda y el borrado del portapapeles
+	// **en silencio y sin que nadie lo haya pedido**. Con el cero significando «no
+	// lo he dicho, deja lo que había», el descuido es inofensivo. Ver fundir.
+	MinutosParaBloquear    int `json:"minutosParaBloquear"`
+	SegundosDePortapapeles int `json:"segundosDePortapapeles"`
+}
+
+// Nunca es lo que se manda para apagar uno de los dos relojes.
+const Nunca = -1
+
+// Lo que valen los dos relojes mientras nadie diga otra cosa, y hasta dónde se
+// dejan mover. El tope de arriba no es desconfianza: una bóveda que no se cierra
+// en ocho horas es una bóveda abierta, y ahí ya vale más «nunca», que al menos
+// se lee como lo que es.
+const (
+	minutosBloqueoPorDefecto = 15
+	minutosBloqueoMaximo     = 480
+
+	segundosPortapapelesPorDefecto = 30
+	segundosPortapapelesMinimo     = 5
+	segundosPortapapelesMaximo     = 600
+)
+
+// fundir mezcla lo que llega con lo que había y deja los plazos en su sitio.
+//
+// La regla, escrita una sola vez y aplicada a los dos: **cero es «no lo he
+// dicho»**, cualquier negativo es «nunca», y lo demás se recorta a lo que tiene
+// sentido.
+func fundir(anterior, nuevo Preferencias) Preferencias {
+	nuevo.MinutosParaBloquear = plazo(anterior.MinutosParaBloquear, nuevo.MinutosParaBloquear,
+		0, minutosBloqueoMaximo)
+	nuevo.SegundosDePortapapeles = plazo(anterior.SegundosDePortapapeles, nuevo.SegundosDePortapapeles,
+		segundosPortapapelesMinimo, segundosPortapapelesMaximo)
+	return nuevo
+}
+
+func plazo(anterior, nuevo, minimo, maximo int) int {
+	switch {
+	case nuevo == 0:
+		return anterior
+	case nuevo < 0:
+		return Nunca
+	case nuevo < minimo:
+		return minimo
+	case nuevo > maximo:
+		return maximo
+	default:
+		return nuevo
+	}
 }
 
 // Ajustes guarda las preferencias en la carpeta de configuración.
@@ -49,7 +105,11 @@ type Ajustes struct {
 func AbrirAjustes() *Ajustes {
 	a := &Ajustes{
 		ruta: rutaPreferencias(),
-		p:    Preferencias{BuscarActualizaciones: true},
+		p: Preferencias{
+			BuscarActualizaciones:  true,
+			MinutosParaBloquear:    minutosBloqueoPorDefecto,
+			SegundosDePortapapeles: segundosPortapapelesPorDefecto,
+		},
 	}
 	if a.ruta == "" {
 		return a
@@ -58,7 +118,17 @@ func AbrirAjustes() *Ajustes {
 	if err != nil {
 		return a
 	}
+	// Los valores por defecto están puestos arriba, antes de leer: json.Unmarshal
+	// solo pisa lo que viene en el fichero, así que un fichero de antes de la
+	// bóveda —que no lleva estos campos— se queda con ellos.
 	_ = json.Unmarshal(datos, &a.p)
+	// Y si el fichero trae un cero a pelo —que ya no lo escribe nadie, pero un
+	// fichero es un fichero— se queda con lo de siempre en vez de con un plazo
+	// que no significa nada.
+	a.p = fundir(Preferencias{
+		MinutosParaBloquear:    minutosBloqueoPorDefecto,
+		SegundosDePortapapeles: segundosPortapapelesPorDefecto,
+	}, a.p)
 	return a
 }
 
@@ -89,7 +159,7 @@ func (a *Ajustes) Guardar(p Preferencias) error {
 	p.VersionVista = a.p.VersionVista
 	p.CarpetaAbrir = a.p.CarpetaAbrir
 	p.CarpetaGuardar = a.p.CarpetaGuardar
-	a.p = p
+	a.p = fundir(a.p, p)
 	return a.guardar()
 }
 
