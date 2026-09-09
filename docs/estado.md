@@ -114,15 +114,27 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Vivir con la bóveda una semana.** Los datos ya están dentro y la clave de recuperación ya se ha
-usado: lo que queda no es una comprobación, es uso. La puerta de decisión del plan es de costumbre y
-no de código —si no se abre Esfinge para buscar una contraseña, las fases 2 a 4 no se empiezan— y hay
-dos cosas concretas que solo dirá el día a día: si el bloqueo a los quince minutos molesta o
-tranquiliza, y si **los códigos de un solo uso** hacen falta ya, porque hoy se guarda la semilla pero
-no se calcula el código, y con eso los segundos factores se quedan en Dashlane.
+**Seguir con las fases de Dashlane**, que es lo acordado para la próxima sesión. Lo que hay sobre la
+mesa, por orden de lo que más acerca a dejar Dashlane:
 
-Y de paso, juzgar el oro de la 2.11.0 puesto: la identidad entró en la ventana y todo lo que la
-sostiene está medido, pero medido no es visto.
+1. **Los códigos de un solo uso (TOTP).** La bóveda ya guarda la semilla y la trae al importar, pero
+   **nadie calcula el código de seis cifras**. Mientras eso falte, los segundos factores se quedan
+   allí y con ellos media razón para no dejarlo. Es un algoritmo estándar, sin dependencias, y encaja
+   en lo que ya hay: es lo primero que haría.
+2. **La papelera no se puede vaciar.** Borrar es borrado suave —hace falta para sincronizar después—
+   así que una entrada borrada **sigue en el fichero con su contraseña dentro**. Es pequeño y es una
+   promesa a medias.
+3. **La fase 2, el autorrelleno.** Es la que de verdad decide si se deja Dashlane, y también la más
+   grande de todas: código nuevo en otro lenguaje, tres extensiones, tres tiendas con revisión, y
+   **sin final** —cada cambio de los navegadores hay que seguirlo—. Safari además está bloqueado sin
+   la cuenta de Apple. Antes de empezarla conviene releer la valoración del plan.
+
+**Y una decisión que sigue abierta y que conviene tomar con la cabeza fría:** la puerta del plan era
+que las fases 2 a 4 no se empezaran hasta que la bóveda se usara a diario, y todavía no ha pasado ni
+un día completo con ella. Lo que se decida mañana debería decirlo a sabiendas.
+
+De paso sigue pendiente juzgar el oro de la 2.11.0 puesto, y ver **cuántos de los 65 sitios acaban
+con icono real**: de ese número depende si hay que leer el HTML de los que faltan.
 
 Después, y sin prisa, sigue pendiente abrir la aplicación en **Windows** y en **GNOME** de verdad.
 

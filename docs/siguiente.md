@@ -7,11 +7,13 @@ saber qué se hizo.
 
 ## Alta
 
-- **Vivir con la bóveda una semana.** Los datos ya están dentro —la exportación de Dashlane entra
+- **Los códigos de un solo uso (TOTP)**, que han subido desde «media» porque son lo que más ata a
+  Dashlane: la bóveda guarda la semilla y no calcula el código, así que los segundos factores siguen
+  allí. Es lo primero de la próxima sesión, acordado con el cliente.
+- **Vivir con la bóveda unos días.** Los datos ya están dentro —la exportación de Dashlane entra
   entera— y la clave de recuperación ya se ha usado de verdad, así que lo que queda no es una
-  comprobación sino uso. Es la puerta de decisión del plan: si no se abre Esfinge para buscar una
-  contraseña, las fases 2 a 4 —autorrelleno, cuentas, compartir— no se empiezan, porque su coste solo
-  se justifica si la primera funcionó (ADR 0023).
+  comprobación sino uso. Era la puerta de decisión del plan para las fases 2 a 4 —autorrelleno,
+  cuentas, compartir— y **todavía no ha pasado un día completo con ella** (ADR 0023).
 - **Abrir la aplicación en máquinas Windows y GNOME de verdad**, y mirar ahí dos cosas: la estructura
   de cada sistema y el icono de los `.esf` en el explorador de ficheros. En Windows el icono lo pone
   el instalador, en Linux el `.deb`; los dos están comprobados por dentro pero no puestos.
@@ -20,11 +22,7 @@ saber qué se hizo.
 
 ## Media
 
-- **Códigos de un solo uso (TOTP) de verdad.** La bóveda ya guarda la semilla y la trae al importar,
-  pero **nadie calcula el código de seis cifras todavía**: se enseña la semilla y ya. Mientras eso no
-  esté, los segundos factores se quedan en Dashlane, y con ellos la mitad de la razón para no
-  dejarlo. Es un algoritmo estándar y sin dependencias raras. **Es lo primero que haría** si al vivir
-  con la bóveda resulta que eso es lo que frena.
+- ~~Códigos de un solo uso (TOTP)~~ → **subido a Alta**: es lo acordado para la próxima sesión.
 - **La papelera no se puede vaciar desde la ventana.** Borrar es borrado suave —hace falta para
   sincronizar después— así que una entrada borrada sigue en el fichero con su contraseña dentro. Hoy
   la única forma de quitarla de verdad es no tenerla.
