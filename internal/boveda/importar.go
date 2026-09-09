@@ -212,7 +212,7 @@ var ErrSinColumnas = errors.New("Este fichero no parece una exportación de cont
 
 // Leer analiza un CSV y devuelve las entradas junto con la correspondencia que
 // ha adivinado, para poder enseñarla y corregirla antes de meter nada.
-func Leer(datos []byte, mapa Correspondencia) ([]Entrada, Correspondencia, error) {
+func Leer(datos []byte, mapa Correspondencia) ([]Entrada, Lectura, error) {
 	texto := aTexto(datos)
 
 	r := csv.NewReader(strings.NewReader(texto))
@@ -224,23 +224,24 @@ func Leer(datos []byte, mapa Correspondencia) ([]Entrada, Correspondencia, error
 
 	filas, err := r.ReadAll()
 	if err != nil {
-		return nil, nil, fmt.Errorf("No he podido leer el fichero: %w", err)
+		return nil, Lectura{}, fmt.Errorf("No he podido leer el fichero: %w", err)
 	}
 	if len(filas) < 2 {
-		return nil, nil, ErrSinColumnas
+		return nil, Lectura{}, ErrSinColumnas
 	}
 
 	cabecera := filas[0]
 	if mapa == nil {
 		mapa = Adivinar(cabecera)
 	}
+	l := Lectura{Columnas: mapa, Filas: len(filas) - 1}
 	if !mapa.sirve() {
 		// **Con las columnas que traía dentro del mensaje.** Un «no lo reconozco» a
 		// secas deja a quien lo ve sin nada que hacer ni nada que contar; con la
 		// cabecera delante, el fichero se puede añadir a la tabla de alias en cinco
 		// minutos. Los nombres de las columnas no son datos de nadie: son la forma
 		// del fichero.
-		return nil, mapa, fmt.Errorf("%w. Las que trae son: %s",
+		return nil, l, fmt.Errorf("%w. Las que trae son: %s",
 			ErrSinColumnas, strings.Join(cabecera, ", "))
 	}
 
@@ -254,10 +255,27 @@ func Leer(datos []byte, mapa Correspondencia) ([]Entrada, Correspondencia, error
 		}
 		out = append(out, e)
 	}
+	l.Vacias = l.Filas - len(out)
 	if len(out) == 0 {
-		return nil, mapa, errors.New("El fichero se lee bien pero no tiene ninguna entrada")
+		return nil, l, errors.New("El fichero se lee bien pero no tiene ninguna entrada")
 	}
-	return out, mapa, nil
+	return out, l, nil
+}
+
+// Lectura es lo que se ha entendido del fichero, aparte de las entradas.
+//
+// **`Filas` existe para poder contestar «¿están todas?»**, que es la pregunta que
+// se hace cualquiera después de importar y que hasta ahora no tenía respuesta:
+// se veían 65 entradas dentro y no había forma de saber si el fichero traía 65 u
+// 80. Contar las líneas por fuera tampoco vale, porque una nota con saltos de
+// línea ocupa varias.
+type Lectura struct {
+	// Columnas es lo que se ha adivinado, para poder enseñarlo y corregirlo.
+	Columnas Correspondencia
+	// Filas son las del fichero sin contar la cabecera.
+	Filas int
+	// Vacias son las que no llevaban nada que guardar.
+	Vacias int
 }
 
 // Adivinar propone una correspondencia a partir de los nombres de las columnas.

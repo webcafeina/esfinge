@@ -71,11 +71,11 @@ func TestLasTrampasDeLosCSVReales(t *testing.T) {
 		// columna deja de reconocerse. Si no se quita, «name» pasa a ser la misma palabra con tres bytes
 		// invisibles delante, y deja de encontrarse en la tabla de alias.
 		conBOM := append([]byte{0xEF, 0xBB, 0xBF}, []byte("name,url,username,password\nBanco,https://b.es,yo,s3cr3t0\n")...)
-		es, mapa, err := Leer(conBOM, nil)
+		es, lectura, err := Leer(conBOM, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !mapa.tiene(CampoTitulo) {
+		if !lectura.Columnas.tiene(CampoTitulo) {
 			t.Error("la BOM se ha comido la primera columna")
 		}
 		if es[0].Titulo != "Banco" {
@@ -551,5 +551,42 @@ func TestReimportarTarjetasYDocumentosTampocoDuplica(t *testing.T) {
 	}
 	if b.Cuantas() != 3 {
 		t.Errorf("quedan %d entradas donde hay tres", b.Cuantas())
+	}
+}
+
+// **«¿Están todas?» tiene que poder contestarse con lo que devuelve Leer.**
+//
+// Es la pregunta que se hace cualquiera después de importar, y hasta ahora no
+// tenía respuesta: se veían 65 entradas dentro y no había forma de saber si el
+// fichero traía 65 u 80. Contar las líneas por fuera tampoco vale —una nota con
+// saltos de línea ocupa varias— y por eso el número lo tiene que dar quien ya ha
+// leído el CSV de verdad.
+func TestLeerCuentaLasFilasDelFichero(t *testing.T) {
+	csv := "title,password,note\n" +
+		"Banco,s3cr3t0,\n" +
+		"Correo,otra,\"una nota\ncon dos líneas\"\n" +
+		",,\n" + // una fila vacía, de las que dejan los exportadores al final
+		"Tienda,y otra,\n"
+
+	entradas, lectura, err := Leer([]byte(csv), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Cuatro filas de datos, aunque el fichero tenga cinco saltos de línea: la
+	// nota con dos líneas es **una** fila.
+	if lectura.Filas != 4 {
+		t.Errorf("filas %d, y el fichero trae cuatro", lectura.Filas)
+	}
+	if lectura.Vacias != 1 {
+		t.Errorf("vacías %d, y hay una", lectura.Vacias)
+	}
+	if len(entradas) != 3 {
+		t.Errorf("%d entradas, y hay tres", len(entradas))
+	}
+	// La cuenta tiene que cerrar, que es lo que la ventana enseña.
+	if len(entradas)+lectura.Vacias != lectura.Filas {
+		t.Errorf("la cuenta no cierra: %d + %d ≠ %d",
+			len(entradas), lectura.Vacias, lectura.Filas)
 	}
 }

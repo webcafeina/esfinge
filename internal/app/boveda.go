@@ -42,8 +42,15 @@ type ResumenImportacion struct {
 	Repetidas int `json:"repetidas"`
 	// Conflictos son cuentas que ya estaban con otra contraseña. Ésas sí entran,
 	// marcadas, porque una de las dos está mal y no lo decide un importador.
-	Conflictos int    `json:"conflictos"`
-	DeDonde    string `json:"deDonde"`
+	Conflictos int `json:"conflictos"`
+	// Filas son las que traía el fichero, sin la cabecera, y **es lo que permite
+	// contestar «¿están todas?»**: sin este número, ver 65 entradas dentro no dice
+	// si el fichero traía 65 u 80. Contar las líneas por fuera tampoco vale, que
+	// una nota con saltos de línea ocupa varias.
+	Filas int `json:"filas"`
+	// Vacias son las filas que no llevaban nada que guardar.
+	Vacias  int    `json:"vacias"`
+	DeDonde string `json:"deDonde"`
 	// Fichero es el CSV del que se importó. Se devuelve para poder ofrecer
 	// borrarlo: **es una lista de contraseñas en claro en el disco**.
 	Fichero string `json:"fichero"`
@@ -256,7 +263,7 @@ func (a *App) ImportarEnBoveda(deDonde string) (ResumenImportacion, error) {
 	if err != nil {
 		return ResumenImportacion{}, err
 	}
-	entradas, _, err := boveda.Leer(datos, nil)
+	entradas, lectura, err := boveda.Leer(datos, nil)
 	if err != nil {
 		return ResumenImportacion{}, err
 	}
@@ -271,6 +278,7 @@ func (a *App) ImportarEnBoveda(deDonde string) (ResumenImportacion, error) {
 	// señal de tráfico apuntando a lo que alguien acaba de exportar en claro.
 	return ResumenImportacion{
 		Metidas: r.Metidas, Repetidas: r.Repetidas, Conflictos: r.Conflictos,
+		Filas: lectura.Filas, Vacias: lectura.Vacias,
 		DeDonde: deDonde, Fichero: rutas[0],
 	}, nil
 }

@@ -5,6 +5,19 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · «¿Están todas?», contestado por el programa
+
+- **2.12.7.** Después de importar, el cliente preguntó si en su `credentials.csv` había 65 entradas.
+  No se podía saber: la respuesta estaba en un fichero de su Mac, y ni él ni yo teníamos forma de
+  contestarla desde donde estábamos.
+- **Eso es un hueco del programa, no de la pregunta.** Es la segunda vez que «¿me lo he traído todo?»
+  se queda sin respuesta —la primera fue con los cinco ficheros de Dashlane—, y quien tiene el dato
+  es justamente el que acaba de leer el CSV. Ahora la ventana dice cuántas filas traía el fichero,
+  cuántas venían vacías y si la cuenta cierra.
+- Contar las líneas por fuera no vale, y por eso lo tiene que decir él: **una nota con saltos de
+  línea ocupa varias líneas y es una sola fila**. Hay una prueba con ese caso exacto.
+- Verificado: `make comprobar` y **68 pruebas de interfaz**, la tanda repetida dos veces.
+
 ## 2026-09-09 · Reimportar duplicaba la bóveda entera
 
 - **2.12.6.** El cliente pasó dos veces su `credentials.csv` y se encontró con **130 entradas donde

@@ -931,6 +931,19 @@ function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
             {resumen.repetidas > 0 &&
               ` · ${resumen.repetidas} ya estaban igual y no se han vuelto a meter`}
           </p>
+          {/* **La cuenta del fichero, siempre.** Es lo que contesta «¿están
+              todas?», que es la pregunta que se hace cualquiera después de
+              importar: ver 65 entradas dentro no dice si el fichero traía 65 u
+              80, y contar las líneas por fuera tampoco vale porque una nota con
+              saltos de línea ocupa varias. */}
+          <p className="nota">
+            El fichero traía {resumen.filas} {resumen.filas === 1 ? "fila" : "filas"}
+            {resumen.vacias > 0 &&
+              `, ${resumen.vacias} sin nada que guardar`}
+            {resumen.metidas + resumen.repetidas + resumen.vacias === resumen.filas
+              ? " · están todas"
+              : " · repasa la cuenta"}
+          </p>
           {resumen.conflictos > 0 && (
             <p className="aviso">
               {resumen.conflictos === 1

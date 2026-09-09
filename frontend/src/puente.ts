@@ -175,6 +175,10 @@ export type ResumenImportacion = {
   repetidas: number;
   /** Ya estaban **con otra contraseña**: ésas sí entran, marcadas. */
   conflictos: number;
+  /** Las filas que traía el fichero, sin la cabecera. Es lo que contesta «¿están todas?». */
+  filas: number;
+  /** Las filas que no llevaban nada que guardar. */
+  vacias: number;
   deDonde: string;
   /** El CSV del que se importó, para poder ofrecer borrarlo. */
   fichero: string;
