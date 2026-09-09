@@ -1175,6 +1175,38 @@ test("la lista sale ordenada por nombre, y el orden se puede cambiar", async ({ 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+test("con la ventana estrecha se van los rótulos de las clases, pero no los de los gestores", async ({
+  page,
+}) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  // **Y no es lo mismo, aunque los dos controles lleven glifo.** Una llave o una
+  // tarjeta se adivinan; cinco marcas ajenas sin su nombre al lado no las
+  // reconoce nadie. Por eso solo las clases se encogen.
+  await page.setViewportSize({ width: 700, height: 620 });
+
+  const clase = page.getByRole("tab", { name: "Tarjetas", exact: true });
+  const gestor = page.getByRole("tab", { name: "Bitwarden", exact: true });
+
+  // El rótulo sigue estando para quien lee la pantalla en voz alta —y para estos
+  // localizadores— aunque no se vea.
+  await expect(clase).toBeVisible();
+  await expect(gestor).toBeVisible();
+
+  const anchoDe = (l: typeof clase) => l.evaluate((el) => el.getBoundingClientRect().width);
+  const claseEstrecha = await anchoDe(clase);
+  const gestorAncho = await anchoDe(gestor);
+  expect(claseEstrecha).toBeLessThan(gestorAncho);
+
+  // Y al ensanchar, la clase recupera el suyo.
+  await page.setViewportSize({ width: 900, height: 620 });
+  await expect.poll(() => anchoDe(clase)).toBeGreaterThan(claseEstrecha);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 // **Va la última del fichero a propósito**: deja la bóveda borrada, y quien venga
 // detrás —el otro tema— la crea otra vez con `conLaBovedaAbierta`. Ponerla antes
 // obligaría a todas las demás a saber si les toca crear o abrir, que es

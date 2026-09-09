@@ -5,6 +5,24 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · Los gestores, también en trazo
+
+- **2.14.3.** Los cinco gestores de «Traer de otro gestor» llevan ya su glifo, en el mismo trazo
+  monocromo que todo lo demás. Era lo único que quedaba con texto pelado al lado de dos controles con
+  icono.
+- **No son sus logotipos, y es a conciencia.** Nombrar un producto con el que se interopera es
+  legítimo —el nombre está al lado, en texto, y es lo que de verdad identifica— pero calcar la marca
+  de otra empresa dentro de nuestro binario es otra cosa. Son glifos **inspirados en su forma**: una
+  D, un escudo, un ojal, un campo con puntos y una rueda partida en tres. Y a quince píxeles es
+  además lo único que se lee: una marca real a esa escala es una mancha.
+- **Una decisión que parecía un detalle y no lo es:** las pestañas de clase **sí** se quedan sin
+  rótulo cuando la ventana se estrecha, y los gestores **no**. Una llave o una tarjeta se adivinan;
+  cinco marcas ajenas sin su nombre al lado no las reconoce nadie. Hay una prueba que lo fija.
+- Y el de Chrome salió mal al primer intento: los radios se salían del círculo y parecía un gráfico de
+  tarta roto. **Se vio ampliando los glifos a setenta píxeles**, no en la interfaz, donde a quince
+  solo se notaba que algo desentonaba.
+- Verificado: `make comprobar` y **76 pruebas de interfaz**, dos tandas.
+
 ## 2026-09-09 · Y aun arreglado, no aparecía ninguno
 
 - **2.14.2.** El cliente actualizó a la 2.14.1 —con el filtro ya corregido— y seguía sin ver un solo

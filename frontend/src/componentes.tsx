@@ -212,6 +212,52 @@ export function Icono({ nombre }: { nombre: string }) {
         <path d="M11 7.6h2.8M11 10.4h2.8" />
       </>
     ),
+    // Los gestores de los que se sabe importar.
+    //
+    // **Son marcas de otras empresas, y por eso no son sus logotipos.** Nombrar un
+    // producto con el que se interopera es legítimo —el nombre está al lado, en
+    // texto, y es lo que de verdad identifica— pero calcar su marca en nuestro
+    // binario es otra cosa. Éstos son glifos **inspirados en su forma**, en el
+    // mismo trazo que todo lo demás: lo justo para distinguir cinco opciones de un
+    // vistazo. Y a quince píxeles es además lo único que se lee: una marca real
+    // reducida a esta escala se convierte en una mancha.
+    //
+    // Un escudo, un ojal, tres puntos, un disco partido y una onda.
+    bitwarden: (
+      <>
+        <path d="M9 2.6l5.4 2v5.1c0 3-2.2 4.9-5.4 5.7-3.2-.8-5.4-2.7-5.4-5.7V4.6Z" />
+        <path d="M9 5v7.6" />
+      </>
+    ),
+    oneword: (
+      <>
+        <circle cx="9" cy="9" r="6.3" />
+        <circle cx="9" cy="7.4" r="1.7" />
+        <path d="M9 9.1v2.6" />
+      </>
+    ),
+    lastpass: (
+      <>
+        <rect x="2.6" y="4.6" width="12.8" height="8.8" rx="2" />
+        <path d="M6 9h.01M9 9h.01M12 9h.01" />
+      </>
+    ),
+    // Los tres radios van **de la rueda interior al borde y ni un píxel más**: al
+    // primer intento se salían del círculo y aquello parecía un gráfico de tarta
+    // roto, no un disco partido en tres. Se vio ampliándolos, no en la interfaz.
+    chrome: (
+      <>
+        <circle cx="9" cy="9" r="6.3" />
+        <circle cx="9" cy="9" r="2.5" />
+        <path d="M9 11.5v3.8M6.83 7.75 3.54 5.85M11.17 7.75 14.46 5.85" />
+      </>
+    ),
+    dashlane: (
+      <>
+        <path d="M4 3.4h4.2c3.5 0 5.8 2.3 5.8 5.6s-2.3 5.6-5.8 5.6H4Z" />
+        <path d="M7.2 6.6h1.2c1.5 0 2.5 1 2.5 2.4s-1 2.4-2.5 2.4H7.2Z" />
+      </>
+    ),
     // Deslizadores, que es como el sistema dibuja los ajustes.
     ajustes: (
       <>
@@ -357,15 +403,27 @@ export function Segmentado<T extends string>({
   valor,
   alCambiar,
   conIconos,
+  compacto,
 }: {
   opciones: { valor: T; etiqueta: string; icono?: string }[];
   valor: T;
   alCambiar: (v: T) => void;
-  /** Encoge los rótulos cuando no caben, en vez de desbordar. */
   conIconos?: boolean;
+  /**
+   * Deja que el rótulo se retire cuando la ventana se estrecha.
+   *
+   * **No va con `conIconos` a la fuerza, y es a propósito.** Las clases de la
+   * bóveda se adivinan por su glifo —una llave, una tarjeta— pero los gestores no:
+   * cinco marcas ajenas sin su nombre al lado no las reconoce nadie. Ahí el rótulo
+   * se queda siempre.
+   */
+  compacto?: boolean;
 }) {
+  const clases = ["segmentado"];
+  if (conIconos) clases.push("con-iconos");
+  if (compacto) clases.push("compacto");
   return (
-    <div className={conIconos ? "segmentado con-iconos" : "segmentado"} role="tablist">
+    <div className={clases.join(" ")} role="tablist">
       {opciones.map((o) => (
         <button
           key={o.valor}

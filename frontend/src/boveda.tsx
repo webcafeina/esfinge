@@ -478,6 +478,7 @@ function Dentro({
       <div className="boveda-barra">
         <Segmentado<Filtro>
           conIconos
+          compacto
           valor={tipo}
           alCambiar={setTipo}
           opciones={[
@@ -1003,11 +1004,22 @@ const enComas = (v: string) => v.split(",").map((s) => s.trim()).filter(Boolean)
 
 // -------------------------------------------------------- importar y exportar
 
-/** Los gestores de los que se sabe leer. Los nombres los reconoce Go por columnas. */
-const GESTORES = ["Dashlane", "Bitwarden", "1Password", "LastPass", "Chrome"];
+/**
+ * Los gestores de los que se sabe leer, con su glifo.
+ *
+ * El nombre es el que va a Go, que reconoce el fichero por sus columnas y no por
+ * esto: aquí solo sirve para rotular la carpeta donde caen las entradas.
+ */
+const GESTORES: { nombre: string; icono: string }[] = [
+  { nombre: "Dashlane", icono: "dashlane" },
+  { nombre: "Bitwarden", icono: "bitwarden" },
+  { nombre: "1Password", icono: "oneword" },
+  { nombre: "LastPass", icono: "lastpass" },
+  { nombre: "Chrome", icono: "chrome" },
+];
 
 function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
-  const [deDonde, setDeDonde] = useState(GESTORES[0]);
+  const [deDonde, setDeDonde] = useState(GESTORES[0].nombre);
   const [resumen, setResumen] = useState<ResumenImportacion | null>(null);
   const [borrado, setBorrado] = useState(false);
   const [salida, setSalida] = useState("");
@@ -1049,9 +1061,14 @@ function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
       <div>
         <label>Traer de otro gestor</label>
         <Segmentado
+          conIconos
           valor={deDonde}
           alCambiar={setDeDonde}
-          opciones={GESTORES.map((g) => ({ valor: g, etiqueta: g }))}
+          opciones={GESTORES.map((g) => ({
+            valor: g.nombre,
+            etiqueta: g.nombre,
+            icono: g.icono,
+          }))}
         />
       </div>
 

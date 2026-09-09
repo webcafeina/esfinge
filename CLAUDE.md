@@ -334,6 +334,15 @@ dominio con **FNV-1a**, nunca con el hash del motor: tiene que dar lo mismo mañ
 o la lista cambia de colores sola. Y **la letra sale del nombre, no del dominio**: sacándola del
 dominio, «Hacienda» salía con la «A» de agenciatributaria.gob.es.
 
+**Los glifos de los gestores no son sus logotipos**, y no por descuido: nombrar un producto con el
+que se interopera es legítimo —el nombre va al lado en texto— pero calcar la marca de otra empresa
+dentro del binario es otra cosa. Son formas inspiradas, en nuestro trazo, que además es lo único que
+se lee a quince píxeles.
+
+Y de ahí una regla del control segmentado: **`compacto` no viene con `conIconos`**. Las clases de la
+bóveda se quedan sin rótulo cuando la ventana se estrecha porque una llave o una tarjeta se adivinan;
+los gestores lo conservan siempre, porque cinco marcas ajenas sin su nombre no las reconoce nadie.
+
 **En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de
 `.contenido`. Sin acotar, Playwright encuentra dos y falla por modo estricto.

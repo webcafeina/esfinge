@@ -319,7 +319,7 @@ body {
  * Esta técnica lo deja de un píxel y fuera de la vista, que es distinto de no
  * estar. */
 .solo-se-oye,
-.segmentado.con-iconos .rotulo {
+.segmentado.compacto .rotulo {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -331,7 +331,7 @@ body {
 }
 
 @media (min-width: 740px) {
-  .segmentado.con-iconos .rotulo {
+  .segmentado.compacto .rotulo {
     position: static;
     width: auto;
     height: auto;
