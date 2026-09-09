@@ -349,6 +349,17 @@ textarea {
   transition: box-shadow 0.12s, border-color 0.12s;
 }
 
+/* Lo que no tiene vuelta atrás va apartado y marcado.
+ *
+ * El filete de la izquierda es del color de los avisos, no del acento: aquí no
+ * se está proponiendo nada, se está advirtiendo. Y no lleva fondo rojo, que en
+ * una interfaz del sistema grita; con la línea y la separación basta. */
+.grupo.peligro {
+  border-left: 2px solid var(--aviso);
+  padding-left: var(--espacio-4);
+  margin-top: var(--espacio-5);
+}
+
 /* El campo de la clave, con su ojo dentro. El hueco de la derecha se reserva en
  * el propio campo: sin él, una clave larga pasa por debajo del icono. */
 .campo-con-ojo {
@@ -624,15 +635,40 @@ input[type="range"]::-webkit-slider-thumb {
   overflow-y: auto;
 }
 
+/* **Esto era un contenedor flexible y no podía serlo.**
+ *
+ * Con «display: flex», cada trozo del párrafo se convierte en un elemento
+ * flexible por su cuenta: un `<strong>` en medio de una frase dejaba de ser una
+ * palabra en negrita y pasaba a ser **una columna aparte**, con la frase partida
+ * en tres pedazos que se leían en vertical. Lo era desde el principio y no se
+ * notó mientras todos los avisos fueron texto pelado.
+ *
+ * Lo que se quería del flexible era solo colocar el glifo delante sin que la
+ * segunda línea se metiera debajo de él. Eso es una sangría francesa, y se hace
+ * con dos propiedades. */
 .aviso,
 .error,
 .exito,
 .nota {
-  display: flex;
-  gap: var(--espacio-2);
-  align-items: baseline;
+  display: block;
   font-size: var(--texto);
   margin: 0;
+}
+
+.aviso,
+.error,
+.exito {
+  padding-left: 1.4em;
+  text-indent: -1.4em;
+}
+
+.aviso::before,
+.error::before,
+.exito::before {
+  display: inline-block;
+  width: 1.4em;
+  /* La sangría no se hereda dentro del glifo, o se lo lleva fuera del papel. */
+  text-indent: 0;
 }
 
 .aviso { color: var(--aviso); }

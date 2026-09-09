@@ -900,8 +900,17 @@ test("Ajustes manda sobre los dos relojes de la bóveda", async ({ page }) => {
   await guardandoPreferencias(page, () => page.locator("#portapapeles").selectOption("10"));
 
   // Que se guarde de verdad, no solo en la pantalla: se recarga y se mira.
+  //
+  // **Y se espera a que las preferencias lleguen antes de mirar**, que es de
+  // donde venía una prueba que fallaba unas veces sí y otras no: mientras la
+  // llamada está en vuelo la lista enseña su valor por defecto —quince minutos—,
+  // y la aserción competía con esa llamada. Con la máquina cargada por las
+  // derivaciones de la bóveda, unas veces ganaba una y otras la otra.
   await page.reload();
+  const leidas = page.waitForResponse((r) => r.url().endsWith("/api/VerPreferencias"));
   await seccion(page, "Ajustes").click();
+  await leidas;
+
   await expect(page.locator("#bloqueo")).toHaveValue("5");
   await expect(page.locator("#portapapeles")).toHaveValue("10");
 
@@ -933,13 +942,17 @@ test("pegar una clave con el menú activa el botón de cifrar", async ({ page })
   const boton = accion(page, "Cifrar");
   await expect(boton).toBeDisabled();
 
+  // El reintento **no puede comparar por igualdad**: cada intento pega otra vez
+  // donde está el cursor, así que dos que lleguen dejan el texto duplicado y la
+  // comparación no se cumpliría nunca. Lo que importa es que el texto entre, no
+  // cuántas veces.
   await clave(page).focus();
   await expect
     .poll(async () => {
       await pegarDesdeElMenu(page, "una clave pegada de fuera");
       return clave(page).inputValue();
     }, { timeout: 15_000 })
-    .toBe("una clave pegada de fuera");
+    .toContain("una clave pegada de fuera");
 
   // Lo que importa no es lo que se ve, es que la aplicación lo sepa.
   await expect(boton).toBeEnabled();
@@ -1003,4 +1016,49 @@ test("copiar la clave con el menú sale por Go, que es el único camino que func
 
   expect(copiadas[0]).toContain(generada);
   expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+// **Va la última del fichero a propósito**: deja la bóveda borrada, y quien venga
+// detrás —el otro tema— la crea otra vez con `conLaBovedaAbierta`. Ponerla antes
+// obligaría a todas las demás a saber si les toca crear o abrir, que es
+// exactamente lo que ese ayudante existe para que no haya que pensar.
+test("borrar la bóveda pide la contraseña maestra y no perdona", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  await page.getByRole("button", { name: "Contraseña maestra y clave de recuperación" }).click();
+
+  const borrar = accion(page, "Borrar la bóveda…");
+  await expect(borrar).toBeDisabled(); // sin contraseña no se puede ni empezar
+
+  // **Un aviso no puede ser un contenedor flexible**, y esto lo vigila. Con
+  // «display: flex» cada trozo del párrafo se convierte en un elemento por su
+  // cuenta: una palabra en negrita en medio de una frase se sale a una columna
+  // aparte y la frase se lee en vertical, partida en pedazos. Lo era desde el
+  // principio y no se notó mientras todos los avisos fueron texto pelado; se vio
+  // mirando una captura, no en una prueba en verde.
+  const comoSePinta = await page
+    .locator(".peligro .aviso")
+    .evaluate((el) => getComputedStyle(el).display);
+  expect(comoSePinta).not.toBe("flex");
+
+  // Con la contraseña equivocada no se borra nada, y hay que decirlo antes de
+  // que alguien se quede sin bóveda creyendo que se la ha llevado un fallo.
+  await page.locator("#boveda-borrar").fill("ésta no es");
+  await borrar.click();
+  await accion(page, "Sí, borrarla para siempre").click();
+  await expect(page.locator(".error:visible")).toContainText("no es la contraseña");
+  await expect(page.locator("#boveda-buscar")).toBeVisible();
+
+  // Y con la buena hacen falta dos pulsaciones: la primera solo cambia el rótulo.
+  await page.locator("#boveda-borrar").fill(MAESTRA);
+  await accion(page, "Borrar la bóveda…").click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible();
+  await accion(page, "Sí, borrarla para siempre").click();
+
+  // Y se vuelve al principio de todo, que es lo que significa haberla borrado.
+  await expect(accion(page, "Crear la bóveda")).toBeVisible({ timeout: 20_000 });
+
+  expect(errores.filter((e) => !e.includes("400")), errores.join(" | ")).toEqual([]);
 });

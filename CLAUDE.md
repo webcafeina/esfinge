@@ -282,6 +282,13 @@ Con ello va una regla: **cada clase de entrada se identifica por lo suyo** (`hue
 huella de una credencial es «sitio + usuario», y una tarjeta no tiene ninguno de los dos: con esa
 huella todas las tarjetas del mundo son la misma y importar cinco marcaba cuatro como duplicadas.
 
+**Los avisos y las notas no pueden ser contenedores flexibles.** Lo fueron desde el principio, para
+colocar el glifo delante, y con `display: flex` cada trozo del párrafo se convierte en un elemento
+por su cuenta: **un `<strong>` en medio de una frase se sale a una columna aparte** y la frase se lee
+en vertical, partida en pedazos. No se notó mientras todos los avisos fueron texto pelado, y se vio
+mirando una captura, no en una prueba en verde. Lo que se quería es una sangría francesa
+—`padding-left` más `text-indent` negativo—, y hay una prueba de interfaz que lo vigila.
+
 **En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de
 `.contenido`. Sin acotar, Playwright encuentra dos y falla por modo estricto.

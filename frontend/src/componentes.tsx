@@ -426,7 +426,9 @@ export function ZonaFicheros({
           ⇱
         </p>
         <p>{texto}</p>
-        <p className="nota" style={{ justifyContent: "center", marginTop: 4 }}>
+        {/* Sin «justifyContent»: las notas dejaron de ser contenedores flexibles
+            y aquí lo que centra es el «text-align» de la zona de soltar. */}
+        <p className="nota" style={{ marginTop: 4 }}>
           O haz clic para elegirlos · {admite}
         </p>
       </div>

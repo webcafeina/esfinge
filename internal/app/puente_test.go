@@ -50,7 +50,7 @@ var loQuePuedeCruzarElPuente = []string{
 	// BuscarEnBoveda devuelve la lista sin secretos.
 	"EstadoBoveda", "CrearBoveda", "AbrirBoveda", "CerrarBoveda",
 	"BuscarEnBoveda", "VerDeBoveda", "GuardarEnBoveda", "BorrarDeBoveda",
-	"CambiarMaestraDeBoveda", "RotarRecuperacionDeBoveda",
+	"CambiarMaestraDeBoveda", "RotarRecuperacionDeBoveda", "BorrarBoveda",
 	"ImportarEnBoveda", "ExportarBoveda", "BorrarElCSVImportado",
 }
 

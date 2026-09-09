@@ -45,6 +45,12 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~Un `<strong>` dentro de un aviso partía la frase en columnas~~ → los avisos y las notas eran
+  contenedores flexibles, para colocar el glifo delante, así que cada trozo del párrafo se convertía
+  en un elemento por su cuenta. Era así desde el principio y no se notó mientras todos fueron texto
+  pelado. Ahora es una sangría francesa (2026-09-09, 2.12.5).
+- ~~No se podía borrar la bóveda desde el programa~~ → había que ir al Finder y borrar dos ficheros,
+  y quien borraba solo el primero se dejaba una bóveda entera en el `.anterior` (2026-09-09, 2.12.5).
 - ~~Las tarjetas y los documentos de Dashlane no se podían importar~~ → el importador tenía una sola
   tabla de alias, y una misma columna significa cosas distintas en cada uno de los cinco ficheros que
   exporta Dashlane. Sus `payments.csv` e `ids.csv` se rechazaban enteros. Ahora se reconoce la forma

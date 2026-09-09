@@ -475,7 +475,7 @@ function Dentro({
         alCambiar();
       }} />
 
-      <Seguridad alRotar={alRotar} />
+      <Seguridad alRotar={alRotar} alBorrarse={alCambiar} />
     </div>
   );
 }
@@ -966,7 +966,13 @@ function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
 
 // -------------------------------------------------------------------- llaves
 
-function Seguridad({ alRotar }: { alRotar: (clave: string) => void }) {
+function Seguridad({
+  alRotar,
+  alBorrarse,
+}: {
+  alRotar: (clave: string) => void;
+  alBorrarse: () => void;
+}) {
   const [abierto, setAbierto] = useState(false);
   const [vieja, setVieja] = useState("");
   const [nueva, setNueva] = useState("");
@@ -1068,6 +1074,103 @@ function Seguridad({ alRotar }: { alRotar: (clave: string) => void }) {
         >
           Generar otra…
         </button>
+      </div>
+
+      <Borrar alBorrarse={alBorrarse} />
+    </div>
+  );
+}
+
+/**
+ * Borrar la bóveda entera.
+ *
+ * **Es la acción más destructiva del programa** y por eso está construida para
+ * costar: va la última, pide la contraseña maestra, ofrece exportar antes y
+ * necesita dos pulsaciones.
+ *
+ * Lo que la contraseña protege aquí conviene tenerlo claro, porque es fácil
+ * confundirse: no protege de quien quiera hacer daño —quien puede abrir Esfinge
+ * puede borrar el fichero desde el Finder— sino de un clic mal dado, y de que lo
+ * haga quien no es el dueño con la bóveda abierta encima de una mesa.
+ */
+function Borrar({ alBorrarse }: { alBorrarse: () => void }) {
+  const [maestra, setMaestra] = useState("");
+  const [seguro, setSeguro] = useState(false);
+  const [copia, setCopia] = useState("");
+  const [error, setError] = useState("");
+  const [trabajando, setTrabajando] = useState(false);
+
+  async function exportar() {
+    setError("");
+    try {
+      const donde = await esfinge.exportarBoveda();
+      if (donde) setCopia(donde);
+    } catch (e) {
+      setError(mensaje(e));
+    }
+  }
+
+  async function borrar() {
+    setTrabajando(true);
+    setError("");
+    try {
+      await esfinge.borrarBoveda(maestra);
+      setMaestra("");
+      alBorrarse();
+    } catch (e) {
+      setError(mensaje(e));
+      setSeguro(false);
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  return (
+    <div className="grupo peligro">
+      <label>Borrar la bóveda</label>
+      <p className="aviso">
+        Se borra el fichero entero, con todas las entradas. <strong>No hay vuelta atrás</strong>, y
+        la clave de recuperación tampoco sirve: lo que se borra es el fichero que ella abriría.
+      </p>
+      <p className="nota">
+        Si quieres quedarte con lo que hay, sácalo antes. Lo que salga estará <strong>sin
+        cifrar</strong>.
+      </p>
+
+      <div className="botones">
+        <button onClick={exportar}>Exportar una copia antes…</button>
+      </div>
+      {copia && <p className="exito seleccionable">Exportada en {copia}</p>}
+
+      <div>
+        <label htmlFor="boveda-borrar">Contraseña maestra</label>
+        <input
+          id="boveda-borrar"
+          type="password"
+          autoComplete="off"
+          value={maestra}
+          onChange={(e) => {
+            setMaestra(e.target.value);
+            setSeguro(false);
+          }}
+        />
+      </div>
+
+      {error && <p className="error">{error}</p>}
+
+      <div className="botones">
+        <button
+          className={seguro ? "principal" : undefined}
+          disabled={!maestra || trabajando}
+          onClick={() => (seguro ? borrar() : setSeguro(true))}
+        >
+          {trabajando ? "Borrando…" : seguro ? "Sí, borrarla para siempre" : "Borrar la bóveda…"}
+        </button>
+        {seguro && !trabajando && (
+          <button className="discreto" onClick={() => setSeguro(false)}>
+            Mejor no
+          </button>
+        )}
       </div>
     </div>
   );

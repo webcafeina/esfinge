@@ -5,6 +5,32 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · Borrar la bóveda, y una negrita que partía los avisos
+
+- **2.12.5.** Se puede borrar la bóveda desde el programa, que hasta ahora exigía ir al Finder y
+  borrar dos ficheros a mano —y quien borraba solo el primero se dejaba una bóveda entera detrás, en
+  el `.anterior`—.
+- Está construida para costar: **pide la contraseña maestra**, ofrece exportar antes, necesita dos
+  pulsaciones y va apartada con un filete de aviso. Y conviene ser honesto sobre qué protege la
+  contraseña: **no de quien quiera hacer daño** —quien puede abrir Esfinge puede borrar el fichero
+  desde el Finder— sino de un clic mal dado y de que lo haga quien no es el dueño con la bóveda
+  abierta encima de la mesa. Es la misma razón por la que cambiar la maestra pide la de antes.
+- Borra los dos ficheros **y los temporales**, que llevan una bóveda entera dentro. Hay una prueba
+  que recorre el directorio y no deja pasar nada con «boveda» en el nombre.
+- **Y de mirar una captura salió un fallo de CSS que llevaba desde el principio**: los avisos y las
+  notas eran contenedores flexibles —para colocar el glifo delante— así que **un `<strong>` en medio
+  de una frase se convertía en una columna aparte** y la frase se leía partida en trozos verticales.
+  No se había notado mientras todos los avisos fueron texto pelado. Ahora es una sangría francesa,
+  que es lo que se quería desde el principio, y hay una prueba que vigila que eso no vuelva a ser
+  flexible.
+- **Tres pruebas frágiles arregladas de verdad, no subiéndoles el tiempo de espera**: la de los
+  plazos competía con la llamada que carga las preferencias —mientras está en vuelo la lista enseña
+  su valor por defecto—, y la de pegar reintentaba comparando por igualdad, con lo que dos pegados
+  dejaban el texto duplicado y la comparación no se cumplía nunca. Las dos fallaban unas veces sí y
+  otras no, y ninguna era un fallo del programa.
+- Verificado: `make comprobar` y **68 pruebas de interfaz**, con la tanda entera repetida tres veces
+  seguidas en verde, que es lo que distingue arreglar una prueba frágil de esconderla.
+
 ## 2026-09-09 · Dashlane no exporta un CSV, exporta cinco
 
 - **2.12.4.** El cliente importó `credentials.csv`, salieron 65 entradas y en Dashlane había más

@@ -4,10 +4,12 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/webcafeina/esfinge/internal/boveda"
+	"github.com/webcafeina/esfinge/internal/escritura"
 )
 
 // El camino de verdad, del principio al final: crear, importar de Dashlane,
@@ -149,5 +151,67 @@ func TestConLaBovedaCerradaNadaFunciona(t *testing.T) {
 	}
 	if _, err := a.ExportarBoveda(); !errors.Is(err, boveda.ErrCerrada) {
 		t.Errorf("exportar: %v", err)
+	}
+}
+
+// Borrar la bóveda es lo más destructivo que hace el programa, así que lo que se
+// comprueba es lo de siempre en estos casos: **que no borre cuando no debe y que
+// borre del todo cuando debe.**
+func TestBorrarLaBoveda(t *testing.T) {
+	a, _, _ := conReloj(t)
+	if _, err := a.CrearBoveda("la contraseña de verdad"); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.GuardarEnBoveda(boveda.Entrada{Titulo: "Banco", Secreto: "s3cr3t0"}); err != nil {
+		t.Fatal(err)
+	}
+
+	ruta := rutaBoveda()
+	if _, err := os.Stat(ruta); err != nil {
+		t.Fatalf("la bóveda no está donde debería: %v", err)
+	}
+
+	// Con la contraseña equivocada no se borra nada.
+	if err := a.BorrarBoveda("la que no es"); err == nil {
+		t.Fatal("ha borrado la bóveda sin saber la contraseña")
+	}
+	if _, err := os.Stat(ruta); err != nil {
+		t.Fatal("ha borrado el fichero aunque ha dicho que no")
+	}
+	if !a.EstadoBoveda().Abierta {
+		t.Error("un intento fallido ha cerrado la bóveda")
+	}
+
+	// Con la buena, se va entera.
+	if err := a.BorrarBoveda("la contraseña de verdad"); err != nil {
+		t.Fatal(err)
+	}
+	if e := a.EstadoBoveda(); e.Existe || e.Abierta {
+		t.Errorf("después de borrar: %+v", e)
+	}
+
+	// **Y no queda ninguna copia detrás**, que es la mitad del trabajo: el
+	// `.anterior` existe para sobrevivir a un desastre, y aquí sería un desastre a
+	// medias. Los temporales llevan una bóveda entera dentro.
+	entradas, err := os.ReadDir(filepath.Dir(ruta))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entradas {
+		if strings.Contains(e.Name(), "boveda") || strings.HasPrefix(e.Name(), escritura.Prefijo) {
+			t.Errorf("ha quedado %q detrás", e.Name())
+		}
+	}
+
+	// Y se puede volver a empezar de cero, que es para lo que se borra.
+	if _, err := a.CrearBoveda("otra contraseña distinta"); err != nil {
+		t.Errorf("no deja crear otra después de borrar: %v", err)
+	}
+}
+
+func TestNoSePuedeBorrarLoQueNoHay(t *testing.T) {
+	a, _, _ := conReloj(t)
+	if err := a.BorrarBoveda("lo que sea"); err == nil {
+		t.Error("dice que ha borrado una bóveda que no existe")
 	}
 }

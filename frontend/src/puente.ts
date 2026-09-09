@@ -323,6 +323,12 @@ export const esfinge = {
   /** Genera otra clave de recuperación y deja la anterior inservible. */
   rotarRecuperacionDeBoveda: () => llamar<string>("RotarRecuperacionDeBoveda"),
 
+  /**
+   * Borra la bóveda del disco. **No hay vuelta atrás y la clave de recuperación
+   * no sirve de nada**: lo que se borra es el fichero que ella abriría.
+   */
+  borrarBoveda: (maestra: string) => llamar<void>("BorrarBoveda", maestra),
+
   importarEnBoveda: (deDonde: string) =>
     llamar<ResumenImportacion>("ImportarEnBoveda", deDonde),
 

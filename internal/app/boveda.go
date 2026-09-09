@@ -182,6 +182,49 @@ func (a *App) CambiarMaestraDeBoveda(vieja, nueva string) error {
 	return a.bov.CambiarMaestra(nueva)
 }
 
+// BorrarBoveda quita la bóveda del disco. **No hay vuelta atrás.**
+//
+// Es la acción más destructiva de todo el programa: se lleva por delante todas
+// las contraseñas de golpe, sin papelera y sin que la clave de recuperación
+// sirva de nada, porque lo que se borra es el fichero que ella abriría.
+//
+// Pide la contraseña maestra, y conviene ser honesto sobre **contra qué protege
+// eso**: no contra alguien que quiera hacer daño —quien puede abrir la aplicación
+// también puede borrar el fichero desde el Finder— sino contra un clic mal dado y
+// contra que lo haga quien no es el dueño de la bóveda estando ésta abierta
+// encima de una mesa. Es la misma razón por la que cambiar la maestra pide la de
+// antes.
+//
+// Se borran los dos ficheros: el de la bóveda y el `.anterior` con la generación
+// previa, que existe justo para sobrevivir a un desastre y aquí sería un desastre
+// a medias. Y los temporales que hubiera, que llevan una copia entera dentro.
+func (a *App) BorrarBoveda(maestra string) error {
+	ruta := rutaBoveda()
+	if _, err := os.Stat(ruta); err != nil {
+		return errors.New("Aquí no hay ninguna bóveda que borrar")
+	}
+	if _, err := boveda.Abrir(ruta, maestra); err != nil {
+		return errors.New("Esa no es la contraseña de esta bóveda")
+	}
+
+	// Primero se cierra la que hubiera abierta: dejarla en memoria después de
+	// borrar el fichero es tener una bóveda sin fichero, y el siguiente guardado
+	// la escribiría otra vez.
+	if a.bov != nil {
+		a.bov.Cerrar()
+		a.bov = nil
+	}
+
+	if err := os.Remove(ruta); err != nil {
+		return err
+	}
+	// El resto es limpieza: que falte alguno no invalida el borrado, que ya está
+	// hecho, y devolver un error aquí haría creer que no se ha borrado nada.
+	_ = os.Remove(ruta + ".anterior")
+	escritura.LimpiarHuerfanos(filepath.Dir(ruta), 0)
+	return nil
+}
+
 // RotarRecuperacionDeBoveda genera una clave de recuperación nueva y deja la
 // anterior inservible. También se devuelve **una sola vez**.
 func (a *App) RotarRecuperacionDeBoveda() (string, error) {
