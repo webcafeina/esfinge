@@ -258,6 +258,16 @@ export function CampoClave({
 }) {
   const [fuerza, setFuerza] = useState<Fuerza | null>(null);
 
+  // **Tapada de partida y destapada a petición**, nunca al revés: quien teclea
+  // una clave con alguien detrás no tiene que acordarse de esconderla primero.
+  //
+  // No es solo comodidad. De un campo de contraseña el navegador **se niega a
+  // copiar** —lo hacen WebKit y Chromium, a propósito y sin avisar—, así que sin
+  // esto la clave que acaba de fabricar «Generar una» no se podía sacar de aquí,
+  // y es la única que no está apuntada en ningún otro sitio. Copiar de un campo
+  // de contraseña se arregló además por su lado, en ordenes.ts.
+  const [aLaVista, setALaVista] = useState(false);
+
   useEffect(() => {
     if (!medir || !valor) {
       setFuerza(null);
@@ -279,17 +289,33 @@ export function CampoClave({
         <label htmlFor={id} style={{ marginBottom: 0 }}>
           {etiqueta}
         </label>
-        {alGenerar && (
-          <button className="discreto" onClick={alGenerar}>
-            Generar una
+        <span>
+          {alGenerar && (
+            <button className="discreto" onClick={alGenerar}>
+              Generar una
+            </button>
+          )}
+          <button
+            className="discreto"
+            onClick={() => setALaVista(!aLaVista)}
+            aria-controls={id}
+            aria-pressed={aLaVista}
+          >
+            {aLaVista ? "Ocultar" : "Ver"}
           </button>
-        )}
+        </span>
       </div>
       <input
         id={id}
-        type="password"
+        type={aLaVista ? "text" : "password"}
         value={valor}
         autoComplete="off"
+        /* Con la clave a la vista, el corrector y el autocompletado del sistema
+           dejan de ser inocentes: los dos leen lo que hay escrito. */
+        spellCheck={false}
+        autoCorrect="off"
+        autoCapitalize="off"
+        className={aLaVista ? "a-la-vista" : undefined}
         onChange={(e) => alCambiar(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && alEnviar?.()}
       />

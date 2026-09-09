@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.12.0**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.12.1**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -60,7 +60,7 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   la línea de comandos. **No toca `internal/cripto`**, así que los `.esf` y las claves ya emitidos
   siguen valiendo.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
-  máquina sin entorno gráfico. Son **60**.
+  máquina sin entorno gráfico. Son **66**.
 
 ## En curso
 

@@ -349,6 +349,15 @@ textarea {
   transition: box-shadow 0.12s, border-color 0.12s;
 }
 
+/* La clave destapada va en monoespaciada, que es donde se distingue un cero de
+ * una O y un uno de una ele. Es para leerla y copiarla a mano; si no, no se
+ * habría destapado. */
+input.a-la-vista {
+  font-family: var(--fuente-mono);
+  font-size: var(--texto);
+  letter-spacing: 0.02em;
+}
+
 textarea {
   height: auto;
   min-height: 92px;

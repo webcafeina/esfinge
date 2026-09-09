@@ -5,6 +5,29 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · Dos bugs del campo de la clave, contados por el cliente
+
+- **2.12.1**, antes de que llegara a probar la bóveda. Los dos eran de la pantalla de cifrar y los
+  dos llevaban versiones ahí.
+- **Pegar una clave con ⌘V no activaba el botón de cifrar.** React mantiene su propio registro del
+  valor de cada campo en un accesor **del elemento**: al hacer `campo.value = …` ese registro se pone
+  al día antes de tiempo, y el evento `input` que se dispara después no le parece un cambio, así que
+  no llama a `onChange`. La clave se veía puesta y para la aplicación el campo seguía vacío. Como los
+  menús se construyen a mano, **⌘V pasa por `ordenes.ts`**, así que esto afectaba a todos los campos
+  de la ventana.
+- **La clave generada con «Generar una» no se podía copiar.** De un campo de contraseña el navegador
+  se niega a copiar, a propósito y sin decirlo: `execCommand("copy")` devuelve que sí y el
+  portapapeles se queda como estaba. Y esa clave es precisamente la que no está apuntada en ningún
+  otro sitio. Ahora se copia por Go, que además arma el borrado pasado el plazo.
+- **El campo de la clave tiene un ojo** para verla y volver a taparla, que es lo que pidió el
+  cliente. Tapada de partida, siempre: quien teclea con alguien detrás no tiene que acordarse de
+  esconderla primero. Destapada va en monoespaciada, para distinguir un cero de una O.
+- **Lo que enseña esta pareja**: la prueba que había del menú ejercitaba «seleccionar todo» —lo fácil
+  de mirar— y no pegar, que es lo que la gente hace todos los días. Las tres pruebas nuevas van por
+  el camino de verdad, y la de pegar **se comprobó en rojo** quitando el arreglo antes de darla por
+  buena: falla exactamente donde lo notó el cliente, con el valor en el campo y el botón apagado.
+- Verificado: `make comprobar` y **66 pruebas de interfaz** en los dos temas, tres más.
+
 ## 2026-09-09 · La bóveda: Esfinge deja de ser un cifrador sin estado
 
 - **2.12.0.** El cliente quiere sustituir Dashlane poco a poco. Se valoró entero —bóveda,

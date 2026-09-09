@@ -44,6 +44,15 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~Pegar con ⌘V no activaba el botón de cifrar~~ → React no ve un `campo.value = …`: mantiene su
+  propio registro del valor en un accesor del elemento, así que al asignar directamente el evento
+  `input` posterior no le parece un cambio y no llama a `onChange`. La clave se veía en pantalla y
+  para la aplicación el campo seguía vacío. Afectaba a **todos** los campos, porque los menús son
+  propios y ⌘V pasa por `ordenes.ts`. Lo dijo el cliente (2026-09-09, 2.12.1).
+- ~~La clave generada en Cifrar no se podía copiar~~ → de un campo `type="password"` el navegador se
+  niega a copiar, sin decirlo: `execCommand("copy")` devuelve que sí y no copia nada. Ahora se copia
+  por Go —que además arma el borrado del portapapeles— y el campo tiene un ojo para destaparla
+  (2026-09-09, 2.12.1).
 - ~~Un `EventSource` por oyente en el puente~~ → el navegador solo abre **seis conexiones** contra el
   mismo origen y un flujo de eventos no termina nunca, así que a partir del sexto oyente **toda
   llamada al puente se quedaba esperando para siempre**, sin error y sin petición en la red. Con

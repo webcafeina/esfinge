@@ -250,6 +250,22 @@ async function ordenar(page: Page, que: string) {
   );
 }
 
+/**
+ * pegarDesdeElMenu es lo mismo para «Pegar», que va por su propia puerta porque
+ * el texto lo lee Go: el navegador no puede mirar el portapapeles del sistema.
+ */
+async function pegarDesdeElMenu(page: Page, texto: string) {
+  await page.evaluate(
+    (t) =>
+      fetch("/api/OrdenarPegar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([t]),
+      }),
+    texto,
+  );
+}
+
 test("el menú del sistema cambia de pantalla y edita el campo con el foco", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
@@ -782,7 +798,9 @@ test("guarda una entrada y no enseña la contraseña hasta que se pide", async (
   await fila.click();
   const dato = page.locator(".dato.secreto").first();
   await expect(dato).toHaveText("••••••••••••");
-  await page.getByRole("button", { name: "Ver", exact: true }).first().click();
+  // Acotado a lo visible: el campo de la clave de cifrar tiene ahora su propio
+  // «Ver», y ese panel sigue montado aunque esté escondido.
+  await accion(page, "Ver").first().click();
   await expect(dato).toHaveText("s3cr3t0");
 
   expect(errores, errores.join(" | ")).toEqual([]);
@@ -800,7 +818,7 @@ test("copiar un secreto dice cuándo va a borrarse solo", async ({ page }) => {
   await accion(page, "Guardar").click();
 
   await page.locator(".lista-boveda").getByRole("button", { name: titulo }).click();
-  await page.getByRole("button", { name: "Copiar", exact: true }).first().click();
+  await accion(page, "Copiar").first().click();
 
   // El plazo lo dice Go por un evento, no un temporizador de la pantalla: el de
   // un webview se pausa y muere al recargar, y un borrado que a veces no ocurre
@@ -884,5 +902,89 @@ test("Ajustes manda sobre los dos relojes de la bóveda", async ({ page }) => {
   await page.locator("#bloqueo").selectOption("15");
   await page.locator("#portapapeles").selectOption("30");
 
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+// ---------------------------------------------------- el campo de la clave
+
+test("pegar una clave con el menú activa el botón de cifrar", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // **Esto estuvo roto desde que existen los menús propios y no lo vio nadie.**
+  // La prueba del menú ejercitaba «seleccionar todo», que es lo fácil de mirar, y
+  // no pegar. En la ventana no hay pegar del sistema —los menús se construyen a
+  // mano— así que ⌘V pasa por aquí: si el estado de React no se entera, la clave
+  // se ve en pantalla y el botón sigue apagado, que es lo que contó el cliente.
+  await page.getByLabel("Qué quieres cifrar").fill("un secreto cualquiera");
+
+  const boton = accion(page, "Cifrar");
+  await expect(boton).toBeDisabled();
+
+  await clave(page).focus();
+  await expect
+    .poll(async () => {
+      await pegarDesdeElMenu(page, "una clave pegada de fuera");
+      return clave(page).inputValue();
+    }, { timeout: 15_000 })
+    .toBe("una clave pegada de fuera");
+
+  // Lo que importa no es lo que se ve, es que la aplicación lo sepa.
+  await expect(boton).toBeEnabled();
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("la clave se puede destapar para leerla y volver a tapar", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  const campo = page.locator("#clave-cifrar");
+  await accion(page, "Generar una").click();
+  await expect(campo).toHaveAttribute("type", "password");
+  await expect(campo).not.toHaveValue("");
+
+  // Sin esto, la contraseña que acaba de fabricarse no se puede sacar de aquí: de
+  // un campo de contraseña el navegador se niega a copiar, y ésta no está
+  // apuntada en ningún otro sitio.
+  await accion(page, "Ver").click();
+  await expect(campo).toHaveAttribute("type", "text");
+
+  await accion(page, "Ocultar").click();
+  await expect(campo).toHaveAttribute("type", "password");
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("copiar la clave con el menú sale por Go, que es el único camino que funciona", async ({
+  page,
+}) => {
+  const errores = vigilarConsola(page);
+
+  // Se mira la petición y no el portapapeles porque el del servidor de desarrollo
+  // no se puede leer desde aquí. Lo que hay que comprobar es justo esto: que la
+  // orden **sale**. Antes no salía por ninguna parte —`execCommand("copy")` sobre
+  // un campo de contraseña devuelve que sí y no copia nada— y el síntoma era que
+  // pulsar ⌘C no hacía absolutamente nada.
+  const copiadas: string[] = [];
+  page.on("request", (r) => {
+    if (r.url().endsWith("/api/Copiar")) copiadas.push(r.postData() ?? "");
+  });
+
+  await page.goto("/");
+  await accion(page, "Generar una").click();
+  await expect(page.locator("#clave-cifrar")).not.toHaveValue("");
+  const generada = await page.locator("#clave-cifrar").inputValue();
+
+  await clave(page).focus();
+  await ordenar(page, "editar:seleccionar-todo");
+  await expect
+    .poll(async () => {
+      await ordenar(page, "editar:copiar");
+      return copiadas.length;
+    }, { timeout: 15_000 })
+    .toBeGreaterThan(0);
+
+  expect(copiadas[0]).toContain(generada);
   expect(errores, errores.join(" | ")).toEqual([]);
 });

@@ -1,4 +1,4 @@
-import type { Orden } from "./puente";
+import { esfinge, type Orden } from "./puente";
 
 /**
  * obedecer hace lo que pide el menú del sistema dentro de la ventana.
@@ -21,6 +21,24 @@ export function obedecerEdicion(o: Orden): boolean {
   const foco = document.activeElement;
   const campo =
     foco instanceof HTMLInputElement || foco instanceof HTMLTextAreaElement ? foco : null;
+
+  // **Copiar de un campo de contraseña no lo hace el navegador.** WebKit y
+  // Chromium se niegan a copiar de un `type="password"`, a propósito y sin decir
+  // nada: `execCommand("copy")` devuelve que sí y el portapapeles se queda como
+  // estaba. Eso deja «Generar una» en la pantalla de cifrar sin forma de sacar la
+  // contraseña que acaba de fabricar, que es justo la que no está en ningún otro
+  // sitio.
+  //
+  // Se copia por Go, que además es el camino que arma el borrado del portapapeles
+  // pasado el plazo. Para un secreto eso es mejor que el del navegador, no peor.
+  if (o.que === "editar:copiar" || o.que === "editar:cortar") {
+    const secreto = loSeleccionadoDeUnaContrasena(campo);
+    if (secreto !== null) {
+      esfinge.copiar(secreto).catch(() => {});
+      if (o.que === "editar:cortar") quitarLoSeleccionado(campo!);
+      return true;
+    }
+  }
 
   // execCommand está marcado como obsoleto, pero para los comandos de edición
   // sigue siendo lo único que funciona igual en WKWebView y en WebView2, que son
@@ -49,6 +67,28 @@ export function obedecerEdicion(o: Orden): boolean {
 }
 
 /**
+ * loSeleccionadoDeUnaContrasena devuelve lo que haya seleccionado en un campo de
+ * contraseña, o null si no es ese caso —y entonces manda el camino de siempre—.
+ */
+function loSeleccionadoDeUnaContrasena(
+  campo: HTMLInputElement | HTMLTextAreaElement | null,
+): string | null {
+  if (!(campo instanceof HTMLInputElement) || campo.type !== "password") return null;
+  const desde = campo.selectionStart ?? 0;
+  const hasta = campo.selectionEnd ?? 0;
+  if (hasta <= desde) return null;
+  return campo.value.slice(desde, hasta);
+}
+
+function quitarLoSeleccionado(campo: HTMLInputElement | HTMLTextAreaElement) {
+  const desde = campo.selectionStart ?? 0;
+  const hasta = campo.selectionEnd ?? desde;
+  ponerValor(campo, campo.value.slice(0, desde) + campo.value.slice(hasta));
+  campo.setSelectionRange(desde, desde);
+  campo.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+/**
  * pegarEn mete el texto donde está el cursor, respetando lo que hubiera
  * seleccionado, y deja el cursor detrás de lo pegado.
  *
@@ -60,7 +100,7 @@ function pegarEn(campo: HTMLInputElement | HTMLTextAreaElement | null, texto: st
 
   const desde = campo.selectionStart ?? campo.value.length;
   const hasta = campo.selectionEnd ?? desde;
-  campo.value = campo.value.slice(0, desde) + texto + campo.value.slice(hasta);
+  ponerValor(campo, campo.value.slice(0, desde) + texto + campo.value.slice(hasta));
 
   const cursor = desde + texto.length;
   campo.setSelectionRange(cursor, cursor);
@@ -68,4 +108,32 @@ function pegarEn(campo: HTMLInputElement | HTMLTextAreaElement | null, texto: st
   // React no se entera de un cambio hecho sobre el valor del elemento: hay que
   // decírselo con el evento que él escucha.
   campo.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+/**
+ * ponerValor escribe en el campo **de forma que React lo vea**, que es harina de
+ * otro costal que un `campo.value = …`.
+ *
+ * React lleva su propio registro del último valor de cada campo, y para
+ * mantenerlo sustituye la propiedad `value` **del elemento concreto** por un
+ * accesor que lo actualiza. Asignando directamente, ese registro se pone al día
+ * antes de tiempo: cuando después llega el evento «input», React compara el valor
+ * con lo que tiene apuntado, no encuentra diferencia y **no dispara onChange**.
+ * El estado se queda con lo de antes.
+ *
+ * Eso es lo que hacía que pegar una clave con ⌘V no activara el botón de cifrar:
+ * en pantalla estaba puesta y para React el campo seguía vacío. Nunca se había
+ * notado porque la prueba del menú ejercitaba «seleccionar todo» y no pegar.
+ *
+ * El accesor original sigue en el prototipo, y llamarlo desde ahí escribe el
+ * valor sin tocar el registro. Entonces el evento sí cuenta como un cambio.
+ */
+function ponerValor(campo: HTMLInputElement | HTMLTextAreaElement, valor: string) {
+  const nativo = Object.getOwnPropertyDescriptor(
+    Object.getPrototypeOf(campo),
+    "value",
+  )?.set;
+
+  if (nativo) nativo.call(campo, valor);
+  else campo.value = valor;
 }

@@ -238,6 +238,21 @@ verdad. La carpeta es nueva en cada arranque del servidor, así que **la bóveda
 sobrevive entre pruebas y entre temas** pero no entre tandas: el fichero de pruebas la crea o la
 abre, según lo que encuentre.
 
+**React no ve un `campo.value = …`, y eso rompió pegar durante versiones.** React sustituye la
+propiedad `value` **del elemento concreto** por un accesor que mantiene su registro interno del
+valor; al asignar directamente, ese registro se pone al día antes de tiempo y el evento `input` que
+se dispara después no le parece un cambio, así que **no llama a `onChange`**. En pantalla la clave
+estaba puesta y para la aplicación el campo seguía vacío: el botón de cifrar no se activaba. Como los
+menús se construyen a mano (ADR 0015), **⌘V pasa por `ordenes.ts`** y por ahí pasa todo lo que se
+pega en la ventana. Se escribe con el accesor del prototipo (`ponerValor`), que no toca el registro.
+Nunca se notó porque la prueba del menú ejercitaba «seleccionar todo» y no pegar.
+
+**Y de un campo de contraseña el navegador se niega a copiar.** WebKit y Chromium lo bloquean a
+propósito: `execCommand("copy")` dice que sí y el portapapeles se queda como estaba. Eso dejaba la
+clave recién fabricada por «Generar una» sin forma de salir de ahí, que es justo la que no está
+apuntada en ningún otro sitio. Se copia por Go —que además arma el borrado del portapapeles— y el
+campo tiene un ojo para destaparla.
+
 **En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de
 `.contenido`. Sin acotar, Playwright encuentra dos y falla por modo estricto.
