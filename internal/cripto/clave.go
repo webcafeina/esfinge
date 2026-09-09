@@ -55,6 +55,29 @@ func derivar(clave, sal []byte, p Parametros) []byte {
 	return argon2.IDKey(clave, sal, p.Pasadas, p.Memoria, p.Paralelismo, tamClave)
 }
 
+// PerfilLlave es el coste mínimo, y **es correcto justo donde se usa**.
+//
+// Se emplea para sellar el cuerpo de la bóveda, cuya clave no es una contraseña
+// tecleada por nadie sino 256 bits de `crypto/rand`. Estirar una clave que ya es
+// aleatoria no añade nada: la fuerza bruta es inviable con estiramiento y sin
+// él. Lo que sí añadiría es medio segundo **en cada guardado**, es decir cada vez
+// que se toca una entrada.
+//
+// Las contraseñas de persona siguen con PerfilInteractivo, que es donde el coste
+// hace falta de verdad. Y como los parámetros viajan dentro de la cabecera, el
+// fichero se describe a sí mismo: nadie tiene que adivinar con qué se selló.
+//
+// **No es un descuido, y por eso está escrito aquí**: es lo primero que alguien
+// intentaría «arreglar» subiéndolo a PerfilInteractivo.
+var PerfilLlave = Parametros{Memoria: 8 * 1024, Pasadas: 1, Paralelismo: 1}
+
+// Azar devuelve n bytes de aleatoriedad del sistema.
+//
+// Se exporta para que quien construya sobre este paquete no tenga que repetir el
+// mensaje de «no hay entropía», que es de los pocos errores que no admiten
+// seguir adelante.
+func Azar(n int) ([]byte, error) { return azar(n) }
+
 // Borrar sobrescribe un búfer de material sensible. No es una garantía —el
 // recolector de basura de Go puede haber copiado el búfer antes— pero acorta la
 // ventana en la que la clave derivada vive en memoria.
