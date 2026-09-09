@@ -142,6 +142,30 @@ la misma decisión afinada, no otra.
   grosor ya son 29. Bajado 40, y el `viewBox` ajustado al dibujo para que la
   marca ocupe la caja que se le da.
 
+### Y una séptima, de preguntar por los otros dos sistemas (2.11.2)
+
+De comprobar si todo esto llegaba a Windows y a Linux salió que sí —lockup,
+firma, hover y marca son de los tres— **menos una cosa: en Windows la barra
+lateral se quedaba sin una gota de oro**. La fila activa iba en gris neutro y la
+barra de acento en piedra, porque el oro a 3 px sobre fondo claro no se ve.
+
+La decisión original —«en Windows la fila activa no se pinta de oro, que ahí la
+convención es la barra»— era correcta a medias: Fluent no rellena la selección,
+pero **la tiñe con el acento muy diluido**. Eso es exactamente lo que hacía falta:
+el oro entra como relleno, que es su papel, y quien dice «estás aquí» sigue
+siendo la barra, que se ve. De ahí `--relleno-tenue`.
+
+Se emite como translúcido y no como color resuelto, igual que `--anillo`, para
+que valga sobre cualquier superficie. **La contrapartida es que no se puede
+medir**: `make contraste` mide colores opacos. Lo que sí está medido es lo que
+importa —la tinta sobre la barra— porque el tinte apenas mueve el fondo.
+
+Y una trampa de método que costó un rato: al forzar `data-sistema` desde una
+prueba para mirar los tres, hay que **esperar a que la aplicación fije el suyo**.
+Si se pone antes, su promesa lo sobrescribe y se acaba juzgando otro sistema
+creyendo que es éste. Pasó, y la captura parecía decir que el arreglo no
+funcionaba.
+
 ## Verificación
 
 - **`make contraste`** con ocho parejas nuevas, entre ellas la fila activa, la firma, la barra de

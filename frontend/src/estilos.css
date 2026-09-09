@@ -944,8 +944,15 @@ p {
   position: relative;
 }
 
+/* **Teñida del acento, no gris.** Aquí ponía «--elevada», que es un gris neutro,
+ * y el resultado era que en Windows la barra lateral se quedaba **sin una gota de
+ * la marca**: la fila activa gris y la barra de acento en piedra, porque el oro a
+ * 3 px sobre un fondo claro no se ve. Fluent tiñe la selección con el color de
+ * acento muy diluido y deja que la barra de al lado diga «estás aquí», que es
+ * justo lo que hace falta: el oro aparece como relleno —su papel— y la señal la
+ * sigue dando algo que se ve. */
 :root[data-sistema="windows"] .lateral nav button[aria-current="page"] {
-  background: var(--elevada);
+  background: var(--relleno-tenue);
   color: var(--tinta);
   font-weight: 600;
 }

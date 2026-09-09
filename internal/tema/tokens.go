@@ -110,6 +110,10 @@ func GenerarCSS() string {
 	// El anillo de foco es el color de acción a media tinta: así se ve sobre
 	// cualquier superficie sin tener que inventar un color por cada una.
 	fmt.Fprintf(&b, "  --anillo: %s;\n", conAlfa(TemaClaro.Relleno, 0.35))
+	// El acento muy diluido, para la selección de Fluent: en Windows la fila
+	// activa no se rellena, se tiñe, y quien dice «estás aquí» es la barra de al
+	// lado. Va translúcido a propósito, para que sirva sobre cualquier superficie.
+	fmt.Fprintf(&b, "  --relleno-tenue: %s;\n", conAlfa(TemaClaro.Relleno, 0.18))
 	b.WriteString("\n")
 
 	claves := make([]string, 0, len(Medidas))
@@ -129,6 +133,7 @@ func GenerarCSS() string {
 			fmt.Fprintf(&s, "  --%s: %s;\n", c.nombre, c.de(TemaOscuro).Hex())
 		}
 		fmt.Fprintf(&s, "  --anillo: %s;\n", conAlfa(TemaOscuro.Relleno, 0.45))
+		fmt.Fprintf(&s, "  --relleno-tenue: %s;\n", conAlfa(TemaOscuro.Relleno, 0.22))
 		s.WriteString("}\n")
 		return s.String()
 	}

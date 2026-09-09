@@ -25,6 +25,7 @@
   --boton: #ffffff;
   --boton-encima: #f2f2f5;
   --anillo: rgb(242 193 78 / 0.35);
+  --relleno-tenue: rgb(242 193 78 / 0.18);
 
   --alto-control: 28px;
   --alto-fila: 38px;
@@ -71,6 +72,7 @@
     --boton: #3a3a3c;
     --boton-encima: #48484a;
     --anillo: rgb(242 193 78 / 0.45);
+    --relleno-tenue: rgb(242 193 78 / 0.22);
   }
 }
 
@@ -97,4 +99,5 @@
   --boton: #3a3a3c;
   --boton-encima: #48484a;
   --anillo: rgb(242 193 78 / 0.45);
+  --relleno-tenue: rgb(242 193 78 / 0.22);
 }

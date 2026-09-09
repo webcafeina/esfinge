@@ -48,9 +48,17 @@ Plantilla al final.
     relleno queda tapado por el rostro y a trazo se dibuja. Contorno abierto por abajo.
   - Y el ojal tocaba la barbilla: doce píxeles de separación que medio grosor de trazo —29— se comía
     entera. Bajado 40, y el `viewBox` ajustado al dibujo.
+- **2.11.2, de preguntar si todo esto llegaba a Windows y a Linux.** Llegaba —lockup, firma, hover y
+  marca son de los tres— **menos una cosa: la barra lateral de Windows se quedaba sin una gota de
+  oro**, con la fila activa en gris y la barra de acento en piedra. La decisión original era correcta
+  a medias: Fluent no rellena la selección, pero **la tiñe** con el acento diluido. De ahí
+  `--relleno-tenue`, y ahora el oro entra como relleno mientras la señal la sigue dando la barra.
+- Y una trampa de método: al forzar `data-sistema` desde una prueba para mirar los tres sistemas hay
+  que **esperar a que la aplicación fije el suyo**, o su promesa lo sobrescribe y se acaba juzgando
+  otro creyendo que es éste. Pasó, y la captura decía que el arreglo no funcionaba.
 - **Queda por juzgar con el ojo**: la pastilla dorada de la fila activa, que es lo más visible, y si
-  el ámbar de los avisos se estorba con el oro. Medido no es visto — y esta tanda de seis lo
-  demuestra.
+  el ámbar de los avisos se estorba con el oro. Medido no es visto — y estas siete correcciones lo
+  demuestran.
 
 ## 2026-09-09 · La banda sale sola
 
