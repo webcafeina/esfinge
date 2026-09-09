@@ -140,8 +140,13 @@ jobs:
           # cualquiera de ellas sirve un índice caducado. Eso dejó sin publicar la
           # 2.14.0: un problema en un servidor de Google, en una compilación que
           # solo necesita GTK y WebKit de los archivos de Ubuntu.
-          sudo rm -f /etc/apt/sources.list.d/google-chrome.list \
-                     /etc/apt/sources.list.d/microsoft-prod.list
+          # Se buscan **por contenido y no por nombre**: el nombre del fichero
+          # cambia entre imágenes de la máquina —`.list`, `.sources`, o dentro del
+          # `sources.list` de siempre— y quitar el que uno supone deja el problema
+          # igual, que es lo que pasó al primer intento.
+          grep -rIl 'dl\.google\.com\|packages\.microsoft\.com' \
+            /etc/apt/sources.list.d/ 2>/dev/null | sudo xargs -r rm -f
+          sudo sed -i '/dl\.google\.com/d;/packages\.microsoft\.com/d' /etc/apt/sources.list
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
 
