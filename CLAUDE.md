@@ -455,6 +455,12 @@ px por debajo del centro. Todo lo que el fondo dibuje ahí queda tapado, y eso n
 la imagen en un Mac. `make ventana-dmg` la dibuja antes, leyendo las posiciones de
 `empaquetado/macos/armar-dmg.sh` para que fondo y guion no se separen.
 
+**Y una que solo se descubre publicando: la máquina de GitHub trae repositorios de apt que no son
+nuestros.** `apt-get update` **falla entero** si cualquiera de ellos sirve un índice caducado, así que
+un problema en un servidor de Google puede dejar sin publicar una versión de Esfinge —pasó con la
+2.14.0—. Los dos flujos quitan esas listas antes de mirar: esta compilación solo necesita GTK y
+WebKit de los archivos de Ubuntu.
+
 **Cuatro cosas que solo se descubren compilando de verdad**, todas encontradas en GitHub Actions:
 
 - El `main.go` de la aplicación **tiene que estar en la raíz**, junto a `wails.json`. Wails genera

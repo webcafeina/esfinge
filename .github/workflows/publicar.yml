@@ -192,6 +192,15 @@ jobs:
 
       - name: Dependencias del sistema
         run: |
+          # **Fuera los repositorios de terceros antes de mirar.**
+          #
+          # La máquina de GitHub trae listas que esta compilación no necesita para
+          # nada —la de Chrome, entre otras— y `apt-get update` **falla entero** si
+          # cualquiera de ellas sirve un índice caducado. Eso dejó sin publicar la
+          # 2.14.0: un problema en un servidor de Google, en una compilación que
+          # solo necesita GTK y WebKit de los archivos de Ubuntu.
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list \
+                     /etc/apt/sources.list.d/microsoft-prod.list
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
 

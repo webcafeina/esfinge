@@ -46,6 +46,10 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~Un repositorio de terceros roto dejaba sin publicar~~ → la máquina de GitHub trae listas de apt
+  que esta compilación no necesita, y `apt-get update` falla entero si cualquiera sirve un índice
+  caducado. Un problema en un servidor de Google dejó sin publicar la 2.14.0. Ahora se quitan antes
+  de mirar (2026-09-09, 2.14.0).
 - ~~`ESFINGE_SIN_RED` solo la miraba la línea de comandos~~ → la ventana no la consultaba nunca, así
   que quien la ponía creyendo que apagaba la red apagaba la mitad. Con una segunda salida eso dejó de
   ser aceptable: vive en `internal/red` y hay una prueba por cada salida (2026-09-09, 2.14.0).
