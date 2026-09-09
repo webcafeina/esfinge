@@ -5,6 +5,24 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · La bóveda, separada por clases
+
+- **2.12.8.** Con sesenta y cinco entradas dentro, el listado único deja de navegarse. Ahora hay
+  cinco pestañas encima de la lista —Todo, Credenciales, Notas, Tarjetas e Identidades— y el
+  buscador sigue valiendo dentro de cada una.
+- **Las pestañas están siempre, aunque estén vacías.** Que la de tarjetas exista es lo que dice que
+  se pueden guardar tarjetas; esconderla haría que la interfaz cambiara de forma según lo que hubiera
+  dentro, que es peor que una pestaña vacía. Cuando lo está, dice **por qué** —«todavía no hay
+  ninguna tarjeta»— en vez de un «no hay nada» que deja pensando si se ha roto algo.
+- Dos detalles que salieron de mirarlo puesto: **«Nueva» crea de la clase que se esté mirando**
+  —estando en Tarjetas, una tarjeta— y el pie cuenta las de la pestaña y el total, que son dos
+  números distintos y los dos hacen falta.
+- El filtro se aplica en la ventana y no en Go: la lista ya ha cruzado el puente entera —viene sin
+  secretos— y volver a pedirla por cada pestaña sería un viaje para nada.
+- Verificado: `make comprobar` y **70 pruebas de interfaz**, dos más, y la tanda repetida dos veces.
+  La prueba del filtro comprueba las dos mitades: que cada pestaña enseña lo suyo **y esconde lo
+  demás**, que es la que se olvida.
+
 ## 2026-09-09 · «¿Están todas?», contestado por el programa
 
 - **2.12.7.** Después de importar, el cliente preguntó si en su `credentials.csv` había 65 entradas.

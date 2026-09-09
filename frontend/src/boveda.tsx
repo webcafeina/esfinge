@@ -362,6 +362,7 @@ function Dentro({
   alRotar: (clave: string) => void;
 }) {
   const [q, setQ] = useState("");
+  const [tipo, setTipo] = useState<Filtro>("todo");
   const [lista, setLista] = useState<EntradaBoveda[]>([]);
   const [mirando, setMirando] = useState<EntradaBoveda | null>(null);
   const [editando, setEditando] = useState<EntradaBoveda | null>(null);
@@ -382,6 +383,11 @@ function Dentro({
     const t = setTimeout(() => buscar(q), 120);
     return () => clearTimeout(t);
   }, [q, buscar]);
+
+  // El filtro por clase se aplica aquí y no en Go: la lista ya ha cruzado el
+  // puente entera —viene sin secretos— y volver a pedirla por cada pestaña sería
+  // un viaje para nada.
+  const visibles = tipo === "todo" ? lista : lista.filter((e) => e.tipo === tipo);
 
   async function ver(id: string) {
     setError("");
@@ -440,19 +446,36 @@ function Dentro({
           aria-label="Buscar en la bóveda"
           onChange={(e) => setQ(e.target.value)}
         />
-        <button onClick={() => setEditando(entradaNueva())}>Nueva</button>
+        {/* Lo nuevo se crea de la clase que se esté mirando: estando en Tarjetas,
+            «Nueva» es una tarjeta. */}
+        <button onClick={() => setEditando(entradaNueva(tipo))}>Nueva</button>
         <button onClick={cerrar}>Cerrar la bóveda</button>
       </div>
 
+      {/* **Las cuatro clases, separadas.** Con sesenta y cinco entradas dentro un
+          listado único deja de navegarse, y las tarjetas y los documentos no se
+          buscan escribiendo: se buscan mirando, porque son cuatro y se sabe cuáles
+          son. Las pestañas están siempre, incluso vacías: que la de tarjetas
+          exista es lo que dice que se pueden guardar tarjetas. */}
+      <Segmentado<Filtro>
+        valor={tipo}
+        alCambiar={setTipo}
+        opciones={[
+          { valor: "todo", etiqueta: "Todo" },
+          { valor: "credencial", etiqueta: "Credenciales" },
+          { valor: "nota", etiqueta: "Notas" },
+          { valor: "tarjeta", etiqueta: "Tarjetas" },
+          { valor: "identidad", etiqueta: "Identidades" },
+        ]}
+      />
+
       {error && <p className="error">{error}</p>}
 
-      {lista.length === 0 ? (
-        <p className="nota">
-          {q ? "Nada encaja con esa búsqueda." : "La bóveda está vacía. Añade algo o importa lo que ya tengas."}
-        </p>
+      {visibles.length === 0 ? (
+        <p className="nota">{nadaQueEnsenar(q, tipo, lista.length)}</p>
       ) : (
         <ul className="lista-boveda">
-          {lista.map((e) => (
+          {visibles.map((e) => (
             <li key={e.id}>
               <button onClick={() => ver(e.id)}>
                 <span className="que">{ICONO_TIPO[e.tipo] ?? "•"}</span>
@@ -465,7 +488,8 @@ function Dentro({
       )}
 
       <p className="nota">
-        {estado.cuantas === 1 ? "Una entrada" : `${estado.cuantas} entradas`}
+        {tipo !== "todo" && `${cuantasDe(visibles.length, tipo)} · `}
+        {estado.cuantas === 1 ? "Una entrada" : `${estado.cuantas} entradas`} en total
         {estado.minutosParaBloquear > 0 &&
           ` · se cierra sola tras ${estado.minutosParaBloquear} minutos sin tocar nada`}
       </p>
@@ -500,8 +524,45 @@ function deQuien(e: EntradaBoveda): string {
   return e.usuario || e.sitios?.[0] || e.titular || e.nombreCompleto || "";
 }
 
-function entradaNueva(): EntradaBoveda {
-  return { id: "", tipo: "credencial", titulo: "", creada: "", cambiada: "" };
+/** Lo que se puede estar mirando: una clase concreta o todas. */
+type Filtro = TipoEntrada | "todo";
+
+function entradaNueva(tipo: Filtro): EntradaBoveda {
+  return {
+    id: "",
+    tipo: tipo === "todo" ? "credencial" : tipo,
+    titulo: "",
+    creada: "",
+    cambiada: "",
+  };
+}
+
+/** El plural de cada clase, que es como se llaman cuando son varias. */
+const PLURAL: Record<TipoEntrada, [string, string]> = {
+  credencial: ["credencial", "credenciales"],
+  nota: ["nota", "notas"],
+  tarjeta: ["tarjeta", "tarjetas"],
+  identidad: ["identidad", "identidades"],
+};
+
+function cuantasDe(cuantas: number, tipo: Filtro): string {
+  if (tipo === "todo") return `${cuantas}`;
+  const [una, varias] = PLURAL[tipo];
+  return cuantas === 1 ? `Una ${una}` : `${cuantas} ${varias}`;
+}
+
+/**
+ * nadaQueEnsenar dice **por qué** no hay nada, que no es lo mismo en los tres
+ * casos: la bóveda está vacía, la búsqueda no encaja con nada, o no hay ninguna
+ * de esa clase. Un «no hay nada» a secas deja pensando si se ha roto algo.
+ */
+function nadaQueEnsenar(q: string, tipo: Filtro, cuantasEnTotal: number): string {
+  if (q) return "Nada encaja con esa búsqueda.";
+  if (cuantasEnTotal === 0) {
+    return "La bóveda está vacía. Añade algo o importa lo que ya tengas.";
+  }
+  if (tipo === "todo") return "No hay nada que enseñar.";
+  return `Todavía no hay ninguna ${PLURAL[tipo][0]}. Añádela con «Nueva» o impórtala.`;
 }
 
 // --------------------------------------------------------------------- detalle

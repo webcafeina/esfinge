@@ -1018,6 +1018,60 @@ test("copiar la clave con el menú sale por Go, que es el único camino que func
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+test("la lista se separa por clases, y «Todo» las junta", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  // Una credencial y una tarjeta, con títulos distintos en cada pasada: la
+  // bóveda sobrevive a la prueba y dos entradas iguales dejarían el localizador
+  // ambiguo.
+  const sello = Date.now();
+  const credencial = `Banco ${sello}`;
+  const tarjeta = `Visa ${sello}`;
+
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(credencial);
+  await page.locator("#boveda-secreto").fill("s3cr3t0");
+  await accion(page, "Guardar").click();
+
+  await accion(page, "Nueva").click();
+  await page.getByRole("tab", { name: "Tarjeta", exact: true }).click();
+  await page.locator("#boveda-titulo").fill(tarjeta);
+  await page.locator("#boveda-numero").fill("4111111111111111");
+  await accion(page, "Guardar").click();
+
+  const lista = page.locator(".lista-boveda");
+  await expect(lista.getByRole("button", { name: credencial })).toBeVisible({ timeout: 20_000 });
+  await expect(lista.getByRole("button", { name: tarjeta })).toBeVisible();
+
+  // Cada pestaña enseña lo suyo **y esconde lo demás**, que es la mitad que se
+  // olvida al comprobar un filtro.
+  await page.getByRole("tab", { name: "Tarjetas", exact: true }).click();
+  await expect(lista.getByRole("button", { name: tarjeta })).toBeVisible();
+  await expect(lista.getByRole("button", { name: credencial })).toHaveCount(0);
+
+  await page.getByRole("tab", { name: "Credenciales", exact: true }).click();
+  await expect(lista.getByRole("button", { name: credencial })).toBeVisible();
+  await expect(lista.getByRole("button", { name: tarjeta })).toHaveCount(0);
+
+  // Y «Nueva» crea de la clase que se esté mirando, que es lo que se espera
+  // estando en Tarjetas.
+  await page.getByRole("tab", { name: "Identidades", exact: true }).click();
+  await accion(page, "Nueva").click();
+  await expect(page.getByRole("tab", { name: "Identidad", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await accion(page, "← Dejarlo").click();
+
+  await page.getByRole("tab", { name: "Todo", exact: true }).click();
+  await expect(lista.getByRole("button", { name: credencial })).toBeVisible();
+  await expect(lista.getByRole("button", { name: tarjeta })).toBeVisible();
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 // **Va la última del fichero a propósito**: deja la bóveda borrada, y quien venga
 // detrás —el otro tema— la crea otra vez con `conLaBovedaAbierta`. Ponerla antes
 // obligaría a todas las demás a saber si les toca crear o abrir, que es
