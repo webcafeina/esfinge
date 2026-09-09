@@ -1,0 +1,177 @@
+{
+  "aviso": "Generado una sola vez. NO se regenera: si un cambio pone estos vectores en rojo, o el cambio está mal o toca subir la versión del contenedor. Ver LÉEME.md.",
+  "rotos": [
+    {
+      "fichero": "roto-truncado.esf",
+      "clave": "clave de prueba",
+      "error": "ErrFormato",
+      "porque": "cortado a la mitad"
+    },
+    {
+      "fichero": "roto-bit.esf",
+      "clave": "clave de prueba",
+      "error": "ErrClaveIncorrecta",
+      "porque": "un bit cambiado en el texto cifrado"
+    },
+    {
+      "fichero": "roto-version99.esf",
+      "clave": "clave de prueba",
+      "error": "ErrVersion",
+      "porque": "el byte de versión puesto a 99"
+    }
+  ],
+  "vectores": [
+    {
+      "fichero": "unico-vacio.esf",
+      "clave": "clave de prueba",
+      "modo": "unico",
+      "parametros": {
+        "Memoria": 8192,
+        "Pasadas": 1,
+        "Paralelismo": 1
+      },
+      "sal": "11111111111111111111111111111111",
+      "nonce": "212121212121212121212121212121212121212121212121",
+      "sha256": "541b5430e1ca5780cc7fedc4a9ff541d6cc690b66bb1a0b191fe7387e56c1bfa"
+    },
+    {
+      "fichero": "unico-corto.esf",
+      "clave": "clave de prueba",
+      "modo": "unico",
+      "parametros": {
+        "Memoria": 8192,
+        "Pasadas": 1,
+        "Paralelismo": 1
+      },
+      "sal": "12121212121212121212121212121212",
+      "nonce": "222222222222222222222222222222222222222222222222",
+      "claro": "hunter2",
+      "sha256": "31532c3d1da4980bc5d4034a88b18575225fac30b23463d2aa28733f8eaf1d5c"
+    },
+    {
+      "fichero": "unico-utf8.esf",
+      "clave": "contraseña ñandú",
+      "modo": "unico",
+      "parametros": {
+        "Memoria": 8192,
+        "Pasadas": 1,
+        "Paralelismo": 1
+      },
+      "sal": "13131313131313131313131313131313",
+      "nonce": "232323232323232323232323232323232323232323232323",
+      "claro": "Ñandú, cigüeña y añoranza · 5 €",
+      "sha256": "53f8a7e54ea4e7057e35f87b73fcb131cc956f122dcdfca06ac9d4851f980c69"
+    },
+    {
+      "fichero": "unico-parametros.esf",
+      "clave": "clave de prueba",
+      "modo": "unico",
+      "parametros": {
+        "Memoria": 16384,
+        "Pasadas": 2,
+        "Paralelismo": 2
+      },
+      "sal": "14141414141414141414141414141414",
+      "nonce": "242424242424242424242424242424242424242424242424",
+      "claro": "los parametros viajan dentro",
+      "sha256": "1b8b446007ee1788fcd1ce33497da20fe61fb0ffa28cd6af3f5f1108c9d79ae4"
+    },
+    {
+      "fichero": "unico-perfil.esf",
+      "clave": "clave de prueba",
+      "modo": "unico",
+      "parametros": {
+        "Memoria": 65536,
+        "Pasadas": 3,
+        "Paralelismo": 4
+      },
+      "sal": "15151515151515151515151515151515",
+      "nonce": "252525252525252525252525252525252525252525252525",
+      "claro": "perfil interactivo",
+      "sha256": "6dfa9d28ce08b0ca9ed4053e8ffc1de8b541479fede95deeddb1d5d80ab7541a"
+    },
+    {
+      "fichero": "flujo-vacio.esf",
+      "clave": "clave de prueba",
+      "modo": "flujo",
+      "parametros": {
+        "Memoria": 8192,
+        "Pasadas": 1,
+        "Paralelismo": 1
+      },
+      "sal": "31313131313131313131313131313131",
+      "nonce": "414141414141414141414141414141414141414141414141",
+      "sha256": "72bd22ef56a86201721456623602e8f349d8f703dfc456b507609d6ba28ca241"
+    },
+    {
+      "fichero": "flujo-un-segmento.esf",
+      "clave": "clave de prueba",
+      "modo": "flujo",
+      "parametros": {
+        "Memoria": 8192,
+        "Pasadas": 1,
+        "Paralelismo": 1
+      },
+      "sal": "32323232323232323232323232323232",
+      "nonce": "424242424242424242424242424242424242424242424242",
+      "claroBytes": 1000,
+      "sha256": "840064cd60bd97e1ec154c5d646a556d005e094cec03da056656d9e9b65fc3c8"
+    },
+    {
+      "fichero": "flujo-limite.esf",
+      "clave": "clave de prueba",
+      "modo": "flujo",
+      "parametros": {
+        "Memoria": 8192,
+        "Pasadas": 1,
+        "Paralelismo": 1
+      },
+      "sal": "33333333333333333333333333333333",
+      "nonce": "434343434343434343434343434343434343434343434343",
+      "claroBytes": 65536,
+      "sha256": "75e5a456a1425d759b6de71e32cff11ad1e42c528eae1029dd84f5e952ae2ae8"
+    },
+    {
+      "fichero": "flujo-dos-segmentos.esf",
+      "clave": "clave de prueba",
+      "modo": "flujo",
+      "parametros": {
+        "Memoria": 8192,
+        "Pasadas": 1,
+        "Paralelismo": 1
+      },
+      "sal": "34343434343434343434343434343434",
+      "nonce": "444444444444444444444444444444444444444444444444",
+      "claroBytes": 65537,
+      "sha256": "0a37a8832bbdb20436803c471bed968296384868c06ae2cc53fa03f7f8ae2775"
+    },
+    {
+      "fichero": "flujo-tres-segmentos.esf",
+      "clave": "clave de prueba",
+      "modo": "flujo",
+      "parametros": {
+        "Memoria": 8192,
+        "Pasadas": 1,
+        "Paralelismo": 1
+      },
+      "sal": "35353535353535353535353535353535",
+      "nonce": "454545454545454545454545454545454545454545454545",
+      "claroBytes": 131195,
+      "sha256": "edef91dda0384128690c2c0b59555cf1593dc92b1803a4db855724006f3d1adf"
+    },
+    {
+      "fichero": "texto.esf1",
+      "clave": "clave de prueba",
+      "modo": "texto",
+      "parametros": {
+        "Memoria": 8192,
+        "Pasadas": 1,
+        "Paralelismo": 1
+      },
+      "sal": "12121212121212121212121212121212",
+      "nonce": "222222222222222222222222222222222222222222222222",
+      "claro": "hunter2",
+      "sha256": "a11a51087995f8dece68db4ec47f3e0455e9f0ef90775384ef1f1e4811814415"
+    }
+  ]
+}

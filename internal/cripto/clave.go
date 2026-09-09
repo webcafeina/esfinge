@@ -64,7 +64,19 @@ func Borrar(b []byte) {
 	}
 }
 
-func azar(n int) ([]byte, error) {
+// azar es una variable y no una función, y **eso es toda la costura que hace
+// falta para poder congelar el formato**.
+//
+// Los vectores fijos de `testdata/` comprueban dos cosas distintas. Que se
+// **abren** basta con tenerlos grabados. Que se **sellan igual** exige poder
+// reproducir byte a byte un contenedor de hace meses, y para eso hay que fijar
+// la sal y el nonce. Sin esta costura solo se congela la mitad del formato: un
+// cambio coherente en cifrado y descifrado —el orden de bytes de los
+// parámetros, el offset del contador de segmento, el AAD— seguiría pasando en
+// verde y dejaría de abrir lo ya emitido.
+//
+// Solo la sustituyen los tests, y siempre devolviéndola a su sitio.
+var azar = func(n int) ([]byte, error) {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
 		return nil, errors.New("No hay entropía disponible en el sistema: " + err.Error())

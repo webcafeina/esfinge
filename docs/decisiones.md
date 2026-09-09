@@ -31,6 +31,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0019](adr/0019-estructura-de-macos.md) | La ventana se organiza como una aplicación de macOS | 2026-09-07 | aceptada |
 | [0020](adr/0020-windows-y-gnome.md) | Windows y Linux, con marco del sistema y su propia forma | 2026-09-07 | aceptada · revisar si hay cliente allí |
 | [0021](adr/0021-la-marca-en-la-interfaz.md) | La marca entra en la ventana, y el acento es el oro de la esfinge | 2026-09-09 | aceptada · matiza la 0007 |
+| [0022](adr/0022-vectores-fijos.md) | El formato se congela con vectores fijos, no con un test que se mira al espejo | 2026-09-09 | aceptada · revisar si sube la versión del contenedor |
 
 ## Cuándo escribir una
 

@@ -220,6 +220,18 @@ y lo que se cargaba al montarse hay que recargarlo **al entrar**, que es lo que 
 En las pruebas, cualquier selector por clase dentro de un panel se acota con `:visible`, o encuentra
 también los escondidos.
 
+**El formato `ESF1` está congelado con vectores fijos, y no se regeneran** (ADR 0022). Viven en
+`internal/cripto/testdata/` y comprueban dos caminos: que lo grabado **se abre**, y que sellar con la
+misma sal y el mismo nonce **da los mismos bytes**. El segundo es el que importa: sin él, cambiar el
+orden de bytes de los parámetros o el offset del contador de segmento **a la vez al escribir y al
+leer** deja todos los demás tests en verde y deja de abrir lo ya emitido, en silencio. Se comprobó
+que es así antes de darlo por bueno.
+
+Por eso **`azar` es una variable y no una función** en `clave.go`: es la costura que permite
+reproducir un contenedor byte a byte. Y por eso **el programa que generó los vectores se borró**: no
+hay bandera `-actualizar` que apretar cuando un test se pone rojo. Si se pone rojo, o el cambio está
+mal o toca subir la versión del contenedor y grabar vectores nuevos **al lado**.
+
 **El color se genera, no se escribe.** `internal/tema` es la fuente de verdad y produce
 `frontend/src/tokens.css` con `make tokens`. Editar el CSS a mano no sirve: hay un test que compara
 el fichero con lo que dice Go y falla. Y `make contraste` mide las parejas reales de los dos temas.
