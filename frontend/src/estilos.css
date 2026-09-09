@@ -110,15 +110,20 @@ body {
   align-items: center;
   gap: var(--espacio-2);
   padding: 0 10px;
-  margin-bottom: var(--espacio-3);
+  margin-bottom: var(--espacio-5);
   color: var(--tinta);
   flex-shrink: 0;
 }
 
+/* **Tiene que leerse como un título, no como una fila más.** Al principio iba a
+ * «--texto-grande», que es *exactamente* el tamaño de las filas de navegación:
+ * cambiaba solo el peso y el nombre parecía una sección más. Ahora va al tamaño
+ * de título, con la esfinge más grande y más aire debajo, que son las tres cosas
+ * que lo separan del menú. */
 .lateral .marca span {
-  font-size: var(--texto-grande);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: var(--titulo);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 /* La firma de la casa, al fondo del todo. El «margin-top: auto» de «.abajo»
@@ -138,6 +143,9 @@ body {
  * el oro da 1,55:1 y no se vería. Lo mismo que el filete de foco. */
 .lateral .firma .barra {
   color: var(--acento);
+  /* La tinta del glifo de bloque va pegada a la izquierda de su caja, así que
+   * con el mismo hueco a los dos lados se ve pegado al nombre. Se compensa. */
+  margin-left: var(--espacio-1);
 }
 
 .lateral nav {
@@ -183,8 +191,14 @@ body {
  * «button:hover» vive más abajo en este fichero y **empata en peso** con
  * «.lateral button», así que sin esto ganaría ella por ir después y la fila
  * activa se volvería gris al pasar por encima. */
+/* **Se hunde, no se levanta.** Aquí estaba «--boton-encima», que es la respuesta
+ * correcta para un botón suelto —se aclara, como si se acercara— y la equivocada
+ * para una fila de barra lateral: en claro salía casi blanca sobre una barra que
+ * ya es casi blanca, y en oscuro directamente aclaraba. Una fila de barra lateral
+ * se oscurece al pasar por encima, que es lo que hacen las aplicaciones del
+ * sistema. Por eso «--barra-encima» es un color propio y no un reciclado. */
 .lateral nav button:hover:not([aria-current="page"]) {
-  background: var(--boton-encima);
+  background: var(--barra-encima);
 }
 
 .lateral nav button[aria-current="page"] {
@@ -670,6 +684,9 @@ input[type="range"]::-webkit-slider-thumb {
 
 .firma .barra {
   color: var(--acento);
+  /* La tinta del glifo de bloque va pegada a la izquierda de su caja, así que
+   * con el mismo hueco a los dos lados se ve pegado al nombre. Se compensa. */
+  margin-left: var(--espacio-1);
 }
 
 .barra-progreso {
@@ -805,6 +822,41 @@ p {
   align-items: center;
   gap: var(--espacio-3);
   cursor: pointer;
+}
+
+/* La casilla se dibuja entera, y **no es por gusto**: la del navegador se pinta
+ * con el color de acento del sistema —azul— y no hay forma de que respete el
+ * nuestro. Con «accent-color» tampoco valdría: el navegador dibuja el tic en
+ * blanco, y blanco sobre el oro da 1,68:1. Dibujándola, el tic es de piedra.
+ *
+ * De paso deja de ser la casilla diminuta de serie: 18 px, que es la medida a la
+ * que macOS y Fluent las dibujan. */
+.fila-ajuste input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid var(--filete-fuerte);
+  border-radius: var(--radio-chico);
+  background: var(--campo);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+/* El tic va en el SVG y con la piedra escrita a pelo, no con una variable: es
+ * una imagen de fondo y ahí las variables CSS no llegan. Es el mismo #2b2b31 que
+ * «--sobre-acento», que vale en los dos temas. */
+.fila-ajuste input[type="checkbox"]:checked {
+  border-color: transparent;
+  background: var(--relleno)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.6l3 3 5.8-6.8' fill='none' stroke='%232b2b31' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 13px no-repeat;
+}
+
+.fila-ajuste:hover input[type="checkbox"]:not(:checked) {
+  border-color: var(--acento);
 }
 
 /* ------------------------------------------------------------------ vidrio */

@@ -111,6 +111,37 @@ Un halo puede permitirse no cumplir 3:1 porque no es él quien informa.
 - El ámbar de los avisos y el oro de la marca **son vecinos**. Conviven en la pantalla de cifrar. No
   se ha tocado: los estados siguen siendo los del sistema, y hay que mirarlo puesto.
 
+## Lo que cambió al verlo puesto (2.11.1)
+
+Seis cosas, y ninguna se habría visto sin abrir la ventana. Van aquí porque son
+la misma decisión afinada, no otra.
+
+- **El lockup se confundía con el menú.** El nombre usaba `--texto-grande`, que
+  es *exactamente* el tamaño de las filas de navegación: solo cambiaba el peso.
+  Pasa al tamaño de título, con la esfinge más grande y más aire debajo.
+- **La firma lleva la versión**: `Webcafeína ▍ 2.11.0`. El glifo de la casa pasa
+  de abrir la marca a separar el nombre del número. La versión estaba solo en
+  Ajustes, que es un sitio al que hay que ir, y es lo primero que se pregunta
+  cuando algo va raro. La misma pieza se usa en la ficha de Ajustes.
+- **La fila de la barra lateral se hunde al pasar por encima, no se levanta.**
+  Usaba `BotonEncima`, que es la respuesta correcta para un botón suelto y la
+  equivocada para una barra lateral: en claro salía casi blanca sobre una barra
+  que ya es casi blanca, y en oscuro directamente aclaraba. De ahí `BarraEncima`,
+  un color propio y no un reciclado.
+- **La casilla de Ajustes se dibuja entera.** La del navegador se pinta con el
+  acento del sistema —azul— y no hay forma de que respete el nuestro; y con
+  `accent-color` tampoco valdría, porque el navegador dibuja el tic en blanco y
+  eso son 1,68:1 sobre el oro. Dibujada, el tic es de piedra y la casilla mide
+  18 px en vez de la miniatura de serie.
+- **La silueta tenía una raya cruzándole la cara.** Es el tramo `h246` del
+  contorno del tocado, a la altura y=478: relleno queda tapado por el rostro, y a
+  trazo se dibuja. Se sustituye por un salto, y el contorno queda en dos trazos
+  abiertos que se encuentran en la punta.
+- **Y el ojal tocaba la barbilla.** El rostro acaba en y=742 y el ojal empezaba
+  en 754: doce de separación, que relleno se leen y a trazo no, porque medio
+  grosor ya son 29. Bajado 40, y el `viewBox` ajustado al dibujo para que la
+  marca ocupe la caja que se le da.
+
 ## Verificación
 
 - **`make contraste`** con ocho parejas nuevas, entre ellas la fila activa, la firma, la barra de

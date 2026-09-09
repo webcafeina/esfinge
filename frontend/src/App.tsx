@@ -25,6 +25,7 @@ import {
   BandaNovedad,
   BarraLateral,
   CampoClave,
+  Firma,
   Marca,
   nombreDe,
   PanelResultado,
@@ -157,7 +158,7 @@ export default function App() {
 
   return (
     <div className="ventana">
-      <BarraLateral valor={tarea} alCambiar={setTarea} />
+      <BarraLateral valor={tarea} alCambiar={setTarea} version={version} />
 
       <div className="zona">
         <header className="herramientas">
@@ -743,13 +744,8 @@ function Ajustes({
         <Marca lado={44} />
         <div>
           <h2>Esfinge</h2>
-          <p className="nota">Versión {version}</p>
-          <p className="firma">
-            <span className="barra" aria-hidden="true">
-              ▍
-            </span>
-            webcafeína
-          </p>
+          <p className="nota">Cifra y descifra secretos con una clave.</p>
+          <Firma version={version} />
         </div>
       </div>
 

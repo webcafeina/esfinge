@@ -294,6 +294,22 @@ que cumplir: nada de `id`, `clipPath` ni `mask`, porque se inserta hasta tres ve
 página y los identificadores chocarían; y el grosor del trazo va como atributo, para poder afinarlo
 desde CSS en cada tamaño. Maciza no vale: en monocromo el rostro y el tocado se funden en un borrón.
 
+**Y dos cosas que el trazo obliga y el relleno perdona**, las dos vistas en la ventana y no en el
+código: el contorno del tocado **va abierto por abajo**, porque su tramo `h246` queda tapado por el
+rostro cuando está relleno y a trazo aparece como una raya cruzando la cara; y **el ojal baja 40**,
+porque los doce píxeles que lo separaban de la barbilla se los come medio grosor de trazo.
+
+**El lockup no puede ir al tamaño de las filas.** `--texto-grande` es exactamente el de la
+navegación: puesto ahí, el nombre del producto parece una sección más. Va al tamaño de título.
+
+**Y la barra lateral se hunde al pasar por encima, no se levanta** (`--barra-encima`, que existe solo
+para eso). `--boton-encima` aclara, que es lo correcto para un botón suelto y lo contrario de lo que
+hace una fila de barra lateral.
+
+**La casilla de Ajustes se dibuja a mano**, y no por gusto: la del navegador se pinta con el acento
+del sistema y `accent-color` tampoco sirve, porque el tic lo dibuja blanco y eso son 1,68:1 sobre el
+oro. Dibujada, el tic es de piedra.
+
 **El icono del documento llega a cada sistema por un camino distinto, y a Linux no llegaba solo.**
 De `build/esf.png` salen dos: Wails arma el `esf.icns` del paquete de macOS y el `esf.ico` que el
 instalador de Windows copia y registra (`File "..\esf.ico"` en su plantilla NSIS). Pero

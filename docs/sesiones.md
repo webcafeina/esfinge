@@ -33,8 +33,24 @@ Plantilla al final.
   `:focus-visible`, y el borde va con transición, así que hubo que medirlo con `poll`. Y el historial
   se carga al entrar, o sea que preguntar en el acto si «Vaciar» está activo es la trampa que este
   fichero ya había pisado dos veces.
+- **2.11.1, con las seis correcciones que salieron de mirarlo puesto.** Ninguna se habría visto sin
+  abrir la ventana, y una de ellas era un fallo de dibujo con causa exacta:
+  - El lockup usaba **el mismo tamaño que las filas** de navegación y el nombre parecía una sección
+    más. Ahora va al tamaño de título.
+  - La firma pasa a `Webcafeína ▍ 2.11.1`: el glifo de la casa separa el nombre de la versión, que
+    antes solo estaba en Ajustes.
+  - **La fila de la barra lateral se hunde al pasar por encima, no se levanta.** Usaba
+    `--boton-encima`, que aclara: correcto para un botón suelto, al revés para una barra lateral. De
+    ahí `--barra-encima`, un color propio.
+  - La casilla de Ajustes se dibuja entera: la del navegador va en azul del sistema, y `accent-color`
+    tampoco sirve porque el tic lo pinta blanco y sobre el oro son 1,68:1.
+  - **La silueta tenía una raya cruzando la cara**: el tramo `h246` del contorno del tocado, que
+    relleno queda tapado por el rostro y a trazo se dibuja. Contorno abierto por abajo.
+  - Y el ojal tocaba la barbilla: doce píxeles de separación que medio grosor de trazo —29— se comía
+    entera. Bajado 40, y el `viewBox` ajustado al dibujo.
 - **Queda por juzgar con el ojo**: la pastilla dorada de la fila activa, que es lo más visible, y si
-  el ámbar de los avisos se estorba con el oro. Medido no es visto.
+  el ámbar de los avisos se estorba con el oro. Medido no es visto — y esta tanda de seis lo
+  demuestra.
 
 ## 2026-09-09 · La banda sale sola
 

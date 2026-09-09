@@ -29,14 +29,30 @@
      con el primero. Ésa es también la razón de que el grosor sea un atributo:
      se puede afinar desde CSS sin tocar este fichero.
 
-  Los trazados salen tal cual de `icono.svg`, sin retocar, para que las dos
-  piezas no puedan separarse con el tiempo.
+  Los trazados salen de `icono.svg`, con **dos ajustes que el trazo obliga** y
+  que están medidos, no estimados:
+
+  1. **El contorno del tocado va abierto por abajo.** El trazado original cierra
+     el hueco entre las guedejas con un `h246` a la altura y=478. Relleno no se
+     ve —el rostro lo tapa— pero a trazo se dibuja, y aparece una raya horizontal
+     cruzando la cara que en el icono no existe. Aquí ese tramo se sustituye por
+     un salto (`M635 478`), así que el contorno queda en dos trazos abiertos que
+     se encuentran arriba, en la punta del tocado.
+  2. **El ojal baja 40.** El rostro termina en y=742 y el ojal empezaba en 754:
+     doce de separación, que relleno se leen y a trazo no, porque medio grosor
+     ya son 29 y las dos formas se tocan. Bajándolo quedan casi treinta de aire
+     de verdad.
+
+  Y el `viewBox` se ajusta al dibujo en vez de dejarlo suelto en el lienzo de
+  1024: así la marca ocupa la caja que se le da y no queda pequeña dentro de un
+  margen vacío.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="currentColor"
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="60 101 905 905" fill="currentColor"
      role="img" aria-hidden="true" focusable="false">
-  <!-- Tocado y rostro, a trazo. -->
-  <g fill="none" stroke="currentColor" stroke-width="58" stroke-linejoin="round">
-    <path d="M512 150c-140 0-236 94-236 218v74l-62 228c-6 22 10 44 33 44h104l38-236h246l38 236h104c23 0 39-22 33-44l-62-228v-74c0-124-96-218-236-218z"/>
+  <!-- Tocado y rostro, a trazo. El tocado, en dos trazos abiertos: ver arriba. -->
+  <g fill="none" stroke="currentColor" stroke-width="58" stroke-linejoin="round"
+     stroke-linecap="round">
+    <path d="M512 150c-140 0-236 94-236 218v74l-62 228c-6 22 10 44 33 44h104l38-236M635 478l38 236h104c23 0 39-22 33-44l-62-228v-74c0-124-96-218-236-218"/>
     <path d="M512 232c-86 0-156 62-156 142v90c0 62 38 116 92 138v76c0 35 29 64 64 64s64-29 64-64v-76c54-22 92-76 92-138v-90c0-80-70-142-156-142z"/>
   </g>
 
@@ -46,6 +62,8 @@
   <path d="M552 386h48a16 16 0 0 1 0 32h-48a16 16 0 0 1 0-32z"/>
 
   <!-- El ojal de la llave: lo que hace la herramienta, sin escribirlo. -->
-  <path d="M512 754a54 54 0 1 0 0 108 54 54 0 1 0 0-108z"/>
-  <path d="M484 840h56l14 106H470z"/>
+  <g transform="translate(0 40)">
+    <path d="M512 754a54 54 0 1 0 0 108 54 54 0 1 0 0-108z"/>
+    <path d="M484 840h56l14 106H470z"/>
+  </g>
 </svg>

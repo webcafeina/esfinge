@@ -52,9 +52,11 @@ export function Marca({ lado, clase }: { lado: number; clase?: string }) {
 export function BarraLateral<T extends string>({
   valor,
   alCambiar,
+  version,
 }: {
   valor: T;
   alCambiar: (v: T) => void;
+  version: string;
 }) {
   const fila = (v: string, etiqueta: string) => (
     <button
@@ -72,7 +74,7 @@ export function BarraLateral<T extends string>({
       <div className="semaforos" />
 
       <div className="marca">
-        <Marca lado={20} />
+        <Marca lado={26} />
         <span>Esfinge</span>
       </div>
 
@@ -87,35 +89,35 @@ export function BarraLateral<T extends string>({
         {fila("ajustes", "Ajustes")}
       </nav>
 
-      <Firma />
+      <Firma version={version} />
     </aside>
   );
 }
 
 /**
- * Firma es la marca de la casa: «▍ webcafeína».
+ * Firma es quién hizo esto y qué versión es: «Webcafeína ▍ 2.11.0».
  *
- * Es la misma que sale en el pie del LÉEME del DMG, en el README y en la línea
- * de comandos, donde está definida en Go (`internal/salida`: `GlifoBarra` y
- * `Wordmark`). Se repite aquí en vez de pedírsela a Go porque es un rótulo, no
- * un dato: cruzar el puente para traer dos cadenas constantes sería un viaje
+ * El glifo de bloque es el de la casa —el mismo del pie del LÉEME del DMG, del
+ * README y de la línea de comandos, donde vive en Go como `salida.GlifoBarra`—
+ * pero aquí hace de separador entre el nombre y la versión, que es lo que se
+ * pidió al ver la 2.11.0. Se repite en vez de pedírselo a Go porque es un
+ * rótulo, no un dato: cruzar el puente por dos cadenas constantes es un viaje
  * para nada.
  *
- * **Va en minúscula, y eso contradice a la ADR 0005** —«todas las frases
- * empiezan en mayúscula»—. No es un descuido: no es una frase, es un logotipo, y
- * la casa se escribe así en todas partes. Si alguna vez el test de textos llega
- * hasta aquí, ésta es la excepción y éste es el porqué.
+ * **La versión estaba solo en Ajustes**, que es un sitio al que hay que ir. Aquí
+ * se ve siempre, y es lo primero que se pregunta cuando algo va raro.
  *
- * El glifo va aparte y marcado como decorativo para que quien lea la pantalla en
- * voz alta diga «webcafeína» y no el nombre del carácter de bloque.
+ * El glifo va marcado como decorativo para que quien lea la pantalla en voz alta
+ * no oiga el nombre del carácter de bloque en medio de la frase.
  */
-function Firma() {
+export function Firma({ version }: { version: string }) {
   return (
     <p className="firma">
+      Webcafeína
       <span className="barra" aria-hidden="true">
         ▍
       </span>
-      webcafeína
+      {version || "…"}
     </p>
   );
 }

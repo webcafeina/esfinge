@@ -20,6 +20,7 @@
   --aviso: #8f5300;
   --error: #b72a22;
   --barra: #f6f6f8;
+  --barra-encima: #e7e7e9;
   --campo: #ffffff;
   --boton: #ffffff;
   --boton-encima: #f2f2f5;
@@ -65,6 +66,7 @@
     --aviso: #ff9500;
     --error: #ff7d77;
     --barra: #242426;
+    --barra-encima: #19191b;
     --campo: #1a1a1c;
     --boton: #3a3a3c;
     --boton-encima: #48484a;
@@ -90,6 +92,7 @@
   --aviso: #ff9500;
   --error: #ff7d77;
   --barra: #242426;
+  --barra-encima: #19191b;
   --campo: #1a1a1c;
   --boton: #3a3a3c;
   --boton-encima: #48484a;

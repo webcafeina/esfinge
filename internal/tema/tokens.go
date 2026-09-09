@@ -83,6 +83,7 @@ var campos = []struct {
 	{"aviso", func(t Tema) RGB { return t.Aviso }},
 	{"error", func(t Tema) RGB { return t.Error }},
 	{"barra", func(t Tema) RGB { return t.Barra }},
+	{"barra-encima", func(t Tema) RGB { return t.BarraEncima }},
 	{"campo", func(t Tema) RGB { return t.Campo }},
 	{"boton", func(t Tema) RGB { return t.Boton }},
 	{"boton-encima", func(t Tema) RGB { return t.BotonEncima }},

@@ -581,8 +581,11 @@ test("la marca está en la barra lateral y no estorba a la navegación", async (
   await expect(marca).toContainText("Esfinge");
   await expect(marca.locator("svg")).toBeVisible();
 
-  // Abajo, la casa.
-  await expect(page.locator(".lateral .firma")).toContainText("webcafeína");
+  // Abajo, la casa y la versión. Que la versión esté aquí y no solo en Ajustes
+  // es lo que evita tener que ir a buscarla cuando algo va raro.
+  const firma = page.locator(".lateral .firma");
+  await expect(firma).toContainText("Webcafeína");
+  await expect(firma).toContainText(/\d+\.\d+\.\d+/);
 
   // **Y siguen siendo cinco botones.** Todo el fichero de pruebas localiza las
   // secciones con «.lateral + getByRole("button")»: si el lockup o la firma
@@ -699,8 +702,10 @@ test("Ajustes dice qué es esto, de qué versión y de quién", async ({ page })
   // lateral, que es la trampa de siempre de este fichero.
   const ficha = page.locator(".contenido .ficha:visible");
   await expect(ficha).toContainText("Esfinge");
-  await expect(ficha).toContainText("Versión");
-  await expect(ficha).toContainText("webcafeína");
+  // La versión sale de la firma, que en la ficha y en la barra lateral es la
+  // misma pieza: «Webcafeína ▍ 2.11.0».
+  await expect(ficha.locator(".firma")).toContainText(/\d+\.\d+\.\d+/);
+  await expect(ficha).toContainText("Webcafeína");
   await expect(ficha.locator("svg")).toBeVisible();
 
   expect(errores, errores.join(" | ")).toEqual([]);

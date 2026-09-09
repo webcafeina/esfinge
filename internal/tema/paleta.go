@@ -58,7 +58,14 @@ type Tema struct {
 
 	// Superficies con nombre propio, porque en el sistema no son intercambiables:
 	// la barra es translúcida, un campo se hunde y un botón se levanta.
+	//
+	// BarraEncima es la fila de la barra lateral con el puntero encima, y **es
+	// más oscura que la barra, no más clara**. Un botón corriente se levanta al
+	// pasar por encima; una fila de barra lateral se hunde, que es lo que hacen
+	// las aplicaciones del sistema y lo que se pidió al ver la 2.11.0. No vale
+	// reutilizar BotonEncima: en tema oscuro ése aclara.
 	Barra       RGB
+	BarraEncima RGB
 	Campo       RGB
 	Boton       RGB
 	BotonEncima RGB
@@ -125,14 +132,16 @@ var TemaClaro = func() Tema {
 		RellenoVivo: Oscurecer(RellenoLegible(oroMarca, piedra, AANormal), 0.85),
 		SobreAcento: piedra,
 		// La piedra del icono, no un oro oscurecido: el oro rellena y no escribe.
-		Acento:      piedra,
-		Barra:       MustParseHex("#f6f6f8"),
-		Campo:        lienzo,
-		Boton:        lienzo,
-		BotonEncima:  MustParseHex("#f2f2f5"),
-		Exito:        AcentoLegible(verdeSistema, masOscura, AANormal),
-		Aviso:        AcentoLegible(ambarSistema, masOscura, AANormal),
-		Error:        AcentoLegible(rojoSistema, masOscura, AANormal),
+		Acento: piedra,
+		Barra:  MustParseHex("#f6f6f8"),
+		// Un 6 % más oscura que la barra: se nota sin llamar la atención.
+		BarraEncima: Oscurecer(MustParseHex("#f6f6f8"), 0.94),
+		Campo:       lienzo,
+		Boton:       lienzo,
+		BotonEncima: MustParseHex("#f2f2f5"),
+		Exito:       AcentoLegible(verdeSistema, masOscura, AANormal),
+		Aviso:       AcentoLegible(ambarSistema, masOscura, AANormal),
+		Error:       AcentoLegible(rojoSistema, masOscura, AANormal),
 	}
 }()
 
@@ -158,6 +167,9 @@ var TemaOscuro = func() Tema {
 		RellenoVivo: Oscurecer(RellenoLegible(oroMarca, piedra, AANormal), 0.85),
 		SobreAcento: piedra,
 		Barra:       MustParseHex("#242426"),
+		// En oscuro hay menos recorrido hacia abajo —la barra ya está cerca del
+		// negro— así que el paso es mayor para que se llegue a ver.
+		BarraEncima: Oscurecer(MustParseHex("#242426"), 0.7),
 		Campo:       MustParseHex("#1a1a1c"),
 		Boton:       MustParseHex("#3a3a3c"),
 		BotonEncima: MustParseHex("#48484a"),
