@@ -147,9 +147,13 @@ Se enseña **una sola vez** al crearla y no se guarda en ninguna parte.
   276 ms contando el Argon2id. El límite no es la CPU.
 
 **Comprobado en un Mac, con datos de verdad (2026-09-09):** una exportación real
-de Dashlane se importa, y de un vistazo las entradas están bien. Falta contrastar
-el número contra el gestor de origen y abrir unas cuantas al azar, que es lo que
-distingue «parece» de «sí».
+de Dashlane entra entera —credenciales, notas seguras, tarjetas y documentos, que
+son cuatro ficheros distintos— y **la clave de recuperación abre la bóveda**, que
+era lo único que ninguna prueba podía decir: que lo que se apuntó en papel vale.
+
+Costó dos versiones. La primera tanda solo trajo `credentials.csv` porque los
+otros tres se rechazaban enteros, y eso no se vio como un error sino como un
+número que no cuadraba: 65 entradas aquí y más cosas allí.
 
 De ir a hacerlo salió un fallo que llevaba ahí desde que existen los diálogos:
 **en macOS el de abrir no dejaba elegir ningún fichero**, porque el filtro de

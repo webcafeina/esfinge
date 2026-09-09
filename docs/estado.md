@@ -94,9 +94,11 @@ visto nadie.
   LaunchServices. De mirarlo puesto salió la corrección de la 2.10.2: la placa estaba centrada en 636
   y la hoja tiene su centro en 512, así que caía 124 px baja. Se había bajado a propósito, creyendo
   que macOS pone ahí el emblema de los documentos; no era cierto.
-- **La bóveda importa una exportación real de Dashlane** (2026-09-09), en el Mac. Es el primer dato
-  de verdad que pasa por ella. De ir a hacerlo salió el fallo del filtro del diálogo de abrir, que
-  llevaba ahí desde que existen los diálogos y nadie había visto porque en macOS se arrastra.
+- **La bóveda con datos de verdad, en el Mac** (2026-09-09): una exportación de Dashlane entra
+  entera —credenciales, notas seguras, tarjetas y documentos, que son cuatro ficheros— y **la clave
+  de recuperación abre la bóveda**, que era lo único que ninguna prueba podía decir. Costó cuatro
+  versiones: el filtro del diálogo de abrir en macOS, el importador que solo entendía una forma de
+  fichero, las tarjetas que salían todas duplicadas y lo exportado que no volvía a entrar entero.
 - **La banda de versión nueva sale sola** (2026-09-09), con la ventana abierta y sin tocar nada. Es
   la prueba buena de la 2.10.4: antes la comprobación ocurría **solo al arrancar** y esa banda no
   había aparecido nunca, aunque la portada llevara desde la 2.1.0 prometiendo «una vez al día».
@@ -107,11 +109,12 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Usar la bóveda de verdad, con datos de verdad, en el Mac.** Es la puerta de decisión del plan: si
-la bóveda no se usa a diario, las fases 2 a 4 no se empiezan. El camino a recorrer es el que nadie ha
-recorrido todavía: exportar de Dashlane, importar aquí, apuntar la clave de recuperación, y vivir con
-ella una semana. **Nada de esto se ha probado con datos reales ni en un Mac**; aquí solo se ha
-ejercitado con un navegador contra el mismo Go.
+**Vivir con la bóveda una semana.** Los datos ya están dentro y la clave de recuperación ya se ha
+usado: lo que queda no es una comprobación, es uso. La puerta de decisión del plan es de costumbre y
+no de código —si no se abre Esfinge para buscar una contraseña, las fases 2 a 4 no se empiezan— y hay
+dos cosas concretas que solo dirá el día a día: si el bloqueo a los quince minutos molesta o
+tranquiliza, y si **los códigos de un solo uso** hacen falta ya, porque hoy se guarda la semilla pero
+no se calcula el código, y con eso los segundos factores se quedan en Dashlane.
 
 Y de paso, juzgar el oro de la 2.11.0 puesto: la identidad entró en la ventana y todo lo que la
 sostiene está medido, pero medido no es visto.
