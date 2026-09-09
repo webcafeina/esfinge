@@ -94,6 +94,9 @@ visto nadie.
   LaunchServices. De mirarlo puesto salió la corrección de la 2.10.2: la placa estaba centrada en 636
   y la hoja tiene su centro en 512, así que caía 124 px baja. Se había bajado a propósito, creyendo
   que macOS pone ahí el emblema de los documentos; no era cierto.
+- **La bóveda importa una exportación real de Dashlane** (2026-09-09), en el Mac. Es el primer dato
+  de verdad que pasa por ella. De ir a hacerlo salió el fallo del filtro del diálogo de abrir, que
+  llevaba ahí desde que existen los diálogos y nadie había visto porque en macOS se arrastra.
 - **La banda de versión nueva sale sola** (2026-09-09), con la ventana abierta y sin tocar nada. Es
   la prueba buena de la 2.10.4: antes la comprobación ocurría **solo al arrancar** y esa banda no
   había aparecido nunca, aunque la portada llevara desde la 2.1.0 prometiendo «una vez al día».

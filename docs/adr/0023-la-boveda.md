@@ -146,7 +146,19 @@ Se enseña **una sola vez** al crearla y no se guarda en ninguna parte.
 - Medido, no estimado: **20.000 entradas se guardan en 92 ms** y se abren en
   276 ms contando el Argon2id. El límite no es la CPU.
 
-**Lo que no se ha comprobado:** nada de esto se ha usado con datos de verdad ni
-en un Mac. Y sigue sin haber **auditoría externa**, que para un cifrador era una
-nota al pie y para un gestor de contraseñas es la primera pregunta que hará
-cualquiera.
+**Comprobado en un Mac, con datos de verdad (2026-09-09):** una exportación real
+de Dashlane se importa, y de un vistazo las entradas están bien. Falta contrastar
+el número contra el gestor de origen y abrir unas cuantas al azar, que es lo que
+distingue «parece» de «sí».
+
+De ir a hacerlo salió un fallo que llevaba ahí desde que existen los diálogos:
+**en macOS el de abrir no dejaba elegir ningún fichero**, porque el filtro de
+«todos los ficheros» llegaba al panel como una extensión llamada `*`. No se había
+visto nunca porque allí los ficheros se arrastran a la ventana, y ese camino no
+pasa por el diálogo; importar es lo primero que no tiene arrastrar y soltar.
+
+**Lo que sigue sin comprobarse:** abrir la bóveda con la clave de recuperación
+apuntada en papel —lo único que demuestra que lo apuntado vale—, y vivir con ella
+lo bastante para saber si los plazos de bloqueo estorban. Y sigue sin haber
+**auditoría externa**, que para un cifrador era una nota al pie y para un gestor
+de contraseñas es la primera pregunta que hará cualquiera.
