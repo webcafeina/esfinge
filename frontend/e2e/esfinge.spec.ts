@@ -879,13 +879,25 @@ test("una clave de recuperación con una errata se distingue de una que no abre"
   await expect(page.locator(".error:visible")).toContainText("no abre esta bóveda");
 });
 
+/** Hace algo y espera a que el guardado de preferencias haya ido y vuelto. */
+async function guardandoPreferencias(page: Page, hacer: () => Promise<unknown>) {
+  const ida = page.waitForResponse((r) => r.url().endsWith("/api/GuardarPreferencias"));
+  await hacer();
+  await ida;
+}
+
 test("Ajustes manda sobre los dos relojes de la bóveda", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
   await seccion(page, "Ajustes").click();
 
-  await page.locator("#bloqueo").selectOption("5");
-  await page.locator("#portapapeles").selectOption("10");
+  // **Esperando a que cada guardado llegue de vuelta**, y no por cortesía: la
+  // llamada es asíncrona y recargar la aborta a media petición, con lo que la
+  // prueba acaba comprobando lo que había antes. En una tanda pasaba en un tema y
+  // no en el otro, que es la forma que tiene una prueba de decir que hay una
+  // carrera.
+  await guardandoPreferencias(page, () => page.locator("#bloqueo").selectOption("5"));
+  await guardandoPreferencias(page, () => page.locator("#portapapeles").selectOption("10"));
 
   // Que se guarde de verdad, no solo en la pantalla: se recarga y se mira.
   await page.reload();
@@ -899,8 +911,8 @@ test("Ajustes manda sobre los dos relojes de la bóveda", async ({ page }) => {
 
   // Se deja como estaba, que las pruebas de después comparten servidor.
   await seccion(page, "Ajustes").click();
-  await page.locator("#bloqueo").selectOption("15");
-  await page.locator("#portapapeles").selectOption("30");
+  await guardandoPreferencias(page, () => page.locator("#bloqueo").selectOption("15"));
+  await guardandoPreferencias(page, () => page.locator("#portapapeles").selectOption("30"));
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });

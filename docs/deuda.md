@@ -27,6 +27,7 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | El servidor de desarrollo publica los métodos por reflexión | Baja | Si un método cambia de firma, el fallo sale en tiempo de ejecución y no al compilar | Aceptado · solo existe tras la etiqueta `dev` |
 | No hay pruebas de la línea de comandos | Media | `internal/cli` no tenía ni un test: se comprobaba a mano en cada cambio | **Parcialmente saldada (2026-09-09)**: `conSalida` sí tiene pruebas —escribe con 0600, no pisa sin `--forzar`, no deja el fichero a medias, acepta `/dev/null`—, porque se le movieron las tripas a `internal/escritura` y hacer eso sin red es como se rompen las cosas en silencio. El resto de subcomandos sigue sin cubrir |
 | Los códigos de un solo uso (TOTP) no se calculan | Media | La bóveda **guarda la semilla** y la trae al importar, pero nadie calcula el código de seis cifras: se enseña la semilla y ya. Mientras eso no esté, los segundos factores se quedan en Dashlane, y con ellos media razón para no dejarlo | Abierto · [siguiente.md](siguiente.md) |
+| `personalinfo.csv` de Dashlane no se importa | Baja | Direcciones, teléfonos y fechas de nacimiento. No son secretos sino datos de autorrelleno, así que meterlos en una bóveda es una decisión de producto por tomar y no un fallo del importador. Si se intenta, el fichero se rechaza diciendo qué columnas trae | Abierto |
 | La papelera no se puede vaciar desde la ventana | Media | Borrar es borrado suave —hace falta para sincronizar después, porque «borrada aquí» y «nunca existió allí» son indistinguibles sin él— así que una entrada borrada **sigue en el fichero con su contraseña dentro**. Hoy la única forma de quitarla de verdad es no haberla metido | Abierto |
 | El JSON exterior de la bóveda no va autenticado en su conjunto | Baja | Quien pueda escribir el fichero no puede leer nada ni fabricar una bóveda que abra, pero sí estropearla o revertirla a una copia vieja. `comprobarCoherencia` lo **detecta** con un sello por dentro; no lo impide | Aceptado · [ADR 0023](adr/0023-la-boveda.md) |
 | Cifrar una tanda deriva la clave una vez por fichero | Baja | Es el precio de que cada contenedor lleve su sal, y no se va a quitar: compartir la derivación entre ficheros sería compartir la sal | Aceptado. Lo que sí se hizo es paralelizarlo, con tope de la mitad de los núcleos y máximo cuatro: veinte ficheros pasaron de 4,42 s a 1,29 s ([ADR 0018](adr/0018-tandas-en-paralelo.md)) |
@@ -44,6 +45,18 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~Las tarjetas y los documentos de Dashlane no se podían importar~~ → el importador tenía una sola
+  tabla de alias, y una misma columna significa cosas distintas en cada uno de los cinco ficheros que
+  exporta Dashlane. Sus `payments.csv` e `ids.csv` se rechazaban enteros. Ahora se reconoce la forma
+  del fichero antes de mapear nada (2026-09-09, 2.12.4).
+- ~~Todas las tarjetas se marcaban como duplicadas entre sí~~ → la huella de una entrada era «sitio
+  más usuario» y una tarjeta no tiene ninguno de los dos, así que todas tenían la misma. Lo mismo con
+  las notas seguras. Cada clase se identifica ahora por lo suyo (2026-09-09, 2.12.4).
+- ~~Lo exportado no volvía a entrar entero~~ → el CSV de salida solo llevaba los campos de una
+  credencial, así que exportar y reimportar perdía tarjetas y documentos (2026-09-09, 2.12.4).
+- ~~Cambiar dos ajustes seguidos perdía el primero~~ → Go recibe el objeto entero y el segundo cambio
+  partía del estado de React de antes de que se redibujara, así que deshacía el primero. En pantalla
+  los dos se veían puestos. Lo encontró una prueba (2026-09-09, 2.12.4).
 - ~~El diálogo de abrir no dejaba elegir nada en macOS~~ → el filtro «todos los ficheros» iba con el
   patrón `*.*`, que es lo idiomático en Windows; Wails le quita el `*.` de delante antes de dárselo
   al `NSOpenPanel`, así que llegaba como una extensión llamada `*` y el panel lo dejaba todo en gris.

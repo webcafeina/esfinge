@@ -269,6 +269,19 @@ Y la otra mitad: **un filtro nunca puede impedir elegir**, ni donde hay desplega
 ser un `.txt` con la línea `ESF1.…` dentro, y una exportación de contraseñas llega con la extensión
 que le dé la gana al gestor que la escribió.
 
+**Un gestor de contraseñas no exporta un CSV: exporta varios, y la misma columna cambia de
+significado entre ellos.** Dashlane saca cinco —credenciales, notas, tarjetas, documentos e
+información personal— y ahí `number` es una tarjeta o un pasaporte según el fichero, `type` es la
+clase de tarjeta o la de documento, y `name` es el título de una cuenta o el nombre de una persona.
+Por eso `FormaDeLaCabecera` decide **primero** qué se está leyendo y cada forma tiene su tabla de
+alias, que pisa a la común. Con una sola tabla no se puede: se acierta en un fichero y se falla en el
+otro. Y el tipo de cada entrada se deduce de los campos que vengan rellenos, no de lo que el fichero
+diga de sí mismo.
+
+Con ello va una regla: **cada clase de entrada se identifica por lo suyo** (`huellaDeCuenta`). La
+huella de una credencial es «sitio + usuario», y una tarjeta no tiene ninguno de los dos: con esa
+huella todas las tarjetas del mundo son la misma y importar cinco marcaba cuatro como duplicadas.
+
 **En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de
 `.contenido`. Sin acotar, Playwright encuentra dos y falla por modo estricto.

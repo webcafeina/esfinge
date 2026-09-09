@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { obedecerEdicion } from "./ordenes";
 import {
   alAbrirFichero,
@@ -705,14 +705,33 @@ function Ajustes({
   const [dicho, setDicho] = useState("");
   const [error, setError] = useState("");
 
+  // Lo último que se ha decidido guardar, que **no es lo mismo que el estado**.
+  //
+  // Go recibe el objeto entero, así que cada cambio manda también lo que no se ha
+  // tocado. Si eso se lee del estado, dos cambios seguidos —bajar el bloqueo y
+  // acto seguido el portapapeles— salen los dos del mismo valor de partida,
+  // porque entre el primero y el segundo React todavía no ha vuelto a dibujar: el
+  // segundo guardado **deshace el primero**, y en pantalla los dos se ven puestos.
+  // Lo encontró una prueba, no una persona, y en un ajuste que apaga el bloqueo de
+  // la bóveda eso no puede quedarse así.
+  const ultimasPrefs = useRef<Preferencias | null>(null);
+
   useEffect(() => {
-    esfinge.verPreferencias().then(setPrefs).catch(() => {});
+    esfinge
+      .verPreferencias()
+      .then((p) => {
+        ultimasPrefs.current = p;
+        setPrefs(p);
+      })
+      .catch(() => {});
     esfinge.vidrio().then(setVidrio).catch(() => {});
   }, []);
 
   async function cambiar(cambio: Partial<Preferencias>) {
-    if (!prefs) return;
-    const siguiente = { ...prefs, ...cambio };
+    const base = ultimasPrefs.current ?? prefs;
+    if (!base) return;
+    const siguiente = { ...base, ...cambio };
+    ultimasPrefs.current = siguiente;
     setPrefs(siguiente);
     try {
       await esfinge.guardarPreferencias(siguiente);
@@ -733,7 +752,13 @@ function Ajustes({
       } else {
         setDicho("Ya tienes la última versión.");
       }
-      esfinge.verPreferencias().then(setPrefs).catch(() => {});
+      esfinge
+        .verPreferencias()
+        .then((p) => {
+          ultimasPrefs.current = p;
+          setPrefs(p);
+        })
+        .catch(() => {});
     } catch (e) {
       setError(mensaje(e));
     } finally {

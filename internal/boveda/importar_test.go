@@ -245,3 +245,214 @@ func TestImportarNoDejaRastroEnElHistorial(t *testing.T) {
 		t.Fatal("la bóveda no puede vivir en el historial")
 	}
 }
+
+// Los cinco ficheros que exporta Dashlane, cada uno con su cabecera.
+//
+// **Ésta es la prueba que faltaba y por la que el cliente se quedó a medias.**
+// Se importaron sus credenciales, salieron 65 entradas, y en Dashlane había más:
+// lo que no entraba eran las tarjetas y los documentos, porque el importador solo
+// sabía reconocer la forma de un CSV de credenciales y rechazaba los demás
+// enteros —«no reconozco ninguna columna»—.
+func TestLosCincoFicherosDeDashlane(t *testing.T) {
+	casos := []struct {
+		nombre  string
+		csv     string
+		forma   Forma
+		tipo    Tipo
+		revisar func(*testing.T, Entrada)
+	}{{
+		nombre: "credentials.csv",
+		csv: "username,username2,username3,title,password,note,url,category,otpSecret\n" +
+			"yo@ejemplo.com,,,Banco,s3cr3t0,una nota,https://banco.es,Finanzas,JBSWY3DP\n",
+		forma: FormaCredencial,
+		tipo:  TipoCredencial,
+		revisar: func(t *testing.T, e Entrada) {
+			if e.Titulo != "Banco" || e.Usuario != "yo@ejemplo.com" || e.Secreto != "s3cr3t0" {
+				t.Errorf("credencial mal leída: %+v", e)
+			}
+			if e.TOTP != "JBSWY3DP" || e.Carpeta != "Finanzas" {
+				t.Errorf("se ha perdido el segundo factor o la carpeta: %+v", e)
+			}
+		},
+	}, {
+		nombre: "securenotes.csv",
+		csv:    "title,note\nLa caja fuerte,la combinación es 1234\n",
+		forma:  FormaCredencial,
+		tipo:   TipoNota,
+		revisar: func(t *testing.T, e Entrada) {
+			if e.Notas != "la combinación es 1234" {
+				t.Errorf("nota mal leída: %+v", e)
+			}
+		},
+	}, {
+		nombre: "payments.csv",
+		csv: "type,account_name,account_holder,cc_number,code,expiration_month,expiration_year,country,issuing_bank\n" +
+			"credit_card,Visa de la empresa,Yo Mismo,4111 1111 1111 1111,737,09,2029,ES,Banco Malo\n",
+		forma: FormaTarjeta,
+		tipo:  TipoTarjeta,
+		revisar: func(t *testing.T, e Entrada) {
+			if e.Numero != "4111 1111 1111 1111" || e.Verificacion != "737" {
+				t.Errorf("tarjeta mal leída: %+v", e)
+			}
+			// Dashlane parte la caducidad en dos columnas y aquí es un campo.
+			if e.Caduca != "09/2029" {
+				t.Errorf("caducidad: %q, y quiero 09/2029", e.Caduca)
+			}
+			if e.Titular != "Yo Mismo" || e.Titulo != "Visa de la empresa" {
+				t.Errorf("titular o título: %+v", e)
+			}
+			if e.Carpeta != "Banco Malo" {
+				t.Errorf("el banco emisor hace de carpeta: %q", e.Carpeta)
+			}
+		},
+	}, {
+		nombre: "ids.csv",
+		csv: "type,number,name,issue_date,expiration_date,place_of_issue,state\n" +
+			"passport,ABC123456,Yo Mismo,2020-01-01,2030-01-01,Madrid,\n",
+		forma: FormaIdentidad,
+		tipo:  TipoIdentidad,
+		revisar: func(t *testing.T, e Entrada) {
+			if e.NumeroDocumento != "ABC123456" || e.Documento != "passport" {
+				t.Errorf("documento mal leído: %+v", e)
+			}
+			if e.NombreCompleto != "Yo Mismo" {
+				t.Errorf("el nombre no es el título de una cuenta: %+v", e)
+			}
+			// Lo que no tiene campo propio no se tira: se junta en las notas, y con
+			// el nombre de su columna delante para que se sepa de qué es.
+			if !strings.Contains(e.Notas, "Madrid") || !strings.Contains(e.Notas, "place_of_issue") {
+				t.Errorf("notas: %q", e.Notas)
+			}
+		},
+	}}
+
+	for _, c := range casos {
+		t.Run(c.nombre, func(t *testing.T) {
+			if f := FormaDeLaCabecera(cabeceraDe(c.csv)); f != c.forma {
+				t.Fatalf("forma %d, y quiero %d", f, c.forma)
+			}
+			entradas, _, err := Leer([]byte(c.csv), nil)
+			if err != nil {
+				t.Fatalf("no se ha podido leer: %v", err)
+			}
+			if len(entradas) != 1 {
+				t.Fatalf("%d entradas", len(entradas))
+			}
+			if entradas[0].Tipo != c.tipo {
+				t.Errorf("tipo %q, y quiero %q", entradas[0].Tipo, c.tipo)
+			}
+			c.revisar(t, entradas[0])
+		})
+	}
+}
+
+func cabeceraDe(csv string) []string {
+	return strings.Split(strings.SplitN(csv, "\n", 2)[0], ",")
+}
+
+// **Varias tarjetas no son la misma tarjeta.** Con la huella de una credencial
+// —sitio más usuario— todas tenían la misma, porque ninguna tiene ni sitio ni
+// usuario: importar cinco marcaba cuatro como duplicadas. Lo mismo con las notas.
+func TestVariasTarjetasYVariasNotasNoSonDuplicadas(t *testing.T) {
+	b, _, _ := nueva(t)
+
+	tarjetas := "type,account_name,cc_number,code,expiration_month,expiration_year\n" +
+		"credit_card,La azul,4111111111111111,111,01,2030\n" +
+		"credit_card,La negra,5555555555554444,222,02,2031\n" +
+		"credit_card,La de la empresa,378282246310005,333,03,2032\n"
+
+	entradas, _, err := Leer([]byte(tarjetas), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	metidas, duplicadas, err := b.Importar(entradas, "Dashlane")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if metidas != 3 || duplicadas != 0 {
+		t.Errorf("metidas %d, duplicadas %d; y son tres tarjetas distintas", metidas, duplicadas)
+	}
+
+	notas := "title,note\nUna,lo que sea\nOtra,otra cosa\n"
+	entradas, _, err = Leer([]byte(notas), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, duplicadas, err = b.Importar(entradas, "Dashlane"); err != nil {
+		t.Fatal(err)
+	}
+	if duplicadas != 0 {
+		t.Errorf("%d notas dadas por duplicadas, y son distintas", duplicadas)
+	}
+
+	// Y la misma tarjeta escrita de otra forma **sí** es la misma.
+	otraVez := "type,account_name,cc_number,code,expiration_month,expiration_year\n" +
+		"credit_card,La azul,4111 1111 1111 1111,111,01,2030\n"
+	entradas, _, err = Leer([]byte(otraVez), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, duplicadas, err = b.Importar(entradas, "Dashlane"); err != nil {
+		t.Fatal(err)
+	}
+	if duplicadas != 1 {
+		t.Error("la misma tarjeta con espacios no se ha reconocido como la misma")
+	}
+}
+
+// Lo que sale de la bóveda tiene que poder volver a entrar **de una vez**, con
+// tarjetas y documentos incluidos. Es la mitad de lo que significa poder salir.
+func TestLoExportadoVuelveAEntrarConTodo(t *testing.T) {
+	b, _, _ := nueva(t)
+
+	todo := []Entrada{
+		{Tipo: TipoCredencial, Titulo: "Banco", Usuario: "yo", Secreto: "s3cr3t0",
+			Sitios: []string{"https://banco.es"}, TOTP: "JBSWY3DP"},
+		{Tipo: TipoTarjeta, Titulo: "La azul", Titular: "Yo Mismo",
+			Numero: "4111111111111111", Caduca: "01/2030", Verificacion: "111"},
+		{Tipo: TipoIdentidad, Titulo: "Pasaporte", NombreCompleto: "Yo Mismo",
+			Documento: "passport", NumeroDocumento: "ABC123456"},
+		{Tipo: TipoNota, Titulo: "La caja fuerte", Notas: "la combinación es 1234"},
+	}
+	if _, _, err := b.Importar(todo, "una prueba"); err != nil {
+		t.Fatal(err)
+	}
+
+	var salida bytes.Buffer
+	if err := b.Exportar(&salida); err != nil {
+		t.Fatal(err)
+	}
+
+	// Se reconoce como nuestro y no como un CSV de tarjetas, que es lo que
+	// pasaría mirando solo la columna del número.
+	if f := FormaDeLaCabecera(cabeceraDe(salida.String())); f != FormaEsfinge {
+		t.Fatalf("lo nuestro se lee como forma %d", f)
+	}
+
+	vueltas, _, err := Leer(salida.Bytes(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vueltas) != len(todo) {
+		t.Fatalf("salieron %d y volvieron %d", len(todo), len(vueltas))
+	}
+
+	porTitulo := map[string]Entrada{}
+	for _, e := range vueltas {
+		porTitulo[e.Titulo] = e
+	}
+	for _, quiero := range todo {
+		tengo, hay := porTitulo[quiero.Titulo]
+		if !hay {
+			t.Errorf("«%s» no ha vuelto", quiero.Titulo)
+			continue
+		}
+		if tengo.Tipo != quiero.Tipo {
+			t.Errorf("«%s» vuelve como %q y salió como %q", quiero.Titulo, tengo.Tipo, quiero.Tipo)
+		}
+		if tengo.Secreto != quiero.Secreto || tengo.Numero != quiero.Numero ||
+			tengo.NumeroDocumento != quiero.NumeroDocumento || tengo.Notas != quiero.Notas {
+			t.Errorf("«%s» ha vuelto distinta: %+v", quiero.Titulo, tengo)
+		}
+	}
+}

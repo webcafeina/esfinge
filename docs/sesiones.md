@@ -5,6 +5,43 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · Dashlane no exporta un CSV, exporta cinco
+
+- **2.12.4.** El cliente importó `credentials.csv`, salieron 65 entradas y en Dashlane había más
+  cosas. No había ningún error por medio: **lo que faltaba eran los otros cuatro ficheros**, y el
+  importador los rechazaba enteros diciendo que no reconocía ninguna columna.
+- **La causa no era que faltaran alias, era que faltaba distinguir la forma del fichero.** Una misma
+  columna significa cosas distintas en cada uno: `number` es el número de una tarjeta en
+  `payments.csv` y el de un pasaporte en `ids.csv`; `type` es la clase de tarjeta allí y la clase de
+  documento aquí; `name` es el título de una cuenta en uno y el nombre de una persona en otro. Con
+  una sola tabla de alias eso no se resuelve: se acierta en un fichero y se falla en el otro.
+- Ahora `FormaDeLaCabecera` decide primero qué se está leyendo —por las columnas que **solo** salen
+  en una clase de fichero— y cada forma tiene su tabla, que pisa a la común. Con eso entran
+  credenciales, notas seguras, tarjetas y documentos, y el tipo de cada entrada se deduce **de los
+  campos que vengan rellenos**, no de lo que diga el fichero de sí mismo.
+- **Y de paso, dos cosas que estaban mal y no se veían:**
+  - **Todas las tarjetas eran duplicadas entre sí.** La huella de una entrada era «sitio + usuario»,
+    y una tarjeta no tiene ni lo uno ni lo otro: importar cinco marcaba cuatro como repetidas. Lo
+    mismo con las notas seguras. Cada clase se identifica ahora por lo suyo, y una tarjeta escrita
+    con espacios se reconoce como la misma que sin ellos.
+  - **Lo exportado no volvía a entrar entero.** El CSV de salida solo llevaba los campos de una
+    credencial. Ahora lleva todos y se reconoce como propio, porque una bóveda de la que no se puede
+    salir del todo es una trampa a medias.
+- **La ventana no decía nada de esto**, que es la mitad del fallo: ahora avisa de que algunos
+  gestores exportan varios ficheros y hay que traerlos uno a uno. Y si aun así uno no se reconoce, el
+  error **dice qué columnas traía**, para que añadirlo sea cosa de cinco minutos en vez de un
+  callejón sin salida.
+- **Un tercer fallo, encontrado por una prueba y no por una persona:** cambiar dos ajustes seguidos
+  perdía el primero. Go recibe el objeto entero, así que cada cambio manda también lo que no se ha
+  tocado; leyéndolo del estado de React, el segundo cambio parte del valor de antes porque entre uno
+  y otro todavía no se ha vuelto a dibujar. En pantalla los dos se veían puestos. En un ajuste que
+  apaga el bloqueo de la bóveda, eso no puede quedarse así.
+- Verificado: `make comprobar`, **66 pruebas de interfaz** y siete pruebas nuevas del importador, con
+  las cabeceras reales de los cinco ficheros de Dashlane.
+- **Lo que sigue sin saberse:** si `personalinfo.csv` —direcciones, teléfonos, fechas de nacimiento—
+  merece entrar. No son secretos, son datos de autorrelleno, y esa es una decisión de producto y no
+  de importador.
+
 ## 2026-09-09 · Tres cosas que solo aparecen usando la aplicación
 
 - **2.12.3: el diálogo de abrir no dejaba elegir ningún fichero en macOS.** El filtro «todos los

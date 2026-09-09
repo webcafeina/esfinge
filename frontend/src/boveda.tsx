@@ -889,6 +889,17 @@ function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
         />
       </div>
 
+      {/* **Esto no es una nota de cortesía.** Dashlane no exporta un fichero,
+          exporta uno por clase de dato, y quien trae solo el de las credenciales
+          se queda con la mitad de su gestor dentro y la otra mitad fuera sin que
+          nada se lo diga. Pasó de verdad: 65 entradas importadas y más cosas en
+          Dashlane, sin ningún error por medio. */}
+      <p className="nota">
+        Algunos gestores exportan <strong>varios ficheros</strong>: Dashlane saca uno por clase de
+        cosa —credenciales, notas seguras, tarjetas y documentos—. Tráelos uno a uno con este mismo
+        botón, y cada uno se reconoce por sus columnas.
+      </p>
+
       <div className="botones">
         <button onClick={importar} disabled={trabajando}>
           {trabajando ? "Leyendo…" : `Elegir la exportación de ${deDonde}…`}
