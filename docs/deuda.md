@@ -14,7 +14,9 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | La aplicación no se ha ejecutado en Windows ni en Linux | Media | En macOS está probada de sobra —diálogos, arrastrar y soltar, doble clic en un `.esf`, menús, estructura y vidrio—, pero en los otros dos sistemas todo lo visual sigue siendo una suposición | Abierto · depende del humano. Bajó de Alta a Media cuando la 2.10.0 cerró el frente de macOS |
 | El `.deb` no se puede instalar aquí | Media | Se puede inspeccionar con `dpkg -c`, pero instalarlo exige permisos que esta máquina no da | Abierto |
 | El instalador de Windows | Media | Se compila, pero nadie lo ha ejecutado | Abierto |
-| El portapapeles en Windows y Linux | Baja | Va por la API del navegador dentro del webview; en macOS está comprobado | Abierto |
+| El portapapeles en Windows y Linux | Baja | Va por la API del navegador dentro del webview; en macOS está comprobado. Desde la bóveda, además, **el borrado pasa por Go** (`Sistema.PonerEnPortapapeles`), que en Wails usa la API del sistema | Abierto |
+| **La bóveda no se ha usado con datos de verdad ni en un Mac** | **Alta** | Es lo más caro de toda esta lista. Se ha ejercitado entera desde un navegador contra el mismo Go —crear, importar cinco formatos, buscar, copiar, bloquear, recuperar— pero **ningún CSV de Dashlane de verdad ha pasado por ahí**, y de eso depende la decisión de seguir o parar ([ADR 0023](adr/0023-la-boveda.md)) | Abierto · depende del humano |
+| **Nadie de fuera ha auditado esto** | **Alta** | Para un cifrador puntual era una nota al pie; para un gestor de contraseñas publicado en GitHub es la primera pregunta que hará cualquiera. Está dicho en `docs/seguridad.md` | Abierto · decisión de producto |
 
 ## Técnica
 
@@ -24,6 +26,9 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | La interfaz construida se copia a `internal/interfaz/dist` | Baja | Un paso más en la compilación. `go:embed` no puede salir del directorio de su paquete | Aceptado |
 | El servidor de desarrollo publica los métodos por reflexión | Baja | Si un método cambia de firma, el fallo sale en tiempo de ejecución y no al compilar | Aceptado · solo existe tras la etiqueta `dev` |
 | No hay pruebas de la línea de comandos | Media | `internal/cli` no tenía ni un test: se comprobaba a mano en cada cambio | **Parcialmente saldada (2026-09-09)**: `conSalida` sí tiene pruebas —escribe con 0600, no pisa sin `--forzar`, no deja el fichero a medias, acepta `/dev/null`—, porque se le movieron las tripas a `internal/escritura` y hacer eso sin red es como se rompen las cosas en silencio. El resto de subcomandos sigue sin cubrir |
+| Los códigos de un solo uso (TOTP) no se calculan | Media | La bóveda **guarda la semilla** y la trae al importar, pero nadie calcula el código de seis cifras: se enseña la semilla y ya. Mientras eso no esté, los segundos factores se quedan en Dashlane, y con ellos media razón para no dejarlo | Abierto · [siguiente.md](siguiente.md) |
+| La papelera no se puede vaciar desde la ventana | Media | Borrar es borrado suave —hace falta para sincronizar después, porque «borrada aquí» y «nunca existió allí» son indistinguibles sin él— así que una entrada borrada **sigue en el fichero con su contraseña dentro**. Hoy la única forma de quitarla de verdad es no haberla metido | Abierto |
+| El JSON exterior de la bóveda no va autenticado en su conjunto | Baja | Quien pueda escribir el fichero no puede leer nada ni fabricar una bóveda que abra, pero sí estropearla o revertirla a una copia vieja. `comprobarCoherencia` lo **detecta** con un sello por dentro; no lo impide | Aceptado · [ADR 0023](adr/0023-la-boveda.md) |
 | Cifrar una tanda deriva la clave una vez por fichero | Baja | Es el precio de que cada contenedor lleve su sal, y no se va a quitar: compartir la derivación entre ficheros sería compartir la sal | Aceptado. Lo que sí se hizo es paralelizarlo, con tope de la mitad de los núcleos y máximo cuatro: veinte ficheros pasaron de 4,42 s a 1,29 s ([ADR 0018](adr/0018-tandas-en-paralelo.md)) |
 
 ## De producto
@@ -35,10 +40,23 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | `VersionVista` se escribe y no se lee | Baja | Se guarda en las preferencias «para no repetir el mismo aviso», y no hay ni un sitio que la consulte: el descarte de la banda es solo de la interfaz y no sobrevive al reinicio. O se usa o sobra | Abierto |
 | Gatekeeper avisa en macOS y Windows | Baja | El cliente ve un aviso de programa no identificado. Firmar cuesta 99 $/año y se decidió no hacerlo | Aceptado · [ADR 0012](adr/0012-sin-firmar.md). Bajó de Media a Baja al comprobarse que es **solo de la primera instalación**: al actualizarse desde dentro no aparece, porque la cuarentena la pone quien descarga y ahí descarga Go (2026-09-08) |
 | ~~El icono del documento `.esf` era el de la aplicación~~ | Baja | Un fichero cifrado y el programa que lo abre se veían igual: `build/esf.png` era una copia byte a byte de `build/appicon.png`, y en Linux el `.deb` apuntaba al icono de la aplicación | **Saldada (2026-09-08)**: `build/documento.svg` dibuja una hoja con la esquina doblada y la marca sobre una placa. **Comprobado en el Mac**, y la marca se centró en la hoja tras verlo puesto (2.10.2). En Windows sale del mismo PNG sin tocar nada; en Linux hizo falta instalar `application-x-esfinge.png` en `mimetypes/`, comprobado con `dpkg -c` (2.10.3). Sin ver todavía en Windows ni en GNOME de verdad |
-| ~~No hay barra de menús propia~~ | Baja | Sin atajos de teclado ni órdenes en la barra del sistema | **Saldada**: se construye entera y en español en los tres sistemas, con atajos ⌘1…⌘5. Los roles de Wails no servían porque traen los rótulos en inglés escritos a fuego, así que las acciones de edición las hace la ventana con una orden ([ADR 0015](adr/0015-menus-en-espanol.md)). Comprobado en el Mac, que era donde más riesgo había (2026-09-07) |
+| ~~No hay barra de menús propia~~ | Baja | Sin atajos de teclado ni órdenes en la barra del sistema | **Saldada**: se construye entera y en español en los tres sistemas, con atajos ⌘1…⌘6. Los roles de Wails no servían porque traen los rótulos en inglés escritos a fuego, así que las acciones de edición las hace la ventana con una orden ([ADR 0015](adr/0015-menus-en-espanol.md)). Comprobado en el Mac, que era donde más riesgo había (2026-09-07) |
 
 ## Saldada
 
+- ~~Un `EventSource` por oyente en el puente~~ → el navegador solo abre **seis conexiones** contra el
+  mismo origen y un flujo de eventos no termina nunca, así que a partir del sexto oyente **toda
+  llamada al puente se quedaba esperando para siempre**, sin error y sin petición en la red. Con
+  cinco la aplicación funcionaba; la bóveda trajo el sexto. Ahora hay una sola fuente para todos
+  (2026-09-09, 2.12.0).
+- ~~Un guardado de preferencias a medias apagaba el bloqueo de la bóveda~~ → `GuardarPreferencias`
+  recibe el objeto entero, así que un objeto incompleto llegaba con los plazos a cero; con el cero
+  significando «nunca», eso apagaba en silencio el bloqueo y el borrado del portapapeles. Ahora
+  «nunca» es `-1` y el cero conserva lo que hubiera (2026-09-09, 2.12.0).
+- ~~El portapapeles no se limpiaba nunca~~ → desde la 2.8.0, «Usar como clave» copiaba una contraseña
+  generada en claro y ahí se quedaba, cosa que `docs/seguridad.md` reconocía sin resolver. Ahora lo
+  borra un reloj de Go —no un temporizador del webview, que se pausa y muere al recargar— y **nunca
+  pisa lo que se haya copiado después** (2026-09-09, 2.12.0).
 - ~~El arrastrar y soltar no hacía nada~~ → el modo «zona» de Wails exige declarar una propiedad CSS
   que no se estaba declarando (2026-09-07, 2.0.1).
 - ~~Los símbolos de SF Symbols salían como cuadro vacío fuera de macOS~~ → `@supports` no sabe

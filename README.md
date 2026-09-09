@@ -53,8 +53,15 @@ se toca.
 **Genera contraseñas** en hexadecimal por defecto, que es el único alfabeto que se puede meter en
 una cadena de conexión sin que se rompa por un `/` ([por qué](docs/adr/0004-contrasenas-en-hexadecimal.md)).
 
+**Guarda contraseñas en una bóveda** cifrada, en este ordenador: credenciales, notas, tarjetas y
+documentos, con buscador, y trayéndose lo que ya tengas en Dashlane, Bitwarden, 1Password, LastPass
+o Chrome. Se cierra sola cuando llevas un rato sin tocarla y borra del portapapeles lo que copies.
+A diferencia de un `.esf`, aquí **sí hay una segunda llave**: una clave de recuperación que se
+enseña una sola vez, al crearla, para apuntarla en papel
+([cómo está hecha](docs/adr/0023-la-boveda.md)).
+
 **Lleva un historial** de qué se cifró y cuándo. Nunca el contenido, ni la clave, ni el texto
-cifrado.
+cifrado, ni nada de lo que haya en la bóveda.
 
 **Se actualiza sola**, o casi: avisa cuando hay versión nueva, se descarga el instalador de tu
 sistema comprobando que llegó entero, y lo abre. No hay que desinstalar nada. Es lo único que Esfinge
@@ -67,6 +74,7 @@ Y trae **línea de comandos** para lo mismo, pensada para tuberías y scripts:
 echo -n 'secreto' | esfinge cifrar --clave-env CLAVE
 esfinge cifrar -i credenciales.env -o credenciales.env.esf
 esfinge generar --bytes 32
+esfinge boveda ver banco          # la contraseña por la salida, para una tubería
 ```
 
 ## Lo único que hay que tener claro
@@ -74,6 +82,10 @@ esfinge generar --bytes 32
 **Sin la clave no hay forma de recuperar nada.** Esto no es una cuenta con «he olvidado mi
 contraseña»: si se pierde la clave, el contenido se ha perdido, y no hay nadie —tampoco
 Webcafeína— que pueda abrirlo.
+
+La bóveda es la única excepción, y por eso tiene su ceremonia: **la clave de recuperación es una
+segunda puerta a todo lo que hay dentro**. Guárdala como guardarías la contraseña maestra, y en
+otro sitio.
 
 Y manda el resultado y la clave por caminos distintos. Si van en el mismo correo, quien lea ese
 correo lo tiene todo.
@@ -83,6 +95,10 @@ correo lo tiene todo.
 XChaCha20-Poly1305 con Argon2id, en un contenedor versionado. Los ficheros van por segmentos, cada
 uno con su etiqueta y una marca en el último, que es lo que hace que un fichero cortado por la mitad
 se detecte en vez de descifrarse a medias y en silencio.
+
+La bóveda usa esas mismas piezas y ninguna nueva: es un JSON legible cuyos campos cifrados son
+líneas `ESF1.` corrientes. La contraseña maestra no cifra la bóveda —cifra la clave que la cifra—,
+así que cambiarla es volver a envolver 32 bytes y no recifrar nada.
 
 El código está publicado para poder auditarse: en algo que cifra, eso es parte del argumento.
 [Qué protege y qué no](docs/seguridad.md) · [Las decisiones, con su porqué](docs/decisiones.md)

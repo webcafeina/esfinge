@@ -5,9 +5,14 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.11.2**. Funciona de punta a punta: cifra y descifra textos y
-ficheros, genera contraseñas, guarda un historial de qué y cuándo, y se compila sola para macOS,
-Windows y Linux en GitHub Actions.
+comparte núcleo y formato. Va por la **2.12.0**. Funciona de punta a punta: cifra y descifra textos y
+ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
+y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
+
+Desde la 2.12.0 Esfinge **deja de ser un cifrador sin estado**. La bóveda es la fase 1 de sustituir a
+Dashlane, decidida con el cliente y con las fases 2 a 4 —autorrelleno, cuentas y compartir— sin
+empezar a propósito: se hace la primera, se usa a diario, y solo entonces se decide si las otras
+valen su coste.
 
 La 1.x fue una herramienta de terminal con menús. Esos menús se retiraron: su público —el cliente—
 tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete en tuberías y scripts.
@@ -24,7 +29,7 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   gestor de paquetes, que instala como root. Es la única conexión que hace el programa, dicha y
   apagable en Ajustes.
 - **Menús del sistema en español** en los tres sistemas, construidos a mano porque los roles de Wails
-  traen los rótulos en inglés escritos a fuego (ADR 0015). Con atajos ⌘1…⌘5 a las cinco pantallas.
+  traen los rótulos en inglés escritos a fuego (ADR 0015). Con atajos ⌘1…⌘6 a las seis pantallas.
 - **Apertura de un `.esf`** por doble clic o «Abrir con», que abre la pantalla que le toca según lo
   que lleve dentro: ficheros o texto.
 - **Línea de comandos**: intacta desde la 1.5.0, con sus códigos de salida distintos por caso.
@@ -44,8 +49,18 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   `▍ webcafeína` al fondo, la esfinge tenue en el historial vacío y la ficha de producto en Ajustes
   —que es lo que la ADR 0007 prometía y nunca se había construido—. Y el acento de la interfaz pasa a
   ser el oro del tocado en vez del azul del sistema.
+- **El formato `ESF1`, congelado con vectores fijos** (ADR 0022): once contenedores grabados una vez
+  y no vueltos a generar, más los de la 1.5.0 sellados con el código de entonces. Antes lo único que
+  decía congelarlo era un test que se miraba al espejo, y un cambio coherente en los dos sentidos
+  habría pasado en verde dejando de abrir lo ya emitido.
+- **La bóveda** (ADR 0023): local, cifrada, con clave de recuperación, cuatro clases de entrada,
+  historial de contraseñas anteriores, importación desde Dashlane, Bitwarden, 1Password, LastPass y
+  Chrome, exportación en claro para poder salir, bloqueo por inactividad y borrado del portapapeles.
+  Con su sección en la ventana, sus dos plazos en Ajustes y `esfinge boveda listar|ver|exportar` en
+  la línea de comandos. **No toca `internal/cripto`**, así que los `.esf` y las claves ya emitidos
+  siguen valiendo.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
-  máquina sin entorno gráfico. Son **50**.
+  máquina sin entorno gráfico. Son **60**.
 
 ## En curso
 
@@ -89,10 +104,14 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Mirar la 2.11.0 puesta en el Mac, y juzgar el oro.** Es lo único que importa ahora: la identidad
-entró en la ventana y todo lo que la sostiene está medido, pero medido no es visto. Lo primero que
-hay que juzgar es **la pastilla dorada de la fila activa**, que es el cambio más visible; y si el
-ámbar de los avisos y el oro de la marca se estorban en la pantalla de cifrar.
+**Usar la bóveda de verdad, con datos de verdad, en el Mac.** Es la puerta de decisión del plan: si
+la bóveda no se usa a diario, las fases 2 a 4 no se empiezan. El camino a recorrer es el que nadie ha
+recorrido todavía: exportar de Dashlane, importar aquí, apuntar la clave de recuperación, y vivir con
+ella una semana. **Nada de esto se ha probado con datos reales ni en un Mac**; aquí solo se ha
+ejercitado con un navegador contra el mismo Go.
+
+Y de paso, juzgar el oro de la 2.11.0 puesto: la identidad entró en la ventana y todo lo que la
+sostiene está medido, pero medido no es visto.
 
 Después, y sin prisa, sigue pendiente abrir la aplicación en **Windows** y en **GNOME** de verdad.
 
@@ -111,6 +130,10 @@ Ninguno técnico. Lo pendiente son comprobaciones que solo puede hacer el humano
 Queda una, y es de código publicado que no se puede ejercitar aquí: en esta máquina no hay Windows ni
 GNOME con la aplicación puesta, y lo visual no se afirma desde una compilación en verde.
 
+- **¿Se usa la bóveda?** Es la única pregunta que decide las fases 2 a 4, y no la contesta ninguna
+  prueba: la contesta el uso. Con ella hay que mirar tres cosas que aquí no se pueden ver: si el
+  CSV de Dashlane se importa entero y bien, si el bloqueo a los quince minutos molesta o tranquiliza,
+  y si copiar una contraseña con el borrado a los treinta segundos llega a tiempo de pegarla.
 - **¿Cómo queda el oro puesto, en un Mac?** Es la pregunta de la 2.11.0, y sobre todo por **la
   pastilla dorada de la fila activa**: es el cambio más visible de todos, cumple de sobra —8,38:1— y
   es la gramática del icono, pero eso lo dice el cálculo y no el ojo. Si canta, el repliegue está

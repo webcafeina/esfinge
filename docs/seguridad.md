@@ -1,6 +1,6 @@
 # Seguridad
 
-Última actualización: **2026-09-07**
+Última actualización: **2026-09-09**
 
 Qué protege Esfinge y qué no. En una herramienta que cifra, lo segundo importa tanto como lo
 primero: una expectativa equivocada sobre lo que protege es exactamente lo que hace daño.
@@ -55,7 +55,7 @@ Esto es lo importante de este documento.
   gestor de contraseñas sin dar un rodeo— pero la diferencia importa: lo que queda en el portapapeles
   es la llave, no el candado.
 
-  **Desde la 3.0 el portapapeles se borra solo** pasado el plazo que diga Ajustes, y eso arregla ese
+  **Desde la 2.12.0 el portapapeles se borra solo** pasado el plazo que diga Ajustes, y eso arregla ese
   agujero. Con dos límites que conviene saber: solo se borra **si sigue conteniendo lo que Esfinge
   puso** —nunca se pisa lo que se haya copiado después—, y un gestor de portapapeles del sistema, o
   el Portapapeles Universal de Apple, ya se lo pueden haber llevado a otro sitio. Eso no lo puede

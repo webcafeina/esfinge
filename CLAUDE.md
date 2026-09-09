@@ -101,7 +101,14 @@ No se cambian sin preguntar.
   la costumbre de Go para los errores; manda lo que se ve en pantalla. Lo vigila
   `internal/cripto/textos_test.go`.
 - **El historial guarda solo qué y cuándo**: nunca el contenido, la clave ni el texto cifrado. Vive
-  en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar.
+  en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar. **La bóveda no
+  escribe en él**, y es una regla absoluta: `credenciales-dashlane.csv` ahí sería una señal de
+  tráfico apuntando a lo que alguien acaba de exportar en claro.
+- **Hay una bóveda de contraseñas**, local y cifrada, con clave de recuperación (ADR 0023). Es la
+  fase 1 de sustituir a Dashlane, y **cambia lo que el producto es**: hasta ahora un fallo perdía un
+  fichero; ahora puede perder todas las contraseñas de la empresa. Eso sube el listón de las pruebas
+  y de la prisa antes de cada publicación. Lo que **no** hace: navegador, móvil, cuentas, servidor y
+  compartir en equipo.
 - **Al cifrar un texto se copia solo al portapapeles**; al descifrar no, porque ahí lo que sale es
   el secreto en claro.
 - **Guardar usa el diálogo del sistema**, y los diálogos **recuerdan su carpeta**: una para abrir y
@@ -122,7 +129,23 @@ No se cambian sin preguntar.
 servidor de desarrollo los publica por reflexión, sin listas que mantener — que es cómodo hasta que
 se exporta algo que no debería poder pedirse desde la ventana. Por eso `comprobarAlArrancar` va en
 minúscula y `ApuntarAAPI` es función y no método: dejar que la interfaz apunte la actualización a
-donde quiera sería abrir una puerta por comodidad.
+donde quiera sería abrir una puerta por comodidad. Desde la bóveda **hay una lista blanca que lo
+vigila** (`TestLoQueCruzaElPuenteEstaEnLaLista`): con contraseñas dentro, un método de más puede ser
+la clave maestra saliendo por ahí, y acordarse dejó de ser defensa suficiente.
+
+**Un solo flujo de eventos para todos los oyentes, y esto no es una optimización.** El navegador solo
+abre **seis conexiones** contra el mismo origen y un flujo de eventos no termina nunca: con un
+`EventSource` por suscripción, a partir del sexto oyente **toda llamada al puente se queda esperando
+para siempre**, sin error, sin petición en la red y sin nada que mirar. Con cinco la aplicación
+funcionaba; la bóveda trajo el sexto y el síntoma fue un botón de copiar que no hacía nada. Solo pasa
+en el navegador: en la ventana los reparte Wails por dentro.
+
+**En las preferencias, el cero es «no lo he dicho».** `GuardarPreferencias` recibe el objeto entero,
+así que un guardado a medias —mandar solo `{"buscarActualizaciones":true}`, que es lo que hace una
+prueba— llega con todos los números a cero al deserializar. Si el cero significara «nunca», ese
+descuido **apagaría el bloqueo de la bóveda y el borrado del portapapeles en silencio**. Por eso
+«nunca» viaja como `-1` (`app.Nunca`) y el cero conserva lo que hubiera. Vale para cualquier campo
+numérico que se añada.
 
 **Ahora hay red en el binario del cliente.** Hasta la 2.0.3 no la había: el único `net/http` estaba
 tras la etiqueta `dev`. Es una petición GET al día a `api.github.com`, y está documentada en
@@ -206,6 +229,14 @@ prueba que lo vigila porque esos empates vuelven solos.
 contenido llega hasta arriba y ya no hay nada que agarrar: hay que declarar las zonas con
 `--wails-draggable: drag` —la barra lateral y la de herramientas— y desmarcar los botones con
 `no-drag`. Si se olvida, la ventana se queda clavada en la pantalla.
+
+**El servidor de desarrollo aísla su carpeta de configuración** (`cmd/dev`, la opción `-config`).
+Hasta la bóveda escribía el historial y las preferencias en la carpeta de verdad de quien desarrolla,
+que era molesto y poco más. Con una bóveda dentro deja de serlo: las pruebas crearían una con una
+contraseña maestra que está escrita en el fichero de pruebas, en el mismo sitio donde va la de
+verdad. La carpeta es nueva en cada arranque del servidor, así que **la bóveda de las pruebas
+sobrevive entre pruebas y entre temas** pero no entre tandas: el fichero de pruebas la crea o la
+abre, según lo que encuentre.
 
 **En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de

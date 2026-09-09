@@ -5,6 +5,51 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-09 · La bóveda: Esfinge deja de ser un cifrador sin estado
+
+- **2.12.0.** El cliente quiere sustituir Dashlane poco a poco. Se valoró entero —bóveda,
+  autorrelleno, cuentas, servidor y compartir— y la conclusión fue que **eso no es ampliar Esfinge,
+  es construir Dashlane**. Se hace la fase 1 y se para ahí: si la bóveda no se usa a diario, las
+  otras tres no se empiezan.
+- **Antes de nada, la fase 0: congelar el formato** (ADR 0022). El único test que decía congelar
+  `ESF1` se miraba al espejo —ciframos y desciframos en el momento— así que un cambio coherente en
+  los dos sentidos habría pasado en verde dejando de abrir lo ya emitido, en silencio. Ahora hay once
+  vectores grabados una vez, tres rotos a propósito, y contenedores sellados **con el código de la
+  1.5.0 de verdad**, sacado con `git archive`. Se comprobó que el test se pone rojo ante un cambio de
+  ese tipo antes de darlo por bueno.
+- **La bóveda no toca `internal/cripto`** (ADR 0023), y ésa es la decisión de la que cuelga todo lo
+  demás: es un JSON legible cuyos campos cifrados son líneas `ESF1.` corrientes. La idea evidente
+  —un contenedor cuyo contenido sea la bóveda— no vale, porque la clave de recuperación exige dos
+  entradas independientes al mismo secreto y en la cabecera de 55 bytes solo cabe una sal. Lo que se
+  gana: **los `.esf` y las claves ya emitidos siguen valiendo**, y las ranuras quedan como lista
+  abierta para Touch ID o un servidor, sin migrar nada.
+- La contraseña maestra **no cifra la bóveda**: cifra la clave que la cifra. Cambiarla es volver a
+  envolver 32 bytes, y hay un test que comprueba que **el cuerpo queda byte a byte idéntico**.
+- Piezas: escritura atómica con `fsync` en su propio paquete, importación de Dashlane, Bitwarden,
+  1Password, LastPass y Chrome —por nombre de columna, no por posición—, exportación en claro para
+  poder salir, bloqueo por inactividad, borrado del portapapeles, sección en la ventana, dos plazos
+  en Ajustes y `esfinge boveda listar|ver|exportar`.
+- **Tres fallos encontrados por el camino, y ninguno era de la bóveda:**
+  - **Una conexión de eventos por oyente.** El navegador solo abre seis contra el mismo origen y un
+    flujo de eventos no termina nunca: con el sexto oyente **toda llamada al puente se quedaba
+    esperando para siempre**, sin error y sin petición en la red. Con cinco funcionaba. El síntoma
+    fue un botón de copiar que no hacía nada, y costó encontrarlo porque no había nada que mirar.
+  - **Un guardado a medias apagaba los dos relojes.** `GuardarPreferencias` recibe el objeto entero,
+    así que un `{"buscarActualizaciones":true}` —que es lo que manda una prueba de hace versiones—
+    dejaba los plazos a cero al deserializar; con el cero significando «nunca», eso apagaba el
+    bloqueo de la bóveda en silencio. Ahora «nunca» es `-1` y el cero conserva lo que hubiera.
+  - **Una errata en la clave de recuperación se contaba como «no abre».** El comentario prometía la
+    distinción y el código se comía el error de la suma de control. La prueba que había le preguntaba
+    a `Normalizar`, no al camino por el que pasa la persona.
+- Y el servidor de desarrollo **aísla ya su carpeta de configuración**: sin eso, estas pruebas
+  dejarían una bóveda con una contraseña que está escrita en el fichero de pruebas en la carpeta de
+  verdad de quien desarrolla.
+- Verificado: `make comprobar` con `-race`, `make contraste`, y **60 pruebas de interfaz** en los dos
+  temas —diez más—. Medido y no estimado: 20.000 entradas se guardan en 92 ms y se abren en 276 ms.
+- **Lo que no se ha comprobado, y es lo que importa ahora**: nada de la bóveda se ha usado con datos
+  de verdad ni en un Mac. Y sigue sin haber auditoría externa, que para un cifrador era una nota al
+  pie y para un gestor de contraseñas es la primera pregunta que hará cualquiera.
+
 ## 2026-09-09 · La identidad entra en la ventana
 
 - **2.11.0.** La aplicación no tenía una sola marca en ningún píxel, y ahora la tiene: lockup de
