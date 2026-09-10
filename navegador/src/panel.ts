@@ -93,7 +93,12 @@ function conPlazo<T>(promesa: Promise<T>): Promise<T> {
 function queHacer(motivo: Motivo | undefined, error: string | undefined): string {
   switch (motivo) {
     case "sin-esfinge":
-      return "Esfinge no está abierta, o su canal con el navegador está apagado en Ajustes.";
+      // **El texto de dentro, no una frase fija.** Aquí es donde el trabajador
+      // mete lo que dice el navegador al negarse a lanzar el puente, y es lo
+      // único que distingue «no encuentro el manifiesto» de «no puedo ejecutar
+      // eso» de «se ha muerto». Tenerlo y no enseñarlo —que es lo que hacía esta
+      // línea— es el mismo error de todo el día con otra cara.
+      return error ?? "Esfinge no está abierta, o su canal está apagado en sus Ajustes.";
     case "sin-emparejar":
       return "Permite este navegador en la ventana de Esfinge, en Ajustes, y vuelve a abrir esto.";
     case "cerrada":
