@@ -5,6 +5,45 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-10 · La entrega 2: Esfinge rellena, y en la página no dibuja nada
+
+- **2.18.0.** Con una cuenta guardada del sitio, rellena sola al cargar la página; con varias, desde
+  el panel, que gana un botón «Rellenar» delante de los de copiar. Un verbo nuevo en el canal
+  (`rellenar`), un guion de página, la detección de campos y el freno propio de rellenar.
+- **La decisión de forma, y es la de la entrega** ([ADR 0028](adr/0028-rellenar-en-la-pagina.md)): en
+  la página **no se dibuja nada**. Ni desplegable sobre el campo, ni icono dentro, ni marco flotante.
+  Un desplegable propio dentro de la página de otro obliga a un marco de nuestro origen, a pelearse
+  con el `z-index` de cada sitio y a demostrar que la página no lo puede leer ni pulsar; todo eso es
+  trabajo y todo eso es superficie **en todas las páginas**. Con una cuenta no hace falta elegir; con
+  varias, un clic en un sitio seguro es un precio razonable hasta saber cuántas veces pasa de verdad.
+  Se revisa con el uso, y está en `docs/deuda.md` para no olvidarlo.
+- **Dos propiedades de la entrega 1 se rompen a conciencia**, dichas enteras en `docs/seguridad.md`:
+  por el canal **ya sale una contraseña de verdad** —para escribirla en un campo hay que tenerla, y
+  eso **no hereda el borrado del portapapeles**— y **hay código nuestro en cada página `https`**.
+- **Y salió un fallo de la entrega 1 sin buscarlo: el freno no frenaba nada.** El contador de sesenta
+  preguntas por minuto —el que impedía reconstruir la lista de sitios de la bóveda con un diccionario
+  de dominios, que es justo lo que la ADR 0024 decidió cifrar en el disco— vivía **en la conexión**, y
+  la extensión abre **una conexión por petición**. Cada pregunta llegaba con el contador a cero. La
+  prueba estaba en verde porque le pasaba un contador hecho a mano a sesenta llamadas seguidas, que es
+  el caso que no ocurre. Ahora los frenos cuelgan del servidor y la prueba abre una conexión por
+  pregunta. **La regla que sale:** antes de escribir un contador, preguntarse cuánto vive la cosa
+  donde se guarda.
+- **Verificado aquí**, y es lo único de la entrega que puede hacer daño: **qué campo se rellena**, en
+  un Chromium de verdad y contra el fuente compilado en memoria, no una copia. Doce casos, y **media
+  tabla son casos donde lo correcto es no rellenar nada**: el buscador de la cabecera, el formulario
+  de registrarse, el escondido en todas las páginas, el de un píxel, el campo de texto suelto. Más
+  que escribir vale donde el formulario es de React, que es la trampa que ya costó versiones en casa
+  y que ahí fuera es la norma. Y la tubería entera, de los bytes del navegador al fichero de la
+  bóveda, ahora incluida la contraseña. `make comprobar` verde y 84 e2e verdes.
+- **Sin verificar, y es lo que queda:** si los campos de un banco de verdad se detectan; si rellenar
+  solo resulta demasiado —y entonces hace falta un interruptor en Ajustes, no afinar a ciegas—; si un
+  clic más en el panel molesta con varias cuentas; y si en Firefox hay que conceder el permiso de
+  sitio a mano, que en MV3 no se da al instalar. Si hace falta, la extensión lo dice con una frase que
+  explica dónde, en vez de callarse.
+- Y una anotada de paso: la prueba e2e de la clave de recuperación **falló una vez y no se reprodujo
+  en tres tandas**. Las pruebas comparten bóveda dentro de una tanda, así que el resultado depende del
+  orden. A `docs/deuda.md`.
+
 ## 2026-09-10 · Seis versiones por una palabra que faltaba en una lista
 
 - **De la 2.17.1 a la 2.17.6**, todas persiguiendo el mismo síntoma: la extensión instalada en

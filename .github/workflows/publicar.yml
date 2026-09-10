@@ -74,11 +74,33 @@ jobs:
           pnpm exec playwright install --with-deps chromium
           pnpm exec playwright test
 
+      # **Y la extensión, que hasta la 2.18.0 esta puerta no miraba.**
+      #
+      # Es el mismo agujero que costó seis versiones con los vectores del formato,
+      # con otra cara: `make comprobar` sí ejercitaba la extensión —los tipos y,
+      # desde la 2.17.6, que el manifiesto declare lo que el código usa—, pero esta
+      # puerta repite los pasos a mano en vez de llamar a `make`, y ese trozo no se
+      # copió. Una comprobación que la publicación no ejecuta no es una puerta.
+      #
+      # Y desde la entrega 2 pesa más: aquí es donde se comprueba **qué campo se
+      # rellena**, que es lo único de esa entrega que puede hacer daño.
+      #
+      # El navegador ya lo ha instalado el paso de arriba, pero se pide igual: este
+      # espacio de trabajo trae su propio Playwright y puede querer otra versión.
+      - name: Comprobaciones de la extensión
+        working-directory: navegador
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec playwright install chromium
+          pnpm run comprobar
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: informe-pruebas
-          path: frontend/playwright-report/
+          path: |
+            frontend/playwright-report/
+            navegador/playwright-report/
           retention-days: 7
 
   macos:
