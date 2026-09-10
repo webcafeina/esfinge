@@ -1126,6 +1126,33 @@ p {
   letter-spacing: 0.02em;
 }
 
+/* El código de un solo uso se lee para teclearlo en otro sitio, casi siempre
+ * mirando la pantalla y contra reloj. De ahí las tres cosas que lo separan de
+ * cualquier otro dato: monoespaciada de cifras iguales, tamaño de titular, y
+ * partido en dos grupos con un hueco —el hueco lo pone este `gap` y no un
+ * espacio en el texto, para que al seleccionarlo se copien las seis cifras
+ * seguidas—. */
+.dato.codigo-unico {
+  display: flex;
+  gap: var(--espacio-2);
+  font-family: var(--fuente-mono);
+  font-size: var(--titulo);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  user-select: text;
+  cursor: auto;
+  margin-bottom: var(--espacio-2);
+}
+
+/* Y su barra **mide lo que miden las cifras que hay encima**, que es lo que
+ * está midiendo. De borde a borde de la tarjeta se leía como un separador de
+ * sección, no como una cuenta atrás. Se vio en una captura. */
+.codigo-restante {
+  max-width: 148px;
+  margin-bottom: var(--espacio-1);
+}
+
 /* La clave de recuperación se enseña una sola vez, así que se enseña **grande y
  * en monoespaciada**: hay que poder copiarla a mano en un papel sin dudar entre
  * un cero y una O. El alfabeto de Crockford ya quita las letras que se

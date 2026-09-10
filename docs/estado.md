@@ -1,11 +1,11 @@
 # Estado
 
-Última actualización: **2026-09-09**
+Última actualización: **2026-09-10**
 
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.14.3**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.15.0**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -26,8 +26,9 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   ficheros, arrastrar y soltar, diálogos del sistema, historial e generador de contraseñas.
 - **Actualizaciones dentro de la aplicación**: aviso, descarga comprobada con SHA256 y, en macOS y
   Windows, **reemplazo y reinicio sin que nadie arrastre nada** (ADR 0016). En Linux se le pasa al
-  gestor de paquetes, que instala como root. Es la única conexión que hace el programa, dicha y
-  apagable en Ajustes.
+  gestor de paquetes, que instala como root. Fue la única conexión que hacía el programa hasta la
+  2.14.0; ahora son dos, con la de los iconos (ADR 0024). Las dos están dichas y se apagan en Ajustes,
+  y `ESFINGE_SIN_RED` las apaga todas.
 - **Menús del sistema en español** en los tres sistemas, construidos a mano porque los roles de Wails
   traen los rótulos en inglés escritos a fuego (ADR 0015). Con atajos ⌘1…⌘6 a las seis pantallas.
 - **Apertura de un `.esf`** por doble clic o «Abrir con», que abre la pantalla que le toca según lo
@@ -58,14 +59,25 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   Chrome —cada gestor exporta **varios ficheros** y cada uno se reconoce por su forma—, exportación
   en claro para poder salir, bloqueo por inactividad, borrado del portapapeles y borrado de la bóveda
   entera pidiendo la maestra. Con su sección en la ventana, sus dos plazos en Ajustes y
-  `esfinge boveda listar|ver|exportar` en la línea de comandos. **No toca `internal/cripto`**, así que
-  los `.esf` y las claves ya emitidos siguen valiendo.
+  `esfinge boveda listar|ver|codigo|exportar` en la línea de comandos. **No toca `internal/cripto`**,
+  así que los `.esf` y las claves ya emitidos siguen valiendo.
+- **Los códigos de un solo uso** (ADR 0025): la bóveda calcula el código de seis cifras a partir de la
+  semilla que ya guardaba, con su cuenta atrás en la ventana y con `esfinge boveda codigo` para los
+  scripts. `internal/codigos`, sin dependencias, con los vectores de RFC 4226 y RFC 6238 enteros.
+  Con eso se va la última cosa que obligaba a tener Dashlane abierto —y entra la consecuencia
+  incómoda: **el segundo factor pasa a vivir al lado de la contraseña**, dicho tal cual en
+  `docs/seguridad.md`.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
-  máquina sin entorno gráfico. Son **76**.
+  máquina sin entorno gráfico. Son **78**.
 
 ## En curso
 
-Nada a medias. La 2.12.0 salió con la bóveda y de usarla salieron cinco versiones seguidas de
+Nada a medias. La 2.15.0 cierra los códigos de un solo uso, que era lo acordado para esta sesión, y
+de paso una que salió al mirar la papelera: **borrar una nota segura o una tarjeta dejaba su
+contenido dentro del fichero**, porque la lista de campos sensibles estaba escrita en dos sitios y
+solo uno estaba completo.
+
+La 2.12.0 salió con la bóveda y de usarla salieron cinco versiones seguidas de
 correcciones —2.12.1 a 2.12.5—, todas de cosas que **solo aparecen usando la aplicación en un Mac**:
 pegar con ⌘V, copiar de un campo de contraseña, el filtro del diálogo de abrir, el importador que
 solo entendía una forma de fichero y una negrita que partía los avisos en columnas. Ninguna se
@@ -114,17 +126,18 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Seguir con las fases de Dashlane**, que es lo acordado para la próxima sesión. Lo que hay sobre la
-mesa, por orden de lo que más acerca a dejar Dashlane:
+**Probar un código de un solo uso contra una cuenta de verdad**, con Dashlane todavía instalado al
+lado. Es lo único que decide si los segundos factores están mudados, y no lo puede contestar ninguna
+prueba de aquí: los vectores de los dos RFC dicen que el algoritmo está bien —y una implementación de
+fuera da el mismo código en el mismo instante—, pero no dicen que **la semilla que Dashlane exportó
+sea la que el servicio espera**.
 
-1. **Los códigos de un solo uso (TOTP).** La bóveda ya guarda la semilla y la trae al importar, pero
-   **nadie calcula el código de seis cifras**. Mientras eso falte, los segundos factores se quedan
-   allí y con ellos media razón para no dejarlo. Es un algoritmo estándar, sin dependencias, y encaja
-   en lo que ya hay: es lo primero que haría.
-2. **La papelera no se puede vaciar.** Borrar es borrado suave —hace falta para sincronizar después—
-   así que una entrada borrada **sigue en el fichero con su contraseña dentro**. Es pequeño y es una
-   promesa a medias.
-3. **La fase 2, el autorrelleno.** Es la que de verdad decide si se deja Dashlane, y también la más
+Después, por orden de lo que más acerca a dejar Dashlane:
+
+1. **Vaciar la papelera**, que sigue sin poderse. Ya no es lo que era: desde la 2.15.0 el borrado se
+   lleva **todos** los secretos y no solo la contraseña, así que lo que queda dentro del fichero es el
+   título, el usuario, los sitios y las etiquetas de lo borrado. Es pequeño.
+2. **La fase 2, el autorrelleno.** Es la que de verdad decide si se deja Dashlane, y también la más
    grande de todas: código nuevo en otro lenguaje, tres extensiones, tres tiendas con revisión, y
    **sin final** —cada cambio de los navegadores hay que seguirlo—. Safari además está bloqueado sin
    la cuenta de Apple. Antes de empezarla conviene releer la valoración del plan.

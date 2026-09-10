@@ -5,6 +5,41 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-10 · Los códigos de un solo uso, y una nota borrada que no se iba
+
+- **2.15.0.** La bóveda calcula los códigos de un solo uso. Guardaba la semilla desde el primer día y
+  la traía al importar de Dashlane, pero nadie calculaba las seis cifras: lo que se veía en pantalla
+  era la semilla en base32, que no sirve para entrar en ningún sitio. Con esto se va **lo último que
+  obligaba a tener Dashlane abierto** (ADR 0025).
+- **`internal/codigos`**, sin dependencias: TOTP sobre HOTP con la biblioteca estándar. En la ventana
+  sale destapado —caduca en treinta segundos y hay que poder teclearlo mirando— con su cuenta atrás,
+  y en la línea de comandos como `esfinge boveda codigo <búsqueda>`, que es lo que le faltaba a un
+  script para no tener que coger el teléfono.
+- **Y la consecuencia incómoda, dicha donde toca:** el segundo factor pasa a vivir **al lado de la
+  contraseña**, así que una bóveda abierta entrega los dos. Contra quien tiene la maestra, el segundo
+  factor deja de serlo. Se hace igual porque la alternativa realista no era tenerlos separados, era
+  tenerlos juntos en Dashlane. Está en `docs/seguridad.md` en esos términos.
+- **De mirar la papelera salió un fallo que no venía a buscar:** borrar una entrada limpiaba la
+  contraseña, el TOTP y el historial —el secreto de **una credencial**— y dejaba enteros el texto de
+  una nota segura, el número de una tarjeta y el de un documento. Se quedaban dentro del fichero para
+  siempre. La causa: la lista de campos sensibles estaba escrita **en dos sitios** y solo uno estaba
+  completo. Ahora hay una función y la prueba borra una entrada de cada clase.
+- **Verificado**: los vectores de RFC 4226 y RFC 6238 enteros —los diez contadores y los ocho
+  instantes, con SHA-1, SHA-256 y SHA-512, cada uno con su semilla—; el recorrido desde la bóveda con
+  el reloj parado; que **pedir el código no mantiene la bóveda abierta** —treinta peticiones y se
+  cierra igual—; `make comprobar`, `make contraste`, `-race` en bóveda y app, y **78** pruebas de
+  interfaz en los dos temas. Y a mano, el mismo código en el mismo instante que tres líneas de
+  Python.
+- **De mirar una captura salió una corrección**, otra vez: la barra de la cuenta atrás cruzaba la
+  tarjeta de lado a lado y se leía como un separador de sección. Ahora mide lo que miden las cifras.
+- **Una prueba que fallaba una de cada varias veces, arreglada en vez de reintentada:** la del orden
+  de la lista leía los nombres con `allInnerTexts` justo después de guardar, y guardar vuelve a pedir
+  la lista. Contar tres no salvaba —ya eran tres antes—. Ahora se afirma sobre el localizador, que
+  reintenta.
+- **Queda abierto, y es lo primero:** probar un código contra **una cuenta de verdad**. Los vectores
+  dicen que el algoritmo está bien; no dicen que la semilla que Dashlane exportó sea la que el
+  servicio espera.
+
 ## 2026-09-09 · Los gestores, también en trazo
 
 - **2.14.3.** Los cinco gestores de «Traer de otro gestor» llevan ya su glifo, en el mismo trazo

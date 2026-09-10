@@ -55,7 +55,10 @@ una cadena de conexión sin que se rompa por un `/` ([por qué](docs/adr/0004-co
 
 **Guarda contraseñas en una bóveda** cifrada, en este ordenador: credenciales, notas, tarjetas y
 documentos, con buscador, y trayéndose lo que ya tengas en Dashlane, Bitwarden, 1Password, LastPass
-o Chrome. Se cierra sola cuando llevas un rato sin tocarla y borra del portapapeles lo que copies.
+o Chrome. **Calcula también los códigos de un solo uso**, así que el segundo factor deja de estar en
+otro programa —con lo que eso tiene de bueno y de malo, dicho
+[aquí](docs/seguridad.md#lo-que-cambia-con-la-bóveda)—. Se cierra sola cuando llevas un rato sin
+tocarla y borra del portapapeles lo que copies.
 A diferencia de un `.esf`, aquí **sí hay una segunda llave**: una clave de recuperación que se
 enseña una sola vez, al crearla, para apuntarla en papel
 ([cómo está hecha](docs/adr/0023-la-boveda.md)).
@@ -78,6 +81,7 @@ echo -n 'secreto' | esfinge cifrar --clave-env CLAVE
 esfinge cifrar -i credenciales.env -o credenciales.env.esf
 esfinge generar --bytes 32
 esfinge boveda ver banco          # la contraseña por la salida, para una tubería
+esfinge boveda codigo banco       # las seis cifras del segundo factor
 ```
 
 ## Lo único que hay que tener claro

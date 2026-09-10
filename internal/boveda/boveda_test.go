@@ -339,22 +339,52 @@ func TestLaBusquedaNoMiraLosSecretos(t *testing.T) {
 }
 
 func TestBorrarDejaRastroPeroNoElSecreto(t *testing.T) {
-	b, _, _ := nueva(t)
+	b, _, ruta := nueva(t)
+	// **Una de cada clase**, y esa es la gracia de la prueba: mientras solo se
+	// probó con una credencial, el borrado limpiaba la contraseña y dejaba
+	// enteros el texto de una nota segura y el número de una tarjeta, que son el
+	// secreto de esas clases.
 	b.Poner(Entrada{Titulo: "Fuera", Secreto: "s3cr3t0", TOTP: "ABCD"})
-	id := b.Buscar("")[0].ID
+	b.Poner(Entrada{Titulo: "Nota", Tipo: TipoNota, Notas: "la combinación es 4242"})
+	b.Poner(Entrada{Titulo: "Tarjeta", Tipo: TipoTarjeta,
+		Numero: "4111111111111111", Verificacion: "737"})
+	b.Poner(Entrada{Titulo: "Documento", Tipo: TipoIdentidad, NumeroDocumento: "12345678Z"})
 
-	if err := b.Borrar(id); err != nil {
-		t.Fatal(err)
+	for _, e := range b.Buscar("") {
+		if err := b.Borrar(e.ID); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if b.Cuantas() != 0 {
-		t.Error("sigue contando como viva")
+		t.Error("siguen contando como vivas")
 	}
-	e, hay := b.Ver(id)
-	if !hay {
-		t.Fatal("el borrado suave tiene que dejar rastro para poder sincronizar")
+
+	// **Se comprueba sobre lo guardado, no sobre lo que quedó en memoria**: lo
+	// que importa es que el secreto no siga dentro del fichero, y una entrada
+	// limpia en memoria con el fichero sin reescribir se vería igual desde aquí.
+	b.Cerrar()
+	b, err := Abrir(ruta, maestra)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if e.Secreto != "" || e.TOTP != "" || e.Historial != nil {
-		t.Error("la papelera guarda que existió, no lo que valía")
+
+	rastro := 0
+	for _, e := range b.cont.Entradas {
+		if !e.Papelera {
+			t.Errorf("«%s» no está en la papelera", e.Titulo)
+		}
+		if e.Titulo == "" {
+			t.Error("el rastro no dice ni qué era")
+		}
+		rastro++
+		if e.Secreto != "" || e.TOTP != "" || e.Historial != nil ||
+			e.Notas != "" || e.Numero != "" || e.Verificacion != "" ||
+			e.NumeroDocumento != "" {
+			t.Errorf("«%s» se ha guardado con su secreto dentro: %+v", e.Titulo, e)
+		}
+	}
+	if rastro != 4 {
+		t.Errorf("la papelera guarda %d entradas de 4", rastro)
 	}
 }
 

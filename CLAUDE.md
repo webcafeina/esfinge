@@ -104,6 +104,10 @@ No se cambian sin preguntar.
   en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar. **La bóveda no
   escribe en él**, y es una regla absoluta: `credenciales-dashlane.csv` ahí sería una señal de
   tráfico apuntando a lo que alguien acaba de exportar en claro.
+- **Y la bóveda calcula los códigos de un solo uso** (ADR 0025), lo que la convierte también en el
+  autenticador. Con la consecuencia que hay que decir en voz alta y está en `docs/seguridad.md`:
+  **una bóveda abierta entrega la contraseña y el segundo factor a la vez**. Se hace igual porque la
+  alternativa realista no era tenerlos separados, era tenerlos juntos en Dashlane.
 - **Hay una bóveda de contraseñas**, local y cifrada, con clave de recuperación (ADR 0023). Es la
   fase 1 de sustituir a Dashlane, y **cambia lo que el producto es**: hasta ahora un fallo perdía un
   fichero; ahora puede perder todas las contraseñas de la empresa. Eso sube el listón de las pruebas
@@ -169,6 +173,28 @@ eso:
   a la primera.
 - **El goteo no llama a `Actividad()`.** Si lo hiciera, la bóveda no se cerraría nunca mientras baja
   iconos y el bloqueo por inactividad dejaría de significar lo que dice.
+
+**Y eso ya es una regla y no un detalle de un caso: lo que se repite solo no cuenta como actividad.**
+Apareció con el goteo de iconos y ha vuelto con el código de un solo uso, que la ventana vuelve a
+pedir cada treinta segundos mientras haya una entrada abierta. Con una sola de esas dos cosas tocando
+el reloj, una bóveda abierta encima de la mesa **no se cierra nunca**. La prueba que lo vigila pide el
+código treinta veces con el reloj corriendo y comprueba que se cierra igual.
+
+**Cualquier cadena de letras es base32 válida, así que una semilla mal copiada no se detecta.** Lo que
+sí se puede detectar —y hay que hacerlo a mano— es que le falte o le sobre un carácter: **el
+descifrador de Go no comprueba el largo cuando no hay relleno**, y un grupo final de un solo carácter
+no le parece un error, así que devuelve los bytes anteriores como si nada y la semilla entra entera.
+Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
+no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
+
+**Los campos sensibles de una entrada estaban escritos en dos sitios, y solo uno estaba completo.**
+Lo que viaja a la ventana en la lista y lo que se limpia al mandar una entrada a la papelera son la
+misma lista y se mantenían por separado: la de borrar quitaba la contraseña, el TOTP y el historial
+—el secreto de **una credencial**— y dejaba enteros el texto de una nota segura, el número de una
+tarjeta y el de un documento, que son el secreto entero de las otras tres clases. Se quedaban dentro
+del fichero para siempre. Ahora hay una sola función (`vaciarLoSensible`), y la prueba borra **una
+entrada de cada clase** y vuelve a abrir el fichero para mirar lo guardado, no lo que quedó en
+memoria.
 
 **Y `ESFINGE_SIN_RED` es ahora un freno de verdad** (`internal/red`). Antes lo miraba solo la línea de
 comandos y la ventana no lo consultaba nunca, así que quien lo ponía apagaba media red.

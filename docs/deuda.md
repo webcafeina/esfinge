@@ -1,6 +1,6 @@
 # Deuda y cabos sueltos
 
-Última actualización: **2026-09-09**
+Última actualización: **2026-09-10**
 
 Lo que sabemos que está a medias, mal o sin comprobar. Los bloqueantes primero. Lo saldado se tacha
 y se queda.
@@ -27,9 +27,9 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | La interfaz construida se copia a `internal/interfaz/dist` | Baja | Un paso más en la compilación. `go:embed` no puede salir del directorio de su paquete | Aceptado |
 | El servidor de desarrollo publica los métodos por reflexión | Baja | Si un método cambia de firma, el fallo sale en tiempo de ejecución y no al compilar | Aceptado · solo existe tras la etiqueta `dev` |
 | No hay pruebas de la línea de comandos | Media | `internal/cli` no tenía ni un test: se comprobaba a mano en cada cambio | **Parcialmente saldada (2026-09-09)**: `conSalida` sí tiene pruebas —escribe con 0600, no pisa sin `--forzar`, no deja el fichero a medias, acepta `/dev/null`—, porque se le movieron las tripas a `internal/escritura` y hacer eso sin red es como se rompen las cosas en silencio. El resto de subcomandos sigue sin cubrir |
-| Los códigos de un solo uso (TOTP) no se calculan | Media | La bóveda **guarda la semilla** y la trae al importar, pero nadie calcula el código de seis cifras: se enseña la semilla y ya. Mientras eso no esté, los segundos factores se quedan en Dashlane, y con ellos media razón para no dejarlo | Abierto · [siguiente.md](siguiente.md) |
+| ~~Los códigos de un solo uso (TOTP) no se calculan~~ | Media | La bóveda guardaba la semilla y la traía al importar, pero nadie calculaba el código de seis cifras: se enseñaba la semilla, que no sirve para entrar en ningún sitio | **Saldada en la 2.15.0**: `internal/codigos`, sin dependencias, con los vectores de RFC 4226 y RFC 6238 enteros. En la ventana con su cuenta atrás y en `esfinge boveda codigo` ([ADR 0025](adr/0025-los-codigos-de-un-solo-uso.md)). Lo que no puede decir ninguna prueba: si abre una cuenta de verdad |
 | `personalinfo.csv` de Dashlane no se importa | Baja | Direcciones, teléfonos y fechas de nacimiento. No son secretos sino datos de autorrelleno, así que meterlos en una bóveda es una decisión de producto por tomar y no un fallo del importador. Si se intenta, el fichero se rechaza diciendo qué columnas trae | Abierto |
-| La papelera no se puede vaciar desde la ventana | Media | Borrar es borrado suave —hace falta para sincronizar después, porque «borrada aquí» y «nunca existió allí» son indistinguibles sin él— así que una entrada borrada **sigue en el fichero con su contraseña dentro**. Hoy la única forma de quitarla de verdad es no haberla metido | Abierto |
+| La papelera no se puede vaciar desde la ventana | Baja | Borrar es borrado suave —hace falta para sincronizar después, porque «borrada aquí» y «nunca existió allí» son indistinguibles sin él— así que de una entrada borrada se quedan dentro del fichero el título, el usuario, los sitios y las etiquetas, para siempre y sin forma de quitarlos. **Los secretos ya no**, desde la 2.15.0. Bajó de Media a Baja por eso | Abierto |
 | El JSON exterior de la bóveda no va autenticado en su conjunto | Baja | Quien pueda escribir el fichero no puede leer nada ni fabricar una bóveda que abra, pero sí estropearla o revertirla a una copia vieja. `comprobarCoherencia` lo **detecta** con un sello por dentro; no lo impide | Aceptado · [ADR 0023](adr/0023-la-boveda.md) |
 | Cifrar una tanda deriva la clave una vez por fichero | Baja | Es el precio de que cada contenedor lleve su sal, y no se va a quitar: compartir la derivación entre ficheros sería compartir la sal | Aceptado. Lo que sí se hizo es paralelizarlo, con tope de la mitad de los núcleos y máximo cuatro: veinte ficheros pasaron de 4,42 s a 1,29 s ([ADR 0018](adr/0018-tandas-en-paralelo.md)) |
 
@@ -46,6 +46,12 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~Borrar una nota segura o una tarjeta dejaba su contenido dentro del fichero~~ → el borrado suave
+  limpiaba la contraseña, el TOTP y el historial, que es el secreto de **una credencial**. El texto de
+  una nota segura, el número de una tarjeta, su código de verificación y el número de un documento
+  —que son el secreto entero de esas otras tres clases— se quedaban tal cual, para siempre y sin
+  forma de sacarlos. Había dos listas de campos sensibles en dos sitios y solo una estaba completa;
+  ahora hay una (2026-09-10, 2.15.0).
 - ~~El goteo de iconos no guardaba nada hasta terminar la tanda~~ → casi cuatro minutos antes de que
   apareciera el primero, y quien cerraba la bóveda antes no se llevaba ninguno ni de los ya
   descargados. Se guarda y se avisa uno a uno (2026-09-09, 2.14.2).

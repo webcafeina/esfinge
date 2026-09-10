@@ -697,10 +697,10 @@ func (b *Boveda) Borrar(id string) error {
 			b.cont.Entradas[i].Papelera = true
 			b.cont.Entradas[i].BorradaEn = time.Now().UTC().Format(time.RFC3339)
 			// Los secretos se van del todo: la papelera guarda que existió, no lo
-			// que valía.
-			b.cont.Entradas[i].Secreto = ""
-			b.cont.Entradas[i].TOTP = ""
-			b.cont.Entradas[i].Historial = nil
+			// que valía. **Y son todos, no solo la contraseña**: el texto de una
+			// nota segura y el número de una tarjeta son el secreto entero de esa
+			// clase de entrada, y se quedaban dentro del fichero.
+			b.cont.Entradas[i].vaciarLoSensible()
 			b.cuerpoSucio = true
 			return b.guardar()
 		}

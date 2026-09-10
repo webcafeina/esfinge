@@ -165,6 +165,20 @@ export type EntradaBoveda = {
   numeroDocumento?: string;
 };
 
+/**
+ * El código de un solo uso de una entrada, ya calculado.
+ *
+ * **Lo que cruza el puente son las seis cifras, no la semilla**: el código
+ * caduca en treinta segundos y la semilla es el segundo factor entero.
+ */
+export type CodigoDeUnSoloUso = {
+  codigo: string;
+  /** Segundos que le quedan de vida. */
+  quedan: number;
+  /** Cuánto dura entero, para poder dibujar qué fracción queda. */
+  periodo: number;
+};
+
 /** Lo que hace falta saber para decidir qué pantalla de la bóveda se enseña. */
 export type EstadoBoveda = {
   existe: boolean;
@@ -326,6 +340,15 @@ export const esfinge = {
 
   /** Una entrada entera, con su secreto. De una en una a propósito. */
   verDeBoveda: (id: string) => llamar<EntradaBoveda>("VerDeBoveda", id),
+
+  /**
+   * El código de un solo uso que vale **ahora**, calculado en Go.
+   *
+   * Se pide de nuevo cada vez que caduca, y por eso **no cuenta como
+   * actividad** al otro lado: si contara, una entrada abierta encima de la mesa
+   * mantendría la bóveda abierta para siempre.
+   */
+  codigoDeBoveda: (id: string) => llamar<CodigoDeUnSoloUso>("CodigoDeBoveda", id),
 
   guardarEnBoveda: (e: EntradaBoveda) => llamar<void>("GuardarEnBoveda", e),
 

@@ -34,6 +34,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0022](adr/0022-vectores-fijos.md) | El formato se congela con vectores fijos, no con un test que se mira al espejo | 2026-09-09 | aceptada · revisar si sube la versión del contenedor |
 | [0023](adr/0023-la-boveda.md) | La bóveda: Esfinge pasa de cifrar secretos a custodiarlos | 2026-09-09 | aceptada · matiza la 0010 |
 | [0024](adr/0024-iconos-de-los-sitios.md) | Los iconos de los sitios, y la segunda conexión | 2026-09-09 | aceptada · matiza la 0014 |
+| [0025](adr/0025-los-codigos-de-un-solo-uso.md) | Los códigos de un solo uso, en la misma bóveda | 2026-09-10 | aceptada · matiza la 0023 |
 
 ## Cuándo escribir una
 

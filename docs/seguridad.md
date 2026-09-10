@@ -79,6 +79,15 @@ un fallo perdía un fichero; ahora puede perderlas todas. Lo que hay que tener c
   la misma limitación de siempre —Go no permite borrar una cadena— pero aquí la ventana es mucho más
   larga. Se acorta con el bloqueo por inactividad, que va a quince minutos por defecto, y
   mandando a la ventana **una contraseña cada vez**, solo cuando se pide, en vez de la lista entera.
+- **El segundo factor está al lado de la contraseña, y eso le quita parte de su gracia.** Desde la
+  2.15.0 la bóveda calcula los códigos de un solo uso, así que **una bóveda abierta entrega la
+  contraseña y el código a la vez** y quien tenga la contraseña maestra los tiene los dos. Contra
+  ese atacante concreto el segundo factor deja de ser un segundo factor. Contra el que se inventó
+  —una contraseña filtrada en la brecha de un servicio, que es lo que pasa el 99 % de las veces—
+  sigue valiendo entero. Se hace así porque la alternativa realista no era tenerlos separados: era
+  tenerlos juntos en Dashlane ([ADR 0025](adr/0025-los-codigos-de-un-solo-uso.md)). Quien quiera de
+  verdad dos factores separados tiene que dejar la semilla fuera de aquí, en un teléfono o en una
+  llave física, y eso Esfinge no lo puede decidir por nadie.
 - **Los iconos van cifrados aunque un icono sea público.** Lo que hay que ocultar no es el dibujo: es
   **la lista de sitios**. Una carpeta con `banco.es.png` y `hacienda.es.png` diría qué hay dentro de
   la bóveda, y hashear los nombres no salvaría nada.

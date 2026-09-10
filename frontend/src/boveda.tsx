@@ -713,7 +713,7 @@ function Detalle({
         <Dato etiqueta="Usuario" valor={entrada.usuario} />
         <Secreto etiqueta="Contraseña" valor={entrada.secreto} />
         <Dato etiqueta="Sitios" valor={entrada.sitios?.join("\n")} />
-        <Secreto etiqueta="Semilla del código de un solo uso" valor={entrada.totp} />
+        {entrada.totp && <CodigoDeUnSoloUso id={entrada.id} />}
 
         <Dato etiqueta="Titular" valor={entrada.titular} />
         <Secreto etiqueta="Número de la tarjeta" valor={entrada.numero} />
@@ -765,6 +765,124 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor?: string }) {
       <label>{etiqueta}</label>
       <p className="dato seleccionable">{valor}</p>
     </div>
+  );
+}
+
+/**
+ * El código de un solo uso, contando hacia atrás.
+ *
+ * **Se enseña destapado, y es a propósito.** Todo lo demás de esta pantalla va
+ * bajo puntos suspensivos porque sirve para siempre; esto caduca en treinta
+ * segundos y hay que poder teclearlo mirando la pantalla, que es exactamente lo
+ * que hace cualquier autenticador. Lo que sigue tapado —y ni siquiera aparece
+ * aquí— es **la semilla**, que es el segundo factor entero y vive en el editor.
+ *
+ * Las cifras las calcula Go y llegan hechas. Lo único que lleva la ventana es la
+ * cuenta atrás, y **cuando llega a cero vuelve a pedirlas**: no se calcula el
+ * siguiente código de memoria, porque el reloj bueno es el de Go y aquí no hay
+ * ninguna semilla con la que hacerlo.
+ */
+function CodigoDeUnSoloUso({ id }: { id: string }) {
+  const [codigo, setCodigo] = useState("");
+  const [periodo, setPeriodo] = useState(30);
+  const [quedan, setQuedan] = useState(0);
+  const [error, setError] = useState("");
+  const [dicho, setDicho] = useState("");
+
+  const pedir = useCallback(async () => {
+    try {
+      const c = await esfinge.codigoDeBoveda(id);
+      setCodigo(c.codigo);
+      setPeriodo(c.periodo || 30);
+      setQuedan(c.quedan);
+      setError("");
+    } catch (e) {
+      setCodigo("");
+      setError(mensaje(e));
+    }
+  }, [id]);
+
+  useEffect(() => {
+    pedir();
+  }, [pedir]);
+
+  // El tic va contra `quedan` y no contra un intervalo suelto: un intervalo que
+  // se reprograma solo acaba multiplicándose cuando la pantalla se vuelve a
+  // dibujar, y entonces hay cuatro relojes pidiendo el código a la vez.
+  useEffect(() => {
+    if (error) return;
+    if (quedan <= 0) {
+      // Un pelín después del cambio de intervalo: pedirlo justo en el borde
+      // devuelve a veces el código de antes, con cero segundos de vida, y la
+      // pantalla se queda pidiéndolo en bucle.
+      const t = setTimeout(pedir, 250);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setQuedan((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [quedan, error, pedir]);
+
+  async function copiar() {
+    try {
+      await esfinge.copiar(codigo);
+      setDicho("Copiado");
+    } catch (e) {
+      setDicho(mensaje(e));
+    }
+  }
+
+  return (
+    <div>
+      <div className="fila">
+        <label style={{ marginBottom: 0 }}>Código de un solo uso</label>
+        {codigo && (
+          <button className="discreto" onClick={copiar}>
+            Copiar
+          </button>
+        )}
+      </div>
+
+      {error ? (
+        // Se dice lo que pasa en vez de no enseñar nada: una semilla que no se
+        // entiende y una entrada sin semilla se ven igual desde aquí, y el
+        // arreglo de cada una es distinto.
+        <p className="aviso">{error}</p>
+      ) : (
+        <>
+          <p className="dato codigo-unico">{enGrupos(codigo)}</p>
+          <div
+            className="barra-progreso codigo-restante"
+            aria-hidden="true"
+            title={`Vale ${quedan} segundos más`}
+          >
+            <i style={{ width: `${(quedan / periodo) * 100}%` }} />
+          </div>
+          <p className="nota">Vale {quedan} s más</p>
+        </>
+      )}
+
+      {dicho && <p className="exito">{dicho}</p>}
+    </div>
+  );
+}
+
+/**
+ * Parte el código por la mitad para poder leerlo de un vistazo, como hace
+ * cualquier autenticador.
+ *
+ * **Sin meter un espacio de verdad**: son dos trozos separados por CSS, así que
+ * quien seleccione las cifras con el ratón se lleva las seis seguidas y no
+ * «123 456», que en el campo del servicio no vale.
+ */
+function enGrupos(codigo: string) {
+  if (!codigo) return null;
+  if (codigo.length % 2 !== 0) return <span>{codigo}</span>;
+  const mitad = codigo.length / 2;
+  return (
+    <>
+      <span>{codigo.slice(0, mitad)}</span>
+      <span>{codigo.slice(mitad)}</span>
+    </>
   );
 }
 

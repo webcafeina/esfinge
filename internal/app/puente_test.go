@@ -56,6 +56,10 @@ var loQuePuedeCruzarElPuente = []string{
 	// lista se vuelve a pedir en cada tecla del buscador, y meterlos ahí sería
 	// mandarlos todos por el puente en cada pulsación.
 	"IconosDeBoveda",
+	// El código de un solo uso se calcula en Go y cruza **ya calculado**: lo que
+	// sale por aquí son seis cifras que caducan en treinta segundos, no la
+	// semilla, que es el segundo factor entero.
+	"CodigoDeBoveda",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

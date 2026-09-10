@@ -837,6 +837,47 @@ test("copiar un secreto dice cuándo va a borrarse solo", async ({ page }) => {
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+// El código de un solo uso, que es lo que ata a un gestor de contraseñas cuando
+// todo lo demás ya se puede llevar uno.
+//
+// La semilla es la de los vectores del RFC, así que el código que sale de aquí
+// lo puede comprobar cualquiera con cualquier autenticador.
+test("el código de un solo uso sale calculado y contando atrás", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const semilla = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+  const titulo = `Segundo factor ${Date.now()}`;
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(titulo);
+  await page.locator("#boveda-secreto").fill("s3cr3t0");
+  await page.locator("#boveda-totp").fill(semilla);
+  await accion(page, "Guardar").click();
+
+  await page.locator(".lista-boveda").getByRole("button", { name: titulo }).click();
+
+  const codigo = page.locator(".codigo-unico");
+  await expect(codigo).toBeVisible({ timeout: 20_000 });
+
+  // **Seis cifras seguidas en el texto**, aunque en pantalla se vean en dos
+  // grupos: el hueco lo pone el CSS, y quien las seleccione con el ratón se
+  // lleva lo que el servicio espera, no «123 456».
+  expect(await codigo.evaluate((n) => n.textContent ?? "")).toMatch(/^\d{6}$/);
+
+  // Y la semilla **no está en la pantalla**. Es el segundo factor entero: se
+  // enseña el código, que caduca en treinta segundos, no lo que lo genera.
+  expect(await page.locator(".contenido").innerText()).not.toContain("GEZDGNBV");
+
+  // La cuenta atrás corre de verdad. Se mira que cambie, no que baje: entre las
+  // dos lecturas puede haber saltado de intervalo y volver a treinta.
+  const cuanto = page.getByText(/^Vale \d+ s más$/);
+  const antes = await cuanto.innerText();
+  await expect(cuanto).not.toHaveText(antes, { timeout: 5_000 });
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 test("la clave de recuperación abre la bóveda", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
@@ -1139,13 +1180,14 @@ test("la lista sale ordenada por nombre, y el orden se puede cambiar", async ({ 
     await accion(page, "Guardar").click();
   }
 
-  const nombres = page.locator(".lista-boveda .nombre");
-  await expect(nombres.filter({ hasText: String(sello) })).toHaveCount(3);
-
-  const enPantalla = async () =>
-    (await nombres.allInnerTexts()).filter((n) => n.includes(String(sello)));
-
-  expect(await enPantalla()).toEqual([`Áaa ${sello}`, `Mmm ${sello}`, `Yyy ${sello}`]);
+  // **Se afirma con `expect` sobre el localizador y no leyendo los textos a
+  // mano**, y no es una preferencia de estilo: leerlos devuelve lo que hubiera
+  // en pantalla en ese instante, y guardar una entrada vuelve a pedir la lista,
+  // así que la lectura puede llegar antes que la lista nueva. Contar tres
+  // tampoco salva —ya eran tres antes de guardar—. Esta forma reintenta hasta
+  // que el orden es el que se espera, que es lo que hay que comprobar.
+  const nombres = page.locator(".lista-boveda .nombre").filter({ hasText: String(sello) });
+  await expect(nombres).toHaveText([`Áaa ${sello}`, `Mmm ${sello}`, `Yyy ${sello}`]);
 
   // Por lo último cambiado: lo que se acaba de tocar sube arriba.
   //
@@ -1164,13 +1206,12 @@ test("la lista sale ordenada por nombre, y el orden se puede cambiar", async ({ 
   await accion(page, "Editar").click();
   await page.locator("#boveda-notas").fill("tocada la última");
   await accion(page, "Guardar").click();
-  // Guardar vuelve a la lista y **la vuelve a pedir**: hay que esperar a que esté
-  // otra vez, o se lee la pantalla a medio dibujar.
-  await expect(nombres.filter({ hasText: String(sello) })).toHaveCount(3);
-  expect((await enPantalla())[0]).toBe(`Yyy ${sello}`);
+  // Guardar vuelve a la lista y **la vuelve a pedir**: hay que esperar a que la
+  // de después esté puesta, o se lee la de antes.
+  await expect(nombres.first()).toHaveText(`Yyy ${sello}`);
 
   await page.locator("#boveda-orden").selectOption("nombre");
-  expect(await enPantalla()).toEqual([`Áaa ${sello}`, `Mmm ${sello}`, `Yyy ${sello}`]);
+  await expect(nombres).toHaveText([`Áaa ${sello}`, `Mmm ${sello}`, `Yyy ${sello}`]);
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });

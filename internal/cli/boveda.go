@@ -6,10 +6,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/webcafeina/esfinge/internal/boveda"
+	"github.com/webcafeina/esfinge/internal/codigos"
 	"github.com/webcafeina/esfinge/internal/cripto"
 )
 
@@ -57,6 +59,7 @@ func comandoBoveda(o *opciones) *cobra.Command {
 	cmd.AddCommand(
 		comandoBovedaListar(o, &ob),
 		comandoBovedaVer(o, &ob),
+		comandoBovedaCodigo(o, &ob),
 		comandoBovedaExportar(o, &ob),
 	)
 	return cmd
@@ -117,21 +120,10 @@ func comandoBovedaVer(o *opciones, ob *opcionesBoveda) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			candidatas := b.Buscar(args[0])
-			switch len(candidatas) {
-			case 0:
-				return fmt.Errorf("No hay nada en la bóveda que encaje con «%s»", args[0])
-			case 1:
-			default:
-				var nombres []string
-				for _, e := range candidatas {
-					nombres = append(nombres, e.Titulo)
-				}
-				return fmt.Errorf("«%s» encaja con %d entradas (%s); afina la búsqueda",
-					args[0], len(candidatas), strings.Join(nombres, ", "))
+			entera, err := unaSola(b, args[0])
+			if err != nil {
+				return err
 			}
-
-			entera, _ := b.Ver(candidatas[0].ID)
 			if ob.json {
 				return escribirJSON(entera)
 			}
@@ -142,6 +134,94 @@ func comandoBovedaVer(o *opciones, ob *opcionesBoveda) *cobra.Command {
 			}
 			return nil
 		},
+	}
+}
+
+// comandoBovedaCodigo saca el código de un solo uso, que es lo que ata a un
+// gestor de contraseñas cuando todo lo demás ya se puede llevar uno.
+//
+// Aquí gana el mismo sueldo que en la ventana y uno más: en un script, el
+// segundo factor era lo único que obligaba a coger el teléfono.
+func comandoBovedaCodigo(o *opciones, ob *opcionesBoveda) *cobra.Command {
+	return &cobra.Command{
+		Use:   "codigo <búsqueda>",
+		Short: "Calcula el código de un solo uso de una entrada",
+		Long: "Escribe las seis cifras por la salida estándar, sin nada más.\n\n" +
+			"Se calculan aquí a partir de la semilla que guarda la bóveda: no se\n" +
+			"pregunta a nadie ni hace falta red. Si la máquina lleva el reloj\n" +
+			"desviado más de medio minuto, el código no valdrá y eso no hay forma\n" +
+			"de detectarlo desde este lado.",
+		Example:       "  esfinge boveda codigo banco",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(_ *cobra.Command, args []string) error {
+			b, err := abrirBoveda(o, ob)
+			if err != nil {
+				return err
+			}
+			entera, err := unaSola(b, args[0])
+			if err != nil {
+				return err
+			}
+			if entera.TOTP == "" {
+				return fmt.Errorf("«%s» no tiene código de un solo uso guardado", entera.Titulo)
+			}
+			s, err := codigos.Leer(entera.TOTP)
+			if err != nil {
+				return err
+			}
+			ahora := time.Now()
+			codigo, err := s.En(ahora)
+			if err != nil {
+				return err
+			}
+
+			if ob.json {
+				return escribirJSON(map[string]any{
+					"codigo":  codigo,
+					"quedan":  int(s.Quedan(ahora).Seconds()),
+					"periodo": int(s.Periodo.Seconds()),
+				})
+			}
+			// Sin salto ni adornos: esto va a una tubería.
+			fmt.Print(codigo)
+			if aTerminal(os.Stdout) {
+				fmt.Println()
+				// Y cuando hay alguien mirando, cuánto le queda de vida. Un código
+				// con dos segundos por delante y sin avisar es un viaje en balde a
+				// la pantalla del servicio.
+				e, err := estilos(o.tema)
+				if err == nil && !o.silencio {
+					fmt.Fprintln(os.Stderr, e.Info(fmt.Sprintf("Vale %d segundos más.",
+						int(s.Quedan(ahora).Seconds()))))
+				}
+			}
+			return nil
+		},
+	}
+}
+
+// unaSola encuentra la entrada que se pide, o dice por qué no.
+//
+// **No adivina cuando hay varias**, y es deliberado: sacar la contraseña
+// equivocada por una tubería es peor que no sacar ninguna, porque el fallo
+// aparece al otro lado y sin nada que lo explique.
+func unaSola(b *boveda.Boveda, q string) (boveda.Entrada, error) {
+	candidatas := b.Buscar(q)
+	switch len(candidatas) {
+	case 0:
+		return boveda.Entrada{}, fmt.Errorf("No hay nada en la bóveda que encaje con «%s»", q)
+	case 1:
+		entera, _ := b.Ver(candidatas[0].ID)
+		return entera, nil
+	default:
+		var nombres []string
+		for _, e := range candidatas {
+			nombres = append(nombres, e.Titulo)
+		}
+		return boveda.Entrada{}, fmt.Errorf("«%s» encaja con %d entradas (%s); afina la búsqueda",
+			q, len(candidatas), strings.Join(nombres, ", "))
 	}
 }
 

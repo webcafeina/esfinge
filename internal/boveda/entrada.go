@@ -135,6 +135,20 @@ func (e Entrada) Coincide(q string) bool {
 // borrado de búferes junto, porque en cuanto algo cruza a la interfaz vive en el
 // montón del webview, fuera de nuestro alcance.
 func (e Entrada) SinSecretos() Entrada {
+	e.vaciarLoSensible()
+	return e
+}
+
+// vaciarLoSensible quita de la entrada todo lo que hay que proteger.
+//
+// **Está en un solo sitio a propósito**, y lo usan dos caminos que parecen
+// distintos y no lo son: lo que viaja en la lista hacia la ventana y lo que
+// queda en la papelera al borrar. Con dos listas separadas ya pasó lo que tenía
+// que pasar: la de borrar solo quitaba la contraseña, el TOTP y el historial, y
+// **una nota segura borrada se quedaba entera dentro del fichero**, igual que el
+// número de una tarjeta. Añadir un campo sensible y acordarse de dos sitios es
+// una defensa que dura hasta la siguiente prisa.
+func (e *Entrada) vaciarLoSensible() {
 	e.Secreto = ""
 	e.TOTP = ""
 	e.Historial = nil
@@ -142,7 +156,6 @@ func (e Entrada) SinSecretos() Entrada {
 	e.Numero = ""
 	e.NumeroDocumento = ""
 	e.Notas = ""
-	return e
 }
 
 // ---------------------------------------------------------------------------

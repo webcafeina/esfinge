@@ -1,15 +1,17 @@
 # Lo siguiente
 
-Última actualización: **2026-09-09**
+Última actualización: **2026-09-10**
 
 Por prioridad. Lo cerrado se tacha y se queda, con la fecha: saber qué se descartó vale tanto como
 saber qué se hizo.
 
 ## Alta
 
-- **Los códigos de un solo uso (TOTP)**, que han subido desde «media» porque son lo que más ata a
-  Dashlane: la bóveda guarda la semilla y no calcula el código, así que los segundos factores siguen
-  allí. Es lo primero de la próxima sesión, acordado con el cliente.
+- **Probar un código de un solo uso contra una cuenta de verdad.** Los vectores de los dos RFC dicen
+  que el algoritmo está bien, y una implementación de fuera da el mismo código en el mismo instante;
+  lo que no dicen es que **la semilla que Dashlane exportó sea la que el servicio espera**. Eso solo
+  se sabe entrando en un sitio, y hasta que se sepa, los segundos factores no se pueden dar por
+  mudados. Conviene hacerlo con Dashlane todavía instalado al lado.
 - **Vivir con la bóveda unos días.** Los datos ya están dentro —la exportación de Dashlane entra
   entera— y la clave de recuperación ya se ha usado de verdad, así que lo que queda no es una
   comprobación sino uso. Era la puerta de decisión del plan para las fases 2 a 4 —autorrelleno,
@@ -22,10 +24,10 @@ saber qué se hizo.
 
 ## Media
 
-- ~~Códigos de un solo uso (TOTP)~~ → **subido a Alta**: es lo acordado para la próxima sesión.
 - **La papelera no se puede vaciar desde la ventana.** Borrar es borrado suave —hace falta para
-  sincronizar después— así que una entrada borrada sigue en el fichero con su contraseña dentro. Hoy
-  la única forma de quitarla de verdad es no tenerla.
+  sincronizar después—, así que de una entrada borrada se quedan el título, el usuario, los sitios y
+  las etiquetas dentro del fichero, para siempre. Ya no se quedan los secretos, que era la mitad
+  grave de esto (2026-09-10).
 
 ## Baja
 
@@ -35,6 +37,11 @@ saber qué se hizo.
 
 ## Cerrado
 
+- ~~Los códigos de un solo uso (TOTP)~~ → hechos en la 2.15.0, en la ventana y en la línea de
+  comandos, con `internal/codigos` y sin dependencias nuevas. Con ellos se va la última cosa que
+  obligaba a tener Dashlane abierto, y con ellos entra también la consecuencia incómoda: el segundo
+  factor pasa a vivir al lado de la contraseña, dicho tal cual en `docs/seguridad.md` y en la
+  [ADR 0025](adr/0025-los-codigos-de-un-solo-uso.md) (2026-09-10).
 - ~~Ver que la banda de versión nueva sale sola~~ → **sale**, con la ventana abierta y sin tocar nada
   (2026-09-09). Es la prueba buena del reloj de la 2.10.4: hasta entonces solo se comprobaba al
   arrancar y esa banda no había aparecido nunca, con la portada prometiendo «una vez al día» desde la
