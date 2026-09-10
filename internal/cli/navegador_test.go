@@ -148,7 +148,7 @@ func TestUnMensajeMalFormadoNoRompeNada(t *testing.T) {
 	})
 
 	casos := map[string][]byte{
-		"cortado por la mitad": append(enMensaje(`{"version":1}`)[:6]),
+		"cortado por la mitad": enMensaje(`{"version":1}`)[:6],
 		"solo la longitud":     enMensaje(`{"a":1}`)[:4],
 		"vacío":                nil,
 		"una longitud de cero": {0, 0, 0, 0},
