@@ -615,6 +615,15 @@ propio flujo, «NSIS no viene con la máquina»—. Ahora se baja **del proyecto
 comprobada**: una descarga sin comprobar es peor que la dependencia que sustituye. La regla, entonces,
 no es «usa lo que ya está» sino **«si hay que bajar algo, del origen y con su suma»**.
 
+Y la otra mitad de esa regla, que costó la cuarta publicación caída por lo mismo: **del origen, con
+su suma, y reintentando**. La 2.18.0 se cayó con todo lo nuestro en verde porque
+`go install …/wails` no consiguió hablar con `sum.golang.org` —«net/http: TLS handshake timeout»—.
+Un apretón de manos que expira no es un fallo de la compilación, es un segundo malo, y tratarlo como
+un fallo tira una publicación y hace que el correo de «ha fallado» deje de significar algo. Lo
+envuelve `herramientas/reintentar.sh`, que repite con espera creciente. **Lo que no se hace nunca es
+bajar la guardia para que no vuelva a fallar**: nada de `GOFLAGS` saltándose la base de datos de
+sumas ni de `--insecure`. Se reintenta exactamente lo mismo.
+
 **Y una que solo se descubre publicando: la máquina de GitHub trae repositorios de apt que no son
 nuestros.** `apt-get update` **falla entero** si cualquiera de ellos sirve un índice caducado, así que
 un problema en un servidor de Google puede dejar sin publicar una versión de Esfinge —pasó con la

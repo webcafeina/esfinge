@@ -131,8 +131,8 @@ jobs:
 
       - name: Instalar wails y create-dmg
         run: |
-          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
-          brew install create-dmg
+          bash herramientas/reintentar.sh go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          bash herramientas/reintentar.sh brew install create-dmg
 
       - name: Construir la interfaz
         working-directory: frontend
@@ -216,7 +216,7 @@ jobs:
       - name: Instalar wails y NSIS
         shell: bash
         run: |
-          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          bash herramientas/reintentar.sh go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
 
           buscar() {
             for d in "/c/Program Files (x86)/NSIS" "/c/Program Files/NSIS"; do
@@ -351,8 +351,8 @@ jobs:
 
       - name: Instalar wails y nfpm
         run: |
-          go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
-          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          bash herramientas/reintentar.sh go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+          bash herramientas/reintentar.sh go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 
       - name: Construir la interfaz
         working-directory: frontend
