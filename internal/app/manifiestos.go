@@ -31,21 +31,30 @@ const nombreDelHost = "com.webcafeina.esfinge"
 
 // quiénPuedeLlamar: las extensiones que pueden lanzar el puente.
 //
-// **Firefox ya está y Chrome todavía no**, y la diferencia no es descuido: en
-// Firefox el identificador lo elige uno y va en el manifiesto de la extensión
-// (`browser_specific_settings.gecko.id`); en Chrome **lo asigna la tienda** al
-// subirla por primera vez, así que hasta que exista no hay nada que escribir aquí.
+// En Firefox el identificador lo elige uno y va en el manifiesto de la extensión
+// (`browser_specific_settings.gecko.id`).
 //
-// Para probar con una extensión cargada a mano —que en Chrome recibe un
-// identificador distinto cada vez que se instala— está `ESFINGE_EXTENSIONES`, con
-// los identificadores separados por comas. Es una variable de entorno y no un
-// ajuste de la ventana a propósito: quien está probando una extensión sin
-// publicar sabe usar el entorno, y un campo de texto en Ajustes donde escribir
-// «quién puede leer mi bóveda» es justo el campo que alguien acaba rellenando
-// porque se lo han dicho por teléfono.
+// **En Chrome lo deriva el navegador de la clave pública que lleve el
+// manifiesto**, y ahí está el truco: sin `key`, Chrome se inventa uno distinto en
+// cada máquina y en cada instalación, y entonces no hay nada que escribir aquí
+// —había que pasarlo a mano por el entorno—. Con `key` puesta, el identificador
+// **es el mismo siempre y en todas partes**, así que se puede fijar aquí y la
+// extensión funciona nada más cargarla.
+//
+// Lo que hay en el manifiesto es la **clave pública**: no firma nada y no hay
+// secreto que guardar. Solo decide el identificador.
+//
+// El que queda por saber es el de la tienda: al subirla, la Chrome Web Store
+// asigna el suyo. Si no coincide con éste, se añade aquí y ya.
+//
+// Y `ESFINGE_EXTENSIONES` sigue existiendo para probar una extensión sin
+// publicar. Es una variable de entorno y no un ajuste de la ventana a propósito:
+// quien prueba algo sin publicar sabe usar el entorno, y un campo de texto en
+// Ajustes donde escribir «quién puede leer mi bóveda» es justo el campo que
+// alguien acaba rellenando porque se lo han dicho por teléfono.
 var (
 	extensionesDeFirefox = []string{"esfinge@webcafeina.com"}
-	extensionesDeChrome  []string
+	extensionesDeChrome  = []string{"jkkadfdagaojlgffkcboniepfgjkeenk"}
 )
 
 // deDesarrollo son las que se añaden a mano para probar.

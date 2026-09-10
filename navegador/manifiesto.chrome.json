@@ -3,6 +3,7 @@
   "name": "Esfinge",
   "version": "0.1.0",
   "description": "Consulta las contraseñas de tu bóveda de Esfinge sin salir del navegador.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2Q2VNIXJcT2K5Zz+tcFRciWMfzNadoPVnJdB1RcIFXpXmL1K5icgObNhUPD0Kiw/LK55UcZ5XNqt8Em6XM55RvL6EnMzzu5EGQ1f0MUAS48gk857LmphfQZm34LQefnx3ClW+ilV+gqUYbLm3L6ynLk+RdIAm735V+7YCYfN77AnPjEiHUFBTqUT4U2zTw+KZjarqEkVP3ZvrOYiQNZIUerNepNhlrDq2wIt3teyj+wulBdSEuFsOgOVGqibHFwqjb9eCPBFXX0DAUK2rjYgwTedQMy8W1WEOqNJvhYbV232N4vvh82uHFVJiLtCc1qz8+h7s2P5DlxLpoNwgLV6GwIDAQAB",
   "permissions": [
     "nativeMessaging",
     "storage",

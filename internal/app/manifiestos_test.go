@@ -55,13 +55,20 @@ func TestElManifiestoDiceQuienPuedeLlamar(t *testing.T) {
 	}
 }
 
-// Sin nadie a quien autorizar **no se escribe nada**. Es el caso de Chrome hoy:
-// su identificador lo asigna la tienda y todavía no existe, y un manifiesto con
-// la lista vacía no sirve para nada y encima parece que sí.
+// Sin nadie a quien autorizar **no se escribe nada**: un manifiesto con la lista
+// vacía no sirve para nada y encima parece que sí.
+//
+// La lista se vacía aquí a mano porque hoy no está vacía —Chrome tiene su
+// identificador fijo desde que el manifiesto lleva `key`—, y lo que hay que
+// comprobar es **la regla**, no el estado de una lista que va a cambiar.
 func TestSinExtensionesNoSeEscribeManifiesto(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("en Windows esto va al registro, y todavía no está")
 	}
+	antes := extensionesDeChrome
+	extensionesDeChrome = nil
+	t.Cleanup(func() { extensionesDeChrome = antes })
+
 	casa := t.TempDir()
 	base := filepath.Join(casa, ".config", "google-chrome")
 	if runtime.GOOS == "darwin" {

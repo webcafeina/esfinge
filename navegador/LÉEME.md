@@ -43,15 +43,25 @@ Hace falta **Esfinge instalada** y el canal encendido en sus Ajustes.
 4. Abre una página de la que tengas una cuenta guardada y pulsa el botón.
 5. La primera vez, Esfinge preguntará en su ventana si permite ese navegador.
 
-**Chrome** necesita un paso más, y no es un descuido: su identificador **lo
-asigna la tienda** al subir la extensión por primera vez, así que hasta entonces
-no hay nada que escribir en el manifiesto que autoriza a lanzar el puente. Para
-probar antes:
+**Chrome, Edge, Brave, Vivaldi y Opera** funcionan igual, y sin pasos extra:
 
-1. Cárgala descomprimida desde `chrome://extensions`.
-2. Copia el identificador que Chrome le haya dado.
-3. Arranca Esfinge con `ESFINGE_EXTENSIONES=<ese identificador>` y vuelve a
-   encender el canal en Ajustes, para que reescriba el manifiesto.
+1. `make extension`
+2. En `chrome://extensions`, activa «Modo de desarrollador» y pulsa «Cargar
+   descomprimida»; elige la carpeta `navegador/dist/chrome`.
+3. Lo demás, igual que en Firefox.
+
+El identificador **está fijado**: el manifiesto lleva una clave pública (`key`) y
+Chrome deriva el identificador de ella, así que es el mismo en cualquier máquina
+y en cualquier instalación. Es `jkkadfdagaojlgffkcboniepfgjkeenk`.
+
+Esa clave **no firma nada y no es un secreto**: solo decide el identificador. La
+privada ni se guarda ni hace falta.
+
+Lo que queda por saber es el identificador que asigne la **tienda** al subirla. Si
+no coincide con éste, se añade a `extensionesDeChrome` en
+`internal/app/manifiestos.go` y ya. Para probar cualquier otra extensión sin
+publicar sigue estando `ESFINGE_EXTENSIONES`, con los identificadores separados
+por comas.
 
 ## Lo que falta
 
