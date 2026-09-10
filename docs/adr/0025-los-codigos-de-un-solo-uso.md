@@ -143,7 +143,12 @@ no como un detalle de cada caso.
 - Y a mano, contra una implementación de fuera: el mismo instante y la misma
   semilla dando el mismo código en Esfinge y en tres líneas de Python.
 
-**Lo que no se ha comprobado:** que un código de Esfinge abra de verdad una cuenta
-de un servicio real. Eso solo puede hacerlo el cliente, y es la comprobación que
-importa; los vectores del RFC dicen que el algoritmo está bien, no que la semilla
-que Dashlane exportó sea la que el servicio espera.
+**Y la comprobación que importaba, hecha el mismo día:** con Esfinge y Dashlane
+abiertos uno al lado del otro, **el código es el mismo**. Eso cierra las dos
+mitades a la vez —que la semilla se importó bien, que era lo único que estaba de
+verdad en duda, y que el cálculo concuerda con el de un gestor en producción— y no
+lo podía decir ninguna prueba de esta máquina.
+
+**Lo que sigue sin comprobarse**, y ya es menor: que ese código abra la sesión en
+el servicio. Si coincide con el que Dashlane enseña, y con Dashlane se entra hoy,
+la duda que queda no es de Esfinge.

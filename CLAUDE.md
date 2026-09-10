@@ -538,6 +538,11 @@ LaunchServices. De verlo puesto salió su corrección: la marca caía baja en la
 Y **la banda de versión nueva sale sola**, con la ventana abierta y sin tocar nada: la prueba buena
 del reloj de la 2.10.4, porque hasta entonces solo se comprobaba al arrancar.
 
+Y **el código de un solo uso es el mismo que el de Dashlane**, con los dos programas abiertos uno al
+lado del otro (2.15.0). Es la comprobación que cierra el asunto y que ninguna prueba de aquí podía
+hacer: los vectores del RFC dicen que el algoritmo está bien, **no** que la semilla que salió de
+Dashlane sea la que espera el servicio.
+
 Sin verificar todavía, y es lo único que queda en todo el proyecto: **cómo quedan las estructuras de
 Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono de los `.esf`, que en Windows lo
 pone el instalador y en Linux el `.deb`.

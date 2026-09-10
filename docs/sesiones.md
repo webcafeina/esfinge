@@ -36,9 +36,11 @@ Plantilla al final.
   de la lista leía los nombres con `allInnerTexts` justo después de guardar, y guardar vuelve a pedir
   la lista. Contar tres no salvaba —ya eran tres antes—. Ahora se afirma sobre el localizador, que
   reintenta.
-- **Queda abierto, y es lo primero:** probar un código contra **una cuenta de verdad**. Los vectores
-  dicen que el algoritmo está bien; no dicen que la semilla que Dashlane exportó sea la que el
-  servicio espera.
+- **Y comprobado el mismo día, con los dos programas abiertos a la vez: el código es el mismo que el
+  de Dashlane.** Era lo único que ninguna prueba de aquí podía contestar —los vectores dicen que el
+  algoritmo está bien, no que la semilla importada sea la buena— y cierra el traslado de los segundos
+  factores. Con eso, todo lo que hacía falta para sustituir a Dashlane **en el escritorio** está
+  hecho; lo que queda no es una carencia de la bóveda, es la fase 2.
 
 ## 2026-09-09 · Los gestores, también en trazo
 

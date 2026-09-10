@@ -116,6 +116,11 @@ visto nadie.
   de recuperación abre la bóveda**, que era lo único que ninguna prueba podía decir. Costó cuatro
   versiones: el filtro del diálogo de abrir en macOS, el importador que solo entendía una forma de
   fichero, las tarjetas que salían todas duplicadas y lo exportado que no volvía a entrar entero.
+- **El código de un solo uso es el mismo que el de Dashlane** (2026-09-10, 2.15.0), con los dos
+  programas abiertos uno al lado del otro. Es la comprobación que ninguna prueba de aquí podía hacer,
+  y cierra las dos mitades a la vez: que **la semilla se importó bien** —que era lo que de verdad
+  estaba en duda, porque los vectores del RFC solo dicen que el algoritmo está bien— y que el
+  cálculo concuerda con el de un gestor que lleva años en producción.
 - **La banda de versión nueva sale sola** (2026-09-09), con la ventana abierta y sin tocar nada. Es
   la prueba buena de la 2.10.4: antes la comprobación ocurría **solo al arrancar** y esa banda no
   había aparecido nunca, aunque la portada llevara desde la 2.1.0 prometiendo «una vez al día».
@@ -126,13 +131,12 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Probar un código de un solo uso contra una cuenta de verdad**, con Dashlane todavía instalado al
-lado. Es lo único que decide si los segundos factores están mudados, y no lo puede contestar ninguna
-prueba de aquí: los vectores de los dos RFC dicen que el algoritmo está bien —y una implementación de
-fuera da el mismo código en el mismo instante—, pero no dicen que **la semilla que Dashlane exportó
-sea la que el servicio espera**.
+**Los segundos factores están mudados**, comprobado el 10 de septiembre con los dos programas
+abiertos a la vez. Con eso, **todo lo que Dashlane hace y Esfinge tenía que hacer para sustituirlo en
+el escritorio está hecho**: contraseñas, notas, tarjetas, documentos, importación, búsqueda, iconos y
+segundo factor. Lo que queda de Dashlane no es una carencia de la bóveda, es la fase 2.
 
-Después, por orden de lo que más acerca a dejar Dashlane:
+Por orden de lo que más acerca a dejarlo del todo:
 
 1. **Vaciar la papelera**, que sigue sin poderse. Ya no es lo que era: desde la 2.15.0 el borrado se
    lleva **todos** los secretos y no solo la contraseña, así que lo que queda dentro del fichero es el
