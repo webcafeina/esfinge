@@ -23,13 +23,13 @@ Sin cuentas y sin servidores: lo que cifras no sale de tu ordenador.
 
 | Sistema | Descarga | Notas |
 |---|---|---|
-| **macOS** | [Esfinge-2.17.6.dmg](https://github.com/webcafeina/esfinge/releases/download/v2.17.6/Esfinge-2.17.6.dmg) | Universal: Apple Silicon e Intel |
-| **Windows** | [Esfinge-2.17.6-windows-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.17.6/Esfinge-2.17.6-windows-instalador.exe) | Asistente de instalación |
-| **Linux · Debian y Ubuntu** | [esfinge_2.17.6_amd64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.17.6/esfinge_2.17.6_amd64.deb) | Aplicación y línea de comandos |
-| **Linux · cualquiera** | [esfinge-2.17.6-linux-amd64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.17.6/esfinge-2.17.6-linux-amd64.tar.gz) | Los binarios sueltos |
+| **macOS** | [Esfinge-2.17.7.dmg](https://github.com/webcafeina/esfinge/releases/download/v2.17.7/Esfinge-2.17.7.dmg) | Universal: Apple Silicon e Intel |
+| **Windows** | [Esfinge-2.17.7-windows-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.17.7/Esfinge-2.17.7-windows-instalador.exe) | Asistente de instalación |
+| **Linux · Debian y Ubuntu** | [esfinge_2.17.7_amd64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.17.7/esfinge_2.17.7_amd64.deb) | Aplicación y línea de comandos |
+| **Linux · cualquiera** | [esfinge-2.17.7-linux-amd64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.17.7/esfinge-2.17.7-linux-amd64.tar.gz) | Los binarios sueltos |
 | **Línea de comandos** | [todos los sistemas](https://github.com/webcafeina/esfinge/releases/latest) | Seis objetivos, con sus SHA256 |
 
-Versión **2.17.6**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
+Versión **2.17.7**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
 
 <!-- descargas:fin -->
 
