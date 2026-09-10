@@ -138,7 +138,10 @@ visto nadie.
   cálculo concuerda con el de un gestor que lleva años en producción.
 - **El canal con el navegador, de punta a punta** (2026-09-10, 2.17.6): con Firefox y un sitio de
   verdad, la extensión reconoce el sitio, enseña la cuenta guardada y **copia la contraseña al
-  portapapeles**. Era lo único que no se podía ejercitar aquí —no hay navegador con el que probar
+  portapapeles**. Comprobado además lo que hace que eso sea aceptable: **el portapapeles se borra
+  solo** pasado el plazo de Ajustes, igual que copiando desde la ventana. Y el **código de un solo
+  uso** también, contra un sitio con segundo factor de verdad. Era lo único que no se podía ejercitar
+  aquí —no hay navegador con el que probar
   `connectNative`— y por eso costó **seis versiones**: el puente, el socket, el emparejamiento de
   dominios y los manifiestos estaban bien desde el principio, y lo que faltaba era **una palabra en
   una lista**, el permiso `storage` del manifiesto de la extensión. Sin él esa API no da error: es

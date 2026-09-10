@@ -9,7 +9,9 @@ Plantilla al final.
 
 - **De la 2.17.1 a la 2.17.6**, todas persiguiendo el mismo síntoma: la extensión instalada en
   Firefox no hacía nada. **Y funciona**: reconoce el sitio, enseña la cuenta guardada y copia la
-  contraseña. La entrega 1 queda comprobada de punta a punta en un Mac de verdad.
+  contraseña. Comprobado también **el borrado del portapapeles** —que es lo que hace aceptable copiar
+  desde el navegador— y **el código de un solo uso** contra un sitio con segundo factor real. La
+  entrega 1 queda comprobada de punta a punta en un Mac de verdad.
 - **La causa era el permiso `storage`**, que no estaba en el manifiesto de la extensión. Sin permiso,
   esa API no da error: es `undefined`. La excepción saltaba en la primera línea del trabajador de
   fondo, **nadie la recogía**, y desde fuera se veía exactamente igual que si el puente con Esfinge
