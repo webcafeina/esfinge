@@ -22,6 +22,10 @@ contents:
     dst: /usr/bin/esfinge-gui
   - src: esfinge
     dst: /usr/bin/esfinge
+  # El proceso que lanza el navegador para hablar con la bóveda. Va aparte del
+  # binario de la línea de comandos a propósito: ver cmd/esfinge-puente.
+  - src: esfinge-puente
+    dst: /usr/bin/esfinge-puente
   - src: empaquetado/linux/esfinge.desktop
     dst: /usr/share/applications/esfinge.desktop
   - src: empaquetado/linux/esfinge-mime.xml

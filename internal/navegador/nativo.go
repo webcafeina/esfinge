@@ -1,4 +1,4 @@
-package cli
+package navegador
 
 import (
 	"encoding/binary"
@@ -7,14 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
-
-	"github.com/spf13/cobra"
-
-	"github.com/webcafeina/esfinge/internal/app"
 )
 
-// El proceso que lanza el navegador.
+// El lado del navegador: «native messaging».
 //
 // # Qué es esto
 //
@@ -30,9 +25,25 @@ import (
 //
 // Eso corrige a medias una frase que lleva escrita en `internal/cli/boveda.go`
 // desde que existe la bóveda: «la extensión hablará con esto, no con la ventana».
-// Acierta en que habla con este binario y se equivoca en lo demás — si este
-// proceso abriera la bóveda, la contraseña maestra tendría que llegar desde el
-// navegador, que es exactamente lo que no puede pasar.
+// Acierta en que habla con un binario de línea de comandos y se equivoca en lo
+// demás — si ese proceso abriera la bóveda, la contraseña maestra tendría que
+// llegar desde el navegador, que es exactamente lo que no puede pasar.
+//
+// # Y por qué es un binario aparte y no un subcomando de `esfinge`
+//
+// Empezó siendo un subcomando oculto, que es lo que pedía la ADR 0001 —un solo
+// binario— y duró dos commits. Lo tumbó Windows, con dos razones que no se
+// arreglan por separado:
+//
+//   - **`esfinge` es un binario de consola, y Chrome lanza el host cada pocos
+//     minutos.** Cada arranque parpadearía una ventana negra en la cara de quien
+//     esté navegando. Un binario del subsistema gráfico no la abre, y **sigue
+//     teniendo entrada y salida estándar**, porque los descriptores los pasa quien
+//     lo lanza. Es exactamente por esto por lo que KeePassXC publica un
+//     `keepassxc-proxy` en vez de usar su binario principal.
+//   - **Y porque arranca decenas de veces por sesión.** El binario de la línea de
+//     comandos monta cobra, los estilos y el vigilante de versiones antes de
+//     llegar a `main`. Esto no monta nada.
 //
 // # Tres cosas que rompen esto en silencio
 //
@@ -41,7 +52,7 @@ import (
 //     el navegador mata el proceso sin decir por qué. Lo primero que hace este
 //     comando es **quedarse la salida y apuntar `os.Stdout` al error**, para que
 //     un descuido futuro sea ruido en un registro y no un fallo imposible de
-//     encontrar.
+//     encontrar. Eso lo hace `cmd/esfinge-puente`.
 //   - **El aviso de versión nueva.** Ya se calla solo, porque `vigilar` no
 //     arranca si la salida de error no es un terminal (`novedad.go`) y aquí es una
 //     tubería del navegador. Está comprobado, no supuesto.
@@ -49,27 +60,6 @@ import (
 //     MV3 se muere a los pocos minutos, así que esto arranca y muere decenas de
 //     veces por sesión. No puede guardar estado, no puede tardar en arrancar y no
 //     puede dejar nada detrás.
-func comandoPuenteNavegador() *cobra.Command {
-	return &cobra.Command{
-		Use: "puente-navegador",
-		// Oculto porque **no es para personas**: lo lanza el navegador, y una
-		// persona que lo escriba en un terminal se queda mirando un proceso que
-		// espera bytes binarios. Sigue estando documentado aquí y en la ADR.
-		Hidden:        true,
-		Short:         "Traduce entre la extensión del navegador y Esfinge",
-		Args:          cobra.NoArgs,
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(*cobra.Command, []string) error {
-			// **Lo primero de todo**: quedarse la salida de verdad y dejar `os.Stdout`
-			// apuntando al error. A partir de aquí, lo único que llega al navegador es
-			// lo que escriba este fichero.
-			salida := os.Stdout
-			os.Stdout = os.Stderr
-			return Traducir(os.Stdin, salida, app.RutaDelCanal())
-		},
-	}
-}
 
 // topeDelNavegador es lo más grande que Chrome acepta **hacia** la extensión: un
 // megabyte. Hacia aquí admite sesenta y cuatro, pero lo que sale es lo que
@@ -153,9 +143,10 @@ func escribirAlNavegador(w io.Writer, mensaje []byte) error {
 	return err
 }
 
-// respuestaSinEsfinge es lo que se contesta cuando no hay con quién hablar. Se
-// escribe a mano y no se serializa desde el paquete `navegador` para que este
-// camino no dependa de nada que pueda fallar justo cuando ya ha fallado algo.
+// respuestaSinEsfinge es lo que se contesta cuando no hay con quién hablar. Va
+// escrita a mano y no serializada desde `Respuesta` a propósito: este camino es
+// el de cuando ya ha fallado algo, y no puede depender de nada más que pueda
+// fallar.
 func respuestaSinEsfinge() []byte {
 	return []byte(`{"ok":false,"motivo":"sin-esfinge",` +
 		`"error":"Esfinge no está abierta, o el canal con el navegador está apagado en Ajustes"}`)

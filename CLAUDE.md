@@ -511,6 +511,13 @@ px por debajo del centro. Todo lo que el fondo dibuje ahí queda tapado, y eso n
 la imagen en un Mac. `make ventana-dmg` la dibuja antes, leyendo las posiciones de
 `empaquetado/macos/armar-dmg.sh` para que fondo y guion no se separen.
 
+**Y el corolario pequeño, que costó un commit el mismo día: `make comprobar | tail` no dice si
+`make` ha fallado.** El código de salida de una tubería es el del **último** mandato, así que
+`make comprobar 2>&1 | tail -3 && git commit` compromete igual con `go vet` en rojo: lo que se mira
+es el `tail`. Se arregla de dos formas y las dos valen: guardar la salida en un fichero y mirar `$?`,
+o `set -o pipefail` antes. Vale para cualquier comprobación que se lea por una tubería, que aquí son
+todas porque salen largas.
+
 **Un aviso que no detiene nada deja de leerse, y aquí costó seis versiones.** Los tests los corría
 solo el flujo «Compilar», en paralelo con «Publicar» y sin que nadie dependiera de él: una versión
 salía aunque estuvieran en rojo. Y estuvieron en rojo de la 2.14.0 a la 2.16.0 —el `.gitignore` con

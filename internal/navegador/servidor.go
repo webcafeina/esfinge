@@ -5,9 +5,31 @@ import (
 	"errors"
 	"io"
 	"net"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
+
+// RutaDelCanal es el socket por el que habla la extensión.
+//
+// **Vive aquí y no en `internal/app`**, y no es colocación: el proceso que lanza
+// el navegador solo necesita esta ruta, y si la pidiera al paquete de la
+// aplicación se llevaría dentro la bóveda entera —el cifrado, el formato, la
+// importación— por una función de seis líneas. Así **el binario que el navegador
+// arranca ni siquiera sabe abrir una bóveda**, que es una propiedad que vale la
+// pena tener y no solo cuatro megabytes menos.
+//
+// El nombre va **corto a propósito**: la ruta de un socket de dominio unix no
+// puede pasar de 104 caracteres en macOS, y allí la carpeta de configuración ya
+// es `~/Library/Application Support`.
+func RutaDelCanal() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(dir, "Esfinge", "puente.sock")
+}
 
 // Fuente es lo que el canal puede pedirle a la bóveda.
 //

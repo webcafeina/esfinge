@@ -128,6 +128,22 @@ jobs:
           wails build -platform darwin/universal -clean \
             -ldflags "-X main.version=${{ steps.v.outputs.n }}"
 
+      # El puente del navegador va **dentro del paquete**, junto al binario de la
+      # aplicación: es lo que el manifiesto de native messaging le dirá a Chrome
+      # que lance, y tiene que seguir ahí después de arrastrar la aplicación a
+      # Aplicaciones. Universal, como todo lo del paquete.
+      - name: Meter el puente del navegador en el paquete
+        run: |
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=darwin GOARCH=$arch go build \
+              -ldflags "-s -w -X main.version=${{ steps.v.outputs.n }}" \
+              -o "esfinge-puente-$arch" ./cmd/esfinge-puente
+          done
+          lipo -create -output build/bin/Esfinge.app/Contents/MacOS/esfinge-puente \
+            esfinge-puente-amd64 esfinge-puente-arm64
+          chmod +x build/bin/Esfinge.app/Contents/MacOS/esfinge-puente
+          ls -lh build/bin/Esfinge.app/Contents/MacOS/
+
       # La receta de la imagen vive en el guion, para que sea la misma aquí y en
       # un Mac con «make dmg».
       - name: Armar la imagen de disco
@@ -299,6 +315,8 @@ jobs:
         run: |
           CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${{ steps.v.outputs.n }}" \
             -o esfinge ./cmd/esfinge
+          CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${{ steps.v.outputs.n }}" \
+            -o esfinge-puente ./cmd/esfinge-puente
 
       - name: Armar el .deb y el .tar.gz
         run: |
@@ -306,7 +324,7 @@ jobs:
           nfpm package -f empaquetado/linux/nfpm.yaml -p deb -t .
           tar -czf "esfinge-${VERSION}-linux-amd64.tar.gz" \
             -C build/bin Esfinge \
-            -C "$GITHUB_WORKSPACE" esfinge LICENSE
+            -C "$GITHUB_WORKSPACE" esfinge esfinge-puente LICENSE
           ls -lh *.deb *.tar.gz
 
       - uses: actions/upload-artifact@v4

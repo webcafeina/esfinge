@@ -39,19 +39,6 @@ func rutaNavegadores() string {
 	return filepath.Join(dir, "Esfinge", "navegadores.json")
 }
 
-// RutaDelCanal es el socket por el que habla la extensión.
-//
-// **Corto a propósito.** La ruta de un socket de dominio unix no puede pasar de
-// 104 caracteres en macOS, y allí la carpeta de configuración ya es
-// `~/Library/Application Support`: cada letra de más cuenta.
-func RutaDelCanal() string {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(dir, "Esfinge", "puente.sock")
-}
-
 // NavegadorPermitido es un navegador al que se le dijo que sí.
 type NavegadorPermitido struct {
 	// Testigo es lo que la extensión presenta después. No sale hacia la ventana.
@@ -320,7 +307,7 @@ func (a *App) EstadoDelNavegador() EstadoDelNavegador {
 	e := EstadoDelNavegador{
 		Encendido:  a.ajustes.Ver().PuenteDelNavegador,
 		Escuchando: srv != nil,
-		Donde:      RutaDelCanal(),
+		Donde:      navegador.RutaDelCanal(),
 		Error:      fallo,
 		Pide:       a.navegadores.quienPide(),
 	}
@@ -366,7 +353,7 @@ func (a *App) aplicarCanal(p Preferencias) {
 		return
 	}
 
-	ruta := RutaDelCanal()
+	ruta := navegador.RutaDelCanal()
 	srv, err := navegador.Servir(ruta, fuenteDelNavegador{a})
 	a.mu.Lock()
 	a.canal = srv

@@ -28,6 +28,7 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | El servidor de desarrollo publica los métodos por reflexión | Baja | Si un método cambia de firma, el fallo sale en tiempo de ejecución y no al compilar | Aceptado · solo existe tras la etiqueta `dev` |
 | No hay pruebas de la línea de comandos | Media | `internal/cli` no tenía ni un test: se comprobaba a mano en cada cambio | **Parcialmente saldada (2026-09-09)**: `conSalida` sí tiene pruebas —escribe con 0600, no pisa sin `--forzar`, no deja el fichero a medias, acepta `/dev/null`—, porque se le movieron las tripas a `internal/escritura` y hacer eso sin red es como se rompen las cosas en silencio. El resto de subcomandos sigue sin cubrir |
 | ~~Los códigos de un solo uso (TOTP) no se calculan~~ | Media | La bóveda guardaba la semilla y la traía al importar, pero nadie calculaba el código de seis cifras: se enseñaba la semilla, que no sirve para entrar en ningún sitio | **Saldada en la 2.15.0**: `internal/codigos`, sin dependencias, con los vectores de RFC 4226 y RFC 6238 enteros. En la ventana con su cuenta atrás y en `esfinge boveda codigo` ([ADR 0025](adr/0025-los-codigos-de-un-solo-uso.md)). Lo que no puede decir ninguna prueba: si abre una cuenta de verdad |
+| El instalador de Windows no instala el puente del navegador | Baja | El binario se publica para los seis objetivos, pero el instalador solo copia la aplicación: en Windows hay que dejarlo a mano. Hace falta una plantilla NSIS propia, y no tiene sentido tocarla hasta que la extensión exista y haya que escribir también su manifiesto | Abierto · fase 2, entrega 5 |
 | `personalinfo.csv` de Dashlane no se importa | Baja | Direcciones, teléfonos y fechas de nacimiento. No son secretos sino datos de autorrelleno, así que meterlos en una bóveda es una decisión de producto por tomar y no un fallo del importador. Si se intenta, el fichero se rechaza diciendo qué columnas trae | Abierto |
 | ~~La papelera no se puede vaciar desde la ventana~~ | Media | Borrar es borrado suave —hace falta para sincronizar después— así que una entrada borrada se quedaba en el fichero para siempre, y encima el borrado **no tenía vuelta atrás**: dos clics y la contraseña se había ido | **Saldada en la 2.16.0**: papelera de verdad ([ADR 0026](adr/0026-la-papelera.md)), con restaurar, borrar del todo, vaciar a mano y vaciado solo a los treinta días. El coste, dicho en `docs/seguridad.md`: durante esos días la contraseña borrada sigue dentro del fichero |
 | El JSON exterior de la bóveda no va autenticado en su conjunto | Baja | Quien pueda escribir el fichero no puede leer nada ni fabricar una bóveda que abra, pero sí estropearla o revertirla a una copia vieja. `comprobarCoherencia` lo **detecta** con un sello por dentro; no lo impide | Aceptado · [ADR 0023](adr/0023-la-boveda.md) |
@@ -46,6 +47,15 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~El canal con el navegador no funcionaba en Windows~~ → nació así el mismo día. Se sopesó una
+  tubería con nombre —que es lo que usa KeePassXC allí— y se descartó: sus tres ventajas son saber
+  quién se conecta —que Esfinge no comprueba en **ningún** sistema, porque la forma de hacerlo es la
+  de 1Password y exige estar firmado—, un descriptor de seguridad de solo el dueño —que ya lo da el
+  perfil del usuario— y evitar que otro se adelante —que se consigue preguntando—. A cambio pedía
+  doscientas líneas de llamadas al sistema de Windows **en la frontera de seguridad de un gestor de
+  contraseñas y escritas en una máquina donde no se pueden ejecutar**, que es exactamente cómo se
+  rompió la 2.9.1. Se usa el mismo socket, que Go admite en Windows desde la 10.0.17063
+  (2026-09-10).
 - ~~Los vectores fijos del formato no estaban en el repositorio~~ → el `.gitignore` lleva `*.esf`, que
   es lo razonable en un programa que produce ficheros con esa extensión, y **se tragó exactamente los
   quince vectores**, que tienen esa extensión. Todo lo que promete la [ADR 0022](adr/0022-vectores-fijos.md)

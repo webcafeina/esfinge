@@ -1,6 +1,8 @@
 # Binarios
 /esfinge
 /esfinge.exe
+/esfinge-puente
+/esfinge-puente.exe
 /dist/
 
 # Ficheros cifrados y temporales de la propia herramienta

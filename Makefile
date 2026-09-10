@@ -77,6 +77,15 @@ app: frontend
 esfinge:
 	CGO_ENABLED=0 $(GO) build -ldflags "$(LDFLAGS)" -o esfinge ./cmd/esfinge
 
+## puente: el proceso que lanza el navegador para hablar con la bóveda
+##
+## En Windows va con «-H windowsgui», que **no le quita la entrada y la salida
+## estándar** —los descriptores los pasa quien lanza el proceso— y sí le quita la
+## ventana de consola que si no parpadearía cada pocos minutos mientras se navega.
+.PHONY: puente
+puente:
+	CGO_ENABLED=0 $(GO) build -ldflags "$(LDFLAGS)" -o esfinge-puente ./cmd/esfinge-puente
+
 ## dev: levanta el Go de verdad para poder mover la interfaz en el navegador
 .PHONY: dev
 dev:
@@ -110,6 +119,12 @@ publicar-cli:
 		echo "  $$nombre"; \
 		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build -ldflags "$(LDFLAGS)" \
 			-o "$(DIST)/$$nombre" ./cmd/esfinge || exit 1; \
+		puente="esfinge-puente-$(VERSION)-$$os-$$arch$$ext"; \
+		echo "  $$puente"; \
+		enlazador="$(LDFLAGS)"; \
+		[ "$$os" = "windows" ] && enlazador="$$enlazador -H windowsgui"; \
+		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build -ldflags "$$enlazador" \
+			-o "$(DIST)/$$puente" ./cmd/esfinge-puente || exit 1; \
 	done
 	@cd $(DIST) && sha256sum esfinge-* > SHA256SUMS
 	@ls -lh $(DIST)
