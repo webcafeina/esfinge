@@ -42,10 +42,11 @@ type CodigoDeUnSoloUso struct {
 // minutos» dejaría de ser verdad. Es la misma regla que el goteo de los iconos.
 // Quien la abrió ya avisó de que estaba ahí al pedir la entrada.
 func (a *App) CodigoDeBoveda(id string) (CodigoDeUnSoloUso, error) {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return CodigoDeUnSoloUso{}, boveda.ErrCerrada
 	}
-	e, hay := a.bov.Ver(id)
+	e, hay := b.Ver(id)
 	if !hay {
 		return CodigoDeUnSoloUso{}, errors.New("Esa entrada ya no está en la bóveda")
 	}

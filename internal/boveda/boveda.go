@@ -71,6 +71,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 	"sync"
@@ -151,9 +152,50 @@ type sello struct {
 	Cuerpo string `json:"cuerpo"`
 }
 
-// contenido es lo que va cifrado dentro del cuerpo: solo las entradas.
+// contenido es lo que va cifrado dentro del cuerpo: hoy, solo las entradas.
+//
+// **Y conserva lo que no entiende, igual que una entrada.** Esto faltaba, y era
+// una trampa con fecha: `Entrada` guarda en `Extra` los campos que una versión no
+// conoce —para que una Esfinge vieja no borre en silencio lo que escribió una
+// nueva— y el envoltorio de aquí **no hacía nada de eso**. En cuanto alguien
+// añadiera una sección nueva al lado de `entradas` —los permisos del navegador de
+// la fase 2 son el primer candidato—, cualquier Esfinge anterior que abriera la
+// bóveda la habría tirado al guardar.
+//
+// Se arregla ahora porque después sería una migración de datos: mientras no haya
+// nada que conservar no cuesta nada, y en cuanto lo haya, ya es tarde.
 type contenido struct {
 	Entradas []Entrada `json:"entradas"`
+
+	// Extra son las secciones que esta versión no conoce. Ver Entrada.Extra.
+	Extra map[string]json.RawMessage `json:"-"`
+}
+
+var clavesDelContenido = clavesDe(reflect.TypeOf(contenido{}))
+
+type contenidoCrudo contenido // sin los métodos, para no entrar en bucle
+
+func (c *contenido) UnmarshalJSON(b []byte) error {
+	var crudo contenidoCrudo
+	if err := json.Unmarshal(b, &crudo); err != nil {
+		return err
+	}
+	*c = contenido(crudo)
+
+	extra, err := conservarDesconocidos(b, clavesDelContenido)
+	if err != nil {
+		return err
+	}
+	c.Extra = extra
+	return nil
+}
+
+func (c contenido) MarshalJSON() ([]byte, error) {
+	b, err := json.Marshal(contenidoCrudo(c))
+	if err != nil {
+		return nil, err
+	}
+	return conDesconocidos(b, c.Extra, clavesDelContenido)
 }
 
 const marca = "bóveda"

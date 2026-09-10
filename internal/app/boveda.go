@@ -80,11 +80,11 @@ func (a *App) EstadoBoveda() EstadoBoveda {
 	if _, err := os.Stat(ruta); err == nil {
 		e.Existe = true
 	}
-	if a.bov != nil && a.bov.Abierta() {
+	if b := a.boveda(); b != nil {
 		e.Abierta = true
-		e.Cuantas = a.bov.Cuantas()
-		e.SoloLectura = a.bov.SoloLectura()
-		e.EnLaPapelera = a.bov.EnLaPapelera()
+		e.Cuantas = b.Cuantas()
+		e.SoloLectura = b.SoloLectura()
+		e.EnLaPapelera = b.EnLaPapelera()
 	}
 	return e
 }
@@ -95,7 +95,7 @@ func (a *App) EstadoBoveda() EstadoBoveda {
 // esto tiene que enseñarla, insistir en que se apunte y no volver a pedirla:
 // aquí no hay «vuélvemela a enseñar».
 func (a *App) CrearBoveda(maestra string) (string, error) {
-	if a.bov != nil && a.bov.Abierta() {
+	if a.boveda() != nil {
 		return "", errors.New("Ya hay una bóveda abierta")
 	}
 	ruta := rutaBoveda()
@@ -110,7 +110,7 @@ func (a *App) CrearBoveda(maestra string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	a.bov = b
+	a.ponerBoveda(b)
 	a.Actividad()
 	return recuperacion, nil
 }
@@ -128,26 +128,33 @@ func (a *App) AbrirBoveda(llave string) error {
 	if err != nil {
 		return err
 	}
-	a.bov = b
+	a.ponerBoveda(b)
 	a.Actividad()
 	a.buscarIconosSiProcede(a.ctx)
 	return nil
 }
 
 // CerrarBoveda la bloquea a mano, sin esperar al reloj.
+// **Cierra la que haya, esté abierta o no.** Aquí no vale `boveda()`, que
+// devuelve nil para una bóveda ya cerrada: lo que se quiere es soltar lo que
+// hubiera, y cerrar dos veces no cuesta nada.
 func (a *App) CerrarBoveda() {
-	if a.bov != nil {
-		a.bov.Cerrar()
+	a.mu.Lock()
+	b := a.bov
+	a.mu.Unlock()
+	if b != nil {
+		b.Cerrar()
 	}
 }
 
 // BuscarEnBoveda devuelve lo que encaje, **sin secretos**.
 func (a *App) BuscarEnBoveda(q string) ([]boveda.Entrada, error) {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return nil, boveda.ErrCerrada
 	}
 	a.Actividad()
-	return a.bov.Buscar(q), nil
+	return b.Buscar(q), nil
 }
 
 // VerDeBoveda devuelve **una** entrada entera, con su contraseña.
@@ -155,11 +162,12 @@ func (a *App) BuscarEnBoveda(q string) ([]boveda.Entrada, error) {
 // De una en una a propósito: es la diferencia entre que un volcado de memoria
 // del webview tenga una contraseña o las tenga todas.
 func (a *App) VerDeBoveda(id string) (boveda.Entrada, error) {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return boveda.Entrada{}, boveda.ErrCerrada
 	}
 	a.Actividad()
-	e, hay := a.bov.Ver(id)
+	e, hay := b.Ver(id)
 	if !hay {
 		return boveda.Entrada{}, errors.New("Esa entrada ya no está en la bóveda")
 	}
@@ -168,50 +176,55 @@ func (a *App) VerDeBoveda(id string) (boveda.Entrada, error) {
 
 // GuardarEnBoveda añade o cambia una entrada.
 func (a *App) GuardarEnBoveda(e boveda.Entrada) error {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return boveda.ErrCerrada
 	}
 	a.Actividad()
-	return a.bov.Poner(e)
+	return b.Poner(e)
 }
 
 // BorrarDeBoveda manda una entrada a la papelera, **entera**: de ahí se puede
 // sacar durante treinta días (ADR 0026).
 func (a *App) BorrarDeBoveda(id string) error {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return boveda.ErrCerrada
 	}
 	a.Actividad()
-	return a.bov.Borrar(id)
+	return b.Borrar(id)
 }
 
 // PapeleraDeBoveda devuelve lo borrado que todavía se puede recuperar, sin
 // secretos, con lo último borrado arriba.
 func (a *App) PapeleraDeBoveda() ([]boveda.Entrada, error) {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return nil, boveda.ErrCerrada
 	}
 	a.Actividad()
-	return a.bov.Papelera(), nil
+	return b.Papelera(), nil
 }
 
 // RestaurarDeBoveda saca una entrada de la papelera y la devuelve entera.
 func (a *App) RestaurarDeBoveda(id string) error {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return boveda.ErrCerrada
 	}
 	a.Actividad()
-	return a.bov.Restaurar(id)
+	return b.Restaurar(id)
 }
 
 // BorrarDelTodoDeBoveda quita una entrada de la papelera y de la bóveda. **No
 // hay vuelta atrás**, y esta vez de verdad.
 func (a *App) BorrarDelTodoDeBoveda(id string) error {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return boveda.ErrCerrada
 	}
 	a.Actividad()
-	return a.bov.BorrarDelTodo(id)
+	return b.BorrarDelTodo(id)
 }
 
 // VaciarPapeleraDeBoveda se lleva todo lo borrado y dice cuánto era.
@@ -222,11 +235,12 @@ func (a *App) BorrarDelTodoDeBoveda(id string) error {
 // convertiría en un trámite, que es la forma de que deje de proteger nada donde
 // sí hace falta.
 func (a *App) VaciarPapeleraDeBoveda() (int, error) {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return 0, boveda.ErrCerrada
 	}
 	a.Actividad()
-	return a.bov.VaciarPapelera()
+	return b.VaciarPapelera()
 }
 
 // CambiarMaestraDeBoveda pide la vieja aunque la bóveda ya esté abierta.
@@ -235,14 +249,15 @@ func (a *App) VaciarPapeleraDeBoveda() (int, error) {
 // que cualquiera que pase puede cambiarle la contraseña y dejar fuera a su
 // dueño. Pedir la de antes convierte eso en un problema distinto.
 func (a *App) CambiarMaestraDeBoveda(vieja, nueva string) error {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return boveda.ErrCerrada
 	}
 	if _, err := boveda.Abrir(rutaBoveda(), vieja); err != nil {
 		return errors.New("La contraseña de ahora no es ésa")
 	}
 	a.Actividad()
-	return a.bov.CambiarMaestra(nueva)
+	return b.CambiarMaestra(nueva)
 }
 
 // BorrarBoveda quita la bóveda del disco. **No hay vuelta atrás.**
@@ -273,9 +288,12 @@ func (a *App) BorrarBoveda(maestra string) error {
 	// Primero se cierra la que hubiera abierta: dejarla en memoria después de
 	// borrar el fichero es tener una bóveda sin fichero, y el siguiente guardado
 	// la escribiría otra vez.
-	if a.bov != nil {
-		a.bov.Cerrar()
-		a.bov = nil
+	a.mu.Lock()
+	abierta := a.bov
+	a.bov = nil
+	a.mu.Unlock()
+	if abierta != nil {
+		abierta.Cerrar()
 	}
 
 	if err := os.Remove(ruta); err != nil {
@@ -294,16 +312,18 @@ func (a *App) BorrarBoveda(maestra string) error {
 // RotarRecuperacionDeBoveda genera una clave de recuperación nueva y deja la
 // anterior inservible. También se devuelve **una sola vez**.
 func (a *App) RotarRecuperacionDeBoveda() (string, error) {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return "", boveda.ErrCerrada
 	}
 	a.Actividad()
-	return a.bov.RotarRecuperacion()
+	return b.RotarRecuperacion()
 }
 
 // ImportarEnBoveda trae un CSV de otro gestor, por el diálogo del sistema.
 func (a *App) ImportarEnBoveda(deDonde string) (ResumenImportacion, error) {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return ResumenImportacion{}, boveda.ErrCerrada
 	}
 	rutas, err := a.sistema.ElegirFicheros("Elige la exportación de "+deDonde,
@@ -322,7 +342,7 @@ func (a *App) ImportarEnBoveda(deDonde string) (ResumenImportacion, error) {
 		return ResumenImportacion{}, err
 	}
 
-	r, err := a.bov.Importar(entradas, deDonde)
+	r, err := b.Importar(entradas, deDonde)
 	if err != nil {
 		return ResumenImportacion{}, err
 	}
@@ -343,7 +363,8 @@ func (a *App) ImportarEnBoveda(deDonde string) (ResumenImportacion, error) {
 // Existe porque una bóveda de la que no se puede salir es una trampa. Quien
 // llame a esto desde la ventana tiene que haber avisado antes y en grande.
 func (a *App) ExportarBoveda() (string, error) {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return "", boveda.ErrCerrada
 	}
 	destino, err := a.sistema.ElegirDondeGuardar("Exportar la bóveda sin cifrar",
@@ -353,7 +374,7 @@ func (a *App) ExportarBoveda() (string, error) {
 	}
 	a.ajustes.RecordarCarpetaDeGuardar(filepath.Dir(destino))
 
-	err = escritura.Atomica(destino, escritura.Opciones{}, a.bov.Exportar)
+	err = escritura.Atomica(destino, escritura.Opciones{}, b.Exportar)
 	if err != nil {
 		return "", err
 	}

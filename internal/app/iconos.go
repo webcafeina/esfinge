@@ -60,11 +60,12 @@ func ApuntarIconosA(a *App, d *iconos.Descargador, r ritmo) {
 // los iconos ahí sería mandarlos todos por el puente en cada pulsación. Aquí se
 // piden una vez al abrir la lista.
 func (a *App) IconosDeBoveda() (map[string]string, error) {
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return nil, boveda.ErrCerrada
 	}
 	fuera := map[string]string{}
-	for anfitrion, i := range a.bov.Iconos() {
+	for anfitrion, i := range b.Iconos() {
 		if i.URI != "" {
 			fuera[anfitrion] = i.URI
 		}
@@ -88,14 +89,19 @@ func (a *App) buscarIconosSiProcede(ctx context.Context) {
 	if red.SinRed() || !a.ajustes.Ver().DescargarIconos {
 		return
 	}
-	if a.bov == nil || !a.bov.Abierta() {
+	b := a.boveda()
+	if b == nil {
 		return
 	}
 	go a.gotearIconos(ctx)
 }
 
 func (a *App) gotearIconos(ctx context.Context) {
-	a.gotearIconosDesde(ctx, a.loQueFaltaPorMirar())
+	b := a.boveda()
+	if b == nil {
+		return // se ha cerrado entre que se decidió gotear y que arrancó esto
+	}
+	a.gotearIconosDesde(ctx, a.loQueFaltaPorMirar(b))
 }
 
 // gotearIconosDesde es lo mismo con la lista dada, que es como se puede probar el
@@ -129,7 +135,8 @@ func (a *App) gotearIconosDesde(ctx context.Context, pendientes []string) {
 		// La bóveda puede haberse bloqueado mientras se esperaba. Si es así se
 		// abandona **y se tira lo traído**: mantenerla viva para poder guardar sería
 		// convertir el bloqueo por inactividad en una promesa a medias.
-		if a.bov == nil || !a.bov.Abierta() {
+		b := a.boveda()
+		if b == nil {
 			return
 		}
 
@@ -144,7 +151,7 @@ func (a *App) gotearIconosDesde(ctx context.Context, pendientes []string) {
 		//
 		// Tanto el acierto como el fallo se apuntan: lo segundo es lo que evita
 		// volver a preguntar mañana por un sitio que no tiene icono.
-		if err := a.bov.PonerIconos(map[string]boveda.Icono{
+		if err := b.PonerIconos(map[string]boveda.Icono{
 			anfitrion: {URI: uri, Mirado: time.Now().UTC().Format(time.RFC3339)},
 		}); err != nil {
 			return
@@ -161,13 +168,16 @@ func (a *App) gotearIconosDesde(ctx context.Context, pendientes []string) {
 
 // loQueFaltaPorMirar son los anfitriones de la bóveda que no tienen icono ni un
 // intento reciente.
-func (a *App) loQueFaltaPorMirar() []string {
-	sabidos := a.bov.Iconos()
+// **Recibe la bóveda en vez de mirarla**: quien la llama ya la ha pedido detrás
+// del cerrojo, y volver a hacerlo aquí abriría el hueco por el que puede colarse
+// el tic del bloqueo.
+func (a *App) loQueFaltaPorMirar(b *boveda.Boveda) []string {
+	sabidos := b.Iconos()
 	ahora := time.Now()
 
 	visto := map[string]bool{}
 	var faltan []string
-	for _, e := range a.bov.Buscar("") {
+	for _, e := range b.Buscar("") {
 		for _, sitio := range e.Sitios {
 			anfitrion := iconos.Anfitrion(sitio)
 			if anfitrion == "" || visto[anfitrion] {

@@ -200,8 +200,10 @@ func (a *App) repasar() {
 	if a.vig.tocaBorrarPortapapeles() {
 		a.borrarPortapapelesSiSigueSiendoNuestro()
 	}
-	if a.bov != nil && a.bov.Abierta() && a.vig.tocaBloquear() {
-		a.bov.Cerrar()
+	// La bóveda se pide con `boveda()`, que la coge detrás del cerrojo: **esta
+	// gorrutina no es la de la ventana**, y era justo el otro lado de la carrera.
+	if b := a.boveda(); b != nil && a.vig.tocaBloquear() {
+		b.Cerrar()
 		a.sistema.Avisar(EventoBloqueada, nil)
 	}
 }

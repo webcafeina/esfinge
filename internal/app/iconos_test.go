@@ -75,7 +75,7 @@ func TestLoQueFaltaPorMirarDejaFueraLoQueNoSeVisita(t *testing.T) {
 		}
 	}
 
-	faltan := a.loQueFaltaPorMirar()
+	faltan := a.loQueFaltaPorMirar(a.boveda())
 	for _, a := range faltan {
 		if a == "intranet.empresa.local" || a == "192.168.1.1" {
 			t.Errorf("va a preguntarle a %q", a)

@@ -165,9 +165,13 @@ func (e *Entrada) vaciarLoSensible() {
 // propia estructura, para que añadir un campo no obligue a acordarse de
 // actualizar una lista aparte. Es justo la clase de lista que se queda atrás.
 
-var clavesConocidas = func() map[string]bool {
+var clavesConocidas = clavesDe(reflect.TypeOf(Entrada{}))
+
+// clavesDe saca los nombres JSON de una estructura. Está aparte porque lo usan
+// dos: las entradas y el contenido de la bóveda, que tienen el mismo problema y
+// no pueden resolverlo de dos maneras distintas.
+func clavesDe(t reflect.Type) map[string]bool {
 	m := map[string]bool{}
-	t := reflect.TypeOf(Entrada{})
 	for i := 0; i < t.NumField(); i++ {
 		etiqueta := t.Field(i).Tag.Get("json")
 		nombre, _, _ := strings.Cut(etiqueta, ",")
@@ -176,7 +180,43 @@ var clavesConocidas = func() map[string]bool {
 		}
 	}
 	return m
-}()
+}
+
+// conservarDesconocidos separa de un JSON las claves que esta versión no
+// entiende, para poder devolverlas tal cual al escribir.
+func conservarDesconocidos(b []byte, conocidas map[string]bool) (map[string]json.RawMessage, error) {
+	var todo map[string]json.RawMessage
+	if err := json.Unmarshal(b, &todo); err != nil {
+		return nil, err
+	}
+	for k := range todo {
+		if conocidas[k] {
+			delete(todo, k)
+		}
+	}
+	if len(todo) == 0 {
+		return nil, nil
+	}
+	return todo, nil
+}
+
+// conDesconocidos vuelve a meter lo que se conservó. **Lo conocido manda**: un
+// campo que esta versión entiende no se pisa con una copia vieja.
+func conDesconocidos(b []byte, extra map[string]json.RawMessage, conocidas map[string]bool) ([]byte, error) {
+	if len(extra) == 0 {
+		return b, nil
+	}
+	var todo map[string]json.RawMessage
+	if err := json.Unmarshal(b, &todo); err != nil {
+		return nil, err
+	}
+	for k, v := range extra {
+		if !conocidas[k] {
+			todo[k] = v
+		}
+	}
+	return json.Marshal(todo)
+}
 
 type entradaCruda Entrada // sin los métodos, para no entrar en bucle
 
@@ -187,18 +227,11 @@ func (e *Entrada) UnmarshalJSON(b []byte) error {
 	}
 	*e = Entrada(cruda)
 
-	var todo map[string]json.RawMessage
-	if err := json.Unmarshal(b, &todo); err != nil {
+	extra, err := conservarDesconocidos(b, clavesConocidas)
+	if err != nil {
 		return err
 	}
-	for k := range todo {
-		if clavesConocidas[k] {
-			delete(todo, k)
-		}
-	}
-	if len(todo) > 0 {
-		e.Extra = todo
-	}
+	e.Extra = extra
 	return nil
 }
 
@@ -207,20 +240,5 @@ func (e Entrada) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(e.Extra) == 0 {
-		return b, nil
-	}
-
-	var todo map[string]json.RawMessage
-	if err := json.Unmarshal(b, &todo); err != nil {
-		return nil, err
-	}
-	for k, v := range e.Extra {
-		// Lo conocido manda: un campo que esta versión entiende no se pisa con
-		// una copia vieja que venga de Extra.
-		if !clavesConocidas[k] {
-			todo[k] = v
-		}
-	}
-	return json.Marshal(todo)
+	return conDesconocidos(b, e.Extra, clavesConocidas)
 }

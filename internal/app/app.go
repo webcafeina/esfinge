@@ -49,6 +49,16 @@ type App struct {
 	vidrio bool
 
 	// bov es la bóveda, si está abierta. Nil mientras nadie la haya desbloqueado.
+	//
+	// **Va detrás de `mu`, y hay que pedirla con `boveda()`.** No lo estaba, y era
+	// una carrera de verdad aunque nunca se hubiera visto: quien abre y cierra la
+	// bóveda es la gorrutina de la ventana, y **quien la lee para bloquearla es el
+	// tic del vigilante**, que corre en la suya. Con `-race` no salía porque las
+	// pruebas llaman a `repasar()` a mano en vez de esperar al reloj.
+	//
+	// La bóveda tiene su propio cerrojo por dentro desde la 2.14.0; lo que faltaba
+	// era el de **este puntero**, que es otra cosa: uno protege el contenido y el
+	// otro protege saber cuál es.
 	bov *boveda.Boveda
 	// vig lleva los dos relojes: el del bloqueo por inactividad y el del borrado
 	// del portapapeles.
@@ -140,6 +150,30 @@ func (a *App) Plataforma() string { return runtime.GOOS }
 // la transparencia de GTK enseña el escritorio a pelo. Eso no es vibrancia: es
 // un agujero.
 func (a *App) Vidrio() bool { return a.vidrio }
+
+// boveda devuelve la bóveda **si está abierta**, y nil si no hay o está cerrada.
+//
+// Las dos preguntas van juntas a propósito. Preguntando por separado —«¿hay
+// bóveda?» y luego «¿está abierta?»— cabe entre medias el tic del vigilante
+// cerrándola, y lo que sigue trabaja con una bóveda que acaba de dejar de estar
+// abierta. Con una sola llamada, el peor caso es un `ErrCerrada` de más, que es
+// exactamente lo que hay que contestar.
+func (a *App) boveda() *boveda.Boveda {
+	a.mu.Lock()
+	b := a.bov
+	a.mu.Unlock()
+	if b == nil || !b.Abierta() {
+		return nil
+	}
+	return b
+}
+
+// ponerBoveda cambia cuál es la bóveda abierta. Con nil, la quita.
+func (a *App) ponerBoveda(b *boveda.Boveda) {
+	a.mu.Lock()
+	a.bov = b
+	a.mu.Unlock()
+}
 
 // Arrancar la llama Wails cuando la ventana está lista.
 func (a *App) Arrancar(ctx context.Context) {

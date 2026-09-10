@@ -1,6 +1,7 @@
 package boveda
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
@@ -523,6 +524,58 @@ func TestLoBorradoNoBloqueaVolverAImportarlo(t *testing.T) {
 	if b.Cuantas() != 1 {
 		t.Errorf("hay %d entradas vivas", b.Cuantas())
 	}
+}
+
+// Una Esfinge de hoy no puede borrar lo que escriba una de mañana, **ni dentro
+// de una entrada ni al lado de las entradas**.
+//
+// La primera mitad ya estaba probada; la segunda no existía, y era una trampa con
+// fecha de caducidad: el envoltorio del cuerpo no conservaba nada, así que la
+// primera sección nueva que alguien pusiera junto a «entradas» —los permisos del
+// navegador de la fase 2 son la candidata— la habría tirado esta versión al
+// guardar, en silencio y sin forma de recuperarla.
+func TestLoQueEstaVersionNoEntiendeNoSeBorra(t *testing.T) {
+	b, _, ruta := nueva(t)
+	b.Poner(Entrada{Titulo: "Banco", Secreto: "s3cr3t0"})
+
+	// Se fabrica a mano el cuerpo que escribiría una versión más nueva: una
+	// entrada con un campo de más y una sección de más al lado de las entradas.
+	var c contenido
+	if err := json.Unmarshal([]byte(`{
+		"entradas": [{"id":"abc","tipo":"credencial","titulo":"Banco",
+		              "creada":"2026-01-01T00:00:00Z","cambiada":"2026-01-01T00:00:00Z",
+		              "loQueVieneDespues":{"algo":1}}],
+		"permisosDelNavegador": [{"origen":"https://banco.es","cuando":"2026-09-10"}],
+		"otraCosaDeMasAdelante": "no la borres"
+	}`), &c); err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Extra) != 2 {
+		t.Fatalf("no ha conservado las secciones de más: %v", c.Extra)
+	}
+
+	// Y al escribirlo, vuelve entero.
+	salido, err := json.Marshal(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, trozo := range []string{
+		"permisosDelNavegador", "otraCosaDeMasAdelante", "loQueVieneDespues", "no la borres",
+	} {
+		if !bytes.Contains(salido, []byte(trozo)) {
+			t.Errorf("«%s» se ha perdido al guardar: %s", trozo, salido)
+		}
+	}
+
+	// Lo conocido manda: `entradas` sale de la estructura, no de Extra.
+	var vuelta contenido
+	if err := json.Unmarshal(salido, &vuelta); err != nil {
+		t.Fatal(err)
+	}
+	if len(vuelta.Entradas) != 1 || vuelta.Entradas[0].Titulo != "Banco" {
+		t.Errorf("las entradas no han sobrevivido a la ida y vuelta: %+v", vuelta.Entradas)
+	}
+	_ = ruta
 }
 
 // La bóveda tiene que abrirse con las herramientas de siempre, sin depender de
