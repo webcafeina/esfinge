@@ -351,6 +351,29 @@ jobs:
           make publicar-cli VERSION="$version" GO=go
           ls -lh dist/
 
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # La extensión va colgada de la publicación **mientras no esté en las
+      # tiendas**, que es lo único que permite probarla sin clonar el repositorio:
+      # se descarga, se descomprime y se carga a mano. Cuando llegue a las tiendas
+      # esto sobra y se quita.
+      - name: Empaquetar la extensión del navegador
+        shell: bash
+        run: |
+          version="${{ github.event.inputs.version }}"
+          [ -n "$version" ] || version="${GITHUB_REF_NAME#v}"
+          make extension
+          for n in chrome firefox; do
+            (cd "navegador/dist/$n" && zip -qr "$GITHUB_WORKSPACE/dist/esfinge-extension-$version-$n.zip" .)
+          done
+          # Y las sumas otra vez, que se hicieron antes de existir estos ficheros.
+          # Un SHA256SUMS que no cubre todo lo publicado es peor que no tenerlo.
+          (cd dist && sha256sum esfinge-* > SHA256SUMS)
+          ls -lh dist/
+
       - uses: actions/upload-artifact@v4
         with:
           name: cli

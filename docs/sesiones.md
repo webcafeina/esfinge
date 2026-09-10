@@ -5,6 +5,42 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-10 · La fase 2, entrega 1: el navegador habla con la bóveda
+
+- **2.17.0.** Empieza la fase 2, el autorrelleno, con la decisión del cliente de hacerla para
+  Chrome/Edge y Firefox, publicada en las tiendas y rellenando sola. Safari queda fuera: exige la
+  cuenta de Apple que la ADR 0012 decidió no pagar.
+- **Esta entrega es el canal entero y ninguna página.** La extensión enseña las cuentas del sitio de
+  la pestaña y copia lo que se le pida. Es donde vive toda la superficie de seguridad, y deja
+  juzgarla antes de meter código en las páginas de nadie (ADR 0027).
+- **Y por el canal no sale ningún secreto**, que fue el mejor cambio del día: en vez de devolver la
+  contraseña, se le pide a Esfinge que la copie. Ningún secreto vive en el navegador **y** se hereda
+  el borrado del portapapeles de la 2.12.0, que copiando desde la extensión se habría perdido.
+- **Puse el diseño a revisar de forma adversaria antes de escribir el canal**, y volvió con dos
+  correcciones a decisiones que ya estaban enseñadas: traer la ventana al frente con la bóveda
+  cerrada —que convierte cualquier proceso local en un generador de diálogos de contraseña maestra—
+  y un `codigo(id)` sin origen ni permiso, con los identificadores enumerables. Las dos, fuera.
+- **Dos cosas con fecha de caducidad, hechas antes que nada:** el envoltorio del cuerpo de la bóveda
+  no conservaba lo que no entiende —la primera sección nueva la habría borrado una Esfinge vieja— y
+  `a.bov` se leía y escribía sin cerrojo, con el tic del bloqueo al otro lado.
+- **Windows**: el socket funciona, con el mismo código. Se sopesó una tubería con nombre y se
+  descartó con las cuentas delante. Lo que sí obligó Windows fue a sacar el puente a **su propio
+  binario** con `-H windowsgui`: `esfinge` es de consola y Chrome lanza el host cada pocos minutos.
+  De regalo, ese binario **ya no sabe abrir una bóveda**: no importa el paquete.
+- **Verificado**: emparejamiento de dominios con su tabla de casos, cada negativa fallando **por su
+  motivo**, que con la bóveda cerrada no sale ni un título, que treinta preguntas no impiden que se
+  cierre, que el secreto no vuelve por el canal, el enmarcado del traductor por los dos lados, dos
+  Esfinges que no se pisan, un socket huérfano que no bloquea, y los manifiestos de los seis
+  navegadores. `-race`, `make comprobar` y **84** pruebas de interfaz en los dos temas.
+- **Dos fallos míos por el camino, los dos encontrados mirando y no leyendo:** una lista vacía de Go
+  llega como `null` y un `null.length` **tumbó el panel entero de Ajustes**; y `Parar()` se colgaba
+  esperando conversaciones que nadie cerraba, porque cerrar el oyente no cierra lo ya aceptado —
+  apagar el canal se habría llevado la ventana por delante—.
+- **Y de una captura salió lo de siempre**: Ajustes seguía diciendo que la comprobación de versiones
+  es «lo único que Esfinge hace fuera de tu ordenador», falso desde la 2.14.0.
+- **Queda abierto, y es lo primero:** probarla en el Mac. Aquí no hay navegador con el que ejercitar
+  `connectNative` de punta a punta.
+
 ## 2026-09-10 · El correo de fallo que llevaba seis versiones llegando
 
 - **Sin versión nueva, porque no cambia nada del programa**: es el repositorio y la compilación. El

@@ -95,6 +95,63 @@ func TestSinExtensionesNoSeEscribeManifiesto(t *testing.T) {
 	}
 }
 
+// Los seis de la familia de Chromium comparten el mismo manifiesto y lo buscan en
+// seis sitios distintos. Esta prueba existe porque **la lista de carpetas es la
+// clase de cosa que se copia mal**: una ruta con una mayúscula de menos deja a un
+// navegador fuera sin que nada falle.
+func TestLosSeisDeLaFamiliaDeChromium(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("en Windows esto va al registro, y todavía no está")
+	}
+	t.Setenv("ESFINGE_EXTENSIONES", "abcdefghijklmnopabcdefghijklmnop")
+	casa := t.TempDir()
+
+	// Cada uno con su carpeta base, como si estuvieran los seis instalados.
+	var bases []string
+	if runtime.GOOS == "darwin" {
+		soporte := filepath.Join(casa, "Library", "Application Support")
+		bases = []string{
+			filepath.Join(soporte, "Google", "Chrome"),
+			filepath.Join(soporte, "Chromium"),
+			filepath.Join(soporte, "Microsoft Edge"),
+			filepath.Join(soporte, "BraveSoftware", "Brave-Browser"),
+			filepath.Join(soporte, "Vivaldi"),
+			filepath.Join(soporte, "com.operasoftware.Opera"),
+		}
+	} else {
+		config := filepath.Join(casa, ".config")
+		bases = []string{
+			filepath.Join(config, "google-chrome"),
+			filepath.Join(config, "chromium"),
+			filepath.Join(config, "microsoft-edge"),
+			filepath.Join(config, "BraveSoftware", "Brave-Browser"),
+			filepath.Join(config, "vivaldi"),
+			filepath.Join(config, "opera"),
+		}
+	}
+	for _, b := range bases {
+		if err := os.MkdirAll(b, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	escribirManifiestos(casa, "/donde/sea/esfinge-puente")
+	for _, b := range bases {
+		ruta := filepath.Join(b, "NativeMessagingHosts", nombreDelHost+".json")
+		if _, err := os.Stat(ruta); err != nil {
+			t.Errorf("falta el manifiesto en %s", b)
+		}
+	}
+
+	borrarManifiestos(casa)
+	for _, b := range bases {
+		ruta := filepath.Join(b, "NativeMessagingHosts", nombreDelHost+".json")
+		if _, err := os.Stat(ruta); err == nil {
+			t.Errorf("sigue el manifiesto en %s después de apagar el canal", b)
+		}
+	}
+}
+
 // No se crea la carpeta de un navegador que no está instalado: sería dejar un
 // fichero suelto en el perfil de alguien para siempre.
 func TestNoSeTocaElPerfilDeUnNavegadorQueNoEsta(t *testing.T) {

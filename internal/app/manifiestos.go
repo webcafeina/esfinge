@@ -80,9 +80,16 @@ type manifiesto struct {
 //
 // Son rutas por usuario, no del sistema: Esfinge se instala sin permisos de
 // administrador y no tiene por qué tocar nada de fuera de la carpeta de quien la
-// usa. Están las de Chrome, Chromium y Edge porque comparten formato y familia;
-// Brave, Vivaldi y Opera tienen las suyas y **no están**, que es una carencia
-// dicha y no un olvido.
+// usa.
+//
+// **Los seis de la familia de Chromium comparten formato y comparten lista**: el
+// mismo manifiesto vale para Chrome, Chromium, Edge, Brave, Vivaldi y Opera,
+// porque todos leen «allowed_origins» con direcciones «chrome-extension://…». Lo
+// único que cambia es dónde lo buscan, y por eso esto es una lista de carpetas y
+// no seis casos.
+//
+// Firefox va aparte de verdad: su campo es «allowed_extensions» y el valor es el
+// identificador pelado, no una dirección.
 func carpetasDeManifiestos(casa string) map[string][]string {
 	switch runtime.GOOS {
 	case "darwin":
@@ -92,6 +99,9 @@ func carpetasDeManifiestos(casa string) map[string][]string {
 				filepath.Join(soporte, "Google", "Chrome", "NativeMessagingHosts"),
 				filepath.Join(soporte, "Chromium", "NativeMessagingHosts"),
 				filepath.Join(soporte, "Microsoft Edge", "NativeMessagingHosts"),
+				filepath.Join(soporte, "BraveSoftware", "Brave-Browser", "NativeMessagingHosts"),
+				filepath.Join(soporte, "Vivaldi", "NativeMessagingHosts"),
+				filepath.Join(soporte, "com.operasoftware.Opera", "NativeMessagingHosts"),
 			},
 			"firefox": {filepath.Join(soporte, "Mozilla", "NativeMessagingHosts")},
 		}
@@ -102,6 +112,9 @@ func carpetasDeManifiestos(casa string) map[string][]string {
 				filepath.Join(config, "google-chrome", "NativeMessagingHosts"),
 				filepath.Join(config, "chromium", "NativeMessagingHosts"),
 				filepath.Join(config, "microsoft-edge", "NativeMessagingHosts"),
+				filepath.Join(config, "BraveSoftware", "Brave-Browser", "NativeMessagingHosts"),
+				filepath.Join(config, "vivaldi", "NativeMessagingHosts"),
+				filepath.Join(config, "opera", "NativeMessagingHosts"),
 			},
 			"firefox": {filepath.Join(casa, ".mozilla", "native-messaging-hosts")},
 		}

@@ -36,6 +36,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0024](adr/0024-iconos-de-los-sitios.md) | Los iconos de los sitios, y la segunda conexión | 2026-09-09 | aceptada · matiza la 0014 |
 | [0025](adr/0025-los-codigos-de-un-solo-uso.md) | Los códigos de un solo uso, en la misma bóveda | 2026-09-10 | aceptada · matiza la 0023 |
 | [0026](adr/0026-la-papelera.md) | La papelera guarda lo borrado, treinta días | 2026-09-10 | aceptada · matiza la 0023 · revisar con la sincronización |
+| [0027](adr/0027-el-canal-con-el-navegador.md) | El canal con el navegador | 2026-09-10 | aceptada · matiza la 0023 · revisar si se firma |
 
 ## Cuándo escribir una
 

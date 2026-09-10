@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.16.0**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.17.0**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -71,12 +71,20 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   restaura o se tira del todo una a una, se vacía a mano y **se va solo a los treinta días**. El
   coste está dicho en `docs/seguridad.md`: durante esos días la contraseña borrada sigue dentro del
   fichero, igual que las del historial de contraseñas anteriores.
+- **La fase 2, entrega 1** (ADR 0027): la extensión del navegador consulta la
+  bóveda por un **canal local** —un socket en tu carpeta, no un puerto—, apagado de fábrica y
+  encendido en Ajustes. Enseña las cuentas del sitio de la pestaña y copia lo que se le pida.
+  **Por el canal no sale ningún secreto**: copia Esfinge, y así hereda el borrado del portapapeles.
+  Todavía **no rellena formularios**.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
-  máquina sin entorno gráfico. Son **82**.
+  máquina sin entorno gráfico. Son **84**.
 
 ## En curso
 
-Nada a medias. La 2.15.0 cerró los códigos de un solo uso —comprobados contra Dashlane el mismo
+**La fase 2 está empezada.** La entrega 1 —el canal y la extensión que consulta y copia— está
+publicada en la 2.17.0; falta probarla en el Mac. Lo siguiente es la entrega 2, rellenar de verdad.
+
+La 2.15.0 cerró los códigos de un solo uso —comprobados contra Dashlane el mismo
 día— y la 2.16.0, la papelera. En medio salió, sin buscarla, una que llevaba desde la 2.12.0:
 **borrar una nota segura o una tarjeta dejaba su contenido dentro del fichero**, porque la lista de
 campos sensibles estaba escrita en dos sitios y solo uno estaba completo.
@@ -138,21 +146,23 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Los segundos factores están mudados**, comprobado el 10 de septiembre con los dos programas
-abiertos a la vez. Con eso, **todo lo que Dashlane hace y Esfinge tenía que hacer para sustituirlo en
-el escritorio está hecho**: contraseñas, notas, tarjetas, documentos, importación, búsqueda, iconos y
-segundo factor. Lo que queda de Dashlane no es una carencia de la bóveda, es la fase 2.
+**Probar la extensión en el Mac**, que es lo que decide si el canal está bien montado: encender el
+canal en Ajustes, cargar la extensión en Firefox —en Chrome hace falta antes su identificador de la
+tienda—, permitir el navegador cuando Esfinge lo pregunte, y ver que en un sitio de los tuyos salen
+tus cuentas y que copiar funciona.
 
-Por orden de lo que más acerca a dejarlo del todo:
+Después:
 
-1. **La fase 2, el autorrelleno.** Es la que de verdad decide si se deja Dashlane, y también la más
-   grande de todas: código nuevo en otro lenguaje, tres extensiones, tres tiendas con revisión, y
-   **sin final** —cada cambio de los navegadores hay que seguirlo—. Safari además está bloqueado sin
-   la cuenta de Apple. Antes de empezarla conviene releer la valoración del plan.
+1. **La entrega 2 de la fase 2: rellenar de verdad.** Es donde se decide si esto sustituye a
+   Dashlane, y donde entra el riesgo que la entrega 1 no tiene: código nuestro en todas las páginas.
+2. **Guardar y actualizar desde la página**, y luego el código de un solo uso.
+3. **Las tiendas**, que es donde Chrome consigue su identificador fijo y donde empieza a haber
+   revisiones de días por cada versión.
 
-**Y una decisión que sigue abierta y que conviene tomar con la cabeza fría:** la puerta del plan era
-que las fases 2 a 4 no se empezaran hasta que la bóveda se usara a diario, y todavía no ha pasado ni
-un día completo con ella. Lo que se decida mañana debería decirlo a sabiendas.
+**Y lo que sigue siendo verdad aunque la fase 2 esté empezada:** la puerta del plan era no empezarla
+hasta usar la bóveda a diario, y se empezó con un día. Fue una decisión tomada a sabiendas, no un
+descuido, y conviene recordarla si la entrega 2 se hace larga: lo que la justifica es que la bóveda
+se use, no que la extensión avance.
 
 De paso sigue pendiente juzgar el oro de la 2.11.0 puesto, y ver **cuántos de los 65 sitios acaban
 con icono real**: de ese número depende si hay que leer el HTML de los que faltan.
