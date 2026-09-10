@@ -130,6 +130,32 @@ Lo que hay que saber, dicho sin adornos:
 - **En Windows, los permisos del socket no significan nada**; ahí lo que lo protege es que vive en
   tu perfil de usuario.
 
+### Y desde la entrega 2, Esfinge escribe en las páginas
+
+Rellenar un formulario obliga a dos cosas que hasta ahora no hacían falta (ADR 0028). Las dos
+cambian lo que hay que saber, así que van dichas enteras y no de pasada:
+
+- **Hay un guion de Esfinge en cada página `https` que abres.** No dibuja nada, no guarda nada y no
+  habla con la página: lee el formulario, escribe en él y calla. Pero está ahí, y un fallo suyo
+  sería un fallo en las páginas de otros. Se apaga apagando el canal en Ajustes.
+- **Y por el canal sale una contraseña de verdad**, que hasta la entrega 1 no pasaba: entonces
+  copiaba Esfinge y por el socket solo volvía cuánto tardaría en borrarse el portapapeles. Para
+  escribir una contraseña en un formulario hay que tenerla. **Lo que sale por ahí no se borra
+  solo**, porque no pasa por el portapapeles: que la extensión lo escriba en el campo y lo olvide es
+  una promesa suya, y Esfinge no puede comprobarla.
+- **Con una sola cuenta guardada del sitio, se rellena sin que pulses nada.** Es lo que se pidió, y
+  el precio es éste: cualquier guion que ya esté corriendo en esa página puede leer del formulario
+  lo que Esfinge acaba de escribir. Para eso hace falta que alguien ya ejecute código en ese
+  dominio —donde también podría falsificarte el formulario entero—, así que es un escalón menos, no
+  una puerta nueva. Con **varias** cuentas no se rellena nada solo: se elige en el panel.
+- **Nunca en un marco de otro origen, y nunca sobre `http://`.** Un `iframe` ajeno puede ser
+  cualquiera y la dirección que ves arriba no es la suya. Y sobre texto claro no se rellena, lo que
+  deja fuera la página de administración de un router: es una carencia conocida, dicha aquí en vez
+  de resuelta a medias.
+- **Ante la duda, no se rellena.** No se toca un formulario con dos contraseñas visibles —eso es
+  registrarse—, ni un campo declarado como contraseña nueva o código de un solo uso, ni uno
+  invisible o de un píxel. Equivocarse de campo es escribir una contraseña donde la lea alguien.
+
 ## Dónde queda algo en disco
 
 | Qué | Dónde | Permisos |

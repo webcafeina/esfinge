@@ -64,6 +64,13 @@ A diferencia de un `.esf`, aquí **sí hay una segunda llave**: una clave de rec
 enseña una sola vez, al crearla, para apuntarla en papel
 ([cómo está hecha](docs/adr/0023-la-boveda.md)).
 
+**Y rellena en el navegador.** Hay una extensión para Chrome, Edge, Firefox, Brave, Vivaldi y
+Opera: cuando entras en un sitio del que tienes una cuenta guardada, escribe el usuario y la
+contraseña sin que pulses nada. Si tienes varias cuentas de ese sitio, se elige en su panel. Habla
+con Esfinge por un **canal local** —ni cuenta, ni servidor, ni nada que salga de tu ordenador—, viene
+apagado y se enciende en Ajustes ([cómo está hecho](docs/adr/0027-el-canal-con-el-navegador.md), [qué
+cambia al rellenar](docs/adr/0028-rellenar-en-la-pagina.md)).
+
 **Lleva un historial** de qué se cifró y cuándo. Nunca el contenido, ni la clave, ni el texto
 cifrado, ni nada de lo que haya en la bóveda.
 

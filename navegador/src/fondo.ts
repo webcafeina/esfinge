@@ -183,15 +183,49 @@ function nombreDelNavegador(): string {
 api.runtime.onConnect.addListener((puerto) => {
   puerto.onMessage.addListener((p) => {
     const contestar = (r: Respuesta) => {
-      // El panel puede haberse cerrado mientras se preguntaba —se cierra al
-      // hacer clic fuera—, y entonces escribir en el puerto lanza. No es un
-      // fallo: es que ya no hay nadie al otro lado.
+      // Quien preguntaba puede haberse ido mientras se preguntaba —el panel se
+      // cierra al hacer clic fuera, la pestaña se recarga—, y entonces escribir en
+      // el puerto lanza. No es un fallo: es que ya no hay nadie al otro lado.
       try {
         puerto.postMessage(r);
       } catch {
-        /* el panel se ha ido */
+        /* se ha ido */
       }
     };
+
+    // **El origen de una página lo dice el navegador, no la página**, y aquí es
+    // donde eso deja de ser una frase y es una línea. Un puerto llamado «pagina»
+    // viene del guion que Esfinge pone en las páginas, y lo que llegue por él en
+    // el campo `origen` se tira y se pone `sender.tab.url`, que lo rellena el
+    // navegador y es lo que se ve en la barra de direcciones.
+    //
+    // Sin esto, cualquier página con una vulnerabilidad que le dejara hablar por
+    // este puerto podría pedir las cuentas de un banco diciendo que es el banco.
+    // Con esto, lo peor que puede pedir es lo suyo.
+    //
+    // **Y si llega vacía, se dice.** No es una hipótesis: en Firefox los
+    // `host_permissions` de MV3 no se conceden al instalar, hay que darlos en el
+    // panel de extensiones. Sin ellos `sender.tab.url` llega `undefined` —sin
+    // error—, el origen viaja vacío y Esfinge contesta que ahí no rellena. Desde
+    // fuera eso parece un fallo de Esfinge y no un permiso que falta, que es
+    // exactamente la clase de silencio que ya costó cinco versiones con
+    // `storage`. Aquí se convierte en una frase que dice qué hacer.
+    if (puerto.name === "pagina") {
+      const donde = puerto.sender?.tab?.url ?? "";
+      if (!donde) {
+        contestar({
+          ok: false,
+          motivo: "origen",
+          error:
+            "La extensión no puede ver la dirección de esta pestaña. Dale permiso a " +
+            "Esfinge para este sitio: en Firefox, en el botón de extensiones de la " +
+            "barra; en Chrome, en «Gestionar extensión» → «Acceso a sitios web».",
+        });
+        return;
+      }
+      (p as Peticion).origen = donde;
+    }
+
     // **Con `catch`, y es la lección de todo el día por tercera vez.** Sin él,
     // cualquier excepción aquí dentro es una promesa rechazada que nadie recoge:
     // el trabajador no contesta, el panel espera su plazo y lo que se ve es «el

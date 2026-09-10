@@ -62,14 +62,39 @@ func TestLaTuberiaEnteraDesdeElNavegador(t *testing.T) {
 		t.Fatalf("emparejar: %+v", r)
 	}
 
+	testigo := r.Testigo
+
 	// Segundo: pedir las cuentas del sitio, con el testigo recién dado.
-	r = unViaje(t, socket, `{"version":1,"que":"cuentas","testigo":"`+r.Testigo+
+	r = unViaje(t, socket, `{"version":1,"que":"cuentas","testigo":"`+testigo+
 		`","origen":"https://banco.es/entrar"}`)
 	if !r.OK {
 		t.Fatalf("cuentas: %+v", r)
 	}
 	if len(r.Cuentas) != 1 || r.Cuentas[0].Titulo != "Banco" {
 		t.Fatalf("cuentas: %+v", r.Cuentas)
+	}
+
+	// Tercero, y es la entrega 2: pedir con qué rellenar esa cuenta. **Es el único
+	// viaje de todo el protocolo por el que sale una contraseña de la bóveda**, así
+	// que se comprueba de punta a punta y sobre los bytes de verdad.
+	id := r.Cuentas[0].ID
+	r = unViaje(t, socket, `{"version":1,"que":"rellenar","testigo":"`+testigo+
+		`","id":"`+id+`","origen":"https://banco.es/entrar"}`)
+	if !r.OK || r.Relleno == nil {
+		t.Fatalf("rellenar: %+v", r)
+	}
+	if r.Relleno.Usuario != "yo@ejemplo.es" || r.Relleno.Secreto != "s3cr3t0" {
+		t.Fatalf("lo que ha llegado para rellenar no es lo guardado: %+v", r.Relleno)
+	}
+
+	// Y el mismo identificador, pedido desde otro sitio, no saca nada. Va aquí y no
+	// solo en la prueba del servidor porque **esto es lo que de verdad recorre una
+	// contraseña**: si alguna de las cuatro piezas del camino se saltara la
+	// comprobación del dominio, aquí es donde se vería.
+	r = unViaje(t, socket, `{"version":1,"que":"rellenar","testigo":"`+testigo+
+		`","id":"`+id+`","origen":"https://otro-sitio.example/entrar"}`)
+	if r.OK || r.Relleno != nil {
+		t.Fatalf("ha entregado la contraseña del banco a otro sitio: %+v", r)
 	}
 }
 

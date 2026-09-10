@@ -12,7 +12,13 @@ export const VERSION_DEL_PROTOCOLO = 1;
 
 export type Peticion = {
   version: number;
-  que: "estado" | "emparejar" | "cuentas" | "copiar-secreto" | "copiar-codigo";
+  que:
+    | "estado"
+    | "emparejar"
+    | "cuentas"
+    | "copiar-secreto"
+    | "copiar-codigo"
+    | "rellenar";
   origen?: string;
   id?: string;
   testigo?: string;
@@ -45,6 +51,21 @@ export type Copiado = {
   quedan?: number;
 };
 
+/**
+ * Con qué rellenar un formulario. **Es lo único de este protocolo que lleva un
+ * secreto dentro**, y por eso tiene su propio tipo: para que buscar quién toca
+ * una contraseña en la extensión sea buscar un nombre.
+ *
+ * Quien lo recibe tiene una obligación que ningún tipo puede imponer: escribirlo
+ * en el campo y olvidarlo. Nada de guardarlo, nada de registrarlo, nada de pasarlo
+ * a otra parte de la extensión. Lo que sale por aquí **no hereda el borrado del
+ * portapapeles**, porque no pasa por el portapapeles.
+ */
+export type Relleno = {
+  usuario: string;
+  secreto: string;
+};
+
 export type Respuesta = {
   ok: boolean;
   error?: string;
@@ -53,6 +74,7 @@ export type Respuesta = {
   estado?: Estado;
   cuentas?: Cuenta[];
   copiado?: Copiado;
+  relleno?: Relleno;
   testigo?: string;
 };
 

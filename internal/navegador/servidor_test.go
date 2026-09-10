@@ -65,6 +65,16 @@ func (b *bovedaFalsa) CopiarCodigo(id, dominio string) (Copiado, error) {
 	return Copiado{}, errors.New("Esa entrada no es de ese sitio")
 }
 
+func (b *bovedaFalsa) Rellenar(id, dominio string) (Relleno, error) {
+	b.pedidos++
+	for _, e := range lasEntradas {
+		if e.id == id && Encaja(e.sitio, dominio) {
+			return Relleno{Usuario: e.usuario, Secreto: e.secreto}, nil
+		}
+	}
+	return Relleno{}, errors.New("Esa entrada no es de ese sitio")
+}
+
 func (b *bovedaFalsa) Emparejar(string) (string, error) {
 	if b.niega {
 		return "", errors.New("No se ha permitido")
@@ -77,7 +87,7 @@ func (b *bovedaFalsa) Emparejado(t string) bool { return b.testigos[t] }
 
 func pedir(s *Servidor, p Peticion) Respuesta {
 	p.Version = VersionDelProtocolo
-	return s.Atender(p, nil)
+	return s.Atender(p)
 }
 
 // El camino bueno, entero: preguntar qué hay para un sitio y sacar una
@@ -205,7 +215,7 @@ func TestLoQueElNavegadorNoPuedeConseguir(t *testing.T) {
 func TestUnaVersionQueNoSeEntiende(t *testing.T) {
 	s := &Servidor{fuente: nuevaFalsa()}
 	for _, v := range []int{0, 2, 99} {
-		r := s.Atender(Peticion{Version: v, Que: QueEstado}, nil)
+		r := s.Atender(Peticion{Version: v, Que: QueEstado})
 		if r.OK || r.Motivo != MotivoNoEntiendo {
 			t.Errorf("con versión %d: %+v", v, r)
 		}
@@ -244,34 +254,121 @@ func TestConLaBovedaCerradaNoSaleNada(t *testing.T) {
 // dominio no devuelve secretos, pero con un diccionario de dominios se
 // reconstruye la lista entera de sitios de la bóveda, que es justo lo que se
 // cifra en el disco.
+//
+// **Y se prueba abriendo una conexión por pregunta**, que es el camino de verdad
+// y no el cómodo. La versión anterior de esta prueba le pasaba un contador hecho
+// a mano a sesenta llamadas seguidas; en producción ese contador vivía **en la
+// conexión** y la extensión abre **una por petición**, así que el freno no
+// frenaba nada y esto seguía en verde. Es la misma familia de fallo que los
+// iconos, y la regla es la misma: lo que hay que ejercitar es lo que hace la
+// extensión, no lo que es cómodo llamar.
 func TestNoSePuedeEnumerarLaBovedaAPreguntas(t *testing.T) {
-	s := &Servidor{fuente: nuevaFalsa()}
-	cuenta := &contador{}
+	ruta := filepath.Join(t.TempDir(), "puente.sock")
+	s, err := Servir(ruta, nuevaFalsa())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Parar()
 
-	corta := 0
-	for i := 0; i < preguntasPorMinuto*3; i++ {
-		r := s.Atender(Peticion{
+	// Cada vuelta es lo que hace la extensión: puerto nuevo, una pregunta, adiós.
+	unaPregunta := func() Respuesta {
+		conn, err := net.Dial("unix", ruta)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer conn.Close()
+		if err := json.NewEncoder(conn).Encode(Peticion{
 			Version: VersionDelProtocolo, Que: QueCuentas,
 			Testigo: "el-testigo", Origen: "https://banco.es",
-		}, cuenta)
-		if !r.OK && r.Motivo == MotivoDemasiado {
+		}); err != nil {
+			t.Fatal(err)
+		}
+		var r Respuesta
+		if err := json.NewDecoder(conn).Decode(&r); err != nil {
+			t.Fatal(err)
+		}
+		return r
+	}
+
+	corta := 0
+	for i := 0; i < preguntasPorMinuto+10; i++ {
+		if r := unaPregunta(); !r.OK && r.Motivo == MotivoDemasiado {
 			corta++
 		}
 	}
-	if corta == 0 {
-		t.Fatal("se pueden hacer todas las preguntas que se quiera")
-	}
-	if corta != preguntasPorMinuto*2 {
-		t.Errorf("ha cortado %d veces de %d", corta, preguntasPorMinuto*2)
+	if corta != 10 {
+		t.Errorf("ha cortado %d veces de 10: una conexión por pregunta esquiva el freno", corta)
 	}
 
 	// Y pasada la ventana se vuelve a contestar: es un freno, no un castigo.
-	cuenta.desde = time.Now().Add(-2 * ventanaDeCuenta)
-	if r := s.Atender(Peticion{
-		Version: VersionDelProtocolo, Que: QueCuentas,
-		Testigo: "el-testigo", Origen: "https://banco.es",
-	}, cuenta); !r.OK {
+	s.frenos.preguntas.desde = time.Now().Add(-2 * ventanaDeCuenta)
+	if r := unaPregunta(); !r.OK {
 		t.Errorf("sigue cortando pasada la ventana: %+v", r)
+	}
+}
+
+// Rellenar tiene su propio freno, más estrecho: preguntar de más enseña una
+// lista, rellenar de más entrega contraseñas.
+func TestRellenarTieneSuPropioFreno(t *testing.T) {
+	s := &Servidor{fuente: nuevaFalsa(), frenos: nuevosFrenos()}
+	uno := Peticion{
+		Version: VersionDelProtocolo, Que: QueRellenar,
+		Testigo: "el-testigo", ID: "1", Origen: "https://banco.es",
+	}
+
+	for i := 0; i < rellenosPorMinuto; i++ {
+		if r := s.Atender(uno); !r.OK {
+			t.Fatalf("el relleno %d ya cortaba: %+v", i, r)
+		}
+	}
+	if r := s.Atender(uno); r.OK || r.Motivo != MotivoDemasiado {
+		t.Errorf("el freno de rellenar no corta: %+v", r)
+	}
+	// Y corta **antes** que el de preguntar, que es lo que significa «más
+	// estrecho»: si fuera al revés, este número no valdría para nada.
+	if rellenosPorMinuto >= preguntasPorMinuto {
+		t.Errorf("rellenar (%d) no es más estrecho que preguntar (%d)",
+			rellenosPorMinuto, preguntasPorMinuto)
+	}
+}
+
+// El verbo que sí entrega un secreto: que salga cuando toca, y que **no salga**
+// cuando la entrada es de otro sitio, con el identificador correcto en la mano.
+func TestRellenarSoloEntregaLoDeEseSitio(t *testing.T) {
+	s := &Servidor{fuente: nuevaFalsa()}
+
+	r := pedir(s, Peticion{
+		Que: QueRellenar, Testigo: "el-testigo", ID: "1", Origen: "https://www.banco.es/entrar",
+	})
+	if !r.OK || r.Relleno == nil {
+		t.Fatalf("no ha rellenado: %+v", r)
+	}
+	if r.Relleno.Usuario != "yo@ejemplo.es" || r.Relleno.Secreto != "s3cr3t0" {
+		t.Errorf("relleno raro: %+v", r.Relleno)
+	}
+
+	// **La entrada del banco, pedida desde otro sitio.** Es el ataque de una sola
+	// línea si esta comprobación no estuviera, porque los identificadores se
+	// enumeran preguntando por cuentas.
+	r = pedir(s, Peticion{
+		Que: QueRellenar, Testigo: "el-testigo", ID: "1", Origen: "https://correo.com",
+	})
+	if r.OK || r.Relleno != nil {
+		t.Fatalf("ha entregado la contraseña del banco a otro sitio: %+v", r)
+	}
+
+	// Sin testigo no se llega ni a preguntar.
+	r = pedir(s, Peticion{Que: QueRellenar, ID: "1", Origen: "https://banco.es"})
+	if r.OK || r.Motivo != MotivoSinEmparejar {
+		t.Errorf("sin emparejar ha contestado: %+v", r)
+	}
+
+	// Y sobre http no se rellena, que es lo mismo que ya valía para copiar.
+	r = pedir(s, Peticion{
+		Que: QueRellenar, Testigo: "el-testigo", ID: "1", Origen: "http://banco.es",
+	})
+	if r.OK || r.Motivo != MotivoOrigenInvalido {
+		t.Errorf("ha rellenado sobre http: %+v", r)
 	}
 }
 
@@ -397,7 +494,7 @@ func TestLoQueSePuedePedirEstaEnLaLista(t *testing.T) {
 		r := s.Atender(Peticion{
 			Version: VersionDelProtocolo, Que: que,
 			Testigo: "el-testigo", Origen: "https://banco.es", ID: "1", Quien: "Chrome",
-		}, nil)
+		})
 		if r.Motivo == MotivoNoEntiendo {
 			t.Errorf("«%s» está en la lista y el servidor no lo conoce", que)
 			continue

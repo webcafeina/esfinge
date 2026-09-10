@@ -74,15 +74,28 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
 - **La fase 2, entrega 1** (ADR 0027): la extensión del navegador consulta la
   bóveda por un **canal local** —un socket en tu carpeta, no un puerto—, apagado de fábrica y
   encendido en Ajustes. Enseña las cuentas del sitio de la pestaña y copia lo que se le pida.
-  **Por el canal no sale ningún secreto**: copia Esfinge, y así hereda el borrado del portapapeles.
-  Todavía **no rellena formularios**.
+  Comprobado en un Mac de verdad, en Firefox y en Chrome.
+- **La fase 2, entrega 2** (ADR 0028): **rellena los formularios**. Con una cuenta guardada del
+  sitio, sola al cargar la página; con varias, desde el panel. Y **en la página no se dibuja nada**:
+  el guion lee el formulario, escribe en él y calla. Dos propiedades de la entrega 1 se rompen a
+  conciencia y hay que decirlas: **por el canal ya sale una contraseña de verdad** —para escribirla
+  en un campo hay que tenerla, y eso no hereda el borrado del portapapeles— y **hay código nuestro en
+  cada página `https`**. A cambio, el verbo nuevo lleva su propio freno, más estrecho que el de
+  preguntar, y la detección de campos está escrita en negativo: ante la duda, no se rellena.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
   máquina sin entorno gráfico. Son **84**.
 
 ## En curso
 
-**La fase 2 está empezada.** La entrega 1 —el canal y la extensión que consulta y copia— está
-publicada en la 2.17.0; falta probarla en el Mac. Lo siguiente es la entrega 2, rellenar de verdad.
+**La fase 2 va por la entrega 2.** La 1 —el canal y la extensión que consulta y copia— se comprobó
+en un Mac en las dos familias de navegador. La 2 —rellenar— está escrita y probada aquí hasta donde
+se puede: **falta verla en sitios de verdad**, que es lo único que ninguna prueba puede decir.
+
+De escribirla salió, sin buscarla, una de la entrega 1: **el freno de preguntas no frenaba nada**. El
+contador vivía en la conexión y la extensión abre una conexión por petición, así que el tope de
+sesenta por minuto que impedía reconstruir la lista de sitios de la bóveda con un diccionario de
+dominios no se alcanzaba jamás. La prueba estaba en verde porque le pasaba un contador hecho a mano a
+sesenta llamadas seguidas, que es el caso que no ocurre. Es la misma familia que los iconos.
 
 La 2.15.0 cerró los códigos de un solo uso —comprobados contra Dashlane el mismo
 día— y la 2.16.0, la papelera. En medio salió, sin buscarla, una que llevaba desde la 2.12.0:
@@ -157,19 +170,34 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**La entrega 2 de la fase 2: rellenar de verdad.** La 1 está comprobada en el Mac —la extensión
-reconoce el sitio, enseña la cuenta y copia— así que el canal está bien montado y lo que queda es lo
-que se nota: escribir en el formulario en vez de copiar.
+**Probar el relleno en sitios de verdad, en el Mac.** Es la única comprobación que queda de la
+entrega 2 y ninguna prueba la puede hacer: los doce casos de `navegador/pruebas/campos.spec.ts` son
+formularios escritos aquí, y lo que hay ahí fuera lo han escrito otros. Tres cosas que mirar, y las
+tres cambian lo que se hace después:
 
-Es también donde entra el riesgo que la entrega 1 no tiene: **código nuestro en todas las páginas**.
+1. **Si los campos se detectan** en tres o cuatro sitios corrientes y en uno difícil —un banco, que
+   es donde los formularios son más raros—.
+2. **Si rellenar solo es demasiado.** Si aparecen rellenos que nadie quería, la respuesta no es
+   afinar la detección a ciegas: es un interruptor en Ajustes.
+3. **Si un clic más en el panel molesta** cuando hay varias cuentas del mismo sitio. De eso depende
+   si el desplegable dentro del campo se hace o no se hace.
+
+Y de paso, **si en Firefox hace falta conceder el permiso de sitio a mano**: en MV3 no se da al
+instalar. Si hace falta, la extensión lo dice con una frase que explica dónde darlo.
 
 Después:
 
-1. **Guardar y actualizar desde la página**, y el código de un solo uso. Es donde se decide si esto sustituye a
-   Dashlane, y donde entra el riesgo que la entrega 1 no tiene: código nuestro en todas las páginas.
-2. **Guardar y actualizar desde la página**, y luego el código de un solo uso.
-3. **Las tiendas**, que es donde Chrome consigue su identificador fijo y donde empieza a haber
-   revisiones de días por cada versión.
+1. **Guardar y actualizar desde la página** (entrega 3): al enviar un formulario con una cuenta que
+   no está en la bóveda, ofrecer guardarla; si está con otra contraseña, ofrecer actualizarla, con el
+   historial de contraseñas anteriores que ya existe.
+2. **El código de un solo uso, rellenado también** (entrega 4). Ya está calculado en Go desde la
+   2.15.0.
+3. **Las tiendas** (entrega 5), que es donde Chrome consigue su identificador definitivo y donde
+   empieza a haber revisiones de días por cada versión. Y donde el permiso que se pide —`https://*/*`
+   y un guion en todas las páginas— pasa por la revisión más estricta que dan las dos.
+
+Y sigue abierta la deuda de Windows, que la entrega 2 no toca: **el manifiesto del navegador va al
+registro y no se escribe**, y el instalador no copia `esfinge-puente`.
 
 **Y lo que sigue siendo verdad aunque la fase 2 esté empezada:** la puerta del plan era no empezarla
 hasta usar la bóveda a diario, y se empezó con un día. Fue una decisión tomada a sabiendas, no un

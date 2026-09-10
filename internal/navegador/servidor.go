@@ -55,6 +55,10 @@ type Fuente interface {
 	CopiarSecreto(id, dominio string) (Copiado, error)
 	// CopiarCodigo hace lo mismo con el código de un solo uso.
 	CopiarCodigo(id, dominio string) (Copiado, error)
+	// Rellenar devuelve el usuario y la contraseña de una entrada, **si es de ese
+	// dominio**. Es lo único de esta interfaz que entrega un secreto a quien
+	// pregunta en vez de dejarlo en el portapapeles.
+	Rellenar(id, dominio string) (Relleno, error)
 	// Emparejar le pregunta a la persona, en la ventana, si permite que ese
 	// navegador hable con la bóveda. Devuelve el testigo si dice que sí.
 	Emparejar(quien string) (string, error)
@@ -62,7 +66,20 @@ type Fuente interface {
 	Emparejado(testigo string) bool
 }
 
-// Los topes de preguntas por conexión.
+// Los topes de preguntas, que son **del canal y no de una conexión**.
+//
+// Esa distinción es todo el arreglo de la entrega 2, y conviene dejar escrito por
+// qué, porque la primera versión parecía correcta y no frenaba nada: el contador
+// vivía en `conversar`, es decir **uno por conexión**, y la extensión abre **una
+// conexión por pregunta** —lo dice su propio comentario: «un puerto por
+// petición», que con MV3 es lo razonable porque el trabajador se muere solo—.
+// Cada pregunta llegaba por un proceso nuevo, con su contador a cero. El tope de
+// sesenta por minuto no se alcanzaba jamás.
+//
+// La prueba tampoco lo veía, y por el motivo de siempre: le pasaba **un contador
+// hecho a mano** a sesenta llamadas seguidas, que es el caso que no ocurre. Ahora
+// los frenos cuelgan del [Servidor] y no hay dónde poner uno por conexión aunque
+// se quisiera.
 //
 // **Existen por la enumeración, que es el ataque que casi se me escapa.** Pedir
 // las cuentas de un dominio no devuelve secretos, pero con un diccionario de
@@ -74,8 +91,15 @@ type Fuente interface {
 //
 // El tope es holgado para el uso real —una pestaña pregunta una vez— y estrecho
 // para un diccionario.
+// Y son **dos**, porque las dos cosas no cuestan lo mismo: preguntar de más
+// enseña una lista de sitios; rellenar de más entrega contraseñas. El de
+// rellenar es estrecho porque el uso real lo es —una persona rellena un
+// formulario, no doce— y porque al otro lado hay código nuestro en todas las
+// páginas: si alguna vez se cuela algo por ahí, este número es lo que decide
+// entre una contraseña y la bóveda entera.
 const (
 	preguntasPorMinuto = 60
+	rellenosPorMinuto  = 12
 	ventanaDeCuenta    = time.Minute
 )
 
@@ -83,6 +107,9 @@ const (
 type Servidor struct {
 	fuente Fuente
 	ruta   string
+	// frenos son los topes de preguntas, compartidos por todas las conexiones. En
+	// las pruebas puede ser nulo, que significa «sin freno».
+	frenos *frenos
 
 	mu      sync.Mutex
 	oyente  net.Listener
@@ -112,7 +139,13 @@ func Servir(ruta string, f Fuente) (*Servidor, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Servidor{fuente: f, ruta: ruta, oyente: oyente, conexiones: map[net.Conn]bool{}}
+	s := &Servidor{
+		fuente:     f,
+		ruta:       ruta,
+		frenos:     nuevosFrenos(),
+		oyente:     oyente,
+		conexiones: map[net.Conn]bool{},
+	}
 	go s.aceptar()
 	return s, nil
 }
@@ -182,10 +215,11 @@ func (s *Servidor) aceptar() {
 
 // conversar atiende una conexión hasta que se cierra.
 //
-// Una conexión es **un navegador**, y dura lo que dure el proceso que lanzó: con
-// MV3 eso son minutos, no una sesión. Todo lo que se guarde por conexión tiene
-// que poder perderse sin consecuencias, y aquí lo único que se guarda es la
-// cuenta de preguntas.
+// Una conexión es **una pregunta**, o casi: la extensión abre un puerto nativo
+// por petición porque el trabajador de MV3 se muere solo cada pocos minutos y un
+// puerto de larga vida se cae igual. De ahí la regla que costó el freno de
+// mentira de la entrega 1: **aquí no se guarda nada**. Lo que tenga que contar
+// algo cuelga del [Servidor], que sí dura.
 func (s *Servidor) conversar(conn net.Conn) {
 	defer func() {
 		conn.Close()
@@ -196,22 +230,22 @@ func (s *Servidor) conversar(conn net.Conn) {
 
 	dec := json.NewDecoder(io.LimitReader(conn, 1<<20))
 	enc := json.NewEncoder(conn)
-	cuenta := &contador{}
 
 	for {
 		var p Peticion
 		if err := dec.Decode(&p); err != nil {
 			return // se ha ido, o ha mandado algo que no es JSON
 		}
-		if err := enc.Encode(s.Atender(p, cuenta)); err != nil {
+		if err := enc.Encode(s.Atender(p)); err != nil {
 			return
 		}
 	}
 }
 
-// contador limita cuántas preguntas se contestan por ventana de tiempo.
+// contador limita cuántas veces se hace algo por ventana de tiempo.
 type contador struct {
 	mu     sync.Mutex
+	tope   int
 	desde  time.Time
 	cuanto int
 }
@@ -223,19 +257,41 @@ func (c *contador) cabe(ahora time.Time) bool {
 		c.desde, c.cuanto = ahora, 0
 	}
 	c.cuanto++
-	return c.cuanto <= preguntasPorMinuto
+	return c.cuanto <= c.tope
+}
+
+// frenos son los dos topes del canal, juntos porque se leen juntos.
+type frenos struct {
+	preguntas contador
+	rellenos  contador
+}
+
+func nuevosFrenos() *frenos {
+	return &frenos{
+		preguntas: contador{tope: preguntasPorMinuto},
+		rellenos:  contador{tope: rellenosPorMinuto},
+	}
 }
 
 // Atender resuelve una petición. **Es una función de la petición y la fuente**,
 // sin sockets por medio, para que todo lo que decide se pueda probar sin montar
 // nada.
-func (s *Servidor) Atender(p Peticion, cuenta *contador) Respuesta {
+func (s *Servidor) Atender(p Peticion) Respuesta {
 	if p.Version != VersionDelProtocolo {
 		return mal(MotivoNoEntiendo,
 			"Esta versión de Esfinge no entiende a esa extensión; actualiza la que se haya quedado atrás")
 	}
-	if cuenta != nil && !cuenta.cabe(time.Now()) {
-		return mal(MotivoDemasiado, "Demasiadas preguntas seguidas")
+	ahora := time.Now()
+	if s.frenos != nil {
+		if !s.frenos.preguntas.cabe(ahora) {
+			return mal(MotivoDemasiado, "Demasiadas preguntas seguidas")
+		}
+		// **El de rellenar se mira aquí y no en su `case`**, para que caiga antes de
+		// tocar la bóveda y para que esté al lado del otro: un freno escondido en la
+		// rama de un `switch` es un freno que alguien quita sin verlo.
+		if p.Que == QueRellenar && !s.frenos.rellenos.cabe(ahora) {
+			return mal(MotivoDemasiado, "Demasiados rellenos seguidos")
+		}
 	}
 
 	// El estado y el emparejamiento son lo único que se contesta sin testigo, y
@@ -297,6 +353,13 @@ func (s *Servidor) Atender(p Peticion, cuenta *contador) Respuesta {
 			return mal(MotivoNoEncaja, err.Error())
 		}
 		return Respuesta{OK: true, Copiado: &c}
+
+	case QueRellenar:
+		r, err := s.fuente.Rellenar(p.ID, dominio)
+		if err != nil {
+			return mal(MotivoNoEncaja, err.Error())
+		}
+		return Respuesta{OK: true, Relleno: &r}
 	}
 
 	return mal(MotivoNoEntiendo, "Esfinge no sabe hacer eso")

@@ -254,6 +254,39 @@ func (f fuenteDelNavegador) CopiarCodigo(id, dominio string) (navegador.Copiado,
 	}, nil
 }
 
+// Rellenar es **el único sitio de toda la aplicación por el que una contraseña
+// sale hacia el navegador**, y merece leerse entero antes de tocarlo.
+//
+// Hasta la entrega 2 la propiedad del canal era fuerte y fácil de decir: por aquí
+// no pasa ningún secreto, copia Esfinge. Escribir en un formulario no admite ese
+// truco —para escribir la contraseña hay que tenerla—, así que lo que se puede
+// hacer no es evitarlo sino acotarlo, y lo acotado es esto:
+//
+//   - **Pasa por `entradaDe`**, igual que copiar: testigo, origen que da el
+//     navegador, dominio registrable y bóveda abierta. Una entrada de otro sitio
+//     no sale por aquí, y esa comprobación vive en un solo sitio a propósito.
+//   - **Una entrada, no una lista.** No existe «dame las de este dominio con sus
+//     contraseñas».
+//   - **Sin contar como actividad**, como todo lo que entra por el canal. Aquí
+//     importa más que en los demás: si rellenar moviera el reloj, navegar por
+//     sitios guardados mantendría la bóveda abierta indefinidamente.
+//
+// Y lo que **no** se puede acotar desde aquí, que hay que decirlo en vez de
+// dejarlo implícito: lo que sale por esta función **no hereda el borrado del
+// portapapeles**, porque no pasa por el portapapeles. Que se escriba en el campo
+// y se olvide es una promesa de la extensión, y Esfinge no tiene forma de
+// comprobarla. Está en `docs/seguridad.md` con esas palabras.
+func (f fuenteDelNavegador) Rellenar(id, dominio string) (navegador.Relleno, error) {
+	e, err := f.entradaDe(id, dominio)
+	if err != nil {
+		return navegador.Relleno{}, err
+	}
+	if e.Secreto == "" {
+		return navegador.Relleno{}, errors.New("Esa entrada no tiene contraseña")
+	}
+	return navegador.Relleno{Usuario: e.Usuario, Secreto: e.Secreto}, nil
+}
+
 // entradaDe busca una entrada **y comprueba que es de ese sitio**.
 //
 // La comprobación va aquí y no en quien llama, a propósito: es el único sitio por

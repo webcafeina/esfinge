@@ -37,6 +37,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0025](adr/0025-los-codigos-de-un-solo-uso.md) | Los códigos de un solo uso, en la misma bóveda | 2026-09-10 | aceptada · matiza la 0023 |
 | [0026](adr/0026-la-papelera.md) | La papelera guarda lo borrado, treinta días | 2026-09-10 | aceptada · matiza la 0023 · revisar con la sincronización |
 | [0027](adr/0027-el-canal-con-el-navegador.md) | El canal con el navegador | 2026-09-10 | aceptada · matiza la 0023 · revisar si se firma |
+| [0028](adr/0028-rellenar-en-la-pagina.md) | Rellenar en la página, y no dibujar nada en ella | 2026-09-10 | aceptada · continúa la 0027 · revisar con el uso y en las tiendas |
 
 ## Cuándo escribir una
 

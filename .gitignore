@@ -30,6 +30,8 @@ frontend/dist/
 frontend/capturas/
 frontend/test-results/
 frontend/playwright-report/
+navegador/test-results/
+navegador/playwright-report/
 internal/interfaz/dist/assets/
 build/bin/
 build/darwin/ventana-dmg.png

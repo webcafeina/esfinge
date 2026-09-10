@@ -1,20 +1,31 @@
 # La extensión de Esfinge
 
-Consulta la bóveda desde el navegador. Es la **entrega 1** de la fase 2: enseña
-las cuentas que tienes del sitio que estás mirando y copia lo que le pidas.
-**Todavía no rellena formularios**, eso es la entrega siguiente.
+Rellena las contraseñas de tu bóveda de Esfinge. Va por la **entrega 2** de la
+fase 2: con una cuenta guardada del sitio, rellena sola al cargar la página; con
+varias, se elige en el panel.
 
 ## Lo que hay que saber antes de mirar el código
 
-**Por aquí no pasa ningún secreto.** La contraseña la copia Esfinge al
-portapapeles del sistema, no la extensión, y por el canal solo vuelve cuánto
-tardará en borrarse. Eso hace dos cosas a la vez: que un secreto no viva nunca en
-el navegador, y que el borrado del portapapeles que Esfinge ya hacía desde la
-2.12.0 valga también aquí.
+**En la página no se dibuja nada.** Ni desplegable sobre el campo, ni icono
+dentro, ni marco flotante. El guion de página lee el formulario, escribe en él y
+calla. Es la decisión de forma de la entrega ([ADR
+0028](../docs/adr/0028-rellenar-en-la-pagina.md)) y lo que más reduce el riesgo
+que la entrega trae: dibujar en la página de otro obliga a un marco de nuestro
+origen y a pelearse con el `z-index` de cada sitio, y todo eso es superficie.
 
-**La dirección de la pestaña la da el navegador, no la página** (`chrome.tabs`).
-Es la diferencia entre preguntar por un sitio y preguntar por lo que un documento
-dice que es.
+**La contraseña vive dentro de una función y en ningún otro sitio.** Llega por el
+canal, se escribe en el campo y se va con la llamada: ni una variable de módulo,
+ni `storage`, ni un registro. Esfinge no puede comprobarlo desde fuera, así que es
+una promesa de este código —está dicho así en `docs/seguridad.md`—. Y lo que se
+copia al portapapeles sí lo copia Esfinge, no la extensión, con lo que hereda el
+borrado que Esfinge hace desde la 2.12.0.
+
+**La dirección de la pestaña la da el navegador, no la página.** Desde la entrega 2
+eso es una línea y no una frase: lo que llegue en el campo `origen` por el puerto
+de una página **se tira** y se pone `sender.tab.url`. Una página no puede decir de
+qué sitio es.
+
+**Y nunca en un marco de otro origen, ni sobre `http://`.**
 
 **Y no se guarda nada de lo que se pregunta**: ni el sitio, ni las cuentas, ni
 cuándo. Un caché aquí sería la lista de sitios de tu bóveda escrita sin cifrar en
@@ -63,9 +74,22 @@ no coincide con éste, se añade a `extensionesDeChrome` en
 publicar sigue estando `ESFINGE_EXTENSIONES`, con los identificadores separados
 por comas.
 
+## Cómo se comprueba
+
+```sh
+pnpm run comprobar   # tipos, permisos del manifiesto y las pruebas de campos
+```
+
+Las pruebas ejercitan **qué campo se rellena**, en un Chromium de verdad y contra
+el fuente compilado en memoria. Media tabla son casos donde lo correcto es **no
+rellenar nada**: el buscador de la cabecera, el formulario de registrarse, el
+escondido, el de un píxel. Equivocarse de campo es escribir una contraseña donde
+la lea alguien, y es lo único de esta entrega que puede hacer daño.
+
 ## Lo que falta
 
-- Rellenar formularios (entrega 2).
 - Guardar y actualizar contraseñas desde la página (entrega 3).
+- El código de un solo uso, rellenado también (entrega 4).
+- El desplegable dentro del campo, **si el uso dice que hace falta**.
 - Las tiendas, y con ellas el identificador fijo de Chrome (entrega 5).
 - Windows: el manifiesto va al registro y todavía no se escribe.

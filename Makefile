@@ -20,9 +20,12 @@ comprobar:
 	$(GO) vet -tags dev ./...
 	$(GO) test ./...
 	cd $(FRONT) && $(PNPM) exec tsc -b --noEmit
-	@# Y la extensión: tipos, y que el manifiesto declare lo que el código usa.
+	@# Y la extensión: tipos, que el manifiesto declare lo que el código usa, y
+	@# qué campo se rellena en una página de verdad.
 	@# Lo segundo no lo dice el compilador, y su ausencia no da un error: da
-	@# silencio en tiempo de ejecución. Costó cinco versiones publicadas.
+	@# silencio en tiempo de ejecución. Costó cinco versiones publicadas. Lo
+	@# tercero es lo único de la entrega 2 que puede hacer daño: escribir una
+	@# contraseña en el campo equivocado.
 	cd navegador && $(PNPM) run comprobar
 
 ## contraste: mide las parejas de color de los dos temas y las lista

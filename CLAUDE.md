@@ -71,6 +71,15 @@ llevará la ventana:
 - `make e2e` levanta los dos servidores y recorre cifrar, descifrar, generar, tandas de ficheros e
   historial, en tema claro y oscuro.
 
+Y la extensión tiene lo suyo, en `navegador/`:
+
+- `pnpm run comprobar` mira los tipos, comprueba que **el manifiesto declara lo que el código usa**
+  —una palabra que faltó ahí costó cinco versiones publicadas— y corre las pruebas de Playwright.
+- Ésas ejercitan **qué campo se rellena**, en un Chromium de verdad y contra el fuente compilado en
+  memoria. No hay servidor que levantar: son páginas escritas a mano, y **media tabla son casos donde
+  lo correcto es no rellenar nada**. Contra un DOM simulado no valdrían: `getComputedStyle`,
+  `getBoundingClientRect` y `compareDocumentPosition` devolverían lo que se les hubiera enseñado.
+
 Lo que **no** se puede comprobar aquí: la aplicación ensamblada. Eso se ve en el Mac.
 
 ## Decisiones tomadas con el cliente
@@ -113,6 +122,13 @@ No se cambian sin preguntar.
   autenticador. Con la consecuencia que hay que decir en voz alta y está en `docs/seguridad.md`:
   **una bóveda abierta entrega la contraseña y el segundo factor a la vez**. Se hace igual porque la
   alternativa realista no era tenerlos separados, era tenerlos juntos en Dashlane.
+- **Y desde la fase 2 rellena los formularios del navegador** (ADR 0027 y 0028). Con **una** cuenta
+  guardada del sitio se rellena sola, que es lo que se decidió —«solo, como Dashlane»—; con varias se
+  elige en el panel de la extensión. Y **en la página no se dibuja nada**: ni desplegable, ni icono
+  dentro del campo, ni marco flotante. Eso es una decisión y no una carencia, porque dibujar en la
+  página de otro es la parte cara y arriesgada; se revisa **con el uso**, no con la intuición. Dos
+  cosas que cambian y hay que decir en voz alta: **por el canal ya sale una contraseña de verdad** y
+  **hay código nuestro en cada página `https` que se abra**.
 - **Hay una bóveda de contraseñas**, local y cifrada, con clave de recuperación (ADR 0023). Es la
   fase 1 de sustituir a Dashlane, y **cambia lo que el producto es**: hasta ahora un fallo perdía un
   fichero; ahora puede perder todas las contraseñas de la empresa. Eso sube el listón de las pruebas
@@ -540,6 +556,35 @@ quien lo mira ni a quien lo va a arreglar; y **el trabajador de fondo se compila
 pieza y sin `import`**, porque en cuanto comparte un módulo con el panel el empaquetador saca un
 trozo común, mete un `import` en el trabajador y eso obliga a declararlo como módulo en el
 manifiesto —que es justo la clase de detalle que funciona en un navegador y no en el otro—.
+
+**Un freno que vive en la conexión no frena nada, si cada pregunta trae una conexión.** El canal
+limitaba a sesenta preguntas por minuto para que nadie reconstruyera la lista de sitios de la bóveda
+con un diccionario de dominios —que es justo lo que la ADR 0024 decidió cifrar en el disco—, y el
+contador se creaba en `conversar`, o sea **uno por conexión**. La extensión abre **un puerto nativo
+por petición**, porque con MV3 el trabajador se muere solo cada pocos minutos y uno de larga vida se
+cae igual: cada pregunta llegaba por un proceso nuevo con el contador a cero y el tope no se
+alcanzaba nunca. La prueba estaba en verde porque le pasaba **un contador hecho a mano** a sesenta
+llamadas seguidas, que es el caso que no ocurre. Ahora los frenos cuelgan del `Servidor` —no hay
+dónde poner uno por conexión aunque se quiera— y la prueba abre una conexión por pregunta. **La
+regla general:** antes de escribir un contador, preguntarse cuánto vive la cosa donde se guarda.
+
+**Un guion de contenido no puede ser un módulo, y el que lo sea no da error.** Se declara en el
+manifiesto y el navegador lo carga como guion suelto: si el empaquetador saca un trozo común con el
+panel y le mete un `import`, revienta en la primera línea, en la página de otro y sin que nadie lo
+vea. Por eso `pagina.ts` se compila aparte y en una sola pieza, exactamente igual que el trabajador
+de fondo y por una razón todavía menos negociable.
+
+**En Firefox, los `host_permissions` de MV3 no se conceden al instalar.** Hay que darlos en el panel
+de extensiones. Sin ellos, `sender.tab.url` llega `undefined` —sin error, como siempre—, el origen
+viaja vacío y Esfinge contesta que ahí no se rellena: desde fuera parece un fallo de Esfinge y no un
+permiso que falta. Es el fallo mudo de `storage` otra vez con otra cara, así que se convierte en una
+frase que dice dónde darlo, y `herramientas/permisos.mjs` comprueba que el manifiesto declara
+anfitriones si el código lee esa propiedad.
+
+**Y el origen de una página lo pone el trabajador de fondo, no la página.** Lo que llegue por un
+puerto llamado «pagina» en el campo `origen` se tira y se pone `sender.tab.url`. Sin esa línea,
+cualquier página que consiguiera hablar por ese puerto pediría las cuentas de un banco diciendo que
+es el banco.
 
 **Y el corolario pequeño, que costó un commit el mismo día: `make comprobar | tail` no dice si
 `make` ha fallado.** El código de salida de una tubería es el del **último** mandato, así que

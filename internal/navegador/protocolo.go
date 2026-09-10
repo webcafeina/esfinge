@@ -29,7 +29,35 @@ const (
 	// Cuando llegue el relleno hará falta un verbo que **sí** devuelva la
 	// contraseña, porque para escribirla en un formulario hay que tenerla. Ese día
 	// tendrá que justificarse solo; hoy no hace falta y no está.
+	//
+	// Ese día llegó con la entrega 2, y el verbo es [QueRellenar]. Esto se queda:
+	// es lo que sirve cuando el sitio no tiene un formulario que se pueda rellenar
+	// —una aplicación que dibuja su propio campo, un cuadro de diálogo del
+	// sistema— y es lo único que hay en el panel, que no toca ninguna página.
 	QueCopiarSecreto = "copiar-secreto"
+	// QueRellenar devuelve el usuario y la contraseña de **una** entrada.
+	//
+	// **Es el primer verbo por el que sale un secreto hacia el navegador**, y eso
+	// merece decirse con todas las letras en vez de aparecer como un campo más:
+	// hasta aquí la propiedad del canal era «por aquí no pasa ningún secreto», y
+	// desde aquí ya no lo es. No hay forma de escribir una contraseña en un
+	// formulario sin tenerla, así que lo que se puede hacer no es evitarlo sino
+	// acotarlo:
+	//
+	//   - **Las mismas reglas que todo lo demás**: testigo, origen que da el
+	//     navegador, dominio registrable y bóveda abierta. Una entrada de otro
+	//     sitio no sale por aquí.
+	//   - **De una en una y a petición.** No hay «dame las de este dominio con sus
+	//     contraseñas»: se piden las cuentas sin secretos, se elige una, y esa es
+	//     la que se pide.
+	//   - **Con su propio freno**, más estrecho que el de preguntar (ver
+	//     [rellenosPorMinuto]). Preguntar de más enseña una lista; rellenar de más
+	//     entrega contraseñas.
+	//   - **Y lo que sale por aquí no hereda el borrado del portapapeles**, porque
+	//     no pasa por el portapapeles. Quien lo recibe tiene que escribirlo en el
+	//     campo y olvidarlo, y eso es una promesa de la extensión que Esfinge no
+	//     puede comprobar. Está dicho así en `docs/seguridad.md`.
+	QueRellenar = "rellenar"
 	// QueCopiarCodigo hace lo mismo con el código de un solo uso.
 	//
 	// **Lleva origen, como todo lo demás.** En el primer borrador no lo llevaba, y
@@ -53,6 +81,7 @@ const (
 // decisión y no un efecto de haber escrito un `case` más.
 var LoQueSePuedePedir = []string{
 	QueEstado, QueEmparejar, QueCuentas, QueCopiarSecreto, QueCopiarCodigo,
+	QueRellenar,
 }
 
 // VersionDelProtocolo la manda la extensión en cada petición.
@@ -105,6 +134,17 @@ type Copiado struct {
 	Quedan int `json:"quedan,omitempty"`
 }
 
+// Relleno es lo único de este protocolo que lleva un secreto dentro.
+//
+// **Va en su propio tipo y no como dos campos sueltos de [Respuesta]**, para que
+// buscar quién toca una contraseña en este paquete sea buscar un nombre. Y por
+// eso mismo no tiene `String()`: un tipo con secretos dentro que sabe imprimirse
+// acaba en un registro cualquier tarde.
+type Relleno struct {
+	Usuario string `json:"usuario"`
+	Secreto string `json:"secreto"`
+}
+
 // Respuesta es lo que vuelve. Siempre lleva `ok`, y cuando es falso lleva un
 // motivo que se puede enseñar tal cual: los errores de este proyecto están
 // escritos para leerse.
@@ -118,6 +158,7 @@ type Respuesta struct {
 	Estado  *Estado  `json:"estado,omitempty"`
 	Cuentas []Cuenta `json:"cuentas,omitempty"`
 	Copiado *Copiado `json:"copiado,omitempty"`
+	Relleno *Relleno `json:"relleno,omitempty"`
 	// Testigo solo vuelve al emparejar, y una sola vez.
 	Testigo string `json:"testigo,omitempty"`
 }

@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -b && vite build && vite build --config vite.fondo.config.ts",
-    "comprobar": "tsc -b --noEmit && node herramientas/permisos.mjs"
+    "build": "tsc -b && vite build && vite build --config vite.fondo.config.ts && vite build --config vite.pagina.config.ts",
+    "comprobar": "tsc -b --noEmit && node herramientas/permisos.mjs && playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/chrome": "^0.0.287",
     "typescript": "^5.9.0",
     "vite": "^6.0.0"

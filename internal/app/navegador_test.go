@@ -98,6 +98,9 @@ func TestLoBorradoNoLoVeElNavegador(t *testing.T) {
 	if _, err := f.CopiarSecreto(ids["Banco"], "banco.es"); err == nil {
 		t.Error("una entrada de la papelera ha entregado su contraseña")
 	}
+	if _, err := f.Rellenar(ids["Banco"], "banco.es"); err == nil {
+		t.Error("una entrada de la papelera ha entregado su contraseña para rellenar")
+	}
 }
 
 // **Preguntar desde el navegador no cuenta como actividad.** Una extensión
@@ -111,6 +114,9 @@ func TestElNavegadorNoMantieneLaBovedaAbierta(t *testing.T) {
 		f.CuentasDe("banco.es")
 		f.CopiarSecreto(ids["Banco"], "banco.es")
 		f.CopiarCodigo(ids["Banco"], "banco.es")
+		// Y rellenar tampoco, que es donde más se notaría: una página guardada
+		// pregunta al cargarse, y navegar por sitios guardados es lo normal.
+		f.Rellenar(ids["Banco"], "banco.es")
 		f.Estado()
 		a.repasar()
 	}

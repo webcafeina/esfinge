@@ -138,7 +138,61 @@ async function copiar(que: "copiar-secreto" | "copiar-codigo", cuenta: Cuenta, o
   decir(trozos.join(" "));
 }
 
-function fila(cuenta: Cuenta, origen: string): HTMLElement {
+/**
+ * rellenar le dice al guion de la página que escriba esta cuenta en el formulario.
+ *
+ * **Por aquí no pasa ninguna contraseña**, y es a propósito: lo que se manda es un
+ * identificador, y quien pide el secreto es el guion de la página, que es el que
+ * tiene el campo donde escribirlo. El panel se cierra solo al perder el foco, que
+ * es la peor clase de sitio donde dejar un secreto aunque fuera un instante.
+ *
+ * Y por un puerto, como todo lo demás de esta extensión, por la misma razón de
+ * siempre: prometer una respuesta para más tarde no se dice igual en los dos
+ * navegadores.
+ */
+function rellenar(pestana: number, cuenta: Cuenta): Promise<string> {
+  return new Promise((resolver) => {
+    let hecho = false;
+    const terminar = (aviso: string) => {
+      if (hecho) return;
+      hecho = true;
+      resolver(aviso);
+    };
+    const plazo = setTimeout(
+      () =>
+        terminar(
+          "El guion de Esfinge no ha contestado en esta página. Recárgala e inténtalo otra vez.",
+        ),
+      PLAZO,
+    );
+    try {
+      const puerto = api.tabs.connect(pestana, { name: "rellenar" });
+      puerto.onMessage.addListener((r) => {
+        clearTimeout(plazo);
+        puerto.disconnect();
+        const { ok, error } = r as { ok: boolean; error?: string };
+        terminar(ok ? "Rellenado." : (error ?? "No se ha podido rellenar."));
+      });
+      // **Se dispara cuando no hay guion en esa pestaña**, que pasa en las páginas
+      // internas del navegador, en las que se abrieron antes de instalar la
+      // extensión y en cualquier cosa que no sea https. Decirlo así ahorra el rato
+      // de mirar por qué «no hace nada».
+      puerto.onDisconnect.addListener(() => {
+        clearTimeout(plazo);
+        terminar(
+          "Esfinge no está puesta en esta página. Si acabas de instalar o actualizar " +
+            "la extensión, recarga la pestaña.",
+        );
+      });
+      puerto.postMessage({ id: cuenta.id });
+    } catch (e) {
+      clearTimeout(plazo);
+      terminar(`No se ha podido rellenar: ${e}`);
+    }
+  });
+}
+
+function fila(cuenta: Cuenta, origen: string, pestana: number | undefined): HTMLElement {
   const li = document.createElement("li");
 
   const nombre = document.createElement("span");
@@ -155,6 +209,23 @@ function fila(cuenta: Cuenta, origen: string): HTMLElement {
 
   const acciones = document.createElement("span");
   acciones.className = "acciones";
+
+  // **Rellenar va primero y destacado**, porque desde la entrega 2 es lo que se
+  // quiere hacer aquí el noventa por ciento de las veces. Copiar se queda para lo
+  // que no se puede rellenar: una aplicación que dibuja su propio campo, un
+  // diálogo del sistema, un sitio en http.
+  if (pestana !== undefined) {
+    const boton = document.createElement("button");
+    boton.textContent = "Rellenar";
+    boton.className = "principal";
+    boton.addEventListener("click", async () => {
+      boton.disabled = true;
+      decir(await rellenar(pestana, cuenta));
+      boton.disabled = false;
+    });
+    acciones.append(boton);
+  }
+
   for (const [texto, que] of [
     ["Contraseña", "copiar-secreto"],
     ["Código", "copiar-codigo"],
@@ -194,7 +265,7 @@ async function arrancar() {
     return;
   }
   for (const c of cuentas) {
-    lista.append(fila(c, origen));
+    lista.append(fila(c, origen, pestana?.id));
   }
   lista.hidden = false;
   aviso.hidden = true;

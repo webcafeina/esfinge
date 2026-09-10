@@ -15,7 +15,7 @@
  * razón: una lista que hay que acordarse de actualizar se queda atrás, y aquí
  * quedarse atrás no da un error, da silencio.
  */
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -73,6 +73,49 @@ for (const navegador of ["chrome", "firefox"]) {
           `  Sin él, esa API es undefined y el fallo salta en tiempo de ejecución, no al compilar.`,
       );
       mal++;
+    }
+  }
+
+  // **Y la dirección de la pestaña, que es la misma trampa con otra cara.**
+  // `sender.tab.url` no lanza cuando falta el permiso de anfitrión: llega
+  // `undefined`, el origen se va vacío, y desde fuera se ve como que Esfinge dice
+  // que ahí no rellena. Es exactamente el fallo mudo de `storage` otra vez, y por
+  // eso se comprueba aquí en vez de confiar en acordarse.
+  if (/sender\?\.tab\?\.url|sender\.tab\.url/.test(codigo)) {
+    const anfitriones = manifiesto.host_permissions ?? [];
+    if (anfitriones.length === 0 && !declarados.has("tabs")) {
+      console.error(
+        `manifiesto.${navegador}.json: el código lee «sender.tab.url» y no hay ` +
+          `«host_permissions» ni el permiso «tabs».\n` +
+          `  Sin eso llega undefined, sin error, y el origen viaja vacío.`,
+      );
+      mal++;
+    }
+  }
+
+  // Los ficheros que el manifiesto nombra tienen que salir de algún fuente. Un
+  // guion de contenido que no existe **no da error**: el navegador carga la
+  // extensión igual y en las páginas no hay nada.
+  for (const guion of manifiesto.content_scripts ?? []) {
+    for (const js of guion.js ?? []) {
+      const fuente = js.replace(/\.js$/, ".ts");
+      if (!existsSync(join(raiz, "src", fuente))) {
+        console.error(
+          `manifiesto.${navegador}.json: declara el guion «${js}» y no hay «src/${fuente}».`,
+        );
+        mal++;
+      }
+    }
+    // Y sus «matches» tienen que estar cubiertos por los permisos de anfitrión, o
+    // el guion se inyecta y luego no puede hablar con nadie.
+    for (const donde of guion.matches ?? []) {
+      if (!(manifiesto.host_permissions ?? []).includes(donde)) {
+        console.error(
+          `manifiesto.${navegador}.json: el guion se pone en «${donde}» y eso no ` +
+            `está en «host_permissions».`,
+        );
+        mal++;
+      }
     }
   }
 }
