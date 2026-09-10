@@ -5,6 +5,7 @@ import {
   alDescargar,
   alHaberNovedad,
   alOrdenar,
+  alPedirloUnNavegador,
   alProgresar,
   alSoltarFicheros,
   enWails,
@@ -13,6 +14,7 @@ import {
   type Apertura,
   type Avance,
   type Entrada,
+  type EstadoDelNavegador,
   type Medida,
   type Novedad,
   type Preferencias,
@@ -700,6 +702,7 @@ function Ajustes({
   alEncontrar: (n: Novedad) => void;
 }) {
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
+  const [navegador, setNavegador] = useState<EstadoDelNavegador | null>(null);
   const [vidrio, setVidrio] = useState<boolean | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [dicho, setDicho] = useState("");
@@ -739,10 +742,18 @@ function Ajustes({
       .catch(() => {});
   }, []);
 
+  const leerNavegador = useCallback(() => {
+    esfinge.estadoDelNavegador().then(setNavegador).catch(() => {});
+  }, []);
+
   useEffect(() => {
     leerPreferencias();
+    leerNavegador();
     esfinge.vidrio().then(setVidrio).catch(() => {});
-  }, [leerPreferencias]);
+    // Cuando un navegador pide permiso hay que enterarse **sin que nadie
+    // recargue nada**: quien lo está pidiendo está mirando la otra ventana.
+    return alPedirloUnNavegador(leerNavegador);
+  }, [leerPreferencias, leerNavegador]);
 
   async function cambiar(cambio: Partial<Preferencias>) {
     const base = ultimasPrefs.current ?? prefs;
@@ -753,6 +764,7 @@ function Ajustes({
     setPrefs(siguiente);
     try {
       await esfinge.guardarPreferencias(siguiente);
+      leerNavegador();
     } catch (e) {
       setError(mensaje(e));
     }
@@ -817,8 +829,8 @@ function Ajustes({
         </label>
 
         <p className="nota">
-          Es lo único que Esfinge hace fuera de tu ordenador: una vez al día le pregunta a
-          GitHub cuál es la última versión publicada. No manda nada de lo que cifras, ni quién
+          Una de las dos cosas que Esfinge hace fuera de tu ordenador: una vez al día le pregunta
+          a GitHub cuál es la última versión publicada. No manda nada de lo que cifras, ni quién
           eres, ni cuántas veces la usas. En la petición viaja el número de versión que tienes,
           que es lo que se compara, y GitHub ve tu dirección IP, como cualquier página que
           visites.
@@ -871,6 +883,89 @@ function Ajustes({
           </div>
         </div>
       )}
+
+      {/* **El canal con el navegador.**
+       *
+       * Va aquí, con las otras dos cosas que Esfinge hace fuera de sí misma, y con
+       * una diferencia que hay que decir: las otras dos **salen** a la red y ésta
+       * **abre una puerta** a este ordenador. Por eso viene apagada, al revés que
+       * los iconos.
+       *
+       * Y cuando un navegador pide permiso, la respuesta se da aquí y no en el
+       * navegador: es lo único de todo esto que la página que estás mirando no
+       * puede tocar. */}
+      <div className="grupo">
+        <label className="fila-ajuste">
+          <input
+            type="checkbox"
+            checked={prefs?.puenteDelNavegador ?? false}
+            disabled={cargando}
+            onChange={(e) => cambiar({ puenteDelNavegador: e.target.checked })}
+          />
+          <span>Dejar que la extensión del navegador consulte la bóveda</span>
+        </label>
+
+        <p className="nota">
+          Abre un canal <strong>dentro de este ordenador</strong>, no en la red: no hay puerto al
+          que nadie pueda conectarse desde fuera. Por él salen las cuentas del sitio que estés
+          mirando y, cuando las pides, una contraseña cada vez. Nunca la contraseña maestra.
+        </p>
+
+        {navegador?.error && <p className="error">{navegador.error}</p>}
+
+        {navegador?.escuchando && (
+          <p className="nota seleccionable">Escucha en {navegador.donde}</p>
+        )}
+
+        {/* Lo que pide permiso. Va en «peligro» a propósito: es la única pregunta
+            de esta pantalla cuya respuesta le abre la bóveda a otro programa. */}
+        {navegador?.pide && (
+          <div className="grupo peligro">
+            <label>{navegador.pide} quiere consultar tu bóveda</label>
+            <p className="aviso">
+              Si no has sido tú al abrir el navegador, <strong>di que no</strong>. Con permiso podrá
+              preguntar qué cuentas tienes de cada sitio que visites y pedir su contraseña.
+            </p>
+            <div className="botones">
+              <button
+                className="principal"
+                onClick={async () => {
+                  await esfinge.permitirNavegador();
+                  leerNavegador();
+                }}
+              >
+                Permitirlo
+              </button>
+              <button onClick={leerNavegador}>Ahora no</button>
+            </div>
+          </div>
+        )}
+
+        {navegador && navegador.permitidos?.length > 0 && (
+          <div>
+            <label>Navegadores permitidos</label>
+            <ul className="lista-papelera">
+              {navegador.permitidos.map((n) => (
+                <li key={n.desde}>
+                  <span className="nombre">{n.quien}</span>
+                  <span className="nota">Desde el {fecha(n.desde)}</span>
+                  <span className="acciones">
+                    <button
+                      className="discreto"
+                      onClick={async () => {
+                        await esfinge.olvidarNavegador(n.desde);
+                        leerNavegador();
+                      }}
+                    >
+                      Retirar
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
 
       {/* Los dos relojes de la bóveda.
        *

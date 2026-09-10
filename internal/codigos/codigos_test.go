@@ -120,10 +120,10 @@ func TestLaSemillaLlegaComoLaCopiaUnHumano(t *testing.T) {
 func TestUnaSemillaRotaNoSeAdivina(t *testing.T) {
 	malas := []string{
 		"", "   ", "=====",
-		"GEZDGNBV!GY3TQOJQ",  // un carácter que no es del alfabeto
-		"GEZDGNBV0GY3TQOJQ",  // el cero no está en base32
-		"GEZDGNBV1GY3TQOJQ",  // el uno tampoco
-		"GEZDGNBVGY3TQOJQG",  // sobra media letra
+		"GEZDGNBV!GY3TQOJQ",                        // un carácter que no es del alfabeto
+		"GEZDGNBV0GY3TQOJQ",                        // el cero no está en base32
+		"GEZDGNBV1GY3TQOJQ",                        // el uno tampoco
+		"GEZDGNBVGY3TQOJQG",                        // sobra media letra
 		"otpauth://hotp/x?secret=" + semillaDelRFC, // contador, no reloj
 		"otpauth://totp/x?secret=" + semillaDelRFC + "&digits=4",
 		"otpauth://totp/x?secret=" + semillaDelRFC + "&digits=20",

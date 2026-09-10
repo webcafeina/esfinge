@@ -101,6 +101,35 @@ un fallo perdía un fichero; ahora puede perderlas todas. Lo que hay que tener c
   revertirla a una copia vieja. **Se detecta al abrir** —hay un sello por dentro que no cuadraría—
   pero no se impide.
 
+## Y desde la fase 2, una puerta hacia dentro
+
+La extensión del navegador consulta la bóveda por un **canal local** (ADR 0027). Es distinto de las
+otras dos cosas que Esfinge hace fuera de sí misma: aquéllas **salen** a la red y ésta **abre una
+puerta** a este ordenador. Por eso viene apagada y se enciende en Ajustes.
+
+Lo que hay que saber, dicho sin adornos:
+
+- **No es la red.** Es un socket de dominio unix en tu carpeta, no un puerto: no se alcanza desde
+  otra máquina, ni desde otra sesión, ni desde una página web que pruebe direcciones locales. Lo
+  alcanza quien pueda abrir ese fichero, que es tu propio usuario.
+- **Baja el listón dentro de «quien ya está en la máquina».** Eso ya estaba arriba como riesgo, pero
+  cambia de tamaño: hoy, sacarle secretos a una bóveda abierta exige leer la memoria de otro
+  proceso; con el canal encendido, basta con conectarse a un socket. Contra el mismo atacante, menos
+  trabajo.
+- **Por eso hay que dar permiso**, una vez, en la ventana de Esfinge, y se puede retirar. No protege
+  de un programa decidido —el testigo está en un fichero que ese programa puede leer— pero sí
+  convierte «cualquier cosa instalada te vacía la bóveda en silencio» en «tiene que pasar por un
+  aviso que no esperabas». 1Password resuelve esto comprobando la firma del navegador; aquí no se
+  puede, porque **Esfinge no está firmada**.
+- **El navegador nunca ve la contraseña maestra.** Con la bóveda cerrada, el canal contesta
+  «cerrada» y **no trae la ventana al frente**: si lo hiciera, cualquier programa podría hacer
+  aparecer el diálogo de la maestra cuando quisiera, que es la forma de enseñarte a teclearla.
+- **Y por el canal sale una contraseña cada vez, siempre con el sitio delante.** Una entrada no se
+  entrega a un sitio que no sea el suyo, y el emparejamiento de sitios se hace por dominio
+  registrable, nunca comparando cadenas.
+- **En Windows, los permisos del socket no significan nada**; ahí lo que lo protege es que vive en
+  tu perfil de usuario.
+
 ## Dónde queda algo en disco
 
 | Qué | Dónde | Permisos |

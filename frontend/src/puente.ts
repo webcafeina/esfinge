@@ -115,6 +115,11 @@ export type Preferencias = {
   descargarIconos: boolean;
   /** Si ya se dijo lo que eso hace. El aviso se da una vez. */
   iconosAvisados: boolean;
+  /**
+   * Abre el canal por el que la extensión del navegador consulta la bóveda.
+   * **Viene apagado**: esto no sale a la red, abre una puerta a esta máquina.
+   */
+  puenteDelNavegador: boolean;
 };
 
 /** Lo que se manda para apagar uno de los dos relojes de la bóveda. */
@@ -177,6 +182,28 @@ export type CodigoDeUnSoloUso = {
   quedan: number;
   /** Cuánto dura entero, para poder dibujar qué fracción queda. */
   periodo: number;
+};
+
+/** Un navegador al que se le ha dado permiso para hablar con la bóveda. */
+export type NavegadorPermitido = {
+  /** Cómo se llamó a sí mismo. **No se cree**: sirve para poder enseñarlo. */
+  quien: string;
+  /** Cuándo se le dio el permiso. Es lo que lo identifica al retirarlo: el
+   *  testigo no cruza el puente. */
+  desde: string;
+};
+
+/** Cómo está el canal por el que la extensión del navegador consulta la bóveda. */
+export type EstadoDelNavegador = {
+  encendido: boolean;
+  /** Si de verdad hay un socket abierto: el ajuste puede estar puesto y el canal
+   *  no haber podido arrancar, y eso hay que poder verlo. */
+  escuchando: boolean;
+  donde: string;
+  error?: string;
+  /** El navegador que está esperando permiso, si hay alguno. */
+  pide?: string;
+  permitidos: NavegadorPermitido[];
 };
 
 /** Lo que hace falta saber para decidir qué pantalla de la bóveda se enseña. */
@@ -394,6 +421,23 @@ export const esfinge = {
   importarEnBoveda: (deDonde: string) =>
     llamar<ResumenImportacion>("ImportarEnBoveda", deDonde),
 
+  estadoDelNavegador: () =>
+    // **Con la lista puesta a la fuerza.** Una porción vacía de Go se serializa
+    // como `null`, no como `[]`, y un `null.length` en el render tira **el panel
+    // entero de Ajustes**, no solo esa línea: React desmonta el árbol y la
+    // pantalla se queda en blanco. Es el mismo remiendo que ya llevan
+    // `buscarEnBoveda` y `papeleraDeBoveda`, y por lo mismo.
+    llamar<EstadoDelNavegador>("EstadoDelNavegador").then((e) => ({
+      ...e,
+      permitidos: e.permitidos ?? [],
+    })),
+
+  /** El «sí» de la persona: el navegador que esté esperando recibe su permiso. */
+  permitirNavegador: () => llamar<void>("PermitirNavegador"),
+
+  /** Retira un permiso dado, por la fecha en que se dio. */
+  olvidarNavegador: (desde: string) => llamar<void>("OlvidarNavegador", desde),
+
   /** Escribe las entradas **en claro**, por el diálogo del sistema. */
   exportarBoveda: () => llamar<string>("ExportarBoveda"),
 
@@ -444,6 +488,11 @@ export function alDescargar(cb: (a: Avance) => void): () => void {
  * portapapeles se borra desde allí: los temporizadores de un webview se pausan y
  * se pierden al recargar, y un bloqueo que a veces no ocurre no es un bloqueo.
  */
+/** Avisa de que un navegador quiere conectarse a la bóveda. */
+export function alPedirloUnNavegador(cb: (quien: string) => void) {
+  return escuchar("navegador-pide", cb);
+}
+
 export function alBloquearseLaBoveda(cb: () => void): () => void {
   return escuchar("boveda-bloqueada", cb);
 }

@@ -204,7 +204,6 @@ var alias = map[string]string{
 	"folder": CampoCarpeta, "grouping": CampoCarpeta, "category": CampoCarpeta,
 	"carpeta": CampoCarpeta, "categoria": CampoCarpeta, "categoría": CampoCarpeta,
 	"group": CampoCarpeta,
-
 }
 
 // ErrSinColumnas dice que el fichero no tiene ninguna columna reconocible.

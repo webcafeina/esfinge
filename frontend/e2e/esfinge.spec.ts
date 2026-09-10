@@ -958,6 +958,41 @@ test("vaciar la papelera se lo lleva, y pide una segunda pulsación", async ({ p
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+// El canal con el navegador (fase 2).
+//
+// **Viene apagado**, al revés que las otras dos cosas que Esfinge hace fuera de
+// sí misma, y la diferencia importa: aquéllas salen a la red y ésta abre una
+// puerta a este ordenador. Encenderlo y apagarlo tiene que valer desde ya.
+//
+// Lo que esta prueba **no** cubre, y hay que decirlo: el aviso de «un navegador
+// quiere consultar tu bóveda». Para provocarlo hace falta que algo se conecte al
+// socket, y desde un navegador no se puede abrir un socket de dominio unix. Ese
+// camino está probado en Go (`TestElEmparejamientoSePideYSeConcedeUnaVez`) y se
+// verá de verdad cuando exista la extensión.
+test("el canal con el navegador viene apagado y se enciende en Ajustes", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await seccion(page, "Ajustes").click();
+
+  const casilla = page.getByLabel("Dejar que la extensión del navegador consulte la bóveda");
+  await expect(casilla).toBeVisible({ timeout: 20_000 });
+  // Punto de partida propio: el fichero de preferencias dura entre tandas.
+  if (await casilla.isChecked()) {
+    await casilla.uncheck();
+  }
+  await expect(page.getByText(/^Escucha en /)).toHaveCount(0);
+
+  await casilla.check();
+  // **Que diga dónde escucha no es un adorno**: en un programa que guarda
+  // contraseñas, una puerta abierta se dice dónde está.
+  await expect(page.getByText(/^Escucha en /)).toBeVisible({ timeout: 20_000 });
+
+  await casilla.uncheck();
+  await expect(page.getByText(/^Escucha en /)).toHaveCount(0);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 test("la clave de recuperación abre la bóveda", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
