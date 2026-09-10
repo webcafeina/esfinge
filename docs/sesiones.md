@@ -5,6 +5,24 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-10 · La entrega 2, comprobada en las dos familias
+
+- **2.18.1 probada en un Mac de verdad, en Chrome y en Firefox**, contra `login.brevo.com` y
+  `dash.cloudflare.com`. **Rellena sola al cargar la página y acierta el formulario**, y el botón
+  «Rellenar» del panel escribe tras borrar los campos a mano, que era lo que fallaba en la 2.18.0.
+  La entrega 2 queda cerrada por el lado que se puede cerrar.
+- En Firefox se instala desde `about:debugging` → «Cargar complemento temporal», eligiendo el zip de
+  la publicación tal cual. Es temporal de verdad: se desinstala al cerrar Firefox. Eso se acaba con
+  la entrega 5.
+- **Lo que sigue sin saberse, y no es una tarea sino una escucha:** si acierta en un sitio difícil
+  —un banco—, si rellenar solo resulta demasiado —y entonces hace falta un interruptor en Ajustes, no
+  afinar la detección a ciegas— y si el clic de más molesta con varias cuentas del mismo sitio, que
+  es de lo que depende el desplegable dentro del campo.
+- **Y lo que decide lo siguiente:** los dos fallos de la 2.18.0 estaban **fuera** de lo probado. Así
+  que la entrega 3 no empieza por guardar contraseñas desde la página: empieza por **levantar
+  Chromium con la extensión cargada y un host de native messaging de mentira**, que es lo único que
+  ejercita panel → guion → trabajador → puente sin Esfinge delante.
+
 ## 2026-09-10 · Dos fallos del relleno que solo se ven usándolo
 
 - **2.18.1.** Probada la 2.18.0 en Chrome contra Brevo y Cloudflare: **el relleno automático funciona

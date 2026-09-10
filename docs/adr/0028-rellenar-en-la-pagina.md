@@ -161,11 +161,20 @@ porque navegar por sitios guardados pregunta todo el rato.
   prueba tampoco lo veía porque le pasaba un contador hecho a mano. Ahora los
   frenos cuelgan del servidor y la prueba abre una conexión por pregunta.
 
+**Comprobado en un Mac de verdad (2026-09-10, en la 2.18.1):**
+
+- **Rellena solo al cargar la página, y acierta el formulario**, en `login.brevo.com` y en
+  `dash.cloudflare.com`. **En Chrome y en Firefox.**
+- **Y el botón «Rellenar» del panel escribe** tras borrar los campos a mano, que es lo que falló en la
+  2.18.0 y costó la 2.18.1: eran dos fallos encadenados, los dos fuera de la detección de campos —el
+  oyente del panel contestando también desde las tramas de otro origen, y `yaRellenados` bloqueando un
+  relleno pedido por una persona—. Están contados en `CLAUDE.md` y en `docs/sesiones.md`.
+
 **Lo que no se puede comprobar aquí, y hay que mirar en el Mac:**
 
 - **Si los campos de un banco de verdad se detectan.** Ninguna prueba puede
   decirlo: los doce casos son formularios que he escrito yo, y lo que hay ahí
-  fuera lo han escrito otros.
+  fuera lo han escrito otros. Dos sitios corrientes ya aciertan; falta uno difícil.
 - **Si rellenar solo es demasiado.** Si aparecen rellenos que nadie quería, la
   respuesta no es afinar la detección a ciegas: es un interruptor en Ajustes.
 - **Si un clic más en el panel molesta** cuando hay varias cuentas. De eso depende

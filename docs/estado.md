@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.18.0**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.18.1**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -82,6 +82,8 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   en un campo hay que tenerla, y eso no hereda el borrado del portapapeles— y **hay código nuestro en
   cada página `https`**. A cambio, el verbo nuevo lleva su propio freno, más estrecho que el de
   preguntar, y la detección de campos está escrita en negativo: ante la duda, no se rellena.
+  **Comprobado en un Mac, en Chrome y en Firefox** (2.18.1): rellena solo al cargar y acierta
+  el formulario en Brevo y en Cloudflare, y el botón del panel escribe tras borrar los campos.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
   máquina sin entorno gráfico. Son **84**.
 
@@ -170,31 +172,30 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Probar el relleno en sitios de verdad, en el Mac.** Es la única comprobación que queda de la
-entrega 2 y ninguna prueba la puede hacer: los doce casos de `navegador/pruebas/campos.spec.ts` son
-formularios escritos aquí, y lo que hay ahí fuera lo han escrito otros. Tres cosas que mirar, y las
-tres cambian lo que se hace después:
+**Probar el camino de la extensión con la extensión de verdad cargada.** Es lo primero de la entrega
+3 y no un adorno: la entrega 2 salió con la detección de campos probada en un Chromium auténtico y
+**con lo que la envuelve sin probar por nadie**, y ahí aparecieron los dos únicos fallos —el oyente
+del panel contestando también desde las tramas de otro origen, y `yaRellenados` bloqueando un relleno
+pedido a mano—. Los dos los vio el cliente a la primera; ninguno estaba en la parte probada.
 
-1. **Si los campos se detectan** en tres o cuatro sitios corrientes y en uno difícil —un banco, que
-   es donde los formularios son más raros—.
-2. **Si rellenar solo es demasiado.** Si aparecen rellenos que nadie quería, la respuesta no es
-   afinar la detección a ciegas: es un interruptor en Ajustes.
-3. **Si un clic más en el panel molesta** cuando hay varias cuentas del mismo sitio. De eso depende
-   si el desplegable dentro del campo se hace o no se hace.
+La salida está descrita desde el plan de la fase 2: **Playwright puede levantar Chromium con la
+extensión cargada** (`launchPersistentContext` con `--load-extension`) y se le puede escribir el
+manifiesto de native messaging dentro de ese perfil, con un host de mentira que conteste JSON
+preparado. Con eso se ejercita panel → guion → trabajador → puente sin necesidad de Esfinge.
 
-Y de paso, **si en Firefox hace falta conceder el permiso de sitio a mano**: en MV3 no se da al
-instalar. Si hace falta, la extensión lo dice con una frase que explica dónde darlo.
+Después, la **entrega 3: guardar y actualizar desde la página**. Al enviar un formulario con una
+cuenta que no está en la bóveda, ofrecer guardarla; si está con otra contraseña, ofrecer
+actualizarla, con el historial de contraseñas anteriores que ya existe.
 
-Después:
+Luego el **código de un solo uso rellenado también** (entrega 4), que en Go está desde la 2.15.0, y
+las **tiendas** (entrega 5), donde Chrome consigue su identificador definitivo y donde el permiso que
+se pide —`https://*/*` y un guion en todas las páginas— pasa por la revisión más estricta que dan las
+dos.
 
-1. **Guardar y actualizar desde la página** (entrega 3): al enviar un formulario con una cuenta que
-   no está en la bóveda, ofrecer guardarla; si está con otra contraseña, ofrecer actualizarla, con el
-   historial de contraseñas anteriores que ya existe.
-2. **El código de un solo uso, rellenado también** (entrega 4). Ya está calculado en Go desde la
-   2.15.0.
-3. **Las tiendas** (entrega 5), que es donde Chrome consigue su identificador definitivo y donde
-   empieza a haber revisiones de días por cada versión. Y donde el permiso que se pide —`https://*/*`
-   y un guion en todas las páginas— pasa por la revisión más estricta que dan las dos.
+**Y lo que solo dice el uso**, que no es una tarea sino una escucha: si el relleno acierta en un sitio
+difícil —un banco—, si rellenar solo resulta demasiado —y entonces hace falta un interruptor en
+Ajustes, no afinar la detección a ciegas— y si el clic de más molesta cuando hay varias cuentas del
+mismo sitio, que es de lo que depende el desplegable dentro del campo.
 
 Y sigue abierta la deuda de Windows, que la entrega 2 no toca: **el manifiesto del navegador va al
 registro y no se escribe**, y el instalador no copia `esfinge-puente`.
