@@ -5,6 +5,37 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-10 · Seis versiones por una palabra que faltaba en una lista
+
+- **De la 2.17.1 a la 2.17.6**, todas persiguiendo el mismo síntoma: la extensión instalada en
+  Firefox no hacía nada. **Y funciona**: reconoce el sitio, enseña la cuenta guardada y copia la
+  contraseña. La entrega 1 queda comprobada de punta a punta en un Mac de verdad.
+- **La causa era el permiso `storage`**, que no estaba en el manifiesto de la extensión. Sin permiso,
+  esa API no da error: es `undefined`. La excepción saltaba en la primera línea del trabajador de
+  fondo, **nadie la recogía**, y desde fuera se veía exactamente igual que si el puente con Esfinge
+  no contestara.
+- **Todo lo que se persiguió estaba bien**: el puente contestaba —comprobado a mano desde el
+  terminal, con el mensaje enmarcado—, el socket iba, los manifiestos de native messaging eran
+  correctos, el identificador de la extensión coincidía y el emparejamiento de dominios acertaba.
+- **Lo que costó las seis versiones no fue el permiso: fue el silencio.** Cada arreglo intermedio fue
+  poner voz a un tramo que no la tenía —el panel enseña lo que falla, el trabajador tiene plazo, el
+  puerto en vez de `sendMessage`, el motivo del navegador tal cual— y **cada uno acercó el
+  diagnóstico**: de un panel en blanco a «no contesta» a «Promised response… out of scope» a, por
+  fin, el error de verdad en la consola de la extensión.
+- **La lección, y va a `CLAUDE.md`:** lo primero que hay que abrir cuando una extensión no hace nada
+  es **su consola** —«Inspeccionar» en `about:debugging`—. Lo dijo en dos segundos y se preguntó a la
+  quinta versión. Y la de fondo: **una excepción que nadie recoge es silencio, y el silencio no se
+  puede depurar.**
+- **Y un guardián para que no se repita**: `navegador/herramientas/permisos.mjs` compara lo que el
+  código usa con lo que el manifiesto declara, y corre en `make comprobar`. Comprobado quitando el
+  permiso a mano: falla y dice cuál falta. Es la misma clase de lista que ya se vigila en Go.
+- **De paso, dos publicaciones caídas por Chocolatey**, que devolvió 503 media hora. El primer
+  arreglo fue una suposición mía —que la imagen de Windows trae NSIS— y **era falsa**, lo dijo el
+  registro. Ahora el zip se baja del proyecto NSIS con su suma comprobada. Esa ruta **todavía no ha
+  corrido**: se estrena en la próxima publicación.
+- **Queda abierto:** Chrome, que necesita su identificador de la tienda; y la entrega 2, rellenar de
+  verdad.
+
 ## 2026-09-10 · La fase 2, entrega 1: el navegador habla con la bóveda
 
 - **2.17.0.** Empieza la fase 2, el autorrelleno, con la decisión del cliente de hacerla para

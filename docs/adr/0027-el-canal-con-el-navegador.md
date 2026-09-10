@@ -179,8 +179,25 @@ teclearla en cuanto una ventana se lo pide.
 - Y en la ventana, en los dos temas: que el canal viene apagado, que al
   encenderlo dice dónde escucha y que al apagarlo deja de decirlo.
 
-**Lo que no se ha comprobado, y es lo que importa:** que un navegador de verdad
-lance el puente y hable con la bóveda. Aquí no hay navegador con el que probarlo
-de punta a punta —el trabajador de una extensión y el `connectNative` no existen
-en un Chromium de Playwright sin perfil preparado— así que **eso solo se ve en el
-Mac**. Es la misma clase de hueco que la aplicación ensamblada.
+**Y comprobado en un Mac el mismo día** (2.17.6): con Firefox y un sitio real, la
+extensión reconoce el sitio, enseña la cuenta guardada y copia la contraseña. La
+cadena entera —extensión, puente, socket, bóveda, portapapeles— funciona.
+
+**Costó seis versiones, y el motivo merece quedar escrito.** Todo lo que se
+persiguió estaba bien: el puente contestaba, el socket iba, los manifiestos eran
+correctos, el emparejamiento de dominios acertaba. Lo que faltaba era **el
+permiso `storage` en el manifiesto de la extensión**, y sin permiso esa API no da
+error: es `undefined`. La excepción saltaba en la primera línea del trabajador de
+fondo, **nadie la recogía**, y desde fuera se veía exactamente igual que si el
+puente no respondiera.
+
+Las dos lecciones, en orden de valor:
+
+1. **Lo primero que hay que abrir cuando una extensión no hace nada es su
+   consola** («Inspeccionar» en `about:debugging`). Lo dijo en dos segundos, y se
+   preguntó a la quinta versión.
+2. **Una excepción que nadie recoge es silencio, y el silencio no se puede
+   depurar.** Ahora cada tramo tiene su plazo, su `catch` y su mensaje, y hay un
+   guardián (`navegador/herramientas/permisos.mjs`) que compara lo que el código
+   usa con lo que el manifiesto declara. Es la misma clase de lista que ya se
+   vigila en Go, y por la misma razón.

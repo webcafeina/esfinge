@@ -136,6 +136,13 @@ visto nadie.
   y cierra las dos mitades a la vez: que **la semilla se importó bien** —que era lo que de verdad
   estaba en duda, porque los vectores del RFC solo dicen que el algoritmo está bien— y que el
   cálculo concuerda con el de un gestor que lleva años en producción.
+- **El canal con el navegador, de punta a punta** (2026-09-10, 2.17.6): con Firefox y un sitio de
+  verdad, la extensión reconoce el sitio, enseña la cuenta guardada y **copia la contraseña al
+  portapapeles**. Era lo único que no se podía ejercitar aquí —no hay navegador con el que probar
+  `connectNative`— y por eso costó **seis versiones**: el puente, el socket, el emparejamiento de
+  dominios y los manifiestos estaban bien desde el principio, y lo que faltaba era **una palabra en
+  una lista**, el permiso `storage` del manifiesto de la extensión. Sin él esa API no da error: es
+  `undefined`, y el fallo se veía como si el puente no contestara.
 - **La banda de versión nueva sale sola** (2026-09-09), con la ventana abierta y sin tocar nada. Es
   la prueba buena de la 2.10.4: antes la comprobación ocurría **solo al arrancar** y esa banda no
   había aparecido nunca, aunque la portada llevara desde la 2.1.0 prometiendo «una vez al día».
@@ -146,14 +153,15 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Probar la extensión en el Mac**, que es lo que decide si el canal está bien montado: encender el
-canal en Ajustes, cargar la extensión en Firefox —en Chrome hace falta antes su identificador de la
-tienda—, permitir el navegador cuando Esfinge lo pregunte, y ver que en un sitio de los tuyos salen
-tus cuentas y que copiar funciona.
+**La entrega 2 de la fase 2: rellenar de verdad.** La 1 está comprobada en el Mac —la extensión
+reconoce el sitio, enseña la cuenta y copia— así que el canal está bien montado y lo que queda es lo
+que se nota: escribir en el formulario en vez de copiar.
+
+Es también donde entra el riesgo que la entrega 1 no tiene: **código nuestro en todas las páginas**.
 
 Después:
 
-1. **La entrega 2 de la fase 2: rellenar de verdad.** Es donde se decide si esto sustituye a
+1. **Guardar y actualizar desde la página**, y el código de un solo uso. Es donde se decide si esto sustituye a
    Dashlane, y donde entra el riesgo que la entrega 1 no tiene: código nuestro en todas las páginas.
 2. **Guardar y actualizar desde la página**, y luego el código de un solo uso.
 3. **Las tiendas**, que es donde Chrome consigue su identificador fijo y donde empieza a haber
