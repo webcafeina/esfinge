@@ -12,6 +12,13 @@ Plantilla al final.
   contraseña. Comprobado también **el borrado del portapapeles** —que es lo que hace aceptable copiar
   desde el navegador— y **el código de un solo uso** contra un sitio con segundo factor real. La
   entrega 1 queda comprobada de punta a punta en un Mac de verdad.
+- **Y en Chrome también** (2.17.7). Le faltaba una sola cosa: su identificador. Chrome lo deriva de
+  la clave pública que lleve el manifiesto, y sin ella se inventa uno distinto en cada instalación,
+  así que Esfinge no podía autorizarlo de antemano. Con una `key` puesta es el mismo siempre, y
+  funciona nada más cargarla. Vale igual para Edge, Brave, Vivaldi y Opera.
+- **Y el camino nuevo de NSIS se estrenó y funcionó**, con su suma comprobada y sin Chocolatey: el
+  registro dice «NSIS no viene con la máquina; se baja del proyecto NSIS» y Windows pasó en verde.
+  Aquello queda cerrado por comprobación, no por suerte.
 - **La causa era el permiso `storage`**, que no estaba en el manifiesto de la extensión. Sin permiso,
   esa API no da error: es `undefined`. La excepción saltaba en la primera línea del trabajador de
   fondo, **nadie la recogía**, y desde fuera se veía exactamente igual que si el puente con Esfinge
