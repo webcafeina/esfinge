@@ -22,8 +22,68 @@ permissions:
   contents: write
 
 jobs:
+  # **La puerta.** Nada se compila ni se publica si esto no pasa.
+  #
+  # Hasta la 2.16.0 no existía: los tests los corría solo «Compilar», en paralelo
+  # y sin que nadie dependiera de él, así que una versión salía igual con las
+  # pruebas en rojo. Y salió: «Compilar» llevaba **seis versiones fallando** por
+  # unos vectores del formato que el .gitignore se había tragado, y lo único que
+  # producía era un correo que se leía como ruido. Un aviso que no para nada deja
+  # de leerse; una puerta, no.
+  #
+  # Cuesta un par de minutos antes de compilar tres sistemas. En un programa que
+  # guarda las contraseñas de alguien, eso no se discute.
+  comprobar:
+    name: Comprobaciones
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.27", cache-dependency-path: go.sum }
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Instalar la interfaz
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Vet y tests de Go
+        run: |
+          go vet ./...
+          go vet -tags dev ./...
+          go test ./...
+
+      - name: Contraste y tokens
+        run: |
+          go test ./internal/tema/ -run TestContrasteDeLosDosTemas -v
+          go test ./internal/tema/ -run TestLosTokensEstanAlDia
+
+      - name: Tipos de la interfaz
+        working-directory: frontend
+        run: pnpm exec tsc -b --noEmit
+
+      - name: Pruebas de la interfaz
+        working-directory: frontend
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm exec playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: informe-pruebas
+          path: frontend/playwright-report/
+          retention-days: 7
+
   macos:
     name: macOS · imagen de disco
+    needs: comprobar
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +140,7 @@ jobs:
 
   windows:
     name: Windows · instalador
+    needs: comprobar
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -167,6 +228,7 @@ jobs:
 
   linux:
     name: Linux · paquete
+    needs: comprobar
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -256,6 +318,7 @@ jobs:
 
   linea-de-comandos:
     name: Línea de comandos
+    needs: comprobar
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

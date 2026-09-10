@@ -7,6 +7,19 @@
 *.esf
 .esfinge-*
 
+# **Menos los vectores fijos del formato, que tienen que estar en el repositorio.**
+#
+# Esta excepción no es una comodidad: sin ella, `*.esf` se traga los quince
+# contenedores de `internal/cripto/testdata/` —que es justo la extensión que
+# tienen— y la promesa de la ADR 0022 deja de ser cierta para cualquiera que
+# clone esto. Estuvo así desde que nacieron, y no se vio porque en la máquina de
+# desarrollo los ficheros están: lo dijo GitHub, en rojo, durante seis versiones.
+#
+# Los `v15-*` son además **irreemplazables**: los selló el código de la 1.5.0 con
+# sal y nonce de verdad, y son la única prueba de que lo emitido hace un año se
+# sigue abriendo.
+!internal/cripto/testdata/*.esf
+
 # Frontend
 frontend/node_modules/
 frontend/dist/

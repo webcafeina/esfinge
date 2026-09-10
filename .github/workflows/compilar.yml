@@ -5,9 +5,17 @@
 # eso está esto. La línea de comandos, que no usa cgo, sí cruza y se compila
 # entera en Linux.
 #
-# Se dispara a mano o al publicar una etiqueta, no en cada empujón: los minutos
-# de macOS se cuentan diez veces más caros en repositorios privados, y compilar
-# una aplicación de escritorio en cada commit es tirarlos.
+# **Se dispara solo a mano.** No en cada empujón —los minutos de macOS se cuentan
+# diez veces más caros y compilar una aplicación de escritorio en cada commit es
+# tirarlos— y tampoco al publicar una etiqueta, que es lo que hacía hasta la
+# 2.16.0 y era trabajo duplicado: «Publicar» compila los tres sistemas y desde la
+# 2.16.0 **corre estas mismas comprobaciones como puerta**.
+#
+# Que corriera en las etiquetas tuvo además un efecto peor que gastar minutos:
+# este flujo llevaba seis versiones en rojo —por unos vectores del formato que el
+# .gitignore se tragaba— y lo único que producía era un correo de fallo al lado
+# de una publicación en verde. Un aviso que no para nada acaba leyéndose como
+# ruido. Ahora lo que falla, para.
 #
 # **Y se puede pedir con inspector**, que es la red para los fallos que solo se
 # dan en un sistema que no se puede ejecutar en la máquina de desarrollo. Ver la
@@ -22,8 +30,6 @@ on:
         description: "Con inspector, para diagnosticar. NO es una compilación para publicar."
         type: boolean
         default: false
-  push:
-    tags: ["v*"]
 
 permissions:
   contents: read

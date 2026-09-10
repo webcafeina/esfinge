@@ -83,6 +83,40 @@ func leerManifiesto(t *testing.T) manifiesto {
 	return m
 }
 
+// TestLosVectoresEstanEnElRepositorio comprueba lo primero de todo: que los
+// ficheros existen.
+//
+// **Existe por un fallo que costó seis versiones en rojo sin que nadie lo
+// leyera.** El `.gitignore` llevaba `*.esf` —que es lo razonable en un programa
+// que produce ficheros con esa extensión— y se tragó los quince vectores, que
+// tienen exactamente esa extensión. En la máquina de desarrollo estaban, así que
+// todo pasaba en verde; en cualquier otro sitio no existían, y con ellos no
+// existía la promesa de la ADR 0022.
+//
+// Los otros tests también fallan sin los ficheros, pero dicen «no such file or
+// directory» quince veces y eso no señala a la causa. Éste sí, y va el primero.
+func TestLosVectoresEstanEnElRepositorio(t *testing.T) {
+	m := leerManifiesto(t)
+	var faltan []string
+	for _, v := range m.Vectores {
+		if _, err := os.Stat(filepath.Join("testdata", v.Fichero)); err != nil {
+			faltan = append(faltan, v.Fichero)
+		}
+	}
+	for _, v := range m.Rotos {
+		if _, err := os.Stat(filepath.Join("testdata", v.Fichero)); err != nil {
+			faltan = append(faltan, v.Fichero)
+		}
+	}
+	if len(faltan) > 0 {
+		t.Fatalf("faltan %d vectores fijos: %v\n"+
+			"Si aquí están y en otra máquina no, mira el .gitignore: «*.esf» se los traga "+
+			"y hace falta la excepción «!internal/cripto/testdata/*.esf». "+
+			"No se regeneran (ver testdata/LÉEME.md); los v15-* además son irreemplazables.",
+			len(faltan), faltan)
+	}
+}
+
 func claroDe(v vectorFijo) []byte {
 	if v.ClaroBytes > 0 {
 		return patronDe(v.ClaroBytes)

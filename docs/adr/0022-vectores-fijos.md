@@ -112,3 +112,28 @@ retrocompatibilidad.
 
 **Lo que sigue sin cubrirse:** contenedores de la 1.0 a la 1.4, si es que llegaron a existir con este
 formato. El commit de la 1.5.0 es el primero que lo tiene.
+
+## Corrección (2026-09-10): esto no era cierto fuera de esta máquina
+
+**Los quince ficheros de vectores nunca llegaron al repositorio.** El `.gitignore` lleva `*.esf`
+—razonable en un programa que produce ficheros con esa extensión— y se tragó exactamente los
+vectores, que tienen esa extensión. Se subieron el `LÉEME.md`, el `vectores.json` y los dos `.esf1`
+de texto; los otros quince, no.
+
+Así que durante seis versiones **todo lo que dice esta ficha era verdad solo en el disco de quien la
+escribió**. Quien clonara el repositorio no tenía la red; y si esa máquina se hubiera perdido, los
+tres `v15-*` se habrían perdido con ella: llevan sal y nonce de verdad y **no se pueden volver a
+fabricar**, porque los selló un compilador de la 1.5.0.
+
+Y lo dijo GitHub, en rojo, en cada publicación desde la 2.14.0. No se leyó porque el flujo que fallaba
+**no paraba nada**: al lado salía una publicación en verde, así que su correo se leía como ruido. Eso
+también está corregido —«Publicar» corre ahora estas comprobaciones **como puerta**— y es la lección
+más cara de las dos: *un aviso que no detiene nada deja de leerse*.
+
+Lo arreglado, en orden de importancia:
+
+1. Los quince ficheros, en el repositorio, con una excepción explícita en `.gitignore`.
+2. **Publicar no compila nada si los tests no pasan.**
+3. `TestLosVectoresEstanEnElRepositorio`, que va el primero y dice **qué mirar**: los otros tests
+   también fallaban sin los ficheros, pero decían «no such file or directory» quince veces, que no
+   señala a un `.gitignore`.

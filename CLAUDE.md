@@ -511,6 +511,17 @@ px por debajo del centro. Todo lo que el fondo dibuje ahí queda tapado, y eso n
 la imagen en un Mac. `make ventana-dmg` la dibuja antes, leyendo las posiciones de
 `empaquetado/macos/armar-dmg.sh` para que fondo y guion no se separen.
 
+**Un aviso que no detiene nada deja de leerse, y aquí costó seis versiones.** Los tests los corría
+solo el flujo «Compilar», en paralelo con «Publicar» y sin que nadie dependiera de él: una versión
+salía aunque estuvieran en rojo. Y estuvieron en rojo de la 2.14.0 a la 2.16.0 —el `.gitignore` con
+su `*.esf` se había tragado **los quince vectores fijos del formato**, que tienen esa extensión, así
+que la promesa de la ADR 0022 era cierta solo en este disco— mientras GitHub mandaba un correo de
+fallo al lado de una publicación en verde. Lo contó el cliente, no una prueba. Ahora **«Publicar»
+corre las comprobaciones como puerta** y «Compilar» solo se dispara a mano. Dos reglas que salen de
+ahí: lo que hay que respetar tiene que **parar** algo, y al añadir un `.gitignore` conviene
+preguntarse qué ficheros del repositorio tienen esa extensión —los vectores llevan ahora su
+excepción, y `TestLosVectoresEstanEnElRepositorio` explica dónde mirar si vuelven a faltar—.
+
 **Y una que solo se descubre publicando: la máquina de GitHub trae repositorios de apt que no son
 nuestros.** `apt-get update` **falla entero** si cualquiera de ellos sirve un índice caducado, así que
 un problema en un servidor de Google puede dejar sin publicar una versión de Esfinge —pasó con la

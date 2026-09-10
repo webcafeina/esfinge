@@ -5,6 +5,32 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-10 · El correo de fallo que llevaba seis versiones llegando
+
+- **2.16.1.** El cliente contó que «Compilar» le mandaba un correo de fallo en cada publicación desde
+  hacía varias versiones, aunque el programa se actualizara bien. Lo que había detrás era peor que un
+  correo molesto, y son dos cosas.
+- **Los quince vectores fijos del formato nunca estuvieron en el repositorio.** El `.gitignore` lleva
+  `*.esf` —lo razonable en un programa que produce ficheros con esa extensión— y **se tragó
+  exactamente los vectores**, que tienen esa extensión. Se subieron el LÉEME, el `vectores.json` y
+  los dos `.esf1` de texto; los otros quince, no. Así que todo lo que promete la ADR 0022 era cierto
+  **solo en este disco**, y los tres `v15-*` —sellados con el compilador de la 1.5.0, con sal y nonce
+  de verdad, la única prueba de que lo emitido hace un año se abre— se habrían perdido con la máquina.
+  **No se pueden volver a fabricar.**
+- **Y publicar no comprobaba nada.** Los tests los corría solo «Compilar», en paralelo y sin que nadie
+  dependiera de él, así que una versión salía igual con las pruebas en rojo. Salieron seis.
+- **La lección, que vale para cualquier proyecto: un aviso que no detiene nada deja de leerse.** Al
+  lado del correo de fallo había una publicación en verde y un programa que funcionaba; el correo se
+  convirtió en ruido en dos días. Ahora «Publicar» corre las comprobaciones **como puerta** —si
+  fallan, no se compila ni se publica— y «Compilar» solo se dispara a mano, que además quita el
+  trabajo duplicado y el correo.
+- **Verificado**: los quince ficheros en el repositorio, `make comprobar` en verde, y una prueba
+  nueva —`TestLosVectoresEstanEnElRepositorio`— que va la primera y dice **dónde mirar**: los otros
+  fallaban igual sin los ficheros, pero decían «no such file or directory» quince veces, que no
+  señala a un `.gitignore`. Comprobado a mano que falla y qué dice, escondiendo un vector.
+- **Queda dicho** en la ADR 0022, con su corrección fechada: lo que afirmaba era falso fuera de esta
+  máquina durante seis versiones.
+
 ## 2026-09-10 · La papelera, y borrar deja de ser para siempre
 
 - **2.16.0.** Se puede vaciar la papelera, que era el cabo suelto que quedaba de la bóveda. Y de paso

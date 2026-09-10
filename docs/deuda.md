@@ -46,6 +46,17 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~Los vectores fijos del formato no estaban en el repositorio~~ → el `.gitignore` lleva `*.esf`, que
+  es lo razonable en un programa que produce ficheros con esa extensión, y **se tragó exactamente los
+  quince vectores**, que tienen esa extensión. Todo lo que promete la [ADR 0022](adr/0022-vectores-fijos.md)
+  era cierto solo en el disco de desarrollo, y los tres `v15-*` —sellados con el compilador de la
+  1.5.0, con sal y nonce de verdad— **no se pueden volver a fabricar**: se habrían perdido con la
+  máquina. Lo decía GitHub en rojo desde la 2.14.0 (2026-09-10, 2.16.1).
+- ~~Publicar no comprobaba nada~~ → los tests los corría solo el flujo «Compilar», en paralelo y sin
+  que nadie dependiera de él, así que **una versión salía igual con las pruebas en rojo**, y salieron
+  seis. Ahora «Publicar» los corre como puerta: si fallan, no se compila ni se publica. Y «Compilar»
+  deja de dispararse en las etiquetas, que era trabajo duplicado y el correo de fallo que llegaba al
+  cliente (2026-09-10, 2.16.1).
 - ~~Lo borrado no bloquea ya su propia reimportación~~ → lo trajo la papelera de la 2.16.0: con la
   entrada entera guardada dentro, el índice de duplicados del importador la reconocía y volver a
   pasar el CSV la daba por repetida. Se habría visto como «la borré, la reimporté y no ha vuelto»,
