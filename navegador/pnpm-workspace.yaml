@@ -1,0 +1,5 @@
+# Dependencias a las que se permite ejecutar scripts de instalación. pnpm los
+# bloquea por defecto por seguridad, y aquí solo hace falta esbuild, que compila
+# su binario al instalarse. Igual que en `frontend/`.
+allowBuilds:
+  esbuild: true

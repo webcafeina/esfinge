@@ -86,6 +86,17 @@ esfinge:
 puente:
 	CGO_ENABLED=0 $(GO) build -ldflags "$(LDFLAGS)" -o esfinge-puente ./cmd/esfinge-puente
 
+## extension: construye la extensión del navegador, para Chrome y para Firefox
+##
+## Salen dos porque **los manifiestos no son el mismo**: Chrome quiere un
+## service_worker y Firefox una lista de scripts, y el identificador lo elige uno
+## en Firefox y lo asigna la tienda en Chrome.
+.PHONY: extension
+extension:
+	cd navegador && $(PNPM) install --frozen-lockfile && $(PNPM) run build
+	cd navegador && NAVEGADOR=firefox $(PNPM) exec vite build
+	@ls -la navegador/dist/*/
+
 ## dev: levanta el Go de verdad para poder mover la interfaz en el navegador
 .PHONY: dev
 dev:

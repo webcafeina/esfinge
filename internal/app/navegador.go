@@ -200,37 +200,57 @@ func (f fuenteDelNavegador) CuentasDe(dominio string) ([]navegador.Cuenta, error
 	return out, nil
 }
 
-func (f fuenteDelNavegador) Secreto(id, dominio string) (string, error) {
+// CopiarSecreto y CopiarCodigo **copian por Go**, y ése es el motivo de que en
+// esta entrega no salga ni un secreto hacia el navegador.
+//
+// De paso se hereda gratis lo que ya existe desde la 2.12.0: el portapapeles se
+// borra solo pasado el plazo de Ajustes. Copiándolo la extensión, la contraseña
+// se quedaría ahí para siempre —justo el agujero que aquella versión vino a
+// tapar— y encima habría cruzado el canal para nada.
+func (f fuenteDelNavegador) CopiarSecreto(id, dominio string) (navegador.Copiado, error) {
 	e, err := f.entradaDe(id, dominio)
 	if err != nil {
-		return "", err
+		return navegador.Copiado{}, err
 	}
 	if e.Secreto == "" {
-		return "", errors.New("Esa entrada no tiene contraseña")
+		return navegador.Copiado{}, errors.New("Esa entrada no tiene contraseña")
 	}
-	return e.Secreto, nil
+	// **Sin contar como actividad**, como todo lo que entra por aquí: desde este
+	// lado no hay forma de distinguir el clic de una persona de la llamada de un
+	// programa, y el reloj del bloqueo lo mueve quien está delante de la ventana.
+	segundos, err := f.a.copiar(e.Secreto, false)
+	if err != nil {
+		return navegador.Copiado{}, err
+	}
+	return navegador.Copiado{Portapapeles: segundos}, nil
 }
 
-func (f fuenteDelNavegador) Codigo(id, dominio string) (navegador.Codigo, error) {
+func (f fuenteDelNavegador) CopiarCodigo(id, dominio string) (navegador.Copiado, error) {
 	e, err := f.entradaDe(id, dominio)
 	if err != nil {
-		return navegador.Codigo{}, err
+		return navegador.Copiado{}, err
 	}
 	if e.TOTP == "" {
-		return navegador.Codigo{}, errors.New("Esa entrada no tiene código de un solo uso")
+		return navegador.Copiado{}, errors.New("Esa entrada no tiene código de un solo uso")
 	}
 	s, err := codigos.Leer(e.TOTP)
 	if err != nil {
-		return navegador.Codigo{}, err
+		return navegador.Copiado{}, err
 	}
 	ahora := time.Now()
 	codigo, err := s.En(ahora)
 	if err != nil {
-		return navegador.Codigo{}, err
+		return navegador.Copiado{}, err
 	}
-	return navegador.Codigo{
-		Codigo: codigo, Quedan: int(s.Quedan(ahora).Seconds()),
-		Periodo: int(s.Periodo.Seconds()),
+	segundos, err := f.a.copiar(codigo, false)
+	if err != nil {
+		return navegador.Copiado{}, err
+	}
+	// Lo que le queda de vida al código, para no pegar uno que caduca antes de
+	// llegar al formulario.
+	return navegador.Copiado{
+		Portapapeles: segundos,
+		Quedan:       int(s.Quedan(ahora).Seconds()),
 	}, nil
 }
 
@@ -355,16 +375,41 @@ func (a *App) aplicarCanal(p Preferencias) {
 
 	ruta := navegador.RutaDelCanal()
 	srv, err := navegador.Servir(ruta, fuenteDelNavegador{a})
+	fallo := ""
+	if err != nil {
+		fallo = err.Error()
+	}
+
+	// Y el manifiesto de cada navegador, que es la otra mitad de la puerta: sin
+	// él, el socket está abierto y **nadie sabe que existe**.
+	if err == nil {
+		if puente, err := rutaDelPuente(); err != nil {
+			fallo = err.Error()
+		} else if fallos := escribirManifiestos(casaDelUsuario(), puente); len(fallos) > 0 {
+			fallo = fallos[0].Error()
+		}
+	}
+
 	a.mu.Lock()
 	a.canal = srv
-	a.canalFallo = ""
-	if err != nil {
-		a.canalFallo = err.Error()
-	}
+	a.canalFallo = fallo
 	a.mu.Unlock()
 }
 
+// casaDelUsuario es donde cada navegador guarda lo suyo.
+func casaDelUsuario() string {
+	casa, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return casa
+}
+
 func (a *App) pararCanal() {
+	// Primero el manifiesto: apagar el canal y dejar puesto el fichero que dice
+	// cómo llamar sería apagar media puerta.
+	borrarManifiestos(casaDelUsuario())
+
 	a.mu.Lock()
 	srv := a.canal
 	a.canal = nil

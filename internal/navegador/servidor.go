@@ -47,10 +47,14 @@ type Fuente interface {
 	Estado() Estado
 	// CuentasDe son las entradas de ese dominio, **sin secretos**.
 	CuentasDe(dominio string) ([]Cuenta, error)
-	// Secreto es la contraseña de una entrada, **si es de ese dominio**.
-	Secreto(id, dominio string) (string, error)
-	// Codigo es el código de un solo uso de una entrada, con la misma condición.
-	Codigo(id, dominio string) (Codigo, error)
+	// CopiarSecreto pone la contraseña de una entrada en el portapapeles del
+	// sistema, **si es de ese dominio**. Devuelve en cuántos segundos se borrará.
+	//
+	// Copia Esfinge y no la extensión: así el secreto no cruza el canal y se
+	// aprovecha el borrado que ya existe.
+	CopiarSecreto(id, dominio string) (Copiado, error)
+	// CopiarCodigo hace lo mismo con el código de un solo uso.
+	CopiarCodigo(id, dominio string) (Copiado, error)
 	// Emparejar le pregunta a la persona, en la ventana, si permite que ese
 	// navegador hable con la bóveda. Devuelve el testigo si dice que sí.
 	Emparejar(quien string) (string, error)
@@ -280,19 +284,19 @@ func (s *Servidor) Atender(p Peticion, cuenta *contador) Respuesta {
 		}
 		return Respuesta{OK: true, Cuentas: cuentas}
 
-	case QueUsar:
-		secreto, err := s.fuente.Secreto(p.ID, dominio)
+	case QueCopiarSecreto:
+		c, err := s.fuente.CopiarSecreto(p.ID, dominio)
 		if err != nil {
 			return mal(MotivoNoEncaja, err.Error())
 		}
-		return Respuesta{OK: true, Secreto: secreto}
+		return Respuesta{OK: true, Copiado: &c}
 
-	case QueCodigo:
-		c, err := s.fuente.Codigo(p.ID, dominio)
+	case QueCopiarCodigo:
+		c, err := s.fuente.CopiarCodigo(p.ID, dominio)
 		if err != nil {
 			return mal(MotivoNoEncaja, err.Error())
 		}
-		return Respuesta{OK: true, Codigo: &c}
+		return Respuesta{OK: true, Copiado: &c}
 	}
 
 	return mal(MotivoNoEntiendo, "Esfinge no sabe hacer eso")

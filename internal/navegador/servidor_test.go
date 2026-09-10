@@ -16,8 +16,9 @@ import (
 type bovedaFalsa struct {
 	existe, abierta bool
 	testigos        map[string]bool
-	niega           bool // la persona dice que no al emparejar
-	pedidos         int  // cuántas veces se ha preguntado por un secreto
+	niega           bool   // la persona dice que no al emparejar
+	pedidos         int    // cuántas veces se ha preguntado por un secreto
+	portapapeles    string // lo que Esfinge ha copiado
 }
 
 func nuevaFalsa() *bovedaFalsa {
@@ -43,23 +44,25 @@ func (b *bovedaFalsa) CuentasDe(dominio string) ([]Cuenta, error) {
 	return out, nil
 }
 
-func (b *bovedaFalsa) Secreto(id, dominio string) (string, error) {
+func (b *bovedaFalsa) CopiarSecreto(id, dominio string) (Copiado, error) {
 	b.pedidos++
 	for _, e := range lasEntradas {
 		if e.id == id && Encaja(e.sitio, dominio) {
-			return e.secreto, nil
+			b.portapapeles = e.secreto
+			return Copiado{Portapapeles: 30}, nil
 		}
 	}
-	return "", errors.New("Esa entrada no es de ese sitio")
+	return Copiado{}, errors.New("Esa entrada no es de ese sitio")
 }
 
-func (b *bovedaFalsa) Codigo(id, dominio string) (Codigo, error) {
+func (b *bovedaFalsa) CopiarCodigo(id, dominio string) (Copiado, error) {
 	for _, e := range lasEntradas {
 		if e.id == id && Encaja(e.sitio, dominio) && e.semilla != "" {
-			return Codigo{Codigo: "123456", Quedan: 20, Periodo: 30}, nil
+			b.portapapeles = "123456"
+			return Copiado{Portapapeles: 30, Quedan: 20}, nil
 		}
 	}
-	return Codigo{}, errors.New("Esa entrada no es de ese sitio")
+	return Copiado{}, errors.New("Esa entrada no es de ese sitio")
 }
 
 func (b *bovedaFalsa) Emparejar(string) (string, error) {
@@ -100,14 +103,29 @@ func TestElCaminoDeUnRelleno(t *testing.T) {
 		t.Errorf("la lista de cuentas lleva la contraseña dentro: %s", crudo)
 	}
 
-	r = pedir(s, Peticion{Que: QueUsar, Testigo: "el-testigo", ID: "1", Origen: "https://banco.es"})
-	if !r.OK || r.Secreto != "s3cr3t0" {
-		t.Fatalf("usar: %+v", r)
+	// **Copia Esfinge, y por el canal no vuelve el secreto**: solo cuánto tardará
+	// en borrarse del portapapeles. Es lo que hace que en esta entrega no salga
+	// ni un secreto hacia el navegador.
+	r = pedir(s, Peticion{Que: QueCopiarSecreto, Testigo: "el-testigo", ID: "1", Origen: "https://banco.es"})
+	if !r.OK || r.Copiado == nil || r.Copiado.Portapapeles != 30 {
+		t.Fatalf("copiar la contraseña: %+v", r)
+	}
+	if b.portapapeles != "s3cr3t0" {
+		t.Errorf("no ha copiado la contraseña: %q", b.portapapeles)
+	}
+	if crudo, _ := json.Marshal(r); strings.Contains(string(crudo), "s3cr3t0") {
+		t.Errorf("la contraseña ha vuelto por el canal: %s", crudo)
 	}
 
-	r = pedir(s, Peticion{Que: QueCodigo, Testigo: "el-testigo", ID: "1", Origen: "https://banco.es"})
-	if !r.OK || r.Codigo == nil || r.Codigo.Codigo != "123456" {
-		t.Fatalf("codigo: %+v", r)
+	r = pedir(s, Peticion{Que: QueCopiarCodigo, Testigo: "el-testigo", ID: "1", Origen: "https://banco.es"})
+	if !r.OK || r.Copiado == nil || r.Copiado.Quedan != 20 {
+		t.Fatalf("copiar el código: %+v", r)
+	}
+	if b.portapapeles != "123456" {
+		t.Errorf("no ha copiado el código: %q", b.portapapeles)
+	}
+	if crudo, _ := json.Marshal(r); strings.Contains(string(crudo), "123456") {
+		t.Errorf("el código ha vuelto por el canal: %s", crudo)
 	}
 }
 
@@ -133,22 +151,22 @@ func TestLoQueElNavegadorNoPuedeConseguir(t *testing.T) {
 		},
 		{
 			"pidiendo una contraseña sin decir de qué sitio",
-			Peticion{Que: QueUsar, Testigo: "el-testigo", ID: "1"},
+			Peticion{Que: QueCopiarSecreto, Testigo: "el-testigo", ID: "1"},
 			MotivoOrigenInvalido,
 		},
 		{
 			"pidiendo la contraseña del banco desde otro sitio",
-			Peticion{Que: QueUsar, Testigo: "el-testigo", ID: "1", Origen: "https://malo.com"},
+			Peticion{Que: QueCopiarSecreto, Testigo: "el-testigo", ID: "1", Origen: "https://malo.com"},
 			MotivoNoEncaja,
 		},
 		{
 			"pidiendo la contraseña del banco desde un dominio que se le parece",
-			Peticion{Que: QueUsar, Testigo: "el-testigo", ID: "1", Origen: "https://banco.es.malo.com"},
+			Peticion{Que: QueCopiarSecreto, Testigo: "el-testigo", ID: "1", Origen: "https://banco.es.malo.com"},
 			MotivoNoEncaja,
 		},
 		{
 			"pidiendo el código de un solo uso desde otro sitio",
-			Peticion{Que: QueCodigo, Testigo: "el-testigo", ID: "1", Origen: "https://malo.com"},
+			Peticion{Que: QueCopiarCodigo, Testigo: "el-testigo", ID: "1", Origen: "https://malo.com"},
 			MotivoNoEncaja,
 		},
 		{
@@ -174,7 +192,7 @@ func TestLoQueElNavegadorNoPuedeConseguir(t *testing.T) {
 			if r.Motivo != c.motivo {
 				t.Errorf("falla por «%s» y debería fallar por «%s»", r.Motivo, c.motivo)
 			}
-			if r.Secreto != "" || r.Codigo != nil || len(r.Cuentas) > 0 {
+			if r.Copiado != nil || len(r.Cuentas) > 0 {
 				t.Errorf("ha soltado algo por el camino: %+v", r)
 			}
 		})

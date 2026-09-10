@@ -127,14 +127,30 @@ func (v *vigilante) tocaBorrarPortapapeles() bool {
 // clave» copia una contraseña generada en claro y nunca se borraba, cosa que
 // `docs/seguridad.md` reconocía sin resolver.
 func (a *App) Copiar(texto string) error {
+	_, err := a.copiar(texto, true)
+	return err
+}
+
+// copiar es lo mismo, diciendo **si cuenta como actividad**, y devuelve los
+// segundos que tardará en borrarse.
+//
+// Los dos parámetros existen por el canal del navegador. Copiar desde el panel
+// de la extensión **no mueve el reloj del bloqueo**: desde aquí no hay forma de
+// distinguir un clic de una persona de una llamada de un programa, y la regla de
+// esta casa es que solo mueve el reloj quien está delante de la ventana. Y los
+// segundos hacen falta porque al otro lado no llega el evento que la ventana
+// escucha: el panel tiene que poder decir cuánto queda.
+func (a *App) copiar(texto string, cuentaComoActividad bool) (int, error) {
 	if err := a.sistema.PonerEnPortapapeles(texto); err != nil {
-		return err
+		return 0, err
 	}
 
 	a.vig.mu.Lock()
 	espera := a.vig.esperaCopiado
 	ahora := a.vig.ahora()
-	a.vig.ultimaActividad = ahora
+	if cuentaComoActividad {
+		a.vig.ultimaActividad = ahora
+	}
 	// Con el borrado apagado no se apunta lo copiado: lo que no se va a borrar no
 	// hace falta recordarlo, y guardar el secreto en memoria «por si acaso» sería
 	// justo lo contrario de lo que hace este fichero.
@@ -148,8 +164,9 @@ func (a *App) Copiar(texto string) error {
 
 	// La cuenta atrás se enseña. Un secreto en el portapapeles sin decir cuánto
 	// va a estar ahí es peor que no borrarlo: quien no lo sabe, no pega a tiempo.
-	a.sistema.Avisar(EventoPortapapeles, int(espera/time.Second))
-	return nil
+	segundos := int(espera / time.Second)
+	a.sistema.Avisar(EventoPortapapeles, segundos)
+	return segundos, nil
 }
 
 // borrarPortapapelesSiSigueSiendoNuestro es el detalle que hace esto aceptable.

@@ -17,16 +17,27 @@ const (
 	QueEstado = "estado"
 	// QueCuentas devuelve las cuentas que encajan con un origen, **sin secretos**.
 	QueCuentas = "cuentas"
-	// QueUsar devuelve la contraseña de una entrada.
-	QueUsar = "usar"
-	// QueCodigo devuelve el código de un solo uso de una entrada.
+	// QueCopiarSecreto pone la contraseña de una entrada en el portapapeles.
+	//
+	// **Copia Esfinge, y el secreto no cruza el canal.** Es la decisión que hace
+	// que en esta entrega **no salga ni un secreto hacia el navegador**, y encima
+	// no cuesta nada: el borrado del portapapeles ya existe desde la 2.12.0, así
+	// que lo copiado se va solo pasado el plazo de Ajustes. Copiándolo la
+	// extensión se quedaría ahí para siempre, que es justo el agujero que aquella
+	// versión vino a tapar.
+	//
+	// Cuando llegue el relleno hará falta un verbo que **sí** devuelva la
+	// contraseña, porque para escribirla en un formulario hay que tenerla. Ese día
+	// tendrá que justificarse solo; hoy no hace falta y no está.
+	QueCopiarSecreto = "copiar-secreto"
+	// QueCopiarCodigo hace lo mismo con el código de un solo uso.
 	//
 	// **Lleva origen, como todo lo demás.** En el primer borrador no lo llevaba, y
 	// era un agujero de los que se cuelan por parecer un detalle: los
 	// identificadores se pueden enumerar preguntando por cuentas, así que un
 	// `codigo(id)` sin origen es el segundo factor entero saliendo por ahí sin que
 	// nadie diga para qué sitio.
-	QueCodigo = "codigo"
+	QueCopiarCodigo = "copiar-codigo"
 	// QueEmparejar pide permiso para hablar con esta bóveda. Lo contesta una
 	// persona en la ventana de Esfinge, y devuelve un testigo que la extensión
 	// guarda y presenta después.
@@ -40,7 +51,9 @@ const (
 
 // LoQueSePuedePedir es la lista, en un sitio, para que añadir algo sea una
 // decisión y no un efecto de haber escrito un `case` más.
-var LoQueSePuedePedir = []string{QueEstado, QueCuentas, QueUsar, QueCodigo, QueEmparejar}
+var LoQueSePuedePedir = []string{
+	QueEstado, QueEmparejar, QueCuentas, QueCopiarSecreto, QueCopiarCodigo,
+}
 
 // VersionDelProtocolo la manda la extensión en cada petición.
 //
@@ -81,11 +94,15 @@ type Estado struct {
 	Abierta bool `json:"abierta"`
 }
 
-// Codigo es un código de un solo uso con lo que le queda de vida.
-type Codigo struct {
-	Codigo  string `json:"codigo"`
-	Quedan  int    `json:"quedan"`
-	Periodo int    `json:"periodo"`
+// Copiado es lo que se sabe después de copiar algo. **No lleva lo copiado.**
+type Copiado struct {
+	// Portapapeles son los segundos que tardará Esfinge en borrarlo, o cero si el
+	// borrado está apagado en Ajustes.
+	Portapapeles int `json:"portapapeles"`
+	// Quedan son los segundos de vida que le quedan al código de un solo uso.
+	// Solo lo lleva `copiar-codigo`, y sirve para no copiar uno que va a caducar
+	// antes de que dé tiempo a pegarlo.
+	Quedan int `json:"quedan,omitempty"`
 }
 
 // Respuesta es lo que vuelve. Siempre lleva `ok`, y cuando es falso lleva un
@@ -100,8 +117,7 @@ type Respuesta struct {
 
 	Estado  *Estado  `json:"estado,omitempty"`
 	Cuentas []Cuenta `json:"cuentas,omitempty"`
-	Secreto string   `json:"secreto,omitempty"`
-	Codigo  *Codigo  `json:"codigo,omitempty"`
+	Copiado *Copiado `json:"copiado,omitempty"`
 	// Testigo solo vuelve al emparejar, y una sola vez.
 	Testigo string `json:"testigo,omitempty"`
 }

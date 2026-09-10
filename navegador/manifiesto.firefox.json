@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Esfinge",
+  "version": "0.1.0",
+  "description": "Consulta las contraseñas de tu bóveda de Esfinge sin salir del navegador.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "esfinge@webcafeina.com",
+      "strict_min_version": "128.0"
+    }
+  },
+  "permissions": [
+    "nativeMessaging",
+    "activeTab"
+  ],
+  "action": {
+    "default_title": "Esfinge",
+    "default_popup": "panel.html"
+  },
+  "background": {
+    "scripts": [
+      "fondo.js"
+    ],
+    "type": "module"
+  }
+}

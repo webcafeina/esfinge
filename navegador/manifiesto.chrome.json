@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Esfinge",
+  "version": "0.1.0",
+  "description": "Consulta las contraseñas de tu bóveda de Esfinge sin salir del navegador.",
+  "permissions": [
+    "nativeMessaging",
+    "activeTab"
+  ],
+  "action": {
+    "default_title": "Esfinge",
+    "default_popup": "panel.html"
+  },
+  "background": {
+    "service_worker": "fondo.js",
+    "type": "module"
+  }
+}

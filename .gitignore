@@ -22,7 +22,9 @@
 # sigue abriendo.
 !internal/cripto/testdata/*.esf
 
-# Frontend
+# Frontend y extensión
+navegador/node_modules/
+navegador/dist/
 frontend/node_modules/
 frontend/dist/
 frontend/capturas/
@@ -35,3 +37,4 @@ build/darwin/ventana-dmg.png
 # Capturas del sistema que sirven de referencia visual. No se suben: son de
 # Apple y el repositorio es público.
 referencias/
+navegador/tsconfig.tsbuildinfo

@@ -11,9 +11,9 @@ import (
 
 // conBoveda deja una bóveda abierta con una credencial del banco y otra de un
 // correo, y devuelve la fuente que ve el navegador.
-func conBoveda(t *testing.T) (*App, *time.Time, navegador.Fuente, map[string]string) {
+func conBoveda(t *testing.T) (*App, *sistemaFalso, *time.Time, navegador.Fuente, map[string]string) {
 	t.Helper()
-	a, _, ahora := conReloj(t)
+	a, s, ahora := conReloj(t)
 	if _, err := a.CrearBoveda("una contraseña maestra larga"); err != nil {
 		t.Fatal(err)
 	}
@@ -36,12 +36,12 @@ func conBoveda(t *testing.T) (*App, *time.Time, navegador.Fuente, map[string]str
 	for _, e := range a.boveda().Buscar("") {
 		ids[e.Titulo] = e.ID
 	}
-	return a, ahora, fuenteDelNavegador{a}, ids
+	return a, s, ahora, fuenteDelNavegador{a}, ids
 }
 
 // Lo que el navegador ve de un sitio: sus cuentas, sin secretos, y solo las suyas.
 func TestLoQueElNavegadorVeDeUnSitio(t *testing.T) {
-	_, _, f, _ := conBoveda(t)
+	_, _, _, f, _ := conBoveda(t)
 
 	cuentas, err := f.CuentasDe("banco.es")
 	if err != nil {
@@ -60,23 +60,26 @@ func TestLoQueElNavegadorVeDeUnSitio(t *testing.T) {
 // **La prueba que impide el desastre**: con el identificador de una entrada a
 // mano, pedirla desde otro sitio no la da.
 func TestUnaEntradaNoSaleParaUnSitioQueNoEsElSuyo(t *testing.T) {
-	_, _, f, ids := conBoveda(t)
+	_, s, _, f, ids := conBoveda(t)
 
-	if s, err := f.Secreto(ids["Banco"], "banco.es"); err != nil || s != "s3cr3t0" {
-		t.Fatalf("desde su sitio no ha salido: %q, %v", s, err)
+	if _, err := f.CopiarSecreto(ids["Banco"], "banco.es"); err != nil {
+		t.Fatalf("desde su sitio no ha copiado: %v", err)
+	}
+	if s.verPortapapeles() != "s3cr3t0" {
+		t.Fatalf("no ha copiado la contraseña: %q", s.verPortapapeles())
 	}
 
 	for _, dominio := range []string{"correo.com", "malo.com", "banco.es.malo.com", ""} {
-		if s, err := f.Secreto(ids["Banco"], dominio); err == nil {
-			t.Errorf("la contraseña del banco ha salido para «%s»: %q", dominio, s)
+		if _, err := f.CopiarSecreto(ids["Banco"], dominio); err == nil {
+			t.Errorf("la contraseña del banco ha salido para «%s»", dominio)
 		}
-		if _, err := f.Codigo(ids["Banco"], dominio); err == nil {
+		if _, err := f.CopiarCodigo(ids["Banco"], dominio); err == nil {
 			t.Errorf("el código de un solo uso del banco ha salido para «%s»", dominio)
 		}
 	}
 
 	// Y un identificador inventado tampoco abre nada.
-	if _, err := f.Secreto("me lo he inventado", "banco.es"); err == nil {
+	if _, err := f.CopiarSecreto("me lo he inventado", "banco.es"); err == nil {
 		t.Error("un identificador inventado ha devuelto una contraseña")
 	}
 }
@@ -84,7 +87,7 @@ func TestUnaEntradaNoSaleParaUnSitioQueNoEsElSuyo(t *testing.T) {
 // Lo que está en la papelera no se ofrece ni se entrega, aunque conserve su
 // contenido durante treinta días (ADR 0026).
 func TestLoBorradoNoLoVeElNavegador(t *testing.T) {
-	a, _, f, ids := conBoveda(t)
+	a, _, _, f, ids := conBoveda(t)
 	if err := a.BorrarDeBoveda(ids["Banco"]); err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +95,7 @@ func TestLoBorradoNoLoVeElNavegador(t *testing.T) {
 	if c, _ := f.CuentasDe("banco.es"); len(c) != 0 {
 		t.Errorf("una entrada de la papelera se sigue ofreciendo: %+v", c)
 	}
-	if _, err := f.Secreto(ids["Banco"], "banco.es"); err == nil {
+	if _, err := f.CopiarSecreto(ids["Banco"], "banco.es"); err == nil {
 		t.Error("una entrada de la papelera ha entregado su contraseña")
 	}
 }
@@ -101,13 +104,13 @@ func TestLoBorradoNoLoVeElNavegador(t *testing.T) {
 // pregunta sola —al cambiar de pestaña, al revivir su trabajador— así que si esto
 // moviera el reloj, navegar mantendría la bóveda abierta para siempre.
 func TestElNavegadorNoMantieneLaBovedaAbierta(t *testing.T) {
-	a, ahora, f, ids := conBoveda(t)
+	a, _, ahora, f, ids := conBoveda(t)
 
 	for i := 0; i < 30; i++ {
 		*ahora = ahora.Add(time.Minute)
 		f.CuentasDe("banco.es")
-		f.Secreto(ids["Banco"], "banco.es")
-		f.Codigo(ids["Banco"], "banco.es")
+		f.CopiarSecreto(ids["Banco"], "banco.es")
+		f.CopiarCodigo(ids["Banco"], "banco.es")
 		f.Estado()
 		a.repasar()
 	}
@@ -120,7 +123,7 @@ func TestElNavegadorNoMantieneLaBovedaAbierta(t *testing.T) {
 // El emparejamiento: se pide, lo contesta una persona en la ventana, y el testigo
 // se entrega **una sola vez**.
 func TestElEmparejamientoSePideYSeConcedeUnaVez(t *testing.T) {
-	a, _, f, _ := conBoveda(t)
+	a, _, _, f, _ := conBoveda(t)
 
 	if _, err := f.Emparejar("Chrome"); err == nil {
 		t.Fatal("ha dado permiso sin que nadie lo permitiera")
@@ -169,7 +172,7 @@ func TestElEmparejamientoSePideYSeConcedeUnaVez(t *testing.T) {
 // El canal viene apagado y se enciende en Ajustes. Encendido y apagado tienen que
 // valer **desde ya**, no desde el siguiente arranque.
 func TestElCanalSeEnciendeYSeApagaDesdeAjustes(t *testing.T) {
-	a, _, _, _ := conBoveda(t)
+	a, _, _, _, _ := conBoveda(t)
 
 	if e := a.EstadoDelNavegador(); e.Encendido || e.Escuchando {
 		t.Fatalf("viene encendido de fábrica: %+v", e)

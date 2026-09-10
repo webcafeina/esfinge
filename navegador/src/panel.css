@@ -1,0 +1,88 @@
+/* El panel es pequeño y se abre y se cierra en tres segundos, así que no tiene
+ * tema propio ni tokens: sigue al navegador con `color-scheme` y usa la
+ * tipografía del sistema, como la ventana de Esfinge (ADR 0007). */
+:root {
+  color-scheme: light dark;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+    "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+}
+
+body {
+  width: 320px;
+  margin: 0;
+  padding: 12px;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+header span {
+  opacity: 0.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 8px 0;
+  border-top: 1px solid rgb(128 128 128 / 0.3);
+}
+
+li:first-child {
+  border-top: 0;
+}
+
+.nombre {
+  font-weight: 500;
+}
+
+.usuario {
+  grid-column: 1;
+  opacity: 0.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Las acciones ocupan las dos filas de la izquierda, para que el usuario pueda
+ * ser largo sin empujarlas. */
+.acciones {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button {
+  font: inherit;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgb(128 128 128 / 0.4);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  background: rgb(128 128 128 / 0.15);
+}
+
+#aviso {
+  margin: 8px 0 0;
+  opacity: 0.8;
+}

@@ -1,0 +1,14 @@
+{
+  "name": "esfinge-navegador",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b && vite build",
+    "comprobar": "tsc -b --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "typescript": "^5.9.0",
+    "vite": "^6.0.0"
+  }
+}
