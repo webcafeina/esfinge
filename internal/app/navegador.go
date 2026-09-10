@@ -313,7 +313,15 @@ type EstadoDelNavegador struct {
 	Donde      string `json:"donde"`
 	Error      string `json:"error,omitempty"`
 	// Pide es el nombre del navegador que está esperando permiso, si hay alguno.
-	Pide       string               `json:"pide,omitempty"`
+	Pide string `json:"pide,omitempty"`
+	// Avisados son los navegadores a los que se les ha dejado el manifiesto.
+	//
+	// **Se enseña, y es lo que convierte «no funciona» en «ya veo por qué».** Sin
+	// esto, un navegador al que no se avisó y uno avisado se ven exactamente
+	// igual desde la ventana: el interruptor puesto y nada más. Costó un viaje al
+	// Mac descubrir que en macOS Firefox se detectaba mirando la carpeta
+	// equivocada y no se le escribía nada.
+	Avisados   []string             `json:"avisados"`
 	Permitidos []NavegadorPermitido `json:"permitidos"`
 }
 
@@ -321,7 +329,7 @@ type EstadoDelNavegador struct {
 // no los necesita para nada y no tienen por qué vivir en el webview.
 func (a *App) EstadoDelNavegador() EstadoDelNavegador {
 	a.mu.Lock()
-	srv, fallo := a.canal, a.canalFallo
+	srv, fallo, avisados := a.canal, a.canalFallo, a.canalAvisados
 	a.mu.Unlock()
 
 	e := EstadoDelNavegador{
@@ -329,6 +337,7 @@ func (a *App) EstadoDelNavegador() EstadoDelNavegador {
 		Escuchando: srv != nil,
 		Donde:      navegador.RutaDelCanal(),
 		Error:      fallo,
+		Avisados:   avisados,
 		Pide:       a.navegadores.quienPide(),
 	}
 	for _, p := range a.navegadores.ver() {
@@ -382,17 +391,23 @@ func (a *App) aplicarCanal(p Preferencias) {
 
 	// Y el manifiesto de cada navegador, que es la otra mitad de la puerta: sin
 	// él, el socket está abierto y **nadie sabe que existe**.
+	var avisados []string
 	if err == nil {
 		if puente, err := rutaDelPuente(); err != nil {
 			fallo = err.Error()
-		} else if fallos := escribirManifiestos(casaDelUsuario(), puente); len(fallos) > 0 {
-			fallo = fallos[0].Error()
+		} else {
+			var fallos []error
+			avisados, fallos = escribirManifiestos(casaDelUsuario(), puente)
+			if len(fallos) > 0 {
+				fallo = fallos[0].Error()
+			}
 		}
 	}
 
 	a.mu.Lock()
 	a.canal = srv
 	a.canalFallo = fallo
+	a.canalAvisados = avisados
 	a.mu.Unlock()
 }
 

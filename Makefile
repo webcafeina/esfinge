@@ -93,8 +93,8 @@ puente:
 ## en Firefox y lo asigna la tienda en Chrome.
 .PHONY: extension
 extension:
-	cd navegador && $(PNPM) install --frozen-lockfile && $(PNPM) run build
-	cd navegador && NAVEGADOR=firefox $(PNPM) run build
+	cd navegador && $(PNPM) install --frozen-lockfile && VERSION="$(VERSION)" $(PNPM) run build
+	cd navegador && NAVEGADOR=firefox VERSION="$(VERSION)" $(PNPM) run build
 	@ls -la navegador/dist/*/
 
 ## dev: levanta el Go de verdad para poder mover la interfaz en el navegador

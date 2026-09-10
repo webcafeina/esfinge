@@ -67,8 +67,9 @@ type App struct {
 
 	// canal es el socket por el que habla la extensión del navegador, si está
 	// encendido. Nil mientras no lo esté, que es lo que vale por defecto.
-	canal      *navegador.Servidor
-	canalFallo string
+	canal         *navegador.Servidor
+	canalFallo    string
+	canalAvisados []string
 	// navegadores son los que tienen permiso para hablar con la bóveda. Van en su
 	// propio fichero y **no en las preferencias**, que cruzan el puente hacia la
 	// ventana: un testigo de emparejamiento no pinta nada dentro del webview.

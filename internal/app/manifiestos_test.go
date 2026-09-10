@@ -17,16 +17,9 @@ func TestElManifiestoDiceQuienPuedeLlamar(t *testing.T) {
 		t.Skip("en Windows esto va al registro, y todavía no está")
 	}
 	casa := t.TempDir()
-	// Solo se escribe donde el navegador ya está instalado, así que se finge que
-	// Firefox lo está.
-	if err := os.MkdirAll(filepath.Join(casa, ".mozilla"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if runtime.GOOS == "darwin" {
-		os.MkdirAll(filepath.Join(casa, "Library", "Application Support", "Mozilla"), 0o755)
-	}
+	fingirFirefox(t, casa)
 
-	if fallos := escribirManifiestos(casa, "/donde/sea/esfinge-puente"); len(fallos) > 0 {
+	if _, fallos := escribirManifiestos(casa, "/donde/sea/esfinge-puente"); len(fallos) > 0 {
 		t.Fatalf("no ha podido escribirlo: %v", fallos)
 	}
 
@@ -78,14 +71,14 @@ func TestSinExtensionesNoSeEscribeManifiesto(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	escribirManifiestos(casa, "/donde/sea/esfinge-puente")
+	_, _ = escribirManifiestos(casa, "/donde/sea/esfinge-puente")
 	if _, err := os.Stat(filepath.Join(base, "NativeMessagingHosts", nombreDelHost+".json")); err == nil {
 		t.Error("ha escrito un manifiesto de Chrome sin ninguna extensión que autorizar")
 	}
 
 	// Y con una de desarrollo puesta a mano, sí.
 	t.Setenv("ESFINGE_EXTENSIONES", "abcdefghijklmnopabcdefghijklmnop")
-	escribirManifiestos(casa, "/donde/sea/esfinge-puente")
+	_, _ = escribirManifiestos(casa, "/donde/sea/esfinge-puente")
 	datos, err := os.ReadFile(filepath.Join(base, "NativeMessagingHosts", nombreDelHost+".json"))
 	if err != nil {
 		t.Fatalf("con una extensión de desarrollo tampoco lo escribe: %v", err)
@@ -135,7 +128,7 @@ func TestLosSeisDeLaFamiliaDeChromium(t *testing.T) {
 		}
 	}
 
-	escribirManifiestos(casa, "/donde/sea/esfinge-puente")
+	_, _ = escribirManifiestos(casa, "/donde/sea/esfinge-puente")
 	for _, b := range bases {
 		ruta := filepath.Join(b, "NativeMessagingHosts", nombreDelHost+".json")
 		if _, err := os.Stat(ruta); err != nil {
@@ -159,7 +152,7 @@ func TestNoSeTocaElPerfilDeUnNavegadorQueNoEsta(t *testing.T) {
 		t.Skip("en Windows esto va al registro, y todavía no está")
 	}
 	casa := t.TempDir()
-	escribirManifiestos(casa, "/donde/sea/esfinge-puente")
+	_, _ = escribirManifiestos(casa, "/donde/sea/esfinge-puente")
 
 	entradas, err := os.ReadDir(casa)
 	if err != nil {
@@ -167,6 +160,51 @@ func TestNoSeTocaElPerfilDeUnNavegadorQueNoEsta(t *testing.T) {
 	}
 	if len(entradas) != 0 {
 		t.Errorf("ha creado cosas sin que hubiera ningún navegador: %v", entradas)
+	}
+}
+
+// fingirFirefox crea **la señal de que Firefox está instalado**, que es su perfil
+// y no la carpeta de los manifiestos.
+//
+// **Ésa fue la confusión que dejó la extensión muerta en el primer Mac.** En
+// macOS el perfil vive en «…/Application Support/Firefox» y los manifiestos en
+// «…/Application Support/Mozilla/NativeMessagingHosts», que no existe hasta que
+// alguien instala un host nativo. Mirando la de destino, la conclusión era
+// «Firefox no está» con Firefox abierto delante.
+func fingirFirefox(t *testing.T, casa string) {
+	t.Helper()
+	perfil := filepath.Join(casa, ".mozilla")
+	if runtime.GOOS == "darwin" {
+		perfil = filepath.Join(casa, "Library", "Application Support", "Firefox")
+	}
+	if err := os.MkdirAll(perfil, 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// **La prueba que habría evitado el viaje.** Con Firefox instalado y sin que
+// exista todavía la carpeta de los manifiestos, el manifiesto tiene que
+// escribirse igual: esa carpeta la crea quien instala un host nativo, y el
+// primero somos nosotros.
+func TestElManifiestoSeEscribeAunqueSuCarpetaNoExista(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("en Windows esto va al registro, y todavía no está")
+	}
+	casa := t.TempDir()
+	fingirFirefox(t, casa)
+
+	// Y se comprueba que de verdad no existe, para que la prueba no pase por el
+	// motivo equivocado el día que alguien cambie el ayudante de arriba.
+	destino := filepath.Dir(manifiestoDeFirefox(casa))
+	if _, err := os.Stat(destino); err == nil {
+		t.Fatalf("la carpeta de destino ya existía: %s", destino)
+	}
+
+	if _, fallos := escribirManifiestos(casa, "/donde/sea/esfinge-puente"); len(fallos) > 0 {
+		t.Fatalf("no ha podido escribirlo: %v", fallos)
+	}
+	if _, err := os.Stat(manifiestoDeFirefox(casa)); err != nil {
+		t.Errorf("no ha escrito el manifiesto de Firefox: %v", err)
 	}
 }
 

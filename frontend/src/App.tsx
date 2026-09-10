@@ -914,7 +914,20 @@ function Ajustes({
         {navegador?.error && <p className="error">{navegador.error}</p>}
 
         {navegador?.escuchando && (
-          <p className="nota seleccionable">Escucha en {navegador.donde}</p>
+          <>
+            <p className="nota seleccionable">Escucha en {navegador.donde}</p>
+            {/* **A quién se ha avisado.** Sin esto, un navegador al que no se le
+                dejó el manifiesto se ve igual que uno al que sí: el interruptor
+                puesto y nada más. Costó un viaje al Mac. */}
+            {navegador.avisados.length > 0 ? (
+              <p className="nota">Avisados: {navegador.avisados.join(", ")}.</p>
+            ) : (
+              <p className="aviso">
+                No se ha avisado a ningún navegador. Si tienes uno instalado,
+                cuéntamelo: el canal está abierto pero ninguno sabe que existe.
+              </p>
+            )}
+          </>
         )}
 
         {/* Lo que pide permiso. Va en «peligro» a propósito: es la única pregunta

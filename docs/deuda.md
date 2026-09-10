@@ -48,6 +48,17 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~En macOS no se le escribía el manifiesto a Firefox~~ → para saber si estaba instalado se miraba
+  **la carpeta de destino** y no la del navegador, y en macOS no son la misma: el perfil vive en
+  `…/Application Support/Firefox` y los manifiestos en `…/Application Support/Mozilla/…`, que **no
+  existe hasta que alguien instala un host nativo**. La conclusión era «Firefox no está» con Firefox
+  abierto delante. Ahora son dos cosas separadas —dónde se mira y dónde se escribe— y hay una prueba
+  que comprueba que el manifiesto se escribe **aunque su carpeta no exista** (2026-09-10, 2.17.2).
+- ~~Un panel que espera para siempre no dice nada~~ → el trabajador de fondo promete contestar más
+  tarde, y si su respuesta no llegaba nunca el panel se quedaba mudo, idéntico a estar roto. Ahora
+  dice «Preguntando…» desde el primer instante, tiene cinco segundos de plazo y enseña **su propia
+  versión**, que zanja la duda de qué build se está mirando sin tener que preguntarla
+  (2026-09-10, 2.17.2).
 - ~~La extensión no hacía nada en Firefox~~ → el panel enseñaba el sitio y debajo, nada. Dos cosas.
   La primera, un error de bulto: el espacio de nombres `chrome.*` **devuelve promesas en Chrome y
   retrollamadas en Firefox**, así que un `await chrome.runtime.sendMessage(…)` allí recibe

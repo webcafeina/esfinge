@@ -76,47 +76,63 @@ type manifiesto struct {
 	Extensiones []string `json:"allowed_extensions,omitempty"`
 }
 
-// carpetasDeManifiestos dice dónde busca cada navegador, en este sistema.
+// sitio es un navegador: **dónde se mira para saber si está y dónde se escribe**.
 //
-// Son rutas por usuario, no del sistema: Esfinge se instala sin permisos de
-// administrador y no tiene por qué tocar nada de fuera de la carpeta de quien la
-// usa.
-//
-// **Los seis de la familia de Chromium comparten formato y comparten lista**: el
-// mismo manifiesto vale para Chrome, Chromium, Edge, Brave, Vivaldi y Opera,
-// porque todos leen «allowed_origins» con direcciones «chrome-extension://…». Lo
-// único que cambia es dónde lo buscan, y por eso esto es una lista de carpetas y
-// no seis casos.
-//
-// Firefox va aparte de verdad: su campo es «allowed_extensions» y el valor es el
-// identificador pelado, no una dirección.
-func carpetasDeManifiestos(casa string) map[string][]string {
+// Los dos no son lo mismo, y confundirlos fue el fallo que dejó la extensión sin
+// funcionar en el primer Mac donde se probó. En macOS, Firefox guarda su perfil
+// en `~/Library/Application Support/Firefox` y **lee los manifiestos de
+// `…/Mozilla/NativeMessagingHosts`**, una carpeta que no existe hasta que alguien
+// instala un host nativo. Comprobando la carpeta de destino —que es lo que hacía
+// esto— la conclusión era «Firefox no está instalado» en una máquina con Firefox
+// abierto, y no se escribía nada. Desde el otro lado se veía como «la extensión
+// no hace nada», sin más pista.
+type sitio struct {
+	// Nombre es como se llama en la ventana. Enseñar a quién se ha avisado es lo
+	// que convierte «no funciona» en «ya veo por qué».
+	Nombre string
+	// Senal es lo que existe si el navegador está instalado.
+	Senal string
+	// Carpeta es donde ese navegador busca los manifiestos.
+	Carpeta string
+	// Familia dice qué campo lleva el manifiesto: «firefox» o «chrome».
+	Familia string
+}
+
+// dondeMiraCadaNavegador, en este sistema.
+func dondeMiraCadaNavegador(casa string) []sitio {
 	switch runtime.GOOS {
 	case "darwin":
 		soporte := filepath.Join(casa, "Library", "Application Support")
-		return map[string][]string{
-			"chrome": {
-				filepath.Join(soporte, "Google", "Chrome", "NativeMessagingHosts"),
-				filepath.Join(soporte, "Chromium", "NativeMessagingHosts"),
-				filepath.Join(soporte, "Microsoft Edge", "NativeMessagingHosts"),
-				filepath.Join(soporte, "BraveSoftware", "Brave-Browser", "NativeMessagingHosts"),
-				filepath.Join(soporte, "Vivaldi", "NativeMessagingHosts"),
-				filepath.Join(soporte, "com.operasoftware.Opera", "NativeMessagingHosts"),
-			},
-			"firefox": {filepath.Join(soporte, "Mozilla", "NativeMessagingHosts")},
+		anfitriones := func(base string) string {
+			return filepath.Join(base, "NativeMessagingHosts")
+		}
+		return []sitio{
+			// **La señal es el perfil, no la carpeta de destino.**
+			{"Firefox", filepath.Join(soporte, "Firefox"), anfitriones(filepath.Join(soporte, "Mozilla")), "firefox"},
+			{"Chrome", filepath.Join(soporte, "Google", "Chrome"), anfitriones(filepath.Join(soporte, "Google", "Chrome")), "chrome"},
+			{"Chromium", filepath.Join(soporte, "Chromium"), anfitriones(filepath.Join(soporte, "Chromium")), "chrome"},
+			{"Edge", filepath.Join(soporte, "Microsoft Edge"), anfitriones(filepath.Join(soporte, "Microsoft Edge")), "chrome"},
+			{"Brave", filepath.Join(soporte, "BraveSoftware", "Brave-Browser"), anfitriones(filepath.Join(soporte, "BraveSoftware", "Brave-Browser")), "chrome"},
+			{"Vivaldi", filepath.Join(soporte, "Vivaldi"), anfitriones(filepath.Join(soporte, "Vivaldi")), "chrome"},
+			{"Opera", filepath.Join(soporte, "com.operasoftware.Opera"), anfitriones(filepath.Join(soporte, "com.operasoftware.Opera")), "chrome"},
 		}
 	case "linux":
 		config := filepath.Join(casa, ".config")
-		return map[string][]string{
-			"chrome": {
-				filepath.Join(config, "google-chrome", "NativeMessagingHosts"),
-				filepath.Join(config, "chromium", "NativeMessagingHosts"),
-				filepath.Join(config, "microsoft-edge", "NativeMessagingHosts"),
-				filepath.Join(config, "BraveSoftware", "Brave-Browser", "NativeMessagingHosts"),
-				filepath.Join(config, "vivaldi", "NativeMessagingHosts"),
-				filepath.Join(config, "opera", "NativeMessagingHosts"),
-			},
-			"firefox": {filepath.Join(casa, ".mozilla", "native-messaging-hosts")},
+		anfitriones := func(base string) string {
+			return filepath.Join(base, "NativeMessagingHosts")
+		}
+		return []sitio{
+			// En Linux sí coinciden: el perfil vive en `~/.mozilla/firefox` y los
+			// manifiestos en `~/.mozilla/native-messaging-hosts`, las dos bajo la
+			// misma carpeta. Aun así se dice cuál es cuál, que es lo que evita
+			// volver a mezclarlas.
+			{"Firefox", filepath.Join(casa, ".mozilla"), filepath.Join(casa, ".mozilla", "native-messaging-hosts"), "firefox"},
+			{"Chrome", filepath.Join(config, "google-chrome"), anfitriones(filepath.Join(config, "google-chrome")), "chrome"},
+			{"Chromium", filepath.Join(config, "chromium"), anfitriones(filepath.Join(config, "chromium")), "chrome"},
+			{"Edge", filepath.Join(config, "microsoft-edge"), anfitriones(filepath.Join(config, "microsoft-edge")), "chrome"},
+			{"Brave", filepath.Join(config, "BraveSoftware", "Brave-Browser"), anfitriones(filepath.Join(config, "BraveSoftware", "Brave-Browser")), "chrome"},
+			{"Vivaldi", filepath.Join(config, "vivaldi"), anfitriones(filepath.Join(config, "vivaldi")), "chrome"},
+			{"Opera", filepath.Join(config, "opera"), anfitriones(filepath.Join(config, "opera")), "chrome"},
 		}
 	}
 	// En Windows no van en carpetas sino en el registro, y eso es otra historia
@@ -151,23 +167,28 @@ func rutaDelPuente() (string, error) {
 	return ruta, nil
 }
 
-// escribirManifiestos deja el fichero en cada carpeta de navegador que exista.
+// escribirManifiestos deja el fichero donde lo busca cada navegador **que esté
+// instalado**.
 //
-// **Solo donde el navegador ya está instalado.** Crear la carpeta de un navegador
-// que no está sería dejar un fichero suelto en el perfil de alguien para siempre.
-func escribirManifiestos(casa, puente string) []error {
+// Lo de «que esté instalado» es para no dejar ficheros sueltos en el perfil de
+// alguien para siempre; lo que se mira para decidirlo es la **señal** de cada
+// navegador, no la carpeta de destino, que puede no existir todavía.
+func escribirManifiestos(casa, puente string) ([]string, []error) {
+	var avisados []string
 	var fallos []error
-	for familia, carpetas := range carpetasDeManifiestos(casa) {
+	for _, s := range dondeMiraCadaNavegador(casa) {
+		if _, err := os.Stat(s.Senal); err != nil {
+			continue // ese navegador no está
+		}
 		m := manifiesto{
 			Nombre:      nombreDelHost,
 			Descripcion: "El puente entre la extensión de Esfinge y la bóveda",
 			Ruta:        puente,
 			Tipo:        "stdio",
 		}
-		switch familia {
-		case "firefox":
+		if s.Familia == "firefox" {
 			m.Extensiones = append(append([]string{}, extensionesDeFirefox...), deDesarrollo()...)
-		default:
+		} else {
 			for _, id := range append(append([]string{}, extensionesDeChrome...), deDesarrollo()...) {
 				m.Origenes = append(m.Origenes, "chrome-extension://"+id+"/")
 			}
@@ -183,29 +204,23 @@ func escribirManifiestos(casa, puente string) []error {
 			fallos = append(fallos, err)
 			continue
 		}
-		for _, carpeta := range carpetas {
-			if _, err := os.Stat(filepath.Dir(carpeta)); err != nil {
-				continue // ese navegador no está instalado
-			}
-			if err := os.MkdirAll(carpeta, 0o755); err != nil {
-				fallos = append(fallos, err)
-				continue
-			}
-			destino := filepath.Join(carpeta, nombreDelHost+".json")
-			if err := os.WriteFile(destino, datos, 0o644); err != nil {
-				fallos = append(fallos, err)
-			}
+		if err := os.MkdirAll(s.Carpeta, 0o755); err != nil {
+			fallos = append(fallos, err)
+			continue
 		}
+		if err := os.WriteFile(filepath.Join(s.Carpeta, nombreDelHost+".json"), datos, 0o644); err != nil {
+			fallos = append(fallos, err)
+			continue
+		}
+		avisados = append(avisados, s.Nombre)
 	}
-	return fallos
+	return avisados, fallos
 }
 
 // borrarManifiestos los quita de todas partes. Lo llama apagar el canal: un
 // interruptor que dejara el manifiesto puesto estaría apagando media puerta.
 func borrarManifiestos(casa string) {
-	for _, carpetas := range carpetasDeManifiestos(casa) {
-		for _, carpeta := range carpetas {
-			_ = os.Remove(filepath.Join(carpeta, nombreDelHost+".json"))
-		}
+	for _, s := range dondeMiraCadaNavegador(casa) {
+		_ = os.Remove(filepath.Join(s.Carpeta, nombreDelHost+".json"))
 	}
 }

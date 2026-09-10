@@ -16,6 +16,18 @@ import type { Cuenta, Motivo, Peticion, Respuesta } from "./protocolo";
 const donde = document.getElementById("donde") as HTMLElement;
 const lista = document.getElementById("lista") as HTMLElement;
 const aviso = document.getElementById("aviso") as HTMLElement;
+const pie = document.getElementById("pie") as HTMLElement;
+
+/**
+ * Lo que se espera a que el trabajador conteste antes de darlo por perdido.
+ *
+ * **Existe porque un panel que espera para siempre no dice nada**, y eso ya pasó:
+ * el trabajador prometía contestar más tarde —`return true`— y si su respuesta no
+ * llegaba nunca, el panel se quedaba con la cabecera puesta y nada debajo. Desde
+ * fuera es idéntico a un fallo, y no hay forma de distinguirlos mirando. Cinco
+ * segundos son una eternidad para lo que esto hace.
+ */
+const PLAZO = 5000;
 
 /**
  * pedir habla con el trabajador de fondo, **y nunca lanza**.
@@ -27,7 +39,7 @@ const aviso = document.getElementById("aviso") as HTMLElement;
  */
 async function pedir(p: Omit<Peticion, "version">): Promise<Respuesta> {
   try {
-    const r = (await api.runtime.sendMessage(p)) as Respuesta | undefined;
+    const r = (await conPlazo(api.runtime.sendMessage(p))) as Respuesta | undefined;
     if (!r || typeof r.ok !== "boolean") {
       return {
         ok: false,
@@ -38,6 +50,16 @@ async function pedir(p: Omit<Peticion, "version">): Promise<Respuesta> {
   } catch (e) {
     return { ok: false, error: `No se ha podido hablar con Esfinge: ${e}` };
   }
+}
+
+/** conPlazo convierte una espera infinita en una respuesta. */
+function conPlazo<T>(promesa: Promise<T>): Promise<T> {
+  return Promise.race([
+    promesa,
+    new Promise<T>((_, rechazar) =>
+      setTimeout(() => rechazar(new Error("el trabajador de fondo no ha contestado")), PLAZO),
+    ),
+  ]);
 }
 
 /** Lo que se enseña cuando algo no se puede hacer, por motivo y no por texto. */
@@ -115,6 +137,12 @@ function fila(cuenta: Cuenta, origen: string): HTMLElement {
 }
 
 async function arrancar() {
+  // **Lo primero que se ve es que está preguntando.** Un panel en blanco no
+  // distingue «está pensando» de «se ha roto», y quien lo mira no tiene forma de
+  // saber cuál de las dos es.
+  decir("Preguntando a Esfinge…");
+  pie.textContent = `Extensión ${api.runtime.getManifest().version}`;
+
   const [pestana] = await api.tabs.query({ active: true, currentWindow: true });
   const origen = pestana?.url ?? "";
   try {
@@ -137,6 +165,7 @@ async function arrancar() {
     lista.append(fila(c, origen));
   }
   lista.hidden = false;
+  aviso.hidden = true;
 }
 
 // **Con red debajo, y no por costumbre.** Cualquier cosa que se escape aquí deja

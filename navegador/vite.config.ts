@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { copyFileSync, mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
@@ -41,10 +41,20 @@ export default defineConfig({
       name: "manifiesto",
       closeBundle() {
         mkdirSync(salida, { recursive: true });
-        copyFileSync(
-          resolve(__dirname, `manifiesto.${navegador}.json`),
-          resolve(salida, "manifest.json"),
+        const m = JSON.parse(
+          readFileSync(resolve(__dirname, `manifiesto.${navegador}.json`), "utf8"),
         );
+        // **La versión la manda Esfinge**, para que la extensión y la aplicación
+        // digan siempre el mismo número. Cuando algo no funciona, lo primero que
+        // hay que saber es qué se está mirando, y dos numeraciones distintas
+        // cuestan un viaje de ida y vuelta cada vez.
+        // Y **limpia**: un manifiesto solo admite de uno a cuatro números
+        // separados por puntos. Lo que llega del Makefile puede ser
+        // «v2.17.1-dirty» o «v2.17.1-8-gabc1234», y con eso el navegador
+        // **rechaza la extensión entera** sin cargarla.
+        const numeros = /\d+(?:\.\d+){0,3}/.exec(process.env.VERSION ?? "");
+        if (numeros) m.version = numeros[0];
+        writeFileSync(resolve(salida, "manifest.json"), JSON.stringify(m, null, 2) + "\n");
       },
     },
   ],

@@ -203,6 +203,13 @@ export type EstadoDelNavegador = {
   error?: string;
   /** El navegador que está esperando permiso, si hay alguno. */
   pide?: string;
+  /**
+   * Los navegadores a los que se ha dejado el manifiesto que declara el puente.
+   *
+   * **Se enseña**, y es lo que convierte «no funciona» en «ya veo por qué»: sin
+   * esto, un navegador al que no se avisó se ve exactamente igual que uno avisado.
+   */
+  avisados: string[];
   permitidos: NavegadorPermitido[];
 };
 
@@ -430,6 +437,7 @@ export const esfinge = {
     llamar<EstadoDelNavegador>("EstadoDelNavegador").then((e) => ({
       ...e,
       permitidos: e.permitidos ?? [],
+      avisados: e.avisados ?? [],
     })),
 
   /** El «sí» de la persona: el navegador que esté esperando recibe su permiso. */
