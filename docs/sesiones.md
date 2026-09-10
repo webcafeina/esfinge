@@ -7,9 +7,10 @@ Plantilla al final.
 
 ## 2026-09-10 · El correo de fallo que llevaba seis versiones llegando
 
-- **2.16.1.** El cliente contó que «Compilar» le mandaba un correo de fallo en cada publicación desde
-  hacía varias versiones, aunque el programa se actualizara bien. Lo que había detrás era peor que un
-  correo molesto, y son dos cosas.
+- **Sin versión nueva, porque no cambia nada del programa**: es el repositorio y la compilación. El
+  cliente contó que «Compilar» le mandaba un correo de fallo en cada publicación desde hacía varias
+  versiones, aunque el programa se actualizara bien. Lo que había detrás era peor que un correo
+  molesto, y son dos cosas.
 - **Los quince vectores fijos del formato nunca estuvieron en el repositorio.** El `.gitignore` lleva
   `*.esf` —lo razonable en un programa que produce ficheros con esa extensión— y **se tragó
   exactamente los vectores**, que tienen esa extensión. Se subieron el LÉEME, el `vectores.json` y
