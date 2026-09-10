@@ -94,7 +94,7 @@ puente:
 .PHONY: extension
 extension:
 	cd navegador && $(PNPM) install --frozen-lockfile && $(PNPM) run build
-	cd navegador && NAVEGADOR=firefox $(PNPM) exec vite build
+	cd navegador && NAVEGADOR=firefox $(PNPM) run build
 	@ls -la navegador/dist/*/
 
 ## dev: levanta el Go de verdad para poder mover la interfaz en el navegador

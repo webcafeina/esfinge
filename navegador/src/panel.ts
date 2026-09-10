@@ -6,18 +6,38 @@
  * ve un secreto**: copia Esfinge, y por el canal solo vuelve cuánto tardará en
  * borrarse del portapapeles.
  *
- * La dirección de la pestaña la da el navegador (`chrome.tabs`), no la página. Es
+ * La dirección de la pestaña la da el navegador (`tabs.query`), no la página. Es
  * la diferencia entre preguntar por un sitio y preguntar por lo que un documento
  * dice que es.
  */
+import { api } from "./api";
 import type { Cuenta, Motivo, Peticion, Respuesta } from "./protocolo";
 
 const donde = document.getElementById("donde") as HTMLElement;
 const lista = document.getElementById("lista") as HTMLElement;
 const aviso = document.getElementById("aviso") as HTMLElement;
 
-function pedir(p: Omit<Peticion, "version">): Promise<Respuesta> {
-  return chrome.runtime.sendMessage(p);
+/**
+ * pedir habla con el trabajador de fondo, **y nunca lanza**.
+ *
+ * Si lanzara, `arrancar` se cortaría a media función y el panel se quedaría con
+ * la cabecera puesta y nada debajo, sin decir por qué. Eso es exactamente lo que
+ * pasó la primera vez que se probó en Firefox, y es el peor fallo posible aquí:
+ * el sitio de un fallo que no se ve es la cabeza de quien lo mira.
+ */
+async function pedir(p: Omit<Peticion, "version">): Promise<Respuesta> {
+  try {
+    const r = (await api.runtime.sendMessage(p)) as Respuesta | undefined;
+    if (!r || typeof r.ok !== "boolean") {
+      return {
+        ok: false,
+        error: "La extensión no ha recibido respuesta de su propio trabajador de fondo.",
+      };
+    }
+    return r;
+  } catch (e) {
+    return { ok: false, error: `No se ha podido hablar con Esfinge: ${e}` };
+  }
 }
 
 /** Lo que se enseña cuando algo no se puede hacer, por motivo y no por texto. */
@@ -95,7 +115,7 @@ function fila(cuenta: Cuenta, origen: string): HTMLElement {
 }
 
 async function arrancar() {
-  const [pestana] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const [pestana] = await api.tabs.query({ active: true, currentWindow: true });
   const origen = pestana?.url ?? "";
   try {
     donde.textContent = new URL(origen).hostname;
@@ -119,4 +139,8 @@ async function arrancar() {
   lista.hidden = false;
 }
 
-arrancar();
+// **Con red debajo, y no por costumbre.** Cualquier cosa que se escape aquí deja
+// el panel en blanco, que no le dice nada a quien lo mira ni a quien lo va a
+// arreglar. Un panel que enseña el error es un panel que se puede depurar por
+// teléfono.
+arrancar().catch((e) => decir(`Algo ha fallado dentro de la extensión: ${e}`));

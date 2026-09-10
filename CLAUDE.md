@@ -511,6 +511,19 @@ px por debajo del centro. Todo lo que el fondo dibuje ahí queda tapado, y eso n
 la imagen en un Mac. `make ventana-dmg` la dibuja antes, leyendo las posiciones de
 `empaquetado/macos/armar-dmg.sh` para que fondo y guion no se separen.
 
+**En una extensión, `chrome.*` no es lo mismo en los dos navegadores, y `browser` sí.** En Chrome,
+`chrome.*` devuelve promesas desde MV3; en Firefox existe solo por compatibilidad y es de
+retrollamada, así que `await chrome.runtime.sendMessage(…)` allí recibe `undefined` y lo siguiente
+revienta con un error de tipo. Escrito con `chrome.*` funciona en Chrome y **muere en silencio en
+Firefox**. Se usa `globalThis.browser ?? globalThis.chrome`, que da promesas en los dos.
+
+Y con ello dos reglas de la extensión que salieron del mismo fallo: **todo lo que arranca un panel va
+con red debajo**, porque una excepción sin recoger deja el panel en blanco y eso no le dice nada a
+quien lo mira ni a quien lo va a arreglar; y **el trabajador de fondo se compila aparte, en una sola
+pieza y sin `import`**, porque en cuanto comparte un módulo con el panel el empaquetador saca un
+trozo común, mete un `import` en el trabajador y eso obliga a declararlo como módulo en el
+manifiesto —que es justo la clase de detalle que funciona en un navegador y no en el otro—.
+
 **Y el corolario pequeño, que costó un commit el mismo día: `make comprobar | tail` no dice si
 `make` ha fallado.** El código de salida de una tubería es el del **último** mandato, así que
 `make comprobar 2>&1 | tail -3 && git commit` compromete igual con `go vet` en rojo: lo que se mira

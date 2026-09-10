@@ -48,6 +48,13 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~La extensión no hacía nada en Firefox~~ → el panel enseñaba el sitio y debajo, nada. Dos cosas.
+  La primera, un error de bulto: el espacio de nombres `chrome.*` **devuelve promesas en Chrome y
+  retrollamadas en Firefox**, así que un `await chrome.runtime.sendMessage(…)` allí recibe
+  `undefined` y lo siguiente revienta. Se usa `browser` si está, que en los dos casos da promesas. Y
+  la segunda, la que lo hizo invisible: **nada recogía ese fallo**, así que el panel se quedaba en
+  blanco sin decir por qué. Ahora cualquier fallo se enseña ahí mismo. Lo vio el cliente al primer
+  intento (2026-09-10, 2.17.1).
 - ~~El canal con el navegador no funcionaba en Windows~~ → nació así el mismo día. Se sopesó una
   tubería con nombre —que es lo que usa KeePassXC allí— y se descartó: sus tres ventajas son saber
   quién se conecta —que Esfinge no comprueba en **ningún** sistema, porque la forma de hacerlo es la

@@ -3,7 +3,7 @@
  *
  * # Por qué existe, si el panel podría hablar directamente
  *
- * No podría: `chrome.runtime.connectNative` no está disponible en el panel, y
+ * No podría: `runtime.connectNative` no está disponible en el panel, y
  * aunque lo estuviera, el panel **se muere al cerrarse** y con él se iría la
  * conversación a media respuesta. Aquí también hay una muerte, pero es la que se
  * puede manejar.
@@ -13,7 +13,7 @@
  *   - **Este trabajador se muere solo, cada pocos minutos**, y con él el proceso
  *     que Esfinge lanzó. No es un fallo: es cómo funciona MV3. Así que **nada de
  *     lo que se guarde aquí puede hacer falta después**: el testigo va en
- *     `chrome.storage.local`, que sobrevive, y el puerto se vuelve a abrir cuando
+ *     `storage.local`, que sobrevive, y el puerto se vuelve a abrir cuando
  *     haga falta.
  *   - **El testigo se guarda, la contraseña no**, porque la contraseña no llega:
  *     Esfinge copia al portapapeles y por el canal solo vuelve cuánto tardará en
@@ -23,6 +23,7 @@
  *     escrita en el perfil del navegador, sin cifrar, que es exactamente lo que
  *     Esfinge cifra en su disco.
  */
+import { api } from "./api";
 import {
   VERSION_DEL_PROTOCOLO,
   type Peticion,
@@ -47,7 +48,7 @@ function hablar(p: Peticion): Promise<Respuesta> {
   return new Promise((resolver) => {
     let puerto: chrome.runtime.Port;
     try {
-      puerto = chrome.runtime.connectNative(HOST);
+      puerto = api.runtime.connectNative(HOST);
     } catch {
       return resolver(sinPuente());
     }
@@ -84,7 +85,7 @@ function sinPuente(): Respuesta {
 }
 
 async function testigoGuardado(): Promise<string> {
-  const g = await chrome.storage.local.get(CLAVE_TESTIGO);
+  const g = await api.storage.local.get(CLAVE_TESTIGO);
   return typeof g[CLAVE_TESTIGO] === "string" ? g[CLAVE_TESTIGO] : "";
 }
 
@@ -113,7 +114,7 @@ async function pedir(p: Peticion): Promise<Respuesta> {
   });
   if (!emparejado.ok || !emparejado.testigo) return emparejado;
 
-  await chrome.storage.local.set({ [CLAVE_TESTIGO]: emparejado.testigo });
+  await api.storage.local.set({ [CLAVE_TESTIGO]: emparejado.testigo });
   return hablar({ ...conTestigo, testigo: emparejado.testigo });
 }
 
@@ -132,7 +133,7 @@ function nombreDelNavegador(): string {
   return "Un navegador";
 }
 
-chrome.runtime.onMessage.addListener((p: Peticion, _origen, contestar) => {
+api.runtime.onMessage.addListener((p: Peticion, _origen, contestar) => {
   pedir(p).then(contestar);
   return true; // la respuesta llega después
 });
