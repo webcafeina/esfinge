@@ -124,18 +124,27 @@ const yaRellenados = new WeakSet<HTMLInputElement>();
  * la respuesta, se escribe y se va con ella. Es la promesa del encabezado de este
  * fichero, y está escrita así para que romperla exija mover código.
  */
-async function rellenar(id: string, formulario: Formulario): Promise<string> {
+async function rellenar(
+  id: string,
+  formulario: Formulario,
+  // **`insistir` es lo que separa a una persona del observador**, y su ausencia
+  // era un fallo silencioso de los buenos: `yaRellenados` existe para que la
+  // página no entre en un tira y afloja con quien está tecleando, y aplicado al
+  // botón «Rellenar» del panel hacía que **borrar los campos y pulsarlo no
+  // escribiera nada, contestando «Rellenado.»**. Un clic es alguien pidiéndolo.
+  insistir = false,
+): Promise<string> {
   const r = await pedir({ que: "rellenar", id });
   if (!r.ok || !r.relleno) {
     return r.error ?? "Esfinge no ha podido dar la contraseña.";
   }
 
   const { usuario, secreto } = formulario;
-  if (usuario && !yaRellenados.has(usuario) && r.relleno.usuario) {
+  if (usuario && (insistir || !yaRellenados.has(usuario)) && r.relleno.usuario) {
     escribir(usuario, r.relleno.usuario);
     yaRellenados.add(usuario);
   }
-  if (secreto && !yaRellenados.has(secreto)) {
+  if (secreto && (insistir || !yaRellenados.has(secreto))) {
     escribir(secreto, r.relleno.secreto);
     yaRellenados.add(secreto);
   }
@@ -201,32 +210,55 @@ async function mirar() {
  * pide el secreto es este guion, que es el que tiene el campo donde escribirlo.
  * Un sitio menos por el que pasa una contraseña, y encima el panel se cierra solo
  * al perder el foco, que es la peor clase de sitio donde dejar algo.
+ *
+ * # Y una trampa que costó una versión: esto le llega a **todas las tramas**
+ *
+ * `tabs.connect` sin `frameId` abre el puerto a todas las tramas de la pestaña
+ * —lo dice su propia documentación: «instead of all frames in the tab»—, así que
+ * lo contesta cada guion que haya en la página. Con este oyente registrado
+ * incondicionalmente, el `iframe` del captcha de un sitio contestaba «aquí no hay
+ * ningún formulario» **antes** que la trama de verdad, y el panel se quedaba con
+ * la primera respuesta que le llegaba. En Brevo y en Cloudflare el relleno
+ * automático funcionaba y el botón del panel no, que es un síntoma raro de
+ * explicar y con una causa muy concreta.
+ *
+ * Dos cosas lo arreglan, y las dos son correctas por su cuenta:
+ *
+ *   - **El oyente vive dentro del guardián**, no fuera. Una trama de otro origen
+ *     no rellena y por tanto tampoco tiene nada que contestar. Antes el guardián
+ *     solo protegía el relleno automático, que era la mitad del trabajo.
+ *   - **El panel espera un momento a que conteste alguien que sí tenga formulario**
+ *     en vez de creerse al primero. Está en `panel.ts`.
  */
-api.runtime.onConnect.addListener((puerto) => {
-  if (puerto.name !== "rellenar") return;
-  puerto.onMessage.addListener((m) => {
-    const id = (m as { id?: string }).id ?? "";
-    const contestar = (error: string) => {
-      try {
-        puerto.postMessage({ ok: !error, error });
-      } catch {
-        /* el panel se ha ido */
+function atenderAlPanel() {
+  api.runtime.onConnect.addListener((puerto) => {
+    if (puerto.name !== "rellenar") return;
+    puerto.onMessage.addListener((m) => {
+      const id = (m as { id?: string }).id ?? "";
+      const contestar = (error: string) => {
+        try {
+          puerto.postMessage({ ok: !error, error });
+        } catch {
+          /* el panel se ha ido */
+        }
+      };
+      const formularios = buscarFormularios();
+      if (formularios.length === 0) {
+        contestar("Aquí no hay ningún formulario de entrar que Esfinge sepa rellenar.");
+        return;
       }
-    };
-    const formularios = buscarFormularios();
-    if (formularios.length === 0) {
-      contestar("Aquí no hay ningún formulario de entrar que Esfinge sepa rellenar.");
-      return;
-    }
-    // Se pide una vez y se escribe en todos los que haya, que casi siempre es uno.
-    rellenar(id, formularios[0])
-      .then(contestar)
-      // Con red debajo, como todo lo que arranca solo en este proyecto: sin esto,
-      // una excepción aquí es una promesa rechazada que nadie recoge y el panel se
-      // queda esperando su plazo sin saber por qué.
-      .catch((e) => contestar(`La extensión ha fallado por dentro: ${e}`));
+      // Se pide una vez y se escribe en todos los que haya, que casi siempre es
+      // uno. **Insistiendo**: lo ha pedido una persona, así que se escribe aunque
+      // ya se hubiera rellenado antes y se hayan borrado los campos a mano.
+      rellenar(id, formularios[0], true)
+        .then(contestar)
+        // Con red debajo, como todo lo que arranca solo en este proyecto: sin esto,
+        // una excepción aquí es una promesa rechazada que nadie recoge y el panel se
+        // queda esperando su plazo sin saber por qué.
+        .catch((e) => contestar(`La extensión ha fallado por dentro: ${e}`));
+    });
   });
-});
+}
 
 /**
  * Y el arranque: mirar ahora y mirar mientras la página se monta.
@@ -240,8 +272,12 @@ api.runtime.onConnect.addListener((puerto) => {
 const PLAZO_DE_OBSERVACION = 30000;
 
 function arrancar() {
+  // **El guardián va antes que todo, no antes de una parte.** Una trama de otro
+  // origen no rellena sola y tampoco contesta al panel: si contestara, sería una
+  // voz más en una conversación donde el panel se cree la primera que oye.
   if (enMarcoAjeno()) return;
 
+  atenderAlPanel();
   mirar().catch(() => {});
 
   let pendiente: ReturnType<typeof setTimeout> | undefined;

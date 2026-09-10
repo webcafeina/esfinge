@@ -1,10 +1,15 @@
 /**
  * El panel: lo que se ve al pulsar el botón de Esfinge.
  *
- * Enseña las cuentas que hay para el sitio de la pestaña y copia lo que se le
- * pida. **No escribe nada en la página** —eso es la entrega siguiente— y **nunca
- * ve un secreto**: copia Esfinge, y por el canal solo vuelve cuánto tardará en
- * borrarse del portapapeles.
+ * Enseña las cuentas que hay para el sitio de la pestaña, rellena la que se elija
+ * y copia lo que se le pida.
+ *
+ * **Y nunca ve un secreto**, que es lo que hay que conservar al tocarlo. Al copiar
+ * copia Esfinge, y por el canal solo vuelve cuánto tardará en borrarse del
+ * portapapeles. Al rellenar, lo que se manda es un identificador: quien pide la
+ * contraseña es el guion de la página, que es el que tiene el campo donde
+ * escribirla. Este panel se cierra solo al perder el foco, que es la peor clase de
+ * sitio donde dejar un secreto aunque fuera un instante.
  *
  * La dirección de la pestaña la da el navegador (`tabs.query`), no la página. Es
  * la diferencia entre preguntar por un sitio y preguntar por lo que un documento
@@ -28,6 +33,17 @@ const pie = document.getElementById("pie") as HTMLElement;
  * segundos son una eternidad para lo que esto hace.
  */
 const PLAZO = 5000;
+
+/**
+ * Lo que se espera, tras oír el primer «aquí no hay nada», por si otra trama de la
+ * misma página sí tiene el formulario.
+ *
+ * **Corto a propósito.** Es el retraso que se paga cuando de verdad no hay dónde
+ * rellenar, y ahí lo que importa es que la respuesta llegue enseguida. Los guiones
+ * de una misma página arrancan casi a la vez, así que si alguno va a acertar, lo
+ * dice dentro de este margen.
+ */
+const GRACIA = 600;
 
 /**
  * pedir habla con el trabajador de fondo, **y nunca lanza**.
@@ -153,11 +169,20 @@ async function copiar(que: "copiar-secreto" | "copiar-codigo", cuenta: Cuenta, o
 function rellenar(pestana: number, cuenta: Cuenta): Promise<string> {
   return new Promise((resolver) => {
     let hecho = false;
+    let gracia: ReturnType<typeof setTimeout> | undefined;
+    // Lo que dijo la primera trama que contestó que no. Se guarda para poder
+    // enseñarlo si al final no acierta nadie, y para distinguir «alguien ha
+    // contestado» de «aquí no hay ningún guion».
+    let primerFallo = "";
+
     const terminar = (aviso: string) => {
       if (hecho) return;
       hecho = true;
+      clearTimeout(plazo);
+      clearTimeout(gracia);
       resolver(aviso);
     };
+
     const plazo = setTimeout(
       () =>
         terminar(
@@ -165,28 +190,49 @@ function rellenar(pestana: number, cuenta: Cuenta): Promise<string> {
         ),
       PLAZO,
     );
+
     try {
       const puerto = api.tabs.connect(pestana, { name: "rellenar" });
+
       puerto.onMessage.addListener((r) => {
-        clearTimeout(plazo);
-        puerto.disconnect();
         const { ok, error } = r as { ok: boolean; error?: string };
-        terminar(ok ? "Rellenado." : (error ?? "No se ha podido rellenar."));
+
+        // **Un «no» no cierra la conversación; un «sí», sí.** Este puerto llega a
+        // **todas las tramas de la pestaña** —`tabs.connect` sin `frameId` lo dice
+        // así: «instead of all frames in the tab»— y contesta cada guion que haya.
+        // En una página con marcos, el que no tiene formulario puede contestar
+        // antes que el que lo tiene, y creerse al primero era decir «aquí no hay
+        // ningún formulario» en una página que acababa de rellenarse sola. Costó
+        // una versión.
+        if (ok) {
+          puerto.disconnect();
+          terminar("Rellenado.");
+          return;
+        }
+        if (!primerFallo) {
+          primerFallo = error ?? "No se ha podido rellenar.";
+          gracia = setTimeout(() => {
+            puerto.disconnect();
+            terminar(primerFallo);
+          }, GRACIA);
+        }
       });
-      // **Se dispara cuando no hay guion en esa pestaña**, que pasa en las páginas
-      // internas del navegador, en las que se abrieron antes de instalar la
-      // extensión y en cualquier cosa que no sea https. Decirlo así ahorra el rato
-      // de mirar por qué «no hace nada».
+
+      // **Se dispara cuando no hay ningún guion en esa pestaña**, que pasa en las
+      // páginas internas del navegador, en las que se abrieron antes de instalar la
+      // extensión y en cualquier cosa que no sea https. Pero solo significa eso si
+      // no ha contestado nadie: si ya hubo respuesta, lo que hay que enseñar es lo
+      // que dijo.
       puerto.onDisconnect.addListener(() => {
-        clearTimeout(plazo);
         terminar(
-          "Esfinge no está puesta en esta página. Si acabas de instalar o actualizar " +
-            "la extensión, recarga la pestaña.",
+          primerFallo ||
+            "Esfinge no está puesta en esta página. Si acabas de instalar o actualizar " +
+              "la extensión, recarga la pestaña.",
         );
       });
+
       puerto.postMessage({ id: cuenta.id });
     } catch (e) {
-      clearTimeout(plazo);
       terminar(`No se ha podido rellenar: ${e}`);
     }
   });

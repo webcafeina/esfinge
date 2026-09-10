@@ -581,6 +581,22 @@ permiso que falta. Es el fallo mudo de `storage` otra vez con otra cara, así qu
 frase que dice dónde darlo, y `herramientas/permisos.mjs` comprueba que el manifiesto declara
 anfitriones si el código lee esa propiedad.
 
+**`tabs.connect` sin `frameId` abre el puerto a TODAS las tramas de la pestaña**, y contesta cada
+guion que haya en la página. Eso convierte «pedir algo a la página» en una conversación con varias
+voces, y creerse la primera es un fallo con un síntoma rarísimo: en la 2.18.0, el relleno automático
+funcionaba en Brevo y en Cloudflare y **el botón «Rellenar» del panel decía que allí no había ningún
+formulario**, porque el `iframe` del captcha contestaba antes que la trama de verdad. Dos reglas
+salen de ahí: **el oyente del panel vive dentro del guardián de tramas** —una trama de otro origen no
+rellena, así que tampoco tiene nada que contestar; antes el guardián solo protegía el relleno
+automático, que era la mitad del trabajo— y **el panel espera un momento tras el primer «no»** por si
+alguien acierta, en vez de quedarse con el primero que habla.
+
+**Y no todo lo que evita repetirse vale para un clic.** `yaRellenados` existe para que el observador
+de la página no entre en un tira y afloja con quien está tecleando; aplicado también al botón del
+panel, borrar los campos y pulsarlo **no escribía nada y contestaba «Rellenado.»**. Un clic es una
+persona pidiéndolo, y por eso ese camino insiste. Vale para cualquier freno que se añada: preguntarse
+si distingue al programa de la persona.
+
 **Y el origen de una página lo pone el trabajador de fondo, no la página.** Lo que llegue por un
 puerto llamado «pagina» en el campo `origen` se tira y se pone `sender.tab.url`. Sin esa línea,
 cualquier página que consiguiera hablar por ese puerto pediría las cuentas de un banco diciendo que

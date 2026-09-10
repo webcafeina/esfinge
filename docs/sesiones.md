@@ -5,6 +5,28 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-10 · Dos fallos del relleno que solo se ven usándolo
+
+- **2.18.1.** Probada la 2.18.0 en Chrome contra Brevo y Cloudflare: **el relleno automático funciona
+  y acierta el formulario**. Pero borrar los campos y pulsar «Rellenar» en el panel contestaba «Aquí
+  no hay ningún formulario de entrar que Esfinge sepa rellenar». Eran **dos** fallos, y el segundo
+  estaba tapado por el primero.
+- **`tabs.connect` sin `frameId` abre el puerto a todas las tramas de la pestaña** —lo dice su propia
+  documentación— así que contesta cada guion que haya en la página. Y el oyente del panel estaba
+  registrado **fuera** del guardián de tramas: el `enMarcoAjeno()` solo protegía el relleno
+  automático. El `iframe` del captcha contestaba «aquí no hay formulario» antes que la trama buena, y
+  el panel se creía la primera respuesta. Arreglado por los dos lados: el oyente vive dentro del
+  guardián, y el panel **espera un momento tras el primer «no»** por si alguien acierta.
+- **Y `yaRellenados` bloqueaba el relleno pedido a mano.** Existe para que el observador no entre en
+  un tira y afloja con quien está tecleando; aplicado también al botón del panel, borrar los campos y
+  pulsarlo **no escribía nada y contestaba «Rellenado.»**. Un clic es una persona pidiéndolo, así que
+  ese camino insiste. Este no llegó a verse porque el otro contestaba antes.
+- **Lo que estos dos fallos dicen de las pruebas, que es lo que hay que quedarse:** la detección de
+  campos está probada en un Chromium de verdad y **lo que la envuelve no lo prueba nadie**. Los dos
+  fallos viven ahí, y los dos los vio el cliente a la primera. La salida está escrita desde el plan de
+  la fase 2 —Playwright puede levantar Chromium con la extensión cargada y un host de native messaging
+  de mentira— y pasa a ser **lo primero de la entrega 3**. A `docs/deuda.md` con severidad alta.
+
 ## 2026-09-10 · La entrega 2: Esfinge rellena, y en la página no dibuja nada
 
 - **2.18.0.** Con una cuenta guardada del sitio, rellena sola al cargar la página; con varias, desde
