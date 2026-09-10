@@ -559,6 +559,13 @@ ahí: lo que hay que respetar tiene que **parar** algo, y al añadir un `.gitign
 preguntarse qué ficheros del repositorio tienen esa extensión —los vectores llevan ahora su
 excepción, y `TestLosVectoresEstanEnElRepositorio` explica dónde mirar si vuelven a faltar—.
 
+**Y la regla que sale de eso, que ya ha costado dos publicaciones: lo que la máquina de GitHub ya
+trae no se baja de un tercero.** NSIS viene preinstalado en la imagen de Windows y se estaba bajando
+de Chocolatey en cada publicación; el día que Chocolatey devolvió 503 durante media hora, la 2.17.6 se
+quedó sin publicar **con todo lo demás en verde**. Antes había pasado lo mismo con un repositorio de
+apt caducado. Antes de añadir un `choco install`, un `apt-get install` o un `brew install` a un flujo,
+mirar si eso ya está en la imagen.
+
 **Y una que solo se descubre publicando: la máquina de GitHub trae repositorios de apt que no son
 nuestros.** `apt-get update` **falla entero** si cualquiera de ellos sirve un índice caducado, así que
 un problema en un servidor de Google puede dejar sin publicar una versión de Esfinge —pasó con la

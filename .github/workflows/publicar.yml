@@ -183,16 +183,35 @@ jobs:
       # Chocolatey instala NSIS pero no lo deja en el PATH, y wails no lo busca
       # en ningún otro sitio: sin esto avisa de que no encuentra «makensis» y
       # sale con código cero, dejando el trabajo en verde y sin instalador.
+      # **NSIS, el de la máquina si lo trae.**
+      #
+      # La imagen de Windows de GitHub ya lo incluye, así que bajarlo de
+      # Chocolatey era pedirle a un tercero algo que ya estaba aquí — y ese
+      # tercero devolvió 503 durante media hora y dejó sin publicar la 2.17.6.
+      # Es el mismo error que ya costó la 2.14.0 con un repositorio de apt: esta
+      # compilación solo debería necesitar lo que la máquina trae. Se instala
+      # solo si de verdad no está.
       - name: Instalar wails y NSIS
         shell: bash
         run: |
           go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
-          choco install nsis -y --no-progress
-          nsis="/c/Program Files (x86)/NSIS"
-          [ -x "$nsis/makensis.exe" ] || nsis="/c/Program Files/NSIS"
-          if [ ! -x "$nsis/makensis.exe" ]; then
-            echo "::error::No aparece makensis después de instalar NSIS"
-            exit 1
+
+          buscar() {
+            for d in "/c/Program Files (x86)/NSIS" "/c/Program Files/NSIS"; do
+              [ -x "$d/makensis.exe" ] && { echo "$d"; return 0; }
+            done
+            return 1
+          }
+
+          if nsis=$(buscar); then
+            echo "NSIS ya viene con la máquina: $nsis"
+          else
+            echo "NSIS no viene con la máquina; se baja de Chocolatey"
+            choco install nsis -y --no-progress || true
+            nsis=$(buscar) || {
+              echo "::error::No aparece makensis, ni preinstalado ni desde Chocolatey"
+              exit 1
+            }
           fi
           # GITHUB_PATH quiere la ruta como la entiende Windows. Con la de Git
           # bash —«/c/Program Files (x86)/NSIS»— el fichero está y el paso pasa,
