@@ -48,6 +48,10 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
+- ~~«Promised response from onMessage listener went out of scope»~~ → decirle a Chrome que la
+  respuesta llega después es `return true` y una retrollamada; decírselo a Firefox es devolver la
+  promesa. Con la forma de Chrome, Firefox tira la respuesta y el panel no recibe nada. Se habla por
+  un **puerto**, que no promete nada y es igual en los dos (2026-09-10, 2.17.3).
 - ~~En macOS no se le escribía el manifiesto a Firefox~~ → para saber si estaba instalado se miraba
   **la carpeta de destino** y no la del navegador, y en macOS no son la misma: el perfil vive en
   `…/Application Support/Firefox` y los manifiestos en `…/Application Support/Mozilla/…`, que **no

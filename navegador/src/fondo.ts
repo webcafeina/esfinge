@@ -133,7 +133,32 @@ function nombreDelNavegador(): string {
   return "Un navegador";
 }
 
-api.runtime.onMessage.addListener((p: Peticion, _origen, contestar) => {
-  pedir(p).then(contestar);
-  return true; // la respuesta llega después
+/**
+ * El panel habla por un **puerto**, no con un mensaje suelto.
+ *
+ * **Y esto es la tercera versión de estas cuatro líneas**, así que conviene
+ * dejar escrito por qué. Con `onMessage` hay que decir que la respuesta llega
+ * después, y eso **no se dice igual en los dos navegadores**: Chrome quiere un
+ * `return true` y una retrollamada; Firefox quiere que se devuelva la promesa.
+ * Con el `return true` de Chrome, Firefox contesta con un error que lo dice todo
+ * —«Promised response from onMessage listener went out of scope»— y el panel se
+ * queda sin respuesta.
+ *
+ * Un puerto no tiene esa ambigüedad: no hay que prometer nada, la respuesta es
+ * otro mensaje y punto. Es lo mismo en los dos navegadores y no hay que detectar
+ * cuál es.
+ */
+api.runtime.onConnect.addListener((puerto) => {
+  puerto.onMessage.addListener((p) => {
+    pedir(p as Peticion).then((r) => {
+      // El panel puede haberse cerrado mientras se preguntaba —se cierra al
+      // hacer clic fuera—, y entonces escribir en el puerto lanza. No es un
+      // fallo: es que ya no hay nadie al otro lado.
+      try {
+        puerto.postMessage(r);
+      } catch {
+        /* el panel se ha ido */
+      }
+    });
+  });
 });

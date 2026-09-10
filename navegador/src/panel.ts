@@ -39,7 +39,7 @@ const PLAZO = 5000;
  */
 async function pedir(p: Omit<Peticion, "version">): Promise<Respuesta> {
   try {
-    const r = (await conPlazo(api.runtime.sendMessage(p))) as Respuesta | undefined;
+    const r = await conPlazo(porElPuerto(p));
     if (!r || typeof r.ok !== "boolean") {
       return {
         ok: false,
@@ -50,6 +50,33 @@ async function pedir(p: Omit<Peticion, "version">): Promise<Respuesta> {
   } catch (e) {
     return { ok: false, error: `No se ha podido hablar con Esfinge: ${e}` };
   }
+}
+
+/**
+ * porElPuerto manda la petición por un puerto y espera la respuesta.
+ *
+ * **Un puerto y no `sendMessage`**, y es la tercera forma que tienen estas
+ * líneas. Con un mensaje suelto hay que prometer que la respuesta llega después,
+ * y eso no se promete igual en los dos navegadores: Chrome quiere `return true`
+ * y una retrollamada, Firefox quiere la promesa devuelta. Con el `return true`
+ * de Chrome, Firefox contesta «Promised response from onMessage listener went
+ * out of scope» y aquí no llega nada. Un puerto no promete nada: la respuesta es
+ * otro mensaje, igual en los dos.
+ */
+function porElPuerto(p: Omit<Peticion, "version">): Promise<Respuesta> {
+  return new Promise((resolver, rechazar) => {
+    const puerto = api.runtime.connect({ name: "panel" });
+    let contestado = false;
+    puerto.onMessage.addListener((r) => {
+      contestado = true;
+      puerto.disconnect();
+      resolver(r as Respuesta);
+    });
+    puerto.onDisconnect.addListener(() => {
+      if (!contestado) rechazar(new Error("el trabajador de fondo se ha ido sin contestar"));
+    });
+    puerto.postMessage(p);
+  });
 }
 
 /** conPlazo convierte una espera infinita en una respuesta. */

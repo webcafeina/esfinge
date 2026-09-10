@@ -511,6 +511,13 @@ px por debajo del centro. Todo lo que el fondo dibuje ahí queda tapado, y eso n
 la imagen en un Mac. `make ventana-dmg` la dibuja antes, leyendo las posiciones de
 `empaquetado/macos/armar-dmg.sh` para que fondo y guion no se separen.
 
+**Y entre el panel y el trabajador de fondo se habla por un puerto, no con `sendMessage`.** Con un
+mensaje suelto hay que prometer que la respuesta llega después, y **eso no se promete igual en los
+dos navegadores**: Chrome quiere `return true` y una retrollamada; Firefox quiere que el oyente
+devuelva la promesa. Con la forma de Chrome, Firefox contesta «Promised response from onMessage
+listener went out of scope» y al panel no le llega nada. Un puerto no promete nada —la respuesta es
+otro mensaje— y es idéntico en los dos, sin detectar cuál es. Costó una versión publicada.
+
 **En una extensión, `chrome.*` no es lo mismo en los dos navegadores, y `browser` sí.** En Chrome,
 `chrome.*` devuelve promesas desde MV3; en Firefox existe solo por compatibilidad y es de
 retrollamada, así que `await chrome.runtime.sendMessage(…)` allí recibe `undefined` y lo siguiente
