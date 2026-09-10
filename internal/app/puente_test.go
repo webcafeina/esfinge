@@ -64,6 +64,13 @@ var loQuePuedeCruzarElPuente = []string{
 	// sale por aquí son seis cifras que caducan en treinta segundos, no la
 	// semilla, que es el segundo factor entero.
 	"CodigoDeBoveda",
+
+	// El canal con el navegador (fase 2). Lo que cruza por aquí es **el ajuste y
+	// los permisos**, no los datos: lo que el navegador pregunta va por su propio
+	// socket y tiene su propia lista, `navegador.LoQueSePuedePedir`. Y los
+	// testigos de emparejamiento no salen: `EstadoDelNavegador` los quita antes de
+	// devolver la lista, porque no pintan nada dentro del webview.
+	"EstadoDelNavegador", "PermitirNavegador", "OlvidarNavegador",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

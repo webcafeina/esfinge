@@ -23,6 +23,7 @@ import (
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/cripto"
 	"github.com/webcafeina/esfinge/internal/iconos"
+	"github.com/webcafeina/esfinge/internal/navegador"
 )
 
 // App reúne el estado que dura lo que dura la aplicación abierta.
@@ -63,6 +64,15 @@ type App struct {
 	// vig lleva los dos relojes: el del bloqueo por inactividad y el del borrado
 	// del portapapeles.
 	vig *vigilante
+
+	// canal es el socket por el que habla la extensión del navegador, si está
+	// encendido. Nil mientras no lo esté, que es lo que vale por defecto.
+	canal      *navegador.Servidor
+	canalFallo string
+	// navegadores son los que tienen permiso para hablar con la bóveda. Van en su
+	// propio fichero y **no en las preferencias**, que cruzan el puente hacia la
+	// ventana: un testigo de emparejamiento no pinta nada dentro del webview.
+	navegadores *navegadoresPermitidos
 
 	// descargador de iconos y el ritmo al que gotea. Se pueden sustituir con
 	// ApuntarIconosA, que es la costura que permite probar el camino entero sin
@@ -110,6 +120,7 @@ func Nueva(version string, sistema Sistema) *App {
 		vig:     nuevoVigilante(),
 		ritmo:   ritmoNormal(),
 	}
+	a.navegadores = abrirNavegadores(rutaNavegadores())
 	a.aplicarPreferencias(a.ajustes.Ver())
 	return a
 }

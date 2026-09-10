@@ -73,6 +73,11 @@ func nuevoVigilante() *vigilante {
 // plazos tienen que valer **desde ya**: quien acaba de bajar el bloqueo a un
 // minuto porque se va de la mesa no puede tener que reiniciar para que sirva.
 func (a *App) aplicarPreferencias(p Preferencias) {
+	// Y el canal con el navegador, que también tiene que valer desde ya: apagarlo
+	// en Ajustes y que siguiera escuchando hasta el siguiente arranque sería un
+	// interruptor que miente.
+	a.aplicarCanal(p)
+
 	a.vig.mu.Lock()
 	defer a.vig.mu.Unlock()
 	// «Nunca» viaja como -1 y aquí es una duración de cero, que es lo que los dos

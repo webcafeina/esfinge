@@ -62,6 +62,19 @@ type Preferencias struct {
 	// IconosAvisados marca que ya se dijo lo que esto hace. El aviso se da una vez,
 	// no en cada arranque.
 	IconosAvisados bool `json:"iconosAvisados"`
+
+	// PuenteDelNavegador abre el canal por el que la extensión consulta la bóveda.
+	//
+	// **Viene apagado**, al revés que los iconos, y no es incoherencia: aquello
+	// sale a la red y esto **abre una puerta a esta máquina**. El propio código de
+	// este proyecto dice, en `internal/app/dev.go`, que «un servidor HTTP en el
+	// binario del cliente, por local que sea, es una puerta que nadie ha pedido».
+	// Ésta se ha pedido, y aun así se enciende a mano.
+	//
+	// Aquí la regla del cero juega a favor, al revés que en los dos relojes de la
+	// bóveda: un guardado a medias llega con `false` y **apaga** el canal, que es
+	// el lado seguro de equivocarse.
+	PuenteDelNavegador bool `json:"puenteDelNavegador"`
 }
 
 // Nunca es lo que se manda para apagar uno de los dos relojes.
