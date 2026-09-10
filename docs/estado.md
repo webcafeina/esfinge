@@ -172,30 +172,70 @@ visto nadie.
 
 ## Siguiente acción concreta
 
-**Probar el camino de la extensión con la extensión de verdad cargada.** Es lo primero de la entrega
-3 y no un adorno: la entrega 2 salió con la detección de campos probada en un Chromium auténtico y
-**con lo que la envuelve sin probar por nadie**, y ahí aparecieron los dos únicos fallos —el oyente
-del panel contestando también desde las tramas de otro origen, y `yaRellenados` bloqueando un relleno
-pedido a mano—. Los dos los vio el cliente a la primera; ninguno estaba en la parte probada.
+**Lo decidió el cliente al cerrar la sesión del 10 de septiembre, y va en este orden:**
 
-La salida está descrita desde el plan de la fase 2: **Playwright puede levantar Chromium con la
-extensión cargada** (`launchPersistentContext` con `--load-extension`) y se le puede escribir el
-manifiesto de native messaging dentro de ese perfil, con un host de mentira que conteste JSON
-preparado. Con eso se ejercita panel → guion → trabajador → puente sin necesidad de Esfinge.
+### 1. Las mejoras visuales de la extensión
 
-Después, la **entrega 3: guardar y actualizar desde la página**. Al enviar un formulario con una
-cuenta que no está en la bóveda, ofrecer guardarla; si está con otra contraseña, ofrecer
-actualizarla, con el historial de contraseñas anteriores que ya existe.
+El panel salió funcionando y **sin ninguna pasada de diseño**: sigue al navegador con
+`color-scheme: light dark`, usa la tipografía del sistema y tiene el CSS mínimo para que las filas no
+se pisen. Nunca se ha mirado una captura suya, que en este proyecto es como se han encontrado la
+mitad de los fallos de interfaz.
 
-Luego el **código de un solo uso rellenado también** (entrega 4), que en Go está desde la 2.15.0, y
-las **tiendas** (entrega 5), donde Chrome consigue su identificador definitivo y donde el permiso que
-se pide —`https://*/*` y un guion en todas las páginas— pasa por la revisión más estricta que dan las
-dos.
+Tres cosas que hay que decidir antes de tocar nada, y ninguna es de gusto:
 
-**Y lo que solo dice el uso**, que no es una tarea sino una escucha: si el relleno acierta en un sitio
-difícil —un banco—, si rellenar solo resulta demasiado —y entonces hace falta un interruptor en
-Ajustes, no afinar la detección a ciegas— y si el clic de más molesta cuando hay varias cuentas del
-mismo sitio, que es de lo que depende el desplegable dentro del campo.
+- **¿Lleva marca?** La ADR 0021 dice que la identidad de Webcafeína va **dentro de la ventana** y
+  **nunca en las pantallas de trabajo**. El panel de la extensión es una superficie nueva y esa
+  pregunta no está contestada: es un sitio de trabajo —se abre para copiar o rellenar y se cierra en
+  tres segundos— pero también es lo único de Esfinge que se ve dentro del navegador.
+- **¿De dónde sale la escala?** Antes de inventar espaciados o tamaños, mirar
+  `~/sistemas-diseno-empresas/CATALOGO.md`, que es la regla de esta máquina para cualquier interfaz.
+  Por defecto se coge **la estructura** y la paleta sale del proyecto.
+- **Y si entra color, se mide.** `make contraste` mide las parejas de los dos temas de la ventana,
+  pero **este panel no usa esos tokens**: hoy no tiene paleta a propósito. Si se le da una, hay que
+  medirla, y hay que decidir si vive en `internal/tema` como todo lo demás o aparte. Recordar que el
+  oro rellena y la piedra escribe: sobre el oro, el blanco da 1,68:1.
+
+Y lo que ya se sabe que está feo o corto: son **tres botones** por fila en 320 px de ancho —«Rellenar»,
+«Contraseña», «Código»— que envuelven cuando el usuario es largo; el aviso es un párrafo suelto sin
+jerarquía; y no hay ningún estado de carga más allá de «Preguntando a Esfinge…».
+
+### 2. El resto de mejoras de la extensión, empezando por el código de un solo uso
+
+**Rellenar también el segundo factor cuando el sitio lo pida** —era la entrega 4 y el cliente la
+adelanta—. La mitad del trabajo está hecha: Go calcula el código desde la 2.15.0 y `campos.ts` ya
+reconoce `autocomplete="one-time-code"` **para excluirlo** de ser confundido con un usuario. Lo que
+falta es detectarlo como destino y un verbo que lo entregue, con las mismas cinco llaves que
+`rellenar`.
+
+Dos cosas a tener presentes cuando se haga:
+
+- **Un código caduca.** `Copiado.Quedan` ya existe para no entregar uno que muere antes de llegar al
+  formulario; al rellenar hace falta lo mismo o no tiene sentido.
+- **Los formularios de segundo factor suelen ser seis casillas de un carácter**, no un campo. Eso es
+  detección nueva y es donde estará el trabajo.
+
+### 3. Y después, lo que ya estaba planteado
+
+Guardar y actualizar desde la página (entrega 3), y las tiendas (entrega 5), donde Chrome consigue su
+identificador definitivo y donde el permiso que se pide —`https://*/*` y un guion en todas las
+páginas— pasa por la revisión más estricta que dan las dos.
+
+### Lo que yo recomendaría meter en medio, y no es lo que se decidió
+
+**Levantar Chromium con la extensión cargada de verdad.** Lo dejo escrito porque la razón sigue en
+pie aunque el orden sea otro: la entrega 2 salió con la detección de campos bien probada y **con lo
+que la envuelve sin probar por nadie**, y ahí aparecieron los dos únicos fallos —el oyente del panel
+contestando también desde las tramas de otro origen, y `yaRellenados` bloqueando un relleno pedido a
+mano—. Los dos los vio el cliente a la primera. Playwright puede hacerlo (`launchPersistentContext`
+con `--load-extension`, más un manifiesto de native messaging escrito en ese perfil apuntando a un
+host de mentira). Está en `docs/deuda.md` con severidad alta.
+
+### Y lo que solo dice el uso, que no es una tarea sino una escucha
+
+Si el relleno acierta en un **sitio difícil** —un banco—; si **rellenar solo resulta demasiado**, y
+entonces hace falta un interruptor en Ajustes en vez de afinar la detección a ciegas; y si el **clic
+de más molesta** cuando hay varias cuentas del mismo sitio, que es de lo que depende el desplegable
+dentro del campo.
 
 Y sigue abierta la deuda de Windows, que la entrega 2 no toca: **el manifiesto del navegador va al
 registro y no se escribe**, y el instalador no copia `esfinge-puente`.

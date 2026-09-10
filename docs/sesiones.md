@@ -22,6 +22,16 @@ Plantilla al final.
   que la entrega 3 no empieza por guardar contraseñas desde la página: empieza por **levantar
   Chromium con la extensión cargada y un host de native messaging de mentira**, que es lo único que
   ejercita panel → guion → trabajador → puente sin Esfinge delante.
+- **Al cerrar, el cliente puso el orden de mañana**, y no es el que yo proponía: primero **las mejoras
+  visuales de la extensión** —el panel salió funcionando y sin ninguna pasada de diseño, y nunca se ha
+  mirado una captura suya—, luego **el resto de mejoras de la extensión empezando por rellenar el
+  código de un solo uso** —era la entrega 4, adelantada— y después lo que ya estaba planteado. Mi
+  recomendación de meter antes el banco de pruebas con la extensión cargada queda escrita en
+  `docs/estado.md` y en `docs/deuda.md`, no perdida.
+- Y con las visuales entra una pregunta que no está contestada y conviene resolver antes de dibujar:
+  **si el panel de la extensión lleva marca**. La ADR 0021 dice que la identidad va dentro de la
+  ventana y nunca en las pantallas de trabajo; este panel es sitio de trabajo, y a la vez es lo único
+  de Esfinge que se ve dentro del navegador.
 
 ## 2026-09-10 · Dos fallos del relleno que solo se ven usándolo
 
