@@ -48,7 +48,15 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
-- ~~«Promised response from onMessage listener went out of scope»~~ → decirle a Chrome que la
+- ~~El manifiesto de la extensión no declaraba el permiso `storage`~~ → **y ésta es la buena**: el
+  código llamaba a `api.storage.local` para guardar el testigo, el permiso no estaba, `api.storage`
+  era `undefined` y la excepción saltaba en la **primera línea** del trabajador de fondo. Nadie la
+  recogía, así que el trabajador no contestaba y desde fuera se veía como si el puente con Esfinge no
+  respondiera. Se persiguió el puente, el socket, los manifiestos de native messaging, el modelo de
+  mensajes entre navegadores y hasta el orden de bytes: **cinco versiones publicadas por una palabra
+  que faltaba en una lista**. Lo encontró la consola de la extensión, que es lo primero que había que
+  haber mirado. Ahora hay un guardián (`navegador/herramientas/permisos.mjs`) en `make comprobar`
+  (2026-09-10, 2.17.5). → decirle a Chrome que la
   respuesta llega después es `return true` y una retrollamada; decírselo a Firefox es devolver la
   promesa. Con la forma de Chrome, Firefox tira la respuesta y el panel no recibe nada. Se habla por
   un **puerto**, que no promete nada y es igual en los dos (2026-09-10, 2.17.3).

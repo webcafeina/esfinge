@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build && vite build --config vite.fondo.config.ts",
-    "comprobar": "tsc -b --noEmit"
+    "comprobar": "tsc -b --noEmit && node herramientas/permisos.mjs"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.287",

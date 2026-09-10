@@ -5,6 +5,7 @@
   "description": "Consulta las contraseñas de tu bóveda de Esfinge sin salir del navegador.",
   "permissions": [
     "nativeMessaging",
+    "storage",
     "activeTab"
   ],
   "action": {

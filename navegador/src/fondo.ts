@@ -182,7 +182,7 @@ function nombreDelNavegador(): string {
  */
 api.runtime.onConnect.addListener((puerto) => {
   puerto.onMessage.addListener((p) => {
-    pedir(p as Peticion).then((r) => {
+    const contestar = (r: Respuesta) => {
       // El panel puede haberse cerrado mientras se preguntaba —se cierra al
       // hacer clic fuera—, y entonces escribir en el puerto lanza. No es un
       // fallo: es que ya no hay nadie al otro lado.
@@ -191,6 +191,21 @@ api.runtime.onConnect.addListener((puerto) => {
       } catch {
         /* el panel se ha ido */
       }
-    });
+    };
+    // **Con `catch`, y es la lección de todo el día por tercera vez.** Sin él,
+    // cualquier excepción aquí dentro es una promesa rechazada que nadie recoge:
+    // el trabajador no contesta, el panel espera su plazo y lo que se ve es «el
+    // trabajador de fondo no ha contestado», que **no dice nada del problema**.
+    // Así pasó con un permiso que faltaba en el manifiesto: `api.storage` era
+    // undefined, esto lanzaba en la primera línea, y desde fuera parecía un
+    // problema del puente. Cinco versiones persiguiendo eso.
+    pedir(p as Peticion)
+      .then(contestar)
+      .catch((e) =>
+        contestar({
+          ok: false,
+          error: `La extensión ha fallado por dentro: ${e}`,
+        }),
+      );
   });
 });

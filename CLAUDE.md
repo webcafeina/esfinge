@@ -511,6 +511,16 @@ px por debajo del centro. Todo lo que el fondo dibuje ahí queda tapado, y eso n
 la imagen en un Mac. `make ventana-dmg` la dibuja antes, leyendo las posiciones de
 `empaquetado/macos/armar-dmg.sh` para que fondo y guion no se separen.
 
+**Lo que una extensión no declara en su manifiesto no existe, y no da error: da `undefined`.** El
+código usaba `api.storage.local` y el manifiesto no pedía el permiso `storage`, así que la excepción
+saltaba en la primera línea del trabajador de fondo, nadie la recogía y **desde fuera parecía que el
+puente con Esfinge no contestaba**. Se persiguieron el socket, los manifiestos de native messaging, el
+orden de bytes y el modelo de mensajes de cada navegador: **cinco versiones publicadas por una palabra
+que faltaba en una lista**. Lo vio en dos segundos la consola de la extensión —«Inspeccionar» en
+`about:debugging`—, que es lo primero que hay que abrir cuando una extensión no hace nada, antes de
+razonar sobre nada. Lo vigila ahora `navegador/herramientas/permisos.mjs`, que corre en
+`make comprobar` y compara lo que el código usa con lo que el manifiesto declara.
+
 **Y entre el panel y el trabajador de fondo se habla por un puerto, no con `sendMessage`.** Con un
 mensaje suelto hay que prometer que la respuesta llega después, y **eso no se promete igual en los
 dos navegadores**: Chrome quiere `return true` y una retrollamada; Firefox quiere que el oyente

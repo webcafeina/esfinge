@@ -11,6 +11,7 @@
   },
   "permissions": [
     "nativeMessaging",
+    "storage",
     "activeTab"
   ],
   "action": {
