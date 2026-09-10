@@ -71,6 +71,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -376,6 +377,18 @@ func AbrirBytes(ruta string, datos []byte, llaveTecleada string) (*Boveda, error
 
 	if err := b.comprobarCoherencia(); err != nil {
 		return nil, err
+	}
+
+	// **La papelera se vacía sola al abrir**, y aquí y no con un reloj a
+	// propósito: una bóveda cerrada no ejecuta nada, así que un reloj solo
+	// contaría mientras la aplicación estuviera puesta y el plazo dependería de
+	// cuánto la usa cada uno. Al abrir se sabe qué día es y se puede decidir de
+	// una vez.
+	if b.purgarPapelera(ahora().Add(-PlazoPapelera)) > 0 {
+		b.cuerpoSucio = true
+		if err := b.guardar(); err != nil {
+			return nil, err
+		}
 	}
 	return b, nil
 }
@@ -684,8 +697,32 @@ func (b *Boveda) Poner(e Entrada) error {
 	return b.guardar()
 }
 
-// Borrar manda una entrada a la papelera. El borrado es suave a propósito: sin
-// él, «borrada aquí» y «nunca existió allí» son indistinguibles al sincronizar.
+// PlazoPapelera es lo que sobrevive una entrada borrada.
+//
+// Treinta días es lo que usa todo el mundo, y por una razón que no es la
+// costumbre: es lo que tarda alguien en darse cuenta de que borró lo que no era
+// —normalmente cuando va a entrar en el sitio— sin que la papelera se convierta
+// en un almacén paralelo de contraseñas que nadie mira.
+const PlazoPapelera = 30 * 24 * time.Hour
+
+// ahora es una variable para poder parar el reloj en las pruebas.
+//
+// Es la misma costura que `azar` en internal/cripto, y hace falta por lo mismo:
+// sin ella, comprobar que la papelera se vacía a los treinta días exige esperar
+// treinta días o fabricar a mano un fichero con fechas viejas dentro.
+var ahora = time.Now
+
+// Borrar manda una entrada a la papelera.
+//
+// **Lo borrado se guarda entero**, con su contraseña, hasta que la papelera se
+// vacíe (ADR 0026). Es lo contrario de lo que hacía esto por la mañana, y el
+// cambio es deliberado: mientras no había forma de vaciarla, guardar el secreto
+// era dejarlo dentro del fichero para siempre; con una papelera que se vacía —a
+// mano o sola a los treinta días— lo que se compra a cambio es que **un clic mal
+// dado deje de perder una contraseña para siempre**.
+//
+// El borrado sigue siendo suave por lo de siempre, además: sin rastro, «borrada
+// aquí» y «nunca existió allí» son indistinguibles al sincronizar.
 func (b *Boveda) Borrar(id string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -693,19 +730,123 @@ func (b *Boveda) Borrar(id string) error {
 		return ErrCerrada
 	}
 	for i, e := range b.cont.Entradas {
-		if e.ID == id {
+		if e.ID == id && !e.Papelera {
 			b.cont.Entradas[i].Papelera = true
-			b.cont.Entradas[i].BorradaEn = time.Now().UTC().Format(time.RFC3339)
-			// Los secretos se van del todo: la papelera guarda que existió, no lo
-			// que valía. **Y son todos, no solo la contraseña**: el texto de una
-			// nota segura y el número de una tarjeta son el secreto entero de esa
-			// clase de entrada, y se quedaban dentro del fichero.
-			b.cont.Entradas[i].vaciarLoSensible()
+			b.cont.Entradas[i].BorradaEn = ahora().UTC().Format(time.RFC3339)
 			b.cuerpoSucio = true
 			return b.guardar()
 		}
 	}
 	return nil
+}
+
+// Papelera devuelve lo borrado que todavía se puede recuperar, **sin secretos**
+// y con lo último borrado arriba.
+//
+// Sin secretos como cualquier otra lista: que una entrada esté en la papelera no
+// la hace menos secreta, y quien quiera verla la restaura primero.
+func (b *Boveda) Papelera() []Entrada {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	var out []Entrada
+	for _, e := range b.cont.Entradas {
+		if e.Papelera {
+			out = append(out, e.SinSecretos())
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		return out[i].BorradaEn > out[j].BorradaEn // RFC3339 ordena como texto
+	})
+	return out
+}
+
+// Restaurar saca una entrada de la papelera y la devuelve a la lista, entera.
+func (b *Boveda) Restaurar(id string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return ErrCerrada
+	}
+	for i, e := range b.cont.Entradas {
+		if e.ID == id && e.Papelera {
+			b.cont.Entradas[i].Papelera = false
+			b.cont.Entradas[i].BorradaEn = ""
+			b.cuerpoSucio = true
+			return b.guardar()
+		}
+	}
+	return errors.New("Esa entrada ya no está en la papelera")
+}
+
+// BorrarDelTodo quita una entrada de la papelera y de la bóveda. **No hay vuelta
+// atrás**, y esta vez de verdad.
+func (b *Boveda) BorrarDelTodo(id string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return ErrCerrada
+	}
+	for i, e := range b.cont.Entradas {
+		// **Solo desde la papelera.** Una entrada viva se borra en dos pasos, y
+		// saltárselos por tener el identificador a mano sería quitarle el sentido
+		// al primero.
+		if e.ID == id && e.Papelera {
+			b.cont.Entradas = append(b.cont.Entradas[:i], b.cont.Entradas[i+1:]...)
+			b.cuerpoSucio = true
+			return b.guardar()
+		}
+	}
+	return errors.New("Esa entrada no está en la papelera")
+}
+
+// VaciarPapelera se lleva todo lo borrado y dice cuánto era.
+func (b *Boveda) VaciarPapelera() (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return 0, ErrCerrada
+	}
+	// Con un plazo en el futuro entra todo, sea de cuando sea.
+	cuantas := b.purgarPapelera(ahora().Add(time.Hour))
+	if cuantas == 0 {
+		return 0, nil // no hay nada que guardar, y guardar de más reescribe la bóveda
+	}
+	b.cuerpoSucio = true
+	return cuantas, b.guardar()
+}
+
+// purgarPapelera quita lo borrado antes de esa fecha y devuelve cuánto quitó.
+// **No guarda**: quien llame decide, porque uno de los dos sitios que la usan
+// está a mitad de abrir el fichero.
+func (b *Boveda) purgarPapelera(limite time.Time) int {
+	corte := limite.UTC().Format(time.RFC3339)
+	vivas := b.cont.Entradas[:0]
+	quitadas := 0
+	for _, e := range b.cont.Entradas {
+		// Una entrada en la papelera **sin fecha** no se toca. Solo puede venir de
+		// una versión que no la escribía, y tirar datos de alguien por no saber
+		// cuándo los borró es exactamente lo que no hay que hacer.
+		if e.Papelera && e.BorradaEn != "" && e.BorradaEn < corte {
+			quitadas++
+			continue
+		}
+		vivas = append(vivas, e)
+	}
+	b.cont.Entradas = vivas
+	return quitadas
+}
+
+// EnLaPapelera cuenta lo borrado que todavía se puede recuperar.
+func (b *Boveda) EnLaPapelera() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	n := 0
+	for _, e := range b.cont.Entradas {
+		if e.Papelera {
+			n++
+		}
+	}
+	return n
 }
 
 // Cuantas devuelve el número de entradas vivas.

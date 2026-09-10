@@ -5,6 +5,38 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-10 · La papelera, y borrar deja de ser para siempre
+
+- **2.16.0.** Se puede vaciar la papelera, que era el cabo suelto que quedaba de la bóveda. Y de paso
+  cambia lo que significa borrar: **lo borrado se guarda entero y se puede restaurar** durante
+  treinta días, con «Restaurar» y «Borrar del todo» entrada a entrada, un botón de vaciar y un
+  vaciado solo al cumplirse el plazo (ADR 0026).
+- **La decisión no era técnica y la tomó el cliente**, con las dos opciones y sus consecuencias
+  delante: papelera de verdad —como la de Dashlane, que es lo que está sustituyendo— o «borrar es
+  borrar» con limpieza de rastros. Ganó la primera, y el argumento es el que hay que recordar: **en
+  un gestor de contraseñas, perder una por un clic es peor que conservar treinta días una que se
+  quiso tirar**.
+- **Eso revierte a propósito lo de por la mañana**, y el motivo del cambio es lo que había cambiado:
+  mientras no existía forma de vaciar la papelera, guardar el secreto era dejarlo dentro del fichero
+  para siempre. El fallo de fondo de aquello —dos listas de campos sensibles, una incompleta— sigue
+  arreglado.
+- **La trampa que trajo el cambio, cazada antes de salir:** con la entrada entera dentro de la
+  papelera, el índice de duplicados del importador la reconocía, así que **volver a importar el CSV
+  de algo borrado lo daba por repetido y no volvía**, con la única copia escondida en la papelera y a
+  punto de caducar. El índice ignora ahora lo que está en la papelera, y hay una prueba.
+- **Verificado**: que lo borrado vuelve entero **con una entrada de cada clase** —el secreto de una
+  nota es su texto y el de una tarjeta su número, así que una papelera que solo devolviera bien las
+  credenciales estaría rota para tres de las cuatro—; que se restaura después de cerrar y volver a
+  abrir; que vaciar se lo lleva **del fichero**; que se vacía sola a los treinta días con el reloj
+  movido cuarenta días atrás, sin llevarse ni lo reciente ni lo vivo; y que una entrada en la
+  papelera **sin fecha** no se toca. Más `make comprobar`, `-race` y **82** pruebas de interfaz en
+  los dos temas.
+- **Y una captura antes de dar nada por bueno**, que ya es costumbre: la papelera no puede reutilizar
+  las reglas de `.lista-boveda`, donde cada fila es un botón de ancho completo —aquí cada fila lleva
+  dos—, y eso habría apilado «Restaurar» y «Borrar del todo» en dos filas.
+- **Queda abierto:** que el plazo de treinta días se cumpla en una bóveda de verdad, que exige dejar
+  pasar treinta días. Lo comprobado es el cálculo.
+
 ## 2026-09-10 · Los códigos de un solo uso, y una nota borrada que no se iba
 
 - **2.15.0.** La bóveda calcula los códigos de un solo uso. Guardaba la semilla desde el primer día y

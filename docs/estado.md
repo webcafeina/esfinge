@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.15.0**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.16.0**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -67,15 +67,22 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   Con eso se va la última cosa que obligaba a tener Dashlane abierto —y entra la consecuencia
   incómoda: **el segundo factor pasa a vivir al lado de la contraseña**, dicho tal cual en
   `docs/seguridad.md`.
+- **La papelera** (ADR 0026): borrar deja de ser irreversible. Lo borrado se guarda entero, se
+  restaura o se tira del todo una a una, se vacía a mano y **se va solo a los treinta días**. El
+  coste está dicho en `docs/seguridad.md`: durante esos días la contraseña borrada sigue dentro del
+  fichero, igual que las del historial de contraseñas anteriores.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
-  máquina sin entorno gráfico. Son **78**.
+  máquina sin entorno gráfico. Son **82**.
 
 ## En curso
 
-Nada a medias. La 2.15.0 cierra los códigos de un solo uso, que era lo acordado para esta sesión, y
-de paso una que salió al mirar la papelera: **borrar una nota segura o una tarjeta dejaba su
-contenido dentro del fichero**, porque la lista de campos sensibles estaba escrita en dos sitios y
-solo uno estaba completo.
+Nada a medias. La 2.15.0 cerró los códigos de un solo uso —comprobados contra Dashlane el mismo
+día— y la 2.16.0, la papelera. En medio salió, sin buscarla, una que llevaba desde la 2.12.0:
+**borrar una nota segura o una tarjeta dejaba su contenido dentro del fichero**, porque la lista de
+campos sensibles estaba escrita en dos sitios y solo uno estaba completo.
+
+**Con la bóveda ya no queda nada de Dashlane por traer al escritorio.** Lo siguiente es la fase 2, y
+su puerta sigue siendo de uso y no técnica.
 
 La 2.12.0 salió con la bóveda y de usarla salieron cinco versiones seguidas de
 correcciones —2.12.1 a 2.12.5—, todas de cosas que **solo aparecen usando la aplicación en un Mac**:
@@ -138,10 +145,7 @@ segundo factor. Lo que queda de Dashlane no es una carencia de la bóveda, es la
 
 Por orden de lo que más acerca a dejarlo del todo:
 
-1. **Vaciar la papelera**, que sigue sin poderse. Ya no es lo que era: desde la 2.15.0 el borrado se
-   lleva **todos** los secretos y no solo la contraseña, así que lo que queda dentro del fichero es el
-   título, el usuario, los sitios y las etiquetas de lo borrado. Es pequeño.
-2. **La fase 2, el autorrelleno.** Es la que de verdad decide si se deja Dashlane, y también la más
+1. **La fase 2, el autorrelleno.** Es la que de verdad decide si se deja Dashlane, y también la más
    grande de todas: código nuevo en otro lenguaje, tres extensiones, tres tiendas con revisión, y
    **sin final** —cada cambio de los navegadores hay que seguirlo—. Safari además está bloqueado sin
    la cuenta de Apple. Antes de empezarla conviene releer la valoración del plan.

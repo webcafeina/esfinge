@@ -878,6 +878,86 @@ test("el código de un solo uso sale calculado y contando atrás", async ({ page
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+// La papelera, que es lo que hace que borrar deje de ser irreversible.
+//
+// Se comprueba **con la contraseña**, y ahí está la gracia: una papelera que
+// devuelve el título y no el secreto no sirve para nada, y es justo lo que hacía
+// esto antes de la 2.16.0.
+test("lo borrado va a la papelera y vuelve entero", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const titulo = `Se borra ${Date.now()}`;
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(titulo);
+  await page.locator("#boveda-secreto").fill("vuelve entera");
+  await accion(page, "Guardar").click();
+
+  await page.locator(".lista-boveda").getByRole("button", { name: titulo }).click();
+  await accion(page, "Borrar").click();
+  // La segunda pulsación dice adónde va: es el único momento en que alguien que
+  // duda se entera de que esto se puede deshacer.
+  await accion(page, "Sí, a la papelera").click();
+
+  await expect(page.locator(".exito:visible").first()).toContainText(
+    "está en la papelera",
+  );
+  await expect(page.locator(".lista-boveda").getByRole("button", { name: titulo })).toHaveCount(0);
+
+  // El botón de la papelera aparece solo cuando hay algo dentro, y la cuenta la
+  // comparten todas las pruebas de este fichero: por eso no se afirma cuál es.
+  const papelera = page.locator(".contenido").getByRole("button", { name: /^Papelera \(\d+\)$/ });
+  await papelera.click();
+
+  const fila = page.locator(".lista-papelera li").filter({ hasText: titulo });
+  await expect(fila).toHaveCount(1);
+  await expect(fila).toContainText("Borrada hoy");
+  await fila.getByRole("button", { name: "Restaurar" }).click();
+  await expect(fila).toHaveCount(0);
+
+  await accion(page, "← Volver").click();
+  await page.locator(".lista-boveda").getByRole("button", { name: titulo }).click();
+  await accion(page, "Ver").first().click();
+  await expect(page.locator(".dato.secreto").first()).toHaveText("vuelve entera");
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+test("vaciar la papelera se lo lleva, y pide una segunda pulsación", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const titulo = `Se va del todo ${Date.now()}`;
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(titulo);
+  await page.locator("#boveda-secreto").fill("s3cr3t0");
+  await accion(page, "Guardar").click();
+
+  await page.locator(".lista-boveda").getByRole("button", { name: titulo }).click();
+  await accion(page, "Borrar").click();
+  await accion(page, "Sí, a la papelera").click();
+
+  await page.locator(".contenido").getByRole("button", { name: /^Papelera \(\d+\)$/ }).click();
+  await expect(page.locator(".lista-papelera li").filter({ hasText: titulo })).toHaveCount(1);
+
+  // Dos pulsaciones, como todo lo que no tiene vuelta atrás en esta pantalla.
+  await accion(page, "Vaciar la papelera").click();
+  await page.locator(".contenido").getByRole("button", { name: /^Sí, vaciar las \d+$/ }).click();
+
+  await expect(page.locator(".lista-papelera")).toHaveCount(0);
+  await expect(page.getByText("La papelera está vacía.")).toBeVisible();
+
+  // Y de vuelta en la lista ya no hay botón de papelera, porque no hay papelera.
+  await accion(page, "← Volver").click();
+  await expect(
+    page.locator(".contenido").getByRole("button", { name: /^Papelera \(\d+\)$/ }),
+  ).toHaveCount(0);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 test("la clave de recuperación abre la bóveda", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");

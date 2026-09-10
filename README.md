@@ -58,7 +58,8 @@ documentos, con buscador, y trayéndose lo que ya tengas en Dashlane, Bitwarden,
 o Chrome. **Calcula también los códigos de un solo uso**, así que el segundo factor deja de estar en
 otro programa —con lo que eso tiene de bueno y de malo, dicho
 [aquí](docs/seguridad.md#lo-que-cambia-con-la-bóveda)—. Se cierra sola cuando llevas un rato sin
-tocarla y borra del portapapeles lo que copies.
+tocarla, borra del portapapeles lo que copies, y lo que borres se queda **treinta días en la
+papelera** por si no querías.
 A diferencia de un `.esf`, aquí **sí hay una segunda llave**: una clave de recuperación que se
 enseña una sola vez, al crearla, para apuntarla en papel
 ([cómo está hecha](docs/adr/0023-la-boveda.md)).

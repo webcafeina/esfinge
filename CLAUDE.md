@@ -104,6 +104,11 @@ No se cambian sin preguntar.
   en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar. **La bóveda no
   escribe en él**, y es una regla absoluta: `credenciales-dashlane.csv` ahí sería una señal de
   tráfico apuntando a lo que alguien acaba de exportar en claro.
+- **Borrar una entrada no es para siempre** (ADR 0026): va a una papelera que **guarda el contenido**
+  y se vacía a mano o sola a los treinta días. Se eligió con el cliente frente a la alternativa
+  —«borrar es borrar»— por una razón que conviene no volver a discutir: en un gestor de contraseñas,
+  perder una por un clic es peor que conservar treinta días una que se quiso tirar. El coste está en
+  `docs/seguridad.md`, al lado del del historial de contraseñas anteriores, que es el mismo trato.
 - **Y la bóveda calcula los códigos de un solo uso** (ADR 0025), lo que la convierte también en el
   autenticador. Con la consecuencia que hay que decir en voz alta y está en `docs/seguridad.md`:
   **una bóveda abierta entrega la contraseña y el segundo factor a la vez**. Se hace igual porque la
@@ -186,6 +191,13 @@ descifrador de Go no comprueba el largo cuando no hay relleno**, y un grupo fina
 no le parece un error, así que devuelve los bytes anteriores como si nada y la semilla entra entera.
 Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
 no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
+
+**Y lo que está en la papelera no cuenta para el índice de duplicados del importador.** Desde que la
+papelera guarda la entrada entera (ADR 0026), sin esa línea el importador reconoce lo borrado y
+volver a pasar el CSV lo da por repetido: se ve como «la borré, la reimporté y no ha vuelto», con la
+única copia escondida en la papelera y a punto de caducar. Vale para cualquier índice nuevo que se
+construya recorriendo `cont.Entradas`: **casi siempre hay que saltarse la papelera**, y los sitios
+donde ya se hace son `Buscar`, `Cuantas`, `Exportar` y ése.
 
 **Los campos sensibles de una entrada estaban escritos en dos sitios, y solo uno estaba completo.**
 Lo que viaja a la ventana en la lista y lo que se limpia al mandar una entrada a la papelera son la

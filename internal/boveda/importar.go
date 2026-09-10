@@ -488,9 +488,18 @@ func (b *Boveda) Importar(entradas []Entrada, deDonde string) (r Resumen, err er
 
 	// Dos índices, y son dos preguntas distintas: «¿es esta misma entrada?» y
 	// «¿es esta misma cuenta con otra contraseña?».
+	//
+	// **Lo que está en la papelera no cuenta**, y desde que la papelera guarda lo
+	// borrado entero eso dejó de ser un detalle: sin esta línea, volver a importar
+	// el CSV de una entrada que se borró la daría por repetida y no volvería a
+	// entrar, con la única copia escondida en la papelera y a punto de caducar.
+	// Se veía como «la borré, la reimporté y no ha vuelto».
 	iguales := map[string]bool{}
 	cuentas := map[string]bool{}
 	for _, e := range b.cont.Entradas {
+		if e.Papelera {
+			continue
+		}
 		iguales[huellaDeContenido(e)] = true
 		cuentas[huellaDeCuenta(e)] = true
 	}

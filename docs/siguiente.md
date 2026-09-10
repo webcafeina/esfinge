@@ -19,10 +19,7 @@ saber qué se hizo.
 
 ## Media
 
-- **La papelera no se puede vaciar desde la ventana.** Borrar es borrado suave —hace falta para
-  sincronizar después—, así que de una entrada borrada se quedan el título, el usuario, los sitios y
-  las etiquetas dentro del fichero, para siempre. Ya no se quedan los secretos, que era la mitad
-  grave de esto (2026-09-10).
+- **Nada por ahora.**
 
 ## Baja
 
@@ -32,6 +29,12 @@ saber qué se hizo.
 
 ## Cerrado
 
+- ~~La papelera no se puede vaciar~~ → hecha en la 2.16.0, y de paso borrar deja de ser
+  irreversible: lo borrado se guarda entero, se puede restaurar, se vacía a mano y se va solo a los
+  treinta días ([ADR 0026](adr/0026-la-papelera.md)). Se eligió entre dos opciones con las dos
+  consecuencias delante; la descartada era «borrar es borrar», más segura y más pequeña, y perdió
+  porque en un gestor de contraseñas perder una por un clic es peor que conservar treinta días una
+  que se quiso tirar (2026-09-10).
 - ~~Los códigos de un solo uso (TOTP)~~ → hechos en la 2.15.0, en la ventana y en la línea de
   comandos, con `internal/codigos` y sin dependencias nuevas. Con ellos se va la última cosa que
   obligaba a tener Dashlane abierto, y con ellos entra también la consecuencia incómoda: el segundo

@@ -1111,6 +1111,63 @@ p {
   max-width: 45%;
 }
 
+/* La papelera. Tiene el mismo marco que la lista de la bóveda y **no reutiliza
+ * sus reglas**: allí cada fila es un botón que ocupa el ancho entero, y aquí
+ * cada fila lleva dos botones dentro. Heredar aquello convertiría «Restaurar» y
+ * «Borrar del todo» en dos filas apiladas. */
+.lista-papelera {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 0.5px solid var(--filete);
+  border-radius: var(--radio);
+  overflow: hidden;
+  background: var(--lienzo);
+}
+
+.lista-papelera li {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  min-height: var(--alto-fila);
+  padding: var(--espacio-1) var(--espacio-3);
+}
+
+.lista-papelera li + li {
+  border-top: 0.5px solid var(--filete);
+}
+
+.lista-papelera .clase {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--apagado);
+}
+
+.lista-papelera .icono {
+  width: 16px;
+  height: 16px;
+}
+
+.lista-papelera .nombre {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cuándo se borró va pegado a las acciones y no al nombre: lo que se compara de
+ * un vistazo al bajar por la lista es el plazo, no el título. */
+.lista-papelera .nota {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.lista-papelera .acciones {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--espacio-2);
+}
+
 /* Un dato de una entrada. No es un campo: no se edita aquí, se lee. Por eso no
  * lleva el relleno ni el borde de un input, que prometerían lo contrario. */
 .dato {

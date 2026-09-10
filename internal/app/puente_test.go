@@ -52,6 +52,10 @@ var loQuePuedeCruzarElPuente = []string{
 	"BuscarEnBoveda", "VerDeBoveda", "GuardarEnBoveda", "BorrarDeBoveda",
 	"CambiarMaestraDeBoveda", "RotarRecuperacionDeBoveda", "BorrarBoveda",
 	"ImportarEnBoveda", "ExportarBoveda", "BorrarElCSVImportado",
+	// La papelera. `PapeleraDeBoveda` devuelve la lista **sin secretos**, como
+	// cualquier otra lista: estar borrada no hace a una entrada menos secreta.
+	"PapeleraDeBoveda", "RestaurarDeBoveda", "BorrarDelTodoDeBoveda",
+	"VaciarPapeleraDeBoveda",
 	// Los iconos van por su propio método y no dentro de la lista de entradas: la
 	// lista se vuelve a pedir en cada tecla del buscador, y meterlos ahí sería
 	// mandarlos todos por el puente en cada pulsación.

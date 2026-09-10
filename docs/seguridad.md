@@ -74,6 +74,11 @@ un fallo perdía un fichero; ahora puede perderlas todas. Lo que hay que tener c
 - **El historial de contraseñas conserva las anteriores.** Cambiar una contraseña no borra la vieja:
   se guarda para el caso de «cambié la contraseña y el servicio no se enteró». Eso significa que un
   secreto sustituido **sigue dentro de la bóveda** hasta que se borre a mano.
+- **Y lo borrado también, durante treinta días.** La papelera guarda la entrada entera, con su
+  contraseña, para que un clic mal dado no la pierda para siempre
+  ([ADR 0026](adr/0026-la-papelera.md)). Se vacía a mano cuando se quiera, y sola a los treinta días
+  de haber borrado cada entrada. Es el mismo trato que el historial de arriba: contra quien no tiene
+  la maestra no cambia nada, y contra quien la tiene es una entrada más de las que ya había.
 - **La bóveda está abierta durante horas**, y mientras lo está, todas las contraseñas viven
   descifradas en memoria. Un volcado de memoria o el fichero de intercambio pueden contenerlas. Es
   la misma limitación de siempre —Go no permite borrar una cadena— pero aquí la ventana es mucho más

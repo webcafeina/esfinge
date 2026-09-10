@@ -187,6 +187,8 @@ export type EstadoBoveda = {
   cuantas: number;
   soloLectura: boolean;
   minutosParaBloquear: number;
+  /** Cuántas entradas hay en la papelera, para saber si enseñar el botón. */
+  enLaPapelera: number;
 };
 
 /** Lo que se cuenta después de traer un CSV de otro gestor. */
@@ -352,7 +354,20 @@ export const esfinge = {
 
   guardarEnBoveda: (e: EntradaBoveda) => llamar<void>("GuardarEnBoveda", e),
 
+  /** Manda la entrada a la papelera, **entera**: de ahí se saca durante 30 días. */
   borrarDeBoveda: (id: string) => llamar<void>("BorrarDeBoveda", id),
+
+  /** Lo borrado que todavía se puede recuperar, sin secretos y con lo último arriba. */
+  papeleraDeBoveda: () =>
+    llamar<EntradaBoveda[] | null>("PapeleraDeBoveda").then((l) => l ?? []),
+
+  restaurarDeBoveda: (id: string) => llamar<void>("RestaurarDeBoveda", id),
+
+  /** Quita una entrada de la papelera. Esta vez no hay vuelta atrás. */
+  borrarDelTodoDeBoveda: (id: string) => llamar<void>("BorrarDelTodoDeBoveda", id),
+
+  /** Vacía la papelera entera y dice cuántas entradas se ha llevado. */
+  vaciarPapeleraDeBoveda: () => llamar<number>("VaciarPapeleraDeBoveda"),
 
   cambiarMaestraDeBoveda: (vieja: string, nueva: string) =>
     llamar<void>("CambiarMaestraDeBoveda", vieja, nueva),

@@ -338,12 +338,14 @@ func TestLaBusquedaNoMiraLosSecretos(t *testing.T) {
 	}
 }
 
-func TestBorrarDejaRastroPeroNoElSecreto(t *testing.T) {
+// Borrar y volver a traer, que es lo que la papelera existe para permitir.
+//
+// **Una de cada clase**, y esa es la gracia: el secreto de una credencial es su
+// contraseña, el de una nota segura es su texto y el de una tarjeta es su
+// número, así que una papelera que solo devolviera bien las credenciales sería
+// una papelera rota para tres de las cuatro.
+func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	b, _, ruta := nueva(t)
-	// **Una de cada clase**, y esa es la gracia de la prueba: mientras solo se
-	// probó con una credencial, el borrado limpiaba la contraseña y dejaba
-	// enteros el texto de una nota segura y el número de una tarjeta, que son el
-	// secreto de esas clases.
 	b.Poner(Entrada{Titulo: "Fuera", Secreto: "s3cr3t0", TOTP: "ABCD"})
 	b.Poner(Entrada{Titulo: "Nota", Tipo: TipoNota, Notas: "la combinación es 4242"})
 	b.Poner(Entrada{Titulo: "Tarjeta", Tipo: TipoTarjeta,
@@ -358,33 +360,168 @@ func TestBorrarDejaRastroPeroNoElSecreto(t *testing.T) {
 	if b.Cuantas() != 0 {
 		t.Error("siguen contando como vivas")
 	}
+	if b.EnLaPapelera() != 4 {
+		t.Errorf("en la papelera hay %d de 4", b.EnLaPapelera())
+	}
+	// La lista de la papelera es una lista más: **sin secretos**.
+	for _, e := range b.Papelera() {
+		if e.Secreto != "" || e.Notas != "" || e.Numero != "" || e.NumeroDocumento != "" {
+			t.Errorf("la papelera ha traído el secreto de «%s»", e.Titulo)
+		}
+	}
 
-	// **Se comprueba sobre lo guardado, no sobre lo que quedó en memoria**: lo
-	// que importa es que el secreto no siga dentro del fichero, y una entrada
-	// limpia en memoria con el fichero sin reescribir se vería igual desde aquí.
+	// **Se restaura después de cerrar y volver a abrir**, que es el caso de
+	// verdad: nadie borra y restaura en el mismo minuto. Y así se comprueba de
+	// paso que lo borrado se guardó entero en el fichero.
 	b.Cerrar()
 	b, err := Abrir(ruta, maestra)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	rastro := 0
-	for _, e := range b.cont.Entradas {
-		if !e.Papelera {
-			t.Errorf("«%s» no está en la papelera", e.Titulo)
-		}
-		if e.Titulo == "" {
-			t.Error("el rastro no dice ni qué era")
-		}
-		rastro++
-		if e.Secreto != "" || e.TOTP != "" || e.Historial != nil ||
-			e.Notas != "" || e.Numero != "" || e.Verificacion != "" ||
-			e.NumeroDocumento != "" {
-			t.Errorf("«%s» se ha guardado con su secreto dentro: %+v", e.Titulo, e)
+	for _, e := range b.Papelera() {
+		if err := b.Restaurar(e.ID); err != nil {
+			t.Fatal(err)
 		}
 	}
-	if rastro != 4 {
-		t.Errorf("la papelera guarda %d entradas de 4", rastro)
+	if b.Cuantas() != 4 || b.EnLaPapelera() != 0 {
+		t.Fatalf("después de restaurar hay %d vivas y %d en la papelera",
+			b.Cuantas(), b.EnLaPapelera())
+	}
+
+	quiero := map[string]string{
+		"Fuera": "s3cr3t0", "Nota": "la combinación es 4242",
+		"Tarjeta": "4111111111111111", "Documento": "12345678Z",
+	}
+	for _, l := range b.Buscar("") {
+		e, _ := b.Ver(l.ID)
+		suyo := e.Secreto + e.Notas + e.Numero + e.NumeroDocumento
+		if suyo != quiero[e.Titulo] {
+			t.Errorf("«%s» ha vuelto con %q y se borró con %q",
+				e.Titulo, suyo, quiero[e.Titulo])
+		}
+	}
+}
+
+// Vaciar la papelera se lleva lo borrado del fichero, y esta vez de verdad.
+func TestVaciarLaPapeleraSeLoLlevaDelFichero(t *testing.T) {
+	b, _, ruta := nueva(t)
+	b.Poner(Entrada{Titulo: "Se queda", Secreto: "vive"})
+	b.Poner(Entrada{Titulo: "Se va", Secreto: "muere", Notas: "y su nota"})
+
+	for _, e := range b.Buscar("se va") {
+		b.Borrar(e.ID)
+	}
+	cuantas, err := b.VaciarPapelera()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cuantas != 1 {
+		t.Errorf("dice haber vaciado %d entradas", cuantas)
+	}
+	if b.Cuantas() != 1 || b.EnLaPapelera() != 0 {
+		t.Errorf("quedan %d vivas y %d borradas", b.Cuantas(), b.EnLaPapelera())
+	}
+
+	// **Sobre lo guardado, no sobre la memoria**: una entrada quitada de la lista
+	// con el fichero sin reescribir se vería igual desde aquí.
+	b.Cerrar()
+	b, err = Abrir(ruta, maestra)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(b.cont.Entradas) != 1 || b.cont.Entradas[0].Titulo != "Se queda" {
+		t.Errorf("en el fichero quedan %d entradas: %+v", len(b.cont.Entradas), b.cont.Entradas)
+	}
+
+	// Y vaciar una papelera vacía no es un error ni reescribe nada.
+	if n, err := b.VaciarPapelera(); err != nil || n != 0 {
+		t.Errorf("vaciar lo ya vacío devuelve %d, %v", n, err)
+	}
+}
+
+// La papelera se vacía sola a los treinta días, **y al abrir la bóveda**: un
+// reloj solo contaría mientras la aplicación estuviera puesta, así que el plazo
+// dependería de cuánto la usa cada uno.
+func TestLaPapeleraSeVaciaSolaALosTreintaDias(t *testing.T) {
+	b, _, ruta := nueva(t)
+	b.Poner(Entrada{Titulo: "Vieja", Secreto: "caduca"})
+	b.Poner(Entrada{Titulo: "Reciente", Secreto: "aguanta"})
+	b.Poner(Entrada{Titulo: "Viva", Secreto: "ni se toca"})
+
+	viejo := time.Now().Add(-40 * 24 * time.Hour)
+	conReloj(t, func() time.Time { return viejo }, func() {
+		for _, e := range b.Buscar("vieja") {
+			b.Borrar(e.ID)
+		}
+	})
+	for _, e := range b.Buscar("reciente") {
+		b.Borrar(e.ID)
+	}
+	b.Cerrar()
+
+	b, err := Abrir(ruta, maestra)
+	if err != nil {
+		t.Fatal(err)
+	}
+	quedan := map[string]bool{}
+	for _, e := range b.cont.Entradas {
+		quedan[e.Titulo] = true
+	}
+	if quedan["Vieja"] {
+		t.Error("una entrada borrada hace cuarenta días sigue ahí")
+	}
+	if !quedan["Reciente"] {
+		t.Error("se ha llevado una borrada hace un rato")
+	}
+	if !quedan["Viva"] {
+		t.Error("se ha llevado una que no estaba borrada")
+	}
+
+	// **Una entrada en la papelera sin fecha no se toca.** Solo puede venir de una
+	// versión que no la escribía, y tirar datos por no saber cuándo se borraron es
+	// justo lo que no hay que hacer.
+	b.cont.Entradas = append(b.cont.Entradas, Entrada{
+		ID: "sinfecha", Titulo: "Sin fecha", Papelera: true,
+	})
+	if n := b.purgarPapelera(time.Now().Add(time.Hour)); n != 1 {
+		t.Errorf("ha purgado %d entradas y solo debía llevarse la que tiene fecha", n)
+	}
+}
+
+// conReloj corre algo con la hora parada donde se diga.
+func conReloj(t *testing.T, reloj func() time.Time, hacer func()) {
+	t.Helper()
+	antes := ahora
+	ahora = reloj
+	defer func() { ahora = antes }()
+	hacer()
+}
+
+// Lo borrado no bloquea su propia reimportación.
+//
+// **Es la trampa que trajo guardar el contenido en la papelera**: con la entrada
+// entera ahí dentro, el índice de duplicados la reconocía y volver a pasar el CSV
+// la daba por repetida. Se veía como «la borré, la reimporté y no ha vuelto», con
+// la única copia escondida en la papelera y a punto de caducar.
+func TestLoBorradoNoBloqueaVolverAImportarlo(t *testing.T) {
+	b, _, _ := nueva(t)
+	fila := Entrada{Titulo: "Banco", Usuario: "yo", Secreto: "s3cr3t0",
+		Sitios: []string{"https://banco.es"}}
+
+	if r, err := b.Importar([]Entrada{fila}, "Dashlane"); err != nil || r.Metidas != 1 {
+		t.Fatalf("la primera importación: %+v, %v", r, err)
+	}
+	b.Borrar(b.Buscar("banco")[0].ID)
+
+	r, err := b.Importar([]Entrada{fila}, "Dashlane")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Metidas != 1 || r.Repetidas != 0 {
+		t.Errorf("reimportar lo borrado no lo devuelve: %+v", r)
+	}
+	if b.Cuantas() != 1 {
+		t.Errorf("hay %d entradas vivas", b.Cuantas())
 	}
 }
 

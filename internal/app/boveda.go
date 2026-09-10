@@ -30,6 +30,10 @@ type EstadoBoveda struct {
 	Ruta        string `json:"ruta"`
 	Cuantas     int    `json:"cuantas"`
 	SoloLectura bool   `json:"soloLectura"`
+	// EnLaPapelera va aquí y no en un método propio porque la ventana lo necesita
+	// **cada vez que dibuja la lista**, para saber si enseñar el botón de la
+	// papelera, y pedirlo aparte sería un viaje más por el puente en cada tecla.
+	EnLaPapelera int `json:"enLaPapelera"`
 	// MinutosParaBloquear es lo que dice Ajustes, para poder enseñarlo.
 	MinutosParaBloquear int `json:"minutosParaBloquear"`
 }
@@ -80,6 +84,7 @@ func (a *App) EstadoBoveda() EstadoBoveda {
 		e.Abierta = true
 		e.Cuantas = a.bov.Cuantas()
 		e.SoloLectura = a.bov.SoloLectura()
+		e.EnLaPapelera = a.bov.EnLaPapelera()
 	}
 	return e
 }
@@ -170,13 +175,58 @@ func (a *App) GuardarEnBoveda(e boveda.Entrada) error {
 	return a.bov.Poner(e)
 }
 
-// BorrarDeBoveda manda una entrada a la papelera.
+// BorrarDeBoveda manda una entrada a la papelera, **entera**: de ahí se puede
+// sacar durante treinta días (ADR 0026).
 func (a *App) BorrarDeBoveda(id string) error {
 	if a.bov == nil || !a.bov.Abierta() {
 		return boveda.ErrCerrada
 	}
 	a.Actividad()
 	return a.bov.Borrar(id)
+}
+
+// PapeleraDeBoveda devuelve lo borrado que todavía se puede recuperar, sin
+// secretos, con lo último borrado arriba.
+func (a *App) PapeleraDeBoveda() ([]boveda.Entrada, error) {
+	if a.bov == nil || !a.bov.Abierta() {
+		return nil, boveda.ErrCerrada
+	}
+	a.Actividad()
+	return a.bov.Papelera(), nil
+}
+
+// RestaurarDeBoveda saca una entrada de la papelera y la devuelve entera.
+func (a *App) RestaurarDeBoveda(id string) error {
+	if a.bov == nil || !a.bov.Abierta() {
+		return boveda.ErrCerrada
+	}
+	a.Actividad()
+	return a.bov.Restaurar(id)
+}
+
+// BorrarDelTodoDeBoveda quita una entrada de la papelera y de la bóveda. **No
+// hay vuelta atrás**, y esta vez de verdad.
+func (a *App) BorrarDelTodoDeBoveda(id string) error {
+	if a.bov == nil || !a.bov.Abierta() {
+		return boveda.ErrCerrada
+	}
+	a.Actividad()
+	return a.bov.BorrarDelTodo(id)
+}
+
+// VaciarPapeleraDeBoveda se lleva todo lo borrado y dice cuánto era.
+//
+// **No pide la contraseña maestra**, al revés que borrar la bóveda entera, y la
+// diferencia es la que hay entre las dos cosas: aquí se tira lo que ya se tiró
+// una vez, en dos pasos y con la cuenta delante. Pedir la maestra para esto la
+// convertiría en un trámite, que es la forma de que deje de proteger nada donde
+// sí hace falta.
+func (a *App) VaciarPapeleraDeBoveda() (int, error) {
+	if a.bov == nil || !a.bov.Abierta() {
+		return 0, boveda.ErrCerrada
+	}
+	a.Actividad()
+	return a.bov.VaciarPapelera()
 }
 
 // CambiarMaestraDeBoveda pide la vieja aunque la bóveda ya esté abierta.

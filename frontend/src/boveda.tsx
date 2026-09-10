@@ -369,6 +369,11 @@ function Dentro({
   const [iconos, setIconos] = useState<Record<string, string>>({});
   const [mirando, setMirando] = useState<EntradaBoveda | null>(null);
   const [editando, setEditando] = useState<EntradaBoveda | null>(null);
+  const [enLaPapelera, setEnLaPapelera] = useState(false);
+  // Lo que se dice después de borrar. **Hace falta decirlo**: lo borrado va a la
+  // papelera y se puede recuperar, y quien acaba de dar al botón no tiene forma
+  // de saberlo si nadie se lo cuenta.
+  const [dicho, setDicho] = useState("");
   const [error, setError] = useState("");
 
   const buscar = useCallback(async (texto: string) => {
@@ -409,6 +414,7 @@ function Dentro({
 
   async function ver(id: string) {
     setError("");
+    setDicho("");
     try {
       setMirando(await esfinge.verDeBoveda(id));
     } catch (e) {
@@ -444,8 +450,22 @@ function Dentro({
         alVolver={() => setMirando(null)}
         alEditar={() => setEditando(mirando)}
         alBorrar={async () => {
+          const era = mirando.titulo || "Sin título";
           await esfinge.borrarDeBoveda(mirando.id);
           setMirando(null);
+          setDicho(`«${era}» está en la papelera. Se borra sola en 30 días.`);
+          await buscar(q);
+          alCambiar();
+        }}
+      />
+    );
+  }
+
+  if (enLaPapelera) {
+    return (
+      <Papelera
+        alVolver={() => setEnLaPapelera(false)}
+        alCambiar={async () => {
           await buscar(q);
           alCambiar();
         }}
@@ -467,6 +487,19 @@ function Dentro({
         {/* Lo nuevo se crea de la clase que se esté mirando: estando en Tarjetas,
             «Nueva» es una tarjeta. */}
         <button onClick={() => setEditando(entradaNueva(tipo))}>Nueva</button>
+        {/* Solo cuando hay algo dentro. Una papelera vacía en la barra es un
+            botón que no lleva a ninguna parte, y en cuanto se borra algo aparece
+            —que es justo cuando hace falta—. */}
+        {estado.enLaPapelera > 0 && (
+          <button
+            onClick={() => {
+              setDicho("");
+              setEnLaPapelera(true);
+            }}
+          >
+            Papelera ({estado.enLaPapelera})
+          </button>
+        )}
         <button onClick={cerrar}>Cerrar la bóveda</button>
       </div>
 
@@ -510,6 +543,7 @@ function Dentro({
       </div>
 
       {error && <p className="error">{error}</p>}
+      {dicho && <p className="exito">{dicho}</p>}
 
       {visibles.length === 0 ? (
         <p className="nota">{nadaQueEnsenar(q, tipo, lista.length)}</p>
@@ -671,6 +705,137 @@ function nadaQueEnsenar(q: string, tipo: Filtro, cuantasEnTotal: number): string
   return `Todavía no hay ninguna ${PLURAL[tipo][0]}. Añádela con «Nueva» o impórtala.`;
 }
 
+// -------------------------------------------------------------------- papelera
+
+/**
+ * La papelera: lo borrado que todavía se puede recuperar.
+ *
+ * **Es una lista de filas con acciones, no de filas que se pulsan**, y por eso
+ * no reutiliza `.lista-boveda`: allí la regla convierte cualquier botón de
+ * dentro en una fila entera, que es lo que se quiere en la lista de verdad y lo
+ * contrario de lo que hace falta aquí.
+ *
+ * La lista llega **sin secretos**, como cualquier otra: estar borrada no hace a
+ * una entrada menos secreta, y quien quiera ver lo que había la restaura antes.
+ */
+function Papelera({
+  alVolver,
+  alCambiar,
+}: {
+  alVolver: () => void;
+  alCambiar: () => Promise<void>;
+}) {
+  const [lista, setLista] = useState<EntradaBoveda[]>([]);
+  const [seguro, setSeguro] = useState(false);
+  const [error, setError] = useState("");
+
+  const traer = useCallback(async () => {
+    try {
+      setLista(await esfinge.papeleraDeBoveda());
+      setError("");
+    } catch (e) {
+      setError(mensaje(e));
+    }
+  }, []);
+
+  useEffect(() => {
+    traer();
+  }, [traer]);
+
+  // Las tres acciones hacen lo mismo alrededor: tocar la bóveda, volver a pedir
+  // la papelera y avisar a la lista de fuera, que ha cambiado de tamaño.
+  async function hacer(que: () => Promise<unknown>) {
+    setError("");
+    try {
+      await que();
+      await traer();
+      await alCambiar();
+    } catch (e) {
+      setError(mensaje(e));
+    }
+  }
+
+  return (
+    <div className="panel">
+      <div className="boveda-barra">
+        <button onClick={alVolver}>← Volver</button>
+        <span className="crece" />
+        {lista.length > 0 && (
+          <button
+            className={seguro ? "principal" : undefined}
+            onClick={() =>
+              seguro
+                ? hacer(esfinge.vaciarPapeleraDeBoveda).then(() => setSeguro(false))
+                : setSeguro(true)
+            }
+          >
+            {seguro ? `Sí, vaciar las ${lista.length}` : "Vaciar la papelera"}
+          </button>
+        )}
+      </div>
+
+      <h2>Papelera</h2>
+
+      {error && <p className="error">{error}</p>}
+
+      {lista.length === 0 ? (
+        <p className="nota">La papelera está vacía.</p>
+      ) : (
+        <>
+          <ul className="lista-papelera">
+            {lista.map((e) => (
+              <li key={e.id}>
+                <span className="clase" title={NOMBRE_TIPO[e.tipo]}>
+                  <Icono nombre={e.tipo} />
+                </span>
+                <span className="nombre">{e.titulo || "Sin título"}</span>
+                <span className="nota">{borradaHace(e.borradaEn)}</span>
+                <span className="acciones">
+                  <button
+                    className="discreto"
+                    onClick={() => hacer(() => esfinge.restaurarDeBoveda(e.id))}
+                  >
+                    Restaurar
+                  </button>
+                  <button
+                    className="discreto"
+                    onClick={() => hacer(() => esfinge.borrarDelTodoDeBoveda(e.id))}
+                  >
+                    Borrar del todo
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          {/* Se dice el plazo, y se dice que lo de aquí dentro **sigue siendo
+              secreto**: es lo que se compra a cambio de poder recuperarlo. */}
+          <p className="nota">
+            Lo borrado se guarda entero, con su contraseña, y se va solo a los 30
+            días de haberlo borrado.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * borradaHace lo cuenta en días, que es como se piensa en un plazo de treinta.
+ *
+ * En horas no: «borrada hace 27 horas» obliga a dividir para saber si queda
+ * mucho, y lo que se está preguntando es cuánto falta para que desaparezca.
+ */
+function borradaHace(iso?: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const dias = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+  if (dias <= 0) return "Borrada hoy";
+  if (dias === 1) return "Borrada ayer";
+  return `Borrada hace ${dias} días`;
+}
+
 // --------------------------------------------------------------------- detalle
 
 function Detalle({
@@ -695,11 +860,14 @@ function Detalle({
         <button onClick={alVolver}>← Volver</button>
         <span className="crece" />
         <button onClick={alEditar}>Editar</button>
+        {/* La segunda pulsación dice **adónde va**, y no es un adorno: es el
+            único momento en que alguien que duda se entera de que esto se puede
+            deshacer. «Sí, borrar» hacía pensar lo contrario. */}
         <button
           className={seguro ? "principal" : undefined}
           onClick={() => (seguro ? alBorrar() : setSeguro(true))}
         >
-          {seguro ? "Sí, borrar" : "Borrar"}
+          {seguro ? "Sí, a la papelera" : "Borrar"}
         </button>
       </div>
 
