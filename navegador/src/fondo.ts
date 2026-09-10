@@ -46,41 +46,73 @@ const CLAVE_TESTIGO = "testigo";
  */
 function hablar(p: Peticion): Promise<Respuesta> {
   return new Promise((resolver) => {
+    let hecho = false;
+    const terminar = (r: Respuesta) => {
+      if (hecho) return;
+      hecho = true;
+      resolver(r);
+    };
+
+    // **Un plazo, y aquí es donde faltaba.** El panel tenía el suyo, pero esto no:
+    // si el proceso arranca y no contesta —o si el aviso de que no ha arrancado
+    // se pierde por el camino— esta promesa no se resolvía nunca, el trabajador
+    // no contestaba, y lo único que veía quien miraba era «el trabajador de fondo
+    // no ha contestado», que apunta al sitio equivocado. Un plazo aquí dice **qué
+    // tramo** es el que no responde.
+    const plazo = setTimeout(() => {
+      terminar({
+        ok: false,
+        motivo: "sin-esfinge",
+        error:
+          "El puente de Esfinge no ha contestado. Comprueba que Esfinge está " +
+          "instalada y que el canal con el navegador está encendido en sus Ajustes.",
+      });
+    }, PLAZO_DEL_PUENTE);
+
     let puerto: chrome.runtime.Port;
     try {
       puerto = api.runtime.connectNative(HOST);
-    } catch {
-      return resolver(sinPuente());
+    } catch (e) {
+      clearTimeout(plazo);
+      return terminar(sinPuente(`${e}`));
     }
 
-    // Si el proceso muere sin contestar —porque no está instalado, o porque el
-    // manifiesto apunta a donde no hay nada— hay que contestar igual: dejar la
-    // promesa colgada deja el panel girando para siempre.
-    let contestado = false;
     puerto.onMessage.addListener((r: Respuesta) => {
-      contestado = true;
+      clearTimeout(plazo);
       puerto.disconnect();
-      resolver(r);
+      terminar(r);
     });
+    // Se dispara cuando el proceso no está, no se puede ejecutar o se muere. El
+    // motivo lo pone el navegador y **se enseña tal cual**: es lo único que dice
+    // si el problema es el manifiesto, la ruta o los permisos.
     puerto.onDisconnect.addListener(() => {
-      if (!contestado) resolver(sinPuente());
+      clearTimeout(plazo);
+      terminar(sinPuente(api.runtime.lastError?.message));
     });
 
     try {
       puerto.postMessage(p);
-    } catch {
-      resolver(sinPuente());
+    } catch (e) {
+      clearTimeout(plazo);
+      terminar(sinPuente(`${e}`));
     }
   });
 }
 
-function sinPuente(): Respuesta {
+/** Lo que se espera al proceso antes de darlo por perdido. */
+const PLAZO_DEL_PUENTE = 4000;
+
+function sinPuente(porque?: string): Respuesta {
   return {
     ok: false,
     motivo: "sin-esfinge",
     error:
       "No se puede hablar con Esfinge. Comprueba que está instalada y que el " +
-      "canal con el navegador está encendido en sus Ajustes.",
+      "canal con el navegador está encendido en sus Ajustes." +
+      // **Lo que diga el navegador, tal cual.** Es lo único que distingue «no
+      // encuentro el manifiesto» de «no puedo ejecutar eso» de «se ha muerto», y
+      // sin ello los tres se ven igual desde fuera.
+      (porque ? ` El navegador dice: ${porque}` : ""),
   };
 }
 
