@@ -8,8 +8,8 @@ import (
 	"golang.org/x/term"
 
 	"github.com/webcafeina/esfinge/internal/actualizacion"
-	"github.com/webcafeina/esfinge/internal/red"
 	"github.com/webcafeina/esfinge/internal/app"
+	"github.com/webcafeina/esfinge/internal/red"
 	"github.com/webcafeina/esfinge/internal/salida"
 )
 

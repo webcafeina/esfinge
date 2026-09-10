@@ -73,6 +73,7 @@ func Ejecutar(version string) int {
 		comandoDescifrar(&o),
 		comandoGenerar(&o),
 		comandoBoveda(&o),
+		comandoPuenteNavegador(),
 	)
 
 	// Cobra habla inglés de fábrica. La herramienta es para un cliente que la va
