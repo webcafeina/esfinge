@@ -48,12 +48,12 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 ## Saldada
 
-- ~~NSIS se bajaba de Chocolatey en cada publicación~~ → la imagen de Windows de GitHub **ya lo trae**,
-  así que era pedirle a un tercero algo que ya estaba en la máquina. Ese tercero devolvió 503 durante
-  media hora y dejó sin publicar la 2.17.6, con todo lo demás en verde. Es el mismo error que ya costó
-  la 2.14.0 con un repositorio de apt caducado, y la misma regla: **esta compilación solo debería
-  necesitar lo que la máquina trae**. Ahora se usa el preinstalado y solo se baja si de verdad falta
-  (2026-09-10).
+- ~~NSIS se bajaba de Chocolatey en cada publicación~~ → su servidor devolvió 503 durante media hora y
+  tiró **dos publicaciones seguidas** con todo lo demás en verde. Se probó primero a usar el
+  preinstalado de la imagen de Windows, y **la suposición era falsa: esa imagen no lo trae** —lo dijo
+  el propio registro—. Así que se baja del proyecto NSIS directamente, con su suma comprobada y sin
+  gestor de paquetes por medio. Se deja también la búsqueda del preinstalado, que no estorba y sirve
+  si algún día lo incluyen (2026-09-10).
 - ~~El manifiesto de la extensión no declaraba el permiso `storage`~~ → **y ésta es la buena**: el
   código llamaba a `api.storage.local` para guardar el testigo, el permiso no estaba, `api.storage`
   era `undefined` y la excepción saltaba en la **primera línea** del trabajador de fondo. Nadie la

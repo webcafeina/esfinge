@@ -559,12 +559,16 @@ ahí: lo que hay que respetar tiene que **parar** algo, y al añadir un `.gitign
 preguntarse qué ficheros del repositorio tienen esa extensión —los vectores llevan ahora su
 excepción, y `TestLosVectoresEstanEnElRepositorio` explica dónde mirar si vuelven a faltar—.
 
-**Y la regla que sale de eso, que ya ha costado dos publicaciones: lo que la máquina de GitHub ya
-trae no se baja de un tercero.** NSIS viene preinstalado en la imagen de Windows y se estaba bajando
-de Chocolatey en cada publicación; el día que Chocolatey devolvió 503 durante media hora, la 2.17.6 se
-quedó sin publicar **con todo lo demás en verde**. Antes había pasado lo mismo con un repositorio de
-apt caducado. Antes de añadir un `choco install`, un `apt-get install` o un `brew install` a un flujo,
-mirar si eso ya está en la imagen.
+**Y la regla que sale de eso, que ya ha costado tres publicaciones: una dependencia de la compilación
+no puede colgar de un intermediario.** NSIS se bajaba de Chocolatey en cada publicación, y el día que
+su servidor devolvió 503 durante media hora se cayeron **dos publicaciones seguidas** con todo lo
+demás en verde. Antes había pasado igual con un repositorio de apt caducado.
+
+Y una corrección que conviene leer, porque el primer arreglo fue una suposición: se dio por hecho que
+la imagen de Windows de GitHub **traía NSIS preinstalado**, y no lo trae —lo dijo el registro del
+propio flujo, «NSIS no viene con la máquina»—. Ahora se baja **del proyecto NSIS, con su suma
+comprobada**: una descarga sin comprobar es peor que la dependencia que sustituye. La regla, entonces,
+no es «usa lo que ya está» sino **«si hay que bajar algo, del origen y con su suma»**.
 
 **Y una que solo se descubre publicando: la máquina de GitHub trae repositorios de apt que no son
 nuestros.** `apt-get update` **falla entero** si cualquiera de ellos sirve un índice caducado, así que

@@ -206,10 +206,31 @@ jobs:
           if nsis=$(buscar); then
             echo "NSIS ya viene con la máquina: $nsis"
           else
-            echo "NSIS no viene con la máquina; se baja de Chocolatey"
-            choco install nsis -y --no-progress || true
-            nsis=$(buscar) || {
-              echo "::error::No aparece makensis, ni preinstalado ni desde Chocolatey"
+            # **Del origen y con su suma, no de un intermediario.**
+            #
+            # Antes se bajaba de Chocolatey, y su servidor devolvió 503 durante
+            # media hora: dos publicaciones caídas en una tarde con todo lo demás
+            # en verde. Aquí se coge el zip que publica el propio proyecto NSIS,
+            # se comprueba la suma —una descarga sin comprobar es peor que una
+            # dependencia— y se descomprime. Sin instalador y sin gestor de
+            # paquetes por medio.
+            echo "NSIS no viene con la máquina; se baja del proyecto NSIS"
+            version=3.10
+            suma=fcdce3229717a2a148e7cda0ab5bdb667f39d8fb33ede1da8dabc336bd5ad110
+            curl -sSL --retry 3 --retry-delay 5 -o nsis.zip \
+              "https://downloads.sourceforge.net/project/nsis/NSIS%203/$version/nsis-$version.zip"
+            echo "$suma  nsis.zip" | sha256sum -c - || {
+              echo "::error::El zip de NSIS no es el que se esperaba"
+              exit 1
+            }
+            unzip -q nsis.zip -d /c/nsis
+            nsis="/c/nsis/nsis-$version"
+            # NSISDIR le dice al compilador dónde están sus cabeceras y sus
+            # plantillas. Con el zip no hay instalador que lo apunte en el
+            # registro, así que se dice a mano.
+            echo "NSISDIR=$(cygpath -w "$nsis")" >> "$GITHUB_ENV"
+            [ -x "$nsis/makensis.exe" ] || {
+              echo "::error::El zip de NSIS no trae makensis donde se esperaba"
               exit 1
             }
           fi
