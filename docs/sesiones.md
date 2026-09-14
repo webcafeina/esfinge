@@ -5,6 +5,21 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · Cambiar la contraseña en Brevo (2.21.2, sin publicar)
+
+- **Con la 2.21.1, Google funciona perfecto** por los dos caminos —tecleando y con el selector de
+  cuentas—, dicho por el cliente. **Pero cambiar la contraseña en Brevo no ofrecía nada.**
+- Diagnóstico por la consola del cliente: actual y nueva **sin `autocomplete`**, con los nombres
+  `currentPassword` y `newPassword`. La regla exigía la declaración estándar para saber cuál es la nueva.
+  Ahora cuenta también el nombre del campo, si lo dice de uno solo, y tras enviar se mira a los 3, 8 y
+  15 segundos en vez de una vez.
+- La segunda salida —la página después de guardar— no se pudo sacar: la cuenta de pruebas de Brevo se
+  quedó sin su contraseña original. **Si Brevo deja los campos rellenos, seguirá sin ofrecer**; queda en
+  `docs/deuda.md`.
+- Verificado: `make comprobar` en verde con **96 pruebas de la extensión**, cuatro nuevas —el formulario
+  de Brevo copiado, «nueva» y «confirmar nueva» que no coinciden, nombres en español y el clic de verdad
+  en su botón—. Sin verificar: en Brevo. **Pasos 5 a 8 de la entrega 3, sin hacer.**
+
 ## 2026-09-14 · Quién entra, en las páginas de dos pasos (2.21.1)
 
 - **Publicada la 2.21.1** a petición del cliente, con las cinco compilaciones y la puerta de

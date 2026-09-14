@@ -439,7 +439,7 @@ let tarjetaAbierta: ReturnType<typeof mostrarTarjeta> | null = null;
  * Lo que se espera después de un envío antes de mirar si hay que ofrecer algo en la
  * misma página, para los sitios que entran sin cambiar de página.
  */
-const ESPERA_TRAS_ENVIAR = 3000;
+const ESPERAS_TRAS_ENVIAR = [3000, 8000, 15000];
 
 /**
  * pareceFallido dice si, después de enviar, **el formulario sigue ahí**, que es la
@@ -515,7 +515,15 @@ function vigilarLoQueSeEnvia() {
   vigilarEnvios((envio) => {
     hablarConElFondo({ que: "envio", ...envio });
     if (window.top === window.self) {
-      setTimeout(() => mirarPendiente(false).catch(() => {}), ESPERA_TRAS_ENVIAR);
+      // **Varias veces**: un sitio que cambia la contraseña sin cambiar de página
+      // —Brevo— puede tardar en contestar y en vaciar el formulario. Y sin repintar
+      // una tarjeta que ya esté a la vista, que borraría el título que se esté
+      // escribiendo.
+      for (const espera of ESPERAS_TRAS_ENVIAR) {
+        setTimeout(() => {
+          if (!tarjetaAbierta) mirarPendiente(false).catch(() => {});
+        }, espera);
+      }
     }
   });
   if (window.top === window.self) mirarPendiente(true).catch(() => {});

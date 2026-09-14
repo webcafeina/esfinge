@@ -268,7 +268,9 @@ los zip de la 2.21.0, o la tarjeta no sale.
 contraseña en páginas separadas: rellenaba y ofrecía actualizar la cuenta de otro usuario. **Corregido
 en la 2.21.1** recordando el usuario de la página anterior, y con varias cuentas se rellena la que
 coincida con él, a petición del cliente. **Publicada la 2.21.1 el mismo día**, con todas las
-compilaciones en verde (ADR 0032, «Corregido tras probarla en
+compilaciones en verde, y **Google funciona perfecto** con ella. Después, **cambiar la contraseña en Brevo
+no ofrecía nada** —actual y nueva sin `autocomplete`, solo distinguidas por el nombre—: corregido en la
+2.21.2, sin publicar (ADR 0032, «Corregido tras probarla en
 Google»). **Quedan por probar los pasos 5 a 8.**
 
 Se le explicó cómo decide «la contraseña era mala» y se le pidió que apunte **los sitios donde falle en

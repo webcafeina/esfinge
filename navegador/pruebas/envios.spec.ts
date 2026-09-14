@@ -104,3 +104,23 @@ test("usuario tecleado: con una contraseña en la página no se recuerda nada", 
   await page.waitForTimeout(500);
   expect(await tecleados(page)).toEqual([]);
 });
+
+test("envío: el clic de verdad en el botón de Brevo, que no es de enviar", async ({ page }) => {
+  await page.setContent(`<!doctype html><meta charset="utf-8">
+    <form onsubmit="return false"><input type="password" name="currentPassword">
+    <input type="password" name="newPassword">
+    <button type="button">Actualiza contraseña</button></form>`);
+  await page.addScriptTag({ content: modulo });
+  await page.evaluate(() => {
+    const w = window as unknown as { envios: unknown[] };
+    w.envios = [];
+    // @ts-expect-error el módulo se inyecta como global en la página
+    Envios.vigilarEnvios((e: unknown) => w.envios.push(e));
+  });
+  await page.fill('input[name="currentPassword"]', "vieja");
+  await page.fill('input[name="newPassword"]', "nueva");
+  await page.click("button");
+  expect(await page.evaluate(() => (window as unknown as { envios: unknown[] }).envios)).toEqual([
+    { forma: "cambio", usuario: "", secreto: "nueva" },
+  ]);
+});

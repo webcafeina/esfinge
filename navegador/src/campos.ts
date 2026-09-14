@@ -433,9 +433,12 @@ export function queSeEnvia(ambito: ParentNode, doc: Document = document): Envio 
       forma = "registro";
       secreto = valores[0];
     } else if (
-      tokens(campos[0]).includes("current-password") ||
-      tokens(campos[1]).includes("new-password")
+      (esLaActual(campos[0]) && !esLaActual(campos[1])) ||
+      (esLaNueva(campos[1]) && !esLaNueva(campos[0]))
     ) {
+      // Actual y nueva: la nueva es la segunda. **Solo si el sitio dice cuál es cuál**
+      // y lo dice de una sola: «nueva» y «confirmar nueva» con valores distintos es un
+      // error al teclear, no un cambio.
       forma = "cambio";
       secreto = valores[1];
     }
@@ -511,4 +514,26 @@ export function usuarioDeLaPagina(doc: Document = document): string {
     if (campoDeIdentificador(c, doc) && c.value.trim()) return c.value.trim();
   }
   return "";
+}
+
+/**
+ * esLaActual y esLaNueva dicen si una contraseña se declara como la actual o como la
+ * nueva: con `autocomplete`, que es lo estándar, **o con su nombre**. Brevo no pone
+ * `autocomplete` y llama a sus dos campos `currentPassword` y `newPassword` —se vio
+ * con un diagnóstico por la consola del cliente—, y es la forma más corriente de
+ * escribir ese formulario.
+ */
+const NOMBRE_DE_LA_ACTUAL = /current|old|actual|antigu|anterior|viej/i;
+const NOMBRE_DE_LA_NUEVA = /new|nuev/i;
+
+function nombreDe(campo: HTMLInputElement): string {
+  return `${campo.name} ${campo.id}`;
+}
+
+function esLaActual(campo: HTMLInputElement): boolean {
+  return tokens(campo).includes("current-password") || NOMBRE_DE_LA_ACTUAL.test(nombreDe(campo));
+}
+
+function esLaNueva(campo: HTMLInputElement): boolean {
+  return tokens(campo).includes("new-password") || NOMBRE_DE_LA_NUEVA.test(nombreDe(campo));
 }

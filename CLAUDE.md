@@ -699,6 +699,12 @@ la contraseña**: lleva el correo en un `type="email"` escondido con `autocomple
 diagnóstico por la consola del cliente —los campos, sin valores de contraseña—, que es lo que hay que
 pedir antes de escribir una regla para un sitio que no se puede abrir desde aquí.
 
+**Y el cambio de contraseña casi nunca se declara.** Brevo pone la actual y la nueva sin `autocomplete`,
+llamadas `currentPassword` y `newPassword`, y hasta la 2.21.1 eso no ofrecía nada: con dos contraseñas
+distintas y sin declarar, no se sabe cuál es la nueva. Ahora el nombre del campo cuenta, **si lo dice de
+uno y no del otro** —`newPassword` y `confirmNewPassword` distintas es un error al teclear—. Y un sitio que
+cambia sin cambiar de página se mira varias veces tras enviar, no una.
+
 **Y el corolario pequeño, que costó un commit el mismo día: `make comprobar | tail` no dice si
 `make` ha fallado.** El código de salida de una tubería es el del **último** mandato, así que
 `make comprobar 2>&1 | tail -3 && git commit` compromete igual con `go vet` en rojo: lo que se mira

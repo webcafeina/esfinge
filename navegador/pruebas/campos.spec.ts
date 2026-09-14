@@ -437,6 +437,27 @@ const casosDeEnvio: {
     html: `<form><input type="password" value="vieja"><input type="password" value="nueva"><input type="password" value="nuevaa"></form>`,
     espera: null,
   },
+  {
+    // **Tal como la sacó el cliente por la consola** (2026-09-14): actual y nueva, sin
+    // `autocomplete`, distinguidas solo por el nombre.
+    nombre: "envío: cambiar en Brevo, actual y nueva distinguidas por el nombre",
+    html: `<form><input type="password" name="currentPassword" id="currentPassword" value="vieja">
+      <input type="password" name="newPassword" id="newPassword" value="nueva">
+      <button type="button">Actualiza contraseña</button></form>`,
+    espera: { forma: "cambio", usuario: "", secreto: "nueva" },
+  },
+  {
+    nombre: "envío: «nueva» y «confirmar nueva» que no coinciden, nada",
+    html: `<form><input type="password" name="newPassword" value="nueva">
+      <input type="password" name="confirmNewPassword" value="nuevaa"></form>`,
+    espera: null,
+  },
+  {
+    nombre: "envío: con nombres en español, contraseña actual y nueva",
+    html: `<form><input type="password" name="clave_actual" value="vieja">
+      <input type="password" name="clave_nueva" value="nueva"></form>`,
+    espera: { forma: "cambio", usuario: "", secreto: "nueva" },
+  },
 ];
 
 for (const caso of casosDeEnvio) {

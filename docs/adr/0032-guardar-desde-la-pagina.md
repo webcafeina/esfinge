@@ -60,7 +60,8 @@ sitio. Si MV3 mata el trabajador antes, la oferta se pierde: se acepta.
 
 - **Una contraseña**: entrar. O registrarse, si el campo se declara `new-password`.
 - **Dos iguales**: registrarse.
-- **Dos distintas** con `current-password` y `new-password` declarados: cambiar.
+- **Dos distintas** si el sitio dice cuál es cuál —con `autocomplete` o, desde la 2.21.2, con el nombre
+  del campo— y lo dice de una sola: cambiar, y la nueva es la segunda.
 - **Tres**, con las dos últimas iguales y distintas de la primera: cambiar.
 - **Cualquier otra cosa**, nada. Dos distintas sin decir cuál es cuál, o una nueva y una repetida que
   no coinciden, no se ofrecen.
@@ -165,6 +166,24 @@ el correo en un **`<input type="email" name="identifier" autocomplete="off">` es
 usuario escondido vale también así: **un `type="email"` con valor, solo con una contraseña a la vista y
 si todos esos campos dicen el mismo correo**. Esa página, copiada tal cual, está en las pruebas. Con eso
 da igual cómo se llegue a la página de la contraseña.
+
+### Brevo: la actual y la nueva, por el nombre (2.21.2)
+
+Con la 2.21.1, cambiar la contraseña en Brevo **no ofrecía nada**. El cliente sacó por la consola el
+formulario de `app.brevo.com/profile/password`: **dos contraseñas distintas sin `autocomplete`**, llamadas
+`currentPassword` y `newPassword`, y un botón `type="button"` dentro del `<form>`. Sin la declaración
+estándar, la regla no sabía cuál era la nueva y callaba, a propósito.
+
+- **El nombre del campo cuenta como declaración**: `current`, `old`, `actual`, `antigua`, `anterior` o
+  `vieja` para la actual; `new` o `nueva` para la nueva. **Solo si lo dice de uno y no del otro**:
+  `newPassword` y `confirmNewPassword` con valores distintos es un error al teclear y sigue sin ofrecerse.
+- **Se mira varias veces tras enviar** —a los tres, ocho y quince segundos— y no una: Brevo cambia la
+  contraseña sin cambiar de página y puede tardar en contestar y en vaciar el formulario. Sin repintar una
+  tarjeta que ya esté a la vista.
+
+**Lo que no se sabe**: qué hace Brevo con los campos después de guardar. La segunda salida de la consola
+no se pudo sacar —la cuenta de pruebas se quedó sin la contraseña original—. **Si los deja rellenos, la
+tarjeta seguirá sin salir**, porque eso es lo que dice «la contraseña era mala».
 
 ## Alternativas descartadas
 
