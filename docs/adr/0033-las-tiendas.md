@@ -80,16 +80,34 @@ compara byte a byte**. `herramientas/fuente-de-la-extension.sh` arma el zip con 
 `build/icono-barra.svg`, `frontend/src/monograma.ts` y `frontend/src/tokens.css`— y `COMPILAR.md` con Node
 22, pnpm 11.20.0 —fijado con `packageManager`— y las órdenes.
 
+### La web del proyecto
+
+`web/`, publicada en GitHub Pages por `.github/workflows/web.yml` en `https://webcafeina.github.io/esfinge/`,
+que es adonde apuntan los enlaces del aviso. Tres páginas en español: **portada** —qué hace, descargas y la
+extensión—, **política de privacidad** y **soporte**.
+
+- **La política de privacidad dice lo mismo que el aviso del panel**, que `docs/seguridad.md` y que lo que
+  se declara en las tiendas: qué lee la extensión, que va solo a Esfinge en este ordenador, qué guarda en
+  el navegador y en memoria —y cuánto—, para qué es cada permiso, las dos conexiones de la aplicación y
+  que Webcafeína no recibe ningún dato. Lleva un comentario que lo recuerda.
+- **Los colores, espaciados y radios son los tokens de la ventana**, copiados al armarla, y **cada pareja
+  de color es una de las ya medidas**, dicha al lado. La **estructura** —escala de títulos, cuerpo a 16 px,
+  88 px entre secciones, botones en píldora de 36 px— sale del sistema `ollama` del catálogo de sistemas de
+  diseño, «documentación primero». Solo la estructura: paleta y letra son las de Esfinge.
+- **Sin captura de la ventana**: las del README son de la 2.0.3 y no enseñan la bóveda.
+- `herramientas/armar-web.sh` la arma y **falla si hay un enlace roto** a un fichero de la propia web.
+
 ### Pendiente en esta misma decisión
 
-- **La web** (`web/`, GitHub Pages): portada, privacidad y soporte. Los enlaces del aviso ya apuntan a
-  `https://webcafeina.github.io/esfinge/`.
 - **Las fichas** (`docs/tiendas/`), sus imágenes, **el trabajo `tiendas`** en `publicar.yml` —Firefox con
   `web-ext sign --channel=listed`, Chrome con la API v2 y una cuenta de servicio— y **los pasos del
   cliente**: las cuentas, la primera subida a Chrome a mano —la API v2 no crea fichas— y los secretos.
 - **El identificador de Chrome**, que asigna la tienda: se añade a `extensionesDeChrome` cuando se sepa.
 
 ## Alternativas descartadas
+
+**La política de privacidad en webcafeina.com.** Con la marca de la casa, pero cada cambio sería un paso
+del cliente, y esta política tiene que cambiar a la vez que el código.
 
 **No listadas en las dos tiendas.** Se actualizan solas igual y no se exponen, pero el cliente la quiere
 a la vista.
@@ -123,6 +141,9 @@ revisor se pare, y con `https://*/*` y `nativeMessaging` la revisión ya va a se
 - **El icono**: el estado pendiente gana a todos, también a las páginas sin https y a una rellenada.
 - **Solo vale la versión del aviso de ahora**, y nada que no sea una aceptación.
 - **Capturas del aviso** en claro y en oscuro, miradas.
+- **La web**, armada con su comprobación de enlaces y mirada en escritorio y a 400 px, en claro y en
+  oscuro: sin errores en la consola y sin desbordar a lo ancho. De mirarla salió quitar la captura de la
+  ventana, que era de la 2.0.3.
 - `permisos.mjs` en verde sin `activeTab`; los manifiestos compilados con la versión, Firefox 140 y la
   declaración de datos.
 - **`web-ext lint` 10.6.0**: cero errores y el aviso de Android.

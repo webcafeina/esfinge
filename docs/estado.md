@@ -298,7 +298,10 @@ Cuatro bloques, en orden:
    página; sin `activeTab`; Firefox 140 con `data_collection_permissions`; la versión pasada de verdad;
    **sin `innerHTML`**; y el código fuente para Mozilla, **reproducible byte a byte** en una carpeta limpia.
    Queda para el bloque 4 quitar `key` del paquete de la tienda de Chrome.
-3. **La web del proyecto** en `web/` con GitHub Pages: portada, privacidad y soporte.
+3. **~~La web del proyecto~~ — hecha el 2026-09-14, sin publicar** (ADR 0033): `web/` con portada,
+   política de privacidad y soporte, con los tokens de la ventana y la estructura de `ollama`, armada por
+   `herramientas/armar-web.sh` y publicada por `.github/workflows/web.yml`. **Falta activar GitHub Pages**
+   en el repositorio, con «GitHub Actions» como origen, antes de subir el flujo.
 4. **Las fichas** (`docs/tiendas/`, imágenes con Playwright), **el trabajo `tiendas`** en `publicar.yml`
    (Firefox con `web-ext`, Chrome con la API v2 y cuenta de servicio) y **los pasos del cliente** para dar
    de alta las cuentas, hacer la primera subida a Chrome a mano y guardar los secretos.

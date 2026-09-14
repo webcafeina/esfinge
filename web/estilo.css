@@ -1,0 +1,345 @@
+/*
+ * La web de Esfinge: portada, privacidad y soporte (ADR 0033).
+ *
+ * **Los colores, los espaciados y los radios son los de la ventana.** `tokens.css` se
+ * genera desde internal/tema y se copia al armar la web (herramientas/armar-web.sh):
+ * aquí no se escribe ni un color. Y **cada pareja de color es una de las que ya mide
+ * internal/tema/contraste_test.go**, dicha al lado entre comillas, como en el panel
+ * de la extensión. Si hace falta una nueva, se mide allí primero.
+ *
+ * **La estructura sale de `ollama`**, del catálogo de sistemas de diseño
+ * (~/sistemas-diseno-empresas/sistemas/ollama): documentación primero, que es lo que
+ * es Esfinge. De ahí la escala de títulos —36, 30, 24 y 20 px—, el cuerpo a 16 px con
+ * interlineado 1,5, los 88 px entre secciones, la barra de 56 px, los botones en
+ * píldora de 36 px y el pie a 12 px. **Solo la estructura**: la paleta y la letra son
+ * las de Esfinge, y la letra es la del sistema, como en la ventana (ADR 0007).
+ */
+@import url("tokens.css");
+
+:root {
+  --seccion: 88px;
+  --ancho: 1200px;
+  --lectura: 720px;
+  --alto-boton: 36px;
+  --alto-barra: 56px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--lienzo);
+}
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
+  background: var(--lienzo);
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.contenedor {
+  max-width: var(--ancho);
+  margin: 0 auto;
+  padding: 0 var(--espacio-5);
+}
+
+.lectura {
+  max-width: var(--lectura);
+}
+
+/* ---------------------------------------------------------------- la barra */
+
+.barra {
+  min-height: var(--alto-barra);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2) var(--espacio-5);
+  padding-block: var(--espacio-2);
+}
+
+.lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  color: var(--tinta); /* «títulos sobre el lienzo» */
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.lockup img {
+  width: 28px;
+  height: 28px;
+}
+
+.barra nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-1) var(--espacio-4);
+}
+
+.barra nav a {
+  color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.barra nav a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.barra nav a[aria-current="page"] {
+  color: var(--acento); /* «tramo actual de las migas» */
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ------------------------------------------------------------ los títulos */
+
+h1,
+h2,
+h3 {
+  color: var(--tinta); /* «títulos sobre el lienzo» */
+  font-weight: 600;
+  letter-spacing: 0;
+  margin: 0 0 var(--espacio-3);
+}
+
+h1 {
+  font-size: 36px;
+  line-height: 1.11;
+}
+
+h2 {
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+h3 {
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 var(--espacio-4);
+}
+
+li + li {
+  margin-top: var(--espacio-2);
+}
+
+strong {
+  color: var(--tinta); /* «títulos sobre el lienzo» */
+  font-weight: 600;
+}
+
+/* Los enlaces del texto, en acento y subrayados: el oro como texto no se lee. */
+a {
+  color: var(--acento); /* «el resultado cifrado sobre el lienzo» */
+  text-underline-offset: 3px;
+}
+
+a:focus-visible,
+.boton:focus-visible {
+  outline: 2px solid var(--acento); /* «borde de un campo con el foco» */
+  outline-offset: 3px;
+  border-radius: var(--radio-chico);
+}
+
+code {
+  font-family: var(--fuente-mono);
+  font-size: 14px;
+  color: var(--cuerpo); /* «texto dentro de un panel» */
+  background: var(--tarjeta);
+  border-radius: var(--radio-chico);
+  padding: 1px 6px;
+}
+
+.seccion {
+  padding-block: calc(var(--seccion) / 2);
+}
+
+.seccion + .seccion {
+  border-top: 1px solid var(--filete); /* «filete de separación sobre el lienzo» */
+}
+
+.entradilla {
+  font-size: 20px;
+  line-height: 1.4;
+  color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
+}
+
+.apagado {
+  color: var(--apagado); /* «ayudas y pies sobre el lienzo» */
+  font-size: 14px;
+  line-height: 1.43;
+}
+
+/* ------------------------------------------------------------- los botones */
+
+.botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-3);
+  margin: var(--espacio-5) 0;
+}
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--alto-boton);
+  padding: 8px 20px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.boton.primario {
+  background: var(--relleno);
+  color: var(--sobre-acento); /* «botón primario» */
+}
+
+.boton.primario:hover {
+  background: var(--relleno-vivo); /* «botón primario con el puntero encima» */
+}
+
+.boton.secundario {
+  background: var(--boton);
+  color: var(--tinta); /* «texto de un botón normal» */
+  border: 1px solid var(--filete-fuerte); /* «separador de sección, más presente que el filete» */
+}
+
+.boton.secundario:hover {
+  background: var(--boton-encima); /* «texto de un botón con el puntero encima» */
+}
+
+/* -------------------------------------------------------------- la portada */
+
+.portada {
+  padding-block: var(--espacio-6) calc(var(--seccion) / 2);
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--espacio-3);
+  margin-top: var(--espacio-5);
+}
+
+.tarjeta {
+  background: var(--tarjeta);
+  border-radius: var(--radio);
+  padding: var(--espacio-4);
+}
+
+.tarjeta h3 {
+  color: var(--tinta); /* «títulos dentro de un panel» */
+  font-size: 18px;
+  line-height: 1.56;
+  margin-bottom: var(--espacio-1);
+}
+
+.tarjeta p {
+  color: var(--cuerpo); /* «texto dentro de un panel» */
+  font-size: 14px;
+  line-height: 1.43;
+  margin: 0;
+}
+
+/* Un aviso: superficie suave con la barra de acento a la izquierda. **Sangría
+ * normal, no flexible**: con `display: flex`, un <strong> en medio de la frase se
+ * sale a una columna aparte (lo que ya pasó en la ventana). */
+.aviso {
+  background: var(--suave);
+  color: var(--cuerpo); /* «texto sobre la superficie suave» */
+  border-left: 3px solid var(--acento); /* «el borde de la zona de soltar al arrastrar encima» */
+  border-radius: var(--radio-chico);
+  padding: var(--espacio-3) var(--espacio-4);
+  margin: var(--espacio-4) 0;
+}
+
+.aviso strong {
+  color: var(--cuerpo); /* «texto sobre la superficie suave» */
+}
+
+/* --------------------------------------------------------------- los textos */
+
+.documento h2 {
+  font-size: 24px;
+  line-height: 1.33;
+  margin-top: var(--espacio-6);
+}
+
+.documento h3 {
+  margin-top: var(--espacio-5);
+}
+
+/* ------------------------------------------------------------------ el pie */
+
+.pie {
+  border-top: 1px solid var(--filete); /* «filete de separación sobre el lienzo» */
+  margin-top: var(--seccion);
+  padding-block: var(--espacio-6);
+  font-size: 12px;
+  line-height: 1.33;
+  color: var(--apagado); /* «ayudas y pies sobre el lienzo» */
+}
+
+.pie .contenedor {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+}
+
+.pie a {
+  color: var(--apagado); /* «ayudas y pies sobre el lienzo» */
+}
+
+.pie nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-4);
+}
+
+.firma .barrita {
+  color: var(--acento); /* «barra de marca ▍ y medidores» */
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 30px;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 24px;
+    line-height: 1.33;
+  }
+
+  .entradilla {
+    font-size: 18px;
+    line-height: 1.56;
+  }
+}

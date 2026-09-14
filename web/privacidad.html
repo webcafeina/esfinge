@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Política de privacidad · Esfinge</title>
+    <meta name="description" content="Qué datos toca Esfinge y su extensión del navegador, adónde van y qué se guarda." />
+    <link rel="icon" href="imagenes/icono.png" />
+    <link rel="stylesheet" href="estilo.css" />
+  </head>
+  <body>
+    <!--
+      **Esto tiene que decir lo mismo que el aviso del panel de la extensión**
+      (navegador/src/panel.html), lo declarado en las dos tiendas (docs/tiendas/) y
+      docs/seguridad.md. Si cambia lo que la extensión hace con los datos, se cambia
+      aquí, sube VERSION_DEL_AVISO (navegador/src/consentimiento.ts) y se actualizan
+      las fichas. ADR 0033.
+    -->
+    <header class="contenedor barra">
+      <a class="lockup" href="./"><img src="imagenes/icono.png" alt="" />Esfinge</a>
+      <nav aria-label="Principal">
+        <a href="./#descargar">Descargar</a>
+        <a href="./#extension">Extensión</a>
+        <a href="privacidad.html" aria-current="page">Privacidad</a>
+        <a href="soporte.html">Soporte</a>
+        <a href="https://github.com/webcafeina/esfinge">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="contenedor seccion">
+      <article class="lectura documento">
+        <h1>Política de privacidad</h1>
+        <p class="apagado">Última actualización: 14 de septiembre de 2026.</p>
+
+        <p class="entradilla">
+          <strong>Esfinge no recoge ningún dato tuyo.</strong> Todo lo que toca se queda en tu
+          ordenador, y Webcafeína no recibe nada: ni contraseñas, ni direcciones, ni estadísticas de
+          uso.
+        </p>
+        <p>
+          Esta política cubre la aplicación Esfinge —para macOS, Windows y Linux— y su extensión
+          para Chrome, Edge, Brave, Vivaldi, Opera y Firefox. La hace Webcafeína, que puedes
+          contactar en <a href="mailto:info@webcafeina.com">info@webcafeina.com</a>.
+        </p>
+
+        <h2>La extensión del navegador</h2>
+
+        <h3>Qué datos toca</h3>
+        <p>Para rellenar y guardar contraseñas, la extensión lee en las páginas <strong>https</strong>:</p>
+        <ul>
+          <li><strong>Los formularios de entrar</strong>: el usuario o el correo, la contraseña y el código de un solo uso que escribes o que ella rellena.</li>
+          <li><strong>La dirección de la página</strong>, para saber de qué sitio son las cuentas.</li>
+        </ul>
+        <p>No lee el resto del contenido de las páginas, ni tu historial, ni tus marcadores.</p>
+
+        <h3>Adónde van</h3>
+        <p>
+          <strong>Solo a la aplicación Esfinge, en tu mismo ordenador</strong>, por el canal que
+          los navegadores tienen para hablar con programas instalados (native messaging). La
+          extensión <strong>no se conecta a ningún servidor</strong>, no manda nada a internet ni a
+          Webcafeína, no descarga código y no lleva analítica ni servicios de terceros.
+        </p>
+
+        <h3>Qué guarda</h3>
+        <ul>
+          <li>
+            <strong>En el almacenamiento de la extensión</strong>, solo dos cosas: el permiso que le da
+            Esfinge para hablar con ella y que has aceptado el aviso de datos, con la fecha.
+          </li>
+          <li>
+            <strong>En memoria, un momento</strong>: cuando envías un formulario, la contraseña espera
+            como mucho dos minutos a que decidas si guardarla, y el usuario que escribes en una página
+            de dos pasos, cinco minutos. <strong>Nunca se escriben en disco.</strong>
+          </li>
+          <li>
+            Los sitios en los que pides que no te ofrezca guardar se apuntan <strong>dentro de tu
+            bóveda, cifrados</strong>, no en el navegador.
+          </li>
+        </ul>
+
+        <h3>Para qué pide cada permiso</h3>
+        <ul>
+          <li><code>nativeMessaging</code>: hablar con la aplicación Esfinge de tu ordenador.</li>
+          <li><code>storage</code>: guardar el permiso de Esfinge y que has aceptado el aviso.</li>
+          <li><code>alarms</code>: comprobar cada minuto si la bóveda sigue abierta, para que el icono lo diga.</li>
+          <li><code>favicon</code> (solo Chrome): enseñar el icono del sitio en el panel desde la caché del navegador, sin descargarlo.</li>
+          <li>Acceso a las páginas <code>https</code>: encontrar los formularios de entrar y rellenarlos.</li>
+        </ul>
+
+        <h3>Antes de aceptar</h3>
+        <p>
+          La primera vez que abres el panel de la extensión te explica todo esto. <strong>Hasta que lo
+          aceptas no lee ninguna página ni habla con Esfinge.</strong> Si esta política cambia en lo
+          que hace la extensión con tus datos, te lo volverá a preguntar.
+        </p>
+
+        <h2>La aplicación Esfinge</h2>
+        <p>
+          Tus contraseñas y tus ficheros cifrados viven <strong>en tu ordenador</strong>, en una bóveda
+          cifrada con tu contraseña maestra. No hay cuentas ni copia en ningún servidor: ni
+          Webcafeína ni nadie más puede abrirla.
+        </p>
+        <p>La aplicación solo sale a internet para dos cosas, y las dos se apagan en sus Ajustes:</p>
+        <ul>
+          <li><strong>Buscar actualizaciones</strong>, una vez al día, preguntando a GitHub cuál es la última versión.</li>
+          <li><strong>El icono de cada sitio de tu bóveda</strong>, pedido directamente al propio sitio y nunca a un intermediario.</li>
+        </ul>
+        <p>
+          Los detalles técnicos, con lo que protege y lo que no, están en
+          <a href="https://github.com/webcafeina/esfinge/blob/main/docs/seguridad.md">el documento de seguridad del proyecto</a>.
+        </p>
+
+        <h2>Borrar lo que haya</h2>
+        <p>
+          Desinstalar la extensión borra lo que guarda en el navegador. Lo de la aplicación —la
+          bóveda, el historial y las preferencias— se borra desde la propia Esfinge o eliminando su
+          carpeta de configuración. Como Webcafeína no tiene ningún dato tuyo, no hay nada que pedirle
+          que borre; si tienes cualquier duda, escríbenos a
+          <a href="mailto:info@webcafeina.com">info@webcafeina.com</a>.
+        </p>
+      </article>
+    </main>
+
+    <footer class="pie">
+      <div class="contenedor">
+        <span class="firma"><span class="barrita" aria-hidden="true">▍</span> webcafeína</span>
+        <nav aria-label="Pie">
+          <a href="privacidad.html">Privacidad</a>
+          <a href="soporte.html">Soporte</a>
+          <a href="https://github.com/webcafeina/esfinge">Código</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

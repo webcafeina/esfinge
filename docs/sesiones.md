@@ -29,6 +29,13 @@ Plantilla al final.
 - Verificado del bloque 2: 104 pruebas de la extensión —cinco del aviso en el panel, una del icono y dos
   del consentimiento—; capturas del aviso en claro y en oscuro; `web-ext lint` sin errores y con un solo
   aviso, el de Android; y **el código fuente compila idéntico byte a byte** en una carpeta limpia.
+- **Bloque 3, la web** (ADR 0033): `web/` con portada, privacidad y soporte en español. Colores y
+  espaciados de los tokens de la ventana, con cada pareja ya medida; estructura del sistema `ollama` del
+  catálogo, siguiendo la skill de sistemas de diseño. La política de privacidad dice lo mismo que el aviso
+  del panel y `seguridad.md`. **De mirar las capturas salió quitar la de la ventana**, que era de la 2.0.3;
+  queda como deuda para el README.
+- Verificado del bloque 3: la web armada sin enlaces rotos, y mirada en escritorio y a 400 px, en claro y
+  en oscuro, sin errores ni desborde. Sin publicar: falta activar GitHub Pages.
 - Verificado del bloque 1: `make comprobar` en verde; cinco pruebas nuevas de Windows; `GOOS=windows go vet`, el
   binario de pruebas y el puente compilados para Windows; `publicar.yml` válido. **Sin verificar: nada en
   un Windows de verdad**, ni la parte de la máquina de GitHub, que corre al publicar.

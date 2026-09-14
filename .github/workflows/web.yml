@@ -1,0 +1,50 @@
+# La web del proyecto en GitHub Pages: portada, privacidad y soporte (ADR 0033).
+#
+# **Las dos tiendas enlazan su política de privacidad**, así que se publica cada vez
+# que cambia algo de lo que la forma, no a mano. Necesita GitHub Pages activado una
+# vez en el repositorio, con «GitHub Actions» como origen.
+name: Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "frontend/src/tokens.css"
+      - "docs/imagenes/**"
+      - "herramientas/armar-web.sh"
+      - ".github/workflows/web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web
+  cancel-in-progress: false
+
+jobs:
+  armar:
+    name: Armar la web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Armar
+        run: bash herramientas/armar-web.sh _site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  publicar:
+    name: Publicar en GitHub Pages
+    needs: armar
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - id: pages
+        uses: actions/deploy-pages@v4

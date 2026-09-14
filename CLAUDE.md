@@ -715,6 +715,11 @@ puerto y no lanza el puente al refrescar el icono, y el guion de la página no a
 basta: los oyentes de envío de la página leen contraseñas sin preguntar a nadie. **Si cambia lo que dice
 el aviso, sube `VERSION_DEL_AVISO`**, y con él la política de privacidad y lo declarado en las tiendas.
 
+**La política de privacidad de la web tiene que decir lo mismo que el aviso del panel** (ADR 0033), y las
+dos lo mismo que lo declarado en las tiendas. Viven en `web/privacidad.html` y `navegador/src/panel.html`,
+y las enlazan las fichas de Chrome y Firefox: cambiar lo que la extensión hace con los datos sin tocar las
+dos es publicar una política falsa.
+
 **Y en la extensión no hay `innerHTML`**: los dibujos pasan por `dibujar` (`dibujo.ts`). Eran nuestros e
 inofensivos, pero es lo primero que marca la revisión de Mozilla. Y **Mozilla compila el código fuente y
 lo compara byte a byte**: si la extensión importa un fichero nuevo de fuera de `navegador/`, hay que
