@@ -173,7 +173,8 @@ de cambio con la vieja, o una que no coincide con su repetición.
   que «Guardar» no cabía en la fila a 320 px: «Nunca en este sitio» pasó a su línea, subrayado.
 - `make comprobar` y `make e2e` en verde.
 
-**Sin comprobar, y hay que mirar en el Mac, en Firefox y en Chrome:**
+**Publicada en la 2.21.0 (2026-09-14).** Sin comprobar todavía, y hay que mirar en el Mac, en Firefox y
+en Chrome:
 
 - **Todo lo del trabajador de fondo y del guion de la página con la extensión cargada**: el pendiente
   cruzando la navegación, la detección del envío en sitios de verdad y la heurística del formulario que

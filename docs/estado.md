@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.20.3**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.21.0**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -85,7 +85,7 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   **Comprobado en un Mac, en Chrome y en Firefox** (2.18.1): rellena solo al cargar y acierta
   el formulario en Brevo y en Cloudflare, y el botón del panel escribe tras borrar los campos.
 - **La fase 2, entrega 3** (ADR 0032): **ofrece guardar y actualizar** lo que se envía en un
-  formulario, con una tarjeta en la página. Escrita y probada aquí; **sin usar todavía en el Mac**.
+  formulario, con una tarjeta en la página. Publicada en la **2.21.0**; **sin usar todavía en el Mac**.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
   máquina sin entorno gráfico. Son **84**.
 
@@ -240,7 +240,7 @@ esfinge tenue de los avisos, entera y con su trazo de serie, y «Rellenar» con 
 que en Firefox. **Y con la 2.20.3 el cliente dice «Ahora está perfecto»**: la parte visual de la
 extensión queda cerrada.
 
-### 4. Guardar y actualizar desde la página — escrito el 2026-09-14, sin publicar
+### 4. Guardar y actualizar desde la página — publicado en la 2.21.0 el 2026-09-14, sin probar en el Mac
 
 Resuelto en la [ADR 0032](adr/0032-guardar-desde-la-pagina.md), decidido con el cliente por preguntas
 con opciones. **Al enviar un formulario, una tarjeta arriba a la derecha ofrece guardar la cuenta** —o
@@ -257,8 +257,18 @@ Probado aquí por piezas y la tubería de Go entera. **Lo que falta es usarlo en
 Chrome**: entrar con una cuenta nueva, entrar con otra contraseña, registrarse, cambiar la contraseña,
 un inicio fallido, «Nunca en este sitio» y que la ventana se ponga al día sola.
 
-**La siguiente acción concreta es publicar la 2.21.0 cuando el cliente lo pida, y probarla.** Después,
-las tiendas (entrega 5).
+**Publicada la 2.21.0 el 2026-09-14** (todas las compilaciones en verde). **La siguiente acción concreta
+es recoger lo que diga el cliente**, que la prueba la tarde del 14 en su Mac, en Firefox y en Chrome,
+con la lista de ocho pasos: cuenta nueva, otra contraseña con la anterior en el historial, registro,
+cambio de contraseña, **inicio fallido sin tarjeta**, «Nunca en este sitio» y quitarlo en Ajustes, la
+ventana al día sola, y la bóveda cerrada con «Ya la he abierto». Hay que **reinstalar la extensión** con
+los zip de la 2.21.0, o la tarjeta no sale.
+
+Se le explicó cómo decide «la contraseña era mala» y se le pidió que apunte **los sitios donde falle en
+cualquiera de los dos sentidos** —no sale tras entrar bien, o sale tras un error—: esa heurística se
+afina con esos casos (`docs/deuda.md`). Si algo no hace nada, lo primero es la consola de la extensión.
+
+Después, las tiendas (entrega 5).
 
 ### Lo que yo recomendaría meter en medio, y no es lo que se decidió
 

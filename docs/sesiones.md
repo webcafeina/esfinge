@@ -7,7 +7,11 @@ Plantilla al final.
 
 ## 2026-09-14 · Guardar y actualizar desde la página
 
-- **La entrega 3, escrita y sin publicar** ([ADR 0032](adr/0032-guardar-desde-la-pagina.md)). Decidida con el
+- **Publicada en la 2.21.0** a petición del cliente, con las cinco compilaciones y la puerta de
+  comprobaciones en verde. **La prueba él esa misma tarde** en su Mac, en Firefox y en Chrome, y se
+  sigue con lo que diga. Se le explicó la heurística de «la contraseña era mala» y se le pidió que
+  apunte los sitios donde falle.
+- **La entrega 3** ([ADR 0032](adr/0032-guardar-desde-la-pagina.md)). Decidida con el
   cliente en dos rondas de preguntas: tarjeta en la página, basta con pulsar en el navegador, los cuatro
   casos (entrar con cuenta nueva, entrar con otra contraseña, registrarse y cambiar), con la bóveda
   cerrada se dice que la abras, título del sitio editable, «Nunca en este sitio» cifrado en la bóveda,
