@@ -97,12 +97,33 @@ extensión—, **política de privacidad** y **soporte**.
 - **Sin captura de la ventana**: las del README son de la 2.0.3 y no enseñan la bóveda.
 - `herramientas/armar-web.sh` la arma y **falla si hay un enlace roto** a un fichero de la propia web.
 
+### Las fichas y la subida automática
+
+- **`docs/tiendas/ficha.md`**: los textos de las dos fichas, el propósito único, la justificación de cada
+  permiso, las respuestas de «Privacy practices» de Chrome y las notas para los revisores de Mozilla.
+  **`docs/tiendas/amo-metadata.json`**, lo mismo para la primera subida automática a Firefox.
+- **Las imágenes** (`docs/tiendas/imagenes/`): cinco capturas de 1280×800 y el mosaico de 440×280,
+  compuestas por `navegador/herramientas/imagenes-de-tienda.mjs` **con las capturas de verdad** del panel,
+  la marca en el campo y la tarjeta, y textos en blanco y `#d8d8de` sobre la piedra, parejas ya medidas.
+- **Cada publicación genera también** el zip de Chrome **sin `key`** —el identificador lo asigna la
+  tienda— y el zip de código fuente.
+- **El trabajo `tiendas`** de `publicar.yml`, después de la publicación de GitHub y sin frenarla:
+  1. **Compila el código fuente en una carpeta limpia y lo compara byte a byte** con el paquete, que es lo
+     que hará Mozilla.
+  2. **Firefox**: `web-ext sign --channel=listed --approval-timeout=0` con el código fuente y la metadata.
+  3. **Chrome**: `herramientas/tienda-chrome.mjs`, API v2 con **cuenta de servicio** —un token firmado
+     cada vez, sin tokens de refresco que caduquen a los siete días—, sin dependencias.
+  4. **Sin los secretos, avisa y se salta.**
+- **`docs/tiendas/pasos.md`**: lo que hace el cliente —las cuentas, la primera subida a Chrome a mano, los
+  secretos— con lo que está por confirmar marcado.
+
 ### Pendiente en esta misma decisión
 
-- **Las fichas** (`docs/tiendas/`), sus imágenes, **el trabajo `tiendas`** en `publicar.yml` —Firefox con
-  `web-ext sign --channel=listed`, Chrome con la API v2 y una cuenta de servicio— y **los pasos del
-  cliente**: las cuentas, la primera subida a Chrome a mano —la API v2 no crea fichas— y los secretos.
-- **El identificador de Chrome**, que asigna la tienda: se añade a `extensionesDeChrome` cuando se sepa.
+- **Los pasos del cliente** (`docs/tiendas/pasos.md`).
+- **El identificador de Chrome**, que asigna la tienda: se añade a `extensionesDeChrome` y la web cambia
+  «Muy pronto» por los enlaces.
+- **Dejar de colgar los zip de la extensión** en las publicaciones de GitHub cuando las dos fichas estén
+  en marcha.
 
 ## Alternativas descartadas
 
@@ -150,7 +171,16 @@ revisor se pare, y con `https://*/*` y `nativeMessaging` la revisión ya va a se
 - **Reproducible**: el zip de código fuente, descomprimido en una carpeta limpia e instalado desde cero,
   compila un `dist/firefox` **idéntico byte a byte** al del repositorio.
 
+- **Las imágenes de las fichas**, miradas una a una. De mirarlas salieron dos arreglos: el pie del panel
+  decía «Extensión 2.19.0» —la versión de mentira de las capturas— y la tarjeta tapaba a medias el texto
+  de la página de ejemplo.
+- `publicar.yml` válido, `tienda-chrome.mjs` sin errores de sintaxis y `amo-metadata.json` válido.
+
 **Sin comprobar:**
+
+- **Nada de la subida a las tiendas contra las tiendas de verdad**: las direcciones de la API v2 de
+  Chrome salen de su documentación, y que AMO acepte `es-ES` como idioma de la ficha en la primera
+  subida está por confirmar. La primera publicación con los secretos puestos es la prueba.
 
 - **El trabajador de fondo y el guion de página con la extensión cargada**: el bloqueo de sus puertos y
   que la página empiece al aceptar sin recargar. Es la deuda alta de siempre.

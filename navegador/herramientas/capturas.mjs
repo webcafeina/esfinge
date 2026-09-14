@@ -86,7 +86,7 @@ function falsa([respuesta, aceptado]) {
   };
   globalThis.chrome = {
     runtime: {
-      getManifest: () => ({ version: "2.19.0" }),
+      getManifest: () => ({ version: "2.22.0" }),
       connect: () => puerto((m) => (m.que === "cuentas" ? respuesta : { ok: true, copiado: { portapapeles: 30 } })),
     },
     tabs: {
@@ -274,7 +274,7 @@ for (const [nombreWeb, fondo, tinta] of [
   ["web-oscura", "#1b1b1f", "#f2f2f5"],
 ]) {
   for (const [nombreEstado, estado] of Object.entries(estadosDeTarjeta)) {
-    const pagina = await navegador.newPage({ viewport: { width: 520, height: 300 }, deviceScaleFactor: 2 });
+    const pagina = await navegador.newPage({ viewport: { width: 760, height: 300 }, deviceScaleFactor: 2 });
     await pagina.setContent(`<!doctype html><meta charset="utf-8"><style>
       body{margin:0;padding:24px;background:${fondo};color:${tinta};font:14px system-ui}
     </style><h2>Panel de la web</h2><p>Contenido de la página que queda debajo.</p>`);
@@ -291,7 +291,7 @@ for (const [nombreWeb, fondo, tinta] of [
     ["hecho", { ok: true }],
     ["error", { ok: false, error: "Demasiados cambios seguidos en la bóveda. Espera un momento." }],
   ]) {
-    const pagina = await navegador.newPage({ viewport: { width: 520, height: 360 }, deviceScaleFactor: 2 });
+    const pagina = await navegador.newPage({ viewport: { width: 760, height: 360 }, deviceScaleFactor: 2 });
     await pagina.setContent(`<!doctype html><meta charset="utf-8"><style>
       body{margin:0;padding:24px;background:${fondo};color:${tinta};font:14px system-ui}
     </style><h2>Panel de la web</h2><p>Contenido de la página que queda debajo.</p>`);

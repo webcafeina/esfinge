@@ -463,6 +463,13 @@ jobs:
           for n in chrome firefox; do
             (cd "navegador/dist/$n" && zip -qr "$GITHUB_WORKSPACE/dist/esfinge-extension-$version-$n.zip" .)
           done
+          # **Y lo que necesitan las tiendas** (ADR 0033): el paquete de Chrome **sin la
+          # clave de desarrollo** —el identificador lo asigna la tienda— y el código
+          # fuente que exige Mozilla para revisar lo empaquetado con Vite.
+          rm -rf "$RUNNER_TEMP/tienda" && cp -r navegador/dist/chrome "$RUNNER_TEMP/tienda"
+          node -e 'const fs=require("fs"),f=process.argv[1],m=JSON.parse(fs.readFileSync(f));delete m.key;fs.writeFileSync(f,JSON.stringify(m,null,2)+"\n")' "$RUNNER_TEMP/tienda/manifest.json"
+          (cd "$RUNNER_TEMP/tienda" && zip -qr "$GITHUB_WORKSPACE/dist/esfinge-extension-$version-chrome-tienda.zip" .)
+          herramientas/fuente-de-la-extension.sh "$version" "$GITHUB_WORKSPACE/dist/esfinge-extension-$version-fuente.zip"
           # Y las sumas otra vez, que se hicieron antes de existir estos ficheros.
           # Un SHA256SUMS que no cubre todo lo publicado es peor que no tenerlo.
           (cd dist && sha256sum esfinge-* > SHA256SUMS)
@@ -545,3 +552,68 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "Tabla de descargas de la $version"
           git push
+
+  # **La extensión en las tiendas** (ADR 0033), después de la publicación de GitHub y sin
+  # frenarla: si una tienda falla, las descargas ya están, y este trabajo sale en rojo
+  # diciendo por qué. **Sin los secretos, avisa y se salta**: hasta que el cliente dé de
+  # alta las cuentas (docs/tiendas/pasos.md) no hay nada que subir.
+  tiendas:
+    name: Tiendas
+    needs: publicar
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: cli, path: adjuntos }
+      - uses: pnpm/action-setup@v4
+        with: { version: 11 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: Averiguar la versión
+        id: v
+        run: echo "n=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # **Lo que hará Mozilla, antes de mandárselo**: compilar el código fuente en una
+      # carpeta limpia y comparar byte a byte con el paquete. Si difiere, rechazarían la
+      # versión; mejor saberlo aquí.
+      - name: Comprobar que el código fuente da el mismo paquete
+        run: |
+          n="${{ steps.v.outputs.n }}"
+          mkdir -p fuente paquete
+          unzip -q "adjuntos/esfinge-extension-$n-fuente.zip" -d fuente
+          unzip -q "adjuntos/esfinge-extension-$n-firefox.zip" -d paquete
+          (cd fuente/navegador && pnpm install --frozen-lockfile && NAVEGADOR=firefox VERSION="$n" pnpm run build)
+          diff -r fuente/navegador/dist/firefox paquete
+          echo "El código fuente da el mismo paquete, byte a byte"
+
+      - name: Firefox
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_API_SECRET }}
+        run: |
+          if [ -z "$WEB_EXT_API_KEY" ] || [ -z "$WEB_EXT_API_SECRET" ]; then
+            echo "::notice::Sin las claves de addons.mozilla.org: no se sube a Firefox (docs/tiendas/pasos.md)"
+            exit 0
+          fi
+          n="${{ steps.v.outputs.n }}"
+          # Sin esperar a la revisión: una cola de revisión no es un fallo de la publicación.
+          npx --yes web-ext@10.6.0 sign \
+            --channel=listed \
+            --approval-timeout=0 \
+            --source-dir paquete \
+            --upload-source-code "adjuntos/esfinge-extension-$n-fuente.zip" \
+            --amo-metadata docs/tiendas/amo-metadata.json
+
+      - name: Chrome
+        env:
+          CWS_CUENTA_DE_SERVICIO: ${{ secrets.CWS_CUENTA_DE_SERVICIO }}
+          CWS_EDITOR: ${{ secrets.CWS_EDITOR }}
+          CWS_EXTENSION: ${{ secrets.CWS_EXTENSION }}
+        run: |
+          if [ -z "$CWS_CUENTA_DE_SERVICIO" ] || [ -z "$CWS_EDITOR" ] || [ -z "$CWS_EXTENSION" ]; then
+            echo "::notice::Sin la cuenta de servicio de la Chrome Web Store: no se sube a Chrome (docs/tiendas/pasos.md)"
+            exit 0
+          fi
+          node herramientas/tienda-chrome.mjs "adjuntos/esfinge-extension-${{ steps.v.outputs.n }}-chrome-tienda.zip"

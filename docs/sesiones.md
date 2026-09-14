@@ -34,6 +34,14 @@ Plantilla al final.
   catálogo, siguiendo la skill de sistemas de diseño. La política de privacidad dice lo mismo que el aviso
   del panel y `seguridad.md`. **De mirar las capturas salió quitar la de la ventana**, que era de la 2.0.3;
   queda como deuda para el README.
+- **Bloque 4, las fichas y la subida automática** (ADR 0033): `docs/tiendas/` —textos, privacidad,
+  `amo-metadata.json`, pasos del cliente e imágenes compuestas con las capturas de verdad—; cada
+  publicación genera el zip de Chrome sin `key` y el de código fuente; y el trabajo `tiendas` comprueba
+  la reproducibilidad y sube a Firefox con `web-ext` y a Chrome con la API v2 y una cuenta de servicio, o
+  se salta sin secretos. **De mirar las imágenes** salieron el pie «Extensión 2.19.0» y la tarjeta tapando
+  la página de ejemplo, corregidos en `capturas.mjs`.
+- **Publicada la 2.22.0** con los bloques 1 a 3, y **la web en GitHub Pages**, activado con `gh` a petición
+  del cliente: la política de privacidad responde en `https://webcafeina.github.io/esfinge/privacidad.html`.
 - Verificado del bloque 3: la web armada sin enlaces rotos, y mirada en escritorio y a 400 px, en claro y
   en oscuro, sin errores ni desborde. Sin publicar: falta activar GitHub Pages.
 - Verificado del bloque 1: `make comprobar` en verde; cinco pruebas nuevas de Windows; `GOOS=windows go vet`, el

@@ -88,7 +88,8 @@ concreto, pero ahí no puede escribir una aplicación sin permisos de administra
   del perfil; y **sin registro no se da por avisado a nadie**.
 - `GOOS=windows go vet ./...`, el binario de pruebas y el puente para Windows, compilados.
 
-**Comprobado en la máquina Windows de GitHub, en cada publicación:**
+**Comprobado en la máquina Windows de GitHub, en cada publicación** —y en verde desde la primera, la
+2.22.0 (2026-09-14): las once pruebas pasan y el instalador lleva el puente—:
 
 - Las pruebas de manifiestos, y **una que escribe, lee y borra una clave en el registro de verdad**.
 - Que el instalador lleva `esfinge-puente.exe`.

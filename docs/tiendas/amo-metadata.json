@@ -1,0 +1,25 @@
+{
+  "default_locale": "es-ES",
+  "categories": {
+    "firefox": ["privacy-security"]
+  },
+  "summary": {
+    "es-ES": "Rellena las contraseñas de tu bóveda de Esfinge sin salir del navegador."
+  },
+  "description": {
+    "es-ES": "Esfinge es un gestor de contraseñas que vive en tu ordenador: guarda tus contraseñas en una bóveda cifrada, sin cuentas y sin servidores. Esta extensión lo conecta con tu navegador.\n\nQué hace:\n• Rellena el usuario y la contraseña al entrar en un sitio del que tienes una cuenta guardada.\n• Rellena también el código de un solo uso, si la cuenta lo tiene.\n• Cuando entras, te registras o cambias la contraseña, te ofrece guardarla o actualizarla.\n• Con varias cuentas del mismo sitio, eliges cuál en su panel.\n\nLo que tienes que saber:\n• Necesita la aplicación Esfinge instalada en tu ordenador, para macOS, Windows o Linux, con el canal con el navegador encendido en sus Ajustes. Se descarga gratis en https://webcafeina.github.io/esfinge/\n• La extensión habla solo con Esfinge, en tu ordenador. No se conecta a ningún servidor, no manda nada a internet ni a Webcafeína y no lleva analítica.\n• La primera vez que abras su panel te explica qué datos toca. Hasta que lo aceptas, no lee ninguna página.\n\nPolítica de privacidad: https://webcafeina.github.io/esfinge/privacidad.html\nSoporte: https://webcafeina.github.io/esfinge/soporte.html"
+  },
+  "homepage": {
+    "es-ES": "https://webcafeina.github.io/esfinge/"
+  },
+  "support_url": {
+    "es-ES": "https://webcafeina.github.io/esfinge/soporte.html"
+  },
+  "support_email": {
+    "es-ES": "info@webcafeina.com"
+  },
+  "version": {
+    "license": "all-rights-reserved",
+    "approval_notes": "Esfinge is a local password manager. This extension only talks to the Esfinge desktop app installed on the same computer, through native messaging (host com.webcafeina.esfinge); it has no server and makes no network requests. The declared data (authentication info, identifying info, browsing activity) is sent only to that native app.\n\nTo try it you need the desktop app (free, https://github.com/webcafeina/esfinge/releases/latest) with \"canal con el navegador\" enabled in its settings; without it the panel explains that Esfinge cannot be found. Nothing runs before the user accepts the data notice in the panel.\n\nThe code is bundled with Vite, not obfuscated. Build instructions are in COMPILAR.md at the root of the source archive; the build is byte-for-byte reproducible with Node 22 and pnpm 11.20.0."
+  }
+}

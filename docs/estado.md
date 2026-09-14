@@ -302,9 +302,14 @@ Cuatro bloques, en orden:
    política de privacidad y soporte, con los tokens de la ventana y la estructura de `ollama`, armada por
    `herramientas/armar-web.sh` y publicada por `.github/workflows/web.yml`. **Falta activar GitHub Pages**
    en el repositorio, con «GitHub Actions» como origen, antes de subir el flujo.
-4. **Las fichas** (`docs/tiendas/`, imágenes con Playwright), **el trabajo `tiendas`** en `publicar.yml`
-   (Firefox con `web-ext`, Chrome con la API v2 y cuenta de servicio) y **los pasos del cliente** para dar
-   de alta las cuentas, hacer la primera subida a Chrome a mano y guardar los secretos.
+4. **~~Las fichas y la subida automática~~ — hecho el 2026-09-14** (ADR 0033): `docs/tiendas/` con los
+   textos, las respuestas de privacidad y las imágenes miradas; el zip de Chrome sin `key` y el de código
+   fuente en cada publicación; y el trabajo `tiendas`, que comprueba la reproducibilidad y sube a Firefox
+   y a Chrome, **o avisa y se salta sin secretos**. **Sin probar contra las tiendas.**
+
+**La siguiente acción concreta es del cliente**: los pasos de `docs/tiendas/pasos.md` —cuentas de Mozilla
+y de Google, la primera subida a Chrome a mano, los secretos en GitHub— y **pasarme el identificador de
+Chrome**, que hay que añadir a Esfinge.
 
 Lo que se preguntó entonces, ya decidido:
 

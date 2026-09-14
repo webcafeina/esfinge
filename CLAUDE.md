@@ -725,6 +725,11 @@ inofensivos, pero es lo primero que marca la revisión de Mozilla. Y **Mozilla c
 lo compara byte a byte**: si la extensión importa un fichero nuevo de fuera de `navegador/`, hay que
 añadirlo a `herramientas/fuente-de-la-extension.sh` o la versión de Firefox se rechaza.
 
+**Y a la tienda de Chrome no se sube el paquete de siempre**: el suyo va **sin `key`**, porque el
+identificador lo asigna la tienda (`publicar.yml` lo genera como `…-chrome-tienda.zip`). El de desarrollo
+la conserva, para que quien cargue la extensión a mano tenga el identificador que ya conoce Esfinge. Y
+**la primera ficha de Chrome se crea a mano**: la API v2 no crea fichas (`docs/tiendas/pasos.md`).
+
 **En Windows el navegador no mira una carpeta, mira el registro** (ADR 0034): una clave bajo `HKCU` cuyo
 valor por defecto es la ruta **absoluta** del manifiesto. Los manifiestos van en `%APPDATA%\Esfinge`, uno
 por familia —Firefox y Chrome llevan campos distintos—, y la clave de Chrome la comparten Brave, Vivaldi
