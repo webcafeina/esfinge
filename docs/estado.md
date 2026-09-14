@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.21.2**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.22.0**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -307,7 +307,10 @@ Cuatro bloques, en orden:
    fuente en cada publicación; y el trabajo `tiendas`, que comprueba la reproducibilidad y sube a Firefox
    y a Chrome, **o avisa y se salta sin secretos**. **Sin probar contra las tiendas.**
 
-**La siguiente acción concreta es del cliente**: los pasos de `docs/tiendas/pasos.md` —cuentas de Mozilla
+**La 2.22.0, instalada a mano en el Mac del cliente, «todo parece correcto»** (2026-09-14): el aviso de datos
+y lo de antes siguen funcionando.
+
+**La siguiente acción concreta, prevista para el 2026-09-15 con el cliente**: los pasos de `docs/tiendas/pasos.md` —cuentas de Mozilla
 y de Google, la primera subida a Chrome a mano, los secretos en GitHub— y **pasarme el identificador de
 Chrome**, que hay que añadir a Esfinge.
 

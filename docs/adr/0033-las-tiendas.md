@@ -176,6 +176,9 @@ revisor se pare, y con `https://*/*` y `nativeMessaging` la revisión ya va a se
   de la página de ejemplo.
 - `publicar.yml` válido, `tienda-chrome.mjs` sin errores de sintaxis y `amo-metadata.json` válido.
 
+**Comprobado por el cliente en su Mac con la 2.22.0 instalada a mano** (2026-09-14): «todo parece
+correcto», con el aviso de datos.
+
 **Sin comprobar:**
 
 - **Nada de la subida a las tiendas contra las tiendas de verdad**: las direcciones de la API v2 de

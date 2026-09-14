@@ -5,6 +5,16 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · Cierre del día: la 2.22.0 probada, las tiendas mañana
+
+- **El cliente probó la 2.22.0 instalada a mano** —en su Mac— y dice que **todo parece correcto**, con
+  el aviso de datos nuevo incluido.
+- **Las cuentas de las tiendas y la primera subida se hacen mañana** con él, siguiendo
+  `docs/tiendas/pasos.md`. Al volver: acompañarle en esos pasos, recibir el identificador de Chrome,
+  añadirlo a `extensionesDeChrome`, cambiar «Muy pronto» de la web por los enlaces y publicar.
+- Sin verificar todavía: la subida a las tiendas contra las tiendas de verdad, y la extensión en un
+  Windows de verdad.
+
 ## 2026-09-14 · Las tiendas, decididas; y Windows
 
 - **La entrega 5, decidida con el cliente** en dos rondas de preguntas, después de que dos agentes
