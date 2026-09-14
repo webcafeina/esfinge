@@ -7,6 +7,8 @@ Plantilla al final.
 
 ## 2026-09-14 · Quién entra, en las páginas de dos pasos (2.21.1)
 
+- **Publicada la 2.21.1** a petición del cliente, con las cinco compilaciones y la puerta de
+  comprobaciones en verde. Hay que reinstalar la extensión con sus zip.
 - **El cliente probó la 2.21.0 hasta cambiar la contraseña** y encontró un fallo en Google: con `info@`
   guardada y `alvaro@` borrada para probar, entró como `alvaro@` y Esfinge **le rellenó la contraseña de
   `info@`** en la página de la contraseña, y al enviar **le ofreció actualizar `info@`** en vez de guardar
