@@ -619,6 +619,13 @@ tocara nada—, y **gasta del mismo freno de sesenta preguntas** que el panel y 
 agrupa y no repite. Todo lo que decide está en `insignia.ts`, que es una función pura y está probada
 entera; lo que la envuelve, no.
 
+**La insignia del icono solo admite texto, y lo que no es texto va dibujado en el icono.** El número,
+el ✓ y el «!» son texto y los pinta el navegador; el candado no se le puede pasar en blanco —el emoji
+🔒 lo pinta el sistema en color—, así que va dibujado en `build/icono-barra-cerrado.svg` imitando la
+insignia. Costó tres versiones llegar al tamaño bueno: **dentro del icono no se puede salir del cuadro
+como la insignia de verdad**, así que la placa tiene que llegar a los bordes para parecer igual de
+grande.
+
 **Los colores de la extensión que no pinta nuestro CSS se miden aparte**, en
 `internal/tema/extension_test.go`: la silueta contra las barras de Chrome y Firefox, las insignias y el
 aviso de la página. Y esa prueba **lee los SVG y el TypeScript**: si alguien cambia un color allí y no

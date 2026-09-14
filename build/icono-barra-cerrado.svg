@@ -5,11 +5,14 @@
   de los navegadores solo admite texto, y un candado en texto es un emoji que
   cada sistema dibuja a su manera.
 
-  **Y dibujado como una insignia más**: una placa de piedra con el candado en
-  blanco, grande, abajo a la derecha, donde el navegador pone el número y el ✓.
-  En la 2.20.0 era un círculo pequeño y el cliente lo vio demasiado pequeño al
-  lado de las otras dos. Blanco sobre piedra es la misma pareja que el número,
-  medida en `internal/tema/extension_test.go`.
+  **Y dibujado como una insignia más**: una placa naranja oscura con el candado en
+  blanco, abajo a la derecha, donde el navegador pone el número y el ✓, **lo más
+  grande que cabe dentro del cuadro** —la insignia del navegador puede salirse del
+  icono, y esto no—. Costó tres intentos: en la 2.20.0 era un círculo pequeño, en la
+  2.20.1 una placa de piedra de la mitad del icono, y el cliente siguió viéndola
+  pequeña. **Naranja y no piedra ni ámbar**: piedra se fundía con las barras
+  oscuras, y el ámbar es el del «!», que es otra cosa. El blanco sobre este naranja
+  está medido en `internal/tema/extension_test.go`.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="87 123 850 850">
   <defs>
@@ -41,9 +44,9 @@
     <rect x="536" y="386" width="80" height="32" rx="16"/>
   </g>
 
-  <!-- La placa del candado, del tamaño de una insignia. -->
-  <rect x="487" y="523" width="450" height="450" rx="96" fill="#2b2b31"/>
-  <rect x="598" y="740" width="228" height="170" rx="30" fill="#ffffff"/>
-  <path d="M642 742v-52a70 70 0 0 1 140 0v52" fill="none" stroke="#ffffff" stroke-width="46"
+  <!-- La placa del candado: dos tercios del icono, hasta los bordes. -->
+  <rect x="357" y="393" width="580" height="580" rx="118" fill="#c2410c"/>
+  <rect x="527" y="700" width="260" height="196" rx="36" fill="#ffffff"/>
+  <path d="M580 704v-66a77 77 0 0 1 154 0v66" fill="none" stroke="#ffffff" stroke-width="56"
         stroke-linecap="round"/>
 </svg>

@@ -94,17 +94,19 @@ const ESTILO = `
 .aviso {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px 5px 7px;
+  gap: 8px;
+  padding: 7px 14px 7px 9px;
   border-radius: 999px;
   background: ${PIEDRA};
   color: ${BLANCO};
-  font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  box-shadow: 0 2px 10px rgb(0 0 0 / 0.28);
+  /* 14 y no 12 desde la 2.20.2: a 12 el cliente lo vio pequeño, y es lo único que
+   * dice por qué ha aparecido la contraseña. */
+  font: 600 14px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 0.3);
   white-space: nowrap;
   animation: entrar 160ms ease-out;
 }
-.marca { width: 16px; height: 16px; flex-shrink: 0; }
+.marca { width: 20px; height: 20px; flex-shrink: 0; }
 .marca svg { display: block; width: 100%; height: 100%; }
 @keyframes entrar { from { opacity: 0; transform: translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .aviso { animation: none; } }
@@ -128,7 +130,7 @@ export function avisar(bajoDe: HTMLElement, texto: string): HTMLElement {
     anfitrion.style.setProperty(propiedad, valor, "important");
   fijar("position", "absolute");
   fijar("left", `${Math.round(caja.left + window.scrollX)}px`);
-  fijar("top", `${Math.round(caja.bottom + window.scrollY + 6)}px`);
+  fijar("top", `${Math.round(caja.bottom + window.scrollY + 8)}px`);
   fijar("z-index", "2147483647");
   fijar("pointer-events", "none");
   fijar("display", "block");

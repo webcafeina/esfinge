@@ -230,6 +230,9 @@ del tamaño de una insignia y la cara de la esfinge del aviso en crema—, hecha
 en el Mac, y lo que quedaba de antes: si el candado aparece solo al cerrarse la bóveda y si el correo
 cabe entero.
 
+Y con la 2.20.1 el cliente pidió **el candado otra vez más grande y el aviso más grande**: en la 2.20.2
+el candado es una placa naranja de dos tercios del icono con el candado blanco, y el aviso pasa a 14 px.
+
 ### 4. Lo siguiente: lo que ya estaba planteado
 
 **Guardar y actualizar desde la página** (entrega 3), y después las tiendas (entrega 5).

@@ -99,6 +99,21 @@ El cliente probó la 2.20.0 en su Mac y pidió cuatro cambios, que se hicieron t
   crema, medida a 10,36:1 sobre la piedra.
 - **Y el marco de la fila del panel, solo con el teclado** (ADR 0029).
 
+### Y otra vez el candado, y el aviso más grande (2.20.2)
+
+Con la 2.20.1 el cliente siguió viendo el candado demasiado pequeño, y pidió que fuera **como el ✓ y
+el número, pero naranja oscuro con el candado en blanco**; y que el aviso fuera más grande.
+
+- **La insignia del navegador solo admite texto**, así que el candado blanco no se le puede pasar. Se
+  le ofrecieron las dos salidas: la insignia de verdad con el emoji 🔒, que el sistema pinta en color y
+  no en blanco, o el candado dibujado en el icono imitando la insignia. **Eligió el dibujado.**
+- **La placa ocupa ahora dos tercios del icono**, hasta los bordes, con el candado blanco más grueso.
+  Es lo más grande que cabe: la insignia del navegador puede salirse del cuadro del icono, y un dibujo
+  dentro del icono no.
+- **Naranja `#c2410c`**, y no la piedra de la 2.20.1 —que se fundía con las barras oscuras— ni el ámbar
+  del «!», que significa otra cosa. Blanco sobre ese naranja, **5,18:1**, medido.
+- **El aviso, de 12 a 14 px**, con más relleno y la esfinge de 16 a 20 px.
+
 ## Alternativas descartadas
 
 **El icono de la aplicación ampliado, o la cabeza sola sobre un círculo.** Se ofrecieron las dos; el

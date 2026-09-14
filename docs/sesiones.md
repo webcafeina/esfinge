@@ -5,6 +5,19 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · El candado, al tercer intento, y el aviso más grande
+
+- **2.20.2.** Con la 2.20.1, el cliente siguió viendo el candado del icono demasiado pequeño y pidió que
+  fuera como el ✓ y el número, en naranja oscuro con el candado blanco; y el aviso «Rellenado por
+  Esfinge» más grande.
+- **La insignia del navegador solo admite texto**, así que se le dieron las dos salidas —la insignia de
+  verdad con el emoji, que sale en color, o el candado dibujado en el icono— y **eligió el dibujado**.
+  La placa pasa a dos tercios del icono, hasta los bordes, en **naranja `#c2410c`** —distinto del ámbar
+  del «!»— con el candado blanco más grueso: 5,18:1, medido.
+- **El aviso**, de 12 a 14 px, con la esfinge de 16 a 20.
+- Verificado: `make comprobar` en verde con 48 pruebas de la extensión, y capturas del candado en barra
+  clara y oscura —ya del tamaño del «!» y visible en las dos— y del aviso. Sin verificar: en el Mac.
+
 ## 2026-09-14 · Cuatro correcciones de la 2.20.0, vistas en Firefox
 
 - **2.20.1.** El cliente probó la 2.20.0 en Firefox: **el número y el ✓ del icono se ven bien**, y pidió

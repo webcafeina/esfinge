@@ -68,6 +68,9 @@ func TestLaExtensionSeVeDondeLaPintanOtros(t *testing.T) {
 	mide(blanco, piedra, AANormal, "número de cuentas en la insignia")
 	mide(blanco, verdeExito, AANormal, "✓ de rellenado en la insignia")
 	mide(blanco, ambarDeAviso, AANormal, "! de aviso en la insignia")
+	// El candado va dibujado en el icono, en su placa naranja: la insignia del
+	// navegador solo admite texto (2.20.2).
+	mide(blanco, MustParseHex("#c2410c"), AANormal, "candado blanco en su placa naranja")
 
 	// El aviso en la página: texto blanco y marca de oro sobre piedra.
 	mide(blanco, piedra, AANormal, "«Rellenado por Esfinge»")
@@ -81,7 +84,7 @@ func TestLaExtensionSeVeDondeLaPintanOtros(t *testing.T) {
 		"../../navegador/src/marcas.ts":       {"#f2c14e", "#2b2b31", "#ffffff"},
 		"../../build/icono-barra.svg":         {"#f2c14e", "#2b2b31", "#e8dcc4"},
 		"../../build/icono-barra-apagado.svg": {"#a1a1a8", "#2b2b31"},
-		"../../build/icono-barra-cerrado.svg": {"#a1a1a8", "#2b2b31", "#ffffff"},
+		"../../build/icono-barra-cerrado.svg": {"#a1a1a8", "#2b2b31", "#ffffff", "#c2410c"},
 	}
 	for fichero, colores := range usan {
 		datos, err := os.ReadFile(fichero)
