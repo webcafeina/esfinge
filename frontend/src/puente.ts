@@ -450,6 +450,15 @@ export const esfinge = {
   exportarBoveda: () => llamar<string>("ExportarBoveda"),
 
   borrarElCSVImportado: (ruta: string) => llamar<void>("BorrarElCSVImportado", ruta),
+
+  /**
+   * Los sitios en los que la extensión no ofrece guardar (ADR 0032). **Nunca nula**:
+   * un `null` de Go aquí ya tumbó Ajustes una vez.
+   */
+  sitiosExcluidos: () => llamar<string[]>("SitiosExcluidos").then((l) => l ?? []),
+
+  /** Vuelve a dejar que la extensión ofrezca guardar en ese sitio. */
+  quitarSitioExcluido: (dominio: string) => llamar<void>("QuitarSitioExcluido", dominio),
 };
 
 /** Los límites de longitud los pone Go, no la interfaz. */
@@ -508,6 +517,15 @@ export function alBloquearseLaBoveda(cb: () => void): () => void {
 /** alHaberIconos avisa de que la tanda de fondo ha traído alguno nuevo. */
 export function alHaberIconos(cb: () => void): () => void {
   return escuchar("iconos", cb);
+}
+
+/**
+ * alCambiarLaBoveda avisa de que **alguien de fuera ha escrito en la bóveda**: el
+ * navegador ha guardado o actualizado una cuenta, o ha apuntado un sitio en el que
+ * no ofrecer. Sin esto, la lista se quedaba con lo de antes.
+ */
+export function alCambiarLaBoveda(cb: () => void): () => void {
+  return escuchar("boveda-cambiada", cb);
 }
 
 /**

@@ -175,6 +175,30 @@ func (a *App) VerDeBoveda(id string) (boveda.Entrada, error) {
 }
 
 // GuardarEnBoveda añade o cambia una entrada.
+// SitiosExcluidos son los sitios en los que la extensión no ofrece guardar, para
+// verlos en Ajustes y quitarlos. **Lista vacía y no nula**: un nulo de Go llega a
+// la ventana como `null`, y un `.length` sobre eso ya tumbó Ajustes una vez.
+func (a *App) SitiosExcluidos() []string {
+	b := a.boveda()
+	if b == nil {
+		return []string{}
+	}
+	if l := b.Excluidos(); l != nil {
+		return l
+	}
+	return []string{}
+}
+
+// QuitarSitioExcluido vuelve a dejar que se ofrezca guardar en ese sitio.
+func (a *App) QuitarSitioExcluido(dominio string) error {
+	b := a.boveda()
+	if b == nil {
+		return boveda.ErrCerrada
+	}
+	a.Actividad()
+	return b.QuitarExclusion(dominio)
+}
+
 func (a *App) GuardarEnBoveda(e boveda.Entrada) error {
 	b := a.boveda()
 	if b == nil {

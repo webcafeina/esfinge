@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-09-10**
+Última actualización: **2026-09-14**
 
 ## Dónde estamos
 
@@ -84,6 +84,8 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   preguntar, y la detección de campos está escrita en negativo: ante la duda, no se rellena.
   **Comprobado en un Mac, en Chrome y en Firefox** (2.18.1): rellena solo al cargar y acierta
   el formulario en Brevo y en Cloudflare, y el botón del panel escribe tras borrar los campos.
+- **La fase 2, entrega 3** (ADR 0032): **ofrece guardar y actualizar** lo que se envía en un
+  formulario, con una tarjeta en la página. Escrita y probada aquí; **sin usar todavía en el Mac**.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
   máquina sin entorno gráfico. Son **84**.
 
@@ -238,16 +240,25 @@ esfinge tenue de los avisos, entera y con su trazo de serie, y «Rellenar» con 
 que en Firefox. **Y con la 2.20.3 el cliente dice «Ahora está perfecto»**: la parte visual de la
 extensión queda cerrada.
 
-### 4. Lo siguiente: guardar y actualizar desde la página
+### 4. Guardar y actualizar desde la página — escrito el 2026-09-14, sin publicar
 
-**Es la siguiente acción concreta**, y era lo que el cliente dejó planteado antes de las mejoras
-visuales: al enviar un formulario con una cuenta que no está en la bóveda, ofrecer guardarla; si está con
-otra contraseña, ofrecer actualizarla, con el historial de contraseñas anteriores que ya existe. Es la
-entrega 3, y trae decisiones de verdad que hay que hablar antes de escribir nada: **dónde se pregunta**
-—la ADR 0028/0031 limita lo que se dibuja en la página—, **qué verbo nuevo cruza el canal** —el primero
-que **escribe** en la bóveda desde el navegador— y **quién lo aprueba**.
+Resuelto en la [ADR 0032](adr/0032-guardar-desde-la-pagina.md), decidido con el cliente por preguntas
+con opciones. **Al enviar un formulario, una tarjeta arriba a la derecha ofrece guardar la cuenta** —o
+actualizar la contraseña, eligiendo la cuenta si hay varias—, con el título del sitio editable, «Ahora no»
+y «Nunca en este sitio», que se deshace en Ajustes. Con la bóveda cerrada, la tarjeta dice que la abras.
 
-Después, las tiendas (entrega 5).
+Dos cosas que cambian y hay que decir: **el navegador escribe en la bóveda** por primera vez —con su
+propio freno de seis por minuto y la contraseña anterior al historial— y **la tarjeta es lo primero de
+Esfinge que se pulsa en la página de otro**. La contraseña enviada espera **en la memoria del trabajador
+de fondo** y no llega a la página siguiente; qué ofrecer lo decide Go; y si el formulario vuelve a salir,
+se da por mala y no se ofrece.
+
+Probado aquí por piezas y la tubería de Go entera. **Lo que falta es usarlo en el Mac, en Firefox y en
+Chrome**: entrar con una cuenta nueva, entrar con otra contraseña, registrarse, cambiar la contraseña,
+un inicio fallido, «Nunca en este sitio» y que la ventana se ponga al día sola.
+
+**La siguiente acción concreta es publicar la 2.21.0 cuando el cliente lo pida, y probarla.** Después,
+las tiendas (entrega 5).
 
 ### Lo que yo recomendaría meter en medio, y no es lo que se decidió
 

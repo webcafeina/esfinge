@@ -8,6 +8,7 @@ import {
   type EstadoBoveda,
   type ResumenImportacion,
   type TipoEntrada,
+  alCambiarLaBoveda
 } from "./puente";
 import { CampoClave, dominioDe, Icono, Monograma, Segmentado } from "./componentes";
 
@@ -394,6 +395,11 @@ function Dentro({
     traerIconos();
     return alHaberIconos(traerIconos);
   }, [traerIconos]);
+
+  // **Y cuando el navegador guarda o actualiza una cuenta, la lista se pide otra vez.**
+  // Lo escribe otro —la extensión, por el canal—, y sin este aviso la lista seguía
+  // enseñando lo de antes hasta que se tocara el buscador.
+  useEffect(() => alCambiarLaBoveda(() => buscar(q)), [buscar, q]);
 
   // La búsqueda cruza el puente, así que se espera a que se deje de teclear. No
   // es por coste: es que cada pulsación devolvería una lista y las respuestas

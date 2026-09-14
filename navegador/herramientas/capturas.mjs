@@ -223,5 +223,85 @@ for (const [nombreWeb, fondo, tinta, campo] of [
   await pagina.close();
 }
 
+/* ------------------------------------------ la tarjeta de guardar */
+
+const tarjeta = (
+  await build({
+    configFile: false,
+    logLevel: "silent",
+    build: {
+      write: false,
+      lib: {
+        entry: join(raiz, "src", "tarjeta.ts"),
+        formats: ["iife"],
+        name: "Tarjeta",
+        fileName: () => "tarjeta.js",
+      },
+    },
+  })
+)[0].output[0].code;
+
+const estadosDeTarjeta = {
+  guardar: {
+    tipo: "oferta",
+    oferta: { accion: "guardar", sitio: "login.brevo.com", titulo: "Brevo" },
+    usuario: "info@webcafeina.com",
+  },
+  actualizar: {
+    tipo: "oferta",
+    oferta: {
+      accion: "actualizar",
+      sitio: "dash.cloudflare.com",
+      cuentas: [
+        { id: "1", titulo: "Cloudflare", usuario: "info@webcafeina.com" },
+        { id: "2", titulo: "Cloudflare clientes", usuario: "clientes@webcafeina.com" },
+      ],
+    },
+    usuario: "",
+  },
+  cerrada: { tipo: "cerrada", sitio: "login.brevo.com", usuario: "info@webcafeina.com" },
+};
+for (const [nombreWeb, fondo, tinta] of [
+  ["web-clara", "#ffffff", "#1c1c1e"],
+  ["web-oscura", "#1b1b1f", "#f2f2f5"],
+]) {
+  for (const [nombreEstado, estado] of Object.entries(estadosDeTarjeta)) {
+    const pagina = await navegador.newPage({ viewport: { width: 520, height: 300 }, deviceScaleFactor: 2 });
+    await pagina.setContent(`<!doctype html><meta charset="utf-8"><style>
+      body{margin:0;padding:24px;background:${fondo};color:${tinta};font:14px system-ui}
+    </style><h2>Panel de la web</h2><p>Contenido de la página que queda debajo.</p>`);
+    await pagina.addScriptTag({ content: tarjeta });
+    await pagina.evaluate((e) => Tarjeta.mostrarTarjeta(e, async () => ({ ok: true }), () => {}), estado);
+    await pagina.waitForTimeout(300);
+    await pagina.screenshot({ path: join(salida, `tarjeta-${nombreEstado}-${nombreWeb}.png`) });
+    await pagina.close();
+  }
+
+  // Y cómo queda tras pulsar: con un clic de ratón de verdad, que es lo único a lo
+  // que hace caso. Una respuesta buena y una con error.
+  for (const [nombreFinal, respuesta] of [
+    ["hecho", { ok: true }],
+    ["error", { ok: false, error: "Demasiados cambios seguidos en la bóveda. Espera un momento." }],
+  ]) {
+    const pagina = await navegador.newPage({ viewport: { width: 520, height: 360 }, deviceScaleFactor: 2 });
+    await pagina.setContent(`<!doctype html><meta charset="utf-8"><style>
+      body{margin:0;padding:24px;background:${fondo};color:${tinta};font:14px system-ui}
+    </style><h2>Panel de la web</h2><p>Contenido de la página que queda debajo.</p>`);
+    await pagina.addScriptTag({ content: tarjeta });
+    const donde = await pagina.evaluate(
+      ([e, r]) => {
+        const t = Tarjeta.mostrarTarjeta(e, async () => r, () => {});
+        const b = t.raiz.querySelector("button.principal").getBoundingClientRect();
+        return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+      },
+      [estadosDeTarjeta.guardar, respuesta],
+    );
+    await pagina.mouse.click(donde.x, donde.y);
+    await pagina.waitForTimeout(300);
+    await pagina.screenshot({ path: join(salida, `tarjeta-${nombreFinal}-${nombreWeb}.png`) });
+    await pagina.close();
+  }
+}
+
 await navegador.close();
 console.log(`Capturas en ${salida}`);

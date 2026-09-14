@@ -5,8 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -29,6 +31,12 @@ import (
 
 // EventoNavegadorPide avisa a la ventana de que un navegador quiere conectarse.
 const EventoNavegadorPide = "navegador-pide"
+
+// EventoBovedaCambiada avisa a la ventana de que **alguien de fuera ha escrito en
+// la bóveda**: el navegador ha guardado o actualizado una cuenta, o ha apuntado un
+// sitio en el que no ofrecer. Sin esto, la lista de la ventana se quedaba con lo
+// de antes hasta que se buscara algo.
+const EventoBovedaCambiada = "boveda-cambiada"
 
 // rutaNavegadores es donde se apunta a quién se le ha dado permiso.
 func rutaNavegadores() string {
@@ -328,6 +336,208 @@ func (f fuenteDelNavegador) RellenarCodigo(id, dominio string) (navegador.Codigo
 		Codigo: codigo,
 		Quedan: int(s.Quedan(ahora).Seconds()),
 	}, nil
+}
+
+// ------------------------------------------------ guardar desde la página
+
+// Lo de aquí es **lo primero que escribe en la bóveda desde el navegador** (ADR
+// 0032), y hereda las reglas de lo que lee: todo pasa por el dominio del origen
+// que pone el navegador, nada cuenta como actividad, y lo que se escribe es solo
+// para ese sitio. Y una más, propia: **después de escribir se avisa a la ventana**,
+// que si no se quedaría con la lista de antes.
+
+// Ofrecer decide qué proponer después de un envío, **sin escribir nada**.
+//
+// La decisión vive aquí y no en la extensión a propósito: arreglarla es empujar
+// una etiqueta, y en la tienda serían días. Las reglas, por orden:
+//
+//   - **Nada** si no hay contraseña, si la bóveda no admite escritura, si el sitio
+//     está en la lista de «nunca aquí», o si la cuenta ya está con esa misma
+//     contraseña.
+//   - **Con usuario**: la misma cuenta es la del mismo usuario en ese sitio; si
+//     está con otra contraseña, actualizar esa; si no está, guardar.
+//   - **Sin usuario** —cambiar la contraseña, o entrar en dos pantallas—: las
+//     cuentas del sitio con otra contraseña son candidatas a actualizar, y con
+//     varias se elige en la tarjeta. Si no hay ninguna, guardar.
+func (f fuenteDelNavegador) Ofrecer(origen, dominio string, e navegador.Envio) (navegador.Oferta, error) {
+	b := f.a.boveda()
+	if b == nil {
+		return navegador.Oferta{}, boveda.ErrCerrada
+	}
+	host := hostDe(origen)
+	nada := navegador.Oferta{Accion: navegador.OfertaNada, Sitio: host}
+	if e.Secreto == "" || b.SoloLectura() || b.Excluido(dominio) {
+		return nada, nil
+	}
+
+	// Las credenciales del sitio, **enteras**: para comparar la contraseña hace
+	// falta la de verdad, y `Buscar` las devuelve vaciadas por `SinSecretos`.
+	var delSitio []boveda.Entrada
+	for _, x := range b.Buscar("") {
+		if x.Tipo != boveda.TipoCredencial || !leEncaja(x, dominio) {
+			continue
+		}
+		if completa, hay := b.Ver(x.ID); hay {
+			delSitio = append(delSitio, completa)
+		}
+	}
+	for _, x := range delSitio {
+		if x.Secreto == e.Secreto && (e.Usuario == "" || mismoUsuario(x.Usuario, e.Usuario)) {
+			return nada, nil
+		}
+	}
+
+	if usuario := strings.TrimSpace(e.Usuario); usuario != "" {
+		for _, x := range delSitio {
+			if mismoUsuario(x.Usuario, usuario) {
+				return navegador.Oferta{
+					Accion: navegador.OfertaActualizar, Sitio: host,
+					Cuentas: []navegador.Cuenta{cuentaDe(x)},
+				}, nil
+			}
+		}
+		return navegador.Oferta{
+			Accion: navegador.OfertaGuardar, Sitio: host, Titulo: tituloDeSitio(dominio),
+		}, nil
+	}
+
+	if len(delSitio) > 0 {
+		var candidatas []navegador.Cuenta
+		for _, x := range delSitio {
+			candidatas = append(candidatas, cuentaDe(x))
+		}
+		return navegador.Oferta{
+			Accion: navegador.OfertaActualizar, Sitio: host, Cuentas: candidatas,
+		}, nil
+	}
+	return navegador.Oferta{
+		Accion: navegador.OfertaGuardar, Sitio: host, Titulo: tituloDeSitio(dominio),
+	}, nil
+}
+
+// GuardarCuenta crea una credencial con lo que se acaba de escribir.
+//
+// **El sitio es el del origen, y ningún otro**: lo pone el navegador al enviar el
+// formulario, y la página no tiene forma de elegirlo. El título, el que se haya
+// escrito en la tarjeta o el sugerido. Sin contar como actividad.
+func (f fuenteDelNavegador) GuardarCuenta(origen, dominio string, e navegador.Envio) (navegador.Cuenta, error) {
+	b, err := f.bovedaParaEscribir()
+	if err != nil {
+		return navegador.Cuenta{}, err
+	}
+	if e.Secreto == "" {
+		return navegador.Cuenta{}, errors.New("No hay ninguna contraseña que guardar")
+	}
+	host := hostDe(origen)
+	if host == "" {
+		return navegador.Cuenta{}, navegador.ErrSinDominio
+	}
+	titulo := strings.TrimSpace(e.Titulo)
+	if titulo == "" {
+		titulo = tituloDeSitio(dominio)
+	}
+	if r := []rune(titulo); len(r) > 120 {
+		titulo = string(r[:120])
+	}
+
+	nueva := boveda.Entrada{
+		Tipo:    boveda.TipoCredencial,
+		Titulo:  titulo,
+		Usuario: strings.TrimSpace(e.Usuario),
+		Sitios:  []string{"https://" + host},
+	}
+	nueva.CambiarSecreto(e.Secreto, time.Now())
+	if err := b.Poner(nueva); err != nil {
+		return navegador.Cuenta{}, err
+	}
+	f.a.sistema.Avisar(EventoBovedaCambiada, nil)
+	return navegador.Cuenta{Titulo: nueva.Titulo, Usuario: nueva.Usuario}, nil
+}
+
+// ActualizarCuenta cambia la contraseña de una entrada **que sea de ese sitio**.
+//
+// Pasa por `entradaDe`, igual que rellenar: con el identificador de la cuenta del
+// banco en la mano, pedir que se cambie desde otro sitio falla. La anterior pasa
+// al historial de contraseñas anteriores con `CambiarSecreto`, que ya existía.
+func (f fuenteDelNavegador) ActualizarCuenta(id, dominio string, e navegador.Envio) (navegador.Cuenta, error) {
+	b, err := f.bovedaParaEscribir()
+	if err != nil {
+		return navegador.Cuenta{}, err
+	}
+	if e.Secreto == "" {
+		return navegador.Cuenta{}, errors.New("No hay ninguna contraseña nueva")
+	}
+	x, err := f.entradaDe(id, dominio)
+	if err != nil {
+		return navegador.Cuenta{}, err
+	}
+	if x.Tipo != boveda.TipoCredencial {
+		return navegador.Cuenta{}, errors.New("Esa entrada no es una cuenta")
+	}
+	x.CambiarSecreto(e.Secreto, time.Now())
+	if x.Usuario == "" {
+		x.Usuario = strings.TrimSpace(e.Usuario)
+	}
+	if err := b.Poner(x); err != nil {
+		return navegador.Cuenta{}, err
+	}
+	f.a.sistema.Avisar(EventoBovedaCambiada, nil)
+	return cuentaDe(x), nil
+}
+
+// NuncaAqui apunta el dominio entre los que no se ofrece guardar.
+func (f fuenteDelNavegador) NuncaAqui(dominio string) error {
+	b, err := f.bovedaParaEscribir()
+	if err != nil {
+		return err
+	}
+	if err := b.Excluir(dominio); err != nil {
+		return err
+	}
+	f.a.sistema.Avisar(EventoBovedaCambiada, nil)
+	return nil
+}
+
+// bovedaParaEscribir es la bóveda abierta **y en la que se puede escribir**. Una
+// bóveda de una versión más nueva de Esfinge se abre en solo lectura, y ahí el
+// navegador no escribe.
+func (f fuenteDelNavegador) bovedaParaEscribir() (*boveda.Boveda, error) {
+	b := f.a.boveda()
+	if b == nil {
+		return nil, boveda.ErrCerrada
+	}
+	if b.SoloLectura() {
+		return nil, errors.New("Esta bóveda es de una versión más nueva de Esfinge y aquí no se puede escribir en ella")
+	}
+	return b, nil
+}
+
+func cuentaDe(x boveda.Entrada) navegador.Cuenta {
+	return navegador.Cuenta{ID: x.ID, Titulo: x.Titulo, Usuario: x.Usuario, TieneCodigo: x.TOTP != ""}
+}
+
+func mismoUsuario(a, b string) bool {
+	return strings.EqualFold(strings.TrimSpace(a), strings.TrimSpace(b))
+}
+
+// hostDe es el anfitrión de la dirección que da el navegador, en minúsculas.
+func hostDe(origen string) string {
+	u, err := url.Parse(strings.TrimSpace(origen))
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(u.Hostname())
+}
+
+// tituloDeSitio sugiere un título a partir del dominio registrable: «brevo.com» da
+// «Brevo». Es solo una propuesta; en la tarjeta se puede cambiar.
+func tituloDeSitio(dominio string) string {
+	nombre, _, _ := strings.Cut(strings.TrimSpace(dominio), ".")
+	r := []rune(nombre)
+	if len(r) == 0 {
+		return "Cuenta nueva"
+	}
+	return strings.ToUpper(string(r[0])) + string(r[1:])
 }
 
 // entradaDe busca una entrada **y comprueba que es de ese sitio**.

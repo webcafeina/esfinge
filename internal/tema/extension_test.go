@@ -78,9 +78,18 @@ func TestLaExtensionSeVeDondeLaPintanOtros(t *testing.T) {
 	// La cara, que en la 2.20.0 era un hueco y se veía negra sobre la piedra.
 	mide(MustParseHex("#e8dcc4"), piedra, AAGrande, "la cara de la esfinge del aviso")
 
+	// La tarjeta de guardar (ADR 0032): texto blanco y secundario sobre piedra, el
+	// botón de oro con la piedra encima, y el campo del título en blanco con piedra.
+	mide(blanco, piedra, AANormal, "el texto de la tarjeta de guardar")
+	mide(MustParseHex("#d8d8de"), piedra, AANormal, "el texto secundario de la tarjeta")
+	mide(piedra, oro, AANormal, "el botón «Guardar» de la tarjeta")
+	mide(piedra, blanco, AANormal, "lo que se escribe en el título de la tarjeta")
+	mide(oro, piedra, AAGrande, "el foco de los botones de la tarjeta")
+
 	// Y que lo medido es lo que se usa.
 	usan := map[string][]string{
 		"../../navegador/src/insignia.ts":     {"#2b2b31", "#1d6f31", "#8f5300", "#ffffff"},
+		"../../navegador/src/tarjeta.ts":      {"#2b2b31", "#ffffff", "#f2c14e", "#d8d8de"},
 		"../../navegador/src/marcas.ts":       {"#f2c14e", "#2b2b31", "#ffffff"},
 		"../../build/icono-barra.svg":         {"#f2c14e", "#2b2b31", "#e8dcc4"},
 		"../../build/icono-barra-apagado.svg": {"#a1a1a8", "#2b2b31"},

@@ -136,6 +136,11 @@ No se cambian sin preguntar.
   la contraseña y **sin fiarse nunca de la palabra «code»** —que es el código postal, el promocional y
   el CVC—. Con eso, **por el canal salen y en la página quedan escritos la contraseña y el segundo
   factor**, que es lo mismo que la ADR 0025 dijo de la bóveda abierta, ahora dentro del navegador.
+- **Y desde la entrega 3 ofrece guardar y actualizar lo que se envía** (ADR 0032), con una **tarjeta en
+  la página que se pulsa**: lo primero de Esfinge que se pulsa en la web de otro, y **la primera vez que
+  el navegador escribe en la bóveda**. Se aprueba pulsando en el navegador, sin confirmar en la ventana;
+  «Nunca en este sitio» va cifrado dentro de la bóveda y se deshace en Ajustes. Lo decidió el cliente con
+  esas palabras y no se cambia sin preguntar.
 - **Hay una bóveda de contraseñas**, local y cifrada, con clave de recuperación (ADR 0023). Es la
   fase 1 de sustituir a Dashlane, y **cambia lo que el producto es**: hasta ahora un fallo perdía un
   fichero; ahora puede perder todas las contraseñas de la empresa. Eso sube el listón de las pruebas
@@ -667,6 +672,17 @@ el componente de verdad en una prueba, eso manda sobre la deducción.
 puerto llamado «pagina» en el campo `origen` se tira y se pone `sender.tab.url`. Sin esa línea,
 cualquier página que consiguiera hablar por ese puerto pediría las cuentas de un banco diciendo que
 es el banco.
+
+**Y la contraseña de un envío no vuelve a la página.** Al pulsar «Entrar» la página cambia y el guion
+que la leyó muere, así que tiene que esperar en algún sitio: en la memoria del trabajador de fondo
+(`ofertasPendientes`), dos minutos y nunca en `storage`. La tarjeta de la página siguiente recibe el
+sitio, el usuario y las cuentas, **y manda solo la decisión**; quien guarda es el trabajador, **con el
+origen del envío** y no con el de la página donde está la tarjeta. Pasársela a la tarjeta «para que la
+devuelva» parece más sencillo y es poner una contraseña en una página donde no se escribió.
+
+Y con ello un detalle que se olvida fácil: **a los tres segundos de enviar no se descarta nada** aunque
+el formulario siga ahí. Puede ser la página de antes esperando a que el sitio conteste; solo al cargar
+la página nueva un formulario de contraseña visible dice que la contraseña era mala.
 
 **Y el corolario pequeño, que costó un commit el mismo día: `make comprobar | tail` no dice si
 `make` ha fallado.** El código de salida de una tubería es el del **último** mandato, así que

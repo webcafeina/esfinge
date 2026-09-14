@@ -19,6 +19,7 @@ type bovedaFalsa struct {
 	niega           bool   // la persona dice que no al emparejar
 	pedidos         int    // cuántas veces se ha preguntado por un secreto
 	portapapeles    string // lo que Esfinge ha copiado
+	escritas        int    // cuántas veces se ha escrito en la bóveda
 }
 
 func nuevaFalsa() *bovedaFalsa {
@@ -83,6 +84,30 @@ func (b *bovedaFalsa) RellenarCodigo(id, dominio string) (CodigoParaRellenar, er
 		}
 	}
 	return CodigoParaRellenar{}, errors.New("Esa entrada no es de ese sitio, o no tiene código")
+}
+
+func (b *bovedaFalsa) Ofrecer(origen, dominio string, e Envio) (Oferta, error) {
+	return Oferta{Accion: OfertaGuardar, Sitio: "banco.es", Titulo: "Banco"}, nil
+}
+
+func (b *bovedaFalsa) GuardarCuenta(origen, dominio string, e Envio) (Cuenta, error) {
+	b.escritas++
+	return Cuenta{Titulo: e.Titulo, Usuario: e.Usuario}, nil
+}
+
+func (b *bovedaFalsa) ActualizarCuenta(id, dominio string, e Envio) (Cuenta, error) {
+	for _, x := range lasEntradas {
+		if x.id == id && Encaja(x.sitio, dominio) {
+			b.escritas++
+			return Cuenta{ID: x.id}, nil
+		}
+	}
+	return Cuenta{}, errors.New("Esa entrada no es de ese sitio")
+}
+
+func (b *bovedaFalsa) NuncaAqui(dominio string) error {
+	b.escritas++
+	return nil
 }
 
 func (b *bovedaFalsa) Emparejar(string) (string, error) {
@@ -549,5 +574,68 @@ func TestRellenarElCodigoSoloEnSuSitioYConElMismoFreno(t *testing.T) {
 	}
 	if r := pide(QueRellenarCodigo, "1", "https://banco.es"); r.OK || r.Motivo != MotivoDemasiado {
 		t.Errorf("rellenar el código tiene un freno aparte del de la contraseña: %+v", r)
+	}
+}
+
+// **Escribir tiene su propio freno**, más estrecho que el de rellenar: un programa
+// que guardara sin parar llenaría la bóveda de cuentas falsas. Y lo gastan los tres
+// verbos que escriben, no uno cada uno.
+func TestEscribirEnLaBovedaTieneSuPropioFreno(t *testing.T) {
+	b := nuevaFalsa()
+	s := &Servidor{fuente: b, frenos: nuevosFrenos()}
+	pide := func(que string) Respuesta {
+		return s.Atender(Peticion{
+			Version: VersionDelProtocolo, Que: que, Testigo: "el-testigo",
+			ID: "1", Origen: "https://banco.es", Secreto: "nueva", Usuario: "yo",
+		})
+	}
+	verbos := []string{QueGuardarCuenta, QueActualizarCuenta, QueNuncaAqui}
+	for i := 0; i < escriturasPorMinuto; i++ {
+		if r := pide(verbos[i%len(verbos)]); !r.OK {
+			t.Fatalf("la escritura %d ya cortaba: %+v", i, r)
+		}
+	}
+	if r := pide(QueGuardarCuenta); r.OK || r.Motivo != MotivoDemasiado {
+		t.Errorf("el freno de escribir no corta: %+v", r)
+	}
+	// Y preguntar qué ofrecer no gasta de él: no escribe.
+	if r := pide(QueOfrecer); !r.OK {
+		t.Errorf("ofrecer gasta del freno de escribir: %+v", r)
+	}
+	if escriturasPorMinuto >= rellenosPorMinuto {
+		t.Errorf("escribir (%d) no es más estrecho que rellenar (%d)", escriturasPorMinuto, rellenosPorMinuto)
+	}
+}
+
+// Con la bóveda cerrada, ni se ofrece ni se escribe, y se dice por qué: la tarjeta
+// enseña «abre la bóveda».
+func TestConLaBovedaCerradaNoSeOfreceNiSeEscribe(t *testing.T) {
+	b := nuevaFalsa()
+	b.abierta = false
+	s := &Servidor{fuente: b}
+	for _, que := range []string{QueOfrecer, QueGuardarCuenta, QueActualizarCuenta, QueNuncaAqui} {
+		r := pedir(s, Peticion{Que: que, Testigo: "el-testigo", ID: "1", Origen: "https://banco.es", Secreto: "x"})
+		if r.OK || r.Motivo != MotivoCerrada {
+			t.Errorf("«%s» con la bóveda cerrada: %+v", que, r)
+		}
+	}
+	if b.escritas != 0 {
+		t.Errorf("se ha escrito con la bóveda cerrada %d veces", b.escritas)
+	}
+}
+
+// Actualizar una entrada desde un sitio que no es el suyo falla, con el
+// identificador correcto en la mano. Es la misma regla que rellenar.
+func TestActualizarSoloDesdeSuSitio(t *testing.T) {
+	b := nuevaFalsa()
+	s := &Servidor{fuente: b}
+	r := pedir(s, Peticion{Que: QueActualizarCuenta, Testigo: "el-testigo", ID: "1", Origen: "https://correo.com", Secreto: "x"})
+	if r.OK || b.escritas != 0 {
+		t.Errorf("ha actualizado la cuenta del banco desde otro sitio: %+v", r)
+	}
+	// Y sobre http tampoco llega a la bóveda.
+	r = pedir(s, Peticion{Que: QueGuardarCuenta, Testigo: "el-testigo", Origen: "http://banco.es", Secreto: "x"})
+	if r.OK || r.Motivo != MotivoOrigenInvalido || b.escritas != 0 {
+		t.Errorf("ha guardado sobre http: %+v", r)
 	}
 }

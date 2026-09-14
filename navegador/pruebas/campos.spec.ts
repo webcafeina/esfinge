@@ -371,3 +371,76 @@ test("código: se escribe una cifra por casilla, o nada si no cabe", async ({ pa
   expect(resultado.bueno).toBe(true);
   expect(resultado.valores).toBe("482913");
 });
+
+/* ------------------------------------------ lo que se envía (entrega 3) */
+
+/**
+ * Qué es un formulario en el momento de enviarse: entrar, registrarse o cambiar la
+ * contraseña, **o nada si no está claro**. De esto depende qué se ofrece guardar, y
+ * ofrecer mal es guardar una contraseña equivocada.
+ */
+async function envioQueSeLee(page: import("@playwright/test").Page, html: string) {
+  await page.setContent(`<!doctype html><meta charset="utf-8">${html}`);
+  await page.addScriptTag({ content: modulo });
+  return page.evaluate(() => {
+    // @ts-expect-error el módulo se inyecta como global en la página
+    const e = Campos.queSeEnvia(document);
+    return e ? { forma: e.forma, usuario: e.usuario, secreto: e.secreto } : null;
+  });
+}
+
+const casosDeEnvio: {
+  nombre: string;
+  html: string;
+  espera: { forma: string; usuario: string; secreto: string } | null;
+}[] = [
+  {
+    nombre: "envío: entrar con usuario y contraseña",
+    html: `<form><input id="u" value="yo@ejemplo.es"><input type="password" value="clave"></form>`,
+    espera: { forma: "entrar", usuario: "yo@ejemplo.es", secreto: "clave" },
+  },
+  {
+    nombre: "envío: sin contraseña escrita no hay nada",
+    html: `<form><input value="yo@ejemplo.es"><input type="password" value=""></form>`,
+    espera: null,
+  },
+  {
+    nombre: "envío: registrarse, con «repite la contraseña»",
+    html: `<form><input value="nuevo@ejemplo.es"><input type="password" value="n1"><input type="password" value="n1"></form>`,
+    espera: { forma: "registro", usuario: "nuevo@ejemplo.es", secreto: "n1" },
+  },
+  {
+    nombre: "envío: registrarse, con la contraseña declarada nueva",
+    html: `<form><input value="nuevo@ejemplo.es"><input type="password" autocomplete="new-password" value="n1"></form>`,
+    espera: { forma: "registro", usuario: "nuevo@ejemplo.es", secreto: "n1" },
+  },
+  {
+    // Lo corriente al cambiar: actual, nueva y repetir, y el usuario escondido que
+    // ponen muchos sitios para los gestores de contraseñas.
+    nombre: "envío: cambiar la contraseña, con el usuario escondido",
+    html: `<form><input type="hidden" autocomplete="username" value="yo@ejemplo.es">
+      <input type="password" value="vieja"><input type="password" value="nueva"><input type="password" value="nueva"></form>`,
+    espera: { forma: "cambio", usuario: "yo@ejemplo.es", secreto: "nueva" },
+  },
+  {
+    nombre: "envío: cambiar, con actual y nueva declaradas",
+    html: `<form><input type="password" autocomplete="current-password" value="vieja"><input type="password" autocomplete="new-password" value="nueva"></form>`,
+    espera: { forma: "cambio", usuario: "", secreto: "nueva" },
+  },
+  {
+    nombre: "envío: dos contraseñas distintas sin decir cuál es cuál, nada",
+    html: `<form><input type="password" value="una"><input type="password" value="otra"></form>`,
+    espera: null,
+  },
+  {
+    nombre: "envío: la nueva y la repetida no coinciden, nada",
+    html: `<form><input type="password" value="vieja"><input type="password" value="nueva"><input type="password" value="nuevaa"></form>`,
+    espera: null,
+  },
+];
+
+for (const caso of casosDeEnvio) {
+  test(caso.nombre, async ({ page }) => {
+    expect(await envioQueSeLee(page, caso.html)).toEqual(caso.espera);
+  });
+}

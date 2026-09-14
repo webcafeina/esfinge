@@ -169,6 +169,28 @@ cambian lo que hay que saber, así que van dichas enteras y no de pasada:
   pedir las dos, y **no se escribe en cualquier campo que se llame «código»**: ni el postal, ni el
   promocional, ni el de la tarjeta.
 
+### Y desde la entrega 3, el navegador escribe en la bóveda
+
+Hasta aquí el navegador solo leía. Ofrecer guardar lo que se envía en un formulario cambia eso, y
+cambia también lo que se dibuja en la página (ADR 0032):
+
+- **Quien pueda hablar por el canal puede escribir en la bóveda**: crear cuentas, cambiar contraseñas
+  y apuntar sitios en los que no ofrecer. Hace falta el mismo permiso que para leer, y lleva **su propio
+  freno, seis escrituras por minuto**. Una contraseña cambiada **va al historial de anteriores**, así que
+  un cambio no deseado se deshace desde la ventana. No se confirma en la ventana: lo eligió el cliente.
+- **La contraseña que escribes pasa un momento por la memoria de la extensión.** Hace falta porque al
+  pulsar «Entrar» la página cambia. Se queda en el trabajador de fondo, **nunca en disco**, como mucho
+  dos minutos, y **no llega a la página siguiente**: la tarjeta que pregunta no la tiene.
+- **Hay un elemento de Esfinge que se puede pulsar en la página de otro**: la tarjeta «¿Guardar en
+  Esfinge?». Va en una sombra cerrada y solo hace caso a clics de una persona. Lo peor que consigue una
+  web que engañe para pulsar es guardar **lo que escribiste en esa misma web, para esa misma web**:
+  lo que se guarda va siempre para el sitio del que salió.
+- **Ante la duda, no se ofrece.** Si el formulario vuelve a salir tras enviarlo, la contraseña se da por
+  mala y se olvida; y un formulario que no se sabe si es de entrar, de registrarse o de cambiar, no se
+  ofrece.
+- **La lista de «Nunca en este sitio» va cifrada dentro de la bóveda**, porque es una lista de sitios
+  que usas. Por eso Ajustes solo la enseña con la bóveda abierta.
+
 ## Dónde queda algo en disco
 
 | Qué | Dónde | Permisos |

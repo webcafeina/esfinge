@@ -114,6 +114,24 @@ func TestLaTuberiaEnteraDesdeElNavegador(t *testing.T) {
 	if r.OK || r.Codigo != nil {
 		t.Fatalf("ha entregado el código del banco a otro sitio: %+v", r)
 	}
+
+	// Y la entrega 3, que es **lo primero que escribe en la bóveda desde el navegador**:
+	// ofrecer y guardar, sobre los bytes de verdad.
+	r = unViaje(t, socket, `{"version":1,"que":"ofrecer","testigo":"`+testigo+
+		`","origen":"https://banco.es/entrar","usuario":"otra@ejemplo.es","secreto":"clave de otra","forma":"entrar"}`)
+	if !r.OK || r.Oferta == nil || r.Oferta.Accion != "guardar" {
+		t.Fatalf("ofrecer: %+v", r)
+	}
+	r = unViaje(t, socket, `{"version":1,"que":"guardar-cuenta","testigo":"`+testigo+
+		`","origen":"https://banco.es/entrar","usuario":"otra@ejemplo.es","secreto":"clave de otra","titulo":"Banco de otra"}`)
+	if !r.OK || r.Guardada == nil || r.Guardada.Titulo != "Banco de otra" {
+		t.Fatalf("guardar-cuenta: %+v", r)
+	}
+	r = unViaje(t, socket, `{"version":1,"que":"cuentas","testigo":"`+testigo+
+		`","origen":"https://banco.es/entrar"}`)
+	if !r.OK || len(r.Cuentas) != 2 {
+		t.Fatalf("la cuenta guardada desde el navegador no aparece: %+v", r.Cuentas)
+	}
 }
 
 // unViaje hace lo que hace `esfinge-puente`: recibe los bytes del navegador por

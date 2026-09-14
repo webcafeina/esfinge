@@ -43,14 +43,23 @@ import { api } from "./api";
 import {
   buscarCodigo,
   buscarFormularios,
+  contrasenasVisibles,
   camposDe,
   escribir,
   escribirCodigo,
   type DestinoDeCodigo,
   type Formulario,
 } from "./campos";
+import { vigilarEnvios } from "./envios";
 import { avisar, ponerFilete } from "./marcas";
-import { VERSION_DEL_PROTOCOLO, type Peticion, type Respuesta } from "./protocolo";
+import {
+  VERSION_DEL_PROTOCOLO,
+  type Forma,
+  type Oferta,
+  type Peticion,
+  type Respuesta,
+} from "./protocolo";
+import { mostrarTarjeta, type EstadoDeLaTarjeta, type Resultado } from "./tarjeta";
 
 /**
  * enMarcoAjeno dice si esto se está ejecutando donde no debe.
@@ -357,6 +366,131 @@ function atenderAlPanel() {
   });
 }
 
+/* ------------------------------------------------ guardar desde la página */
+
+/**
+ * hablarConElFondo manda un mensaje por el puerto de la tarjeta y espera la
+ * respuesta, **o nulo si no llega**: aquí nada puede dejar la página esperando.
+ */
+function hablarConElFondo<T>(m: unknown): Promise<T | null> {
+  return new Promise((resolver) => {
+    let hecho = false;
+    const terminar = (r: T | null) => {
+      if (hecho) return;
+      hecho = true;
+      clearTimeout(plazo);
+      resolver(r);
+    };
+    const plazo = setTimeout(() => terminar(null), PLAZO);
+    try {
+      const puerto = api.runtime.connect({ name: "tarjeta" });
+      puerto.onMessage.addListener((r) => {
+        puerto.disconnect();
+        terminar(r as T);
+      });
+      puerto.onDisconnect.addListener(() => terminar(null));
+      puerto.postMessage(m);
+    } catch {
+      terminar(null);
+    }
+  });
+}
+
+type LoQueHayPendiente = {
+  nada?: boolean;
+  cerrada?: boolean;
+  sitio?: string;
+  usuario?: string;
+  forma?: Forma;
+  oferta?: Oferta;
+};
+
+/** La tarjeta que hay a la vista, para no poner dos. */
+let tarjetaAbierta: ReturnType<typeof mostrarTarjeta> | null = null;
+
+/**
+ * Lo que se espera después de un envío antes de mirar si hay que ofrecer algo en la
+ * misma página, para los sitios que entran sin cambiar de página.
+ */
+const ESPERA_TRAS_ENVIAR = 3000;
+
+/**
+ * pareceFallido dice si, después de enviar, **el formulario sigue ahí**, que es la
+ * señal de que no ha ido bien: la contraseña era mala, o el sitio no aceptó la
+ * nueva. **Guardar una contraseña equivocada es peor que no ofrecer.**
+ *
+ * Al entrar, cualquier campo de contraseña visible cuenta. Al registrarse o cambiar
+ * no: tras un cambio bien hecho, muchos sitios dejan el formulario puesto y vacío,
+ * así que ahí solo cuenta si los campos siguen rellenos.
+ */
+function pareceFallido(forma: Forma | undefined): boolean {
+  const visibles = contrasenasVisibles();
+  if (forma === "entrar") return visibles.length > 0;
+  return visibles.some((c) => c.value !== "");
+}
+
+/**
+ * mirarPendiente pregunta si quedó algo por ofrecer y, si lo hay, enseña la tarjeta.
+ *
+ * `alCargar` dice si es la página nueva. **Solo al cargar se descarta** lo que parece
+ * fallido: a los tres segundos de enviar puede ser todavía la página de antes, con
+ * su formulario, esperando a que el sitio conteste; descartar ahí perdería una
+ * oferta buena.
+ */
+async function mirarPendiente(alCargar: boolean) {
+  const r = await hablarConElFondo<LoQueHayPendiente>({ que: "mirar" });
+  if (!r) return;
+  if (r.nada) {
+    // Si había una tarjeta a la vista —«Ya la he abierto» tarde, con la oferta
+    // caducada—, no puede quedarse ofreciendo algo que ya no existe.
+    tarjetaAbierta?.cerrar();
+    tarjetaAbierta = null;
+    return;
+  }
+  if (pareceFallido(r.forma)) {
+    if (alCargar) hablarConElFondo({ que: "descartar" });
+    return;
+  }
+  const estado: EstadoDeLaTarjeta =
+    r.cerrada || !r.oferta
+      ? { tipo: "cerrada", sitio: r.sitio ?? "", usuario: r.usuario ?? "" }
+      : { tipo: "oferta", oferta: r.oferta, usuario: r.usuario ?? "" };
+  if (tarjetaAbierta) {
+    tarjetaAbierta.poner(estado);
+    return;
+  }
+  tarjetaAbierta = mostrarTarjeta(
+    estado,
+    async (d) => {
+      const res = await hablarConElFondo<Resultado>({ que: "decidir", ...d });
+      if (d.accion === "ahora-no" || res?.ok) tarjetaAbierta = null;
+      return res ?? { ok: false, error: "La extensión no ha contestado. Inténtalo otra vez." };
+    },
+    () => {
+      mirarPendiente(false).catch(() => {});
+    },
+  );
+}
+
+/**
+ * vigilarLoQueSeEnvia manda al trabajador de fondo lo que se envía y mira si hay que
+ * ofrecer algo: al cargar, por lo que quedó de la página anterior, y a los tres
+ * segundos de enviar, por los sitios que entran sin cambiar de página.
+ *
+ * **La tarjeta solo en la trama de arriba**: con marcos del mismo origen habría una
+ * por marco. Los envíos, en cambio, se leen en todas, porque el formulario puede
+ * estar en un marco.
+ */
+function vigilarLoQueSeEnvia() {
+  vigilarEnvios((envio) => {
+    hablarConElFondo({ que: "envio", ...envio });
+    if (window.top === window.self) {
+      setTimeout(() => mirarPendiente(false).catch(() => {}), ESPERA_TRAS_ENVIAR);
+    }
+  });
+  if (window.top === window.self) mirarPendiente(true).catch(() => {});
+}
+
 /**
  * Y el arranque: mirar ahora y mirar mientras la página se monta.
  *
@@ -375,6 +509,7 @@ function arrancar() {
   if (enMarcoAjeno()) return;
 
   atenderAlPanel();
+  vigilarLoQueSeEnvia();
   mirar().catch(() => {});
 
   let pendiente: ReturnType<typeof setTimeout> | undefined;

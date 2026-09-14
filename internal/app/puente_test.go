@@ -56,6 +56,9 @@ var loQuePuedeCruzarElPuente = []string{
 	// cualquier otra lista: estar borrada no hace a una entrada menos secreta.
 	"PapeleraDeBoveda", "RestaurarDeBoveda", "BorrarDelTodoDeBoveda",
 	"VaciarPapeleraDeBoveda",
+	// Los sitios en los que la extensión no ofrece guardar (ADR 0032): una lista de
+	// dominios, sin secretos, y quitar uno.
+	"SitiosExcluidos", "QuitarSitioExcluido",
 	// Los iconos van por su propio método y no dentro de la lista de entradas: la
 	// lista se vuelve a pedir en cada tecla del buscador, y meterlos ahí sería
 	// mandarlos todos por el puente en cada pulsación.

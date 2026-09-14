@@ -167,6 +167,17 @@ type sello struct {
 type contenido struct {
 	Entradas []Entrada `json:"entradas"`
 
+	// SitiosExcluidos son los dominios en los que la extensión del navegador **no
+	// ofrece guardar** una contraseña (ADR 0032).
+	//
+	// **Viven aquí, dentro del cuerpo que se cifra entero, y no en el navegador ni en
+	// las preferencias**, y la razón es la misma por la que se cifraron los iconos
+	// (ADR 0024): una lista de sitios dice mucho de alguien. En el perfil del
+	// navegador estaría en claro, y las preferencias son un JSON sin cifrar que
+	// además cruza el puente a la ventana. Una Esfinge anterior a la 2.21.0 no conoce
+	// esta sección y la conserva igual, por `Extra`.
+	SitiosExcluidos []string `json:"sitiosExcluidos,omitempty"`
+
 	// Extra son las secciones que esta versión no conoce. Ver Entrada.Extra.
 	Extra map[string]json.RawMessage `json:"-"`
 }
@@ -906,3 +917,70 @@ func (b *Boveda) Cuantas() int {
 
 // Ruta dice dónde vive, para poder enseñarlo y que nadie tenga que fiarse.
 func (b *Boveda) Ruta() string { return b.ruta }
+
+// ------------------------------------------- los sitios en los que no se ofrece
+
+// Excluir apunta un dominio en el que la extensión no ofrecerá guardar. Repetirlo
+// no hace nada.
+func (b *Boveda) Excluir(dominio string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return ErrCerrada
+	}
+	dominio = strings.ToLower(strings.TrimSpace(dominio))
+	if dominio == "" {
+		return errors.New("Hace falta un sitio que excluir")
+	}
+	for _, d := range b.cont.SitiosExcluidos {
+		if d == dominio {
+			return nil
+		}
+	}
+	b.cont.SitiosExcluidos = append(b.cont.SitiosExcluidos, dominio)
+	sort.Strings(b.cont.SitiosExcluidos)
+	b.cuerpoSucio = true
+	return b.guardar()
+}
+
+// QuitarExclusion vuelve a dejar que se ofrezca guardar en ese dominio.
+func (b *Boveda) QuitarExclusion(dominio string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return ErrCerrada
+	}
+	dominio = strings.ToLower(strings.TrimSpace(dominio))
+	var quedan []string
+	for _, d := range b.cont.SitiosExcluidos {
+		if d != dominio {
+			quedan = append(quedan, d)
+		}
+	}
+	if len(quedan) == len(b.cont.SitiosExcluidos) {
+		return errors.New("Ese sitio no estaba excluido")
+	}
+	b.cont.SitiosExcluidos = quedan
+	b.cuerpoSucio = true
+	return b.guardar()
+}
+
+// Excluido dice si en ese dominio no se ofrece guardar.
+func (b *Boveda) Excluido(dominio string) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	dominio = strings.ToLower(strings.TrimSpace(dominio))
+	for _, d := range b.cont.SitiosExcluidos {
+		if d == dominio {
+			return true
+		}
+	}
+	return false
+}
+
+// Excluidos es la lista, en orden, para enseñarla en Ajustes.
+func (b *Boveda) Excluidos() []string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return append([]string(nil), b.cont.SitiosExcluidos...)
+}

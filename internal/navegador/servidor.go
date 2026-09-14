@@ -62,6 +62,15 @@ type Fuente interface {
 	// RellenarCodigo devuelve el código de un solo uso de una entrada, **si es de
 	// ese dominio**, con los segundos que le quedan.
 	RellenarCodigo(id, dominio string) (CodigoParaRellenar, error)
+
+	// Ofrecer decide qué ofrecer tras un envío en ese sitio. No escribe nada.
+	Ofrecer(origen, dominio string, e Envio) (Oferta, error)
+	// GuardarCuenta crea una credencial **con el sitio del origen y ningún otro**.
+	GuardarCuenta(origen, dominio string, e Envio) (Cuenta, error)
+	// ActualizarCuenta cambia la contraseña de una entrada **de ese dominio**.
+	ActualizarCuenta(id, dominio string, e Envio) (Cuenta, error)
+	// NuncaAqui apunta el dominio entre los que no se ofrece guardar.
+	NuncaAqui(dominio string) error
 	// Emparejar le pregunta a la persona, en la ventana, si permite que ese
 	// navegador hable con la bóveda. Devuelve el testigo si dice que sí.
 	Emparejar(quien string) (string, error)
@@ -100,10 +109,16 @@ type Fuente interface {
 // formulario, no doce— y porque al otro lado hay código nuestro en todas las
 // páginas: si alguna vez se cuela algo por ahí, este número es lo que decide
 // entre una contraseña y la bóveda entera.
+//
+// Y desde la entrega 3 hay un tercero, **el de escribir**: guardar, actualizar y
+// «nunca aquí». Seis por minuto, más estrecho todavía. Una persona guarda una
+// cuenta al entrar en un sitio; un programa que escribiera sin parar llenaría la
+// bóveda de cuentas falsas o machacaría el historial de contraseñas anteriores.
 const (
-	preguntasPorMinuto = 60
-	rellenosPorMinuto  = 12
-	ventanaDeCuenta    = time.Minute
+	preguntasPorMinuto  = 60
+	rellenosPorMinuto   = 12
+	escriturasPorMinuto = 6
+	ventanaDeCuenta     = time.Minute
 )
 
 // Servidor atiende a la extensión del navegador.
@@ -265,14 +280,16 @@ func (c *contador) cabe(ahora time.Time) bool {
 
 // frenos son los dos topes del canal, juntos porque se leen juntos.
 type frenos struct {
-	preguntas contador
-	rellenos  contador
+	preguntas  contador
+	rellenos   contador
+	escrituras contador
 }
 
 func nuevosFrenos() *frenos {
 	return &frenos{
-		preguntas: contador{tope: preguntasPorMinuto},
-		rellenos:  contador{tope: rellenosPorMinuto},
+		preguntas:  contador{tope: preguntasPorMinuto},
+		rellenos:   contador{tope: rellenosPorMinuto},
+		escrituras: contador{tope: escriturasPorMinuto},
 	}
 }
 
@@ -297,6 +314,9 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 		// margen para quien no debería tener ninguno.
 		if (p.Que == QueRellenar || p.Que == QueRellenarCodigo) && !s.frenos.rellenos.cabe(ahora) {
 			return mal(MotivoDemasiado, "Demasiados rellenos seguidos")
+		}
+		if esEscritura(p.Que) && !s.frenos.escrituras.cabe(ahora) {
+			return mal(MotivoDemasiado, "Demasiados cambios seguidos en la bóveda")
 		}
 	}
 
@@ -373,7 +393,44 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 			return mal(MotivoNoEncaja, err.Error())
 		}
 		return Respuesta{OK: true, Codigo: &c}
+
+	case QueOfrecer:
+		o, err := s.fuente.Ofrecer(p.Origen, dominio, envioDe(p))
+		if err != nil {
+			return mal(MotivoNoEncaja, err.Error())
+		}
+		return Respuesta{OK: true, Oferta: &o}
+
+	case QueGuardarCuenta:
+		c, err := s.fuente.GuardarCuenta(p.Origen, dominio, envioDe(p))
+		if err != nil {
+			return mal(MotivoNoEncaja, err.Error())
+		}
+		return Respuesta{OK: true, Guardada: &c}
+
+	case QueActualizarCuenta:
+		c, err := s.fuente.ActualizarCuenta(p.ID, dominio, envioDe(p))
+		if err != nil {
+			return mal(MotivoNoEncaja, err.Error())
+		}
+		return Respuesta{OK: true, Guardada: &c}
+
+	case QueNuncaAqui:
+		if err := s.fuente.NuncaAqui(dominio); err != nil {
+			return mal(MotivoNoEncaja, err.Error())
+		}
+		return Respuesta{OK: true}
 	}
 
 	return mal(MotivoNoEntiendo, "Esfinge no sabe hacer eso")
+}
+
+// esEscritura dice si un verbo cambia la bóveda.
+func esEscritura(que string) bool {
+	return que == QueGuardarCuenta || que == QueActualizarCuenta || que == QueNuncaAqui
+}
+
+// envioDe saca de una petición lo que se sabe del formulario enviado.
+func envioDe(p Peticion) Envio {
+	return Envio{Usuario: p.Usuario, Secreto: p.Secreto, Titulo: p.Titulo, Forma: p.Forma}
 }

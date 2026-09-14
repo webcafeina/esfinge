@@ -616,3 +616,42 @@ func TestLaBovedaSeAbreConLasPiezasDeSiempre(t *testing.T) {
 func abrirTextoDeSiempre(contenedor, clave string) ([]byte, error) {
 	return cripto.AbrirTexto(contenedor, []byte(clave))
 }
+
+// **La lista de «nunca en este sitio» va dentro del cuerpo cifrado**, y sobrevive a
+// cerrar y abrir. Se mira el fichero de verdad: el dominio no puede estar en claro,
+// que es lo que se quería evitar dejándola fuera del navegador.
+func TestLosSitiosExcluidosVanCifradosYSobreviven(t *testing.T) {
+	b, _, ruta := nueva(t)
+	if err := b.Excluir(" Banco-Raro.ES "); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.Excluir("banco-raro.es"); err != nil {
+		t.Fatal(err)
+	}
+	if l := b.Excluidos(); len(l) != 1 || l[0] != "banco-raro.es" {
+		t.Fatalf("excluidos: %v", l)
+	}
+	b.Cerrar()
+
+	crudo, err := os.ReadFile(ruta)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.ToLower(string(crudo)), "banco-raro") {
+		t.Error("el sitio excluido está en claro en el fichero de la bóveda")
+	}
+
+	otra, err := Abrir(ruta, maestra)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !otra.Excluido("banco-raro.es") {
+		t.Error("la lista de excluidos no ha sobrevivido a cerrar y abrir")
+	}
+	if err := otra.QuitarExclusion("banco-raro.es"); err != nil {
+		t.Fatal(err)
+	}
+	if otra.Excluido("banco-raro.es") {
+		t.Error("quitar la exclusión no la ha quitado")
+	}
+}

@@ -23,6 +23,7 @@ import {
   CARACTERES_MINIMO,
   CARACTERES_MAXIMO,
   NUNCA,
+  alCambiarLaBoveda
 } from "./puente";
 import {
   BandaNovedad,
@@ -746,6 +747,17 @@ function Ajustes({
     esfinge.estadoDelNavegador().then(setNavegador).catch(() => {});
   }, []);
 
+  // Los sitios en los que la extensión no ofrece guardar, que viven dentro de la
+  // bóveda. Se vuelven a leer cuando el navegador apunta uno nuevo.
+  const [excluidos, setExcluidos] = useState<string[]>([]);
+  const leerExcluidos = useCallback(() => {
+    esfinge.sitiosExcluidos().then(setExcluidos).catch(() => {});
+  }, []);
+  useEffect(() => {
+    leerExcluidos();
+    return alCambiarLaBoveda(leerExcluidos);
+  }, [leerExcluidos]);
+
   useEffect(() => {
     leerPreferencias();
     leerNavegador();
@@ -971,6 +983,32 @@ function Ajustes({
                       }}
                     >
                       Retirar
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {/* «Nunca en este sitio» se decide en la tarjeta de la página y se deshace
+            aquí (ADR 0032). La lista está dentro de la bóveda, cifrada, y por eso
+            solo se ve con la bóveda abierta. */}
+        {excluidos.length > 0 && (
+          <div>
+            <label>Sitios en los que no se ofrece guardar</label>
+            <ul className="lista-papelera">
+              {excluidos.map((d) => (
+                <li key={d}>
+                  <span className="nombre">{d}</span>
+                  <span className="acciones">
+                    <button
+                      className="discreto"
+                      onClick={async () => {
+                        await esfinge.quitarSitioExcluido(d);
+                        leerExcluidos();
+                      }}
+                    >
+                      Quitar
                     </button>
                   </span>
                 </li>

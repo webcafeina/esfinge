@@ -182,6 +182,9 @@ func TestElNavegadorNoMantieneLaBovedaAbierta(t *testing.T) {
 		// pregunta al cargarse, y navegar por sitios guardados es lo normal.
 		f.Rellenar(ids["Banco"], "banco.es")
 		f.RellenarCodigo(ids["Banco"], "banco.es")
+		// Y lo de guardar desde la página, que tampoco es alguien delante de la ventana.
+		f.Ofrecer("https://banco.es", "banco.es", navegador.Envio{Usuario: "yo@ejemplo.es", Secreto: "otra"})
+		f.ActualizarCuenta(ids["Banco"], "banco.es", navegador.Envio{Secreto: "otra"})
 		f.Estado()
 		a.repasar()
 	}
@@ -268,5 +271,137 @@ func TestElCanalSeEnciendeYSeApagaDesdeAjustes(t *testing.T) {
 	}
 	if e := a.EstadoDelNavegador(); e.Encendido || e.Escuchando {
 		t.Errorf("sigue escuchando después de apagarlo: %+v", e)
+	}
+}
+
+// ------------------------------------------------ guardar desde la página
+
+// Qué se ofrece después de enviar un formulario, en cada caso, **sin que salga ningún
+// secreto** en la oferta.
+func TestQueSeOfreceDespuesDeEnviarUnFormulario(t *testing.T) {
+	_, _, _, f, _ := conBoveda(t)
+	casos := []struct {
+		nombre string
+		envio  navegador.Envio
+		accion string
+		cuenta string
+	}{
+		{"una cuenta que no está",
+			navegador.Envio{Usuario: "nuevo@ejemplo.es", Secreto: "x", Forma: navegador.FormaEntrar},
+			navegador.OfertaGuardar, ""},
+		{"la misma cuenta con la misma contraseña, aunque cambien mayúsculas y espacios",
+			navegador.Envio{Usuario: " YO@ejemplo.es", Secreto: "s3cr3t0", Forma: navegador.FormaEntrar},
+			navegador.OfertaNada, ""},
+		{"la misma cuenta con otra contraseña",
+			navegador.Envio{Usuario: "yo@ejemplo.es", Secreto: "otra", Forma: navegador.FormaEntrar},
+			navegador.OfertaActualizar, "Banco"},
+		{"cambiar la contraseña sin usuario",
+			navegador.Envio{Secreto: "nueva", Forma: navegador.FormaCambio},
+			navegador.OfertaActualizar, "Banco"},
+		{"sin contraseña no hay nada que ofrecer",
+			navegador.Envio{Usuario: "yo@ejemplo.es", Forma: navegador.FormaEntrar},
+			navegador.OfertaNada, ""},
+	}
+	for _, c := range casos {
+		o, err := f.Ofrecer("https://www.banco.es/entrar", "banco.es", c.envio)
+		if err != nil {
+			t.Fatalf("%s: %v", c.nombre, err)
+		}
+		if o.Accion != c.accion {
+			t.Errorf("%s: ofrece %q y tocaba %q", c.nombre, o.Accion, c.accion)
+		}
+		if c.cuenta != "" && (len(o.Cuentas) != 1 || o.Cuentas[0].Titulo != c.cuenta) {
+			t.Errorf("%s: cuentas candidatas %+v", c.nombre, o.Cuentas)
+		}
+		if o.Accion == navegador.OfertaGuardar && o.Titulo != "Banco" {
+			t.Errorf("%s: título sugerido %q", c.nombre, o.Titulo)
+		}
+		if crudo, _ := json.Marshal(o); strings.Contains(string(crudo), "s3cr3t0") {
+			t.Errorf("%s: la oferta lleva la contraseña guardada: %s", c.nombre, crudo)
+		}
+	}
+}
+
+// **Guardar desde el navegador pone el sitio del origen y ningún otro**, con el título
+// sugerido si no se ha escrito uno, y la ventana se entera.
+func TestGuardarDesdeElNavegadorPoneElSitioDelOrigen(t *testing.T) {
+	a, s, _, f, _ := conBoveda(t)
+	c, err := f.GuardarCuenta("https://login.nuevo-sitio.es/entrar?x=1", "nuevo-sitio.es",
+		navegador.Envio{Usuario: " yo@nuevo.es ", Secreto: "clave nueva"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Titulo != "Nuevo-sitio" || c.Usuario != "yo@nuevo.es" {
+		t.Errorf("lo guardado: %+v", c)
+	}
+
+	var id string
+	lista, _ := a.BuscarEnBoveda("")
+	for _, e := range lista {
+		if e.Usuario == "yo@nuevo.es" {
+			id = e.ID
+		}
+	}
+	if id == "" {
+		t.Fatal("la cuenta guardada no está en la bóveda")
+	}
+	e, err := a.VerDeBoveda(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(e.Sitios) != 1 || e.Sitios[0] != "https://login.nuevo-sitio.es" {
+		t.Errorf("sitios guardados: %v", e.Sitios)
+	}
+	if e.Secreto != "clave nueva" || e.Tipo != boveda.TipoCredencial {
+		t.Errorf("entrada guardada: tipo %q", e.Tipo)
+	}
+	if !s.hanAvisadoDe(EventoBovedaCambiada) {
+		t.Error("la ventana no se ha enterado de la cuenta nueva")
+	}
+}
+
+// Actualizar desde el navegador **solo desde el sitio de la cuenta**, y la anterior
+// pasa al historial de contraseñas anteriores.
+func TestActualizarDesdeElNavegadorGuardaLaAnterior(t *testing.T) {
+	a, _, _, f, ids := conBoveda(t)
+	if _, err := f.ActualizarCuenta(ids["Banco"], "correo.com", navegador.Envio{Secreto: "robada"}); err == nil {
+		t.Fatal("ha cambiado la contraseña del banco desde otro sitio")
+	}
+	if _, err := f.ActualizarCuenta(ids["Banco"], "banco.es", navegador.Envio{Secreto: "nueva"}); err != nil {
+		t.Fatal(err)
+	}
+	e, err := a.VerDeBoveda(ids["Banco"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.Secreto != "nueva" {
+		t.Errorf("la contraseña no ha cambiado")
+	}
+	if len(e.Historial) == 0 || e.Historial[0].Secreto != "s3cr3t0" {
+		t.Errorf("la anterior no está en el historial: %+v", e.Historial)
+	}
+}
+
+// «Nunca en este sitio»: deja de ofrecerse, se ve en Ajustes y se deshace.
+func TestNuncaEnEsteSitio(t *testing.T) {
+	a, _, _, f, _ := conBoveda(t)
+	envio := navegador.Envio{Usuario: "nuevo@ejemplo.es", Secreto: "x", Forma: navegador.FormaEntrar}
+	if err := f.NuncaAqui("banco.es"); err != nil {
+		t.Fatal(err)
+	}
+	if o, _ := f.Ofrecer("https://banco.es", "banco.es", envio); o.Accion != navegador.OfertaNada {
+		t.Errorf("en un sitio excluido se ofrece %q", o.Accion)
+	}
+	if l := a.SitiosExcluidos(); len(l) != 1 || l[0] != "banco.es" {
+		t.Errorf("Ajustes ve %v", l)
+	}
+	if err := a.QuitarSitioExcluido("banco.es"); err != nil {
+		t.Fatal(err)
+	}
+	if o, _ := f.Ofrecer("https://banco.es", "banco.es", envio); o.Accion != navegador.OfertaGuardar {
+		t.Errorf("tras quitar la exclusión se ofrece %q", o.Accion)
+	}
+	if l := a.SitiosExcluidos(); l == nil {
+		t.Error("una lista vacía llega como nula, y a la ventana como null")
 	}
 }

@@ -69,6 +69,22 @@ const (
 	// Devuelve también lo que le queda de vida, para que la extensión no escriba uno
 	// que va a caducar antes de que alguien pulse «Verificar».
 	QueRellenarCodigo = "rellenar-codigo"
+
+	// Los cuatro verbos de la entrega 3, **los primeros que escriben en la bóveda**
+	// desde el navegador (ADR 0032). Hasta aquí el navegador solo leía.
+	//
+	// QueOfrecer pregunta qué ofrecer después de un envío: guardar, actualizar o
+	// nada. **Recibe la contraseña que se acaba de escribir** —hace falta para saber
+	// si es la misma que la guardada— y **no devuelve ningún secreto**.
+	QueOfrecer = "ofrecer"
+	// QueGuardarCuenta crea una cuenta **para el sitio del origen y ningún otro**.
+	QueGuardarCuenta = "guardar-cuenta"
+	// QueActualizarCuenta cambia la contraseña de una entrada que encaje con el
+	// origen, y la anterior pasa al historial.
+	QueActualizarCuenta = "actualizar-cuenta"
+	// QueNuncaAqui apunta el sitio en la lista de los que no se ofrece guardar,
+	// que vive dentro de la bóveda, cifrada.
+	QueNuncaAqui = "nunca-aqui"
 	// QueCopiarCodigo hace lo mismo con el código de un solo uso.
 	//
 	// **Lleva origen, como todo lo demás.** En el primer borrador no lo llevaba, y
@@ -93,6 +109,7 @@ const (
 var LoQueSePuedePedir = []string{
 	QueEstado, QueEmparejar, QueCuentas, QueCopiarSecreto, QueCopiarCodigo,
 	QueRellenar, QueRellenarCodigo,
+	QueOfrecer, QueGuardarCuenta, QueActualizarCuenta, QueNuncaAqui,
 }
 
 // VersionDelProtocolo la manda la extensión en cada petición.
@@ -118,7 +135,50 @@ type Peticion struct {
 	// emparejar. **No se cree**: sirve para escribir «Chrome» en un diálogo, no
 	// para decidir nada.
 	Quien string `json:"quien,omitempty"`
+
+	// Lo que llega de un envío, para ofrecer, guardar o actualizar (entrega 3).
+	// **Secreto es la contraseña que se acaba de escribir en la página**: Esfinge
+	// no la guarda si no se pide con guardar-cuenta o actualizar-cuenta.
+	Usuario string `json:"usuario,omitempty"`
+	Secreto string `json:"secreto,omitempty"`
+	Titulo  string `json:"titulo,omitempty"`
+	Forma   string `json:"forma,omitempty"`
 }
+
+// Envio es lo que se sabe de un formulario que se acaba de enviar.
+type Envio struct {
+	Usuario string
+	Secreto string
+	Titulo  string
+	Forma   string
+}
+
+// Las formas de un formulario, que decide la extensión. **Si no está claro, la
+// extensión no manda nada**: aquí solo llegan estas tres.
+const (
+	FormaEntrar   = "entrar"
+	FormaRegistro = "registro"
+	FormaCambio   = "cambio"
+)
+
+// Oferta es lo que la tarjeta de la página tiene que ofrecer. **Sin secretos.**
+type Oferta struct {
+	// Accion es guardar, actualizar o nada.
+	Accion string `json:"accion"`
+	// Sitio es el anfitrión para el que se guardaría, para enseñarlo en la tarjeta.
+	Sitio string `json:"sitio"`
+	// Titulo es el que se sugiere para una cuenta nueva.
+	Titulo string `json:"titulo,omitempty"`
+	// Cuentas son las candidatas a actualizar. Con más de una, se elige en la tarjeta.
+	Cuentas []Cuenta `json:"cuentas,omitempty"`
+}
+
+// Las acciones de una oferta.
+const (
+	OfertaGuardar    = "guardar"
+	OfertaActualizar = "actualizar"
+	OfertaNada       = "nada"
+)
 
 // Cuenta es lo que sale hacia el navegador cuando se pregunta qué hay para un
 // sitio. **Sin secretos**: ni contraseña, ni semilla, ni notas.
@@ -183,11 +243,13 @@ type Respuesta struct {
 	// mirar el texto. Los textos cambian; esto no.
 	Motivo string `json:"motivo,omitempty"`
 
-	Estado  *Estado             `json:"estado,omitempty"`
-	Cuentas []Cuenta            `json:"cuentas,omitempty"`
-	Copiado *Copiado            `json:"copiado,omitempty"`
-	Relleno *Relleno            `json:"relleno,omitempty"`
-	Codigo  *CodigoParaRellenar `json:"codigo,omitempty"`
+	Estado   *Estado             `json:"estado,omitempty"`
+	Cuentas  []Cuenta            `json:"cuentas,omitempty"`
+	Copiado  *Copiado            `json:"copiado,omitempty"`
+	Relleno  *Relleno            `json:"relleno,omitempty"`
+	Oferta   *Oferta             `json:"oferta,omitempty"`
+	Guardada *Cuenta             `json:"guardada,omitempty"`
+	Codigo   *CodigoParaRellenar `json:"codigo,omitempty"`
 	// Testigo solo vuelve al emparejar, y una sola vez.
 	Testigo string `json:"testigo,omitempty"`
 }

@@ -24,7 +24,8 @@
  *     Esfinge cifra en su disco.
  */
 import { api } from "./api";
-import { queMostrar, TEXTO_DE_INSIGNIA, type QueMostrar } from "./insignia";
+import { hostDe, queMostrar, TEXTO_DE_INSIGNIA, type QueMostrar } from "./insignia";
+import { sirvePara, vigente, type Pendiente } from "./pendientes";
 import {
   VERSION_DEL_PROTOCOLO,
   type Peticion,
@@ -313,7 +314,153 @@ api.alarms.onAlarm.addListener((alarma) => {
   if (alarma.name === ALARMA) refrescarLaActiva(true).catch(() => {});
 });
 
+/* ------------------------------------------------ guardar desde la página */
+
+/**
+ * Lo que se acaba de enviar en cada pestaña, esperando a que alguien decida si se
+ * guarda (ADR 0032).
+ *
+ * **La contraseña vive aquí, en la memoria de este trabajador, y en ningún otro
+ * sitio.** Hace falta tenerla un momento porque al pulsar «Entrar» la página cambia
+ * y su guion muere, y la tarjeta sale en la siguiente. Pero la tarjeta de la página
+ * siguiente **no la recibe**: recibe el sitio, el usuario y las cuentas, y al pulsar
+ * manda la decisión. Es este trabajador el que la guarda. Caduca a los dos minutos,
+ * se va al decidir y al cerrar la pestaña, y **nunca va a `storage`**.
+ */
+const ofertasPendientes = new Map<number, Pendiente>();
+api.tabs.onRemoved.addListener((tabId) => ofertasPendientes.delete(tabId));
+
+type MensajeDeTarjeta =
+  | { que: "envio"; forma: Pendiente["forma"]; usuario: string; secreto: string }
+  | { que: "mirar" }
+  | { que: "descartar" }
+  | {
+      que: "decidir";
+      accion: "guardar" | "actualizar" | "nunca" | "ahora-no";
+      titulo?: string;
+      id?: string;
+    };
+
+/**
+ * atenderTarjeta hace lo que pide el guion de la página. **La pestaña y su dirección
+ * las pone el navegador**, como en todo lo demás.
+ */
+async function atenderTarjeta(tabId: number, url: string, m: MensajeDeTarjeta): Promise<unknown> {
+  switch (m.que) {
+    case "envio":
+      if (url.startsWith("https:") && m.secreto) {
+        ofertasPendientes.set(tabId, {
+          origen: url,
+          usuario: m.usuario ?? "",
+          secreto: m.secreto,
+          forma: m.forma,
+          cuando: Date.now(),
+        });
+      }
+      return { ok: true };
+
+    case "descartar":
+      ofertasPendientes.delete(tabId);
+      return { ok: true };
+
+    case "mirar": {
+      const p = ofertasPendientes.get(tabId);
+      if (!p || !sirvePara(p, url, Date.now())) {
+        ofertasPendientes.delete(tabId);
+        return { nada: true };
+      }
+      // **Con `consultar`, que no se empareja**: una página que se carga no es
+      // alguien pidiendo permiso para el navegador.
+      const r = await consultar({
+        que: "ofrecer",
+        origen: p.origen,
+        usuario: p.usuario,
+        secreto: p.secreto,
+        forma: p.forma,
+      });
+      if (!r.ok) {
+        // Con la bóveda cerrada se guarda el pendiente y se dice que la abra: es lo
+        // que eligió el cliente. Con cualquier otro problema, se olvida.
+        if (r.motivo === "cerrada") {
+          return { cerrada: true, sitio: hostDe(p.origen), usuario: p.usuario, forma: p.forma };
+        }
+        ofertasPendientes.delete(tabId);
+        return { nada: true };
+      }
+      if (!r.oferta || r.oferta.accion === "nada") {
+        ofertasPendientes.delete(tabId);
+        return { nada: true };
+      }
+      return { oferta: r.oferta, usuario: p.usuario, forma: p.forma };
+    }
+
+    case "decidir": {
+      const p = ofertasPendientes.get(tabId);
+      if (m.accion === "ahora-no") {
+        ofertasPendientes.delete(tabId);
+        return { ok: true };
+      }
+      if (!p || !vigente(p, Date.now())) {
+        ofertasPendientes.delete(tabId);
+        return {
+          ok: false,
+          error: "Esta oferta ha caducado. Vuelve a entrar en el sitio para guardarla.",
+        };
+      }
+      // **El origen es el del envío**, no el de la página en la que está la tarjeta:
+      // lo que se guarda es para el sitio del que salió, y Esfinge lo comprueba.
+      const r =
+        m.accion === "nunca"
+          ? await consultar({ que: "nunca-aqui", origen: p.origen })
+          : m.accion === "guardar"
+            ? await consultar({
+                que: "guardar-cuenta",
+                origen: p.origen,
+                usuario: p.usuario,
+                secreto: p.secreto,
+                titulo: m.titulo ?? "",
+              })
+            : await consultar({
+                que: "actualizar-cuenta",
+                origen: p.origen,
+                id: m.id ?? "",
+                usuario: p.usuario,
+                secreto: p.secreto,
+              });
+      if (r.ok) {
+        ofertasPendientes.delete(tabId);
+        programarRefresco(tabId, true);
+      }
+      return { ok: r.ok, error: r.error };
+    }
+  }
+}
+
 api.runtime.onConnect.addListener((puerto) => {
+  // **La tarjeta de guardar habla por su propio puerto**, y lo atiende otra función:
+  // aquí no se reenvía nada a Esfinge tal cual, se decide con lo que tiene este
+  // trabajador.
+  if (puerto.name === "tarjeta") {
+    puerto.onMessage.addListener((m) => {
+      const pestana = puerto.sender?.tab;
+      const contestar = (r: unknown) => {
+        try {
+          puerto.postMessage(r);
+        } catch {
+          /* la página se ha ido */
+        }
+      };
+      if (pestana?.id === undefined || !pestana.url) {
+        contestar({ ok: false, nada: true });
+        return;
+      }
+      atenderTarjeta(pestana.id, pestana.url, m as MensajeDeTarjeta)
+        .then(contestar)
+        .catch((e) => contestar({ ok: false, error: `La extensión ha fallado por dentro: ${e}` }));
+    });
+    return;
+  }
+
   // **El guion de la página avisa de que ha rellenado**, sin decir qué: basta con
   // abrir el puerto. La pestaña y su dirección las pone el navegador.
   if (puerto.name === "relleno-hecho") {

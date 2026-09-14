@@ -19,11 +19,40 @@ export type Peticion = {
     | "copiar-secreto"
     | "copiar-codigo"
     | "rellenar"
-    | "rellenar-codigo";
+    | "rellenar-codigo"
+    | "ofrecer"
+    | "guardar-cuenta"
+    | "actualizar-cuenta"
+    | "nunca-aqui";
   origen?: string;
   id?: string;
   testigo?: string;
   quien?: string;
+  /** Lo que se acaba de enviar en un formulario (entrega 3). */
+  usuario?: string;
+  secreto?: string;
+  titulo?: string;
+  forma?: Forma;
+};
+
+/**
+ * Qué es un formulario que se envía. **Si no está claro, no se manda nada**: aquí
+ * solo hay tres.
+ */
+export type Forma = "entrar" | "registro" | "cambio";
+
+/**
+ * Lo que la tarjeta de la página tiene que ofrecer. **Sin secretos**: la
+ * contraseña se queda en el trabajador de fondo, que es quien la guarda.
+ */
+export type Oferta = {
+  accion: "guardar" | "actualizar" | "nada";
+  /** El anfitrión para el que se guardaría. */
+  sitio: string;
+  /** El título que se sugiere para una cuenta nueva. */
+  titulo?: string;
+  /** Las candidatas a actualizar; con varias, se elige en la tarjeta. */
+  cuentas?: Cuenta[];
 };
 
 /** Una cuenta de la bóveda. **Sin secretos**: aquí no hay dónde ponerlos. */
@@ -94,6 +123,9 @@ export type Respuesta = {
   copiado?: Copiado;
   relleno?: Relleno;
   codigo?: CodigoParaRellenar;
+  oferta?: Oferta;
+  /** Lo que se ha guardado o actualizado desde la página. */
+  guardada?: Cuenta;
   testigo?: string;
 };
 

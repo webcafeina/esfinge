@@ -1,6 +1,6 @@
 # Decisiones
 
-Última actualización: **2026-09-07**
+Última actualización: **2026-09-14**
 
 Una ficha por decisión no trivial, en [adr/](adr/). Las que se superan **no se borran**: se marcan y
 se quedan, porque saber qué se pensaba antes explica por qué el código es como es.
@@ -41,6 +41,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0029](adr/0029-el-panel-de-la-extension-es-esfinge.md) | El panel de la extensión es Esfinge: los tokens de la ventana y la marca en la cabecera | 2026-09-14 | aceptada · extiende la 0021 · revisar al verlo en un Mac |
 | [0030](adr/0030-rellenar-el-codigo-de-un-solo-uso.md) | Rellenar el código de un solo uso, con el freno de la contraseña y sin fiarse de la palabra «code» | 2026-09-14 | aceptada · continúa la 0028 y la 0025 · revisar con el uso |
 | [0031](adr/0031-el-icono-con-estados-y-la-marca-en-el-campo.md) | El icono de la barra dice el estado, y el campo rellenado lleva filete y un aviso de tres segundos | 2026-09-14 | aceptada · matiza la 0028 · revisar con el uso y en las tiendas |
+| [0032](adr/0032-guardar-desde-la-pagina.md) | Guardar y actualizar desde la página: una tarjeta que se pulsa y el navegador que escribe en la bóveda | 2026-09-14 | aceptada · matiza la 0028 y la 0031 · revisar en sitios de verdad y en las tiendas |
 
 ## Cuándo escribir una
 

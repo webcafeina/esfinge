@@ -25,6 +25,8 @@
  *     es cómo se escribe un correo electrónico en la caja de búsqueda de un sitio.
  */
 
+import type { Forma } from "./protocolo";
+
 /** Un par de campos que juntos sirven para entrar. */
 export type Formulario = {
   /** Dónde va el usuario, si es que hay dónde. */
@@ -384,4 +386,72 @@ export async function escribirCodigo(destino: DestinoDeCodigo, codigo: string): 
   campos.forEach((campo, i) => escribir(campo, codigo[i]));
   await unRespiro();
   return campos.map((c) => c.value).join("") === codigo;
+}
+
+/* ------------------------------------------ lo que se envía (entrega 3) */
+
+/**
+ * Lo que se sabe de un formulario en el momento de enviarse. **Lleva la contraseña**,
+ * y por eso vive lo justo: se lee, se manda al trabajador de fondo y se olvida.
+ */
+export type Envio = { forma: Forma; usuario: string; secreto: string };
+
+/**
+ * contrasenasVisibles son los campos de contraseña que se ven y se pueden escribir.
+ * Sirve para saber si, después de enviar, el formulario sigue ahí.
+ */
+export function contrasenasVisibles(raiz: ParentNode = document): HTMLInputElement[] {
+  return [...raiz.querySelectorAll<HTMLInputElement>('input[type="password"]')].filter(sePuedeEscribir);
+}
+
+/**
+ * queSeEnvia lee un formulario **en el momento de enviarse** y dice qué es.
+ *
+ * Tres formas, y **ante la duda, nada**, como todo en este fichero:
+ *
+ *   - **Una contraseña**: entrar, o registrarse si el sitio la declara `new-password`.
+ *   - **Dos iguales**: registrarse, con «repite la contraseña».
+ *   - **Actual y nueva** —dos distintas con la primera declarada `current-password`
+ *     o la segunda `new-password`, o tres con las dos últimas iguales—: cambiar.
+ *
+ * Cualquier otra combinación no se ofrece. Guardar una contraseña equivocada es
+ * peor que no ofrecer.
+ */
+export function queSeEnvia(ambito: ParentNode, doc: Document = document): Envio | null {
+  const campos = contrasenasVisibles(ambito).filter((c) => c.value !== "");
+  if (campos.length === 0 || campos.length > 3) return null;
+
+  const valores = campos.map((c) => c.value);
+  let forma: Forma | null = null;
+  let secreto = "";
+
+  if (campos.length === 1) {
+    forma = tokens(campos[0]).includes("new-password") ? "registro" : "entrar";
+    secreto = valores[0];
+  } else if (campos.length === 2) {
+    if (valores[0] === valores[1]) {
+      forma = "registro";
+      secreto = valores[0];
+    } else if (
+      tokens(campos[0]).includes("current-password") ||
+      tokens(campos[1]).includes("new-password")
+    ) {
+      forma = "cambio";
+      secreto = valores[1];
+    }
+  } else if (valores[1] === valores[2] && valores[0] !== valores[1]) {
+    forma = "cambio";
+    secreto = valores[1];
+  }
+  if (!forma) return null;
+
+  // El usuario, **hacia atrás desde la primera contraseña**, como al rellenar. Y en
+  // los de cambiar, que casi nunca lo enseñan, el campo escondido que muchos sitios
+  // ponen para los gestores de contraseñas.
+  const visible = usuarioPara(campos[0], doc)?.value ?? "";
+  const escondido =
+    [...ambito.querySelectorAll<HTMLInputElement>("input")]
+      .find((c) => tokens(c).includes("username") && c.value)
+      ?.value ?? "";
+  return { forma, usuario: (visible || escondido).trim(), secreto };
 }

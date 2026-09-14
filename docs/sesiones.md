@@ -5,6 +5,30 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · Guardar y actualizar desde la página
+
+- **La entrega 3, escrita y sin publicar** ([ADR 0032](adr/0032-guardar-desde-la-pagina.md)). Decidida con el
+  cliente en dos rondas de preguntas: tarjeta en la página, basta con pulsar en el navegador, los cuatro
+  casos (entrar con cuenta nueva, entrar con otra contraseña, registrarse y cambiar), con la bóveda
+  cerrada se dice que la abras, título del sitio editable, «Nunca en este sitio» cifrado en la bóveda,
+  la tarjeta hasta que se decida, y la cuenta se elige si hay varias.
+- **Go**: verbos `ofrecer`, `guardar-cuenta`, `actualizar-cuenta` y `nunca-aqui`, con un freno propio de
+  seis escrituras por minuto; `SitiosExcluidos` dentro del cuerpo cifrado; `SitiosExcluidos` y
+  `QuitarSitioExcluido` para Ajustes; y el aviso `boveda-cambiada`, que no existía porque nada de fuera
+  escribía en la bóveda.
+- **Extensión**: `queSeEnvia` en `campos.ts`, `envios.ts` (submit, clic e Intro, solo de personas),
+  `pendientes.ts` (función pura), `tarjeta.ts` y lo que los une en `fondo.ts` y `pagina.ts`. **La
+  contraseña espera en la memoria del trabajador y no llega a la página siguiente.**
+- **Ventana**: la lista «Sitios en los que no se ofrece guardar» en Ajustes, y la lista de la bóveda se
+  recarga sola tras una escritura del navegador.
+- **De mirar las capturas** salió que «Guardar» se caía a una segunda fila a 320 px: «Nunca en este
+  sitio» pasó a su propia línea, subrayado como el botón discreto de la ventana, y el usuario ganó su
+  etiqueta.
+- Verificado: `make comprobar` en verde —Go, tipos y **70 pruebas de la extensión**, diecinueve nuevas—,
+  `make e2e` con 84, los colores de la tarjeta medidos y las capturas de sus cinco estados en web clara
+  y oscura. Sin verificar: **nada de esto con la extensión cargada** ni en sitios de verdad, y la lista
+  de excluidos de Ajustes, que no tiene prueba de interfaz. Todo apuntado en `docs/deuda.md`.
+
 ## 2026-09-14 · La parte visual de la extensión, cerrada
 
 - **2.20.3 probada en el Mac, en Firefox y en Chrome: «Ahora está perfecto».** Con eso queda cerrada la
