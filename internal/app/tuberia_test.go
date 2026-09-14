@@ -33,7 +33,7 @@ func TestLaTuberiaEnteraDesdeElNavegador(t *testing.T) {
 	}
 	if err := a.GuardarEnBoveda(boveda.Entrada{
 		Titulo: "Banco", Usuario: "yo@ejemplo.es", Secreto: "s3cr3t0",
-		Sitios: []string{"https://banco.es/particulares"},
+		Sitios: []string{"https://banco.es/particulares"}, TOTP: "GEZDGNBVGY3TQOJQ",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -73,6 +73,12 @@ func TestLaTuberiaEnteraDesdeElNavegador(t *testing.T) {
 	if len(r.Cuentas) != 1 || r.Cuentas[0].Titulo != "Banco" {
 		t.Fatalf("cuentas: %+v", r.Cuentas)
 	}
+	// **Y si tiene código, visto desde el otro extremo.** Es lo que se leía mal sobre
+	// lo que devuelve `Buscar` —vaciado por `SinSecretos`— y salía que ninguna
+	// cuenta tenía segundo factor. Aquí se mira en los bytes que llegan al navegador.
+	if !r.Cuentas[0].TieneCodigo {
+		t.Error("la cuenta tiene semilla y al navegador le llega que no tiene código")
+	}
 
 	// Tercero, y es la entrega 2: pedir con qué rellenar esa cuenta. **Es el único
 	// viaje de todo el protocolo por el que sale una contraseña de la bóveda**, así
@@ -95,6 +101,18 @@ func TestLaTuberiaEnteraDesdeElNavegador(t *testing.T) {
 		`","id":"`+id+`","origen":"https://otro-sitio.example/entrar"}`)
 	if r.OK || r.Relleno != nil {
 		t.Fatalf("ha entregado la contraseña del banco a otro sitio: %+v", r)
+	}
+
+	// Y el código de un solo uso, que es el segundo verbo por el que sale un secreto.
+	r = unViaje(t, socket, `{"version":1,"que":"rellenar-codigo","testigo":"`+testigo+
+		`","id":"`+id+`","origen":"https://banco.es/verificar"}`)
+	if !r.OK || r.Codigo == nil || len(r.Codigo.Codigo) != 6 {
+		t.Fatalf("rellenar el código: %+v", r)
+	}
+	r = unViaje(t, socket, `{"version":1,"que":"rellenar-codigo","testigo":"`+testigo+
+		`","id":"`+id+`","origen":"https://otro-sitio.example/verificar"}`)
+	if r.OK || r.Codigo != nil {
+		t.Fatalf("ha entregado el código del banco a otro sitio: %+v", r)
 	}
 }
 

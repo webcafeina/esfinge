@@ -330,7 +330,9 @@ function rellenar(pestana: number, cuenta: Cuenta): Promise<[string, boolean]> {
         );
       });
 
-      puerto.postMessage({ id: cuenta.id });
+      // Con si tiene código, para que la página no pida uno que no existe cuando
+      // además del formulario de entrar hay un campo de segundo factor.
+      puerto.postMessage({ id: cuenta.id, tieneCodigo: cuenta.tieneCodigo });
     } catch (e) {
       terminar(`No se ha podido rellenar: ${e}`);
     }

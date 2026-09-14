@@ -30,6 +30,15 @@ Plantilla al final.
   extensión cargada de verdad— sigue abierta.
 - Verificado: `make comprobar` en verde, 18 pruebas de la extensión. **Sin verificar**: cómo se ve en
   un navegador de verdad en el Mac, con San Francisco, y el icono de 16 px en la barra.
+- **Y el código de un solo uso, rellenado** ([ADR 0030](adr/0030-rellenar-el-codigo-de-un-solo-uso.md)),
+  que era la segunda cosa que pidió el cliente. Un verbo nuevo con las llaves y **el freno** de
+  `rellenar`; tres formas de encontrar dónde va —declarado, seis u ocho casillas, o por el nombre si no
+  hay contraseña— y **nunca un campo que solo se llame «code»**; y esperar al siguiente si al actual le
+  quedan menos de tres segundos.
+- Verificado: once casos de detección en Chromium, cinco de ellos donde lo correcto es no tocar nada;
+  el código comparado con `internal/codigos` en la aplicación; y **la tubería entera** recorriendo el
+  verbo nuevo y `tieneCodigo`. `make comprobar` en verde. **Sin verificar**: formularios de segundo
+  factor de verdad —Cloudflare el primero— y si sus casillas aceptan que se les escriba así.
 
 ## 2026-09-10 · La entrega 2, comprobada en las dos familias
 

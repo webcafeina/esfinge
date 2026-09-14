@@ -129,6 +129,10 @@ No se cambian sin preguntar.
   página de otro es la parte cara y arriesgada; se revisa **con el uso**, no con la intuición. Dos
   cosas que cambian y hay que decir en voz alta: **por el canal ya sale una contraseña de verdad** y
   **hay código nuestro en cada página `https` que se abra**.
+  Y desde la 2.19.0 **rellena también el código de un solo uso** (ADR 0030), con el mismo freno que
+  la contraseña y **sin fiarse nunca de la palabra «code»** —que es el código postal, el promocional y
+  el CVC—. Con eso, **por el canal salen y en la página quedan escritos la contraseña y el segundo
+  factor**, que es lo mismo que la ADR 0025 dijo de la bóveda abierta, ahora dentro del navegador.
 - **Hay una bóveda de contraseñas**, local y cifrada, con clave de recuperación (ADR 0023). Es la
   fase 1 de sustituir a Dashlane, y **cambia lo que el producto es**: hasta ahora un fallo perdía un
   fichero; ahora puede perder todas las contraseñas de la empresa. Eso sube el listón de las pruebas

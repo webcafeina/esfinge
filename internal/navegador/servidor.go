@@ -59,6 +59,9 @@ type Fuente interface {
 	// dominio**. Es lo único de esta interfaz que entrega un secreto a quien
 	// pregunta en vez de dejarlo en el portapapeles.
 	Rellenar(id, dominio string) (Relleno, error)
+	// RellenarCodigo devuelve el código de un solo uso de una entrada, **si es de
+	// ese dominio**, con los segundos que le quedan.
+	RellenarCodigo(id, dominio string) (CodigoParaRellenar, error)
 	// Emparejar le pregunta a la persona, en la ventana, si permite que ese
 	// navegador hable con la bóveda. Devuelve el testigo si dice que sí.
 	Emparejar(quien string) (string, error)
@@ -289,7 +292,10 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 		// **El de rellenar se mira aquí y no en su `case`**, para que caiga antes de
 		// tocar la bóveda y para que esté al lado del otro: un freno escondido en la
 		// rama de un `switch` es un freno que alguien quita sin verlo.
-		if p.Que == QueRellenar && !s.frenos.rellenos.cabe(ahora) {
+		// Y **rellenar el código gasta del mismo freno**: los dos entregan secretos,
+		// y juntos son la cuenta entera. Dos frenos separados serían el doble de
+		// margen para quien no debería tener ninguno.
+		if (p.Que == QueRellenar || p.Que == QueRellenarCodigo) && !s.frenos.rellenos.cabe(ahora) {
 			return mal(MotivoDemasiado, "Demasiados rellenos seguidos")
 		}
 	}
@@ -360,6 +366,13 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 			return mal(MotivoNoEncaja, err.Error())
 		}
 		return Respuesta{OK: true, Relleno: &r}
+
+	case QueRellenarCodigo:
+		c, err := s.fuente.RellenarCodigo(p.ID, dominio)
+		if err != nil {
+			return mal(MotivoNoEncaja, err.Error())
+		}
+		return Respuesta{OK: true, Codigo: &c}
 	}
 
 	return mal(MotivoNoEntiendo, "Esfinge no sabe hacer eso")

@@ -209,3 +209,140 @@ export function escribir(campo: HTMLInputElement, valor: string) {
   campo.dispatchEvent(new Event("input", { bubbles: true }));
   campo.dispatchEvent(new Event("change", { bubbles: true }));
 }
+
+/* ------------------------------------------------ el código de un solo uso */
+
+/**
+ * Dónde va el código de segundo factor: un campo, o una fila de casillas de un
+ * carácter.
+ */
+export type DestinoDeCodigo =
+  | { tipo: "uno"; campo: HTMLInputElement }
+  | { tipo: "casillas"; campos: HTMLInputElement[] };
+
+/** Los tipos de campo donde cabe un código. */
+const TIPOS_DE_CODIGO = new Set(["text", "tel", "number", ""]);
+
+/**
+ * Los nombres que dicen «esto es un segundo factor».
+ *
+ * **«code» a secas no está, y es la ausencia importante**: es el código postal,
+ * el promocional, el de la tarjeta regalo y el de verificación del CVC. Todos
+ * esos tienen seis caracteres a menudo, y escribir ahí un código de un solo uso
+ * es regalarlo a un formulario que no lo pidió.
+ */
+const NOMBRE_DE_CODIGO =
+  /(^|[^a-z])(otp|totp|mfa|2fa)([^a-z]|$)|two.?factor|one.?time|authenticat|verification.?code/i;
+
+/**
+ * buscarCodigo encuentra dónde escribir un código de un solo uso, **o nada**.
+ *
+ * Tres formas, en orden de cuánto hay que creerse a la página:
+ *
+ *   1. **Lo declara el sitio**: `autocomplete="one-time-code"`, que es el estándar.
+ *      Si hay más de uno declarado, no se sabe cuál y no se toca.
+ *   2. **Seis u ocho casillas de un carácter**, juntas. Es la forma más común de
+ *      los formularios de segundo factor que no declaran nada, y la que un campo
+ *      suelto no detecta. **Solo seis u ocho**: cuatro es un PIN, y un PIN no es
+ *      esto.
+ *   3. **Por el nombre**, y solo si en la página no hay ninguna contraseña visible
+ *      y el campo tiene cara de numérico. Es la regla más débil, así que es la
+ *      que más condiciones lleva.
+ *
+ * Y lo mismo que en todo este fichero: **ante la duda, nada**. Un código escrito
+ * en el campo equivocado es un segundo factor regalado.
+ */
+export function buscarCodigo(raiz: Document = document): DestinoDeCodigo | null {
+  const candidatos = [...raiz.querySelectorAll<HTMLInputElement>("input")]
+    .filter(sePuedeEscribir)
+    .filter((c) => TIPOS_DE_CODIGO.has(c.type.toLowerCase()));
+
+  // 1. Lo que el sitio declara. Las casillas de un carácter también suelen llevar
+  // la declaración en la primera, así que aquí solo cuentan los campos enteros.
+  const declarados = candidatos.filter(
+    (c) => tokens(c).includes("one-time-code") && c.maxLength !== 1,
+  );
+  if (declarados.length === 1) return { tipo: "uno", campo: declarados[0] };
+  if (declarados.length > 1) return null;
+
+  // 2. Las casillas.
+  const casillas = candidatos.filter((c) => c.maxLength === 1 && !esDeTarjeta(c));
+  const grupos = agruparCasillas(casillas).filter((g) => g.length === 6 || g.length === 8);
+  if (grupos.length === 1) return { tipo: "casillas", campos: grupos[0] };
+  if (grupos.length > 1) return null;
+
+  // 3. Por el nombre, con todas las cautelas.
+  const hayContrasena = [...raiz.querySelectorAll<HTMLInputElement>('input[type="password"]')].some(
+    sePuedeEscribir,
+  );
+  if (hayContrasena) return null;
+  const porNombre = candidatos.filter(
+    (c) =>
+      !esDeTarjeta(c) &&
+      NOMBRE_DE_CODIGO.test(
+        [c.name, c.id, c.getAttribute("aria-label") ?? "", c.placeholder].join(" "),
+      ) &&
+      pareceNumerico(c),
+  );
+  return porNombre.length === 1 ? { tipo: "uno", campo: porNombre[0] } : null;
+}
+
+/** esDeTarjeta: lo que el sitio declara de una tarjeta no es un segundo factor. */
+function esDeTarjeta(campo: HTMLInputElement): boolean {
+  return tokens(campo).some((t) => t.startsWith("cc-"));
+}
+
+/** pareceNumerico: las señales de que un campo espera seis u ocho cifras. */
+function pareceNumerico(campo: HTMLInputElement): boolean {
+  return (
+    campo.inputMode === "numeric" ||
+    campo.type === "tel" ||
+    campo.type === "number" ||
+    campo.maxLength === 6 ||
+    campo.maxLength === 8 ||
+    /\\d|\[0-9\]/.test(campo.pattern)
+  );
+}
+
+/**
+ * agruparCasillas junta las casillas que van juntas.
+ *
+ * **Muchas van cada una en su caja** —un `div` por casilla, para dibujarle el
+ * borde—, así que agrupar por el padre directo daría seis grupos de una. Cuando la
+ * caja solo contiene esa casilla, se sube un nivel.
+ */
+function agruparCasillas(casillas: HTMLInputElement[]): HTMLInputElement[][] {
+  const porPadre = new Map<Element, HTMLInputElement[]>();
+  for (const c of casillas) {
+    let padre = c.parentElement;
+    if (padre && padre.querySelectorAll("input").length === 1 && padre.parentElement) {
+      padre = padre.parentElement;
+    }
+    if (!padre) continue;
+    const grupo = porPadre.get(padre) ?? [];
+    grupo.push(c);
+    porPadre.set(padre, grupo);
+  }
+  return [...porPadre.values()];
+}
+
+/** camposDe devuelve los campos de un destino, para marcarlos como rellenados. */
+export function camposDe(destino: DestinoDeCodigo): HTMLInputElement[] {
+  return destino.tipo === "uno" ? [destino.campo] : destino.campos;
+}
+
+/**
+ * escribirCodigo pone el código en su sitio. **Devuelve falso si no cabe**: seis
+ * casillas y un código de ocho cifras no es un sitio donde escribir a medias.
+ */
+export function escribirCodigo(destino: DestinoDeCodigo, codigo: string): boolean {
+  if (destino.tipo === "uno") {
+    escribir(destino.campo, codigo);
+    return true;
+  }
+  if (destino.campos.length !== codigo.length) return false;
+  // Una a una y con sus eventos, como si se tecleara: las casillas suelen mover el
+  // foco a la siguiente al recibir el `input`, y es lo que esperan ver.
+  destino.campos.forEach((campo, i) => escribir(campo, codigo[i]));
+  return true;
+}

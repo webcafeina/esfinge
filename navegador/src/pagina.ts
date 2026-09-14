@@ -40,7 +40,15 @@
  *     `docs/seguridad.md`— así que es una promesa de este fichero.
  */
 import { api } from "./api";
-import { buscarFormularios, escribir, type Formulario } from "./campos";
+import {
+  buscarCodigo,
+  buscarFormularios,
+  camposDe,
+  escribir,
+  escribirCodigo,
+  type DestinoDeCodigo,
+  type Formulario,
+} from "./campos";
 import { VERSION_DEL_PROTOCOLO, type Peticion, type Respuesta } from "./protocolo";
 
 /**
@@ -152,6 +160,47 @@ async function rellenar(
 }
 
 /**
+ * Por debajo de esto, un código se da por caducado y se espera al siguiente.
+ *
+ * **Escribir uno al que le quedan dos segundos es escribir uno que no va a
+ * servir**: entre que aparece en el campo y alguien pulsa «Verificar» se van esos
+ * dos segundos, y lo que se ve es un «código incorrecto» con el código de Esfinge
+ * puesto, que es la peor forma de fallar porque parece que Esfinge calcula mal.
+ */
+const VIDA_MINIMA_DEL_CODIGO = 3;
+
+const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * rellenarCodigo escribe el código de un solo uso de una cuenta.
+ *
+ * Igual que `rellenar`: el código vive **dentro de esta función y en ningún otro
+ * sitio**. Y con `insistir` para lo que pide una persona desde el panel.
+ */
+async function rellenarCodigo(
+  id: string,
+  destino: DestinoDeCodigo,
+  insistir = false,
+): Promise<string> {
+  const campos = camposDe(destino);
+  if (!insistir && campos.some((c) => yaRellenados.has(c))) return "";
+
+  let r = await pedir({ que: "rellenar-codigo", id });
+  if (r.ok && r.codigo && r.codigo.quedan < VIDA_MINIMA_DEL_CODIGO) {
+    await esperar((r.codigo.quedan + 1) * 1000);
+    r = await pedir({ que: "rellenar-codigo", id });
+  }
+  if (!r.ok || !r.codigo) {
+    return r.error ?? "Esfinge no ha podido dar el código.";
+  }
+  if (!escribirCodigo(destino, r.codigo.codigo)) {
+    return "Este formulario pide un código de otro largo que el que da Esfinge.";
+  }
+  campos.forEach((c) => yaRellenados.add(c));
+  return "";
+}
+
+/**
  * Cuántas veces se le puede preguntar a Esfinge por una carga de página.
  *
  * **Existe porque el observador puede dispararse muchas veces.** Una aplicación
@@ -188,7 +237,11 @@ async function mirar() {
     (f) =>
       (f.secreto && !yaRellenados.has(f.secreto)) || (f.usuario && !yaRellenados.has(f.usuario)),
   );
-  if (formularios.length === 0) return;
+  // **Y el código de un solo uso**, que suele llegar en la pantalla siguiente a la
+  // de la contraseña, o en la misma cuando el sitio lo pide todo a la vez.
+  const codigo = buscarCodigo();
+  const codigoPendiente = codigo && !camposDe(codigo).some((c) => yaRellenados.has(c));
+  if (formularios.length === 0 && !codigoPendiente) return;
 
   preguntando = true;
   try {
@@ -197,6 +250,11 @@ async function mirar() {
     if (cuentas.length !== 1) return;
     for (const f of formularios) {
       await rellenar(cuentas[0].id, f);
+    }
+    // Solo si Esfinge **dice** que esa cuenta tiene código: una Esfinge anterior a
+    // la 2.19.0 no lo dice, y ahí no se pide uno a ciegas.
+    if (codigo && codigoPendiente && cuentas[0].tieneCodigo === true) {
+      await rellenarCodigo(cuentas[0].id, codigo);
     }
   } finally {
     preguntando = false;
@@ -234,7 +292,7 @@ function atenderAlPanel() {
   api.runtime.onConnect.addListener((puerto) => {
     if (puerto.name !== "rellenar") return;
     puerto.onMessage.addListener((m) => {
-      const id = (m as { id?: string }).id ?? "";
+      const { id = "", tieneCodigo } = m as { id?: string; tieneCodigo?: boolean };
       const contestar = (error: string) => {
         try {
           puerto.postMessage({ ok: !error, error });
@@ -243,14 +301,26 @@ function atenderAlPanel() {
         }
       };
       const formularios = buscarFormularios();
-      if (formularios.length === 0) {
-        contestar("Aquí no hay ningún formulario de entrar que Esfinge sepa rellenar.");
+      // El código solo si la cuenta lo tiene; `undefined` es un panel anterior, y
+      // ahí se intenta, que si no hay código Esfinge lo dirá.
+      const codigo = tieneCodigo === false ? null : buscarCodigo();
+      if (formularios.length === 0 && !codigo) {
+        contestar("Aquí no hay ningún formulario de entrar ni de código que Esfinge sepa rellenar.");
         return;
       }
-      // Se pide una vez y se escribe en todos los que haya, que casi siempre es
-      // uno. **Insistiendo**: lo ha pedido una persona, así que se escribe aunque
-      // ya se hubiera rellenado antes y se hayan borrado los campos a mano.
-      rellenar(id, formularios[0], true)
+      // **Insistiendo**: lo ha pedido una persona, así que se escribe aunque ya se
+      // hubiera rellenado antes y se hayan borrado los campos a mano. Primero el
+      // formulario de entrar y luego el código; si hay formulario y el código
+      // falla, lo que se cuenta es que el formulario se ha rellenado.
+      (async () => {
+        if (formularios.length > 0) {
+          const fallo = await rellenar(id, formularios[0], true);
+          if (fallo) return fallo;
+          if (codigo) await rellenarCodigo(id, codigo, true);
+          return "";
+        }
+        return codigo ? rellenarCodigo(id, codigo, true) : "";
+      })()
         .then(contestar)
         // Con red debajo, como todo lo que arranca solo en este proyecto: sin esto,
         // una excepción aquí es una promesa rechazada que nadie recoge y el panel se

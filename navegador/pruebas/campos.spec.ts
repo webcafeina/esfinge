@@ -228,3 +228,126 @@ test("escribir vale aunque el campo tenga un accesor propio, como en React", asy
   // dice lo de antes, así que el cambio le parece un cambio.
   expect(resultado.registroAlLlegarElEvento).toBe("");
 });
+
+/* ------------------------------------------------ el código de un solo uso */
+
+/**
+ * Dónde se escribe el código de segundo factor, **y sobre todo dónde no**.
+ *
+ * La mitad de la tabla son casos donde lo correcto es no tocar nada, por lo mismo
+ * que con la contraseña: un código escrito en el campo equivocado es un segundo
+ * factor regalado, y los formularios de la web están llenos de campos de «código»
+ * que no lo son —el postal, el promocional, el CVC—.
+ */
+async function codigoQueSeDetecta(page: import("@playwright/test").Page, html: string) {
+  await page.setContent(`<!doctype html><meta charset="utf-8">${html}`);
+  await page.addScriptTag({ content: modulo });
+  return page.evaluate(() => {
+    // @ts-expect-error el módulo se inyecta como global en la página
+    const d = Campos.buscarCodigo(document);
+    if (!d) return null;
+    return d.tipo === "uno"
+      ? { tipo: "uno", ids: [d.campo.id] }
+      : { tipo: "casillas", ids: d.campos.map((c: HTMLInputElement) => c.id) };
+  });
+}
+
+const seis = (envuelta = false) =>
+  [1, 2, 3, 4, 5, 6]
+    .map((n) => {
+      const casilla = `<input id="c${n}" type="text" inputmode="numeric" maxlength="1" style="width:32px">`;
+      return envuelta ? `<span class="caja">${casilla}</span>` : casilla;
+    })
+    .join("");
+
+const casosDeCodigo: {
+  nombre: string;
+  html: string;
+  espera: { tipo: string; ids: string[] } | null;
+}[] = [
+  {
+    nombre: "código: el campo que el sitio declara",
+    html: `<form><input id="c" autocomplete="one-time-code" inputmode="numeric"></form>`,
+    espera: { tipo: "uno", ids: ["c"] },
+  },
+  {
+    nombre: "código: seis casillas de un carácter",
+    html: `<form><div class="fila">${seis()}</div></form>`,
+    espera: { tipo: "casillas", ids: ["c1", "c2", "c3", "c4", "c5", "c6"] },
+  },
+  {
+    // Lo más común en la práctica: cada casilla en su caja, para dibujarle el borde.
+    nombre: "código: seis casillas, cada una en su caja",
+    html: `<form><div class="fila">${seis(true)}</div></form>`,
+    espera: { tipo: "casillas", ids: ["c1", "c2", "c3", "c4", "c5", "c6"] },
+  },
+  {
+    nombre: "código: por el nombre, si no hay contraseña y parece numérico",
+    html: `<form><input id="c" name="totp" inputmode="numeric" maxlength="6"></form>`,
+    espera: { tipo: "uno", ids: ["c"] },
+  },
+  {
+    // «code» a secas no es un segundo factor, y es el caso que más se ve.
+    nombre: "código: un código promocional no lo es",
+    html: `<form><input id="p" name="promo_code" maxlength="6"></form>`,
+    espera: null,
+  },
+  {
+    nombre: "código: el de la tarjeta tampoco",
+    html: `<form><input id="cvc" name="security_code" autocomplete="cc-csc" maxlength="3" inputmode="numeric"></form>`,
+    espera: null,
+  },
+  {
+    nombre: "código: ni el código postal",
+    html: `<form><input id="cp" name="codigo_postal" maxlength="5" inputmode="numeric"></form>`,
+    espera: null,
+  },
+  {
+    // Cuatro casillas son un PIN, y un PIN no es un código de un solo uso.
+    nombre: "código: cuatro casillas son un PIN",
+    html: `<form><div>${[1, 2, 3, 4].map((n) => `<input id="c${n}" maxlength="1" style="width:32px">`).join("")}</div></form>`,
+    espera: null,
+  },
+  {
+    // Con una contraseña delante, un campo que se llama «mfa» puede ser cualquier
+    // cosa: la regla del nombre es la más débil y solo vale sola.
+    nombre: "código: por el nombre no, si hay una contraseña en la página",
+    html: `<form><input id="u" name="usuario"><input id="p" type="password"><input id="c" name="mfa_token" inputmode="numeric"></form>`,
+    espera: null,
+  },
+  {
+    nombre: "código: un campo escondido no se rellena",
+    html: `<div style="display:none"><input id="c" autocomplete="one-time-code"></div>`,
+    espera: null,
+  },
+];
+
+for (const caso of casosDeCodigo) {
+  test(caso.nombre, async ({ page }) => {
+    expect(await codigoQueSeDetecta(page, caso.html)).toEqual(caso.espera);
+  });
+}
+
+/**
+ * Escribir en casillas pone **un carácter en cada una**, y no escribe nada si el
+ * código no cabe: seis casillas y ocho cifras no es sitio para escribir a medias.
+ */
+test("código: se escribe una cifra por casilla, o nada si no cabe", async ({ page }) => {
+  await page.setContent(`<!doctype html><meta charset="utf-8"><form><div>${seis()}</div></form>`);
+  await page.addScriptTag({ content: modulo });
+  const resultado = await page.evaluate(() => {
+    // @ts-expect-error el módulo se inyecta como global en la página
+    const destino = Campos.buscarCodigo(document);
+    const valores = () => destino.campos.map((c: HTMLInputElement) => c.value).join("");
+    // @ts-expect-error el módulo se inyecta como global en la página
+    const largo = Campos.escribirCodigo(destino, "12345678");
+    const trasLargo = valores();
+    // @ts-expect-error el módulo se inyecta como global en la página
+    const bueno = Campos.escribirCodigo(destino, "482913");
+    return { largo, trasLargo, bueno, valores: valores() };
+  });
+  expect(resultado.largo).toBe(false);
+  expect(resultado.trasLargo).toBe("");
+  expect(resultado.bueno).toBe(true);
+  expect(resultado.valores).toBe("482913");
+});

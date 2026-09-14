@@ -75,6 +75,16 @@ func (b *bovedaFalsa) Rellenar(id, dominio string) (Relleno, error) {
 	return Relleno{}, errors.New("Esa entrada no es de ese sitio")
 }
 
+func (b *bovedaFalsa) RellenarCodigo(id, dominio string) (CodigoParaRellenar, error) {
+	b.pedidos++
+	for _, e := range lasEntradas {
+		if e.id == id && Encaja(e.sitio, dominio) && e.semilla != "" {
+			return CodigoParaRellenar{Codigo: "123456", Quedan: 20}, nil
+		}
+	}
+	return CodigoParaRellenar{}, errors.New("Esa entrada no es de ese sitio, o no tiene código")
+}
+
 func (b *bovedaFalsa) Emparejar(string) (string, error) {
 	if b.niega {
 		return "", errors.New("No se ha permitido")
@@ -507,5 +517,37 @@ func TestLoQueSePuedePedirEstaEnLaLista(t *testing.T) {
 	sort.Strings(contestados)
 	if !reflect.DeepEqual(esperados, contestados) {
 		t.Errorf("contestados %v, en la lista %v", contestados, esperados)
+	}
+}
+
+// El código para rellenar sale solo en su sitio, solo de una entrada con semilla,
+// y **gasta del mismo freno que rellenar la contraseña**: los dos juntos son la
+// cuenta entera, así que no pueden tener dos márgenes.
+func TestRellenarElCodigoSoloEnSuSitioYConElMismoFreno(t *testing.T) {
+	s := &Servidor{fuente: nuevaFalsa(), frenos: nuevosFrenos()}
+	pide := func(que, id, origen string) Respuesta {
+		return s.Atender(Peticion{
+			Version: VersionDelProtocolo, Que: que,
+			Testigo: "el-testigo", ID: id, Origen: origen,
+		})
+	}
+
+	r := pide(QueRellenarCodigo, "1", "https://www.banco.es/verificar")
+	if !r.OK || r.Codigo == nil || r.Codigo.Codigo != "123456" || r.Codigo.Quedan != 20 {
+		t.Fatalf("no ha dado el código: %+v", r)
+	}
+	if r := pide(QueRellenarCodigo, "1", "https://correo.com"); r.OK || r.Codigo != nil {
+		t.Fatalf("ha dado el código del banco a otro sitio: %+v", r)
+	}
+	if r := pide(QueRellenarCodigo, "2", "https://correo.com"); r.OK || r.Codigo != nil {
+		t.Errorf("una entrada sin semilla ha dado un código: %+v", r)
+	}
+
+	// Se gasta el freno rellenando contraseñas, y el código ya no sale.
+	for i := 0; i < rellenosPorMinuto; i++ {
+		pide(QueRellenar, "1", "https://banco.es")
+	}
+	if r := pide(QueRellenarCodigo, "1", "https://banco.es"); r.OK || r.Motivo != MotivoDemasiado {
+		t.Errorf("rellenar el código tiene un freno aparte del de la contraseña: %+v", r)
 	}
 }

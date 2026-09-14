@@ -296,6 +296,40 @@ func (f fuenteDelNavegador) Rellenar(id, dominio string) (navegador.Relleno, err
 	return navegador.Relleno{Usuario: e.Usuario, Secreto: e.Secreto}, nil
 }
 
+// RellenarCodigo es el código de un solo uso de una entrada, **para escribirlo en
+// el formulario** y no en el portapapeles.
+//
+// Pasa por `entradaDe` como todo lo que sale hacia el navegador, así que tiene las
+// mismas llaves que `Rellenar`, y como ella **no cuenta como actividad**: una
+// página de segundo factor se rellena sola al cargar, y eso no es alguien delante
+// de la ventana.
+//
+// Y lo mismo que se dice de `Rellenar` hay que decirlo aquí: lo que sale por esta
+// función **no se borra solo**, porque no pasa por el portapapeles. Un código dura
+// treinta segundos, que es poco, pero junto con la contraseña es la cuenta entera.
+func (f fuenteDelNavegador) RellenarCodigo(id, dominio string) (navegador.CodigoParaRellenar, error) {
+	e, err := f.entradaDe(id, dominio)
+	if err != nil {
+		return navegador.CodigoParaRellenar{}, err
+	}
+	if e.TOTP == "" {
+		return navegador.CodigoParaRellenar{}, errors.New("Esa entrada no tiene código de un solo uso")
+	}
+	s, err := codigos.Leer(e.TOTP)
+	if err != nil {
+		return navegador.CodigoParaRellenar{}, err
+	}
+	ahora := time.Now()
+	codigo, err := s.En(ahora)
+	if err != nil {
+		return navegador.CodigoParaRellenar{}, err
+	}
+	return navegador.CodigoParaRellenar{
+		Codigo: codigo,
+		Quedan: int(s.Quedan(ahora).Seconds()),
+	}, nil
+}
+
 // entradaDe busca una entrada **y comprueba que es de ese sitio**.
 //
 // La comprobación va aquí y no en quien llama, a propósito: es el único sitio por

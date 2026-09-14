@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/webcafeina/esfinge/internal/boveda"
+	"github.com/webcafeina/esfinge/internal/codigos"
 	"github.com/webcafeina/esfinge/internal/navegador"
 )
 
@@ -65,6 +66,37 @@ func TestElNavegadorSabeSiHayCodigoPeroNoLaSemilla(t *testing.T) {
 	}
 }
 
+// El código que sale para rellenar es el de ahora, con lo que le queda de vida, y
+// solo sale de una entrada que tenga semilla.
+func TestElCodigoParaRellenarEsElDeAhora(t *testing.T) {
+	_, _, _, f, ids := conBoveda(t)
+
+	antes := time.Now()
+	c, err := f.RellenarCodigo(ids["Banco"], "banco.es")
+	despues := time.Now()
+	if err != nil {
+		t.Fatal(err)
+	}
+	semilla, err := codigos.Leer("GEZDGNBVGY3TQOJQ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Se compara con el de antes y el de después de pedirlo: si la llamada cae justo
+	// en el cambio de periodo, cualquiera de los dos es correcto.
+	a, _ := semilla.En(antes)
+	d, _ := semilla.En(despues)
+	if c.Codigo != a && c.Codigo != d {
+		t.Errorf("código %q, y en ese momento valían %q o %q", c.Codigo, a, d)
+	}
+	if c.Quedan < 0 || c.Quedan > 30 {
+		t.Errorf("le quedan %d segundos, que no cabe en un periodo de treinta", c.Quedan)
+	}
+
+	if _, err := f.RellenarCodigo(ids["Correo"], "correo.com"); err == nil {
+		t.Error("una entrada sin semilla ha entregado un código")
+	}
+}
+
 // Lo que el navegador ve de un sitio: sus cuentas, sin secretos, y solo las suyas.
 func TestLoQueElNavegadorVeDeUnSitio(t *testing.T) {
 	_, _, _, f, _ := conBoveda(t)
@@ -102,6 +134,9 @@ func TestUnaEntradaNoSaleParaUnSitioQueNoEsElSuyo(t *testing.T) {
 		if _, err := f.CopiarCodigo(ids["Banco"], dominio); err == nil {
 			t.Errorf("el código de un solo uso del banco ha salido para «%s»", dominio)
 		}
+		if _, err := f.RellenarCodigo(ids["Banco"], dominio); err == nil {
+			t.Errorf("el código del banco ha salido para rellenar en «%s»", dominio)
+		}
 	}
 
 	// Y un identificador inventado tampoco abre nada.
@@ -127,6 +162,9 @@ func TestLoBorradoNoLoVeElNavegador(t *testing.T) {
 	if _, err := f.Rellenar(ids["Banco"], "banco.es"); err == nil {
 		t.Error("una entrada de la papelera ha entregado su contraseña para rellenar")
 	}
+	if _, err := f.RellenarCodigo(ids["Banco"], "banco.es"); err == nil {
+		t.Error("una entrada de la papelera ha entregado su código para rellenar")
+	}
 }
 
 // **Preguntar desde el navegador no cuenta como actividad.** Una extensión
@@ -143,6 +181,7 @@ func TestElNavegadorNoMantieneLaBovedaAbierta(t *testing.T) {
 		// Y rellenar tampoco, que es donde más se notaría: una página guardada
 		// pregunta al cargarse, y navegar por sitios guardados es lo normal.
 		f.Rellenar(ids["Banco"], "banco.es")
+		f.RellenarCodigo(ids["Banco"], "banco.es")
 		f.Estado()
 		a.repasar()
 	}

@@ -189,20 +189,18 @@ pruebas del panel compilado. **Lo que falta es verlo en un navegador de verdad e
 letra es San Francisco y los anchos cambian, así que lo primero es si el correo sigue cabiendo; y si el
 icono de 16 px se lee en la barra.
 
-### 2. El resto de mejoras de la extensión, empezando por el código de un solo uso
+### ~~2. Rellenar el código de un solo uso~~ — hecho el 2026-09-14, falta verlo en sitios de verdad
 
-**Rellenar también el segundo factor cuando el sitio lo pida** —era la entrega 4 y el cliente la
-adelanta—. La mitad del trabajo está hecha: Go calcula el código desde la 2.15.0 y `campos.ts` ya
-reconoce `autocomplete="one-time-code"` **para excluirlo** de ser confundido con un usuario. Lo que
-falta es detectarlo como destino y un verbo que lo entregue, con las mismas cinco llaves que
-`rellenar`.
+Resuelto en la [ADR 0030](adr/0030-rellenar-el-codigo-de-un-solo-uso.md). Un verbo nuevo,
+`rellenar-codigo`, con las mismas llaves que `rellenar` y **gastando de su mismo freno**. Se escribe en
+el campo que el sitio declara, en **seis u ocho casillas de un carácter**, o en un campo con nombre de
+segundo factor si no hay contraseña en la página; **nunca en uno que solo se llame «code»**. Solo con
+una cuenta del sitio que tenga código, esperando al siguiente si al actual le quedan menos de tres
+segundos. El botón «Rellenar» del panel hace formulario y código a la vez.
 
-Dos cosas a tener presentes cuando se haga:
-
-- **Un código caduca.** `Copiado.Quedan` ya existe para no entregar uno que muere antes de llegar al
-  formulario; al rellenar hace falta lo mismo o no tiene sentido.
-- **Los formularios de segundo factor suelen ser seis casillas de un carácter**, no un campo. Eso es
-  detección nueva y es donde estará el trabajo.
+**Lo que falta es verlo en formularios de verdad**, empezando por Cloudflare, que el cliente ya usa con
+código. Y dos cosas que solo se ven allí: si las casillas de verdad aceptan que se les escriba así
+—algunas solo reaccionan a pegar o a teclas—, y si la detección acierta sin escribir donde no debe.
 
 ### 3. Y después, lo que ya estaba planteado
 

@@ -58,6 +58,17 @@ const (
 	//     campo y olvidarlo, y eso es una promesa de la extensión que Esfinge no
 	//     puede comprobar. Está dicho así en `docs/seguridad.md`.
 	QueRellenar = "rellenar"
+	// QueRellenarCodigo devuelve el código de un solo uso de **una** entrada, para
+	// escribirlo en el formulario de segundo factor.
+	//
+	// **Es el segundo verbo que entrega un secreto**, y lleva exactamente las mismas
+	// llaves que [QueRellenar] y **el mismo freno**: un código vale treinta segundos,
+	// pero junto a la contraseña es la cuenta entera. Lo que no se hace es darle una
+	// puerta más ancha por durar poco.
+	//
+	// Devuelve también lo que le queda de vida, para que la extensión no escriba uno
+	// que va a caducar antes de que alguien pulse «Verificar».
+	QueRellenarCodigo = "rellenar-codigo"
 	// QueCopiarCodigo hace lo mismo con el código de un solo uso.
 	//
 	// **Lleva origen, como todo lo demás.** En el primer borrador no lo llevaba, y
@@ -81,7 +92,7 @@ const (
 // decisión y no un efecto de haber escrito un `case` más.
 var LoQueSePuedePedir = []string{
 	QueEstado, QueEmparejar, QueCuentas, QueCopiarSecreto, QueCopiarCodigo,
-	QueRellenar,
+	QueRellenar, QueRellenarCodigo,
 }
 
 // VersionDelProtocolo la manda la extensión en cada petición.
@@ -154,6 +165,14 @@ type Relleno struct {
 	Secreto string `json:"secreto"`
 }
 
+// CodigoParaRellenar es el código de un solo uso que sale para escribirlo en un
+// formulario. Como [Relleno], lleva un secreto y va en su propio tipo.
+type CodigoParaRellenar struct {
+	Codigo string `json:"codigo"`
+	// Quedan son los segundos de vida que le quedan al código.
+	Quedan int `json:"quedan"`
+}
+
 // Respuesta es lo que vuelve. Siempre lleva `ok`, y cuando es falso lleva un
 // motivo que se puede enseñar tal cual: los errores de este proyecto están
 // escritos para leerse.
@@ -164,10 +183,11 @@ type Respuesta struct {
 	// mirar el texto. Los textos cambian; esto no.
 	Motivo string `json:"motivo,omitempty"`
 
-	Estado  *Estado  `json:"estado,omitempty"`
-	Cuentas []Cuenta `json:"cuentas,omitempty"`
-	Copiado *Copiado `json:"copiado,omitempty"`
-	Relleno *Relleno `json:"relleno,omitempty"`
+	Estado  *Estado             `json:"estado,omitempty"`
+	Cuentas []Cuenta            `json:"cuentas,omitempty"`
+	Copiado *Copiado            `json:"copiado,omitempty"`
+	Relleno *Relleno            `json:"relleno,omitempty"`
+	Codigo  *CodigoParaRellenar `json:"codigo,omitempty"`
 	// Testigo solo vuelve al emparejar, y una sola vez.
 	Testigo string `json:"testigo,omitempty"`
 }

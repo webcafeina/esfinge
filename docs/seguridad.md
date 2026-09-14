@@ -155,6 +155,13 @@ cambian lo que hay que saber, así que van dichas enteras y no de pasada:
 - **Ante la duda, no se rellena.** No se toca un formulario con dos contraseñas visibles —eso es
   registrarse—, ni un campo declarado como contraseña nueva o código de un solo uso, ni uno
   invisible o de un píxel. Equivocarse de campo es escribir una contraseña donde la lea alguien.
+- **Y desde la 2.19.0, también el segundo factor** (ADR 0030). Cuando un sitio pide el código de un
+  solo uso y tienes una sola cuenta de ese sitio con código, Esfinge lo escribe. Eso quiere decir que
+  **por el canal salen la contraseña y el código**, y que **en la página quedan escritos los dos**:
+  lo que la ADR 0025 dijo de la bóveda abierta —que entrega las dos cosas a la vez— vale ahora dentro
+  del navegador. El código gasta del mismo freno que la contraseña, así que no hay más margen por
+  pedir las dos, y **no se escribe en cualquier campo que se llame «código»**: ni el postal, ni el
+  promocional, ni el de la tarjeta.
 
 ## Dónde queda algo en disco
 

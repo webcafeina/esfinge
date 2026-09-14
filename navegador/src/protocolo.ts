@@ -18,7 +18,8 @@ export type Peticion = {
     | "cuentas"
     | "copiar-secreto"
     | "copiar-codigo"
-    | "rellenar";
+    | "rellenar"
+    | "rellenar-codigo";
   origen?: string;
   id?: string;
   testigo?: string;
@@ -72,6 +73,17 @@ export type Relleno = {
   secreto: string;
 };
 
+/**
+ * El código de un solo uso para escribirlo en un formulario. Como `Relleno`,
+ * lleva un secreto y va en su propio tipo; y la misma obligación: se escribe y se
+ * olvida.
+ */
+export type CodigoParaRellenar = {
+  codigo: string;
+  /** Segundos de vida que le quedan. */
+  quedan: number;
+};
+
 export type Respuesta = {
   ok: boolean;
   error?: string;
@@ -81,6 +93,7 @@ export type Respuesta = {
   cuentas?: Cuenta[];
   copiado?: Copiado;
   relleno?: Relleno;
+  codigo?: CodigoParaRellenar;
   testigo?: string;
 };
 
