@@ -293,9 +293,11 @@ Cuatro bloques, en orden:
 1. **~~Windows~~ — hecho el 2026-09-14, sin publicar** (ADR 0034): manifiestos apuntados desde el registro
    y el puente en el instalador. Probado con un registro de mentira aquí; el de verdad y el instalador se
    comprueban en la máquina Windows de GitHub al publicar. **Ningún navegador lo ha lanzado en Windows.**
-2. **La extensión, lista para las tiendas**: consentimiento en el panel —que hace cumplir el trabajador de
-   fondo y respeta la página—, sin `activeTab`, Firefox 140 con `data_collection_permissions`, paquete de
-   Chrome sin `key`, la versión pasada de verdad y el código fuente reproducible para Mozilla.
+2. **~~La extensión, lista para las tiendas~~ — hecho el 2026-09-14, sin publicar** (ADR 0033): el aviso
+   de datos en el panel la primera vez, que hacen cumplir también el trabajador de fondo y el guion de la
+   página; sin `activeTab`; Firefox 140 con `data_collection_permissions`; la versión pasada de verdad;
+   **sin `innerHTML`**; y el código fuente para Mozilla, **reproducible byte a byte** en una carpeta limpia.
+   Queda para el bloque 4 quitar `key` del paquete de la tienda de Chrome.
 3. **La web del proyecto** en `web/` con GitHub Pages: portada, privacidad y soporte.
 4. **Las fichas** (`docs/tiendas/`, imágenes con Playwright), **el trabajo `tiendas`** en `publicar.yml`
    (Firefox con `web-ext`, Chrome con la API v2 y cuenta de servicio) y **los pasos del cliente** para dar

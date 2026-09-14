@@ -54,6 +54,7 @@ import {
   type DestinoDeCodigo,
   type Formulario,
 } from "./campos";
+import { aceptado, alAceptar } from "./consentimiento";
 import { vigilarEnvios, vigilarIdentificador } from "./envios";
 import { cuentaParaRellenarSola } from "./identidad";
 import { avisar, ponerFilete } from "./marcas";
@@ -540,11 +541,31 @@ function vigilarLoQueSeEnvia() {
  */
 const PLAZO_DE_OBSERVACION = 30000;
 
-function arrancar() {
+async function arrancar() {
   // **El guardián va antes que todo, no antes de una parte.** Una trama de otro
   // origen no rellena sola y tampoco contesta al panel: si contestara, sería una
   // voz más en una conversación donde el panel se cree la primera que oye.
   if (enMarcoAjeno()) return;
+
+  // **Y nada antes del aviso de datos** (ADR 0033). Sin aceptarlo, este guion no
+  // mira formularios, no escucha envíos —que es donde se leen las contraseñas— ni
+  // contesta al panel. Si se acepta con la página abierta, empieza sin recargar.
+  if (!(await aceptado())) {
+    const dejarDeOir = alAceptar(() => {
+      dejarDeOir();
+      empezar();
+    });
+    return;
+  }
+  empezar();
+}
+
+/** Que no empiece dos veces si el aviso se acepta mientras se comprobaba. */
+let empezado = false;
+
+function empezar() {
+  if (empezado) return;
+  empezado = true;
 
   atenderAlPanel();
   vigilarLoQueSeEnvia();
@@ -561,4 +582,4 @@ function arrancar() {
   setTimeout(() => observador.disconnect(), PLAZO_DE_OBSERVACION);
 }
 
-arrancar();
+arrancar().catch(() => {});

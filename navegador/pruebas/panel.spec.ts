@@ -47,6 +47,16 @@ type Guion = {
   tramas?: { ms: number; r: unknown }[];
   /** El icono que el navegador dice tener de la pestaña. */
   favicon?: string;
+  /** Si ya se ha aceptado el aviso de datos (ADR 0033). Por defecto, sí. */
+  aceptado?: boolean;
+};
+
+/** Lo que la `chrome` de mentira deja a la vista de las pruebas. */
+type Rastro = {
+  /** Lo que el panel ha mandado al trabajador de fondo. */
+  __mensajes: { que: string }[];
+  /** Lo que el panel ha guardado en `storage.local`. */
+  __guardado: Record<string, { version: number }>;
 };
 
 const ORIGEN = "http://panel.esfinge.test";
@@ -86,11 +96,25 @@ async function abrir(page: Page, guion: Guion) {
         },
       };
     };
+    const rastro = globalThis as unknown as Rastro;
+    rastro.__mensajes = [];
+    rastro.__guardado =
+      g.aceptado === false ? {} : { consentimiento: { version: 1 } };
     (globalThis as Record<string, unknown>).chrome = {
+      storage: {
+        local: {
+          get: async () => ({ ...rastro.__guardado }),
+          set: async (o: Record<string, { version: number }>) => {
+            Object.assign(rastro.__guardado, o);
+          },
+        },
+        onChanged: { addListener: () => {}, removeListener: () => {} },
+      },
       runtime: {
         getManifest: () => ({ version: "9.9.9" }),
         connect: () =>
           puerto((m, oyentes) => {
+            rastro.__mensajes.push(m as { que: string });
             const r = (m as { que: string }).que === "cuentas" ? g.cuentas : { ok: true, copiado: { portapapeles: 30 } };
             setTimeout(() => oyentes.forEach((f) => f(r)), 10);
           }),
@@ -385,4 +409,62 @@ test("el texto del aviso no pasa por encima de la esfinge tenue", async ({ page 
     });
     expect(derecha, `${sitio} pisa la esfinge`).toBeLessThanOrEqual(dibujo!.x);
   }
+});
+
+/* -------------------------------------------- el aviso de datos (ADR 0033) */
+
+const rastro = (page: Page): Promise<Rastro> =>
+  page.evaluate(() => {
+    // **Los dos campos y no `globalThis`**: la ventana entera no se puede pasar de la
+    // página a la prueba, y llega vacía.
+    const g = globalThis as unknown as Rastro;
+    return { __mensajes: g.__mensajes, __guardado: g.__guardado };
+  });
+
+test("aviso de datos: sin aceptarlo, se enseña y no se pregunta nada a Esfinge", async ({ page }) => {
+  const errores = await abrir(page, { cuentas: TRES, aceptado: false });
+  await expect(page.locator("#aviso")).toBeVisible();
+  await expect(page.locator("#aviso h1")).toHaveText("Esfinge y tus datos");
+  await expect(page.locator("#lista")).toBeHidden();
+  await expect(page.locator("#cargando")).toBeHidden();
+  // **La prueba que importa**: ni una petición al trabajador de fondo, que es lo que
+  // emparejaría el navegador y haría salir el aviso de permiso en Esfinge.
+  await page.waitForTimeout(300);
+  expect((await rastro(page)).__mensajes).toEqual([]);
+  expect(errores).toEqual([]);
+});
+
+test("aviso de datos: aceptarlo lo guarda con su versión y trae las cuentas", async ({ page }) => {
+  await abrir(page, { cuentas: TRES, aceptado: false });
+  await page.click("#aceptar");
+  await expect(page.locator("#lista li")).toHaveCount(3);
+  await expect(page.locator("#aviso")).toBeHidden();
+  const r = await rastro(page);
+  expect(r.__guardado.consentimiento.version).toBe(1);
+  expect(r.__mensajes.map((m) => m.que)).toEqual(["cuentas"]);
+});
+
+test("aviso de datos: Intro acepta, sin marco de foco al abrir", async ({ page }) => {
+  await abrir(page, { cuentas: TRES, aceptado: false });
+  await expect(page.locator("#aviso")).toBeVisible();
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#lista li")).toHaveCount(3);
+});
+
+test("aviso de datos: los enlaces van a la web del proyecto, en otra pestaña", async ({ page }) => {
+  await abrir(page, { cuentas: TRES, aceptado: false });
+  const enlaces = await page.locator("#aviso a").evaluateAll((as) =>
+    as.map((a) => [(a as HTMLAnchorElement).href, (a as HTMLAnchorElement).target]),
+  );
+  expect(enlaces).toEqual([
+    ["https://webcafeina.github.io/esfinge/privacidad.html", "_blank"],
+    ["https://webcafeina.github.io/esfinge/soporte.html", "_blank"],
+  ]);
+});
+
+test("aviso de datos: ya aceptado, no se enseña", async ({ page }) => {
+  await abrir(page, { cuentas: TRES });
+  await expect(page.locator("#lista li")).toHaveCount(3);
+  await expect(page.locator("#aviso")).toBeHidden();
 });

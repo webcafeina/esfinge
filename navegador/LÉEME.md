@@ -105,6 +105,8 @@ El panel toma los tokens de la ventana tal cual (ADR 0029): **una pareja de colo
 - Guardar y actualizar contraseñas desde la página (entrega 3).
 - El código de un solo uso, rellenado también (entrega 4).
 - El desplegable dentro del campo, **si el uso dice que hace falta**.
-- Las tiendas, y con ellas el identificador fijo de Chrome (entrega 5).
+- Las tiendas (entrega 5, ADR 0033), **en curso**: el aviso de datos, los manifiestos y el código fuente
+  reproducible ya están; faltan la web, las fichas y la subida automática, y con ellas el identificador
+  que asigne la tienda de Chrome. Cómo se compila para Mozilla está en `COMPILAR.md`.
 - ~~Windows: el manifiesto va al registro y todavía no se escribe.~~ Se escribe desde la 2.22.0
   (ADR 0034), sin probar todavía con un navegador en un Windows de verdad.

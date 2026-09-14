@@ -267,7 +267,8 @@ button:focus-visible {
 
 /* Rellenar: el botón de acción. Oro de fondo y piedra encima. Con ancho mínimo,
  * para que «✓ Hecho» no haga saltar la fila. */
-.rellenar {
+.rellenar,
+.primario {
   position: relative;
   height: var(--alto-control);
   min-width: 78px;
@@ -278,7 +279,8 @@ button:focus-visible {
   font-weight: 600;
 }
 
-.rellenar:hover:not(:disabled) {
+.rellenar:hover:not(:disabled),
+.primario:hover:not(:disabled) {
   background: var(--relleno-vivo); /* «botón primario con el puntero encima» */
 }
 
@@ -354,6 +356,56 @@ button:focus-visible {
   50% {
     opacity: 0.5;
   }
+}
+
+/* El aviso de datos, la primera vez (ADR 0033). **Sobre el lienzo y con pares ya
+ * medidos**: el título y lo destacado en --tinta, el texto en --cuerpo, los enlaces
+ * en --cuerpo y subrayados —como el botón discreto de la ventana, que no tiene color
+ * que gastar— y «Aceptar y empezar» con el botón primario. */
+.aviso {
+  padding: var(--espacio-3) var(--espacio-2) var(--espacio-4);
+}
+
+.aviso h1 {
+  margin: 0 0 var(--espacio-2);
+  font-size: var(--texto);
+  font-weight: 600;
+  color: var(--tinta); /* «títulos sobre el lienzo» */
+}
+
+.aviso p {
+  margin: 0 0 var(--espacio-2);
+  color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
+  line-height: 1.4;
+}
+
+.aviso strong {
+  color: var(--tinta); /* «títulos sobre el lienzo» */
+}
+
+/* Solo enlaces dentro, así que puede ser flexible: la regla de no hacerlo va por los
+ * párrafos con texto y negritas mezclados. */
+.aviso .enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-3);
+}
+
+.aviso a {
+  color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.aviso a:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: var(--radio-chico);
+}
+
+.aviso .primario {
+  width: 100%;
+  margin-top: var(--espacio-2);
 }
 
 /* Lo que se enseña cuando no hay lista. **Sobre el lienzo y no sobre tarjeta**,

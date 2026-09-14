@@ -13,7 +13,6 @@
   "permissions": [
     "nativeMessaging",
     "storage",
-    "activeTab",
     "alarms",
     "favicon"
   ],

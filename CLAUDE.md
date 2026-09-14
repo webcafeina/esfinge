@@ -709,6 +709,17 @@ distintas y sin declarar, no se sabe cuál es la nueva. Ahora el nombre del camp
 uno y no del otro** —`newPassword` y `confirmNewPassword` distintas es un error al teclear—. Y un sitio que
 cambia sin cambiar de página se mira varias veces tras enviar, no una.
 
+**Nada de la extensión funciona antes del aviso de datos, y se hace cumplir en tres sitios** (ADR 0033):
+el panel no pregunta hasta aceptarlo, el trabajador de fondo contesta `sin-consentimiento` a cualquier
+puerto y no lanza el puente al refrescar el icono, y el guion de la página no arranca. Con uno solo no
+basta: los oyentes de envío de la página leen contraseñas sin preguntar a nadie. **Si cambia lo que dice
+el aviso, sube `VERSION_DEL_AVISO`**, y con él la política de privacidad y lo declarado en las tiendas.
+
+**Y en la extensión no hay `innerHTML`**: los dibujos pasan por `dibujar` (`dibujo.ts`). Eran nuestros e
+inofensivos, pero es lo primero que marca la revisión de Mozilla. Y **Mozilla compila el código fuente y
+lo compara byte a byte**: si la extensión importa un fichero nuevo de fuera de `navegador/`, hay que
+añadirlo a `herramientas/fuente-de-la-extension.sh` o la versión de Firefox se rechaza.
+
 **En Windows el navegador no mira una carpeta, mira el registro** (ADR 0034): una clave bajo `HKCU` cuyo
 valor por defecto es la ruta **absoluta** del manifiesto. Los manifiestos van en `%APPDATA%\Esfinge`, uno
 por familia —Firefox y Chrome llevan campos distintos—, y la clave de Chrome la comparten Brave, Vivaldi

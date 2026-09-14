@@ -24,6 +24,7 @@
  *     Esfinge cifra en su disco.
  */
 import { api } from "./api";
+import { aceptado, alAceptar } from "./consentimiento";
 import { hostDe, queMostrar, TEXTO_DE_INSIGNIA, type QueMostrar } from "./insignia";
 import {
   sirvePara,
@@ -250,6 +251,12 @@ async function refrescar(tabId: number, obligar: boolean) {
     return; // la pestaña ya no está
   }
   const url = pestana.url ?? "";
+  // **Sin aceptar el aviso de datos no se pregunta nada a Esfinge** (ADR 0033): ni
+  // siquiera se lanza el puente. El icono dice dónde se empieza.
+  if (!(await aceptado())) {
+    pintar(tabId, queMostrar({ url, aceptado: false }));
+    return;
+  }
   const antes = ultimaVez.get(tabId);
   if (!obligar && antes && antes.url === url && Date.now() - antes.cuando < NO_REPETIR) return;
   ultimaVez.set(tabId, { url, cuando: Date.now() });
@@ -318,6 +325,12 @@ Promise.resolve(api.alarms.get(ALARMA))
   .catch(() => {});
 api.alarms.onAlarm.addListener((alarma) => {
   if (alarma.name === ALARMA) refrescarLaActiva(true).catch(() => {});
+});
+
+// Y al aceptar el aviso de datos en el panel, el icono de la pestaña activa deja de
+// pedir que se abra.
+alAceptar(() => {
+  refrescarLaActiva(true).catch(() => {});
 });
 
 /* ------------------------------------------------ guardar desde la página */
@@ -493,7 +506,9 @@ api.runtime.onConnect.addListener((puerto) => {
         contestar({ ok: false, nada: true });
         return;
       }
-      atenderTarjeta(pestana.id, pestana.url, m as MensajeDeTarjeta)
+      const { id, url } = pestana;
+      aceptado()
+        .then((si) => (si ? atenderTarjeta(id, url, m as MensajeDeTarjeta) : { ok: false, nada: true }))
         .then(contestar)
         .catch((e) => contestar({ ok: false, error: `La extensión ha fallado por dentro: ${e}` }));
     });
@@ -505,15 +520,21 @@ api.runtime.onConnect.addListener((puerto) => {
   if (puerto.name === "relleno-hecho") {
     const pestana = puerto.sender?.tab;
     if (pestana?.id !== undefined && pestana.url) {
-      rellenadas.set(pestana.id, pestana.url);
-      pintar(
-        pestana.id,
-        queMostrar({
-          url: pestana.url,
-          estado: { ok: true, estado: { existe: true, abierta: true } },
-          rellenado: true,
-        }),
-      );
+      const { id, url } = pestana;
+      aceptado()
+        .then((si) => {
+          if (!si) return;
+          rellenadas.set(id, url);
+          pintar(
+            id,
+            queMostrar({
+              url,
+              estado: { ok: true, estado: { existe: true, abierta: true } },
+              rellenado: true,
+            }),
+          );
+        })
+        .catch(() => {});
     }
     return;
   }
@@ -530,74 +551,90 @@ api.runtime.onConnect.addListener((puerto) => {
       }
     };
 
-    // **El origen de una página lo dice el navegador, no la página**, y aquí es
-    // donde eso deja de ser una frase y es una línea. Un puerto llamado «pagina»
-    // viene del guion que Esfinge pone en las páginas, y lo que llegue por él en
-    // el campo `origen` se tira y se pone `sender.tab.url`, que lo rellena el
-    // navegador y es lo que se ve en la barra de direcciones.
-    //
-    // Sin esto, cualquier página con una vulnerabilidad que le dejara hablar por
-    // este puerto podría pedir las cuentas de un banco diciendo que es el banco.
-    // Con esto, lo peor que puede pedir es lo suyo.
-    //
-    // **Y si llega vacía, se dice.** No es una hipótesis: en Firefox los
-    // `host_permissions` de MV3 no se conceden al instalar, hay que darlos en el
-    // panel de extensiones. Sin ellos `sender.tab.url` llega `undefined` —sin
-    // error—, el origen viaja vacío y Esfinge contesta que ahí no rellena. Desde
-    // fuera eso parece un fallo de Esfinge y no un permiso que falta, que es
-    // exactamente la clase de silencio que ya costó cinco versiones con
-    // `storage`. Aquí se convierte en una frase que dice qué hacer.
-    if (puerto.name === "pagina") {
-      const donde = puerto.sender?.tab?.url ?? "";
-      if (!donde) {
-        contestar({
-          ok: false,
-          motivo: "origen",
-          error:
-            "La extensión no puede ver la dirección de esta pestaña. Dale permiso a " +
-            "Esfinge para este sitio: en Firefox, en el botón de extensiones de la " +
-            "barra; en Chrome, en «Gestionar extensión» → «Acceso a sitios web».",
-        });
-        return;
-      }
-      (p as Peticion).origen = donde;
-    }
-
-    // **Con `catch`, y es la lección de todo el día por tercera vez.** Sin él,
-    // cualquier excepción aquí dentro es una promesa rechazada que nadie recoge:
-    // el trabajador no contesta, el panel espera su plazo y lo que se ve es «el
-    // trabajador de fondo no ha contestado», que **no dice nada del problema**.
-    // Así pasó con un permiso que faltaba en el manifiesto: `api.storage` era
-    // undefined, esto lanzaba en la primera línea, y desde fuera parecía un
-    // problema del puente. Cinco versiones persiguiendo eso.
-    pedir(p as Peticion)
-      .then((r) => {
-        contestar(r);
-        // **Al abrir el panel, el icono se pone al día con lo que el panel acaba de
-        // saber**, sin volver a preguntar: el panel pide las cuentas nada más abrirse.
-        const peticion = p as Peticion;
-        if (puerto.name === "panel" && peticion.que === "cuentas" && peticion.origen) {
-          api.tabs
-            .query({ active: true, currentWindow: true })
-            .then(([pestana]) => {
-              if (pestana?.id === undefined) return;
-              pintar(
-                pestana.id,
-                queMostrar({
-                  url: peticion.origen,
-                  cuentas: r,
-                  rellenado: rellenadas.get(pestana.id) === peticion.origen,
-                }),
-              );
-            })
-            .catch(() => {});
+    // **Sin aceptar el aviso de datos, nada de lo que llegue por aquí va a Esfinge**
+    // (ADR 0033), ni del panel ni de las páginas. El panel no llega a preguntar
+    // antes de aceptarlo; esto es lo que lo hace cumplir si algo lo intentara.
+    aceptado()
+      .then((si) => {
+        if (!si) {
+          contestar({
+            ok: false,
+            motivo: "sin-consentimiento",
+            error: "Falta aceptar el aviso de datos de la extensión: abre su panel.",
+          });
+          return;
         }
+
+        // **El origen de una página lo dice el navegador, no la página**, y aquí es
+        // donde eso deja de ser una frase y es una línea. Un puerto llamado «pagina»
+        // viene del guion que Esfinge pone en las páginas, y lo que llegue por él en
+        // el campo `origen` se tira y se pone `sender.tab.url`, que lo rellena el
+        // navegador y es lo que se ve en la barra de direcciones.
+        //
+        // Sin esto, cualquier página con una vulnerabilidad que le dejara hablar por
+        // este puerto podría pedir las cuentas de un banco diciendo que es el banco.
+        // Con esto, lo peor que puede pedir es lo suyo.
+        //
+        // **Y si llega vacía, se dice.** No es una hipótesis: en Firefox los
+        // `host_permissions` de MV3 no se conceden al instalar, hay que darlos en el
+        // panel de extensiones. Sin ellos `sender.tab.url` llega `undefined` —sin
+        // error—, el origen viaja vacío y Esfinge contesta que ahí no rellena. Desde
+        // fuera eso parece un fallo de Esfinge y no un permiso que falta, que es
+        // exactamente la clase de silencio que ya costó cinco versiones con
+        // `storage`. Aquí se convierte en una frase que dice qué hacer.
+        if (puerto.name === "pagina") {
+          const donde = puerto.sender?.tab?.url ?? "";
+          if (!donde) {
+            contestar({
+              ok: false,
+              motivo: "origen",
+              error:
+                "La extensión no puede ver la dirección de esta pestaña. Dale permiso a " +
+                "Esfinge para este sitio: en Firefox, en el botón de extensiones de la " +
+                "barra; en Chrome, en «Gestionar extensión» → «Acceso a sitios web».",
+            });
+            return;
+          }
+          (p as Peticion).origen = donde;
+        }
+
+        // **Con `catch`, y es la lección de todo el día por tercera vez.** Sin él,
+        // cualquier excepción aquí dentro es una promesa rechazada que nadie recoge:
+        // el trabajador no contesta, el panel espera su plazo y lo que se ve es «el
+        // trabajador de fondo no ha contestado», que **no dice nada del problema**.
+        // Así pasó con un permiso que faltaba en el manifiesto: `api.storage` era
+        // undefined, esto lanzaba en la primera línea, y desde fuera parecía un
+        // problema del puente. Cinco versiones persiguiendo eso.
+        pedir(p as Peticion)
+          .then((r) => {
+            contestar(r);
+            // **Al abrir el panel, el icono se pone al día con lo que el panel acaba de
+            // saber**, sin volver a preguntar: el panel pide las cuentas nada más abrirse.
+            const peticion = p as Peticion;
+            if (puerto.name === "panel" && peticion.que === "cuentas" && peticion.origen) {
+              api.tabs
+                .query({ active: true, currentWindow: true })
+                .then(([pestana]) => {
+                  if (pestana?.id === undefined) return;
+                  pintar(
+                    pestana.id,
+                    queMostrar({
+                      url: peticion.origen,
+                      cuentas: r,
+                      rellenado: rellenadas.get(pestana.id) === peticion.origen,
+                    }),
+                  );
+                })
+                .catch(() => {});
+            }
+          })
+          .catch((e) =>
+            contestar({
+              ok: false,
+              error: `La extensión ha fallado por dentro: ${e}`,
+            }),
+          );
       })
-      .catch((e) =>
-        contestar({
-          ok: false,
-          error: `La extensión ha fallado por dentro: ${e}`,
-        }),
-      );
+      .catch((e) => contestar({ ok: false, error: `La extensión ha fallado por dentro: ${e}` }));
   });
 });

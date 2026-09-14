@@ -103,7 +103,14 @@ export function queMostrar(p: {
   estado?: Respuesta;
   cuentas?: Respuesta;
   rellenado?: boolean;
+  /**
+   * Si se ha aceptado el aviso de datos (ADR 0033). **Falso gana a todo**, también a
+   * las páginas donde no se rellena: hasta aceptarlo la extensión no hace nada en
+   * ninguna, y lo único útil que puede decir el icono es dónde se empieza.
+   */
+  aceptado?: boolean;
 }): QueMostrar {
+  if (p.aceptado === false) return conAviso("Esfinge · Abre el panel para empezar");
   if (!sePuedeRellenar(p.url)) return sinInsignia("apagado", "Esfinge no rellena en esta página");
   const host = hostDe(p.url);
 

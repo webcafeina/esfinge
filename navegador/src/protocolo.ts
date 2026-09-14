@@ -138,4 +138,9 @@ export type Motivo =
   | "demasiado"
   | "no-entiendo"
   /** Lo pone el propio puente cuando Esfinge no está abierta. */
-  | "sin-esfinge";
+  | "sin-esfinge"
+  /**
+   * Lo pone el trabajador de fondo mientras no se ha aceptado el aviso de datos de
+   * la extensión (ADR 0033). Esfinge no lo manda nunca: la pregunta no llega.
+   */
+  | "sin-consentimiento";

@@ -12,13 +12,19 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "esfinge@webcafeina.com",
-      "strict_min_version": "128.0"
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "authenticationInfo",
+          "personallyIdentifyingInfo",
+          "browsingActivity"
+        ]
+      }
     }
   },
   "permissions": [
     "nativeMessaging",
     "storage",
-    "activeTab",
     "alarms"
   ],
   "host_permissions": [

@@ -42,6 +42,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0030](adr/0030-rellenar-el-codigo-de-un-solo-uso.md) | Rellenar el código de un solo uso, con el freno de la contraseña y sin fiarse de la palabra «code» | 2026-09-14 | aceptada · continúa la 0028 y la 0025 · revisar con el uso |
 | [0031](adr/0031-el-icono-con-estados-y-la-marca-en-el-campo.md) | El icono de la barra dice el estado, y el campo rellenado lleva filete y un aviso de tres segundos | 2026-09-14 | aceptada · matiza la 0028 · revisar con el uso y en las tiendas |
 | [0032](adr/0032-guardar-desde-la-pagina.md) | Guardar y actualizar desde la página: una tarjeta que se pulsa y el navegador que escribe en la bóveda | 2026-09-14 | aceptada · matiza la 0028 y la 0031 · revisar en sitios de verdad y en las tiendas |
+| [0033](adr/0033-las-tiendas.md) | La extensión, pública en las tiendas: aviso de datos en el panel, sin `innerHTML` y código fuente reproducible | 2026-09-14 | aceptada, en curso · continúa la 0027 y la 0032 · revisar cuando la aprueben las tiendas |
 | [0034](adr/0034-el-canal-con-el-navegador-en-windows.md) | El canal con el navegador en Windows: el manifiesto apuntado desde el registro, y el puente en el instalador | 2026-09-14 | aceptada · continúa la 0027 · revisar al probarlo en un Windows |
 
 ## Cuándo escribir una

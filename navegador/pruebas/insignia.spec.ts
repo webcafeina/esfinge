@@ -90,3 +90,17 @@ test("insignia: todas las frases empiezan en mayúscula", () => {
   ].map((q) => q.titulo);
   for (const f of frases) expect(f[0]).toBe(f[0].toUpperCase());
 });
+
+test("insignia: sin aceptar el aviso de datos, «!» y abrir el panel, antes que nada", () => {
+  for (const q of [
+    { url: URL, aceptado: false },
+    { url: "http://router.local/", aceptado: false },
+    { url: URL, aceptado: false, rellenado: true, estado: abierta, cuentas: cuentas(2) },
+  ]) {
+    expect(queMostrar(q)).toMatchObject({
+      icono: "apagado",
+      insignia: "!",
+      titulo: "Esfinge · Abre el panel para empezar",
+    });
+  }
+});

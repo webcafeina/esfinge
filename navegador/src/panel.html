@@ -33,6 +33,29 @@
 
       <ul id="lista" aria-label="Cuentas de este sitio" hidden></ul>
 
+      <!-- El aviso de qué datos toca la extensión (ADR 0033), la primera vez que se
+           abre el panel. Hasta aceptarlo no se pregunta nada a Esfinge. Lo que dice
+           tiene que coincidir con la política de privacidad y con lo declarado en las
+           dos tiendas: si cambia, sube VERSION_DEL_AVISO y se vuelve a pedir. -->
+      <section id="aviso" class="aviso" hidden>
+        <h1>Esfinge y tus datos</h1>
+        <p>
+          Para rellenar y guardar contraseñas, la extensión lee en las páginas
+          <strong>https</strong> los formularios de entrar: el usuario, la contraseña, el
+          código de un solo uso y la dirección de la página.
+        </p>
+        <p>
+          Todo eso va <strong>solo a Esfinge, en este ordenador</strong>. La extensión no
+          manda nada a internet ni a Webcafeína, y en el navegador solo guarda el permiso
+          que le da Esfinge.
+        </p>
+        <p class="enlaces">
+          <a href="https://webcafeina.github.io/esfinge/privacidad.html" target="_blank" rel="noopener">Política de privacidad</a>
+          <a href="https://webcafeina.github.io/esfinge/soporte.html" target="_blank" rel="noopener">Soporte</a>
+        </p>
+        <button id="aceptar" class="primario" type="button">Aceptar y empezar</button>
+      </section>
+
       <!-- Lo que no es una lista: la bóveda cerrada, sin permiso, sin Esfinge…
            Con la esfinge grande y tenue detrás, como el historial vacío de la
            ventana: aquí no se trabaja, así que es sitio para la marca. -->

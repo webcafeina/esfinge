@@ -62,12 +62,14 @@ const estados = {
 };
 // Y el resultado de un gesto: la lista de varias, con «Rellenar» pulsado.
 estados.rellenado = estados.varias;
+// Y el aviso de datos de la primera vez (ADR 0033), que tapa todo lo demás.
+estados.aviso = estados.una;
 
 /**
  * La `chrome` de mentira. Se inyecta antes de que cargue el panel, y contesta por
  * puerto igual que el trabajador de verdad.
  */
-function falsa(respuesta) {
+function falsa([respuesta, aceptado]) {
   const puerto = (alMandar) => {
     const oyentes = [];
     const alIrse = [];
@@ -91,7 +93,13 @@ function falsa(respuesta) {
       query: async () => [{ id: 7, url: "https://login.brevo.com/entrar?x=1", favIconUrl: "data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27><rect width=%2716%27 height=%2716%27 rx=%274%27 fill=%27%230b996e%27/></svg>" }],
       connect: () => puerto(() => ({ ok: true })),
     },
-    storage: { local: { get: async () => ({}), set: async () => {} } },
+    storage: {
+      local: {
+        get: async () => (aceptado ? { consentimiento: { version: 1, cuando: "2026-09-14" } } : {}),
+        set: async () => {},
+      },
+      onChanged: { addListener() {}, removeListener() {} },
+    },
   };
 }
 
@@ -120,7 +128,7 @@ for (const tema of ["light", "dark"]) {
     const errores = [];
     pagina.on("pageerror", (e) => errores.push(String(e)));
     pagina.on("console", (m) => m.type() === "error" && errores.push(m.text()));
-    await pagina.addInitScript(falsa, respuesta);
+    await pagina.addInitScript(falsa, [respuesta, nombre !== "aviso"]);
     await pagina.goto(panel);
     await pagina.waitForTimeout(250);
     if (nombre === "rellenado") {

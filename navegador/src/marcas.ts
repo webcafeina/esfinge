@@ -26,6 +26,7 @@
  * este fichero.
  */
 import siluetaSVG from "../../build/icono-barra.svg?raw";
+import { dibujar } from "./dibujo";
 
 const ORO = "#f2c14e";
 const PIEDRA = "#2b2b31";
@@ -150,7 +151,7 @@ export function avisar(bajoDe: HTMLElement, texto: string): HTMLElement {
   // la cara hueca, y sobre el fondo de piedra del aviso el hueco se veía como una
   // cara negra (lo vio el cliente en la 2.20.0). La silueta lleva la cara en crema.
   // Un dibujo nuestro, no nada de la página.
-  marca.innerHTML = siluetaSVG;
+  dibujar(marca, siluetaSVG);
   const frase = document.createElement("span");
   frase.textContent = texto;
   aviso.append(marca, frase);

@@ -16,12 +16,14 @@
  * # Cómo está dibujado
  *
  * Con los tokens de la ventana (ADR 0029; `panel.css` dice cuáles). **Todo el texto
- * se escribe con `textContent`**, y los únicos `innerHTML` son dibujos nuestros —la
- * marca y los iconos—, nunca nada que venga de la bóveda ni de la página.
+ * se escribe con `textContent`**, y los dibujos —la marca y los iconos, nuestros— se
+ * insertan con `dibujar`, **sin `innerHTML` en ningún sitio** (ADR 0033).
  */
 import marcaSVG from "../../build/marca.svg?raw";
 import { dominioDe, inicialDe, tinteDe } from "../../frontend/src/monograma";
 import { api } from "./api";
+import { aceptado, aceptar } from "./consentimiento";
+import { dibujar } from "./dibujo";
 import type { Cuenta, Motivo, Peticion, Respuesta } from "./protocolo";
 
 const donde = document.getElementById("donde") as HTMLElement;
@@ -31,6 +33,7 @@ const abierta = document.getElementById("abierta") as HTMLElement;
 const cargando = document.getElementById("cargando") as HTMLElement;
 const lista = document.getElementById("lista") as HTMLElement;
 const estado = document.getElementById("estado") as HTMLElement;
+const aviso = document.getElementById("aviso") as HTMLElement;
 const resultado = document.getElementById("resultado") as HTMLElement;
 const pie = document.getElementById("pie") as HTMLElement;
 
@@ -170,6 +173,12 @@ function queHacer(motivo: Motivo | undefined, error: string | undefined): QueHac
         texto: error ?? "Esfinge solo rellena en sitios con https.",
         glifo: "mal",
       };
+    case "sin-consentimiento":
+      return {
+        titulo: "Falta aceptar el aviso de datos",
+        texto: "Vuelve a abrir este panel para verlo.",
+        glifo: "candado",
+      };
     case "demasiado":
       return {
         titulo: "Demasiadas preguntas seguidas",
@@ -194,13 +203,52 @@ function ensenar(q: QueHacer) {
   estado.hidden = false;
   estado.classList.toggle("error", Boolean(q.error));
   const tenue = estado.querySelector(".tenue") as HTMLElement;
-  if (!tenue.firstChild) tenue.innerHTML = marcaSVG;
-  (estado.querySelector(".glifo") as HTMLElement).innerHTML = ICONOS[q.glifo];
+  if (!tenue.firstChild) dibujar(tenue, marcaSVG);
+  dibujar(estado.querySelector(".glifo") as HTMLElement, ICONOS[q.glifo]);
   (estado.querySelector("h1") as HTMLElement).textContent = q.titulo;
   (estado.querySelector(".texto") as HTMLElement).textContent = q.texto;
   const detalle = estado.querySelector(".detalle") as HTMLElement;
   detalle.textContent = q.detalle ?? "";
   detalle.hidden = !q.detalle;
+}
+
+/**
+ * pedirConsentimiento enseña el aviso de datos y espera a que se acepte (ADR 0033).
+ *
+ * **Antes de preguntar nada a Esfinge**, y el orden no es un detalle: la primera
+ * pregunta del panel empareja el navegador si no lo está, y eso hace salir un aviso
+ * de permiso en la ventana de Esfinge. Sin aceptar, ni eso.
+ *
+ * **Sin foco al abrir**, por lo mismo que las filas (2.20.0): un botón con su marco
+ * nada más abrir se lee como algo ya elegido. Intro acepta igualmente, y el tabulador
+ * llega a los enlaces y al botón.
+ */
+function pedirConsentimiento(): Promise<void> {
+  cargando.hidden = true;
+  aviso.hidden = false;
+  const boton = document.getElementById("aceptar") as HTMLButtonElement;
+  return new Promise((resolver) => {
+    const conIntro = (e: KeyboardEvent) => {
+      const activa = document.activeElement;
+      if (e.key === "Enter" && (!activa || activa === document.body)) {
+        e.preventDefault();
+        boton.click();
+      }
+    };
+    document.addEventListener("keydown", conIntro);
+    boton.addEventListener(
+      "click",
+      async () => {
+        boton.disabled = true;
+        document.removeEventListener("keydown", conIntro);
+        await aceptar();
+        aviso.hidden = true;
+        cargando.hidden = false;
+        resolver();
+      },
+      { once: true },
+    );
+  });
 }
 
 /** El reloj de la cuenta atrás del código, para poder pararlo si llega otro resultado. */
@@ -220,11 +268,13 @@ function contar(texto: string, bien: boolean, quedan?: number) {
 
   if (quedan !== undefined && bien) {
     const vida = Math.max(0, Math.min(30, Math.round(quedan)));
-    resultado.innerHTML =
+    dibujar(
+      resultado,
       `<svg class="anillo" viewBox="0 0 20 20" aria-hidden="true">` +
-      `<circle class="pista" cx="10" cy="10" r="8" pathLength="30"/>` +
-      `<circle class="resto" cx="10" cy="10" r="8" pathLength="30" ` +
-      `style="stroke-dashoffset:${30 - vida};animation-duration:${vida}s"/></svg>`;
+        `<circle class="pista" cx="10" cy="10" r="8" pathLength="30"/>` +
+        `<circle class="resto" cx="10" cy="10" r="8" pathLength="30" ` +
+        `style="stroke-dashoffset:${30 - vida};animation-duration:${vida}s"/></svg>`,
+    );
     const frase = document.createElement("span");
     let restantes = vida;
     const escribirFrase = () => {
@@ -244,7 +294,7 @@ function contar(texto: string, bien: boolean, quedan?: number) {
     return;
   }
 
-  resultado.innerHTML = ICONOS[bien ? "bien" : "mal"];
+  dibujar(resultado, ICONOS[bien ? "bien" : "mal"]);
   const frase = document.createElement("span");
   frase.textContent = texto;
   resultado.append(frase);
@@ -339,7 +389,7 @@ function rellenar(pestana: number, cuenta: Cuenta): Promise<[string, boolean]> {
 function botonIcono(icono: keyof typeof ICONOS, nombre: string, alPulsar: () => Promise<void>) {
   const boton = document.createElement("button");
   boton.className = "icono";
-  boton.innerHTML = ICONOS[icono];
+  dibujar(boton, ICONOS[icono]);
   boton.title = nombre;
   boton.setAttribute("aria-label", nombre);
   boton.addEventListener("click", async () => {
@@ -530,13 +580,15 @@ function atenderAlTeclado() {
 }
 
 async function arrancar() {
-  (document.querySelector(".marca") as HTMLElement).innerHTML = marcaSVG;
+  dibujar(document.querySelector(".marca") as HTMLElement, marcaSVG);
   pie.textContent = `Extensión ${api.runtime.getManifest().version}`;
   atenderAlTeclado();
 
   const [pestana] = await api.tabs.query({ active: true, currentWindow: true });
   const origen = pestana?.url ?? "";
   ponerElSitio(pestana);
+
+  if (!(await aceptado())) await pedirConsentimiento();
 
   const r = await pedir({ que: "cuentas", origen });
   if (!r.ok) {

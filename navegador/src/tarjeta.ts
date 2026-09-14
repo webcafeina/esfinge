@@ -22,6 +22,7 @@
  * fichero.
  */
 import siluetaSVG from "../../build/icono-barra.svg?raw";
+import { dibujar } from "./dibujo";
 import type { Cuenta, Oferta } from "./protocolo";
 
 const PIEDRA = "#2b2b31";
@@ -186,7 +187,7 @@ export function mostrarTarjeta(
     const marca = doc.createElement("span");
     marca.className = "marca";
     marca.setAttribute("aria-hidden", "true");
-    marca.innerHTML = siluetaSVG; // un dibujo nuestro
+    dibujar(marca, siluetaSVG); // un dibujo nuestro
     const textos = doc.createElement("div");
     const h = doc.createElement("h1");
     h.textContent = titulo;

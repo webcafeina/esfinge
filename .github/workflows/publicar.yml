@@ -456,7 +456,10 @@ jobs:
         run: |
           version="${{ github.event.inputs.version }}"
           [ -n "$version" ] || version="${GITHUB_REF_NAME#v}"
-          make extension
+          # **Con la versión dicha**: sin ella, `make` la saca de `git describe`, y en
+          # un lanzamiento a mano sin etiqueta sale un hash cuyo primer número acaba
+          # en el manifiesto. Las tiendas exigen que cada versión sea mayor.
+          make extension VERSION="$version"
           for n in chrome firefox; do
             (cd "navegador/dist/$n" && zip -qr "$GITHUB_WORKSPACE/dist/esfinge-extension-$version-$n.zip" .)
           done

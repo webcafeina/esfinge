@@ -21,7 +21,15 @@ Plantilla al final.
   cualquier sistema, así que la tabla de Windows se prueba desde Linux; plantilla NSIS propia con el
   puente; y en la máquina Windows de GitHub, las pruebas de manifiestos, una con el registro de verdad y
   la comprobación de que el instalador lleva el puente.
-- Verificado: `make comprobar` en verde; cinco pruebas nuevas de Windows; `GOOS=windows go vet`, el
+- **Bloque 2, la extensión lista para las tiendas** (ADR 0033): «Esfinge y tus datos» en el panel la
+  primera vez, con «Aceptar y empezar»; hasta aceptarlo el panel no pregunta, el trabajador de fondo no
+  lanza el puente ni atiende puertos y la página no mira nada. Sin `activeTab`, Firefox 140 con
+  `data_collection_permissions`, la versión pasada de verdad al empaquetar, **ningún `innerHTML`** —ahora
+  `dibujar`, con `DOMParser`— y el zip de código fuente con `COMPILAR.md` y pnpm fijado.
+- Verificado del bloque 2: 104 pruebas de la extensión —cinco del aviso en el panel, una del icono y dos
+  del consentimiento—; capturas del aviso en claro y en oscuro; `web-ext lint` sin errores y con un solo
+  aviso, el de Android; y **el código fuente compila idéntico byte a byte** en una carpeta limpia.
+- Verificado del bloque 1: `make comprobar` en verde; cinco pruebas nuevas de Windows; `GOOS=windows go vet`, el
   binario de pruebas y el puente compilados para Windows; `publicar.yml` válido. **Sin verificar: nada en
   un Windows de verdad**, ni la parte de la máquina de GitHub, que corre al publicar.
 
