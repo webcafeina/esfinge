@@ -82,6 +82,23 @@ Esto **matiza la ADR 0028**. En la página ahora se dibuja algo, con estos lími
   vez y **se va solo a los tres segundos**. Solo en el relleno automático: desde el panel, la persona
   acaba de pulsar «Rellenar» y ya sabe por qué.
 
+### Corregido tras probarla en Firefox (2.20.1)
+
+El cliente probó la 2.20.0 en su Mac y pidió cuatro cambios, que se hicieron tal cual:
+
+- **El filete, sin el anillo de piedra**: se leía como un borde negro alrededor del campo. Queda un
+  anillo de oro con un halo del mismo oro, más suave. **El precio, dicho**: el oro como línea sobre
+  una web clara da 1,37-1,68:1, por debajo de los 3:1 de un indicador. El halo lo ensancha —en la
+  captura de una web blanca se distingue— y quien dice que ha sido Esfinge es el aviso, no el filete.
+- **El candado, como una insignia más**: en la 2.20.0 era un círculo pequeño y se veía mal al lado
+  del número y del ✓. Ahora es una placa de piedra del tamaño de una insignia, abajo a la derecha, con
+  el candado en blanco. Sobre una barra oscura la placa se funde y queda el candado, igual que le pasa
+  a la insignia del número.
+- **La esfinge del aviso, rellena**: era la marca a trazo, que tiene la cara hueca, y sobre la piedra
+  del aviso el hueco se veía como una cara negra. Ahora es la silueta de la barra, con la cara en
+  crema, medida a 10,36:1 sobre la piedra.
+- **Y el marco de la fila del panel, solo con el teclado** (ADR 0029).
+
 ## Alternativas descartadas
 
 **El icono de la aplicación ampliado, o la cabeza sola sobre un círculo.** Se ofrecieron las dos; el
@@ -131,6 +148,10 @@ pone en la página.
 - **Capturas** (`pnpm run capturas`): la silueta con cada insignia sobre las cuatro barras, y el campo
   con filete y aviso en una web clara y una oscura. La barra es **una composición**: la de verdad no
   se puede capturar aquí.
+
+**Visto por el cliente en Firefox con la 2.20.0**: el número y el ✓ del icono se ven bien; el
+candado se veía pequeño, el filete tenía un borde negro y la esfinge del aviso una cara negra. Los tres
+se corrigieron en la 2.20.1 y se miraron en capturas antes de publicar.
 
 **Sin comprobar, y hay que mirar en el Mac:**
 

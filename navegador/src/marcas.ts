@@ -9,9 +9,12 @@
  * matiza con estas dos piezas, y con límites:
  *
  *   - **El filete** va en el propio campo de la web, sin añadir nada: un anillo
- *     de oro por dentro y uno de piedra por fuera. **Los dos**, porque el oro como
- *     línea sobre una web clara da 1,37-1,68:1 y la piedra no se ve sobre una
- *     oscura. Se quita con lo primero que escribe una persona.
+ *     de oro con un halo del mismo oro, más suave, alrededor. **Sin anillo de
+ *     piedra por fuera**: lo llevó la 2.20.0 para que se viera en webs claras, y el
+ *     cliente pidió quitarlo porque se leía como un borde negro. El precio, dicho:
+ *     el oro como línea sobre una web clara da 1,37-1,68:1, por debajo de lo que
+ *     pide un indicador; el halo lo ensancha, y quien dice que ha sido Esfinge es
+ *     el aviso. Se quita con lo primero que escribe una persona.
  *   - **El aviso** «Rellenado por Esfinge» sí es un elemento nuestro en la página
  *     de otro. Para que eso sea poco: **no se puede pulsar**, va en un
  *     `shadowRoot` **cerrado** —la web no puede leerlo ni cambiar su estilo—, no
@@ -22,14 +25,17 @@
  * ser clara u oscura. Están medidos en `internal/tema/extension_test.go`, que lee
  * este fichero.
  */
-import marcaSVG from "../../build/marca.svg?raw";
+import siluetaSVG from "../../build/icono-barra.svg?raw";
 
 const ORO = "#f2c14e";
 const PIEDRA = "#2b2b31";
 const BLANCO = "#ffffff";
 
-/** El filete: oro por dentro, piedra por fuera. No mueve nada de sitio. */
-const FILETE = `0 0 0 2px ${ORO}, 0 0 0 3px ${PIEDRA}`;
+/**
+ * El filete: un anillo de oro y un halo del mismo oro, suave. No mueve nada de
+ * sitio. **Sin piedra**: ver arriba.
+ */
+const FILETE = `0 0 0 2px ${ORO}, 0 0 0 5px rgb(242 193 78 / 0.3)`;
 
 /** Cuánto dura el aviso a la vista. */
 export const DURACION_DEL_AVISO = 3000;
@@ -98,9 +104,8 @@ const ESTILO = `
   white-space: nowrap;
   animation: entrar 160ms ease-out;
 }
-.marca { width: 15px; height: 15px; color: ${ORO}; flex-shrink: 0; }
+.marca { width: 16px; height: 16px; flex-shrink: 0; }
 .marca svg { display: block; width: 100%; height: 100%; }
-.marca svg g { stroke-width: 72; }
 @keyframes entrar { from { opacity: 0; transform: translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .aviso { animation: none; } }
 `;
@@ -139,7 +144,11 @@ export function avisar(bajoDe: HTMLElement, texto: string): HTMLElement {
   const marca = document.createElement("span");
   marca.className = "marca";
   marca.setAttribute("aria-hidden", "true");
-  marca.innerHTML = marcaSVG; // un dibujo nuestro, no nada de la página
+  // **La silueta rellena de la barra, no la marca a trazo.** La marca a trazo tiene
+  // la cara hueca, y sobre el fondo de piedra del aviso el hueco se veía como una
+  // cara negra (lo vio el cliente en la 2.20.0). La silueta lleva la cara en crema.
+  // Un dibujo nuestro, no nada de la página.
+  marca.innerHTML = siluetaSVG;
   const frase = document.createElement("span");
   frase.textContent = texto;
   aviso.append(marca, frase);

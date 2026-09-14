@@ -125,7 +125,8 @@ No se cambian sin preguntar.
 - **Y desde la fase 2 rellena los formularios del navegador** (ADR 0027 y 0028). Con **una** cuenta
   guardada del sitio se rellena sola, que es lo que se decidió —«solo, como Dashlane»—; con varias se
   elige en el panel de la extensión. Y **en la página se dibuja lo mínimo** (ADR 0028, matizada por
-  la 0031): un **filete** de oro y piedra en el campo rellenado, que se va al escribir, y un **aviso
+  la 0031): un **filete** de oro con halo en el campo rellenado —sin anillo de piedra, que se leía como un
+  borde negro—, que se va al escribir, y un **aviso
   de tres segundos**, «Rellenado por Esfinge», que no se puede pulsar y va en una sombra cerrada.
   Nada de desplegables, iconos fijos dentro del campo ni marcos: dibujar en la página de otro es la
   parte cara y arriesgada, y cada cosa más se decide **con el uso**, no con la intuición. Dos

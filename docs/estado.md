@@ -224,6 +224,12 @@ ampliación de la [0029](adr/0029-el-panel-de-la-extension-es-esfinge.md)):
 Lo que falta es **verlo en el Mac**: si la silueta se lee en la barra, si el candado aparece solo, el
 filete y el aviso en Brevo y Cloudflare, y si el correo cabe entero en el panel.
 
+**Y probada en Firefox con la 2.20.0** (2026-09-14): el número y el ✓ del icono se ven bien. El cliente
+pidió cuatro correcciones —el filete sin borde negro, el marco de la fila solo con teclado, el candado
+del tamaño de una insignia y la cara de la esfinge del aviso en crema—, hechas en la 2.20.1. Falta verlas
+en el Mac, y lo que quedaba de antes: si el candado aparece solo al cerrarse la bóveda y si el correo
+cabe entero.
+
 ### 4. Lo siguiente: lo que ya estaba planteado
 
 **Guardar y actualizar desde la página** (entrega 3), y después las tiendas (entrega 5).

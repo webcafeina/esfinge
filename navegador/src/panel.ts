@@ -489,8 +489,14 @@ function ponerElSitio(pestana: chrome.tabs.Tab | undefined) {
 }
 
 /**
- * Los atajos: ↑ y ↓ entre cuentas, Intro rellena la cuenta con el foco, Esc cierra.
- * Solo cuando el foco está en la fila; en un botón, Intro hace lo del botón.
+ * Los atajos: ↑ y ↓ entre cuentas, Intro rellena, Esc cierra.
+ *
+ * **El marco de la fila solo aparece cuando se usa el teclado**, no al abrir. En la
+ * 2.20.0 la primera cuenta recibía el foco nada más abrirse el panel, y el
+ * navegador le pintaba el marco sin que nadie hubiera tocado nada: se leía como una
+ * cuenta seleccionada. Ahora nada tiene el foco al abrir, **Intro rellena la
+ * primera igualmente** —que era para lo que servía aquel foco—, y el marco aparece
+ * con la primera flecha o el tabulador. Con el ratón se va otra vez.
  */
 function atenderAlTeclado() {
   document.addEventListener("keydown", (e) => {
@@ -498,6 +504,7 @@ function atenderAlTeclado() {
       window.close();
       return;
     }
+    if (e.key === "Tab") lista.classList.add("con-teclado");
     const filas = [...lista.querySelectorAll<HTMLElement>("li")];
     if (filas.length === 0 || lista.hidden) return;
     const activa = document.activeElement as HTMLElement | null;
@@ -506,15 +513,20 @@ function atenderAlTeclado() {
 
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
+      lista.classList.add("con-teclado");
       const j = e.key === "ArrowDown" ? Math.min(filas.length - 1, i + 1) : Math.max(0, i - 1);
       filas[j].focus();
       return;
     }
-    if (e.key === "Enter" && actual && activa === actual) {
+    if (e.key !== "Enter") return;
+    // Intro en una fila rellena esa; sin nada con el foco, la primera.
+    const fila = actual && activa === actual ? actual : !activa || activa === document.body ? filas[0] : null;
+    if (fila) {
       e.preventDefault();
-      actual.querySelector<HTMLButtonElement>(".rellenar")?.click();
+      fila.querySelector<HTMLButtonElement>(".rellenar")?.click();
     }
   });
+  document.addEventListener("pointerdown", () => lista.classList.remove("con-teclado"));
 }
 
 async function arrancar() {
@@ -548,8 +560,6 @@ async function arrancar() {
   }
   cargando.hidden = true;
   lista.hidden = false;
-  // **La primera cuenta con el foco**, para que Intro rellene sin tocar el ratón.
-  lista.querySelector<HTMLElement>("li")?.focus();
 }
 
 arrancar().catch((e) =>

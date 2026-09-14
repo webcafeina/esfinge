@@ -59,7 +59,8 @@ test("el filete aguanta lo que escribe Esfinge y se va con lo que escribe una pe
   const puesto = await page.evaluate(leerSombra);
   expect(puesto.prioridad).toBe("important");
   expect(puesto.sombra).toContain("rgb(242, 193, 78)");
-  expect(puesto.sombra).toContain("rgb(43, 43, 49)");
+  // **Sin anillo de piedra**: se leía como un borde negro, y se quitó en la 2.20.1.
+  expect(puesto.sombra).not.toContain("43, 43, 49");
 
   // Una tecla de verdad, y el campo vuelve a como estaba, estilo de la web incluido.
   await page.locator("#p").focus();

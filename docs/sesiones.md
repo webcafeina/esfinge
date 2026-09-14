@@ -5,6 +5,24 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · Cuatro correcciones de la 2.20.0, vistas en Firefox
+
+- **2.20.1.** El cliente probó la 2.20.0 en Firefox: **el número y el ✓ del icono se ven bien**, y pidió
+  cuatro cambios, que se hicieron tal cual. Se planificaron antes de tocar la documentación y se
+  miraron en capturas antes de publicar.
+- **El filete, sin anillo de piedra**, que se leía como un borde negro: queda oro con un halo suave. El
+  oro solo sobre una web clara no llega a 3:1, y así queda escrito en la ADR 0031; en la captura de una
+  web blanca se distingue gracias al halo.
+- **El marco de la fila del panel, solo con el teclado**: salía al abrir porque la primera cuenta
+  recibía el foco sola. Ahora aparece con las flechas o el tabulador, e Intro rellena la primera igual.
+- **El candado del icono, como una insignia**: una placa del tamaño del número y del ✓, con el candado
+  en blanco.
+- **La esfinge del aviso, rellena**: la marca a trazo tiene la cara hueca, y sobre la piedra del aviso
+  se veía negra. Ahora es la silueta de la barra, con la cara en crema, medida.
+- Verificado: `make comprobar` en verde con **48 pruebas de la extensión** —dos nuevas del teclado, y la
+  del filete comprobando que no queda piedra—, y capturas del candado, el filete, el aviso y el panel.
+  Sin verificar: todo ello en el Mac.
+
 ## 2026-09-14 · El icono que dice el estado, y la marca en el campo rellenado
 
 - **El cliente pidió tres mejoras visuales antes de guardar desde la página**, y se decidieron con él por

@@ -71,15 +71,17 @@ func TestLaExtensionSeVeDondeLaPintanOtros(t *testing.T) {
 
 	// El aviso en la página: texto blanco y marca de oro sobre piedra.
 	mide(blanco, piedra, AANormal, "«Rellenado por Esfinge»")
-	mide(oro, piedra, AAGrande, "la esfinge del aviso")
+	mide(oro, piedra, AAGrande, "el tocado de la esfinge del aviso")
+	// La cara, que en la 2.20.0 era un hueco y se veía negra sobre la piedra.
+	mide(MustParseHex("#e8dcc4"), piedra, AAGrande, "la cara de la esfinge del aviso")
 
 	// Y que lo medido es lo que se usa.
 	usan := map[string][]string{
 		"../../navegador/src/insignia.ts":     {"#2b2b31", "#1d6f31", "#8f5300", "#ffffff"},
 		"../../navegador/src/marcas.ts":       {"#f2c14e", "#2b2b31", "#ffffff"},
-		"../../build/icono-barra.svg":         {"#f2c14e", "#2b2b31"},
+		"../../build/icono-barra.svg":         {"#f2c14e", "#2b2b31", "#e8dcc4"},
 		"../../build/icono-barra-apagado.svg": {"#a1a1a8", "#2b2b31"},
-		"../../build/icono-barra-cerrado.svg": {"#a1a1a8", "#2b2b31"},
+		"../../build/icono-barra-cerrado.svg": {"#a1a1a8", "#2b2b31", "#ffffff"},
 	}
 	for fichero, colores := range usan {
 		datos, err := os.ReadFile(fichero)

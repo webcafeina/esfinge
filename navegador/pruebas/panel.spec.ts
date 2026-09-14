@@ -278,13 +278,31 @@ test("al rellenar, la fila dice «✓ Hecho» y luego vuelve", async ({ page }) 
 });
 
 /**
- * **Sin tocar el ratón**: la primera cuenta tiene el foco al abrir, las flechas se
- * mueven entre cuentas e Intro rellena la que tiene el foco.
+ * **Sin tocar el ratón, y sin marco hasta usar el teclado.** En la 2.20.0 la primera
+ * fila salía marcada al abrir el panel, sin que nadie tocara nada, y se leía como
+ * seleccionada. Ahora al abrir no hay marco, Intro rellena la primera, y las flechas
+ * marcan y mueven.
  */
-test("con el teclado: foco en la primera, flechas e Intro", async ({ page }) => {
+const sombraDe = (li: import("@playwright/test").Locator) =>
+  li.evaluate((e) => getComputedStyle(e).boxShadow);
+
+test("con el teclado: sin marco al abrir, e Intro rellena la primera", async ({ page }) => {
   await abrir(page, { cuentas: TRES, tramas: [{ ms: 20, r: { ok: true } }] });
   const filas = page.locator("#lista li");
+  await expect(filas).toHaveCount(3);
+  await expect(filas.nth(0)).not.toBeFocused();
+  expect(await sombraDe(filas.nth(0))).toBe("none");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#resultado")).toHaveText("Rellenado.");
+});
+
+test("con el teclado: las flechas marcan y mueven, e Intro rellena la marcada", async ({ page }) => {
+  await abrir(page, { cuentas: TRES, tramas: [{ ms: 20, r: { ok: true } }] });
+  const filas = page.locator("#lista li");
+  await expect(filas).toHaveCount(3);
+  await page.keyboard.press("ArrowDown");
   await expect(filas.nth(0)).toBeFocused();
+  expect(await sombraDe(filas.nth(0))).not.toBe("none");
   await page.keyboard.press("ArrowDown");
   await expect(filas.nth(1)).toBeFocused();
   await page.keyboard.press("ArrowUp");

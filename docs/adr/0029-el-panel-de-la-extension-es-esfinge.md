@@ -92,6 +92,12 @@ las que se le propusieron:
 
 Y el panel pasa de 340 a **360 px** de ancho, porque el cuadro le quita espacio al correo.
 
+**Corregido en la 2.20.1: el marco de la fila, solo con el teclado.** En la 2.20.0 la primera cuenta
+recibía el foco al abrir el panel, y el navegador le pintaba el marco sin que nadie hubiera tocado
+nada: se leía como una cuenta seleccionada. Ahora nada tiene el foco al abrir; el marco aparece con la
+primera flecha o el tabulador y se va con el ratón, e **Intro sin haber usado las flechas rellena la
+primera cuenta**, que era para lo que servía aquel foco.
+
 ## Alternativas descartadas
 
 **Un panel neutro, sin marca**, siguiendo al navegador como hasta ahora. Era lo más fácil de defender
