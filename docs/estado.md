@@ -280,6 +280,25 @@ afina con esos casos (`docs/deuda.md`). Si algo no hace nada, lo primero es la c
 
 **La siguiente acción concreta son las tiendas (entrega 5)**, que hay que plantear con el cliente antes de escribir nada.
 
+### 5. Las tiendas (entrega 5) — la siguiente, sin empezar
+
+El cliente la dejó para otra sesión el 2026-09-14, con la entrega 3 comprobada entera. **Se plantea con
+preguntas con opciones antes de escribir nada**, como las anteriores. Lo que hay que decidir con él:
+
+- **Pública u oculta** en cada tienda: la de Chrome admite «no listada» y la de Firefox (AMO) permite
+  firmar sin listar.
+- **A nombre de quién** van las cuentas de desarrollador —Webcafeína— y quién las administra. La de
+  Chrome cuesta una cuota única.
+- **El identificador de la extensión en Chrome cambia al subirla**: hay que añadirlo al manifiesto de
+  native messaging al lado del actual (`docs/deuda.md`, el canal del navegador), o fijar la clave como
+  ahora.
+- **Qué contar en las fichas**: los permisos —`alarms`, anfitriones, `favicon`, native messaging— tienen
+  que justificarse, y hace falta una política de privacidad que diga lo que ya dice `docs/seguridad.md`.
+- **Cómo se actualiza**: hoy la extensión viaja en cada publicación de GitHub en dos zip; con las tiendas,
+  si se sigue publicando ahí y quién sube cada versión.
+- Y lo que queda de Windows para que la extensión funcione allí: **el manifiesto en el registro** y el
+  instalador sin `esfinge-puente` (`docs/deuda.md`).
+
 ### Lo que yo recomendaría meter en medio, y no es lo que se decidió
 
 **Levantar Chromium con la extensión cargada de verdad.** Lo dejo escrito porque la razón sigue en
