@@ -12,10 +12,10 @@
 # añadirlo aquí: lo detecta `comprobar-fuente-de-la-extension.sh`, porque sin él la
 # compilación falla.
 #
-# Uso: herramientas/fuente-de-la-extension.sh 2.23.0 dist/esfinge-extension-2.23.0-fuente.zip
+# Uso: herramientas/fuente-de-la-extension.sh 2.22.0 dist/esfinge-extension-2.22.0-fuente.zip
 set -euo pipefail
 
-version="${1:?Falta la versión, por ejemplo 2.23.0}"
+version="${1:?Falta la versión, por ejemplo 2.22.0}"
 salida="${2:?Falta el zip de salida}"
 
 raiz="$(cd "$(dirname "$0")/.." && pwd)"

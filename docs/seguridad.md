@@ -196,7 +196,7 @@ cambia también lo que se dibuja en la página (ADR 0032):
 - **Ante la duda, no se ofrece.** Si el formulario vuelve a salir tras enviarlo, la contraseña se da por
   mala y se olvida; y un formulario que no se sabe si es de entrar, de registrarse o de cambiar, no se
   ofrece.
-- **Y desde la 2.23.0, nada antes del aviso de datos** (ADR 0033). La extensión recién instalada no
+- **Y desde la 2.22.0, nada antes del aviso de datos** (ADR 0033). La extensión recién instalada no
   lee ninguna página ni habla con Esfinge hasta que se abre su panel y se acepta «Esfinge y tus datos»,
   que dice qué lee, que va solo a Esfinge en este ordenador y qué guarda. Lo exige la tienda de Chrome y
   se hace cumplir en el trabajador de fondo y en el guion de la página, no solo en el panel. En Firefox,
