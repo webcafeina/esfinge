@@ -181,9 +181,7 @@ estándar, la regla no sabía cuál era la nueva y callaba, a propósito.
   contraseña sin cambiar de página y puede tardar en contestar y en vaciar el formulario. Sin repintar una
   tarjeta que ya esté a la vista.
 
-**Lo que no se sabe**: qué hace Brevo con los campos después de guardar. La segunda salida de la consola
-no se pudo sacar —la cuenta de pruebas se quedó sin la contraseña original—. **Si los deja rellenos, la
-tarjeta seguirá sin salir**, porque eso es lo que dice «la contraseña era mala».
+**Comprobado por el cliente con la 2.21.2**: al cambiar la contraseña en Brevo, la tarjeta sale.
 
 ## Alternativas descartadas
 
@@ -244,12 +242,15 @@ recuerda, lo puesto por Esfinge o el navegador también, lo puesto por el sitio 
 del usuario escondido y de `cuentaParaRellenarSola` con una y con varias cuentas. **Sin comprobar contra el Google de verdad**: el criterio del campo es el mismo
 que ya rellenaba esa página, y eso es lo único que se sabe de su HTML.
 
-Sin comprobar todavía, y hay que mirar en el Mac, en Firefox y en Chrome:
+**Y con la 2.21.2 (2026-09-14) el cliente dice que funciona perfecto**, en su Mac: los ocho pasos de la
+prueba —cuenta nueva, otra contraseña, registro, cambio, inicio fallido sin tarjeta, «Nunca en este sitio»
+y deshacerlo en Ajustes, la ventana al día sola y la bóveda cerrada— , Google por los dos caminos y el cambio de contraseña de Brevo.
+
+Lo que sigue sin comprobarse:
 
 - **Todo lo del trabajador de fondo y del guion de la página con la extensión cargada**: el pendiente
   cruzando la navegación, la detección del envío en sitios de verdad y la heurística del formulario que
   vuelve. Sigue siendo la deuda alta de `docs/deuda.md`.
-- Entrar con una cuenta nueva, entrar con otra contraseña y ver la anterior en el historial,
-  registrarse, cambiar la contraseña, **que un inicio de sesión fallido no ofrezca nada**, «Nunca en este
-  sitio» y deshacerlo en Ajustes, y que la ventana enseñe la cuenta nueva sin tocar nada.
+- ~~Los ocho pasos en el Mac~~ — comprobados con la 2.21.2.
+- ~~El cambio de contraseña de Brevo~~ — comprobado con la 2.21.2.
 - **La lista de sitios excluidos en Ajustes** no tiene prueba de interfaz.

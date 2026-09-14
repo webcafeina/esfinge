@@ -5,6 +5,15 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · La entrega 3, comprobada en el Mac
+
+- **Con la 2.21.2, el cliente dice que funciona perfecto** y que **los pasos 5 a 8 funcionan**: el
+  inicio fallido no ofrece nada, «Nunca en este sitio» se deshace en Ajustes, la ventana se pone al día
+  sola y con la bóveda cerrada «Ya la he abierto» deja guardar. Con los pasos 1 a 4 de antes y Google por
+  los dos caminos, **la entrega 3 queda comprobada**.
+- **Y el cambio de contraseña de Brevo también funciona** con la 2.21.2, comprobado por el cliente.
+- **Lo siguiente son las tiendas** (entrega 5), a plantear con el cliente.
+
 ## 2026-09-14 · Cambiar la contraseña en Brevo (2.21.2)
 
 - **Publicada la 2.21.2** a petición del cliente, con todo en verde.

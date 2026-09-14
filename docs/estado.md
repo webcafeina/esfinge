@@ -85,7 +85,7 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   **Comprobado en un Mac, en Chrome y en Firefox** (2.18.1): rellena solo al cargar y acierta
   el formulario en Brevo y en Cloudflare, y el botón del panel escribe tras borrar los campos.
 - **La fase 2, entrega 3** (ADR 0032): **ofrece guardar y actualizar** lo que se envía en un
-  formulario, con una tarjeta en la página. Publicada en la **2.21.0**; **sin usar todavía en el Mac**.
+  formulario, con una tarjeta en la página. Publicada en la 2.21.0 y corregida hasta la **2.21.2** con lo que salió de usarla —Google con dos pasos y varias cuentas, y el cambio de contraseña de Brevo—; **comprobada en el Mac**.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
   máquina sin entorno gráfico. Son **84**.
 
@@ -240,7 +240,7 @@ esfinge tenue de los avisos, entera y con su trazo de serie, y «Rellenar» con 
 que en Firefox. **Y con la 2.20.3 el cliente dice «Ahora está perfecto»**: la parte visual de la
 extensión queda cerrada.
 
-### 4. Guardar y actualizar desde la página — publicado en la 2.21.0 el 2026-09-14, sin probar en el Mac
+### ~~4. Guardar y actualizar desde la página~~ — comprobado en el Mac el 2026-09-14 (2.21.2)
 
 Resuelto en la [ADR 0032](adr/0032-guardar-desde-la-pagina.md), decidido con el cliente por preguntas
 con opciones. **Al enviar un formulario, una tarjeta arriba a la derecha ofrece guardar la cuenta** —o
@@ -270,8 +270,7 @@ en la 2.21.1** recordando el usuario de la página anterior, y con varias cuenta
 coincida con él, a petición del cliente. **Publicada la 2.21.1 el mismo día**, con todas las
 compilaciones en verde, y **Google funciona perfecto** con ella. Después, **cambiar la contraseña en Brevo
 no ofrecía nada** —actual y nueva sin `autocomplete`, solo distinguidas por el nombre—: corregido en la
-**2.21.2, publicada el mismo día**. Sin probar en Brevo: la cuenta de pruebas se quedó sin su
-contraseña original. **Faltan los pasos 5 a 8.** Y **la extensión no escribe nada en la consola** por
+**2.21.2, publicada el mismo día**. **Y Brevo también funciona**, comprobado por el cliente. **Y con la 2.21.2 los pasos 5 a 8 también funcionan**, dicho por el cliente: el inicio fallido no ofrece nada, «Nunca en este sitio» se deshace en Ajustes, la ventana se pone al día sola y con la bóveda cerrada «Ya la he abierto» deja guardar. Y **la extensión no escribe nada en la consola** por
 defecto, decidido por el cliente: los diagnósticos se le piden con un fragmento para pegar (ADR 0032, «Corregido tras probarla en
 Google»). **Quedan por probar los pasos 5 a 8.**
 
@@ -279,7 +278,7 @@ Se le explicó cómo decide «la contraseña era mala» y se le pidió que apunt
 cualquiera de los dos sentidos** —no sale tras entrar bien, o sale tras un error—: esa heurística se
 afina con esos casos (`docs/deuda.md`). Si algo no hace nada, lo primero es la consola de la extensión.
 
-Después, las tiendas (entrega 5).
+**La siguiente acción concreta son las tiendas (entrega 5)**, que hay que plantear con el cliente antes de escribir nada.
 
 ### Lo que yo recomendaría meter en medio, y no es lo que se decidió
 
