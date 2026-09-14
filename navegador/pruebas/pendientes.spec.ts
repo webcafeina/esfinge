@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { mismoSitio, sirvePara, vigente, VIDA_DEL_PENDIENTE, type Pendiente } from "../src/pendientes";
+import {
+  mismoSitio,
+  sirvePara,
+  vigente,
+  VIDA_DEL_PENDIENTE,
+  VIDA_DEL_USUARIO,
+  type Pendiente,
+} from "../src/pendientes";
 
 /**
  * Cuándo se ofrece lo que se acaba de enviar, sin navegador.
@@ -41,4 +48,13 @@ test("pendiente: solo sirve en https, en el mismo sitio y a tiempo", () => {
   expect(sirvePara(p, "http://app.brevo.com/panel", 5000)).toBe(false);
   expect(sirvePara(p, "https://otra-web.com/", 5000)).toBe(false);
   expect(sirvePara(p, "https://app.brevo.com/panel", VIDA_DEL_PENDIENTE + 1)).toBe(false);
+});
+
+test("pendiente: el usuario tecleado dura más que la contraseña, y solo en su sitio", () => {
+  const escrito = { origen: "https://accounts.google.com/v3/signin/identifier", usuario: "alvaro@webcafeina.com", cuando: 0 };
+  const despues = VIDA_DEL_PENDIENTE + 1000;
+  expect(VIDA_DEL_USUARIO).toBeGreaterThan(VIDA_DEL_PENDIENTE);
+  expect(sirvePara(escrito, "https://accounts.google.com/v3/signin/challenge/pwd", despues, VIDA_DEL_USUARIO)).toBe(true);
+  expect(sirvePara(escrito, "https://accounts.google.com/v3/signin/challenge/pwd", VIDA_DEL_USUARIO, VIDA_DEL_USUARIO)).toBe(false);
+  expect(sirvePara(escrito, "https://otra-web.com/", 1000, VIDA_DEL_USUARIO)).toBe(false);
 });

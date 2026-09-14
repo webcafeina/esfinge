@@ -12,7 +12,7 @@
  * propia página no se ofrece guardar. Y si llegan varios por el mismo envío —el
  * clic y el `submit` a la vez—, da igual: el último pisa al anterior con lo mismo.
  */
-import { queSeEnvia, type Envio } from "./campos";
+import { campoDeIdentificador, queSeEnvia, type Envio } from "./campos";
 
 /** Hasta dónde se sube buscando el contenedor de la contraseña. */
 const NIVELES = 8;
@@ -60,6 +60,61 @@ export function vigilarEnvios(alEnviar: (e: Envio) => void, doc: Document = docu
       const campo = e.target as HTMLInputElement | null;
       if (campo?.tagName !== "INPUT" || campo.type !== "password") return;
       leer(campo.form ?? contenedorConContrasena(campo));
+    },
+    true,
+  );
+}
+
+/** Lo que se espera a que se deje de teclear antes de avisar. */
+const ESPERA_AL_TECLEAR = 300;
+
+/**
+ * vigilarIdentificador avisa de **lo que una persona teclea** en el usuario de una
+ * página de solo usuario, para que la página siguiente —la de la contraseña— sepa
+ * quién entra (`identidad.ts`).
+ *
+ * **Solo lo tecleado** (`isTrusted`): lo que escribe Esfinge al rellenar no cuenta,
+ * y así, si se deja la cuenta que puso Esfinge y se pulsa «Siguiente», la página de la
+ * contraseña se rellena como siempre. Se avisa al dejar de teclear, al cambiar de
+ * campo y al pulsar Intro, porque **cómo se envía esa página no importa**: no hace
+ * falta adivinar dónde está su botón.
+ */
+export function vigilarIdentificador(alEscribir: (usuario: string) => void, doc: Document = document) {
+  let plazo: ReturnType<typeof setTimeout> | undefined;
+  const avisar = (campo: HTMLInputElement, yaMismo: boolean) => {
+    clearTimeout(plazo);
+    const enviar = () => {
+      const usuario = campo.value.trim();
+      if (usuario) alEscribir(usuario);
+    };
+    if (yaMismo) enviar();
+    else plazo = setTimeout(enviar, ESPERA_AL_TECLEAR);
+  };
+
+  doc.addEventListener(
+    "input",
+    (e) => {
+      if (!e.isTrusted) return;
+      const campo = campoDeIdentificador(e.target, doc);
+      if (campo) avisar(campo, false);
+    },
+    true,
+  );
+  doc.addEventListener(
+    "change",
+    (e) => {
+      if (!e.isTrusted) return;
+      const campo = campoDeIdentificador(e.target, doc);
+      if (campo) avisar(campo, true);
+    },
+    true,
+  );
+  doc.addEventListener(
+    "keydown",
+    (e) => {
+      if (!e.isTrusted || e.key !== "Enter") return;
+      const campo = campoDeIdentificador(e.target, doc);
+      if (campo) avisar(campo, true);
     },
     true,
   );

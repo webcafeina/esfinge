@@ -444,3 +444,45 @@ for (const caso of casosDeEnvio) {
     expect(await envioQueSeLee(page, caso.html)).toEqual(caso.espera);
   });
 }
+
+/* ------------------------------ la página de solo usuario (2.21.1) */
+
+/**
+ * Qué se da por «el usuario de una página de solo usuario», que es lo que se recuerda
+ * para la página de la contraseña. Con el mismo criterio que para rellenarla.
+ */
+const casosDeIdentificador: { nombre: string; html: string; espera: boolean }[] = [
+  {
+    nombre: "identificador: el correo de la primera página de Google",
+    html: `<form><input id="objetivo" type="email" autocomplete="username webauthn" name="identifier">
+      <input type="password" name="hiddenPassword" style="display:none"><button>Siguiente</button></form>`,
+    espera: true,
+  },
+  {
+    nombre: "identificador: con una contraseña a la vista no es esa página",
+    html: `<form><input id="objetivo" autocomplete="username"><input type="password"></form>`,
+    espera: false,
+  },
+  {
+    nombre: "identificador: un campo sin declarar no cuenta",
+    html: `<form><input id="objetivo" type="email" name="email"><button>Seguir</button></form>`,
+    espera: false,
+  },
+  {
+    nombre: "identificador: un buscador tampoco, aunque diga username",
+    html: `<input id="objetivo" type="search" autocomplete="username">`,
+    espera: false,
+  },
+];
+
+for (const caso of casosDeIdentificador) {
+  test(caso.nombre, async ({ page }) => {
+    await page.setContent(`<!doctype html><meta charset="utf-8">${caso.html}`);
+    await page.addScriptTag({ content: modulo });
+    const es = await page.evaluate(
+      // @ts-expect-error el módulo se inyecta como global en la página
+      () => Campos.campoDeIdentificador(document.getElementById("objetivo")) !== null,
+    );
+    expect(es).toBe(caso.espera);
+  });
+}

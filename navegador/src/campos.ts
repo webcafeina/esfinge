@@ -455,3 +455,22 @@ export function queSeEnvia(ambito: ParentNode, doc: Document = document): Envio 
       ?.value ?? "";
   return { forma, usuario: (visible || escondido).trim(), secreto };
 }
+
+/**
+ * campoDeIdentificador dice si lo que se está tecleando es **el usuario de una
+ * página de solo usuario** —la primera de Google o de Microsoft—, y lo devuelve.
+ *
+ * Con el mismo criterio con el que se rellenan esas páginas (`buscarFormularios`):
+ * el sitio lo declara con `autocomplete="username"`, es visible y **no hay ninguna
+ * contraseña a la vista**. Con una contraseña al lado, el usuario ya se lee al enviar.
+ */
+export function campoDeIdentificador(
+  objetivo: EventTarget | null,
+  doc: Document = document,
+): HTMLInputElement | null {
+  const campo = objetivo as HTMLInputElement | null;
+  if (!campo || campo.tagName !== "INPUT") return null;
+  if (!sePuedeEscribir(campo) || !TIPOS_DE_USUARIO.has(campo.type.toLowerCase())) return null;
+  if (!tokens(campo).includes("username")) return null;
+  return contrasenasVisibles(doc).length === 0 ? campo : null;
+}

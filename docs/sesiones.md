@@ -5,6 +5,21 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · Quién entra, en las páginas de dos pasos (2.21.1)
+
+- **El cliente probó la 2.21.0 hasta cambiar la contraseña** y encontró un fallo en Google: con `info@`
+  guardada y `alvaro@` borrada para probar, entró como `alvaro@` y Esfinge **le rellenó la contraseña de
+  `info@`** en la página de la contraseña, y al enviar **le ofreció actualizar `info@`** en vez de guardar
+  `alvaro@`. Las dos cosas por lo mismo: en la página de la contraseña ya no se ve el usuario que se
+  tecleó en la anterior.
+- **Arreglo**: el guion avisa de lo tecleado en la página de solo usuario, el trabajador lo recuerda
+  cinco minutos por pestaña y sitio, no se rellena sola una cuenta que lo contradiga
+  (`identidad.ts`, función pura) y el envío sin usuario toma ése.
+- Verificado: `make comprobar` en verde con **84 pruebas de la extensión**, catorce nuevas, cuatro de
+  ellas con el teclado de verdad de Chromium. Sin verificar: contra el Google de verdad.
+- **Queda por probar de la 2.21.0**: los pasos 5 a 8 —el inicio fallido, «Nunca en este sitio», la
+  ventana al día sola y la bóveda cerrada—.
+
 ## 2026-09-14 · Guardar y actualizar desde la página
 
 - **Publicada en la 2.21.0** a petición del cliente, con las cinco compilaciones y la puerta de

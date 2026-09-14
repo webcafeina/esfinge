@@ -264,6 +264,11 @@ cambio de contraseña, **inicio fallido sin tarjeta**, «Nunca en este sitio» y
 ventana al día sola, y la bóveda cerrada con «Ya la he abierto». Hay que **reinstalar la extensión** con
 los zip de la 2.21.0, o la tarjeta no sale.
 
+**Con la 2.21.0 probó hasta cambiar la contraseña** y salió un fallo en Google, que pide usuario y
+contraseña en páginas separadas: rellenaba y ofrecía actualizar la cuenta de otro usuario. **Corregido
+en la 2.21.1** recordando lo tecleado en la página del usuario (ADR 0032, «Corregido tras probarla en
+Google»). **Quedan por probar los pasos 5 a 8.**
+
 Se le explicó cómo decide «la contraseña era mala» y se le pidió que apunte **los sitios donde falle en
 cualquiera de los dos sentidos** —no sale tras entrar bien, o sale tras un error—: esa heurística se
 afina con esos casos (`docs/deuda.md`). Si algo no hace nada, lo primero es la consola de la extensión.

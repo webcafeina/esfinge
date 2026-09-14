@@ -50,7 +50,8 @@ import {
   type DestinoDeCodigo,
   type Formulario,
 } from "./campos";
-import { vigilarEnvios } from "./envios";
+import { vigilarEnvios, vigilarIdentificador } from "./envios";
+import { cuentaParaRellenarSola } from "./identidad";
 import { avisar, ponerFilete } from "./marcas";
 import {
   VERSION_DEL_PROTOCOLO,
@@ -249,6 +250,15 @@ async function rellenarCodigo(
 const TOPE_DE_PREGUNTAS = 5;
 let preguntadas = 0;
 
+/**
+ * quienEntra es el usuario que se tecleó en la página de solo usuario de este sitio,
+ * o cadena vacía. Lo guarda el trabajador de fondo, porque esa página ya no está.
+ */
+async function quienEntra(): Promise<string> {
+  const r = await hablarConElFondo<{ usuario?: string }>({ que: "quien-entra" });
+  return r?.usuario ?? "";
+}
+
 /** Y un cerrojo, para no solapar dos vueltas mientras se espera la respuesta. */
 let preguntando = false;
 
@@ -284,12 +294,24 @@ async function mirar() {
     preguntadas++;
     const cuentas = await cuentasDeAqui();
     if (cuentas.length !== 1) return;
+    // **Quién entra**, para no rellenar con la cuenta de otro (`identidad.ts`): lo
+    // tecleado en la página de solo usuario, que en la de la contraseña ya no se ve.
+    const tecleadoAntes = await quienEntra();
     for (const f of formularios) {
+      // Y si el formulario tiene usuario y alguien ya ha escrito uno, manda ése.
+      const alLado = f.usuario && !yaRellenados.has(f.usuario) ? f.usuario.value : "";
+      if (!cuentaParaRellenarSola(cuentas, alLado || tecleadoAntes)) continue;
       await rellenar(cuentas[0].id, f);
     }
     // Solo si Esfinge **dice** que esa cuenta tiene código: una Esfinge anterior a
-    // la 2.19.0 no lo dice, y ahí no se pide uno a ciegas.
-    if (codigo && codigoPendiente && cuentas[0].tieneCodigo === true) {
+    // la 2.19.0 no lo dice, y ahí no se pide uno a ciegas. Y tampoco si quien entra
+    // es otro.
+    if (
+      codigo &&
+      codigoPendiente &&
+      cuentas[0].tieneCodigo === true &&
+      cuentaParaRellenarSola(cuentas, tecleadoAntes)
+    ) {
       await rellenarCodigo(cuentas[0].id, codigo);
     }
   } finally {
@@ -482,6 +504,9 @@ async function mirarPendiente(alCargar: boolean) {
  * estar en un marco.
  */
 function vigilarLoQueSeEnvia() {
+  vigilarIdentificador((usuario) => {
+    hablarConElFondo({ que: "usuario-escrito", usuario });
+  });
   vigilarEnvios((envio) => {
     hablarConElFondo({ que: "envio", ...envio });
     if (window.top === window.self) {

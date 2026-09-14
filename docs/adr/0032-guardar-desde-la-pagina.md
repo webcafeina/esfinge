@@ -121,6 +121,36 @@ sitios en los que usas cuentas es justo lo que la [ADR 0024](0024-iconos-de-los-
 dejar en claro. **Por eso Ajustes solo la enseña con la bóveda abierta**. La prueba mira el fichero y
 comprueba que el dominio no aparece.
 
+### Corregido tras probarla en Google (2.21.1)
+
+El cliente probó la 2.21.0 hasta cambiar la contraseña y encontró un fallo **de las páginas que piden el
+usuario y la contraseña por separado**. En Google, con `info@` y `alvaro@` guardadas, borró `alvaro@`
+para que saliera como nueva. Al entrar:
+
+1. En la página del correo, Esfinge **rellenó `info@`**, que era la única cuenta. Él lo cambió por
+   `alvaro@`.
+2. En la página de la contraseña **ya no hay ningún campo con el usuario**, así que Esfinge rellenó la
+   contraseña de `info@` encima de lo que él iba a escribir.
+3. Al enviar la de `alvaro@`, la tarjeta llegó **sin usuario**, y sin usuario Go ofrece actualizar las
+   cuentas del sitio: **«Actualizar» la de `info@` con la contraseña de `alvaro@`**.
+
+El arreglo es **recordar quién entra**:
+
+- El guion de la página avisa de **lo que una persona teclea** (`isTrusted`) en el usuario de una página
+  de solo usuario —el mismo criterio con el que se rellena: `autocomplete="username"` y ninguna
+  contraseña a la vista—. Se avisa al dejar de teclear, al cambiar de campo y con Intro, así que **no
+  hace falta saber cómo envía el sitio** esa página.
+- El trabajador de fondo lo guarda por pestaña, **en memoria, cinco minutos y solo para el mismo
+  sitio** (`usuariosEscritos`). No es una contraseña, y tampoco sale de ahí hacia otro sitio.
+- **Rellenar sola**: con una sola cuenta del sitio, como siempre, pero **no si lo tecleado la
+  contradice** —en el campo de usuario del propio formulario o en la página anterior—. Lo decide
+  `cuentaParaRellenarSola` (`identidad.ts`), una función pura. Vale también para el código de un solo
+  uso.
+- **Al enviar sin usuario en el formulario**, el trabajador pone el tecleado en la página anterior. Con
+  eso la tarjeta ofrece **guardar `alvaro@` como cuenta nueva**.
+- Lo que escribe Esfinge **no cuenta como tecleado**: si se deja la cuenta que puso y se pulsa
+  «Siguiente», la página de la contraseña se rellena como antes.
+
 ## Alternativas descartadas
 
 **El panel de la extensión, sin tocar la página.** Mantenía la 0028 al pie de la letra, pero nadie abre
@@ -173,8 +203,14 @@ de cambio con la vieja, o una que no coincide con su repetición.
   que «Guardar» no cabía en la fila a 320 px: «Nunca en este sitio» pasó a su línea, subrayado.
 - `make comprobar` y `make e2e` en verde.
 
-**Publicada en la 2.21.0 (2026-09-14).** Sin comprobar todavía, y hay que mirar en el Mac, en Firefox y
-en Chrome:
+**Publicada en la 2.21.0 (2026-09-14)** y probada por el cliente hasta cambiar la contraseña, en su
+Mac. De ahí salió el fallo de Google de arriba, corregido en la 2.21.1 con cuatro pruebas del teclado de
+verdad —lo tecleado se recuerda, lo escrito por la página o por Esfinge no, cambiar lo que puso Esfinge
+y pulsar Intro sí, y con una contraseña a la vista nada—, cuatro del campo de solo usuario y cinco de
+`cuentaParaRellenarSola`. **Sin comprobar contra el Google de verdad**: el criterio del campo es el mismo
+que ya rellenaba esa página, y eso es lo único que se sabe de su HTML.
+
+Sin comprobar todavía, y hay que mirar en el Mac, en Firefox y en Chrome:
 
 - **Todo lo del trabajador de fondo y del guion de la página con la extensión cargada**: el pendiente
   cruzando la navegación, la detección del envío en sitios de verdad y la heurística del formulario que

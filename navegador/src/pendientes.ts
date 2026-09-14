@@ -19,14 +19,28 @@ import type { Forma } from "./protocolo";
 
 export const VIDA_DEL_PENDIENTE = 2 * 60 * 1000;
 
-export type Pendiente = {
-  /** La dirección desde la que se envió, tal como la dio el navegador. */
+/**
+ * Lo que dura el usuario tecleado en la página de solo usuario (ver
+ * `identidad.ts`). Más que el pendiente, porque entre las dos páginas puede haber un
+ * captcha o una espera; y no es una contraseña.
+ */
+export const VIDA_DEL_USUARIO = 5 * 60 * 1000;
+
+/** Algo que se recuerda de una pestaña: de dónde vino y cuándo. */
+export type Recuerdo = {
+  /** La dirección en la que pasó, tal como la dio el navegador. */
   origen: string;
+  cuando: number;
+};
+
+export type Pendiente = Recuerdo & {
   usuario: string;
   secreto: string;
   forma: Forma;
-  cuando: number;
 };
+
+/** El usuario que una persona tecleó en la página de solo usuario. */
+export type UsuarioEscrito = Recuerdo & { usuario: string };
 
 function anfitrion(url: string): string {
   try {
@@ -57,11 +71,11 @@ export function mismoSitio(a: string, b: string): boolean {
   return pa.slice(-cuantas).join(".") === pb.slice(-cuantas).join(".");
 }
 
-export function vigente(p: Pendiente, ahora: number): boolean {
-  return ahora - p.cuando < VIDA_DEL_PENDIENTE;
+export function vigente(p: Recuerdo, ahora: number, vida = VIDA_DEL_PENDIENTE): boolean {
+  return ahora - p.cuando < vida;
 }
 
-/** sirvePara dice si un pendiente se puede ofrecer en esa dirección, ahora. */
-export function sirvePara(p: Pendiente, url: string, ahora: number): boolean {
-  return vigente(p, ahora) && mismoSitio(anfitrion(p.origen), anfitrion(url));
+/** sirvePara dice si lo recordado vale en esa dirección, ahora. */
+export function sirvePara(p: Recuerdo, url: string, ahora: number, vida = VIDA_DEL_PENDIENTE): boolean {
+  return vigente(p, ahora, vida) && mismoSitio(anfitrion(p.origen), anfitrion(url));
 }

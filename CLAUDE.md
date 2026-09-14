@@ -684,6 +684,14 @@ Y con ello un detalle que se olvida fácil: **a los tres segundos de enviar no s
 el formulario siga ahí. Puede ser la página de antes esperando a que el sitio conteste; solo al cargar
 la página nueva un formulario de contraseña visible dice que la contraseña era mala.
 
+**Y en las páginas de dos pasos, en la de la contraseña ya no se sabe quién entra.** Google pide el
+correo en una página y la contraseña en otra, y la segunda no tiene campo de usuario: con una sola
+cuenta guardada, la 2.21.0 **rellenaba su contraseña aunque se acabara de teclear otro correo**, y al
+enviar la tarjeta llegaba sin usuario y ofrecía **actualizar la cuenta de otro**. Lo vio el cliente. Por
+eso el trabajador recuerda **lo tecleado** en la página de solo usuario (`usuariosEscritos`, cinco
+minutos, mismo sitio), y **una cuenta que lo contradiga no se rellena sola** (`identidad.ts`). Lo que
+escribe Esfinge no cuenta como tecleado, o dejar la cuenta que puso rompería el relleno de siempre.
+
 **Y el corolario pequeño, que costó un commit el mismo día: `make comprobar | tail` no dice si
 `make` ha fallado.** El código de salida de una tubería es el del **último** mandato, así que
 `make comprobar 2>&1 | tail -3 && git commit` compromete igual con `go vet` en rojo: lo que se mira

@@ -25,7 +25,13 @@
  */
 import { api } from "./api";
 import { hostDe, queMostrar, TEXTO_DE_INSIGNIA, type QueMostrar } from "./insignia";
-import { sirvePara, vigente, type Pendiente } from "./pendientes";
+import {
+  sirvePara,
+  vigente,
+  VIDA_DEL_USUARIO,
+  type Pendiente,
+  type UsuarioEscrito,
+} from "./pendientes";
 import {
   VERSION_DEL_PROTOCOLO,
   type Peticion,
@@ -330,10 +336,32 @@ api.alarms.onAlarm.addListener((alarma) => {
 const ofertasPendientes = new Map<number, Pendiente>();
 api.tabs.onRemoved.addListener((tabId) => ofertasPendientes.delete(tabId));
 
+/**
+ * El usuario que una persona tecleó en la página de solo usuario de cada pestaña
+ * —la primera de Google—, para que la de la contraseña sepa quién entra
+ * (`identidad.ts`). **No es una contraseña**, pero tampoco sale de aquí más que
+ * hacia el mismo sitio, y como el pendiente vive solo en memoria.
+ */
+const usuariosEscritos = new Map<number, UsuarioEscrito>();
+api.tabs.onRemoved.addListener((tabId) => usuariosEscritos.delete(tabId));
+
+/** usuarioEscritoPara es lo tecleado en esa pestaña, si vale para esa dirección. */
+function usuarioEscritoPara(tabId: number, url: string): string {
+  const u = usuariosEscritos.get(tabId);
+  if (!u) return "";
+  if (!sirvePara(u, url, Date.now(), VIDA_DEL_USUARIO)) {
+    usuariosEscritos.delete(tabId);
+    return "";
+  }
+  return u.usuario;
+}
+
 type MensajeDeTarjeta =
   | { que: "envio"; forma: Pendiente["forma"]; usuario: string; secreto: string }
   | { que: "mirar" }
   | { que: "descartar" }
+  | { que: "usuario-escrito"; usuario: string }
+  | { que: "quien-entra" }
   | {
       que: "decidir";
       accion: "guardar" | "actualizar" | "nunca" | "ahora-no";
@@ -351,13 +379,24 @@ async function atenderTarjeta(tabId: number, url: string, m: MensajeDeTarjeta): 
       if (url.startsWith("https:") && m.secreto) {
         ofertasPendientes.set(tabId, {
           origen: url,
-          usuario: m.usuario ?? "",
+          // Sin usuario en el formulario —la página de la contraseña de Google—, el
+          // que se tecleó en la página anterior del mismo sitio.
+          usuario: (m.usuario ?? "").trim() || usuarioEscritoPara(tabId, url),
           secreto: m.secreto,
           forma: m.forma,
           cuando: Date.now(),
         });
       }
       return { ok: true };
+
+    case "usuario-escrito":
+      if (url.startsWith("https:") && m.usuario?.trim()) {
+        usuariosEscritos.set(tabId, { origen: url, usuario: m.usuario.trim(), cuando: Date.now() });
+      }
+      return { ok: true };
+
+    case "quien-entra":
+      return { usuario: usuarioEscritoPara(tabId, url) };
 
     case "descartar":
       ofertasPendientes.delete(tabId);
