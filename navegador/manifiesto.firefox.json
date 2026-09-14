@@ -3,6 +3,12 @@
   "name": "Esfinge",
   "version": "0.1.0",
   "description": "Rellena las contraseñas de tu bóveda de Esfinge sin salir del navegador.",
+  "icons": {
+    "16": "iconos/16.png",
+    "32": "iconos/32.png",
+    "48": "iconos/48.png",
+    "128": "iconos/128.png"
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "esfinge@webcafeina.com",
@@ -31,7 +37,13 @@
   ],
   "action": {
     "default_title": "Esfinge",
-    "default_popup": "panel.html"
+    "default_popup": "panel.html",
+    "default_icon": {
+      "16": "iconos/16.png",
+      "32": "iconos/32.png",
+      "48": "iconos/48.png",
+      "128": "iconos/128.png"
+    }
   },
   "background": {
     "scripts": [

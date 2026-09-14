@@ -115,6 +115,15 @@ type Cuenta struct {
 	ID      string `json:"id"`
 	Titulo  string `json:"titulo"`
 	Usuario string `json:"usuario"`
+	// TieneCodigo dice si la entrada guarda semilla de un solo uso. **La semilla
+	// no viaja**, solo el hecho de que existe.
+	//
+	// Hasta la 2.18.1 no estaba, y el panel enseñaba el botón «Código» en todas
+	// las cuentas: en las que no tenían segundo factor, pulsarlo contestaba un
+	// error. Lo que se revela a cambio es poco y ya lo sabe quien ve la ventana
+	// —que esa cuenta tiene segundo factor—, y hace falta de todas formas para
+	// rellenar el código solo, que es lo siguiente.
+	TieneCodigo bool `json:"tieneCodigo,omitempty"`
 }
 
 // Estado es lo poco que se puede saber sin haber abierto nada.

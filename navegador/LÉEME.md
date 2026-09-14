@@ -86,6 +86,20 @@ rellenar nada**: el buscador de la cabecera, el formulario de registrarse, el
 escondido, el de un píxel. Equivocarse de campo es escribir una contraseña donde
 la lea alguien, y es lo único de esta entrega que puede hacer daño.
 
+## Cómo se mira
+
+```sh
+pnpm run capturas    # dibuja el panel en cada estado, en claro y en oscuro
+```
+
+Deja las capturas en `capturas/` —que no se sube—. Carga el `panel.html` compilado, el mismo que se
+publica, con una `chrome` de mentira que contesta lo que cada estado necesita. **Hasta la 2.19.0
+nadie había mirado este panel**, y de hacerlo salieron un correo cortado, filas de formas distintas y
+un botón desalineado que ninguna prueba habría visto.
+
+El panel toma los tokens de la ventana tal cual (ADR 0029): **una pareja de colores que no esté en
+`internal/tema/contraste_test.go` no se usa aquí**. Si hace falta una nueva, se mide primero allí.
+
 ## Lo que falta
 
 - Guardar y actualizar contraseñas desde la página (entrega 3).

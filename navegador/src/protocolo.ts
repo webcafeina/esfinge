@@ -30,6 +30,12 @@ export type Cuenta = {
   id: string;
   titulo: string;
   usuario: string;
+  /**
+   * Si la entrada guarda semilla de un solo uso. Solo el hecho, no la semilla.
+   * Llega desde la 2.19.0: una Esfinge anterior no lo manda, y entonces vale
+   * `undefined`, que el panel trata como «no se sabe» y enseña el botón igual.
+   */
+  tieneCodigo?: boolean;
 };
 
 export type Estado = {

@@ -31,6 +31,8 @@ frontend/capturas/
 frontend/test-results/
 frontend/playwright-report/
 navegador/test-results/
+# Las capturas del panel las dibuja herramientas/capturas.mjs cada vez: son para mirar, no para guardar.
+navegador/capturas/
 navegador/playwright-report/
 internal/interfaz/dist/assets/
 build/bin/

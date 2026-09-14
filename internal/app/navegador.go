@@ -195,7 +195,16 @@ func (f fuenteDelNavegador) CuentasDe(dominio string) ([]navegador.Cuenta, error
 		if e.Tipo != boveda.TipoCredencial || !leEncaja(e, dominio) {
 			continue
 		}
-		out = append(out, navegador.Cuenta{ID: e.ID, Titulo: e.Titulo, Usuario: e.Usuario})
+		// **Si tiene código hay que mirarlo en la entrada entera**, no en ésta:
+		// `Buscar` devuelve las entradas pasadas por `SinSecretos`, que vacía la
+		// semilla sin dejar marca de que la hubiera. Leyéndolo de aquí salía que
+		// ninguna cuenta tenía segundo factor —lo cazó la prueba, no la vista—. Se
+		// hace solo con las que ya encajan con el sitio, y lo único que sale de
+		// esta función es el sí o el no.
+		completa, _ := b.Ver(e.ID)
+		out = append(out, navegador.Cuenta{
+			ID: e.ID, Titulo: e.Titulo, Usuario: e.Usuario, TieneCodigo: completa.TOTP != "",
+		})
 	}
 	return out, nil
 }

@@ -6,16 +6,47 @@
     <link rel="stylesheet" href="./panel.css" />
   </head>
   <body>
+    <!-- El lockup, como el de la barra lateral de la ventana (ADR 0021): es el
+         único sitio del panel con marca. Debajo, el sitio de la pestaña, que es
+         lo que dice para qué se están enseñando estas cuentas. -->
     <header>
-      <strong>Esfinge</strong>
-      <span id="donde"></span>
+      <span class="marca" aria-hidden="true"></span>
+      <div class="cabecera">
+        <strong>Esfinge</strong>
+        <span id="donde"></span>
+      </div>
     </header>
-    <ul id="lista" hidden></ul>
-    <p id="aviso" hidden></p>
+
+    <main>
+      <!-- Mientras se pregunta: dos filas vacías con la forma de las de verdad,
+           para que el panel no dé un salto cuando lleguen. El texto va escondido
+           a la vista y no a quien lee la pantalla en voz alta. -->
+      <div id="cargando" class="cargando" role="status">
+        <span class="solo-lectores">Preguntando a Esfinge…</span>
+        <div class="hueco"></div>
+        <div class="hueco"></div>
+      </div>
+
+      <ul id="lista" hidden></ul>
+
+      <!-- Lo que no es una lista: la bóveda cerrada, sin permiso, sin Esfinge… -->
+      <section id="estado" class="estado" hidden>
+        <span class="glifo" aria-hidden="true"></span>
+        <div>
+          <h1></h1>
+          <p class="texto"></p>
+          <p class="detalle" hidden></p>
+        </div>
+      </section>
+    </main>
+
+    <!-- El resultado del último gesto: «Rellenado», «Contraseña copiada»… -->
+    <p id="resultado" class="resultado" role="status" hidden></p>
+
     <!-- La versión, a la vista. **No es un adorno**: cuando algo no funciona, lo
          primero que hay que saber es qué versión se está mirando, y preguntarlo
          por escrito cuesta un viaje de ida y vuelta. -->
-    <p id="pie"></p>
+    <footer id="pie"></footer>
     <script type="module" src="./panel.ts"></script>
   </body>
 </html>

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -37,6 +38,31 @@ func conBoveda(t *testing.T) (*App, *sistemaFalso, *time.Time, navegador.Fuente,
 		ids[e.Titulo] = e.ID
 	}
 	return a, s, ahora, fuenteDelNavegador{a}, ids
+}
+
+// El navegador sabe **si** una cuenta tiene segundo factor, y nada más de él.
+//
+// Sin esto el panel enseñaba «Código» en todas las cuentas y fallaba en las que
+// no lo tienen. Lo que se comprueba de verdad es la segunda mitad: que la semilla
+// no aparece en lo que cruza el canal, mirando el JSON y no el tipo.
+func TestElNavegadorSabeSiHayCodigoPeroNoLaSemilla(t *testing.T) {
+	_, _, _, f, _ := conBoveda(t)
+
+	banco, err := f.CuentasDe("banco.es")
+	if err != nil || len(banco) != 1 {
+		t.Fatalf("cuentas del banco: %+v, %v", banco, err)
+	}
+	if !banco[0].TieneCodigo {
+		t.Error("la cuenta del banco guarda semilla y dice que no tiene código")
+	}
+	if crudo, _ := json.Marshal(banco); strings.Contains(string(crudo), "GEZDGNBVGY3TQOJQ") {
+		t.Errorf("la semilla ha cruzado el canal: %s", crudo)
+	}
+
+	correo, _ := f.CuentasDe("correo.com")
+	if len(correo) != 1 || correo[0].TieneCodigo {
+		t.Errorf("una cuenta sin semilla dice que tiene código: %+v", correo)
+	}
 }
 
 // Lo que el navegador ve de un sitio: sus cuentas, sin secretos, y solo las suyas.

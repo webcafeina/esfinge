@@ -36,6 +36,14 @@ const trabajos = [
     n,
   ]),
 
+  // Los de la extensión del navegador. **Hasta la 2.19.0 no llevaba ninguno**, y
+  // en la barra salía la inicial genérica que pone el navegador: lo único de
+  // Esfinge que se ve dentro del navegador era una «E» gris. Son los cuatro que
+  // piden las dos tiendas —16 para la barra, 32 para Windows, 48 para la página
+  // de extensiones, 128 para la instalación y la ficha—, y viven fuera de
+  // «dist/» para que la extensión no dependa de haber ejecutado esto.
+  ...[16, 32, 48, 128].map((n) => ["build/icono.svg", `navegador/iconos/${n}.png`, n]),
+
   ["build/icono.svg", "frontend/public/icono-256.png", 256],
   ["build/icono.svg", "frontend/public/favicon.png", 64],
   ["build/icono.svg", "docs/imagenes/icono.png", 256],

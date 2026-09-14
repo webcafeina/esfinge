@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build && vite build --config vite.fondo.config.ts && vite build --config vite.pagina.config.ts",
-    "comprobar": "tsc -b --noEmit && node herramientas/permisos.mjs && playwright test"
+    "comprobar": "tsc -b --noEmit && node herramientas/permisos.mjs && playwright test",
+    "capturas": "vite build && node herramientas/capturas.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

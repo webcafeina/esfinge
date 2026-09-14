@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 /**
  * El panel. **El trabajador de fondo se compila aparte** (`vite.fondo.config.ts`)
@@ -55,6 +55,20 @@ export default defineConfig({
         const numeros = /\d+(?:\.\d+){0,3}/.exec(process.env.VERSION ?? "");
         if (numeros) m.version = numeros[0];
         writeFileSync(resolve(salida, "manifest.json"), JSON.stringify(m, null, 2) + "\n");
+
+        // Los iconos que nombra el manifiesto. **Un icono que falta no da error**:
+        // el navegador carga la extensión igual y pone su inicial genérica en la
+        // barra, así que se copian todos los que el manifiesto diga y se falla aquí
+        // si alguno no está, que es donde se puede ver.
+        const iconos = new Set<string>([
+          ...Object.values<string>(m.icons ?? {}),
+          ...Object.values<string>(m.action?.default_icon ?? {}),
+        ]);
+        for (const icono of iconos) {
+          const destino = resolve(salida, icono);
+          mkdirSync(dirname(destino), { recursive: true });
+          copyFileSync(resolve(__dirname, icono), destino);
+        }
       },
     },
   ],

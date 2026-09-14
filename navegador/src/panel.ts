@@ -14,14 +14,46 @@
  * La dirección de la pestaña la da el navegador (`tabs.query`), no la página. Es
  * la diferencia entre preguntar por un sitio y preguntar por lo que un documento
  * dice que es.
+ *
+ * # Cómo está dibujado
+ *
+ * Con los tokens de la ventana (`panel.css` explica cuáles y por qué). Aquí solo
+ * hay estructura: la cabecera con la marca, una fila por cuenta con la misma
+ * forma todas, un estado con jerarquía cuando no hay lista, y una línea con el
+ * resultado del último gesto. **Todo el texto se escribe con `textContent`**, y
+ * los únicos `innerHTML` son dibujos nuestros —la marca y cuatro iconos—, nunca
+ * nada que venga de la bóveda ni de la página.
  */
+import marcaSVG from "../../build/marca.svg?raw";
 import { api } from "./api";
 import type { Cuenta, Motivo, Peticion, Respuesta } from "./protocolo";
 
 const donde = document.getElementById("donde") as HTMLElement;
+const cargando = document.getElementById("cargando") as HTMLElement;
 const lista = document.getElementById("lista") as HTMLElement;
-const aviso = document.getElementById("aviso") as HTMLElement;
+const estado = document.getElementById("estado") as HTMLElement;
+const resultado = document.getElementById("resultado") as HTMLElement;
 const pie = document.getElementById("pie") as HTMLElement;
+
+/**
+ * Los iconos, a trazo y en `currentColor` como los de la barra lateral de la
+ * ventana (ADR 0019): cada sitio los pinta con su token.
+ */
+const ICONOS = {
+  // Una llave: la contraseña.
+  llave:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M16 7l3 3M14 9l2 2"/></svg>',
+  // Un reloj: el código, que caduca.
+  reloj:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  bien: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  mal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>',
+  // Un candado: la bóveda cerrada, o sin permiso.
+  candado:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  // Una lupa: no hay nada de este sitio.
+  lupa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
+};
 
 /**
  * Lo que se espera a que el trabajador conteste antes de darlo por perdido.
@@ -105,43 +137,111 @@ function conPlazo<T>(promesa: Promise<T>): Promise<T> {
   ]);
 }
 
-/** Lo que se enseña cuando algo no se puede hacer, por motivo y no por texto. */
-function queHacer(motivo: Motivo | undefined, error: string | undefined): string {
+/** Lo que se enseña cuando no hay lista: un título, qué hacer, y el detalle. */
+type QueHacer = {
+  titulo: string;
+  texto: string;
+  /** Lo que dijo el navegador o Esfinge tal cual. Para quien lo arregla. */
+  detalle?: string;
+  glifo: keyof typeof ICONOS;
+  error?: boolean;
+};
+
+/**
+ * queHacer traduce un motivo a algo que se pueda leer, **por motivo y no por
+ * texto**: los textos de Esfinge cambian, las etiquetas no.
+ */
+function queHacer(motivo: Motivo | undefined, error: string | undefined): QueHacer {
   switch (motivo) {
-    case "sin-esfinge":
-      // **El texto de dentro, no una frase fija.** Aquí es donde el trabajador
-      // mete lo que dice el navegador al negarse a lanzar el puente, y es lo
-      // único que distingue «no encuentro el manifiesto» de «no puedo ejecutar
-      // eso» de «se ha muerto». Tenerlo y no enseñarlo —que es lo que hacía esta
-      // línea— es el mismo error de todo el día con otra cara.
-      return error ?? "Esfinge no está abierta, o su canal está apagado en sus Ajustes.";
+    case "sin-esfinge": {
+      // El trabajador mete aquí lo que dice el navegador al negarse a lanzar el
+      // puente, detrás de «El navegador dice:». **Se separa y se enseña aparte**:
+      // es lo único que distingue «no encuentro el manifiesto» de «no puedo
+      // ejecutar eso» de «se ha muerto», pero no es una instrucción.
+      const [, navegador] = (error ?? "").split(" El navegador dice: ");
+      return {
+        titulo: "No se encuentra Esfinge",
+        texto:
+          "Comprueba que Esfinge está abierta y que el canal con el navegador está " +
+          "encendido en sus Ajustes.",
+        detalle: navegador ?? (error && !error.startsWith("No se puede hablar") ? error : undefined),
+        glifo: "mal",
+        error: true,
+      };
+    }
     case "sin-emparejar":
-      return "Permite este navegador en la ventana de Esfinge, en Ajustes, y vuelve a abrir esto.";
+      return {
+        titulo: "Falta dar permiso a este navegador",
+        texto: "Permítelo en la ventana de Esfinge, en Ajustes, y vuelve a abrir este panel.",
+        glifo: "candado",
+      };
     case "cerrada":
-      return "La bóveda está cerrada. Ábrela en Esfinge.";
+      return {
+        titulo: "La bóveda está cerrada",
+        texto: "Ábrela en Esfinge y vuelve a abrir este panel.",
+        glifo: "candado",
+      };
     case "sin-boveda":
-      return "Todavía no hay ninguna bóveda. Créala en Esfinge.";
+      return {
+        titulo: "Todavía no hay bóveda",
+        texto: "Créala en Esfinge, y las cuentas que guardes aparecerán aquí.",
+        glifo: "candado",
+      };
     case "origen":
       // Aquí el texto de Esfinge dice **por qué** —no es https, es una IP, es un
-      // dominio que no se puede reducir— y eso es más útil que una frase fija.
-      return error ?? "Aquí no se puede rellenar.";
+      // dominio que no se puede reducir—, y eso es más útil que una frase fija.
+      return {
+        titulo: "Aquí no se rellena",
+        texto: error ?? "Esfinge solo rellena en sitios con https.",
+        glifo: "mal",
+      };
     case "demasiado":
-      return "Demasiadas preguntas seguidas. Espera un momento.";
+      return {
+        titulo: "Demasiadas preguntas seguidas",
+        texto: "Espera un momento y vuelve a abrir este panel.",
+        glifo: "mal",
+        error: true,
+      };
     default:
-      return error ?? "Algo no ha ido bien.";
+      return {
+        titulo: "Algo no ha ido bien",
+        texto: error ?? "Esfinge no ha contestado lo que se esperaba.",
+        glifo: "mal",
+        error: true,
+      };
   }
 }
 
-function decir(texto: string) {
-  aviso.textContent = texto;
-  aviso.hidden = false;
+/** enseñar pone el estado en lugar de la lista. */
+function ensenar(q: QueHacer) {
+  cargando.hidden = true;
+  lista.hidden = true;
+  estado.hidden = false;
+  estado.classList.toggle("error", Boolean(q.error));
+  (estado.querySelector(".glifo") as HTMLElement).innerHTML = ICONOS[q.glifo];
+  (estado.querySelector("h1") as HTMLElement).textContent = q.titulo;
+  (estado.querySelector(".texto") as HTMLElement).textContent = q.texto;
+  const detalle = estado.querySelector(".detalle") as HTMLElement;
+  detalle.textContent = q.detalle ?? "";
+  detalle.hidden = !q.detalle;
+}
+
+/** contar pone el resultado del último gesto, bien o mal. */
+function contar(texto: string, bien: boolean) {
+  resultado.hidden = false;
+  resultado.className = `resultado ${bien ? "bien" : "mal"}`;
+  resultado.innerHTML = ICONOS[bien ? "bien" : "mal"];
+  const frase = document.createElement("span");
+  frase.textContent = texto;
+  resultado.append(frase);
 }
 
 /** copiar pide a Esfinge que copie, y cuenta lo que ha pasado. */
 async function copiar(que: "copiar-secreto" | "copiar-codigo", cuenta: Cuenta, origen: string) {
   const r = await pedir({ que, id: cuenta.id, origen });
   if (!r.ok || !r.copiado) {
-    decir(queHacer(r.motivo, r.error));
+    const q = queHacer(r.motivo, r.error);
+    contar(`${q.titulo}. ${q.texto}`, false);
     return;
   }
   const trozos = [que === "copiar-codigo" ? "Código copiado." : "Contraseña copiada."];
@@ -151,7 +251,7 @@ async function copiar(que: "copiar-secreto" | "copiar-codigo", cuenta: Cuenta, o
   if (r.copiado.portapapeles) {
     trozos.push(`Se borra del portapapeles en ${r.copiado.portapapeles} s.`);
   }
-  decir(trozos.join(" "));
+  contar(trozos.join(" "), true);
 }
 
 /**
@@ -159,14 +259,13 @@ async function copiar(que: "copiar-secreto" | "copiar-codigo", cuenta: Cuenta, o
  *
  * **Por aquí no pasa ninguna contraseña**, y es a propósito: lo que se manda es un
  * identificador, y quien pide el secreto es el guion de la página, que es el que
- * tiene el campo donde escribirlo. El panel se cierra solo al perder el foco, que
- * es la peor clase de sitio donde dejar un secreto aunque fuera un instante.
+ * tiene el campo donde escribirlo.
  *
- * Y por un puerto, como todo lo demás de esta extensión, por la misma razón de
- * siempre: prometer una respuesta para más tarde no se dice igual en los dos
- * navegadores.
+ * Devuelve el aviso y si ha ido bien. Y por un puerto, como todo lo demás de esta
+ * extensión, por la misma razón de siempre: prometer una respuesta para más tarde
+ * no se dice igual en los dos navegadores.
  */
-function rellenar(pestana: number, cuenta: Cuenta): Promise<string> {
+function rellenar(pestana: number, cuenta: Cuenta): Promise<[string, boolean]> {
   return new Promise((resolver) => {
     let hecho = false;
     let gracia: ReturnType<typeof setTimeout> | undefined;
@@ -175,12 +274,12 @@ function rellenar(pestana: number, cuenta: Cuenta): Promise<string> {
     // contestado» de «aquí no hay ningún guion».
     let primerFallo = "";
 
-    const terminar = (aviso: string) => {
+    const terminar = (aviso: string, bien = false) => {
       if (hecho) return;
       hecho = true;
       clearTimeout(plazo);
       clearTimeout(gracia);
-      resolver(aviso);
+      resolver([aviso, bien]);
     };
 
     const plazo = setTimeout(
@@ -206,7 +305,7 @@ function rellenar(pestana: number, cuenta: Cuenta): Promise<string> {
         // una versión.
         if (ok) {
           puerto.disconnect();
-          terminar("Rellenado.");
+          terminar("Rellenado.", true);
           return;
         }
         if (!primerFallo) {
@@ -238,58 +337,91 @@ function rellenar(pestana: number, cuenta: Cuenta): Promise<string> {
   });
 }
 
+/** botonIcono hace uno de los botones de copiar. El nombre va en los dos sitios. */
+function botonIcono(icono: keyof typeof ICONOS, nombre: string, alPulsar: () => Promise<void>) {
+  const boton = document.createElement("button");
+  boton.className = "icono";
+  boton.innerHTML = ICONOS[icono];
+  boton.title = nombre;
+  boton.setAttribute("aria-label", nombre);
+  boton.addEventListener("click", async () => {
+    boton.disabled = true;
+    await alPulsar();
+    boton.disabled = false;
+  });
+  return boton;
+}
+
 function fila(cuenta: Cuenta, origen: string, pestana: number | undefined): HTMLElement {
   const li = document.createElement("li");
+
+  const texto = document.createElement("div");
+  texto.className = "texto-cuenta";
 
   const nombre = document.createElement("span");
   nombre.className = "nombre";
   nombre.textContent = cuenta.titulo || "Sin título";
-  li.append(nombre);
+  if (cuenta.titulo) nombre.title = cuenta.titulo;
+  texto.append(nombre);
 
-  if (cuenta.usuario) {
-    const usuario = document.createElement("span");
-    usuario.className = "usuario";
-    usuario.textContent = cuenta.usuario;
-    li.append(usuario);
-  }
+  // **El usuario siempre tiene su línea**, aunque falte: con varias cuentas del
+  // mismo sitio es lo único que las distingue, y una fila sin segunda línea se
+  // lee como otra clase de cosa. Entero en el `title`, por si no cabe.
+  const usuario = document.createElement("span");
+  usuario.className = cuenta.usuario ? "usuario" : "usuario sin-usuario";
+  usuario.textContent = cuenta.usuario || "Sin usuario";
+  if (cuenta.usuario) usuario.title = cuenta.usuario;
+  texto.append(usuario);
 
-  const acciones = document.createElement("span");
+  li.append(texto);
+
+  const acciones = document.createElement("div");
   acciones.className = "acciones";
 
-  // **Rellenar va primero y destacado**, porque desde la entrega 2 es lo que se
-  // quiere hacer aquí el noventa por ciento de las veces. Copiar se queda para lo
-  // que no se puede rellenar: una aplicación que dibuja su propio campo, un
-  // diálogo del sistema, un sitio en http.
+  // **Rellenar va primero y es el único con rótulo**, porque desde la entrega 2
+  // es lo que se quiere hacer aquí casi siempre. Copiar se queda para lo que no se
+  // puede rellenar: una aplicación que dibuja su propio campo, un diálogo del
+  // sistema, un sitio en http.
   if (pestana !== undefined) {
     const boton = document.createElement("button");
+    boton.className = "rellenar";
     boton.textContent = "Rellenar";
-    boton.className = "principal";
     boton.addEventListener("click", async () => {
       boton.disabled = true;
-      decir(await rellenar(pestana, cuenta));
+      const [aviso, bien] = await rellenar(pestana, cuenta);
+      contar(aviso, bien);
       boton.disabled = false;
     });
     acciones.append(boton);
   }
 
-  for (const [texto, que] of [
-    ["Contraseña", "copiar-secreto"],
-    ["Código", "copiar-codigo"],
-  ] as const) {
-    const boton = document.createElement("button");
-    boton.textContent = texto;
-    boton.addEventListener("click", () => copiar(que, cuenta, origen));
-    acciones.append(boton);
+  acciones.append(
+    botonIcono("llave", "Copiar la contraseña", () => copiar("copiar-secreto", cuenta, origen)),
+  );
+  // El código solo si la cuenta tiene. `undefined` es una Esfinge anterior a la
+  // 2.19.0, que no lo dice: ahí se enseña, como antes, y si no hay contestará.
+  if (cuenta.tieneCodigo !== false) {
+    acciones.append(
+      botonIcono("reloj", "Copiar el código de un solo uso", () =>
+        copiar("copiar-codigo", cuenta, origen),
+      ),
+    );
+  } else {
+    // **Un hueco del mismo ancho**, y no por simetría: sin él, la fila sin código
+    // tiene las acciones más estrechas y su «Rellenar» cae más a la derecha que el
+    // de las demás. Se vio en la primera captura del panel nuevo.
+    const hueco = document.createElement("span");
+    hueco.className = "icono-hueco";
+    hueco.setAttribute("aria-hidden", "true");
+    acciones.append(hueco);
   }
+
   li.append(acciones);
   return li;
 }
 
 async function arrancar() {
-  // **Lo primero que se ve es que está preguntando.** Un panel en blanco no
-  // distingue «está pensando» de «se ha roto», y quien lo mira no tiene forma de
-  // saber cuál de las dos es.
-  decir("Preguntando a Esfinge…");
+  (document.querySelector(".marca") as HTMLElement).innerHTML = marcaSVG;
   pie.textContent = `Extensión ${api.runtime.getManifest().version}`;
 
   const [pestana] = await api.tabs.query({ active: true, currentWindow: true });
@@ -302,23 +434,35 @@ async function arrancar() {
 
   const r = await pedir({ que: "cuentas", origen });
   if (!r.ok) {
-    decir(queHacer(r.motivo, r.error));
+    ensenar(queHacer(r.motivo, r.error));
     return;
   }
   const cuentas = r.cuentas ?? [];
   if (cuentas.length === 0) {
-    decir("No tienes ninguna cuenta guardada de este sitio.");
+    ensenar({
+      titulo: "No hay cuentas de este sitio",
+      texto: "Cuando guardes una en la bóveda de Esfinge, aparecerá aquí.",
+      glifo: "lupa",
+    });
     return;
   }
   for (const c of cuentas) {
     lista.append(fila(c, origen, pestana?.id));
   }
+  cargando.hidden = true;
   lista.hidden = false;
-  aviso.hidden = true;
 }
 
 // **Con red debajo, y no por costumbre.** Cualquier cosa que se escape aquí deja
 // el panel en blanco, que no le dice nada a quien lo mira ni a quien lo va a
 // arreglar. Un panel que enseña el error es un panel que se puede depurar por
 // teléfono.
-arrancar().catch((e) => decir(`Algo ha fallado dentro de la extensión: ${e}`));
+arrancar().catch((e) =>
+  ensenar({
+    titulo: "La extensión ha fallado por dentro",
+    texto: "Vuelve a abrir este panel. Si se repite, avisa con el detalle de abajo.",
+    detalle: String(e),
+    glifo: "mal",
+    error: true,
+  }),
+);

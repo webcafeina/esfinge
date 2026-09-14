@@ -174,30 +174,20 @@ visto nadie.
 
 **Lo decidió el cliente al cerrar la sesión del 10 de septiembre, y va en este orden:**
 
-### 1. Las mejoras visuales de la extensión
+### ~~1. Las mejoras visuales de la extensión~~ — hechas el 2026-09-14, falta verlas en el Mac
 
-El panel salió funcionando y **sin ninguna pasada de diseño**: sigue al navegador con
-`color-scheme: light dark`, usa la tipografía del sistema y tiene el CSS mínimo para que las filas no
-se pisen. Nunca se ha mirado una captura suya, que en este proyecto es como se han encontrado la
-mitad de los fallos de interfaz.
+Resuelto en la [ADR 0029](adr/0029-el-panel-de-la-extension-es-esfinge.md): **el panel es la misma
+Esfinge en otro sitio**. Importa los tokens de la ventana tal cual —ni una escala ni una pareja de
+color nueva, cada combinación es una de las que ya mide `contraste_test.go`—, la marca va solo en la
+cabecera como el lockup de la barra lateral, y el oro solo en «Rellenar». Una forma de fila para todas
+las cuentas, con el correo entero siempre que quepa; copiar pasa a iconos con nombre; los estados
+tienen título, instrucción y, aparte, lo que dijo el navegador. La extensión estrena **iconos**, que no
+tenía, y el protocolo dice **si una cuenta tiene código** para no enseñar el botón donde no lo hay.
 
-Tres cosas que hay que decidir antes de tocar nada, y ninguna es de gusto:
-
-- **¿Lleva marca?** La ADR 0021 dice que la identidad de Webcafeína va **dentro de la ventana** y
-  **nunca en las pantallas de trabajo**. El panel de la extensión es una superficie nueva y esa
-  pregunta no está contestada: es un sitio de trabajo —se abre para copiar o rellenar y se cierra en
-  tres segundos— pero también es lo único de Esfinge que se ve dentro del navegador.
-- **¿De dónde sale la escala?** Antes de inventar espaciados o tamaños, mirar
-  `~/sistemas-diseno-empresas/CATALOGO.md`, que es la regla de esta máquina para cualquier interfaz.
-  Por defecto se coge **la estructura** y la paleta sale del proyecto.
-- **Y si entra color, se mide.** `make contraste` mide las parejas de los dos temas de la ventana,
-  pero **este panel no usa esos tokens**: hoy no tiene paleta a propósito. Si se le da una, hay que
-  medirla, y hay que decidir si vive en `internal/tema` como todo lo demás o aparte. Recordar que el
-  oro rellena y la piedra escribe: sobre el oro, el blanco da 1,68:1.
-
-Y lo que ya se sabe que está feo o corto: son **tres botones** por fila en 320 px de ancho —«Rellenar»,
-«Contraseña», «Código»— que envuelven cuando el usuario es largo; el aviso es un párrafo suelto sin
-jerarquía; y no hay ningún estado de carga más allá de «Preguntando a Esfinge…».
+Se miró en capturas de cada estado en los dos temas (`pnpm run capturas` en `navegador/`) y hay seis
+pruebas del panel compilado. **Lo que falta es verlo en un navegador de verdad en el Mac**: allí la
+letra es San Francisco y los anchos cambian, así que lo primero es si el correo sigue cabiendo; y si el
+icono de 16 px se lee en la barra.
 
 ### 2. El resto de mejoras de la extensión, empezando por el código de un solo uso
 

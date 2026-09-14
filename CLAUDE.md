@@ -597,6 +597,19 @@ panel, borrar los campos y pulsarlo **no escribía nada y contestaba «Rellenado
 persona pidiéndolo, y por eso ese camino insiste. Vale para cualquier freno que se añada: preguntarse
 si distingue al programa de la persona.
 
+**`Buscar` devuelve las entradas ya pasadas por `SinSecretos`, y eso incluye la semilla del código.**
+Parece obvio con la contraseña y no lo es con lo demás: al añadir `tieneCodigo` al protocolo del
+navegador se leyó `e.TOTP != ""` sobre lo que devuelve `Buscar`, y **todas las cuentas salían sin
+segundo factor**. `SinSecretos` vacía la semilla sin dejar marca de que la hubiera. Lo cazó la prueba
+antes de publicar, no la vista. Para saber algo de un campo sensible —aunque solo sea si está— se mira
+la entrada entera con `Ver`, y se hace solo con las que ya se van a usar.
+
+**Y el panel de la extensión no puede usar una pareja de colores que no esté medida** (ADR 0029).
+Importa los tokens de la ventana tal cual, y cada combinación es una de las de `contraste_test.go`,
+dicha al lado de cada regla. Si hace falta una nueva, se añade primero ahí. La que casi se cuela: el
+texto apagado sobre la superficie elevada no está medido, así que al pasar el puntero por una fila el
+usuario sube a `--cuerpo`.
+
 **Y el origen de una página lo pone el trabajador de fondo, no la página.** Lo que llegue por un
 puerto llamado «pagina» en el campo `origen` se tira y se pone `sender.tab.url`. Sin esa línea,
 cualquier página que consiguiera hablar por ese puerto pediría las cuentas de un banco diciendo que

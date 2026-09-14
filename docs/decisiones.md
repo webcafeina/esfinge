@@ -38,6 +38,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0026](adr/0026-la-papelera.md) | La papelera guarda lo borrado, treinta días | 2026-09-10 | aceptada · matiza la 0023 · revisar con la sincronización |
 | [0027](adr/0027-el-canal-con-el-navegador.md) | El canal con el navegador | 2026-09-10 | aceptada · matiza la 0023 · revisar si se firma |
 | [0028](adr/0028-rellenar-en-la-pagina.md) | Rellenar en la página, y no dibujar nada en ella | 2026-09-10 | aceptada · continúa la 0027 · revisar con el uso y en las tiendas |
+| [0029](adr/0029-el-panel-de-la-extension-es-esfinge.md) | El panel de la extensión es Esfinge: los tokens de la ventana y la marca en la cabecera | 2026-09-14 | aceptada · extiende la 0021 · revisar al verlo en un Mac |
 
 ## Cuándo escribir una
 

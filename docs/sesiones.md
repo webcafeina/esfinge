@@ -5,6 +5,32 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · El panel de la extensión, mirado por primera vez
+
+- **Nadie había mirado el panel en una captura desde la 2.17.0**, así que lo primero fue un arnés que
+  lo dibuja en cada estado y en los dos temas (`navegador/herramientas/capturas.mjs`). Lo que salió no
+  era de gusto: el correo cortado en «info@w…» —lo único que distingue dos cuentas del mismo sitio—,
+  tres botones con rótulo que envolvían y daban a cada fila una forma distinta, errores que mezclaban
+  la instrucción con lo que dijo el navegador, «Código» en todas las cuentas, y **ningún icono** en la
+  extensión.
+- **Decidido y escrito en la [ADR 0029](adr/0029-el-panel-de-la-extension-es-esfinge.md)**, que
+  contesta la pregunta que se dejó abierta al cerrar: el panel **lleva marca, en la cabecera**, como
+  el lockup de la barra lateral, y **toma los tokens de la ventana tal cual**. No se inventa escala ni
+  pareja de color: cada combinación es una de las que ya mide `contraste_test.go`, dicha al lado de
+  cada regla.
+- **De mirar la primera captura del panel nuevo salió un fallo**: el «Rellenar» de la fila sin código
+  caía desplazado, porque le faltaba un botón y las acciones se encogían. Ahora hay un hueco del mismo
+  ancho y una prueba que mide la columna.
+- **Y de la prueba de Go salió otro, antes de publicar**: al añadir `tieneCodigo` se leyó la semilla
+  sobre lo que devuelve `Buscar`, que pasa por `SinSecretos` y la vacía sin dejar marca, así que todas
+  las cuentas salían sin código. Se mira con `Ver` y solo en las que encajan. A `CLAUDE.md`.
+- **Seis pruebas del panel compilado** con una `chrome` de mentira, que son la mitad de la deuda alta
+  de la semana pasada: incluyen **el fallo de las tramas de la 2.18.0 reproducido**, y que un título
+  con HTML dentro se escribe como texto. La otra mitad —el guion de página y el trabajador, con la
+  extensión cargada de verdad— sigue abierta.
+- Verificado: `make comprobar` en verde, 18 pruebas de la extensión. **Sin verificar**: cómo se ve en
+  un navegador de verdad en el Mac, con San Francisco, y el icono de 16 px en la barra.
+
 ## 2026-09-10 · La entrega 2, comprobada en las dos familias
 
 - **2.18.1 probada en un Mac de verdad, en Chrome y en Firefox**, contra `login.brevo.com` y
