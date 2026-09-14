@@ -49,6 +49,7 @@ import {
   type DestinoDeCodigo,
   type Formulario,
 } from "./campos";
+import { avisar, ponerFilete } from "./marcas";
 import { VERSION_DEL_PROTOCOLO, type Peticion, type Respuesta } from "./protocolo";
 
 /**
@@ -148,15 +149,38 @@ async function rellenar(
   }
 
   const { usuario, secreto } = formulario;
+  const escritos: HTMLInputElement[] = [];
   if (usuario && (insistir || !yaRellenados.has(usuario)) && r.relleno.usuario) {
     escribir(usuario, r.relleno.usuario);
     yaRellenados.add(usuario);
+    escritos.push(usuario);
   }
   if (secreto && (insistir || !yaRellenados.has(secreto))) {
     escribir(secreto, r.relleno.secreto);
     yaRellenados.add(secreto);
+    escritos.push(secreto);
   }
+  dejarConstancia(escritos, insistir ? "" : "Rellenado por Esfinge");
   return "";
+}
+
+/**
+ * dejarConstancia marca lo que Esfinge acaba de escribir (ADR 0031).
+ *
+ * **El filete siempre; el aviso, solo en el relleno automático**: desde el panel la
+ * persona acaba de pulsar «Rellenar» y ya sabe por qué ha aparecido. Y avisa al
+ * trabajador de fondo para que el icono de la barra enseñe el ✓, **sin decir
+ * qué**: basta con abrir el puerto, la pestaña la pone el navegador.
+ */
+function dejarConstancia(campos: HTMLInputElement[], aviso: string) {
+  if (campos.length === 0) return;
+  campos.forEach(ponerFilete);
+  if (aviso) avisar(campos[campos.length - 1], aviso);
+  try {
+    api.runtime.connect({ name: "relleno-hecho" }).disconnect();
+  } catch {
+    /* sin trabajador no hay icono que poner al día, y no es un fallo del relleno */
+  }
 }
 
 /**
@@ -199,6 +223,7 @@ async function rellenarCodigo(
     return "El código no ha quedado puesto en este formulario. Cópialo desde el panel y pégalo.";
   }
   campos.forEach((c) => yaRellenados.add(c));
+  dejarConstancia(campos, insistir ? "" : "Código rellenado por Esfinge");
   return "";
 }
 

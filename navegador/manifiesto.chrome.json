@@ -13,7 +13,9 @@
   "permissions": [
     "nativeMessaging",
     "storage",
-    "activeTab"
+    "activeTab",
+    "alarms",
+    "favicon"
   ],
   "host_permissions": [
     "https://*/*"
@@ -34,10 +36,8 @@
     "default_title": "Esfinge",
     "default_popup": "panel.html",
     "default_icon": {
-      "16": "iconos/16.png",
-      "32": "iconos/32.png",
-      "48": "iconos/48.png",
-      "128": "iconos/128.png"
+      "16": "iconos/barra-activo-16.png",
+      "32": "iconos/barra-activo-32.png"
     }
   },
   "background": {

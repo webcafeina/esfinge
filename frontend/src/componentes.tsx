@@ -10,6 +10,11 @@ import { esfinge, type Avance, type Fuerza, type Novedad } from "./puente";
 // permite que la misma pieza sea la tinta en el lockup y el filete en el vacío
 // del historial. Ver build/marca.svg, que explica cómo está dibujada.
 import marcaSVG from "../../build/marca.svg?raw";
+// El monograma —inicial y tinte de cada sitio— vive en un módulo sin React desde
+// la 2.20.0, porque **lo usa también el panel de la extensión** y tiene que dar el
+// mismo color en los dos sitios. Se reexporta para que nada más cambie aquí.
+import { dominioDe, inicialDe, tinteDe } from "./monograma";
+export { dominioDe, inicialDe, tinteDe };
 
 /**
  * Marca dibuja la esfinge, monocroma y del color que herede.
@@ -332,61 +337,6 @@ function MonogramaDeLetra({ sitio, titulo }: { sitio?: string; titulo: string })
       {inicialDe(titulo)}
     </span>
   );
-}
-
-/**
- * dominioDe saca el anfitrión de lo que haya escrito en el campo del sitio, que
- * es texto libre: llegan `https://www.banco.es/login?x=1`, `banco.es`, con
- * espacios y con mayúsculas, según quién lo escribiera o qué gestor lo exportara.
- *
- * Se queda con el anfitrión completo y **no reduce a dominio de segundo nivel**:
- * eso exigiría la lista de sufijos públicos —una dependencia más en un programa
- * que guarda contraseñas— para que `mail.google.com` y `drive.google.com`
- * compartieran color. No compensa: que dos subdominios salgan distintos es
- * inocuo, y con el nombre al lado nadie se pierde.
- */
-export function dominioDe(sitio?: string): string {
-  if (!sitio) return "";
-  const limpio = sitio.trim().toLowerCase();
-  if (!limpio) return "";
-  try {
-    const url = new URL(limpio.includes("://") ? limpio : `https://${limpio}`);
-    return url.hostname.replace(/^www\./, "");
-  } catch {
-    return limpio.replace(/^www\./, "").split("/")[0];
-  }
-}
-
-/**
- * inicialDe se queda con la primera **letra o cifra**, en mayúscula.
- *
- * Por runas y no por bytes: un título que empiece por «Á» o por «Ñ» tiene que
- * salir entero, y `cadena[0]` de un carácter de dos unidades devuelve medio
- * carácter. Y saltándose lo que no es letra ni cifra, que en un título escrito a
- * mano hay comillas, guiones y corchetes de sobra.
- */
-export function inicialDe(texto: string): string {
-  for (const c of texto) {
-    if (/\p{L}|\p{N}/u.test(c)) return c.toUpperCase();
-  }
-  return "•";
-}
-
-/**
- * tinteDe elige uno de los ocho cuadros, del 1 al 8.
- *
- * Con FNV-1a y **no con el hash que traiga el motor**: el color de un sitio tiene
- * que ser el mismo hoy, mañana y en la otra máquina. Un hash que cambie entre
- * versiones haría que la lista entera cambiara de colores sola, y eso se lee como
- * un fallo aunque no lo sea.
- */
-export function tinteDe(clave: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < clave.length; i++) {
-    h ^= clave.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return (h % 8) + 1;
 }
 
 /**

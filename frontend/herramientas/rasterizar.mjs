@@ -44,6 +44,17 @@ const trabajos = [
   // «dist/» para que la extensión no dependa de haber ejecutado esto.
   ...[16, 32, 48, 128].map((n) => ["build/icono.svg", `navegador/iconos/${n}.png`, n]),
 
+  // Y el de la barra, que **no es el de la aplicación reducido** desde la 2.20.0:
+  // la silueta sin placa, para que ocupe el cuadro entero, en sus tres variantes.
+  // La barra pide 16 y 32; la de 32 es la que se ve en una pantalla Retina.
+  ...["", "-apagado", "-cerrado"].flatMap((v) =>
+    [16, 32].map((n) => [
+      `build/icono-barra${v}.svg`,
+      `navegador/iconos/barra-${v ? v.slice(1) : "activo"}-${n}.png`,
+      n,
+    ]),
+  ),
+
   ["build/icono.svg", "frontend/public/icono-256.png", 256],
   ["build/icono.svg", "frontend/public/favicon.png", 64],
   ["build/icono.svg", "docs/imagenes/icono.png", 256],

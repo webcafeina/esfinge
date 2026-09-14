@@ -124,9 +124,11 @@ No se cambian sin preguntar.
   alternativa realista no era tenerlos separados, era tenerlos juntos en Dashlane.
 - **Y desde la fase 2 rellena los formularios del navegador** (ADR 0027 y 0028). Con **una** cuenta
   guardada del sitio se rellena sola, que es lo que se decidió —«solo, como Dashlane»—; con varias se
-  elige en el panel de la extensión. Y **en la página no se dibuja nada**: ni desplegable, ni icono
-  dentro del campo, ni marco flotante. Eso es una decisión y no una carencia, porque dibujar en la
-  página de otro es la parte cara y arriesgada; se revisa **con el uso**, no con la intuición. Dos
+  elige en el panel de la extensión. Y **en la página se dibuja lo mínimo** (ADR 0028, matizada por
+  la 0031): un **filete** de oro y piedra en el campo rellenado, que se va al escribir, y un **aviso
+  de tres segundos**, «Rellenado por Esfinge», que no se puede pulsar y va en una sombra cerrada.
+  Nada de desplegables, iconos fijos dentro del campo ni marcos: dibujar en la página de otro es la
+  parte cara y arriesgada, y cada cosa más se decide **con el uso**, no con la intuición. Dos
   cosas que cambian y hay que decir en voz alta: **por el canal ya sale una contraseña de verdad** y
   **hay código nuestro en cada página `https` que se abra**.
   Y desde la 2.19.0 **rellena también el código de un solo uso** (ADR 0030), con el mismo freno que
@@ -607,6 +609,19 @@ navegador se leyó `e.TOTP != ""` sobre lo que devuelve `Buscar`, y **todas las 
 segundo factor**. `SinSecretos` vacía la semilla sin dejar marca de que la hubiera. Lo cazó la prueba
 antes de publicar, no la vista. Para saber algo de un campo sensible —aunque solo sea si está— se mira
 la entrada entera con `Ver`, y se hace solo con las que ya se van a usar.
+
+**Y el icono de la barra dice el estado de cada pestaña** (ADR 0031): número de cuentas, ✓ si ha
+rellenado, candado si la bóveda está cerrada, «!» si algo falla. Se pone al día al cambiar de pestaña
+y **cada minuto**, y dos cosas de ahí no se pueden olvidar: **el refresco no se empareja** —con
+`pedir`, la ventana de Esfinge avisaría de «un navegador pide permiso» cada minuto sin que nadie
+tocara nada—, y **gasta del mismo freno de sesenta preguntas** que el panel y las páginas, así que
+agrupa y no repite. Todo lo que decide está en `insignia.ts`, que es una función pura y está probada
+entera; lo que la envuelve, no.
+
+**Los colores de la extensión que no pinta nuestro CSS se miden aparte**, en
+`internal/tema/extension_test.go`: la silueta contra las barras de Chrome y Firefox, las insignias y el
+aviso de la página. Y esa prueba **lee los SVG y el TypeScript**: si alguien cambia un color allí y no
+en la medición, se pone roja en vez de seguir midiendo el color viejo.
 
 **Y el panel de la extensión no puede usar una pareja de colores que no esté medida** (ADR 0029).
 Importa los tokens de la ventana tal cual, y cada combinación es una de las de `contraste_test.go`,

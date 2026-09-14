@@ -68,6 +68,30 @@ debajo de la lista, con su marca de bien o mal.
 sabe quien ve la ventana, y hace falta de todas formas para rellenar el código solo, que es lo
 siguiente.
 
+### La segunda pasada (2.20.0)
+
+Con el panel usado en el Mac, el cliente pidió que no pareciera tan básico y eligió estas mejoras entre
+las que se le propusieron:
+
+- **Un cuadro con la inicial en cada cuenta**, el mismo de la lista de la bóveda: `inicialDe`,
+  `tinteDe` y `dominioDe` salen de `componentes.tsx` a `frontend/src/monograma.ts`, sin React, y los
+  usan la ventana y el panel. **El color sale del sitio de la pestaña**, porque al panel no le llega
+  el sitio guardado de cada entrada: coincide con la ventana salvo si una entrada se guardó con otro
+  subdominio.
+- **El icono de la web junto a su dirección, sin salir a internet**, como pide la ADR 0024: en Chrome,
+  la dirección `_favicon` de la propia extensión, que lo sirve desde su caché y exige el permiso
+  `favicon`; en Firefox, solo si ya viene incrustado. Si no, el cuadro con la inicial del sitio.
+- **«● Abierta»** en la cabecera cuando la bóveda contesta.
+- **«✓ Hecho» en la fila** al rellenar, con el botón girando mientras espera.
+- **La esfinge grande y tenue detrás de los avisos**, como la del historial vacío. Solo está medida
+  sobre el lienzo, así que **los avisos dejan de ir sobre tarjeta**.
+- **La cuenta atrás del código** al copiarlo: un anillo que se vacía y los segundos al lado.
+- **La firma «▍ webcafeína»** al pie, junto a la versión.
+- **Atajos**: la primera cuenta con el foco al abrir, ↑ y ↓ entre cuentas, Intro rellena la de foco y
+  Esc cierra.
+
+Y el panel pasa de 340 a **360 px** de ancho, porque el cuadro le quita espacio al correo.
+
 ## Alternativas descartadas
 
 **Un panel neutro, sin marca**, siguiendo al navegador como hasta ahora. Era lo más fácil de defender
@@ -115,6 +139,11 @@ formulario.
 **Y usado en un Mac (2026-09-14, 2.19.0 y 2.19.1), en Firefox y en Chrome**: el cliente lo ha
 probado de punta a punta y dice que funciona todo. **No ha comentado nada en concreto** de las dos
 cosas de abajo, así que siguen apuntadas como sin comprobar en vez de darlas por buenas.
+
+**Comprobado aquí en la segunda pasada (2.20.0):** capturas de todos los estados en los dos temas, y
+ocho pruebas más del panel: el tinte del cuadro coincide con `tinteDe` para el sitio; **el icono de
+la web nunca se pide a internet** —se comprueba que no sale ninguna petición—; «Abierta» solo con la
+bóveda abierta; «✓ Hecho» y su vuelta; el teclado; la esfinge tenue y la firma.
 
 **Sin comprobar:**
 

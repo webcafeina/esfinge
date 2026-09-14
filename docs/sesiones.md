@@ -5,6 +5,40 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · El icono que dice el estado, y la marca en el campo rellenado
+
+- **El cliente pidió tres mejoras visuales antes de guardar desde la página**, y se decidieron con él por
+  preguntas con opciones: el icono de la barra se veía pequeño y quería que dijera el estado; al
+  rellenar solo, quien mira no sabe por qué; y el panel seguía pareciendo básico. Salió un plan, lo
+  aprobó, y está hecho. [ADR 0031](adr/0031-el-icono-con-estados-y-la-marca-en-el-campo.md) y la
+  ampliación de la [0029](adr/0029-el-panel-de-la-extension-es-esfinge.md).
+- **El icono de la barra** es la silueta de `icono.svg` sin placa, con contorno de piedra, en tres
+  variantes; y refleja por pestaña el número de cuentas, el ✓ de rellenado, el candado y el «!». Todo
+  lo que decide es una función pura (`insignia.ts`), y el trabajador solo pregunta y pinta: al cambiar
+  de pestaña y **cada minuto**, que eligió el cliente sabiendo que es un permiso más.
+- **Una cautela que no estaba en el plan y salió al escribirlo**: el `pedir` del trabajador se empareja
+  solo cuando falta permiso, y usado desde el refresco habría hecho aparecer en la ventana de Esfinge
+  «un navegador pide permiso» **cada minuto sin que nadie tocara nada**. El refresco usa `consultar`,
+  que no se empareja.
+- **La marca en el campo**, que matiza la ADR 0028: un filete de oro y piedra en el propio campo, que se
+  va con la primera tecla de verdad (`isTrusted`) y no con lo que escribe Esfinge; y un aviso de tres
+  segundos solo en el relleno automático, en una sombra cerrada y sin poder pulsarse.
+- **El panel**: `inicialDe`, `tinteDe` y `dominioDe` pasan a `frontend/src/monograma.ts` para que la
+  ventana y el panel den el mismo color; icono de la web con `_favicon` en Chrome y solo incrustado en
+  Firefox, **nunca pedido a internet**; «Abierta», «✓ Hecho», esfinge tenue, cuenta atrás, firma y
+  teclado. Y de 340 a 360 px.
+- **Los colores que no pinta nuestro CSS, medidos**: `internal/tema/extension_test.go` mide la silueta
+  contra las barras de Chrome y Firefox, las insignias y el aviso, y **lee los SVG y el TypeScript**
+  para fallar si un color cambia allí sin cambiar en la medición.
+- **Verificado**: `make comprobar` en verde, **47 pruebas de la extensión** —entre ellas las nuevas de
+  la insignia, las marcas y ocho más del panel, una de las cuales comprueba que no sale ninguna
+  petición a la web—, y `make e2e` en verde **a la segunda**: la primera falló la prueba intermitente de
+  la clave de recuperación, con el mismo `400` de hace cuatro días, y como esta vez se había tocado
+  `componentes.tsx` se repitió la tanda entera antes de darla por intermitente. Capturas mirando cada
+  estado; de ahí salió que el arnés cortaba el borde del panel, que se corrigió en el arnés.
+- **Sin verificar**: todo en la barra de verdad del Mac —la silueta, la insignia cambiando sola, el
+  candado al minuto—, el filete y el aviso en Brevo y Cloudflare, y si el correo cabe entero.
+
 ## 2026-09-14 · El panel de la extensión, mirado por primera vez
 
 - **Nadie había mirado el panel en una captura desde la 2.17.0**, así que lo primero fue un arnés que

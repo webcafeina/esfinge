@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { tinteDe } from "../../frontend/src/monograma";
 
 const aqui = dirname(fileURLToPath(import.meta.url));
 
@@ -44,6 +45,8 @@ type Guion = {
    * de cada una. **Varias a propósito**: `tabs.connect` llega a todas las tramas.
    */
   tramas?: { ms: number; r: unknown }[];
+  /** El icono que el navegador dice tener de la pestaña. */
+  favicon?: string;
 };
 
 const ORIGEN = "http://panel.esfinge.test";
@@ -93,7 +96,7 @@ async function abrir(page: Page, guion: Guion) {
           }),
       },
       tabs: {
-        query: async () => [{ id: 7, url: "https://login.ejemplo.es/entrar" }],
+        query: async () => [{ id: 7, url: "https://login.ejemplo.es/entrar", favIconUrl: g.favicon }],
         connect: () =>
           puerto((_, oyentes) => {
             for (const t of g.tramas ?? []) setTimeout(() => oyentes.forEach((f) => f(t.r)), t.ms);
@@ -214,4 +217,85 @@ test("sin Esfinge, la instrucción y el detalle del navegador van separados", as
   await expect(page.locator("#estado .detalle")).toHaveText("Specified native messaging host not found.");
   await expect(page.locator("#lista")).toBeHidden();
   expect(errores).toEqual([]);
+});
+
+/* ------------------------------------------------ la segunda pasada visual */
+
+/**
+ * El cuadro de cada cuenta sale de **la misma función que la ventana**, con el sitio
+ * de la pestaña: el mismo sitio, el mismo color, en los dos sitios.
+ */
+test("el cuadro de la inicial tiene el tinte de la ventana para ese sitio", async ({ page }) => {
+  await abrir(page, { cuentas: TRES });
+  const cuadros = page.locator("#lista li .monograma");
+  await expect(cuadros).toHaveCount(3);
+  const esperado = String(tinteDe("login.ejemplo.es"));
+  for (const t of await cuadros.evaluateAll((cs) => cs.map((c) => (c as HTMLElement).dataset.tinte))) {
+    expect(t).toBe(esperado);
+  }
+  await expect(cuadros.nth(0)).toHaveText("C");
+});
+
+/**
+ * **El icono de la web nunca se pide a internet**, que es la regla de la ADR 0024.
+ * En Firefox —aquí, porque el manifiesto de mentira no lleva el permiso `favicon`—
+ * solo vale uno incrustado; uno con `https:` se descarta y sale la inicial.
+ */
+test("el icono de la web nunca sale de internet", async ({ page }) => {
+  const peticiones: string[] = [];
+  page.on("request", (r) => peticiones.push(r.url()));
+  await abrir(page, { cuentas: TRES, favicon: "https://login.ejemplo.es/favicon.ico" });
+  await expect(page.locator("#lista li")).toHaveCount(3);
+  await expect(page.locator("#favicon")).toBeHidden();
+  await expect(page.locator("#inicial-sitio")).toBeVisible();
+  expect(peticiones.filter((u) => u.includes("ejemplo.es"))).toEqual([]);
+});
+
+test("con un icono incrustado, se enseña", async ({ page }) => {
+  const punto =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+  await abrir(page, { cuentas: TRES, favicon: punto });
+  await expect(page.locator("#favicon")).toBeVisible();
+  await expect(page.locator("#inicial-sitio")).toBeHidden();
+});
+
+test("«Abierta» cuando la bóveda contesta, y no cuando está cerrada", async ({ page }) => {
+  await abrir(page, { cuentas: TRES });
+  await expect(page.locator("#abierta")).toBeVisible();
+
+  const otra = await page.context().newPage();
+  await abrir(otra, { cuentas: { ok: false, motivo: "cerrada" } });
+  await expect(otra.locator("#estado h1")).toHaveText("La bóveda está cerrada");
+  await expect(otra.locator("#abierta")).toBeHidden();
+});
+
+test("al rellenar, la fila dice «✓ Hecho» y luego vuelve", async ({ page }) => {
+  await abrir(page, { cuentas: TRES, tramas: [{ ms: 50, r: { ok: true } }] });
+  const boton = page.locator(".rellenar").first();
+  await boton.click();
+  await expect(boton).toHaveText("✓ Hecho");
+  await expect(boton).toHaveText("Rellenar", { timeout: 4000 });
+});
+
+/**
+ * **Sin tocar el ratón**: la primera cuenta tiene el foco al abrir, las flechas se
+ * mueven entre cuentas e Intro rellena la que tiene el foco.
+ */
+test("con el teclado: foco en la primera, flechas e Intro", async ({ page }) => {
+  await abrir(page, { cuentas: TRES, tramas: [{ ms: 20, r: { ok: true } }] });
+  const filas = page.locator("#lista li");
+  await expect(filas.nth(0)).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(filas.nth(1)).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(filas.nth(0)).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#resultado")).toHaveText("Rellenado.");
+});
+
+test("la esfinge tenue en los avisos y la firma al pie", async ({ page }) => {
+  await abrir(page, { cuentas: { ok: true, cuentas: [] } });
+  await expect(page.locator("#estado h1")).toHaveText("No hay cuentas de este sitio");
+  await expect(page.locator("#estado .tenue svg")).toHaveCount(1);
+  await expect(page.locator("footer .firma")).toHaveText("▍webcafeína");
 });

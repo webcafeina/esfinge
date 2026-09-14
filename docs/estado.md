@@ -204,14 +204,29 @@ detectaba —seis casillas que declaran `one-time-code` y ninguna con `maxlength
 **su mismo componente**, `OTPField` de Base UI, en React. **Y con la 2.19.1 funciona en Cloudflare, en
 Firefox y en Chrome**, comprobado por el cliente el mismo día.
 
-### 3. Lo siguiente: lo que ya estaba planteado
+### ~~3. La segunda pasada visual de la extensión~~ — hecha el 2026-09-14, falta verla en el Mac
 
-**Los dos primeros puntos están cerrados**, y el orden que puso el cliente sigue aquí: guardar y
-actualizar desde la página (entrega 3), y después las tiendas (entrega 5).
+El cliente la pidió después de usar la 2.19.1, **antes** de guardar desde la página, y la decidió por
+preguntas con opciones ([ADR 0031](adr/0031-el-icono-con-estados-y-la-marca-en-el-campo.md) y la
+ampliación de la [0029](adr/0029-el-panel-de-la-extension-es-esfinge.md)):
 
-Guardar y actualizar desde la página (entrega 3), y las tiendas (entrega 5), donde Chrome consigue su
-identificador definitivo y donde el permiso que se pide —`https://*/*` y un guion en todas las
-páginas— pasa por la revisión más estricta que dan las dos.
+- **El icono de la barra es la silueta de Esfinge sin placa**, con contorno de piedra para verse en
+  barras claras y oscuras, y **dice el estado de cada pestaña**: número de cuentas, ✓ si ha rellenado,
+  candado si la bóveda está cerrada, «!» si algo falla, y la frase al pasar el ratón. Se pone al día
+  al cambiar de pestaña y **cada minuto** (permiso `alarms`).
+- **El campo rellenado lleva un filete** de oro y piedra hasta que se escribe en él, y en los rellenos
+  automáticos **un aviso de tres segundos**, «Rellenado por Esfinge». Esto **matiza la ADR 0028**: en
+  la página ya se dibuja algo, aunque no se pueda pulsar ni dure.
+- **El panel**: cuadro con la inicial en cada cuenta —la misma función que la ventana—, icono de la web
+  sin salir a internet, «● Abierta», «✓ Hecho» en la fila, esfinge tenue en los avisos, cuenta atrás
+  del código, firma al pie y atajos de teclado.
+
+Lo que falta es **verlo en el Mac**: si la silueta se lee en la barra, si el candado aparece solo, el
+filete y el aviso en Brevo y Cloudflare, y si el correo cabe entero en el panel.
+
+### 4. Lo siguiente: lo que ya estaba planteado
+
+**Guardar y actualizar desde la página** (entrega 3), y después las tiendas (entrega 5).
 
 ### Lo que yo recomendaría meter en medio, y no es lo que se decidió
 

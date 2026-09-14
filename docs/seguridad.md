@@ -155,6 +155,12 @@ cambian lo que hay que saber, así que van dichas enteras y no de pasada:
 - **Ante la duda, no se rellena.** No se toca un formulario con dos contraseñas visibles —eso es
   registrarse—, ni un campo declarado como contraseña nueva o código de un solo uso, ni uno
   invisible o de un píxel. Equivocarse de campo es escribir una contraseña donde la lea alguien.
+- **Y desde la 2.20.0, Esfinge deja constancia en la página** (ADR 0031): un filete en el campo
+  rellenado y, en los rellenos automáticos, un aviso de tres segundos, «Rellenado por Esfinge». El
+  aviso no se puede pulsar, va en una sombra cerrada y no lleva nada de la web ni de la bóveda. Pero
+  es un elemento nuestro en la página de otro, y con él **una web puede saber con seguridad que usas
+  Esfinge**. El icono de la barra, además, **enseña cuántas cuentas tienes de la web que miras** a
+  quien mire tu pantalla.
 - **Y desde la 2.19.0, también el segundo factor** (ADR 0030). Cuando un sitio pide el código de un
   solo uso y tienes una sola cuenta de ese sitio con código, Esfinge lo escribe. Eso quiere decir que
   **por el canal salen la contraseña y el código**, y que **en la página quedan escritos los dos**:

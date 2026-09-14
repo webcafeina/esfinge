@@ -40,6 +40,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0028](adr/0028-rellenar-en-la-pagina.md) | Rellenar en la página, y no dibujar nada en ella | 2026-09-10 | aceptada · continúa la 0027 · revisar con el uso y en las tiendas |
 | [0029](adr/0029-el-panel-de-la-extension-es-esfinge.md) | El panel de la extensión es Esfinge: los tokens de la ventana y la marca en la cabecera | 2026-09-14 | aceptada · extiende la 0021 · revisar al verlo en un Mac |
 | [0030](adr/0030-rellenar-el-codigo-de-un-solo-uso.md) | Rellenar el código de un solo uso, con el freno de la contraseña y sin fiarse de la palabra «code» | 2026-09-14 | aceptada · continúa la 0028 y la 0025 · revisar con el uso |
+| [0031](adr/0031-el-icono-con-estados-y-la-marca-en-el-campo.md) | El icono de la barra dice el estado, y el campo rellenado lleva filete y un aviso de tres segundos | 2026-09-14 | aceptada · matiza la 0028 · revisar con el uso y en las tiendas |
 
 ## Cuándo escribir una
 

@@ -16,6 +16,7 @@
  * Uso: `pnpm run build && node herramientas/capturas.mjs`
  */
 import { chromium } from "@playwright/test";
+import { build } from "vite";
 import { mkdirSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 
@@ -87,7 +88,7 @@ function falsa(respuesta) {
       connect: () => puerto((m) => (m.que === "cuentas" ? respuesta : { ok: true, copiado: { portapapeles: 30 } })),
     },
     tabs: {
-      query: async () => [{ id: 7, url: "https://login.brevo.com/entrar?x=1" }],
+      query: async () => [{ id: 7, url: "https://login.brevo.com/entrar?x=1", favIconUrl: "data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27><rect width=%2716%27 height=%2716%27 rx=%274%27 fill=%27%230b996e%27/></svg>" }],
       connect: () => puerto(() => ({ ok: true })),
     },
     storage: { local: { get: async () => ({}), set: async () => {} } },
@@ -99,7 +100,9 @@ for (const tema of ["light", "dark"]) {
   const contexto = await navegador.newContext({
     colorScheme: tema,
     deviceScaleFactor: 2,
-    viewport: { width: 360, height: 420 },
+    // Más ancho que el panel: el cuerpo mide 360 más su relleno, y con una ventana
+    // de 360 la captura cortaba el borde derecho —«Abiert…»— y parecía un fallo.
+    viewport: { width: 420, height: 460 },
   });
   await contexto.route(`${ORIGEN}/**`, (ruta) => {
     const fichero = new URL(ruta.request().url()).pathname;
@@ -136,5 +139,89 @@ for (const tema of ["light", "dark"]) {
   }
   await contexto.close();
 }
+/* ----------------------------------------- el icono de la barra, compuesto */
+
+/**
+ * **La barra de verdad no se puede capturar aquí**, así que esto es una
+ * composición: el icono tal cual, a 16 px con pantalla Retina, sobre el color de la
+ * barra de cada navegador, con una insignia dibujada a imitación de la de Chrome.
+ * Sirve para ver si la silueta se lee y si la insignia tapa algo; **no** para dar
+ * por buena la de un navegador concreto.
+ */
+const iconoEnDatos = (v) =>
+  `data:image/png;base64,${readFileSync(join(raiz, "iconos", `barra-${v}-32.png`)).toString("base64")}`;
+const muestras = [
+  ["activo", "", ""],
+  ["activo", "2", "#2b2b31"],
+  ["activo", "✓", "#1d6f31"],
+  ["cerrado", "", ""],
+  ["apagado", "!", "#8f5300"],
+];
+for (const [nombreBarra, fondoBarra] of [
+  ["chrome-claro", "#ffffff"],
+  ["chrome-oscuro", "#3c3c3c"],
+  ["firefox-claro", "#f9f9fb"],
+  ["firefox-oscuro", "#2b2a33"],
+]) {
+  const pagina = await navegador.newPage({ viewport: { width: 330, height: 40 }, deviceScaleFactor: 2 });
+  await pagina.setContent(`<!doctype html><style>
+    body{margin:0;background:${fondoBarra};display:flex;gap:30px;padding:10px 18px;font:700 9px system-ui}
+    .i{position:relative;width:16px;height:16px}
+    .i img{width:16px;height:16px;display:block}
+    .b{position:absolute;right:-7px;bottom:-5px;min-width:9px;height:11px;padding:0 2px;border-radius:3px;
+       color:#fff;display:grid;place-items:center;line-height:1}
+  </style>${muestras
+    .map(
+      ([v, t, c]) =>
+        `<div class="i"><img src="${iconoEnDatos(v)}">${t ? `<span class="b" style="background:${c}">${t}</span>` : ""}</div>`,
+    )
+    .join("")}`);
+  await pagina.screenshot({ path: join(salida, `barra-${nombreBarra}.png`) });
+  await pagina.close();
+}
+
+/* ----------------------------------------- el campo rellenado, con su marca */
+
+const marcas = (
+  await build({
+    configFile: false,
+    logLevel: "silent",
+    build: {
+      write: false,
+      lib: {
+        entry: join(raiz, "src", "marcas.ts"),
+        formats: ["iife"],
+        name: "Marcas",
+        fileName: () => "marcas.js",
+      },
+    },
+  })
+)[0].output[0].code;
+
+for (const [nombreWeb, fondo, tinta, campo] of [
+  ["web-clara", "#ffffff", "#1c1c1e", "#ffffff"],
+  ["web-oscura", "#1b1b1f", "#f2f2f5", "#26262b"],
+]) {
+  const pagina = await navegador.newPage({ viewport: { width: 380, height: 250 }, deviceScaleFactor: 2 });
+  await pagina.setContent(`<!doctype html><meta charset="utf-8"><style>
+    body{margin:0;padding:24px 28px;background:${fondo};color:${tinta};font:14px system-ui}
+    label{display:block;margin:10px 0 4px;font-size:12px;opacity:.75}
+    input{width:300px;box-sizing:border-box;padding:9px 11px;border:1px solid #8888;border-radius:6px;
+          background:${campo};color:${tinta};font:inherit}
+  </style><form><label>Correo</label><input id="u" value="info@webcafeina.com">
+  <label>Contraseña</label><input id="p" type="password" value="secretisimo"></form>`);
+  await pagina.addScriptTag({ content: marcas });
+  await pagina.evaluate(() => {
+    const u = document.getElementById("u");
+    const p = document.getElementById("p");
+    Marcas.ponerFilete(u);
+    Marcas.ponerFilete(p);
+    Marcas.avisar(p, "Rellenado por Esfinge");
+  });
+  await pagina.waitForTimeout(250);
+  await pagina.screenshot({ path: join(salida, `campo-${nombreWeb}.png`) });
+  await pagina.close();
+}
+
 await navegador.close();
 console.log(`Capturas en ${salida}`);

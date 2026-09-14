@@ -3,22 +3,21 @@
  *
  * # De dónde sale todo lo que hay aquí
  *
- * **De los tokens de la ventana, importados tal cual.** Hasta la 2.18.1 este
- * panel no tenía paleta a propósito —seguía al navegador con `color-scheme`—, y
- * se veía como lo que era: una página suelta. Ahora es la misma Esfinge en otro
- * sitio: los mismos espaciados, radios y tamaños, y **los mismos colores, que
- * ya están medidos** en `internal/tema/contraste_test.go`. No se inventa ni una
- * escala ni una pareja: cada combinación de abajo es una de las que ese test
- * mide, y al lado de cada una se dice cuál.
+ * **De los tokens de la ventana, importados tal cual** (ADR 0029). Los mismos
+ * espaciados, radios, tamaños y **los mismos colores, que ya están medidos** en
+ * `internal/tema/contraste_test.go`. No se inventa ni una escala ni una pareja:
+ * cada combinación de abajo es una de las que ese test mide, y al lado de cada una
+ * se dice cuál.
  *
- * Eso tiene una consecuencia que hay que respetar al tocar esto: **una pareja
- * que no esté en ese test no se usa aquí**. El caso que casi se cuela: el texto
- * apagado sobre la superficie elevada no está medido, así que al pasar el
- * puntero por una fila el usuario sube a `--cuerpo`, que sí lo está.
+ * Eso tiene una consecuencia que hay que respetar al tocar esto: **una pareja que
+ * no esté en ese test no se usa aquí**. Dos casos que casi se cuelan: el texto
+ * apagado sobre la superficie elevada no está medido, así que al pasar el puntero
+ * por una fila el usuario sube a `--cuerpo`; y la esfinge tenue solo está medida
+ * sobre el lienzo, así que los avisos ya no van sobre tarjeta.
  *
- * Y la marca solo en la cabecera, como el lockup de la barra lateral (ADR 0021).
- * El oro, solo como relleno del botón de acción, con la piedra encima: sobre el
- * oro, el blanco da 1,68:1.
+ * La marca en la cabecera, la esfinge tenue en los avisos y la firma al pie, como
+ * en la ventana (ADR 0021). El oro, solo como relleno de «Rellenar», con la piedra
+ * encima: sobre el oro, el blanco da 1,68:1.
  */
 @import "../../frontend/src/tokens.css";
 
@@ -28,13 +27,14 @@
 }
 
 body {
-  /* Un poco más ancho que antes (320): con 320 el correo de la cuenta —que es lo
-   * único que distingue dos cuentas del mismo sitio— se cortaba en «info@w…». */
-  width: 340px;
+  /* 360 y no 340 desde la 2.20.0: el cuadro de la inicial le quita unos 36 px al
+   * texto, y lo que no puede faltar es el correo, que es lo único que distingue dos
+   * cuentas del mismo sitio. */
+  width: 360px;
   margin: 0;
   padding: var(--espacio-3);
   background: var(--lienzo);
-  color: var(--tinta); /* Tinta sobre Lienzo: «títulos sobre el lienzo» */
+  color: var(--tinta); /* «títulos sobre el lienzo» */
 }
 
 .solo-lectores {
@@ -60,8 +60,8 @@ header {
 }
 
 .marca {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
   color: var(--tinta);
 }
@@ -72,8 +72,6 @@ header {
   height: 100%;
 }
 
-/* A 22 px el trazo de 58 unidades se emborrona; es la misma afinación que lleva
- * la marca pequeña de la ventana. */
 .marca svg g {
   stroke-width: 64;
 }
@@ -82,7 +80,8 @@ header {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  line-height: 1.2;
+  flex: 1;
+  line-height: 1.25;
 }
 
 .cabecera strong {
@@ -91,13 +90,77 @@ header {
   letter-spacing: -0.01em;
 }
 
+.sitio {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+#favicon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+
 #donde {
   font-size: var(--texto-chico);
-  color: var(--apagado); /* Apagado sobre Lienzo: «ayudas y pies sobre el lienzo» */
+  color: var(--apagado); /* «ayudas y pies sobre el lienzo» */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* «● Abierta»: el punto es un indicador y va en el color de éxito, medido como
+ * texto sobre el lienzo; la palabra, apagada. */
+.abierta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: var(--texto-chico);
+  color: var(--apagado); /* «ayudas y pies sobre el lienzo» */
+}
+
+.abierta .punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--exito); /* Exito sobre Lienzo */
+}
+
+/* ----------------------------------------------------------- monograma */
+
+/* El mismo cuadro que la lista de la bóveda: los ocho tintes son tokens, y la
+ * inicial sobre cada uno está medida («la inicial del sitio sobre el cuadro N»). */
+.monograma {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radio-chico);
+  font-size: var(--texto);
+  font-weight: 600;
+  background: var(--tinte-icono-1);
+  color: var(--tinta-icono);
+}
+
+.monograma.chico {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  font-size: 9px;
+}
+
+.monograma[data-tinte="2"] { background: var(--tinte-icono-2); }
+.monograma[data-tinte="3"] { background: var(--tinte-icono-3); }
+.monograma[data-tinte="4"] { background: var(--tinte-icono-4); }
+.monograma[data-tinte="5"] { background: var(--tinte-icono-5); }
+.monograma[data-tinte="6"] { background: var(--tinte-icono-6); }
+.monograma[data-tinte="7"] { background: var(--tinte-icono-7); }
+.monograma[data-tinte="8"] { background: var(--tinte-icono-8); }
 
 /* --------------------------------------------------------------- lista */
 
@@ -110,21 +173,27 @@ ul {
   gap: var(--espacio-1);
 }
 
-/* Una fila por cuenta. **Todas con la misma forma**, que es lo que no tenían:
- * antes los botones envolvían según lo largo que fuera el título, y cada fila
- * salía distinta. Ahora el texto se come lo que sobre y las acciones no se mueven. */
+/* Una fila por cuenta, **todas con la misma forma**: cuadro, texto que se come lo
+ * que sobre, y acciones que no se mueven. */
 li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--espacio-2);
-  padding: var(--espacio-2) var(--espacio-2) var(--espacio-2) var(--espacio-3);
+  gap: var(--espacio-3);
+  padding: var(--espacio-2);
   border-radius: var(--radio);
   background: var(--tarjeta);
+  outline: none;
 }
 
 li:hover {
   background: var(--elevada);
+}
+
+/* La fila con el foco del teclado: el acento, medido a 3:1 sobre tarjeta («borde
+ * con foco dentro de un panel»). */
+li:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--acento);
 }
 
 .texto-cuenta {
@@ -143,16 +212,15 @@ li:hover {
 
 .nombre {
   font-weight: 600;
-  color: var(--tinta); /* Tinta sobre Tarjeta y sobre Elevada: las dos medidas */
+  color: var(--tinta); /* Tinta sobre Tarjeta y sobre Elevada */
 }
 
 .usuario {
   font-size: var(--texto-chico);
-  color: var(--apagado); /* Apagado sobre Tarjeta: «etiquetas dentro de un panel» */
+  color: var(--apagado); /* «etiquetas dentro de un panel» */
 }
 
-/* Apagado sobre Elevada **no está medido**, así que al pasar el puntero sube a
- * Cuerpo, que sí («texto secundario sobre la elevada»). */
+/* Apagado sobre Elevada **no está medido**: al pasar el puntero sube a Cuerpo. */
 li:hover .usuario {
   color: var(--cuerpo);
 }
@@ -177,25 +245,25 @@ button {
 
 button:disabled {
   cursor: default;
-  opacity: 0.55;
 }
 
 /* El foco, del acento y no del oro: el oro como línea sobre fondo claro da
- * 1,37-1,68:1 y es invisible. Acento sobre Lienzo y sobre Tarjeta a 3:1 están
- * medidos («borde de un campo con el foco»). Es la misma trampa que la ventana
- * vigila con una prueba. */
+ * 1,37-1,68:1 y es invisible. */
 button:focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
 }
 
-/* Rellenar: el botón de acción. Oro de fondo y piedra encima. */
+/* Rellenar: el botón de acción. Oro de fondo y piedra encima. Con ancho mínimo,
+ * para que «✓ Hecho» no haga saltar la fila. */
 .rellenar {
+  position: relative;
   height: var(--alto-control);
+  min-width: 78px;
   padding: 0 var(--espacio-3);
   border: 0;
   background: var(--relleno);
-  color: var(--sobre-acento); /* SobreAcento sobre Relleno: «botón primario» */
+  color: var(--sobre-acento); /* «botón primario» */
   font-weight: 600;
 }
 
@@ -203,9 +271,30 @@ button:focus-visible {
   background: var(--relleno-vivo); /* «botón primario con el puntero encima» */
 }
 
-/* Copiar: iconos, porque en 340 px no caben tres rótulos al lado de un correo, y
- * lo que se sacrificaba era el correo. El nombre va en `aria-label` y en
- * `title`, que es lo que sale al dejar el puntero encima. */
+/* Mientras espera: el rótulo se aparta y gira un círculo en su lugar. */
+.rellenar.trabajando {
+  color: transparent;
+}
+
+.rellenar.trabajando::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--sobre-acento);
+  border-right-color: transparent;
+  animation: girar 0.7s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .icono {
   width: var(--alto-control);
   height: var(--alto-control);
@@ -214,7 +303,7 @@ button:focus-visible {
   padding: 0;
   border: 1px solid var(--filete);
   background: var(--boton);
-  color: var(--tinta); /* Tinta sobre Boton: «texto de un botón normal» */
+  color: var(--tinta); /* «texto de un botón normal» */
 }
 
 .icono:hover:not(:disabled) {
@@ -226,8 +315,6 @@ button:focus-visible {
   height: 15px;
 }
 
-/* El sitio del botón de código en las cuentas que no lo tienen: mismo ancho, para
- * que el «Rellenar» de todas las filas caiga en la misma columna. */
 .icono-hueco {
   width: var(--alto-control);
   flex-shrink: 0;
@@ -242,7 +329,7 @@ button:focus-visible {
 }
 
 .hueco {
-  height: 48px;
+  height: 46px;
   border-radius: var(--radio);
   background: var(--tarjeta);
   animation: latido 1.2s ease-in-out infinite;
@@ -258,22 +345,41 @@ button:focus-visible {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hueco {
-    animation: none;
-  }
-}
-
-/* Lo que se enseña cuando no hay lista. **Con jerarquía**, que es lo que le
- * faltaba: antes era un párrafo que mezclaba lo que hay que hacer con lo que
- * dijo el navegador, y lo segundo es para quien lo arregla, no para quien lo lee. */
+/* Lo que se enseña cuando no hay lista. **Sobre el lienzo y no sobre tarjeta**,
+ * porque la esfinge tenue solo está medida sobre el lienzo («la esfinge tenue del
+ * historial vacío»). */
 .estado {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--espacio-3);
-  padding: var(--espacio-3);
-  border-radius: var(--radio);
-  background: var(--tarjeta);
+  padding: var(--espacio-4) var(--espacio-2) var(--espacio-5);
+  min-height: 96px;
+}
+
+.estado .tenue {
+  position: absolute;
+  right: -18px;
+  bottom: -26px;
+  width: 132px;
+  height: 132px;
+  color: var(--filete); /* Filete sobre Lienzo: «la esfinge tenue del historial vacío» */
+  pointer-events: none;
+}
+
+.estado .tenue svg {
+  width: 100%;
+  height: 100%;
+}
+
+.estado .tenue svg g {
+  stroke-width: 34;
+}
+
+.estado .glifo,
+.estado > div {
+  position: relative; /* por encima de la esfinge tenue */
 }
 
 .estado .glifo {
@@ -283,7 +389,7 @@ button:focus-visible {
 }
 
 .estado.error .glifo {
-  color: var(--error); /* Error sobre Tarjeta: «error dentro de un panel» */
+  color: var(--error); /* Error sobre Lienzo */
 }
 
 .estado .glifo svg {
@@ -295,30 +401,28 @@ button:focus-visible {
   margin: 0 0 var(--espacio-1);
   font-size: var(--texto);
   font-weight: 600;
-  color: var(--tinta); /* «títulos dentro de un panel» */
+  color: var(--tinta); /* «títulos sobre el lienzo» */
 }
 
 .estado .texto {
   margin: 0;
-  color: var(--cuerpo); /* «texto dentro de un panel» */
+  max-width: 250px;
+  color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
   line-height: 1.4;
 }
 
-/* Lo que dice el navegador tal cual. Es lo único que distingue «no encuentro el
- * manifiesto» de «no puedo ejecutar eso», así que no se esconde; pero va aparte y
- * en pequeño, porque no es una instrucción. */
 .estado .detalle {
   margin: var(--espacio-2) 0 0;
   font-family: var(--fuente-mono);
   font-size: 11px;
-  color: var(--apagado); /* «etiquetas dentro de un panel» */
+  color: var(--apagado); /* «ayudas y pies sobre el lienzo» */
   overflow-wrap: anywhere;
 }
 
 /* El resultado del último gesto, debajo de la lista. */
 .resultado {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--espacio-2);
   margin: var(--espacio-3) var(--espacio-1) 0;
   color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
@@ -327,9 +431,8 @@ button:focus-visible {
 
 .resultado svg {
   flex-shrink: 0;
-  width: 15px;
-  height: 15px;
-  margin-top: 1px;
+  width: 16px;
+  height: 16px;
 }
 
 .resultado.bien svg {
@@ -340,8 +443,54 @@ button:focus-visible {
   color: var(--error); /* Error sobre Lienzo */
 }
 
+/* La cuenta atrás del código: la pista en filete, lo que queda en acento, que como
+ * indicador está medido a 3:1 sobre el lienzo («barra de marca ▍ y medidores»). */
+.anillo {
+  transform: rotate(-90deg);
+}
+
+.anillo circle {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.anillo .pista {
+  stroke: var(--filete);
+}
+
+.anillo .resto {
+  stroke: var(--acento);
+  stroke-dasharray: 30;
+  stroke-linecap: round;
+  animation-name: vaciar;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes vaciar {
+  to {
+    stroke-dashoffset: 30;
+  }
+}
+
 footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin: var(--espacio-3) var(--espacio-1) 0;
   font-size: 11px;
   color: var(--apagado); /* «ayudas y pies sobre el lienzo» */
+}
+
+.firma .barra {
+  color: var(--acento); /* «barra de marca ▍ y medidores» */
+  margin-right: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hueco,
+  .rellenar.trabajando::after,
+  .anillo .resto {
+    animation: none;
+  }
 }

@@ -1,0 +1,49 @@
+<!--
+  El icono de la barra del navegador: la silueta de Esfinge, sin placa.
+
+  **No es el icono de la aplicación reducido**, que es lo que había hasta la
+  2.19.1 y a 16 px se leía regular: la placa y su margen se comían la mitad del
+  cuadro. Aquí están los mismos trazados de `icono.svg` —tocado de oro con sus
+  bandas, rostro, ojos y ojal— **sin placa y con el `viewBox` ajustado al
+  dibujo**, así que la esfinge ocupa el cuadro entero.
+
+  **El contorno de piedra es lo que la hace visible en las dos barras.** Sin
+  placa detrás, el oro solo sobre una barra clara da 1,37-1,68:1 y desaparece; la
+  piedra, en cambio, no se ve sobre una oscura. Juntos se ven en las dos, y está
+  medido en `internal/tema/extension_test.go`, que lee los colores de este
+  fichero. Va con `paint-order: stroke` para que el contorno quede por fuera y no
+  se coma el relleno, y grueso (90) porque a 16 px medio trazo es menos de un
+  píxel.
+
+  Hay dos variantes al lado: `icono-barra-apagado.svg` e `icono-barra-cerrado.svg`.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="87 123 850 850">
+  <defs>
+    <path id="tocado"
+          d="M512 150c-140 0-236 94-236 218v74l-62 228c-6 22 10 44 33 44h104l38-236h246l38 236h104c23 0 39-22 33-44l-62-228v-74c0-124-96-218-236-218z"/>
+    <clipPath id="soloTocado"><use href="#tocado"/></clipPath>
+  </defs>
+
+  <!-- El tocado primero, con su contorno; luego las bandas recortadas contra él;
+       y el rostro y el ojal encima, con el suyo. **En ese orden**, como en
+       `icono.svg`: con las bandas al final, pintaban por encima de la cara. -->
+  <use href="#tocado" fill="#f2c14e" stroke="#2b2b31" stroke-width="90" stroke-linejoin="round"
+       paint-order="stroke"/>
+
+  <g clip-path="url(#soloTocado)" fill="#2b2b31" opacity="0.5">
+    <rect x="180" y="452" width="680" height="30"/>
+    <rect x="180" y="524" width="680" height="30"/>
+  </g>
+
+  <g stroke="#2b2b31" stroke-width="90" stroke-linejoin="round" paint-order="stroke">
+    <path d="M512 232c-86 0-156 62-156 142v90c0 62 38 116 92 138v76c0 35 29 64 64 64s64-29 64-64v-76c54-22 92-76 92-138v-90c0-80-70-142-156-142z"
+          fill="#e8dcc4"/>
+    <circle cx="512" cy="808" r="54" fill="#e8dcc4"/>
+    <path d="M484 840h56l14 106H470z" fill="#e8dcc4"/>
+  </g>
+
+  <g fill="#2b2b31">
+    <rect x="408" y="386" width="80" height="32" rx="16"/>
+    <rect x="536" y="386" width="80" height="32" rx="16"/>
+  </g>
+</svg>

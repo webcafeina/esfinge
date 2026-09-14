@@ -6,31 +6,38 @@
     <link rel="stylesheet" href="./panel.css" />
   </head>
   <body>
-    <!-- El lockup, como el de la barra lateral de la ventana (ADR 0021): es el
-         único sitio del panel con marca. Debajo, el sitio de la pestaña, que es
-         lo que dice para qué se están enseñando estas cuentas. -->
+    <!-- El lockup, como el de la barra lateral de la ventana (ADR 0021 y 0029), y
+         debajo el sitio de la pestaña con su icono. A la derecha, si la bóveda está
+         abierta. -->
     <header>
       <span class="marca" aria-hidden="true"></span>
       <div class="cabecera">
         <strong>Esfinge</strong>
-        <span id="donde"></span>
+        <span class="sitio">
+          <img id="favicon" alt="" hidden />
+          <span id="inicial-sitio" class="monograma chico" aria-hidden="true" hidden></span>
+          <span id="donde"></span>
+        </span>
       </div>
+      <span id="abierta" class="abierta" hidden><span class="punto"></span>Abierta</span>
     </header>
 
     <main>
       <!-- Mientras se pregunta: dos filas vacías con la forma de las de verdad,
-           para que el panel no dé un salto cuando lleguen. El texto va escondido
-           a la vista y no a quien lee la pantalla en voz alta. -->
+           para que el panel no dé un salto cuando lleguen. -->
       <div id="cargando" class="cargando" role="status">
         <span class="solo-lectores">Preguntando a Esfinge…</span>
         <div class="hueco"></div>
         <div class="hueco"></div>
       </div>
 
-      <ul id="lista" hidden></ul>
+      <ul id="lista" aria-label="Cuentas de este sitio" hidden></ul>
 
-      <!-- Lo que no es una lista: la bóveda cerrada, sin permiso, sin Esfinge… -->
+      <!-- Lo que no es una lista: la bóveda cerrada, sin permiso, sin Esfinge…
+           Con la esfinge grande y tenue detrás, como el historial vacío de la
+           ventana: aquí no se trabaja, así que es sitio para la marca. -->
       <section id="estado" class="estado" hidden>
+        <span class="tenue" aria-hidden="true"></span>
         <span class="glifo" aria-hidden="true"></span>
         <div>
           <h1></h1>
@@ -43,10 +50,12 @@
     <!-- El resultado del último gesto: «Rellenado», «Contraseña copiada»… -->
     <p id="resultado" class="resultado" role="status" hidden></p>
 
-    <!-- La versión, a la vista. **No es un adorno**: cuando algo no funciona, lo
-         primero que hay que saber es qué versión se está mirando, y preguntarlo
-         por escrito cuesta un viaje de ida y vuelta. -->
-    <footer id="pie"></footer>
+    <!-- La versión, a la vista —cuando algo falla, lo primero es saber qué versión
+         se está mirando—, y la firma de la casa, como al pie de la barra lateral. -->
+    <footer>
+      <span id="pie"></span>
+      <span class="firma"><span class="barra" aria-hidden="true">▍</span>webcafeína</span>
+    </footer>
     <script type="module" src="./panel.ts"></script>
   </body>
 </html>

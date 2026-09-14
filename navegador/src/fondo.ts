@@ -24,6 +24,7 @@
  *     Esfinge cifra en su disco.
  */
 import { api } from "./api";
+import { queMostrar, TEXTO_DE_INSIGNIA, type QueMostrar } from "./insignia";
 import {
   VERSION_DEL_PROTOCOLO,
   type Peticion,
@@ -180,7 +181,157 @@ function nombreDelNavegador(): string {
  * otro mensaje y punto. Es lo mismo en los dos navegadores y no hay que detectar
  * cuál es.
  */
+/* ------------------------------------------------ el icono de la barra */
+
+/**
+ * consultar pregunta a Esfinge **sin pedir permiso si falta**.
+ *
+ * Es la diferencia con `pedir`, y no es un detalle: `pedir` se empareja solo
+ * cuando el permiso no vale, y eso hace aparecer en la ventana de Esfinge «un
+ * navegador pide permiso». Desde el panel está bien, porque alguien lo ha abierto;
+ * desde el refresco del icono —cada minuto y al cambiar de pestaña— sería un aviso
+ * en la ventana cada poco **sin que nadie hubiera tocado nada**.
+ */
+async function consultar(p: Omit<Peticion, "version" | "testigo">): Promise<Respuesta> {
+  return hablar({ ...p, version: VERSION_DEL_PROTOCOLO, testigo: await testigoGuardado() });
+}
+
+/** Las variantes del icono, que genera `make icono` desde `build/icono-barra*.svg`. */
+const RUTAS_DEL_ICONO = (v: QueMostrar["icono"]) => ({
+  16: `iconos/barra-${v}-16.png`,
+  32: `iconos/barra-${v}-32.png`,
+});
+
+/**
+ * Las pestañas donde Esfinge ha rellenado, con la dirección en la que lo hizo.
+ *
+ * **En memoria del trabajador y en ningún otro sitio**, como todo lo de aquí: el
+ * trabajador se muere solo y con él se va esto, que es lo que tiene que pasar. La
+ * insignia de cada pestaña la conserva el navegador.
+ */
+const rellenadas = new Map<number, string>();
+
+/** Cuándo se preguntó por última vez por cada pestaña, y con qué dirección. */
+const ultimaVez = new Map<number, { url: string; cuando: number }>();
+const pendientes = new Map<number, ReturnType<typeof setTimeout>>();
+
+/**
+ * **El freno de sesenta preguntas por minuto es del canal entero**, y lo gastan
+ * también el panel y las páginas. Así que el refresco agrupa las ráfagas —cambiar
+ * de pestaña deprisa dispara muchos eventos seguidos— y no vuelve a preguntar por la
+ * misma pestaña y la misma dirección antes de este plazo, salvo que se le obligue.
+ */
+const AGRUPAR = 300;
+const NO_REPETIR = 5000;
+
+function programarRefresco(tabId: number, obligar = false) {
+  clearTimeout(pendientes.get(tabId));
+  pendientes.set(
+    tabId,
+    setTimeout(() => {
+      pendientes.delete(tabId);
+      refrescar(tabId, obligar).catch(() => {});
+    }, AGRUPAR),
+  );
+}
+
+async function refrescar(tabId: number, obligar: boolean) {
+  let pestana: chrome.tabs.Tab;
+  try {
+    pestana = await api.tabs.get(tabId);
+  } catch {
+    return; // la pestaña ya no está
+  }
+  const url = pestana.url ?? "";
+  const antes = ultimaVez.get(tabId);
+  if (!obligar && antes && antes.url === url && Date.now() - antes.cuando < NO_REPETIR) return;
+  ultimaVez.set(tabId, { url, cuando: Date.now() });
+  if (rellenadas.has(tabId) && rellenadas.get(tabId) !== url) rellenadas.delete(tabId);
+
+  const q = { url, rellenado: rellenadas.get(tabId) === url } as Parameters<typeof queMostrar>[0];
+  if (url.startsWith("https:")) {
+    q.estado = await consultar({ que: "estado" });
+    if (q.estado.ok && q.estado.estado?.abierta) {
+      q.cuentas = await consultar({ que: "cuentas", origen: url });
+    }
+  }
+  pintar(tabId, queMostrar(q));
+}
+
+/** pintar pone el icono, la insignia y la frase de una pestaña. Nunca lanza. */
+function pintar(tabId: number, q: QueMostrar) {
+  const sinFallo = (promesa: unknown) => Promise.resolve(promesa).catch(() => {});
+  try {
+    sinFallo(api.action.setIcon({ tabId, path: RUTAS_DEL_ICONO(q.icono) }));
+    sinFallo(api.action.setBadgeText({ tabId, text: q.insignia }));
+    if (q.insignia) {
+      sinFallo(api.action.setBadgeBackgroundColor({ tabId, color: q.fondoInsignia }));
+      // No está en todos los navegadores viejos; donde falta, el texto sale blanco
+      // igualmente, que es el que está medido.
+      const accion = api.action as unknown as {
+        setBadgeTextColor?: (d: { tabId: number; color: string }) => Promise<void>;
+      };
+      sinFallo(accion.setBadgeTextColor?.({ tabId, color: TEXTO_DE_INSIGNIA }));
+    }
+    sinFallo(api.action.setTitle({ tabId, title: q.titulo }));
+  } catch {
+    /* la pestaña se ha cerrado mientras tanto */
+  }
+}
+
+async function refrescarLaActiva(obligar: boolean) {
+  const [pestana] = await api.tabs.query({ active: true, lastFocusedWindow: true });
+  if (pestana?.id !== undefined) programarRefresco(pestana.id, obligar);
+}
+
+api.tabs.onActivated.addListener(({ tabId }) => programarRefresco(tabId));
+api.tabs.onUpdated.addListener((tabId, cambio) => {
+  // Una dirección nueva obliga; una carga que termina en la misma, no.
+  if (cambio.url) programarRefresco(tabId, true);
+  else if (cambio.status === "complete") programarRefresco(tabId);
+});
+api.windows.onFocusChanged.addListener(() => {
+  refrescarLaActiva(false).catch(() => {});
+});
+
+/**
+ * **Y cada minuto, solo la pestaña activa**, porque Esfinge no puede avisar a la
+ * extensión cuando la bóveda se cierra sola: es la extensión la que tiene que
+ * preguntar. Lo decidió el cliente sabiendo el precio —un permiso más y arrancar el
+ * puente una vez por minuto—.
+ *
+ * La alarma se crea solo si no existe: crearla cada vez que el trabajador despierta
+ * la reiniciaría, y con un trabajador que despierta a menudo no llegaría a sonar.
+ */
+const ALARMA = "refrescar-el-icono";
+Promise.resolve(api.alarms.get(ALARMA))
+  .then((alarma) => {
+    if (!alarma) api.alarms.create(ALARMA, { periodInMinutes: 1 });
+  })
+  .catch(() => {});
+api.alarms.onAlarm.addListener((alarma) => {
+  if (alarma.name === ALARMA) refrescarLaActiva(true).catch(() => {});
+});
+
 api.runtime.onConnect.addListener((puerto) => {
+  // **El guion de la página avisa de que ha rellenado**, sin decir qué: basta con
+  // abrir el puerto. La pestaña y su dirección las pone el navegador.
+  if (puerto.name === "relleno-hecho") {
+    const pestana = puerto.sender?.tab;
+    if (pestana?.id !== undefined && pestana.url) {
+      rellenadas.set(pestana.id, pestana.url);
+      pintar(
+        pestana.id,
+        queMostrar({
+          url: pestana.url,
+          estado: { ok: true, estado: { existe: true, abierta: true } },
+          rellenado: true,
+        }),
+      );
+    }
+    return;
+  }
+
   puerto.onMessage.addListener((p) => {
     const contestar = (r: Respuesta) => {
       // Quien preguntaba puede haberse ido mientras se preguntaba —el panel se
@@ -234,7 +385,28 @@ api.runtime.onConnect.addListener((puerto) => {
     // undefined, esto lanzaba en la primera línea, y desde fuera parecía un
     // problema del puente. Cinco versiones persiguiendo eso.
     pedir(p as Peticion)
-      .then(contestar)
+      .then((r) => {
+        contestar(r);
+        // **Al abrir el panel, el icono se pone al día con lo que el panel acaba de
+        // saber**, sin volver a preguntar: el panel pide las cuentas nada más abrirse.
+        const peticion = p as Peticion;
+        if (puerto.name === "panel" && peticion.que === "cuentas" && peticion.origen) {
+          api.tabs
+            .query({ active: true, currentWindow: true })
+            .then(([pestana]) => {
+              if (pestana?.id === undefined) return;
+              pintar(
+                pestana.id,
+                queMostrar({
+                  url: peticion.origen,
+                  cuentas: r,
+                  rellenado: rellenadas.get(pestana.id) === peticion.origen,
+                }),
+              );
+            })
+            .catch(() => {});
+        }
+      })
       .catch((e) =>
         contestar({
           ok: false,

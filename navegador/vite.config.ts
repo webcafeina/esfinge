@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 /**
  * El panel. **El trabajador de fondo se compila aparte** (`vite.fondo.config.ts`)
@@ -56,18 +56,24 @@ export default defineConfig({
         if (numeros) m.version = numeros[0];
         writeFileSync(resolve(salida, "manifest.json"), JSON.stringify(m, null, 2) + "\n");
 
-        // Los iconos que nombra el manifiesto. **Un icono que falta no da error**:
-        // el navegador carga la extensión igual y pone su inicial genérica en la
-        // barra, así que se copian todos los que el manifiesto diga y se falla aquí
-        // si alguno no está, que es donde se puede ver.
-        const iconos = new Set<string>([
+        // Los iconos. **Se copian todos, no solo los que nombra el manifiesto**:
+        // las variantes apagada y cerrada del icono de la barra las pone el
+        // trabajador de fondo con `action.setIcon`, y el manifiesto no las nombra.
+        // Y se falla aquí si falta uno de los nombrados, porque **un icono que falta
+        // no da error** en el navegador: pone su inicial genérica en la barra.
+        const carpeta = resolve(__dirname, "iconos");
+        mkdirSync(resolve(salida, "iconos"), { recursive: true });
+        for (const fichero of readdirSync(carpeta)) {
+          copyFileSync(resolve(carpeta, fichero), resolve(salida, "iconos", fichero));
+        }
+        const nombrados = new Set<string>([
           ...Object.values<string>(m.icons ?? {}),
           ...Object.values<string>(m.action?.default_icon ?? {}),
         ]);
-        for (const icono of iconos) {
-          const destino = resolve(salida, icono);
-          mkdirSync(dirname(destino), { recursive: true });
-          copyFileSync(resolve(__dirname, icono), destino);
+        for (const icono of nombrados) {
+          if (!existsSync(resolve(__dirname, icono))) {
+            throw new Error(`El manifiesto nombra «${icono}» y no existe: ejecuta «make icono».`);
+          }
         }
       },
     },
