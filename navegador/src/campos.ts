@@ -257,19 +257,30 @@ export function buscarCodigo(raiz: Document = document): DestinoDeCodigo | null 
     .filter(sePuedeEscribir)
     .filter((c) => TIPOS_DE_CODIGO.has(c.type.toLowerCase()));
 
-  // 1. Lo que el sitio declara. Las casillas de un carácter también suelen llevar
-  // la declaración en la primera, así que aquí solo cuentan los campos enteros.
-  const declarados = candidatos.filter(
-    (c) => tokens(c).includes("one-time-code") && c.maxLength !== 1,
+  // 1. **Las casillas, antes que nada.** Hasta la 2.19.0 iban segundas, y el
+  // formulario de Cloudflare no se detectaba por eso: sus seis casillas declaran
+  // todas `one-time-code`, así que la regla del campo declarado veía seis y se
+  // callaba por no saber cuál. Una fila de seis u ocho campos que se parecen es
+  // una forma inconfundible; un campo declarado suelto, no tanto.
+  //
+  // Y cuenta como casilla más de lo que contaba: `maxlength="1"`, o un `pattern`
+  // de una sola cifra —que es lo que llevan las de Cloudflare, donde **ninguna**
+  // tiene `maxlength="1"` porque la primera acepta el código entero para el
+  // autorrelleno del sistema—, o declarar `one-time-code` dentro de un grupo.
+  const posibles = candidatos.filter(
+    (c) => !esDeTarjeta(c) && (esCasilla(c) || tokens(c).includes("one-time-code")),
   );
-  if (declarados.length === 1) return { tipo: "uno", campo: declarados[0] };
-  if (declarados.length > 1) return null;
-
-  // 2. Las casillas.
-  const casillas = candidatos.filter((c) => c.maxLength === 1 && !esDeTarjeta(c));
-  const grupos = agruparCasillas(casillas).filter((g) => g.length === 6 || g.length === 8);
+  const grupos = agruparCasillas(posibles).filter((g) => g.length === 6 || g.length === 8);
   if (grupos.length === 1) return { tipo: "casillas", campos: grupos[0] };
   if (grupos.length > 1) return null;
+
+  // 2. Lo que el sitio declara, si es un solo campo entero. Si hay más de uno, o
+  // el único que hay es una casilla suelta, no se sabe dónde va y no se toca.
+  const declarados = candidatos.filter((c) => tokens(c).includes("one-time-code"));
+  if (declarados.length === 1 && !esCasilla(declarados[0])) {
+    return { tipo: "uno", campo: declarados[0] };
+  }
+  if (declarados.length > 0) return null;
 
   // 3. Por el nombre, con todas las cautelas.
   const hayContrasena = [...raiz.querySelectorAll<HTMLInputElement>('input[type="password"]')].some(
@@ -285,6 +296,16 @@ export function buscarCodigo(raiz: Document = document): DestinoDeCodigo | null 
       pareceNumerico(c),
   );
   return porNombre.length === 1 ? { tipo: "uno", campo: porNombre[0] } : null;
+}
+
+/**
+ * esCasilla: un campo hecho para una sola cifra. O lo dice `maxlength`, o lo dice
+ * el `pattern` —`\\d`, `\\d{1}`, `[0-9]`—, que es lo que usan los componentes que no
+ * pueden poner `maxlength="1"` porque la primera casilla tiene que aceptar el
+ * código entero.
+ */
+function esCasilla(campo: HTMLInputElement): boolean {
+  return campo.maxLength === 1 || /^(\\d|\[0-9\])(\{1\})?$/.test(campo.pattern);
 }
 
 /** esDeTarjeta: lo que el sitio declara de una tarjeta no es un segundo factor. */
@@ -331,18 +352,36 @@ export function camposDe(destino: DestinoDeCodigo): HTMLInputElement[] {
   return destino.tipo === "uno" ? [destino.campo] : destino.campos;
 }
 
+/** Lo que se deja al componente de la página para que se entere antes de mirar. */
+const unRespiro = () => new Promise<void>((r) => setTimeout(r, 30));
+
 /**
- * escribirCodigo pone el código en su sitio. **Devuelve falso si no cabe**: seis
- * casillas y un código de ocho cifras no es un sitio donde escribir a medias.
+ * escribirCodigo pone el código en su sitio **y dice si ha quedado puesto**.
+ *
+ * Las casillas se escriben una a una, como si se tecleara, y al final **se lee lo
+ * que hay**: «he escrito» no es «ha quedado puesto», y la diferencia es un botón de
+ * verificar que no se activa. Si no ha quedado, se devuelve falso y quien llama lo
+ * dice, en vez de contar que ha ido bien.
+ *
+ * **Y una cosa que se creyó y no era**, para que no vuelva a escribirse: leyendo el
+ * código del componente de Cloudflare (Base UI, `otp-field`) parecía que cada
+ * casilla recalculaba el código desde el valor de la última vez que se dibujó, y
+ * que escribir las seis seguidas las haría pisarse. Se escribió un rodeo para eso
+ * —el código entero en la primera casilla— y **la prueba contra el componente de
+ * verdad dijo que no hacía falta**: React atiende cada `input` al momento, y cada
+ * casilla ya ve lo que dejó la anterior. El rodeo se quitó. Lo comprueba
+ * `pruebas/otp-de-verdad.spec.ts`.
  */
-export function escribirCodigo(destino: DestinoDeCodigo, codigo: string): boolean {
+export async function escribirCodigo(destino: DestinoDeCodigo, codigo: string): Promise<boolean> {
   if (destino.tipo === "uno") {
     escribir(destino.campo, codigo);
     return true;
   }
-  if (destino.campos.length !== codigo.length) return false;
-  // Una a una y con sus eventos, como si se tecleara: las casillas suelen mover el
-  // foco a la siguiente al recibir el `input`, y es lo que esperan ver.
-  destino.campos.forEach((campo, i) => escribir(campo, codigo[i]));
-  return true;
+  const { campos } = destino;
+  // Seis casillas y un código de ocho cifras no es sitio donde escribir a medias.
+  if (campos.length !== codigo.length) return false;
+
+  campos.forEach((campo, i) => escribir(campo, codigo[i]));
+  await unRespiro();
+  return campos.map((c) => c.value).join("") === codigo;
 }

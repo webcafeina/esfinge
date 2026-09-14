@@ -614,6 +614,20 @@ dicha al lado de cada regla. Si hace falta una nueva, se añade primero ahí. La
 texto apagado sobre la superficie elevada no está medido, así que al pasar el puntero por una fila el
 usuario sube a `--cuerpo`.
 
+**Unas casillas de código no siempre llevan `maxlength="1"`, y seis campos declarados pueden ser una
+sola cosa.** El formulario de segundo factor de Cloudflare son seis casillas que declaran **todas**
+`one-time-code`, y ninguna tiene `maxlength="1"`: la primera admite seis cifras para el autorrelleno
+del sistema. La 2.19.0 no lo detectaba por los dos lados —seis declarados era «no sé cuál», y sin
+`maxlength="1"` no eran casillas—, y lo vio el cliente. Ahora **las casillas se miran antes que el
+campo declarado** y cuenta como casilla también un `pattern` de una cifra. Lo que lo destapó fue
+**pedir la forma de los campos por la consola**, sin valores, en vez de adivinarla.
+
+**Y leer el código de una biblioteca no es ejecutarlo.** De leer el `otp-field` de Base UI salió que
+escribir sus casillas seguidas no le valdría, y se escribió un rodeo. La prueba contra el paquete de
+verdad dijo que sí le valía —React atiende cada `input` al momento— y el rodeo se quitó. Leer dice qué
+hace el código; **cómo se comporta junto al resto solo lo dice ejecutarlo**, y cuando se puede montar
+el componente de verdad en una prueba, eso manda sobre la deducción.
+
 **Y el origen de una página lo pone el trabajador de fondo, no la página.** Lo que llegue por un
 puerto llamado «pagina» en el campo `origen` se tira y se pone `sender.tab.url`. Sin esa línea,
 cualquier página que consiguiera hablar por ese puerto pediría las cuentas de un banco diciendo que

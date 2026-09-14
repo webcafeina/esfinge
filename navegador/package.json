@@ -8,8 +8,11 @@
     "capturas": "vite build && node herramientas/capturas.mjs"
   },
   "devDependencies": {
+    "@base-ui/react": "1.8.0",
     "@playwright/test": "^1.63.0",
     "@types/chrome": "^0.0.287",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "typescript": "^5.9.0",
     "vite": "^6.0.0"
   }

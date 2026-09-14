@@ -193,8 +193,10 @@ async function rellenarCodigo(
   if (!r.ok || !r.codigo) {
     return r.error ?? "Esfinge no ha podido dar el código.";
   }
-  if (!escribirCodigo(destino, r.codigo.codigo)) {
-    return "Este formulario pide un código de otro largo que el que da Esfinge.";
+  // **Esperando a que diga si ha quedado puesto**, que no es lo mismo que haberlo
+  // escrito: ver `escribirCodigo`, y el formulario de Cloudflare.
+  if (!(await escribirCodigo(destino, r.codigo.codigo))) {
+    return "El código no ha quedado puesto en este formulario. Cópialo desde el panel y pégalo.";
   }
   campos.forEach((c) => yaRellenados.add(c));
   return "";

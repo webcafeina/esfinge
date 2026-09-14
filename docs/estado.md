@@ -198,9 +198,11 @@ segundo factor si no hay contraseña en la página; **nunca en uno que solo se l
 una cuenta del sitio que tenga código, esperando al siguiente si al actual le quedan menos de tres
 segundos. El botón «Rellenar» del panel hace formulario y código a la vez.
 
-**Lo que falta es verlo en formularios de verdad**, empezando por Cloudflare, que el cliente ya usa con
-código. Y dos cosas que solo se ven allí: si las casillas de verdad aceptan que se les escriba así
-—algunas solo reaccionan a pegar o a teclas—, y si la detección acierta sin escribir donde no debe.
+**Probado en Firefox en el Mac con la 2.19.0: todo funciona salvo el código en Cloudflare**, que no se
+detectaba —seis casillas que declaran `one-time-code` y ninguna con `maxlength="1"`—. Arreglado en la
+2.19.1: su formulario copiado de la consola está en las pruebas, y la escritura se ha comprobado contra
+**su mismo componente**, `OTPField` de Base UI, en React. **Falta verlo en Cloudflare de verdad** con
+la 2.19.1, y en Chrome.
 
 ### 3. Y después, lo que ya estaba planteado
 

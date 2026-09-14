@@ -36,11 +36,18 @@ doble de margen para quien no debería tener ninguno.
 
 En orden de cuánto hay que creerse a la página:
 
-1. **Lo declara el sitio** con `autocomplete="one-time-code"`. Si hay más de un campo así, no se sabe
-   cuál y no se toca.
-2. **Seis u ocho casillas de un carácter, juntas.** Es la forma más común de los formularios que no
-   declaran nada. Muchas van cada una en su caja, así que se agrupa subiendo un nivel cuando la caja
-   solo contiene esa casilla. **Cuatro no**: eso es un PIN.
+1. **Lo declara el sitio** con `autocomplete="one-time-code"`, y es un solo campo entero. Si hay más
+   de uno, no se sabe cuál y no se toca.
+2. **Seis u ocho casillas, juntas.** Es la forma más común de los formularios de segundo factor.
+   Cuenta como casilla un campo con `maxlength="1"`, uno con un `pattern` de una sola cifra, o uno
+   que declara `one-time-code` dentro de un grupo. Muchas van cada una en su caja, así que se agrupa
+   subiendo un nivel cuando la caja solo contiene esa casilla. **Cuatro no**: eso es un PIN.
+
+   **Y las casillas se miran antes que el campo declarado**, que es la corrección de la 2.19.1: el
+   formulario de Cloudflare son seis casillas que declaran **todas** `one-time-code` y **ninguna**
+   tiene `maxlength="1"` —la primera admite seis cifras, para el autorrelleno del sistema—. Con el
+   campo declarado primero, la regla veía seis y se callaba por no saber cuál; y sin `maxlength="1"`
+   no eran casillas. Lo que sí llevan todas es `pattern="\d{1}"`.
 3. **Por el nombre** —`otp`, `totp`, `mfa`, `2fa`, `two factor`, `one time`, `authenticat…`,
    `verification code`—, **solo si en la página no hay ninguna contraseña visible y el campo tiene
    cara de numérico**. Es la regla más débil y por eso la que más condiciones lleva.
@@ -107,11 +114,24 @@ navegador. Con esto, **el gesto completo de entrar se hace sin tocar el teclado*
 - **La tubería entera**, de los bytes del navegador a la bóveda: `tieneCodigo` llega bien y el código
   sale para su sitio y no para otro.
 
+**Comprobado después de publicar la 2.19.0 (2026-09-14):**
+
+- **En Firefox, en un Mac, funciona todo lo demás**, y **en Cloudflare el código no se rellenaba**: el
+  botón del panel decía que allí no había formulario. Con un diagnóstico pegado en la consola —solo la
+  forma de los campos, sin valores— se vio el formulario de verdad, se copió tal cual a
+  `campos.spec.ts` y la prueba **se vio fallar antes del arreglo**.
+- **Y se probó la escritura contra el componente que usa Cloudflare**, `OTPField` de Base UI, el
+  paquete, en React (`pruebas/otp-de-verdad.spec.ts`): el estado del componente queda con el código y
+  el botón de verificar se activa. De ahí salió una corrección a una suposición mía: leyendo su código
+  parecía que escribir las casillas seguidas no le valdría, se escribió un rodeo, y **la prueba dijo
+  que sí le valía**. El rodeo se quitó.
+
 **Sin comprobar, y es lo que importa:**
 
-- **Si se detecta en los formularios de segundo factor de verdad.** Los casos de la prueba los he
-  escrito yo. Cloudflare, que el cliente ya usa con código, es el primero que hay que mirar.
-- **Si las casillas de verdad aceptan que se les escriba así.** Algunas solo reaccionan a pegar o a
-  pulsaciones de tecla, y lo que se vería es el código puesto y el botón de verificar sin activarse.
+- **Que la 2.19.1 rellene de verdad en Cloudflare**, en el Mac. La prueba usa su formulario copiado y
+  su componente, pero no es su página.
+- **Otros formularios de segundo factor.** Hay componentes que solo reaccionan a pegar o a pulsaciones
+  de tecla; con esos, `escribirCodigo` lee lo que ha quedado y **dice que no ha quedado puesto** en vez
+  de contar que ha ido bien, pero no lo arregla.
 - **Nada del guion de página está probado con la extensión cargada**: ni la espera de los tres
   segundos, ni el orden formulario-código del panel. Sigue en `docs/deuda.md`.

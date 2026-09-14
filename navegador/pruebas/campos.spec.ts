@@ -322,6 +322,26 @@ const casosDeCodigo: {
   },
 ];
 
+// **El de Cloudflare, copiado del de verdad** (2026-09-14, sacado de la consola en
+// la pantalla de segundo factor). Seis casillas visibles que declaran todas
+// `one-time-code`, **ninguna con `maxlength="1"`** —la primera acepta seis, para
+// el autorrelleno del sistema— y un séptimo campo de 1×1 que guarda el valor.
+// La 2.19.0 no lo detectaba por los dos lados: seis declarados era «no sé cuál»,
+// y sin `maxlength="1"` no eran casillas. La señal que sí llevan todas es el
+// `pattern` de una cifra.
+casosDeCodigo.push({
+  nombre: "código: el de Cloudflare, seis casillas sin maxlength y un campo escondido",
+  html: `<form><div role="group">${[1, 2, 3, 4, 5, 6]
+    .map(
+      (n) =>
+        `<input id="c${n}" type="text" autocomplete="one-time-code" inputmode="numeric"${
+          n === 1 ? ' maxlength="6"' : ""
+        } pattern="\\d{1}" style="width:65px;height:65px">`,
+    )
+    .join("")}<input id="oculto" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="6" pattern="\\d{6}" style="width:1px;height:1px"></div></form>`,
+  espera: { tipo: "casillas", ids: ["c1", "c2", "c3", "c4", "c5", "c6"] },
+});
+
 for (const caso of casosDeCodigo) {
   test(caso.nombre, async ({ page }) => {
     expect(await codigoQueSeDetecta(page, caso.html)).toEqual(caso.espera);
@@ -335,15 +355,15 @@ for (const caso of casosDeCodigo) {
 test("código: se escribe una cifra por casilla, o nada si no cabe", async ({ page }) => {
   await page.setContent(`<!doctype html><meta charset="utf-8"><form><div>${seis()}</div></form>`);
   await page.addScriptTag({ content: modulo });
-  const resultado = await page.evaluate(() => {
+  const resultado = await page.evaluate(async () => {
     // @ts-expect-error el módulo se inyecta como global en la página
     const destino = Campos.buscarCodigo(document);
     const valores = () => destino.campos.map((c: HTMLInputElement) => c.value).join("");
     // @ts-expect-error el módulo se inyecta como global en la página
-    const largo = Campos.escribirCodigo(destino, "12345678");
+    const largo = await Campos.escribirCodigo(destino, "12345678");
     const trasLargo = valores();
     // @ts-expect-error el módulo se inyecta como global en la página
-    const bueno = Campos.escribirCodigo(destino, "482913");
+    const bueno = await Campos.escribirCodigo(destino, "482913");
     return { largo, trasLargo, bueno, valores: valores() };
   });
   expect(resultado.largo).toBe(false);

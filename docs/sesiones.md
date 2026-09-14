@@ -39,6 +39,17 @@ Plantilla al final.
   el código comparado con `internal/codigos` en la aplicación; y **la tubería entera** recorriendo el
   verbo nuevo y `tieneCodigo`. `make comprobar` en verde. **Sin verificar**: formularios de segundo
   factor de verdad —Cloudflare el primero— y si sus casillas aceptan que se les escriba así.
+- **2.19.0 publicada y probada en Firefox en el Mac: todo funciona salvo el código en Cloudflare.** El
+  botón del panel decía que allí no había formulario, así que era la detección. Con un diagnóstico
+  pegado en la consola —solo la forma de los campos— salió el formulario de verdad: seis casillas que
+  declaran todas `one-time-code` y ninguna con `maxlength="1"`, más un campo de 1×1 que guarda el
+  valor. Copiado a las pruebas, **visto fallar**, y arreglado mirando las casillas antes que el campo
+  declarado y aceptando un `pattern` de una cifra.
+- **Y la escritura, contra el componente de verdad**: Cloudflare usa `OTPField` de Base UI, el paquete
+  es público, y la prueba lo monta en React y mira su estado y el botón de verificar. De ahí salió una
+  corrección a mí mismo: leyendo su código deduje que escribir las casillas seguidas no le valdría y
+  escribí un rodeo; **la prueba dijo que sí le valía**, y el rodeo se quitó. Me quedo con lo útil:
+  comprobar al final que el código ha quedado puesto, y decirlo si no.
 
 ## 2026-09-10 · La entrega 2, comprobada en las dos familias
 
