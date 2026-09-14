@@ -147,7 +147,11 @@ cambian lo que hay que saber, así que van dichas enteras y no de pasada:
   el precio es éste: cualquier guion que ya esté corriendo en esa página puede leer del formulario
   lo que Esfinge acaba de escribir. Para eso hace falta que alguien ya ejecute código en ese
   dominio —donde también podría falsificarte el formulario entero—, así que es un escalón menos, no
-  una puerta nueva. Con **varias** cuentas no se rellena nada solo: se elige en el panel.
+  una puerta nueva. Con **varias**, desde la 2.21.1, se rellena sola **la que coincida con el usuario que va a
+  entrar** —el escrito en el formulario, el escondido que declara el sitio o el de la página anterior—;
+  si no se sabe o no coincide ninguna, se elige en el panel. Eso quiere decir que **una página de ese
+  sitio puede elegir cuál de tus cuentas de ese sitio se rellena**, poniendo un usuario: es el mismo
+  escalón, dentro del mismo dominio.
 - **Nunca en un marco de otro origen, y nunca sobre `http://`.** Un `iframe` ajeno puede ser
   cualquiera y la dirección que ves arriba no es la suya. Y sobre texto claro no se rellena, lo que
   deja fuera la página de administración de un router: es una carencia conocida, dicha aquí en vez

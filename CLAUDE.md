@@ -124,7 +124,9 @@ No se cambian sin preguntar.
   alternativa realista no era tenerlos separados, era tenerlos juntos en Dashlane.
 - **Y desde la fase 2 rellena los formularios del navegador** (ADR 0027 y 0028). Con **una** cuenta
   guardada del sitio se rellena sola, que es lo que se decidió —«solo, como Dashlane»—; con varias se
-  elige en el panel de la extensión. Y **en la página se dibuja lo mínimo** (ADR 0028, matizada por
+  elige en el panel de la extensión, **salvo que se sepa quién entra** —el usuario escrito en el
+  formulario, el escondido que declara el sitio o el de la página anterior— y coincida con una sola:
+  entonces ésa, que lo pidió el cliente con la 2.21.1. Y **en la página se dibuja lo mínimo** (ADR 0028, matizada por
   la 0031): un **filete** de oro con halo en el campo rellenado —sin anillo de piedra, que se leía como un
   borde negro—, que se va al escribir, y un **aviso
   de tres segundos**, «Rellenado por Esfinge», que no se puede pulsar y va en una sombra cerrada.
@@ -688,9 +690,11 @@ la página nueva un formulario de contraseña visible dice que la contraseña er
 correo en una página y la contraseña en otra, y la segunda no tiene campo de usuario: con una sola
 cuenta guardada, la 2.21.0 **rellenaba su contraseña aunque se acabara de teclear otro correo**, y al
 enviar la tarjeta llegaba sin usuario y ofrecía **actualizar la cuenta de otro**. Lo vio el cliente. Por
-eso el trabajador recuerda **lo tecleado** en la página de solo usuario (`usuariosEscritos`, cinco
-minutos, mismo sitio), y **una cuenta que lo contradiga no se rellena sola** (`identidad.ts`). Lo que
-escribe Esfinge no cuenta como tecleado, o dejar la cuenta que puso rompería el relleno de siempre.
+eso el trabajador recuerda **el usuario que había** en la página de solo usuario (`usuariosEscritos`,
+cinco minutos, mismo sitio), y **se rellena la cuenta de ese usuario o ninguna** (`identidad.ts`).
+**Cuenta lo ponga quien lo ponga** —la primera versión solo contaba lo tecleado, y el cliente preguntó
+lo evidente: ¿y si el correo lo pone Google solo?—, y se lee también con el clic de «Siguiente», porque
+un sitio puede poner el valor sin disparar ningún evento.
 
 **Y el corolario pequeño, que costó un commit el mismo día: `make comprobar | tail` no dice si
 `make` ha fallado.** El código de salida de una tubería es el del **último** mandato, así que

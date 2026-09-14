@@ -266,7 +266,8 @@ los zip de la 2.21.0, o la tarjeta no sale.
 
 **Con la 2.21.0 probó hasta cambiar la contraseña** y salió un fallo en Google, que pide usuario y
 contraseña en páginas separadas: rellenaba y ofrecía actualizar la cuenta de otro usuario. **Corregido
-en la 2.21.1** recordando lo tecleado en la página del usuario (ADR 0032, «Corregido tras probarla en
+en la 2.21.1** recordando el usuario de la página anterior, y con varias cuentas se rellena la que
+coincida con él, a petición del cliente (ADR 0032, «Corregido tras probarla en
 Google»). **Quedan por probar los pasos 5 a 8.**
 
 Se le explicó cómo decide «la contraseña era mala» y se le pidió que apunte **los sitios donde falle en

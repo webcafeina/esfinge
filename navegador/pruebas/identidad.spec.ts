@@ -5,7 +5,8 @@ import { cuentaParaRellenarSola, mismoUsuario } from "../src/identidad";
  * Con qué cuenta se rellena sola una página, sabiendo quién entra.
  *
  * Sale de lo que vio el cliente en Google con la 2.21.0: con `info@` guardada, entró
- * como `alvaro@` y la página de la contraseña se rellenó con la de `info@`.
+ * como `alvaro@` y la página de la contraseña se rellenó con la de `info@`. Y de lo
+ * que pidió después: con varias cuentas, la que coincida con el correo.
  */
 
 const INFO = { id: "1", titulo: "Google", usuario: "info@webcafeina.com" };
@@ -22,9 +23,19 @@ test("identidad: con el mismo usuario, o sin saber quién entra, se rellena como
   expect(cuentaParaRellenarSola([INFO], "   ")).toEqual(INFO);
 });
 
-test("identidad: con varias cuentas no se rellena solo, ni sabiendo quién entra", () => {
-  expect(cuentaParaRellenarSola([INFO, ALVARO], "alvaro@webcafeina.com")).toBeNull();
+test("identidad: con varias cuentas, la que coincide con quien entra", () => {
+  expect(cuentaParaRellenarSola([INFO, ALVARO], "alvaro@webcafeina.com")).toEqual(ALVARO);
+  expect(cuentaParaRellenarSola([INFO, ALVARO], "Info@Webcafeina.com")).toEqual(INFO);
+});
+
+test("identidad: con varias y sin saber quién entra, o sin ninguna que coincida, nada", () => {
+  expect(cuentaParaRellenarSola([INFO, ALVARO], "")).toBeNull();
+  expect(cuentaParaRellenarSola([INFO, ALVARO], "otra@webcafeina.com")).toBeNull();
   expect(cuentaParaRellenarSola([], "")).toBeNull();
+});
+
+test("identidad: dos cuentas con el mismo usuario no se deciden solas", () => {
+  expect(cuentaParaRellenarSola([ALVARO, { ...ALVARO, id: "3" }], "alvaro@webcafeina.com")).toBeNull();
 });
 
 test("identidad: una cuenta sin usuario no vale para quien ha tecleado uno", () => {

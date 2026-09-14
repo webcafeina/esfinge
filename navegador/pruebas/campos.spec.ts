@@ -486,3 +486,27 @@ for (const caso of casosDeIdentificador) {
     expect(es).toBe(caso.espera);
   });
 }
+
+test("usuario declarado: el escondido de la página de la contraseña, nunca una contraseña", async ({ page }) => {
+  await page.setContent(`<!doctype html><meta charset="utf-8">
+    <form><input type="hidden" autocomplete="username" value=" alvaro@webcafeina.com ">
+    <input type="password" autocomplete="current-password username" value="secreta"></form>`);
+  await page.addScriptTag({ content: modulo });
+  // @ts-expect-error el módulo se inyecta como global en la página
+  expect(await page.evaluate(() => Campos.usuarioDeclarado(document))).toBe("alvaro@webcafeina.com");
+});
+
+test("usuario de la página: el del campo de solo usuario, y nada si hay contraseña a la vista", async ({ page }) => {
+  await page.setContent(`<!doctype html><meta charset="utf-8">
+    <form><input id="c" type="email" autocomplete="username" value="alvaro@webcafeina.com"></form>`);
+  await page.addScriptTag({ content: modulo });
+  // @ts-expect-error el módulo se inyecta como global en la página
+  expect(await page.evaluate(() => Campos.usuarioDeLaPagina(document))).toBe("alvaro@webcafeina.com");
+  await page.evaluate(() => {
+    const p = document.createElement("input");
+    p.type = "password";
+    document.forms[0].append(p);
+  });
+  // @ts-expect-error el módulo se inyecta como global en la página
+  expect(await page.evaluate(() => Campos.usuarioDeLaPagina(document))).toBe("");
+});

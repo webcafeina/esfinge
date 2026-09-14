@@ -11,8 +11,9 @@
  * `alvaro@` y Esfinge le puso la contraseña de `info@` —y luego le ofreció
  * actualizarla con la de `alvaro@`—.
  *
- * Ahora el trabajador de fondo recuerda **lo que una persona teclea** en la página
- * del usuario (ADR 0032), y esta función pura decide con eso. Probada entera en
+ * Ahora el trabajador de fondo recuerda **el usuario que había** en la página del
+ * usuario al seguir —lo tecleara una persona, lo pusiera el navegador, el sitio o
+ * Esfinge— (ADR 0032), y esta función pura decide con eso. Probada entera en
  * `pruebas/identidad.spec.ts`.
  */
 import type { Cuenta } from "./protocolo";
@@ -26,14 +27,19 @@ export function mismoUsuario(a: string, b: string): boolean {
  * cuentaParaRellenarSola dice con qué cuenta se rellena sin que nadie pulse nada, o
  * nulo si con ninguna.
  *
- * Con **una sola** cuenta del sitio, como siempre (ADR 0028). Y ahora **solo si lo
- * escrito no la contradice**: si se sabe qué usuario ha escrito una persona —en el
- * campo de al lado o en la página anterior— y no es el de esa cuenta, no se rellena.
- * Ante la duda, no: rellenar con la contraseña de otra cuenta es enseñarla en un
- * formulario que no es el suyo.
+ * **Si se sabe qué usuario va a entrar** —el del campo de al lado, el escondido que
+ * declara el sitio o el de la página anterior—, la cuenta con ese usuario, **solo si
+ * hay exactamente una**. Con varias cuentas del sitio es lo que eligió el cliente con
+ * la 2.21.1 («la que coincida con el correo»), y con una sola evita rellenar la
+ * contraseña de otra cuenta, que era el fallo de Google.
+ *
+ * **Si no se sabe**, como siempre (ADR 0028): con una sola cuenta, ésa; con varias,
+ * ninguna, y se elige en el panel.
  */
 export function cuentaParaRellenarSola(cuentas: Cuenta[], escrito: string): Cuenta | null {
-  if (cuentas.length !== 1) return null;
-  if (escrito.trim() && !mismoUsuario(cuentas[0].usuario, escrito)) return null;
-  return cuentas[0];
+  if (escrito.trim()) {
+    const suyas = cuentas.filter((c) => mismoUsuario(c.usuario, escrito));
+    return suyas.length === 1 ? suyas[0] : null;
+  }
+  return cuentas.length === 1 ? cuentas[0] : null;
 }

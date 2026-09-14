@@ -449,11 +449,7 @@ export function queSeEnvia(ambito: ParentNode, doc: Document = document): Envio 
   // los de cambiar, que casi nunca lo enseñan, el campo escondido que muchos sitios
   // ponen para los gestores de contraseñas.
   const visible = usuarioPara(campos[0], doc)?.value ?? "";
-  const escondido =
-    [...ambito.querySelectorAll<HTMLInputElement>("input")]
-      .find((c) => tokens(c).includes("username") && c.value)
-      ?.value ?? "";
-  return { forma, usuario: (visible || escondido).trim(), secreto };
+  return { forma, usuario: (visible || usuarioDeclarado(ambito)).trim(), secreto };
 }
 
 /**
@@ -473,4 +469,26 @@ export function campoDeIdentificador(
   if (!sePuedeEscribir(campo) || !TIPOS_DE_USUARIO.has(campo.type.toLowerCase())) return null;
   if (!tokens(campo).includes("username")) return null;
   return contrasenasVisibles(doc).length === 0 ? campo : null;
+}
+
+/**
+ * usuarioDeclarado es el valor del campo que el sitio declara como usuario
+ * (`autocomplete="username"`), **aunque esté escondido**. Muchos sitios lo ponen en
+ * la página de la contraseña precisamente para los gestores de contraseñas.
+ */
+export function usuarioDeclarado(ambito: ParentNode = document): string {
+  return (
+    [...ambito.querySelectorAll<HTMLInputElement>("input")]
+      .find((c) => c.type !== "password" && tokens(c).includes("username") && c.value.trim())
+      ?.value.trim() ?? ""
+  );
+}
+
+/** usuarioDeLaPagina es lo que hay escrito en el usuario de una página de solo usuario. */
+export function usuarioDeLaPagina(doc: Document = document): string {
+  if (contrasenasVisibles(doc).length > 0) return "";
+  for (const c of doc.querySelectorAll<HTMLInputElement>("input")) {
+    if (campoDeIdentificador(c, doc) && c.value.trim()) return c.value.trim();
+  }
+  return "";
 }

@@ -12,11 +12,16 @@ Plantilla al final.
   `info@`** en la página de la contraseña, y al enviar **le ofreció actualizar `info@`** en vez de guardar
   `alvaro@`. Las dos cosas por lo mismo: en la página de la contraseña ya no se ve el usuario que se
   tecleó en la anterior.
-- **Arreglo**: el guion avisa de lo tecleado en la página de solo usuario, el trabajador lo recuerda
-  cinco minutos por pestaña y sitio, no se rellena sola una cuenta que lo contradiga
-  (`identidad.ts`, función pura) y el envío sin usuario toma ése.
-- Verificado: `make comprobar` en verde con **84 pruebas de la extensión**, catorce nuevas, cuatro de
-  ellas con el teclado de verdad de Chromium. Sin verificar: contra el Google de verdad.
+- **Arreglo**: el guion avisa del usuario de la página de solo usuario, el trabajador lo recuerda
+  cinco minutos por pestaña y sitio, se rellena la cuenta de ese usuario o ninguna (`identidad.ts`,
+  función pura) y el envío sin usuario toma ése.
+- **Y dos cosas que pidió el cliente al verlo**: con **varias** cuentas del sitio, que se rellene sola la
+  que coincida con el correo —matiza la ADR 0028—; y que cuente también **el correo que se pone solo**,
+  por Google o por el navegador. Ahora cuenta lo ponga quien lo ponga, se lee también con el clic de
+  «Siguiente» y se mira el usuario escondido que declare la página de la contraseña. **El selector de
+  cuentas de Google**, sin campo de correo, queda pendiente de un diagnóstico por la consola.
+- Verificado: `make comprobar` en verde con **90 pruebas de la extensión**, veinte nuevas, varias de
+  ellas con el teclado y el ratón de verdad de Chromium. Sin verificar: contra el Google de verdad.
 - **Queda por probar de la 2.21.0**: los pasos 5 a 8 —el inicio fallido, «Nunca en este sitio», la
   ventana al día sola y la bóveda cerrada—.
 

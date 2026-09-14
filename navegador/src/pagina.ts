@@ -20,7 +20,10 @@
  *   - Con una sola cuenta guardada —el caso corriente— no hace falta elegir nada:
  *     se rellena y ya está, que es justo lo que se pidió.
  *   - Y con varias, elegir se hace **en el panel de la extensión**, que ya existe,
- *     ya está probado y está fuera de la página por construcción.
+ *     ya está probado y está fuera de la página por construcción. **Salvo que se
+ *     sepa quién entra** —el usuario escrito, el escondido que declara el sitio o el
+ *     de la página anterior— y coincida con una sola: entonces ésa, que lo pidió el
+ *     cliente con la 2.21.1 (`identidad.ts`).
  *
  * Si al usarlo resulta que hacen falta dos clics demasiado a menudo, el
  * desplegable dentro del campo es lo siguiente y se decide entonces. Está en
@@ -44,6 +47,7 @@ import {
   buscarCodigo,
   buscarFormularios,
   contrasenasVisibles,
+  usuarioDeclarado,
   camposDe,
   escribir,
   escribirCodigo,
@@ -269,12 +273,13 @@ async function cuentasDeAqui() {
 }
 
 /**
- * mirar es lo que se hace cada vez que la página cambia: buscar formulario y, si
- * hay **una sola** cuenta, rellenarlo.
+ * mirar es lo que se hace cada vez que la página cambia: buscar formulario y, si se
+ * sabe con qué cuenta, rellenarlo.
  *
- * **Una sola, y con dos ya no se hace nada.** Con dos no hay forma de acertar sin
- * preguntar, y preguntar aquí sería dibujar en la página. Con dos se rellena desde
- * el panel, que es donde se elige.
+ * **Con qué cuenta lo decide `cuentaParaRellenarSola`**: la que coincida con quien
+ * entra, si se sabe; si no, la única que haya. Con varias y sin saber quién entra no
+ * hay forma de acertar sin preguntar, y preguntar aquí sería dibujar en la página: se
+ * rellena desde el panel, que es donde se elige.
  */
 async function mirar() {
   if (preguntando || preguntadas >= TOPE_DE_PREGUNTAS) return;
@@ -293,26 +298,26 @@ async function mirar() {
   try {
     preguntadas++;
     const cuentas = await cuentasDeAqui();
-    if (cuentas.length !== 1) return;
-    // **Quién entra**, para no rellenar con la cuenta de otro (`identidad.ts`): lo
-    // tecleado en la página de solo usuario, que en la de la contraseña ya no se ve.
-    const tecleadoAntes = await quienEntra();
+    if (cuentas.length === 0) return;
+    // **Quién entra** (`identidad.ts`): el usuario escondido que declara el sitio o,
+    // si no, el que había en la página de solo usuario, que en la de la contraseña
+    // ya no se ve. Con eso se elige la cuenta, también entre varias.
+    const antes = usuarioDeclarado() || (await quienEntra());
     for (const f of formularios) {
-      // Y si el formulario tiene usuario y alguien ya ha escrito uno, manda ése.
-      const alLado = f.usuario && !yaRellenados.has(f.usuario) ? f.usuario.value : "";
-      if (!cuentaParaRellenarSola(cuentas, alLado || tecleadoAntes)) continue;
-      await rellenar(cuentas[0].id, f);
+      // Y si el formulario tiene su propio usuario escrito, manda ése.
+      const cuenta = cuentaParaRellenarSola(cuentas, f.usuario?.value.trim() || antes);
+      if (!cuenta) continue;
+      // En la página de solo usuario, lo que ya había también es quién entra.
+      if (!f.secreto && f.usuario?.value.trim()) {
+        hablarConElFondo({ que: "usuario-escrito", usuario: f.usuario.value.trim() });
+      }
+      await rellenar(cuenta.id, f);
     }
     // Solo si Esfinge **dice** que esa cuenta tiene código: una Esfinge anterior a
-    // la 2.19.0 no lo dice, y ahí no se pide uno a ciegas. Y tampoco si quien entra
-    // es otro.
-    if (
-      codigo &&
-      codigoPendiente &&
-      cuentas[0].tieneCodigo === true &&
-      cuentaParaRellenarSola(cuentas, tecleadoAntes)
-    ) {
-      await rellenarCodigo(cuentas[0].id, codigo);
+    // la 2.19.0 no lo dice, y ahí no se pide uno a ciegas.
+    const deCodigo = cuentaParaRellenarSola(cuentas, antes);
+    if (codigo && codigoPendiente && deCodigo?.tieneCodigo === true) {
+      await rellenarCodigo(deCodigo.id, codigo);
     }
   } finally {
     preguntando = false;

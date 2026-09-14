@@ -136,20 +136,31 @@ para que saliera como nueva. Al entrar:
 
 El arreglo es **recordar quién entra**:
 
-- El guion de la página avisa de **lo que una persona teclea** (`isTrusted`) en el usuario de una página
-  de solo usuario —el mismo criterio con el que se rellena: `autocomplete="username"` y ninguna
-  contraseña a la vista—. Se avisa al dejar de teclear, al cambiar de campo y con Intro, así que **no
-  hace falta saber cómo envía el sitio** esa página.
+- El guion de la página avisa del **usuario que hay** en el campo de una página de solo usuario —el
+  mismo criterio con el que se rellena: `autocomplete="username"` y ninguna contraseña a la vista—.
+  **Lo ponga quien lo ponga**: tecleado, puesto por el navegador, recordado por el sitio o escrito por
+  Esfinge, porque es el que se va a enviar. Se lee cuando el campo cambia y otra vez **con un clic o un
+  Intro de una persona** en cualquier sitio de la página, así que no hace falta saber dónde está el
+  botón «Siguiente» y vale también para un sitio que pone el valor sin avisar.
 - El trabajador de fondo lo guarda por pestaña, **en memoria, cinco minutos y solo para el mismo
   sitio** (`usuariosEscritos`). No es una contraseña, y tampoco sale de ahí hacia otro sitio.
-- **Rellenar sola**: con una sola cuenta del sitio, como siempre, pero **no si lo tecleado la
-  contradice** —en el campo de usuario del propio formulario o en la página anterior—. Lo decide
-  `cuentaParaRellenarSola` (`identidad.ts`), una función pura. Vale también para el código de un solo
-  uso.
-- **Al enviar sin usuario en el formulario**, el trabajador pone el tecleado en la página anterior. Con
-  eso la tarjeta ofrece **guardar `alvaro@` como cuenta nueva**.
-- Lo que escribe Esfinge **no cuenta como tecleado**: si se deja la cuenta que puso y se pulsa
-  «Siguiente», la página de la contraseña se rellena como antes.
+- **Quién entra**, en la página siguiente: el usuario escrito en el propio formulario; si no hay, el
+  **escondido que declara el sitio** (`autocomplete="username"`, que muchos ponen para los gestores); si
+  no, el recordado.
+- **Rellenar sola**: si se sabe quién entra, **la cuenta con ese usuario, si hay exactamente una**; si no
+  se sabe, como antes, solo con una única cuenta. Lo decide `cuentaParaRellenarSola` (`identidad.ts`),
+  una función pura. Vale también para el código de un solo uso.
+- **Al enviar sin usuario en el formulario**, el trabajador pone el recordado. Con eso la tarjeta ofrece
+  **guardar `alvaro@` como cuenta nueva**.
+
+**Y con varias cuentas, la que coincida** (2.21.1). Al verlo arreglado, el cliente pidió que con varias
+cuentas del sitio se rellene sola la del correo que va a entrar. **Matiza la ADR 0028**, que decía que con
+varias se elige siempre en el panel: ahora solo cuando no se sabe quién entra, o no coincide ninguna, o
+coinciden dos.
+
+Queda un caso sin resolver: **el selector de cuentas de Google**, donde se pulsa una ficha y no hay campo
+de correo. Ahí quién entra solo se sabe si la página de la contraseña declara el usuario escondido, y eso
+no se ha podido ver: está en `docs/deuda.md`, pendiente de un diagnóstico por la consola.
 
 ## Alternativas descartadas
 
@@ -204,10 +215,10 @@ de cambio con la vieja, o una que no coincide con su repetición.
 - `make comprobar` y `make e2e` en verde.
 
 **Publicada en la 2.21.0 (2026-09-14)** y probada por el cliente hasta cambiar la contraseña, en su
-Mac. De ahí salió el fallo de Google de arriba, corregido en la 2.21.1 con cuatro pruebas del teclado de
-verdad —lo tecleado se recuerda, lo escrito por la página o por Esfinge no, cambiar lo que puso Esfinge
-y pulsar Intro sí, y con una contraseña a la vista nada—, cuatro del campo de solo usuario y cinco de
-`cuentaParaRellenarSola`. **Sin comprobar contra el Google de verdad**: el criterio del campo es el mismo
+Mac. De ahí salió el fallo de Google de arriba, corregido en la 2.21.1 con pruebas del teclado y el ratón de verdad —lo tecleado se
+recuerda, lo puesto por Esfinge o el navegador también, lo puesto por el sitio sin avisar se lee al pulsar
+«Siguiente», un clic fabricado no lo lee y con una contraseña a la vista nada—, del campo de solo usuario,
+del usuario escondido y de `cuentaParaRellenarSola` con una y con varias cuentas. **Sin comprobar contra el Google de verdad**: el criterio del campo es el mismo
 que ya rellenaba esa página, y eso es lo único que se sabe de su HTML.
 
 Sin comprobar todavía, y hay que mirar en el Mac, en Firefox y en Chrome:

@@ -55,7 +55,7 @@ test("usuario tecleado: se recuerda lo que escribe una persona en la página de 
   await expect.poll(() => tecleados(page)).toContain("alvaro@webcafeina.com");
 });
 
-test("usuario tecleado: lo que escribe Esfinge o la página no cuenta", async ({ page }) => {
+test("usuario de la página: lo que pone Esfinge o el navegador también cuenta", async ({ page }) => {
   await montar(page, GOOGLE);
   await page.evaluate(() => {
     const campo = document.getElementById("correo") as HTMLInputElement;
@@ -63,7 +63,25 @@ test("usuario tecleado: lo que escribe Esfinge o la página no cuenta", async ({
     campo.dispatchEvent(new Event("input", { bubbles: true }));
     campo.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await page.waitForTimeout(500);
+  await expect.poll(() => tecleados(page)).toContain("info@webcafeina.com");
+});
+
+test("usuario de la página: el que pone el sitio sin avisar se lee al pulsar «Siguiente»", async ({ page }) => {
+  await montar(page, GOOGLE);
+  await page.evaluate(() => {
+    (document.getElementById("correo") as HTMLInputElement).value = "alvaro@webcafeina.com";
+  });
+  expect(await tecleados(page)).toEqual([]);
+  await page.click("button");
+  expect(await tecleados(page)).toEqual(["alvaro@webcafeina.com"]);
+});
+
+test("usuario de la página: un clic fabricado por la página no lo lee", async ({ page }) => {
+  await montar(page, GOOGLE);
+  await page.evaluate(() => {
+    (document.getElementById("correo") as HTMLInputElement).value = "alvaro@webcafeina.com";
+    document.querySelector("button")!.click();
+  });
   expect(await tecleados(page)).toEqual([]);
 });
 

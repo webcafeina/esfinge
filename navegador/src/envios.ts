@@ -12,7 +12,7 @@
  * propia página no se ofrece guardar. Y si llegan varios por el mismo envío —el
  * clic y el `submit` a la vez—, da igual: el último pisa al anterior con lo mismo.
  */
-import { campoDeIdentificador, queSeEnvia, type Envio } from "./campos";
+import { campoDeIdentificador, queSeEnvia, usuarioDeLaPagina, type Envio } from "./campos";
 
 /** Hasta dónde se sube buscando el contenedor de la contraseña. */
 const NIVELES = 8;
@@ -69,52 +69,55 @@ export function vigilarEnvios(alEnviar: (e: Envio) => void, doc: Document = docu
 const ESPERA_AL_TECLEAR = 300;
 
 /**
- * vigilarIdentificador avisa de **lo que una persona teclea** en el usuario de una
- * página de solo usuario, para que la página siguiente —la de la contraseña— sepa
- * quién entra (`identidad.ts`).
+ * vigilarIdentificador avisa del usuario que hay en una página de solo usuario —la
+ * primera de Google o de Microsoft—, para que la página siguiente, la de la
+ * contraseña, sepa quién entra (`identidad.ts`).
  *
- * **Solo lo tecleado** (`isTrusted`): lo que escribe Esfinge al rellenar no cuenta,
- * y así, si se deja la cuenta que puso Esfinge y se pulsa «Siguiente», la página de la
- * contraseña se rellena como siempre. Se avisa al dejar de teclear, al cambiar de
- * campo y al pulsar Intro, porque **cómo se envía esa página no importa**: no hace
- * falta adivinar dónde está su botón.
+ * **Cuenta lo ponga quien lo ponga**: tecleado, puesto por el navegador, recordado por
+ * el sitio o escrito por Esfinge. Es el usuario que se va a enviar, y eso es lo único
+ * que importa. (En la primera versión solo contaba lo tecleado, y el cliente preguntó
+ * lo evidente: ¿y si el correo se pone solo?)
+ *
+ * Se lee **cuando el campo cambia**, y otra vez **al pulsar Intro o hacer clic** en
+ * cualquier sitio de la página —el botón «Siguiente», esté donde esté—, porque un
+ * sitio puede poner el valor sin avisar a nadie. El clic y la tecla sí tienen que ser
+ * de una persona: son la señal de que se sigue adelante.
  */
 export function vigilarIdentificador(alEscribir: (usuario: string) => void, doc: Document = document) {
   let plazo: ReturnType<typeof setTimeout> | undefined;
-  const avisar = (campo: HTMLInputElement, yaMismo: boolean) => {
+  const leer = () => {
     clearTimeout(plazo);
-    const enviar = () => {
-      const usuario = campo.value.trim();
-      if (usuario) alEscribir(usuario);
-    };
-    if (yaMismo) enviar();
-    else plazo = setTimeout(enviar, ESPERA_AL_TECLEAR);
+    const usuario = usuarioDeLaPagina(doc);
+    if (usuario) alEscribir(usuario);
   };
 
   doc.addEventListener(
     "input",
     (e) => {
-      if (!e.isTrusted) return;
-      const campo = campoDeIdentificador(e.target, doc);
-      if (campo) avisar(campo, false);
+      if (!campoDeIdentificador(e.target, doc)) return;
+      clearTimeout(plazo);
+      plazo = setTimeout(leer, ESPERA_AL_TECLEAR);
     },
     true,
   );
   doc.addEventListener(
     "change",
     (e) => {
-      if (!e.isTrusted) return;
-      const campo = campoDeIdentificador(e.target, doc);
-      if (campo) avisar(campo, true);
+      if (campoDeIdentificador(e.target, doc)) leer();
     },
     true,
   );
   doc.addEventListener(
     "keydown",
     (e) => {
-      if (!e.isTrusted || e.key !== "Enter") return;
-      const campo = campoDeIdentificador(e.target, doc);
-      if (campo) avisar(campo, true);
+      if (e.isTrusted && e.key === "Enter") leer();
+    },
+    true,
+  );
+  doc.addEventListener(
+    "click",
+    (e) => {
+      if (e.isTrusted) leer();
     },
     true,
   );
