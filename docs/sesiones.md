@@ -5,6 +5,26 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · Las tiendas, decididas; y Windows
+
+- **La entrega 5, decidida con el cliente** en dos rondas de preguntas, después de que dos agentes
+  investigaran la documentación oficial de las dos tiendas: públicas en Chrome y Firefox, subida sola al
+  publicar, cuentas de Webcafeína, consentimiento en el panel la primera vez, datos de comerciante
+  públicos en Chrome, web con GitHub Pages y **Windows antes de publicar**. Plan aprobado.
+- **De la investigación salieron requisitos que obligan a tocar código**: Chrome pide aviso y
+  consentimiento dentro de la extensión aunque nada salga del equipo y la primera ficha se crea a mano;
+  Firefox pide declarar lo que va a la aplicación nativa (`data_collection_permissions`, desde Firefox
+  140) y el código fuente reproducible byte a byte. Y de explorar: **la publicación empaqueta la
+  extensión sin pasarle `VERSION`**.
+- **Bloque 1, Windows** (ADR 0034): los manifiestos en `%APPDATA%\Esfinge` apuntados desde una clave de
+  registro por navegador en `HKCU`; el registro detrás de una interfaz y las rutas calculables para
+  cualquier sistema, así que la tabla de Windows se prueba desde Linux; plantilla NSIS propia con el
+  puente; y en la máquina Windows de GitHub, las pruebas de manifiestos, una con el registro de verdad y
+  la comprobación de que el instalador lleva el puente.
+- Verificado: `make comprobar` en verde; cinco pruebas nuevas de Windows; `GOOS=windows go vet`, el
+  binario de pruebas y el puente compilados para Windows; `publicar.yml` válido. **Sin verificar: nada en
+  un Windows de verdad**, ni la parte de la máquina de GitHub, que corre al publicar.
+
 ## 2026-09-14 · La entrega 3, comprobada en el Mac
 
 - **Con la 2.21.2, el cliente dice que funciona perfecto** y que **los pasos 5 a 8 funcionan**: el

@@ -57,6 +57,9 @@ jobs:
         run: |
           go vet ./...
           go vet -tags dev ./...
+          # Y compilado para Windows, que tiene código propio —el registro— y
+          # ninguna otra puerta lo compila antes de su trabajo.
+          GOOS=windows go vet ./...
           go test ./...
 
       - name: Contraste y tokens
@@ -202,6 +205,14 @@ jobs:
           [ -n "$n" ] || n="${GITHUB_REF_NAME#v}"
           echo "n=$n" >> "$GITHUB_OUTPUT"
 
+      # **Lo único del canal con el navegador que se puede ejecutar en Windows sin que
+      # nadie lo instale**: los manifiestos, con el registro de verdad de esta
+      # máquina. Que un navegador lance el puente no lo dice ninguna máquina de
+      # GitHub.
+      - name: Pruebas del canal con el navegador en Windows
+        shell: bash
+        run: go test ./internal/app/ -run 'Manifiest|Chromium|Perfil|Windows|Registro' -v
+
       # Chocolatey instala NSIS pero no lo deja en el PATH, y wails no lo busca
       # en ningún otro sitio: sin esto avisa de que no encuentra «makensis» y
       # sale con código cero, dejando el trabajo en verde y sin instalador.
@@ -285,6 +296,18 @@ jobs:
       # los ficheros .esf declarados en wails.json. Si no puede, avisa y sigue
       # como si nada, así que aquí se comprueba que el instalador existe de
       # verdad en vez de fiarse del código de salida.
+      # **El puente del navegador, para meterlo en el instalador** (ver
+      # build/windows/installer/project.nsi). Para el subsistema gráfico, como pide
+      # cmd/esfinge-puente: sin consola que parpadee cada vez que el navegador lo
+      # lanza. Aquí y no en build/bin, que wails vacía con -clean.
+      - name: Compilar el puente del navegador
+        shell: bash
+        run: |
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build \
+            -ldflags "-s -w -H windowsgui -X main.version=${{ steps.v.outputs.n }}" \
+            -o build/windows/installer/esfinge-puente.exe ./cmd/esfinge-puente
+          ls -lh build/windows/installer/esfinge-puente.exe
+
       - name: Compilar la aplicación y su instalador
         shell: bash
         run: |
@@ -298,6 +321,12 @@ jobs:
           nombre="Esfinge-${{ steps.v.outputs.n }}-windows-instalador.exe"
           mv build/bin/*installer*.exe "$nombre"
           ls -lh "$nombre"
+          # Y que de verdad lleve el puente: un instalador sin él se compila igual
+          # y deja la extensión muerta en Windows sin decir nada.
+          if ! 7z l "$nombre" | grep -qi "esfinge-puente.exe"; then
+            echo "::error::El instalador no lleva esfinge-puente.exe"
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:

@@ -42,3 +42,12 @@ build/darwin/ventana-dmg.png
 # Apple y el repositorio es público.
 referencias/
 navegador/tsconfig.tsbuildinfo
+
+# Lo que Wails genera para Windows en cada compilación. Solo se sube la plantilla
+# del instalador (`build/windows/installer/project.nsi`), que lleva el puente.
+build/windows/installer/wails_tools.nsh
+build/windows/installer/tmp/
+build/windows/installer/esfinge-puente.exe
+build/windows/icon.ico
+build/windows/info.json
+build/windows/wails.exe.manifest

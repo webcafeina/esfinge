@@ -709,6 +709,14 @@ distintas y sin declarar, no se sabe cuál es la nueva. Ahora el nombre del camp
 uno y no del otro** —`newPassword` y `confirmNewPassword` distintas es un error al teclear—. Y un sitio que
 cambia sin cambiar de página se mira varias veces tras enviar, no una.
 
+**En Windows el navegador no mira una carpeta, mira el registro** (ADR 0034): una clave bajo `HKCU` cuyo
+valor por defecto es la ruta **absoluta** del manifiesto. Los manifiestos van en `%APPDATA%\Esfinge`, uno
+por familia —Firefox y Chrome llevan campos distintos—, y la clave de Chrome la comparten Brave, Vivaldi
+y Opera, que no documentan cuál leen. Dos cosas para tocarlo: **las rutas se calculan para `sistema`, no
+para `runtime.GOOS`**, así que la tabla de Windows se prueba desde aquí; y **lo único que se ejecuta en
+un Windows es la máquina de GitHub al publicar**, que prueba el registro de verdad y que el instalador
+lleve el puente, no que un navegador lo lance.
+
 **Y el corolario pequeño, que costó un commit el mismo día: `make comprobar | tail` no dice si
 `make` ha fallado.** El código de salida de una tubería es el del **último** mandato, así que
 `make comprobar 2>&1 | tail -3 && git commit` compromete igual con `go vet` en rojo: lo que se mira

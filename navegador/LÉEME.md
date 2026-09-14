@@ -106,4 +106,5 @@ El panel toma los tokens de la ventana tal cual (ADR 0029): **una pareja de colo
 - El código de un solo uso, rellenado también (entrega 4).
 - El desplegable dentro del campo, **si el uso dice que hace falta**.
 - Las tiendas, y con ellas el identificador fijo de Chrome (entrega 5).
-- Windows: el manifiesto va al registro y todavía no se escribe.
+- ~~Windows: el manifiesto va al registro y todavía no se escribe.~~ Se escribe desde la 2.22.0
+  (ADR 0034), sin probar todavía con un navegador en un Windows de verdad.

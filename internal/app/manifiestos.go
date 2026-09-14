@@ -18,6 +18,10 @@ import (
 // enciende el canal en Ajustes, y lo borra cuando se apaga: el interruptor tiene
 // que apagar la puerta entera, no solo el socket.
 //
+// En Windows es lo mismo con un paso más: el fichero va en la carpeta de Esfinge y
+// lo que se escribe donde mira el navegador es **una clave de registro** que apunta
+// a él. Encender y apagar el canal escribe y borra las dos cosas.
+//
 // Es, además, el punto flojo que conviene tener escrito y está en
 // `docs/seguridad.md`: **el fichero vive en una carpeta que el usuario puede
 // escribir**. Un programa con los permisos de la persona puede cambiar la ruta y
@@ -28,6 +32,30 @@ import (
 // nombreDelHost identifica al puente. Los navegadores solo admiten minúsculas,
 // cifras, puntos y guiones bajos, sin dos puntos seguidos.
 const nombreDelHost = "com.webcafeina.esfinge"
+
+// sistema es el sistema para el que se calculan las rutas. **Es una variable y no
+// `runtime.GOOS` a secas** por lo mismo que `filtrosPara` toma el sistema como
+// argumento: la tabla de Windows se prueba entera desde Linux, donde se desarrolla,
+// y no hay un Windows a mano en el que ejecutarla.
+var sistema = runtime.GOOS
+
+// entorno lee las variables del sistema. Variable, para las pruebas.
+var entorno = os.Getenv
+
+// registro es **donde Windows apunta a quién puede lanzar cada navegador**: allí
+// el navegador no mira una carpeta, mira una clave de registro cuyo valor por
+// defecto es la ruta del manifiesto. Detrás de una interfaz porque el de verdad solo
+// existe en Windows (`registro_windows.go`) y en las pruebas se usa uno de mentira.
+type registro interface {
+	// Poner deja `valor` en el valor por defecto de `clave`, bajo `HKCU`,
+	// creándola si no existe.
+	Poner(clave, valor string) error
+	// Quitar borra la clave. Que no estuviera no es un fallo.
+	Quitar(clave string) error
+}
+
+// elRegistro es el de Windows en Windows y nulo en los demás.
+var elRegistro = registroDelSistema()
 
 // quiénPuedeLlamar: las extensiones que pueden lanzar el puente.
 //
@@ -101,15 +129,22 @@ type sitio struct {
 	Nombre string
 	// Senal es lo que existe si el navegador está instalado.
 	Senal string
-	// Carpeta es donde ese navegador busca los manifiestos.
+	// Carpeta es donde se deja el manifiesto: donde lo busca el navegador en macOS y
+	// Linux, y la de Esfinge en Windows, donde lo que busca es la clave.
 	Carpeta string
+	// Fichero es el nombre del manifiesto dentro de la carpeta.
+	Fichero string
+	// Claves son, **solo en Windows**, las del registro bajo `HKCU` que apuntan al
+	// manifiesto. En macOS y Linux ninguna: allí la carpeta es la dirección.
+	Claves []string
 	// Familia dice qué campo lleva el manifiesto: «firefox» o «chrome».
 	Familia string
 }
 
 // dondeMiraCadaNavegador, en este sistema.
 func dondeMiraCadaNavegador(casa string) []sitio {
-	switch runtime.GOOS {
+	fichero := nombreDelHost + ".json"
+	switch sistema {
 	case "darwin":
 		soporte := filepath.Join(casa, "Library", "Application Support")
 		anfitriones := func(base string) string {
@@ -117,13 +152,13 @@ func dondeMiraCadaNavegador(casa string) []sitio {
 		}
 		return []sitio{
 			// **La señal es el perfil, no la carpeta de destino.**
-			{"Firefox", filepath.Join(soporte, "Firefox"), anfitriones(filepath.Join(soporte, "Mozilla")), "firefox"},
-			{"Chrome", filepath.Join(soporte, "Google", "Chrome"), anfitriones(filepath.Join(soporte, "Google", "Chrome")), "chrome"},
-			{"Chromium", filepath.Join(soporte, "Chromium"), anfitriones(filepath.Join(soporte, "Chromium")), "chrome"},
-			{"Edge", filepath.Join(soporte, "Microsoft Edge"), anfitriones(filepath.Join(soporte, "Microsoft Edge")), "chrome"},
-			{"Brave", filepath.Join(soporte, "BraveSoftware", "Brave-Browser"), anfitriones(filepath.Join(soporte, "BraveSoftware", "Brave-Browser")), "chrome"},
-			{"Vivaldi", filepath.Join(soporte, "Vivaldi"), anfitriones(filepath.Join(soporte, "Vivaldi")), "chrome"},
-			{"Opera", filepath.Join(soporte, "com.operasoftware.Opera"), anfitriones(filepath.Join(soporte, "com.operasoftware.Opera")), "chrome"},
+			{"Firefox", filepath.Join(soporte, "Firefox"), anfitriones(filepath.Join(soporte, "Mozilla")), fichero, nil, "firefox"},
+			{"Chrome", filepath.Join(soporte, "Google", "Chrome"), anfitriones(filepath.Join(soporte, "Google", "Chrome")), fichero, nil, "chrome"},
+			{"Chromium", filepath.Join(soporte, "Chromium"), anfitriones(filepath.Join(soporte, "Chromium")), fichero, nil, "chrome"},
+			{"Edge", filepath.Join(soporte, "Microsoft Edge"), anfitriones(filepath.Join(soporte, "Microsoft Edge")), fichero, nil, "chrome"},
+			{"Brave", filepath.Join(soporte, "BraveSoftware", "Brave-Browser"), anfitriones(filepath.Join(soporte, "BraveSoftware", "Brave-Browser")), fichero, nil, "chrome"},
+			{"Vivaldi", filepath.Join(soporte, "Vivaldi"), anfitriones(filepath.Join(soporte, "Vivaldi")), fichero, nil, "chrome"},
+			{"Opera", filepath.Join(soporte, "com.operasoftware.Opera"), anfitriones(filepath.Join(soporte, "com.operasoftware.Opera")), fichero, nil, "chrome"},
 		}
 	case "linux":
 		config := filepath.Join(casa, ".config")
@@ -135,17 +170,48 @@ func dondeMiraCadaNavegador(casa string) []sitio {
 			// manifiestos en `~/.mozilla/native-messaging-hosts`, las dos bajo la
 			// misma carpeta. Aun así se dice cuál es cuál, que es lo que evita
 			// volver a mezclarlas.
-			{"Firefox", filepath.Join(casa, ".mozilla"), filepath.Join(casa, ".mozilla", "native-messaging-hosts"), "firefox"},
-			{"Chrome", filepath.Join(config, "google-chrome"), anfitriones(filepath.Join(config, "google-chrome")), "chrome"},
-			{"Chromium", filepath.Join(config, "chromium"), anfitriones(filepath.Join(config, "chromium")), "chrome"},
-			{"Edge", filepath.Join(config, "microsoft-edge"), anfitriones(filepath.Join(config, "microsoft-edge")), "chrome"},
-			{"Brave", filepath.Join(config, "BraveSoftware", "Brave-Browser"), anfitriones(filepath.Join(config, "BraveSoftware", "Brave-Browser")), "chrome"},
-			{"Vivaldi", filepath.Join(config, "vivaldi"), anfitriones(filepath.Join(config, "vivaldi")), "chrome"},
-			{"Opera", filepath.Join(config, "opera"), anfitriones(filepath.Join(config, "opera")), "chrome"},
+			{"Firefox", filepath.Join(casa, ".mozilla"), filepath.Join(casa, ".mozilla", "native-messaging-hosts"), fichero, nil, "firefox"},
+			{"Chrome", filepath.Join(config, "google-chrome"), anfitriones(filepath.Join(config, "google-chrome")), fichero, nil, "chrome"},
+			{"Chromium", filepath.Join(config, "chromium"), anfitriones(filepath.Join(config, "chromium")), fichero, nil, "chrome"},
+			{"Edge", filepath.Join(config, "microsoft-edge"), anfitriones(filepath.Join(config, "microsoft-edge")), fichero, nil, "chrome"},
+			{"Brave", filepath.Join(config, "BraveSoftware", "Brave-Browser"), anfitriones(filepath.Join(config, "BraveSoftware", "Brave-Browser")), fichero, nil, "chrome"},
+			{"Vivaldi", filepath.Join(config, "vivaldi"), anfitriones(filepath.Join(config, "vivaldi")), fichero, nil, "chrome"},
+			{"Opera", filepath.Join(config, "opera"), anfitriones(filepath.Join(config, "opera")), fichero, nil, "chrome"},
+		}
+	case "windows":
+		// **En Windows el navegador mira el registro, no una carpeta** (documentación
+		// de Chrome, Edge y MDN): una clave bajo `HKCU` cuyo valor por defecto es la
+		// ruta absoluta del manifiesto, que puede estar en cualquier sitio. Van en la
+		// carpeta de Esfinge, **uno por familia**, porque llevan campos distintos.
+		local := entorno("LOCALAPPDATA")
+		if local == "" {
+			local = filepath.Join(casa, "AppData", "Local")
+		}
+		itinerante := entorno("APPDATA")
+		if itinerante == "" {
+			itinerante = filepath.Join(casa, "AppData", "Roaming")
+		}
+		carpeta := filepath.Join(itinerante, "Esfinge", "NativeMessagingHosts")
+		clave := func(base string) string {
+			return `Software\` + base + `\NativeMessagingHosts\` + nombreDelHost
+		}
+		deChrome := nombreDelHost + ".chrome.json"
+		deGoogle := clave(`Google\Chrome`)
+		return []sitio{
+			{"Firefox", filepath.Join(itinerante, "Mozilla", "Firefox"), carpeta, nombreDelHost + ".firefox.json", []string{clave("Mozilla")}, "firefox"},
+			{"Chrome", filepath.Join(local, "Google", "Chrome", "User Data"), carpeta, deChrome, []string{deGoogle}, "chrome"},
+			{"Chromium", filepath.Join(local, "Chromium", "User Data"), carpeta, deChrome, []string{clave("Chromium")}, "chrome"},
+			// Edge busca primero la suya y, si no está, la de Chromium y la de Chrome.
+			{"Edge", filepath.Join(local, "Microsoft", "Edge", "User Data"), carpeta, deChrome, []string{clave(`Microsoft\Edge`)}, "chrome"},
+			// **Brave, Vivaldi y Opera no documentan qué clave leen**, y lo que se
+			// encuentra se contradice: hay quien dice que Brave solo lee la suya y quien
+			// dice que comparte la de Chrome. Brave va en las dos; Vivaldi y Opera, en la
+			// de Chrome, que es lo que hace KeePassXC hoy. Sin comprobar en un Windows.
+			{"Brave", filepath.Join(local, "BraveSoftware", "Brave-Browser", "User Data"), carpeta, deChrome, []string{clave(`BraveSoftware\Brave-Browser`), deGoogle}, "chrome"},
+			{"Vivaldi", filepath.Join(local, "Vivaldi", "User Data"), carpeta, deChrome, []string{deGoogle}, "chrome"},
+			{"Opera", filepath.Join(itinerante, "Opera Software", "Opera Stable"), carpeta, deChrome, []string{deGoogle}, "chrome"},
 		}
 	}
-	// En Windows no van en carpetas sino en el registro, y eso es otra historia
-	// que se escribirá cuando toque empaquetar. Está en docs/deuda.md.
 	return nil
 }
 
@@ -217,9 +283,18 @@ func escribirManifiestos(casa, puente string) ([]string, []error) {
 			fallos = append(fallos, err)
 			continue
 		}
-		if err := os.WriteFile(filepath.Join(s.Carpeta, nombreDelHost+".json"), datos, 0o644); err != nil {
+		ruta := filepath.Join(s.Carpeta, s.Fichero)
+		if err := os.WriteFile(ruta, datos, 0o644); err != nil {
 			fallos = append(fallos, err)
 			continue
+		}
+		// Y en Windows, la clave que dice dónde está, **con la ruta absoluta**: en el
+		// registro Chrome no acepta una relativa.
+		if len(s.Claves) > 0 {
+			if err := apuntarEnElRegistro(s.Claves, ruta); err != nil {
+				fallos = append(fallos, err)
+				continue
+			}
 		}
 		avisados = append(avisados, s.Nombre)
 	}
@@ -230,6 +305,29 @@ func escribirManifiestos(casa, puente string) ([]string, []error) {
 // interruptor que dejara el manifiesto puesto estaría apagando media puerta.
 func borrarManifiestos(casa string) {
 	for _, s := range dondeMiraCadaNavegador(casa) {
-		_ = os.Remove(filepath.Join(s.Carpeta, nombreDelHost+".json"))
+		_ = os.Remove(filepath.Join(s.Carpeta, s.Fichero))
+		if elRegistro == nil {
+			continue
+		}
+		for _, c := range s.Claves {
+			_ = elRegistro.Quitar(c)
+		}
 	}
+}
+
+// apuntarEnElRegistro pone en cada clave la ruta absoluta del manifiesto.
+func apuntarEnElRegistro(claves []string, ruta string) error {
+	if elRegistro == nil {
+		return errors.New("No hay registro de Windows donde apuntar el manifiesto")
+	}
+	absoluta, err := filepath.Abs(ruta)
+	if err != nil {
+		return err
+	}
+	for _, c := range claves {
+		if err := elRegistro.Poner(c, absoluta); err != nil {
+			return err
+		}
+	}
+	return nil
 }

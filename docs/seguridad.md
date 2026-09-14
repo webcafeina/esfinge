@@ -129,6 +129,10 @@ Lo que hay que saber, dicho sin adornos:
   registrable, nunca comparando cadenas.
 - **En Windows, los permisos del socket no significan nada**; ahí lo que lo protege es que vive en
   tu perfil de usuario.
+- **Y en Windows, Esfinge escribe en tu registro** (ADR 0034): al encender el canal, una clave por
+  navegador bajo `HKCU` que apunta al manifiesto, y al apagarlo las borra. Es el equivalente de los
+  ficheros de macOS y Linux, con el mismo punto flojo: **cualquier programa con tus permisos puede
+  cambiar a qué apunta**.
 
 ### Y desde la entrega 2, Esfinge escribe en las páginas
 

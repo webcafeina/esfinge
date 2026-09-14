@@ -280,10 +280,28 @@ afina con esos casos (`docs/deuda.md`). Si algo no hace nada, lo primero es la c
 
 **La siguiente acción concreta son las tiendas (entrega 5)**, que hay que plantear con el cliente antes de escribir nada.
 
-### 5. Las tiendas (entrega 5) — la siguiente, sin empezar
+### 5. Las tiendas (entrega 5) — en curso desde el 2026-09-14
 
-El cliente la dejó para otra sesión el 2026-09-14, con la entrega 3 comprobada entera. **Se plantea con
-preguntas con opciones antes de escribir nada**, como las anteriores. Lo que hay que decidir con él:
+**Decidida y planificada el 2026-09-14** (plan aprobado por el cliente), por preguntas con opciones y tras
+investigar las dos tiendas en su documentación oficial: **públicas en Chrome y en Firefox**, subida
+automática al publicar, cuentas de Webcafeína con info@webcafeina.com, **aviso de consentimiento en el
+panel la primera vez**, datos de comerciante públicos en la ficha de Chrome, **web del proyecto con GitHub
+Pages** para la privacidad y el soporte, y **Windows arreglado antes de publicar**.
+
+Cuatro bloques, en orden:
+
+1. **~~Windows~~ — hecho el 2026-09-14, sin publicar** (ADR 0034): manifiestos apuntados desde el registro
+   y el puente en el instalador. Probado con un registro de mentira aquí; el de verdad y el instalador se
+   comprueban en la máquina Windows de GitHub al publicar. **Ningún navegador lo ha lanzado en Windows.**
+2. **La extensión, lista para las tiendas**: consentimiento en el panel —que hace cumplir el trabajador de
+   fondo y respeta la página—, sin `activeTab`, Firefox 140 con `data_collection_permissions`, paquete de
+   Chrome sin `key`, la versión pasada de verdad y el código fuente reproducible para Mozilla.
+3. **La web del proyecto** en `web/` con GitHub Pages: portada, privacidad y soporte.
+4. **Las fichas** (`docs/tiendas/`, imágenes con Playwright), **el trabajo `tiendas`** en `publicar.yml`
+   (Firefox con `web-ext`, Chrome con la API v2 y cuenta de servicio) y **los pasos del cliente** para dar
+   de alta las cuentas, hacer la primera subida a Chrome a mano y guardar los secretos.
+
+Lo que se preguntó entonces, ya decidido:
 
 - **Pública u oculta** en cada tienda: la de Chrome admite «no listada» y la de Firefox (AMO) permite
   firmar sin listar.
