@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.18.1**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.19.1**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -174,7 +174,7 @@ visto nadie.
 
 **Lo decidió el cliente al cerrar la sesión del 10 de septiembre, y va en este orden:**
 
-### ~~1. Las mejoras visuales de la extensión~~ — hechas el 2026-09-14, falta verlas en el Mac
+### ~~1. Las mejoras visuales de la extensión~~ — hechas el 2026-09-14, usadas en el Mac
 
 Resuelto en la [ADR 0029](adr/0029-el-panel-de-la-extension-es-esfinge.md): **el panel es la misma
 Esfinge en otro sitio**. Importa los tokens de la ventana tal cual —ni una escala ni una pareja de
@@ -189,7 +189,7 @@ pruebas del panel compilado. **Lo que falta es verlo en un navegador de verdad e
 letra es San Francisco y los anchos cambian, así que lo primero es si el correo sigue cabiendo; y si el
 icono de 16 px se lee en la barra.
 
-### ~~2. Rellenar el código de un solo uso~~ — hecho el 2026-09-14, falta verlo en sitios de verdad
+### ~~2. Rellenar el código de un solo uso~~ — hecho y comprobado en el Mac el 2026-09-14
 
 Resuelto en la [ADR 0030](adr/0030-rellenar-el-codigo-de-un-solo-uso.md). Un verbo nuevo,
 `rellenar-codigo`, con las mismas llaves que `rellenar` y **gastando de su mismo freno**. Se escribe en
@@ -201,10 +201,13 @@ segundos. El botón «Rellenar» del panel hace formulario y código a la vez.
 **Probado en Firefox en el Mac con la 2.19.0: todo funciona salvo el código en Cloudflare**, que no se
 detectaba —seis casillas que declaran `one-time-code` y ninguna con `maxlength="1"`—. Arreglado en la
 2.19.1: su formulario copiado de la consola está en las pruebas, y la escritura se ha comprobado contra
-**su mismo componente**, `OTPField` de Base UI, en React. **Falta verlo en Cloudflare de verdad** con
-la 2.19.1, y en Chrome.
+**su mismo componente**, `OTPField` de Base UI, en React. **Y con la 2.19.1 funciona en Cloudflare, en
+Firefox y en Chrome**, comprobado por el cliente el mismo día.
 
-### 3. Y después, lo que ya estaba planteado
+### 3. Lo siguiente: lo que ya estaba planteado
+
+**Los dos primeros puntos están cerrados**, y el orden que puso el cliente sigue aquí: guardar y
+actualizar desde la página (entrega 3), y después las tiendas (entrega 5).
 
 Guardar y actualizar desde la página (entrega 3), y las tiendas (entrega 5), donde Chrome consigue su
 identificador definitivo y donde el permiso que se pide —`https://*/*` y un guion en todas las

@@ -50,6 +50,9 @@ Plantilla al final.
   corrección a mí mismo: leyendo su código deduje que escribir las casillas seguidas no le valdría y
   escribí un rodeo; **la prueba dijo que sí le valía**, y el rodeo se quitó. Me quedo con lo útil:
   comprobar al final que el código ha quedado puesto, y decirlo si no.
+- **Y comprobado en el Mac con la 2.19.1: funciona en Firefox y en Chrome**, Cloudflare incluido. Con
+  eso quedan cerrados los dos puntos que el cliente puso para hoy. Sin comentario concreto sobre si el
+  correo cabe entero con San Francisco o si el icono de 16 px se lee, así que siguen apuntados.
 
 ## 2026-09-10 · La entrega 2, comprobada en las dos familias
 

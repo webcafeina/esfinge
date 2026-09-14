@@ -112,6 +112,10 @@ formulario.
   antes de publicar: `Buscar` devuelve las entradas pasadas por `SinSecretos`, que vacía la semilla
   sin dejar marca, así que todas las cuentas salían sin código.
 
+**Y usado en un Mac (2026-09-14, 2.19.0 y 2.19.1), en Firefox y en Chrome**: el cliente lo ha
+probado de punta a punta y dice que funciona todo. **No ha comentado nada en concreto** de las dos
+cosas de abajo, así que siguen apuntadas como sin comprobar en vez de darlas por buenas.
+
 **Sin comprobar:**
 
 - **Cómo se ve dentro de un navegador de verdad, en un Mac.** Las capturas son del panel compilado en

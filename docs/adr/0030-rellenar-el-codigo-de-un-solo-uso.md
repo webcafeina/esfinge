@@ -126,10 +126,12 @@ navegador. Con esto, **el gesto completo de entrar se hace sin tocar el teclado*
   parecía que escribir las casillas seguidas no le valdría, se escribió un rodeo, y **la prueba dijo
   que sí le valía**. El rodeo se quitó.
 
-**Sin comprobar, y es lo que importa:**
+**Y comprobado en un Mac con la 2.19.1 (2026-09-14): en Cloudflare el código se rellena solo, en
+Firefox y en Chrome.** Era lo único que ninguna prueba de aquí podía decir: las pruebas usan su
+formulario copiado y su componente, pero no su página.
 
-- **Que la 2.19.1 rellene de verdad en Cloudflare**, en el Mac. La prueba usa su formulario copiado y
-  su componente, pero no es su página.
+**Sin comprobar:**
+
 - **Otros formularios de segundo factor.** Hay componentes que solo reaccionan a pegar o a pulsaciones
   de tecla; con esos, `escribirCodigo` lee lo que ha quedado y **dice que no ha quedado puesto** en vez
   de contar que ha ido bien, pero no lo arregla.
