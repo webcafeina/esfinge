@@ -5,6 +5,23 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · La esfinge tenue entera, y «Rellenar» igual en los dos navegadores
+
+- **2.20.3.** Con la 2.20.2, **todo se ve bien en Firefox y en Chrome**, y el cliente pidió dos cambios
+  pequeños.
+- **La esfinge tenue de los avisos** no parecía bien construida y se salía por abajo. Eran dos cosas:
+  estaba desplazada fuera de su caja, que la recortaba; y su trazo estaba forzado a 34 sobre el grupo,
+  así que las líneas quedaban finas al lado de los ojos y el ojal, que van rellenos. En la ventana ese
+  34 no llega al grupo —el atributo de presentación le gana— y se ve el 58. Ahora mide 112 px con su
+  trazo de serie, entera dentro de la caja. **Y de mirar la captura salió un fallo que había metido yo**:
+  con la esfinge entera, el texto largo del aviso le pasaba por encima; se le reservó su ancho.
+- **«Rellenar» salía más pequeño en Chrome de macOS.** Los botones ya no heredan la letra: sin aspecto
+  nativo y con familia, tamaño e interlineado fijados. No se puede reproducir aquí —esta máquina no
+  tiene macOS—, así que la prueba vigila lo que sí puede: que el botón mida lo mismo que el texto.
+- Verificado: `make comprobar` en verde con **51 pruebas de la extensión** —tres nuevas: la esfinge
+  cabe entera, el texto no la pisa, y la letra del botón— y capturas de los avisos en los dos temas.
+  Sin verificar: «Rellenar» en Chrome de macOS.
+
 ## 2026-09-14 · El candado, al tercer intento, y el aviso más grande
 
 - **2.20.2.** Con la 2.20.1, el cliente siguió viendo el candado del icono demasiado pequeño y pidió que

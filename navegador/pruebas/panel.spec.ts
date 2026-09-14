@@ -317,3 +317,72 @@ test("la esfinge tenue en los avisos y la firma al pie", async ({ page }) => {
   await expect(page.locator("#estado .tenue svg")).toHaveCount(1);
   await expect(page.locator("footer .firma")).toHaveText("▍webcafeína");
 });
+
+/**
+ * **La esfinge tenue, entera dentro del aviso.** En la 2.20.0 salía desplazada fuera
+ * de su caja y la caja la recortaba por abajo, así que se veía cortada y parecía mal
+ * dibujada. Se mide la caja del dibujo contra la del aviso.
+ */
+test("la esfinge tenue cabe entera dentro del aviso", async ({ page }) => {
+  await abrir(page, { cuentas: { ok: false, motivo: "cerrada" } });
+  await expect(page.locator("#estado h1")).toHaveText("La bóveda está cerrada");
+  const [dibujo, aviso] = await Promise.all([
+    page.locator("#estado .tenue").boundingBox(),
+    page.locator("#estado").boundingBox(),
+  ]);
+  expect(dibujo && aviso).toBeTruthy();
+  expect(dibujo!.x).toBeGreaterThanOrEqual(aviso!.x);
+  expect(dibujo!.y).toBeGreaterThanOrEqual(aviso!.y);
+  expect(dibujo!.x + dibujo!.width).toBeLessThanOrEqual(aviso!.x + aviso!.width + 0.5);
+  expect(dibujo!.y + dibujo!.height).toBeLessThanOrEqual(aviso!.y + aviso!.height + 0.5);
+});
+
+/**
+ * **«Rellenar» con la letra del panel, fijada.** En Chrome de macOS salía más pequeño
+ * que en Firefox, porque el botón traía la letra de su aspecto nativo. Esta prueba no
+ * puede reproducir macOS, pero sí vigilar que el botón no depende de heredarla: sin
+ * aspecto nativo y con el mismo tamaño que el título de la cuenta.
+ */
+test("el botón «Rellenar» lleva la letra del panel y no la del sistema", async ({ page }) => {
+  await abrir(page, { cuentas: TRES });
+  const boton = page.locator(".rellenar").first();
+  const nombre = page.locator("#lista li .nombre").first();
+  const [estiloBoton, tamanoNombre] = await Promise.all([
+    boton.evaluate((b) => {
+      const e = getComputedStyle(b);
+      return { tamano: e.fontSize, aspecto: e.appearance };
+    }),
+    nombre.evaluate((n) => getComputedStyle(n).fontSize),
+  ]);
+  expect(estiloBoton.aspecto).toBe("none");
+  expect(estiloBoton.tamano).toBe(tamanoNombre);
+});
+
+/**
+ * **Y el texto del aviso no pisa la esfinge tenue.** Al dejarla entera, el texto
+ * largo —el de «No se encuentra Esfinge», con su detalle— le pasaba por encima. Se
+ * mide con el aviso más largo que hay.
+ */
+test("el texto del aviso no pasa por encima de la esfinge tenue", async ({ page }) => {
+  await abrir(page, {
+    cuentas: {
+      ok: false,
+      motivo: "sin-esfinge",
+      error:
+        "No se puede hablar con Esfinge. Comprueba que está instalada y que el canal con el " +
+        "navegador está encendido en sus Ajustes. El navegador dice: Specified native messaging host not found.",
+    },
+  });
+  await expect(page.locator("#estado .detalle")).toBeVisible();
+  const dibujo = await page.locator("#estado .tenue").boundingBox();
+  for (const sitio of ["#estado h1", "#estado .texto", "#estado .detalle"]) {
+    const derecha = await page.locator(sitio).evaluate((e) => {
+      // El borde derecho de lo escrito, no de la caja: un párrafo ocupa todo el ancho
+      // aunque sus líneas no lleguen.
+      const rango = document.createRange();
+      rango.selectNodeContents(e);
+      return Math.max(...[...rango.getClientRects()].map((r) => r.right));
+    });
+    expect(derecha, `${sitio} pisa la esfinge`).toBeLessThanOrEqual(dibujo!.x);
+  }
+});

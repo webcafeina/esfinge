@@ -98,6 +98,18 @@ nada: se leía como una cuenta seleccionada. Ahora nada tiene el foco al abrir; 
 primera flecha o el tabulador y se va con el ratón, e **Intro sin haber usado las flechas rellena la
 primera cuenta**, que era para lo que servía aquel foco.
 
+**Corregido en la 2.20.3, vistas las dos en Firefox y en Chrome:**
+
+- **La esfinge tenue de los avisos, entera y con su trazo de serie.** Salía desplazada fuera de su
+  caja, que la recortaba por abajo, y con el trazo forzado a 34 sobre el grupo: líneas finas al lado
+  de unos ojos y un ojal rellenos, gordos, que se leían como un dibujo mal construido. Ahora mide
+  112 px como la del historial vacío de la ventana, con su trazo de 58, entera dentro de la caja; y
+  **el texto del aviso tiene reservado su ancho**, porque con la esfinge entera el texto largo le
+  pasaba por encima.
+- **«Rellenar» con la misma letra en los dos navegadores.** En Chrome de macOS salía más pequeño que
+  en Firefox. Los botones ya no heredan la letra: llevan familia, tamaño e interlineado fijados y sin
+  aspecto nativo.
+
 ## Alternativas descartadas
 
 **Un panel neutro, sin marca**, siguiendo al navegador como hasta ahora. Era lo más fácil de defender

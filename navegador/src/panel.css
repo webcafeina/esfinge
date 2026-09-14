@@ -239,8 +239,17 @@ li:hover .usuario {
 
 /* ------------------------------------------------------------- botones */
 
+/* **La letra de los botones, fijada y no heredada.** Con `font: inherit` a secas,
+ * «Rellenar» salía más pequeño en Chrome de macOS que en Firefox (2.20.2): Chrome
+ * da a los botones su aspecto nativo y ese aspecto trae su propia letra. Sin aspecto
+ * nativo y con familia, tamaño e interlineado explícitos, los dos navegadores pintan
+ * lo mismo. */
 button {
-  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: var(--fuente);
+  font-size: var(--texto);
+  line-height: 1.2;
   cursor: pointer;
   border-radius: var(--radio-chico);
 }
@@ -352,36 +361,49 @@ button:focus-visible {
  * historial vacío»). */
 .estado {
   position: relative;
-  overflow: hidden;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--espacio-3);
-  padding: var(--espacio-4) var(--espacio-2) var(--espacio-5);
-  min-height: 96px;
+  padding: var(--espacio-4) var(--espacio-2);
+  min-height: 128px;
 }
 
+/* La esfinge tenue, **entera y con su trazo de serie**, como la del historial vacío
+ * de la ventana: 112 px y sin tocar el grosor.
+ *
+ * En la 2.20.0 salía desplazada fuera de la caja —y la caja la recortaba por abajo y
+ * por la derecha— y con el trazo forzado a 34 sobre el grupo, así que las líneas
+ * quedaban finas al lado de unos ojos y un ojal rellenos, gordos: se leía como un
+ * dibujo mal construido. En la ventana ese 34 se pone en el `svg` y **no llega** al
+ * grupo, que trae su 58 escrito; lo que se ve allí es el 58. */
 .estado .tenue {
   position: absolute;
-  right: -18px;
-  bottom: -26px;
-  width: 132px;
-  height: 132px;
+  right: var(--espacio-2);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 112px;
+  height: 112px;
   color: var(--filete); /* Filete sobre Lienzo: «la esfinge tenue del historial vacío» */
   pointer-events: none;
 }
 
 .estado .tenue svg {
+  display: block;
   width: 100%;
   height: 100%;
-}
-
-.estado .tenue svg g {
-  stroke-width: 34;
 }
 
 .estado .glifo,
 .estado > div {
   position: relative; /* por encima de la esfinge tenue */
+}
+
+/* **Y el texto no pisa la esfinge**: se le reserva su ancho a la derecha. Con la
+ * esfinge ya entera (2.20.3), el texto largo —el de «No se encuentra Esfinge» y su
+ * detalle— le pasaba por encima, y un dibujo debajo de las letras les quita
+ * legibilidad aunque sea tenue. El texto hace un salto de línea más, y cabe. */
+.estado > div {
+  padding-right: calc(112px + var(--espacio-2));
 }
 
 .estado .glifo {
@@ -408,7 +430,6 @@ button:focus-visible {
 
 .estado .texto {
   margin: 0;
-  max-width: 250px;
   color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
   line-height: 1.4;
 }

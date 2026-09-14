@@ -626,6 +626,18 @@ insignia. Costó tres versiones llegar al tamaño bueno: **dentro del icono no s
 como la insignia de verdad**, así que la placa tiene que llegar a los bordes para parecer igual de
 grande.
 
+**Un `stroke-width` puesto en el `svg` no llega a un grupo que trae el suyo escrito.** La marca
+(`build/marca.svg`) lleva `stroke-width="58"` en su grupo, y un atributo de presentación le gana a lo
+que hereda. Por eso en la ventana el `stroke-width: 34` del historial vacío, puesto en el `svg`, **no
+hace nada** y lo que se ve es el 58; y por eso en el panel, donde se puso en el grupo, sí adelgazó las
+líneas y la esfinge salió con trazos finos al lado de unos ojos y un ojal gordos (2.20.0). Si se quiere
+otro grosor, se pone en el grupo y se mira en una captura.
+
+**Y en Chrome de macOS, un botón con `font: inherit` puede salir con otra letra.** «Rellenar» salía
+más pequeño que en Firefox, porque Chrome da a los botones su aspecto nativo y ese aspecto trae su
+letra. En el panel los botones llevan `appearance: none` y la familia, el tamaño y el interlineado
+fijados; hay una prueba que comprueba que el botón mide lo mismo que el texto de al lado.
+
 **Los colores de la extensión que no pinta nuestro CSS se miden aparte**, en
 `internal/tema/extension_test.go`: la silueta contra las barras de Chrome y Firefox, las insignias y el
 aviso de la página. Y esa prueba **lee los SVG y el TypeScript**: si alguien cambia un color allí y no

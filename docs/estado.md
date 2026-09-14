@@ -233,6 +233,10 @@ cabe entero.
 Y con la 2.20.1 el cliente pidió **el candado otra vez más grande y el aviso más grande**: en la 2.20.2
 el candado es una placa naranja de dos tercios del icono con el candado blanco, y el aviso pasa a 14 px.
 
+Con la 2.20.2 **todo se ve bien en Firefox y en Chrome**. Quedaban dos detalles, hechos en la 2.20.3: la
+esfinge tenue de los avisos, entera y con su trazo de serie, y «Rellenar» con la misma letra en Chrome
+que en Firefox. Falta ver lo segundo en Chrome de macOS.
+
 ### 4. Lo siguiente: lo que ya estaba planteado
 
 **Guardar y actualizar desde la página** (entrega 3), y después las tiendas (entrega 5).
