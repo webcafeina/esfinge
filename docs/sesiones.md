@@ -5,7 +5,11 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
-## 2026-09-14 · Cambiar la contraseña en Brevo (2.21.2, sin publicar)
+## 2026-09-14 · Cambiar la contraseña en Brevo (2.21.2)
+
+- **Publicada la 2.21.2** a petición del cliente, con todo en verde.
+- **Nada en la consola por defecto**: se propuso que la extensión dijera por qué no ofrece guardar y el
+  cliente dijo que no, «de momento». Apuntado en `CLAUDE.md`.
 
 - **Con la 2.21.1, Google funciona perfecto** por los dos caminos —tecleando y con el selector de
   cuentas—, dicho por el cliente. **Pero cambiar la contraseña en Brevo no ofrecía nada.**

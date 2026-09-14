@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.21.1**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.21.2**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -270,7 +270,9 @@ en la 2.21.1** recordando el usuario de la página anterior, y con varias cuenta
 coincida con él, a petición del cliente. **Publicada la 2.21.1 el mismo día**, con todas las
 compilaciones en verde, y **Google funciona perfecto** con ella. Después, **cambiar la contraseña en Brevo
 no ofrecía nada** —actual y nueva sin `autocomplete`, solo distinguidas por el nombre—: corregido en la
-2.21.2, sin publicar (ADR 0032, «Corregido tras probarla en
+**2.21.2, publicada el mismo día**. Sin probar en Brevo: la cuenta de pruebas se quedó sin su
+contraseña original. **Faltan los pasos 5 a 8.** Y **la extensión no escribe nada en la consola** por
+defecto, decidido por el cliente: los diagnósticos se le piden con un fragmento para pegar (ADR 0032, «Corregido tras probarla en
 Google»). **Quedan por probar los pasos 5 a 8.**
 
 Se le explicó cómo decide «la contraseña era mala» y se le pidió que apunte **los sitios donde falle en

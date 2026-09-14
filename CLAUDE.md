@@ -143,6 +143,10 @@ No se cambian sin preguntar.
   el navegador escribe en la bóveda**. Se aprueba pulsando en el navegador, sin confirmar en la ventana;
   «Nunca en este sitio» va cifrado dentro de la bóveda y se deshace en Ajustes. Lo decidió el cliente con
   esas palabras y no se cambia sin preguntar.
+- **La extensión no escribe nada en la consola por defecto** (2026-09-14): ni trazas de por qué no
+  ofrece guardar ni avisos de depuración. Se propuso para diagnosticar sitios que fallan y el cliente
+  dijo que no, «de momento». Cuando un sitio no funciona, se le pide un fragmento para pegar en la
+  consola —los campos, sin valores de contraseña—, como se hizo con Cloudflare, Google y Brevo.
 - **Hay una bóveda de contraseñas**, local y cifrada, con clave de recuperación (ADR 0023). Es la
   fase 1 de sustituir a Dashlane, y **cambia lo que el producto es**: hasta ahora un fallo perdía un
   fichero; ahora puede perder todas las contraseñas de la empresa. Eso sube el listón de las pruebas
