@@ -510,3 +510,47 @@ test("usuario de la página: el del campo de solo usuario, y nada si hay contras
   // @ts-expect-error el módulo se inyecta como global en la página
   expect(await page.evaluate(() => Campos.usuarioDeLaPagina(document))).toBe("");
 });
+
+/**
+ * La página de la contraseña de Google, **tal como la sacó el cliente por la consola**
+ * (2026-09-14), después de elegir `alvaro@` en «Elige una cuenta»: el correo va en un
+ * `type="email"` escondido con `autocomplete="off"`, y no hay ningún `username`.
+ */
+const CONTRASENA_DE_GOOGLE = `<form>
+  <input type="email" name="identifier" id="hiddenEmail" autocomplete="off" value="alvaro@webcafeina.com" hidden>
+  <input type="password" name="Passwd" autocomplete="current-password webauthn">
+  <input type="checkbox" checked>
+  <input type="hidden" name="TrustDevice" value="true">
+  <input type="text" name="ca" id="ca" autocomplete="off" style="display:none">
+  <input type="hidden" name="ct" id="ct">
+  <input type="hidden" id="identifierId" value="alvaro@webcafeina.com">
+</form>`;
+
+test("usuario declarado: el correo escondido de la página de la contraseña de Google", async ({ page }) => {
+  await page.setContent(`<!doctype html><meta charset="utf-8">${CONTRASENA_DE_GOOGLE}`);
+  await page.addScriptTag({ content: modulo });
+  // @ts-expect-error el módulo se inyecta como global en la página
+  expect(await page.evaluate(() => Campos.usuarioDeclarado(document))).toBe("alvaro@webcafeina.com");
+  await page.fill('input[name="Passwd"]', "la-de-alvaro");
+  const envio = await page.evaluate(
+    // @ts-expect-error el módulo se inyecta como global en la página
+    () => Campos.queSeEnvia(document.forms[0], document),
+  );
+  expect(envio).toEqual({ forma: "entrar", usuario: "alvaro@webcafeina.com", secreto: "la-de-alvaro" });
+});
+
+test("usuario declarado: dos correos escondidos distintos, o sin contraseña a la vista, nada", async ({ page }) => {
+  await page.setContent(`<!doctype html><meta charset="utf-8"><form>
+    <input type="email" value="alvaro@webcafeina.com" hidden>
+    <input type="email" value="info@webcafeina.com" hidden>
+    <input type="password"></form>`);
+  await page.addScriptTag({ content: modulo });
+  // @ts-expect-error el módulo se inyecta como global en la página
+  expect(await page.evaluate(() => Campos.usuarioDeclarado(document))).toBe("");
+
+  await page.setContent(`<!doctype html><meta charset="utf-8">
+    <form><input type="email" value="alvaro@webcafeina.com" hidden><button>Suscribirse</button></form>`);
+  await page.addScriptTag({ content: modulo });
+  // @ts-expect-error el módulo se inyecta como global en la página
+  expect(await page.evaluate(() => Campos.usuarioDeclarado(document))).toBe("");
+});

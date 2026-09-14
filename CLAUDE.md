@@ -694,7 +694,10 @@ eso el trabajador recuerda **el usuario que había** en la página de solo usuar
 cinco minutos, mismo sitio), y **se rellena la cuenta de ese usuario o ninguna** (`identidad.ts`).
 **Cuenta lo ponga quien lo ponga** —la primera versión solo contaba lo tecleado, y el cliente preguntó
 lo evidente: ¿y si el correo lo pone Google solo?—, y se lee también con el clic de «Siguiente», porque
-un sitio puede poner el valor sin disparar ningún evento.
+un sitio puede poner el valor sin disparar ningún evento. **Y Google no declara `username` en la página de
+la contraseña**: lleva el correo en un `type="email"` escondido con `autocomplete="off"`. Se supo con un
+diagnóstico por la consola del cliente —los campos, sin valores de contraseña—, que es lo que hay que
+pedir antes de escribir una regla para un sitio que no se puede abrir desde aquí.
 
 **Y el corolario pequeño, que costó un commit el mismo día: `make comprobar | tail` no dice si
 `make` ha fallado.** El código de salida de una tubería es el del **último** mandato, así que

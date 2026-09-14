@@ -449,7 +449,11 @@ export function queSeEnvia(ambito: ParentNode, doc: Document = document): Envio 
   // los de cambiar, que casi nunca lo enseñan, el campo escondido que muchos sitios
   // ponen para los gestores de contraseñas.
   const visible = usuarioPara(campos[0], doc)?.value ?? "";
-  return { forma, usuario: (visible || usuarioDeclarado(ambito)).trim(), secreto };
+  return {
+    forma,
+    usuario: (visible || usuarioDeclarado(ambito) || usuarioDeclarado(doc)).trim(),
+    secreto,
+  };
 }
 
 /**
@@ -472,16 +476,32 @@ export function campoDeIdentificador(
 }
 
 /**
- * usuarioDeclarado es el valor del campo que el sitio declara como usuario
- * (`autocomplete="username"`), **aunque esté escondido**. Muchos sitios lo ponen en
- * la página de la contraseña precisamente para los gestores de contraseñas.
+ * usuarioDeclarado es el usuario que la página de la contraseña lleva puesto, **aunque
+ * esté escondido**. Dos formas, por orden:
+ *
+ *   - El campo que el sitio declara como usuario (`autocomplete="username"`), que
+ *     muchos ponen precisamente para los gestores de contraseñas.
+ *   - Y si no hay, **un campo `type="email"` con valor, solo si hay una contraseña a
+ *     la vista y todos esos campos dicen el mismo correo**. Es lo que hace Google:
+ *     en la página de la contraseña, venga del selector de cuentas o de teclear, lleva
+ *     `<input type="email" name="identifier" autocomplete="off" hidden>` con el
+ *     correo, y ningún `username`. Se vio con un diagnóstico por la consola del
+ *     cliente, no adivinando. Con dos correos distintos no se elige ninguno.
  */
 export function usuarioDeclarado(ambito: ParentNode = document): string {
-  return (
-    [...ambito.querySelectorAll<HTMLInputElement>("input")]
-      .find((c) => c.type !== "password" && tokens(c).includes("username") && c.value.trim())
-      ?.value.trim() ?? ""
+  const campos = [...ambito.querySelectorAll<HTMLInputElement>("input")];
+  const declarado = campos.find(
+    (c) => c.type !== "password" && tokens(c).includes("username") && c.value.trim(),
   );
+  if (declarado) return declarado.value.trim();
+
+  if (contrasenasVisibles(ambito).length === 0) return "";
+  const correos = new Set(
+    campos
+      .filter((c) => c.type.toLowerCase() === "email" && c.value.includes("@"))
+      .map((c) => c.value.trim().toLowerCase()),
+  );
+  return correos.size === 1 ? [...correos][0] : "";
 }
 
 /** usuarioDeLaPagina es lo que hay escrito en el usuario de una página de solo usuario. */

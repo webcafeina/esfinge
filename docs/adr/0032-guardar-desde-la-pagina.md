@@ -158,9 +158,13 @@ cuentas del sitio se rellene sola la del correo que va a entrar. **Matiza la ADR
 varias se elige siempre en el panel: ahora solo cuando no se sabe quién entra, o no coincide ninguna, o
 coinciden dos.
 
-Queda un caso sin resolver: **el selector de cuentas de Google**, donde se pulsa una ficha y no hay campo
-de correo. Ahí quién entra solo se sabe si la página de la contraseña declara el usuario escondido, y eso
-no se ha podido ver: está en `docs/deuda.md`, pendiente de un diagnóstico por la consola.
+**Y el selector de cuentas de Google**, donde se pulsa una ficha y no hay campo de correo que leer. Se
+resolvió **mirando, no adivinando**: el cliente sacó por la consola los campos de la página de la
+contraseña tras elegir `alvaro@`, y Google no declara ningún `username` —por eso no se veía— pero lleva
+el correo en un **`<input type="email" name="identifier" autocomplete="off">` escondido**. Así que el
+usuario escondido vale también así: **un `type="email"` con valor, solo con una contraseña a la vista y
+si todos esos campos dicen el mismo correo**. Esa página, copiada tal cual, está en las pruebas. Con eso
+da igual cómo se llegue a la página de la contraseña.
 
 ## Alternativas descartadas
 

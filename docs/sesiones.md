@@ -19,8 +19,10 @@ Plantilla al final.
   que coincida con el correo —matiza la ADR 0028—; y que cuente también **el correo que se pone solo**,
   por Google o por el navegador. Ahora cuenta lo ponga quien lo ponga, se lee también con el clic de
   «Siguiente» y se mira el usuario escondido que declare la página de la contraseña. **El selector de
-  cuentas de Google**, sin campo de correo, queda pendiente de un diagnóstico por la consola.
-- Verificado: `make comprobar` en verde con **90 pruebas de la extensión**, veinte nuevas, varias de
+  cuentas de Google**, sin campo de correo, se resolvió con un diagnóstico por la consola del cliente:
+  la página de la contraseña lleva el correo en un `type="email"` escondido con `autocomplete="off"`, que
+  ahora cuenta si hay contraseña a la vista y un solo correo.
+- Verificado: `make comprobar` en verde con **92 pruebas de la extensión**, veintidós nuevas, varias de
   ellas con el teclado y el ratón de verdad de Chromium. Sin verificar: contra el Google de verdad.
 - **Queda por probar de la 2.21.0**: los pasos 5 a 8 —el inicio fallido, «Nunca en este sitio», la
   ventana al día sola y la bóveda cerrada—.
