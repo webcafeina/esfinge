@@ -5,6 +5,20 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-14 · La parte visual de la extensión, cerrada
+
+- **2.20.3 probada en el Mac, en Firefox y en Chrome: «Ahora está perfecto».** Con eso queda cerrada la
+  segunda pasada visual que el cliente pidió antes de guardar desde la página: el icono que dice el
+  estado, la marca en el campo rellenado y el panel. Costó cuatro versiones —2.20.0 a 2.20.3— y nueve
+  ajustes, todos visuales y todos vistos por él en su Mac: el borde negro del filete, el marco de la fila
+  al abrir, el candado tres veces, la cara negra de la esfinge del aviso, el aviso pequeño, la esfinge
+  tenue cortada y «Rellenar» más pequeño en Chrome.
+- **Lo que no ha dicho expresamente**, y queda para el uso y no como comprobado: si el candado aparece
+  solo al minuto de cerrarse la bóveda, y si el correo cabe entero en el panel.
+- **Lo siguiente es guardar y actualizar desde la página** (entrega 3), con tres decisiones que hablar
+  antes de escribir: dónde se pregunta, qué verbo nuevo escribe en la bóveda desde el navegador, y quién
+  lo aprueba.
+
 ## 2026-09-14 · La esfinge tenue entera, y «Rellenar» igual en los dos navegadores
 
 - **2.20.3.** Con la 2.20.2, **todo se ve bien en Firefox y en Chrome**, y el cliente pidió dos cambios

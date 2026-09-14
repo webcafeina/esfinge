@@ -168,6 +168,10 @@ pone en la página.
 candado se veía pequeño, el filete tenía un borde negro y la esfinge del aviso una cara negra. Los tres
 se corrigieron en la 2.20.1 y se miraron en capturas antes de publicar.
 
+**Y con la 2.20.2 y la 2.20.3, en el Mac, en Firefox y en Chrome (2026-09-14): el cliente dice que
+funciona y se ve todo bien**, candado incluido. No ha comentado expresamente si el candado aparece solo
+al minuto de cerrarse la bóveda, así que eso sigue abajo.
+
 **Sin comprobar, y hay que mirar en el Mac:**
 
 - **Si la silueta se lee en la barra de verdad**, a su tamaño y con Retina.

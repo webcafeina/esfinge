@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.19.1**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.20.3**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -204,7 +204,7 @@ detectaba —seis casillas que declaran `one-time-code` y ninguna con `maxlength
 **su mismo componente**, `OTPField` de Base UI, en React. **Y con la 2.19.1 funciona en Cloudflare, en
 Firefox y en Chrome**, comprobado por el cliente el mismo día.
 
-### ~~3. La segunda pasada visual de la extensión~~ — hecha el 2026-09-14, falta verla en el Mac
+### ~~3. La segunda pasada visual de la extensión~~ — hecha y comprobada en el Mac el 2026-09-14 (2.20.3)
 
 El cliente la pidió después de usar la 2.19.1, **antes** de guardar desde la página, y la decidió por
 preguntas con opciones ([ADR 0031](adr/0031-el-icono-con-estados-y-la-marca-en-el-campo.md) y la
@@ -235,11 +235,19 @@ el candado es una placa naranja de dos tercios del icono con el candado blanco, 
 
 Con la 2.20.2 **todo se ve bien en Firefox y en Chrome**. Quedaban dos detalles, hechos en la 2.20.3: la
 esfinge tenue de los avisos, entera y con su trazo de serie, y «Rellenar» con la misma letra en Chrome
-que en Firefox. Falta ver lo segundo en Chrome de macOS.
+que en Firefox. **Y con la 2.20.3 el cliente dice «Ahora está perfecto»**: la parte visual de la
+extensión queda cerrada.
 
-### 4. Lo siguiente: lo que ya estaba planteado
+### 4. Lo siguiente: guardar y actualizar desde la página
 
-**Guardar y actualizar desde la página** (entrega 3), y después las tiendas (entrega 5).
+**Es la siguiente acción concreta**, y era lo que el cliente dejó planteado antes de las mejoras
+visuales: al enviar un formulario con una cuenta que no está en la bóveda, ofrecer guardarla; si está con
+otra contraseña, ofrecer actualizarla, con el historial de contraseñas anteriores que ya existe. Es la
+entrega 3, y trae decisiones de verdad que hay que hablar antes de escribir nada: **dónde se pregunta**
+—la ADR 0028/0031 limita lo que se dibuja en la página—, **qué verbo nuevo cruza el canal** —el primero
+que **escribe** en la bóveda desde el navegador— y **quién lo aprueba**.
+
+Después, las tiendas (entrega 5).
 
 ### Lo que yo recomendaría meter en medio, y no es lo que se decidió
 

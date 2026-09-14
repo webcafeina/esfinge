@@ -163,6 +163,10 @@ ocho pruebas más del panel: el tinte del cuadro coincide con `tinteDe` para el 
 la web nunca se pide a internet** —se comprueba que no sale ninguna petición—; «Abierta» solo con la
 bóveda abierta; «✓ Hecho» y su vuelta; el teclado; la esfinge tenue y la firma.
 
+**Y usado con la 2.20.3 en el Mac, en Firefox y en Chrome: «Ahora está perfecto»**, con la esfinge de los
+avisos entera y «Rellenar» del mismo tamaño en los dos navegadores. Lo del correo entero no lo ha
+mencionado expresamente.
+
 **Sin comprobar:**
 
 - **Cómo se ve dentro de un navegador de verdad, en un Mac.** Las capturas son del panel compilado en
