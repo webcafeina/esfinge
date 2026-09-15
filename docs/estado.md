@@ -321,8 +321,16 @@ previsto, y la publicación trae ya `esfinge-extension-2.22.1-chrome-tienda.zip`
 rellenadas y enviada a revisión el mismo día**, con el aviso de Google de que irá a revisión a fondo por los
 permisos de host amplios —esperado: sin ellos no rellena sola ni ofrece guardar—.
 
-**Quedan**: publicar la 2.22.2 para que Esfinge deje entrar a la extensión de la tienda, la cuenta de
-servicio de Chrome (`pasos.md`, 2.4) y esperar a las dos revisiones.
+**Decidido con el cliente: esperar a que terminen las dos revisiones y publicar la 2.22.2 entonces.**
+Publicarla ya mandaría a Firefox una segunda versión idéntica a revisar, porque el trabajo `tiendas` sube
+la extensión en cada publicación. **Se asume** que, si Chrome la aprueba antes, quien la instale desde la
+tienda verá «No se encuentra Esfinge» hasta la 2.22.2: hoy tiene pocos usuarios o ninguno.
+
+**La siguiente acción concreta es esperar las dos revisiones** —Mozilla, normalmente menos de un día;
+Google, días o semanas, a fondo— y, cuando terminen, publicar la 2.22.2. Pendiente también, sin prisa, la
+cuenta de servicio de Chrome (`pasos.md`, 2.4). Y **queda por decidir con el cliente** si la extensión sube
+a las tiendas solo cuando cambia su código, para que una versión que solo toca la aplicación no mande
+nada a revisar.
 
 **Lo que queda, con el cliente**: los pasos de `docs/tiendas/pasos.md` —cuentas de Mozilla
 y de Google, la primera subida a Chrome a mano, los secretos en GitHub— y **pasarme el identificador de

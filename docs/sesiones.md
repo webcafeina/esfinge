@@ -23,6 +23,10 @@ Plantilla al final.
   amplios» y de que la revisión irá a fondo, proponiendo `activeTab` o una lista de sitios: se envió
   igual, porque con cualquiera de las dos dejaría de rellenar sola y de ofrecer guardar, que es lo que se
   decidió con el cliente. Es lo que hacen todos los gestores de contraseñas.
+- **La 2.22.2 —con el identificador de la tienda de Chrome— se publica cuando terminen las dos revisiones**,
+  decidido por el cliente: publicarla ya mandaría a Firefox una segunda versión idéntica. Asume que la
+  extensión de la tienda de Chrome diga «No se encuentra Esfinge» si la aprueban antes. Se propuso que la
+  extensión suba a las tiendas solo cuando cambie; sin decidir.
 - Queda: la cuenta y la
   primera subida a Chrome con `esfinge-extension-2.22.1-chrome-tienda.zip`, y el identificador que dé.
 
