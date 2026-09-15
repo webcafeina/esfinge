@@ -1,0 +1,60 @@
+# Esta es la política de privacidad de web/privacidad.html en texto plano, para pegarla donde
+# addons.mozilla.org pide el texto («Esta extensión tiene una política de privacidad»). Se genera
+# desde la web: si cambia la política, se cambia allí y se vuelve a sacar este fichero.
+# (Estas tres líneas no se pegan.)
+
+Política de privacidad
+
+Última actualización: 14 de septiembre de 2026.
+
+Esfinge no recoge ningún dato tuyo. Todo lo que toca se queda en tu ordenador, y Webcafeína no recibe nada: ni contraseñas, ni direcciones, ni estadísticas de uso.
+
+Esta política cubre la aplicación Esfinge —para macOS, Windows y Linux— y su extensión para Chrome, Edge, Brave, Vivaldi, Opera y Firefox. La hace Webcafeína, que puedes contactar en info@webcafeina.com.
+
+LA EXTENSIÓN DEL NAVEGADOR
+
+Qué datos toca
+
+Para rellenar y guardar contraseñas, la extensión lee en las páginas https:
+
+- Los formularios de entrar: el usuario o el correo, la contraseña y el código de un solo uso que escribes o que ella rellena.
+- La dirección de la página, para saber de qué sitio son las cuentas.
+
+No lee el resto del contenido de las páginas, ni tu historial, ni tus marcadores.
+
+Adónde van
+
+Solo a la aplicación Esfinge, en tu mismo ordenador, por el canal que los navegadores tienen para hablar con programas instalados (native messaging). La extensión no se conecta a ningún servidor, no manda nada a internet ni a Webcafeína, no descarga código y no lleva analítica ni servicios de terceros.
+
+Qué guarda
+
+- En el almacenamiento de la extensión, solo dos cosas: el permiso que le da Esfinge para hablar con ella y que has aceptado el aviso de datos, con la fecha.
+- En memoria, un momento: cuando envías un formulario, la contraseña espera como mucho dos minutos a que decidas si guardarla, y el usuario que escribes en una página de dos pasos, cinco minutos. Nunca se escriben en disco.
+- Los sitios en los que pides que no te ofrezca guardar se apuntan dentro de tu bóveda, cifrados, no en el navegador.
+
+Para qué pide cada permiso
+
+- nativeMessaging: hablar con la aplicación Esfinge de tu ordenador.
+- storage: guardar el permiso de Esfinge y que has aceptado el aviso.
+- alarms: comprobar cada minuto si la bóveda sigue abierta, para que el icono lo diga.
+- favicon (solo Chrome): enseñar el icono del sitio en el panel desde la caché del navegador, sin descargarlo.
+- Acceso a las páginas https: encontrar los formularios de entrar y rellenarlos.
+
+Antes de aceptar
+
+La primera vez que abres el panel de la extensión te explica todo esto. Hasta que lo aceptas no lee ninguna página ni habla con Esfinge. Si esta política cambia en lo que hace la extensión con tus datos, te lo volverá a preguntar.
+
+LA APLICACIÓN ESFINGE
+
+Tus contraseñas y tus ficheros cifrados viven en tu ordenador, en una bóveda cifrada con tu contraseña maestra. No hay cuentas ni copia en ningún servidor: ni Webcafeína ni nadie más puede abrirla.
+
+La aplicación solo sale a internet para dos cosas, y las dos se apagan en sus Ajustes:
+
+- Buscar actualizaciones, una vez al día, preguntando a GitHub cuál es la última versión.
+- El icono de cada sitio de tu bóveda, pedido directamente al propio sitio y nunca a un intermediario.
+
+Los detalles técnicos, con lo que protege y lo que no, están en el documento de seguridad del proyecto (https://github.com/webcafeina/esfinge/blob/main/docs/seguridad.md).
+
+BORRAR LO QUE HAYA
+
+Desinstalar la extensión borra lo que guarda en el navegador. Lo de la aplicación —la bóveda, el historial y las preferencias— se borra desde la propia Esfinge o eliminando su carpeta de configuración. Como Webcafeína no tiene ningún dato tuyo, no hay nada que pedirle que borre; si tienes cualquier duda, escríbenos a info@webcafeina.com.

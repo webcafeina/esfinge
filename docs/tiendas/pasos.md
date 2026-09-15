@@ -35,8 +35,11 @@ añadieron a la publicación después. Así que:
 sube la versión con su código fuente. **Hecho con la 2.22.1 (2026-09-15)**: la versión quedó esperando
 revisión en https://addons.mozilla.org/es-ES/developers/addon/esfinge/versions/6486838. Después, en el panel de AMO:
 
-- **Poner la política de privacidad** (https://webcafeina.github.io/esfinge/privacidad.html): la API no
-  documenta ese campo.
+- **La política de privacidad, en texto y no como dirección**: Mozilla no tiene un campo de URL, sino la
+  casilla «Esta extensión tiene una política de privacidad» con un cuadro donde se pega el texto. Está en
+  [`privacidad-amo.txt`](privacidad-amo.txt), sacado de la web. La descripción de la ficha ya enlaza además
+  la de la web, que es lo que Mozilla recomienda. La pantalla exacta del panel donde está la casilla, por
+  confirmar.
 - **Añadir las capturas** de `docs/tiendas/imagenes/` (por confirmar si se pueden subir por la API).
 - Revisar que la ficha haya salido en español: el idioma se pide como `es-ES` y está **por confirmar**
   que AMO lo acepte así en la primera subida.
