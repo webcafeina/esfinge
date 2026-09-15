@@ -151,7 +151,10 @@ revisor se pare, y con `https://*/*` y `nativeMessaging` la revisión ya va a se
 - **Cada versión sube el código fuente a Mozilla**, y si no se compila igual, la rechaza. Una dependencia
   que no dé el mismo resultado —o un fichero de fuera de `navegador/` que se importe sin añadirlo al
   guion— rompe la publicación en Firefox.
-- **Las revisiones pueden tardar**: la de Chrome, días o semanas, con `https://*/*` y `nativeMessaging`.
+- **Las revisiones pueden tardar**: la de Chrome, días o semanas, con `https://*/*` y `nativeMessaging`. Al
+  enviarla (2026-09-15), la consola avisó de «Permisos de host amplios» y propuso `activeTab` o una lista de
+  sitios. **Se descartó**: `activeTab` solo da acceso tras pulsar el botón, así que dejaría de rellenar sola y
+  de ofrecer guardar, y una lista de sitios no existe para un gestor de contraseñas.
 
 ## Verificación
 

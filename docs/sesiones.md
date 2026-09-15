@@ -19,6 +19,10 @@ Plantilla al final.
 - **Chrome: subido el zip de tienda a la consola**, y de la clave pública que enseñó salió el identificador
   `jfkkegampjamnnlopobepjoanebemegp` —comprobado el cálculo con la clave de desarrollo, que da `jkka…`—.
   Añadido a `extensionesDeChrome` con una prueba que exige los dos.
+- **Ficha de Chrome rellenada con `ficha.md` y enviada a revisión.** Google avisó de «Permisos de host
+  amplios» y de que la revisión irá a fondo, proponiendo `activeTab` o una lista de sitios: se envió
+  igual, porque con cualquiera de las dos dejaría de rellenar sola y de ofrecer guardar, que es lo que se
+  decidió con el cliente. Es lo que hacen todos los gestores de contraseñas.
 - Queda: la cuenta y la
   primera subida a Chrome con `esfinge-extension-2.22.1-chrome-tienda.zip`, y el identificador que dé.
 

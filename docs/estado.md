@@ -317,7 +317,12 @@ código fuente y la dejó esperando revisión** (versión 6486838 en su panel). 
 previsto, y la publicación trae ya `esfinge-extension-2.22.1-chrome-tienda.zip` para la primera subida a mano.
 
 **Y Chrome, en marcha**: subido el zip a la consola de la tienda, que asignó el identificador
-`jfkkegampjamnnlopobepjoanebemegp`, ya añadido a Esfinge sin publicar.
+`jfkkegampjamnnlopobepjoanebemegp`, ya añadido a Esfinge sin publicar. **Ficha y prácticas de privacidad
+rellenadas y enviada a revisión el mismo día**, con el aviso de Google de que irá a revisión a fondo por los
+permisos de host amplios —esperado: sin ellos no rellena sola ni ofrece guardar—.
+
+**Quedan**: publicar la 2.22.2 para que Esfinge deje entrar a la extensión de la tienda, la cuenta de
+servicio de Chrome (`pasos.md`, 2.4) y esperar a las dos revisiones.
 
 **Lo que queda, con el cliente**: los pasos de `docs/tiendas/pasos.md` —cuentas de Mozilla
 y de Google, la primera subida a Chrome a mano, los secretos en GitHub— y **pasarme el identificador de
