@@ -41,8 +41,7 @@ revisión en https://addons.mozilla.org/es-ES/developers/addon/esfinge/versions/
   la de la web, que es lo que Mozilla recomienda. **Puesta por el cliente el 2026-09-15**, junto
   con las capturas; la pantalla exacta del panel donde está la casilla sigue sin apuntar.
 - **Añadir las capturas** de `docs/tiendas/imagenes/` (por confirmar si se pueden subir por la API).
-- Revisar que la ficha haya salido en español: el idioma se pide como `es-ES` y está **por confirmar**
-  que AMO lo acepte así en la primera subida.
+- ~~Revisar que la ficha haya salido en español~~: con `es-ES` sale en español, comprobado el 2026-09-15.
 
 ## 2. Chrome (Chrome Web Store)
 

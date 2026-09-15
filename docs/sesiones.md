@@ -15,7 +15,8 @@ Plantilla al final.
   validó la extensión, recibió el código fuente y la dejó esperando revisión.** Chrome se saltó avisando.
 - **En el panel de AMO, el cliente subió las capturas y pegó la política de privacidad** —en texto, que es lo
   que pide Mozilla y no una dirección (`docs/tiendas/privacidad-amo.txt`)—.
-- Queda: confirmar que la ficha de AMO salió en español, la cuenta y la
+- **La ficha de AMO salió en español**, comprobado por el cliente: `es-ES` vale.
+- Queda: la cuenta y la
   primera subida a Chrome con `esfinge-extension-2.22.1-chrome-tienda.zip`, y el identificador que dé.
 
 ## 2026-09-14 · Cierre del día: la 2.22.0 probada, las tiendas mañana
