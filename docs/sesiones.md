@@ -13,7 +13,9 @@ Plantilla al final.
 - **Publicada la 2.22.1** para que corriera el trabajo `tiendas`: la 2.22.0 no traía los zip de las tiendas,
   que se añadieron a la publicación después. **El código fuente dio el mismo paquete byte a byte, y Mozilla
   validó la extensión, recibió el código fuente y la dejó esperando revisión.** Chrome se saltó avisando.
-- Queda: revisar la ficha en el panel de AMO —política de privacidad, capturas, idioma—, la cuenta y la
+- **En el panel de AMO, el cliente subió las capturas y pegó la política de privacidad** —en texto, que es lo
+  que pide Mozilla y no una dirección (`docs/tiendas/privacidad-amo.txt`)—.
+- Queda: confirmar que la ficha de AMO salió en español, la cuenta y la
   primera subida a Chrome con `esfinge-extension-2.22.1-chrome-tienda.zip`, y el identificador que dé.
 
 ## 2026-09-14 · Cierre del día: la 2.22.0 probada, las tiendas mañana
