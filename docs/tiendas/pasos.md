@@ -7,6 +7,17 @@ pantalla, y hay que apuntarlo aquí.
 
 Los textos de las fichas están en [`ficha.md`](ficha.md) y las imágenes en `docs/tiendas/imagenes/`.
 
+## El orden
+
+**La 2.22.0 no trae los zip de las tiendas** —el de Chrome sin la clave y el de código fuente—: se
+añadieron a la publicación después. Así que:
+
+1. **Las cuentas de Mozilla y de Google**, y las claves de Mozilla guardadas en GitHub (apartados 1 y 2.1-2.2).
+2. **Publicar una versión nueva.** Con las claves puestas crea la ficha de Firefox, y deja en la publicación
+   el zip de Chrome sin la clave.
+3. **La primera subida a Chrome, a mano**, con ese zip (apartado 2.3), y el identificador que dé la tienda.
+4. La cuenta de servicio de Chrome y sus secretos (apartado 2.4), para que las siguientes suban solas.
+
 ---
 
 ## 1. Firefox (addons.mozilla.org)
