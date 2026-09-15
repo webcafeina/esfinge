@@ -32,7 +32,8 @@ añadieron a la publicación después. Así que:
    - `AMO_API_SECRET`: el secreto JWT.
 
 **No hace falta subir nada a mano**: con las claves puestas, la siguiente publicación crea la ficha y
-sube la versión con su código fuente. Después, en el panel de AMO:
+sube la versión con su código fuente. **Hecho con la 2.22.1 (2026-09-15)**: la versión quedó esperando
+revisión en https://addons.mozilla.org/es-ES/developers/addon/esfinge/versions/6486838. Después, en el panel de AMO:
 
 - **Poner la política de privacidad** (https://webcafeina.github.io/esfinge/privacidad.html): la API no
   documenta ese campo.

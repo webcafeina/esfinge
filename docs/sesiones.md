@@ -5,6 +5,17 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-15 · La extensión, enviada a Firefox (2.22.1)
+
+- **El cliente dio de alta la cuenta de Mozilla** y guardó `AMO_API_KEY` y `AMO_API_SECRET` en GitHub. Costó
+  varios intentos: la casilla *Name* del secreto no es para la clave de Mozilla sino para la etiqueta, y el
+  error de GitHub no lo dice. No se pasaron las claves por la conversación.
+- **Publicada la 2.22.1** para que corriera el trabajo `tiendas`: la 2.22.0 no traía los zip de las tiendas,
+  que se añadieron a la publicación después. **El código fuente dio el mismo paquete byte a byte, y Mozilla
+  validó la extensión, recibió el código fuente y la dejó esperando revisión.** Chrome se saltó avisando.
+- Queda: revisar la ficha en el panel de AMO —política de privacidad, capturas, idioma—, la cuenta y la
+  primera subida a Chrome con `esfinge-extension-2.22.1-chrome-tienda.zip`, y el identificador que dé.
+
 ## 2026-09-14 · Cierre del día: la 2.22.0 probada, las tiendas mañana
 
 - **El cliente probó la 2.22.0 instalada a mano** —en su Mac— y dice que **todo parece correcto**, con
