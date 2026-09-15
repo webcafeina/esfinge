@@ -68,11 +68,10 @@ y en cualquier instalación. Es `jkkadfdagaojlgffkcboniepfgjkeenk`.
 Esa clave **no firma nada y no es un secreto**: solo decide el identificador. La
 privada ni se guarda ni hace falta.
 
-Lo que queda por saber es el identificador que asigne la **tienda** al subirla. Si
-no coincide con éste, se añade a `extensionesDeChrome` en
-`internal/app/manifiestos.go` y ya. Para probar cualquier otra extensión sin
-publicar sigue estando `ESFINGE_EXTENSIONES`, con los identificadores separados
-por comas.
+El de la **Chrome Web Store** es otro, `jfkkegampjamnnlopobepjoanebemegp`: la tienda asigna el suyo y el
+paquete que se le sube va sin `key`. Los dos están en `extensionesDeChrome`
+(`internal/app/manifiestos.go`) desde el 2026-09-15. Para probar cualquier otra extensión sin
+publicar sigue estando `ESFINGE_EXTENSIONES`, con los identificadores separados por comas.
 
 ## Cómo se comprueba
 

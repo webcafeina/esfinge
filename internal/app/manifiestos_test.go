@@ -422,3 +422,31 @@ func TestEnWindowsSinRegistroNoSeAvisaANadie(t *testing.T) {
 		t.Errorf("sin registro: avisados %v, fallos %v", avisados, fallos)
 	}
 }
+
+// **Las dos de Chrome en el manifiesto**: la de desarrollo, para quien carga la
+// extensión a mano, y la que asignó la tienda. Si falta la de la tienda, la extensión
+// instalada desde la Chrome Web Store no puede lanzar el puente y no hace nada.
+func TestChromeDejaEntrarALaDeLaTiendaYALaDeDesarrollo(t *testing.T) {
+	deCarpetas(t)
+	t.Setenv("ESFINGE_EXTENSIONES", "")
+	casa := t.TempDir()
+	base := filepath.Join(casa, ".config", "google-chrome")
+	if sistema == "darwin" {
+		base = filepath.Join(casa, "Library", "Application Support", "Google", "Chrome")
+	}
+	if err := os.MkdirAll(base, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, fallos := escribirManifiestos(casa, "/donde/sea/esfinge-puente"); len(fallos) > 0 {
+		t.Fatal(fallos)
+	}
+	datos, err := os.ReadFile(filepath.Join(base, "NativeMessagingHosts", nombreDelHost+".json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"jkkadfdagaojlgffkcboniepfgjkeenk", "jfkkegampjamnnlopobepjoanebemegp"} {
+		if !strings.Contains(string(datos), "chrome-extension://"+id+"/") {
+			t.Errorf("el manifiesto de Chrome no deja entrar a %s: %s", id, datos)
+		}
+	}
+}

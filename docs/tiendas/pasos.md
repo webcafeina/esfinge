@@ -54,7 +54,9 @@ revisión en https://addons.mozilla.org/es-ES/developers/addon/esfinge/versions/
    1. «Añadir elemento» y subir el zip de tienda de Chrome de la última publicación
       (`esfinge-extension-<versión>-chrome-tienda.zip`, sin la clave de desarrollo).
    2. **Apuntar el identificador** que da la tienda —32 letras— y **pasármelo**: hay que añadirlo a Esfinge
-      para que la aplicación deje hablar a la extensión de la tienda.
+      para que la aplicación deje hablar a la extensión de la tienda. **Hecho el 2026-09-15**:
+      `jfkkegampjamnnlopobepjoanebemegp`. La consola enseña también la clave pública, y de ella sale el
+      identificador con el cálculo de Chrome.
    3. Rellenar la ficha con `ficha.md`: descripción, categoría, idioma, capturas y mosaico de
       `docs/tiendas/imagenes/`, web y soporte.
    4. Rellenar **«Privacy practices»** con `ficha.md`, tal cual.

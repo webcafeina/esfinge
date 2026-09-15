@@ -316,6 +316,9 @@ primera vez: el código fuente dio el mismo paquete byte a byte y **Mozilla vali
 código fuente y la dejó esperando revisión** (versión 6486838 en su panel). Chrome se saltó, como estaba
 previsto, y la publicación trae ya `esfinge-extension-2.22.1-chrome-tienda.zip` para la primera subida a mano.
 
+**Y Chrome, en marcha**: subido el zip a la consola de la tienda, que asignó el identificador
+`jfkkegampjamnnlopobepjoanebemegp`, ya añadido a Esfinge sin publicar.
+
 **Lo que queda, con el cliente**: los pasos de `docs/tiendas/pasos.md` —cuentas de Mozilla
 y de Google, la primera subida a Chrome a mano, los secretos en GitHub— y **pasarme el identificador de
 Chrome**, que hay que añadir a Esfinge.

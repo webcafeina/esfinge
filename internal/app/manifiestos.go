@@ -72,8 +72,12 @@ var elRegistro = registroDelSistema()
 // Lo que hay en el manifiesto es la **clave pública**: no firma nada y no hay
 // secreto que guardar. Solo decide el identificador.
 //
-// El que queda por saber es el de la tienda: al subirla, la Chrome Web Store
-// asigna el suyo. Si no coincide con éste, se añade aquí y ya.
+// **Y el de la tienda, al lado** (ADR 0033): la Chrome Web Store asigna el suyo,
+// sacado de su propia clave, y el paquete que se le sube va sin `key`. Se calculó
+// de la clave pública que enseña la consola de la tienda —SHA-256 de la clave,
+// los 32 primeros dígitos hexadecimales pasados a las letras de la «a» a la «p»,
+// el mismo cálculo que da `jkka…` con la de desarrollo— el 2026-09-15. Los dos
+// conviven: la de desarrollo es la de quien carga la extensión a mano.
 //
 // Y `ESFINGE_EXTENSIONES` sigue existiendo para probar una extensión sin
 // publicar. Es una variable de entorno y no un ajuste de la ventana a propósito:
@@ -82,7 +86,10 @@ var elRegistro = registroDelSistema()
 // alguien acaba rellenando porque se lo han dicho por teléfono.
 var (
 	extensionesDeFirefox = []string{"esfinge@webcafeina.com"}
-	extensionesDeChrome  = []string{"jkkadfdagaojlgffkcboniepfgjkeenk"}
+	extensionesDeChrome  = []string{
+		"jkkadfdagaojlgffkcboniepfgjkeenk", // la de desarrollo, con la `key` del manifiesto
+		"jfkkegampjamnnlopobepjoanebemegp", // la de la Chrome Web Store
+	}
 )
 
 // deDesarrollo son las que se añaden a mano para probar.

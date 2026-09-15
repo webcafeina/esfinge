@@ -16,6 +16,9 @@ Plantilla al final.
 - **En el panel de AMO, el cliente subió las capturas y pegó la política de privacidad** —en texto, que es lo
   que pide Mozilla y no una dirección (`docs/tiendas/privacidad-amo.txt`)—.
 - **La ficha de AMO salió en español**, comprobado por el cliente: `es-ES` vale.
+- **Chrome: subido el zip de tienda a la consola**, y de la clave pública que enseñó salió el identificador
+  `jfkkegampjamnnlopobepjoanebemegp` —comprobado el cálculo con la clave de desarrollo, que da `jkka…`—.
+  Añadido a `extensionesDeChrome` con una prueba que exige los dos.
 - Queda: la cuenta y la
   primera subida a Chrome con `esfinge-extension-2.22.1-chrome-tienda.zip`, y el identificador que dé.
 

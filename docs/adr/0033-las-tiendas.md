@@ -120,7 +120,8 @@ extensión—, **política de privacidad** y **soporte**.
 ### Pendiente en esta misma decisión
 
 - **Los pasos del cliente** (`docs/tiendas/pasos.md`).
-- **El identificador de Chrome**, que asigna la tienda: se añade a `extensionesDeChrome` y la web cambia
+- ~~**El identificador de Chrome**, que asigna la tienda~~: `jfkkegampjamnnlopobepjoanebemegp`, añadido a
+  `extensionesDeChrome` el 2026-09-15, calculado de la clave pública de la consola. Queda que la web cambie
   «Muy pronto» por los enlaces.
 - **Dejar de colgar los zip de la extensión** en las publicaciones de GitHub cuando las dos fichas estén
   en marcha.
