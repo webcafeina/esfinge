@@ -30,6 +30,9 @@ comprobar:
 	@# Y el servidor de cuentas: tipos y sus pruebas, dentro del motor de Workers
 	@# de verdad. Sin conexión con Cloudflare: todo corre en local.
 	cd servidor && $(PNPM) run comprobar
+	@# Y el cliente y la sincronización contra ese mismo servidor, levantado en
+	@# local: la tubería entera, de la bóveda de un equipo a la de otro.
+	herramientas/con-servidor.sh $(GO) test -race -count=1 ./internal/cuenta ./internal/sincro
 
 ## servidor: levanta el servidor de cuentas en local, con el buzón de pruebas
 .PHONY: servidor

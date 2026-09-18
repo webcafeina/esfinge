@@ -388,10 +388,18 @@ que dar cada vez. Producción vive en **https://esfinge-cuentas.webcafeina.com**
 `@webcafeina.com` en la lista; el de pruebas, en `https://esfinge-cuentas-pruebas.webcafe-na.workers.dev`.
 **El código por correo llega a la bandeja de entrada, con SPF, DKIM y DMARC en `PASS`.**
 
-**La siguiente acción concreta es la A1**: el modelo de la bóveda (`Revision`, lápidas, `sello.Sincro`,
-apertura en memoria), la fusión a tres bandas y los paquetes `internal/cuenta` e `internal/sincro`, **sin
-interfaz**. Se prueba contra `make servidor`. **El cliente de Go tiene que leer el `ETag` débil** (`W/"1"`):
-Cloudflare lo debilita al comprimir.
+**~~La A1~~ — hecha el 2026-09-18, sin publicar** ([ADR 0037](adr/0037-claves-de-la-cuenta.md) y
+[0038](adr/0038-sincronizar-la-boveda.md), formato en [`formato-boveda.md`](formato-boveda.md)): la bóveda
+lleva revisiones, lápidas de seis meses y la versión del servidor sellada; se abre sin escribir, se sube sin
+las ranuras de este equipo y **se funde a tres bandas**; `internal/cuenta` deriva la clave de acceso y habla
+con el servidor —leyendo el `ETag` débil—, e `internal/sincro` hace las pasadas y vigila. **Nada se ve en la
+ventana todavía.** Probado con tres equipos al azar (16 semillas), con una bóveda de la 2.22.2 de verdad y
+**contra el servidor de verdad levantado en local**, en `make comprobar` y en la puerta de publicación.
+
+**La siguiente acción concreta es la A2**: la bienvenida al arrancar, crear la cuenta y entrar desde otro
+equipo, y la sincronización enganchada a la aplicación —`BorrarBoveda` tiene que borrar también `.base`,
+`.sincro` y `.antes-de-fundir`, y nada de la sincronización puede llamar a `Actividad()`—. Con el servidor
+de producción por invitación, y **en el Mac, con dos equipos de verdad**.
 
 ### Lo que yo recomendaría meter en medio, y no es lo que se decidió
 

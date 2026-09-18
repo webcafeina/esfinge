@@ -30,9 +30,16 @@ export { Cuenta };
 
 const LIMITE_JSON = 64 * 1024;
 const CODIGOS_DE_ALTA_POR_HORA = 3;
-const CODIGOS_DE_ALTA_POR_IP_Y_DIA = 20;
-const ALTAS_POR_IP_Y_DIA = 3;
 const INTENTOS_DE_ALTA = 5;
+
+/**
+ * Los topes por IP y día, con el valor de producción por defecto. Solo el entorno
+ * `local` —el de las pruebas de Go, donde todo llega desde 127.0.0.1— los sube.
+ */
+function tope(valor: string | undefined, porDefecto: number): number {
+	const n = Number(valor);
+	return Number.isInteger(n) && n > 0 ? n : porDefecto;
+}
 
 class Fallo extends Error {
 	constructor(
@@ -120,7 +127,7 @@ async function empezarAlta(p: Request, env: Env): Promise<Response> {
 	await puedeDarseDeAlta(env, c);
 	await frenar(env.FRENO_ALTAS, p, env);
 	const ip = await claveDeIP(p, env);
-	await contar(env, `codigos-alta:${ip}`, CODIGOS_DE_ALTA_POR_IP_Y_DIA, "Se han pedido demasiados códigos desde aquí hoy.");
+	await contar(env, `codigos-alta:${ip}`, tope(env.TOPE_CODIGOS_IP_DIA, 20), "Se han pedido demasiados códigos desde aquí hoy.");
 
 	const ahora = Date.now();
 	const enviados = await env.BD.prepare("SELECT COUNT(*) AS n FROM envios_alta WHERE correo = ? AND momento > ?")
@@ -176,8 +183,8 @@ async function terminarAlta(p: Request, env: Env): Promise<Response> {
 	}
 
 	const ip = await claveDeIP(p, env);
-	await contar(env, `altas:${ip}`, ALTAS_POR_IP_Y_DIA, "Se han creado demasiadas cuentas desde aquí hoy.");
-	await contar(env, "altas:todas", Number(env.TOPE_ALTAS_DIA ?? "200"), "Hoy no se pueden crear más cuentas. Prueba mañana.");
+	await contar(env, `altas:${ip}`, tope(env.TOPE_ALTAS_IP_DIA, 3), "Se han creado demasiadas cuentas desde aquí hoy.");
+	await contar(env, "altas:todas", tope(env.TOPE_ALTAS_DIA, 200), "Hoy no se pueden crear más cuentas. Prueba mañana.");
 
 	const cuenta = aHex(azar(16));
 	const previa = await cuentaDeCorreo(env, c);

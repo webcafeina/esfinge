@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/webcafeina/esfinge/internal/cripto"
@@ -63,6 +64,11 @@ type Fusion struct {
 	// Subir dice si lo que queda aquí es distinto de lo que hay en el servidor:
 	// entonces hay que subirlo.
 	Subir bool
+	// Serie es la del fichero justo después de fundir, **leída sin soltar el
+	// cerrojo**. Leerla después con Serie() dejaría un hueco por el que un guardado
+	// de otro hilo —el navegador guardando una contraseña— se daría por sincronizado
+	// sin haberse subido.
+	Serie int64
 }
 
 // Serie devuelve el contador de guardados de este fichero.
@@ -88,14 +94,18 @@ func (b *Boveda) GuardarEn(ruta string) error {
 	return b.guardar()
 }
 
-// Posesion es la prueba de que se tiene la clave de bóveda, para una cuenta.
+// Posesion es la prueba de que se tiene la clave de bóveda.
 //
 // Se deriva de la clave de bóveda, que **no cambia nunca**: ni al cambiar la
 // contraseña maestra ni al rotar la de recuperación. Por eso sirve para demostrar
 // al servidor, sin dársela, que quien pide cambiar la contraseña de la cuenta
 // tiene la bóveda abierta —con la maestra o con la clave de recuperación—. El
 // servidor guarda un HMAC de esto, no esto.
-func (b *Boveda) Posesion(cuentaID string) ([]byte, error) {
+//
+// No lleva el identificador de la cuenta, como decía el plan: al darse de alta
+// todavía no se sabe, porque lo asigna el servidor en ese mismo paso. Tampoco
+// hace falta: la clave de bóveda ya es única de cada bóveda.
+func (b *Boveda) Posesion() ([]byte, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.llave == nil {
@@ -106,7 +116,7 @@ func (b *Boveda) Posesion(cuentaID string) ([]byte, error) {
 		return nil, err
 	}
 	defer cripto.Borrar(clave)
-	return hkdf.Key(sha256.New, clave, []byte(cuentaID), "esfinge/cuenta/posesion/v1", 32)
+	return hkdf.Key(sha256.New, clave, nil, "esfinge/cuenta/posesion/v1", 32)
 }
 
 // PrepararSubida devuelve la bóveda tal como se sube al servidor como `version`.
@@ -116,14 +126,17 @@ func (b *Boveda) Posesion(cuentaID string) ([]byte, error) {
 // como otra. Quitar una ranura obliga a volver a sellar —si no, el sello del otro
 // equipo echaría en falta su huella y diría que está manipulada—, así que el sello
 // se hace de nuevo. **No toca el fichero de aquí.**
-func (b *Boveda) PrepararSubida(version int64) ([]byte, error) {
+//
+// Devuelve también la serie del fichero que lleva dentro, por la misma razón que
+// Fusion.Serie.
+func (b *Boveda) PrepararSubida(version int64) ([]byte, int64, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.llave == nil {
-		return nil, ErrCerrada
+		return nil, 0, ErrCerrada
 	}
 	if b.cuerpoSucio {
-		return nil, errors.New("La bóveda tiene cambios sin guardar")
+		return nil, 0, errors.New("La bóveda tiene cambios sin guardar")
 	}
 	doc := b.doc
 	doc.Sobres = nil
@@ -137,17 +150,17 @@ func (b *Boveda) PrepararSubida(version int64) ([]byte, error) {
 	}
 	crudo, err := json.Marshal(sel)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	doc.Sello, err = cripto.SellarTexto(crudo, b.llave, cripto.PerfilLlave)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	fuera, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return append(fuera, '\n'), nil
+	return append(fuera, '\n'), doc.Serie, nil
 }
 
 // OpcionesDeFusion cambian lo que Fundir se atreve a hacer solo.
@@ -220,6 +233,7 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 		}
 	}
 	f.Borradas = perdidas
+	f.Serie = b.doc.Serie
 	if !o.AunqueBorreMucho && len(vivasAntes) >= 4 && perdidas*2 > len(vivasAntes) {
 		return f, ErrMuchosBorrados
 	}
@@ -237,7 +251,9 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	b.cont = cont
 	b.doc.Sobres = sobres
 	b.cuerpoSucio = true
-	return f, b.guardar()
+	err = b.guardar()
+	f.Serie = b.doc.Serie
+	return f, err
 }
 
 // ------------------------------------------------------------------ piezas
@@ -302,9 +318,31 @@ func normal(c contenido) contenido {
 	return c
 }
 
+// canon es la forma canónica de una entrada: JSON con las claves en orden
+// alfabético a todos los niveles, sin espacios y **sin escapar `<`, `>` ni `&`**,
+// que Go escapa por defecto y JavaScript no.
+//
+// Sirve para comparar y para el último desempate, que hace una huella de esto: la
+// extensión, que fundirá en TypeScript, tiene que sacar exactamente los mismos
+// bytes (docs/formato-boveda.md).
 func canon(e Entrada) string {
-	j, _ := json.Marshal(e)
-	return string(j)
+	crudo, err := json.Marshal(e)
+	if err != nil {
+		return ""
+	}
+	dec := json.NewDecoder(bytes.NewReader(crudo))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return ""
+	}
+	return strings.TrimSuffix(buf.String(), "\n")
 }
 
 // fundirSobres decide, de cada tipo de ranura, cuál queda.

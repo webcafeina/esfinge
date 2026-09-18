@@ -823,6 +823,26 @@ cosas que ya costaron algo al escribirlo:
   `minimumReleaseAgeExclude`. No se acepta: se fijan versiones con una semana, que es lo que ese freno
   pide.
 
+**La fusión de la bóveda la vigila una prueba de tres equipos al azar, y es la que manda** (ADR 0038).
+Al escribirla cazó dos fallos que ninguna prueba caso a caso veía: **cada equipo conservaba su orden de
+entradas**, así que la bóveda fundida nunca era igual a la del servidor y se la pasaban sin fin —ahora
+manda el orden del servidor—; y **un borrado volvía a matar una entrada** que otro equipo había decidido
+conservar porque la editó. Tres reglas que salen de ahí y de lo demás:
+
+- **Las fechas tienen resolución de un segundo**, así que nada que importe puede decidirse solo por ellas:
+  la revisión desempata antes, y las ranuras se funden a tres bandas contra la base. Una prueba que haga
+  dos cosas en el mismo segundo puede pasar por el empate sin ejercitar la regla: la de la lápida no
+  cazaba nada hasta que el borrado se movió una hora.
+- **La serie del fichero sale del mismo cerrojo que la subida y que la fusión** (`PrepararSubida`,
+  `Fusion.Serie`). Leída después, un guardado del navegador en medio se daría por subido sin estarlo.
+- **La forma canónica de una entrada no es `json.Marshal`**: claves en orden y sin el escape de HTML de
+  Go, porque la extensión tendrá que sacar los mismos bytes en TypeScript (`docs/formato-boveda.md`).
+
+**Las pruebas de la cuenta y de la sincronización hablan con el servidor de verdad**, levantado en local
+por `herramientas/con-servidor.sh` con el entorno `local` del Worker —frenos holgados, porque todo llega
+desde 127.0.0.1: con los de verdad, la cuarta cuenta de la tanda chocaba con el tope de tres altas por IP y
+día—. Un `go test` suelto se las salta; `make comprobar` y `publicar.yml` no.
+
 ## Lo que nunca se ha probado
 
 Y ojo con qué se ha comprobado de verdad: **el diálogo de abrir no**, porque en macOS los ficheros se

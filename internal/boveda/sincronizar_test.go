@@ -72,7 +72,7 @@ func (e *equipo) sincronizar(t *testing.T, s *servidorFalso) (subio bool) {
 	if err != nil {
 		t.Fatalf("%s: fundir la %d: %v", e.nombre, s.version, err)
 	}
-	e.base, e.version, e.serie = s.datos, s.version, e.b.Serie()
+	e.base, e.version, e.serie = s.datos, s.version, f.Serie
 	if f.Subir {
 		e.subir(t, s)
 		return true
@@ -85,12 +85,12 @@ func (e *equipo) subir(t *testing.T, s *servidorFalso) {
 	if s.version != e.version {
 		t.Fatalf("%s sube sobre la %d y el servidor va por la %d", e.nombre, e.version, s.version)
 	}
-	datos, err := e.b.PrepararSubida(s.version + 1)
+	datos, serie, err := e.b.PrepararSubida(s.version + 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	s.datos, s.version = datos, s.version+1
-	e.base, e.version, e.serie = datos, s.version, e.b.Serie()
+	e.base, e.version, e.serie = datos, s.version, serie
 }
 
 func buscar(t *testing.T, b *Boveda, titulo string) Entrada {
@@ -236,7 +236,7 @@ func TestLaSubidaNoLlevaLasRanurasDeEsteEquipo(t *testing.T) {
 	if err := b.Guardar(); err != nil {
 		t.Fatal(err)
 	}
-	subida, err := b.PrepararSubida(7)
+	subida, _, err := b.PrepararSubida(7)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,7 +271,7 @@ func TestUnaVersionQueNoCuadraNoSeFunde(t *testing.T) {
 func TestOtraBovedaNoSeFunde(t *testing.T) {
 	a, _, _ := dosEquipos(t)
 	otra, _, _ := nueva(t)
-	datos, _ := otra.PrepararSubida(1)
+	datos, _, _ := otra.PrepararSubida(1)
 	if _, err := a.b.Fundir(datos, 1, nil, OpcionesDeFusion{}); !errors.Is(err, ErrOtraBoveda) {
 		t.Fatalf("funde una bóveda que no es la suya: %v", err)
 	}
@@ -279,20 +279,24 @@ func TestOtraBovedaNoSeFunde(t *testing.T) {
 
 func TestLaPosesionNoCambiaConLaMaestra(t *testing.T) {
 	b, _, _ := nueva(t)
-	antes, err := b.Posesion("cuenta")
+	antes, err := b.Posesion()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := b.CambiarMaestra("otra contraseña maestra"); err != nil {
 		t.Fatal(err)
 	}
-	despues, _ := b.Posesion("cuenta")
-	otraCuenta, _ := b.Posesion("otra cuenta")
-	if string(antes) != string(despues) {
-		t.Fatal("la posesión cambia al cambiar la maestra")
+	if _, err := b.RotarRecuperacion(); err != nil {
+		t.Fatal(err)
 	}
-	if string(antes) == string(otraCuenta) || len(antes) != 32 {
-		t.Fatal("la posesión no depende de la cuenta o no mide 32 bytes")
+	despues, _ := b.Posesion()
+	otra, _, _ := nueva(t)
+	deOtra, _ := otra.Posesion()
+	if string(antes) != string(despues) {
+		t.Fatal("la posesión cambia al cambiar la maestra o la de recuperación")
+	}
+	if string(antes) == string(deOtra) || len(antes) != 32 {
+		t.Fatal("dos bóvedas dan la misma posesión, o no mide 32 bytes")
 	}
 }
 
@@ -720,5 +724,18 @@ func TestUnaBovedaDeLa2222SeAbreYSeSincroniza(t *testing.T) {
 	a.sincronizar(t, s)
 	if buscar(t, otro.b, "Banco").Notas != "desde A" || !hay(a.b, "Desde B") {
 		t.Fatal("la bóveda de la 2.22.2 no se sincroniza")
+	}
+}
+
+// La forma canónica tiene que poder sacarla igual la extensión en TypeScript:
+// claves en orden a todos los niveles y sin el escape de HTML que Go pone solo.
+func TestLaFormaCanonicaEsLaDeLaEspecificacion(t *testing.T) {
+	e := Entrada{ID: "a", Tipo: TipoCredencial, Titulo: "<Tom & Jerry>", Revision: 2,
+		Sitios: []string{"b.com", "a.com"}, Historial: []Antigua{{Secreto: "x", Hasta: "2026"}},
+		Extra: map[string]json.RawMessage{"zeta": json.RawMessage(`{"b":1,"a":[2,1]}`)}}
+	quiere := `{"cambiada":"","creada":"","historial":[{"hasta":"2026","secreto":"x"}],"id":"a","revision":2,` +
+		`"sitios":["b.com","a.com"],"tipo":"credencial","titulo":"<Tom & Jerry>","zeta":{"a":[2,1],"b":1}}`
+	if got := canon(e); got != quiere {
+		t.Fatalf("\n%s\n%s", got, quiere)
 	}
 }

@@ -48,6 +48,34 @@
 	],
 
 	"env": {
+		// **Solo para `wrangler dev`, nunca se despliega**: el de las pruebas de Go
+		// contra el servidor (make comprobar). Igual que el de pruebas, pero con los
+		// frenos por IP holgados, porque ahí todas las peticiones llegan desde
+		// 127.0.0.1. Los frenos de verdad los prueba vitest con los topes de verdad.
+		"local": {
+			"name": "esfinge-cuentas-local",
+			"routes": [],
+			"workers_dev": false,
+			"vars": {
+				"ENTORNO": "pruebas",
+				"JURISDICCION": "",
+				"REGISTRO": "abierto",
+				"REMITENTE": "Esfinge <esfinge@webcafeina.com>",
+				"TOPE_ALTAS_DIA": "100000",
+				"TOPE_ALTAS_IP_DIA": "100000",
+				"TOPE_CODIGOS_IP_DIA": "100000"
+			},
+			"d1_databases": [
+				{ "binding": "BD", "database_name": "esfinge-cuentas-local", "database_id": "local", "migrations_dir": "migraciones" }
+			],
+			"durable_objects": {
+				"bindings": [{ "name": "CUENTAS", "class_name": "Cuenta" }]
+			},
+			"ratelimits": [
+				{ "name": "FRENO_ENTRAR", "namespace_id": "3001", "simple": { "limit": 100000, "period": 60 } },
+				{ "name": "FRENO_ALTAS", "namespace_id": "3002", "simple": { "limit": 100000, "period": 60 } }
+			]
+		},
 		// El Worker de pruebas: otro nombre, otra base y el buzón de pruebas encendido.
 		"pruebas": {
 			"name": "esfinge-cuentas-pruebas",

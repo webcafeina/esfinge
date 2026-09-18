@@ -105,6 +105,11 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm run comprobar
 
+      # Y el cliente de Go y la sincronización contra ese servidor, levantado aquí
+      # mismo: sin esto, las pruebas de la tubería se saltan solas.
+      - name: La sincronización contra el servidor
+        run: herramientas/con-servidor.sh go test -race -count=1 ./internal/cuenta ./internal/sincro
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

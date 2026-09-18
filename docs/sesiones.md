@@ -5,6 +5,31 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-18 (tarde) · Las cuentas: decididas, el servidor desplegado y la A1
+
+- **Decidido con el cliente, en modo plan y por preguntas**, el nivel de cuenta: servidor propio en
+  Cloudflare UE que no puede leer nada, código por correo con Resend, bienvenida «En este ordenador / Con
+  cuenta» reversible, sin equipos, compartir copias sin permisos, maestra «fuerte» con cuenta, **la
+  extensión como cliente completo y siempre por la cuenta**, y registro libre solo tras una auditoría
+  externa. ADR 0035 y plan en `docs/cuentas.md`. Preguntó por un usuario de Colombia: la UE decide dónde
+  se guarda, no desde dónde se entra; lo de la ley colombiana queda por mirar en la fuente.
+- **A0, el servidor** (ADR 0036): `servidor/`, un Durable Object por cuenta **con la bóveda dentro y no
+  en R2**, D1 como índice, 39 pruebas en `workerd`. **Desplegado guiando al cliente**: bases D1 creadas por
+  él con jurisdicción UE —leída en la API; producción contesta desde Milán—, token y secretos puestos por
+  él, nunca por el chat; entorno `produccion` sin aprobación, que no la quiere cada vez. Producción en
+  `esfinge-cuentas.webcafeina.com` por invitación (`@webcafeina.com`). **El código llega a la bandeja de
+  entrada con SPF, DKIM y DMARC en `PASS`.** Cloudflare debilita el ETag al comprimir (`W/"1"`).
+- **A1, la bóveda que sincroniza** (ADR 0037 y 0038, formato en `docs/formato-boveda.md`): revisiones,
+  lápidas de seis meses, la versión sellada, abrir sin escribir, la subida sin ranuras locales, la fusión a
+  tres bandas, `internal/cuenta` e `internal/sincro`. La prueba de tres equipos al azar (16 semillas) cazó
+  dos fallos al escribirla —el orden que hacía a los equipos pasarse la bóveda sin fin y un borrado que
+  volvía a matar lo conservado— y **la tubería entera corre contra el servidor de verdad** levantado en
+  local (`herramientas/con-servidor.sh`), en `make comprobar` y en `publicar.yml`.
+- Salió del diseño: la prueba de posesión **no puede llevar el identificador de la cuenta** —al darse de
+  alta todavía no se sabe—, y **la serie del fichero tiene que salir del mismo cerrojo** que la subida.
+- Sin publicar ninguna versión: la A1 no cambia nada que se vea. **Siguiente: la A2**, la bienvenida y la
+  cuenta en la ventana.
+
 ## 2026-09-18 · La extensión, publicada en las dos tiendas
 
 - **Mozilla y Google aprobaron la extensión** y las dos fichas son públicas con la 2.22.1, comprobado por la
