@@ -70,6 +70,12 @@ revisión en https://addons.mozilla.org/es-ES/developers/addon/esfinge/versions/
    4. Guardar en GitHub como secretos: `CWS_CUENTA_DE_SERVICIO` (el JSON entero), `CWS_EDITOR` (el ID de
       editor) y `CWS_EXTENSION` (el identificador de la extensión).
 
+## Hecho
+
+Todo lo de arriba, entre el 15 y el 18 de septiembre de 2026: las dos cuentas, las dos fichas publicadas y los
+cinco secretos en GitHub (`AMO_API_KEY`, `AMO_API_SECRET`, `CWS_CUENTA_DE_SERVICIO`, `CWS_EDITOR` y
+`CWS_EXTENSION`). **Desde la 2.22.2, cada publicación sube la extensión sola a las dos tiendas.**
+
 ## 3. Lo que hago yo cuando me pases el identificador de Chrome
 
 - Añadirlo a `extensionesDeChrome` (`internal/app/manifiestos.go`) y publicar una versión de Esfinge,

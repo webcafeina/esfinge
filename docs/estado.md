@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.22.1**, y **la extensión está publicada en las dos tiendas**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.22.2**, y **la extensión está publicada en las dos tiendas y se sube sola a las dos**. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -331,6 +331,12 @@ Firefox en https://addons.mozilla.org/es-ES/firefox/addon/esfinge/ y Chrome en
 https://chromewebstore.google.com/detail/esfinge/jfkkegampjamnnlopobepjoanebemegp. La web y el README las
 enlazan. Decidido con el cliente ese día: **seguir subiendo la extensión en cada publicación**, **quitar sus
 zip de la publicación de GitHub** y montar la cuenta de servicio de Chrome. Después, la 2.22.2.
+
+**Y la 2.22.2, publicada el mismo día**: Esfinge deja entrar a la extensión de la Chrome Web Store, la
+publicación de GitHub ya no lleva los zip para cargarla a mano, y **el trabajo `tiendas` subió la extensión a
+las dos tiendas solo**: a Firefox con `web-ext` y **a Chrome por la API v2 con la cuenta de servicio, a la
+primera** —subida aceptada y enviada a revisión—. **La entrega 5 queda cerrada**: lo que falta de ella es
+esperar esas revisiones, que ya no piden nada a nadie.
 
 ~~**La siguiente acción concreta era esperar las dos revisiones**~~ —Mozilla, normalmente menos de un día;
 Google, días o semanas, a fondo— y, cuando terminen, publicar la 2.22.2. Pendiente también, sin prisa, la

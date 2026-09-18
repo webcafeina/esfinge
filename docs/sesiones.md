@@ -16,7 +16,11 @@ Plantilla al final.
 - **Cuenta de servicio de Chrome montada por el cliente**: proyecto en Google Cloud con la Chrome Web Store
   API, cuenta de servicio sin roles con su clave JSON, añadida en la cuenta de la consola de la tienda. En
   GitHub: `CWS_CUENTA_DE_SERVICIO` y `CWS_EDITOR` los guardó él, y `CWS_EXTENSION` —el identificador, que es
-  público— se guardó con `gh`. **Sin probar hasta la primera publicación.**
+  público— se guardó con `gh`.
+- **Publicada la 2.22.2**: Esfinge deja entrar a la extensión de la tienda de Chrome y la publicación ya no
+  lleva los zip para cargarla a mano. **El trabajo `tiendas` subió la extensión a las dos tiendas solo**, y a
+  Chrome por la API v2 con la cuenta de servicio a la primera —`SUCCEEDED` y `PENDING_REVIEW`—. **La
+  entrega 5 queda cerrada.**
 
 ## 2026-09-15 · La extensión, enviada a Firefox (2.22.1)
 

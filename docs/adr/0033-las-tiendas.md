@@ -1,6 +1,6 @@
 # ADR 0033 — La extensión, pública en las tiendas de Chrome y de Firefox
 
-**Fecha:** 2026-09-14 · **Estado:** aceptada, en curso · **Continúa la [0027](0027-el-canal-con-el-navegador.md)
+**Fecha:** 2026-09-14 · **Estado:** aceptada · **Continúa la [0027](0027-el-canal-con-el-navegador.md)
 y la [0032](0032-guardar-desde-la-pagina.md)** · **Revisar cuando** las dos tiendas la aprueben, y si
 cambian sus normas de datos
 
@@ -179,6 +179,13 @@ revisor se pare, y con `https://*/*` y `nativeMessaging` la revisión ya va a se
   decía «Extensión 2.19.0» —la versión de mentira de las capturas— y la tarjeta tapaba a medias el texto
   de la página de ejemplo.
 - `publicar.yml` válido, `tienda-chrome.mjs` sin errores de sintaxis y `amo-metadata.json` válido.
+
+**Y en las tiendas de verdad**: la 2.22.1 fue a Firefox con `web-ext` el 2026-09-15, y **las dos fichas se
+aprobaron y son públicas el 2026-09-18** —la de Chrome, tras avisar de revisión a fondo por los permisos de
+host amplios—. La 2.22.2 subió sola a las dos, **y a Chrome por la API v2 con la cuenta de servicio a la
+primera**: `uploadState: SUCCEEDED` y `state: PENDING_REVIEW`. Fichas:
+https://addons.mozilla.org/es-ES/firefox/addon/esfinge/ y
+https://chromewebstore.google.com/detail/esfinge/jfkkegampjamnnlopobepjoanebemegp.
 
 **Comprobado por el cliente en su Mac con la 2.22.0 instalada a mano** (2026-09-14): «todo parece
 correcto», con el aviso de datos.
