@@ -13,6 +13,10 @@ Plantilla al final.
 - **Decidido con el cliente**: la extensión **sigue subiendo en cada publicación**, aunque no cambie; **sus zip
   para cargarla a mano dejan de colgarse** de la publicación de GitHub —se quedan el de la tienda de Chrome y
   el de código fuente—; y la cuenta de servicio de Chrome, hoy.
+- **Cuenta de servicio de Chrome montada por el cliente**: proyecto en Google Cloud con la Chrome Web Store
+  API, cuenta de servicio sin roles con su clave JSON, añadida en la cuenta de la consola de la tienda. En
+  GitHub: `CWS_CUENTA_DE_SERVICIO` y `CWS_EDITOR` los guardó él, y `CWS_EXTENSION` —el identificador, que es
+  público— se guardó con `gh`. **Sin probar hasta la primera publicación.**
 
 ## 2026-09-15 · La extensión, enviada a Firefox (2.22.1)
 
