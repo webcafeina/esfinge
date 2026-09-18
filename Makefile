@@ -32,7 +32,7 @@ comprobar:
 	cd servidor && $(PNPM) run comprobar
 	@# Y el cliente y la sincronización contra ese mismo servidor, levantado en
 	@# local: la tubería entera, de la bóveda de un equipo a la de otro.
-	herramientas/con-servidor.sh $(GO) test -race -count=1 ./internal/cuenta ./internal/sincro
+	herramientas/con-servidor.sh $(GO) test -race -count=1 ./internal/cuenta ./internal/sincro ./internal/app
 
 ## servidor: levanta el servidor de cuentas en local, con el buzón de pruebas
 .PHONY: servidor

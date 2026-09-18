@@ -261,14 +261,10 @@ func TestDosPasadasALaVezNoSePisan(t *testing.T) {
 }
 
 func TestVigilarSubeTrasGuardarYParaAlCancelar(t *testing.T) {
-	antes := EsperaTrasGuardar
-	EsperaTrasGuardar = 20 * time.Millisecond
-	defer func() { EsperaTrasGuardar = antes }()
-
 	srv := &enMemoria{}
 	e := nuevoEquipo(t, srv, crear(t))
 	pasadas := make(chan Resultado, 10)
-	v := &Vigilante{S: e.s, Avisar: func(r Resultado, err error) {
+	v := &Vigilante{S: e.s, Espera: 20 * time.Millisecond, Avisar: func(r Resultado, err error) {
 		if err != nil {
 			t.Error(err)
 		}
@@ -460,4 +456,25 @@ func codigoDe(t *testing.T, raiz, correo string) string {
 		t.Fatal("el correo no trae código")
 	}
 	return m[1]
+}
+
+// Al cerrar se sube lo pendiente, sin esperar a los tres segundos del vigilante.
+func TestVaciarSubeLoPendiente(t *testing.T) {
+	srv := &enMemoria{}
+	e := nuevoEquipo(t, srv, crear(t))
+	e.sincronizar(t)
+	if e.s.Pendiente() {
+		t.Fatal("recién sincronizada dice que hay algo pendiente")
+	}
+	_ = e.b.Poner(boveda.Entrada{Titulo: "Antes de cerrar"})
+	if !e.s.Pendiente() {
+		t.Fatal("con un cambio sin subir dice que no hay nada pendiente")
+	}
+	if err := e.s.Vaciar(5 * time.Second); err != nil {
+		t.Fatal(err)
+	}
+	m, _ := boveda.AbrirEnMemoria(srv.datos, maestra)
+	if titulos(m) != "[Antes de cerrar]" {
+		t.Fatalf("en el servidor hay %s", titulos(m))
+	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/escritura"
+	"github.com/webcafeina/esfinge/internal/sincro"
 )
 
 // Lo que la ventana puede pedirle a la bóveda.
@@ -112,6 +113,10 @@ func (a *App) CrearBoveda(maestra string) (string, error) {
 	}
 	a.ponerBoveda(b)
 	a.Actividad()
+	// Crearla aquí es elegir trabajar en local, si no se había elegido nada.
+	if d := leerDatosCuenta(); d.Modo == "" {
+		_ = a.ElegirModoLocal()
+	}
 	return recuperacion, nil
 }
 
@@ -128,9 +133,10 @@ func (a *App) AbrirBoveda(llave string) error {
 	if err != nil {
 		return err
 	}
-	a.ponerBoveda(b)
+	a.cambiarBoveda(b)
 	a.Actividad()
 	a.buscarIconosSiProcede(a.ctx)
+	a.alAbrirLaBoveda(b)
 	return nil
 }
 
@@ -142,6 +148,7 @@ func (a *App) CerrarBoveda() {
 	a.mu.Lock()
 	b := a.bov
 	a.mu.Unlock()
+	a.alCerrarLaBoveda()
 	if b != nil {
 		b.Cerrar()
 	}
@@ -312,6 +319,7 @@ func (a *App) BorrarBoveda(maestra string) error {
 	// Primero se cierra la que hubiera abierta: dejarla en memoria después de
 	// borrar el fichero es tener una bóveda sin fichero, y el siguiente guardado
 	// la escribiría otra vez.
+	a.alCerrarLaBoveda()
 	a.mu.Lock()
 	abierta := a.bov
 	a.bov = nil
@@ -329,6 +337,13 @@ func (a *App) BorrarBoveda(maestra string) error {
 	// Y la caché de iconos, que es la lista de sitios: dejarla detrás sería dejar
 	// escrito en el disco qué había dentro de la bóveda que se acaba de borrar.
 	_ = os.Remove(boveda.RutaDeIconos(ruta))
+	// Y lo de la sincronización: la base es **una copia entera de la bóveda**, y
+	// la de antes de fundir también. La lección de los iconos, otra vez.
+	_ = (sincro.JuntoALaBoveda{Ruta: ruta}).Olvidar()
+	_ = os.Remove(ruta + ".antes-de-fundir")
+	// Y la cuenta de este equipo: su sesión iba sellada con la bóveda que se acaba
+	// de borrar, así que ya no sirve. La cuenta sigue en el servidor.
+	_ = os.Remove(rutaCuenta())
 	escritura.LimpiarHuerfanos(filepath.Dir(ruta), 0)
 	return nil
 }

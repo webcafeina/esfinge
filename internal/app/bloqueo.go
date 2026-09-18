@@ -225,6 +225,7 @@ func (a *App) repasar() {
 	// La bóveda se pide con `boveda()`, que la coge detrás del cerrojo: **esta
 	// gorrutina no es la de la ventana**, y era justo el otro lado de la carrera.
 	if b := a.boveda(); b != nil && a.vig.tocaBloquear() {
+		a.alCerrarLaBoveda()
 		b.Cerrar()
 		a.sistema.Avisar(EventoBloqueada, nil)
 	}

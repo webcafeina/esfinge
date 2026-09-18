@@ -74,6 +74,15 @@ var loQuePuedeCruzarElPuente = []string{
 	// testigos de emparejamiento no salen: `EstadoDelNavegador` los quita antes de
 	// devolver la lista, porque no pintan nada dentro del webview.
 	"EstadoDelNavegador", "PermitirNavegador", "OlvidarNavegador",
+
+	// La cuenta (ADR 0035). Por aquí viaja **la contraseña maestra hacia Go**, igual
+	// que al abrir la bóveda, y nunca de vuelta: lo que sale es el estado, sin
+	// sesión ni testigos, y la clave de recuperación una sola vez al crear la
+	// cuenta con una bóveda nueva. A qué servidor se habla lo decide
+	// `ApuntarCuentasA`, que es función y no método.
+	"EstadoDeCuenta", "ElegirModoLocal", "SincronizarAhora",
+	"EmpezarRegistro", "TerminarRegistro",
+	"EntrarEnCuenta", "ConfirmarEntrada", "ResolverOtraBoveda",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

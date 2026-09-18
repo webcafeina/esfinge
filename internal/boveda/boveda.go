@@ -260,6 +260,10 @@ type Boveda struct {
 	cuerpoSucio bool
 	// soloLectura cuando el formato es más nuevo del que entendemos.
 	soloLectura bool
+	// alGuardar se llama tras cada guardado que sale bien, **en su propia
+	// gorrutina**: se guarda con el cerrojo cogido, y quien escucha —la
+	// sincronización— no puede esperar a que se suelte ni tomarlo.
+	alGuardar func()
 }
 
 // Es dice si unos bytes parecen una bóveda, mirando lo justo.
@@ -286,6 +290,18 @@ func Es(b []byte) bool {
 // Crear hace una bóveda nueva y devuelve la clave de recuperación **una sola
 // vez**: no se guarda en ninguna parte y no se puede volver a ver.
 func Crear(ruta, maestra string) (*Boveda, string, error) {
+	return crear(ruta, maestra)
+}
+
+// CrearEnMemoria hace una bóveda nueva **sin escribirla**: la que se crea al dar
+// de alta una cuenta, que solo se guarda si el servidor dice que sí. Si se
+// guardara antes y el alta fallara, quedaría una bóveda cuya clave de
+// recuperación no ha visto nadie. Se le da fichero con GuardarEn.
+func CrearEnMemoria(maestra string) (*Boveda, string, error) {
+	return crear("", maestra)
+}
+
+func crear(ruta, maestra string) (*Boveda, string, error) {
 	if strings.TrimSpace(maestra) == "" {
 		return nil, "", errors.New("La contraseña maestra no puede estar vacía")
 	}
@@ -341,6 +357,9 @@ func Crear(ruta, maestra string) (*Boveda, string, error) {
 		b.doc.Sobres = append(b.doc.Sobres, s)
 	}
 
+	if ruta == "" {
+		return b, recuperacion, nil
+	}
 	if err := b.Guardar(); err != nil {
 		return nil, "", err
 	}
@@ -660,7 +679,18 @@ func (b *Boveda) guardar() error {
 		return err
 	}
 	b.cuerpoSucio = false
+	if b.alGuardar != nil {
+		go b.alGuardar()
+	}
 	return nil
+}
+
+// AlGuardar pide que se avise tras cada guardado. Vale para cualquiera que
+// escriba: la ventana, el navegador, el importador y la propia fusión.
+func (b *Boveda) AlGuardar(f func()) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.alGuardar = f
 }
 
 func (b *Boveda) comprobarSerieEnDisco() error {

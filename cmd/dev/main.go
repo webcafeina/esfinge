@@ -22,6 +22,7 @@ func main() {
 	version := flag.String("version", "dev", "Versión que enseña la interfaz")
 	api := flag.String("api", "", "API de publicaciones de mentira, para probar el aviso de versión nueva")
 	config := flag.String("config", "", "Carpeta de configuración; vacío, una temporal recién hecha")
+	cuentas := flag.String("cuentas", "", "Servidor de cuentas, normalmente el local de make servidor (http://127.0.0.1:8790)")
 	flag.Parse()
 
 	// **La configuración se aísla, y con la bóveda dentro deja de ser un detalle.**
@@ -68,6 +69,14 @@ func main() {
 		app.ApuntarAAPI(aplicacion, *api)
 	} else {
 		app.ApuntarAAPI(aplicacion, "http://127.0.0.1:1") // a ninguna parte
+	}
+
+	// Y lo mismo con el servidor de cuentas: sin -cuentas, a ninguna parte. Nadie
+	// quiere que desarrollar la ventana cree cuentas en el servidor de verdad.
+	if *cuentas != "" {
+		app.ApuntarCuentasA(aplicacion, *cuentas)
+	} else {
+		app.ApuntarCuentasA(aplicacion, "http://127.0.0.1:1")
 	}
 
 	log.Fatal(app.Servir(aplicacion, sistema, *direccion))

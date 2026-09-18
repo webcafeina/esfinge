@@ -98,6 +98,32 @@ type Sincronizador struct {
 // intentos que se hacen cuando otro equipo sube en medio de una pasada.
 const intentos = 5
 
+// Pendiente dice si hay cambios de aquí sin subir.
+func (s *Sincronizador) Pendiente() bool {
+	r, _, err := s.Memoria.Cargar()
+	return err != nil || r.Serie != s.Boveda.Serie()
+}
+
+// Vaciar sube lo que quede de aquí antes de parar, **con un tope de tiempo**: lo
+// usa la aplicación al cerrar la bóveda, que no puede quedarse esperando a la red.
+// Si hay una pasada en marcha, espera su turno dentro del mismo tope.
+func (s *Sincronizador) Vaciar(tope time.Duration) error {
+	if !s.Pendiente() {
+		return nil
+	}
+	ctx, cancelar := context.WithTimeout(context.Background(), tope)
+	defer cancelar()
+	for {
+		_, err := s.Sincronizar(ctx)
+		if !errors.Is(err, ErrOcupado) {
+			return err
+		}
+		if !esperar(ctx, 20*time.Millisecond) {
+			return ctx.Err()
+		}
+	}
+}
+
 // Sincronizar hace una pasada. Si ya hay una en marcha, devuelve ErrOcupado y la
 // que está en marcha repite al terminar.
 func (s *Sincronizador) Sincronizar(ctx context.Context) (Resultado, error) {
@@ -195,8 +221,8 @@ func (s *Sincronizador) pasada(ctx context.Context) (Resultado, error) {
 
 // ------------------------------------------------------------------ vigilar
 
-// Plazos de Vigilar. Son variables para que las pruebas no esperen minutos.
-var (
+// Plazos de Vigilar.
+const (
 	// EsperaTrasGuardar agrupa los guardados seguidos en una sola subida.
 	EsperaTrasGuardar = 3 * time.Second
 	// CadaCuanto se mira si hay algo nuevo aunque aquí no se toque nada.
@@ -211,6 +237,10 @@ type Vigilante struct {
 	S *Sincronizador
 	// Avisar recibe el resultado de cada pasada, con su error. Puede ser nil.
 	Avisar func(Resultado, error)
+	// Espera tras un guardado antes de subir; cero es EsperaTrasGuardar. Es un
+	// campo y no una variable del paquete para que las pruebas puedan acortarla
+	// sin pisar a otro vigilante que siga vivo.
+	Espera time.Duration
 
 	pedido chan struct{}
 	una    sync.Once
@@ -243,7 +273,11 @@ func (v *Vigilante) Vigilar(ctx context.Context) {
 			return
 		case <-pedido:
 			// Se deja pasar un momento para juntar los guardados seguidos.
-			if !esperar(ctx, EsperaTrasGuardar) {
+			tras := v.Espera
+			if tras <= 0 {
+				tras = EsperaTrasGuardar
+			}
+			if !esperar(ctx, tras) {
 				return
 			}
 			select {

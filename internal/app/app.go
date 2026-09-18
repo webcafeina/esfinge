@@ -22,6 +22,7 @@ import (
 	"github.com/webcafeina/esfinge/internal/actualizacion"
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/cripto"
+	"github.com/webcafeina/esfinge/internal/cuenta"
 	"github.com/webcafeina/esfinge/internal/iconos"
 	"github.com/webcafeina/esfinge/internal/navegador"
 )
@@ -64,6 +65,8 @@ type App struct {
 	// vig lleva los dos relojes: el del bloqueo por inactividad y el del borrado
 	// del portapapeles.
 	vig *vigilante
+	// cu es la cuenta: el cliente del servidor, la sesión y la sincronización.
+	cu laCuenta
 
 	// canal es el socket por el que habla la extensión del navegador, si está
 	// encendido. Nil mientras no lo esté, que es lo que vale por defecto.
@@ -121,6 +124,8 @@ func Nueva(version string, sistema Sistema) *App {
 		vig:     nuevoVigilante(),
 		ritmo:   ritmoNormal(),
 	}
+	a.cu.cliente = cuenta.Nuevo(cuenta.RaizPorDefecto)
+	a.cu.cliente.Version = version
 	a.navegadores = abrirNavegadores(rutaNavegadores())
 	a.aplicarPreferencias(a.ajustes.Ver())
 	return a

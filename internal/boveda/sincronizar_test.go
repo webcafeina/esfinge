@@ -739,3 +739,91 @@ func TestLaFormaCanonicaEsLaDeLaEspecificacion(t *testing.T) {
 		t.Fatalf("\n%s\n%s", got, quiere)
 	}
 }
+
+// ------------------------------------------------------------------ piezas de la cuenta
+
+func TestCrearEnMemoriaNoEscribeHastaDarleFichero(t *testing.T) {
+	b, rec, err := CrearEnMemoria(maestra)
+	if err != nil || rec == "" {
+		t.Fatalf("%v, %q", err, rec)
+	}
+	if err := b.Poner(Entrada{Titulo: "X"}); !errors.Is(err, errSinFichero) {
+		t.Fatalf("sin fichero no se guarda: %v", err)
+	}
+	ruta := filepath.Join(t.TempDir(), "boveda.esfinge")
+	if err := b.GuardarEn(ruta); err != nil {
+		t.Fatal(err)
+	}
+	for _, llave := range []string{maestra, rec} {
+		if _, err := Abrir(ruta, llave); err != nil {
+			t.Fatalf("no abre con %q: %v", llave, err)
+		}
+	}
+}
+
+func TestAlGuardarAvisaDeCadaGuardado(t *testing.T) {
+	b, _, _ := nueva(t)
+	avisos := make(chan struct{}, 10)
+	b.AlGuardar(func() { avisos <- struct{}{} })
+	mustPoner(t, b, Entrada{Titulo: "X"})
+	_ = b.Excluir("a.com")
+	for range 2 {
+		select {
+		case <-avisos:
+		case <-time.After(2 * time.Second):
+			t.Fatal("un guardado no ha avisado")
+		}
+	}
+}
+
+func TestUnSecretoSelladoSoloSeAbreConLaBoveda(t *testing.T) {
+	b, _, _ := nueva(t)
+	sellado, err := b.SellarSecreto([]byte("s1.cuenta.sesion"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	claro, err := b.AbrirSecreto(sellado)
+	if err != nil || string(claro) != "s1.cuenta.sesion" {
+		t.Fatalf("%q %v", claro, err)
+	}
+	otra, _, _ := nueva(t)
+	if _, err := otra.AbrirSecreto(sellado); err == nil {
+		t.Fatal("otra bóveda abre el secreto")
+	}
+	b.Cerrar()
+	if _, err := b.AbrirSecreto(sellado); !errors.Is(err, ErrCerrada) {
+		t.Fatalf("con la bóveda cerrada: %v", err)
+	}
+}
+
+func TestTraerJuntaDosBovedasSinRepetir(t *testing.T) {
+	a, _, _ := nueva(t)
+	mustPoner(t, a, Entrada{Titulo: "De la cuenta"})
+	otra, _, _ := nueva(t)
+	mustPoner(t, otra, Entrada{Titulo: "De este equipo"})
+	mustPoner(t, otra, Entrada{Titulo: "Borrada aquí"})
+	_ = otra.Borrar(buscar(t, otra, "Borrada aquí").ID)
+	_ = otra.Excluir("nunca.com")
+	n, err := a.Traer(otra)
+	if err != nil || n != 2 {
+		t.Fatalf("%d, %v", n, err)
+	}
+	if n, _ := a.Traer(otra); n != 0 {
+		t.Fatalf("traer dos veces repite %d", n)
+	}
+	if !hay(a, "De este equipo") || !buscar(t, a, "Borrada aquí").Papelera || !a.Excluido("nunca.com") {
+		t.Fatal("no llega todo, o la papelera no se respeta")
+	}
+	if id, _ := IDDe(mustLeer(t, a.ruta)); id != a.ID() {
+		t.Fatal("IDDe no lee el identificador")
+	}
+}
+
+func mustLeer(t *testing.T, ruta string) []byte {
+	t.Helper()
+	d, err := os.ReadFile(ruta)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return d
+}

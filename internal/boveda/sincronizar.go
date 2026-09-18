@@ -119,6 +119,74 @@ func (b *Boveda) Posesion() ([]byte, error) {
 	return hkdf.Key(sha256.New, clave, nil, "esfinge/cuenta/posesion/v1", 32)
 }
 
+// IDDe lee el identificador de una bóveda sin abrirla: para saber si la de este
+// equipo y la de una cuenta son la misma antes de pedir ninguna contraseña.
+func IDDe(datos []byte) (string, error) {
+	doc, err := leerDocumento(datos)
+	if err != nil {
+		return "", err
+	}
+	return doc.ID, nil
+}
+
+// SellarSecreto cifra algo pequeño con la clave de bóveda: la sesión de la
+// cuenta, que se guarda en el disco pero **solo sirve con la bóveda abierta**.
+// Un disco robado sin la contraseña maestra no habla con el servidor.
+func (b *Boveda) SellarSecreto(claro []byte) (string, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return "", ErrCerrada
+	}
+	return cripto.SellarTexto(claro, b.llave, cripto.PerfilLlave)
+}
+
+// AbrirSecreto es lo contrario de SellarSecreto.
+func (b *Boveda) AbrirSecreto(sellado string) ([]byte, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return nil, ErrCerrada
+	}
+	return cripto.AbrirTexto(sellado, b.llave)
+}
+
+// Traer mete en esta bóveda las entradas de otra —la que había en un equipo antes
+// de entrar en la cuenta, cuando se elige «Juntar»— **con sus identificadores**,
+// las de la papelera incluidas, y sus sitios excluidos. Lo que ya está no se
+// toca. Devuelve cuántas ha traído y guarda.
+func (b *Boveda) Traer(otra *Boveda) (int, error) {
+	otra.mu.Lock()
+	suyas := append([]Entrada(nil), otra.cont.Entradas...)
+	excluidos := append([]string(nil), otra.cont.SitiosExcluidos...)
+	otra.mu.Unlock()
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return 0, ErrCerrada
+	}
+	hay := map[string]bool{}
+	for _, e := range b.cont.Entradas {
+		hay[e.ID] = true
+	}
+	traidas := 0
+	for _, e := range suyas {
+		if hay[e.ID] {
+			continue
+		}
+		b.cont.Entradas = append(b.cont.Entradas, e)
+		hay[e.ID] = true
+		traidas++
+	}
+	b.cont.SitiosExcluidos = fundirConjunto(b.cont.SitiosExcluidos, excluidos, nil, false)
+	b.cuerpoSucio = true
+	if b.ruta == "" {
+		return traidas, nil // se guarda al darle fichero
+	}
+	return traidas, b.guardar()
+}
+
 // PrepararSubida devuelve la bóveda tal como se sube al servidor como `version`.
 //
 // Es la misma que hay en el disco con dos diferencias: **sin las ranuras de este
