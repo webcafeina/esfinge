@@ -47,6 +47,7 @@ make publicar     # comprueba y compila la línea de comandos para los seis obje
 make app          # la aplicación con ventana (necesita wails; ver abajo)
 make dmg          # la imagen de disco de macOS (solo en un Mac, con create-dmg)
 make ventana-dmg  # dibuja cómo quedará esa ventana, sin necesidad de Mac
+make servidor     # el servidor de cuentas en local (http://localhost:8790), con buzón de pruebas
 make ayuda        # todos los objetivos
 ```
 
@@ -165,6 +166,14 @@ No se cambian sin preguntar.
   proceso muera. En Linux no: el `.deb` instala como root (ADR 0016). Firmar con Apple no tiene nada
   que ver con esto —evita el aviso de Gatekeeper, no habilita el reemplazo—, y darlo por hecho fue
   el error de la 0014.
+
+- **Y va a haber cuentas** (ADR 0035, plan en `docs/cuentas.md`): la bóveda en todos los equipos con un
+  servidor nuestro en **Cloudflare UE que no puede leer nada**, compartir **copias sin permisos** con otras
+  cuentas, código por correo en cada equipo nuevo, bienvenida «En este ordenador / Con cuenta» reversible,
+  **maestra «fuerte» obligatoria con cuenta**, y **la extensión como cliente completo de la cuenta, siempre
+  por ella**. **El registro libre, solo tras una auditoría externa**; hasta entonces, por invitación. Rompe
+  dos promesas públicas —«sin servidores» y «Webcafeína no recibe nada»— que hay que cambiar antes de que
+  nadie tenga cuenta.
 
 ## Trampas que ya costaron encontrarse
 
@@ -792,6 +801,22 @@ WebKit de los archivos de Ubuntu.
   `-tags webkit2_41`.
 - Los artefactos de GitHub **no conservan el bit de ejecución**. Una `.app` descargada de ahí no
   arranca hasta que se le devuelve con `chmod +x Contents/MacOS/Esfinge`.
+
+**El servidor de cuentas vive en `servidor/`** (ADR 0036): un Durable Object por cuenta **con la bóveda
+dentro, en trozos**, y no en R2, para que comprobar la versión y escribir sean una transacción. Cuatro
+cosas que ya costaron algo al escribirlo:
+
+- **`workerd` no implementa las jurisdicciones** y revienta al pedir `jurisdiction("eu")`. Por eso sale de
+  la variable `JURISDICCION`, vacía en las pruebas y `eu` en los dos Workers, y **una prueba lee
+  `wrangler.jsonc`** y se pone roja si alguien la quita. La de D1 se elige **al crear la base** y no se
+  cambia: no se puede crear desde la integración de Cloudflare, que solo da una «preferencia».
+- **Sin sus secretos no contesta nada** (`503`): un secreto que falta es `undefined`, y firmar con la
+  palabra «undefined» funcionaría sin que nada avisara. `PIMIENTA` **no se cambia nunca**: deja fuera a
+  todas las cuentas.
+- **El 8787 lo ocupa otro programa** en la máquina de desarrollo; `make servidor` usa el 8790.
+- **pnpm frena las versiones recién publicadas** y, si se le deja, las mete solo en
+  `minimumReleaseAgeExclude`. No se acepta: se fijan versiones con una semana, que es lo que ese freno
+  pide.
 
 ## Lo que nunca se ha probado
 

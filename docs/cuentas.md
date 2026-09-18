@@ -142,9 +142,10 @@ iconos. Cada equipo baja los suyos.
   equipos, retos, fallos y registro de eventos. Serializa todo lo de una cuenta, de modo que la
   comparación con intercambio y «blob + verificador + revocar sesiones» van en una sola transacción. Y
   **los frenos por cuenta viven lo que vive la cuenta**, que es la lección del contador por conexión.
-- **R2 `esfinge-bovedas`, jurisdicción `eu`**: los bytes del blob, con 20 versiones o 30 días, para poder
-  restaurar si una fusión mala se propaga.
-  - **Trampa:** esperar a R2 no queda protegido dentro del Durable Object, así que el `PUT` va entero en `blockConcurrencyWhile`.
+- ~~**R2 `esfinge-bovedas`**~~ — **cambiado al escribirlo (ADR 0036)**: la bóveda va **en el propio
+  Durable Object, en trozos de 1 MB**, para que comprobar la versión y escribir sean una sola
+  transacción. Se conservan las diez últimas versiones y la última de cada uno de los treinta días
+  anteriores.
 - **Extremos `/v1`:**
   - `salud`, `prelogin`, `registro/{inicio,fin}`, `sesion`, `sesion/codigo`;
   - `boveda` (`GET`/`PUT`), `boveda/versiones`;
@@ -296,14 +297,15 @@ salen casi todas las reglas de esta sección.
   las tiendas se cambian **una sola vez, en la E**, con `VERSION_DEL_AVISO` en 2. En la A2 basta una
   frase en la política de la web.
 - **ADR:**
-  - 0035, cuentas y servidor en Cloudflare UE, con la puerta de la auditoría;
-  - 0036, derivación, acceso, segundo factor y recuperación por posesión;
-  - 0037, sincronización y fusión;
-  - 0038, bienvenida y local ↔ cuenta;
-  - 0039, la extensión como cliente de la cuenta (fase E): dos implementaciones del formato, la bóveda
+  - 0035, cuentas y servidor en Cloudflare UE, con la puerta de la auditoría (escrita);
+  - 0036, el servidor de cuentas (escrita, con la A0);
+  - 0037, derivación, acceso, segundo factor y recuperación por posesión;
+  - 0038, sincronización y fusión;
+  - 0039, bienvenida y local ↔ cuenta;
+  - 0040, la extensión como cliente de la cuenta (fase E): dos implementaciones del formato, la bóveda
     abierta dentro del navegador y «siempre por la cuenta»;
-  - 0040, identidad y copias (fase B);
-  - 0041, desbloqueo con el sistema (fase C).
+  - 0041, identidad y copias (fase B);
+  - 0042, desbloqueo con el sistema (fase C).
   
   Matizan la 0014 (tercera conexión), la 0023 (la ranura `servidor` descartada), la 0024 (los iconos no
   se sincronizan), la 0026 (el plazo de las lápidas) y la regla del historial.
@@ -313,7 +315,7 @@ salen casi todas las reglas de esta sección.
 
 | Entrega | Qué lleva | Cómo se comprueba |
 |---|---|---|
-| **A0** (solo servidor) | `servidor/` en el Worker de pruebas: D1, Durable Object y R2 en la UE; correo real; flujo de despliegue. **El cliente**: token de Cloudflare, secretos y comprobar que el DNS de `webcafeina.com` está en Cloudflare | vitest; `curl` contra el Worker; correo recibido en Gmail con DKIM alineado |
+| **A0** (solo servidor) | `servidor/` en el Worker de pruebas: D1 y Durable Objects en la UE (ADR 0036); correo real; flujo de despliegue. **El cliente**: token de Cloudflare, las bases D1 en la UE y los secretos (el DNS de `webcafeina.com` ya está en Cloudflare, comprobado) | vitest; `curl` contra el Worker; correo recibido en Gmail con DKIM alineado |
 | **A1**, 2.23.0 | Refactor de la carpeta, `Revision`, `Lapidas`, `sello.Sincro`, fusión, apertura en memoria, `internal/cuenta` e `internal/sincro`. **Sin interfaz**, invisible para el usuario | Pruebas de **convergencia con tres equipos simulados** y operaciones al azar; una bóveda de la 2.22.2 en `testdata` se abre y conserva todo; la tubería con dos `App` contra un servidor falso |
 | **A2**, 2.24.0 | Bienvenida, registro, entrada con código, sincronización, identidad creada. Servidor con `REGISTRO=lista` (solo la casa) | **e2e de dos equipos**: dos `cmd/dev` y dos Vite contra `wrangler dev` local. A crea la cuenta y guarda; B entra y la ve; los dos editan a la vez y la contraseña perdedora sale en el historial; A borra y en B desaparece. **En el Mac: dos máquinas reales** |
 | **A3**, 2.25.0 | Cambio de contraseña, recuperación, equipos, borrado, exportación, cuenta → local, restaurar una versión | e2e de cada flujo; ensayo de recuperación con la clave en papel |

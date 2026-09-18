@@ -24,6 +24,8 @@
 
 # Frontend y extensión
 navegador/node_modules/
+servidor/node_modules/
+servidor/.wrangler/
 navegador/dist/
 frontend/node_modules/
 frontend/dist/

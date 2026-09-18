@@ -1,0 +1,6 @@
+# Dependencias a las que se permite ejecutar scripts de instalación. pnpm los
+# bloquea por defecto: aquí hacen falta esbuild y workerd —el motor de Workers
+# con el que corren las pruebas y `wrangler dev`—, que preparan su binario.
+allowBuilds:
+  esbuild: true
+  workerd: true

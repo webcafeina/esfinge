@@ -45,6 +45,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0033](adr/0033-las-tiendas.md) | La extensión, pública en las tiendas: aviso de datos en el panel, sin `innerHTML` y código fuente reproducible | 2026-09-14 | aceptada, en curso · continúa la 0027 y la 0032 · revisar cuando la aprueben las tiendas |
 | [0034](adr/0034-el-canal-con-el-navegador-en-windows.md) | El canal con el navegador en Windows: el manifiesto apuntado desde el registro, y el puente en el instalador | 2026-09-14 | aceptada · continúa la 0027 · revisar al probarlo en un Windows |
 | [0035](adr/0035-las-cuentas.md) | Las cuentas: la bóveda en todos los equipos con un servidor nuestro en Cloudflare UE que no puede leerla, compartir copias y la extensión como cliente propio | 2026-09-18 | aceptada, sin empezar · matiza la 0023 y la 0014 · revisar al terminar la auditoría |
+| [0036](adr/0036-el-servidor-de-cuentas.md) | El servidor de cuentas: un Durable Object por cuenta con la bóveda dentro y no en R2, D1 como índice, frenos donde vive lo que frenan y sin secretos no arranca | 2026-09-18 | aceptada, sin desplegar · continúa la 0035 · revisar al desplegar y en la auditoría |
 
 ## Cuándo escribir una
 

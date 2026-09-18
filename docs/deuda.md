@@ -1,6 +1,6 @@
 # Deuda y cabos sueltos
 
-Última actualización: **2026-09-10**
+Última actualización: **2026-09-18**
 
 Lo que sabemos que está a medias, mal o sin comprobar. Los bloqueantes primero. Lo saldado se tacha
 y se queda.
@@ -11,6 +11,8 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 | Elemento | Severidad | Impacto | Estado |
 |---|---|---|---|
+| **El servidor de cuentas, sin desplegar** | Media | Escrito y probado entero dentro de `workerd` (39 pruebas, ADR 0036), pero **nada ha corrido en Cloudflare**: ni la jurisdicción `eu` —el motor local no la implementa—, ni el freno por IP de verdad, ni el dominio propio, ni que Resend entregue los correos y no caigan en spam. Hace falta que el cliente cree las bases D1 en la UE, el token y los secretos (`servidor/LÉEME.md`) | Abierto · depende del cliente |
+| La pimienta del servidor no se puede rotar | Baja | Los verificadores van firmados con `PIMIENTA` y cada cuenta guarda qué versión de la pimienta usó (`pimienta: 1`), pero **no hay código que rote**: cambiarla hoy deja fuera a todas las cuentas. Si se filtra, hay que escribirlo antes de cambiarla ([ADR 0036](adr/0036-el-servidor-de-cuentas.md)) | Abierto · antes de la auditoría |
 | ~~La extensión de la Chrome Web Store no encuentra Esfinge hasta la 2.22.2~~ | Baja | Su identificador (`jfkkegampjamnnlopobepjoanebemegp`) está en `extensionesDeChrome` desde el 2026-09-15 pero **sin publicar**: el cliente decidió esperar a que terminen las dos revisiones para no mandar a Firefox una versión idéntica. Si Chrome la aprueba antes, quien la instale desde la tienda verá «No se encuentra Esfinge» ([ADR 0033](adr/0033-las-tiendas.md)) | **Saldada con la 2.22.2 (2026-09-18)** |
 | Cada publicación sube la extensión a las tiendas, aunque no haya cambiado | Baja | El trabajo `tiendas` sube en cada etiqueta. Una versión que solo toca la aplicación manda a revisar una extensión idéntica, y en Chrome una subida nueva durante una revisión puede volver a empezarla. Se propuso subir **solo cuando cambie el código de la extensión** y el cliente decidió seguir subiendo siempre (2026-09-18) ([ADR 0033](adr/0033-las-tiendas.md)) | Aceptado · cada versión se revisa |
 | ~~La subida a las tiendas no se ha probado contra las tiendas~~ | Media | El trabajo `tiendas` y `herramientas/tienda-chrome.mjs` están escritos con la documentación oficial de las dos tiendas, pero **no se han ejecutado nunca contra ellas**: faltan las cuentas. Dos cosas en concreto: los campos que devuelve la API v2 de Chrome al subir y que **AMO acepte `es-ES`** como idioma de la ficha en la primera subida ([ADR 0033](adr/0033-las-tiendas.md)) | **Saldada (2026-09-18, 2.22.2)**: Firefox con `web-ext` desde la 2.22.1, y Chrome por la API v2 con la cuenta de servicio, a la primera: subida `SUCCEEDED` y enviada a revisión (`PENDING_REVIEW`) |

@@ -27,6 +27,16 @@ comprobar:
 	@# tercero es lo único de la entrega 2 que puede hacer daño: escribir una
 	@# contraseña en el campo equivocado.
 	cd navegador && $(PNPM) run comprobar
+	@# Y el servidor de cuentas: tipos y sus pruebas, dentro del motor de Workers
+	@# de verdad. Sin conexión con Cloudflare: todo corre en local.
+	cd servidor && $(PNPM) run comprobar
+
+## servidor: levanta el servidor de cuentas en local, con el buzón de pruebas
+.PHONY: servidor
+servidor:
+	cd servidor && $(PNPM) install --frozen-lockfile && $(PNPM) exec wrangler d1 migrations apply BD --local --env pruebas
+	@# En el 8790: el 8787 de siempre lo tiene ocupado otro programa en la máquina de desarrollo.
+	cd servidor && $(PNPM) exec wrangler dev --env pruebas --port 8790 --var JURISDICCION: --var PIMIENTA:pimienta-local-de-desarrollo-0123456789 --var SECRETO_PRELOGIN:secreto-local-de-desarrollo-0123456789
 
 ## contraste: mide las parejas de color de los dos temas y las lista
 .PHONY: contraste

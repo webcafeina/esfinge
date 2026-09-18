@@ -97,6 +97,14 @@ jobs:
           pnpm exec playwright install chromium
           pnpm run comprobar
 
+      # El servidor de cuentas se despliega por su lado (servidor.yml), pero una
+      # versión de Esfinge habla con él: si sus pruebas están en rojo, no se publica.
+      - name: Comprobaciones del servidor de cuentas
+        working-directory: servidor
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run comprobar
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

@@ -1,0 +1,98 @@
+# El servidor de cuentas en Cloudflare (ADR 0035 y 0036).
+#
+# Se comprueba solo al tocar `servidor/`, y **se despliega solo a mano**, eligiendo
+# a cuál de los dos Workers: el de pruebas o el de producción. Desplegar producción
+# pasa además por el entorno `produccion` de GitHub, que pide aprobación.
+#
+# Lo que **no** hace este flujo, a propósito: poner los secretos del Worker
+# (`PIMIENTA`, `SECRETO_PRELOGIN`, `RESEND_API_KEY`). Los pone quien administra la
+# cuenta de Cloudflare, una vez, con `wrangler secret put`. Aquí solo hay un token
+# para desplegar, que no sirve para leerlos.
+name: Servidor de cuentas
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "servidor/**"
+      - ".github/workflows/servidor.yml"
+  workflow_dispatch:
+    inputs:
+      desplegar:
+        description: "Dónde desplegar después de comprobar"
+        type: choice
+        options: [nada, pruebas, produccion]
+        default: nada
+
+permissions:
+  contents: read
+
+concurrency:
+  group: servidor
+  cancel-in-progress: false
+
+jobs:
+  comprobar:
+    name: Comprobar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: servidor/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: servidor/pnpm-lock.yaml
+      - name: Tipos y pruebas
+        working-directory: servidor
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run comprobar
+
+  desplegar:
+    name: Desplegar (${{ inputs.desplegar }})
+    needs: comprobar
+    if: github.event_name == 'workflow_dispatch' && inputs.desplegar != 'nada'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.desplegar == 'produccion' && 'produccion' || 'pruebas' }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: servidor/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: servidor/pnpm-lock.yaml
+      - name: Instalar
+        working-directory: servidor
+        run: pnpm install --frozen-lockfile
+
+      # Las bases D1 se crean a mano, una vez y **con `--jurisdiction eu`**, que no
+      # se puede poner después (docs/cuentas.md). Hasta que su identificador esté en
+      # wrangler.jsonc, desplegar no tiene dónde escribir: se avisa y se para.
+      - name: Comprobar que las bases existen
+        working-directory: servidor
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Faltan CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID en los secretos del repositorio."
+            exit 1
+          fi
+          if grep -q '"database_id": "por-crear"' wrangler.jsonc; then
+            echo "::error::Las bases D1 están sin crear: falta su database_id en servidor/wrangler.jsonc."
+            exit 1
+          fi
+
+      - name: Migraciones y despliegue
+        working-directory: servidor
+        run: |
+          entorno=()
+          [ "${{ inputs.desplegar }}" = pruebas ] && entorno=(--env pruebas)
+          ../herramientas/reintentar.sh pnpm exec wrangler d1 migrations apply BD --remote "${entorno[@]}"
+          ../herramientas/reintentar.sh pnpm exec wrangler deploy "${entorno[@]}"

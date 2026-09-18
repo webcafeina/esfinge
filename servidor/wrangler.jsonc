@@ -1,0 +1,79 @@
+// El servidor de cuentas de Esfinge (ADR 0035, plan en docs/cuentas.md).
+//
+// **Todo en la UE, y fijado al crear**: la base D1 se crea con
+// `wrangler d1 create esfinge-cuentas --jurisdiction eu`, y la jurisdicción no se
+// puede cambiar después. Los Durable Objects se piden en la UE desde el código
+// (`jurisdiction("eu")`), porque aquí no hay campo para eso.
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "esfinge-cuentas",
+	"main": "src/indice.ts",
+	"compatibility_date": "2026-09-01",
+
+	// Sin registros de invocación: incluyen la petición, y la petición lleva el
+	// testigo de sesión en `Authorization`. El código tampoco escribe nada.
+	"observability": { "enabled": false },
+
+	"workers_dev": false,
+	"routes": [{ "pattern": "esfinge-cuentas.webcafeina.com", "custom_domain": true }],
+
+	"vars": {
+		"ENTORNO": "produccion",
+		// Dónde viven las cuentas. Solo «eu»: el código no acepta otra cosa, y las
+		// pruebas lo vacían porque el motor local no sabe de jurisdicciones.
+		"JURISDICCION": "eu",
+		// cerrado · lista · abierto. «abierto» solo después de la auditoría externa.
+		"REGISTRO": "lista",
+		"REMITENTE": "Esfinge <esfinge@webcafeina.com>"
+	},
+
+	"d1_databases": [
+		{
+			"binding": "BD",
+			"database_name": "esfinge-cuentas",
+			"database_id": "por-crear",
+			"migrations_dir": "migraciones"
+		}
+	],
+
+	"durable_objects": {
+		"bindings": [{ "name": "CUENTAS", "class_name": "Cuenta" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["Cuenta"] }],
+
+	// Frenos por IP. Los de cada cuenta viven en su Durable Object, no aquí.
+	"ratelimits": [
+		{ "name": "FRENO_ENTRAR", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } },
+		{ "name": "FRENO_ALTAS", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+	],
+
+	"env": {
+		// El Worker de pruebas: otro nombre, otra base y el buzón de pruebas encendido.
+		"pruebas": {
+			"name": "esfinge-cuentas-pruebas",
+			"routes": [],
+			"workers_dev": true,
+			"vars": {
+				"ENTORNO": "pruebas",
+				"JURISDICCION": "eu",
+				"REGISTRO": "abierto",
+				"REMITENTE": "Esfinge <esfinge@webcafeina.com>"
+			},
+			"d1_databases": [
+				{
+					"binding": "BD",
+					"database_name": "esfinge-cuentas-pruebas",
+					"database_id": "por-crear",
+					"migrations_dir": "migraciones"
+				}
+			],
+			"durable_objects": {
+				"bindings": [{ "name": "CUENTAS", "class_name": "Cuenta" }]
+			},
+			"ratelimits": [
+				{ "name": "FRENO_ENTRAR", "namespace_id": "2001", "simple": { "limit": 20, "period": 60 } },
+				{ "name": "FRENO_ALTAS", "namespace_id": "2002", "simple": { "limit": 5, "period": 60 } }
+			]
+		}
+	}
+}
