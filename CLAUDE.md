@@ -814,6 +814,11 @@ cosas que ya costaron algo al escribirlo:
   palabra «undefined» funcionaría sin que nada avisara. `PIMIENTA` **no se cambia nunca**: deja fuera a
   todas las cuentas.
 - **El 8787 lo ocupa otro programa** en la máquina de desarrollo; `make servidor` usa el 8790.
+- **Cloudflare debilita el `ETag` al comprimir**: la versión `"17"` llega como `W/"17"`. Solo se ve contra
+  el servidor desplegado, nunca en local, y el cliente tiene que leer las dos formas.
+- **Está desplegado desde el 2026-09-18**: producción en `https://esfinge-cuentas.webcafeina.com`, por
+  invitación (`admision`, con `@webcafeina.com`). Desplegar es lanzar a mano `servidor.yml`; los secretos
+  los pone el cliente en el panel y **la `PIMIENTA` de producción la guarda él**.
 - **pnpm frena las versiones recién publicadas** y, si se le deja, las mete solo en
   `minimumReleaseAgeExclude`. No se acepta: se fijan versiones con una semana, que es lo que ese freno
   pide.

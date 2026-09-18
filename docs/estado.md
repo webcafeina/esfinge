@@ -376,20 +376,22 @@ Las entregas, en orden: **A0** el servidor solo; **A1** (2.23.0) el modelo y la 
 equipos y borrado; **E** la extensión autónoma; **la auditoría externa**; **A4** abrir el registro; **B**
 compartir; **C** Touch ID o PIN.
 
-**La A0, escrita y probada aquí el 2026-09-18, sin desplegar** ([ADR 0036](adr/0036-el-servidor-de-cuentas.md)):
-`servidor/` con **39 pruebas** dentro de `workerd`, que entran en `make comprobar` y en la puerta de
-`publicar.yml`, `make servidor` para levantarlo en local y `.github/workflows/servidor.yml` para
-desplegarlo a mano. Un cambio sobre el plan: **la bóveda va en el Durable Object de su cuenta y no en R2**.
-El DNS de `webcafeina.com` ya está en Cloudflare (comprobado).
+**~~La A0~~ — hecha, desplegada y comprobada el 2026-09-18** ([ADR 0036](adr/0036-el-servidor-de-cuentas.md)).
+`servidor/` con 39 pruebas dentro de `workerd`, en `make comprobar` y en la puerta de `publicar.yml`;
+`make servidor` para levantarlo en local; `.github/workflows/servidor.yml` para desplegarlo a mano. Un
+cambio sobre el plan: **la bóveda va en el Durable Object de su cuenta y no en R2**.
 
-**Para desplegarlo hace falta el cliente**, con los pasos de `servidor/LÉEME.md`: las dos bases D1 **con
-jurisdicción UE** —solo se elige al crearlas—, un token de la API para GitHub y los secretos del Worker
-generados por él con `openssl rand -hex 32`. **Nunca por el chat.**
+Desplegado guiando al cliente: las dos bases D1 **con jurisdicción UE** (leída en la API; producción
+contesta desde Milán), el token en GitHub, los secretos puestos por él en el panel —nunca por el chat— y
+el entorno `produccion` de GitHub, **solo desde `main` y sin aprobación**, que el cliente no quiere tener
+que dar cada vez. Producción vive en **https://esfinge-cuentas.webcafeina.com**, **por invitación** con
+`@webcafeina.com` en la lista; el de pruebas, en `https://esfinge-cuentas-pruebas.webcafe-na.workers.dev`.
+**El código por correo llega a la bandeja de entrada, con SPF, DKIM y DMARC en `PASS`.**
 
-**La siguiente acción concreta** es desplegar el Worker de pruebas en cuanto estén las bases, y comprobar
-de verdad lo que aquí no se puede: la jurisdicción, un correo que llega y el dominio. Mientras tanto se
-puede empezar la **A1** —el modelo de la bóveda y la fusión en Go—, que no necesita el servidor desplegado:
-se prueba contra `make servidor`.
+**La siguiente acción concreta es la A1**: el modelo de la bóveda (`Revision`, lápidas, `sello.Sincro`,
+apertura en memoria), la fusión a tres bandas y los paquetes `internal/cuenta` e `internal/sincro`, **sin
+interfaz**. Se prueba contra `make servidor`. **El cliente de Go tiene que leer el `ETag` débil** (`W/"1"`):
+Cloudflare lo debilita al comprimir.
 
 ### Lo que yo recomendaría meter en medio, y no es lo que se decidió
 

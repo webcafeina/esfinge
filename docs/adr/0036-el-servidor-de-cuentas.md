@@ -1,7 +1,7 @@
 # ADR 0036 — El servidor de cuentas: un Durable Object por cuenta, con la bóveda dentro
 
-**Fecha:** 2026-09-18 · **Estado:** aceptada, sin desplegar · **Continúa la [0035](0035-las-cuentas.md)** ·
-**Revisar cuando** se despliegue por primera vez en Cloudflare, y en la auditoría
+**Fecha:** 2026-09-18 · **Estado:** aceptada, desplegada y comprobada el mismo día · **Continúa la [0035](0035-las-cuentas.md)** ·
+**Revisar cuando** llegue la auditoría
 
 ## Contexto
 
@@ -96,6 +96,22 @@ registro por invitación, el buzón de pruebas cerrado en producción y el servi
 **se rompieron a propósito** la comprobación de versión y el freno por cuenta, y las pruebas lo cazaron.
 Y levantado con `wrangler dev`: salud, alta con su código en el buzón y pre-entrada.
 
-**Sin comprobar**: nada se ha desplegado. Ni la jurisdicción de verdad —el motor local no la tiene—, ni
-el freno por IP de Cloudflare, que en local se simula, ni que Resend entregue los correos, ni el dominio
-propio.
+**Desplegado y comprobado en Cloudflare el 2026-09-18**, guiando al cliente paso a paso:
+
+- **Las dos bases D1 tienen `jurisdiction: "eu"`**, leído en la cuenta con la API y no en el panel, y la
+  de producción contesta desde **Milán** (`served_by_colo: MXP`, región `EEUR`).
+- **Los Durable Objects con `jurisdiction("eu")` funcionan** en el Worker de pruebas: una prueba de humo
+  hizo el alta entera, entró con equipo de confianza, subió y bajó 300 KB, y **de cuatro subidas a la vez
+  sobre la misma versión ganó una**, ya en Cloudflare y no en el simulador. Tiempos desde España: 80-200 ms
+  por petición y ~570 ms el alta.
+- **Sin secretos, `503`** en los dos Workers antes de ponerlos. En producción: `workers.dev` apagado, el
+  dominio propio con su certificado, el buzón de pruebas en `404` y un correo fuera de la lista rechazado.
+- **El correo de Resend llega a la bandeja de entrada** de `info@webcafeina.com` —no a spam—, desde
+  `esfinge@webcafeina.com`, con **SPF, DKIM y DMARC en `PASS`** según Gmail.
+
+Y una que solo sale en el servidor de verdad: **Cloudflare comprime la respuesta y debilita el `ETag`**,
+así que la versión `"1"` llega como `W/"1"`. El servidor ya lo aceptaba de vuelta; **el cliente tiene que
+leer los dos**.
+
+**Sin comprobar**: que el freno por IP de Cloudflare corte donde dice —en local se simula—, y lo que pase
+con muchos correos seguidos al plan gratuito de Resend.

@@ -58,6 +58,8 @@ El correo se normaliza **igual en los dos lados**: sin espacios alrededor, NFC y
 | `GET /v1/boveda/versiones/17` | — | esa versión |
 | `PUT /v1/cuenta/clave` | `{posesion, sal, argon2, claveDeAcceso, version, documento}` | `200 {version, sesion?}` |
 
+- **El `ETag` puede llegar débil** (`W/"17"`): Cloudflare lo debilita al comprimir la respuesta. El
+  cliente tiene que leer las dos formas; el servidor acepta las dos de vuelta.
 - La primera subida va sobre la versión `0`. La versión la asigna el servidor, y es siempre la anterior + 1.
 - **Se conservan las diez últimas versiones y la última de cada uno de los treinta días anteriores**.
 - Tope: 8 MB por bóveda y 60 subidas por hora.
@@ -88,7 +90,7 @@ Una vez, en este orden. **Ningún secreto pasa por el chat ni por el repositorio
 2. **Un token de la API** para GitHub, en *My Profile → API Tokens*, con la plantilla «Edit Cloudflare
    Workers» más *Account · D1 · Edit*, limitado a la cuenta WebCafeína y a la zona `webcafeina.com`.
    Se guarda en GitHub como secreto `CLOUDFLARE_API_TOKEN`, y el identificador de la cuenta como
-   `CLOUDFLARE_ACCOUNT_ID`. **Por confirmar** si la plantilla basta para el dominio propio.
+   `CLOUDFLARE_ACCOUNT_ID`. Basta con eso también para el dominio propio (comprobado al desplegar).
 3. **Desplegar el de pruebas**: *Actions → Servidor de cuentas → Run workflow → pruebas*.
 4. **Sus secretos**, en el panel del Worker (*Settings → Variables and Secrets*, tipo *Secret*). Cada
    uno se genera en el terminal con `openssl rand -hex 32`, **distinto para cada uno y para cada
@@ -100,8 +102,12 @@ Una vez, en este orden. **Ningún secreto pasa por el chat ni por el repositorio
      para `webcafeina.com`**.
 
    Sin ellos el servidor contesta `503` a todo: no arranca con un secreto que falte.
-5. **Producción**, lo mismo con `produccion`, que pide aprobación en GitHub. Vive en
-   `https://esfinge-cuentas.webcafeina.com`.
+5. **Producción**, lo mismo con `produccion`: el entorno de GitHub solo deja desplegar desde `main`.
+   Vive en `https://esfinge-cuentas.webcafeina.com`.
+
+**Hecho todo el 2026-09-18.** Bases: `esfinge-cuentas` (`0122dfb4-…`) y `esfinge-cuentas-pruebas`
+(`62a934bf-…`), las dos con jurisdicción `eu`. El de pruebas vive en
+`https://esfinge-cuentas-pruebas.webcafe-na.workers.dev`.
 
 **Abrir el registro** (`REGISTRO: "abierto"`) es **después de la auditoría externa** (ADR 0035). Hasta
 entonces, quién entra se decide en la tabla `admision`:
