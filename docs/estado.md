@@ -412,8 +412,11 @@ el mismo día**, con la A1 y la A2, todo en verde y la extensión subida sola a 
 cambiar la contraseña maestra en Ajustes la cambiaba solo en la bóveda**, y un equipo nuevo no podría
 entrar. Queda bloqueado con un mensaje hasta la A3, y **no se invita a nadie más hasta entonces**.
 
-**La siguiente acción concreta es que el cliente la pruebe en sus dos Macs**: crear la cuenta desde
-Ajustes con la bóveda que ya tiene, entrar desde el otro con el código, y trabajar en los dos. Después, la
+**La siguiente acción concreta es que el cliente la pruebe en sus dos Macs, el lunes 21 de septiembre en
+la oficina** (el viernes 18 no tenía dos a mano): crear la cuenta desde Ajustes con la bóveda que ya tiene,
+entrar desde el otro con el código, y trabajar en los dos —una entrada en uno que aparece en el otro, la
+misma entrada editada a la vez, guardar desde el navegador y cerrar justo después de guardar—. Se le dio el
+guion paso a paso. **Al volver, se empieza por preguntarle cómo ha ido.** Después, la
 A3: cambiar la contraseña, recuperar la cuenta, la lista de equipos, borrar la cuenta y exportar.
 
 **Para retomar la A2** (sesión cerrada el 2026-09-18 por la tarde, a petición del cliente): el plan está en
