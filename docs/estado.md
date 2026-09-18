@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-09-14**
+Última actualización: **2026-09-18**
 
 ## Dónde estamos
 
@@ -363,6 +363,23 @@ Lo que se preguntó entonces, ya decidido:
   si se sigue publicando ahí y quién sube cada versión.
 - Y lo que queda de Windows para que la extensión funcione allí: **el manifiesto en el registro** y el
   instalador sin `esfinge-puente` (`docs/deuda.md`).
+
+### 6. Las cuentas (fase 3) — decidida y planificada el 2026-09-18
+
+**La bóveda en todos los equipos, compartir copias con otras cuentas y la extensión como cliente
+propio**, con un servidor nuestro en Cloudflare UE que no puede leer nada. Lo decidido con el cliente
+está en la [ADR 0035](adr/0035-las-cuentas.md) y el plan entero —criptografía, fusión, servidor,
+aplicación, extensión y entregas— en [`docs/cuentas.md`](cuentas.md).
+
+Las entregas, en orden: **A0** el servidor solo; **A1** (2.23.0) el modelo y la fusión, sin interfaz;
+**A2** la bienvenida, la cuenta y la sincronización, por invitación; **A3** contraseña, recuperación,
+equipos y borrado; **E** la extensión autónoma; **la auditoría externa**; **A4** abrir el registro; **B**
+compartir; **C** Touch ID o PIN.
+
+**La siguiente acción concreta es la A0**: `servidor/` con sus pruebas, que se puede escribir y probar
+entero aquí con Miniflare. **Para desplegarlo hace falta el cliente**: un token de la API de Cloudflare
+con alcance mínimo, comprobar que el DNS de `webcafeina.com` está en Cloudflare, y poner él mismo
+`PIMIENTA`, `SECRETO_PRELOGIN` y `RESEND_API_KEY` con `wrangler secret put`. **Nunca por el chat.**
 
 ### Lo que yo recomendaría meter en medio, y no es lo que se decidió
 

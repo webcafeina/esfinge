@@ -1,6 +1,6 @@
 # Decisiones
 
-Última actualización: **2026-09-14**
+Última actualización: **2026-09-18**
 
 Una ficha por decisión no trivial, en [adr/](adr/). Las que se superan **no se borran**: se marcan y
 se quedan, porque saber qué se pensaba antes explica por qué el código es como es.
@@ -44,6 +44,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0032](adr/0032-guardar-desde-la-pagina.md) | Guardar y actualizar desde la página: una tarjeta que se pulsa y el navegador que escribe en la bóveda | 2026-09-14 | aceptada · matiza la 0028 y la 0031 · revisar en sitios de verdad y en las tiendas |
 | [0033](adr/0033-las-tiendas.md) | La extensión, pública en las tiendas: aviso de datos en el panel, sin `innerHTML` y código fuente reproducible | 2026-09-14 | aceptada, en curso · continúa la 0027 y la 0032 · revisar cuando la aprueben las tiendas |
 | [0034](adr/0034-el-canal-con-el-navegador-en-windows.md) | El canal con el navegador en Windows: el manifiesto apuntado desde el registro, y el puente en el instalador | 2026-09-14 | aceptada · continúa la 0027 · revisar al probarlo en un Windows |
+| [0035](adr/0035-las-cuentas.md) | Las cuentas: la bóveda en todos los equipos con un servidor nuestro en Cloudflare UE que no puede leerla, compartir copias y la extensión como cliente propio | 2026-09-18 | aceptada, sin empezar · matiza la 0023 y la 0014 · revisar al terminar la auditoría |
 
 ## Cuándo escribir una
 
