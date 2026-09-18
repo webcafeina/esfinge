@@ -5,6 +5,15 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-18 · La extensión, publicada en las dos tiendas
+
+- **Mozilla y Google aprobaron la extensión** y las dos fichas son públicas con la 2.22.1, comprobado por la
+  API de AMO y la página de la Chrome Web Store. La web cambia «Muy pronto» por «Añadir a Chrome» y «Añadir
+  a Firefox», soporte enlaza las tiendas en el paso de instalar y el README también.
+- **Decidido con el cliente**: la extensión **sigue subiendo en cada publicación**, aunque no cambie; **sus zip
+  para cargarla a mano dejan de colgarse** de la publicación de GitHub —se quedan el de la tienda de Chrome y
+  el de código fuente—; y la cuenta de servicio de Chrome, hoy.
+
 ## 2026-09-15 · La extensión, enviada a Firefox (2.22.1)
 
 - **El cliente dio de alta la cuenta de Mozilla** y guardó `AMO_API_KEY` y `AMO_API_SECRET` en GitHub. Costó

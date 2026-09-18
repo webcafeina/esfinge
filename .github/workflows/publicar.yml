@@ -447,10 +447,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
 
-      # La extensión va colgada de la publicación **mientras no esté en las
-      # tiendas**, que es lo único que permite probarla sin clonar el repositorio:
-      # se descarga, se descomprime y se carga a mano. Cuando llegue a las tiendas
-      # esto sobra y se quita.
+      # La extensión se empaqueta aquí para el trabajo `tiendas`, que la sube a
+      # Chrome y a Firefox. **Desde que está en las dos (2026-09-18) sus zip para
+      # cargarla a mano ya no se cuelgan de la publicación**: los quita el trabajo
+      # `publicar`. Se quedan el de la tienda de Chrome y el de código fuente.
       - name: Empaquetar la extensión del navegador
         shell: bash
         run: |
@@ -497,6 +497,9 @@ jobs:
       - name: Resumir todo lo que se publica
         working-directory: adjuntos
         run: |
+          # Los zip para cargar la extensión a mano ya no se publican: desde el
+          # 2026-09-18 se instala desde las tiendas y se actualiza sola.
+          rm -f esfinge-extension-*-chrome.zip esfinge-extension-*-firefox.zip
           rm -f SHA256SUMS
           # El propio fichero queda fuera de la lista. La redirección lo crea
           # antes de que corra «find», así que se colaría con el resumen de sí

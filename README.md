@@ -65,7 +65,8 @@ enseña una sola vez, al crearla, para apuntarla en papel
 ([cómo está hecha](docs/adr/0023-la-boveda.md)).
 
 **Y rellena en el navegador.** Hay una extensión para Chrome, Edge, Firefox, Brave, Vivaldi y
-Opera: cuando entras en un sitio del que tienes una cuenta guardada, escribe el usuario y la
+Opera —en la [Chrome Web Store](https://chromewebstore.google.com/detail/esfinge/jfkkegampjamnnlopobepjoanebemegp) y en
+[Firefox Add-ons](https://addons.mozilla.org/es-ES/firefox/addon/esfinge/)—: cuando entras en un sitio del que tienes una cuenta guardada, escribe el usuario y la
 contraseña sin que pulses nada. Si tienes varias cuentas de ese sitio, se elige en su panel. Habla
 con Esfinge por un **canal local** —ni cuenta, ni servidor, ni nada que salga de tu ordenador—, viene
 apagado y se enciende en Ajustes ([cómo está hecho](docs/adr/0027-el-canal-con-el-navegador.md), [qué
