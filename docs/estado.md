@@ -5,7 +5,7 @@
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.22.2**, y **la extensión está publicada en las dos tiendas y se sube sola a las dos**. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.23.0**, que trae **las cuentas, por invitación**, y la extensión está publicada en las dos tiendas y se sube sola a las dos. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -407,8 +407,8 @@ nada que cuente como actividad. Probado en Go contra el servidor de verdad y **e
 equipos a la vez** (`e2e/cuentas.spec.ts`), con las capturas miradas en los dos temas. La política de
 privacidad, la portada, el README y `docs/seguridad.md` ya cuentan la cuenta.
 
-**Chrome aprobó la 2.22.2 el 2026-09-18**, y el cliente dijo «adelante con todo»: **la 2.23.0 se publica
-el mismo día**, con la A1 y la A2. Antes, un agujero que salió al contestarle si era estable: **con cuenta,
+**Chrome aprobó la 2.22.2 el 2026-09-18**, y el cliente dijo «adelante con todo»: **la 2.23.0 se publicó
+el mismo día**, con la A1 y la A2, todo en verde y la extensión subida sola a las dos tiendas. Antes, un agujero que salió al contestarle si era estable: **con cuenta,
 cambiar la contraseña maestra en Ajustes la cambiaba solo en la bóveda**, y un equipo nuevo no podría
 entrar. Queda bloqueado con un mensaje hasta la A3, y **no se invita a nadie más hasta entonces**.
 

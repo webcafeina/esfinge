@@ -5,6 +5,24 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-18 (noche) · La A2 y la 2.23.0: las cuentas, por invitación
+
+- **La A2, hecha** (ADR 0039): la bienvenida al estrenar Esfinge sin nada, el asistente para crear la
+  cuenta y entrar —juntando o apartando la bóveda que hubiera, que nunca se borra—, la sincronización a la
+  vista en la bóveda y en Ajustes, y **dejar la cuenta en este equipo**, adelantado de la A3 porque la
+  bienvenida promete poder cambiar de idea.
+- Primero se arregló la prueba que fallaba una de cada doce desde antes de las cuentas: la bóveda buscaba
+  120 ms después de cerrarse. **24 de 24.**
+- La prueba de dos equipos cazó que **al cerrar no se subía lo pendiente**; ahora se sube con tres segundos
+  de tope. Y al contestar al cliente si era estable salió otro: **con cuenta, cambiar la maestra en Ajustes
+  la cambiaba solo en la bóveda** y un equipo nuevo no podría entrar. Bloqueado hasta la A3.
+- La política de privacidad, la portada, el README y `docs/seguridad.md` cuentan ya la cuenta. **La política
+  no la ha revisado un abogado**: obligatorio antes de abrir el registro.
+- Chrome aprobó la 2.22.2 y **se publicó la 2.23.0**: todo en verde, la puerta nueva levantando el servidor
+  de cuentas en la máquina de GitHub, y la extensión subida sola a las dos tiendas (Firefox esperando
+  aprobación, Chrome en revisión).
+- **Queda**: que el cliente la pruebe en sus dos Macs, y la A3. No se invita a nadie más hasta entonces.
+
 ## 2026-09-18 (tarde) · Las cuentas: decididas, el servidor desplegado y la A1
 
 - **Decidido con el cliente, en modo plan y por preguntas**, el nivel de cuenta: servidor propio en
