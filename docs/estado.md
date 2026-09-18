@@ -407,10 +407,14 @@ nada que cuente como actividad. Probado en Go contra el servidor de verdad y **e
 equipos a la vez** (`e2e/cuentas.spec.ts`), con las capturas miradas en los dos temas. La política de
 privacidad, la portada, el README y `docs/seguridad.md` ya cuentan la cuenta.
 
-**La siguiente acción concreta es publicarla (2.23.0) cuando el cliente lo diga** —y cuando Chrome haya
-aprobado la 2.22.2, porque publicar sube la extensión otra vez a revisar— y **probarla en el Mac con dos
-equipos de verdad**: crear la cuenta con la bóveda que ya tiene, desde Ajustes, y entrar desde el otro.
-Después, la A3: cambiar la contraseña, recuperar, la lista de equipos, borrar la cuenta y exportar.
+**Chrome aprobó la 2.22.2 el 2026-09-18**, y el cliente dijo «adelante con todo»: **la 2.23.0 se publica
+el mismo día**, con la A1 y la A2. Antes, un agujero que salió al contestarle si era estable: **con cuenta,
+cambiar la contraseña maestra en Ajustes la cambiaba solo en la bóveda**, y un equipo nuevo no podría
+entrar. Queda bloqueado con un mensaje hasta la A3, y **no se invita a nadie más hasta entonces**.
+
+**La siguiente acción concreta es que el cliente la pruebe en sus dos Macs**: crear la cuenta desde
+Ajustes con la bóveda que ya tiene, entrar desde el otro con el código, y trabajar en los dos. Después, la
+A3: cambiar la contraseña, recuperar la cuenta, la lista de equipos, borrar la cuenta y exportar.
 
 **Para retomar la A2** (sesión cerrada el 2026-09-18 por la tarde, a petición del cliente): el plan está en
 `docs/cuentas.md` («La aplicación» y la tabla de entregas); el protocolo, en `servidor/LÉEME.md`; el formato,

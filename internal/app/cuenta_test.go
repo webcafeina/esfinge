@@ -423,3 +423,18 @@ func TestSalirDeLaCuentaEnEsteEquipo(t *testing.T) {
 		t.Fatalf("la cuenta ya no existe: %+v %v", r, err)
 	}
 }
+
+// Con cuenta, cambiar solo la contraseña de la bóveda dejaría a los equipos nuevos
+// sin poder entrar. Hasta que se pueda cambiar en los dos sitios a la vez, no se deja.
+func TestConCuentaLaMaestraNoSeCambiaTodavia(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	e := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, e, correoDePrueba(), maestraFuerte)
+	if err := e.a.CambiarMaestraDeBoveda(maestraFuerte, "otra maestra larga que sería la nueva"); err == nil {
+		t.Fatal("con cuenta deja cambiar la contraseña solo en la bóveda")
+	}
+	e.a.CerrarBoveda()
+	if err := e.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatalf("la de siempre ya no abre: %v", err)
+	}
+}
