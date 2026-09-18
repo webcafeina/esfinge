@@ -31,7 +31,7 @@
 		{
 			"binding": "BD",
 			"database_name": "esfinge-cuentas",
-			"database_id": "por-crear",
+			"database_id": "0122dfb4-e680-43dd-bf7d-e60be8f42316",
 			"migrations_dir": "migraciones"
 		}
 	],
@@ -63,7 +63,7 @@
 				{
 					"binding": "BD",
 					"database_name": "esfinge-cuentas-pruebas",
-					"database_id": "por-crear",
+					"database_id": "62a934bf-0141-4855-90ac-d9e222469a44",
 					"migrations_dir": "migraciones"
 				}
 			],
