@@ -377,3 +377,49 @@ func TestLaSesionNoQuedaEnClaroEnElDisco(t *testing.T) {
 		t.Fatal("con la bóveda cerrada sigue la sesión en memoria")
 	}
 }
+
+// Dejar la cuenta en este equipo: la bóveda se queda como está, deja de
+// sincronizarse, y la cuenta sigue viva para los demás equipos.
+func TestSalirDeLaCuentaEnEsteEquipo(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+	e := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, e, correo, maestraFuerte)
+	_ = e.a.GuardarEnBoveda(boveda.Entrada{Titulo: "Se queda aquí"})
+	alDia(t, e.a, time.Now())
+	e.a.cu.mu.Lock()
+	sesion := e.a.cu.sesion
+	e.a.cu.mu.Unlock()
+
+	if err := e.a.SalirDeCuenta("no es ésta"); err == nil {
+		t.Fatal("sale de la cuenta sin la contraseña")
+	}
+	if err := e.a.SalirDeCuenta(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	if m := e.a.EstadoDeCuenta().Modo; m != "local" {
+		t.Fatalf("tras salir, el modo es %q", m)
+	}
+	if got := titulosDe(t, e.a); got != "Se queda aquí" {
+		t.Fatalf("la bóveda de aquí ha cambiado: %q", got)
+	}
+	if _, err := os.Stat(rutaBoveda() + ".base"); err == nil {
+		t.Fatal("se queda la base de la sincronización")
+	}
+	if err := e.a.SincronizarAhora(); err == nil {
+		t.Fatal("sigue sincronizando")
+	}
+	// La sesión de este equipo ya no vale en el servidor.
+	if _, err := e.a.cliente().Equipos(e.a.ctxCuenta(), sesion); err == nil {
+		t.Fatal("la sesión sigue viva en el servidor")
+	}
+	// Y la cuenta sigue: se puede volver a entrar desde otro equipo.
+	otro := nuevoEquipo(t, raiz)
+	r, err := otro.a.EntrarEnCuenta(correo, maestraFuerte)
+	if err == nil && r.NecesitaCodigo {
+		r, err = otro.a.ConfirmarEntrada(codigoDelBuzon(t, raiz, correo))
+	}
+	if err != nil || !r.Listo {
+		t.Fatalf("la cuenta ya no existe: %+v %v", r, err)
+	}
+}

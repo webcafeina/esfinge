@@ -11,6 +11,7 @@ import {
   alCambiarLaBoveda
 } from "./puente";
 import { CampoClave, dominioDe, Icono, Monograma, Segmentado } from "./componentes";
+import { LineaSincro } from "./cuenta";
 
 /**
  * La bóveda, asomada a la ventana.
@@ -32,7 +33,13 @@ import { CampoClave, dominioDe, Icono, Monograma, Segmentado } from "./component
  *     se pausa y muere al recargar, y un bloqueo que a veces no ocurre no es un
  *     bloqueo. Aquí solo se escucha lo que Go decide.
  */
-export function Boveda({ activo }: { activo: boolean }) {
+export function Boveda({
+  activo,
+  alVolverAEntrar,
+}: {
+  activo: boolean;
+  alVolverAEntrar: (correo: string) => void;
+}) {
   const [estado, setEstado] = useState<EstadoBoveda | null>(null);
   const [error, setError] = useState("");
   // La clave de recuperación, cuando toca enseñarla. **Es la única vez que se
@@ -93,6 +100,7 @@ export function Boveda({ activo }: { activo: boolean }) {
   return (
     <Dentro
       estado={estado}
+      alVolverAEntrar={alVolverAEntrar}
       alCambiar={refrescar}
       alRotar={(clave) => setCeremonia({ clave, nueva: false })}
     />
@@ -214,7 +222,7 @@ function Crear({ alCrear }: { alCrear: (recuperacion: string) => void }) {
  * Se enseña una vez y no se puede volver a pedir. Por eso hay una casilla que
  * hay que marcar para seguir: no es burocracia, es la última oportunidad.
  */
-function Ceremonia({
+export function Ceremonia({
   clave,
   nueva,
   alSeguir,
@@ -358,10 +366,12 @@ function Dentro({
   estado,
   alCambiar,
   alRotar,
+  alVolverAEntrar,
 }: {
   estado: EstadoBoveda;
   alCambiar: () => void;
   alRotar: (clave: string) => void;
+  alVolverAEntrar: (correo: string) => void;
 }) {
   const [q, setQ] = useState("");
   const [tipo, setTipo] = useState<Filtro>("todo");
@@ -517,6 +527,9 @@ function Dentro({
         )}
         <button onClick={cerrar}>Cerrar la bóveda</button>
       </div>
+
+      {/* Cómo va la sincronización, si este equipo está en una cuenta. */}
+      <LineaSincro alVolverAEntrar={alVolverAEntrar} />
 
       {/* **Las cuatro clases, separadas.** Con sesenta y cinco entradas dentro un
           listado único deja de navegarse, y las tarjetas y los documentos no se

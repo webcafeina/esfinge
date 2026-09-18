@@ -48,6 +48,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0036](adr/0036-el-servidor-de-cuentas.md) | El servidor de cuentas: un Durable Object por cuenta con la bóveda dentro y no en R2, D1 como índice, frenos donde vive lo que frenan y sin secretos no arranca | 2026-09-18 | aceptada, desplegada y comprobada · continúa la 0035 · revisar en la auditoría |
 | [0037](adr/0037-claves-de-la-cuenta.md) | Las claves de la cuenta: la de acceso derivada aparte con su sal y un coste que el servidor no puede bajar, y la posesión de la bóveda para cambiar la contraseña | 2026-09-18 | aceptada, sin interfaz · continúa la 0035 · revisar en la auditoría |
 | [0038](adr/0038-sincronizar-la-boveda.md) | Sincronizar la bóveda: entera y con la versión sellada, fusión a tres bandas donde la edición gana al borrado y ninguna contraseña se pierde, y lápidas de seis meses | 2026-09-18 | aceptada, sin interfaz · matiza la 0026 · revisar al usarla en dos equipos |
+| [0039](adr/0039-la-bienvenida-y-la-cuenta-en-la-ventana.md) | La bienvenida y la cuenta en la ventana: elegir local o cuenta al estrenar, el asistente para crearla y entrar, juntar o apartar la bóveda que ya había, y dejar la cuenta desde Ajustes | 2026-09-18 | aceptada, sin publicar · continúa la 0035 · revisar en el Mac con dos equipos |
 
 ## Cuándo escribir una
 

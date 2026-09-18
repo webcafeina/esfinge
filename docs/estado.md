@@ -396,10 +396,21 @@ con el servidor —leyendo el `ETag` débil—, e `internal/sincro` hace las pas
 ventana todavía.** Probado con tres equipos al azar (16 semillas), con una bóveda de la 2.22.2 de verdad y
 **contra el servidor de verdad levantado en local**, en `make comprobar` y en la puerta de publicación.
 
-**La siguiente acción concreta es la A2**: la bienvenida al arrancar, crear la cuenta y entrar desde otro
-equipo, y la sincronización enganchada a la aplicación —`BorrarBoveda` tiene que borrar también `.base`,
-`.sincro` y `.antes-de-fundir`, y nada de la sincronización puede llamar a `Actividad()`—. Con el servidor
-de producción por invitación, y **en el Mac, con dos equipos de verdad**.
+**~~La A2~~ — hecha el 2026-09-18, sin publicar** ([ADR 0039](adr/0039-la-bienvenida-y-la-cuenta-en-la-ventana.md)):
+la bienvenida a ventana entera al estrenar Esfinge sin nada, el asistente para crear la cuenta y para
+entrar —juntando o apartando la bóveda que ya hubiera, **que nunca se borra**—, la línea de la
+sincronización en la bóveda y el grupo «Cuenta y sincronización» en Ajustes, **con «Dejar la cuenta en
+este equipo» adelantado de la A3** porque la bienvenida promete poder cambiar de idea. Por debajo,
+`internal/app/cuenta.go`: la sesión sellada con la bóveda en `cuenta.json`, la sincronización enganchada a
+abrir, cerrar, bloquear y borrar, **subir lo pendiente al cerrar** —lo cazó la prueba de dos equipos— y
+nada que cuente como actividad. Probado en Go contra el servidor de verdad y **en la ventana con dos
+equipos a la vez** (`e2e/cuentas.spec.ts`), con las capturas miradas en los dos temas. La política de
+privacidad, la portada, el README y `docs/seguridad.md` ya cuentan la cuenta.
+
+**La siguiente acción concreta es publicarla (2.23.0) cuando el cliente lo diga** —y cuando Chrome haya
+aprobado la 2.22.2, porque publicar sube la extensión otra vez a revisar— y **probarla en el Mac con dos
+equipos de verdad**: crear la cuenta con la bóveda que ya tiene, desde Ajustes, y entrar desde el otro.
+Después, la A3: cambiar la contraseña, recuperar, la lista de equipos, borrar la cuenta y exportar.
 
 **Para retomar la A2** (sesión cerrada el 2026-09-18 por la tarde, a petición del cliente): el plan está en
 `docs/cuentas.md` («La aplicación» y la tabla de entregas); el protocolo, en `servidor/LÉEME.md`; el formato,

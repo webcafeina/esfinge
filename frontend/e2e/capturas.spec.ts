@@ -22,6 +22,15 @@ test.describe("Capturas", () => {
     await page.setViewportSize({ width: 980, height: 680 });
     await page.goto("/");
 
+    // Con el servidor de desarrollo recién arrancado, lo primero es la bienvenida
+    // de la cuenta. Se retrata y se elige «En este ordenador», que es lo que
+    // recorre el resto.
+    const bienvenida = page.getByRole("button", { name: "Usar en este ordenador" });
+    if (await bienvenida.isVisible().catch(() => false)) {
+      await foto("00-bienvenida");
+      await bienvenida.click();
+    }
+
     // El rótulo de «Modo desarrollo» es cierto aquí y mentira en la portada del
     // repositorio, que es donde acaban estas capturas.
     if (process.env.CAPTURAS_SIN_DEV) {

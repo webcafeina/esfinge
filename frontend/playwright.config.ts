@@ -57,5 +57,37 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
+
+    // **Y dos equipos con cuenta** (e2e/cuentas.spec.ts): el servidor de cuentas
+    // de verdad en local, y dos ventanas, cada una con su Go y su carpeta de
+    // configuración recién hecha. Es la tubería entera de la cuenta, de la ventana
+    // de un equipo a la de otro, que es la prueba que faltó con los iconos.
+    {
+      command: "bash ../herramientas/servidor-para-e2e.sh 8792",
+      url: "http://127.0.0.1:8792/v1/salud",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    ...[
+      { go: 34453, vite: 5174 },
+      { go: 34463, vite: 5175 },
+    ].flatMap(({ go, vite }) => [
+      {
+        command:
+          `go run -tags dev ../cmd/dev -direccion 127.0.0.1:${go}` +
+          ` -version 2.23.0 -cuentas http://127.0.0.1:8792`,
+        url: `http://127.0.0.1:${go}/api/salud`,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+        env: { PATH: `${process.env.HOME}/.local/go/bin:${process.env.PATH}` },
+      },
+      {
+        command: `vite --port ${vite} --host 127.0.0.1`,
+        url: `http://127.0.0.1:${vite}`,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+        env: { ESFINGE_GO: `http://127.0.0.1:${go}` },
+      },
+    ]),
   ],
 });

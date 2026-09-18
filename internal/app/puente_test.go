@@ -82,7 +82,7 @@ var loQuePuedeCruzarElPuente = []string{
 	// `ApuntarCuentasA`, que es función y no método.
 	"EstadoDeCuenta", "ElegirModoLocal", "SincronizarAhora",
 	"EmpezarRegistro", "TerminarRegistro",
-	"EntrarEnCuenta", "ConfirmarEntrada", "ResolverOtraBoveda",
+	"EntrarEnCuenta", "ConfirmarEntrada", "ResolverOtraBoveda", "SalirDeCuenta",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

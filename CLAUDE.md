@@ -171,7 +171,9 @@ No se cambian sin preguntar.
   servidor nuestro en **Cloudflare UE que no puede leer nada**, compartir **copias sin permisos** con otras
   cuentas, código por correo en cada equipo nuevo, bienvenida «En este ordenador / Con cuenta» reversible,
   **maestra «fuerte» obligatoria con cuenta**, y **la extensión como cliente completo de la cuenta, siempre
-  por ella**. **El registro libre, solo tras una auditoría externa**; hasta entonces, por invitación. Rompe
+  por ella**. La bienvenida sale **solo a quien estrena Esfinge sin nada** —quien ya tenía bóveda
+  trabaja en local sin que se le pregunte—, y **la bóveda que hubiera en un equipo al entrar en una cuenta
+  se aparta y no se borra nunca** (ADR 0039). **El registro libre, solo tras una auditoría externa**; hasta entonces, por invitación. Rompe
   dos promesas públicas —«sin servidores» y «Webcafeína no recibe nada»— que hay que cambiar antes de que
   nadie tenga cuenta.
 
@@ -842,6 +844,20 @@ conservar porque la editó. Tres reglas que salen de ahí y de lo demás:
 por `herramientas/con-servidor.sh` con el entorno `local` del Worker —frenos holgados, porque todo llega
 desde 127.0.0.1: con los de verdad, la cuarta cuenta de la tanda chocaba con el tope de tres altas por IP y
 día—. Un `go test` suelto se las salta; `make comprobar` y `publicar.yml` no.
+
+**Desde la A2, el servidor de desarrollo arranca en la bienvenida** (ADR 0039): sin bóveda y sin modo
+elegido, la bienvenida tapa la ventana entera. Por eso las pruebas de siempre **eligen local antes de
+empezar** (`beforeEach` con `ElegirModoLocal` en `esfinge.spec.ts`), y las de la cuenta
+(`cuentas.spec.ts`) tienen sus propias dos ventanas —5174 y 5175, cada una con su Go, con `ESFINGE_GO`
+diciéndole a Vite a cuál hablar— y el servidor de cuentas de verdad en el 8792. Tres cosas que salieron
+al escribirlas:
+
+- **`fill(await codigo())` lee el buzón antes de esperar al campo**: el argumento se calcula primero, y se
+  cogía el código anterior. Se espera a que salga el campo del código y después se lee el buzón.
+- **Una captura justo después de `emulateMedia` sale a mitad de la transición de los botones**: en oscuro
+  parecían blancos con letra blanca. Se espera un momento antes de retratar.
+- **La hoja de estilos viste los campos por su tipo** (`text`, `email`, `password`): uno sin `type`, o de
+  un tipo que no esté en la lista, sale con el aspecto del navegador.
 
 ## Lo que nunca se ha probado
 

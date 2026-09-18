@@ -214,6 +214,42 @@ export type EstadoDelNavegador = {
 };
 
 /** Lo que hace falta saber para decidir qué pantalla de la bóveda se enseña. */
+/** Cómo va la sincronización con la cuenta (ADR 0038). */
+export type EstadoSincro = {
+  estado:
+    | "apagada"
+    | "sincronizando"
+    | "al-dia"
+    | "sin-conexion"
+    | "sin-red"
+    | "hay-que-entrar"
+    | "muchos-borrados"
+    | "error";
+  /** Cuándo salió bien la última pasada, en RFC3339. */
+  ultima?: string;
+  /** Lo que hay que enseñar si algo no va bien, tal cual. */
+  mensaje?: string;
+};
+
+/** Si este equipo trabaja en local o con cuenta (ADR 0035). */
+export type EstadoCuenta = {
+  /** Vacío: todavía no se ha elegido, y toca la bienvenida. */
+  modo: "" | "local" | "cuenta";
+  correo?: string;
+  equipo?: string;
+  servidor: string;
+  sincro: EstadoSincro;
+};
+
+/** En qué punto se ha quedado entrar en una cuenta. */
+export type ResultadoEntrada = {
+  necesitaCodigo: boolean;
+  hayOtraBoveda: boolean;
+  listo: boolean;
+  /** Dónde ha quedado la bóveda que había en este equipo, si se apartó. */
+  apartada?: string;
+};
+
 export type EstadoBoveda = {
   existe: boolean;
   abierta: boolean;
@@ -359,6 +395,42 @@ export const esfinge = {
 
   /** Dice que alguien está usando la aplicación, para aplazar el bloqueo. */
   actividad: () => llamar<void>("Actividad"),
+
+  // --------------------------------------------------------------- la cuenta
+
+  estadoDeCuenta: () => llamar<EstadoCuenta>("EstadoDeCuenta"),
+
+  /** Lo que se elige en la bienvenida para trabajar sin cuenta. */
+  elegirModoLocal: () => llamar<void>("ElegirModoLocal"),
+
+  sincronizarAhora: () => llamar<void>("SincronizarAhora"),
+
+  /**
+   * Deja la cuenta en este equipo: la bóveda se queda aquí tal como está y deja de
+   * sincronizarse. La cuenta sigue en el servidor para los demás equipos.
+   */
+  salirDeCuenta: (maestra: string) => llamar<void>("SalirDeCuenta", maestra),
+
+  /** Manda el código al correo para crear la cuenta. */
+  empezarRegistro: (correo: string) => llamar<void>("EmpezarRegistro", correo),
+
+  /**
+   * Crea la cuenta. Si en este equipo no había bóveda, se crea una y **devuelve su
+   * clave de recuperación, que es la única vez que se ve**; si la había, vacío.
+   */
+  terminarRegistro: (correo: string, codigo: string, maestra: string) =>
+    llamar<string>("TerminarRegistro", correo, codigo, maestra),
+
+  entrarEnCuenta: (correo: string, maestra: string) =>
+    llamar<ResultadoEntrada>("EntrarEnCuenta", correo, maestra),
+
+  confirmarEntrada: (codigo: string) => llamar<ResultadoEntrada>("ConfirmarEntrada", codigo),
+
+  /** Juntar la bóveda que había aquí con la de la cuenta, o apartarla sin más. */
+  resolverOtraBoveda: (juntar: boolean, maestraLocal: string) =>
+    llamar<ResultadoEntrada>("ResolverOtraBoveda", juntar, maestraLocal),
+
+  // --------------------------------------------------------------- la bóveda en sí
 
   estadoBoveda: () => llamar<EstadoBoveda>("EstadoBoveda"),
 
@@ -506,6 +578,11 @@ export function alDescargar(cb: (a: Avance) => void): () => void {
  * se pierden al recargar, y un bloqueo que a veces no ocurre no es un bloqueo.
  */
 /** Avisa de que un navegador quiere conectarse a la bóveda. */
+/** Avisa de cómo va la sincronización con la cuenta. */
+export function alCambiarLaSincro(cb: (e: EstadoSincro) => void): () => void {
+  return escuchar("sincro", cb);
+}
+
 export function alPedirloUnNavegador(cb: (quien: string) => void) {
   return escuchar("navegador-pide", cb);
 }

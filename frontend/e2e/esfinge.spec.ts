@@ -36,6 +36,16 @@ function clave(page: Page) {
 }
 
 /** Ningún error de la consola pasa desapercibido. */
+/**
+ * **Estas pruebas trabajan en local**, y lo eligen antes de empezar: el servidor
+ * de desarrollo arranca sin nada, y sin elegir, la bienvenida de la cuenta taparía
+ * la ventana. La bienvenida tiene sus propias pruebas, en cuentas.spec.ts.
+ */
+test.beforeEach(async ({ request }) => {
+  const r = await request.post("/api/ElegirModoLocal", { data: [] });
+  expect(r.ok(), await r.text()).toBe(true);
+});
+
 function vigilarConsola(page: Page): string[] {
   const errores: string[] = [];
   page.on("console", (m) => m.type() === "error" && errores.push(m.text()));

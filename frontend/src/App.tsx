@@ -38,6 +38,7 @@ import {
   ZonaFicheros,
 } from "./componentes";
 import { Boveda } from "./boveda";
+import { Asistente, Bienvenida, GrupoCuenta, usaCuenta, type TipoAsistente } from "./cuenta";
 
 type Tarea = "cifrar" | "descifrar" | "generar" | "boveda" | "historial" | "ajustes";
 type Modo = "texto" | "ficheros";
@@ -61,6 +62,20 @@ export default function App() {
   // lo que dispara el efecto de abajo es que **cambie**, y pedir dos veces
   // seguidas la misma contraseña es perfectamente posible.
   const [claveGenerada, setClaveGenerada] = useState<{ valor: string; sello: number } | null>(null);
+
+  // La cuenta (ADR 0035): sin elegir todavía, toca la bienvenida; y el asistente
+  // para crearla o entrar, que va a ventana entera. `selloBoveda` rehace la
+  // sección de la bóveda al terminar, que ya no es la de antes.
+  const [cuenta, refrescarCuenta] = usaCuenta();
+  const [asistente, setAsistente] = useState<{ tipo: TipoAsistente; hayBoveda: boolean } | null>(null);
+  const [selloBoveda, setSelloBoveda] = useState(0);
+
+  const abrirAsistente = (tipo: TipoAsistente) => {
+    esfinge
+      .estadoBoveda()
+      .then((e) => setAsistente({ tipo, hayBoveda: e.existe }))
+      .catch(() => setAsistente({ tipo, hayBoveda: false }));
+  };
 
   const [novedad, setNovedad] = useState<Novedad | null>(null);
   const [avance, setAvance] = useState<Avance | undefined>();
@@ -161,6 +176,34 @@ export default function App() {
     }
   }
 
+  if (asistente) {
+    return (
+      <Asistente
+        tipo={asistente.tipo}
+        version={version}
+        hayBoveda={asistente.hayBoveda}
+        alVolver={() => setAsistente(null)}
+        alTerminar={() => {
+          setAsistente(null);
+          refrescarCuenta();
+          setSelloBoveda((n) => n + 1);
+          setTarea("boveda");
+        }}
+      />
+    );
+  }
+
+  if (cuenta?.modo === "") {
+    return (
+      <Bienvenida
+        version={version}
+        alElegirLocal={refrescarCuenta}
+        alCrearCuenta={() => abrirAsistente({ que: "crear" })}
+        alEntrar={() => abrirAsistente({ que: "entrar" })}
+      />
+    );
+  }
+
   return (
     <div className="ventana">
       <BarraLateral valor={tarea} alCambiar={setTarea} version={version} />
@@ -229,7 +272,11 @@ export default function App() {
               que aplaza el bloqueo por inactividad y lo que hace que al volver se
               vea el estado de ahora y no el de hace media hora. */}
           <Panel activo={tarea === "boveda"} visitado={visitadas.has("boveda")}>
-            <Boveda activo={tarea === "boveda"} />
+            <Boveda
+              key={selloBoveda}
+              activo={tarea === "boveda"}
+              alVolverAEntrar={(correo) => abrirAsistente({ que: "entrar", correo, deNuevo: true })}
+            />
           </Panel>
 
           <Panel activo={tarea === "historial"} visitado={visitadas.has("historial")}>
@@ -237,7 +284,12 @@ export default function App() {
           </Panel>
 
           <Panel activo={tarea === "ajustes"} visitado={visitadas.has("ajustes")}>
-            <Ajustes version={version} alEncontrar={setNovedad} />
+            <Ajustes
+              version={version}
+              alEncontrar={setNovedad}
+              alCrearCuenta={() => abrirAsistente({ que: "crear" })}
+              alEntrar={(correo, deNuevo) => abrirAsistente({ que: "entrar", correo, deNuevo })}
+            />
           </Panel>
         </main>
       </div>
@@ -698,9 +750,13 @@ function Generar({ alUsarComoClave }: { alUsarComoClave: (clave: string) => void
 function Ajustes({
   version,
   alEncontrar,
+  alCrearCuenta,
+  alEntrar,
 }: {
   version: string;
   alEncontrar: (n: Novedad) => void;
+  alCrearCuenta: () => void;
+  alEntrar: (correo?: string, deNuevo?: boolean) => void;
 }) {
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
   const [navegador, setNavegador] = useState<EstadoDelNavegador | null>(null);
@@ -828,6 +884,8 @@ function Ajustes({
           <Firma version={version} />
         </div>
       </div>
+
+      <GrupoCuenta alCrearCuenta={alCrearCuenta} alEntrar={alEntrar} />
 
       <div className="grupo">
         <label className="fila-ajuste">

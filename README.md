@@ -5,7 +5,7 @@
 # Esfinge
 
 **Cifra y descifra contraseñas y ficheros con una clave.**
-Sin cuentas y sin servidores: lo que cifras no sale de tu ordenador.
+En tu ordenador, sin cuentas ni servidores; o en todos tus equipos, con una cuenta que se cifra antes de salir y que nuestro servidor no puede leer.
 
 [![Compilación](https://github.com/webcafeina/esfinge/actions/workflows/compilar.yml/badge.svg)](https://github.com/webcafeina/esfinge/actions/workflows/compilar.yml)
 [![Última versión](https://img.shields.io/github/v/release/webcafeina/esfinge?label=versión&color=0070eb)](https://github.com/webcafeina/esfinge/releases/latest)

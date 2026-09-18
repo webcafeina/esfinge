@@ -223,6 +223,45 @@ func (a *App) ElegirModoLocal() error {
 	return guardarDatosCuenta(d)
 }
 
+// SalirDeCuenta deja la cuenta **en este equipo**: la bóveda se queda aquí tal
+// como está y deja de sincronizarse. La cuenta sigue en el servidor, y los otros
+// equipos no cambian. Pide la contraseña maestra, por lo mismo que borrar la
+// bóveda: no es algo que deba poder hacer quien pase por delante.
+func (a *App) SalirDeCuenta(maestra string) error {
+	d := leerDatosCuenta()
+	if d.Modo != "cuenta" {
+		return errors.New("Este equipo no está en ninguna cuenta")
+	}
+	ruta := rutaBoveda()
+	if _, err := boveda.Abrir(ruta, maestra); err != nil {
+		return errors.New("Esa no es la contraseña de esta bóveda")
+	}
+	// Primero se sube lo que quede, para que no se pierda en el camino, y se cierra
+	// la sesión en el servidor: sin eso seguiría viva hasta caducar. Si no hay red,
+	// se sale igual: la sesión sellada se borra de aquí y ya no sirve.
+	a.cu.mu.Lock()
+	m, token := a.cu.marcha, a.cu.sesion
+	a.cu.mu.Unlock()
+	if m != nil {
+		m.cancelar()
+		_ = m.s.Vaciar(vaciarAlCerrar)
+	}
+	if token != "" {
+		_ = a.cliente().CerrarSesion(a.ctxCuenta(), token)
+	}
+	a.alCerrarLaBoveda()
+	a.cu.mu.Lock()
+	a.cu.estado = EstadoSincro{}
+	a.cu.mu.Unlock()
+	if b := a.boveda(); b != nil {
+		b.AlGuardar(nil)
+	}
+	if err := (sincro.JuntoALaBoveda{Ruta: ruta}).Olvidar(); err != nil {
+		return err
+	}
+	return guardarDatosCuenta(datosCuenta{Modo: "local"})
+}
+
 // SincronizarAhora pide una pasada sin esperar al reloj.
 func (a *App) SincronizarAhora() error {
 	a.cu.mu.Lock()

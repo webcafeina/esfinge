@@ -213,13 +213,18 @@ cambia también lo que se dibuja en la página (ADR 0032):
 | **La bóveda** | La misma carpeta, `Esfinge/boveda.esfinge`, más `.anterior` con la copia previa | `600` |
 | Los iconos de los sitios | `Esfinge/boveda.esfinge.iconos`, **cifrado con la clave de la bóveda** | `600` |
 | Preferencias | La misma carpeta, `Esfinge/preferencias.json` | `600` |
+| **La cuenta**, si hay | `Esfinge/cuenta.json`: el correo, el nombre del equipo y **la sesión y el testigo de confianza sellados con la clave de la bóveda** | `600` |
+| La base de la sincronización, si hay cuenta | `Esfinge/boveda.esfinge.base` —**una copia entera de la bóveda**, cifrada igual— y `.sincro`, qué versión es | `600` |
+| La bóveda de antes de una fusión que borró algo | `Esfinge/boveda.esfinge.antes-de-fundir` | `600` |
+| La bóveda que había al entrar en una cuenta | `Esfinge/boveda.esfinge.apartada-<fecha>`: **no se borra nunca sola** | `600` |
 | La actualización descargada | Carpeta de caché del usuario, `Esfinge/descargas/` | `600` |
 | Ficheros cifrados | Junto al original, con `.esf` al final | `600` |
 | Lo que se guarda desde la ventana | Donde diga el diálogo del sistema | `600` |
 
 ## Lo único que sale de la máquina
 
-Desde la 2.14.0 son **dos**, y conviene saber exactamente cuáles.
+Desde la 2.14.0 son **dos**, y **tres si se crea una cuenta** (la tercera, más abajo). Conviene saber
+exactamente cuáles.
 
 **1 · Una petición `GET` a `api.github.com`, una vez al día**, para preguntar cuál es la última
 versión publicada ([ADR 0014](adr/0014-comprobacion-de-actualizaciones.md)). En ella viaja el número
@@ -252,6 +257,41 @@ la red apagaba la mitad. Ahora vive en un sitio y la consultan las dos salidas, 
 cada una. En la línea de comandos, además, no se pregunta nunca si la salida de error no es un
 terminal, que es el caso de cualquier script.
 
+**3 · Con cuenta, la bóveda cifrada, al servidor de cuentas de Webcafeína**
+([ADR 0035](adr/0035-las-cuentas.md) a [0038](adr/0038-sincronizar-la-boveda.md)). Solo si se elige
+«Con cuenta» en la bienvenida o en Ajustes; sin cuenta, esta salida no existe. Va a
+`esfinge-cuentas.webcafeina.com`, un servidor en Cloudflare con los datos guardados **en la UE**, y
+también la apaga `ESFINGE_SIN_RED`.
+
+**Qué no le llega nunca**: la contraseña maestra, la clave de la bóveda, ni ninguna entrada en claro. La
+bóveda sube **tal como está en el disco**, cifrada, y el servidor no tiene con qué abrirla. De la maestra
+se deriva aparte una clave de acceso, y el servidor guarda un HMAC de ella.
+
+**Qué sí ve**, y hay que decirlo:
+
+- **El correo** de la cuenta, y cuándo se creó.
+- **La dirección IP** de cada petición, que la ve Cloudflare. El servidor no la guarda en claro: los
+  frenos por IP llevan un HMAC de ella, y se tiran a los dos días.
+- **Cuánto ocupa la bóveda y cuándo cambia**, con las diez últimas versiones y una por día del último
+  mes, para poder deshacer una fusión mala.
+- **Qué equipos hay en la cuenta**: el nombre de cada ordenador y cuándo se usó por última vez.
+- **Cuándo se entra, se cambia la contraseña o se recupera la cuenta**: los doscientos últimos eventos.
+
+**Los códigos llegan por correo** y los manda Resend, que ve la dirección y el código. Un correo no es un
+segundo factor tan fuerte como una aplicación de códigos: quien entre en el buzón y sepa la contraseña,
+entra. Se eligió así con el cliente.
+
+**Lo que no protege, dicho tal cual:**
+
+- **Quien robe el servidor puede probar contraseñas contra la bóveda cifrada** sin conexión, al coste de
+  Argon2id, igual que quien robe hoy el fichero del disco. La defensa es la contraseña: por eso, con
+  cuenta, tiene que ser al menos «Buena».
+- **Un servidor malicioso puede enseñar a un equipo una versión vieja de la bóveda** y no la última. Lo
+  que no puede es hacerla pasar por nueva —la versión va sellada dentro, con la clave de la bóveda— ni
+  fabricar una ranura para abrirla.
+- **El servidor sabe quién tiene cuenta.** La pre-entrada contesta igual con cuenta que sin ella, así que
+  preguntar desde fuera no lo desvela; al servidor, sí.
+
 Si se descarga una actualización, se comprueba su SHA256 contra el publicado. **Eso protege de una
 descarga rota, no de una publicación manipulada**: el resumen sale del mismo sitio que el fichero. Lo
 que sostiene la confianza es el TLS contra GitHub, y que la aplicación no se instala sola —el
@@ -267,7 +307,8 @@ instalador lo abre quien esté delante—.
 
 ## Lo que no se ha auditado
 
-Nadie de fuera ha revisado esto. El núcleo tiene pruebas que cubren la ida y vuelta, la manipulación
+Nadie de fuera ha revisado esto. **Tampoco el servidor de cuentas**, y por eso el registro es por
+invitación hasta que lo revise alguien de fuera (ADR 0035). El núcleo tiene pruebas que cubren la ida y vuelta, la manipulación
 de cada byte, el truncado y la reordenación, y usa implementaciones de la biblioteca estándar
 extendida de Go —`golang.org/x/crypto`— en vez de nada escrito aquí. Pero **una batería de pruebas
 propia no es una auditoría**, y conviene decirlo antes de que alguien confíe más de la cuenta.

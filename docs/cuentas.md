@@ -301,7 +301,7 @@ salen casi todas las reglas de esta sección.
   - 0036, el servidor de cuentas (escrita, con la A0);
   - 0037, derivación, acceso, segundo factor y recuperación por posesión;
   - 0038, sincronización y fusión;
-  - 0039, bienvenida y local ↔ cuenta;
+  - 0039, bienvenida y local ↔ cuenta (escrita);
   - 0040, la extensión como cliente de la cuenta (fase E): dos implementaciones del formato, la bóveda
     abierta dentro del navegador y «siempre por la cuenta»;
   - 0041, identidad y copias (fase B);
@@ -317,7 +317,7 @@ salen casi todas las reglas de esta sección.
 |---|---|---|
 | **A0** (solo servidor) · **hecha el 2026-09-18** | `servidor/` en el Worker de pruebas: D1 y Durable Objects en la UE (ADR 0036); correo real; flujo de despliegue. **El cliente**: token de Cloudflare, las bases D1 en la UE y los secretos (el DNS de `webcafeina.com` ya está en Cloudflare, comprobado) | vitest; `curl` contra el Worker; correo recibido en Gmail con DKIM alineado |
 | **A1** · **hecha el 2026-09-18, sin publicar** | Refactor de la carpeta, `Revision`, `Lapidas`, `sello.Sincro`, fusión, apertura en memoria, `internal/cuenta` e `internal/sincro`. **Sin interfaz**, invisible para el usuario | Pruebas de **convergencia con tres equipos simulados** y operaciones al azar; una bóveda de la 2.22.2 en `testdata` se abre y conserva todo; la tubería con dos `App` contra un servidor falso |
-| **A2**, 2.24.0 | Bienvenida, registro, entrada con código, sincronización, identidad creada. Servidor con `REGISTRO=lista` (solo la casa) | **e2e de dos equipos**: dos `cmd/dev` y dos Vite contra `wrangler dev` local. A crea la cuenta y guarda; B entra y la ve; los dos editan a la vez y la contraseña perdedora sale en el historial; A borra y en B desaparece. **En el Mac: dos máquinas reales** |
+| **A2** · **hecha el 2026-09-18, sin publicar** (ADR 0039) | Bienvenida, registro, entrada con código, sincronización, identidad creada. Servidor con `REGISTRO=lista` (solo la casa) | **e2e de dos equipos**: dos `cmd/dev` y dos Vite contra `wrangler dev` local. A crea la cuenta y guarda; B entra y la ve; los dos editan a la vez y la contraseña perdedora sale en el historial; A borra y en B desaparece. **En el Mac: dos máquinas reales** |
 | **A3**, 2.25.0 | Cambio de contraseña, recuperación, equipos, borrado, exportación, cuenta → local, restaurar una versión | e2e de cada flujo; ensayo de recuperación con la clave en papel |
 | **E**, 2.26.0 y extensión | La extensión, cliente de la cuenta: ESF1, fusión y TOTP en TypeScript, entrar, desbloquear, bloquear, sincronizar, guardar y actualizar; fichas, aviso y privacidad al día | Vectores de ESF1 en los dos lenguajes; fusión cruzada Go ↔ TypeScript byte a byte; Playwright con la extensión de verdad contra `wrangler dev` (**salda la deuda alta de las pruebas con la extensión cargada**); en el Mac: rellenar y guardar con la aplicación cerrada, y un cambio en el navegador que aparece en la aplicación |
 | **Auditoría** | Diseño, Worker, aplicación, **extensión** y textos | Informe y correcciones |

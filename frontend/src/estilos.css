@@ -374,6 +374,7 @@ label {
 }
 
 input[type="text"],
+input[type="email"],
 input[type="password"],
 textarea {
   width: 100%;
@@ -1454,4 +1455,189 @@ select {
  * sino la única forma de que esconder esconda. */
 [hidden] {
   display: none !important;
+}
+
+/* ------------------------------------------------------------ la cuenta (ADR 0035)
+ *
+ * La bienvenida y el asistente van a ventana entera: son la puerta, no una
+ * pantalla de trabajo, y ahí la marca tiene sitio (ADR 0021). Todos los colores
+ * son parejas ya medidas en contraste_test.go: tinta, cuerpo y apagado sobre el
+ * lienzo y la tarjeta; el éxito sobre la tarjeta; el acento como raya sobre la
+ * tarjeta.
+ *
+ * **Con fondo propio**: bajo el vidrio del sistema, lo que no declara fondo se
+ * vuelve transparente y enseña el escritorio (CLAUDE.md). Y **se arrastra la
+ * ventana desde ella**, que no hay barra de título. */
+
+.portada {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--lienzo);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--hueco-semaforos) var(--espacio-5) var(--espacio-4);
+  --wails-draggable: drag;
+}
+
+.portada button,
+.portada input,
+.portada select,
+.portada .grupo,
+.portada .seleccionable,
+.portada .clave-recuperacion,
+.portada .fila-ajuste {
+  --wails-draggable: no-drag;
+}
+
+:root[data-sistema="windows"] .portada,
+:root[data-sistema="linux"] .portada {
+  --wails-draggable: no-drag;
+}
+
+.portada-cuerpo {
+  flex: 1;
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+}
+
+.portada .firma {
+  margin-top: var(--espacio-5);
+}
+
+.portada-cabeza,
+.asistente-cabeza {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--espacio-2);
+  color: var(--tinta);
+}
+
+.portada-cabeza .entradilla,
+.asistente-cabeza .entradilla {
+  color: var(--apagado);
+  margin: 0;
+}
+
+.portada-cabeza h1,
+.asistente-cabeza h1 {
+  margin: var(--espacio-2) 0 0;
+}
+
+/* A este tamaño, el grosor de serie de la marca se empasta. Va en el grupo y no
+ * en el «svg»: el grupo trae el suyo escrito y un atributo le gana a lo heredado
+ * (CLAUDE.md). */
+.portada-marca svg g {
+  stroke-width: 44;
+}
+
+.eleccion {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espacio-4);
+}
+
+@media (max-width: 640px) {
+  .eleccion {
+    grid-template-columns: 1fr;
+  }
+}
+
+.opcion {
+  background: var(--tarjeta);
+  border: 0.5px solid var(--filete);
+  /* Sin raya de color arriba: se probó con el acento y salía negra en claro y
+   * blanca en oscuro, y una elección neutra no puede destacar una de las dos. */
+  border-radius: var(--radio-grande);
+  padding: var(--espacio-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  --wails-draggable: no-drag;
+}
+
+.opcion h2 {
+  color: var(--tinta);
+}
+
+.opcion-lema {
+  color: var(--cuerpo);
+  margin: 0;
+}
+
+.opcion .botones {
+  margin-top: auto;
+}
+
+.pros-contras {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+/* El glifo delante con sangría francesa, **no con flex**: un <strong> en medio de
+ * la frase se saldría a una columna aparte (CLAUDE.md). */
+.pros-contras li {
+  color: var(--cuerpo);
+  padding-left: 1.4em;
+  text-indent: -1.4em;
+}
+
+.pros-contras li::before {
+  display: inline-block;
+  width: 1.4em;
+  text-indent: 0;
+  font-weight: 600;
+}
+
+.pros-contras .pro::before {
+  content: "✓";
+  color: var(--exito);
+}
+
+.pros-contras .contra::before {
+  content: "–";
+  color: var(--apagado);
+}
+
+.portada-pie {
+  text-align: center;
+}
+
+.asistente {
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-5);
+}
+
+/* La línea de la sincronización, debajo de la barra de la bóveda. */
+.linea-sincro {
+  margin: 0;
+}
+
+.datos-cuenta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--espacio-2) var(--espacio-4);
+  margin: 0;
+}
+
+.datos-cuenta dt {
+  color: var(--apagado);
+}
+
+.datos-cuenta dd {
+  margin: 0;
+  color: var(--cuerpo);
 }
