@@ -377,7 +377,15 @@ function Dentro({
   const [dicho, setDicho] = useState("");
   const [error, setError] = useState("");
 
+  // **Al cerrar, esta pantalla deja de preguntar.** La búsqueda espera 120 ms a que
+  // se deje de teclear, y si en ese hueco se pulsa «Cerrar la bóveda» salía igual,
+  // contra una bóveda ya cerrada: el Go contestaba «La bóveda está cerrada» y la
+  // prueba de la clave de recuperación fallaba una vez de cada doce, desde antes de
+  // las cuentas. Lo mismo vale para cualquier pregunta que llegue tarde.
+  const cerrada = useRef(false);
+
   const buscar = useCallback(async (texto: string) => {
+    if (cerrada.current) return;
     try {
       setLista(await esfinge.buscarEnBoveda(texto));
     } catch (e) {
@@ -429,6 +437,7 @@ function Dentro({
   }
 
   async function cerrar() {
+    cerrada.current = true;
     await esfinge.cerrarBoveda();
     alCambiar();
   }
