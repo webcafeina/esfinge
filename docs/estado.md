@@ -401,6 +401,12 @@ equipo, y la sincronización enganchada a la aplicación —`BorrarBoveda` tiene
 `.sincro` y `.antes-de-fundir`, y nada de la sincronización puede llamar a `Actividad()`—. Con el servidor
 de producción por invitación, y **en el Mac, con dos equipos de verdad**.
 
+**Para retomar la A2** (sesión cerrada el 2026-09-18 por la tarde, a petición del cliente): el plan está en
+`docs/cuentas.md` («La aplicación» y la tabla de entregas); el protocolo, en `servidor/LÉEME.md`; el formato,
+en `docs/formato-boveda.md`. Lo primero de la A2 es la carrera de `BuscarEnBoveda` tras cerrar (deuda). El
+Worker de producción **no se ha vuelto a desplegar** tras la A1: el único cambio del servidor —los topes por
+IP y día configurables— deja producción igual, y entra con el próximo despliegue.
+
 ### Lo que yo recomendaría meter en medio, y no es lo que se decidió
 
 **Levantar Chromium con la extensión cargada de verdad.** Lo dejo escrito porque la razón sigue en
