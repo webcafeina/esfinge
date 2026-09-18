@@ -21,6 +21,8 @@ Plantilla al final.
   lleva los zip para cargarla a mano. **El trabajo `tiendas` subió la extensión a las dos tiendas solo**, y a
   Chrome por la API v2 con la cuenta de servicio a la primera —`SUCCEEDED` y `PENDING_REVIEW`—. **La
   entrega 5 queda cerrada.**
+- **Mozilla aprobó la 2.22.2 prácticamente al instante**, como avisaba su documentación para las
+  actualizaciones: revisión automática. Chrome, todavía en revisión.
 
 ## 2026-09-15 · La extensión, enviada a Firefox (2.22.1)
 

@@ -183,7 +183,8 @@ revisor se pare, y con `https://*/*` y `nativeMessaging` la revisión ya va a se
 **Y en las tiendas de verdad**: la 2.22.1 fue a Firefox con `web-ext` el 2026-09-15, y **las dos fichas se
 aprobaron y son públicas el 2026-09-18** —la de Chrome, tras avisar de revisión a fondo por los permisos de
 host amplios—. La 2.22.2 subió sola a las dos, **y a Chrome por la API v2 con la cuenta de servicio a la
-primera**: `uploadState: SUCCEEDED` y `state: PENDING_REVIEW`. Fichas:
+primera**: `uploadState: SUCCEEDED` y `state: PENDING_REVIEW`. **Mozilla aprobó la actualización al instante**; en Chrome, cada
+actualización pasa su revisión. Fichas:
 https://addons.mozilla.org/es-ES/firefox/addon/esfinge/ y
 https://chromewebstore.google.com/detail/esfinge/jfkkegampjamnnlopobepjoanebemegp.
 
