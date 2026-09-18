@@ -530,6 +530,7 @@ func (b *Boveda) Importar(entradas []Entrada, deDonde string) (r Resumen, err er
 		}
 		e.ID = id
 		e.Creada, e.Cambiada = ahora, ahora
+		e.Revision = 1
 		b.cont.Entradas = append(b.cont.Entradas, e)
 		iguales[huellaDeContenido(e)] = true
 		cuentas[huellaDeCuenta(e)] = true

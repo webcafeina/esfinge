@@ -54,6 +54,15 @@ type Entrada struct {
 	Creada   string `json:"creada"`
 	Cambiada string `json:"cambiada"`
 
+	// Revision cuenta los cambios de esta entrada: la pone la bóveda al guardar,
+	// nunca quien la edita, y sube de uno en uno.
+	//
+	// Existe para la sincronización (ADR 0038). `Cambiada` no sirve para decidir
+	// quién cambió después: tiene resolución de un segundo y depende del reloj de
+	// cada equipo. La revisión solo sirve para desempatar cuando dos equipos han
+	// tocado lo mismo; qué cambió lo decide comparar con la versión común.
+	Revision int64 `json:"revision,omitempty"`
+
 	// Papelera es borrado suave. Barato ahora e imprescindible para sincronizar
 	// después: sin él, «borrada aquí» y «nunca existió allí» son indistinguibles.
 	Papelera  bool   `json:"papelera,omitempty"`

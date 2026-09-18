@@ -104,6 +104,7 @@ var (
 	ErrCambiada     = errors.New("La bóveda ha cambiado en otro sitio desde que se abrió aquí")
 	ErrSinRanura    = errors.New("Esa llave no abre esta bóveda")
 	ErrCerrada      = errors.New("La bóveda está cerrada")
+	errSinFichero   = errors.New("Esta bóveda todavía no tiene fichero en este equipo")
 )
 
 // sobre es una ranura de llave: la clave de bóveda envuelta con una llave.
@@ -143,6 +144,14 @@ type sello struct {
 	ID      string            `json:"id"`
 	Serie   int64             `json:"serie"`
 	Huellas map[string]string `json:"huellas"`
+	// Sincro es la versión del servidor que tiene o va a tener este documento.
+	//
+	// Va aquí, **dentro de lo cifrado con la clave de bóveda**, porque es lo que
+	// impide que un servidor sirva una versión vieja haciéndola pasar por nueva:
+	// la versión que dice la respuesta tiene que coincidir con la de dentro, y la
+	// de dentro no la puede escribir nadie que no tenga la clave. Una bóveda que no
+	// se ha sincronizado nunca la lleva a cero.
+	Sincro int64 `json:"sincro,omitempty"`
 	// Cuerpo es la huella del cuerpo, y es lo que ata las dos piezas.
 	//
 	// Al separar el sello del cuerpo, revertir el cuerpo a uno viejo dejó de
@@ -177,6 +186,15 @@ type contenido struct {
 	// además cruza el puente a la ventana. Una Esfinge anterior a la 2.21.0 no conoce
 	// esta sección y la conserva igual, por `Extra`.
 	SitiosExcluidos []string `json:"sitiosExcluidos,omitempty"`
+
+	// Lapidas son las entradas borradas del todo: identificador → cuándo.
+	//
+	// **Sin ellas no se puede sincronizar un borrado.** Una entrada que falta en
+	// un lado puede ser una que se borró aquí o una que allí todavía no ha llegado,
+	// y confundirlas es resucitar lo borrado o borrar lo nuevo. Solo llevan el
+	// identificador y la fecha —nada del contenido—, y duran más que la papelera
+	// (PlazoLapidas), para que un equipo que pase semanas sin conectar se entere.
+	Lapidas map[string]string `json:"lapidas,omitempty"`
 
 	// Extra son las secciones que esta versión no conoce. Ver Entrada.Extra.
 	Extra map[string]json.RawMessage `json:"-"`
@@ -362,15 +380,27 @@ func Abrir(ruta, llaveTecleada string) (*Boveda, error) {
 	return AbrirBytes(ruta, datos, llaveTecleada)
 }
 
-// AbrirBytes es lo mismo sin tocar el disco. Existe para poder probarlo y para
+// AbrirBytes es lo mismo sin leer el disco. Existe para poder probarlo y para
 // abrir una bóveda que venga de otro sitio.
+//
+// **Puede escribir en `ruta`**: si al abrir hay papelera o lápidas caducadas, se
+// guardan ya purgadas. Para mirar una bóveda que no es la de este equipo sin
+// tocar nada, AbrirEnMemoria.
 func AbrirBytes(ruta string, datos []byte, llaveTecleada string) (*Boveda, error) {
-	var doc documento
-	if err := json.Unmarshal(datos, &doc); err != nil || doc.Esfinge != marca {
-		return nil, ErrNoEsBoveda
-	}
-	if doc.Formato > Formato {
-		return nil, ErrFormatoNuevo
+	return abrir(ruta, datos, llaveTecleada, true)
+}
+
+// AbrirEnMemoria abre una bóveda que no tiene fichero en este equipo —la que baja
+// del servidor en un equipo nuevo— **sin escribir nada en ninguna parte**. La que
+// devuelve no se puede guardar hasta que se le dé una ruta con GuardarEn.
+func AbrirEnMemoria(datos []byte, llaveTecleada string) (*Boveda, error) {
+	return abrir("", datos, llaveTecleada, false)
+}
+
+func abrir(ruta string, datos []byte, llaveTecleada string, purgar bool) (*Boveda, error) {
+	doc, err := leerDocumento(datos)
+	if err != nil {
+		return nil, err
 	}
 
 	// Si parece una clave de recuperación, se normaliza: así se acepta lo que la
@@ -382,7 +412,6 @@ func AbrirBytes(ruta string, datos []byte, llaveTecleada string) (*Boveda, error
 		candidatas = append([]string{norm}, candidatas...)
 	}
 
-	b := &Boveda{ruta: ruta, doc: doc, soloLectura: doc.Formato < Formato}
 	var llave []byte
 	for _, s := range doc.Sobres {
 		for _, c := range candidatas {
@@ -407,37 +436,24 @@ func AbrirBytes(ruta string, datos []byte, llaveTecleada string) (*Boveda, error
 		}
 		return nil, ErrSinRanura
 	}
-	b.llave = llave
 
 	// Que la llave abriera un sobre y esto no se deje abrir significa que el
 	// fichero está mezclado, no que la clave esté mal.
-	crudoSello, err := cripto.AbrirTexto(doc.Sello, llave)
+	sel, cont, err := desempaquetar(doc, llave)
 	if err != nil {
-		return nil, ErrManipulada
-	}
-	if err := json.Unmarshal(crudoSello, &b.sel); err != nil {
-		return nil, ErrManipulada
-	}
-
-	claro, err := cripto.AbrirTexto(doc.Cuerpo, llave)
-	if err != nil {
-		return nil, ErrManipulada
-	}
-	if err := json.Unmarshal(claro, &b.cont); err != nil {
-		return nil, ErrManipulada
-	}
-	cripto.Borrar(claro)
-
-	if err := b.comprobarCoherencia(); err != nil {
 		return nil, err
 	}
+	b := &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, soloLectura: doc.Formato < Formato}
 
+	if !purgar {
+		return b, nil
+	}
 	// **La papelera se vacía sola al abrir**, y aquí y no con un reloj a
 	// propósito: una bóveda cerrada no ejecuta nada, así que un reloj solo
 	// contaría mientras la aplicación estuviera puesta y el plazo dependería de
 	// cuánto la usa cada uno. Al abrir se sabe qué día es y se puede decidir de
-	// una vez.
-	if b.purgarPapelera(ahora().Add(-PlazoPapelera)) > 0 {
+	// una vez. Y lo mismo las lápidas que ya han cumplido su plazo.
+	if b.purgarPapelera(ahora().Add(-PlazoPapelera))+b.purgarLapidas(ahora().Add(-PlazoLapidas)) > 0 {
 		b.cuerpoSucio = true
 		if err := b.guardar(); err != nil {
 			return nil, err
@@ -446,25 +462,68 @@ func AbrirBytes(ruta string, datos []byte, llaveTecleada string) (*Boveda, error
 	return b, nil
 }
 
+// leerDocumento lee el JSON de fuera y comprueba que es una bóveda que se entiende.
+func leerDocumento(datos []byte) (documento, error) {
+	var doc documento
+	if err := json.Unmarshal(datos, &doc); err != nil || doc.Esfinge != marca {
+		return documento{}, ErrNoEsBoveda
+	}
+	if doc.Formato > Formato {
+		return documento{}, ErrFormatoNuevo
+	}
+	return doc, nil
+}
+
+// desempaquetar abre el sello y el cuerpo con la clave de bóveda y comprueba que
+// cuadran con lo de fuera. No escribe nada.
+func desempaquetar(doc documento, llave []byte) (sello, contenido, error) {
+	var sel sello
+	var cont contenido
+	crudoSello, err := cripto.AbrirTexto(doc.Sello, llave)
+	if err != nil {
+		return sel, cont, ErrManipulada
+	}
+	if err := json.Unmarshal(crudoSello, &sel); err != nil {
+		return sel, cont, ErrManipulada
+	}
+	claro, err := cripto.AbrirTexto(doc.Cuerpo, llave)
+	if err != nil {
+		return sel, cont, ErrManipulada
+	}
+	defer cripto.Borrar(claro)
+	if err := json.Unmarshal(claro, &cont); err != nil {
+		return sel, cont, ErrManipulada
+	}
+	if err := coherente(doc, sel); err != nil {
+		return sel, cont, err
+	}
+	return sel, cont, nil
+}
+
 // comprobarCoherencia compara lo de dentro con lo de fuera.
+func (b *Boveda) comprobarCoherencia() error { return coherente(b.doc, b.sel) }
+
+// coherente compara lo de dentro con lo de fuera.
 //
 // El JSON exterior no va autenticado, así que quien pueda escribir el fichero
 // puede quitar la ranura de recuperación o revertir el cuerpo a uno viejo. No
 // puede leerlo ni fabricar uno que abra, pero sí estropearlo sin que se note. Lo
-// que hay aquí no lo impide: lo **detecta**, y es el mismo mecanismo que
-// necesitará la sincronización.
-func (b *Boveda) comprobarCoherencia() error {
-	if b.sel.ID != b.doc.ID {
+// que hay aquí no lo impide: lo **detecta**, y es lo mismo que protege lo que
+// baja del servidor, que tampoco puede fabricar una ranura.
+func coherente(doc documento, sel sello) error {
+	if sel.ID != doc.ID {
 		return ErrManipulada
 	}
-	if b.sel.Serie != b.doc.Serie {
+	if sel.Serie != doc.Serie {
 		return ErrManipulada
 	}
-	if b.sel.Cuerpo != huellaDe(b.doc.Cuerpo) {
+	if sel.Cuerpo != huellaDe(doc.Cuerpo) {
 		return ErrManipulada
 	}
-	for _, s := range b.doc.Sobres {
-		esperada, hay := b.sel.Huellas[s.Tipo]
+	tiene := map[string]bool{}
+	for _, s := range doc.Sobres {
+		tiene[s.Tipo] = true
+		esperada, hay := sel.Huellas[s.Tipo]
 		if !hay {
 			// Una ranura que el sello no conoce: sobra o es de una versión que
 			// añade tipos nuevos. No es motivo para no abrir.
@@ -475,8 +534,8 @@ func (b *Boveda) comprobarCoherencia() error {
 		}
 	}
 	// Y al revés: una ranura que el sello conoce y ya no está en el fichero.
-	for tipo := range b.sel.Huellas {
-		if b.ranura(tipo) < 0 {
+	for tipo := range sel.Huellas {
+		if !tiene[tipo] {
 			return ErrManipulada
 		}
 	}
@@ -527,6 +586,9 @@ func (b *Boveda) guardar() error {
 	}
 	if b.soloLectura {
 		return ErrFormatoNuevo
+	}
+	if b.ruta == "" {
+		return errSinFichero
 	}
 
 	// Comprobación optimista: si el fichero de disco ya no es de la serie que se
@@ -734,12 +796,16 @@ func (b *Boveda) Poner(e Entrada) error {
 	if e.Tipo == "" {
 		e.Tipo = TipoCredencial
 	}
+	// La revisión la pone la bóveda, no quien edita: lo que llegue de la ventana o
+	// del navegador puede ser una copia vieja de la entrada.
+	e.Revision = 1
 
 	for i, v := range b.cont.Entradas {
 		if v.ID == e.ID {
 			if e.Creada == "" {
 				e.Creada = v.Creada
 			}
+			e.Revision = v.Revision + 1
 			b.cont.Entradas[i] = e
 			b.cuerpoSucio = true
 			return b.guardar()
@@ -786,6 +852,7 @@ func (b *Boveda) Borrar(id string) error {
 		if e.ID == id && !e.Papelera {
 			b.cont.Entradas[i].Papelera = true
 			b.cont.Entradas[i].BorradaEn = ahora().UTC().Format(time.RFC3339)
+			b.cont.Entradas[i].Revision++
 			b.cuerpoSucio = true
 			return b.guardar()
 		}
@@ -824,6 +891,7 @@ func (b *Boveda) Restaurar(id string) error {
 		if e.ID == id && e.Papelera {
 			b.cont.Entradas[i].Papelera = false
 			b.cont.Entradas[i].BorradaEn = ""
+			b.cont.Entradas[i].Revision++
 			b.cuerpoSucio = true
 			return b.guardar()
 		}
@@ -845,6 +913,7 @@ func (b *Boveda) BorrarDelTodo(id string) error {
 		// al primero.
 		if e.ID == id && e.Papelera {
 			b.cont.Entradas = append(b.cont.Entradas[:i], b.cont.Entradas[i+1:]...)
+			b.enterrar(id, ahora())
 			b.cuerpoSucio = true
 			return b.guardar()
 		}
@@ -871,6 +940,8 @@ func (b *Boveda) VaciarPapelera() (int, error) {
 // purgarPapelera quita lo borrado antes de esa fecha y devuelve cuánto quitó.
 // **No guarda**: quien llame decide, porque uno de los dos sitios que la usan
 // está a mitad de abrir el fichero.
+//
+// Cada entrada que se va deja su lápida.
 func (b *Boveda) purgarPapelera(limite time.Time) int {
 	corte := limite.UTC().Format(time.RFC3339)
 	vivas := b.cont.Entradas[:0]
@@ -881,12 +952,46 @@ func (b *Boveda) purgarPapelera(limite time.Time) int {
 		// cuándo los borró es exactamente lo que no hay que hacer.
 		if e.Papelera && e.BorradaEn != "" && e.BorradaEn < corte {
 			quitadas++
+			b.enterrar(e.ID, ahora())
 			continue
 		}
 		vivas = append(vivas, e)
 	}
 	b.cont.Entradas = vivas
 	return quitadas
+}
+
+// PlazoLapidas es lo que dura el rastro de una entrada borrada del todo.
+//
+// Seis meses, bastante más que la papelera: es el tiempo que un equipo puede
+// pasar sin conectarse y aun así enterarse de que algo se borró, en vez de
+// devolverlo a la vida al sincronizar. Pasado ese plazo, un equipo que vuelva
+// con la entrada la subirá como si fuera nueva: es el coste, y está dicho en la
+// ADR 0038.
+const PlazoLapidas = 180 * 24 * time.Hour
+
+// enterrar apunta que una entrada se ha borrado del todo.
+func (b *Boveda) enterrar(id string, cuando time.Time) {
+	if b.cont.Lapidas == nil {
+		b.cont.Lapidas = map[string]string{}
+	}
+	b.cont.Lapidas[id] = cuando.UTC().Format(time.RFC3339)
+}
+
+// purgarLapidas quita las lápidas anteriores a esa fecha y dice cuántas.
+func (b *Boveda) purgarLapidas(limite time.Time) int {
+	corte := limite.UTC().Format(time.RFC3339)
+	n := 0
+	for id, cuando := range b.cont.Lapidas {
+		if cuando < corte {
+			delete(b.cont.Lapidas, id)
+			n++
+		}
+	}
+	if len(b.cont.Lapidas) == 0 {
+		b.cont.Lapidas = nil
+	}
+	return n
 }
 
 // EnLaPapelera cuenta lo borrado que todavía se puede recuperar.
