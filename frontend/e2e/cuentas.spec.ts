@@ -265,8 +265,11 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await accion(b, "Crear la cuenta").click();
   // Al terminar, a la bóveda, sincronizada; y abre con la nueva.
   await expect(b.locator(".linea-sincro")).toContainText("Sincronizada", { timeout: 20_000 });
-  const abre = await request.post(`${B}/api/CerrarBoveda`, { data: [] });
-  expect(abre.ok()).toBe(true);
+  // Se cierra con el botón, como lo haría una persona: cerrarla por detrás justo
+  // al montarse la lista dejaba su primera búsqueda en el aire (lo vio la máquina
+  // de GitHub con la 2.24.4).
+  await accion(b, "Cerrar la bóveda").click();
+  await expect(accion(b, "Abrir la bóveda")).toBeVisible();
   const conLaNueva = await request.post(`${B}/api/AbrirBoveda`, { data: [MAESTRA + " nueva"] });
   expect(conLaNueva.ok(), await conLaNueva.text()).toBe(true);
   expect(erroresB, erroresB.join(" | ")).toEqual([]);

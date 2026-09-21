@@ -15,6 +15,10 @@ Plantilla al final.
   del todo, mirados a 4× en los dos temas. El estado va en el `title` y no en el nombre, que sigue siendo
   «Bóveda». Go avisa con `boveda-estado` en cada apertura y cierre.
 - `make comprobar` y `make e2e` en verde, con una prueba que cierra la bóveda desde fuera.
+- **La primera publicación la paró la puerta**: la prueba de dos ventanas cerraba la bóveda por el
+  puente justo al montarse la lista, y su primera búsqueda llegaba a una bóveda cerrada. La pantalla de la
+  bóveda atiende ahora el aviso de cierre venga de donde venga, y la prueba cierra con el botón. Tres
+  pasadas seguidas en verde; etiqueta movida y vuelta a publicar.
 
 ## 2026-09-21 (tarde) · 2.24.3: las repetidas que no eran «iguales en todo»
 

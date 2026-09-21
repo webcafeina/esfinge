@@ -8,7 +8,8 @@ import {
   type EstadoBoveda,
   type ResumenImportacion,
   type TipoEntrada,
-  alCambiarLaBoveda
+  alCambiarLaBoveda,
+  alCambiarElEstadoDeLaBoveda,
 } from "./puente";
 import { CampoClave, dominioDe, Icono, Monograma, Segmentado } from "./componentes";
 import { LineaSincro, usaCuenta } from "./cuenta";
@@ -71,6 +72,11 @@ export function Boveda({
     setCeremonia(null);
     refrescar();
   }), [refrescar]);
+
+  // Y cerrada por cualquier otro camino —desde la cuenta, al borrarla, o por el
+  // puente—, lo mismo: la lista de dentro no puede seguir preguntando a una bóveda
+  // que ya no está abierta. Abierta desde fuera, también se refresca.
+  useEffect(() => alCambiarElEstadoDeLaBoveda(() => refrescar()), [refrescar]);
 
   usaLatidoDeActividad(activo && (estado?.abierta ?? false));
 
