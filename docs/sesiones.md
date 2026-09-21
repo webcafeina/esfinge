@@ -5,6 +5,21 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-21 · La cuenta en los dos Macs: 2.23.1 y 2.23.2
+
+- **El cliente probó la 2.23.0 en sus dos Macs** de la oficina, y cada cosa que salió se publicó al
+  momento, como pidió («prefiero ir viendo todo en real»):
+  - **2.23.1**: crear la cuenta pedía abrir la bóveda antes, aunque la contraseña ya estaba escrita —ahora
+    se abre con ella—, y si la contraseña no llegaba a «Buena» no había salida —ahora pide una nueva en el
+    mismo paso y la pone en la bóveda cuando el servidor acepta el alta—.
+  - **2.23.2**: los cambios del otro Mac solo se veían al cerrar y reabrir la bóveda. Se mira al volver a
+    la ventana y cada minuto. **Comprobado**: borrar en un Mac lo quita casi al instante en el otro.
+- La primera publicación de la 2.23.2 **la paró la puerta**: la prueba de dos ventanas comprobaba el otro
+  equipo antes de que el primero hubiera subido, y en la máquina de GitHub se notaba. Arreglada la prueba
+  y vuelta a publicar. Y **Chrome no aceptó la extensión** porque aún revisaba la de la 2.23.1: desde
+  ahora eso es un aviso, no un fallo. El código de la extensión no ha cambiado desde la 2.22.2.
+- **Siguiente: la A3.**
+
 ## 2026-09-18 (noche) · La A2 y la 2.23.0: las cuentas, por invitación
 
 - **La A2, hecha** (ADR 0039): la bienvenida al estrenar Esfinge sin nada, el asistente para crear la

@@ -101,6 +101,12 @@ aplicación de este ordenador, y su aviso y lo declarado en las tiendas siguen s
   el campo del correo y del código sin estilo —la hoja no vestía `type="email"` ni los campos sin tipo—
   y un falso fallo del tema oscuro que era la transición de los botones a mitad en la captura.
 
-**Sin comprobar**: todo en el Mac —la bienvenida bajo el vidrio, arrastrar la ventana desde ella, dos
-equipos de verdad con la red que va y viene— y que el correo del código llegue a otros buzones además
-del de Webcafeína.
+**Comprobado en los dos Macs del cliente, el 2026-09-21**: crear la cuenta con su bóveda de siempre,
+entrar desde el otro con el código, y los cambios viajando en los dos sentidos. Salieron tres cosas,
+arregladas el mismo día: crear la cuenta pedía abrir la bóveda antes (2.23.1), no había salida si la
+contraseña no llegaba a «Buena» (2.23.1), y **los cambios solo se veían al cerrar y reabrir la bóveda**
+—la pasada era cada cinco minutos y no se miraba al volver a la ventana— (2.23.2). Con la 2.23.2, borrar
+una entrada en un Mac **la quitó casi al instante en el otro sin cerrar nada**.
+
+**Sin comprobar**: la bienvenida en un equipo sin nada —el cliente ya tenía bóveda en los dos—, la red que
+va y viene, y que el correo del código llegue a otros buzones además del de Webcafeína.

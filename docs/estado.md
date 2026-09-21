@@ -426,7 +426,14 @@ llegaba a «Buena». Sigue la prueba.
 **Con la 2.23.1, «todo funciona, las modificaciones viajan»**, con una pega: los cambios del otro Mac solo
 se veían al cerrar y volver a abrir la bóveda. Era el plazo —cada cinco minutos— y que no se miraba al
 volver a la ventana; la lista sí se refrescaba sola al llegar algo. **2.23.2**: se mira al volver a la
-ventana y cada minuto. Después, la
+ventana y cada minuto.
+
+**Con la 2.23.2, comprobado por el cliente en sus dos Macs: «funciona perfecto»**. Borró una entrada en
+uno y **desapareció casi al instante en el otro, sin cerrar la bóveda**. La A2 queda comprobada de verdad.
+
+**La siguiente acción concreta es la A3**: cambiar la contraseña con cuenta —hoy bloqueado—, recuperar la
+cuenta con la clave de recuperación sin ningún equipo a mano, la lista de equipos, y borrar y exportar la
+cuenta desde la aplicación. Hasta entonces, no se invita a nadie más. Después, la
 A3: cambiar la contraseña, recuperar la cuenta, la lista de equipos, borrar la cuenta y exportar.
 
 **Para retomar la A2** (sesión cerrada el 2026-09-18 por la tarde, a petición del cliente): el plan está en
