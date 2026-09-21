@@ -277,6 +277,8 @@ export default function App() {
               key={selloBoveda}
               activo={tarea === "boveda"}
               alVolverAEntrar={(correo) => abrirAsistente({ que: "entrar", correo, deNuevo: true })}
+              alEntrarConLaNueva={(correo) => abrirAsistente({ que: "entrar", correo })}
+              alRecuperar={(correo) => abrirAsistente({ que: "recuperar", correo })}
             />
           </Panel>
 

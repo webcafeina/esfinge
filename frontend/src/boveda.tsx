@@ -11,7 +11,7 @@ import {
   alCambiarLaBoveda
 } from "./puente";
 import { CampoClave, dominioDe, Icono, Monograma, Segmentado } from "./componentes";
-import { LineaSincro } from "./cuenta";
+import { LineaSincro, usaCuenta } from "./cuenta";
 
 /**
  * La bóveda, asomada a la ventana.
@@ -36,9 +36,14 @@ import { LineaSincro } from "./cuenta";
 export function Boveda({
   activo,
   alVolverAEntrar,
+  alEntrarConLaNueva,
+  alRecuperar,
 }: {
   activo: boolean;
   alVolverAEntrar: (correo: string) => void;
+  /** Con cuenta y la bóveda cerrada: la contraseña se cambió en otro equipo. */
+  alEntrarConLaNueva: (correo: string) => void;
+  alRecuperar: (correo: string) => void;
 }) {
   const [estado, setEstado] = useState<EstadoBoveda | null>(null);
   const [error, setError] = useState("");
@@ -95,7 +100,16 @@ export function Boveda({
     );
   }
 
-  if (!estado.abierta) return <Cerrada estado={estado} alAbrir={refrescar} />;
+  if (!estado.abierta) {
+    return (
+      <Cerrada
+        estado={estado}
+        alAbrir={refrescar}
+        alEntrarConLaNueva={alEntrarConLaNueva}
+        alRecuperar={alRecuperar}
+      />
+    );
+  }
 
   return (
     <Dentro
@@ -304,7 +318,18 @@ export function Ceremonia({
   );
 }
 
-function Cerrada({ estado, alAbrir }: { estado: EstadoBoveda; alAbrir: () => void }) {
+function Cerrada({
+  estado,
+  alAbrir,
+  alEntrarConLaNueva,
+  alRecuperar,
+}: {
+  estado: EstadoBoveda;
+  alAbrir: () => void;
+  alEntrarConLaNueva: (correo: string) => void;
+  alRecuperar: (correo: string) => void;
+}) {
+  const [cuenta] = usaCuenta();
   const [llave, setLlave] = useState("");
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState("");
@@ -348,6 +373,19 @@ function Cerrada({ estado, alAbrir }: { estado: EstadoBoveda; alAbrir: () => voi
           {trabajando ? "Abriendo…" : "Abrir la bóveda"}
         </button>
       </div>
+
+      {/* Con cuenta, la contraseña pudo cambiarse en otro equipo, y la de aquí es la
+          de antes: entrar con la nueva la pone al día sin perder nada. */}
+      {cuenta?.modo === "cuenta" && (
+        <div className="botones">
+          <button className="discreto" onClick={() => alEntrarConLaNueva(cuenta.correo ?? "")}>
+            ¿Cambiaste la contraseña en otro equipo?
+          </button>
+          <button className="discreto" onClick={() => alRecuperar(cuenta.correo ?? "")}>
+            ¿La has olvidado?
+          </button>
+        </div>
+      )}
 
       {estado.minutosParaBloquear > 0 && (
         <p className="nota">

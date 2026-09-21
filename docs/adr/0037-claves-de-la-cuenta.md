@@ -1,6 +1,6 @@
 # ADR 0037 — Las claves de la cuenta: acceso derivado aparte y posesión de la bóveda
 
-**Fecha:** 2026-09-18 · **Estado:** aceptada, sin interfaz todavía · **Continúa la [0035](0035-las-cuentas.md)**
+**Fecha:** 2026-09-18 · **Estado:** aceptada, construida entera en la A3 (2.24.0) · **Continúa la [0035](0035-las-cuentas.md)**
 y la [0036](0036-el-servidor-de-cuentas.md) · **Revisar cuando** llegue la auditoría
 
 ## Contexto
@@ -38,6 +38,23 @@ recuperación, y el servidor no tiene que tocar su verificador en ninguno de los
 **El correo se normaliza igual en los dos lados**: sin espacios alrededor, NFC y minúsculas. Nada de
 quitar puntos ni lo que va tras un «+», que es una regla de Gmail y uniría cuentas de personas distintas.
 
+### Construido en la A3 (2026-09-21)
+
+- **Cambiar la contraseña con cuenta** (`cambiarMaestraEnLaCuenta`): se para la sincronización de fondo,
+  se sincroniza una vez, se prepara la bóveda con la ranura nueva **sin tocar el fichero de aquí**
+  (`SubidaConMaestra`), se sube con la clave de acceso nueva —bóveda, verificador y sesiones revocadas a
+  la vez en el servidor— y **solo entonces** se pone la ranura aquí (`PonerMaestra`). Si el servidor dice
+  que no, aquí no ha cambiado nada. Con cuenta, la nueva tiene que llegar a «Buena».
+- **El equipo que se quedó con la contraseña de antes**: la nueva no abre su fichero, pero la clave de
+  bóveda es la misma. Al entrar con la nueva se abre el fichero de aquí con la clave de la bóveda bajada
+  (`AbrirConLaLlaveDe`) y **se funde** con lo del servidor: trae la ranura nueva y no se pierde lo que
+  tuviera sin subir. Solo si no se puede fundir se aparta, como antes.
+- **Recuperar sin ningún equipo** (`TerminarRecuperacion`): el código del correo da el sobre de
+  recuperación, la clave de recuperación lo abre y da la posesión, con ella el servidor da una sesión
+  restringida, y con esa sesión se cambia la contraseña; después es como entrar.
+- **Los equipos, exportar y borrar la cuenta**, en Ajustes. Borrar pide la contraseña y un código, y **la
+  bóveda de cada equipo se queda** en local.
+
 ## Alternativas descartadas
 
 - **Posesión atada a la cuenta**, con el identificador de la cuenta como sal del HKDF, que era el plan.
@@ -68,6 +85,12 @@ con su código y con un equipo de confianza, recuperar con la posesión y cambia
 `ESFINGE_SIN_RED` no deje salir ni una petición —en un proceso aparte, y rompiendo el freno a propósito
 para ver que la prueba lo caza—.
 
-**Sin comprobar**: nada de esto lo ha usado todavía la aplicación, que no tiene interfaz de cuenta hasta
-la A2. Y que `NormalizarCorreo` de Go y `normalizarCorreo` del servidor coinciden en todos los casos raros
+**Comprobado en la A3**, contra el servidor de verdad: cambiar la contraseña en un equipo, que el otro
+—con la de antes y **algo guardado sin subir**— entre con la nueva sin apartar su bóveda ni perder nada, y
+que uno nuevo entre con la nueva y no con la vieja; recuperar en un equipo vacío con la clave de
+recuperación, y no con otra; ver y olvidar equipos; exportar sin nada en claro, y borrar la cuenta
+dejando la bóveda de aquí. Se rompió a propósito la fusión del equipo de la contraseña vieja y el orden
+servidor-antes-que-aquí, y las pruebas lo cazaron.
+
+**Sin comprobar**: nada de la A3 en un Mac todavía. Y que `NormalizarCorreo` de Go y `normalizarCorreo` del servidor coinciden en todos los casos raros
 de Unicode: las dos pasan a minúsculas con reglas de lenguajes distintos. Manda la del servidor.

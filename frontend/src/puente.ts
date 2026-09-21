@@ -241,6 +241,15 @@ export type EstadoCuenta = {
   sincro: EstadoSincro;
 };
 
+/** Un equipo con sesión en la cuenta. */
+export type EquipoDeCuenta = {
+  id: string;
+  nombre: string;
+  /** Cuándo se usó por última vez, en RFC3339. */
+  visto: string;
+  actual: boolean;
+};
+
 /** En qué punto se ha quedado entrar en una cuenta. */
 export type ResultadoEntrada = {
   necesitaCodigo: boolean;
@@ -410,6 +419,29 @@ export const esfinge = {
    * sincronizarse. La cuenta sigue en el servidor para los demás equipos.
    */
   salirDeCuenta: (maestra: string) => llamar<void>("SalirDeCuenta", maestra),
+
+  /** Manda un código al correo para recuperar la cuenta. */
+  empezarRecuperacion: (correo: string) => llamar<void>("EmpezarRecuperacion", correo),
+
+  /**
+   * Recupera la cuenta con el código, la clave de recuperación y una contraseña nueva,
+   * y deja su bóveda abierta en este equipo, como al entrar.
+   */
+  terminarRecuperacion: (correo: string, codigo: string, clave: string, nueva: string) =>
+    llamar<ResultadoEntrada>("TerminarRecuperacion", correo, codigo, clave, nueva),
+
+  dispositivosDeCuenta: () =>
+    llamar<EquipoDeCuenta[] | null>("DispositivosDeCuenta").then((l) => l ?? []),
+
+  olvidarDispositivo: (id: string) => llamar<void>("OlvidarDispositivo", id),
+
+  pedirCodigoParaBorrarCuenta: () => llamar<void>("PedirCodigoParaBorrarCuenta"),
+
+  /** Borra la cuenta del servidor. La bóveda de este equipo se queda, en local. */
+  borrarCuenta: (maestra: string, codigo: string) => llamar<void>("BorrarCuenta", maestra, codigo),
+
+  /** Guarda en un fichero lo que el servidor tiene de la cuenta; devuelve dónde. */
+  exportarDatosDeCuenta: () => llamar<string>("ExportarDatosDeCuenta"),
 
   /** Manda el código al correo para crear la cuenta. */
   empezarRegistro: (correo: string) => llamar<void>("EmpezarRegistro", correo),

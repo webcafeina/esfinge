@@ -431,9 +431,16 @@ ventana y cada minuto.
 **Con la 2.23.2, comprobado por el cliente en sus dos Macs: «funciona perfecto»**. Borró una entrada en
 uno y **desapareció casi al instante en el otro, sin cerrar la bóveda**. La A2 queda comprobada de verdad.
 
-**La siguiente acción concreta es la A3**: cambiar la contraseña con cuenta —hoy bloqueado—, recuperar la
-cuenta con la clave de recuperación sin ningún equipo a mano, la lista de equipos, y borrar y exportar la
-cuenta desde la aplicación. Hasta entonces, no se invita a nadie más. Después, la
+**~~La A3~~ — hecha el 2026-09-21, en la 2.24.0** ([ADR 0037](adr/0037-claves-de-la-cuenta.md)):
+cambiar la contraseña con cuenta —en el servidor y aquí a la vez—, el equipo que se quedó con la de antes
+se pone al día al entrar con la nueva **sin perder lo que tenía sin subir**, recuperar la cuenta con la
+clave de recuperación sin ningún equipo a mano, la lista de equipos con «Olvidar», y exportar y borrar la
+cuenta desde Ajustes. Probado contra el servidor de verdad y en la ventana, con capturas miradas.
+
+**La siguiente acción concreta es que el cliente pruebe la A3 en sus Macs** —cambiar la contraseña en uno
+y entrar con la nueva en el otro, olvidar un equipo, exportar— y después **decidir con él el orden de lo
+que queda**: la extensión autónoma (E), la auditoría externa, abrir el registro (A4), compartir (B) y Touch
+ID (C). Con la A3 hecha **ya se podría invitar a alguien más**: se le pregunta antes. Después, la
 A3: cambiar la contraseña, recuperar la cuenta, la lista de equipos, borrar la cuenta y exportar.
 
 **Para retomar la A2** (sesión cerrada el 2026-09-18 por la tarde, a petición del cliente): el plan está en

@@ -280,23 +280,23 @@ func (a *App) VaciarPapeleraDeBoveda() (int, error) {
 // que cualquiera que pase puede cambiarle la contraseña y dejar fuera a su
 // dueño. Pedir la de antes convierte eso en un problema distinto.
 //
-// **Con cuenta, todavía no.** La contraseña de la cuenta es la maestra de la
-// bóveda (ADR 0037), y cambiarla hay que hacerlo en el servidor a la vez que en la
-// bóveda, todo o nada: eso es la A3. Cambiando solo la de la bóveda, un equipo
-// nuevo no podría entrar —con la nueva no pasa del servidor, y con la vieja no abre
-// la bóveda—. Hasta entonces se dice y no se hace.
+// **Con cuenta, cambia también en el servidor**, y primero allí: ver
+// cambiarMaestraEnLaCuenta.
 func (a *App) CambiarMaestraDeBoveda(vieja, nueva string) error {
 	b := a.boveda()
 	if b == nil {
 		return boveda.ErrCerrada
 	}
-	if leerDatosCuenta().Modo == "cuenta" {
-		return errors.New("Con cuenta, la contraseña maestra se podrá cambiar en la próxima versión: tiene que cambiar a la vez en el servidor")
-	}
+
 	if _, err := boveda.Abrir(rutaBoveda(), vieja); err != nil {
 		return errors.New("La contraseña de ahora no es ésa")
 	}
 	a.Actividad()
+	// Con cuenta, la contraseña es también la de la cuenta: cambia en el servidor y
+	// aquí a la vez, o en ninguno de los dos (ADR 0037).
+	if leerDatosCuenta().Modo == "cuenta" {
+		return a.cambiarMaestraEnLaCuenta(b, nueva)
+	}
 	return b.CambiarMaestra(nueva)
 }
 

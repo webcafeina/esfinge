@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 import { Ceremonia } from "./boveda";
 import { CampoClave, Firma, Marca, Segmentado } from "./componentes";
-import { alCambiarLaSincro, esfinge, type EstadoCuenta, type EstadoSincro } from "./puente";
+import {
+  alCambiarLaSincro,
+  esfinge,
+  type EquipoDeCuenta,
+  type EstadoCuenta,
+  type EstadoSincro,
+} from "./puente";
 
 /**
  * La cuenta, en la ventana (ADR 0035).
@@ -114,7 +120,10 @@ function Portada({ version, children }: { version: string; children: React.React
 
 // ------------------------------------------------------------------ el asistente
 
-export type TipoAsistente = { que: "crear" } | { que: "entrar"; correo?: string; deNuevo?: boolean };
+export type TipoAsistente =
+  | { que: "crear" }
+  | { que: "entrar"; correo?: string; deNuevo?: boolean }
+  | { que: "recuperar"; correo?: string };
 
 /**
  * El asistente para crear la cuenta o entrar en ella. Al terminar, `alTerminar`:
@@ -134,17 +143,25 @@ export function Asistente({
   alTerminar: () => void;
   alVolver: () => void;
 }) {
+  const [recuperando, setRecuperando] = useState(false);
   return (
     <Portada version={version}>
       <div className="asistente">
         {tipo.que === "crear" ? (
           <CrearCuenta hayBoveda={hayBoveda} alTerminar={alTerminar} alVolver={alVolver} />
+        ) : tipo.que === "recuperar" || recuperando ? (
+          <RecuperarCuenta
+            correoInicial={tipo.correo ?? ""}
+            alTerminar={alTerminar}
+            alVolver={tipo.que === "recuperar" ? alVolver : () => setRecuperando(false)}
+          />
         ) : (
           <EntrarEnCuenta
             correoFijo={tipo.correo}
             deNuevo={tipo.deNuevo ?? false}
             alTerminar={alTerminar}
             alVolver={alVolver}
+            alOlvidarla={() => setRecuperando(true)}
           />
         )}
       </div>
@@ -353,11 +370,13 @@ function EntrarEnCuenta({
   deNuevo,
   alTerminar,
   alVolver,
+  alOlvidarla,
 }: {
   correoFijo?: string;
   deNuevo: boolean;
   alTerminar: () => void;
   alVolver: () => void;
+  alOlvidarla: () => void;
 }) {
   const [paso, setPaso] = useState<"datos" | "codigo" | "otra" | "hecho">("datos");
   const [correo, setCorreo] = useState(correoFijo ?? "");
@@ -518,12 +537,177 @@ function EntrarEnCuenta({
           <button className="principal" onClick={entrar} disabled={!correo || !maestra || trabajando}>
             {trabajando ? "Entrando…" : "Entrar"}
           </button>
+        ) : null}
+        {paso === "datos" ? (
+          <button className="discreto" onClick={alOlvidarla}>
+            ¿Has olvidado la contraseña?
+          </button>
         ) : (
           <button className="principal" onClick={confirmar} disabled={codigo.length !== 6 || trabajando}>
             {trabajando ? "Comprobando…" : "Confirmar"}
           </button>
         )}
         <button className="discreto" onClick={paso === "datos" ? alVolver : () => setPaso("datos")}>
+          Volver
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Recuperar la cuenta **sin ningún equipo a mano** (A3): código por correo, la clave
+ * de recuperación y una contraseña nueva. Sin la clave de recuperación no hay forma:
+ * nosotros no podemos abrir la bóveda.
+ */
+function RecuperarCuenta({
+  correoInicial,
+  alTerminar,
+  alVolver,
+}: {
+  correoInicial: string;
+  alTerminar: () => void;
+  alVolver: () => void;
+}) {
+  const [paso, setPaso] = useState<"correo" | "datos" | "hecho">("correo");
+  const [correo, setCorreo] = useState(correoInicial);
+  const [codigo, setCodigo] = useState("");
+  const [clave, setClave] = useState("");
+  const [nueva, setNueva] = useState("");
+  const [repetida, setRepetida] = useState("");
+  const [apartada, setApartada] = useState("");
+  const [trabajando, setTrabajando] = useState(false);
+  const [error, setError] = useState("");
+  const nivel = usaNivel(nueva);
+
+  async function hacer(f: () => Promise<void>) {
+    setTrabajando(true);
+    setError("");
+    try {
+      await f();
+    } catch (e) {
+      setError(mensaje(e));
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  const pedir = () =>
+    hacer(async () => {
+      await esfinge.empezarRecuperacion(correo);
+      setPaso("datos");
+    });
+  const recuperar = () =>
+    hacer(async () => {
+      const r = await esfinge.terminarRecuperacion(correo, codigo, clave, nueva);
+      if (r.apartada) {
+        setApartada(r.apartada);
+        setPaso("hecho");
+      } else if (r.hayOtraBoveda) {
+        setError("En este ordenador hay otra bóveda. Entra en la cuenta con la contraseña nueva para decidir qué hacer con ella.");
+      } else alTerminar();
+    });
+
+  const distintas = repetida !== "" && repetida !== nueva;
+  const listo =
+    codigo.length === 6 && clave.trim() !== "" && nueva !== "" && repetida === nueva && (nivel ?? 0) >= 3;
+
+  if (paso === "hecho") {
+    return (
+      <>
+        <Cabecera titulo="Cuenta recuperada" texto="Ya puedes entrar con tu contraseña nueva en todos tus equipos." />
+        <p className="nota seleccionable">
+          La bóveda que había en este ordenador no se ha borrado: se ha guardado aparte, en {apartada}.
+        </p>
+        <div className="botones">
+          <button className="principal" onClick={alTerminar}>
+            Continuar
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Cabecera
+        titulo="Recuperar tu cuenta"
+        texto="Con el código que te mandaremos y tu clave de recuperación, pondrás una contraseña nueva."
+      />
+      {paso === "correo" ? (
+        <div className="grupo">
+          <div>
+            <label htmlFor="recuperar-correo">Tu correo</label>
+            <input
+              id="recuperar-correo"
+              type="email"
+              autoComplete="email"
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && correo && pedir()}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="grupo">
+          <div>
+            <label htmlFor="recuperar-codigo">Código que te ha llegado a {correo}</label>
+            <input
+              id="recuperar-codigo"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={7}
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value.replace(/[^\d]/g, ""))}
+            />
+          </div>
+          <div>
+            <label htmlFor="recuperar-clave">Clave de recuperación</label>
+            <input
+              id="recuperar-clave"
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="ESF-…"
+              value={clave}
+              onChange={(e) => setClave(e.target.value)}
+            />
+            <p className="nota">La que apuntaste al crear la bóveda. Da igual en mayúsculas o minúsculas.</p>
+          </div>
+          <CampoClave id="recuperar-nueva" etiqueta="Contraseña maestra nueva" valor={nueva} alCambiar={setNueva} />
+          <div>
+            <label htmlFor="recuperar-nueva-2">Repítela</label>
+            <input
+              id="recuperar-nueva-2"
+              type="password"
+              autoComplete="off"
+              value={repetida}
+              onChange={(e) => setRepetida(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && listo && recuperar()}
+            />
+            {distintas && <p className="error">Las dos no coinciden</p>}
+          </div>
+        </div>
+      )}
+      {paso === "datos" && (
+        <p className="aviso">
+          La contraseña nueva tiene que ser <strong>al menos «Buena»</strong>. Tus otros equipos te la
+          pedirán al volver a entrar, y lo que tuvieran sin subir no se pierde.
+        </p>
+      )}
+      {error && <p className="error">{error}</p>}
+      <div className="botones">
+        {paso === "correo" ? (
+          <button className="principal" onClick={pedir} disabled={!correo || trabajando}>
+            {trabajando ? "Mandando…" : "Mandarme el código"}
+          </button>
+        ) : (
+          <button className="principal" onClick={recuperar} disabled={!listo || trabajando}>
+            {trabajando ? "Recuperando…" : "Recuperar la cuenta"}
+          </button>
+        )}
+        <button className="discreto" onClick={paso === "correo" ? alVolver : () => setPaso("correo")}>
           Volver
         </button>
       </div>
@@ -702,7 +886,12 @@ export function GrupoCuenta({
     );
   }
 
+  // Los equipos, exportar y borrar necesitan la sesión, que solo existe con la
+  // bóveda abierta y sin caducar.
+  const conSesion = cuenta.sincro.estado !== "apagada" && cuenta.sincro.estado !== "hay-que-entrar";
+
   return (
+    <>
     <div className="grupo">
       <h2>Cuenta y sincronización</h2>
       <dl className="datos-cuenta">
@@ -766,6 +955,166 @@ export function GrupoCuenta({
         Tu bóveda sube cifrada a {new URL(cuenta.servidor).host}, en la UE: el servidor no puede
         leerla.
       </p>
+    </div>
+    {conSesion && <EquiposDeLaCuenta />}
+    {conSesion && <BorrarLaCuenta alBorrar={refrescar} />}
+    </>
+  );
+}
+
+/** Los equipos con la cuenta abierta, y quitarle la sesión a uno (A3). */
+function EquiposDeLaCuenta() {
+  const [equipos, setEquipos] = useState<EquipoDeCuenta[] | null>(null);
+  const [error, setError] = useState("");
+  const traer = () => {
+    esfinge
+      .dispositivosDeCuenta()
+      .then(setEquipos)
+      .catch((e) => setError(mensaje(e)));
+  };
+  useEffect(traer, []);
+
+  async function olvidar(e: EquipoDeCuenta) {
+    setError("");
+    try {
+      await esfinge.olvidarDispositivo(e.id);
+      traer();
+    } catch (err) {
+      setError(mensaje(err));
+    }
+  }
+
+  return (
+    <div className="grupo">
+      <h2>Equipos con tu cuenta</h2>
+      {equipos === null ? (
+        <p className="nota">Cargando…</p>
+      ) : (
+        <ul className="lista-equipos">
+          {equipos.map((e) => (
+            <li key={e.id}>
+              <span className="equipo">
+                <strong>{e.nombre}</strong>
+                <span className="equipo-visto">
+                  {e.actual ? "Este equipo" : `Usado ${haceCuanto(e.visto)}`}
+                </span>
+              </span>
+              {!e.actual && (
+                <button className="discreto" onClick={() => olvidar(e)}>
+                  Olvidar
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="nota">
+        Olvidar un equipo —uno perdido, uno que ya no usas— le cierra la sesión: tendrá que volver a
+        entrar con tu contraseña y un código. Lo que tenga en su disco se queda allí, cifrado.
+      </p>
+      {error && <p className="error">{error}</p>}
+    </div>
+  );
+}
+
+/** Exportar lo que hay de la cuenta y borrarla del servidor (A3). */
+function BorrarLaCuenta({ alBorrar }: { alBorrar: () => void }) {
+  const [paso, setPaso] = useState<"nada" | "codigo">("nada");
+  const [codigo, setCodigo] = useState("");
+  const [maestra, setMaestra] = useState("");
+  const [exportado, setExportado] = useState("");
+  const [trabajando, setTrabajando] = useState(false);
+  const [error, setError] = useState("");
+
+  async function hacer(f: () => Promise<void>) {
+    setTrabajando(true);
+    setError("");
+    try {
+      await f();
+    } catch (e) {
+      setError(mensaje(e));
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  return (
+    <div className="grupo peligro">
+      <h2>Tus datos en el servidor</h2>
+      <p className="nota">
+        Puedes llevarte lo que tenemos de tu cuenta —el correo, los equipos, los avisos y tu bóveda tal
+        como está allí: cifrada— o borrarla del servidor.
+      </p>
+      <div className="botones">
+        <button
+          onClick={() =>
+            hacer(async () => {
+              const donde = await esfinge.exportarDatosDeCuenta();
+              if (donde) setExportado(donde);
+            })
+          }
+          disabled={trabajando}
+        >
+          Guardar lo que hay de mi cuenta…
+        </button>
+      </div>
+      {exportado && <p className="exito seleccionable">Guardado en {exportado}</p>}
+
+      {paso === "nada" ? (
+        <div className="botones">
+          <button
+            className="discreto"
+            onClick={() =>
+              hacer(async () => {
+                await esfinge.pedirCodigoParaBorrarCuenta();
+                setPaso("codigo");
+              })
+            }
+            disabled={trabajando}
+          >
+            Borrar la cuenta…
+          </button>
+        </div>
+      ) : (
+        <>
+          <p className="aviso">
+            <strong>No tiene vuelta atrás.</strong> Se borran del servidor tu bóveda, sus versiones,
+            tus equipos y tu correo. La bóveda de este ordenador —y la de tus otros equipos— se queda
+            donde está, y deja de sincronizarse.
+          </p>
+          <div>
+            <label htmlFor="borrar-codigo">Código que te ha llegado al correo</label>
+            <input
+              id="borrar-codigo"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={7}
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value.replace(/[^\d]/g, ""))}
+            />
+          </div>
+          <CampoClave id="borrar-maestra" etiqueta="Contraseña maestra" medir={false} valor={maestra} alCambiar={setMaestra} />
+          <div className="botones">
+            <button
+              onClick={() =>
+                hacer(async () => {
+                  await esfinge.borrarCuenta(maestra, codigo);
+                  setPaso("nada");
+                  alBorrar();
+                })
+              }
+              disabled={codigo.length !== 6 || !maestra || trabajando}
+            >
+              {trabajando ? "Borrando…" : "Borrar la cuenta del servidor"}
+            </button>
+            <button className="discreto" onClick={() => setPaso("nada")}>
+              Cancelar
+            </button>
+          </div>
+        </>
+      )}
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

@@ -101,6 +101,8 @@ type laCuenta struct {
 	estado  EstadoSincro
 	entrada *entradaPendiente
 	marcha  *sincroEnMarcha
+	// retoBorrado es el del código para borrar la cuenta, entre pedirlo y usarlo.
+	retoBorrado string
 	// espera tras un guardado antes de subir; cero es la de siempre. Solo la
 	// tocan las pruebas.
 	espera time.Duration
@@ -249,6 +251,12 @@ func (a *App) SalirDeCuenta(maestra string) error {
 	if token != "" {
 		_ = a.cliente().CerrarSesion(a.ctxCuenta(), token)
 	}
+	return a.olvidarLaCuentaAqui()
+}
+
+// olvidarLaCuentaAqui deja este equipo en local: la bóveda como está, sin
+// sincronizar y sin nada de la cuenta en el disco.
+func (a *App) olvidarLaCuentaAqui() error {
 	a.alCerrarLaBoveda()
 	a.cu.mu.Lock()
 	a.cu.estado = EstadoSincro{}
@@ -256,7 +264,7 @@ func (a *App) SalirDeCuenta(maestra string) error {
 	if b := a.boveda(); b != nil {
 		b.AlGuardar(nil)
 	}
-	if err := (sincro.JuntoALaBoveda{Ruta: ruta}).Olvidar(); err != nil {
+	if err := (sincro.JuntoALaBoveda{Ruta: rutaBoveda()}).Olvidar(); err != nil {
 		return err
 	}
 	return guardarDatosCuenta(datosCuenta{Modo: "local"})
@@ -413,11 +421,13 @@ func (a *App) EntrarEnCuenta(correo, maestra string) (ResultadoEntrada, error) {
 	d := leerDatosCuenta()
 	p := &entradaPendiente{correo: c, maestra: maestra, nombre: nombreDelEquipo()}
 	confianza := ""
-	if d.Modo == "cuenta" {
-		b := a.boveda()
-		if b == nil || d.Correo != c {
-			return ResultadoEntrada{}, errors.New("Este equipo ya está en otra cuenta")
-		}
+	if d.Modo == "cuenta" && d.Correo != c {
+		return ResultadoEntrada{}, errors.New("Este equipo ya está en otra cuenta")
+	}
+	// Con la bóveda de la cuenta abierta es volver a entrar; cerrada, es entrar sin
+	// más —el caso de quien cambió la contraseña en otro equipo y aquí no abre con
+	// la nueva—, y terminarEntrada se encarga de ponerla al día.
+	if b := a.boveda(); d.Modo == "cuenta" && b != nil {
 		p.deNuevo = true
 		if d.NombreEquipo != "" {
 			p.nombre = d.NombreEquipo
@@ -476,7 +486,7 @@ func (a *App) terminarEntrada(p *entradaPendiente, s cuenta.Sesion) (ResultadoEn
 		return ResultadoEntrada{Listo: true}, a.quedarseCon(b, p.correo, p.nombre, s)
 	}
 
-	datos, _, _, err := a.cliente().Bajar(a.ctxCuenta(), s.Token, 0)
+	datos, version, _, err := a.cliente().Bajar(a.ctxCuenta(), s.Token, 0)
 	var remota *boveda.Boveda
 	switch {
 	case errors.Is(err, cuenta.ErrSinBoveda):
@@ -510,8 +520,23 @@ func (a *App) terminarEntrada(p *entradaPendiente, s cuenta.Sesion) (ResultadoEn
 		// bóveda que va a recibir la de aquí. Se abre la de aquí con la contraseña.
 		b, err := boveda.Abrir(ruta, p.maestra)
 		if err != nil && remota != nil {
-			// La de aquí tiene una contraseña vieja: manda la de la cuenta, y la de
-			// aquí se aparta en vez de pisarse.
+			// La de aquí tiene la contraseña de antes: se cambió en otro equipo. La
+			// clave de la bóveda es la misma, así que se abre la de aquí con la de la
+			// cuenta y **se funde** con lo del servidor: trae la ranura nueva y no se
+			// pierde lo que hubiera aquí sin subir.
+			if local, err := boveda.AbrirConLaLlaveDe(ruta, remota); err == nil {
+				_, base, _ := (sincro.JuntoALaBoveda{Ruta: ruta}).Cargar()
+				if _, err := local.Fundir(datos, version, base, boveda.OpcionesDeFusion{}); err == nil {
+					remota.Cerrar()
+					a.cambiarBoveda(local)
+					a.Actividad()
+					a.olvidarEntrada()
+					return ResultadoEntrada{Listo: true}, a.quedarseCon(local, p.correo, p.nombre, s)
+				}
+				local.Cerrar()
+			}
+			// Si no se puede fundir, manda la de la cuenta, y la de aquí se aparta en
+			// vez de pisarse.
 			apartada, err := apartar(ruta)
 			if err != nil {
 				return ResultadoEntrada{}, err
@@ -676,9 +701,8 @@ func (a *App) alAbrirLaBoveda(b *boveda.Boveda) {
 	a.arrancarSincro(b)
 }
 
-func (a *App) arrancarSincro(b *boveda.Boveda) {
-	a.pararSincro()
-	s := &sincro.Sincronizador{
+func (a *App) nuevoSincronizador(b *boveda.Boveda) *sincro.Sincronizador {
+	return &sincro.Sincronizador{
 		Servidor: a.cliente(),
 		Boveda:   b,
 		Memoria:  sincro.JuntoALaBoveda{Ruta: b.Ruta()},
@@ -688,6 +712,11 @@ func (a *App) arrancarSincro(b *boveda.Boveda) {
 			return a.cu.sesion
 		},
 	}
+}
+
+func (a *App) arrancarSincro(b *boveda.Boveda) {
+	a.pararSincro()
+	s := a.nuevoSincronizador(b)
 	a.cu.mu.Lock()
 	espera := a.cu.espera
 	a.cu.mu.Unlock()

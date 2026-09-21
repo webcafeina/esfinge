@@ -83,6 +83,12 @@ var loQuePuedeCruzarElPuente = []string{
 	"EstadoDeCuenta", "ElegirModoLocal", "SincronizarAhora",
 	"EmpezarRegistro", "TerminarRegistro",
 	"EntrarEnCuenta", "ConfirmarEntrada", "ResolverOtraBoveda", "SalirDeCuenta",
+	// La A3. Recuperar recibe la clave de recuperación y la contraseña nueva, y no
+	// devuelve ninguna de las dos; los equipos salen sin sesiones ni testigos, y la
+	// exportación va a un fichero, no por el puente.
+	"EmpezarRecuperacion", "TerminarRecuperacion",
+	"DispositivosDeCuenta", "OlvidarDispositivo",
+	"PedirCodigoParaBorrarCuenta", "BorrarCuenta", "ExportarDatosDeCuenta",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

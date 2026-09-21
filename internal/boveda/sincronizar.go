@@ -111,12 +111,7 @@ func (b *Boveda) Posesion() ([]byte, error) {
 	if b.llave == nil {
 		return nil, ErrCerrada
 	}
-	clave, err := base64.RawURLEncoding.DecodeString(string(b.llave))
-	if err != nil {
-		return nil, err
-	}
-	defer cripto.Borrar(clave)
-	return hkdf.Key(sha256.New, clave, nil, "esfinge/cuenta/posesion/v1", 32)
+	return PosesionDeLlave(b.llave)
 }
 
 // IDDe lee el identificador de una bóveda sin abrirla: para saber si la de este
@@ -200,6 +195,13 @@ func (b *Boveda) Traer(otra *Boveda) (int, error) {
 func (b *Boveda) PrepararSubida(version int64) ([]byte, int64, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	return b.prepararSubida(version, nil)
+}
+
+// prepararSubida arma el documento que se sube, con el cerrojo cogido. Con
+// `cambio`, esa ranura sustituye a la de su tipo **solo en lo que se sube**: el
+// fichero de aquí no se toca.
+func (b *Boveda) prepararSubida(version int64, cambio *sobre) ([]byte, int64, error) {
 	if b.llave == nil {
 		return nil, 0, ErrCerrada
 	}
@@ -209,12 +211,20 @@ func (b *Boveda) PrepararSubida(version int64) ([]byte, int64, error) {
 	doc := b.doc
 	doc.Sobres = nil
 	sel := sello{ID: doc.ID, Serie: doc.Serie, Sincro: version, Cuerpo: huellaDe(doc.Cuerpo), Huellas: map[string]string{}}
+	puesto := false
 	for _, s := range b.doc.Sobres {
 		if ranurasLocales[s.Tipo] {
 			continue
 		}
+		if cambio != nil && s.Tipo == cambio.Tipo {
+			s, puesto = *cambio, true
+		}
 		doc.Sobres = append(doc.Sobres, s)
 		sel.Huellas[s.Tipo] = huellaDe(s.Contenedor)
+	}
+	if cambio != nil && !puesto {
+		doc.Sobres = append(doc.Sobres, *cambio)
+		sel.Huellas[cambio.Tipo] = huellaDe(cambio.Contenedor)
 	}
 	crudo, err := json.Marshal(sel)
 	if err != nil {
@@ -229,6 +239,104 @@ func (b *Boveda) PrepararSubida(version int64) ([]byte, int64, error) {
 		return nil, 0, err
 	}
 	return append(fuera, '\n'), doc.Serie, nil
+}
+
+// MaestraNueva es una ranura de contraseña maestra preparada y **todavía sin
+// poner** en la bóveda: la de una cuenta, que primero tiene que aceptar el
+// servidor.
+type MaestraNueva struct{ s sobre }
+
+// SubidaConMaestra prepara el cambio de contraseña de una cuenta: el documento que
+// se sube como `version`, ya con la ranura de `nueva`, y esa ranura para ponerla
+// aquí **solo cuando el servidor diga que sí** (PonerMaestra). Si el servidor dice
+// que no, aquí no ha cambiado nada y las dos contraseñas siguen siendo la misma.
+func (b *Boveda) SubidaConMaestra(nueva string, version int64) ([]byte, MaestraNueva, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return nil, MaestraNueva{}, ErrCerrada
+	}
+	if strings.TrimSpace(nueva) == "" {
+		return nil, MaestraNueva{}, errors.New("La contraseña maestra no puede estar vacía")
+	}
+	s, err := envolver(RanuraMaestra, nueva, b.llave, ahora().UTC().Format(time.RFC3339))
+	if err != nil {
+		return nil, MaestraNueva{}, err
+	}
+	datos, _, err := b.prepararSubida(version, &s)
+	return datos, MaestraNueva{s}, err
+}
+
+// PonerMaestra pone aquí la ranura que ya aceptó el servidor, y guarda. Devuelve
+// la serie del fichero tras guardar, leída sin soltar el cerrojo.
+func (b *Boveda) PonerMaestra(m MaestraNueva) (int64, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return 0, ErrCerrada
+	}
+	if i := b.ranura(RanuraMaestra); i >= 0 {
+		b.doc.Sobres[i] = m.s
+	} else {
+		b.doc.Sobres = append(b.doc.Sobres, m.s)
+	}
+	if err := b.guardar(); err != nil {
+		return 0, err
+	}
+	return b.doc.Serie, nil
+}
+
+// LlaveDeRecuperacion abre el sobre de recuperación que entrega el servidor al
+// recuperar una cuenta y devuelve la clave de la bóveda. Solo sirve para sacar la
+// prueba de posesión (PosesionDeLlave): la bóveda se abre después, entera.
+func LlaveDeRecuperacion(contenedor, clave string) ([]byte, error) {
+	norm, err := Normalizar(clave)
+	if err != nil {
+		return nil, err
+	}
+	llave, err := cripto.AbrirTexto(contenedor, []byte(norm))
+	if err != nil {
+		return nil, errors.New("Esa clave de recuperación no es la de esta cuenta")
+	}
+	return llave, nil
+}
+
+// PosesionDeLlave es Posesion a partir de la clave de bóveda suelta.
+func PosesionDeLlave(llave []byte) ([]byte, error) {
+	clave, err := base64.RawURLEncoding.DecodeString(string(llave))
+	if err != nil {
+		return nil, err
+	}
+	defer cripto.Borrar(clave)
+	return hkdf.Key(sha256.New, clave, nil, "esfinge/cuenta/posesion/v1", 32)
+}
+
+// AbrirConLaLlaveDe abre el fichero de este equipo con la clave de otra bóveda
+// abierta —la misma bóveda, bajada del servidor—. Es el equipo que se quedó con la
+// contraseña de antes: la nueva no abre su fichero, pero la clave de bóveda es la
+// misma, y así se puede fundir lo de aquí con lo del servidor sin perder nada.
+// **No escribe nada** al abrir.
+func AbrirConLaLlaveDe(ruta string, otra *Boveda) (*Boveda, error) {
+	datos, err := os.ReadFile(ruta)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := leerDocumento(datos)
+	if err != nil {
+		return nil, err
+	}
+	otra.mu.Lock()
+	llave := append([]byte(nil), otra.llave...)
+	id := otra.doc.ID
+	otra.mu.Unlock()
+	if doc.ID != id {
+		return nil, ErrOtraBoveda
+	}
+	sel, cont, err := desempaquetar(doc, llave)
+	if err != nil {
+		return nil, err
+	}
+	return &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, soloLectura: doc.Formato < Formato}, nil
 }
 
 // OpcionesDeFusion cambian lo que Fundir se atreve a hacer solo.

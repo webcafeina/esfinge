@@ -5,6 +5,18 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-21 (tarde) · La A3 y la 2.24.0: gestionar la cuenta
+
+- **Cambiar la contraseña con cuenta**, en el servidor y aquí a la vez; el otro equipo, con la de antes,
+  entra con la nueva y **se funde** en vez de apartarse, sin perder lo que tenía sin subir.
+- **Recuperar la cuenta sin ningún equipo**: código, clave de recuperación y contraseña nueva, desde el
+  asistente de entrar y desde la bóveda cerrada.
+- **Equipos** con «Olvidar», **exportar** y **borrar la cuenta**, en Ajustes. La política de privacidad ya
+  no remite al correo para eso.
+- Probado contra el servidor de verdad y en la ventana, con dos roturas a propósito cazadas y capturas
+  miradas (de ahí salió reordenar la lista de equipos).
+- **Siguiente**: que el cliente pruebe la A3 y decidir con él el orden de lo que queda.
+
 ## 2026-09-21 · La cuenta en los dos Macs: 2.23.1 y 2.23.2
 
 - **El cliente probó la 2.23.0 en sus dos Macs** de la oficina, y cada cosa que salió se publicó al

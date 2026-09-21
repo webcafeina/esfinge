@@ -169,11 +169,32 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
     timeout: 30_000,
   });
 
+  // Con cuenta y la bóveda cerrada, la pantalla ofrece entrar con una contraseña
+  // cambiada en otro equipo y recuperar la cuenta.
+  await accion(a, "Cerrar la bóveda").click();
+  await expect(accion(a, "¿Cambiaste la contraseña en otro equipo?")).toBeVisible();
+  await accion(a, "¿La has olvidado?").click();
+  await expect(a.getByRole("heading", { name: "Recuperar tu cuenta" })).toBeVisible();
+  await expect(a.locator("#recuperar-correo")).toHaveValue(correo);
+  await retratar(a, "recuperar");
+  await accion(a, "Volver").click();
+  await expect(accion(a, "Abrir la bóveda")).toBeVisible();
+
   // Y Ajustes cuenta en qué cuenta está este equipo.
   await b.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
   await expect(b.getByRole("heading", { name: "Cuenta y sincronización" })).toBeVisible();
   await expect(b.getByText(correo)).toBeVisible();
+  // Los dos equipos, el de ahora marcado; y exportar lo que hay de la cuenta.
+  await expect(b.getByRole("heading", { name: "Equipos con tu cuenta" })).toBeVisible();
+  await expect(b.locator(".lista-equipos li")).toHaveCount(2);
+  await expect(b.locator(".lista-equipos")).toContainText("Este equipo");
   await retratar(b, "ajustes-cuenta");
+  await b.getByRole("heading", { name: "Equipos con tu cuenta" }).scrollIntoViewIfNeeded();
+  await retratar(b, "ajustes-equipos");
+  await accion(b, "Guardar lo que hay de mi cuenta…").click();
+  await expect(b.getByText(/^Guardado en /)).toBeVisible();
+  await b.getByRole("heading", { name: "Tus datos en el servidor" }).scrollIntoViewIfNeeded();
+  await retratar(b, "ajustes-cuenta-datos");
 
   // Y se puede cambiar de idea: dejar la cuenta en este equipo, con la contraseña.
   await accion(b, "Dejar la cuenta en este equipo…").click();

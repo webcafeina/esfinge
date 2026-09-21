@@ -424,20 +424,6 @@ func TestSalirDeLaCuentaEnEsteEquipo(t *testing.T) {
 	}
 }
 
-// Con cuenta, cambiar solo la contraseña de la bóveda dejaría a los equipos nuevos
-// sin poder entrar. Hasta que se pueda cambiar en los dos sitios a la vez, no se deja.
-func TestConCuentaLaMaestraNoSeCambiaTodavia(t *testing.T) {
-	raiz := servidorDeCuentas(t)
-	e := nuevoEquipo(t, raiz)
-	crearCuenta(t, raiz, e, correoDePrueba(), maestraFuerte)
-	if err := e.a.CambiarMaestraDeBoveda(maestraFuerte, "otra maestra larga que sería la nueva"); err == nil {
-		t.Fatal("con cuenta deja cambiar la contraseña solo en la bóveda")
-	}
-	e.a.CerrarBoveda()
-	if err := e.a.AbrirBoveda(maestraFuerte); err != nil {
-		t.Fatalf("la de siempre ya no abre: %v", err)
-	}
-}
 
 // Con la bóveda cerrada, crear la cuenta la abre con la contraseña que se acaba de
 // escribir: pedir que se abra antes obligaba a salir del asistente y empezar otra vez.
@@ -510,5 +496,231 @@ func TestCrearLaCuentaCambiandoUnaMaestraFloja(t *testing.T) {
 	}
 	if err != nil || !r.Listo || titulosDe(t, otro.a) != "Ya estaba" {
 		t.Fatalf("otro equipo no entra con la nueva: %+v %v", r, err)
+	}
+}
+
+// entrarDesde hace que un equipo entre en la cuenta, código incluido.
+func entrarDesde(t *testing.T, raiz string, e *equipoDePrueba, correo, maestra string) ResultadoEntrada {
+	t.Helper()
+	e.usar(t)
+	r, err := e.a.EntrarEnCuenta(correo, maestra)
+	if err == nil && r.NecesitaCodigo {
+		r, err = e.a.ConfirmarEntrada(codigoDelBuzon(t, raiz, correo))
+	}
+	if err != nil {
+		t.Fatalf("entrar: %v", err)
+	}
+	return r
+}
+
+// Cambiar la contraseña con cuenta: cambia en el servidor y aquí a la vez. El otro
+// equipo, con la de antes, entra con la nueva y **no pierde lo que tenía sin
+// subir**; y un equipo nuevo entra con la nueva.
+func TestCambiarLaContrasenaDeLaCuenta(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+	const nueva = "la contraseña nueva de la cuenta, larga y buena"
+
+	b := nuevoEquipo(t, raiz)
+	a := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, a, correo, maestraFuerte)
+	_ = a.a.GuardarEnBoveda(boveda.Entrada{Titulo: "De A"})
+	alDia(t, a.a, time.Now())
+	a.a.CerrarBoveda()
+
+	entrarDesde(t, raiz, b, correo, maestraFuerte)
+	alDia(t, b.a, time.Now())
+	b.a.CerrarBoveda()
+
+	// A cambia la contraseña.
+	a.usar(t)
+	if err := a.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.a.CambiarMaestraDeBoveda(maestraFuerte, "corta"); err == nil {
+		t.Fatal("con cuenta acepta una contraseña que no llega a «Buena»")
+	}
+	if err := a.a.CambiarMaestraDeBoveda("no es ésta", nueva); err == nil {
+		t.Fatal("cambia sin la contraseña de ahora")
+	}
+	if err := a.a.CambiarMaestraDeBoveda(maestraFuerte, nueva); err != nil {
+		t.Fatal(err)
+	}
+	alDia(t, a.a, time.Now())
+	a.a.CerrarBoveda()
+	if err := a.a.AbrirBoveda(maestraFuerte); err == nil {
+		t.Fatal("la de antes sigue abriendo la bóveda en A")
+	}
+	if err := a.a.AbrirBoveda(nueva); err != nil {
+		t.Fatalf("la nueva no abre la bóveda en A: %v", err)
+	}
+	a.a.CerrarBoveda()
+
+	// B tiene la de antes: abre con ella, guarda algo sin poder subirlo —su sesión
+	// ya no vale—, y al entrar con la nueva se pone al día sin perderlo.
+	b.usar(t)
+	if err := b.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	_ = b.a.GuardarEnBoveda(boveda.Entrada{Titulo: "De B sin subir"})
+	b.a.CerrarBoveda()
+	if r := entrarDesde(t, raiz, b, correo, nueva); !r.Listo || r.Apartada != "" {
+		t.Fatalf("B no entra con la nueva, o aparta su bóveda: %+v", r)
+	}
+	alDia(t, b.a, time.Now())
+	if got := titulosDe(t, b.a); got != "De A, De B sin subir" {
+		t.Fatalf("en B hay %q", got)
+	}
+	b.a.CerrarBoveda()
+	if err := b.a.AbrirBoveda(nueva); err != nil {
+		t.Fatalf("en B la nueva no abre la bóveda: %v", err)
+	}
+	b.a.CerrarBoveda()
+
+	// Y un equipo nuevo entra con la nueva, y no con la vieja.
+	c := nuevoEquipo(t, raiz)
+	if _, err := c.a.EntrarEnCuenta(correo, maestraFuerte); err == nil {
+		t.Fatal("la contraseña de antes entra en la cuenta")
+	}
+	entrarDesde(t, raiz, c, correo, nueva)
+	if got := titulosDe(t, c.a); got != "De A, De B sin subir" {
+		t.Fatalf("en el equipo nuevo hay %q", got)
+	}
+}
+
+// Recuperar la cuenta sin ningún equipo a mano: código, clave de recuperación y
+// contraseña nueva, en un equipo vacío.
+func TestRecuperarLaCuentaSinNingunEquipo(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+	const nueva = "la contraseña de después de recuperar la cuenta"
+	a := nuevoEquipo(t, raiz)
+	rec := crearCuenta(t, raiz, a, correo, maestraFuerte)
+	_ = a.a.GuardarEnBoveda(boveda.Entrada{Titulo: "Lo que había"})
+	alDia(t, a.a, time.Now())
+	a.a.CerrarBoveda()
+
+	d := nuevoEquipo(t, raiz)
+	if err := d.a.EmpezarRecuperacion(correo); err != nil {
+		t.Fatal(err)
+	}
+	codigo := codigoDelBuzon(t, raiz, correo)
+	if _, err := d.a.TerminarRecuperacion(correo, codigo, rec, "corta"); err == nil {
+		t.Fatal("recupera con una contraseña nueva floja")
+	}
+	r, err := d.a.TerminarRecuperacion(correo, codigo, rec, nueva)
+	if err != nil || !r.Listo {
+		t.Fatalf("%+v %v", r, err)
+	}
+	if got := titulosDe(t, d.a); got != "Lo que había" {
+		t.Fatalf("tras recuperar hay %q", got)
+	}
+	alDia(t, d.a, time.Now())
+	d.a.CerrarBoveda()
+	if err := d.a.AbrirBoveda(nueva); err != nil {
+		t.Fatalf("la nueva no abre: %v", err)
+	}
+	d.a.CerrarBoveda()
+	// Con otra clave de recuperación, no.
+	if err := d.a.EmpezarRecuperacion(correo); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.a.TerminarRecuperacion(correo, codigoDelBuzon(t, raiz, correo), "ESF-0000-0000-0000-0000-0000-0000-0000-0000-0000-0000-0000-0000-0000", nueva); err == nil {
+		t.Fatal("recupera con una clave de recuperación que no es la suya")
+	}
+	// Y el equipo de antes entra con la nueva.
+	if r := entrarDesde(t, raiz, a, correo, nueva); !r.Listo {
+		t.Fatalf("%+v", r)
+	}
+}
+
+func TestLosEquiposSeVenYSeOlvidan(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+	b := nuevoEquipo(t, raiz)
+	a := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, a, correo, maestraFuerte)
+	alDia(t, a.a, time.Now())
+	a.a.CerrarBoveda()
+	entrarDesde(t, raiz, b, correo, maestraFuerte)
+	es, err := b.a.DispositivosDeCuenta()
+	if err != nil || len(es) != 2 {
+		t.Fatalf("%+v %v", es, err)
+	}
+	var otro string
+	actuales := 0
+	for _, e := range es {
+		if e.Actual {
+			actuales++
+		} else {
+			otro = e.ID
+		}
+	}
+	if actuales != 1 || otro == "" {
+		t.Fatalf("no se marca bien el de ahora: %+v", es)
+	}
+	if err := b.a.OlvidarDispositivo(otro); err != nil {
+		t.Fatal(err)
+	}
+	if es, _ := b.a.DispositivosDeCuenta(); len(es) != 1 {
+		t.Fatalf("sigue el olvidado: %+v", es)
+	}
+	// A, al abrir, se entera de que tiene que volver a entrar.
+	a.usar(t)
+	if err := a.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	limite := time.Now().Add(20 * time.Second)
+	for a.a.EstadoDeCuenta().Sincro.Estado != "hay-que-entrar" {
+		if time.Now().After(limite) {
+			t.Fatalf("el equipo olvidado sigue: %+v", a.a.EstadoDeCuenta().Sincro)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+func TestExportarYBorrarLaCuenta(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+	e := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, e, correo, maestraFuerte)
+	_ = e.a.GuardarEnBoveda(boveda.Entrada{Titulo: "Se queda aquí", Secreto: "s3cr3t0"})
+	alDia(t, e.a, time.Now())
+
+	e.s.guardaEn = filepath.Join(t.TempDir(), "esfinge-cuenta.json")
+	donde, err := e.a.ExportarDatosDeCuenta()
+	if err != nil || donde != e.s.guardaEn {
+		t.Fatalf("%q %v", donde, err)
+	}
+	crudo, _ := os.ReadFile(donde)
+	if !strings.Contains(string(crudo), correo) || strings.Contains(string(crudo), "s3cr3t0") || strings.Contains(string(crudo), "Se queda aquí") {
+		t.Fatal("la exportación no trae la cuenta, o trae algo en claro")
+	}
+
+	if err := e.a.BorrarCuenta(maestraFuerte, "123456"); err == nil {
+		t.Fatal("borra sin haber pedido el código")
+	}
+	if err := e.a.PedirCodigoParaBorrarCuenta(); err != nil {
+		t.Fatal(err)
+	}
+	codigo := codigoDelBuzon(t, raiz, correo)
+	if err := e.a.BorrarCuenta("no es ésta", codigo); err == nil {
+		t.Fatal("borra con otra contraseña")
+	}
+	if err := e.a.BorrarCuenta(maestraFuerte, codigo); err != nil {
+		t.Fatal(err)
+	}
+	if m := e.a.EstadoDeCuenta().Modo; m != "local" {
+		t.Fatalf("tras borrar la cuenta, el modo es %q", m)
+	}
+	if got := titulosDe(t, e.a); got != "Se queda aquí" {
+		t.Fatalf("la bóveda de aquí ha cambiado: %q", got)
+	}
+	if _, err := e.a.cliente().Prelogin(e.a.ctxCuenta(), correo); err != nil {
+		t.Fatal(err)
+	}
+	otro := nuevoEquipo(t, raiz)
+	if _, err := otro.a.EntrarEnCuenta(correo, maestraFuerte); err == nil {
+		t.Fatal("la cuenta borrada deja entrar")
 	}
 }

@@ -1641,3 +1641,31 @@ select {
   margin: 0;
   color: var(--cuerpo);
 }
+
+.lista-equipos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.lista-equipos li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  color: var(--cuerpo);
+}
+
+.lista-equipos .equipo {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Apagado sobre la tarjeta: pareja medida. */
+.lista-equipos .equipo-visto {
+  color: var(--apagado);
+  font-size: var(--texto-chico);
+}
