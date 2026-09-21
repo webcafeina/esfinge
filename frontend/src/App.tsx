@@ -23,7 +23,8 @@ import {
   CARACTERES_MINIMO,
   CARACTERES_MAXIMO,
   NUNCA,
-  alCambiarLaBoveda
+  alCambiarLaBoveda,
+  alCambiarElEstadoDeLaBoveda,
 } from "./puente";
 import {
   BandaNovedad,
@@ -77,6 +78,22 @@ export default function App() {
       .then((e) => setAsistente({ tipo, hayBoveda: e.existe }))
       .catch(() => setAsistente({ tipo, hayBoveda: false }));
   };
+
+  // El candado de la barra lateral: se pregunta una vez y luego lo avisa Go en
+  // cada cambio. Crear la bóveda la deja abierta y también avisa.
+  const [bovedaAbierta, setBovedaAbierta] = useState<boolean | null>(null);
+  useEffect(() => {
+    esfinge
+      .estadoBoveda()
+      .then((e) => setBovedaAbierta(e.existe ? e.abierta : null))
+      .catch(() => {});
+    return alCambiarElEstadoDeLaBoveda((abierta) =>
+      esfinge
+        .estadoBoveda()
+        .then((e) => setBovedaAbierta(e.existe ? e.abierta : null))
+        .catch(() => setBovedaAbierta(abierta)),
+    );
+  }, []);
 
   const [novedad, setNovedad] = useState<Novedad | null>(null);
   const [avance, setAvance] = useState<Avance | undefined>();
@@ -207,7 +224,7 @@ export default function App() {
 
   return (
     <div className="ventana">
-      <BarraLateral valor={tarea} alCambiar={setTarea} version={version} />
+      <BarraLateral valor={tarea} alCambiar={setTarea} version={version} bovedaAbierta={bovedaAbierta} />
 
       <div className="zona">
         <header className="herramientas">

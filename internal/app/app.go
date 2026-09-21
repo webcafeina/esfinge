@@ -190,6 +190,19 @@ func (a *App) ponerBoveda(b *boveda.Boveda) {
 	a.mu.Lock()
 	a.bov = b
 	a.mu.Unlock()
+	a.avisarDeLaBoveda()
+}
+
+// EventoEstadoBoveda dice a la ventana si la bóveda está abierta o cerrada, cada
+// vez que cambia. Lo escucha la barra lateral para su candado: la bóveda se abre
+// y se cierra por muchos caminos —a mano, sola por inactividad, al entrar en la
+// cuenta, al borrarla— y preguntar desde la ventana en cada uno se olvidaría.
+const EventoEstadoBoveda = "boveda-estado"
+
+func (a *App) avisarDeLaBoveda() {
+	if a.sistema != nil {
+		a.sistema.Avisar(EventoEstadoBoveda, a.boveda() != nil)
+	}
 }
 
 // Arrancar la llama Wails cuando la ventana está lista.

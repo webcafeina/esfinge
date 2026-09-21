@@ -54,26 +54,45 @@ export function Marca({ lado, clase }: { lado: number; clase?: string }) {
  *   Un botón o un enlace de más aquí rompería ese localizador en todo el fichero
  *   de pruebas, y hay una prueba que cuenta cuántos hay. Son seis desde que está
  *   la bóveda.
+ *
+ * **La fila de la bóveda dice si está abierta o cerrada** con un candado pequeño
+ * a la derecha, apagado como los iconos, que lo pidió el cliente con la 2.24.3.
+ * Va marcado como decorativo y el estado se dice en el `title`: si entrara en el
+ * nombre accesible, la sección dejaría de llamarse «Bóveda» para quien la busca
+ * por su nombre —las pruebas, y quien usa un lector de pantalla—. Sin bóveda
+ * creada no sale nada: no hay nada que esté abierto ni cerrado.
  */
 export function BarraLateral<T extends string>({
   valor,
   alCambiar,
   version,
+  bovedaAbierta,
 }: {
   valor: T;
   alCambiar: (v: T) => void;
   version: string;
+  /** null: no hay bóveda. */
+  bovedaAbierta?: boolean | null;
 }) {
-  const fila = (v: string, etiqueta: string) => (
-    <button
-      key={v}
-      onClick={() => alCambiar(v as T)}
-      aria-current={v === valor ? "page" : undefined}
-    >
-      <Icono nombre={v} />
-      {etiqueta}
-    </button>
-  );
+  const fila = (v: string, etiqueta: string) => {
+    const candado = v === "boveda" && bovedaAbierta != null;
+    return (
+      <button
+        key={v}
+        onClick={() => alCambiar(v as T)}
+        aria-current={v === valor ? "page" : undefined}
+        title={candado ? (bovedaAbierta ? "La bóveda está abierta" : "La bóveda está cerrada") : undefined}
+      >
+        <Icono nombre={v} />
+        {etiqueta}
+        {candado && (
+          <span className="estado-boveda" data-abierta={bovedaAbierta ? "si" : "no"} aria-hidden="true">
+            <Icono nombre={bovedaAbierta ? "candado-abierto" : "candado-cerrado"} />
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <aside className="lateral">
@@ -152,6 +171,22 @@ export function Icono({ nombre }: { nombre: string }) {
       <>
         <rect x="3.5" y="7" width="11" height="7.5" rx="2" />
         <path d="M12 7V5a3 3 0 0 0-6 0" />
+      </>
+    ),
+    // Los candados del estado de la bóveda, en la barra lateral. No son los de
+    // «Cifrar» y «Descifrar»: a trece píxeles aquel arco apenas movido no se
+    // distinguía del cerrado. Aquí el cuerpo es más bajo y, abierto, el arco sube y
+    // se separa del todo: se lee sin tener que buscar la diferencia.
+    "candado-cerrado": (
+      <>
+        <rect x="3.5" y="8" width="11" height="7.5" rx="2" />
+        <path d="M6 8V5.5a3 3 0 0 1 6 0V8" />
+      </>
+    ),
+    "candado-abierto": (
+      <>
+        <rect x="3.5" y="8" width="11" height="7.5" rx="2" />
+        <path d="M12 8V4a3 3 0 0 0-6 0v.6" />
       </>
     ),
     // Chispa: lo que se genera sale de la nada.

@@ -5,6 +5,17 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-21 (tarde) · 2.24.4: el candado de la bóveda en la barra lateral
+
+- El cliente comprobó la 2.24.3: **66 repetidas** quitadas, el otro Mac al día solo, ninguna pareja
+  suelta; exportar bien, y con la bóveda cerrada avisa.
+- Pidió ver en la barra lateral si la bóveda está abierta o cerrada, «visual y elegante»: un candado
+  pequeño y apagado a la derecha de «Bóveda». Primero se usaron los de Cifrar y Descifrar y **en la
+  captura no se distinguían** a ese tamaño; se dibujaron dos propios, con el arco del abierto levantado
+  del todo, mirados a 4× en los dos temas. El estado va en el `title` y no en el nombre, que sigue siendo
+  «Bóveda». Go avisa con `boveda-estado` en cada apertura y cierre.
+- `make comprobar` y `make e2e` en verde, con una prueba que cierra la bóveda desde fuera.
+
 ## 2026-09-21 (tarde) · 2.24.3: las repetidas que no eran «iguales en todo»
 
 - Con la 2.24.2 el cliente no veía el aviso de repetidas y dice que las parejas son iguales en sus datos.

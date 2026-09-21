@@ -84,6 +84,9 @@ demás **se junta en la que se queda**: webs, etiquetas e historial se suman, y 
 la otra. Solo separan dos entradas unas notas o una semilla de código distintas en las dos: una es la
 buena, y eso no lo decide Esfinge. `Traer` usa la misma regla.
 
+**Comprobado en los dos Macs del cliente con la 2.24.3**: el aviso contó **66 repetidas**, las quitó en un
+Mac, el otro se quedó igual solo, y no quedó ninguna pareja.
+
 ## Alternativas descartadas
 
 - **Enseñar la bienvenida a todo el mundo en la versión que la trae**, también a quien ya tiene bóveda.

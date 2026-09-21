@@ -220,6 +220,20 @@ body {
   color: currentColor;
 }
 
+/* El candado de la bóveda, a la derecha de su fila: más pequeño que el icono de
+ * la sección y del mismo color apagado, para que se lea como un estado y no como
+ * otra cosa que pulsar. Mismo trazo que «Cifrar» y «Descifrar», que son el mismo
+ * candado cerrado y abierto. */
+.lateral .estado-boveda {
+  display: flex;
+  margin-left: auto;
+}
+
+.lateral .estado-boveda .icono {
+  width: 14px;
+  height: 14px;
+}
+
 /* ------------------------------------------------------------------ contenido */
 
 /* La columna de la derecha. No se llama «principal» porque esa clase ya es la

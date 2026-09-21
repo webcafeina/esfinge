@@ -647,6 +647,7 @@ func (a *App) cambiarBoveda(b *boveda.Boveda) {
 	if antes != nil && antes != b {
 		antes.Cerrar()
 	}
+	a.avisarDeLaBoveda()
 }
 
 // quedarseCon apunta la cuenta en este equipo, con la sesión sellada con la clave

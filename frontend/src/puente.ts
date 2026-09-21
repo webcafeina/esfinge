@@ -627,6 +627,15 @@ export function alPedirloUnNavegador(cb: (quien: string) => void) {
   return escuchar("navegador-pide", cb);
 }
 
+/**
+ * Avisa cada vez que la bóveda se abre o se cierra, por el camino que sea: a mano,
+ * sola por inactividad, al entrar en la cuenta o al borrarla. Lo usa el candado de
+ * la barra lateral.
+ */
+export function alCambiarElEstadoDeLaBoveda(cb: (abierta: boolean) => void): () => void {
+  return escuchar("boveda-estado", cb);
+}
+
 export function alBloquearseLaBoveda(cb: () => void): () => void {
   return escuchar("boveda-bloqueada", cb);
 }

@@ -160,6 +160,7 @@ func (a *App) CerrarBoveda() {
 	if b != nil {
 		b.Cerrar()
 	}
+	a.avisarDeLaBoveda()
 }
 
 // BuscarEnBoveda devuelve lo que encaje, **sin secretos**.
@@ -365,6 +366,7 @@ func (a *App) BorrarBoveda(maestra string) error {
 	if abierta != nil {
 		abierta.Cerrar()
 	}
+	a.avisarDeLaBoveda()
 
 	if err := os.Remove(ruta); err != nil {
 		return err

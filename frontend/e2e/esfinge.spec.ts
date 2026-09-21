@@ -1454,3 +1454,25 @@ test("las entradas repetidas se ven y se quitan de un clic", async ({ page }) =>
   await expect(accion(page, "Quitar las repetidas")).toHaveCount(0);
   expect(errores).toEqual([]);
 });
+
+// La fila de la bóveda dice si está abierta o cerrada, con un candado que avisa Go
+// —no la pantalla de la bóveda—, así que también cambia cuando se cierra desde
+// fuera. Y el nombre de la sección sigue siendo «Bóveda».
+test("la barra lateral dice si la bóveda está abierta o cerrada", async ({ page, request }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  const candado = page.locator(".lateral .estado-boveda");
+  await expect(candado).toHaveAttribute("data-abierta", "si");
+  await expect(seccion(page, "Bóveda")).toHaveAttribute("title", "La bóveda está abierta");
+  await seccion(page, "Cifrar").click();
+  await page.locator(".lateral").screenshot({ path: `test-results/candado-abierta-${test.info().project.name}.png` });
+  await seccion(page, "Bóveda").click();
+
+  // Cerrada desde fuera de la ventana —como la cierra el reloj de inactividad—.
+  expect((await request.post("/api/CerrarBoveda", { data: [] })).ok()).toBe(true);
+  await expect(candado).toHaveAttribute("data-abierta", "no");
+  await expect(seccion(page, "Bóveda")).toHaveAttribute("title", "La bóveda está cerrada");
+  await page.locator(".lateral").screenshot({ path: `test-results/candado-cerrada-${test.info().project.name}.png` });
+  expect(errores).toEqual([]);
+});

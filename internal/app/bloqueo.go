@@ -228,5 +228,6 @@ func (a *App) repasar() {
 		a.alCerrarLaBoveda()
 		b.Cerrar()
 		a.sistema.Avisar(EventoBloqueada, nil)
+		a.avisarDeLaBoveda()
 	}
 }

@@ -132,6 +132,8 @@ En la ventana, con un equipo olvidado desde el otro, que es lo que le quita el t
 otro, la de antes todavía abre la copia de aquí y avisa de que hay que volver a entrar, y con la nueva entra
 en la cuenta.
 
-**Sin comprobar en un Mac**: recuperar con la clave de recuperación, olvidar un equipo, exportar y borrar
-la cuenta. Y que `NormalizarCorreo` de Go y `normalizarCorreo` del servidor coinciden en todos los casos raros
+**Comprobado en su Mac con la 2.24.3**: exportar los datos de la cuenta —el fichero sale bien, y con la
+bóveda cerrada el botón avisa—.
+
+**Sin comprobar en un Mac**: recuperar con la clave de recuperación, olvidar un equipo y borrar la cuenta. Y que `NormalizarCorreo` de Go y `normalizarCorreo` del servidor coinciden en todos los casos raros
 de Unicode: las dos pasan a minúsculas con reglas de lenguajes distintos. Manda la del servidor.

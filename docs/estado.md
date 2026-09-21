@@ -452,6 +452,11 @@ Macs**: cambiada en uno, el otro entró en la cuenta con la nueva.
 - **2.24.3**: el aviso de las repetidas no salía en los Macs del cliente —«igual en todo» era demasiado
   estricto, y sus parejas diferían en lo que no se ve—. Ahora cuenta como la misma cuenta mismo título,
   usuario y contraseña, y junta lo demás en la que se queda.
+- **Comprobado por el cliente con la 2.24.3**: 66 repetidas quitadas en un Mac, el otro al día solo, sin
+  parejas sueltas; exportar, bien.
+- **2.24.4**: la fila «Bóveda» de la barra lateral lleva un candado pequeño, cerrado o con el arco
+  levantado, que lo pidió el cliente. Lo avisa Go en cada apertura y cierre (`boveda-estado`), así que
+  vale también cuando se cierra sola o se abre desde la cuenta.
 - «Exportar» no salía en Ajustes con la bóveda cerrada, y se llamaba «Guardar lo que hay de mi cuenta».
   Ahora está siempre con cuenta, como «Exportar los datos de la cuenta…», y dice que hay que abrir la
   bóveda para usarlo.
