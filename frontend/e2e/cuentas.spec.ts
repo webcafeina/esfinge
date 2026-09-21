@@ -147,10 +147,22 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await accion(a, "Abrir la bóveda").click();
   await expect(a.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
   await accion(a, "Nueva").click();
+  // La hora de guardar, sin milisegundos: la de la sincronización va al segundo.
+  const guardadoEn = new Date(Math.floor(Date.now() / 1000) * 1000 + 1000).toISOString().replace(".000Z", "Z");
   await a.locator("#boveda-titulo").fill("Llega sin reabrir");
   await accion(a, "Guardar").click();
   await expect(a.locator(".lista-boveda").getByRole("button", { name: "Llega sin reabrir" })).toBeVisible();
-  // Volver a la ventana de B basta: pide una pasada sola.
+  // Primero que A lo haya subido: guarda y espera tres segundos para juntar los
+  // guardados seguidos. Sin esperar, B preguntaba antes de que hubiera nada y la
+  // siguiente pasada tocaba al minuto (lo vio la máquina de GitHub, no ésta).
+  await expect
+    .poll(async () => {
+      const r = await request.post(`${A}/api/EstadoDeCuenta`, { data: [] });
+      const e = (await r.json()) as { sincro: { estado: string; ultima?: string } };
+      return e.sincro.estado === "al-dia" && (e.sincro.ultima ?? "") >= guardadoEn;
+    }, { timeout: 20_000 })
+    .toBe(true);
+  // Y volver a la ventana de B basta: pide una pasada sola.
   await b.bringToFront();
   await b.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(b.locator(".lista-boveda").getByRole("button", { name: "Llega sin reabrir" })).toBeVisible({
