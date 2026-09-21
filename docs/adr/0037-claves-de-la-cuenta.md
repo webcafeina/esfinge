@@ -122,5 +122,10 @@ con todo —lo de A y lo suyo, que llega a A—; una contraseña que no es ningu
 error de siempre, y la de antes deja de abrir. El testigo queda en claro en el disco. Se quitó a propósito
 el paso por la cuenta y la prueba lo cazó.
 
-**Sin comprobar**: nada de la A3 en un Mac todavía. Y que `NormalizarCorreo` de Go y `normalizarCorreo` del servidor coinciden en todos los casos raros
+**Comprobado en los dos Macs del cliente con la 2.24.1** (2026-09-21): cambiar la contraseña en uno; en el
+otro, la de antes todavía abre la copia de aquí y avisa de que hay que volver a entrar, y con la nueva entra
+en la cuenta.
+
+**Sin comprobar en un Mac**: recuperar con la clave de recuperación, olvidar un equipo, exportar y borrar
+la cuenta. Y que `NormalizarCorreo` de Go y `normalizarCorreo` del servidor coinciden en todos los casos raros
 de Unicode: las dos pasan a minúsculas con reglas de lenguajes distintos. Manda la del servidor.

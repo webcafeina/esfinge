@@ -439,7 +439,8 @@ cuenta desde Ajustes. Probado contra el servidor de verdad y en la ventana, con 
 
 **2.24.1**: con la contraseña cambiada en un Mac, **el otro se abre escribiendo la nueva** en «Abrir la
 bóveda», sin código ni pasos aparte. Lo preguntó el cliente al ver la 2.24.0; cambiar la contraseña sigue
-cerrando las sesiones de los demás equipos, que es lo que eligió.
+cerrando las sesiones de los demás equipos, que es lo que eligió. **Comprobado por el cliente en sus dos
+Macs**: cambiada en uno, el otro entró en la cuenta con la nueva.
 
 **La siguiente acción concreta es que el cliente pruebe la A3 en sus Macs** —cambiar la contraseña en uno
 y entrar con la nueva en el otro, olvidar un equipo, exportar— y después **decidir con él el orden de lo
