@@ -333,6 +333,11 @@ function Cerrada({
   const [llave, setLlave] = useState("");
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState("");
+  // Con cuenta, la contraseña nueva puede no bastar: si este equipo no es de
+  // confianza —caducó, o venía de la 2.24.0—, el servidor pide el código del
+  // correo. Se pide aquí mismo, sin mandar a nadie a otro asistente.
+  const [pidiendoCodigo, setPidiendoCodigo] = useState(false);
+  const [codigo, setCodigo] = useState("");
 
   async function abrir() {
     setTrabajando(true);
@@ -342,10 +347,76 @@ function Cerrada({
       setLlave("");
       alAbrir();
     } catch (e) {
+      const estado = cuenta?.modo === "cuenta" ? await esfinge.estadoDeCuenta().catch(() => null) : null;
+      if (estado?.codigoPendiente) {
+        setPidiendoCodigo(true);
+      } else {
+        setError(mensaje(e));
+      }
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  async function confirmar() {
+    setTrabajando(true);
+    setError("");
+    try {
+      await esfinge.confirmarEntrada(codigo);
+      setLlave("");
+      setCodigo("");
+      setPidiendoCodigo(false);
+      alAbrir();
+    } catch (e) {
       setError(mensaje(e));
     } finally {
       setTrabajando(false);
     }
+  }
+
+  if (pidiendoCodigo) {
+    return (
+      <div className="panel">
+        <p className="entradilla">Es la contraseña nueva de tu cuenta.</p>
+        <div className="grupo">
+          <p className="nota">
+            Como este equipo tiene que confirmarlo, te hemos mandado un código a{" "}
+            <span className="seleccionable">{cuenta?.correo}</span>. Al escribirlo, la bóveda de
+            aquí se pone al día con la contraseña nueva, sin perder nada.
+          </p>
+          <div>
+            <label htmlFor="abrir-codigo">Código</label>
+            <input
+              id="abrir-codigo"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={7}
+              autoFocus
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value.replace(/[^\d]/g, ""))}
+              onKeyDown={(e) => e.key === "Enter" && codigo.length === 6 && confirmar()}
+            />
+          </div>
+        </div>
+        {error && <p className="error">{error}</p>}
+        <div className="botones">
+          <button className="principal" onClick={confirmar} disabled={codigo.length !== 6 || trabajando}>
+            {trabajando ? "Abriendo…" : "Abrir la bóveda"}
+          </button>
+          <button
+            className="discreto"
+            onClick={() => {
+              setPidiendoCodigo(false);
+              setCodigo("");
+              setError("");
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -456,6 +527,29 @@ function Dentro({
   // Lo escribe otro —la extensión, por el canal—, y sin este aviso la lista seguía
   // enseñando lo de antes hasta que se tocara el buscador.
   useEffect(() => alCambiarLaBoveda(() => buscar(q)), [buscar, q]);
+
+  // **Las repetidas, iguales en todo a otra**, se cuentan cada vez que cambia la
+  // lista. Salieron de juntar dos bóvedas importadas del mismo gestor al entrar
+  // en una cuenta (2.24.2): cada cuenta dos veces, en todos los equipos.
+  const [repetidas, setRepetidas] = useState(0);
+  useEffect(() => {
+    if (cerrada.current) return;
+    esfinge.repetidasEnBoveda().then(setRepetidas).catch(() => setRepetidas(0));
+  }, [lista]);
+
+  async function quitarRepetidas() {
+    setError("");
+    try {
+      const n = await esfinge.quitarRepetidasDeBoveda();
+      setDicho(
+        `${n === 1 ? "Una entrada repetida está" : `${n} entradas repetidas están`} en la papelera. Se borran solas en 30 días.`,
+      );
+      await buscar(q);
+      alCambiar();
+    } catch (e) {
+      setError(mensaje(e));
+    }
+  }
 
   // La búsqueda cruza el puente, así que se espera a que se deje de teclear. No
   // es por coste: es que cada pulsación devolvería una lista y las respuestas
@@ -568,6 +662,20 @@ function Dentro({
 
       {/* Cómo va la sincronización, si este equipo está en una cuenta. */}
       <LineaSincro alVolverAEntrar={alVolverAEntrar} />
+
+      {repetidas > 0 && (
+        <div className="grupo">
+          <p className="aviso">
+            {repetidas === 1
+              ? "Hay una entrada repetida: igual en todo a otra."
+              : `Hay ${repetidas} entradas repetidas: iguales en todo a otra.`}{" "}
+            Se queda una de cada y las demás van a la papelera, de donde se pueden recuperar.
+          </p>
+          <div className="botones">
+            <button onClick={quitarRepetidas}>Quitar las repetidas</button>
+          </div>
+        </div>
+      )}
 
       {/* **Las cuatro clases, separadas.** Con sesenta y cinco entradas dentro un
           listado único deja de navegarse, y las tarjetas y los documentos no se

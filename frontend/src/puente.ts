@@ -239,6 +239,8 @@ export type EstadoCuenta = {
   equipo?: string;
   servidor: string;
   sincro: EstadoSincro;
+  /** Una entrada a medias espera el código del correo (al abrir con la contraseña nueva). */
+  codigoPendiente?: boolean;
 };
 
 /** Un equipo con sesión en la cuenta. */
@@ -496,6 +498,12 @@ export const esfinge = {
   borrarDeBoveda: (id: string) => llamar<void>("BorrarDeBoveda", id),
 
   /** Lo borrado que todavía se puede recuperar, sin secretos y con lo último arriba. */
+  /** Cuántas entradas sobran por ser iguales en todo a otra. */
+  repetidasEnBoveda: () => llamar<number>("RepetidasEnBoveda"),
+
+  /** Manda a la papelera las repetidas; devuelve cuántas. */
+  quitarRepetidasDeBoveda: () => llamar<number>("QuitarRepetidasDeBoveda"),
+
   papeleraDeBoveda: () =>
     llamar<EntradaBoveda[] | null>("PapeleraDeBoveda").then((l) => l ?? []),
 

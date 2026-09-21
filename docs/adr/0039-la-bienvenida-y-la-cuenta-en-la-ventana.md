@@ -64,6 +64,18 @@ puede pedir—; **la portada y el README** dicen las dos formas de usarla; y **`
 la tercera salida a la red con lo que no protege. **La extensión no cambia**: sigue hablando solo con la
 aplicación de este ordenador, y su aviso y lo declarado en las tiendas siguen siendo ciertos.
 
+### Matizado en la 2.24.2: juntar no repite lo que ya está
+
+«Juntar» comparaba solo identificadores. Dos bóvedas importadas por separado del mismo Dashlane tienen las
+mismas cuentas con identificadores distintos, así que **en los dos Macs del cliente quedó cada cuenta dos
+veces**, y la sincronización las llevó a todos los equipos. Ahora `Traer` salta lo que es **igual en todo**
+a una entrada que ya está —todo menos identificador, fechas y revisión—; lo que difiere en algo, aunque sea
+el mismo sitio y usuario, sí llega, porque cuál es la buena no lo puede decidir Esfinge.
+
+Y para lo que ya se juntó mal, la bóveda **cuenta las repetidas y las quita de un clic**, a la papelera y
+no borradas. De cada grupo se queda **la de identificador menor**, que no depende del equipo: si los dos
+limpian a la vez, mandan a la papelera las mismas y no se quedan sin ninguna.
+
 ## Alternativas descartadas
 
 - **Enseñar la bienvenida a todo el mundo en la versión que la trae**, también a quien ya tiene bóveda.

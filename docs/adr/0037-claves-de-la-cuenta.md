@@ -69,8 +69,10 @@ equipo?»: **basta escribir la nueva en «Abrir la bóveda»**.
   `cuenta.json`, como la cookie de «recordar este equipo» de cualquier web. Sellado con la clave de la
   bóveda no se podía leer justo cuando hace falta: con la bóveda cerrada y una contraseña que ya no la
   abre. La sesión sigue sellada. Los de antes se pasan a claro al abrir la bóveda.
-- Si el equipo no tiene testigo —o el servidor pide código igual—, se dice que use «¿Cambiaste la
-  contraseña en otro equipo?».
+- Si el equipo no tiene testigo —caducó a los 90 días, o venía sellado de la 2.24.0—, **la contraseña
+  nueva no se toma por mala**: el servidor la reconoce, manda el código al correo y «Abrir la bóveda» lo
+  pide en la misma pantalla (2.24.2). En la 2.24.1 daba «Esa llave no abre esta bóveda», y le pasó al
+  cliente en su segundo Mac.
 
 **Lo que cuesta**: quien copie `cuenta.json` se lleva el testigo, que le ahorra el código por correo **si
 además sabe la contraseña**. Pero quien tiene ese disco tiene también `boveda.esfinge`, y con la contraseña
@@ -121,6 +123,10 @@ algo guardado sin poder subir **se abre escribiendo la nueva** en «Abrir la bó
 con todo —lo de A y lo suyo, que llega a A—; una contraseña que no es ninguna de las dos sigue dando el
 error de siempre, y la de antes deja de abrir. El testigo queda en claro en el disco. Se quitó a propósito
 el paso por la cuenta y la prueba lo cazó.
+
+**Comprobado en la 2.24.2**, contra el servidor de verdad y en la ventana: sin testigo, la contraseña nueva
+pide el código en «Abrir la bóveda» y con él abre; una mala sigue siendo mala y no deja código pendiente.
+En la ventana, con un equipo olvidado desde el otro, que es lo que le quita el testigo.
 
 **Comprobado en los dos Macs del cliente con la 2.24.1** (2026-09-21): cambiar la contraseña en uno; en el
 otro, la de antes todavía abre la copia de aquí y avisa de que hay que volver a entrar, y con la nueva entra

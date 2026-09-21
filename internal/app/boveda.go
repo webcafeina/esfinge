@@ -234,6 +234,27 @@ func (a *App) BorrarDeBoveda(id string) error {
 	return b.Borrar(id)
 }
 
+// RepetidasEnBoveda dice cuántas entradas sobran por ser iguales en todo a otra
+// (ver boveda/repetidas.go).
+func (a *App) RepetidasEnBoveda() (int, error) {
+	b := a.boveda()
+	if b == nil {
+		return 0, boveda.ErrCerrada
+	}
+	return b.Repetidas()
+}
+
+// QuitarRepetidasDeBoveda manda a la papelera las que sobran. Es un clic de
+// alguien, así que cuenta como actividad.
+func (a *App) QuitarRepetidasDeBoveda() (int, error) {
+	b := a.boveda()
+	if b == nil {
+		return 0, boveda.ErrCerrada
+	}
+	a.Actividad()
+	return b.QuitarRepetidas()
+}
+
 // PapeleraDeBoveda devuelve lo borrado que todavía se puede recuperar, sin
 // secretos, con lo último borrado arriba.
 func (a *App) PapeleraDeBoveda() ([]boveda.Entrada, error) {

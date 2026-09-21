@@ -26,6 +26,9 @@ test.describe("Capturas", () => {
     // de la cuenta. Se retrata y se elige «En este ordenador», que es lo que
     // recorre el resto.
     const bienvenida = page.getByRole("button", { name: "Usar en este ordenador" });
+    // Se espera a que haya algo: preguntar en el acto si se ve, con la página aún
+    // pintándose, decía que no y el recorrido se quedaba en la bienvenida.
+    await bienvenida.or(page.getByLabel("Qué quieres cifrar")).first().waitFor();
     if (await bienvenida.isVisible().catch(() => false)) {
       await foto("00-bienvenida");
       await bienvenida.click();

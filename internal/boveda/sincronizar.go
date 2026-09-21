@@ -150,6 +150,11 @@ func (b *Boveda) AbrirSecreto(sellado string) ([]byte, error) {
 // de entrar en la cuenta, cuando se elige «Juntar»— **con sus identificadores**,
 // las de la papelera incluidas, y sus sitios excluidos. Lo que ya está no se
 // toca. Devuelve cuántas ha traído y guarda.
+//
+// **Lo que ya está es también lo idéntico con otro identificador** (ver
+// repetidas.go): dos bóvedas importadas por separado del mismo gestor tienen las
+// mismas cuentas con identificadores distintos, y juntarlas comparando solo el
+// identificador las dejaba todas dos veces.
 func (b *Boveda) Traer(otra *Boveda) (int, error) {
 	otra.mu.Lock()
 	suyas := append([]Entrada(nil), otra.cont.Entradas...)
@@ -162,16 +167,26 @@ func (b *Boveda) Traer(otra *Boveda) (int, error) {
 		return 0, ErrCerrada
 	}
 	hay := map[string]bool{}
+	igual := map[string]bool{}
 	for _, e := range b.cont.Entradas {
 		hay[e.ID] = true
+		if !e.Papelera {
+			igual[contenidoDe(e)] = true
+		}
 	}
 	traidas := 0
 	for _, e := range suyas {
 		if hay[e.ID] {
 			continue
 		}
+		if c := contenidoDe(e); !e.Papelera && c != "" && igual[c] {
+			continue
+		}
 		b.cont.Entradas = append(b.cont.Entradas, e)
 		hay[e.ID] = true
+		if !e.Papelera {
+			igual[contenidoDe(e)] = true
+		}
 		traidas++
 	}
 	b.cont.SitiosExcluidos = fundirConjunto(b.cont.SitiosExcluidos, excluidos, nil, false)

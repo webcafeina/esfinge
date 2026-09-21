@@ -89,6 +89,7 @@ var loQuePuedeCruzarElPuente = []string{
 	"EmpezarRecuperacion", "TerminarRecuperacion",
 	"DispositivosDeCuenta", "OlvidarDispositivo",
 	"PedirCodigoParaBorrarCuenta", "BorrarCuenta", "ExportarDatosDeCuenta",
+	"RepetidasEnBoveda", "QuitarRepetidasDeBoveda",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

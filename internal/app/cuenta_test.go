@@ -425,7 +425,6 @@ func TestSalirDeLaCuentaEnEsteEquipo(t *testing.T) {
 	}
 }
 
-
 // Con la bóveda cerrada, crear la cuenta la abre con la contraseña que se acaba de
 // escribir: pedir que se abra antes obligaba a salir del asistente y empezar otra vez.
 func TestCrearLaCuentaConLaBovedaCerrada(t *testing.T) {
@@ -662,6 +661,70 @@ func TestElOtroEquipoAbreConLaContrasenaNueva(t *testing.T) {
 	alDia(t, a.a, time.Now())
 	if got := titulosDe(t, a.a); got != "De A, De A con la nueva, De B sin subir" {
 		t.Fatalf("en A hay %q", got)
+	}
+}
+
+// Sin testigo de confianza —caducado, o sellado de antes de la 2.24.1, que es lo
+// que le pasó al cliente con su segundo Mac— la contraseña nueva **no se toma por
+// mala**: se reconoce y se pide el código del correo, y con él se abre.
+func TestLaContrasenaNuevaSinTestigoPideElCodigo(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+	const nueva = "la contraseña nueva de la cuenta, larga y buena"
+
+	a := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, a, correo, maestraFuerte)
+	_ = a.a.GuardarEnBoveda(boveda.Entrada{Titulo: "De A"})
+	alDia(t, a.a, time.Now())
+	a.a.CerrarBoveda()
+
+	b := nuevoEquipo(t, raiz)
+	entrarDesde(t, raiz, b, correo, maestraFuerte)
+	alDia(t, b.a, time.Now())
+	b.a.CerrarBoveda()
+	d := leerDatosCuenta()
+	d.Confianza = "ESF1.sellado-con-la-clave-de-la-boveda"
+	if err := guardarDatosCuenta(d); err != nil {
+		t.Fatal(err)
+	}
+
+	a.usar(t)
+	if err := a.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.a.CambiarMaestraDeBoveda(maestraFuerte, nueva); err != nil {
+		t.Fatal(err)
+	}
+	alDia(t, a.a, time.Now())
+	a.a.CerrarBoveda()
+
+	b.usar(t)
+	if err := b.a.AbrirBoveda("una que no es ninguna de las dos"); !errors.Is(err, boveda.ErrSinRanura) {
+		t.Fatalf("una contraseña mala: quiero ErrSinRanura, tengo %v", err)
+	}
+	if b.a.EstadoDeCuenta().CodigoPendiente {
+		t.Fatal("una contraseña mala deja un código pendiente")
+	}
+	if err := b.a.AbrirBoveda(nueva); !errors.Is(err, ErrFaltaElCodigo) {
+		t.Fatalf("con la nueva y sin testigo: quiero ErrFaltaElCodigo, tengo %v", err)
+	}
+	if !b.a.EstadoDeCuenta().CodigoPendiente {
+		t.Fatal("la ventana no sabe que falta el código")
+	}
+	r, err := b.a.ConfirmarEntrada(codigoDelBuzon(t, raiz, correo))
+	if err != nil || !r.Listo || r.Apartada != "" {
+		t.Fatalf("con el código: %+v, %v", r, err)
+	}
+	alDia(t, b.a, time.Now())
+	if got := titulosDe(t, b.a); got != "De A" {
+		t.Fatalf("en B hay %q", got)
+	}
+	if b.a.EstadoDeCuenta().CodigoPendiente {
+		t.Fatal("queda un código pendiente después de entrar")
+	}
+	b.a.CerrarBoveda()
+	if err := b.a.AbrirBoveda(nueva); err != nil {
+		t.Fatalf("la nueva no abre a la segunda: %v", err)
 	}
 }
 

@@ -442,6 +442,17 @@ bóveda», sin código ni pasos aparte. Lo preguntó el cliente al ver la 2.24.0
 cerrando las sesiones de los demás equipos, que es lo que eligió. **Comprobado por el cliente en sus dos
 Macs**: cambiada en uno, el otro entró en la cuenta con la nueva.
 
+**2.24.2**, de lo que vio el cliente probándola:
+- En su segundo Mac, la nueva daba «Esa llave no abre esta bóveda» —el testigo de confianza venía sellado
+  de la 2.24.0—. Ahora, sin testigo, la nueva se reconoce y «Abrir la bóveda» pide el código del correo en
+  la misma pantalla. Pasaría también al caducar el testigo, a los 90 días.
+- **Cada cuenta estaba dos veces en los dos Macs**: salió de «Juntar» al entrar en la cuenta con el
+  segundo, que tenía su propia importación de Dashlane. Juntar ya no repite lo igual, y la bóveda avisa de
+  las repetidas y **las quita de un clic, a la papelera**. El cliente tiene que pulsarlo en uno de los dos.
+- «Exportar» no salía en Ajustes con la bóveda cerrada, y se llamaba «Guardar lo que hay de mi cuenta».
+  Ahora está siempre con cuenta, como «Exportar los datos de la cuenta…», y dice que hay que abrir la
+  bóveda para usarlo.
+
 **La siguiente acción concreta es que el cliente pruebe la A3 en sus Macs** —cambiar la contraseña en uno
 y entrar con la nueva en el otro, olvidar un equipo, exportar— y después **decidir con él el orden de lo
 que queda**: la extensión autónoma (E), la auditoría externa, abrir el registro (A4), compartir (B) y Touch

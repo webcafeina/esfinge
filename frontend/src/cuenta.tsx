@@ -957,7 +957,9 @@ export function GrupoCuenta({
       </p>
     </div>
     {conSesion && <EquiposDeLaCuenta />}
-    {conSesion && <BorrarLaCuenta alBorrar={refrescar} />}
+    {/* **Siempre a la vista con cuenta**, aunque sin sesión no se pueda usar: con la
+        bóveda cerrada el grupo no salía, y el cliente no encontraba dónde exportar. */}
+    <BorrarLaCuenta alBorrar={refrescar} conSesion={conSesion} />
     </>
   );
 }
@@ -1018,7 +1020,7 @@ function EquiposDeLaCuenta() {
 }
 
 /** Exportar lo que hay de la cuenta y borrarla del servidor (A3). */
-function BorrarLaCuenta({ alBorrar }: { alBorrar: () => void }) {
+function BorrarLaCuenta({ alBorrar, conSesion }: { alBorrar: () => void; conSesion: boolean }) {
   const [paso, setPaso] = useState<"nada" | "codigo">("nada");
   const [codigo, setCodigo] = useState("");
   const [maestra, setMaestra] = useState("");
@@ -1053,11 +1055,16 @@ function BorrarLaCuenta({ alBorrar }: { alBorrar: () => void }) {
               if (donde) setExportado(donde);
             })
           }
-          disabled={trabajando}
+          disabled={trabajando || !conSesion}
         >
-          Guardar lo que hay de mi cuenta…
+          Exportar los datos de la cuenta…
         </button>
       </div>
+      {!conSesion && (
+        <p className="nota">
+          Para exportar o borrar la cuenta, abre la bóveda y, si lo pide, vuelve a entrar en la cuenta.
+        </p>
+      )}
       {exportado && <p className="exito seleccionable">Guardado en {exportado}</p>}
 
       {paso === "nada" ? (
@@ -1070,7 +1077,7 @@ function BorrarLaCuenta({ alBorrar }: { alBorrar: () => void }) {
                 setPaso("codigo");
               })
             }
-            disabled={trabajando}
+            disabled={trabajando || !conSesion}
           >
             Borrar la cuenta…
           </button>

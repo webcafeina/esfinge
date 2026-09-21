@@ -5,6 +5,18 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-21 (tarde) · 2.24.2: el código al abrir, las repetidas y «Exportar»
+
+- El cliente cambió la contraseña en un Mac: en el otro la nueva no abría (testigo sellado de la 2.24.0) y
+  entró con la vieja y luego en la cuenta. **Ahora sin testigo se pide el código en «Abrir la bóveda»**.
+- Vio **las credenciales duplicadas en los dos Macs**. Causa: «Juntar» comparaba solo identificadores y
+  cada Mac tenía su propia importación de Dashlane. Arreglado en `Traer` y con «Quitar las repetidas»
+  en la bóveda (a la papelera, deterministas entre equipos). ADR 0039 matizada, trampa en `CLAUDE.md`.
+- «Exportar» no lo encontraba: visible siempre con cuenta y con ese nombre.
+- De paso, el recorrido de capturas se quedaba en la bienvenida (preguntaba si se veía antes de pintar).
+- Go contra el servidor, `make comprobar`, `make e2e` —con la pantalla del código y las repetidas en la
+  ventana— en verde; dos roturas a propósito cazadas; capturas miradas.
+
 ## 2026-09-21 (tarde) · 2.24.1: el otro equipo se abre con la contraseña nueva
 
 - La **2.24.0 salió en verde** entera, tiendas incluidas.

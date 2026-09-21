@@ -62,6 +62,9 @@ type EstadoCuenta struct {
 	Equipo   string       `json:"equipo,omitempty"`
 	Servidor string       `json:"servidor"`
 	Sincro   EstadoSincro `json:"sincro"`
+	// CodigoPendiente: hay una entrada a medias esperando el código del correo. Lo
+	// mira «Abrir la bóveda» cuando la contraseña nueva no bastó para entrar.
+	CodigoPendiente bool `json:"codigoPendiente,omitempty"`
 }
 
 // ResultadoEntrada dice en qué punto se ha quedado entrar en una cuenta.
@@ -212,6 +215,7 @@ func (a *App) EstadoDeCuenta() EstadoCuenta {
 	a.cu.mu.Lock()
 	defer a.cu.mu.Unlock()
 	e := EstadoCuenta{Modo: modo, Servidor: a.cu.cliente.Raiz(), Sincro: a.cu.estado}
+	e.CodigoPendiente = a.cu.entrada != nil && a.cu.entrada.reto != ""
 	if modo == "cuenta" {
 		e.Correo, e.Equipo = d.Correo, d.NombreEquipo
 		if e.Sincro.Estado == "" {
@@ -690,6 +694,11 @@ func confianzaDe(d datosCuenta, b *boveda.Boveda) string {
 	return ""
 }
 
+// ErrFaltaElCodigo: la contraseña es la nueva de la cuenta, y este equipo tiene que
+// confirmarlo con el código que ha llegado al correo. La ventana lo sabe por
+// EstadoDeCuenta().CodigoPendiente, no por la frase.
+var ErrFaltaElCodigo = errors.New("Es la contraseña nueva de tu cuenta: escribe el código que te acaba de llegar al correo")
+
 // abrirConLaCuenta es lo que hace AbrirBoveda cuando la contraseña no abre la
 // copia de este equipo y el equipo está en una cuenta: puede ser **la nueva**,
 // cambiada en otro equipo. Se entra en la cuenta con ella —sin código, si el
@@ -703,14 +712,14 @@ func (a *App) abrirConLaCuenta(llave string, original error) error {
 	if d.Modo != "cuenta" || d.Correo == "" {
 		return original
 	}
+	// Sin testigo de confianza —caducado a los 90 días, o sellado de antes de la
+	// 2.24.1— se prueba igual: el servidor dirá si es la contraseña y pedirá el
+	// código, y eso es mejor que tomar por mala la contraseña buena.
 	confianza := confianzaDe(d, nil)
-	if confianza == "" {
-		return original
-	}
 	ctx := a.ctxCuenta()
 	pre, err := a.cliente().Prelogin(ctx, d.Correo)
 	if err != nil {
-		return original
+		return errors.New("Esa contraseña no abre la copia de este equipo. Si la cambiaste en otro, hace falta conexión para ponerla al día")
 	}
 	clave, err := cuenta.DerivarAcceso(llave, pre.Sal, pre.Argon2)
 	if err != nil {
@@ -721,11 +730,16 @@ func (a *App) abrirConLaCuenta(llave string, original error) error {
 		nombre = nombreDelEquipo()
 	}
 	s, reto, err := a.cliente().Entrar(ctx, d.Correo, clave, nombre, confianza)
-	if err != nil || s == nil {
-		if reto != "" {
-			return errors.New("Esa es la contraseña nueva de tu cuenta, pero este equipo tiene que confirmarlo con un código: usa «¿Cambiaste la contraseña en otro equipo?»")
-		}
+	if err != nil {
 		return original
+	}
+	if s == nil {
+		// Es la contraseña de la cuenta, y hace falta el código que acaba de llegar
+		// al correo: se sigue con ConfirmarEntrada, como al entrar.
+		a.cu.mu.Lock()
+		a.cu.entrada = &entradaPendiente{correo: d.Correo, maestra: llave, nombre: nombre, reto: reto}
+		a.cu.mu.Unlock()
+		return ErrFaltaElCodigo
 	}
 	r, err := a.terminarEntrada(&entradaPendiente{correo: d.Correo, maestra: llave, nombre: nombre}, *s)
 	if err != nil {

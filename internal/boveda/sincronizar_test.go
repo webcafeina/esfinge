@@ -827,3 +827,66 @@ func mustLeer(t *testing.T, ruta string) []byte {
 	}
 	return d
 }
+
+// Dos bóvedas importadas por separado del mismo gestor: las mismas cuentas con
+// identificadores distintos. Juntarlas no las repite, y lo que difiere en algo sí
+// llega, porque no se sabe cuál es la buena. Lo vio el cliente en sus dos Macs.
+func TestTraerNoRepiteLoImportadoDosVeces(t *testing.T) {
+	a, _, _ := nueva(t)
+	otra, _, _ := nueva(t)
+	for _, b := range []*Boveda{a, otra} {
+		mustPoner(t, b, Entrada{Titulo: "Correo", Usuario: "yo@x.com", Secreto: "uno", Sitios: []string{"x.com"}})
+		mustPoner(t, b, Entrada{Titulo: "Banco", Usuario: "yo", Secreto: "dos", Sitios: []string{"banco.es"}})
+	}
+	mustPoner(t, otra, Entrada{Titulo: "Correo", Usuario: "yo@x.com", Secreto: "la otra", Sitios: []string{"x.com"}})
+	n, err := a.Traer(otra)
+	if err != nil || n != 1 {
+		t.Fatalf("trae %d (quiero solo la distinta), %v", n, err)
+	}
+	if c, _ := a.Repetidas(); c != 0 {
+		t.Fatalf("quedan %d repetidas", c)
+	}
+}
+
+// Lo que ya se juntó dos veces se limpia: sobra una de cada pareja idéntica, va a
+// la papelera y no se borra, y de cada grupo se queda la misma sea quien sea quien
+// limpie —si no, dos equipos limpiando a la vez se quedarían sin ninguna—.
+func TestQuitarRepetidas(t *testing.T) {
+	a, _, _ := nueva(t)
+	mustPoner(t, a, Entrada{Titulo: "Correo", Usuario: "yo@x.com", Secreto: "uno", Sitios: []string{"x.com"}})
+	mustPoner(t, a, Entrada{Titulo: "Banco", Usuario: "yo", Secreto: "dos"})
+	mustPoner(t, a, Entrada{Titulo: "Banco", Usuario: "yo", Secreto: "dos"})
+	mustPoner(t, a, Entrada{Titulo: "Banco", Usuario: "yo", Secreto: "dos"})
+	mustPoner(t, a, Entrada{Titulo: "Banco", Usuario: "yo", Secreto: "otra"})
+	if c, err := a.Repetidas(); err != nil || c != 2 {
+		t.Fatalf("repetidas: %d, %v", c, err)
+	}
+	var menor string
+	for _, e := range a.cont.Entradas {
+		if e.Secreto == "dos" && (menor == "" || e.ID < menor) {
+			menor = e.ID
+		}
+	}
+	n, err := a.QuitarRepetidas()
+	if err != nil || n != 2 {
+		t.Fatalf("quita %d, %v", n, err)
+	}
+	vivas := map[string]int{}
+	for _, e := range a.cont.Entradas {
+		if !e.Papelera {
+			vivas[e.Secreto]++
+			if e.Secreto == "dos" && e.ID != menor {
+				t.Fatal("no se queda la de identificador menor")
+			}
+		}
+	}
+	if vivas["uno"] != 1 || vivas["dos"] != 1 || vivas["otra"] != 1 {
+		t.Fatalf("quedan %v", vivas)
+	}
+	if len(a.Papelera()) != 2 {
+		t.Fatal("las que sobran no están en la papelera")
+	}
+	if c, _ := a.Repetidas(); c != 0 {
+		t.Fatalf("siguen %d", c)
+	}
+}

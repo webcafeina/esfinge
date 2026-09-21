@@ -1417,3 +1417,38 @@ test("borrar la bóveda pide la contraseña maestra y no perdona", async ({ page
 
   expect(errores.filter((e) => !e.includes("400")), errores.join(" | ")).toEqual([]);
 });
+
+// Juntar dos bóvedas importadas del mismo gestor dejó cada cuenta dos veces en los
+// Macs del cliente (2.24.1). La bóveda lo dice y las limpia de un clic, a la
+// papelera: se queda una de cada.
+test("las entradas repetidas se ven y se quitan de un clic", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const titulo = `Repetida ${Date.now()}`;
+  for (let i = 0; i < 3; i++) {
+    await page.evaluate(
+      (t) =>
+        fetch("/api/GuardarEnBoveda", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify([{ tipo: "credencial", titulo: t, usuario: "yo", secreto: "igual" }]),
+        }),
+      titulo,
+    );
+  }
+  await page.reload();
+  await conLaBovedaAbierta(page);
+  await page.locator("#boveda-buscar").fill(titulo);
+  await expect(page.locator(".panel:visible").getByText(titulo)).toHaveCount(3);
+
+  await expect(page.getByText("Hay 2 entradas repetidas: iguales en todo a otra.", { exact: false })).toBeVisible();
+  await page.screenshot({ path: `test-results/repetidas-${test.info().project.name}.png` });
+  await accion(page, "Quitar las repetidas").click();
+
+  await expect(page.getByText("2 entradas repetidas están en la papelera", { exact: false })).toBeVisible();
+  await expect(page.locator(".panel:visible").getByText(titulo)).toHaveCount(1);
+  await expect(accion(page, "Quitar las repetidas")).toHaveCount(0);
+  expect(errores).toEqual([]);
+});

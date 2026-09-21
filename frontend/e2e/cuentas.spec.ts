@@ -180,6 +180,45 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await accion(a, "Volver").click();
   await expect(accion(a, "Abrir la bóveda")).toBeVisible();
 
+  // B cambia la contraseña, y en A, cerrado, **basta escribir la nueva** en «Abrir
+  // la bóveda»: entra en la cuenta sin código y se pone al día (2.24.1).
+  const NUEVA = MAESTRA + " cambiada en B";
+  const cambiada = await request.post(`${B}/api/CambiarMaestraDeBoveda`, { data: [MAESTRA, NUEVA] });
+  expect(cambiada.ok(), await cambiada.text()).toBe(true);
+  await a.locator("#boveda-llave").fill(NUEVA);
+  await accion(a, "Abrir la bóveda").click();
+  await expect(a.locator(".lista-boveda").getByRole("button", { name: "Llega sin reabrir" })).toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(a.locator(".linea-sincro")).toContainText("Sincronizada", { timeout: 20_000 });
+
+  // Y si A ya no es de confianza —aquí porque B lo olvida; en la vida, porque
+  // caducó a los 90 días—, la nueva no se toma por mala: pide el código del correo
+  // en la misma pantalla, y con él abre.
+  await accion(a, "Cerrar la bóveda").click();
+  const equipos = (await (await request.post(`${B}/api/DispositivosDeCuenta`, { data: [] })).json()) as {
+    id: string;
+    actual: boolean;
+  }[];
+  const deA = equipos.find((e) => !e.actual);
+  expect(deA).toBeTruthy();
+  expect((await request.post(`${B}/api/OlvidarDispositivo`, { data: [deA!.id] })).ok()).toBe(true);
+  const OTRA = NUEVA + " y otra vez";
+  const otraVez = await request.post(`${B}/api/CambiarMaestraDeBoveda`, { data: [NUEVA, OTRA] });
+  expect(otraVez.ok(), await otraVez.text()).toBe(true);
+  await a.locator("#boveda-llave").fill(OTRA);
+  await accion(a, "Abrir la bóveda").click();
+  await expect(a.getByText("Es la contraseña nueva de tu cuenta.")).toBeVisible({ timeout: 20_000 });
+  await retratar(a, "abrir-con-codigo");
+  // Esa respuesta es un error a propósito —«falta el código»—, y es la única.
+  expect(erroresA.splice(erroresA.indexOf("400 /api/AbrirBoveda"), 1)).toEqual(["400 /api/AbrirBoveda"]);
+  await a.locator("#abrir-codigo").fill(await codigo(request, correo));
+  await accion(a, "Abrir la bóveda").click();
+  await expect(a.locator(".lista-boveda").getByRole("button", { name: "Llega sin reabrir" })).toBeVisible({
+    timeout: 20_000,
+  });
+  expect(erroresA, erroresA.join(" | ")).toEqual([]);
+
   // Y Ajustes cuenta en qué cuenta está este equipo.
   await b.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
   await expect(b.getByRole("heading", { name: "Cuenta y sincronización" })).toBeVisible();
@@ -191,14 +230,14 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await retratar(b, "ajustes-cuenta");
   await b.getByRole("heading", { name: "Equipos con tu cuenta" }).scrollIntoViewIfNeeded();
   await retratar(b, "ajustes-equipos");
-  await accion(b, "Guardar lo que hay de mi cuenta…").click();
+  await accion(b, "Exportar los datos de la cuenta…").click();
   await expect(b.getByText(/^Guardado en /)).toBeVisible();
   await b.getByRole("heading", { name: "Tus datos en el servidor" }).scrollIntoViewIfNeeded();
   await retratar(b, "ajustes-cuenta-datos");
 
   // Y se puede cambiar de idea: dejar la cuenta en este equipo, con la contraseña.
   await accion(b, "Dejar la cuenta en este equipo…").click();
-  await b.locator("#salir-maestra").fill(MAESTRA);
+  await b.locator("#salir-maestra").fill(OTRA);
   await retratar(b, "ajustes-salir");
   await accion(b, "Dejar la cuenta en este equipo").click();
   await expect(accion(b, "Crear una cuenta")).toBeVisible();
@@ -209,7 +248,7 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   // B vuelve a estar en local. Con una contraseña que no llega a «Buena», crear una
   // cuenta nueva la pide nueva en el mismo paso, sin salir del asistente.
   const FLOJA = "contrasena1";
-  const cambio = await request.post(`${B}/api/CambiarMaestraDeBoveda`, { data: [MAESTRA, FLOJA] });
+  const cambio = await request.post(`${B}/api/CambiarMaestraDeBoveda`, { data: [OTRA, FLOJA] });
   expect(cambio.ok(), await cambio.text()).toBe(true);
   const otroCorreo = `floja-${Date.now()}@ejemplo.com`;
   await accion(b, "Crear una cuenta").click();
