@@ -83,3 +83,11 @@ cinco secretos en GitHub (`AMO_API_KEY`, `AMO_API_SECRET`, `CWS_CUENTA_DE_SERVIC
 - Cambiar «Muy pronto en las tiendas» de la web por los enlaces de verdad.
 - Y cuando las dos fichas estén en marcha, **dejar de colgar los zip de la extensión** en cada
   publicación de GitHub.
+
+## Si Chrome está revisando otra versión
+
+Chrome **no admite una versión nueva mientras revisa la anterior** («You may not edit or publish an item
+that is in review»). Desde la 2.23.2 el trabajo `tiendas` lo da como **aviso y no como fallo**: esa
+versión de la extensión no se sube a Chrome, y la siguiente publicación lo hará. Firefox no tiene esa
+restricción. Pasó el 2026-09-21 publicando la 2.23.1 y la 2.23.2 con horas de diferencia; el código de la
+extensión era el mismo en las dos.

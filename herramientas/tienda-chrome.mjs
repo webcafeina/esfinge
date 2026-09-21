@@ -77,6 +77,15 @@ async function llamar(acceso, metodo, ruta, cuerpo, tipo = "application/json") {
   });
   const texto = await r.text();
   console.log(`${metodo} ${ruta} → ${r.status}\n${texto}`);
+  // **Otra versión en revisión no es un fallo de esta publicación.** Chrome no deja
+  // subir mientras revisa la anterior, y publicando dos veces en pocas horas pasa
+  // siempre. Se avisa y se sigue: la próxima publicación la subirá. Tratarlo como
+  // fallo mandaba un correo de «ha fallado» con todo lo nuestro en verde, que es la
+  // forma de que esos correos dejen de leerse (CLAUDE.md).
+  if (r.status === 400 && texto.includes("NOT_UPDATEABLE")) {
+    console.log("::warning::Chrome está revisando la versión anterior de la extensión y no admite otra hasta terminar. Ésta no se sube; la próxima publicación lo hará.");
+    process.exit(0);
+  }
   if (!r.ok) falla(`La tienda ha contestado ${r.status} a ${ruta}`);
   try {
     return JSON.parse(texto);
