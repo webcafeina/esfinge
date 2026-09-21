@@ -416,7 +416,12 @@ entrar. Queda bloqueado con un mensaje hasta la A3, y **no se invita a nadie má
 la oficina** (el viernes 18 no tenía dos a mano): crear la cuenta desde Ajustes con la bóveda que ya tiene,
 entrar desde el otro con el código, y trabajar en los dos —una entrada en uno que aparece en el otro, la
 misma entrada editada a la vez, guardar desde el navegador y cerrar justo después de guardar—. Se le dio el
-guion paso a paso. **Al volver, se empieza por preguntarle cómo ha ido.** Después, la
+guion paso a paso. **Al volver, se empieza por preguntarle cómo ha ido.**
+
+**2026-09-21, probándola en la oficina**, el cliente encontró dos cosas al crear la cuenta con su bóveda
+de siempre, arregladas y publicadas al momento en la **2.23.1** —prefiere ir viéndolo en real—: pedía
+abrir la bóveda antes aunque la contraseña ya estaba escrita, y no había salida si su contraseña no
+llegaba a «Buena». Sigue la prueba. Después, la
 A3: cambiar la contraseña, recuperar la cuenta, la lista de equipos, borrar la cuenta y exportar.
 
 **Para retomar la A2** (sesión cerrada el 2026-09-18 por la tarde, a petición del cliente): el plan está en

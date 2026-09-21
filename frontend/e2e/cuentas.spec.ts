@@ -86,14 +86,12 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
 
   await expect(a.locator("#cuenta-codigo")).toBeVisible({ timeout: 20_000 });
   await a.locator("#cuenta-codigo").fill(await codigo(request, correo));
-  // Con cuenta, una contraseña débil no vale, y lo dice Go con su frase.
+  // Con cuenta, una contraseña débil no vale.
   await a.locator("#cuenta-maestra").fill("corta");
   await a.locator("#cuenta-maestra-2").fill("corta");
-  await accion(a, "Crear la cuenta").click();
-  await expect(a.locator(".error")).toContainText("al menos «Buena»");
-  // Ése es el único fallo que se espera en todo el recorrido.
-  expect(erroresA).toEqual(["400 /api/TerminarRegistro"]);
-  erroresA.length = 0;
+  // El botón no se deja pulsar: el medidor dice que no llega. Go lo comprueba
+  // también (internal/app), por si algo llegara sin pasar por aquí.
+  await expect(accion(a, "Crear la cuenta")).toBeDisabled();
   await a.locator("#cuenta-maestra").fill(MAESTRA);
   await a.locator("#cuenta-maestra-2").fill(MAESTRA);
   await retratar(a, "cuenta-codigo");
@@ -155,5 +153,32 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await accion(b, "Dejar la cuenta en este equipo").click();
   await expect(accion(b, "Crear una cuenta")).toBeVisible();
   await expect(b.getByText("Tu bóveda está solo en este ordenador.")).toBeVisible();
+  expect(erroresB, erroresB.join(" | ")).toEqual([]);
+
+  // ---------------------------------------------------------------- una maestra floja
+  // B vuelve a estar en local. Con una contraseña que no llega a «Buena», crear una
+  // cuenta nueva la pide nueva en el mismo paso, sin salir del asistente.
+  const FLOJA = "contrasena1";
+  const cambio = await request.post(`${B}/api/CambiarMaestraDeBoveda`, { data: [MAESTRA, FLOJA] });
+  expect(cambio.ok(), await cambio.text()).toBe(true);
+  const otroCorreo = `floja-${Date.now()}@ejemplo.com`;
+  await accion(b, "Crear una cuenta").click();
+  await b.locator("#cuenta-correo").fill(otroCorreo);
+  await accion(b, "Mandarme el código").click();
+  await expect(b.locator("#cuenta-codigo")).toBeVisible({ timeout: 20_000 });
+  await b.locator("#cuenta-codigo").fill(await codigo(request, otroCorreo));
+  await b.locator("#cuenta-maestra").fill(FLOJA);
+  await expect(b.getByText("Tu contraseña de ahora no llega a «Buena»")).toBeVisible();
+  await expect(accion(b, "Crear la cuenta")).toBeDisabled();
+  await b.locator("#cuenta-maestra-nueva").fill(MAESTRA + " nueva");
+  await b.locator("#cuenta-maestra-nueva-2").fill(MAESTRA + " nueva");
+  await retratar(b, "cuenta-maestra-floja");
+  await accion(b, "Crear la cuenta").click();
+  // Al terminar, a la bóveda, sincronizada; y abre con la nueva.
+  await expect(b.locator(".linea-sincro")).toContainText("Sincronizada", { timeout: 20_000 });
+  const abre = await request.post(`${B}/api/CerrarBoveda`, { data: [] });
+  expect(abre.ok()).toBe(true);
+  const conLaNueva = await request.post(`${B}/api/AbrirBoveda`, { data: [MAESTRA + " nueva"] });
+  expect(conLaNueva.ok(), await conLaNueva.text()).toBe(true);
   expect(erroresB, erroresB.join(" | ")).toEqual([]);
 });

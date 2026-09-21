@@ -1,6 +1,6 @@
 # ADR 0039 — La bienvenida y la cuenta en la ventana
 
-**Fecha:** 2026-09-18 · **Estado:** aceptada, sin publicar · **Continúa la [0035](0035-las-cuentas.md)** ·
+**Fecha:** 2026-09-18 · **Estado:** aceptada, publicada en la 2.23.0 y matizada en la 2.23.1 · **Continúa la [0035](0035-las-cuentas.md)** ·
 **Revisar cuando** se use en el Mac con dos equipos de verdad
 
 ## Contexto
@@ -26,6 +26,12 @@ cliente del servidor, la sincronización— sin nada en la ventana. Esto es la A
   en local también cuenta como elegirlo.
 
 ### El asistente
+
+**Matizado el 2026-09-21, probándola el cliente con la 2.23.0** (2.23.1): con la bóveda de siempre,
+crear la cuenta **la abre con la contraseña que se acaba de escribir** —pedía abrirla antes y había que
+salir y volver a escribirlo todo—, y **si esa contraseña no llega a «Buena», pide una nueva en el mismo
+paso**. La nueva se pone en la bóveda **después** de que el servidor acepte el alta: un código mal
+escrito no deja la bóveda con otra contraseña y sin cuenta.
 
 Crear la cuenta y entrar en ella van en el mismo marco que la bienvenida, a ventana entera:
 

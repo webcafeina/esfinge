@@ -300,33 +300,46 @@ func maestraSirveParaCuenta(maestra string) error {
 
 // TerminarRegistro crea la cuenta con el código del correo.
 //
-// Si en este equipo no hay bóveda, se crea una con esa contraseña y **se devuelve
-// su clave de recuperación**, una sola vez, como al crearla en local. Si ya la
-// hay, tiene que estar abierta y la contraseña tiene que ser la suya: la de la
-// cuenta y la maestra son la misma.
+// Si en este equipo no hay bóveda, se crea una con `maestra` y **se devuelve su
+// clave de recuperación**, una sola vez, como al crearla en local. La bóveda nueva
+// se crea en memoria y **solo se guarda si el servidor dice que sí**: guardada
+// antes, un código mal escrito dejaría una bóveda cuya clave de recuperación no ha
+// visto nadie.
 //
-// La bóveda nueva se crea en memoria y **solo se guarda si el servidor dice que
-// sí**: guardada antes, un código mal escrito dejaría una bóveda cuya clave de
-// recuperación no ha visto nadie.
-func (a *App) TerminarRegistro(correo, codigo, maestra string) (string, error) {
+// Si ya la hay, `maestra` es la suya —si está cerrada, se abre con ella: pedir que
+// se abriera antes obligaba a salir del asistente y volver a escribirlo todo—. La
+// contraseña de la cuenta es la maestra de la bóveda, y con cuenta tiene que ser al
+// menos «Buena». **Si la de ahora no llega, `nueva` es la que la sustituye**, y se
+// cambia en la bóveda después de que el servidor haya dicho que sí: así un código
+// mal escrito no deja la bóveda con otra contraseña y sin cuenta.
+func (a *App) TerminarRegistro(correo, codigo, maestra, nueva string) (string, error) {
 	c, err := cuenta.NormalizarCorreo(correo)
 	if err != nil {
-		return "", err
-	}
-	if err := maestraSirveParaCuenta(maestra); err != nil {
 		return "", err
 	}
 	ruta := rutaBoveda()
 	var b *boveda.Boveda
 	recuperacion := ""
-	nueva := false
+	creada := false
+	efectiva := maestra
 	if _, err := os.Stat(ruta); err == nil {
-		// La contraseña de la cuenta es la maestra de la bóveda, y se acaba de
-		// escribir: si la bóveda está cerrada, se abre con ella. Pedir que se abra
-		// antes obligaba a salir del asistente y volver a escribirlo todo.
 		abierta, err := boveda.Abrir(ruta, maestra)
 		if err != nil {
-			return "", errors.New("Con cuenta, la contraseña es la maestra de tu bóveda, y la que has escrito no la abre")
+			return "", errors.New("La contraseña maestra de tu bóveda no es ésa")
+		}
+		if nueva != "" {
+			if err := maestraSirveParaCuenta(nueva); err != nil {
+				abierta.Cerrar()
+				return "", err
+			}
+			if nueva == maestra {
+				abierta.Cerrar()
+				return "", errors.New("La contraseña nueva tiene que ser distinta de la de ahora")
+			}
+			efectiva = nueva
+		} else if err := maestraSirveParaCuenta(maestra); err != nil {
+			abierta.Cerrar()
+			return "", errors.New("Tu contraseña maestra de ahora no llega a «Buena», y con cuenta hace falta: pon una nueva")
 		}
 		if b = a.boveda(); b == nil {
 			b = abierta
@@ -336,17 +349,20 @@ func (a *App) TerminarRegistro(correo, codigo, maestra string) (string, error) {
 			abierta.Cerrar()
 		}
 	} else {
+		if err := maestraSirveParaCuenta(maestra); err != nil {
+			return "", err
+		}
 		if b, recuperacion, err = boveda.CrearEnMemoria(maestra); err != nil {
 			return "", err
 		}
-		nueva = true
+		creada = true
 	}
 
 	sal, err := cripto.Azar(16)
 	if err != nil {
 		return "", err
 	}
-	clave, err := cuenta.DerivarAcceso(maestra, sal, cuenta.PorDefecto)
+	clave, err := cuenta.DerivarAcceso(efectiva, sal, cuenta.PorDefecto)
 	if err != nil {
 		return "", err
 	}
@@ -362,12 +378,19 @@ func (a *App) TerminarRegistro(correo, codigo, maestra string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if nueva {
+	if creada {
 		if err := b.GuardarEn(ruta); err != nil {
 			return "", err
 		}
 		a.ponerBoveda(b)
 		a.Actividad()
+	}
+	// La contraseña nueva, en la bóveda, antes de que empiece a sincronizarse: lo
+	// que suba tiene que llevar ya la ranura que abre la cuenta.
+	if efectiva != maestra {
+		if err := b.CambiarMaestra(efectiva); err != nil {
+			return "", err
+		}
 	}
 	if err := a.quedarseCon(b, c, nombre, s); err != nil {
 		return "", err

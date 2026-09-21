@@ -176,7 +176,12 @@ function CrearCuenta({
   const [codigo, setCodigo] = useState("");
   const [maestra, setMaestra] = useState("");
   const [repetida, setRepetida] = useState("");
+  // La que sustituye a la de la bóveda si ésa no llega a «Buena».
+  const [nueva, setNueva] = useState("");
+  const [nuevaRepetida, setNuevaRepetida] = useState("");
   const [recuperacion, setRecuperacion] = useState("");
+  const nivel = usaNivel(maestra);
+  const nivelNueva = usaNivel(nueva);
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState("");
 
@@ -200,7 +205,7 @@ function CrearCuenta({
 
   const crear = () =>
     hacer(async () => {
-      const rec = await esfinge.terminarRegistro(correo, codigo, maestra);
+      const rec = await esfinge.terminarRegistro(correo, codigo, maestra, floja ? nueva : "");
       if (rec) setRecuperacion(rec);
       else alTerminar();
     });
@@ -209,8 +214,19 @@ function CrearCuenta({
     return <Ceremonia clave={recuperacion} nueva alSeguir={alTerminar} />;
   }
 
+  // Con la bóveda de siempre, si su contraseña no llega a «Buena» se pide una nueva
+  // aquí mismo, y se cambia a la vez que se crea la cuenta. Sin bóveda, la que se
+  // escribe tiene que llegar ya.
+  const floja = hayBoveda && maestra !== "" && nivel !== null && nivel < 3;
   const distintas = !hayBoveda && repetida !== "" && repetida !== maestra;
-  const listo = codigo.trim().length === 6 && maestra !== "" && (hayBoveda || repetida === maestra);
+  const nuevasDistintas = floja && nuevaRepetida !== "" && nuevaRepetida !== nueva;
+  const listo =
+    codigo.trim().length === 6 &&
+    maestra !== "" &&
+    nivel !== null &&
+    (hayBoveda
+      ? !floja || (nueva !== "" && nuevaRepetida === nueva && (nivelNueva ?? 0) >= 3)
+      : repetida === maestra && nivel >= 3);
 
   return (
     <>
@@ -258,8 +274,35 @@ function CrearCuenta({
             etiqueta={hayBoveda ? "La contraseña maestra de tu bóveda" : "Contraseña maestra"}
             valor={maestra}
             alCambiar={setMaestra}
+            medir={!hayBoveda}
             alEnviar={() => hayBoveda && listo && crear()}
           />
+          {floja && (
+            <>
+              <p className="aviso">
+                Tu contraseña de ahora no llega a «Buena», y con cuenta hace falta. Pon una nueva: a
+                partir de ahora abrirá tu bóveda y tu cuenta. La de recuperación sigue valiendo.
+              </p>
+              <CampoClave
+                id="cuenta-maestra-nueva"
+                etiqueta="Contraseña maestra nueva"
+                valor={nueva}
+                alCambiar={setNueva}
+              />
+              <div>
+                <label htmlFor="cuenta-maestra-nueva-2">Repítela</label>
+                <input
+                  id="cuenta-maestra-nueva-2"
+                  type="password"
+                  autoComplete="off"
+                  value={nuevaRepetida}
+                  onChange={(e) => setNuevaRepetida(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && listo && crear()}
+                />
+                {nuevasDistintas && <p className="error">Las dos no coinciden</p>}
+              </div>
+            </>
+          )}
           {!hayBoveda && (
             <div>
               <label htmlFor="cuenta-maestra-2">Repítela</label>
@@ -486,6 +529,32 @@ function EntrarEnCuenta({
       </div>
     </>
   );
+}
+
+/**
+ * usaNivel pregunta a Go cuánto vale una contraseña (0 muy débil … 4 excelente),
+ * con el mismo medidor que el resto de la ventana. Null mientras no contesta.
+ */
+function usaNivel(clave: string): number | null {
+  const [nivel, setNivel] = useState<number | null>(null);
+  useEffect(() => {
+    if (!clave) {
+      setNivel(null);
+      return;
+    }
+    let vigente = true;
+    const t = setTimeout(() => {
+      esfinge
+        .evaluarClave(clave)
+        .then((f) => vigente && setNivel(f.nivel))
+        .catch(() => {});
+    }, 150);
+    return () => {
+      vigente = false;
+      clearTimeout(t);
+    };
+  }, [clave]);
+  return nivel;
 }
 
 // ------------------------------------------------------------------ la sincronización a la vista

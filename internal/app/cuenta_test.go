@@ -126,7 +126,7 @@ func crearCuenta(t *testing.T, raiz string, e *equipoDePrueba, correo, maestra s
 	if err := e.a.EmpezarRegistro(correo); err != nil {
 		t.Fatal(err)
 	}
-	rec, err := e.a.TerminarRegistro(correo, codigoDelBuzon(t, raiz, correo), maestra)
+	rec, err := e.a.TerminarRegistro(correo, codigoDelBuzon(t, raiz, correo), maestra, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,14 +149,14 @@ func TestCuentaDeUnEquipoAOtro(t *testing.T) {
 		t.Fatal(err)
 	}
 	codigo := codigoDelBuzon(t, raiz, correo)
-	if _, err := a.a.TerminarRegistro(correo, codigo, "corta"); err == nil {
+	if _, err := a.a.TerminarRegistro(correo, codigo, "corta", ""); err == nil {
 		t.Fatal("crea la cuenta con una contraseña débil")
 	}
 	if _, err := os.Stat(rutaBoveda()); err == nil {
 		t.Fatal("un alta que no ha salido deja una bóveda en el disco")
 	}
 	desde := time.Now()
-	rec, err := a.a.TerminarRegistro(correo, codigo, maestraFuerte)
+	rec, err := a.a.TerminarRegistro(correo, codigo, maestraFuerte, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,11 +224,11 @@ func TestCuentaConLaBovedaQueYaHabia(t *testing.T) {
 		t.Fatal(err)
 	}
 	codigo := codigoDelBuzon(t, raiz, correo)
-	if _, err := e.a.TerminarRegistro(correo, codigo, "otra maestra larga que no es la de esta bóveda"); err == nil {
+	if _, err := e.a.TerminarRegistro(correo, codigo, "otra maestra larga que no es la de esta bóveda", ""); err == nil {
 		t.Fatal("crea la cuenta con una contraseña que no es la de la bóveda")
 	}
 	desde := time.Now()
-	rec, err := e.a.TerminarRegistro(correo, codigo, maestraFuerte)
+	rec, err := e.a.TerminarRegistro(correo, codigo, maestraFuerte, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -455,14 +455,60 @@ func TestCrearLaCuentaConLaBovedaCerrada(t *testing.T) {
 		t.Fatal(err)
 	}
 	codigo := codigoDelBuzon(t, raiz, correo)
-	if _, err := e.a.TerminarRegistro(correo, codigo, "una contraseña larga que no es la de la bóveda"); err == nil {
+	if _, err := e.a.TerminarRegistro(correo, codigo, "una contraseña larga que no es la de la bóveda", ""); err == nil {
 		t.Fatal("crea la cuenta con una contraseña que no abre la bóveda")
 	}
-	if _, err := e.a.TerminarRegistro(correo, codigo, maestraFuerte); err != nil {
+	if _, err := e.a.TerminarRegistro(correo, codigo, maestraFuerte, ""); err != nil {
 		t.Fatalf("con la bóveda cerrada no crea la cuenta: %v", err)
 	}
 	if !e.a.EstadoBoveda().Abierta || titulosDe(t, e.a) != "Ya estaba" {
 		t.Fatal("la bóveda no ha quedado abierta con lo suyo")
 	}
 	alDia(t, e.a, time.Now())
+}
+
+// Una bóveda con una contraseña que no llega a «Buena»: sin nueva, no se crea la
+// cuenta; con nueva, se crea, la bóveda pasa a abrirse con la nueva, y otro equipo
+// entra con ella.
+func TestCrearLaCuentaCambiandoUnaMaestraFloja(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+	const floja = "contrasena1"
+	e := nuevoEquipo(t, raiz)
+	if _, err := e.a.CrearBoveda(floja); err != nil {
+		t.Fatal(err)
+	}
+	_ = e.a.GuardarEnBoveda(boveda.Entrada{Titulo: "Ya estaba"})
+	e.a.CerrarBoveda()
+	if err := e.a.EmpezarRegistro(correo); err != nil {
+		t.Fatal(err)
+	}
+	codigo := codigoDelBuzon(t, raiz, correo)
+	if _, err := e.a.TerminarRegistro(correo, codigo, floja, ""); err == nil || !strings.Contains(err.Error(), "pon una nueva") {
+		t.Fatalf("con una maestra floja y sin nueva: %v", err)
+	}
+	if _, err := e.a.TerminarRegistro(correo, codigo, floja, "corta"); err == nil {
+		t.Fatal("acepta una nueva que tampoco es buena")
+	}
+	if _, err := e.a.TerminarRegistro(correo, codigo, floja, maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	alDia(t, e.a, time.Now())
+	e.a.CerrarBoveda()
+	if err := e.a.AbrirBoveda(floja); err == nil {
+		t.Fatal("la contraseña de antes sigue abriendo la bóveda")
+	}
+	if err := e.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatalf("la nueva no abre la bóveda: %v", err)
+	}
+	e.a.CerrarBoveda()
+
+	otro := nuevoEquipo(t, raiz)
+	r, err := otro.a.EntrarEnCuenta(correo, maestraFuerte)
+	if err == nil && r.NecesitaCodigo {
+		r, err = otro.a.ConfirmarEntrada(codigoDelBuzon(t, raiz, correo))
+	}
+	if err != nil || !r.Listo || titulosDe(t, otro.a) != "Ya estaba" {
+		t.Fatalf("otro equipo no entra con la nueva: %+v %v", r, err)
+	}
 }

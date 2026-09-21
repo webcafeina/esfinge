@@ -418,8 +418,8 @@ export const esfinge = {
    * Crea la cuenta. Si en este equipo no había bóveda, se crea una y **devuelve su
    * clave de recuperación, que es la única vez que se ve**; si la había, vacío.
    */
-  terminarRegistro: (correo: string, codigo: string, maestra: string) =>
-    llamar<string>("TerminarRegistro", correo, codigo, maestra),
+  terminarRegistro: (correo: string, codigo: string, maestra: string, nueva = "") =>
+    llamar<string>("TerminarRegistro", correo, codigo, maestra, nueva),
 
   entrarEnCuenta: (correo: string, maestra: string) =>
     llamar<ResultadoEntrada>("EntrarEnCuenta", correo, maestra),
