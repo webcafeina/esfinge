@@ -438,3 +438,31 @@ func TestConCuentaLaMaestraNoSeCambiaTodavia(t *testing.T) {
 		t.Fatalf("la de siempre ya no abre: %v", err)
 	}
 }
+
+// Con la bóveda cerrada, crear la cuenta la abre con la contraseña que se acaba de
+// escribir: pedir que se abra antes obligaba a salir del asistente y empezar otra vez.
+func TestCrearLaCuentaConLaBovedaCerrada(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+	e := nuevoEquipo(t, raiz)
+	if _, err := e.a.CrearBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	_ = e.a.GuardarEnBoveda(boveda.Entrada{Titulo: "Ya estaba"})
+	e.a.CerrarBoveda()
+
+	if err := e.a.EmpezarRegistro(correo); err != nil {
+		t.Fatal(err)
+	}
+	codigo := codigoDelBuzon(t, raiz, correo)
+	if _, err := e.a.TerminarRegistro(correo, codigo, "una contraseña larga que no es la de la bóveda"); err == nil {
+		t.Fatal("crea la cuenta con una contraseña que no abre la bóveda")
+	}
+	if _, err := e.a.TerminarRegistro(correo, codigo, maestraFuerte); err != nil {
+		t.Fatalf("con la bóveda cerrada no crea la cuenta: %v", err)
+	}
+	if !e.a.EstadoBoveda().Abierta || titulosDe(t, e.a) != "Ya estaba" {
+		t.Fatal("la bóveda no ha quedado abierta con lo suyo")
+	}
+	alDia(t, e.a, time.Now())
+}

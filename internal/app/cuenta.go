@@ -321,11 +321,19 @@ func (a *App) TerminarRegistro(correo, codigo, maestra string) (string, error) {
 	recuperacion := ""
 	nueva := false
 	if _, err := os.Stat(ruta); err == nil {
-		if b = a.boveda(); b == nil {
-			return "", errors.New("Abre primero la bóveda de este equipo")
+		// La contraseña de la cuenta es la maestra de la bóveda, y se acaba de
+		// escribir: si la bóveda está cerrada, se abre con ella. Pedir que se abra
+		// antes obligaba a salir del asistente y volver a escribirlo todo.
+		abierta, err := boveda.Abrir(ruta, maestra)
+		if err != nil {
+			return "", errors.New("Con cuenta, la contraseña es la maestra de tu bóveda, y la que has escrito no la abre")
 		}
-		if _, err := boveda.Abrir(ruta, maestra); err != nil {
-			return "", errors.New("Con cuenta, la contraseña es la maestra de la bóveda, y la que has escrito no la abre")
+		if b = a.boveda(); b == nil {
+			b = abierta
+			a.cambiarBoveda(b)
+			a.Actividad()
+		} else {
+			abierta.Cerrar()
 		}
 	} else {
 		if b, recuperacion, err = boveda.CrearEnMemoria(maestra); err != nil {
