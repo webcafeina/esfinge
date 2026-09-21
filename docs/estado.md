@@ -461,11 +461,19 @@ Macs**: cambiada en uno, el otro entró en la cuenta con la nueva.
   Ahora está siempre con cuenta, como «Exportar los datos de la cuenta…», y dice que hay que abrir la
   bóveda para usarlo.
 
-**La siguiente acción concreta es que el cliente pruebe la A3 en sus Macs** —cambiar la contraseña en uno
-y entrar con la nueva en el otro, olvidar un equipo, exportar— y después **decidir con él el orden de lo
-que queda**: la extensión autónoma (E), la auditoría externa, abrir el registro (A4), compartir (B) y Touch
-ID (C). Con la A3 hecha **ya se podría invitar a alguien más**: se le pregunta antes. Después, la
-A3: cambiar la contraseña, recuperar la cuenta, la lista de equipos, borrar la cuenta y exportar.
+**La siguiente acción concreta (sesión cerrada el 2026-09-21 a mediodía, a petición del cliente) es recoger
+lo que diga de la 2.24.4**, publicada en verde, que prueba esa tarde en sus dos Macs con esta lista:
+
+1. **El candado de la barra lateral**: cerrado/abierto, que se cierre solo al bloquearse por inactividad, y
+   el texto al pasar el ratón.
+2. **Olvidar un equipo** desde el otro: el olvidado pide volver a entrar, con contraseña y código.
+3. **Recuperar la cuenta** con la clave `ESF-…` (cambia su contraseña de verdad); después el otro Mac tiene
+   que abrir escribiendo la nueva.
+4. **Borrar la cuenta**, solo con una cuenta de prueba y un equipo fuera de la suya; si no, se deja.
+
+Con eso la A3 queda comprobada entera en su Mac, y **toca decidir con él el orden de lo que queda**: la
+extensión autónoma (E), la auditoría externa, abrir el registro (A4), compartir (B) y Touch ID (C). Con la
+A3 hecha **ya se podría invitar a alguien más**: se le pregunta antes.
 
 **Para retomar la A2** (sesión cerrada el 2026-09-18 por la tarde, a petición del cliente): el plan está en
 `docs/cuentas.md` («La aplicación» y la tabla de entregas); el protocolo, en `servidor/LÉEME.md`; el formato,

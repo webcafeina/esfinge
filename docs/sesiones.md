@@ -5,7 +5,7 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
-## 2026-09-21 (tarde) · 2.24.4: el candado de la bóveda en la barra lateral
+## 2026-09-21 (mediodía, cierre) · 2.24.4: el candado de la bóveda en la barra lateral
 
 - El cliente comprobó la 2.24.3: **66 repetidas** quitadas, el otro Mac al día solo, ninguna pareja
   suelta; exportar bien, y con la bóveda cerrada avisa.
@@ -18,7 +18,10 @@ Plantilla al final.
 - **La primera publicación la paró la puerta**: la prueba de dos ventanas cerraba la bóveda por el
   puente justo al montarse la lista, y su primera búsqueda llegaba a una bóveda cerrada. La pantalla de la
   bóveda atiende ahora el aviso de cierre venga de donde venga, y la prueba cierra con el botón. Tres
-  pasadas seguidas en verde; etiqueta movida y vuelta a publicar.
+  pasadas seguidas en verde; etiqueta movida y vuelta a publicar. **Publicada en verde.**
+- **Sesión cerrada aquí** a petición del cliente, que prueba esta tarde la lista de `estado.md` (candado,
+  olvidar un equipo, recuperar, y borrar solo con cuenta de prueba). **Al volver: recoger lo que diga** y
+  decidir el orden de E, auditoría, A4, B y C.
 
 ## 2026-09-21 (tarde) · 2.24.3: las repetidas que no eran «iguales en todo»
 
