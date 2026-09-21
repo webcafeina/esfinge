@@ -612,6 +612,33 @@ export function usaCuenta(activo = true): [EstadoCuenta | null, () => void] {
   return [cuenta, refrescar];
 }
 
+/**
+ * usaSincroAlVolver pide una pasada cuando se vuelve a la ventana de Esfinge, como
+ * mucho una cada treinta segundos. Es lo natural: se cambia algo en otro equipo, se
+ * vuelve a éste, y ya está. **No cuenta como actividad**: SincronizarAhora no toca
+ * el reloj del bloqueo.
+ */
+export function usaSincroAlVolver(conCuenta: boolean) {
+  useEffect(() => {
+    if (!conCuenta) return;
+    let ultima = 0;
+    const pedir = () => {
+      if (document.visibilityState === "hidden") return;
+      const ahora = Date.now();
+      if (ahora - ultima < 30_000) return;
+      ultima = ahora;
+      // Con la bóveda cerrada contesta que no hay nada que sincronizar: da igual.
+      esfinge.sincronizarAhora().catch(() => {});
+    };
+    window.addEventListener("focus", pedir);
+    document.addEventListener("visibilitychange", pedir);
+    return () => {
+      window.removeEventListener("focus", pedir);
+      document.removeEventListener("visibilitychange", pedir);
+    };
+  }, [conCuenta]);
+}
+
 /** La línea de la sincronización, en la bóveda. Nada si no hay cuenta. */
 export function LineaSincro({ alVolverAEntrar }: { alVolverAEntrar: (correo: string) => void }) {
   const [cuenta] = usaCuenta();

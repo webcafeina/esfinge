@@ -140,6 +140,23 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await expect(b.locator(".linea-sincro")).toContainText("Sincronizada", { timeout: 20_000 });
   await retratar(b, "boveda-sincronizada");
 
+  // **Con las dos bóvedas abiertas**, lo que guarda un equipo aparece en el otro
+  // sin cerrar ni volver a abrir nada: la lista se refresca sola al llegar.
+  await accion(a, "Abrir la bóveda").isVisible();
+  await a.locator("#boveda-llave").fill(MAESTRA);
+  await accion(a, "Abrir la bóveda").click();
+  await expect(a.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+  await accion(a, "Nueva").click();
+  await a.locator("#boveda-titulo").fill("Llega sin reabrir");
+  await accion(a, "Guardar").click();
+  await expect(a.locator(".lista-boveda").getByRole("button", { name: "Llega sin reabrir" })).toBeVisible();
+  // Volver a la ventana de B basta: pide una pasada sola.
+  await b.bringToFront();
+  await b.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(b.locator(".lista-boveda").getByRole("button", { name: "Llega sin reabrir" })).toBeVisible({
+    timeout: 30_000,
+  });
+
   // Y Ajustes cuenta en qué cuenta está este equipo.
   await b.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
   await expect(b.getByRole("heading", { name: "Cuenta y sincronización" })).toBeVisible();

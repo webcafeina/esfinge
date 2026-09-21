@@ -38,7 +38,7 @@ import {
   ZonaFicheros,
 } from "./componentes";
 import { Boveda } from "./boveda";
-import { Asistente, Bienvenida, GrupoCuenta, usaCuenta, type TipoAsistente } from "./cuenta";
+import { Asistente, Bienvenida, GrupoCuenta, usaCuenta, usaSincroAlVolver, type TipoAsistente } from "./cuenta";
 
 type Tarea = "cifrar" | "descifrar" | "generar" | "boveda" | "historial" | "ajustes";
 type Modo = "texto" | "ficheros";
@@ -69,6 +69,7 @@ export default function App() {
   const [cuenta, refrescarCuenta] = usaCuenta();
   const [asistente, setAsistente] = useState<{ tipo: TipoAsistente; hayBoveda: boolean } | null>(null);
   const [selloBoveda, setSelloBoveda] = useState(0);
+  usaSincroAlVolver(cuenta?.modo === "cuenta");
 
   const abrirAsistente = (tipo: TipoAsistente) => {
     esfinge

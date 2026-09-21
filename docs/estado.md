@@ -421,7 +421,12 @@ guion paso a paso. **Al volver, se empieza por preguntarle cómo ha ido.**
 **2026-09-21, probándola en la oficina**, el cliente encontró dos cosas al crear la cuenta con su bóveda
 de siempre, arregladas y publicadas al momento en la **2.23.1** —prefiere ir viéndolo en real—: pedía
 abrir la bóveda antes aunque la contraseña ya estaba escrita, y no había salida si su contraseña no
-llegaba a «Buena». Sigue la prueba. Después, la
+llegaba a «Buena». Sigue la prueba.
+
+**Con la 2.23.1, «todo funciona, las modificaciones viajan»**, con una pega: los cambios del otro Mac solo
+se veían al cerrar y volver a abrir la bóveda. Era el plazo —cada cinco minutos— y que no se miraba al
+volver a la ventana; la lista sí se refrescaba sola al llegar algo. **2.23.2**: se mira al volver a la
+ventana y cada minuto. Después, la
 A3: cambiar la contraseña, recuperar la cuenta, la lista de equipos, borrar la cuenta y exportar.
 
 **Para retomar la A2** (sesión cerrada el 2026-09-18 por la tarde, a petición del cliente): el plan está en

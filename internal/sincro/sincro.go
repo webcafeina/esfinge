@@ -226,7 +226,11 @@ const (
 	// EsperaTrasGuardar agrupa los guardados seguidos en una sola subida.
 	EsperaTrasGuardar = 3 * time.Second
 	// CadaCuanto se mira si hay algo nuevo aunque aquí no se toque nada.
-	CadaCuanto = 5 * time.Minute
+	//
+	// **Un minuto, no cinco**: con cinco, el cliente veía los cambios del otro
+	// equipo solo al cerrar y volver a abrir la bóveda (2.23.1). Mirar cuesta poco:
+	// si no hay nada nuevo, el servidor contesta 304 sin mandar la bóveda.
+	CadaCuanto = time.Minute
 	// ReintentoMaximo es lo más que se espera tras un fallo de red.
 	ReintentoMaximo = 5 * time.Minute
 )
