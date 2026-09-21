@@ -53,6 +53,7 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 | Elemento | Severidad | Impacto | Estado |
 |---|---|---|---|
+| Con la contraseña nueva en «Abrir la bóveda», **un equipo sin testigo de confianza no la reconoce** | Media | Da «Esa llave no abre esta bóveda», como si fuera una contraseña mala, y hay que dar con «¿Cambiaste la contraseña en otro equipo?». Pasa una vez en cada Mac que venía de la 2.24.0 sin haberse abierto con la 2.24.1 —el testigo iba sellado—, **y volverá cada vez que caduque el testigo, a los 90 días**. Lo vio el cliente el 2026-09-21 | Abierta · lo propio es reconocerla igual y saltar al paso del código |
 | El `main.go` de la aplicación vive en la raíz, no en `cmd/` | Baja | Rompe la organización idiomática de Go. Lo impone Wails, que busca el paquete main junto a `wails.json` | Aceptado · [ADR 0006](adr/0006-de-terminal-a-ventana.md) |
 | La interfaz construida se copia a `internal/interfaz/dist` | Baja | Un paso más en la compilación. `go:embed` no puede salir del directorio de su paquete | Aceptado |
 | El servidor de desarrollo publica los métodos por reflexión | Baja | Si un método cambia de firma, el fallo sale en tiempo de ejecución y no al compilar | Aceptado · solo existe tras la etiqueta `dev` |
