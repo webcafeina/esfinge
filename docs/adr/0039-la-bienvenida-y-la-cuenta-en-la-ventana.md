@@ -76,6 +76,14 @@ Y para lo que ya se juntó mal, la bóveda **cuenta las repetidas y las quita de
 no borradas. De cada grupo se queda **la de identificador menor**, que no depende del equipo: si los dos
 limpian a la vez, mandan a la papelera las mismas y no se quedan sin ninguna.
 
+**Corregido en la 2.24.3**: «igual en todo» no encontró ninguna en los Macs del cliente, que las veía
+idénticas. Dos importaciones hechas con versiones distintas dejan la misma cuenta distinta en lo que la
+ventana no enseña —carpeta, etiquetas, columnas del gestor guardadas aparte, la web escrita de otra
+forma—. Ahora **la misma cuenta es misma clase, título, usuario y secreto** (en una nota, el texto), y lo
+demás **se junta en la que se queda**: webs, etiquetas e historial se suman, y lo que le falte lo toma de
+la otra. Solo separan dos entradas unas notas o una semilla de código distintas en las dos: una es la
+buena, y eso no lo decide Esfinge. `Traer` usa la misma regla.
+
 ## Alternativas descartadas
 
 - **Enseñar la bienvenida a todo el mundo en la versión que la trae**, también a quien ya tiene bóveda.

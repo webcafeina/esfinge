@@ -1427,15 +1427,17 @@ test("las entradas repetidas se ven y se quitan de un clic", async ({ page }) =>
   await conLaBovedaAbierta(page);
 
   const titulo = `Repetida ${Date.now()}`;
-  for (let i = 0; i < 3; i++) {
+  // Iguales a la vista, distintas en lo que la ventana no enseña: así estaban las
+  // del cliente, y la 2.24.2 —que pedía iguales en todo— no las encontró.
+  for (const carpeta of ["", "Dashlane", "Email"]) {
     await page.evaluate(
-      (t) =>
+      ([t, c]) =>
         fetch("/api/GuardarEnBoveda", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify([{ tipo: "credencial", titulo: t, usuario: "yo", secreto: "igual" }]),
+          body: JSON.stringify([{ tipo: "credencial", titulo: t, usuario: "yo", secreto: "igual", carpeta: c }]),
         }),
-      titulo,
+      [titulo, carpeta],
     );
   }
   await page.reload();
@@ -1443,11 +1445,11 @@ test("las entradas repetidas se ven y se quitan de un clic", async ({ page }) =>
   await page.locator("#boveda-buscar").fill(titulo);
   await expect(page.locator(".panel:visible").getByText(titulo)).toHaveCount(3);
 
-  await expect(page.getByText("Hay 2 entradas repetidas: iguales en todo a otra.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Hay 2 cuentas repetidas: mismo título, usuario y contraseña que otra.", { exact: false })).toBeVisible();
   await page.screenshot({ path: `test-results/repetidas-${test.info().project.name}.png` });
   await accion(page, "Quitar las repetidas").click();
 
-  await expect(page.getByText("2 entradas repetidas están en la papelera", { exact: false })).toBeVisible();
+  await expect(page.getByText("2 cuentas repetidas están en la papelera", { exact: false })).toBeVisible();
   await expect(page.locator(".panel:visible").getByText(titulo)).toHaveCount(1);
   await expect(accion(page, "Quitar las repetidas")).toHaveCount(0);
   expect(errores).toEqual([]);

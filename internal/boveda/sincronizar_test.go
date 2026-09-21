@@ -7,6 +7,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -888,5 +889,149 @@ func TestQuitarRepetidas(t *testing.T) {
 	}
 	if c, _ := a.Repetidas(); c != 0 {
 		t.Fatalf("siguen %d", c)
+	}
+}
+
+// Lo que vio el cliente: parejas idénticas a la vista que la primera versión no
+// contaba, porque se diferenciaban en lo que la ventana no enseña. Se juntan en la
+// de identificador menor sin perder nada; lo que choca de verdad se queda.
+func TestRepetidasConDiferenciasQueNoSeVen(t *testing.T) {
+	a, _, _ := nueva(t)
+	base := Entrada{Tipo: TipoCredencial, Titulo: "Correo", Usuario: "yo@x.com", Secreto: "uno", Sitios: []string{"x.com"}}
+	una := base
+	una.Etiquetas = []string{"trabajo"}
+	otra := base
+	otra.Titulo = "Correo "
+	otra.Sitios = []string{"https://x.com", "mail.x.com"}
+	otra.Carpeta = "Dashlane"
+	otra.Notas = "la nota que solo tenía una"
+	otra.Historial = []Antigua{{Secreto: "cero", Hasta: "2026-01-01T00:00:00Z"}}
+	otra.Extra = map[string]json.RawMessage{"categoria": json.RawMessage(`"Email"`)}
+	distinta := base
+	distinta.Secreto = "dos"
+	for _, e := range []Entrada{una, otra, distinta} {
+		mustPoner(t, a, e)
+	}
+	// Las dos primeras son la misma cuenta; la de otra contraseña es otra cuenta.
+	if c, err := a.Repetidas(); err != nil || c != 1 {
+		t.Fatalf("repetidas: %d, %v", c, err)
+	}
+	if n, err := a.QuitarRepetidas(); err != nil || n != 1 {
+		t.Fatalf("quita %d, %v", n, err)
+	}
+	var vivas []Entrada
+	for _, e := range a.cont.Entradas {
+		if !e.Papelera {
+			vivas = append(vivas, e)
+		}
+	}
+	if len(vivas) != 2 {
+		t.Fatalf("quedan %d vivas", len(vivas))
+	}
+	var junta *Entrada
+	for i := range vivas {
+		if vivas[i].Secreto == "uno" {
+			junta = &vivas[i]
+		}
+	}
+	if junta == nil || junta.Notas != "la nota que solo tenía una" || len(junta.Historial) != 1 ||
+		strings.Join(junta.Etiquetas, ",") != "trabajo" || len(junta.Sitios) != 3 || junta.Carpeta != "Dashlane" ||
+		junta.Extra["categoria"] == nil {
+		t.Fatalf("la que se queda no lleva lo de las dos: %+v", junta)
+	}
+
+	// Lo que choca se queda: dos notas distintas, una de las dos es la buena.
+	b, _, _ := nueva(t)
+	conNota := base
+	conNota.Notas = "una nota"
+	otraNota := base
+	otraNota.Notas = "otra nota"
+	mustPoner(t, b, conNota)
+	mustPoner(t, b, otraNota)
+	if c, _ := b.Repetidas(); c != 0 {
+		t.Fatalf("junta dos notas distintas: %d", c)
+	}
+}
+
+// Dos equipos que limpian a la vez llegan a lo mismo: si no, cada uno mandaría a
+// la papelera una copia distinta y la cuenta desaparecería de los dos.
+func TestQuitarRepetidasEsLoMismoEnDosEquipos(t *testing.T) {
+	uno, _, _ := nueva(t)
+	for i := 0; i < 4; i++ {
+		e := Entrada{Tipo: TipoCredencial, Titulo: "Banco", Usuario: "yo", Secreto: "s"}
+		if i%2 == 1 {
+			e.Carpeta = "Finanzas"
+		}
+		mustPoner(t, uno, e)
+	}
+	// El otro equipo tiene las mismas entradas en otro orden.
+	otro, _, _ := nueva(t)
+	otro.cont.Entradas = append([]Entrada(nil), uno.cont.Entradas...)
+	for i, j := 0, len(otro.cont.Entradas)-1; i < j; i, j = i+1, j-1 {
+		otro.cont.Entradas[i], otro.cont.Entradas[j] = otro.cont.Entradas[j], otro.cont.Entradas[i]
+	}
+	for _, b := range []*Boveda{uno, otro} {
+		if n, err := b.QuitarRepetidas(); err != nil || n != 3 {
+			t.Fatalf("quita %d, %v", n, err)
+		}
+	}
+	vivaDe := func(b *Boveda) Entrada {
+		for _, e := range b.cont.Entradas {
+			if !e.Papelera {
+				return e
+			}
+		}
+		return Entrada{}
+	}
+	u, o := vivaDe(uno), vivaDe(otro)
+	if u.ID == "" || u.ID != o.ID || u.Carpeta != "Finanzas" || contenidoDe(u) != contenidoDe(o) {
+		t.Fatalf("cada equipo se queda con otra: %+v / %+v", u, o)
+	}
+}
+
+// Juntar al entrar en una cuenta: la misma cuenta con lo que la ventana no enseña
+// distinto no se trae dos veces; se junta en la que hay.
+func TestTraerJuntaLaMismaCuentaConDiferenciasQueNoSeVen(t *testing.T) {
+	a, _, _ := nueva(t)
+	otra, _, _ := nueva(t)
+	mustPoner(t, a, Entrada{Tipo: TipoCredencial, Titulo: "Correo", Usuario: "yo", Secreto: "s", Sitios: []string{"x.com"}})
+	mustPoner(t, otra, Entrada{Tipo: TipoCredencial, Titulo: "Correo", Usuario: "yo", Secreto: "s", Sitios: []string{"https://x.com"}, Carpeta: "Email"})
+	n, err := a.Traer(otra)
+	if err != nil || n != 0 {
+		t.Fatalf("trae %d, %v", n, err)
+	}
+	if len(a.cont.Entradas) != 1 || a.cont.Entradas[0].Carpeta != "Email" || len(a.cont.Entradas[0].Sitios) != 2 {
+		t.Fatalf("no se junta: %+v", a.cont.Entradas)
+	}
+}
+
+// La carpeta y los campos del gestor guardados aparte no impiden juntar: son
+// ordenar, no secretos, y así llegaban las del cliente de dos importaciones.
+func TestRepetidasConCarpetasDistintas(t *testing.T) {
+	a, _, _ := nueva(t)
+	for _, c := range []string{"", "Dashlane", "Email"} {
+		mustPoner(t, a, Entrada{Tipo: TipoCredencial, Titulo: "Banco", Usuario: "yo", Secreto: "s", Carpeta: c,
+			Extra: map[string]json.RawMessage{"categoria": json.RawMessage(`"` + c + `"`)}})
+	}
+	if n, err := a.QuitarRepetidas(); err != nil || n != 2 {
+		t.Fatalf("quita %d, %v", n, err)
+	}
+}
+
+// Contar no cambia nada: juntar trabaja sobre una copia.
+func TestContarRepetidasNoTocaLaBoveda(t *testing.T) {
+	a, _, _ := nueva(t)
+	mustPoner(t, a, Entrada{Tipo: TipoCredencial, Titulo: "B", Usuario: "yo", Secreto: "s", Sitios: []string{"a.com"},
+		Extra: map[string]json.RawMessage{"x": json.RawMessage(`1`)}})
+	mustPoner(t, a, Entrada{Tipo: TipoCredencial, Titulo: "B", Usuario: "yo", Secreto: "s", Sitios: []string{"b.com"},
+		Extra: map[string]json.RawMessage{"y": json.RawMessage(`2`)}})
+	antes := []string{contenidoDe(a.cont.Entradas[0]), contenidoDe(a.cont.Entradas[1])}
+	if c, _ := a.Repetidas(); c != 1 {
+		t.Fatalf("repetidas: %d", c)
+	}
+	for i := range antes {
+		if contenidoDe(a.cont.Entradas[i]) != antes[i] {
+			t.Fatalf("contar ha cambiado la entrada %d", i)
+		}
 	}
 }

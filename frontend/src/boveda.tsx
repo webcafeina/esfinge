@@ -528,7 +528,7 @@ function Dentro({
   // enseñando lo de antes hasta que se tocara el buscador.
   useEffect(() => alCambiarLaBoveda(() => buscar(q)), [buscar, q]);
 
-  // **Las repetidas, iguales en todo a otra**, se cuentan cada vez que cambia la
+  // **Las repetidas, la misma cuenta que otra**, se cuentan cada vez que cambia la
   // lista. Salieron de juntar dos bóvedas importadas del mismo gestor al entrar
   // en una cuenta (2.24.2): cada cuenta dos veces, en todos los equipos.
   const [repetidas, setRepetidas] = useState(0);
@@ -542,7 +542,7 @@ function Dentro({
     try {
       const n = await esfinge.quitarRepetidasDeBoveda();
       setDicho(
-        `${n === 1 ? "Una entrada repetida está" : `${n} entradas repetidas están`} en la papelera. Se borran solas en 30 días.`,
+        `${n === 1 ? "Una cuenta repetida está" : `${n} cuentas repetidas están`} en la papelera. Se borran solas en 30 días.`,
       );
       await buscar(q);
       alCambiar();
@@ -667,9 +667,10 @@ function Dentro({
         <div className="grupo">
           <p className="aviso">
             {repetidas === 1
-              ? "Hay una entrada repetida: igual en todo a otra."
-              : `Hay ${repetidas} entradas repetidas: iguales en todo a otra.`}{" "}
-            Se queda una de cada y las demás van a la papelera, de donde se pueden recuperar.
+              ? "Hay una cuenta repetida: mismo título, usuario y contraseña que otra."
+              : `Hay ${repetidas} cuentas repetidas: mismo título, usuario y contraseña que otra.`}{" "}
+            Se queda una de cada, con lo que tuviera de más la otra —notas, webs, etiquetas—, y las
+            repetidas van a la papelera, de donde se pueden recuperar.
           </p>
           <div className="botones">
             <button onClick={quitarRepetidas}>Quitar las repetidas</button>

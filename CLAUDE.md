@@ -842,10 +842,13 @@ conservar porque la editó. Tres reglas que salen de ahí y de lo demás:
 
 **Juntar dos bóvedas no puede comparar solo identificadores** (ADR 0039, 2.24.2). Dos importaciones del
 mismo gestor dan las mismas cuentas con identificadores distintos, y «Juntar» al entrar en la cuenta dejó
-**cada cuenta dos veces en los dos Macs del cliente**, propagadas por la sincronización. `Traer` salta lo
-igual en todo (`contenidoDe`: sin identificador, fechas ni revisión), y la bóveda ofrece quitar las
-repetidas a la papelera quedándose **la de identificador menor**, para que dos equipos limpiando a la vez
-no se queden sin ninguna. Cualquier limpieza que corra en varios equipos tiene que elegir igual en todos.
+**cada cuenta dos veces en los dos Macs del cliente**, propagadas por la sincronización. Y **tampoco puede
+comparar «igual en todo»**: fue el primer arreglo (2.24.2) y no encontró ni una, porque dos importaciones
+de versiones distintas difieren en lo que la ventana no enseña. La misma cuenta es clase, título, usuario
+y secreto (`claveDeCuenta`), y lo demás se junta (`juntarEn`, sobre una `copiaHonda`: la copia plana de Go
+comparte listas y mapas, y contar habría escrito en la bóveda). Quitar las repetidas se queda **la de
+identificador menor**, para que dos equipos limpiando a la vez no se queden sin ninguna. Cualquier
+limpieza que corra en varios equipos tiene que elegir igual en todos.
 
 **Las pruebas de la cuenta y de la sincronización hablan con el servidor de verdad**, levantado en local
 por `herramientas/con-servidor.sh` con el entorno `local` del Worker —frenos holgados, porque todo llega

@@ -728,6 +728,66 @@ func TestLaContrasenaNuevaSinTestigoPideElCodigo(t *testing.T) {
 	}
 }
 
+// El camino que siguió el cliente con la 2.24.1: cambiada en A, en B abre con la
+// de antes, ve «Vuelve a entrar» y entra con la nueva **con la bóveda abierta**.
+func TestVolverAEntrarConLaNuevaConLaBovedaAbierta(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+	const nueva = "la contraseña nueva de la cuenta, larga y buena"
+
+	a := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, a, correo, maestraFuerte)
+	for _, t2 := range []string{"Uno", "Dos", "Tres"} {
+		_ = a.a.GuardarEnBoveda(boveda.Entrada{Titulo: t2, Usuario: "yo", Secreto: t2})
+	}
+	alDia(t, a.a, time.Now())
+	a.a.CerrarBoveda()
+
+	b := nuevoEquipo(t, raiz)
+	entrarDesde(t, raiz, b, correo, maestraFuerte)
+	alDia(t, b.a, time.Now())
+	b.a.CerrarBoveda()
+
+	a.usar(t)
+	if err := a.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.a.CambiarMaestraDeBoveda(maestraFuerte, nueva); err != nil {
+		t.Fatal(err)
+	}
+	alDia(t, a.a, time.Now())
+	a.a.CerrarBoveda()
+
+	b.usar(t)
+	if err := b.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	_ = b.a.SincronizarAhora()
+	time.Sleep(500 * time.Millisecond)
+	t.Logf("estado en B: %+v", b.a.EstadoDeCuenta().Sincro)
+	r := entrarDesde(t, raiz, b, correo, nueva)
+	t.Logf("entrar: %+v", r)
+	alDia(t, b.a, time.Now())
+	t.Logf("en B: %q", titulosDe(t, b.a))
+	b.a.CerrarBoveda()
+	if err := b.a.AbrirBoveda(nueva); err != nil {
+		t.Logf("en B la nueva no abre: %v", err)
+		_ = b.a.AbrirBoveda(maestraFuerte)
+	}
+	t.Logf("en B al reabrir: %q", titulosDe(t, b.a))
+	alDia(t, b.a, time.Now())
+	b.a.CerrarBoveda()
+
+	a.usar(t)
+	if err := a.a.AbrirBoveda(nueva); err != nil {
+		t.Fatal(err)
+	}
+	alDia(t, a.a, time.Now())
+	if got := titulosDe(t, a.a); got != "Dos, Tres, Uno" && got != "Uno, Dos, Tres" {
+		t.Fatalf("en A hay %q", got)
+	}
+}
+
 // Recuperar la cuenta sin ningún equipo a mano: código, clave de recuperación y
 // contraseña nueva, en un equipo vacío.
 func TestRecuperarLaCuentaSinNingunEquipo(t *testing.T) {

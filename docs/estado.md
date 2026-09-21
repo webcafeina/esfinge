@@ -449,6 +449,9 @@ Macs**: cambiada en uno, el otro entró en la cuenta con la nueva.
 - **Cada cuenta estaba dos veces en los dos Macs**: salió de «Juntar» al entrar en la cuenta con el
   segundo, que tenía su propia importación de Dashlane. Juntar ya no repite lo igual, y la bóveda avisa de
   las repetidas y **las quita de un clic, a la papelera**. El cliente tiene que pulsarlo en uno de los dos.
+- **2.24.3**: el aviso de las repetidas no salía en los Macs del cliente —«igual en todo» era demasiado
+  estricto, y sus parejas diferían en lo que no se ve—. Ahora cuenta como la misma cuenta mismo título,
+  usuario y contraseña, y junta lo demás en la que se queda.
 - «Exportar» no salía en Ajustes con la bóveda cerrada, y se llamaba «Guardar lo que hay de mi cuenta».
   Ahora está siempre con cuenta, como «Exportar los datos de la cuenta…», y dice que hay que abrir la
   bóveda para usarlo.

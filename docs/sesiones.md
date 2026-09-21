@@ -5,6 +5,16 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-21 (tarde) · 2.24.3: las repetidas que no eran «iguales en todo»
+
+- Con la 2.24.2 el cliente no veía el aviso de repetidas y dice que las parejas son iguales en sus datos.
+  Se descartó que el camino de la contraseña cambiada duplique (prueba nueva que lo recorre como él). Causa:
+  diferencias que la ventana no enseña. Ahora la misma cuenta es clase, título, usuario y secreto, y lo
+  demás se junta; separan solo notas o semillas de código distintas. `Traer`, con la misma regla.
+- Al escribirlo salió que contar escribía en la bóveda (copia plana de Go): `copiaHonda`, y una prueba
+  que lo caza rompiéndolo.
+- `make comprobar` y `make e2e` en verde; la prueba de la ventana usa ahora copias con carpetas distintas.
+
 ## 2026-09-21 (tarde) · 2.24.2: el código al abrir, las repetidas y «Exportar»
 
 - El cliente cambió la contraseña en un Mac: en el otro la nueva no abría (testigo sellado de la 2.24.0) y

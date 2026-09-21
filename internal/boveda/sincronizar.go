@@ -151,10 +151,11 @@ func (b *Boveda) AbrirSecreto(sellado string) ([]byte, error) {
 // las de la papelera incluidas, y sus sitios excluidos. Lo que ya está no se
 // toca. Devuelve cuántas ha traído y guarda.
 //
-// **Lo que ya está es también lo idéntico con otro identificador** (ver
+// **Lo que ya está es también la misma cuenta con otro identificador** (ver
 // repetidas.go): dos bóvedas importadas por separado del mismo gestor tienen las
 // mismas cuentas con identificadores distintos, y juntarlas comparando solo el
-// identificador las dejaba todas dos veces.
+// identificador las dejaba todas dos veces. La que llega se junta en la que hay
+// —lo que traiga de más, sin cambiar nada de lo que había— y no se trae.
 func (b *Boveda) Traer(otra *Boveda) (int, error) {
 	otra.mu.Lock()
 	suyas := append([]Entrada(nil), otra.cont.Entradas...)
@@ -167,25 +168,32 @@ func (b *Boveda) Traer(otra *Boveda) (int, error) {
 		return 0, ErrCerrada
 	}
 	hay := map[string]bool{}
-	igual := map[string]bool{}
-	for _, e := range b.cont.Entradas {
+	cuenta := map[string]int{} // claveDeCuenta → posición en b.cont.Entradas
+	for i, e := range b.cont.Entradas {
 		hay[e.ID] = true
 		if !e.Papelera {
-			igual[contenidoDe(e)] = true
+			cuenta[claveDeCuenta(e)] = i
 		}
 	}
+	cuando := ahora().UTC().Format(time.RFC3339)
 	traidas := 0
 	for _, e := range suyas {
 		if hay[e.ID] {
 			continue
 		}
-		if c := contenidoDe(e); !e.Papelera && c != "" && igual[c] {
+		if i, esta := cuenta[claveDeCuenta(e)]; esta && !e.Papelera && !chocan(b.cont.Entradas[i], e) {
+			antes := contenidoDe(b.cont.Entradas[i])
+			juntarEn(&b.cont.Entradas[i], e)
+			if contenidoDe(b.cont.Entradas[i]) != antes {
+				b.cont.Entradas[i].Cambiada = cuando
+				b.cont.Entradas[i].Revision++
+			}
 			continue
 		}
 		b.cont.Entradas = append(b.cont.Entradas, e)
 		hay[e.ID] = true
 		if !e.Papelera {
-			igual[contenidoDe(e)] = true
+			cuenta[claveDeCuenta(e)] = len(b.cont.Entradas) - 1
 		}
 		traidas++
 	}
