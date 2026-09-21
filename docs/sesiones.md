@@ -5,6 +5,19 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-21 (tarde) · 2.24.1: el otro equipo se abre con la contraseña nueva
+
+- La **2.24.0 salió en verde** entera, tiendas incluidas.
+- El cliente preguntó por qué, cambiada la contraseña en un Mac, había que decírselo al otro. Se le
+  preguntó si cambiarla debía seguir cerrando las sesiones de los demás equipos y eligió «pedir la nueva
+  una vez». **Ahora basta escribirla en «Abrir la bóveda»**: si no abre el fichero de aquí y hay cuenta,
+  se prueba con el servidor, se baja y se funde (ADR 0037, matizada).
+- Para no pedir código, **el testigo de confianza va en claro** en `cuenta.json`; el coste está en la ADR
+  y en `docs/seguridad.md`. Los sellados de antes se pasan a claro al abrir la bóveda.
+- Prueba nueva contra el servidor (`TestElOtroEquipoAbreConLaContrasenaNueva`), con la rotura a propósito
+  cazada. `make comprobar` y `make e2e` en verde.
+- **Siguiente**: que el cliente pruebe la A3 y esto en sus Macs; después, decidir el orden de lo que queda.
+
 ## 2026-09-21 (tarde) · La A3 y la 2.24.0: gestionar la cuenta
 
 - **Cambiar la contraseña con cuenta**, en el servidor y aquí a la vez; el otro equipo, con la de antes,

@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -585,6 +586,82 @@ func TestCambiarLaContrasenaDeLaCuenta(t *testing.T) {
 	entrarDesde(t, raiz, c, correo, nueva)
 	if got := titulosDe(t, c.a); got != "De A, De B sin subir" {
 		t.Fatalf("en el equipo nuevo hay %q", got)
+	}
+}
+
+// El otro equipo, cerrado, se abre con solo escribir la contraseña nueva en
+// «Abrir la bóveda»: es de confianza, así que entra en la cuenta sin código, se
+// pone al día y no pierde lo que tuviera sin subir. Lo pidió el cliente con la
+// 2.24.0: «si la cambio en un ordenador, ¿por qué tengo que indicarlo en el otro?».
+func TestElOtroEquipoAbreConLaContrasenaNueva(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+	const nueva = "la contraseña nueva de la cuenta, larga y buena"
+
+	a := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, a, correo, maestraFuerte)
+	_ = a.a.GuardarEnBoveda(boveda.Entrada{Titulo: "De A"})
+	alDia(t, a.a, time.Now())
+	a.a.CerrarBoveda()
+
+	b := nuevoEquipo(t, raiz)
+	entrarDesde(t, raiz, b, correo, maestraFuerte)
+	alDia(t, b.a, time.Now())
+	b.a.CerrarBoveda()
+	if d := leerDatosCuenta(); d.Confianza == "" || strings.HasPrefix(d.Confianza, "ESF1.") {
+		t.Fatalf("el testigo de confianza no queda en claro: %q", d.Confianza)
+	}
+
+	a.usar(t)
+	if err := a.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.a.CambiarMaestraDeBoveda(maestraFuerte, nueva); err != nil {
+		t.Fatal(err)
+	}
+	_ = a.a.GuardarEnBoveda(boveda.Entrada{Titulo: "De A con la nueva"})
+	alDia(t, a.a, time.Now())
+	a.a.CerrarBoveda()
+
+	// B, con la de antes, todavía abre su copia y guarda algo que no puede subir:
+	// su sesión ya no vale.
+	b.usar(t)
+	if err := b.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	_ = b.a.GuardarEnBoveda(boveda.Entrada{Titulo: "De B sin subir"})
+	b.a.CerrarBoveda()
+
+	if err := b.a.AbrirBoveda("una que no es ninguna de las dos"); !errors.Is(err, boveda.ErrSinRanura) {
+		t.Fatalf("una contraseña mala: quiero ErrSinRanura, tengo %v", err)
+	}
+	if err := b.a.AbrirBoveda(nueva); err != nil {
+		t.Fatalf("B no abre con la nueva: %v", err)
+	}
+	alDia(t, b.a, time.Now())
+	if got := titulosDe(t, b.a); got != "De A, De A con la nueva, De B sin subir" {
+		t.Fatalf("en B hay %q", got)
+	}
+	if e := b.a.EstadoDeCuenta(); e.Modo != "cuenta" {
+		t.Fatalf("B ha salido de la cuenta: %+v", e)
+	}
+	b.a.CerrarBoveda()
+	if err := b.a.AbrirBoveda(maestraFuerte); err == nil {
+		t.Fatal("en B la de antes sigue abriendo")
+	}
+	if err := b.a.AbrirBoveda(nueva); err != nil {
+		t.Fatalf("en B la nueva ya no abre a la segunda: %v", err)
+	}
+	b.a.CerrarBoveda()
+
+	// Y lo de B ha llegado a A.
+	a.usar(t)
+	if err := a.a.AbrirBoveda(nueva); err != nil {
+		t.Fatal(err)
+	}
+	alDia(t, a.a, time.Now())
+	if got := titulosDe(t, a.a); got != "De A, De A con la nueva, De B sin subir" {
+		t.Fatalf("en A hay %q", got)
 	}
 }
 

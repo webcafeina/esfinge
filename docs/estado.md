@@ -1,11 +1,11 @@
 # Estado
 
-Última actualización: **2026-09-18**
+Última actualización: **2026-09-21**
 
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.23.0**, que trae **las cuentas, por invitación**, y la extensión está publicada en las dos tiendas y se sube sola a las dos. Funciona de punta a punta: cifra y descifra textos y
+comparte núcleo y formato. Va por la **2.24.1**, con **las cuentas, por invitación** y ya gestionables desde Ajustes, y la extensión está publicada en las dos tiendas y se sube sola a las dos. Funciona de punta a punta: cifra y descifra textos y
 ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
 y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
@@ -436,6 +436,10 @@ cambiar la contraseña con cuenta —en el servidor y aquí a la vez—, el equi
 se pone al día al entrar con la nueva **sin perder lo que tenía sin subir**, recuperar la cuenta con la
 clave de recuperación sin ningún equipo a mano, la lista de equipos con «Olvidar», y exportar y borrar la
 cuenta desde Ajustes. Probado contra el servidor de verdad y en la ventana, con capturas miradas.
+
+**2.24.1**: con la contraseña cambiada en un Mac, **el otro se abre escribiendo la nueva** en «Abrir la
+bóveda», sin código ni pasos aparte. Lo preguntó el cliente al ver la 2.24.0; cambiar la contraseña sigue
+cerrando las sesiones de los demás equipos, que es lo que eligió.
 
 **La siguiente acción concreta es que el cliente pruebe la A3 en sus Macs** —cambiar la contraseña en uno
 y entrar con la nueva en el otro, olvidar un equipo, exportar— y después **decidir con él el orden de lo

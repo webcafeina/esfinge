@@ -1,6 +1,6 @@
 # ADR 0037 — Las claves de la cuenta: acceso derivado aparte y posesión de la bóveda
 
-**Fecha:** 2026-09-18 · **Estado:** aceptada, construida entera en la A3 (2.24.0) · **Continúa la [0035](0035-las-cuentas.md)**
+**Fecha:** 2026-09-18 · **Estado:** aceptada, construida entera en la A3 (2.24.0) y matizada en la 2.24.1 · **Continúa la [0035](0035-las-cuentas.md)**
 y la [0036](0036-el-servidor-de-cuentas.md) · **Revisar cuando** llegue la auditoría
 
 ## Contexto
@@ -55,6 +55,30 @@ quitar puntos ni lo que va tras un «+», que es una regla de Gmail y uniría cu
 - **Los equipos, exportar y borrar la cuenta**, en Ajustes. Borrar pide la contraseña y un código, y **la
   bóveda de cada equipo se queda** en local.
 
+### Matizado en la 2.24.1: el otro equipo se abre con la contraseña nueva
+
+Probando la 2.24.0, el cliente preguntó lo evidente: «si la cambio en un ordenador, ¿por qué tengo que
+indicarlo en el otro?». Cambiar la contraseña **sigue cerrando las sesiones de los demás equipos** —se le
+preguntó y eligió «pedir la nueva una vez»—, pero ya no hace falta ir a «¿Cambiaste la contraseña en otro
+equipo?»: **basta escribir la nueva en «Abrir la bóveda»**.
+
+- Si la contraseña no abre el fichero de aquí y el equipo está en una cuenta, `AbrirBoveda` prueba a
+  entrar en la cuenta con ella (`abrirConLaCuenta`). Si el servidor la acepta, es la nueva: se baja la
+  bóveda y se funde con la de aquí, igual que al entrar. Si no, el error es el de siempre.
+- Para que eso no pida un código por correo, **el testigo de confianza del equipo va en claro** en
+  `cuenta.json`, como la cookie de «recordar este equipo» de cualquier web. Sellado con la clave de la
+  bóveda no se podía leer justo cuando hace falta: con la bóveda cerrada y una contraseña que ya no la
+  abre. La sesión sigue sellada. Los de antes se pasan a claro al abrir la bóveda.
+- Si el equipo no tiene testigo —o el servidor pide código igual—, se dice que use «¿Cambiaste la
+  contraseña en otro equipo?».
+
+**Lo que cuesta**: quien copie `cuenta.json` se lleva el testigo, que le ahorra el código por correo **si
+además sabe la contraseña**. Pero quien tiene ese disco tiene también `boveda.esfinge`, y con la contraseña
+la abre sin hablar con nadie: el segundo factor protege de una contraseña filtrada sin el equipo, y eso
+sigue igual. Y **una contraseña mal escrita en un equipo con cuenta llega al servidor** —un Argon2 más y
+un intento fallido—; los equipos de confianza no quedan fuera por los fallos, así que no se bloquea uno
+mismo tecleando mal.
+
 ## Alternativas descartadas
 
 - **Posesión atada a la cuenta**, con el identificador de la cuenta como sal del HKDF, que era el plan.
@@ -91,6 +115,12 @@ que uno nuevo entre con la nueva y no con la vieja; recuperar en un equipo vací
 recuperación, y no con otra; ver y olvidar equipos; exportar sin nada en claro, y borrar la cuenta
 dejando la bóveda de aquí. Se rompió a propósito la fusión del equipo de la contraseña vieja y el orden
 servidor-antes-que-aquí, y las pruebas lo cazaron.
+
+**Comprobado en la 2.24.1**, contra el servidor de verdad: con la contraseña cambiada en A, B cerrado y con
+algo guardado sin poder subir **se abre escribiendo la nueva** en «Abrir la bóveda», sin código, y se queda
+con todo —lo de A y lo suyo, que llega a A—; una contraseña que no es ninguna de las dos sigue dando el
+error de siempre, y la de antes deja de abrir. El testigo queda en claro en el disco. Se quitó a propósito
+el paso por la cuenta y la prueba lo cazó.
 
 **Sin comprobar**: nada de la A3 en un Mac todavía. Y que `NormalizarCorreo` de Go y `normalizarCorreo` del servidor coinciden en todos los casos raros
 de Unicode: las dos pasan a minúsculas con reglas de lenguajes distintos. Manda la del servidor.

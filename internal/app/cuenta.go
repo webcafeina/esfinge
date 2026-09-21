@@ -86,7 +86,16 @@ type datosCuenta struct {
 	Cuenta       string `json:"cuenta,omitempty"`
 	Equipo       string `json:"equipo,omitempty"`
 	NombreEquipo string `json:"nombreEquipo,omitempty"`
-	// Sesion y Confianza van **selladas con la clave de la bóveda**.
+	// Sesion va **sellada con la clave de la bóveda**: sin la maestra, un disco
+	// robado no habla con el servidor.
+	//
+	// Confianza, el testigo de «este equipo es de confianza», va **en claro**, como
+	// la cookie de «recordar este equipo» de cualquier web. Hace falta leerlo sin
+	// abrir la bóveda: cuando la contraseña se cambió en otro equipo, la de aquí ya
+	// no abre el fichero, y es lo que deja entrar en la cuenta con la nueva sin pedir
+	// un código. No basta para entrar: el servidor pide la contraseña igual. Hasta la
+	// 2.24.0 iba sellado; uno sellado (empieza por «ESF1.») se abre al abrir la
+	// bóveda y se reescribe en claro.
 	Sesion    string `json:"sesion,omitempty"`
 	Confianza string `json:"confianza,omitempty"`
 }
@@ -432,11 +441,7 @@ func (a *App) EntrarEnCuenta(correo, maestra string) (ResultadoEntrada, error) {
 		if d.NombreEquipo != "" {
 			p.nombre = d.NombreEquipo
 		}
-		if d.Confianza != "" {
-			if claro, err := b.AbrirSecreto(d.Confianza); err == nil {
-				confianza = string(claro)
-			}
-		}
+		confianza = confianzaDe(d, b)
 	}
 
 	pre, err := a.cliente().Prelogin(a.ctxCuenta(), c)
@@ -656,9 +661,9 @@ func (a *App) quedarseCon(b *boveda.Boveda, correo, nombre string, s cuenta.Sesi
 		d.Equipo = s.Dispositivo
 	}
 	if s.Confianza != "" {
-		if d.Confianza, err = b.SellarSecreto([]byte(s.Confianza)); err != nil {
-			return err
-		}
+		d.Confianza = s.Confianza
+	} else if d.Confianza != "" {
+		d.Confianza = confianzaDe(d, b)
 	}
 	if err := guardarDatosCuenta(d); err != nil {
 		return err
@@ -667,6 +672,68 @@ func (a *App) quedarseCon(b *boveda.Boveda, correo, nombre string, s cuenta.Sesi
 	a.cu.sesion = s.Token
 	a.cu.mu.Unlock()
 	a.arrancarSincro(b)
+	return nil
+}
+
+// confianzaDe lee el testigo de confianza de este equipo. Si viene sellado —de
+// antes de la 2.24.1—, lo abre con la bóveda, si se tiene.
+func confianzaDe(d datosCuenta, b *boveda.Boveda) string {
+	if !strings.HasPrefix(d.Confianza, "ESF1.") {
+		return d.Confianza
+	}
+	if b == nil {
+		return ""
+	}
+	if claro, err := b.AbrirSecreto(d.Confianza); err == nil {
+		return string(claro)
+	}
+	return ""
+}
+
+// abrirConLaCuenta es lo que hace AbrirBoveda cuando la contraseña no abre la
+// copia de este equipo y el equipo está en una cuenta: puede ser **la nueva**,
+// cambiada en otro equipo. Se entra en la cuenta con ella —sin código, si el
+// equipo es de confianza—, se baja la bóveda y se funde con la de aquí, que así se
+// pone al día sin perder lo que tuviera sin subir.
+//
+// Devuelve el error de siempre si no es eso: una contraseña mala sigue siendo una
+// contraseña mala.
+func (a *App) abrirConLaCuenta(llave string, original error) error {
+	d := leerDatosCuenta()
+	if d.Modo != "cuenta" || d.Correo == "" {
+		return original
+	}
+	confianza := confianzaDe(d, nil)
+	if confianza == "" {
+		return original
+	}
+	ctx := a.ctxCuenta()
+	pre, err := a.cliente().Prelogin(ctx, d.Correo)
+	if err != nil {
+		return original
+	}
+	clave, err := cuenta.DerivarAcceso(llave, pre.Sal, pre.Argon2)
+	if err != nil {
+		return original
+	}
+	nombre := d.NombreEquipo
+	if nombre == "" {
+		nombre = nombreDelEquipo()
+	}
+	s, reto, err := a.cliente().Entrar(ctx, d.Correo, clave, nombre, confianza)
+	if err != nil || s == nil {
+		if reto != "" {
+			return errors.New("Esa es la contraseña nueva de tu cuenta, pero este equipo tiene que confirmarlo con un código: usa «¿Cambiaste la contraseña en otro equipo?»")
+		}
+		return original
+	}
+	r, err := a.terminarEntrada(&entradaPendiente{correo: d.Correo, maestra: llave, nombre: nombre}, *s)
+	if err != nil {
+		return err
+	}
+	if !r.Listo {
+		return original
+	}
 	return nil
 }
 
@@ -684,6 +751,11 @@ func (a *App) alAbrirLaBoveda(b *boveda.Boveda) {
 	d := leerDatosCuenta()
 	if d.Modo != "cuenta" {
 		return
+	}
+	if strings.HasPrefix(d.Confianza, "ESF1.") {
+		// Sellado, de antes de la 2.24.1: se pasa a claro ahora que se puede abrir.
+		d.Confianza = confianzaDe(d, b)
+		_ = guardarDatosCuenta(d)
 	}
 	token := ""
 	if d.Sesion != "" {

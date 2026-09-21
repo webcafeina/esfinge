@@ -213,7 +213,7 @@ cambia también lo que se dibuja en la página (ADR 0032):
 | **La bóveda** | La misma carpeta, `Esfinge/boveda.esfinge`, más `.anterior` con la copia previa | `600` |
 | Los iconos de los sitios | `Esfinge/boveda.esfinge.iconos`, **cifrado con la clave de la bóveda** | `600` |
 | Preferencias | La misma carpeta, `Esfinge/preferencias.json` | `600` |
-| **La cuenta**, si hay | `Esfinge/cuenta.json`: el correo, el nombre del equipo y **la sesión y el testigo de confianza sellados con la clave de la bóveda** | `600` |
+| **La cuenta**, si hay | `Esfinge/cuenta.json`: el correo, el nombre del equipo y **la sesión sellada con la clave de la bóveda** y el testigo de confianza del equipo **en claro**, para que la bóveda se abra con la contraseña nueva cuando se cambió en otro equipo (ADR 0037): le ahorra el código por correo a quien copie el fichero **y sepa la contraseña**, que con ese disco ya abre `boveda.esfinge` sin hablar con nadie | `600` |
 | La base de la sincronización, si hay cuenta | `Esfinge/boveda.esfinge.base` —**una copia entera de la bóveda**, cifrada igual— y `.sincro`, qué versión es | `600` |
 | La bóveda de antes de una fusión que borró algo | `Esfinge/boveda.esfinge.antes-de-fundir` | `600` |
 | La bóveda que había al entrar en una cuenta | `Esfinge/boveda.esfinge.apartada-<fecha>`: **no se borra nunca sola** | `600` |

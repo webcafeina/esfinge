@@ -56,7 +56,7 @@ cual en `docs/seguridad.md` y en las ADR.
 - **Segundo factor.** El código por correo se manda **solo después de comprobar la contraseña**: 6 cifras,
   dura 10 minutos y admite 5 intentos. Cada equipo recibe un testigo de confianza de 90 días, que se
   revoca desde Ajustes.
-- **En el disco, la sesión y el testigo van sellados con la clave de bóveda**, en `cuenta.json`. Sin la
+- **En el disco, la sesión va sellada con la clave de bóveda** (el testigo, desde la 2.24.1, en claro: ADR 0037), en `cuenta.json`. Sin la
   maestra, un disco robado no habla con el servidor.
 - **Recuperación por posesión.**
   - `posesion = HKDF(clave_de_bóveda, cuentaId, "esfinge/cuenta/posesion/v1")`.

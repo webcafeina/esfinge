@@ -130,6 +130,14 @@ func (a *App) AbrirBoveda(llave string) error {
 	escritura.LimpiarHuerfanos(filepath.Dir(ruta), 24*time.Hour)
 
 	b, err := boveda.Abrir(ruta, llave)
+	if errors.Is(err, boveda.ErrSinRanura) {
+		// Con cuenta, puede ser la contraseña nueva, cambiada en otro equipo.
+		if err := a.abrirConLaCuenta(llave, err); err != nil {
+			return err
+		}
+		a.buscarIconosSiProcede(a.ctx)
+		return nil
+	}
 	if err != nil {
 		return err
 	}
