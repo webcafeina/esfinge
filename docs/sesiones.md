@@ -5,6 +5,15 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-22 (noche) · 2.25.3: las flechas que giran
+
+- El cliente pidió que sincronizar a mano se vea: **flechas en círculo que giran** mientras dura, en
+  lugar de la palabra, en la aplicación y en la extensión. Giran desde el clic hasta que llega el
+  resultado de esa pasada, al menos medio segundo; con «reducir movimiento», se atenúan. Las pruebas de
+  las dos comprueban que giran y que paran.
+- Preguntó si la extensión pide siempre el código: **no**, solo la primera vez en cada navegador —ahora
+  lo pedía por reinstalarla a mano—; después, la contraseña maestra al abrirla.
+
 ## 2026-09-22 (noche) · 2.25.2: sincronizar a mano
 
 - El cliente probó la 2.25.1 en Chrome, cargada a mano: **todo perfecto**. Pidió poder sincronizar a

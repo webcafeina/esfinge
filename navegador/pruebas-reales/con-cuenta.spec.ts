@@ -204,7 +204,10 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
     // Con el botón del panel, sin esperar a la pasada de cada minuto (2.25.2).
     const p = await panel();
     await p.click("#sincronizar");
+    // Gira mientras sincroniza, y para al acabar (2.25.2).
+    await expect(p.locator("#sincronizar")).toHaveClass(/girando/);
     await expect(p.locator("#resultado")).toContainText("Sincronizada con tu cuenta.", { timeout: 20_000 });
+    await expect(p.locator("#sincronizar")).not.toHaveClass(/girando/);
     await retratar(p, "sincronizada");
     await p.close();
     expect(await contrasenaRellenada("otro.prueba")).toBe("clave-del-otro");

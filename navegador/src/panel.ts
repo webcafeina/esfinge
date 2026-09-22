@@ -399,10 +399,15 @@ function atenderGestos() {
   // llegue se ve en la lista en el acto.
   const sincronizar = document.getElementById("sincronizar") as HTMLButtonElement;
   sincronizar.addEventListener("click", async () => {
+    // Gira mientras dura, y al menos medio segundo para que se vea.
+    const desde = Date.now();
     sincronizar.disabled = true;
-    sincronizar.textContent = "Sincronizando…";
+    sincronizar.classList.add("girando");
+    sincronizar.setAttribute("aria-busy", "true");
     const r = await pedirCuenta({ cuenta: "sincronizar" });
-    sincronizar.textContent = "Sincronizar";
+    await new Promise((listo) => setTimeout(listo, Math.max(0, 500 - (Date.now() - desde))));
+    sincronizar.classList.remove("girando");
+    sincronizar.removeAttribute("aria-busy");
     sincronizar.disabled = false;
     const s = r.estado?.sincro;
     if (!r.ok || !s || s.estado !== "al-dia") {

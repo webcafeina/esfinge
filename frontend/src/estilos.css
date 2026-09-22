@@ -1640,6 +1640,60 @@ select {
   margin: 0;
 }
 
+/* Las flechas de sincronizar a mano (2.25.2): sin marco ni fondo, del color del
+ * texto de la línea —apagado en una nota, el del aviso en un aviso—, y más
+ * presente al pasar por encima («texto corriente sobre el lienzo»). */
+.linea-sincro .boton-sincro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: auto;
+  min-width: 0;
+  margin-left: var(--espacio-1);
+  padding: 2px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  vertical-align: -3px;
+  text-indent: 0;
+}
+
+.linea-sincro .boton-sincro:hover:not(:disabled),
+.linea-sincro .boton-sincro:active:not(:disabled) {
+  background: none;
+  color: var(--cuerpo);
+}
+
+.linea-sincro .boton-sincro svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Mientras gira está desactivado —otro clic no haría nada—, pero **no se atenúa**:
+ * el giro ya lo dice, y a 0,4 de opacidad se leería como roto. */
+.linea-sincro .boton-sincro:disabled {
+  opacity: 1;
+}
+
+.linea-sincro .boton-sincro.girando svg {
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .linea-sincro .boton-sincro.girando svg {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
 .datos-cuenta {
   display: grid;
   grid-template-columns: max-content 1fr;

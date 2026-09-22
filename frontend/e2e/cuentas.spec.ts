@@ -182,10 +182,17 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
       return e.sincro.estado === "al-dia" && (e.sincro.ultima ?? "") >= conElBoton;
     }, { timeout: 20_000 })
     .toBe(true);
-  await b.locator(".linea-sincro").getByRole("button", { name: "Sincronizar ahora" }).click();
+  const botonSincro = b.locator(".linea-sincro").getByRole("button", { name: "Sincronizar ahora" });
+  await botonSincro.click();
+  // Las flechas giran hasta que llega el resultado, y paran (2.25.2).
+  await expect(botonSincro).toHaveClass(/girando/);
   await expect(b.locator(".lista-boveda").getByRole("button", { name: "Llega con el botón" })).toBeVisible({
     timeout: 8_000,
   });
+  await expect(botonSincro).not.toHaveClass(/girando/, { timeout: 8_000 });
+  await retratar(b, "boveda-con-sincronizar");
+  // Y el candado de la barra lateral dice que está abierta.
+  await expect(b.locator(".lateral .estado-boveda")).toHaveAttribute("data-abierta", "si");
 
   // Con cuenta y la bóveda cerrada, la pantalla ofrece entrar con una contraseña
   // cambiada en otro equipo y recuperar la cuenta.

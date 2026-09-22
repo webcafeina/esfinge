@@ -632,6 +632,38 @@ button:focus-visible {
   margin: var(--espacio-2) auto 0;
 }
 
+/* Las flechas de sincronizar a mano (2.25.2), como en la aplicación: sin marco ni
+ * fondo, en el apagado del pie («ayudas y pies sobre el lienzo») y en el cuerpo al
+ * pasar por encima («texto corriente sobre el lienzo»). Giran mientras sincroniza. */
+.boton-sincro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: 0;
+  background: none;
+  color: var(--apagado); /* «ayudas y pies sobre el lienzo» */
+}
+
+.boton-sincro:hover:not(:disabled) {
+  color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
+}
+
+.boton-sincro svg {
+  width: 15px;
+  height: 15px;
+}
+
+.boton-sincro.girando svg {
+  animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* De quién es la cuenta y sus gestos, entre la lista y el pie. */
 .gestos {
   display: flex;
@@ -668,7 +700,12 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   .hueco,
   .rellenar.trabajando::after,
-  .anillo .resto {
+  .anillo .resto,
+  .boton-sincro.girando svg {
     animation: none;
+  }
+
+  .boton-sincro.girando svg {
+    opacity: 0.5;
   }
 }

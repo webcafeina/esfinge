@@ -843,21 +843,54 @@ export function LineaSincro({ alVolverAEntrar }: { alVolverAEntrar: (correo: str
       {/* **Sincronizar a mano**, sin esperar a la pasada de cada minuto: lo pidió el
           cliente al ver que un cambio entre la aplicación y la extensión tardaba
           hasta un minuto (2.25.2). La pasada sola se queda. */}
-      {e.estado !== "hay-que-entrar" && e.estado !== "apagada" && (
-        <>
-          {" "}
-          <button
-            className="discreto"
-            disabled={e.estado === "sincronizando"}
-            onClick={() => {
-              esfinge.sincronizarAhora().catch(() => {});
-            }}
-          >
-            Sincronizar ahora
-          </button>
-        </>
-      )}
+      {e.estado !== "hay-que-entrar" && e.estado !== "apagada" && <BotonSincronizar sincro={e} />}
     </p>
+  );
+}
+
+/**
+ * Las dos flechas que giran mientras sincroniza. **Lo pidió el cliente así** con la
+ * 2.25.2: un botón con la palabra y sin nada que se moviera no decía si había hecho
+ * algo. Gira desde el clic hasta que llega el resultado de esa pasada —una fecha
+ * igual o posterior al clic, o un fallo—, y al menos medio segundo, para que se vea
+ * aunque vaya rapidísimo. Con «reducir movimiento», no gira: se atenúa.
+ */
+function BotonSincronizar({ sincro }: { sincro: EstadoSincro }) {
+  const [desde, setDesde] = useState<number | null>(null);
+  useEffect(() => {
+    if (desde === null) return;
+    const ultima = sincro.ultima ? Date.parse(sincro.ultima) : 0;
+    const acabada =
+      ultima >= Math.floor(desde / 1000) * 1000 ||
+      sincro.estado === "error" ||
+      sincro.estado === "sin-conexion" ||
+      sincro.estado === "sin-red";
+    const resto = Math.max(0, 500 - (Date.now() - desde));
+    // Si no llega nada, se para igual: un botón que gira para siempre miente.
+    const t = setTimeout(() => setDesde(null), acabada ? resto : 20_000);
+    return () => clearTimeout(t);
+  }, [desde, sincro]);
+  const girando = desde !== null;
+  return (
+    <button
+      type="button"
+      className={girando ? "boton-sincro girando" : "boton-sincro"}
+      aria-label="Sincronizar ahora"
+      title="Sincronizar ahora"
+      aria-busy={girando}
+      disabled={girando}
+      onClick={() => {
+        setDesde(Date.now());
+        esfinge.sincronizarAhora().catch(() => setDesde(null));
+      }}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16" />
+        <path d="M3 21v-5h5" />
+        <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8" />
+        <path d="M21 3v5h-5" />
+      </svg>
+    </button>
   );
 }
 
