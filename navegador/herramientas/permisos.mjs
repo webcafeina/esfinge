@@ -42,9 +42,11 @@ const PIDEN_PERMISO = {
 const APARTE = { connectNative: "nativeMessaging", sendNativeMessage: "nativeMessaging" };
 
 const raiz = new URL("..", import.meta.url).pathname;
-const fuentes = readdirSync(join(raiz, "src"))
-  .filter((f) => f.endsWith(".ts"))
-  .map((f) => readFileSync(join(raiz, "src", f), "utf8"))
+// Con las carpetas de dentro: desde la E1 el núcleo de la bóveda vive en
+// `src/nucleo/`, y lo que use allí cuenta igual.
+const fuentes = readdirSync(join(raiz, "src"), { recursive: true })
+  .filter((f) => String(f).endsWith(".ts"))
+  .map((f) => readFileSync(join(raiz, "src", String(f)), "utf8"))
   .join("\n");
 
 // Se mira **el código, no los comentarios**: un ejemplo dentro de un comentario
@@ -88,6 +90,22 @@ for (const navegador of ["chrome", "firefox"]) {
         `manifiesto.${navegador}.json: el código lee «sender.tab.url» y no hay ` +
           `«host_permissions» ni el permiso «tabs».\n` +
           `  Sin eso llega undefined, sin error, y el origen viaja vacío.`,
+      );
+      mal++;
+    }
+  }
+
+  // **Y el WebAssembly, que es la misma trampa otra vez** (ADR 0040). Argon2id
+  // corre en WebAssembly, y en MV3 compilarlo exige `'wasm-unsafe-eval'` en la
+  // política de las páginas de la extensión. Sin eso no hay error al cargar: hay
+  // una excepción al desbloquear la bóveda, dentro del trabajador de fondo.
+  if (/from\s+["']hash-wasm["']/.test(codigo)) {
+    const politica = manifiesto.content_security_policy?.extension_pages ?? "";
+    if (!politica.includes("'wasm-unsafe-eval'")) {
+      console.error(
+        `manifiesto.${navegador}.json: el código usa WebAssembly (hash-wasm) y la ` +
+          `política «extension_pages» no permite «'wasm-unsafe-eval'».\n` +
+          `  Sin eso, desbloquear la bóveda falla dentro del trabajador de fondo.`,
       );
       mal++;
     }

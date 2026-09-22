@@ -141,7 +141,7 @@ test("tarjeta: con varias cuentas se elige cuál actualizar", async ({ page }) =
 test("tarjeta: con la bóveda cerrada pide abrirla, y «Ya la he abierto» vuelve a mirar", async ({ page }) => {
   await abrir(page, { tipo: "cerrada", sitio: "login.brevo.com", usuario: "info@webcafeina.com" });
   expect(await page.evaluate(() => (window as unknown as Ventana).tarjeta.raiz.textContent)).toContain(
-    "Abre la bóveda en Esfinge",
+    "Abre la bóveda de Esfinge",
   );
   await pulsar(page, "button.principal");
   expect(await page.evaluate(() => (window as unknown as Ventana).reintentos)).toBe(1);

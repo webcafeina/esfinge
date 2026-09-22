@@ -329,6 +329,23 @@ export class Boveda {
     return Boveda.conLlave(doc, otra.clave(), {});
   }
 
+  /**
+   * Abre con la clave de la bóveda, sin contraseña: la que la extensión guarda en
+   * `storage.session` mientras está abierta, para que el trabajador de fondo, que
+   * se duerme cada pocos minutos, la recupere al despertar.
+   */
+  static async abrirConClave(texto: string, llave: string): Promise<Boveda> {
+    return Boveda.conLlave(leerDocumento(texto), llave, {});
+  }
+
+  /**
+   * @internal La clave de la bóveda, para `storage.session` y para nada más: es lo
+   * que abre la bóveda sin contraseña, y vive en memoria hasta cerrar el navegador.
+   */
+  _llaveParaLaSesion(): string {
+    return this.clave();
+  }
+
   private static async conLlave(doc: Documento, llave: string, opciones: { purgar?: boolean }): Promise<Boveda> {
     const { sel, cont } = await desempaquetar(doc, llave);
     const b = new Boveda(doc, sel, cont, llave, doc.formato < FORMATO);

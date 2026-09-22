@@ -168,6 +168,9 @@ test("una fila por cuenta, y el código solo en las que lo tienen", async ({ pag
  */
 test("los botones de rellenar están alineados aunque falte el de código", async ({ page }) => {
   await abrir(page, { cuentas: TRES });
+  // Primero que estén: medir antes de que llegue la lista era una carrera que la
+  // pregunta por la cuenta (E2), una más al abrir, hizo visible.
+  await expect(page.locator(".rellenar")).toHaveCount(3);
   const xs = await page.locator(".rellenar").evaluateAll((bs) => bs.map((b) => Math.round(b.getBoundingClientRect().left)));
   expect(xs).toHaveLength(3);
   expect(new Set(xs).size).toBe(1);
@@ -441,7 +444,12 @@ test("aviso de datos: aceptarlo lo guarda con su versión y trae las cuentas", a
   await expect(page.locator("#aviso")).toBeHidden();
   const r = await rastro(page);
   expect(r.__guardado.consentimiento.version).toBe(1);
-  expect(r.__mensajes.map((m) => m.que)).toEqual(["cuentas"]);
+  // Primero el estado de la cuenta —¿hay cuenta y está cerrada?— y luego las
+  // cuentas del sitio. Nada antes de aceptar, que es lo que mira la prueba de arriba.
+  expect(r.__mensajes.map((m) => (m as { que?: string; cuenta?: string }).que ?? `cuenta:${(m as { cuenta?: string }).cuenta}`)).toEqual([
+    "cuenta:estado",
+    "cuentas",
+  ]);
 });
 
 test("aviso de datos: Intro acepta, sin marco de foco al abrir", async ({ page }) => {

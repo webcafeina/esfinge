@@ -24,6 +24,7 @@ import { dominioDe, inicialDe, tinteDe } from "../../frontend/src/monograma";
 import { api } from "./api";
 import { aceptado, aceptar } from "./consentimiento";
 import { dibujar } from "./dibujo";
+import type { EstadoDeCuenta, PeticionDeCuenta, RespuestaDeCuenta } from "./concuenta";
 import type { Cuenta, Motivo, Peticion, Respuesta } from "./protocolo";
 
 const donde = document.getElementById("donde") as HTMLElement;
@@ -36,6 +37,8 @@ const estado = document.getElementById("estado") as HTMLElement;
 const aviso = document.getElementById("aviso") as HTMLElement;
 const resultado = document.getElementById("resultado") as HTMLElement;
 const pie = document.getElementById("pie") as HTMLElement;
+const seccionCuenta = document.getElementById("cuenta") as HTMLElement;
+const gestos = document.getElementById("gestos") as HTMLElement;
 
 /**
  * Los iconos, a trazo y en `currentColor` como los de la barra lateral de la
@@ -96,7 +99,7 @@ async function pedir(p: Omit<Peticion, "version">): Promise<Respuesta> {
  * igual en los dos navegadores, y con la forma de Chrome, Firefox contesta «Promised
  * response from onMessage listener went out of scope». Un puerto no promete nada.
  */
-function porElPuerto(p: Omit<Peticion, "version">): Promise<Respuesta> {
+function porElPuerto(p: Omit<Peticion, "version"> | PeticionDeCuenta): Promise<Respuesta> {
   return new Promise((resolver, rechazar) => {
     const puerto = api.runtime.connect({ name: "panel" });
     let contestado = false;
@@ -112,13 +115,33 @@ function porElPuerto(p: Omit<Peticion, "version">): Promise<Respuesta> {
   });
 }
 
-function conPlazo<T>(promesa: Promise<T>): Promise<T> {
+function conPlazo<T>(promesa: Promise<T>, plazo = PLAZO): Promise<T> {
   return Promise.race([
     promesa,
     new Promise<T>((_, rechazar) =>
-      setTimeout(() => rechazar(new Error("el trabajador de fondo no ha contestado")), PLAZO),
+      setTimeout(() => rechazar(new Error("el trabajador de fondo no ha contestado")), plazo),
     ),
   ]);
+}
+
+/**
+ * Entrar o desbloquear hace dos Argon2id de 64 MiB y habla con el servidor: cerca
+ * de un par de segundos en un equipo normal, y más con una red lenta. El plazo de
+ * siempre lo daría por perdido.
+ */
+const PLAZO_DE_LA_CUENTA = 60_000;
+
+/** pedirCuenta es `pedir` para lo de la cuenta. Tampoco lanza nunca. */
+async function pedirCuenta(p: PeticionDeCuenta): Promise<RespuestaDeCuenta> {
+  try {
+    const r = (await conPlazo(porElPuerto(p), PLAZO_DE_LA_CUENTA)) as unknown as RespuestaDeCuenta;
+    if (!r || typeof r.ok !== "boolean") {
+      return { ok: false, error: "La extensión no ha recibido respuesta de su propio trabajador de fondo." };
+    }
+    return r;
+  } catch (e) {
+    return { ok: false, error: `No se ha podido hablar con el trabajador de fondo: ${e}` };
+  }
 }
 
 /** Lo que se enseña cuando no hay lista: un título, qué hacer, y el detalle. */
@@ -248,6 +271,139 @@ function pedirConsentimiento(): Promise<void> {
       },
       { once: true },
     );
+  });
+}
+
+/* ------------------------------------------------ la cuenta (ADR 0040) */
+
+type Paso = "entrar" | "desbloquear" | "codigo";
+
+/**
+ * pasoDeCuenta enseña el formulario de un paso y espera a que la bóveda quede
+ * abierta. Entrar puede pedir el código del correo, y entonces sigue con ese paso
+ * **en el mismo formulario**, sin volver a teclear nada.
+ */
+function pasoDeCuenta(primero: Paso, ec?: EstadoDeCuenta): Promise<void> {
+  cargando.hidden = true;
+  lista.hidden = true;
+  estado.hidden = true;
+  seccionCuenta.hidden = false;
+  const titulo = document.getElementById("cuenta-titulo") as HTMLElement;
+  const texto = document.getElementById("cuenta-texto") as HTMLElement;
+  const form = document.getElementById("cuenta-form") as HTMLFormElement;
+  const correo = document.getElementById("cuenta-correo") as HTMLInputElement;
+  const maestra = document.getElementById("cuenta-maestra") as HTMLInputElement;
+  const codigo = document.getElementById("cuenta-codigo") as HTMLInputElement;
+  const error = document.getElementById("cuenta-error") as HTMLElement;
+  const enviar = document.getElementById("cuenta-enviar") as HTMLButtonElement;
+  const volver = document.getElementById("cuenta-volver") as HTMLButtonElement;
+  if (ec?.correo) correo.value = ec.correo;
+
+  let paso = primero;
+  const poner = (p: Paso) => {
+    paso = p;
+    error.hidden = true;
+    (document.getElementById("paso-correo") as HTMLElement).hidden = p !== "entrar";
+    (document.getElementById("paso-maestra") as HTMLElement).hidden = p === "codigo";
+    (document.getElementById("paso-codigo") as HTMLElement).hidden = p !== "codigo";
+    volver.hidden = p !== "entrar" || ec?.modo === "cuenta";
+    if (p === "entrar") {
+      titulo.textContent = "Entrar con tu cuenta de Esfinge";
+      texto.textContent =
+        "La extensión guardará tu bóveda cifrada en este navegador y la tendrá al día con tu " +
+        "cuenta, sin necesidad de la aplicación.";
+      enviar.textContent = "Entrar";
+      (correo.value ? maestra : correo).focus();
+    } else if (p === "desbloquear") {
+      titulo.textContent = "Tu bóveda está cerrada";
+      texto.textContent =
+        ec?.sincro.estado === "hay-que-entrar" && ec.sincro.mensaje
+          ? ec.sincro.mensaje
+          : `Escribe tu contraseña maestra para abrirla en este navegador${ec?.correo ? ` (${ec.correo})` : ""}.`;
+      enviar.textContent = "Abrir la bóveda";
+      maestra.focus();
+    } else {
+      titulo.textContent = "Revisa tu correo";
+      texto.textContent = "Te hemos mandado un código para confirmar este navegador. Caduca en diez minutos.";
+      enviar.textContent = "Confirmar";
+      codigo.value = "";
+      codigo.focus();
+    }
+  };
+  poner(primero);
+
+  volver.addEventListener("click", () => location.reload(), { once: true });
+  return new Promise((resolver) => {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (enviar.disabled) return;
+      const antes = enviar.textContent;
+      enviar.disabled = true;
+      enviar.textContent = paso === "codigo" ? "Comprobando…" : paso === "entrar" ? "Entrando…" : "Abriendo…";
+      const r =
+        paso === "entrar"
+          ? await pedirCuenta({ cuenta: "entrar", correo: correo.value, maestra: maestra.value })
+          : paso === "desbloquear"
+            ? await pedirCuenta({ cuenta: "desbloquear", maestra: maestra.value })
+            : await pedirCuenta({ cuenta: "codigo", codigo: codigo.value });
+      enviar.disabled = false;
+      enviar.textContent = antes;
+      if (!r.ok) {
+        error.textContent = r.error ?? "No ha ido bien.";
+        error.hidden = false;
+        return;
+      }
+      if (r.necesitaCodigo) {
+        poner("codigo");
+        return;
+      }
+      maestra.value = "";
+      codigo.value = "";
+      seccionCuenta.hidden = true;
+      if (r.estado) pintarGestos(r.estado);
+      resolver();
+    });
+  });
+}
+
+/**
+ * pintarGestos pone lo de abajo: con cuenta, de quién es y «Bloquear» y «Salir»; sin
+ * cuenta, la puerta para entrar en una.
+ */
+function pintarGestos(ec: EstadoDeCuenta) {
+  gestos.hidden = false;
+  const conCuenta = ec.modo === "cuenta";
+  (document.getElementById("gestos-correo") as HTMLElement).textContent = conCuenta ? (ec.correo ?? "") : "";
+  (document.getElementById("bloquear") as HTMLElement).hidden = !(conCuenta && ec.abierta);
+  (document.getElementById("salir") as HTMLElement).hidden = !conCuenta;
+  (document.getElementById("usar-cuenta") as HTMLElement).hidden = conCuenta;
+}
+
+function atenderGestos() {
+  document.getElementById("bloquear")!.addEventListener("click", async () => {
+    await pedirCuenta({ cuenta: "bloquear" });
+    location.reload();
+  });
+  document.getElementById("usar-cuenta")!.addEventListener("click", async () => {
+    gestos.hidden = true;
+    abierta.hidden = true;
+    await pasoDeCuenta("entrar");
+    location.reload();
+  });
+  // **Salir pide dos pulsaciones**: borra de este navegador la copia de la bóveda
+  // —la de la cuenta sigue en el servidor y en los demás equipos—, y un clic
+  // despistado en un panel pequeño no puede costar volver a entrar con el código.
+  const salir = document.getElementById("salir") as HTMLButtonElement;
+  let seguro = false;
+  salir.addEventListener("click", async () => {
+    if (!seguro) {
+      seguro = true;
+      salir.textContent = "Pulsa otra vez para salir: se borra la copia de este navegador";
+      return;
+    }
+    salir.disabled = true;
+    await pedirCuenta({ cuenta: "salir" });
+    location.reload();
   });
 }
 
@@ -602,6 +758,18 @@ async function arrancar() {
   ponerElSitio(pestana);
 
   if (!(await aceptado())) await pedirConsentimiento();
+
+  // **Primero la cuenta**: con cuenta y la bóveda cerrada, se abre aquí mismo, sin
+  // la aplicación. Preguntarlo cuenta como actividad: alguien ha abierto el panel.
+  atenderGestos();
+  const ec = await pedirCuenta({ cuenta: "estado" });
+  if (ec.estado) {
+    pintarGestos(ec.estado);
+    if (ec.estado.modo === "cuenta" && !ec.estado.abierta) {
+      await pasoDeCuenta(ec.estado.codigoPendiente ? "codigo" : "desbloquear", ec.estado);
+      cargando.hidden = false;
+    }
+  }
 
   const r = await pedir({ que: "cuentas", origen });
   if (!r.ok) {

@@ -548,6 +548,109 @@ button:focus-visible {
   }
 }
 
+/* La cuenta (ADR 0040): entrar, el código y desbloquear. Sobre el lienzo, como el
+ * aviso de datos, y con los campos de la ventana. */
+.cuenta {
+  padding: var(--espacio-3) var(--espacio-2) var(--espacio-2);
+}
+
+.cuenta h1 {
+  margin: 0 0 var(--espacio-1);
+  font-size: var(--texto);
+  font-weight: 600;
+  color: var(--tinta); /* «títulos sobre el lienzo» */
+}
+
+.cuenta .texto {
+  margin: 0 0 var(--espacio-3);
+  color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
+  line-height: 1.4;
+}
+
+.cuenta .campo {
+  margin-bottom: var(--espacio-3);
+}
+
+.cuenta label {
+  display: block;
+  margin-bottom: var(--espacio-1);
+  font-size: var(--texto-chico);
+  font-weight: 500;
+  color: var(--tinta); /* «títulos sobre el lienzo» */
+}
+
+/* Los mismos campos que la ventana (`frontend/src/estilos.css`): relleno un punto
+ * distinto del fondo y una línea casi invisible. */
+.cuenta input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--alto-control);
+  padding: 0 var(--espacio-2);
+  font-family: var(--fuente);
+  font-size: var(--texto);
+  color: var(--tinta); /* «lo que se teclea en un campo» */
+  background: var(--campo);
+  border: 0.5px solid var(--filete-fuerte);
+  border-radius: var(--radio-chico);
+}
+
+.cuenta input::placeholder {
+  color: var(--apagado); /* «el texto de ejemplo de un campo» */
+}
+
+.cuenta input:focus-visible {
+  outline: none;
+  border-color: var(--acento); /* «borde de un campo con el foco» */
+  box-shadow: 0 0 0 1px var(--acento);
+}
+
+.cuenta .error {
+  margin: 0 0 var(--espacio-2);
+  color: var(--error); /* «“clave incorrecta” sobre el lienzo» */
+  line-height: 1.4;
+}
+
+.cuenta .primario {
+  width: 100%;
+}
+
+/* El botón discreto va subrayado: sin color que gastar, es lo que dice «se pulsa». */
+.discreto {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--fuente);
+  font-size: var(--texto-chico);
+  color: var(--cuerpo); /* «texto corriente sobre el lienzo» */
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.cuenta .discreto {
+  display: block;
+  margin: var(--espacio-2) auto 0;
+}
+
+/* De quién es la cuenta y sus gestos, entre la lista y el pie. */
+.gestos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-3);
+  margin: var(--espacio-3) var(--espacio-1) 0;
+}
+
+.gestos .correo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--texto-chico);
+  color: var(--apagado); /* «ayudas y pies sobre el lienzo» */
+}
+
 footer {
   display: flex;
   justify-content: space-between;

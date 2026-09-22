@@ -231,7 +231,7 @@ export function mostrarTarjeta(
     if (e.tipo === "cerrada") {
       tarjeta.append(cabecera("¿Guardar en Esfinge?", e.sitio));
       if (e.usuario) tarjeta.append(usuario(e.usuario));
-      tarjeta.append(parrafo("aviso", "Abre la bóveda en Esfinge para guardar esta cuenta."));
+      tarjeta.append(parrafo("aviso", "Abre la bóveda de Esfinge para guardar esta cuenta."));
       const fila = doc.createElement("div");
       fila.className = "botones";
       fila.append(

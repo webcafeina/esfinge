@@ -56,6 +56,31 @@
         <button id="aceptar" class="primario" type="button">Aceptar y empezar</button>
       </section>
 
+      <!-- La cuenta (ADR 0040): entrar, el código del correo y desbloquear. Un solo
+           formulario que enseña los campos de cada paso. Sin la aplicación: esto
+           habla con el servidor de cuentas desde el propio navegador. -->
+      <section id="cuenta" class="cuenta" hidden>
+        <h1 id="cuenta-titulo"></h1>
+        <p id="cuenta-texto" class="texto"></p>
+        <form id="cuenta-form" novalidate>
+          <div id="paso-correo" class="campo">
+            <label for="cuenta-correo">Correo de tu cuenta</label>
+            <input id="cuenta-correo" type="email" autocomplete="username" spellcheck="false" />
+          </div>
+          <div id="paso-maestra" class="campo">
+            <label for="cuenta-maestra">Contraseña maestra</label>
+            <input id="cuenta-maestra" type="password" autocomplete="current-password" />
+          </div>
+          <div id="paso-codigo" class="campo" hidden>
+            <label for="cuenta-codigo">Código que te ha llegado al correo</label>
+            <input id="cuenta-codigo" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" />
+          </div>
+          <p id="cuenta-error" class="error" role="alert" hidden></p>
+          <button id="cuenta-enviar" class="primario" type="submit"></button>
+          <button id="cuenta-volver" class="discreto" type="button" hidden>Volver</button>
+        </form>
+      </section>
+
       <!-- Lo que no es una lista: la bóveda cerrada, sin permiso, sin Esfinge…
            Con la esfinge grande y tenue detrás, como el historial vacío de la
            ventana: aquí no se trabaja, así que es sitio para la marca. -->
@@ -75,6 +100,15 @@
 
     <!-- La versión, a la vista —cuando algo falla, lo primero es saber qué versión
          se está mirando—, y la firma de la casa, como al pie de la barra lateral. -->
+    <!-- Con cuenta: de quién es y los gestos de la bóveda. Sin cuenta: la puerta
+         para entrar en una. -->
+    <nav id="gestos" class="gestos" aria-label="Cuenta" hidden>
+      <span id="gestos-correo" class="correo"></span>
+      <button id="bloquear" class="discreto" type="button" hidden>Bloquear</button>
+      <button id="salir" class="discreto" type="button" hidden>Salir de la cuenta</button>
+      <button id="usar-cuenta" class="discreto" type="button" hidden>Entrar con tu cuenta de Esfinge</button>
+    </nav>
+
     <footer>
       <span id="pie"></span>
       <span class="firma"><span class="barra" aria-hidden="true">▍</span>webcafeína</span>

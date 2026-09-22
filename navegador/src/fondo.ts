@@ -25,6 +25,14 @@
  */
 import { api } from "./api";
 import { aceptado, alAceptar } from "./consentimiento";
+import {
+  alCambiarLaBoveda,
+  atenderAlPanel,
+  atenderConCuenta,
+  conCuenta,
+  tic,
+  type PeticionDeCuenta,
+} from "./concuenta";
 import { hostDe, queMostrar, TEXTO_DE_INSIGNIA, type QueMostrar } from "./insignia";
 import {
   sirvePara,
@@ -139,7 +147,10 @@ async function testigoGuardado(): Promise<string> {
  * guarda el que venga. Si la persona todavía no ha contestado en la ventana, lo
  * que vuelve es «sin-emparejar», que el panel sabe enseñar.
  */
-async function pedir(p: Peticion): Promise<Respuesta> {
+async function pedir(p: Peticion, dePersona: boolean): Promise<Respuesta> {
+  // **Con cuenta no se habla con la aplicación** (ADR 0040): la bóveda está aquí
+  // y la contesta la extensión, con las mismas reglas.
+  if (await conCuenta()) return atenderConCuenta(p, dePersona);
   const conTestigo = {
     ...p,
     version: VERSION_DEL_PROTOCOLO,
@@ -201,6 +212,9 @@ function nombreDelNavegador(): string {
  * en la ventana cada poco **sin que nadie hubiera tocado nada**.
  */
 async function consultar(p: Omit<Peticion, "version" | "testigo">): Promise<Respuesta> {
+  // Con cuenta, lo mismo que `pedir`, y **sin contar como actividad**: esto lo
+  // hacen el refresco del icono y las páginas, no una persona.
+  if (await conCuenta()) return atenderConCuenta({ ...p, version: VERSION_DEL_PROTOCOLO } as Peticion, false);
   return hablar({ ...p, version: VERSION_DEL_PROTOCOLO, testigo: await testigoGuardado() });
 }
 
@@ -324,7 +338,18 @@ Promise.resolve(api.alarms.get(ALARMA))
   })
   .catch(() => {});
 api.alarms.onAlarm.addListener((alarma) => {
-  if (alarma.name === ALARMA) refrescarLaActiva(true).catch(() => {});
+  if (alarma.name !== ALARMA) return;
+  // Con cuenta, el mismo reloj cierra la bóveda si lleva el plazo sin tocarse y
+  // sincroniza; después se pinta el icono con lo que haya quedado.
+  aceptado()
+    .then((si) => (si ? tic() : undefined))
+    .catch(() => {})
+    .finally(() => refrescarLaActiva(true).catch(() => {}));
+});
+
+// Cuando llega algo de otro equipo, el icono de la pestaña activa se pone al día.
+alCambiarLaBoveda(() => {
+  refrescarLaActiva(true).catch(() => {});
 });
 
 // Y al aceptar el aviso de datos en el panel, el icono de la pestaña activa deja de
@@ -605,7 +630,23 @@ api.runtime.onConnect.addListener((puerto) => {
         // Así pasó con un permiso que faltaba en el manifiesto: `api.storage` era
         // undefined, esto lanzaba en la primera línea, y desde fuera parecía un
         // problema del puente. Cinco versiones persiguiendo eso.
-        pedir(p as Peticion)
+        // **Lo de la cuenta solo desde el panel.** Una página no puede entrar, salir
+        // ni desbloquear: por su puerto, eso ni se mira.
+        if ((p as PeticionDeCuenta).cuenta !== undefined) {
+          if (puerto.name !== "panel") {
+            contestar({ ok: false, motivo: "no-entiendo", error: "Eso solo se pide desde el panel" });
+            return;
+          }
+          atenderAlPanel(p as PeticionDeCuenta)
+            .then((r) => {
+              contestar(r as unknown as Respuesta);
+              refrescarLaActiva(true).catch(() => {});
+            })
+            .catch((e) => contestar({ ok: false, error: `La extensión ha fallado por dentro: ${e}` }));
+          return;
+        }
+
+        pedir(p as Peticion, puerto.name === "panel")
           .then((r) => {
             contestar(r);
             // **Al abrir el panel, el icono se pone al día con lo que el panel acaba de
