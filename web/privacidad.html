@@ -30,7 +30,7 @@
     <main class="contenedor seccion">
       <article class="lectura documento">
         <h1>Política de privacidad</h1>
-        <p class="apagado">Última actualización: 21 de septiembre de 2026.</p>
+        <p class="apagado">Última actualización: 22 de septiembre de 2026.</p>
 
         <p class="entradilla">
           <strong>Usada en tu ordenador, Esfinge no recoge ningún dato tuyo.</strong> Todo lo que
@@ -57,17 +57,36 @@
 
         <h3>Adónde van</h3>
         <p>
-          <strong>Solo a la aplicación Esfinge, en tu mismo ordenador</strong>, por el canal que
-          los navegadores tienen para hablar con programas instalados (native messaging). La
-          extensión <strong>no se conecta a ningún servidor</strong>, no manda nada a internet ni a
-          Webcafeína, no descarga código y no lleva analítica ni servicios de terceros.
+          <strong>Sin cuenta, solo a la aplicación Esfinge, en tu mismo ordenador</strong>, por el
+          canal que los navegadores tienen para hablar con programas instalados (native messaging).
+          Así, la extensión <strong>no se conecta a internet</strong>.
+        </p>
+        <p>
+          <strong>Si entras con tu cuenta de Esfinge en la extensión</strong>, ya no necesita la
+          aplicación: guarda tu bóveda en el navegador y la sincroniza con nuestro servidor de
+          cuentas, igual que la aplicación. <strong>La bóveda sale del navegador cifrada</strong>, con
+          una clave que sale de tu contraseña maestra, y el servidor no puede leerla. Lo que le llega
+          es lo que se cuenta en <a href="#cuenta">Si creas una cuenta</a>: tu correo, la bóveda
+          cifrada y el nombre de este navegador —por ejemplo, «Chrome en Mac»— en la lista de tus
+          equipos. Es la única conexión que hace la extensión.
+        </p>
+        <p>
+          En ningún caso descarga código, ni lleva analítica ni servicios de terceros.
         </p>
 
         <h3>Qué guarda</h3>
         <ul>
           <li>
-            <strong>En el almacenamiento de la extensión</strong>, solo dos cosas: el permiso que le da
-            Esfinge para hablar con ella y que has aceptado el aviso de datos, con la fecha.
+            <strong>En el almacenamiento de la extensión</strong>: que has aceptado el aviso de datos,
+            con la fecha, y el permiso que le da Esfinge para hablar con ella.
+          </li>
+          <li>
+            <strong>Con cuenta, además</strong>: tu bóveda <strong>cifrada</strong> y la última versión
+            que coincidía con el servidor, también cifrada; tu correo; la sesión con el servidor,
+            cifrada con la clave de tu bóveda; y el testigo de «este navegador es de confianza», que
+            evita pedirte un código cada vez. Mientras la bóveda está abierta, su clave vive
+            <strong>solo en la memoria del navegador</strong>, y se va al bloquearla, a los quince
+            minutos sin usarla o al cerrar el navegador.
           </li>
           <li>
             <strong>En memoria, un momento</strong>: cuando envías un formulario, la contraseña espera
@@ -83,17 +102,19 @@
         <h3>Para qué pide cada permiso</h3>
         <ul>
           <li><code>nativeMessaging</code>: hablar con la aplicación Esfinge de tu ordenador.</li>
-          <li><code>storage</code>: guardar el permiso de Esfinge y que has aceptado el aviso.</li>
-          <li><code>alarms</code>: comprobar cada minuto si la bóveda sigue abierta, para que el icono lo diga.</li>
+          <li><code>storage</code>: guardar que has aceptado el aviso, el permiso de Esfinge y, con cuenta, tu bóveda cifrada.</li>
+          <li><code>alarms</code>: comprobar cada minuto si la bóveda sigue abierta, para que el icono lo diga, y con cuenta, sincronizarla y cerrarla si no se usa.</li>
           <li><code>favicon</code> (solo Chrome): enseñar el icono del sitio en el panel desde la caché del navegador, sin descargarlo.</li>
-          <li>Acceso a las páginas <code>https</code>: encontrar los formularios de entrar y rellenarlos.</li>
+          <li>Acceso a las páginas <code>https</code>: encontrar los formularios de entrar y rellenarlos, y con cuenta, hablar con nuestro servidor de cuentas.</li>
+          <li>Ejecutar WebAssembly: derivar la clave de tu bóveda de tu contraseña (Argon2id) dentro del navegador, con cuenta.</li>
         </ul>
 
         <h3>Antes de aceptar</h3>
         <p>
           La primera vez que abres el panel de la extensión te explica todo esto. <strong>Hasta que lo
-          aceptas no lee ninguna página ni habla con Esfinge.</strong> Si esta política cambia en lo
-          que hace la extensión con tus datos, te lo volverá a preguntar.
+          aceptas no lee ninguna página ni habla con Esfinge ni con el servidor.</strong> Si esta
+          política cambia en lo que hace la extensión con tus datos, te lo vuelve a preguntar: pasó
+          al llegar las cuentas a la extensión.
         </p>
 
         <h2>La aplicación Esfinge</h2>
@@ -121,7 +142,7 @@
         <ul>
           <li><strong>Tu correo</strong> y cuándo creaste la cuenta.</li>
           <li><strong>Tu bóveda, cifrada</strong>: la de ahora, las diez versiones anteriores y la última de cada uno de los treinta días anteriores, para poder deshacer un error al juntar los cambios de dos equipos.</li>
-          <li><strong>Tus equipos</strong>: el nombre de cada ordenador con el que entras y cuándo lo usaste por última vez.</li>
+          <li><strong>Tus equipos</strong>: el nombre de cada ordenador o navegador con el que entras y cuándo lo usaste por última vez.</li>
           <li><strong>Los doscientos últimos avisos de la cuenta</strong>: cuándo se entra, se cambia la contraseña o se recupera la cuenta.</li>
           <li><strong>Lo justo para comprobar que eres tú</strong>: una huella de la clave de acceso que sale de tu contraseña —no tu contraseña— y los códigos que te mandamos, que caducan a los diez minutos.</li>
         </ul>

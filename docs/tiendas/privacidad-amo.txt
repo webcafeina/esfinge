@@ -5,9 +5,9 @@
 
 Política de privacidad
 
-Última actualización: 14 de septiembre de 2026.
+Última actualización: 22 de septiembre de 2026.
 
-Esfinge no recoge ningún dato tuyo. Todo lo que toca se queda en tu ordenador, y Webcafeína no recibe nada: ni contraseñas, ni direcciones, ni estadísticas de uso.
+Usada en tu ordenador, Esfinge no recoge ningún dato tuyo. Todo lo que toca se queda ahí, y Webcafeína no recibe nada: ni contraseñas, ni direcciones, ni estadísticas de uso. Si creas una cuenta para tener tu bóveda en varios equipos, lo que guardamos y por qué está más abajo: tu bóveda viaja cifrada y no podemos abrirla.
 
 Esta política cubre la aplicación Esfinge —para macOS, Windows y Linux— y su extensión para Chrome, Edge, Brave, Vivaldi, Opera y Firefox. La hace Webcafeína, que puedes contactar en info@webcafeina.com.
 
@@ -24,37 +24,71 @@ No lee el resto del contenido de las páginas, ni tu historial, ni tus marcadore
 
 Adónde van
 
-Solo a la aplicación Esfinge, en tu mismo ordenador, por el canal que los navegadores tienen para hablar con programas instalados (native messaging). La extensión no se conecta a ningún servidor, no manda nada a internet ni a Webcafeína, no descarga código y no lleva analítica ni servicios de terceros.
+Sin cuenta, solo a la aplicación Esfinge, en tu mismo ordenador, por el canal que los navegadores tienen para hablar con programas instalados (native messaging). Así, la extensión no se conecta a internet.
+
+Si entras con tu cuenta de Esfinge en la extensión, ya no necesita la aplicación: guarda tu bóveda en el navegador y la sincroniza con nuestro servidor de cuentas, igual que la aplicación. La bóveda sale del navegador cifrada, con una clave que sale de tu contraseña maestra, y el servidor no puede leerla. Lo que le llega es lo que se cuenta en Si creas una cuenta: tu correo, la bóveda cifrada y el nombre de este navegador —por ejemplo, «Chrome en Mac»— en la lista de tus equipos. Es la única conexión que hace la extensión.
+
+En ningún caso descarga código, ni lleva analítica ni servicios de terceros.
 
 Qué guarda
 
-- En el almacenamiento de la extensión, solo dos cosas: el permiso que le da Esfinge para hablar con ella y que has aceptado el aviso de datos, con la fecha.
+- En el almacenamiento de la extensión: que has aceptado el aviso de datos, con la fecha, y el permiso que le da Esfinge para hablar con ella.
+- Con cuenta, además: tu bóveda cifrada y la última versión que coincidía con el servidor, también cifrada; tu correo; la sesión con el servidor, cifrada con la clave de tu bóveda; y el testigo de «este navegador es de confianza», que evita pedirte un código cada vez. Mientras la bóveda está abierta, su clave vive solo en la memoria del navegador, y se va al bloquearla, a los quince minutos sin usarla o al cerrar el navegador.
 - En memoria, un momento: cuando envías un formulario, la contraseña espera como mucho dos minutos a que decidas si guardarla, y el usuario que escribes en una página de dos pasos, cinco minutos. Nunca se escriben en disco.
 - Los sitios en los que pides que no te ofrezca guardar se apuntan dentro de tu bóveda, cifrados, no en el navegador.
 
 Para qué pide cada permiso
 
 - nativeMessaging: hablar con la aplicación Esfinge de tu ordenador.
-- storage: guardar el permiso de Esfinge y que has aceptado el aviso.
-- alarms: comprobar cada minuto si la bóveda sigue abierta, para que el icono lo diga.
+- storage: guardar que has aceptado el aviso, el permiso de Esfinge y, con cuenta, tu bóveda cifrada.
+- alarms: comprobar cada minuto si la bóveda sigue abierta, para que el icono lo diga, y con cuenta, sincronizarla y cerrarla si no se usa.
 - favicon (solo Chrome): enseñar el icono del sitio en el panel desde la caché del navegador, sin descargarlo.
-- Acceso a las páginas https: encontrar los formularios de entrar y rellenarlos.
+- Acceso a las páginas https: encontrar los formularios de entrar y rellenarlos, y con cuenta, hablar con nuestro servidor de cuentas.
+- Ejecutar WebAssembly: derivar la clave de tu bóveda de tu contraseña (Argon2id) dentro del navegador, con cuenta.
 
 Antes de aceptar
 
-La primera vez que abres el panel de la extensión te explica todo esto. Hasta que lo aceptas no lee ninguna página ni habla con Esfinge. Si esta política cambia en lo que hace la extensión con tus datos, te lo volverá a preguntar.
+La primera vez que abres el panel de la extensión te explica todo esto. Hasta que lo aceptas no lee ninguna página ni habla con Esfinge ni con el servidor. Si esta política cambia en lo que hace la extensión con tus datos, te lo vuelve a preguntar: pasó al llegar las cuentas a la extensión.
 
 LA APLICACIÓN ESFINGE
 
-Tus contraseñas y tus ficheros cifrados viven en tu ordenador, en una bóveda cifrada con tu contraseña maestra. No hay cuentas ni copia en ningún servidor: ni Webcafeína ni nadie más puede abrirla.
+Tus contraseñas y tus ficheros cifrados viven en tu ordenador, en una bóveda cifrada con tu contraseña maestra. Sin cuenta, no hay copia en ningún servidor: ni Webcafeína ni nadie más puede abrirla.
 
-La aplicación solo sale a internet para dos cosas, y las dos se apagan en sus Ajustes:
+La aplicación solo sale a internet para estas cosas:
 
 - Buscar actualizaciones, una vez al día, preguntando a GitHub cuál es la última versión.
 - El icono de cada sitio de tu bóveda, pedido directamente al propio sitio y nunca a un intermediario.
+- Si creas una cuenta, sincronizar tu bóveda con nuestro servidor, cifrada.
 
-Los detalles técnicos, con lo que protege y lo que no, están en el documento de seguridad del proyecto (https://github.com/webcafeina/esfinge/blob/main/docs/seguridad.md).
+Las dos primeras se apagan en sus Ajustes; la tercera, dejando la cuenta.
+
+SI CREAS UNA CUENTA
+
+Con una cuenta, tu bóveda está en todos tus equipos. Se cifra en tu ordenador antes de salir, con una clave que sale de tu contraseña maestra, y así llega a nuestro servidor: nosotros no tenemos esa clave ni tu contraseña, así que no podemos leer nada de lo que hay dentro, ni recuperarlo si las pierdes.
+
+Qué guardamos
+
+- Tu correo y cuándo creaste la cuenta.
+- Tu bóveda, cifrada: la de ahora, las diez versiones anteriores y la última de cada uno de los treinta días anteriores, para poder deshacer un error al juntar los cambios de dos equipos.
+- Tus equipos: el nombre de cada ordenador o navegador con el que entras y cuándo lo usaste por última vez.
+- Los doscientos últimos avisos de la cuenta: cuándo se entra, se cambia la contraseña o se recupera la cuenta.
+- Lo justo para comprobar que eres tú: una huella de la clave de acceso que sale de tu contraseña —no tu contraseña— y los códigos que te mandamos, que caducan a los diez minutos.
+
+Tu dirección IP no la guardamos: para frenar a quien pruebe contraseñas se cuenta una huella de ella, que se tira a los dos días. No hay analítica ni publicidad.
+
+Quién más interviene
+
+- Cloudflare aloja el servidor. Los datos de las cuentas se guardan en centros de la Unión Europea.
+- Resend manda los correos con los códigos, y para eso ve tu dirección y el código.
+
+Para qué y hasta cuándo
+
+Solo para darte el servicio que pides —tener tu bóveda en tus equipos— y protegerlo. Lo guardamos mientras tengas la cuenta; al borrarla, se borra todo lo de arriba del servidor. Lo que tengas en tus equipos se queda en ellos.
+
+Lo que puedes pedir
+
+Desde los Ajustes de Esfinge puedes ver tus equipos y quitarle la sesión a cualquiera, llevarte lo que tenemos de tu cuenta, dejar la cuenta en un equipo y borrarla entera del servidor. Para cualquier otra cosa, escríbenos a info@webcafeina.com. Por ahora, las cuentas son por invitación.
 
 BORRAR LO QUE HAYA
 
-Desinstalar la extensión borra lo que guarda en el navegador. Lo de la aplicación —la bóveda, el historial y las preferencias— se borra desde la propia Esfinge o eliminando su carpeta de configuración. Como Webcafeína no tiene ningún dato tuyo, no hay nada que pedirle que borre; si tienes cualquier duda, escríbenos a info@webcafeina.com.
+Desinstalar la extensión borra lo que guarda en el navegador. Lo de la aplicación —la bóveda, el historial y las preferencias— se borra desde la propia Esfinge o eliminando su carpeta de configuración. Sin cuenta, Webcafeína no tiene ningún dato tuyo que borrar; con cuenta, mira lo que puedes pedir. Si tienes cualquier duda, escríbenos a info@webcafeina.com.

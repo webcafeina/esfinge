@@ -171,7 +171,8 @@ No se cambian sin preguntar.
   servidor nuestro en **Cloudflare UE que no puede leer nada**, compartir **copias sin permisos** con otras
   cuentas, código por correo en cada equipo nuevo, bienvenida «En este ordenador / Con cuenta» reversible,
   **maestra «fuerte» obligatoria con cuenta**, y **la extensión como cliente completo de la cuenta, siempre
-  por ella**. La bienvenida sale **solo a quien estrena Esfinge sin nada** —quien ya tenía bóveda
+  por ella** —hecha en la 2.25.0 (ADR 0040): con cuenta, rellena, da códigos y guarda **sin la
+  aplicación**, y copiar desde su panel no se borra solo del portapapeles—. La bienvenida sale **solo a quien estrena Esfinge sin nada** —quien ya tenía bóveda
   trabaja en local sin que se le pregunte—, y **la bóveda que hubiera en un equipo al entrar en una cuenta
   se aparta y no se borra nunca** (ADR 0039). **El registro libre, solo tras una auditoría externa**; hasta entonces, por invitación. Rompe
   dos promesas públicas —«sin servidores» y «Webcafeína no recibe nada»— que hay que cambiar antes de que
@@ -862,6 +863,28 @@ exigen los mismos bytes; como las de la cuenta, un `go test` suelto se las salta
   que dar el mismo código que la ventana, aunque sea raro.
 - **Un `*/` dentro de un comentario lo cierra**, y `internal/*/…` es justo eso. Y `readFileSync(0)` da
   `EAGAIN` con una tubería grande: la entrada estándar se lee como flujo.
+
+**Y desde la E2, la extensión con cuenta no le pide nada a la aplicación** (ADR 0040): el trabajador de
+fondo guarda la bóveda cifrada en `storage.local`, la clave de la abierta en `storage.session` —que se va
+al cerrar el navegador y que los guiones de las páginas no leen— y **contesta los mismos verbos del canal**
+(`nucleo/fuente.ts`), así que el panel, las páginas y la tarjeta no distinguen. Cinco cosas para tocarlo:
+
+- **Lo de la cuenta —entrar, el código, desbloquear, salir— solo por el puerto del panel.** Una página no
+  puede pedir eso; su puerto ni lo mira.
+- **La bóveda de TypeScript pasa sus cambios por una cola** (`_exclusivo`). Sin cerrojos, entre dos
+  `await` se cuela cualquiera: dos guardados cruzados compartían serie y el segundo no se subía nunca, y
+  una fusión pisaba lo que la tarjeta guardara en medio. Hay una prueba que lo caza quitando la cola.
+- **El trabajador se muere cada pocos minutos y la bóveda se rehace al despertar** (`laBoveda`), con la
+  clave de `storage.session`. Nada que haga falta después puede vivir solo en una variable.
+- **Solo cuenta como actividad lo que llega del panel.** El relleno automático, el refresco del icono y
+  la sincronización no, o no se cerraría nunca: la misma regla de la aplicación.
+- **La compilación de pruebas** (`ESFINGE_CUENTAS_PRUEBAS`) apunta al servidor local y sale en
+  `dist/pruebas`; **las tres configuraciones de Vite tienen que mandar ahí**. La del guion de las páginas
+  no lo hacía, y **Chromium rechaza sin decir nada una extensión cuyo manifiesto nombra un fichero que no
+  está**. En `navegador/pruebas-reales` la extensión corre de verdad, sin pantalla: la alarma se hace
+  sonar desde el propio trabajador (`worker.evaluate`), y **abrir el panel es actividad**, así que una
+  prueba del bloqueo tiene que esperar a que se cierre antes de abrirlo. La tarjeta de guardar no se puede
+  pulsar desde ahí: va en una sombra cerrada.
 
 **Las pruebas de la cuenta y de la sincronización hablan con el servidor de verdad**, levantado en local
 por `herramientas/con-servidor.sh` con el entorno `local` del Worker —frenos holgados, porque todo llega

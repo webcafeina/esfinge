@@ -465,12 +465,19 @@ Macs**: cambiada en uno, el otro entró en la cuenta con la nueva.
 olvidar un equipo pedía volver a entrar pero **dejaba la bóveda abierta**, y pidió que se cerrara →
 **2.24.5**: al perder la sesión, la bóveda se cierra y dice por qué. Borrar la cuenta no lo va a probar.
 
+**La E2, hecha (2026-09-22, 2.25.0)** — [ADR 0040](adr/0040-la-extension-cliente-de-la-cuenta.md): **la
+extensión con cuenta funciona sin la aplicación**. En su panel se entra con el correo, la contraseña y el
+código; la bóveda vive cifrada en el navegador, se abre con la maestra, se cierra a los quince minutos sin
+tocarla o al cerrar el navegador, y se sincroniza sola; rellena, da códigos y guarda contra ella. Probada
+**con la extensión cargada de verdad** en Chromium contra el servidor local, en la puerta. El aviso de
+datos sube a la versión 2 y la política, la portada y las fichas de las tiendas lo cuentan. **La
+siguiente acción concreta es la E3: que el cliente la pruebe en su Mac** —Chrome y Firefox, con la
+aplicación cerrada— y que las dos tiendas acepten la versión nueva, que vuelven a revisar.
+
 **La E1, hecha (2026-09-22, sin publicar: no cambia nada de lo instalado)** — [ADR 0040](adr/0040-la-extension-cliente-de-la-cuenta.md):
 el núcleo de la bóveda en TypeScript (`navegador/src/nucleo/`: ESF1, bóveda, fusión, códigos y claves de
 la cuenta), probado contra los vectores fijos de Go y **cruzado con Go** en `make comprobar` y en la
-puerta: 4.000 fusiones al azar sin una diferencia, y tres roturas a propósito cazadas. **La siguiente
-acción concreta es la E2**: la extensión con cuenta —entrar, desbloquear, sincronizar, y rellenar, códigos
-y guardar contra la bóveda del navegador—, con el aviso, la política y las tiendas al día.
+puerta: 4.000 fusiones al azar sin una diferencia, y tres roturas a propósito cazadas.
 
 **2.24.5 comprobada por el cliente**: «funciona todo perfecto». **La A3 queda comprobada en sus Macs**, salvo
 borrar la cuenta, que no va a probar con la suya. **Orden decidido con él (2026-09-22): primero la E —la

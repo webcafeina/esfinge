@@ -5,6 +5,25 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-22 (noche) · La E2 y la 2.25.0: la extensión con cuenta, sin la aplicación
+
+- **Dominios** con `tldts`, cruzados con Go en 30 casos (lo no ASCII se rechaza antes de que el navegador
+  lo pase a punycode). **Los verbos** contra la bóveda del navegador, con las reglas de la aplicación.
+  **Cliente** del servidor y **sincronización**, portados. **Una cola en la bóveda**: sin ella dos
+  guardados compartían serie y una fusión pisaba lo guardado en medio.
+- **`concuenta.ts`** en el trabajador de fondo: la bóveda cifrada en `storage.local`, la clave en
+  `storage.session`; entrar con código, desbloquear —probando la cuenta si la contraseña cambió—, bloqueo
+  a los quince minutos, salir, sincronizar tras guardar y cada minuto, y un 401 que cierra. **El panel**:
+  entrar, código y desbloquear en un formulario; «Bloquear», «Salir», «Volver a entrar». Copia el panel,
+  y dice que el portapapeles no se vacía solo.
+- **La extensión cargada de verdad** (`navegador/pruebas-reales`), en `make comprobar` y en la puerta:
+  seis escenarios contra el servidor local, sin la aplicación; tres roturas a propósito cazadas; capturas
+  del panel miradas. Salió que el guion de las páginas no iba a la carpeta de pruebas y Chromium rechaza
+  sin decir nada una extensión incompleta.
+- **Hacia fuera**: `VERSION_DEL_AVISO` 2, el aviso del panel, la política de la web y su copia para
+  Mozilla (que se había quedado en el 14-09), la portada, las fichas de las tiendas y `docs/seguridad.md`.
+- **Siguiente: la E3 en su Mac** y las revisiones de las dos tiendas.
+
 ## 2026-09-22 (tarde) · La E1: el núcleo de la bóveda en la extensión
 
 - La 2.24.5, comprobada por el cliente: «funciona todo perfecto». Orden decidido con él: **la E y después

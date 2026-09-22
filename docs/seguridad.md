@@ -212,6 +212,37 @@ cambia también lo que se dibuja en la página (ADR 0032):
 - **La lista de «Nunca en este sitio» va cifrada dentro de la bóveda**, porque es una lista de sitios
   que usas. Por eso Ajustes solo la enseña con la bóveda abierta.
 
+### Y desde la E2, la extensión puede tener la bóveda dentro
+
+Con cuenta, la extensión deja de pedirle nada a la aplicación: **guarda la bóveda en el navegador, la
+abre con la contraseña maestra y la sincroniza ella sola** con el servidor de cuentas (ADR 0040). Es la
+parte más expuesta de todo el producto, y conviene decir por qué y hasta dónde:
+
+- **Mientras está abierta, su clave vive en la memoria del navegador** (`storage.session`), no en disco.
+  Se va al pulsar «Bloquear», a los quince minutos sin usarla y al cerrar el navegador. Los guiones que la
+  extensión pone en las páginas no pueden leerla. Pero **quien controle el navegador —otra extensión con
+  permisos de más, un fallo del navegador, alguien con el equipo desbloqueado— llega ahí**, y no a la
+  aplicación, que es otro programa. Contra eso no hay arreglo desde dentro de una extensión; lo que se
+  puede hacer es tenerla abierta poco, y eso es lo que hace el bloqueo.
+- **En el disco del navegador** (`storage.local`) quedan la bóveda **cifrada**, su última versión común
+  con el servidor —cifrada también—, el correo, la sesión **sellada con la clave de la bóveda** y el testigo
+  de «este navegador es de confianza» **en claro**, igual que en la aplicación: le ahorra el código por
+  correo a quien copie el perfil del navegador **y sepa la contraseña**, que con ese perfil ya abre la
+  bóveda sin hablar con nadie.
+- **Copiar desde el panel no se borra solo del portapapeles.** La aplicación copia ella y lo borra pasado
+  el plazo; con cuenta, la bóveda está en el trabajador de fondo, que no puede tocar el portapapeles, así
+  que copia el panel y el panel se cierra enseguida. El panel lo dice al copiar.
+- **Una contraseña mal escrita al desbloquear llega al servidor**: si no abre la copia del navegador,
+  puede ser la nueva —cambiada en otro equipo—, y se prueba con la cuenta. Es un intento fallido más en
+  el servidor; los equipos de confianza no quedan fuera por los fallos.
+- **Se conecta a un solo sitio**, el servidor de cuentas, y solo con cuenta. Lo que le llega es lo mismo
+  que desde la aplicación —el correo, la bóveda cifrada, el nombre del equipo, que aquí es «Chrome en Mac»
+  o similar— y se revoca igual desde Ajustes de la aplicación. **Un 401 cierra la bóveda**, como en la
+  aplicación desde la 2.24.5.
+- **El WebAssembly de Argon2id va dentro del paquete** (`hash-wasm`), como el cifrado (`@noble/ciphers`):
+  la extensión no descarga código. Las dos bibliotecas van a versión exacta, y lo que hacen se comprueba
+  contra los vectores fijos del formato y **cruzado con Go** en cada publicación.
+
 ## Dónde queda algo en disco
 
 | Qué | Dónde | Permisos |
@@ -231,7 +262,8 @@ cambia también lo que se dibuja en la página (ADR 0032):
 ## Lo único que sale de la máquina
 
 Desde la 2.14.0 son **dos**, y **tres si se crea una cuenta** (la tercera, más abajo). Conviene saber
-exactamente cuáles.
+exactamente cuáles. Y la extensión, con cuenta, hace la tercera desde el navegador, sin la aplicación
+(ver «la extensión puede tener la bóveda dentro», arriba).
 
 **1 · Una petición `GET` a `api.github.com`, una vez al día**, para preguntar cuál es la última
 versión publicada ([ADR 0014](adr/0014-comprobacion-de-actualizaciones.md)). En ella viaja el número

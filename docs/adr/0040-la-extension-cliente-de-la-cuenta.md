@@ -1,6 +1,6 @@
 # ADR 0040 — La extensión, cliente de la cuenta (fase E)
 
-**Fecha:** 2026-09-22 · **Estado:** aceptada, en construcción · **Continúa la [0035](0035-las-cuentas.md)**,
+**Fecha:** 2026-09-22 · **Estado:** aceptada; E1 y E2 hechas, falta la E3 en su Mac · **Continúa la [0035](0035-las-cuentas.md)**,
 que decidió con el cliente que la extensión fuera un cliente completo de la cuenta · **Revisar cuando** llegue
 la auditoría
 
@@ -86,4 +86,37 @@ paquete de la extensión, comprobado buscándolo en `dist/`—.
   y Go compara un campo desconocido por sus bytes, con el HTML escapado, y la extensión por su forma
   canónica. Solo afectaría a campos que hoy no existe ninguna versión que escriba.
 
-**Sin comprobar todavía**: todo lo de la E2 y la E3.
+**E2, hecha el 2026-09-22** (se publica con la 2.25.0):
+
+- **Lo que se decidió al construirla**, que la ADR no decía:
+  - **Con cuenta, el trabajador de fondo contesta los mismos verbos del canal** (`nucleo/fuente.ts`), con
+    las reglas y frases de la aplicación: el panel, el guion de las páginas y la tarjeta de guardar no
+    cambian. Lo de la cuenta —entrar, el código, desbloquear, bloquear, salir— solo se atiende por el
+    puerto del panel.
+  - **Copia el panel**, porque el trabajador de fondo no puede tocar el portapapeles, y **no se borra
+    solo**: el panel lo dice. Sin pedir `clipboardWrite`, que en Chrome avisa al actualizar y desactiva
+    la extensión hasta aceptarlo; basta el clic de la persona.
+  - **Quince minutos sin tocarla** y se cierra, como la aplicación por defecto, y al cerrar el navegador.
+    Sin ajuste todavía.
+  - **Desbloquear con una contraseña que no abre** prueba la cuenta (la nueva, cambiada en otro equipo),
+    como la aplicación desde la 2.24.1.
+  - **Una cola en la bóveda de TypeScript**: sin cerrojos, dos guardados cruzados compartían serie y el
+    segundo no se subía, y una fusión pisaba lo guardado en medio. Una prueba lo vigila.
+  - **La lista de sufijos públicos, de `tldts`**, cruzada con la de Go en 30 casos. Lo que no es ASCII se
+    rechaza mirando lo escrito: el navegador convierte solo `bücher.de` a punycode y Go no.
+  - **`VERSION_DEL_AVISO` en 2**, con el aviso del panel, la política de la web, su copia para Mozilla,
+    la portada, las fichas de las dos tiendas y `docs/seguridad.md` al día.
+- **Comprobado aquí, con la extensión cargada de verdad** (`navegador/pruebas-reales`, en `make comprobar`
+  y en la puerta): un Chromium sin pantalla con la extensión compilada para pruebas, contra el servidor de
+  cuentas levantado aquí y **sin la aplicación**: entrar con el código, rellenar sola en un sitio guardado
+  y no en otro, recibir lo que se guarda en otro equipo, guardar desde el navegador y que suba, bloquear
+  —y que entonces no rellene— y desbloquear, el cierre a los quince minutos sin tocarla, y el cierre cuando
+  otro equipo la olvida, que lo dice y ofrece volver a entrar. Tres roturas a propósito cazadas: no pasar
+  por la cuenta, no subir y un plazo de bloqueo de 1.500 minutos. Capturas del panel en los dos temas,
+  miradas.
+- **Y por piezas**: los verbos (qué se ofrece, que una contraseña no sale hacia otro sitio —rompiéndolo,
+  cazado—, el freno de rellenos), los dominios cruzados con Go y la cola de la bóveda.
+
+**Sin comprobar todavía**: la E3 —en su Mac, con Chrome y Firefox de verdad y la aplicación cerrada—,
+**Firefox con la extensión cargada** (la prueba es solo Chromium), y que las tiendas acepten el
+WebAssembly y la conexión nueva.

@@ -99,7 +99,7 @@ async function abrir(page: Page, guion: Guion) {
     const rastro = globalThis as unknown as Rastro;
     rastro.__mensajes = [];
     rastro.__guardado =
-      g.aceptado === false ? {} : { consentimiento: { version: 1 } };
+      g.aceptado === false ? {} : { consentimiento: { version: 2 } };
     (globalThis as Record<string, unknown>).chrome = {
       storage: {
         local: {
@@ -443,7 +443,7 @@ test("aviso de datos: aceptarlo lo guarda con su versión y trae las cuentas", a
   await expect(page.locator("#lista li")).toHaveCount(3);
   await expect(page.locator("#aviso")).toBeHidden();
   const r = await rastro(page);
-  expect(r.__guardado.consentimiento.version).toBe(1);
+  expect(r.__guardado.consentimiento.version).toBe(2);
   // Primero el estado de la cuenta —¿hay cuenta y está cerrada?— y luego las
   // cuentas del sitio. Nada antes de aceptar, que es lo que mira la prueba de arriba.
   expect(r.__mensajes.map((m) => (m as { que?: string; cuenta?: string }).que ?? `cuenta:${(m as { cuenta?: string }).cuenta}`)).toEqual([

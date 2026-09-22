@@ -19,7 +19,11 @@
 import { api } from "./api";
 
 export const CLAVE_DEL_CONSENTIMIENTO = "consentimiento";
-export const VERSION_DEL_AVISO = 1;
+/**
+ * **2 desde la E2** (ADR 0040): con cuenta, la extensión se conecta al servidor de
+ * cuentas y guarda la bóveda cifrada en el navegador, y el aviso lo dice.
+ */
+export const VERSION_DEL_AVISO = 2;
 
 /** vale dice si lo guardado es la aceptación del aviso de ahora. */
 export function vale(guardado: unknown): boolean {
