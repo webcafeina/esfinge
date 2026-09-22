@@ -61,6 +61,13 @@ Esto es lo importante de este documento.
   el Portapapeles Universal de Apple, ya se lo pueden haber llevado a otro sitio. Eso no lo puede
   borrar nadie.
 
+- **De un equipo perdido, olvidarlo protege a medias.** Con cuenta, «Olvidar» en Ajustes le quita la
+  sesión en el servidor, y desde la 2.24.5 **le cierra la bóveda** si la tenía abierta —en menos de un
+  minuto, al intentar sincronizar—, así que quien lo tenga delante necesita la contraseña maestra. Pero
+  **solo si está encendido y con conexión**, y **no borra nada**: la copia de ese equipo sigue en su disco
+  y se abre con la contraseña de siempre. Si crees que alguien la sabe, cámbiala: el equipo perdido deja
+  de poder ponerse al día, aunque lo que ya tenía sigue ahí.
+
 ## Lo que cambia con la bóveda
 
 La bóveda guarda contraseñas, así que **cambia el modelo de amenazas del propio programa**. Antes,

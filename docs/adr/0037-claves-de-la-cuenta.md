@@ -81,6 +81,22 @@ sigue igual. Y **una contraseña mal escrita en un equipo con cuenta llega al se
 un intento fallido—; los equipos de confianza no quedan fuera por los fallos, así que no se bloquea uno
 mismo tecleando mal.
 
+### Matizado en la 2.24.5: un equipo que pierde la sesión cierra la bóveda
+
+Probando la A3, el cliente olvidó un Mac desde el otro, y el olvidado se quedó con la bóveda abierta
+diciendo «vuelve a entrar». Pidió que se cerrara, y es lo que se espera de «olvidar»: sirve sobre todo
+para un equipo perdido o robado, y abierto encima de una mesa no protege nada. Ahora, cuando el servidor
+contesta que la sesión no vale (401), la bóveda se cierra, se olvida la sesión guardada y «Abrir la
+bóveda» dice por qué.
+
+- **Se comprueba antes con la sesión de ahora** (`cerrarPorSesionPerdida`): una pasada que salió con la de
+  antes puede volver con un 401 justo después de volver a entrar, y cerraría una bóveda que ya está bien.
+- **La sesión guardada se olvida**: si no, al reabrir arrancaría con ella, volvería el 401 y se cerraría a
+  cada minuto.
+- Vale igual para las otras dos causas del 401 —**la contraseña cambiada en otro equipo** y **la sesión
+  caducada**—: en las dos hace falta volver a entrar, y en la primera cerrar es además lo prudente.
+- **Lo que no hace**: borrar nada, ni cerrar un equipo apagado o sin conexión. Dicho en `docs/seguridad.md`.
+
 ## Alternativas descartadas
 
 - **Posesión atada a la cuenta**, con el identificador de la cuenta como sal del HKDF, que era el plan.
@@ -135,5 +151,14 @@ en la cuenta.
 **Comprobado en su Mac con la 2.24.3**: exportar los datos de la cuenta —el fichero sale bien, y con la
 bóveda cerrada el botón avisa—.
 
-**Sin comprobar en un Mac**: recuperar con la clave de recuperación, olvidar un equipo y borrar la cuenta. Y que `NormalizarCorreo` de Go y `normalizarCorreo` del servidor coinciden en todos los casos raros
+**Comprobado en sus Macs con la 2.24.4** (2026-09-21, tarde): **recuperar con la clave de recuperación**
+—abre con la nueva, y el otro Mac entra escribiéndola— y **olvidar un equipo**, que pedía volver a entrar
+pero dejaba la bóveda abierta: de ahí la 2.24.5.
+
+**Comprobado en la 2.24.5**, contra el servidor de verdad y en la ventana: olvidado con la bóveda abierta,
+se cierra solo y lo dice; al reabrir no se vuelve a cerrar; al volver a entrar sincroniza; y un 401 tardío
+con una sesión que ya vale no cierra nada (rompiendo esa comprobación, la prueba lo caza).
+
+**Sin comprobar en un Mac**: el cierre por olvido de la 2.24.5, y borrar la cuenta —el cliente no lo va a
+probar con la suya; está probado aquí contra el servidor—. Y que `NormalizarCorreo` de Go y `normalizarCorreo` del servidor coinciden en todos los casos raros
 de Unicode: las dos pasan a minúsculas con reglas de lenguajes distintos. Manda la del servidor.

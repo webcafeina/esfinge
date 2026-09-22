@@ -219,13 +219,29 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   });
   expect(erroresA, erroresA.join(" | ")).toEqual([]);
 
+  // Y si B olvida a A con la bóveda abierta, a A se le cierra sola y dice por qué
+  // (2.24.5): olvidar es sobre todo para un equipo perdido.
+  const deNuevo = (await (await request.post(`${B}/api/DispositivosDeCuenta`, { data: [] })).json()) as {
+    id: string;
+    actual: boolean;
+  }[];
+  const aOtraVez = deNuevo.find((e) => !e.actual);
+  expect((await request.post(`${B}/api/OlvidarDispositivo`, { data: [aOtraVez!.id] })).ok()).toBe(true);
+  await request.post(`${A}/api/SincronizarAhora`, { data: [] });
+  await expect(accion(a, "Abrir la bóveda")).toBeVisible({ timeout: 20_000 });
+  await expect(a.getByText("tu cuenta ya no reconoce este equipo", { exact: false })).toBeVisible();
+  await expect(a.locator(".lateral .estado-boveda")).toHaveAttribute("data-abierta", "no");
+  await retratar(a, "cerrada-por-olvido");
+  expect(erroresA, erroresA.join(" | ")).toEqual([]);
+
   // Y Ajustes cuenta en qué cuenta está este equipo.
   await b.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
   await expect(b.getByRole("heading", { name: "Cuenta y sincronización" })).toBeVisible();
   await expect(b.getByText(correo)).toBeVisible();
-  // Los dos equipos, el de ahora marcado; y exportar lo que hay de la cuenta.
+  // El equipo de ahora, marcado; y exportar lo que hay de la cuenta.
   await expect(b.getByRole("heading", { name: "Equipos con tu cuenta" })).toBeVisible();
-  await expect(b.locator(".lista-equipos li")).toHaveCount(2);
+  // Solo B: a A lo acaba de olvidar.
+  await expect(b.locator(".lista-equipos li")).toHaveCount(1);
   await expect(b.locator(".lista-equipos")).toContainText("Este equipo");
   await retratar(b, "ajustes-cuenta");
   await b.getByRole("heading", { name: "Equipos con tu cuenta" }).scrollIntoViewIfNeeded();

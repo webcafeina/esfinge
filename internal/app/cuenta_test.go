@@ -870,12 +870,53 @@ func TestLosEquiposSeVenYSeOlvidan(t *testing.T) {
 	if err := a.a.AbrirBoveda(maestraFuerte); err != nil {
 		t.Fatal(err)
 	}
+	// Y la bóveda se le cierra sola (2.24.5): olvidar es sobre todo para un equipo
+	// perdido, y abierta encima de una mesa no protegería nada.
 	limite := time.Now().Add(20 * time.Second)
-	for a.a.EstadoDeCuenta().Sincro.Estado != "hay-que-entrar" {
+	for a.a.boveda() != nil || a.a.EstadoDeCuenta().Sincro.Mensaje != MensajeSesionPerdida {
 		if time.Now().After(limite) {
-			t.Fatalf("el equipo olvidado sigue: %+v", a.a.EstadoDeCuenta().Sincro)
+			t.Fatalf("el equipo olvidado sigue abierto: %+v", a.a.EstadoDeCuenta().Sincro)
 		}
 		time.Sleep(50 * time.Millisecond)
+	}
+	if d := leerDatosCuenta(); d.Sesion != "" || d.Modo != "cuenta" {
+		t.Fatalf("la sesión perdida sigue guardada, o se ha salido de la cuenta: %+v", d)
+	}
+
+	// Se vuelve a abrir con su contraseña, y **no se cierra otra vez**: sin sesión
+	// guardada no hay pasada que vuelva con un 401.
+	if err := a.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	_ = a.a.SincronizarAhora()
+	time.Sleep(time.Second)
+	if a.a.boveda() == nil {
+		t.Fatal("al reabrirla se cierra otra vez")
+	}
+	if e := a.a.EstadoDeCuenta().Sincro; e.Estado != "hay-que-entrar" {
+		t.Fatalf("no dice que hay que volver a entrar: %+v", e)
+	}
+	// Y al volver a entrar, sincroniza y sigue abierta.
+	entrarDesde(t, raiz, a, correo, maestraFuerte)
+	alDia(t, a.a, time.Now())
+	if a.a.boveda() == nil {
+		t.Fatal("se cierra después de volver a entrar")
+	}
+}
+
+// Una pasada que salió con la sesión de antes y vuelve con un 401 **después** de
+// volver a entrar no puede cerrar la bóveda: se comprueba la de ahora.
+func TestUnCuatroCientosUnoTardioNoCierra(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	a := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, a, correoDePrueba(), maestraFuerte)
+	alDia(t, a.a, time.Now())
+	a.a.cerrarPorSesionPerdida()
+	if a.a.boveda() == nil {
+		t.Fatal("cierra con una sesión que vale")
+	}
+	if d := leerDatosCuenta(); d.Sesion == "" {
+		t.Fatal("olvida una sesión que vale")
 	}
 }
 

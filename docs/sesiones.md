@@ -5,6 +5,19 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-22 · 2.24.5: olvidar un equipo le cierra la bóveda
+
+- El cliente probó la 2.24.4: **candado y recuperar, perfectos**; borrar la cuenta no lo va a probar.
+  Olvidar un Mac desde el otro pedía volver a entrar pero **dejaba la bóveda abierta**, y preguntó si no
+  debería cerrarse. Sí: olvidar es sobre todo para un equipo perdido.
+- **2.24.5**: con un 401 del servidor la bóveda se cierra, se olvida la sesión guardada —si no, se cerraría
+  a cada minuto al reabrir— y «Abrir la bóveda» dice por qué. Antes se comprueba con la sesión de ahora,
+  para que un 401 tardío tras volver a entrar no cierre nada. ADR 0037 matizada; `docs/seguridad.md` dice
+  lo que olvidar no hace (borrar, o cerrar un equipo apagado).
+- Go contra el servidor (incluida una rotura a propósito, cazada), `make comprobar`, `make e2e` y la prueba
+  de dos ventanas siete veces: seis en verde y una con el servidor local cortando la primera conexión, a
+  la deuda como baja. Captura mirada.
+
 ## 2026-09-21 (mediodía, cierre) · 2.24.4: el candado de la bóveda en la barra lateral
 
 - El cliente comprobó la 2.24.3: **66 repetidas** quitadas, el otro Mac al día solo, ninguna pareja

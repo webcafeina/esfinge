@@ -869,6 +869,9 @@ func (a *App) alSincronizar(r sincro.Resultado, err error) {
 		e = EstadoSincro{Estado: "sin-red", Mensaje: err.Error()}
 	case cuenta.SesionCaducada(err):
 		e = EstadoSincro{Estado: "hay-que-entrar", Mensaje: "La sesión ha caducado: vuelve a entrar en la cuenta para sincronizar"}
+		// Y la bóveda se cierra: lo pidió el cliente al olvidar un equipo desde el
+		// otro. Fuera de esta gorrutina, que es la del vigilante al que cerrar para.
+		go a.cerrarPorSesionPerdida()
 	case errors.Is(err, boveda.ErrMuchosBorrados):
 		e = EstadoSincro{Estado: "muchos-borrados", Mensaje: err.Error()}
 	default:
@@ -885,6 +888,44 @@ func (a *App) alSincronizar(r sincro.Resultado, err error) {
 	}
 	a.cu.mu.Unlock()
 	a.ponerEstado(e)
+}
+
+// MensajeSesionPerdida es lo que dice «Abrir la bóveda» cuando se ha cerrado sola
+// porque la cuenta ya no reconoce este equipo.
+const MensajeSesionPerdida = "Se ha cerrado porque tu cuenta ya no reconoce este equipo: se olvidó desde otro, se cambió la contraseña o la sesión caducó. Ábrela y vuelve a entrar en la cuenta para sincronizar."
+
+// cerrarPorSesionPerdida cierra la bóveda cuando el servidor ya no reconoce la
+// sesión de este equipo (2.24.5). **Olvidar un equipo es sobre todo para uno
+// perdido o robado**, y si se quedó con la bóveda abierta, dejarla así diciendo
+// «vuelve a entrar» no protege nada: quien lo tenga delante sigue viéndolo todo.
+// Cerrada, hace falta la contraseña maestra. No borra nada: la copia de aquí es
+// del equipo y se abre con su contraseña como siempre.
+//
+// Dos cosas para no cerrar de más:
+//
+//   - **Se comprueba antes con el servidor**, con la sesión que haya ahora. Una
+//     pasada que salió con la sesión de antes puede volver con un 401 justo
+//     después de volver a entrar, y cerraría una bóveda que ya está bien.
+//   - **La sesión guardada se olvida**, o al volver a abrir la bóveda arrancaría
+//     otra vez con ella, volvería el 401 y se cerraría a cada minuto.
+func (a *App) cerrarPorSesionPerdida() {
+	if a.boveda() == nil || leerDatosCuenta().Modo != "cuenta" {
+		return
+	}
+	a.cu.mu.Lock()
+	token := a.cu.sesion
+	a.cu.mu.Unlock()
+	if token != "" {
+		if _, err := a.cliente().Equipos(a.ctxCuenta(), token); !cuenta.SesionCaducada(err) {
+			return // la sesión de ahora vale, o no se sabe: no se cierra nada
+		}
+	}
+	d := leerDatosCuenta()
+	d.Sesion = ""
+	_ = guardarDatosCuenta(d)
+	a.CerrarBoveda()
+	a.sistema.Avisar(EventoBloqueada, nil)
+	a.ponerEstado(EstadoSincro{Estado: "hay-que-entrar", Mensaje: MensajeSesionPerdida})
 }
 
 func (a *App) ponerEstado(e EstadoSincro) {

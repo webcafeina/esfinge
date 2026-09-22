@@ -461,8 +461,12 @@ Macs**: cambiada en uno, el otro entró en la cuenta con la nueva.
   Ahora está siempre con cuenta, como «Exportar los datos de la cuenta…», y dice que hay que abrir la
   bóveda para usarlo.
 
-**La siguiente acción concreta (sesión cerrada el 2026-09-21 a mediodía, a petición del cliente) es recoger
-lo que diga de la 2.24.4**, publicada en verde, que prueba esa tarde en sus dos Macs con esta lista:
+**Lo que dijo el cliente de la 2.24.4 (2026-09-22)**: el candado, perfecto; recuperar la cuenta, perfecto;
+olvidar un equipo pedía volver a entrar pero **dejaba la bóveda abierta**, y pidió que se cerrara →
+**2.24.5**: al perder la sesión, la bóveda se cierra y dice por qué. Borrar la cuenta no lo va a probar.
+
+**La siguiente acción concreta es que compruebe el cierre de la 2.24.5** (olvidar un Mac desde el otro con
+la bóveda abierta) **y decidir con él el orden de lo que queda** (abajo). La lista que probó:
 
 1. **El candado de la barra lateral**: cerrado/abierto, que se cierre solo al bloquearse por inactividad, y
    el texto al pasar el ratón.

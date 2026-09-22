@@ -429,6 +429,13 @@ function Cerrada({
     <div className="panel">
       <p className="entradilla">La bóveda está cerrada.</p>
 
+      {/* Se ha cerrado sola porque la cuenta ya no reconoce este equipo (2.24.5):
+          sin decirlo, parecería el bloqueo de siempre y el siguiente paso —volver a
+          entrar en la cuenta— no se adivina. */}
+      {cuenta?.modo === "cuenta" && cuenta.sincro.estado === "hay-que-entrar" && cuenta.sincro.mensaje && (
+        <p className="aviso">{cuenta.sincro.mensaje}</p>
+      )}
+
       <div className="grupo">
         <div>
           <label htmlFor="boveda-llave">Contraseña maestra o clave de recuperación</label>
