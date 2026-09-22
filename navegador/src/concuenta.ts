@@ -43,7 +43,12 @@ const L = {
   base: "cuenta-base",
   recuerdo: "cuenta-recuerdo",
 } as const;
-const S = { llave: "cuenta-llave", actividad: "cuenta-actividad", sincro: "cuenta-sincro" } as const;
+const S = {
+  llave: "cuenta-llave",
+  actividad: "cuenta-actividad",
+  sincro: "cuenta-sincro",
+  entrando: "cuenta-entrando",
+} as const;
 
 /** Los datos de la cuenta en este navegador. Nada de esto sirve sin la maestra, salvo el testigo. */
 type Datos = {
@@ -79,6 +84,8 @@ export type PeticionDeCuenta =
   | { cuenta: "estado" }
   | { cuenta: "entrar"; correo: string; maestra: string; servidor?: string }
   | { cuenta: "codigo"; codigo: string }
+  /** Deja la entrada a medias: se vuelve a empezar. */
+  | { cuenta: "cancelar" }
   | { cuenta: "desbloquear"; maestra: string }
   | { cuenta: "bloquear" }
   | { cuenta: "salir" }
@@ -116,8 +123,34 @@ async function datos(): Promise<Datos | undefined> {
  * despertar: la clave está allí y el documento en `storage.local`.
  */
 let abierta: Boveda | null = null;
-/** Una entrada a medias: el reto del código y la maestra, **solo en memoria**. */
-let entrando: { correo: string; maestra: string; reto: string; servidor: string; equipo: string } | null = null;
+/**
+ * Una entrada a medias: el reto del código y la maestra, esperando el código del
+ * correo.
+ *
+ * **En `storage.session` y no en una variable**, y lo contó el cliente la primera
+ * vez que lo probó: para leer el código hay que ir al correo, el panel se cierra y
+ * el trabajador de fondo se duerme a los pocos segundos. En una variable, al volver
+ * no había nada y había que empezar otra vez, con otro correo. `storage.session`
+ * vive en memoria, no la leen las páginas y se va al cerrar el navegador; y esto se
+ * borra al confirmar, al cancelar y **a los diez minutos**, que es lo que dura el
+ * código.
+ */
+type Entrando = { correo: string; maestra: string; reto: string; servidor: string; equipo: string; hasta: number };
+const VIDA_DEL_CODIGO_MS = 10 * 60_000;
+
+async function entrando(): Promise<Entrando | null> {
+  const e = await sesion<Entrando>(S.entrando);
+  if (!e) return null;
+  if (Date.now() > e.hasta) {
+    await api.storage.session.remove(S.entrando);
+    return null;
+  }
+  return e;
+}
+
+async function olvidarEntrada(): Promise<void> {
+  await api.storage.session.remove(S.entrando);
+}
 
 async function laBoveda(): Promise<Boveda | null> {
   if (abierta?.abierta) return abierta;
@@ -181,7 +214,7 @@ export async function estado(): Promise<EstadoDeCuenta> {
     modo: d ? "cuenta" : "local",
     correo: d?.correo,
     abierta: b !== null,
-    codigoPendiente: entrando !== null,
+    codigoPendiente: (await entrando()) !== null,
     sincro,
     bloqueo: MINUTOS_DE_BLOQUEO,
   };
@@ -206,7 +239,9 @@ async function entrar(correoTecleado: string, maestra: string, servidor: string)
   const equipo = d?.equipo ?? nombreDelEquipo();
   const r = await cliente.entrar(correo, clave, equipo, d?.confianza ?? "");
   if (r.reto !== undefined) {
-    entrando = { correo, maestra, reto: r.reto, servidor, equipo };
+    await api.storage.session.set({
+      [S.entrando]: { correo, maestra, reto: r.reto, servidor, equipo, hasta: Date.now() + VIDA_DEL_CODIGO_MS },
+    });
     return { ok: true, necesitaCodigo: true };
   }
   await terminarEntrada(correo, maestra, servidor, equipo, r.sesion!);
@@ -214,11 +249,11 @@ async function entrar(correoTecleado: string, maestra: string, servidor: string)
 }
 
 async function confirmar(codigo: string): Promise<RespuestaDeCuenta> {
-  const p = entrando;
+  const p = await entrando();
   if (!p) throw new Error("Empieza otra vez: no hay ninguna entrada a medias");
   const s = await new Cliente(p.servidor).confirmar(p.reto, codigo.replace(/\D/g, ""), true);
   await terminarEntrada(p.correo, p.maestra, p.servidor, p.equipo, s);
-  entrando = null;
+  await olvidarEntrada();
   return { ok: true };
 }
 
@@ -313,7 +348,7 @@ async function salir(): Promise<void> {
       /* sin conexión o ya caducada: aquí se borra igual */
     }
   }
-  entrando = null;
+  await olvidarEntrada();
   await bloquear();
   await api.storage.local.remove([L.datos, L.boveda, L.base, L.recuerdo]);
   await api.storage.session.remove(S.sincro);
@@ -437,6 +472,9 @@ export async function atenderAlPanel(p: PeticionDeCuenta): Promise<RespuestaDeCu
         break;
       case "codigo":
         r = await confirmar(p.codigo);
+        break;
+      case "cancelar":
+        await olvidarEntrada();
         break;
       case "desbloquear":
         r = await desbloquear(p.maestra);

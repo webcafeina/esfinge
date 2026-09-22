@@ -117,6 +117,12 @@ paquete de la extensión, comprobado buscándolo en `dist/`—.
 - **Y por piezas**: los verbos (qué se ofrece, que una contraseña no sale hacia otro sitio —rompiéndolo,
   cazado—, el freno de rellenos), los dominios cruzados con Go y la cola de la bóveda.
 
+**Corregido en la 2.25.1, lo primero que vio el cliente al probarla**: para leer el código hay que ir al
+correo, el panel se cierra y al abrirlo otra vez se empezaba de cero, con otro correo. La entrada a medias
+vivía en una variable del trabajador de fondo, que se duerme a los pocos segundos. Ahora va en
+`storage.session` diez minutos —lo que dura el código—, el panel la retoma al abrirse, y «Volver» la
+cancela. La prueba con la extensión cargada cierra el panel en ese punto, como una persona.
+
 **Sin comprobar todavía**: la E3 —en su Mac, con Chrome y Firefox de verdad y la aplicación cerrada—,
 **Firefox con la extensión cargada** (la prueba es solo Chromium), y que las tiendas acepten el
 WebAssembly y la conexión nueva.

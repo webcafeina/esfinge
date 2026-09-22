@@ -181,12 +181,18 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
     await p.click("#cuenta-enviar");
     await expect(p.locator("#cuenta-codigo")).toBeVisible({ timeout: 30_000 });
     await retratar(p, "codigo");
-    await p.fill("#cuenta-codigo", await codigoDelBuzon(CORREO));
-    await p.click("#cuenta-enviar");
-    await expect(p.locator("#gestos-correo")).toHaveText(CORREO, { timeout: 30_000 });
-    await expect(p.locator("#bloquear")).toBeVisible();
-    await retratar(p, "abierta");
+    // **Como lo hace una persona**: el panel se cierra al ir al correo a por el
+    // código. Al abrirlo otra vez tiene que seguir en el código, sin volver a
+    // empezar ni mandar otro. Lo contó el cliente la primera vez que lo probó.
     await p.close();
+    const p2 = await panel();
+    await expect(p2.locator("#cuenta-codigo")).toBeVisible({ timeout: 15_000 });
+    await p2.fill("#cuenta-codigo", await codigoDelBuzon(CORREO));
+    await p2.click("#cuenta-enviar");
+    await expect(p2.locator("#gestos-correo")).toHaveText(CORREO, { timeout: 30_000 });
+    await expect(p2.locator("#bloquear")).toBeVisible();
+    await retratar(p2, "abierta");
+    await p2.close();
 
     expect(await contrasenaRellenada("sitio.prueba")).toBe("clave-del-sitio");
     // Y en un sitio sin nada guardado, no escribe nada.

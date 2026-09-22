@@ -875,7 +875,9 @@ al cerrar el navegador y que los guiones de las páginas no leen— y **contesta
   `await` se cuela cualquiera: dos guardados cruzados compartían serie y el segundo no se subía nunca, y
   una fusión pisaba lo que la tarjeta guardara en medio. Hay una prueba que lo caza quitando la cola.
 - **El trabajador se muere cada pocos minutos y la bóveda se rehace al despertar** (`laBoveda`), con la
-  clave de `storage.session`. Nada que haga falta después puede vivir solo en una variable.
+  clave de `storage.session`. Nada que haga falta después puede vivir solo en una variable: **la entrada
+  a medias vivía en una y se perdía mientras se iba al correo a por el código** —lo vio el cliente la
+  primera vez—; ahora va en `storage.session`, diez minutos.
 - **Solo cuenta como actividad lo que llega del panel.** El relleno automático, el refresco del icono y
   la sincronización no, o no se cerraría nunca: la misma regla de la aplicación.
 - **La compilación de pruebas** (`ESFINGE_CUENTAS_PRUEBAS`) apunta al servidor local y sale en

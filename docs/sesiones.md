@@ -5,6 +5,14 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-22 (noche) · 2.25.1: el código del correo sin volver a empezar
+
+- Primera prueba del cliente con la 2.25.0 cargada a mano en Chrome: el aviso nuevo, bien; sin estar aún
+  en la cuenta, la copia cargada a mano no puede hablar con la aplicación («forbidden»), que es lo
+  esperado. Pero **al ir al correo a por el código, el panel se cerraba y había que empezar otra vez**.
+- La entrada a medias pasa a `storage.session` (diez minutos), el panel la retoma al abrirse y «Volver»
+  la cancela. La prueba con la extensión cargada cierra el panel en ese punto; rompiéndolo, lo caza.
+
 ## 2026-09-22 (noche) · La E2 y la 2.25.0: la extensión con cuenta, sin la aplicación
 
 - **Dominios** con `tldts`, cruzados con Go en 30 casos (lo no ASCII se rechaza antes de que el navegador

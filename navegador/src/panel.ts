@@ -306,7 +306,9 @@ function pasoDeCuenta(primero: Paso, ec?: EstadoDeCuenta): Promise<void> {
     (document.getElementById("paso-correo") as HTMLElement).hidden = p !== "entrar";
     (document.getElementById("paso-maestra") as HTMLElement).hidden = p === "codigo";
     (document.getElementById("paso-codigo") as HTMLElement).hidden = p !== "codigo";
-    volver.hidden = p !== "entrar" || ec?.modo === "cuenta";
+    // «Volver» al entrar sin cuenta, y en el código siempre: puede que el correo no
+    // llegue o que se quiera empezar con otro.
+    volver.hidden = p === "desbloquear" || (p === "entrar" && ec?.modo === "cuenta");
     if (p === "entrar") {
       titulo.textContent = "Entrar con tu cuenta de Esfinge";
       texto.textContent =
@@ -324,7 +326,9 @@ function pasoDeCuenta(primero: Paso, ec?: EstadoDeCuenta): Promise<void> {
       maestra.focus();
     } else {
       titulo.textContent = "Revisa tu correo";
-      texto.textContent = "Te hemos mandado un código para confirmar este navegador. Caduca en diez minutos.";
+      texto.textContent =
+        "Te hemos mandado un código para confirmar este navegador. Puedes cerrar este panel para ir a " +
+        "buscarlo: al abrirlo otra vez seguirás aquí. Caduca en diez minutos.";
       enviar.textContent = "Confirmar";
       codigo.value = "";
       codigo.focus();
@@ -332,7 +336,14 @@ function pasoDeCuenta(primero: Paso, ec?: EstadoDeCuenta): Promise<void> {
   };
   poner(primero);
 
-  volver.addEventListener("click", () => location.reload(), { once: true });
+  volver.addEventListener(
+    "click",
+    async () => {
+      if (paso === "codigo") await pedirCuenta({ cuenta: "cancelar" });
+      location.reload();
+    },
+    { once: true },
+  );
   return new Promise((resolver) => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -774,8 +785,16 @@ async function arrancar() {
   const ec = await pedirCuenta({ cuenta: "estado" });
   if (ec.estado) {
     pintarGestos(ec.estado);
+    // **Una entrada a medias va primero**, haya cuenta o no: es quien fue al correo a
+    // por el código y vuelve con él.
+    if (ec.estado.codigoPendiente) {
+      gestos.hidden = true;
+      await pasoDeCuenta("codigo", ec.estado);
+      location.reload();
+      return;
+    }
     if (ec.estado.modo === "cuenta" && !ec.estado.abierta) {
-      await pasoDeCuenta(ec.estado.codigoPendiente ? "codigo" : "desbloquear", ec.estado);
+      await pasoDeCuenta("desbloquear", ec.estado);
       cargando.hidden = false;
     }
   }
