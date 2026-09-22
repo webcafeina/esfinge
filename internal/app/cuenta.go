@@ -291,7 +291,7 @@ func (a *App) SincronizarAhora() error {
 	if m == nil {
 		return errors.New("Aquí no se está sincronizando: abre la bóveda de la cuenta")
 	}
-	m.vig.Pedir()
+	m.vig.Ya()
 	return nil
 }
 

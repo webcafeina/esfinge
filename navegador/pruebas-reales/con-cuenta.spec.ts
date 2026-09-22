@@ -201,9 +201,11 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
 
   test("lo que se guarda en otro equipo llega al navegador", async () => {
     await desdeElOtroEquipo((b) => b.poner(credencial("Otro", "yo@otro.prueba", "clave-del-otro", "https://otro.prueba")).then(() => {}));
+    // Con el botón del panel, sin esperar a la pasada de cada minuto (2.25.2).
     const p = await panel();
-    const r = await alTrabajador(p, { cuenta: "sincronizar" });
-    expect(r.estado?.sincro.estado).toBe("al-dia");
+    await p.click("#sincronizar");
+    await expect(p.locator("#resultado")).toContainText("Sincronizada con tu cuenta.", { timeout: 20_000 });
+    await retratar(p, "sincronizada");
     await p.close();
     expect(await contrasenaRellenada("otro.prueba")).toBe("clave-del-otro");
   });

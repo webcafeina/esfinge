@@ -386,6 +386,7 @@ function pintarGestos(ec: EstadoDeCuenta) {
   const conCuenta = ec.modo === "cuenta";
   (document.getElementById("gestos-correo") as HTMLElement).textContent = conCuenta ? (ec.correo ?? "") : "";
   (document.getElementById("bloquear") as HTMLElement).hidden = !(conCuenta && ec.abierta);
+  (document.getElementById("sincronizar") as HTMLElement).hidden = !(conCuenta && ec.abierta && ec.sincro.estado !== "hay-que-entrar");
   // Abierta pero sin sesión —la cuenta dejó de reconocer este navegador—: se trabaja
   // aquí, sin sincronizar, hasta volver a entrar.
   (document.getElementById("volver-a-entrar") as HTMLElement).hidden = !(conCuenta && ec.abierta && ec.sincro.estado === "hay-que-entrar");
@@ -394,6 +395,24 @@ function pintarGestos(ec: EstadoDeCuenta) {
 }
 
 function atenderGestos() {
+  // **Sincronizar a mano** (2.25.2): sin esperar a la pasada de cada minuto. Lo que
+  // llegue se ve en la lista en el acto.
+  const sincronizar = document.getElementById("sincronizar") as HTMLButtonElement;
+  sincronizar.addEventListener("click", async () => {
+    sincronizar.disabled = true;
+    sincronizar.textContent = "Sincronizando…";
+    const r = await pedirCuenta({ cuenta: "sincronizar" });
+    sincronizar.textContent = "Sincronizar";
+    sincronizar.disabled = false;
+    const s = r.estado?.sincro;
+    if (!r.ok || !s || s.estado !== "al-dia") {
+      contar(s?.mensaje ?? r.error ?? "No se ha podido sincronizar.", false);
+      if (r.estado) pintarGestos(r.estado);
+      return;
+    }
+    contar("Sincronizada con tu cuenta.", true);
+    await pintarCuentas();
+  });
   document.getElementById("bloquear")!.addEventListener("click", async () => {
     await pedirCuenta({ cuenta: "bloquear" });
     location.reload();
@@ -799,7 +818,18 @@ async function arrancar() {
     }
   }
 
+  sitioDelPanel = { origen, pestana: pestana?.id };
+  await pintarCuentas();
+}
+
+/** El sitio de la pestaña, para volver a pintar sus cuentas tras sincronizar. */
+let sitioDelPanel: { origen: string; pestana: number | undefined } = { origen: "", pestana: undefined };
+
+/** pintarCuentas pide las cuentas del sitio y las pone en la lista, o dice por qué no hay. */
+async function pintarCuentas() {
+  const { origen, pestana } = sitioDelPanel;
   const r = await pedir({ que: "cuentas", origen });
+  lista.replaceChildren();
   if (!r.ok) {
     ensenar(queHacer(r.motivo, r.error));
     return;
@@ -817,8 +847,9 @@ async function arrancar() {
     return;
   }
   for (const c of cuentas) {
-    lista.append(fila(c, origen, pestana?.id));
+    lista.append(fila(c, origen, pestana));
   }
+  estado.hidden = true;
   cargando.hidden = true;
   lista.hidden = false;
 }

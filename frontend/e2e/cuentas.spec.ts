@@ -169,6 +169,24 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
     timeout: 30_000,
   });
 
+  // Y con el botón, sin esperar a la pasada de cada minuto ni volver a la ventana
+  // (2.25.2). Primero que A lo haya subido, como arriba.
+  const conElBoton = new Date(Math.floor(Date.now() / 1000) * 1000 + 1000).toISOString().replace(".000Z", "Z");
+  await accion(a, "Nueva").click();
+  await a.locator("#boveda-titulo").fill("Llega con el botón");
+  await accion(a, "Guardar").click();
+  await expect
+    .poll(async () => {
+      const r = await request.post(`${A}/api/EstadoDeCuenta`, { data: [] });
+      const e = (await r.json()) as { sincro: { estado: string; ultima?: string } };
+      return e.sincro.estado === "al-dia" && (e.sincro.ultima ?? "") >= conElBoton;
+    }, { timeout: 20_000 })
+    .toBe(true);
+  await b.locator(".linea-sincro").getByRole("button", { name: "Sincronizar ahora" }).click();
+  await expect(b.locator(".lista-boveda").getByRole("button", { name: "Llega con el botón" })).toBeVisible({
+    timeout: 8_000,
+  });
+
   // Con cuenta y la bóveda cerrada, la pantalla ofrece entrar con una contraseña
   // cambiada en otro equipo y recuperar la cuenta.
   await accion(a, "Cerrar la bóveda").click();

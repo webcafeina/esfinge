@@ -465,6 +465,10 @@ Macs**: cambiada en uno, el otro entró en la cuenta con la nueva.
 olvidar un equipo pedía volver a entrar pero **dejaba la bóveda abierta**, y pidió que se cerrara →
 **2.24.5**: al perder la sesión, la bóveda se cierra y dice por qué. Borrar la cuenta no lo va a probar.
 
+**La E2, comprobada por el cliente en Chrome (2.25.1, cargada a mano): «funciona todo perfecto»**. Pidió
+un botón para sincronizar a mano en la aplicación y en la extensión → **2.25.2**. Falta Firefox —cuando
+Mozilla apruebe la versión— y que las dos tiendas la publiquen.
+
 **La E2, hecha (2026-09-22, 2.25.0)** — [ADR 0040](adr/0040-la-extension-cliente-de-la-cuenta.md): **la
 extensión con cuenta funciona sin la aplicación**. En su panel se entra con el correo, la contraseña y el
 código; la bóveda vive cifrada en el navegador, se abre con la maestra, se cierra a los quince minutos sin

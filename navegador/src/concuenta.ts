@@ -370,7 +370,7 @@ const memoria: Memoria = {
 };
 
 let temporizador: ReturnType<typeof setTimeout> | undefined;
-let sincronizando = false;
+let enMarcha: Promise<void> | null = null;
 let otraVez = false;
 
 /** Pide una pasada dentro de `ms`. La alarma de cada minuto es la red de seguridad si el trabajador se muere antes. */
@@ -381,21 +381,28 @@ export function pedirSincro(ms: number) {
   }, ms);
 }
 
-/** Una pasada, con el turno reservado: si ya hay una, se apunta otra para cuando acabe. */
-export async function sincronizar(): Promise<void> {
-  if (sincronizando) {
+/**
+ * Una pasada, con el turno reservado: si ya hay una, se apunta otra para cuando
+ * acabe **y se espera a las dos**. Volver en el acto diciendo «ya hay una» hacía
+ * que el botón del panel contestara antes de que la pasada que lanzó abrirlo
+ * terminara, con lo de antes (lo cazó la prueba con la extensión cargada).
+ */
+export function sincronizar(): Promise<void> {
+  if (enMarcha) {
     otraVez = true;
-    return;
+    return enMarcha;
   }
-  sincronizando = true;
-  try {
-    do {
-      otraVez = false;
-      await unaPasada();
-    } while (otraVez);
-  } finally {
-    sincronizando = false;
-  }
+  enMarcha = (async () => {
+    try {
+      do {
+        otraVez = false;
+        await unaPasada();
+      } while (otraVez);
+    } finally {
+      enMarcha = null;
+    }
+  })();
+  return enMarcha;
 }
 
 async function unaPasada(): Promise<void> {
@@ -466,6 +473,10 @@ export async function atenderAlPanel(p: PeticionDeCuenta): Promise<RespuestaDeCu
     switch (p.cuenta) {
       case "estado":
         await actividad();
+        // **Abrir el panel pide una pasada**, como la aplicación al volver a su
+        // ventana: quien lo abre suele venir de cambiar algo en otro equipo. No se
+        // espera a que acabe; la lista la pinta el panel con lo que haya.
+        if (await sesion<string>(S.llave)) pedirSincro(0);
         break;
       case "entrar":
         r = await entrar(p.correo, p.maestra, p.servidor || (await datos())?.servidor || RAIZ_POR_DEFECTO);

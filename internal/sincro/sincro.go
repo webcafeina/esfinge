@@ -247,12 +247,27 @@ type Vigilante struct {
 	Espera time.Duration
 
 	pedido chan struct{}
+	ya     chan struct{}
 	una    sync.Once
 }
 
 func (v *Vigilante) canal() chan struct{} {
-	v.una.Do(func() { v.pedido = make(chan struct{}, 1) })
+	v.una.Do(func() {
+		v.pedido = make(chan struct{}, 1)
+		v.ya = make(chan struct{}, 1)
+	})
 	return v.pedido
+}
+
+// Ya pide una pasada **sin la espera de después de guardar**: la de un botón o la
+// de volver a la ventana. Pedir espera para juntar los guardados seguidos, y eso
+// en un botón se lee como que no ha hecho nada (lo pidió el cliente, 2.25.2).
+func (v *Vigilante) Ya() {
+	v.canal()
+	select {
+	case v.ya <- struct{}{}:
+	default:
+	}
 }
 
 // Pedir avisa de que hay algo que sincronizar —un guardado—. No espera ni
@@ -267,6 +282,7 @@ func (v *Vigilante) Pedir() {
 // Vigilar corre hasta que se cancela `ctx`.
 func (v *Vigilante) Vigilar(ctx context.Context) {
 	pedido := v.canal()
+	ya := v.ya
 	espera := CadaCuanto
 	fallos := 0
 	temporizador := time.NewTimer(0) // la primera pasada, al arrancar
@@ -281,9 +297,16 @@ func (v *Vigilante) Vigilar(ctx context.Context) {
 			if tras <= 0 {
 				tras = EsperaTrasGuardar
 			}
-			if !esperar(ctx, tras) {
+			// Y un «ya» a mitad de la espera la corta: el botón no espera a nadie.
+			if !esperarSalvo(ctx, tras, ya) {
 				return
 			}
+			select {
+			case <-pedido:
+			default:
+			}
+		case <-ya:
+			// Sin esperar. Y un guardado pendiente va en esta misma pasada.
 			select {
 			case <-pedido:
 			default:
@@ -317,6 +340,21 @@ func (v *Vigilante) Vigilar(ctx context.Context) {
 			}
 		}
 		temporizador.Reset(espera)
+	}
+}
+
+// esperarSalvo es esperar, salvo que llegue algo por `corte`, que la acaba antes.
+// Devuelve falso si se ha cancelado el contexto.
+func esperarSalvo(ctx context.Context, d time.Duration, corte <-chan struct{}) bool {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-t.C:
+		return true
+	case <-corte:
+		return true
 	}
 }
 

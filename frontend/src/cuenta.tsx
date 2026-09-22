@@ -840,6 +840,23 @@ export function LineaSincro({ alVolverAEntrar }: { alVolverAEntrar: (correo: str
           </button>
         </>
       )}
+      {/* **Sincronizar a mano**, sin esperar a la pasada de cada minuto: lo pidió el
+          cliente al ver que un cambio entre la aplicación y la extensión tardaba
+          hasta un minuto (2.25.2). La pasada sola se queda. */}
+      {e.estado !== "hay-que-entrar" && e.estado !== "apagada" && (
+        <>
+          {" "}
+          <button
+            className="discreto"
+            disabled={e.estado === "sincronizando"}
+            onClick={() => {
+              esfinge.sincronizarAhora().catch(() => {});
+            }}
+          >
+            Sincronizar ahora
+          </button>
+        </>
+      )}
     </p>
   );
 }

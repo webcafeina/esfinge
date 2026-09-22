@@ -5,6 +5,15 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-22 (noche) · 2.25.2: sincronizar a mano
+
+- El cliente probó la 2.25.1 en Chrome, cargada a mano: **todo perfecto**. Pidió poder sincronizar a
+  mano, en la aplicación y en la extensión, sin quitar la pasada de cada minuto.
+- La aplicación: «Sincronizar ahora» en la línea de la bóveda, y `Vigilante.Ya`, que no espera los tres
+  segundos de después de guardar (prueba en Go). La extensión: «Sincronizar» en el panel, y abrir el panel
+  pide una pasada. Salió una carrera —el botón volvía antes de que acabara la pasada en marcha— y la cazó
+  la prueba con la extensión cargada; ahora espera.
+
 ## 2026-09-22 (noche) · 2.25.1: el código del correo sin volver a empezar
 
 - Primera prueba del cliente con la 2.25.0 cargada a mano en Chrome: el aviso nuevo, bien; sin estar aún

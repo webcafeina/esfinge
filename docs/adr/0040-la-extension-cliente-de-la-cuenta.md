@@ -123,6 +123,18 @@ vivía en una variable del trabajador de fondo, que se duerme a los pocos segund
 `storage.session` diez minutos —lo que dura el código—, el panel la retoma al abrirse, y «Volver» la
 cancela. La prueba con la extensión cargada cierra el panel en ese punto, como una persona.
 
-**Sin comprobar todavía**: la E3 —en su Mac, con Chrome y Firefox de verdad y la aplicación cerrada—,
+**Comprobado por el cliente en su Mac con la 2.25.1 (2026-09-22), cargada a mano en Chrome**: entrar con
+el código cerrando el panel para ir al correo, rellenar con la aplicación cerrada, guardar desde la
+tarjeta y que llegue a sus Macs, lo de los Macs en la extensión, bloquear y desbloquear, copiar, y
+«Chrome en Mac» en la lista de equipos. «Funciona todo perfecto».
+
+**2.25.2, lo que pidió después**: un botón para **sincronizar a mano**, en la aplicación y en la
+extensión, sin quitar la pasada de cada minuto. En la aplicación va en la línea de sincronización de la
+bóveda y **no espera** los tres segundos de después de guardar (`Vigilante.Ya`, que corta también esa
+espera si ya estaba en marcha); en la extensión va en el panel, y además **abrir el panel pide una
+pasada**, como la aplicación al volver a su ventana. Al hacerlo salió una carrera: el botón del panel
+volvía en el acto si ya había una pasada, con lo de antes; ahora espera a la que está en marcha.
+
+**Sin comprobar todavía**: el resto de la E3 —en su Mac, con Chrome y Firefox de verdad y la aplicación cerrada—,
 **Firefox con la extensión cargada** (la prueba es solo Chromium), y que las tiendas acepten el
 WebAssembly y la conexión nueva.

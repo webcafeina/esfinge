@@ -294,6 +294,36 @@ func TestVigilarSubeTrasGuardarYParaAlCancelar(t *testing.T) {
 	}
 }
 
+// «Sincronizar ahora» es ahora: sin la espera de después de guardar, que en un
+// botón se lee como que no ha hecho nada (2.25.2).
+func TestYaNoEsperaLoDeDespuesDeGuardar(t *testing.T) {
+	srv := &enMemoria{}
+	e := nuevoEquipo(t, srv, crear(t))
+	pasadas := make(chan Resultado, 10)
+	v := &Vigilante{S: e.s, Espera: 10 * time.Second, Avisar: func(r Resultado, err error) {
+		if err != nil {
+			t.Error(err)
+		}
+		pasadas <- r
+	}}
+	c, cancelar := context.WithCancel(ctx)
+	defer cancelar()
+	go v.Vigilar(c)
+	<-pasadas // la del arranque
+
+	_ = e.b.Poner(boveda.Entrada{Titulo: "Con prisa"})
+	v.Pedir() // un guardado: esperaría diez segundos
+	v.Ya()    // un botón: no
+	select {
+	case r := <-pasadas:
+		if !r.Subio {
+			t.Fatalf("no sube: %+v", r)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("«ya» ha esperado lo de después de guardar")
+	}
+}
+
 func TestLoQueSeRecuerdaSeGuardaYSeOlvida(t *testing.T) {
 	ruta := filepath.Join(t.TempDir(), "boveda.esfinge")
 	m := JuntoALaBoveda{Ruta: ruta}
