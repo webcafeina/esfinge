@@ -375,6 +375,9 @@ function pintarGestos(ec: EstadoDeCuenta) {
   const conCuenta = ec.modo === "cuenta";
   (document.getElementById("gestos-correo") as HTMLElement).textContent = conCuenta ? (ec.correo ?? "") : "";
   (document.getElementById("bloquear") as HTMLElement).hidden = !(conCuenta && ec.abierta);
+  // Abierta pero sin sesión —la cuenta dejó de reconocer este navegador—: se trabaja
+  // aquí, sin sincronizar, hasta volver a entrar.
+  (document.getElementById("volver-a-entrar") as HTMLElement).hidden = !(conCuenta && ec.abierta && ec.sincro.estado === "hay-que-entrar");
   (document.getElementById("salir") as HTMLElement).hidden = !conCuenta;
   (document.getElementById("usar-cuenta") as HTMLElement).hidden = conCuenta;
 }
@@ -382,6 +385,12 @@ function pintarGestos(ec: EstadoDeCuenta) {
 function atenderGestos() {
   document.getElementById("bloquear")!.addEventListener("click", async () => {
     await pedirCuenta({ cuenta: "bloquear" });
+    location.reload();
+  });
+  document.getElementById("volver-a-entrar")!.addEventListener("click", async () => {
+    gestos.hidden = true;
+    const ec = await pedirCuenta({ cuenta: "estado" });
+    await pasoDeCuenta("entrar", ec.estado);
     location.reload();
   });
   document.getElementById("usar-cuenta")!.addEventListener("click", async () => {

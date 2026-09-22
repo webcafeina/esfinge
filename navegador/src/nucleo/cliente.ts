@@ -11,7 +11,11 @@
 import { base64url, desdeBase64 } from "./esf1";
 import { validarCoste, type ParametrosDeCuenta } from "./cuenta";
 
-export const RAIZ_POR_DEFECTO = "https://esfinge-cuentas.webcafeina.com";
+/** Lo pone la compilación de pruebas (`vite.fondo.config.ts`); en la de siempre va vacío. */
+declare const __RAIZ_CUENTAS__: string;
+
+export const RAIZ_POR_DEFECTO =
+  (typeof __RAIZ_CUENTAS__ === "string" && __RAIZ_CUENTAS__) || "https://esfinge-cuentas.webcafeina.com";
 const TAMANO_MAXIMO = 16 * 1024 * 1024;
 const PLAZO_MS = 60_000;
 

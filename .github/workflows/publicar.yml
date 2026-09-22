@@ -113,6 +113,14 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm run comprobar
 
+      # **La extensión cargada de verdad** en un Chromium, con cuenta y sin la
+      # aplicación, contra el servidor de cuentas levantado aquí (ADR 0040): entrar,
+      # rellenar, sincronizar en los dos sentidos, bloquear y el cierre por olvido.
+      # Aquí y no con las demás de la extensión: necesita el servidor instalado.
+      - name: La extensión cargada, con cuenta
+        working-directory: navegador
+        run: pnpm exec playwright test -c pruebas-reales
+
       # Y el cliente de Go y la sincronización contra ese servidor, levantado aquí
       # mismo: sin esto, las pruebas de la tubería se saltan solas.
       - name: La sincronización contra el servidor

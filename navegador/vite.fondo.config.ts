@@ -15,9 +15,17 @@ import { resolve } from "node:path";
  */
 const navegador = process.env.NAVEGADOR === "firefox" ? "firefox" : "chrome";
 
+/**
+ * **Solo para las pruebas con la extensión cargada** (ADR 0040): el servidor de
+ * cuentas al que habla, en vez del de producción, y en una carpeta aparte para que
+ * nunca se confunda con la que se publica. Sin la variable, nada cambia.
+ */
+const pruebas = process.env.ESFINGE_CUENTAS_PRUEBAS ?? "";
+
 export default defineConfig({
+  define: { __RAIZ_CUENTAS__: JSON.stringify(pruebas) },
   build: {
-    outDir: resolve(__dirname, "dist", navegador),
+    outDir: pruebas ? resolve(__dirname, "dist", "pruebas") : resolve(__dirname, "dist", navegador),
     emptyOutDir: false,
     lib: {
       entry: resolve(__dirname, "src/fondo.ts"),

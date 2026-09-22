@@ -34,6 +34,9 @@ comprobar:
 	@# Y el servidor de cuentas: tipos y sus pruebas, dentro del motor de Workers
 	@# de verdad. Sin conexión con Cloudflare: todo corre en local.
 	cd servidor && $(PNPM) run comprobar
+	@# Y la extensión cargada de verdad, con cuenta y sin la aplicación, contra ese
+	@# servidor levantado aquí (ADR 0040).
+	cd navegador && $(PNPM) exec playwright test -c pruebas-reales
 	@# Y el cliente y la sincronización contra ese mismo servidor, levantado en
 	@# local: la tubería entera, de la bóveda de un equipo a la de otro.
 	herramientas/con-servidor.sh $(GO) test -race -count=1 ./internal/cuenta ./internal/sincro ./internal/app

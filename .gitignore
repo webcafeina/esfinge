@@ -53,3 +53,4 @@ build/windows/installer/esfinge-puente.exe
 build/windows/icon.ico
 build/windows/info.json
 build/windows/wails.exe.manifest
+navegador/pruebas-reales/test-results/

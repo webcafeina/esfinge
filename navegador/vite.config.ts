@@ -18,7 +18,9 @@ import { resolve } from "node:path";
  * Se elige con NAVEGADOR=chrome|firefox. Por defecto, Chrome.
  */
 const navegador = process.env.NAVEGADOR === "firefox" ? "firefox" : "chrome";
-const salida = resolve(__dirname, "dist", navegador);
+/** Las pruebas con la extensión cargada: ver `vite.fondo.config.ts`. */
+const pruebas = process.env.ESFINGE_CUENTAS_PRUEBAS ?? "";
+const salida = pruebas ? resolve(__dirname, "dist", "pruebas") : resolve(__dirname, "dist", navegador);
 
 export default defineConfig({
   root: resolve(__dirname, "src"),
@@ -54,6 +56,12 @@ export default defineConfig({
         // **rechaza la extensión entera** sin cargarla.
         const numeros = /\d+(?:\.\d+){0,3}/.exec(process.env.VERSION ?? "");
         if (numeros) m.version = numeros[0];
+        // En la compilación de pruebas, permiso para su servidor de cuentas —que es
+        // `http` y local, fuera de `https://*/*`— y un nombre que no deja dudas.
+        if (pruebas) {
+          m.name = "Esfinge (pruebas)";
+          m.host_permissions = [...(m.host_permissions ?? []), `${new URL(pruebas).origin}/*`];
+        }
         writeFileSync(resolve(salida, "manifest.json"), JSON.stringify(m, null, 2) + "\n");
 
         // Los iconos. **Se copian todos, no solo los que nombra el manifiesto**:

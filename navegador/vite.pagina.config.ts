@@ -16,7 +16,11 @@ const navegador = process.env.NAVEGADOR === "firefox" ? "firefox" : "chrome";
 
 export default defineConfig({
   build: {
-    outDir: resolve(__dirname, "dist", navegador),
+    // La compilación de pruebas va en su carpeta, como las otras dos (ver
+    // `vite.fondo.config.ts`). Sin esto, `dist/pruebas` salía sin `pagina.js`, y
+    // Chromium rechaza una extensión cuyo manifiesto nombra un fichero que no está,
+    // **sin decir nada**.
+    outDir: process.env.ESFINGE_CUENTAS_PRUEBAS ? resolve(__dirname, "dist", "pruebas") : resolve(__dirname, "dist", navegador),
     emptyOutDir: false,
     lib: {
       entry: resolve(__dirname, "src/pagina.ts"),
