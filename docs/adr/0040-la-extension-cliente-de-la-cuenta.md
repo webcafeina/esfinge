@@ -139,6 +139,9 @@ volvía en el acto si ya había una pasada, con lo de antes; ahora espera a la q
 en la extensión, que lo pidió el cliente: con la palabra y nada que se moviera no se sabía si había hecho
 algo.
 
+**Comprobado por el cliente en su Mac con la 2.25.3**: las flechas giran y sincronizan, en la aplicación
+y en la extensión. «Funciona perfecto».
+
 **Sin comprobar todavía**: el resto de la E3 —en su Mac, con Chrome y Firefox de verdad y la aplicación cerrada—,
 **Firefox con la extensión cargada** (la prueba es solo Chromium), y que las tiendas acepten el
 WebAssembly y la conexión nueva.
