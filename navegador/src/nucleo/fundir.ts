@@ -73,6 +73,18 @@ export async function fundir(
   base: string | null,
   opciones: { aunqueBorreMucho?: boolean } = {},
 ): Promise<Fusion> {
+  // **Entera dentro de la cola de la bóveda**: si no, lo que se guardara mientras
+  // se funde —la tarjeta de una página— se perdería al poner lo fundido.
+  return boveda._exclusivo(() => fundirSinCola(boveda, remoto, version, base, opciones));
+}
+
+async function fundirSinCola(
+  boveda: Boveda,
+  remoto: string,
+  version: number,
+  base: string | null,
+  opciones: { aunqueBorreMucho?: boolean },
+): Promise<Fusion> {
   if (boveda.soloLectura) throw new ErrorBoveda("formato-nuevo");
   const { doc, cont, llave } = boveda._estado;
   const docR = leerDocumento(remoto);
@@ -117,7 +129,7 @@ export async function fundir(
   }
   if (!f.cambio) return f;
   boveda._ponerFundido(r.contenido, r.sobres);
-  await boveda.guardar();
+  await boveda._guardarSinCola();
   f.serie = boveda.serie;
   return f;
 }

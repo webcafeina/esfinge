@@ -12,6 +12,7 @@ import { canonico, type ValorJSON } from "./canon";
 import { Boveda, canonContenido, contenidoDesde, relojParaPruebas, type Sobre } from "./boveda";
 import { codigoEn, leerSemilla } from "./codigos";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
+import { dominioDeOrigen, dominioDeSitio } from "./dominios";
 import { canonEntrada, entradaDesde } from "./entrada";
 import { fundir, fundirPiezas } from "./fundir";
 
@@ -82,7 +83,7 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
 
     case "subida": {
       const b = await Boveda.abrir(p.texto as string, p.llave as string);
-      return { texto: await b.prepararSubida(p.version as number) };
+      return { texto: (await b.prepararSubida(p.version as number)).texto };
     }
 
     case "fundirBoveda": {
@@ -112,6 +113,17 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
       return hex(
         await derivarAcceso(p.maestra as string, deHex(p.sal as string), p.parametros as { memoria: number; pasadas: number; paralelismo: number }),
       );
+
+    case "dominios":
+      return (p.casos as string[]).map((c) => {
+        let origen: string;
+        try {
+          origen = dominioDeOrigen(c);
+        } catch {
+          origen = "error";
+        }
+        return { origen, sitio: dominioDeSitio(c) };
+      });
 
     case "correos":
       return (p.correos as string[]).map((c) => {

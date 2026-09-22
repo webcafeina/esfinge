@@ -102,3 +102,28 @@ test("bóveda: la lista sale sin secretos, y cerrada no deja hacer nada", async 
   boveda.cerrar();
   expect(() => boveda.buscar("")).toThrow("La bóveda está cerrada");
 });
+
+test("bóveda: dos guardados a la vez no comparten serie, y fundir no pisa lo que se guarda en medio", async () => {
+  const { boveda } = await Boveda.crear(MAESTRA);
+  await boveda.guardar();
+  const antes = boveda.serie;
+  // Sin la cola, los dos partían de la misma serie y acababan con la misma: el
+  // segundo cambio se daba por subido sin estarlo.
+  const series: number[] = [];
+  boveda.alGuardar = () => series.push(boveda.serie);
+  await Promise.all([
+    boveda.poner({ id: "", tipo: "credencial", titulo: "Una", creada: "", cambiada: "" }),
+    boveda.poner({ id: "", tipo: "credencial", titulo: "Otra", creada: "", cambiada: "" }),
+  ]);
+  expect(series).toEqual([antes + 1, antes + 2]);
+  expect(boveda.cuantas()).toBe(2);
+
+  // Una fusión con lo que «llega del servidor» mientras se guarda una tercera.
+  const { fundir } = await import("../src/nucleo/fundir");
+  const remoto = await boveda.prepararSubida(1);
+  await Promise.all([
+    fundir(boveda, remoto.texto, 1, null),
+    boveda.poner({ id: "", tipo: "credencial", titulo: "En medio", creada: "", cambiada: "" }),
+  ]);
+  expect(boveda.buscar("").map((e) => e.titulo).sort()).toEqual(["En medio", "Otra", "Una"]);
+});

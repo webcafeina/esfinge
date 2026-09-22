@@ -105,7 +105,7 @@ jobs:
       - name: Go y la extensión, cruzados
         env:
           ESFINGE_CRUZADA: "1"
-        run: go test -count=1 -run Cruzada ./internal/boveda ./internal/codigos ./internal/cuenta
+        run: go test -count=1 -run Cruzada ./internal/boveda ./internal/codigos ./internal/cuenta ./internal/navegador
 
       - name: Comprobaciones del servidor de cuentas
         working-directory: servidor

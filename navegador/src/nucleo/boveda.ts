@@ -370,8 +370,30 @@ export class Boveda {
     return JSON.stringify(this.doc, null, 2) + "\n";
   }
 
+  /**
+   * **Lo que cambia la bóveda pasa de uno en uno**, y hace falta escribirlo porque
+   * aquí no hay cerrojos: entre dos `await` se cuela cualquiera. Dos guardados
+   * cruzados acababan con **la misma serie**, y el segundo cambio no se subía nunca
+   * porque la sincronización lo daba por subido; y una fusión que tarda —bajar,
+   * descifrar, fundir— pisaba lo que la tarjeta de la página hubiera guardado en
+   * medio. En Go lo evita el cerrojo de la bóveda; aquí, esta cola.
+   */
+  private cola: Promise<unknown> = Promise.resolve();
+
+  /** @internal Ejecuta `f` cuando haya terminado todo lo anterior, y lo siguiente espera a `f`. */
+  _exclusivo<T>(f: () => Promise<T>): Promise<T> {
+    const turno = this.cola.then(f, f);
+    this.cola = turno.catch(() => undefined);
+    return turno;
+  }
+
   /** Sella y devuelve el documento nuevo. Solo cambia el cuerpo si han cambiado las entradas. */
-  async guardar(): Promise<string> {
+  guardar(): Promise<string> {
+    return this._exclusivo(() => this._guardarSinCola());
+  }
+
+  /** @internal Guardar, ya dentro de la cola. */
+  async _guardarSinCola(): Promise<string> {
     const llave = this.clave();
     if (this.soloLectura) throw new ErrorBoveda("formato-nuevo");
     const doc = { ...this.doc, serie: this.doc.serie + 1, cambiada: rfc3339(new Date()) };
@@ -394,7 +416,11 @@ export class Boveda {
    * La bóveda tal como se sube como `version`: sin las ranuras de este equipo y con
    * la versión sellada dentro. **No cambia la de aquí.**
    */
-  async prepararSubida(version: number): Promise<string> {
+  prepararSubida(version: number): Promise<{ texto: string; serie: number }> {
+    return this._exclusivo(() => this.prepararSubidaSinCola(version));
+  }
+
+  private async prepararSubidaSinCola(version: number): Promise<{ texto: string; serie: number }> {
     const llave = this.clave();
     if (this.cuerpoSucio) throw new Error("La bóveda tiene cambios sin guardar");
     const sobres = this.doc.sobres.filter((s) => !RANURAS_LOCALES.has(s.tipo));
@@ -406,7 +432,9 @@ export class Boveda {
       sobres,
       sello: await sellarTexto(utf8.encode(JSON.stringify(ordenSello(sel))), llave, PERFIL_LLAVE),
     };
-    return JSON.stringify(doc, null, 2) + "\n";
+    // La serie sale de lo mismo que se sube: leída aparte, un guardado en medio se
+    // daría por subido sin estarlo (como `PrepararSubida` en Go).
+    return { texto: JSON.stringify(doc, null, 2) + "\n", serie: doc.serie };
   }
 
   /** La prueba de posesión para el servidor. */
@@ -439,7 +467,11 @@ export class Boveda {
   }
 
   /** Añade o sustituye una entrada y guarda. La revisión la pone la bóveda. */
-  async poner(nueva: Entrada): Promise<Entrada> {
+  poner(nueva: Entrada): Promise<Entrada> {
+    return this._exclusivo(() => this.ponerSinCola(nueva));
+  }
+
+  private async ponerSinCola(nueva: Entrada): Promise<Entrada> {
     this.clave();
     const e = copiar(nueva);
     const cuando = rfc3339(new Date());
@@ -459,12 +491,16 @@ export class Boveda {
       this.cont.entradas.push(e);
     }
     this.cuerpoSucio = true;
-    await this.guardar();
+    await this._guardarSinCola();
     return copiar(e);
   }
 
   /** A la papelera, entera (ADR 0026). */
-  async borrar(id: string): Promise<void> {
+  borrar(id: string): Promise<void> {
+    return this._exclusivo(() => this.borrarSinCola(id));
+  }
+
+  private async borrarSinCola(id: string): Promise<void> {
     this.clave();
     const e = this.cont.entradas.find((x) => x.id === id && !x.papelera);
     if (!e) return;
@@ -472,10 +508,14 @@ export class Boveda {
     e.borradaEn = rfc3339(ahora());
     e.revision = (e.revision ?? 0) + 1;
     this.cuerpoSucio = true;
-    await this.guardar();
+    await this._guardarSinCola();
   }
 
-  async restaurar(id: string): Promise<void> {
+  restaurar(id: string): Promise<void> {
+    return this._exclusivo(() => this.restaurarSinCola(id));
+  }
+
+  private async restaurarSinCola(id: string): Promise<void> {
     this.clave();
     const e = this.cont.entradas.find((x) => x.id === id && x.papelera);
     if (!e) throw new Error("Esa entrada ya no está en la papelera");
@@ -483,18 +523,22 @@ export class Boveda {
     delete e.borradaEn;
     e.revision = (e.revision ?? 0) + 1;
     this.cuerpoSucio = true;
-    await this.guardar();
+    await this._guardarSinCola();
   }
 
   /** Solo desde la papelera, y deja su lápida. */
-  async borrarDelTodo(id: string): Promise<void> {
+  borrarDelTodo(id: string): Promise<void> {
+    return this._exclusivo(() => this.borrarDelTodoSinCola(id));
+  }
+
+  private async borrarDelTodoSinCola(id: string): Promise<void> {
     this.clave();
     const i = this.cont.entradas.findIndex((x) => x.id === id && x.papelera);
     if (i < 0) throw new ErrorBoveda("papelera");
     this.cont.entradas.splice(i, 1);
     this.enterrar(id, ahora());
     this.cuerpoSucio = true;
-    await this.guardar();
+    await this._guardarSinCola();
   }
 
   papelera(): Entrada[] {
@@ -543,7 +587,11 @@ export class Boveda {
 
   // ---------------------------------------------------------------- sitios excluidos
 
-  async excluir(dominio: string): Promise<void> {
+  excluir(dominio: string): Promise<void> {
+    return this._exclusivo(() => this.excluirSinCola(dominio));
+  }
+
+  private async excluirSinCola(dominio: string): Promise<void> {
     this.clave();
     const d = dominio.trim().toLowerCase();
     if (!d) throw new Error("Hace falta un sitio que excluir");
@@ -551,10 +599,14 @@ export class Boveda {
     if (l.includes(d)) return;
     this.cont.sitiosExcluidos = [...l, d].sort(compararComoGo);
     this.cuerpoSucio = true;
-    await this.guardar();
+    await this._guardarSinCola();
   }
 
-  async quitarExclusion(dominio: string): Promise<void> {
+  quitarExclusion(dominio: string): Promise<void> {
+    return this._exclusivo(() => this.quitarExclusionSinCola(dominio));
+  }
+
+  private async quitarExclusionSinCola(dominio: string): Promise<void> {
     this.clave();
     const d = dominio.trim().toLowerCase();
     const l = this.cont.sitiosExcluidos ?? [];
@@ -562,7 +614,7 @@ export class Boveda {
     if (quedan.length === l.length) throw new Error("Ese sitio no estaba excluido");
     this.cont.sitiosExcluidos = quedan.length > 0 ? quedan : undefined;
     this.cuerpoSucio = true;
-    await this.guardar();
+    await this._guardarSinCola();
   }
 
   excluido(dominio: string): boolean {

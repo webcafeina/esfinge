@@ -126,6 +126,13 @@ export type Respuesta = {
   oferta?: Oferta;
   /** Lo que se ha guardado o actualizado desde la página. */
   guardada?: Cuenta;
+  /**
+   * **Solo con cuenta** (ADR 0040): lo que el panel tiene que copiar. La aplicación
+   * copia ella misma y no lo manda nunca; con cuenta, la bóveda vive en el
+   * trabajador de fondo, que no puede tocar el portapapeles, así que copia el
+   * panel, donde se ha hecho el clic. Quien lo recibe lo copia y lo olvida.
+   */
+  paraCopiar?: string;
   testigo?: string;
 };
 

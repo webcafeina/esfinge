@@ -308,9 +308,22 @@ async function copiar(que: "copiar-secreto" | "copiar-codigo", cuenta: Cuenta, o
     contar(`${q.titulo}. ${q.texto}`, false);
     return;
   }
+  // **Con cuenta copia el panel** (ADR 0040): la bóveda está en el trabajador de
+  // fondo, que no puede tocar el portapapeles. Se copia aquí, dentro del margen que
+  // deja el clic, y se dice que no se borra solo: la aplicación sí lo borra.
+  if (r.paraCopiar !== undefined) {
+    try {
+      await navigator.clipboard.writeText(r.paraCopiar);
+    } catch {
+      contar("No se ha podido copiar. Vuelve a pulsar el botón.", false);
+      return;
+    }
+  }
   const borrado = r.copiado.portapapeles
     ? ` Se borra del portapapeles en ${r.copiado.portapapeles} s.`
-    : "";
+    : r.paraCopiar !== undefined
+      ? " El portapapeles no se vacía solo."
+      : "";
   if (que === "copiar-codigo") {
     contar(`Código copiado.${borrado}`, true, r.copiado.quedan);
   } else {
