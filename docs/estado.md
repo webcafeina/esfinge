@@ -465,8 +465,16 @@ Macs**: cambiada en uno, el otro entró en la cuenta con la nueva.
 olvidar un equipo pedía volver a entrar pero **dejaba la bóveda abierta**, y pidió que se cerrara →
 **2.24.5**: al perder la sesión, la bóveda se cierra y dice por qué. Borrar la cuenta no lo va a probar.
 
-**La siguiente acción concreta es que compruebe el cierre de la 2.24.5** (olvidar un Mac desde el otro con
-la bóveda abierta) **y decidir con él el orden de lo que queda** (abajo). La lista que probó:
+**La E1, hecha (2026-09-22, sin publicar: no cambia nada de lo instalado)** — [ADR 0040](adr/0040-la-extension-cliente-de-la-cuenta.md):
+el núcleo de la bóveda en TypeScript (`navegador/src/nucleo/`: ESF1, bóveda, fusión, códigos y claves de
+la cuenta), probado contra los vectores fijos de Go y **cruzado con Go** en `make comprobar` y en la
+puerta: 4.000 fusiones al azar sin una diferencia, y tres roturas a propósito cazadas. **La siguiente
+acción concreta es la E2**: la extensión con cuenta —entrar, desbloquear, sincronizar, y rellenar, códigos
+y guardar contra la bóveda del navegador—, con el aviso, la política y las tiendas al día.
+
+**2.24.5 comprobada por el cliente**: «funciona todo perfecto». **La A3 queda comprobada en sus Macs**, salvo
+borrar la cuenta, que no va a probar con la suya. **Orden decidido con él (2026-09-22): primero la E —la
+extensión como cliente de la cuenta— y después la auditoría externa**; A4, B y C, detrás. La lista que probó:
 
 1. **El candado de la barra lateral**: cerrado/abierto, que se cierre solo al bloquearse por inactividad, y
    el texto al pasar el ratón.

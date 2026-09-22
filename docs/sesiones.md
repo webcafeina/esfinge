@@ -5,6 +5,21 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-22 (tarde) · La E1: el núcleo de la bóveda en la extensión
+
+- La 2.24.5, comprobada por el cliente: «funciona todo perfecto». Orden decidido con él: **la E y después
+  la auditoría**. ADR 0040, con la E en tres entregas.
+- **E1** en `navegador/src/nucleo/`: ESF1 (con `hash-wasm` y `@noble/ciphers`, a versión exacta), la
+  bóveda, la forma canónica —escrita a mano porque Go escapa U+2028 y JavaScript no, comprobado con Go
+  1.27—, la fusión línea a línea de la de Go, los códigos —con el desbordamiento de Go a diez cifras
+  incluido— y las claves de la cuenta.
+- Probado contra los vectores fijos de Go y **cruzado con Go** (`internal/cruzada` lanza Node con el
+  núcleo empaquetado por Vite): 4.000 fusiones al azar iguales, tres roturas a propósito cazadas. En
+  `make comprobar` y en la puerta, tras instalar la extensión (`ESFINGE_CRUZADA=1`).
+- Dos tropiezos: `readFileSync(0)` da `EAGAIN` con una tubería grande (se lee como flujo), y un
+  `internal/*/…` dentro de un comentario lo cerraba.
+- **No se publica**: nada de lo instalado cambia. **Siguiente: la E2.**
+
 ## 2026-09-22 · 2.24.5: olvidar un equipo le cierra la bóveda
 
 - El cliente probó la 2.24.4: **candado y recuperar, perfectos**; borrar la cuenta no lo va a probar.

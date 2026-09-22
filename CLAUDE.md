@@ -850,6 +850,19 @@ comparte listas y mapas, y contar habría escrito en la bóveda). Quitar las rep
 identificador menor**, para que dos equipos limpiando a la vez no se queden sin ninguna. Cualquier
 limpieza que corra en varios equipos tiene que elegir igual en todos.
 
+**Desde la E1, la bóveda existe dos veces: en Go y en `navegador/src/nucleo/`** (ADR 0040), y **cualquier
+cambio del formato, de la fusión o de los códigos se hace en las dos**. Lo vigilan las pruebas cruzadas
+(`cruzada_test.go` en `internal/boveda`, `codigos` y `cuenta`), que mandan lo mismo a los dos lados y
+exigen los mismos bytes; como las de la cuenta, un `go test` suelto se las salta y las activa
+`ESFINGE_CRUZADA=1` en `make comprobar` y en la puerta. Tres cosas que salieron al escribirlas:
+
+- **La forma canónica no es `JSON.stringify`**: Go escapa U+2028 y U+2029 aunque no escape el HTML, y
+  ordena las claves por bytes UTF-8. `canon.ts` la escribe a mano, y una prueba cruzada la vigila.
+- **El TOTP de Go se desborda a diez cifras** (el divisor es un `uint32`), y la extensión lo imita: tiene
+  que dar el mismo código que la ventana, aunque sea raro.
+- **Un `*/` dentro de un comentario lo cierra**, y `internal/*/…` es justo eso. Y `readFileSync(0)` da
+  `EAGAIN` con una tubería grande: la entrada estándar se lee como flujo.
+
 **Las pruebas de la cuenta y de la sincronización hablan con el servidor de verdad**, levantado en local
 por `herramientas/con-servidor.sh` con el entorno `local` del Worker —frenos holgados, porque todo llega
 desde 127.0.0.1: con los de verdad, la cuarta cuenta de la tanda chocaba con el tope de tres altas por IP y

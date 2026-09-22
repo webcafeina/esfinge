@@ -159,6 +159,9 @@ pero dejaba la bóveda abierta: de ahí la 2.24.5.
 se cierra solo y lo dice; al reabrir no se vuelve a cerrar; al volver a entrar sincroniza; y un 401 tardío
 con una sesión que ya vale no cierra nada (rompiendo esa comprobación, la prueba lo caza).
 
-**Sin comprobar en un Mac**: el cierre por olvido de la 2.24.5, y borrar la cuenta —el cliente no lo va a
+**Comprobado en sus Macs con la 2.24.5** (2026-09-22): olvidado con la bóveda abierta, se cierra solo, lo
+dice, se reabre sin volver a cerrarse y al volver a entrar sincroniza. «Funciona todo perfecto».
+
+**Sin comprobar en un Mac**: borrar la cuenta —el cliente no lo va a
 probar con la suya; está probado aquí contra el servidor—. Y que `NormalizarCorreo` de Go y `normalizarCorreo` del servidor coinciden en todos los casos raros
 de Unicode: las dos pasan a minúsculas con reglas de lenguajes distintos. Manda la del servidor.

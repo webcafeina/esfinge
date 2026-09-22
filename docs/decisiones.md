@@ -1,6 +1,6 @@
 # Decisiones
 
-Última actualización: **2026-09-18**
+Última actualización: **2026-09-22**
 
 Una ficha por decisión no trivial, en [adr/](adr/). Las que se superan **no se borran**: se marcan y
 se quedan, porque saber qué se pensaba antes explica por qué el código es como es.
@@ -49,6 +49,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0037](adr/0037-claves-de-la-cuenta.md) | Las claves de la cuenta: la de acceso derivada aparte con su sal y un coste que el servidor no puede bajar, y la posesión de la bóveda para cambiar la contraseña | 2026-09-18 | aceptada, construida en la A3 (2.24.0); desde la 2.24.1 el otro equipo abre con la contraseña nueva y el testigo de confianza va en claro · continúa la 0035 · revisar en la auditoría |
 | [0038](adr/0038-sincronizar-la-boveda.md) | Sincronizar la bóveda: entera y con la versión sellada, fusión a tres bandas donde la edición gana al borrado y ninguna contraseña se pierde, y lápidas de seis meses | 2026-09-18 | aceptada, sin interfaz · matiza la 0026 · revisar al usarla en dos equipos |
 | [0039](adr/0039-la-bienvenida-y-la-cuenta-en-la-ventana.md) | La bienvenida y la cuenta en la ventana: elegir local o cuenta al estrenar, el asistente para crearla y entrar, juntar o apartar la bóveda que ya había, y dejar la cuenta desde Ajustes | 2026-09-18 | aceptada, sin publicar · continúa la 0035 · revisar en el Mac con dos equipos |
+| [0040](adr/0040-la-extension-cliente-de-la-cuenta.md) | La extensión, cliente de la cuenta: el formato de la bóveda en TypeScript vigilado contra Go, por entregas (E1 núcleo invisible, E2 la extensión con cuenta, E3 en el Mac) | 2026-09-22 | aceptada, en construcción · continúa la 0035 |
 
 ## Cuándo escribir una
 

@@ -99,6 +99,14 @@ jobs:
 
       # El servidor de cuentas se despliega por su lado (servidor.yml), pero una
       # versión de Esfinge habla con él: si sus pruebas están en rojo, no se publica.
+      # La bóveda, la fusión, los códigos y las claves de la cuenta existen en Go y
+      # en la extensión desde la fase E, y tienen que dar los mismos bytes (ADR
+      # 0040). Aquí y no con los tests de Go: necesitan navegador/ instalado.
+      - name: Go y la extensión, cruzados
+        env:
+          ESFINGE_CRUZADA: "1"
+        run: go test -count=1 -run Cruzada ./internal/boveda ./internal/codigos ./internal/cuenta
+
       - name: Comprobaciones del servidor de cuentas
         working-directory: servidor
         run: |

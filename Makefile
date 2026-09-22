@@ -27,6 +27,10 @@ comprobar:
 	@# tercero es lo único de la entrega 2 que puede hacer daño: escribir una
 	@# contraseña en el campo equivocado.
 	cd navegador && $(PNPM) run comprobar
+	@# Y la bóveda, la fusión, los códigos y las claves de la cuenta, **cruzados**:
+	@# desde la fase E existen en Go y en la extensión, y tienen que dar los mismos
+	@# bytes (ADR 0040). Van aquí porque necesitan navegador/ instalado.
+	ESFINGE_CRUZADA=1 $(GO) test -count=1 -run Cruzada ./internal/boveda ./internal/codigos ./internal/cuenta
 	@# Y el servidor de cuentas: tipos y sus pruebas, dentro del motor de Workers
 	@# de verdad. Sin conexión con Cloudflare: todo corre en local.
 	cd servidor && $(PNPM) run comprobar

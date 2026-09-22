@@ -1,9 +1,12 @@
 # El formato de la bóveda
 
-Hasta la A1 el formato vivía solo en el código de Go (`internal/boveda`). Con cuentas va a haber **dos
-implementaciones** —Go en la aplicación y TypeScript en la extensión, fase E—, y este documento es el
-contrato entre las dos. **Si el código y esto no coinciden, está mal uno de los dos**, y las pruebas
-cruzadas de la fase E deciden cuál.
+Hasta la A1 el formato vivía solo en el código de Go (`internal/boveda`). Desde la E1 (2026-09-22) hay
+**dos implementaciones** —Go en la aplicación y TypeScript en la extensión, `navegador/src/nucleo/`—, y
+este documento es el contrato entre las dos. **Si el código y esto no coinciden, está mal uno de los dos**,
+y las pruebas cruzadas (`cruzada_test.go`, ADR 0040) deciden cuál.
+
+**La forma canónica tiene una trampa que no se ve**: Go escapa U+2028 y U+2029 aunque no escape el HTML, y
+`JSON.stringify` no. La extensión la escribe a mano (`canon.ts`).
 
 El contenedor `ESF1` (Argon2id + XChaCha20-Poly1305) no se describe aquí: está en `internal/cripto`,
 congelado con vectores fijos (ADR 0022), y la versión de TypeScript se prueba contra esos mismos vectores.
