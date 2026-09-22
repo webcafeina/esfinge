@@ -5,6 +5,14 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-22 (noche, cierre) · A la espera de las tiendas
+
+- La 2.25.3, comprobada: «funciona perfecto». **Sesión cerrada aquí** a petición del cliente, a la
+  espera de que Chrome y Mozilla aprueben la extensión.
+- **Al volver**: si ya están aprobadas, quitar la copia cargada a mano en Chrome y probar Firefox (lo que
+  queda de la E3); decidir con él el interruptor del canal en Ajustes con cuenta (propuesta en
+  `estado.md`); y preparar la auditoría externa.
+
 ## 2026-09-22 (noche) · 2.25.3: las flechas que giran
 
 - El cliente pidió que sincronizar a mano se vea: **flechas en círculo que giran** mientras dura, en

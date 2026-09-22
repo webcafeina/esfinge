@@ -471,6 +471,12 @@ giran → **2.25.3**, comprobada: «funciona perfecto». **La siguiente acción 
 dos tiendas aprueben la extensión** y probarla entonces en Firefox —lo único que queda de la E3—, con la
 versión de la tienda en Chrome en vez de la cargada a mano. Después, **la auditoría externa**.
 
+**Pendiente de decidir con el cliente (lo preguntó al cerrar el 2026-09-22)**: en Ajustes de la aplicación,
+«Dejar que la extensión del navegador consulte la bóveda» **con cuenta sobra** —la extensión va siempre por
+la cuenta—, pero sigue haciendo falta en local. Propuesta: mantenerlo, con una nota en modo cuenta («la
+extensión no lo necesita: entra con tu cuenta en su panel») y apagado por defecto para quien estrene
+Esfinge con cuenta.
+
 **La E2, hecha (2026-09-22, 2.25.0)** — [ADR 0040](adr/0040-la-extension-cliente-de-la-cuenta.md): **la
 extensión con cuenta funciona sin la aplicación**. En su panel se entra con el correo, la contraseña y el
 código; la bóveda vive cifrada en el navegador, se abre con la maestra, se cierra a los quince minutos sin
