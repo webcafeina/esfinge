@@ -88,8 +88,12 @@ type Sincronizador struct {
 	Memoria  Memoria
 	// Token da la sesión de ahora; puede cambiar entre pasadas.
 	Token func() string
-	// Opciones van a Fundir. AunqueBorreMucho solo la pone quien ha preguntado.
-	Opciones boveda.OpcionesDeFusion
+	// aunqueBorre vale para **una sola pasada** y se consume al usarla: es lo que
+	// pone el botón de «Juntar igual» cuando la fusión se paró porque se llevaba
+	// media bóveda (revisión del 2026-09-23). Se guarda aquí y no en un campo
+	// corriente porque lo enciende la gorrutina de la ventana mientras otra puede
+	// estar sincronizando.
+	aunqueBorre atomic.Bool
 
 	turno   atomic.Bool
 	otraVez atomic.Bool
@@ -99,6 +103,10 @@ type Sincronizador struct {
 const intentos = 5
 
 // Pendiente dice si hay cambios de aquí sin subir.
+// UnaVezAunqueBorre deja dicho que **la próxima pasada** funda aunque se lleve más
+// de la mitad de las entradas. Lo pide una persona, mirando lo que va a pasar.
+func (s *Sincronizador) UnaVezAunqueBorre() { s.aunqueBorre.Store(true) }
+
 func (s *Sincronizador) Pendiente() bool {
 	r, _, err := s.Memoria.Cargar()
 	return err != nil || r.Serie != s.Boveda.Serie()
@@ -178,7 +186,9 @@ func (s *Sincronizador) pasada(ctx context.Context) (Resultado, error) {
 			if version < recuerdo.Version {
 				return r, fmt.Errorf("%w (aquí se vio la %d y allí dice la %d)", ErrRetroceso, recuerdo.Version, version)
 			}
-			f, err := s.Boveda.Fundir(datos, version, base, s.Opciones)
+			f, err := s.Boveda.Fundir(datos, version, base, boveda.OpcionesDeFusion{
+				AunqueBorreMucho: s.aunqueBorre.Swap(false),
+			})
 			r.Fusion = f
 			if err != nil {
 				return r, err

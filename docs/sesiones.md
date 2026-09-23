@@ -20,8 +20,14 @@ Plantilla al final.
 - **Decisión del cliente**: cambiar la contraseña se lleva los testigos de confianza de los demás equipos,
   aunque eso obligue a pasar una vez por el código. ADR 0037 matizada; `seguridad.md` corregido también en
   lo que rotar la clave de recuperación **no** hace.
-- **Queda por decidir**: que la extensión no pise su bóveda, que «muchos borrados» no cuente la papelera y
-  tenga salida, y los cupos de códigos del servidor.
+- **Y los tres pendientes, hechos el mismo día (2.25.6)**: la extensión aparta su bóveda en vez de pisarla
+  —con su aviso en el panel—; «muchos borrados» cuenta solo lo que desaparece del fichero, no lo que va a la
+  papelera, y tiene salida —«Juntarlo igual», en la ventana y en el panel, válida para una sola pasada—; y
+  en el servidor, cupo de códigos por propósito, tope diario, y pedir otro código de recuperación ya no mata
+  el anterior. Con sus pruebas, incluida la que caza la vuelta atrás de cada una.
+- **Queda para más adelante** lo apuntado en el informe: recifrar al rotar la clave de recuperación (o
+  dejarlo dicho, que es lo que se ha hecho), el borrado suave que gana a una edición, los intentos del
+  código de alta, y el sello que no cubre el `creado` de cada sobre.
 
 ## 2026-09-23 · 2.25.4: el interruptor del canal, con su nota
 

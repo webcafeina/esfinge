@@ -480,8 +480,11 @@ bóveda si la fusión falla (propuesto), y «muchos borrados» salta al usar la 
 sobrevivía al cambio de contraseña —ahora el otro equipo pide el código una vez, elegido por el cliente—,
 quién puede pedir lo de la cuenta en la extensión, y la tarjeta que se podía pulsar nada más aparecer.
 **El registro sigue por invitación**: una revisión interna no es la auditoría externa que pide la ADR 0035.
-**La siguiente acción concreta es decidir los tres pendientes** del informe (2, 3 y 5) y si se recifra al
-rotar la clave de recuperación o se queda dicho lo que hace.
+**Los tres pendientes quedaron hechos el mismo día (2.25.6)**. **La siguiente acción concreta es desplegar
+el servidor** —los cambios de cuenta no están en producción hasta lanzar `servidor.yml` a mano— y después
+decidir qué se hace con lo que el informe deja abierto: el borrado suave que gana a una edición, los
+intentos del código de alta, el sello que no cubre el `creado` de cada sobre, y si algún día se recifra al
+rotar la clave de recuperación.
 
 **El paquete de la auditoría, escrito (2026-09-23)**: [`docs/auditoria.md`](auditoria.md) dice qué es
 Esfinge para alguien de fuera, **qué mirar por orden de riesgo** —servidor y protocolo de cuenta, la

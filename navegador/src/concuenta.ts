@@ -42,6 +42,8 @@ const L = {
   boveda: "cuenta-boveda",
   base: "cuenta-base",
   recuerdo: "cuenta-recuerdo",
+  /** La que había aquí cuando una fusión no se pudo hacer. **No se borra sola.** */
+  apartada: "cuenta-boveda-apartada",
 } as const;
 const S = {
   llave: "cuenta-llave",
@@ -63,7 +65,7 @@ type Datos = {
 };
 
 export type EstadoSincro = {
-  estado: "apagada" | "sincronizando" | "al-dia" | "sin-conexion" | "hay-que-entrar" | "error";
+  estado: "apagada" | "sincronizando" | "al-dia" | "sin-conexion" | "hay-que-entrar" | "muchos-borrados" | "error";
   ultima?: string;
   mensaje?: string;
 };
@@ -74,6 +76,8 @@ export type EstadoDeCuenta = {
   abierta: boolean;
   /** Hay una entrada a medias esperando el código del correo. */
   codigoPendiente: boolean;
+  /** Hay una bóveda de este navegador apartada porque no se pudo fundir. */
+  apartada: boolean;
   sincro: EstadoSincro;
   /** Minutos sin tocar nada antes de cerrarse sola. */
   bloqueo: number;
@@ -89,7 +93,8 @@ export type PeticionDeCuenta =
   | { cuenta: "desbloquear"; maestra: string }
   | { cuenta: "bloquear" }
   | { cuenta: "salir" }
-  | { cuenta: "sincronizar" };
+  /** Con `igual`, acepta una fusión que se lleve media bóveda: la salida de la parada. */
+  | { cuenta: "sincronizar"; igual?: boolean };
 
 export type RespuestaDeCuenta = {
   ok: boolean;
@@ -215,6 +220,7 @@ export async function estado(): Promise<EstadoDeCuenta> {
     correo: d?.correo,
     abierta: b !== null,
     codigoPendiente: (await entrando()) !== null,
+    apartada: (await local<string>(L.apartada)) !== undefined,
     sincro,
     bloqueo: MINUTOS_DE_BLOQUEO,
   };
@@ -292,8 +298,16 @@ async function terminarEntrada(correo: string, maestra: string, servidor: string
       recuerdo = { version: bajada.version, serie: f.serie };
       remota.cerrar();
     } catch {
-      // Otra bóveda, o una que no se deja fundir: manda la de la cuenta. Lo de aquí
-      // era una copia de esa misma cuenta, no algo que solo existiera aquí.
+      // **Lo de aquí no se pisa** (revisión del 2026-09-23). El comentario de antes
+      // decía que lo de aquí era «una copia de esa misma cuenta», y desde la E2 eso
+      // ya no es verdad: la extensión guarda contraseñas, y si la fusión no se puede
+      // hacer —«muchos borrados», una bóveda a medias— escribir encima se llevaba
+      // por delante lo guardado aquí y no subido, sin aviso y sin copia. La
+      // aplicación, en el mismo caso, aparta el fichero y dice dónde queda.
+      //
+      // Aquí se hace lo mismo: manda la de la cuenta para poder seguir trabajando, y
+      // la de este navegador se guarda aparte. El panel lo dice y no se borra sola.
+      await api.storage.local.set({ [L.apartada]: aqui });
     }
   }
 
@@ -387,7 +401,7 @@ export function pedirSincro(ms: number) {
  * que el botón del panel contestara antes de que la pasada que lanzó abrirlo
  * terminara, con lo de antes (lo cazó la prueba con la extensión cargada).
  */
-export function sincronizar(): Promise<void> {
+export function sincronizar(aunqueBorreMucho = false): Promise<void> {
   if (enMarcha) {
     otraVez = true;
     return enMarcha;
@@ -396,7 +410,10 @@ export function sincronizar(): Promise<void> {
     try {
       do {
         otraVez = false;
-        await unaPasada();
+        await unaPasada(aunqueBorreMucho);
+        // **Solo la primera pasada** va con el permiso: lo dio una persona para
+        // esta vez, no para siempre.
+        aunqueBorreMucho = false;
       } while (otraVez);
     } finally {
       enMarcha = null;
@@ -405,7 +422,7 @@ export function sincronizar(): Promise<void> {
   return enMarcha;
 }
 
-async function unaPasada(): Promise<void> {
+async function unaPasada(aunqueBorreMucho = false): Promise<void> {
   const d = await datos();
   const b = await laBoveda();
   if (!d || !b) return;
@@ -415,7 +432,7 @@ async function unaPasada(): Promise<void> {
   }
   const token = await b.abrirSecreto(d.sesion);
   try {
-    const r = await pasada(b, new Cliente(d.servidor), token, memoria);
+    const r = await pasada(b, new Cliente(d.servidor), token, memoria, aunqueBorreMucho);
     await ponerSincro({ estado: "al-dia", ultima: new Date().toISOString() });
     if (r.bajo) avisarDeCambios();
   } catch (e) {
@@ -432,6 +449,12 @@ async function unaPasada(): Promise<void> {
     }
     if (e instanceof ErrorDeRed) {
       await ponerSincro({ estado: "sin-conexion", mensaje: "Sin conexión con el servidor de cuentas: se sube al volver" });
+      return;
+    }
+    // La parada por muchos borrados tiene su propio estado, porque tiene salida: el
+    // panel enseña «Juntarlo igual» (revisión del 2026-09-23).
+    if (e instanceof ErrorBoveda && e.codigo === "muchos-borrados") {
+      await ponerSincro({ estado: "muchos-borrados", mensaje: e.message });
       return;
     }
     await ponerSincro({ estado: "error", mensaje: (e as Error).message });
@@ -508,7 +531,7 @@ export async function atenderAlPanel(p: PeticionDeCuenta): Promise<RespuestaDeCu
         await salir();
         break;
       case "sincronizar":
-        await sincronizar();
+        await sincronizar(p.igual === true);
         break;
     }
     return { ...r, estado: await estado() };

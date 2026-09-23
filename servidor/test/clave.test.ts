@@ -143,16 +143,46 @@ describe("recuperar la cuenta", () => {
 		expect((await pedir("POST", "/v1/recuperacion/codigo", { ip, cuerpo: { correo: "nadie2@ejemplo.com", codigo: "123456" } })).status).toBe(401);
 	});
 
-	it("pedir otro código invalida el anterior", async () => {
+	// **Pedir otro código ya no mata el anterior** (revisión del 2026-09-23). Antes
+	// sí, para que quien escribiera un código no tuviera que saber cuál de ellos era;
+	// pero `/v1/recuperacion/inicio` no pide autenticación, así que cualquiera que
+	// supiera el correo podía invalidar una y otra vez el código que su dueño
+	// estuviera escribiendo. Ahora valen los que sigan vivos, y lo que impide que se
+	// acumulen es el cupo por propósito.
+	it("pedir otro código no invalida el anterior, y valen los dos", async () => {
 		const a = await conBoveda("wen@ejemplo.com");
 		const ip = nuevaIP();
 		await pedir("POST", "/v1/recuperacion/inicio", { ip, cuerpo: { correo: a.correo } });
 		const primero = await ultimoCodigo(a.correo);
 		await pedir("POST", "/v1/recuperacion/inicio", { ip, cuerpo: { correo: a.correo } });
 		const segundo = await ultimoCodigo(a.correo);
+		expect((await pedir("POST", "/v1/recuperacion/codigo", { ip, cuerpo: { correo: a.correo, codigo: primero } })).status).toBe(200);
 		if (primero !== segundo) {
-			expect((await pedir("POST", "/v1/recuperacion/codigo", { ip, cuerpo: { correo: a.correo, codigo: primero } })).status).toBe(401);
+			expect((await pedir("POST", "/v1/recuperacion/codigo", { ip, cuerpo: { correo: a.correo, codigo: segundo } })).status).toBe(200);
 		}
-		expect((await pedir("POST", "/v1/recuperacion/codigo", { ip, cuerpo: { correo: a.correo, codigo: segundo } })).status).toBe(200);
+	});
+
+	// **Y el cupo es de cada cosa** (revisión del 2026-09-23): con uno solo, quien
+	// supiera el correo dejaba a su dueño sin poder entrar desde un equipo nuevo a
+	// base de pedir recuperaciones, que no piden autenticación ninguna.
+	it("gastar los códigos de recuperación no deja sin entrar", async () => {
+		const a = await conBoveda("vicente@ejemplo.com");
+		const ip = nuevaIP();
+		for (let i = 0; i < 6; i++) {
+			await pedir("POST", "/v1/recuperacion/inicio", { ip: nuevaIP(), cuerpo: { correo: a.correo } });
+		}
+		// La recuperación sí se ha quedado sin cupo, y eso **no se ve en la respuesta**
+		// —siempre 202, para no decir si la cuenta existe—: se ve en que no llega otro
+		// correo.
+		const cuantos = (await buzon(a.correo)).length;
+		const otra = await pedir("POST", "/v1/recuperacion/inicio", { ip: nuevaIP(), cuerpo: { correo: a.correo } });
+		expect(otra.status).toBe(202);
+		expect((await buzon(a.correo)).length).toBe(cuantos);
+		// …y entrar desde un equipo nuevo sigue pudiendo pedir su código.
+		const entrar = await pedir("POST", "/v1/sesion", {
+			ip,
+			cuerpo: { correo: a.correo, claveDeAcceso: a.claveDeAcceso, dispositivo: "Equipo nuevo" },
+		});
+		expect(entrar.status).toBe(202);
 	});
 });

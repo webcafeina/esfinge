@@ -37,7 +37,14 @@ const SESION_RESTRINGIDA = 15 * MINUTO;
 const CONFIANZA = 90 * DIA;
 const RETO = 10 * MINUTO;
 const INTENTOS_POR_RETO = 5;
+// **Un cupo por propósito, y no uno para todo** (revisión del 2026-09-23). Con un
+// solo cupo, cinco peticiones de recuperación por hora —que no piden
+// autenticación, basta saber el correo— dejaban a esa persona sin poder entrar
+// desde un equipo nuevo **y** sin poder recuperar la cuenta, y además le llegaban
+// cinco correos. Ahora cada cosa gasta del suyo, y hay un tope al día para que
+// nadie use la cuenta ajena como bombardeo de correo.
 const RETOS_POR_HORA = 5;
+const RETOS_POR_DIA = 20;
 const FALLOS_PARA_FRENAR = 10;
 const VENTANA_DE_FALLOS = 15 * MINUTO;
 const SUBIDAS_POR_HORA = 60;
@@ -90,7 +97,7 @@ export class Cuenta extends DurableObject<Env> {
 			CREATE TABLE IF NOT EXISTS sesiones (huella TEXT PRIMARY KEY, dispositivo TEXT NOT NULL, creada INTEGER NOT NULL, vista INTEGER NOT NULL, restringida INTEGER NOT NULL DEFAULT 0);
 			CREATE TABLE IF NOT EXISTS dispositivos (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, creado INTEGER NOT NULL, visto INTEGER NOT NULL, confianza TEXT, confianza_caduca INTEGER);
 			CREATE TABLE IF NOT EXISTS retos (id TEXT PRIMARY KEY, proposito TEXT NOT NULL, codigo TEXT NOT NULL, caduca INTEGER NOT NULL, intentos INTEGER NOT NULL DEFAULT 0, datos TEXT);
-			CREATE TABLE IF NOT EXISTS retos_creados (momento INTEGER NOT NULL);
+			CREATE TABLE IF NOT EXISTS retos_creados (momento INTEGER NOT NULL, proposito TEXT NOT NULL DEFAULT 'entrar');
 			CREATE TABLE IF NOT EXISTS fallos (momento INTEGER NOT NULL);
 			CREATE TABLE IF NOT EXISTS subidas (momento INTEGER NOT NULL);
 			CREATE TABLE IF NOT EXISTS eventos (momento INTEGER NOT NULL, tipo TEXT NOT NULL, detalle TEXT NOT NULL DEFAULT '');
@@ -386,9 +393,11 @@ export class Cuenta extends DurableObject<Env> {
 
 	async retoRecuperacion(): Promise<Resultado<{ reto: string; codigo: string; correo: string }> | null> {
 		if (!this.existe()) return null;
-		// Un solo código de recuperación vivo a la vez: pedir otro invalida el anterior,
-		// y así quien lo usa no tiene que decir cuál de ellos es.
-		this.sql.exec("DELETE FROM retos WHERE proposito = 'recuperar'");
+		// **Pedir otro no mata el anterior** (revisión del 2026-09-23). Antes se
+		// borraba aquí, así que cualquiera que supiera el correo podía invalidar el
+		// código que su dueño estuviera escribiendo, una y otra vez. Ahora valen los
+		// que estén vivos —diez minutos— y se comprueban todos; el cupo por propósito
+		// es lo que impide que se acumulen.
 		const r = await this.nuevoReto("recuperar", {});
 		if (!r.ok) return r;
 		return bien({ ...r.datos, correo: this.leerAjuste("correo")! });
@@ -397,11 +406,17 @@ export class Cuenta extends DurableObject<Env> {
 	/** Con el código bueno se entrega **solo el sobre de recuperación**, y un reto para el último paso. */
 	async comprobarRecuperacion(codigo: unknown): Promise<Resultado<{ reto: string; sobre: unknown }>> {
 		if (!this.existe()) return mal(401, CODIGO_MALO);
-		const vivo = this.sql
-			.exec<{ id: string }>("SELECT id FROM retos WHERE proposito = 'recuperar' ORDER BY caduca DESC LIMIT 1")
-			.toArray()[0];
-		if (!vivo) return mal(401, CODIGO_MALO);
-		const r = await this.gastarReto(`${this.leerAjuste("cuenta")}.${vivo.id}`, "recuperar", codigo);
+		// Se prueban **todos los que estén vivos**, del más nuevo al más viejo: quien
+		// escribe un código no tiene por qué saber cuál de los que ha pedido es.
+		const vivos = this.sql
+			.exec<{ id: string }>("SELECT id FROM retos WHERE proposito = 'recuperar' ORDER BY caduca DESC")
+			.toArray();
+		if (vivos.length === 0) return mal(401, CODIGO_MALO);
+		let r: Resultado<unknown> = mal(401, CODIGO_MALO);
+		for (const vivo of vivos) {
+			r = await this.gastarReto(`${this.leerAjuste("cuenta")}.${vivo.id}`, "recuperar", codigo);
+			if (r.ok) break;
+		}
 		if (!r.ok) return r;
 		const sobre = JSON.parse(this.leerAjuste("recuperacion") ?? "null");
 		if (!sobre) return mal(404, "Esta cuenta no tiene clave de recuperación en el servidor.");
@@ -698,10 +713,19 @@ export class Cuenta extends DurableObject<Env> {
 		const ahora = Date.now();
 		if (cuentaParaElTope) {
 			const creados = this.sql
-				.exec<{ n: number }>("SELECT COUNT(*) AS n FROM retos_creados WHERE momento > ?", ahora - HORA)
+				.exec<{ n: number }>(
+					"SELECT COUNT(*) AS n FROM retos_creados WHERE momento > ? AND proposito = ?",
+					ahora - HORA, proposito,
+				)
 				.one().n;
 			if (creados >= RETOS_POR_HORA) {
 				return mal(429, "Se han pedido demasiados códigos. Espera un rato antes de pedir otro.");
+			}
+			const delDia = this.sql
+				.exec<{ n: number }>("SELECT COUNT(*) AS n FROM retos_creados WHERE momento > ?", ahora - DIA)
+				.one().n;
+			if (delDia >= RETOS_POR_DIA) {
+				return mal(429, "Se han pedido demasiados códigos hoy. Prueba mañana.");
 			}
 		}
 		const id = aBase64url(azar(16));
@@ -709,8 +733,10 @@ export class Cuenta extends DurableObject<Env> {
 		const huella = aHex(await hmac(this.env.PIMIENTA, `codigo|${id}|${codigo}`));
 		this.ctx.storage.transactionSync(() => {
 			this.sql.exec("DELETE FROM retos WHERE caduca < ?", ahora);
-			this.sql.exec("DELETE FROM retos_creados WHERE momento <= ?", ahora - HORA);
-			if (cuentaParaElTope) this.sql.exec("INSERT INTO retos_creados (momento) VALUES (?)", ahora);
+			this.sql.exec("DELETE FROM retos_creados WHERE momento <= ?", ahora - DIA);
+			if (cuentaParaElTope) {
+				this.sql.exec("INSERT INTO retos_creados (momento, proposito) VALUES (?, ?)", ahora, proposito);
+			}
 			this.sql.exec(
 				"INSERT INTO retos (id, proposito, codigo, caduca, datos) VALUES (?, ?, ?, ?, ?)",
 				id, proposito, huella, ahora + RETO, JSON.stringify(datos),

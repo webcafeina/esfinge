@@ -423,11 +423,21 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	f.Cambio = !igualJSON(normal(cont), normal(b.cont)) || !mismasRanuras(sobres, b.doc.Sobres)
 	f.Subir = !igualJSON(normal(cont), normal(contR)) || !mismasRanuras(sinLocales(sobres), sinLocales(docR.Sobres))
 
+	// **Perdida es la que desaparece, no la que va a la papelera** (revisión del
+	// 2026-09-23). Contando la papelera, mandar tres de cuatro entradas a ella en un
+	// equipo —un gesto normal y reversible— era «media bóveda borrada» para todos
+	// los demás, que se paraban en seco y además dejaban de subir lo suyo. La
+	// papelera es justo el seguro contra ese clic: lo borrado se ve, se restaura y
+	// dura treinta días. Lo que este freno tiene que cazar es una fusión que **se
+	// lleve** entradas del fichero.
 	vivasAntes := vivas(b.cont.Entradas)
 	perdidas := 0
-	vivasDespues := vivas(cont.Entradas)
+	quedan := map[string]bool{}
+	for _, e := range cont.Entradas {
+		quedan[e.ID] = true
+	}
 	for id := range vivasAntes {
-		if !vivasDespues[id] {
+		if !quedan[id] {
 			perdidas++
 		}
 	}

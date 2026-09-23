@@ -840,6 +840,23 @@ export function LineaSincro({ alVolverAEntrar }: { alVolverAEntrar: (correo: str
           </button>
         </>
       )}
+      {/* **La parada por muchos borrados tiene salida** (revisión del 2026-09-23).
+          La comprobación existía desde la ADR 0038 y no había forma de decir que sí:
+          la bóveda se quedaba sin sincronizar, sin subir lo de aquí, y lo único que
+          se leía era que estaba parada. */}
+      {e.estado === "muchos-borrados" && (
+        <>
+          {" "}
+          <button
+            className="discreto"
+            onClick={() => {
+              esfinge.sincronizarAunqueBorre().catch(() => {});
+            }}
+          >
+            Juntarlo igual
+          </button>
+        </>
+      )}
       {/* **Sincronizar a mano**, sin esperar a la pasada de cada minuto: lo pidió el
           cliente al ver que un cambio entre la aplicación y la extensión tardaba
           hasta un minuto (2.25.2). La pasada sola se queda. */}

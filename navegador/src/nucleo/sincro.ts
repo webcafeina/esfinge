@@ -34,7 +34,14 @@ export async function pendiente(b: Boveda, m: Memoria): Promise<boolean> {
   return recuerdo.serie !== b.serie;
 }
 
-export async function pasada(b: Boveda, cliente: Cliente, token: string, m: Memoria): Promise<Resultado> {
+export async function pasada(
+  b: Boveda,
+  cliente: Cliente,
+  token: string,
+  m: Memoria,
+  /** Acepta una fusión que se lleve más de la mitad de las entradas: lo pide una persona. */
+  aunqueBorreMucho = false,
+): Promise<Resultado> {
   const r: Resultado = { version: 0, bajo: false, subio: false };
   let { recuerdo, base } = await m.cargar();
   for (let intento = 1; intento <= INTENTOS; intento++) {
@@ -59,7 +66,7 @@ export async function pasada(b: Boveda, cliente: Cliente, token: string, m: Memo
       if (bajada.version < recuerdo.version) {
         throw new Error(`${ERR_RETROCESO} (aquí se vio la ${recuerdo.version} y allí dice la ${bajada.version})`);
       }
-      const f = await fundir(b, bajada.datos, bajada.version, base);
+      const f = await fundir(b, bajada.datos, bajada.version, base, { aunqueBorreMucho });
       r.fusion = f;
       r.bajo = f.cambio;
       recuerdo = { version: bajada.version, serie: f.serie };

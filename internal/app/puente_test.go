@@ -80,7 +80,7 @@ var loQuePuedeCruzarElPuente = []string{
 	// sesión ni testigos, y la clave de recuperación una sola vez al crear la
 	// cuenta con una bóveda nueva. A qué servidor se habla lo decide
 	// `ApuntarCuentasA`, que es función y no método.
-	"EstadoDeCuenta", "ElegirModoLocal", "SincronizarAhora",
+	"EstadoDeCuenta", "ElegirModoLocal", "SincronizarAhora", "SincronizarAunqueBorre",
 	"EmpezarRegistro", "TerminarRegistro",
 	"EntrarEnCuenta", "ConfirmarEntrada", "ResolverOtraBoveda", "SalirDeCuenta",
 	// La A3. Recuperar recibe la clave de recuperación y la contraseña nueva, y no

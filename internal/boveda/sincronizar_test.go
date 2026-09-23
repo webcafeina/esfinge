@@ -498,6 +498,37 @@ func TestLaContrasenaCambiadaEnOtroEquipoLlegaConSuRanura(t *testing.T) {
 	}
 }
 
+// **La papelera no es un borrado, a estos efectos** (revisión del 2026-09-23).
+// Mandar a la papelera casi todo en un equipo es un gesto normal y reversible, y
+// hasta ahora paraba en seco la sincronización de todos los demás —que además
+// dejaban de subir lo suyo— sin ninguna forma de decir que sí. El freno es para
+// una fusión que **se lleve** entradas del fichero.
+func TestMandarALaPapeleraNoParaLaSincronizacion(t *testing.T) {
+	a, b, s := dosEquipos(t)
+	for i := range 5 {
+		mustPoner(t, a.b, Entrada{Titulo: fmt.Sprint("E", i)})
+	}
+	a.sincronizar(t, s)
+	b.sincronizar(t, s)
+	for _, e := range append([]Entrada(nil), a.b.cont.Entradas...) {
+		if e.Titulo != "E0" {
+			_ = a.b.Borrar(e.ID) // a la papelera, sin borrar del todo
+		}
+	}
+	a.sincronizar(t, s)
+
+	f, err := b.b.Fundir(s.datos, s.version, b.base, OpcionesDeFusion{})
+	if err != nil {
+		t.Fatalf("la papelera de otro equipo para la sincronización: %v", err)
+	}
+	if f.Borradas != 0 {
+		t.Fatalf("cuenta %d como borradas y solo están en la papelera", f.Borradas)
+	}
+	if b.b.Cuantas() != 1 || b.b.EnLaPapelera() != 5 {
+		t.Fatalf("en B quedan %d vivas y %d en la papelera", b.b.Cuantas(), b.b.EnLaPapelera())
+	}
+}
+
 func TestUnaFusionQueSeLlevaMediaBovedaNoSeAplicaSola(t *testing.T) {
 	a, b, s := dosEquipos(t)
 	for i := range 5 {

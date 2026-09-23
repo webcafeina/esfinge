@@ -550,3 +550,57 @@ func TestElVigilanteSigueDespuesDeEncontrarseOcupado(t *testing.T) {
 		t.Fatal("el vigilante se ha quedado dormido tras encontrarse el turno cogido")
 	}
 }
+
+// **La parada por muchos borrados tiene salida** (revisión del 2026-09-23): un
+// permiso para **una sola pasada**, que da una persona viendo lo que va a pasar.
+// Antes, la opción existía en el código y no la ponía nadie: la bóveda se quedaba
+// sin sincronizar y sin subir lo suyo, y lo único que se leía era que estaba
+// parada.
+func TestJuntarloIgualValeUnaVezYSoloUna(t *testing.T) {
+	srv := &enMemoria{}
+	a := nuevoEquipo(t, srv, crear(t))
+	for i := range 5 {
+		_ = a.b.Poner(boveda.Entrada{Titulo: fmt.Sprint("E", i)})
+	}
+	a.sincronizar(t)
+	b := otroEquipo(t, srv, a.b)
+	b.sincronizar(t)
+
+	// A se lleva por delante cuatro de las cinco, del todo.
+	for _, e := range a.b.Buscar("") {
+		if e.Titulo != "E0" {
+			_ = a.b.Borrar(e.ID)
+			_ = a.b.BorrarDelTodo(e.ID)
+		}
+	}
+	a.sincronizar(t)
+
+	if _, err := b.s.Sincronizar(ctx); !errors.Is(err, boveda.ErrMuchosBorrados) {
+		t.Fatalf("se las lleva sin preguntar: %v", err)
+	}
+	b.s.UnaVezAunqueBorre()
+	if _, err := b.s.Sincronizar(ctx); err != nil {
+		t.Fatalf("con el permiso no funde: %v", err)
+	}
+	if b.b.Cuantas() != 1 {
+		t.Fatalf("en B quedan %d", b.b.Cuantas())
+	}
+
+	// Y el permiso **se ha gastado**: la vez siguiente vuelve a pararse. B repuebla
+	// la bóveda, A se lleva otra vez casi todo, y B se para.
+	for i := range 5 {
+		_ = b.b.Poner(boveda.Entrada{Titulo: fmt.Sprint("De B ", i)})
+	}
+	b.sincronizar(t)
+	a.sincronizar(t)
+	for _, e := range a.b.Buscar("") {
+		if e.Titulo != "E0" {
+			_ = a.b.Borrar(e.ID)
+			_ = a.b.BorrarDelTodo(e.ID)
+		}
+	}
+	a.sincronizar(t)
+	if _, err := b.s.Sincronizar(ctx); !errors.Is(err, boveda.ErrMuchosBorrados) {
+		t.Fatalf("el permiso se ha quedado puesto: %v", err)
+	}
+}

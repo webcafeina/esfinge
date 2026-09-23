@@ -121,9 +121,11 @@ async function fundirSinCola(
     serie: doc.serie,
   };
 
+  // **Perdida es la que desaparece, no la que va a la papelera** (revisión del
+  // 2026-09-23): ver el mismo trozo en `internal/boveda/sincronizar.go`.
   const antes = vivas(cont.entradas);
-  const despues = vivas(r.contenido.entradas);
-  for (const id of antes) if (!despues.has(id)) f.borradas++;
+  const quedan = new Set(r.contenido.entradas.map((e) => e.id));
+  for (const id of antes) if (!quedan.has(id)) f.borradas++;
   if (!opciones.aunqueBorreMucho && antes.size >= 4 && f.borradas * 2 > antes.size) {
     throw Object.assign(new ErrorBoveda("muchos-borrados"), { fusion: f });
   }

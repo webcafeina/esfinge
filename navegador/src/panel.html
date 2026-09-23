@@ -100,6 +100,14 @@
       </section>
     </main>
 
+    <!-- Cuando una fusión no se pudo hacer, la bóveda que había en este navegador
+         se aparta en vez de pisarse, y hay que decirlo: si no, lo guardado aquí y
+         no subido parecería perdido. -->
+    <p id="apartada" class="resultado" role="status" hidden>
+      Se ha apartado la bóveda que había en este navegador porque no se pudo juntar con la de la cuenta.
+      Lo guardado aquí sigue dentro: ábrela en la aplicación de Esfinge para recuperarlo.
+    </p>
+
     <!-- El resultado del último gesto: «Rellenado», «Contraseña copiada»… -->
     <p id="resultado" class="resultado" role="status" hidden></p>
 
@@ -116,6 +124,9 @@
           <path d="M21 3v5h-5" />
         </svg>
       </button>
+      <!-- La salida de «la fusión borraría media bóveda»: hasta la revisión del
+           2026-09-23 no había ninguna y la bóveda se quedaba sin sincronizar. -->
+      <button id="juntar-igual" class="discreto" type="button" hidden>Juntarlo igual</button>
       <button id="volver-a-entrar" class="discreto" type="button" hidden>Volver a entrar</button>
       <button id="bloquear" class="discreto" type="button" hidden>Bloquear</button>
       <button id="salir" class="discreto" type="button" hidden>Salir de la cuenta</button>

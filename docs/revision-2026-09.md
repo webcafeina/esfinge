@@ -16,10 +16,10 @@ externa**: mientras no la haya, las cuentas siguen por invitación.
 | # | Dónde | Gravedad | Estado |
 |---|---|---|---|
 | 1 | Extensión: un campo escondido por su contenedor se rellenaba solo | Alta | **Arreglado** |
-| 2 | Extensión: pisa su bóveda —y pierde lo no subido— si la fusión falla al volver a entrar | Alta | Propuesto, pendiente de decisión |
-| 3 | Sincronización: «muchos borrados» salta al usar la papelera y **no tiene salida** | Alta | Propuesto, pendiente de decisión |
+| 2 | Extensión: pisa su bóveda —y pierde lo no subido— si la fusión falla al volver a entrar | Alta | **Arreglado** |
+| 3 | Sincronización: «muchos borrados» salta al usar la papelera y **no tiene salida** | Alta | **Arreglado** |
 | 4 | Servidor: se puede saber si un correo tiene cuenta (429 frente a 401) | Media | **Arreglado** |
-| 5 | Servidor: con solo el correo se deja una cuenta sin códigos una hora | Media | Propuesto |
+| 5 | Servidor: con solo el correo se deja una cuenta sin códigos una hora | Media | **Arreglado** |
 | 6 | Servidor: el testigo de confianza sobrevive al cambio de contraseña | Media | **Arreglado** |
 | 7 | Extensión: quién puede pedir lo de la cuenta se decidía por el nombre del puerto | Media | **Arreglado** |
 | 8 | Extensión: la tarjeta de guardar se podía pulsar en el instante en que aparece | Media | **Arreglado** |
@@ -96,7 +96,7 @@ que lo comprueba por los dos lados.
 - **«El mismo sitio»** para las ofertas pendientes contaba etiquetas a ojo, así que `evil.github.io` y
   `victima.github.io` eran el mismo. Ahora usa la lista de sufijos públicos, que ya iba dentro.
 
-## Lo que propongo arreglar y necesita tu visto bueno
+## Lo que se arregló después (2.25.6)
 
 ### 2 · La extensión pisa su bóveda si la fusión falla al volver a entrar — **alta**
 
@@ -105,8 +105,9 @@ la de aquí; si la fusión lanza —y el hallazgo 3 hace que lance con facilidad
 con la del servidor y **escribe encima**. Lo que la extensión hubiera guardado y no subido se pierde, sin
 aviso y sin copia. La aplicación, en el mismo caso, **aparta** el fichero y dice dónde ha quedado.
 
-**Propuesta**: hacer lo mismo que la aplicación —guardar la de aquí bajo otra clave y decirlo— y, antes de
-sustituir nada, intentar subir lo pendiente.
+**Arreglado**: se hace lo mismo que la aplicación. La bóveda de este navegador se guarda aparte —no se
+borra sola— y el panel lo dice: «Se ha apartado la bóveda que había en este navegador… ábrela en la
+aplicación de Esfinge para recuperarlo».
 
 ### 3 · «Muchos borrados» salta al usar la papelera, y no hay salida — **alta**
 
@@ -119,9 +120,10 @@ llevaría más de la mitad de las entradas vivas. El problema es doble:
   fuera de las pruebas. La ventana enseña «Parada: los cambios de otro equipo borrarían media bóveda» y no
   hay botón. Mientras tanto ese equipo tampoco sube lo suyo.
 
-**Propuesta**: contar como perdidas solo las entradas que **desaparecen del todo**, no las que pasan a la
-papelera —que es justo el seguro contra un clic—, y poner un botón en la ventana y en el panel que repita la
-pasada aceptándolo. Toca las dos implementaciones, sus pruebas cruzadas y `docs/formato-boveda.md`.
+**Arreglado**, las dos cosas y en las dos implementaciones: perdida es la que **desaparece del fichero**, no
+la que pasa a la papelera; y la parada tiene salida, «Juntarlo igual», en la línea de la bóveda de la
+aplicación y en el panel de la extensión. El permiso vale para **una sola pasada** y se consume al usarla,
+con pruebas que lo comprueban por los dos lados.
 
 ### 5 · Con solo el correo, una cuenta se queda sin códigos una hora — **media**
 
@@ -130,8 +132,10 @@ por hora es **uno solo** para entrar, recuperar y borrar. Cinco peticiones por h
 dejan a esa persona sin poder entrar desde un equipo nuevo ni recuperar la cuenta, y le mandan cinco correos.
 Además, pedir otro código de recuperación **invalida el que estuviera usando**.
 
-**Propuesta**: un cupo por propósito, un tope diario de correos por cuenta, y que pedir otro código no mate
-el anterior hasta que el nuevo se haya mandado.
+**Arreglado**: un cupo por propósito —gastar los de recuperación ya no deja sin entrar—, un tope de veinte
+códigos al día por cuenta, y **pedir otro código de recuperación ya no mata el anterior**: valen los que
+sigan vivos y se comprueban todos. Eso cambia una decisión anterior —«un solo código vivo»—, y el motivo
+está escrito al lado de la prueba.
 
 ### 10 · Un borrado suave gana a una edición — **media**
 
@@ -151,6 +155,10 @@ fuera de la papelera. En las dos implementaciones, con caso en las pruebas cruza
 intentos» de un código de seis cifras no son cinco. No se reproduce en el simulador; contra D1 de verdad
 se espera que sí. **Propuesta**: una sola sentencia atómica (`UPDATE … WHERE intentos < 5 RETURNING codigo`)
 y pasar también esa ruta por el freno.
+
+**Lo que queda del 2 y del 3**: el estado de la extensión no se marca como «hay que subir» cuando la fusión
+de la entrada deja cambios sin subir (hallazgo menor 4 de esa pasada); se autocura en la siguiente pasada,
+y está apuntado en `docs/deuda.md`.
 
 ## Decisiones que no son un arreglo, sino una elección
 

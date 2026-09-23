@@ -295,6 +295,22 @@ func (a *App) SincronizarAhora() error {
 	return nil
 }
 
+// SincronizarAunqueBorre repite la pasada aceptando una fusión que se lleve más de
+// la mitad de las entradas: es la salida de «Parada: los cambios de otro equipo
+// borrarían media bóveda», que hasta la revisión del 2026-09-23 no tenía ninguna.
+// Vale para **una sola pasada**.
+func (a *App) SincronizarAunqueBorre() error {
+	a.cu.mu.Lock()
+	m := a.cu.marcha
+	a.cu.mu.Unlock()
+	if m == nil {
+		return errors.New("Aquí no se está sincronizando: abre la bóveda de la cuenta")
+	}
+	m.s.UnaVezAunqueBorre()
+	m.vig.Ya()
+	return nil
+}
+
 // ------------------------------------------------------------------ crear la cuenta
 
 // EmpezarRegistro pide el código para crear la cuenta.

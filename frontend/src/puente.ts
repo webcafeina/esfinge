@@ -411,6 +411,13 @@ export const esfinge = {
 
   estadoDeCuenta: () => llamar<EstadoCuenta>("EstadoDeCuenta"),
 
+  /**
+   * Repite la pasada aceptando una fusión que se lleve más de la mitad de las
+   * entradas: la salida de «Parada: los cambios de otro equipo borrarían media
+   * bóveda». Vale para una sola pasada.
+   */
+  sincronizarAunqueBorre: () => llamar<void>("SincronizarAunqueBorre"),
+
   /** Lo que se elige en la bienvenida para trabajar sin cuenta. */
   elegirModoLocal: () => llamar<void>("ElegirModoLocal"),
 

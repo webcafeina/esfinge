@@ -390,8 +390,12 @@ function pintarGestos(ec: EstadoDeCuenta) {
   // Abierta pero sin sesión —la cuenta dejó de reconocer este navegador—: se trabaja
   // aquí, sin sincronizar, hasta volver a entrar.
   (document.getElementById("volver-a-entrar") as HTMLElement).hidden = !(conCuenta && ec.abierta && ec.sincro.estado === "hay-que-entrar");
+  (document.getElementById("juntar-igual") as HTMLElement).hidden = !(conCuenta && ec.sincro.estado === "muchos-borrados");
   (document.getElementById("salir") as HTMLElement).hidden = !conCuenta;
   (document.getElementById("usar-cuenta") as HTMLElement).hidden = conCuenta;
+  // Y si una fusión dejó aparte la bóveda de este navegador, se dice hasta que se
+  // salga de la cuenta: lo guardado aquí y no subido está ahí dentro.
+  (document.getElementById("apartada") as HTMLElement).hidden = !(conCuenta && ec.apartada);
 }
 
 function atenderGestos() {
@@ -416,6 +420,22 @@ function atenderGestos() {
       return;
     }
     contar("Sincronizada con tu cuenta.", true);
+    await pintarCuentas();
+  });
+  // **Juntarlo igual**: la salida de «la fusión borraría media bóveda». Vale para
+  // una sola pasada, y lo pide una persona que está viendo lo que va a pasar.
+  const juntar = document.getElementById("juntar-igual") as HTMLButtonElement;
+  juntar.addEventListener("click", async () => {
+    juntar.disabled = true;
+    const r = await pedirCuenta({ cuenta: "sincronizar", igual: true });
+    juntar.disabled = false;
+    const s = r.estado?.sincro;
+    if (r.estado) pintarGestos(r.estado);
+    if (!r.ok || s?.estado !== "al-dia") {
+      contar(s?.mensaje ?? r.error ?? "No se ha podido sincronizar.", false);
+      return;
+    }
+    contar("Juntado con tu cuenta.", true);
     await pintarCuentas();
   });
   document.getElementById("bloquear")!.addEventListener("click", async () => {
