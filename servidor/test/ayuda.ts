@@ -48,12 +48,18 @@ export async function buzon(correo: string): Promise<{ asunto: string; cuerpo: s
 	return ((await r.json()) as { mensajes: { asunto: string; cuerpo: string }[] }).mensajes;
 }
 
-/** El código de seis cifras del último correo que ha llegado a ese buzón. */
+/**
+ * El código de seis cifras del **último correo que lleve uno**.
+ *
+ * No vale mirar solo el último que ha llegado: desde que el alta manda también su
+ * confirmación (LSSI 28), el más reciente puede no llevar código.
+ */
 export async function ultimoCodigo(correo: string): Promise<string> {
-	const [ultimo] = await buzon(correo);
-	const m = ultimo && /^\s+(\d{6})$/m.exec(ultimo.cuerpo);
-	if (!m) throw new Error(`No hay código en el buzón de ${correo}`);
-	return m[1];
+	for (const carta of await buzon(correo)) {
+		const m = /^\s+(\d{6})$/m.exec(carta.cuerpo);
+		if (m) return m[1];
+	}
+	throw new Error(`No hay código en el buzón de ${correo}`);
 }
 
 export const ARGON2 = { memoria: 65536, pasadas: 3, paralelismo: 4 };

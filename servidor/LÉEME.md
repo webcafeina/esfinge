@@ -115,3 +115,30 @@ las condiciones de uso publicadas. Hasta entonces, quién entra se decide en la 
 ```sh
 pnpm exec wrangler d1 execute BD --remote --command "INSERT INTO admision (patron) VALUES ('@webcafeina.com')"
 ```
+
+## Cerrar una cuenta
+
+Lo que las condiciones de uso prometen —cerrar la de quien las incumpla, avisando y dando un plazo para
+llevarse los datos— se hace **a mano y desde aquí**, sin ninguna ruta de administración
+([ADR 0042](../docs/adr/0042-cerrar-una-cuenta-sin-puerta-de-administracion.md)). Son tres pasos y el
+segundo es esperar:
+
+```sh
+# 1 · Suspender. No entra ni sube; sigue pudiendo bajar y exportar, que es de lo
+#     que vive el plazo. Antes de esto, el aviso por correo.
+pnpm exec wrangler d1 execute BD --remote \
+  --command "UPDATE cuentas SET suspendida = 1 WHERE correo = 'quien@ejemplo.com'"
+
+# 2 · Esperar el plazo que se le haya dado (las condiciones dicen treinta días).
+
+# 3 · Borrar. **El objeto primero y la fila después**: al revés queda el objeto
+#     huérfano con la bóveda cifrada dentro.
+pnpm exec wrangler d1 execute BD --remote \
+  --command "SELECT cuenta FROM cuentas WHERE correo = 'quien@ejemplo.com'"
+# …y con ese identificador, borrar el Durable Object desde el panel de Cloudflare.
+pnpm exec wrangler d1 execute BD --remote \
+  --command "DELETE FROM cuentas WHERE correo = 'quien@ejemplo.com'"
+```
+
+Para deshacerlo, `SET suspendida = 0`. **Nada de esto ocurre solo**: quien suspenda tiene que anotarse
+cuándo vence el plazo.

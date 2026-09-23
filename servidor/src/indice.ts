@@ -11,7 +11,7 @@
 //   el freno del canal con el navegador. Los frenos van en el enlace `ratelimit`,
 //   en D1 o en el Durable Object de la cuenta.
 
-import { cartas, carteroPara, type Carta } from "./correo";
+import { cartas, carteroPara, type Carta, type Entregado } from "./correo";
 import { Cuenta, SESION_CADUCADA, cuentaDeReto, cuentaDeSesion } from "./cuenta";
 import { aBase64url, aHex, azar, codigoDeSeisCifras, deBase64url, hmac, iguales } from "./cripto";
 import {
@@ -107,7 +107,7 @@ async function atender(p: Request, env: Env, ctx: ExecutionContext): Promise<Res
 	if (r("GET", "/v1/salud")) return json(200, { registro: modoDeRegistro(env), protocolo: 1 });
 	if (r("POST", "/v1/prelogin")) return prelogin(p, env);
 	if (r("POST", "/v1/registro/inicio")) return empezarAlta(p, env);
-	if (r("POST", "/v1/registro/fin")) return terminarAlta(p, env);
+	if (r("POST", "/v1/registro/fin")) return terminarAlta(p, env, ctx);
 	if (r("POST", "/v1/sesion")) return entrar(p, env);
 	if (r("POST", "/v1/sesion/codigo")) return confirmarEntrada(p, env, ctx);
 	if (r("DELETE", "/v1/sesion")) return cerrarSesion(p, env);
@@ -188,7 +188,7 @@ async function empezarAlta(p: Request, env: Env): Promise<Response> {
 	return json(202, {});
 }
 
-async function terminarAlta(p: Request, env: Env): Promise<Response> {
+async function terminarAlta(p: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const d = await leerJSON(p);
 	const c = correoValido(d.correo);
 	// **Esta ruta también pasa por el freno por IP** (revisión del 2026-09-23): es
@@ -257,6 +257,9 @@ async function terminarAlta(p: Request, env: Env): Promise<Response> {
 		throw new Fallo(creada.estado, creada.error);
 	}
 	await env.BD.prepare("DELETE FROM altas WHERE correo = ?").bind(c).run();
+	// La constancia del alta va **después** y sin bloquear la respuesta: que el correo
+	// falle no puede dejar a medias una cuenta que ya existe.
+	ctx.waitUntil(mandar(env, cartas.cuentaCreada(c)));
 	return json(201, { cuenta, ...creada.datos });
 }
 
@@ -267,6 +270,9 @@ async function entrar(p: Request, env: Env): Promise<Response> {
 	const d = await leerJSON(p);
 	const c = correoValido(d.correo);
 	const cuenta = await cuentaDeCorreo(env, c);
+	// Suspendida, no se entra. Se dice claro y con a quién escribir: un 401 genérico
+	// dejaría a esa persona probando su contraseña sin entender qué pasa.
+	if (cuenta) await noSuspendida(env, cuenta);
 	const hecho = abrir(
 		await objeto(env, cuenta ?? SIN_CUENTA).entrar({
 			claveDeAcceso: d.claveDeAcceso,
@@ -284,6 +290,7 @@ async function confirmarEntrada(p: Request, env: Env, ctx: ExecutionContext): Pr
 	const d = await leerJSON(p);
 	const cuenta = cuentaDeReto(d.reto);
 	if (!cuenta) throw new Fallo(401, "El código no es correcto o ha caducado. Pide otro.");
+	await noSuspendida(env, cuenta);
 	const hecho = abrir(
 		await objeto(env, cuenta).confirmar({ reto: d.reto as string, codigo: d.codigo, confiar: d.confiar === true }),
 	);
@@ -312,6 +319,9 @@ async function leerBoveda(p: Request, env: Env): Promise<Response> {
 
 async function escribirBoveda(p: Request, env: Env): Promise<Response> {
 	const { token, cuenta } = sesionDe(p);
+	// **Suspendida se puede leer y exportar, pero no subir.** Las condiciones
+	// prometen un plazo para llevarse los datos, y eso exige que bajar siga yendo.
+	await noSuspendida(env, cuenta);
 	const siCoincide = etiqueta(p.headers.get("If-Match"));
 	if (siCoincide === null) throw new Fallo(428, "Falta decir sobre qué versión se escribe (If-Match).");
 	const datos = await leerBytes(p, TAMANO_MAXIMO);
@@ -497,6 +507,30 @@ async function cuentaDeCorreo(env: Env, correo: string): Promise<string | null> 
 	return fila?.cuenta ?? null;
 }
 
+/**
+ * Lo que las condiciones de uso llaman cerrar una cuenta, aquí (ADR 0042).
+ *
+ * La marca vive en D1 y **se pone a mano con `wrangler d1 execute`**, como la lista
+ * de admisión: así no hace falta ninguna ruta de administración en el servidor, que
+ * sería una puerta nueva a un sitio donde no queremos puertas.
+ *
+ * **Suspendida no es borrada**: no se puede entrar ni subir, pero **sí leer y
+ * exportar**, porque las condiciones prometen un plazo para llevarse los datos y
+ * esa promesa tiene que poder cumplirse.
+ */
+const SUSPENDIDA = "Esta cuenta está suspendida. Escríbenos a info@webcafeina.com.";
+
+async function estaSuspendida(env: Env, cuenta: string): Promise<boolean> {
+	const fila = await env.BD.prepare("SELECT suspendida FROM cuentas WHERE cuenta = ?")
+		.bind(cuenta)
+		.first<{ suspendida: number }>();
+	return (fila?.suspendida ?? 0) !== 0;
+}
+
+async function noSuspendida(env: Env, cuenta: string): Promise<void> {
+	if (await estaSuspendida(env, cuenta)) throw new Fallo(403, SUSPENDIDA);
+}
+
 function correoValido(correo: unknown): string {
 	const c = normalizarCorreo(correo);
 	if (!c) throw new Fallo(400, "Ese correo no parece válido.");
@@ -532,12 +566,16 @@ async function contar(env: Env, clave: string, tope: number, mensaje: string) {
 	await env.BD.prepare("DELETE FROM contadores WHERE dia < ?").bind(antes).run();
 }
 
-async function mandar(env: Env, c: Carta): Promise<boolean> {
+async function mandar(env: Env, c: Carta): Promise<Entregado> {
 	return carteroPara(env).mandar(c);
 }
 
 async function mandarOFallar(env: Env, c: Carta) {
-	if (!(await mandar(env, c))) {
+	const como = await mandar(env, c);
+	if (como === "cupo") {
+		throw new Fallo(503, "Hoy no se pueden mandar más correos. Vuelve a intentarlo mañana.");
+	}
+	if (como !== "ok") {
 		throw new Fallo(502, "No se ha podido mandar el correo. Prueba otra vez en un momento.");
 	}
 }

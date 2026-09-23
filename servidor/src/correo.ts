@@ -18,8 +18,16 @@ export interface Carta {
 	idempotencia?: string;
 }
 
+/**
+ * Qué ha pasado al mandar. **«Cupo» no es «fallo»**, y por eso son tres y no dos
+ * (ADR 0041): con el plan gratuito de Resend —cien correos al día— agotarlo es lo
+ * más probable que pase, y decir «prueba otra vez en un momento» sería mentir: no
+ * es en un momento, es mañana.
+ */
+export type Entregado = "ok" | "fallo" | "cupo";
+
 export interface Cartero {
-	mandar(c: Carta): Promise<boolean>;
+	mandar(c: Carta): Promise<Entregado>;
 }
 
 export function carteroPara(env: Env): Cartero {
@@ -33,8 +41,8 @@ class CarteroResend implements Cartero {
 		private remitente: string,
 	) {}
 
-	async mandar(c: Carta): Promise<boolean> {
-		if (!this.clave) return false;
+	async mandar(c: Carta): Promise<Entregado> {
+		if (!this.clave) return "fallo";
 		const cabeceras: Record<string, string> = {
 			Authorization: `Bearer ${this.clave}`,
 			"Content-Type": "application/json",
@@ -46,9 +54,13 @@ class CarteroResend implements Cartero {
 				headers: cabeceras,
 				body: JSON.stringify({ from: this.remitente, to: [c.para], subject: c.asunto, text: c.texto }),
 			});
-			return r.ok;
+			if (r.ok) return "ok";
+			// 429 es «demasiados»; Resend lo usa tanto para el cupo del día como para su
+			// límite por segundo. Desde fuera no se distinguen, y para quien lo lee el
+			// consejo es el mismo: esto no se arregla volviendo a pulsar.
+			return r.status === 429 ? "cupo" : "fallo";
 		} catch {
-			return false;
+			return "fallo";
 		}
 	}
 }
@@ -56,12 +68,12 @@ class CarteroResend implements Cartero {
 class CarteroDePruebas implements Cartero {
 	constructor(private bd: D1Database) {}
 
-	async mandar(c: Carta): Promise<boolean> {
+	async mandar(c: Carta): Promise<Entregado> {
 		await this.bd
 			.prepare("INSERT INTO buzon_pruebas (correo, asunto, cuerpo, momento) VALUES (?, ?, ?, ?)")
 			.bind(c.para, c.asunto, c.texto, Date.now())
 			.run();
-		return true;
+		return "ok";
 	}
 }
 
@@ -72,6 +84,19 @@ export const cartas = {
 		para,
 		asunto: "Tu código para crear la cuenta de Esfinge",
 		texto: `Tu código para crear la cuenta de Esfinge es:\n\n    ${codigo}\n\nCaduca en diez minutos. Si no lo has pedido tú, ignora este correo: sin el código no se crea nada.${PIE}`,
+	}),
+	/**
+	 * La confirmación del alta, que **pide el artículo 28 de la LSSI**: quien
+	 * contrata a distancia tiene que recibir constancia de lo que ha contratado y
+	 * dónde están las condiciones. Va después de crear la cuenta, no antes.
+	 *
+	 * Y cuesta un correo más de los cien al día del plan gratuito de Resend
+	 * (ADR 0041): dos por alta en vez de uno.
+	 */
+	cuentaCreada: (para: string): Carta => ({
+		para,
+		asunto: "Tu cuenta de Esfinge está creada",
+		texto: `Tu cuenta de Esfinge está creada con este correo.\n\nTres cosas que conviene no olvidar:\n\n  · Tu bóveda se cifra en tu ordenador antes de salir. No podemos leerla, ni recuperarla si pierdes tus claves.\n  · Guarda tu clave de recuperación fuera del ordenador. Es lo único que abre la bóveda si olvidas la contraseña maestra.\n  · Tu buzón de correo importa tanto como tus claves: por aquí van los códigos.\n\nLas condiciones de uso y la política de privacidad, en https://webcafeina.github.io/esfinge/condiciones.html y https://webcafeina.github.io/esfinge/privacidad.html${PIE}`,
 	}),
 	yaTienesCuenta: (para: string): Carta => ({
 		para,

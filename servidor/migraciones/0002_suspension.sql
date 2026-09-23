@@ -1,0 +1,11 @@
+-- Suspender una cuenta, para poder cumplir lo que dicen las condiciones de uso:
+-- cerrar la de quien las incumpla, avisando y dándole un plazo para llevarse sus
+-- datos (docs/revision-textos-2026-09.md, ADR 0041).
+--
+-- Va **en D1 y no en el Durable Object** a propósito: así se pone y se quita con
+-- `wrangler d1 execute`, como la lista de admisión, sin abrir en el servidor
+-- ninguna ruta de administración. Una puerta que no existe no se puede forzar.
+--
+-- Suspendida, la cuenta **no deja entrar ni subir**, pero **sigue dejando leer y
+-- exportar**: si no, el plazo para llevarse los datos sería una frase vacía.
+ALTER TABLE cuentas ADD COLUMN suspendida INTEGER NOT NULL DEFAULT 0;

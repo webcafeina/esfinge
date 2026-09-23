@@ -15,9 +15,18 @@ describe("el alta", () => {
 		const a = await darDeAlta("ana@ejemplo.com");
 		expect(a.cuenta).toMatch(/^[0-9a-f]{32}$/);
 		expect(a.sesion).toMatch(new RegExp(`^s1\\.${a.cuenta}\\.`));
-		const [carta] = await buzon("ana@ejemplo.com");
-		expect(carta.asunto).not.toMatch(/\d{6}/);
-		expect(carta.cuerpo).toMatch(/^\s+\d{6}$/m);
+		const cartas = await buzon("ana@ejemplo.com");
+		const conCodigo = cartas.find((c) => /^\s+\d{6}$/m.test(c.cuerpo))!;
+		expect(conCodigo).toBeDefined();
+		expect(conCodigo.asunto).not.toMatch(/\d{6}/);
+
+		// **Y al terminar llega la constancia del alta** (LSSI 28), con los enlaces a
+		// las condiciones y a la política. Es el correo más reciente, porque va
+		// después de crear la cuenta.
+		expect(cartas[0].asunto).toBe("Tu cuenta de Esfinge está creada");
+		expect(cartas[0].cuerpo).toContain("condiciones.html");
+		expect(cartas[0].cuerpo).toContain("privacidad.html");
+		expect(cartas[0].cuerpo).not.toMatch(/\d{6}/);
 	});
 
 	it("normaliza el correo: mayúsculas y espacios son la misma cuenta", async () => {
