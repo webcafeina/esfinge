@@ -565,3 +565,85 @@ func TestCruzadaFundirIdentidad(t *testing.T) {
 		t.Fatalf("funden distinto:\nGo:        %s\nextensión: %s", canonDeContenido(t, mio), suyos[0].Contenido)
 	}
 }
+
+// **El sobre de un envío, cerrado aquí y abierto allí, y al revés** (ADR 0043).
+//
+// Es la prueba que decide si compartir funciona entre la ventana y el navegador:
+// HPKE está escrito dos veces —`crypto/hpke` en Go y a mano sobre WebCrypto en la
+// extensión— y lo que se firma es JSON que los dos tienen que escribir igual, byte
+// a byte. Cualquier desvío se ve aquí y en ningún otro sitio.
+func TestCruzadaEnvio(t *testing.T) {
+	cruzada.Activa(t)
+	semillaDeGo := "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+	semillaDeElla := "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
+
+	a := conSemilla(t, semillaDeGo)
+	b := conSemilla(t, semillaDeElla)
+	suya, err := b.Identidad()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mia, err := a.Identidad()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := Entrada{Tipo: TipoCredencial, Titulo: "Banco «ñ» <b>", Usuario: "ana@ejemplo.com",
+		Secreto: "contraseña con ñ y 😀", Sitios: []string{"banco.com"}, Creada: "2026-09-01T00:00:00Z", Cambiada: "2026-09-01T00:00:00Z"}
+
+	t.Run("lo que cierra Go lo abre la extensión", func(t *testing.T) {
+		sobre, err := a.MandarEntrada(e, suya)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var suyo struct {
+			Entrada string `json:"entrada"`
+			Huella  string `json:"huella"`
+		}
+		cruzada.Pedir(t, map[string]any{"orden": "envioAbrir", "semilla": semillaDeElla, "sobre": sobre}, &suyo)
+		copia := e
+		copia.ID, copia.Historial, copia.Revision = "", nil, 0
+		if suyo.Entrada != canon(copia) {
+			t.Fatalf("la extensión saca otra entrada:\nquiero: %s\ntiene:  %s", canon(copia), suyo.Entrada)
+		}
+		if suyo.Huella != mia.Huella {
+			t.Fatalf("la huella de quien manda es %s y la extensión ve %s", mia.Huella, suyo.Huella)
+		}
+	})
+
+	t.Run("lo que cierra la extensión lo abre Go", func(t *testing.T) {
+		var sobre Envio
+		cruzada.Pedir(t, map[string]any{
+			"orden": "envioSellar", "semilla": semillaDeElla, "paraSemilla": semillaDeGo,
+			"entrada": map[string]any{"titulo": "De vuelta", "tipo": "credencial", "secreto": "otra contraseña", "creada": "2026-09-02T00:00:00Z", "cambiada": "2026-09-02T00:00:00Z"},
+		}, &sobre)
+
+		recibida, de, err := a.AbrirEnvio(sobre)
+		if err != nil {
+			t.Fatalf("Go no abre lo que cerró la extensión: %v", err)
+		}
+		if recibida.Secreto != "otra contraseña" || recibida.Titulo != "De vuelta" {
+			t.Fatalf("Go saca otra cosa: %+v", recibida)
+		}
+		if de.Huella != suya.Huella {
+			t.Fatalf("Go ve la huella %s y la de quien manda es %s", de.Huella, suya.Huella)
+		}
+	})
+}
+
+// conSemilla hace una bóveda cuya identidad es exactamente esa semilla, para que
+// las dos partes de la prueba hablen de las mismas llaves.
+func conSemilla(t *testing.T, semillaHex string) *Boveda {
+	t.Helper()
+	b, _, _ := nueva(t)
+	semilla, err := hex.DecodeString(semillaHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.cont.Identidad = &identidad{Semilla: b64.EncodeToString(semilla), Creada: "2026-09-01T00:00:00Z", Suite: Suite}
+	b.cuerpoSucio = true
+	if err := b.Guardar(); err != nil {
+		t.Fatal(err)
+	}
+	return b
+}

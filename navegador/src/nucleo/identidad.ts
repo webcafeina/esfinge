@@ -112,6 +112,32 @@ export async function identidadDeSemilla(semilla: Uint8Array, suite = SUITE): Pr
   return { suite, cifrado, firma, huella: await huellaDeIdentidad(suite, cifrado, firma) };
 }
 
+/** Las dos privadas de 32 bytes que salen de la semilla. */
+export async function privadasDeSemilla(semilla: Uint8Array): Promise<{ cifrado: Uint8Array; firma: Uint8Array }> {
+  return { cifrado: await hkdf(semilla, INFO_CIFRADO), firma: await hkdf(semilla, INFO_FIRMA) };
+}
+
+/** Firma con la identidad de esa semilla, como `ed25519.Sign` en Go. */
+export async function firmarConSemilla(semilla: Uint8Array, mensaje: Uint8Array): Promise<Uint8Array> {
+  const { firma } = await privadasDeSemilla(semilla);
+  const pkcs8 = new Uint8Array([
+    0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20,
+    ...firma,
+  ]);
+  const k = await crypto.subtle.importKey("pkcs8", pkcs8, { name: "Ed25519" }, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("Ed25519", k, new Uint8Array(mensaje)));
+}
+
+/** Comprueba una firma con la llave pública de quien dice haberla hecho. */
+export async function comprobarFirma(publica: Uint8Array, mensaje: Uint8Array, firma: Uint8Array): Promise<boolean> {
+  try {
+    const k = await crypto.subtle.importKey("raw", new Uint8Array(publica), { name: "Ed25519" }, false, ["verify"]);
+    return await crypto.subtle.verify("Ed25519", k, new Uint8Array(firma), new Uint8Array(mensaje));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * De las dos, la misma que elegiría Go: la más antigua, y si empatan la de semilla
  * menor. Solo hay dos si dos equipos crearon la suya antes de verse.

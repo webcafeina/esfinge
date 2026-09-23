@@ -12,6 +12,7 @@ import { canonico, type ValorJSON } from "./canon";
 import { Boveda, canonContenido, contenidoDesde, relojParaPruebas, type Sobre } from "./boveda";
 import { codigoEn, leerSemilla } from "./codigos";
 import { identidadDeSemilla } from "./identidad";
+import { abrirEnvio, mandarEntrada, type Envio } from "./envio";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
 import { dominioDeOrigen, dominioDeSitio } from "./dominios";
 import { canonEntrada, entradaDesde } from "./entrada";
@@ -119,6 +120,18 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
         out.push({ cifrado: hex(i.cifrado), firma: hex(i.firma), huella: i.huella, suite: i.suite });
       }
       return out;
+    }
+
+    // Los sobres de los envíos (ADR 0043): Go cierra y esto abre, y al revés. Si
+    // los bytes que se firman no son los mismos, nada de esto cuadra.
+    case "envioAbrir": {
+      const { entrada, de } = await abrirEnvio(deHex(p.semilla as string), p.sobre as Envio);
+      return { entrada: canonEntrada(entrada), huella: de.huella };
+    }
+
+    case "envioSellar": {
+      const para = await identidadDeSemilla(deHex(p.paraSemilla as string));
+      return await mandarEntrada(deHex(p.semilla as string), entradaDesde(p.entrada), para);
     }
 
     case "acceso":

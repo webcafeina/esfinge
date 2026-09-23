@@ -131,6 +131,35 @@ Los vacíos no se escriben.
 Borrar del todo —a mano desde la papelera, al vaciarla o sola a los treinta días— **quita la entrada y
 deja su lápida**, que se va a los 180 días. Al abrir se purgan las dos cosas.
 
+## El sobre de un envío
+
+Lo que viaja cuando se manda una copia de una entrada a otra cuenta
+([ADR 0043](adr/0043-la-identidad-para-compartir.md)). **No es parte de la bóveda**, pero se describe aquí
+porque es el otro sitio donde las dos implementaciones tienen que escribir los mismos bytes.
+
+```json
+{
+  "esfinge": "envío", "version": 1,
+  "suite": "DHKEM(X25519)/HKDF-SHA256/ChaCha20-Poly1305",
+  "de": { "cifrado": "base64", "firma": "base64" },
+  "para": "base64 de la llave de cifrado de quien lo recibe",
+  "enc": "base64 del encapsulado de HPKE",
+  "cuerpo": "base64 de la entrada cifrada",
+  "firma": "base64 de la firma Ed25519"
+}
+```
+
+- **El cuerpo** es la entrada en forma canónica, **sin `id`, sin `historial`, sin papelera y con
+  `revision` a cero**: es una copia, no la misma entrada en dos bóvedas.
+- **Cifrado con HPKE** en modo base, `info = "esfinge/envio/v1"`, hacia `para`.
+- **Lo autenticado** (los datos asociados del cifrado) es la cabecera **sin el cuerpo y sin la firma**,
+  como `json.Marshal` de un mapa: claves en orden alfabético, sin espacios y los bytes en **base64
+  estándar con relleno**. Al cerrar, el cuerpo todavía no existe; por eso no entra.
+- **Lo firmado** es `{"cabecera":<lo autenticado>,"cuerpo":"base64"}`, con Ed25519 y la llave de firma de
+  quien manda. **La firma se comprueba antes de descifrar.**
+- Al abrir se exige, por este orden: versión conocida, que `suite` y `para` sean los de esta bóveda, que la
+  firma cuadre, y por último que el cifrado abra.
+
 ## Fundir
 
 Lo que hace `Boveda.Fundir` con la bóveda de aquí (L), la del servidor (R) y la última común (B, puede
