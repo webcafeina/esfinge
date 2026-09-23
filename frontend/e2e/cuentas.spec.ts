@@ -62,7 +62,7 @@ const accion = (page: Page, nombre: string) =>
 
 test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, request }) => {
   test.skip(test.info().project.name !== "claro", "Los dos equipos se estrenan una vez por tanda");
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   const correo = `ventana-${Date.now()}@ejemplo.com`;
 
   // ---------------------------------------------------------------- equipo A
@@ -105,6 +105,24 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
 
   // Dentro: la bóveda abierta, en la sección de la bóveda, y sincronizada.
   await expect(a.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+  // **El estado lo pone Go y la línea solo lo pinta**, así que se mira primero lo
+  // que dice Go: cuando esto falló en la máquina de GitHub —y aquí nunca—, lo
+  // único que quedaba era «Sincronizando…», que no dice si la pasada falló, se
+  // canceló o sigue en marcha (2.25.4).
+  await expect
+    .poll(
+      async () => {
+        const r = await request.post(`${A}/api/EstadoDeCuenta`, { data: [] });
+        return ((await r.json()) as { sincro: unknown }).sincro;
+      },
+      // **Más de lo que tarda la red en rendirse** (el cliente de la cuenta espera
+      // como mucho un minuto). Así, si esto vuelve a fallar, el estado que salga
+      // dice de qué se trata: «al-dia» tarde es lentitud de la máquina; «sin
+      // conexión» o «error» es una petición que se colgó y lo cuenta; y seguir en
+      // «sincronizando» es una pasada que se canceló sin decir nada.
+      { timeout: 70_000 },
+    )
+    .toMatchObject({ estado: "al-dia" });
   await expect(a.locator(".linea-sincro")).toContainText("Sincronizada", { timeout: 20_000 });
 
   await accion(a, "Nueva").click();

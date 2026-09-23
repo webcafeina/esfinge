@@ -17,6 +17,11 @@ Plantilla al final.
   dormido —sin pasadas cada minuto— y la ventana, en «Sincronizando…». Pasa al abrir la bóveda mientras
   corre la pasada del vigilante anterior, que es lo que hace entrar con la contraseña nueva; aquí no salía
   porque la pasada anterior terminaba antes. Ahora reintenta en un segundo, y hay una prueba que lo caza.
+- **Y volvió a fallar igual**, así que el vigilante dormido no era la causa (o no la única). Con la traza ya
+  a mano se ve que la bóveda abre bien y que Go no manda el estado final; aquí no se reproduce ni con la
+  máquina cargada. La prueba espera ahora más de lo que tarda la red en rendirse y **mira lo que contesta
+  Go**, para que el próximo fallo diga si es lentitud, una petición colgada o una pasada cancelada. A la
+  deuda hasta entonces.
 - Y lo que el fallo destapó: **en la máquina de GitHub un fallo no dejaba nada que mirar** —el informe no se
   generaba y el artefacto venía vacío—. Ahora deja informe, traza y captura. A la deuda, saldada.
 - La nota sale solo con cuenta, y las pruebas de interfaz lo vigilan por los dos lados: en local no aparece
