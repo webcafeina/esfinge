@@ -174,7 +174,7 @@ No se cambian sin preguntar.
   por ella** —hecha en la 2.25.0 (ADR 0040): con cuenta, rellena, da códigos y guarda **sin la
   aplicación**, y copiar desde su panel no se borra solo del portapapeles—. La bienvenida sale **solo a quien estrena Esfinge sin nada** —quien ya tenía bóveda
   trabaja en local sin que se le pregunte—, y **la bóveda que hubiera en un equipo al entrar en una cuenta
-  se aparta y no se borra nunca** (ADR 0039). **El registro libre, solo tras una auditoría externa**; hasta entonces, por invitación. Rompe
+  se aparta y no se borra nunca** (ADR 0039). **El registro, por invitación** mientras no se decida abrirlo. Rompe
   dos promesas públicas —«sin servidores» y «Webcafeína no recibe nada»— que hay que cambiar antes de que
   nadie tenga cuenta.
 

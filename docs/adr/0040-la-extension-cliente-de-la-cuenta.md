@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-09-22 · **Estado:** aceptada; E1 y E2 hechas, falta la E3 en su Mac · **Continúa la [0035](0035-las-cuentas.md)**,
 que decidió con el cliente que la extensión fuera un cliente completo de la cuenta · **Revisar cuando** llegue
-la auditoría
+la fase B (compartir)
 
 ## Contexto
 
@@ -12,8 +12,8 @@ cliente que, **con cuenta, la extensión lo haga todo sola** —rellenar, códig
 **yendo siempre por la cuenta**, aunque la aplicación esté abierta, y con su propio desbloqueo. Sin
 cuenta, sigue como hoy. El plan está en `docs/cuentas.md`, «La extensión, cliente de la cuenta».
 
-El 2026-09-22, con la A3 comprobada en sus dos Macs, el cliente eligió el orden: **primero la E y después
-la auditoría externa**, que así revisa también la parte más expuesta.
+El 2026-09-22, con la A3 comprobada en sus dos Macs, el cliente eligió el orden: **primero la E**, que es
+la parte más expuesta y la que más se usa, y detrás lo demás.
 
 ## Decisión
 

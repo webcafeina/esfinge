@@ -163,6 +163,4 @@ pasa por el diálogo; importar es lo primero que no tiene arrastrar y soltar.
 
 **Lo que sigue sin comprobarse:** abrir la bóveda con la clave de recuperación
 apuntada en papel —lo único que demuestra que lo apuntado vale—, y vivir con ella
-lo bastante para saber si los plazos de bloqueo estorban. Y sigue sin haber
-**auditoría externa**, que para un cifrador era una nota al pie y para un gestor
-de contraseñas es la primera pregunta que hará cualquiera.
+lo bastante para saber si los plazos de bloqueo estorban.

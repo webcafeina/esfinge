@@ -40,7 +40,7 @@ describe("lo que solo es de pruebas no está en producción", () => {
 		const conf = JSON.parse(sinComentarios);
 		expect(conf.vars.JURISDICCION).toBe("eu");
 		expect(conf.env.pruebas.vars.JURISDICCION).toBe("eu");
-		// Y producción empieza por invitación: abrir el registro es después de la auditoría.
+		// Y producción empieza por invitación: abrir el registro se decide aparte.
 		expect(conf.vars.REGISTRO).toBe("lista");
 		expect(conf.observability.enabled).toBe(false);
 	});

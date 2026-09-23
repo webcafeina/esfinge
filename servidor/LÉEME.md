@@ -109,8 +109,8 @@ Una vez, en este orden. **Ningún secreto pasa por el chat ni por el repositorio
 (`62a934bf-…`), las dos con jurisdicción `eu`. El de pruebas vive en
 `https://esfinge-cuentas-pruebas.webcafe-na.workers.dev`.
 
-**Abrir el registro** (`REGISTRO: "abierto"`) es **después de la auditoría externa** (ADR 0035). Hasta
-entonces, quién entra se decide en la tabla `admision`:
+**Abrir el registro** (`REGISTRO: "abierto"`) es una decisión de producto (ADR 0035); pide la política y
+las condiciones de uso publicadas. Hasta entonces, quién entra se decide en la tabla `admision`:
 
 ```sh
 pnpm exec wrangler d1 execute BD --remote --command "INSERT INTO admision (patron) VALUES ('@webcafeina.com')"

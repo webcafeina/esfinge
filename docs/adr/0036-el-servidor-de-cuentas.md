@@ -1,7 +1,7 @@
 # ADR 0036 — El servidor de cuentas: un Durable Object por cuenta, con la bóveda dentro
 
 **Fecha:** 2026-09-18 · **Estado:** aceptada, desplegada y comprobada el mismo día · **Continúa la [0035](0035-las-cuentas.md)** ·
-**Revisar cuando** llegue la auditoría
+**Revisar cuando** se abra el registro
 
 ## Contexto
 

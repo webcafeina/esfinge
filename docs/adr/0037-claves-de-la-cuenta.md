@@ -1,7 +1,7 @@
 # ADR 0037 — Las claves de la cuenta: acceso derivado aparte y posesión de la bóveda
 
 **Fecha:** 2026-09-18 · **Estado:** aceptada, construida entera en la A3 (2.24.0) y matizada en la 2.24.1 · **Continúa la [0035](0035-las-cuentas.md)**
-y la [0036](0036-el-servidor-de-cuentas.md) · **Revisar cuando** llegue la auditoría
+y la [0036](0036-el-servidor-de-cuentas.md) · **Revisar cuando** se abra el registro
 
 ## Contexto
 
@@ -117,9 +117,9 @@ sobre lo que ya decidió el 2026-09-21 («pedir la nueva una vez»).
 - **Mandar la contraseña y que el servidor la derive**, como hace casi cualquier web. Es justo lo que el
   conocimiento cero descarta.
 - **OPAQUE u otro protocolo sin verificador**, que protegería también de un servidor que mirara las
-  claves de acceso al llegar. Es mejor, y es más código criptográfico propio sin auditar; con el HMAC y
-  una derivación de coste alto, lo que llega al servidor ya es inútil para abrir la bóveda. Lo decide el
-  auditor.
+  claves de acceso al llegar. Es mejor, y es bastante más criptografía escrita por nosotros; con el HMAC y
+  una derivación de coste alto, lo que llega al servidor ya es inútil para abrir la bóveda. Se queda como
+  está mientras no haya una razón concreta para cambiarlo.
 
 ## Consecuencias
 

@@ -22,7 +22,7 @@
 		// Dónde viven las cuentas. Solo «eu»: el código no acepta otra cosa, y las
 		// pruebas lo vacían porque el motor local no sabe de jurisdicciones.
 		"JURISDICCION": "eu",
-		// cerrado · lista · abierto. «abierto» solo después de la auditoría externa.
+		// cerrado · lista · abierto. Abrirlo pide la política y las condiciones publicadas.
 		"REGISTRO": "lista",
 		"REMITENTE": "Esfinge <esfinge@webcafeina.com>"
 	},

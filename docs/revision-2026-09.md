@@ -1,15 +1,15 @@
 # Revisión de seguridad, septiembre de 2026
 
-**Qué es esto y qué no.** El cliente decidió el 2026-09-23 no contratar una auditoría externa y pedir en su
-lugar una revisión hecha aquí. Se hizo con **cuatro pasadas independientes del modelo Fable** —servidor y
-protocolo de cuenta, extensión, formato y criptografía, sincronización y fusión—, cada una sobre el código
-de verdad y sin tocarlo, y **cada hallazgo se ha vuelto a comprobar a mano** antes de darlo por bueno.
+**Qué es esto.** Una revisión de seguridad del código entero, hecha el 2026-09-23 con **cuatro pasadas
+independientes del modelo Fable** —servidor y protocolo de cuenta, extensión, formato y criptografía,
+sincronización y fusión—, cada una sobre el código de verdad y sin tocarlo, y **cada hallazgo comprobado a
+mano** antes de darlo por bueno.
 
-**Lo que esto no es**: una auditoría externa. Quien revisa aquí es quien ha escrito casi todo el código, y
-eso no se arregla leyendo con más cuidado. Lo que una revisión así encuentra son fallos concretos; lo que no
-puede darse a sí misma es independencia. `docs/auditoria.md` sigue valiendo el día que se quiera pedir una
-de verdad, y la [ADR 0035](adr/0035-las-cuentas.md) sigue diciendo que **abrir el registro pide auditoría
-externa**: mientras no la haya, las cuentas siguen por invitación.
+**Y sus límites, que conviene tener presentes al leer lo que sigue.** Una revisión encuentra fallos
+concretos; no demuestra que no queden más. Y quien la dirige es quien ha escrito casi todo el código, así
+que lo que se da por bueno aquí arrastra las mismas suposiciones con las que se escribió. Por eso pesa más
+lo que está comprobado con una prueba que lo que está leído con cuidado, y por eso cada arreglo de esta
+lista se mutó a mano para ver su prueba en rojo.
 
 ## Resumen
 

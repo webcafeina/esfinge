@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-09-18 · **Estado:** aceptada, sin empezar · **Matiza la [0023](0023-la-boveda.md)** («sin
 servidor») **y la [0014](0014-comprobacion-de-actualizaciones.md)** (qué sale de la máquina) ·
-**Revisar cuando** termine la auditoría externa, que es la puerta del registro abierto
+**Revisar cuando** se abra el registro
 
 ## Contexto
 
@@ -27,7 +27,7 @@ Decidido con el cliente el 2026-09-18, por preguntas con opciones:
 | Pregunta | Elegido |
 |---|---|
 | Para quién | Webcafeína y sus clientes |
-| Registro | **Libre**, pero **solo después de una auditoría de seguridad externa**; hasta entonces, por lista de admisión |
+| Registro | **Libre** cuando la política de privacidad y las condiciones de uso estén revisadas y publicadas; hasta entonces, por lista de admisión |
 | Servidor | Propio, en **Cloudflare**, con los datos en la **UE** (D1, Durable Objects y R2 con jurisdicción `eu`) |
 | Dirección | `esfinge-cuentas.webcafeina.com` |
 | Entrar | **Correo + contraseña maestra**, y **código por correo** en cada equipo nuevo; Touch ID o PIN más adelante |
@@ -39,7 +39,7 @@ Decidido con el cliente el 2026-09-18, por preguntas con opciones:
 | Contraseña con cuenta | **Exigir «fuerte»** con el medidor que ya existe; en local se avisa como ahora |
 | Dos bóvedas en un equipo | **Preguntar cada vez**: «Juntar» o «Quedarme con la de la cuenta», apartando la local en una copia |
 | La extensión con cuenta | **Un cliente más**: entra, se desbloquea con la maestra y **lo hace todo sin la aplicación**. **Con cuenta va siempre por la cuenta**, aunque la aplicación esté abierta. Sin cuenta, sigue por el canal nativo |
-| Orden | **Por fases**: la bóveda propia sincronizada; la extensión autónoma, **antes de la auditoría**; compartir; Touch ID o PIN |
+| Orden | **Por fases**: la bóveda propia sincronizada; la extensión autónoma; abrir el registro; compartir; Touch ID o PIN |
 
 Y tres cosas de fondo que no se discutieron porque sin ellas no hay producto:
 

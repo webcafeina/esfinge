@@ -18,7 +18,7 @@ cuándo te conectas.
 | Pregunta | Elegido |
 |---|---|
 | Para quién | Webcafeína y sus clientes |
-| Registro | **Libre**, pero **solo después de una auditoría de seguridad externa**; hasta entonces, por lista de admisión |
+| Registro | **Libre** cuando la política de privacidad y las condiciones de uso estén revisadas y publicadas; hasta entonces, por lista de admisión |
 | Servidor | Propio, en **Cloudflare**, con los datos en la **UE** (D1 y Durable Objects con jurisdicción `eu`, comprobado en su documentación) |
 | Dirección | `esfinge-cuentas.webcafeina.com` |
 | Entrar | **Correo + contraseña maestra**, y **código por correo** en cada equipo nuevo; Touch ID o PIN más adelante |
@@ -30,7 +30,7 @@ cuándo te conectas.
 | Contraseña con cuenta | **Exigir «fuerte»** con el medidor que ya existe (`cripto.Evaluar`). En local, se avisa como ahora |
 | Dos bóvedas en un equipo | **Preguntar cada vez**: «Juntar» o «Quedarme con la de la cuenta», y la local se aparta en una copia, no se borra |
 | La extensión con cuenta | **Un cliente más de la cuenta**: entra, se desbloquea con la maestra y **lo hace todo sin la aplicación** —rellenar, códigos, guardar y actualizar—. **Con cuenta va siempre por la cuenta**, aunque la aplicación esté abierta, así que se desbloquea por separado en cada sitio. Sin cuenta, sigue como hoy, por el canal nativo |
-| Orden | **Por fases**: primero la bóveda propia sincronizada, luego **la extensión autónoma, antes de la auditoría**, luego compartir, luego Touch ID o PIN |
+| Orden | **Por fases**: primero la bóveda propia sincronizada, luego **la extensión autónoma**, luego abrir el registro, luego compartir, luego Touch ID o PIN |
 
 Una idea que conviene tener presente al leer todo lo demás: **el servidor no puede leer nada, y aun así
 hay cosas que no podemos prometer**. Si alguien roba el servidor, puede atacar la contraseña maestra
@@ -77,7 +77,7 @@ cual en `docs/seguridad.md` y en las ADR.
   del cuerpo cifrado (sección nueva `identidad`, que las versiones viejas conservan por `Extra`). De ella
   salen la clave de cifrado (HPKE, que ya viene en la biblioteca estándar de Go 1.27) y la de firma
   (Ed25519).
-  - **El conjunto de HPKE lo decide el auditor**: X‑Wing (`MLKEM768X25519`, resistente a cuántica pero borrador) o `DHKEM(X25519)`, RFC 9180. Viaja como campo, así que se puede cambiar.
+  - **El conjunto de HPKE se elige al escribir la fase B**: X‑Wing (`MLKEM768X25519`, resistente a cuántica pero borrador) o `DHKEM(X25519)`, RFC 9180. Viaja como campo, así que se puede cambiar.
   - La autenticidad de la clave pública es **TOFU con huella comparable**. Lo que eso no protege —el primer envío si no se comparan huellas— se dice tal cual.
 
 ## Sincronización
@@ -159,8 +159,8 @@ iconos. Cada equipo baja los suyos.
   - por cuenta, en el Durable Object: tras 10 fallos, solo entran los equipos de confianza durante 15 minutos. **Nunca se bloquea la cuenta sin más.**
   - cuotas: 8 MB por blob y 60 subidas por hora;
   - **ningún contador en variables globales del Worker**.
-- **`REGISTRO`**: `cerrado`, `lista` o `abierto`, más la tabla `admision`. Abrirlo tras la auditoría es
-  un cambio de configuración, sin publicar versión de la aplicación.
+- **`REGISTRO`**: `cerrado`, `lista` o `abierto`, más la tabla `admision`. Abrirlo es un cambio de
+  configuración, sin publicar versión de la aplicación.
 - **El correo pasa por una interfaz `Cartero`**, con Resend en producción y un buzón en D1 para las
   pruebas. El código va en el cuerpo y no en el asunto, que se ve con la pantalla bloqueada. **Para abrir
   el registro hace falta el plan de pago de Resend**: el gratuito da 100 correos al día.
@@ -297,7 +297,7 @@ salen casi todas las reglas de esta sección.
   las tiendas se cambian **una sola vez, en la E**, con `VERSION_DEL_AVISO` en 2. En la A2 basta una
   frase en la política de la web.
 - **ADR:**
-  - 0035, cuentas y servidor en Cloudflare UE, con la puerta de la auditoría (escrita);
+  - 0035, cuentas y servidor en Cloudflare UE (escrita);
   - 0036, el servidor de cuentas (escrita, con la A0);
   - 0037, derivación, acceso, segundo factor y recuperación por posesión;
   - 0038, sincronización y fusión;
@@ -320,7 +320,6 @@ salen casi todas las reglas de esta sección.
 | **A2** · **hecha el 2026-09-18, sin publicar** (ADR 0039) | Bienvenida, registro, entrada con código, sincronización, identidad creada. Servidor con `REGISTRO=lista` (solo la casa) | **e2e de dos equipos**: dos `cmd/dev` y dos Vite contra `wrangler dev` local. A crea la cuenta y guarda; B entra y la ve; los dos editan a la vez y la contraseña perdedora sale en el historial; A borra y en B desaparece. **En el Mac: dos máquinas reales** |
 | **A3** · **hecha el 2026-09-21** (2.24.0) | Cambio de contraseña, recuperación, equipos, borrado, exportación, cuenta → local, restaurar una versión | e2e de cada flujo; ensayo de recuperación con la clave en papel |
 | **E**, 2.26.0 y extensión | La extensión, cliente de la cuenta: ESF1, fusión y TOTP en TypeScript, entrar, desbloquear, bloquear, sincronizar, guardar y actualizar; fichas, aviso y privacidad al día | Vectores de ESF1 en los dos lenguajes; fusión cruzada Go ↔ TypeScript byte a byte; Playwright con la extensión de verdad contra `wrangler dev` (**salda la deuda alta de las pruebas con la extensión cargada**); en el Mac: rellenar y guardar con la aplicación cerrada, y un cambio en el navegador que aparece en la aplicación |
-| **Auditoría** | Diseño, Worker, aplicación, **extensión** y textos | Informe y correcciones |
 | **A4** (solo configuración) | `REGISTRO=abierto`, con la web, la privacidad y las condiciones publicadas antes y Resend de pago | Revisión legal |
 | **B** | Contactos, huellas, envío y recepción de copias, invitaciones | e2e con dos cuentas |
 | **C** | Touch ID o Windows Hello y PIN, como ranuras solo locales | Solo en Mac y Windows reales. **Puede exigir firmar la aplicación**, en contra de la decisión de no firmar: hay que investigarlo antes |
@@ -347,12 +346,13 @@ con sus pruebas, y pedir al cliente el token de Cloudflare y los tres secretos.
   - los parámetros de Argon2id rebajados se rechazan.
 - Capturas de la bienvenida y de Ajustes en los dos temas, **miradas**.
 
-**Solo lo puede comprobar el cliente o el auditor:**
+**Solo lo puede comprobar el cliente:**
 
 - La sincronización entre dos Mac reales, con reposo, cambios de red y cierre con cambios pendientes.
 - Que los correos lleguen a la bandeja y no al spam.
 - La bienvenida bajo el vidrio.
 - La fase C entera.
 - Que las tiendas aprueben la extensión con conexión propia y WebAssembly.
-- **El auditor**: la bóveda abierta dentro del navegador, el conjunto de HPKE, la recuperación por posesión, la fusión frente a un servidor
-  malicioso, los frenos y una prueba de intrusión de la API.
+**Y lo que desde aquí no se puede comprobar de ninguna manera**: cómo aguanta la bóveda abierta dentro
+del navegador frente a una extensión maliciosa, la fusión frente a un servidor que quiera hacer daño, los
+frenos de verdad y una prueba de intrusión contra la API.

@@ -373,8 +373,8 @@ aplicación, extensión y entregas— en [`docs/cuentas.md`](cuentas.md).
 
 Las entregas, en orden: **A0** el servidor solo; **A1** (2.23.0) el modelo y la fusión, sin interfaz;
 **A2** la bienvenida, la cuenta y la sincronización, por invitación; **A3** contraseña, recuperación,
-equipos y borrado; **E** la extensión autónoma; **la auditoría externa**; **A4** abrir el registro; **B**
-compartir; **C** Touch ID o PIN.
+equipos y borrado; **E** la extensión autónoma; **A4** abrir el registro; **B** compartir; **C** Touch ID
+o PIN.
 
 **~~La A0~~ — hecha, desplegada y comprobada el 2026-09-18** ([ADR 0036](adr/0036-el-servidor-de-cuentas.md)).
 `servidor/` con 39 pruebas dentro de `workerd`, en `make comprobar` y en la puerta de `publicar.yml`;
@@ -469,17 +469,16 @@ olvidar un equipo pedía volver a entrar pero **dejaba la bóveda abierta**, y p
 un botón para sincronizar a mano en la aplicación y en la extensión → **2.25.2**, y que fueran flechas que
 giran → **2.25.3**, comprobada: «funciona perfecto». **La siguiente acción concreta es esperar a que las
 dos tiendas aprueben la extensión** y probarla entonces en Firefox —lo único que queda de la E3—, con la
-versión de la tienda en Chrome en vez de la cargada a mano. Después, **la auditoría externa**.
+versión de la tienda en Chrome en vez de la cargada a mano.
 
-**Revisión de seguridad hecha aquí (2026-09-23)** — [`docs/revision-2026-09.md`](revision-2026-09.md). El
-cliente decidió **no contratar auditoría externa** y pedir una revisión interna: cuatro pasadas del modelo
-Fable —servidor, extensión, criptografía y fusión—, con cada hallazgo verificado a mano. Salieron **tres
+**Revisión de seguridad (2026-09-23)** — [`docs/revision-2026-09.md`](revision-2026-09.md). Cuatro pasadas
+del modelo Fable —servidor, extensión, criptografía y fusión—, con cada hallazgo verificado a mano, sobre
+el código entero. Salieron **tres
 graves**: un campo escondido por su contenedor se rellenaba solo (arreglado), la extensión puede pisar su
 bóveda si la fusión falla (propuesto), y «muchos borrados» salta al usar la papelera y no tiene salida
 (propuesto). Arreglados también: la enumeración de correos por el freno, el testigo de confianza que
 sobrevivía al cambio de contraseña —ahora el otro equipo pide el código una vez, elegido por el cliente—,
 quién puede pedir lo de la cuenta en la extensión, y la tarjeta que se podía pulsar nada más aparecer.
-**El registro sigue por invitación**: una revisión interna no es la auditoría externa que pide la ADR 0035.
 **Los tres pendientes quedaron hechos el mismo día (2.25.6)**, y **lo que el informe dejaba abierto quedó
 hecho el 2026-09-23**: el borrado suave que ganaba a una edición, los cinco intentos del código de alta
 —ahora una sentencia atómica y con freno por IP—, el sello que no cubría el `creado` de cada sobre —un
@@ -510,40 +509,25 @@ curl -s "https://clients2.google.com/service/update2/crx?response=updatecheck&pr
 &acceptformat=crx3&x=id%3Djfkkegampjamnnlopobepjoanebemegp%26uc"   # atributo version=
 ```
 
-**Y con ella, las tres tareas que quedan, en el orden que puso el cliente:**
+**Y con ella, las tres tareas que quedaban, en el orden que puso el cliente:**
 
-1. ~~**Cerrar el Worker de pruebas**~~ **— hecho el 2026-09-23 por la tarde.** Aplicación de Access sobre
-   la ruta `_pruebas/buzon`, con «Emails ending in `@webcafeina.com`»; el buzón redirige a la pantalla de
-   identificación y la API sigue intacta (detalle y comprobaciones en [`deuda.md`](deuda.md)). **Y abre**:
-   el cliente entró con el código que le llegó a su correo y vio el buzón vacío, así que la puerta
-   funciona en los dos sentidos. Lo de antes decía: **cerrar el Worker de pruebas** —Cloudflare Access delante de `esfinge-cuentas-pruebas`, cuyo buzón
-   entrega hoy los códigos de cualquier cuenta de ese servidor—. **Cuando las tiendas hayan publicado la
-   versión nueva**; lo hace él en su panel. Lo suyo es una aplicación de Access **por ruta**, sobre
-   `/_pruebas/buzon`: protegiendo el Worker entero, una Esfinge apuntada al servidor de pruebas recibiría
-   la pantalla de identificación en vez de JSON. Nada de aquí se rompe al cerrarlo, porque las pruebas
-   hablan con el `wrangler` local y no con el desplegado.
+1. ~~**Cerrar el buzón del Worker de pruebas**~~ —entregaba los códigos de cualquier cuenta de ese
+   servidor a quien preguntara— **hecho el 2026-09-23 por la tarde**. Una aplicación de Access **sobre la
+   ruta** `_pruebas/buzon`, no sobre el Worker, con «Emails ending in `@webcafeina.com`»: el buzón redirige
+   a la pantalla de identificación y la API sigue intacta, que era la condición. **Y abre**: el cliente
+   entró con el código de su correo y vio el buzón vacío. Detalle y comprobaciones en
+   [`deuda.md`](deuda.md).
 2. **Probar la extensión en Firefox**, lo último de la E3. **Cuando no quede ninguna otra tarea**, dicho así
    por él dos veces.
 3. **Abrir el registro**, que **ya estaba contemplado**: es la entrega **A4** del plan
-   ([`docs/cuentas.md`](cuentas.md)), «solo configuración» —`REGISTRO=abierto`— pero con cuatro puertas
-   delante, y tres siguen cerradas:
-   - **La auditoría externa** ([ADR 0035](adr/0035-las-cuentas.md)). El cliente la descartó el 2026-09-23 y
-     pidió la revisión de aquí en su lugar, así que **abrir el registro es cambiar esa condición**: pide su
-     decisión escrita y una matización de la ADR, no darla por cumplida.
+   ([`docs/cuentas.md`](cuentas.md)), «solo configuración» —`REGISTRO=abierto`— pero con tres puertas
+   delante:
    - **La revisión legal** de la política de privacidad y unas condiciones de uso que todavía no existen
      (está en [`deuda.md`](deuda.md) como obligatoria antes de abrir).
    - **El plan de pago de Resend**: el gratuito da cien correos al día, y cada alta y cada equipo nuevo
      gastan uno.
    - Y si se abre a clientes de Colombia, **mirar en la fuente** lo que dice la Ley 1581 de 2012 sobre
      guardar los datos en la UE, que la ADR 0035 dejó sin comprobar.
-
-**El paquete de la auditoría, escrito (2026-09-23)**: [`docs/auditoria.md`](auditoria.md) dice qué es
-Esfinge para alguien de fuera, **qué mirar por orden de riesgo** —servidor y protocolo de cuenta, la
-extensión con cuenta, formato y criptografía, la fusión, el canal, las actualizaciones y los textos—, lo
-que se promete y lo que no, qué se entrega, lo que ya tiene red aquí, lo que sabemos flojo y qué se espera
-del informe. **La siguiente acción concreta es del cliente**: elegir quién la hace y cerrar el alcance y el
-presupuesto con ese documento delante; después se crea la cuenta de prueba en el servidor de pruebas —nunca
-la suya—.
 
 **2.25.4 publicada (2026-09-23)**: la nota del canal con cuenta, el vigilante que ya no se duerme al
 encontrarse el turno cogido, y las pruebas de la ventana dejando informe, traza y captura cuando fallan en
@@ -559,10 +543,9 @@ instalar.
 **Las dos tiendas han aprobado la 2.25.3** (comprobado el 2026-09-23: la ficha de AMO la sirve, y el canal
 de actualizaciones de Chrome también). **La siguiente acción concreta es que el cliente termine la E3**:
 quitar de Chrome la copia cargada a mano y usar la de la tienda, y probar en Firefox —donde hay que darle
-los permisos de sitios a mano, que en MV3 no se conceden al instalar—. Después, **preparar el paquete para
-la auditoría externa**.
+los permisos de sitios a mano, que en MV3 no se conceden al instalar—.
 
-~~**Pendiente, y va antes de la auditoría**~~ — **hecho en la 2.25.4 (2026-09-23)**: el cliente eligió
+~~**Pendiente de la E**~~ — **hecho en la 2.25.4 (2026-09-23)**: el cliente eligió
 «dejarlo como está y avisar», así que el interruptor se queda y con cuenta lleva una nota que dice que no
 hace falta. No se apaga solo al entrar en una cuenta: en un navegador donde no se haya entrado con la
 cuenta, eso dejaría de rellenar sin avisar (ADR 0040). Lo que decía el pendiente: en Ajustes de la aplicación,
@@ -587,7 +570,7 @@ puerta: 4.000 fusiones al azar sin una diferencia, y tres roturas a propósito c
 
 **2.24.5 comprobada por el cliente**: «funciona todo perfecto». **La A3 queda comprobada en sus Macs**, salvo
 borrar la cuenta, que no va a probar con la suya. **Orden decidido con él (2026-09-22): primero la E —la
-extensión como cliente de la cuenta— y después la auditoría externa**; A4, B y C, detrás. La lista que probó:
+extensión como cliente de la cuenta—**; A4, B y C, detrás. La lista que probó:
 
 1. **El candado de la barra lateral**: cerrado/abierto, que se cierre solo al bloquearse por inactividad, y
    el texto al pasar el ratón.
@@ -597,7 +580,7 @@ extensión como cliente de la cuenta— y después la auditoría externa**; A4, 
 4. **Borrar la cuenta**, solo con una cuenta de prueba y un equipo fuera de la suya; si no, se deja.
 
 Con eso la A3 queda comprobada entera en su Mac, y **toca decidir con él el orden de lo que queda**: la
-extensión autónoma (E), la auditoría externa, abrir el registro (A4), compartir (B) y Touch ID (C). Con la
+extensión autónoma (E), abrir el registro (A4), compartir (B) y Touch ID (C). Con la
 A3 hecha **ya se podría invitar a alguien más**: se le pregunta antes.
 
 **Para retomar la A2** (sesión cerrada el 2026-09-18 por la tarde, a petición del cliente): el plan está en

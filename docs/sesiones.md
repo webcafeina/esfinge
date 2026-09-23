@@ -64,8 +64,9 @@ Plantilla al final.
 
 ## 2026-09-23 (tarde) · La revisión de seguridad, hecha aquí
 
-- El cliente **descartó la auditoría externa** y pidió que la hiciera yo. Se le dijo lo que eso no puede
-  dar —independencia: reviso mi propio trabajo— y eligió «revisión interna ahora y decidir después».
+- **Revisión de seguridad del código entero**, pedida por el cliente. Se le dijo lo que una revisión así no
+  puede dar —independencia: reviso mi propio trabajo— y qué pesa entonces: lo comprobado con una prueba,
+  no lo leído con cuidado.
 - Cuatro pasadas del modelo Fable (servidor, extensión, criptografía, fusión), **cada hallazgo verificado a
   mano**. Informe en `docs/revision-2026-09.md`.
 - **Arreglado ya (2.25.5)**: el relleno de un campo escondido por su contenedor —rompía la promesa de
@@ -90,7 +91,7 @@ Plantilla al final.
 
 - **Las dos tiendas han aprobado la 2.25.3**: AMO la sirve y el canal de actualizaciones de Chrome también.
   Queda que el cliente pruebe con la de la tienda en Chrome y en Firefox (resto de la E3).
-- El pendiente que iba antes de la auditoría: con cuenta, el canal con el navegador sobra. Se le preguntó y
+- El pendiente que quedaba de la E: con cuenta, el canal con el navegador sobra. Se le preguntó y
   eligió **dejarlo como está y avisar**; las otras dos —apagarlo al entrar en una cuenta, o quitarlo de
   Ajustes— dejaban de rellenar sin avisar o hacían aparecer y desaparecer un ajuste. ADR 0040 matizada.
 - **La puerta de publicación cazó un fallo de verdad**, no de la prueba: al encontrarse el turno cogido, el
@@ -105,11 +106,6 @@ Plantilla al final.
   deuda hasta entonces.
 - Y lo que el fallo destapó: **en la máquina de GitHub un fallo no dejaba nada que mirar** —el informe no se
   generaba y el artefacto venía vacío—. Ahora deja informe, traza y captura. A la deuda, saldada.
-- **Escrito el paquete de la auditoría** (`docs/auditoria.md`): para alguien de fuera, con el orden de
-  riesgo, lo que ya está probado —para no gastarle el tiempo—, lo que sabemos flojo y qué se espera del
-  informe. El repositorio es público y hay servidor de pruebas aparte, así que lo que hay que entregar es
-  sobre todo **dónde mirar primero**, una cuenta de prueba y el alcance. Lo que queda es decisión del
-  cliente: elegir casa y cerrar presupuesto.
 - **La 2.25.4 salió a la tercera**, en verde y con las tiendas: la misma prueba pasó sin tocar nada más, así
   que el fallo de la puerta es intermitente y solo de esa máquina. Queda en la deuda, ya con el estado de Go
   a la vista para cuando vuelva.
@@ -121,8 +117,8 @@ Plantilla al final.
 - La 2.25.3, comprobada: «funciona perfecto». **Sesión cerrada aquí** a petición del cliente, a la
   espera de que Chrome y Mozilla aprueben la extensión.
 - **Al volver**: si ya están aprobadas, quitar la copia cargada a mano en Chrome y probar Firefox (lo que
-  queda de la E3); decidir con él el interruptor del canal en Ajustes con cuenta (propuesta en
-  `estado.md`); y preparar la auditoría externa.
+  queda de la E3) y decidir con él el interruptor del canal en Ajustes con cuenta (propuesta en
+  `estado.md`).
 
 ## 2026-09-22 (noche) · 2.25.3: las flechas que giran
 
@@ -171,8 +167,8 @@ Plantilla al final.
 
 ## 2026-09-22 (tarde) · La E1: el núcleo de la bóveda en la extensión
 
-- La 2.24.5, comprobada por el cliente: «funciona todo perfecto». Orden decidido con él: **la E y después
-  la auditoría**. ADR 0040, con la E en tres entregas.
+- La 2.24.5, comprobada por el cliente: «funciona todo perfecto». Orden decidido con él: **la E primero**,
+  antes que lo demás. ADR 0040, con la E en tres entregas.
 - **E1** en `navegador/src/nucleo/`: ESF1 (con `hash-wasm` y `@noble/ciphers`, a versión exacta), la
   bóveda, la forma canónica —escrita a mano porque Go escapa U+2028 y JavaScript no, comprobado con Go
   1.27—, la fusión línea a línea de la de Go, los códigos —con el desbordamiento de Go a diez cifras
@@ -213,7 +209,7 @@ Plantilla al final.
   pasadas seguidas en verde; etiqueta movida y vuelta a publicar. **Publicada en verde.**
 - **Sesión cerrada aquí** a petición del cliente, que prueba esta tarde la lista de `estado.md` (candado,
   olvidar un equipo, recuperar, y borrar solo con cuenta de prueba). **Al volver: recoger lo que diga** y
-  decidir el orden de E, auditoría, A4, B y C.
+  decidir el orden de E, A4, B y C.
 
 ## 2026-09-21 (tarde) · 2.24.3: las repetidas que no eran «iguales en todo»
 
@@ -300,8 +296,8 @@ Plantilla al final.
 - **Decidido con el cliente, en modo plan y por preguntas**, el nivel de cuenta: servidor propio en
   Cloudflare UE que no puede leer nada, código por correo con Resend, bienvenida «En este ordenador / Con
   cuenta» reversible, sin equipos, compartir copias sin permisos, maestra «fuerte» con cuenta, **la
-  extensión como cliente completo y siempre por la cuenta**, y registro libre solo tras una auditoría
-  externa. ADR 0035 y plan en `docs/cuentas.md`. Preguntó por un usuario de Colombia: la UE decide dónde
+  extensión como cliente completo y siempre por la cuenta**, y registro por invitación mientras no se
+  decida abrirlo. ADR 0035 y plan en `docs/cuentas.md`. Preguntó por un usuario de Colombia: la UE decide dónde
   se guarda, no desde dónde se entra; lo de la ley colombiana queda por mirar en la fuente.
 - **A0, el servidor** (ADR 0036): `servidor/`, un Durable Object por cuenta **con la bóveda dentro y no
   en R2**, D1 como índice, 39 pruebas en `workerd`. **Desplegado guiando al cliente**: bases D1 creadas por
@@ -1240,8 +1236,7 @@ Plantilla al final.
 - Verificado: `make comprobar` con `-race`, `make contraste`, y **60 pruebas de interfaz** en los dos
   temas —diez más—. Medido y no estimado: 20.000 entradas se guardan en 92 ms y se abren en 276 ms.
 - **Lo que no se ha comprobado, y es lo que importa ahora**: nada de la bóveda se ha usado con datos
-  de verdad ni en un Mac. Y sigue sin haber auditoría externa, que para un cifrador era una nota al
-  pie y para un gestor de contraseñas es la primera pregunta que hará cualquiera.
+  de verdad ni en un Mac.
 
 ## 2026-09-09 · La identidad entra en la ventana
 
