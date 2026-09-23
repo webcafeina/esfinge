@@ -25,6 +25,9 @@ Plantilla al final.
   suelta en monoespaciada.
 - Queda **la B3**, las invitaciones, que es la que cierra que hoy un envío a quien no tiene cuenta se pierda
   en silencio, y la **B4**, los textos. **Compartir no se publica hasta entonces.**
+- **Sesión cerrada aquí a petición del cliente**, para seguir mañana con `--resume`. Trabajo limpio: todo
+  comprometido y empujado (`36f1d43`), sin nada a medias en el disco. **La B2 no se ha publicado**: va en
+  `main` sin etiqueta, y lo sensato es publicarla con la B3 y la B4, cuando compartir esté entero.
 
 ## 2026-09-23 (tarde) · Las tiendas publican, y el buzón de pruebas queda cerrado
 
