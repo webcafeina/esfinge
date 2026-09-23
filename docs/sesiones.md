@@ -31,6 +31,16 @@ Plantilla al final.
   `seguridad.md` y a `deuda.md`.
 - **Servidor desplegado**, `pruebas` y `produccion`, los dos en verde: es donde viven los arreglos de la
   revisión que son del servidor. Producción sigue en `lista` —por invitación— y su ruta de buzón da 404.
+- **2.25.7 publicada**, decidida por el cliente, y **los siete trabajos en verde**, tiendas incluidas: ésta
+  no repite etiqueta, así que Firefox no dio el aviso de «versión ya subida» de la 2.25.6. Diecinueve
+  ficheros con su `SHA256SUMS` y la tabla de descargas del README puesta al día por el bot.
+- **Y de sobremesa, una conversación que conviene no perder**: qué es Cloudflare Access —un portero de
+  identidad en el borde, antes de que el Worker corra— y **dónde encaja en lo que ya hay**. Para el Worker
+  de pruebas, lo suyo es una aplicación por **ruta** sobre `/_pruebas/buzon`, no sobre el Worker entero:
+  protegiéndolo entero, cualquier Esfinge apuntada al servidor de pruebas recibiría la pantalla de
+  identificación en vez de JSON. Y si algún día hiciera falta leer ese buzón desde un programa, Access tiene
+  testigos de servicio (`CF-Access-Client-Id`/`Secret`); hoy no hace falta, porque las pruebas de aquí
+  hablan con el `wrangler` local y no con el desplegado.
 - **Un tropiezo que conviene no repetir**: para deshacer una mutación de prueba se usó
   `git checkout <fichero>`, y eso se llevó por delante **el trabajo sin comprometer que había en ese
   fichero** —el arreglo del hallazgo 10—. Se rehízo entero y las pruebas lo confirman. Para deshacer una

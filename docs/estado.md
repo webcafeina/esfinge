@@ -497,13 +497,18 @@ pruebas da 404 allí, como debe. Con ello, los cambios de cuenta de la revisión
 testigo de confianza que se va al cambiar la contraseña, el código de alta atómico y con freno, y el tope de
 Argon2id— ya están en el servidor que usan sus dos Macs.
 
-**La 2.25.7 se publicó el 2026-09-23** con todo lo anterior, decidido por el cliente.
+**La 2.25.7 se publicó el 2026-09-23** con todo lo anterior, decidido por el cliente, y **con los siete
+trabajos en verde, tiendas incluidas**. La extensión está en la cola de revisión de Chrome y de Firefox.
+**La sesión se cerró aquí**, a la espera de que las tiendas la aprueben.
 
 **Y con ella, las tres tareas que quedan, en el orden que puso el cliente:**
 
 1. **Cerrar el Worker de pruebas** —Cloudflare Access delante de `esfinge-cuentas-pruebas`, cuyo buzón
-   entrega hoy los códigos de cualquier cuenta de ese servidor—. **Cuando la versión nueva esté publicada**;
-   lo hace él en su panel.
+   entrega hoy los códigos de cualquier cuenta de ese servidor—. **Cuando las tiendas hayan publicado la
+   versión nueva**; lo hace él en su panel. Lo suyo es una aplicación de Access **por ruta**, sobre
+   `/_pruebas/buzon`: protegiendo el Worker entero, una Esfinge apuntada al servidor de pruebas recibiría
+   la pantalla de identificación en vez de JSON. Nada de aquí se rompe al cerrarlo, porque las pruebas
+   hablan con el `wrangler` local y no con el desplegado.
 2. **Probar la extensión en Firefox**, lo último de la E3. **Cuando no quede ninguna otra tarea**, dicho así
    por él dos veces.
 3. **Abrir el registro**, que **ya estaba contemplado**: es la entrega **A4** del plan
