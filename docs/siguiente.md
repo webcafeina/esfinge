@@ -1,12 +1,21 @@
 # Lo siguiente
 
-Última actualización: **2026-09-10**
+Última actualización: **2026-09-23**
 
 Por prioridad. Lo cerrado se tacha y se queda, con la fecha: saber qué se descartó vale tanto como
 saber qué se hizo.
 
 ## Alta
 
+- **Probar la extensión en Firefox**, lo último del plan de cuentas (E3) y la última tarea del plan,
+  dicho así por el cliente tres veces: va cuando no quede ninguna otra. La lista de lo que hay que mirar
+  está en [`estado.md`](estado.md).
+- **Passkeys** ([`passkeys.md`](passkeys.md)), pedidas por el cliente el 2026-09-23: «como Dashlane, que
+  sale un banner y es darle a Aceptar». Va **fuera y después** del plan de cuentas. Estudiada la
+  viabilidad y escritas las cuatro entregas y las cinco decisiones previas; **sin empezar**.
+- **Poder rotar la pimienta del servidor**, que está en la deuda y **vencida**: su condición era «antes de
+  abrir el registro», y el registro se abrió el 2026-09-23. Si se filtrara hoy, cambiarla dejaría fuera a
+  todas las cuentas.
 - **Vivir con la bóveda unos días.** Los datos ya están dentro —la exportación de Dashlane entra
   entera— y la clave de recuperación ya se ha usado de verdad, así que lo que queda no es una
   comprobación sino uso. Era la puerta de decisión del plan para las fases 2 a 4 —autorrelleno,
