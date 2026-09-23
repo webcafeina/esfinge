@@ -509,6 +509,15 @@ curl -s "https://clients2.google.com/service/update2/crx?response=updatecheck&pr
 &acceptformat=crx3&x=id%3Djfkkegampjamnnlopobepjoanebemegp%26uc"   # atributo version=
 ```
 
+**Lo que viene después de todo esto (2026-09-23)**: el cliente pidió **passkeys**, «como Dashlane, que
+sale un banner y es darle a Aceptar». Está estudiado y escrito en [`docs/passkeys.md`](passkeys.md), con lo
+que ya se ha comprobado de los navegadores para no volver a empezar: **en Chrome no hay API de extensión
+para esto** —la que lo parece, `chrome.webAuthenticationProxy`, es de escritorio remoto y suspende todo el
+WebAuthn del navegador—, así que el camino es el de los demás gestores: **reemplazar
+`navigator.credentials` en el mundo principal de la página**, que Chrome permite y Firefox también desde
+la 128. **No es una tarea, es una fase**, y el documento dice por qué, cómo partirla en cuatro y las cinco
+cosas que hay que decidir antes de tocar código.
+
 **Y con ella, las tres tareas que quedaban, en el orden que puso el cliente:**
 
 1. ~~**Cerrar el buzón del Worker de pruebas**~~ —entregaba los códigos de cualquier cuenta de ese
@@ -517,9 +526,11 @@ curl -s "https://clients2.google.com/service/update2/crx?response=updatecheck&pr
    a la pantalla de identificación y la API sigue intacta, que era la condición. **Y abre**: el cliente
    entró con el código de su correo y vio el buzón vacío. Detalle y comprobaciones en
    [`deuda.md`](deuda.md).
-2. **Probar la extensión en Firefox**, lo último de la E3. **Cuando no quede ninguna otra tarea**, dicho así
-   por él dos veces.
-3. **Abrir el registro**, que **ya estaba contemplado**: es la entrega **A4** del plan
+2. **Probar la extensión en Firefox**, lo último de la E3 y **la última tarea del plan de cuentas**, dicho
+   así por él tres veces. Lo de fuera del plan —las passkeys— va después.
+3. ~~**Abrir el registro**~~ — **hecho el 2026-09-23**: producción contesta `{"registro":"abierto"}`, el
+   tope del día baja a treinta altas para caber en los cien correos de Resend, y las frases de «por
+   invitación» salieron de los cinco sitios donde estaban. Lo de antes decía: es la entrega **A4** del plan
    ([`docs/cuentas.md`](cuentas.md)), «solo configuración» —`REGISTRO=abierto`— pero con tres puertas
    delante:
    - **La revisión de la política de privacidad y unas condiciones de uso que todavía no existen.** El

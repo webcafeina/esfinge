@@ -13,6 +13,9 @@ dónde está y por qué está así. Todo en español, fechas en formato `AAAA-MM
 | [sesiones.md](sesiones.md) | Bitácora: qué se hizo en cada sesión | Al cerrar cada sesión |
 | [seguridad.md](seguridad.md) | Qué protege Esfinge y qué no | Al tocar el cifrado, el historial o lo que se guarda |
 | [revision-2026-09.md](revision-2026-09.md) | La revisión de seguridad hecha aquí: hallazgos, lo arreglado y lo pendiente | Al arreglar algo de la lista o al hacer otra revisión |
+| [revision-textos-2026-09.md](revision-textos-2026-09.md) | La política y las condiciones contrastadas con el código, y lo que falta | Al tocar lo que se guarda o lo que dicen los textos |
+| [cuentas.md](cuentas.md) | El plan de las cuentas, por entregas, con lo hecho marcado | Al cerrar una entrega o cambiar el plan |
+| [passkeys.md](passkeys.md) | Lo que haría falta para que Esfinge guarde y use passkeys, y qué hay que decidir antes | Al decidir algo de esa fase o al empezarla |
 | [../CLAUDE.md](../CLAUDE.md) | Cómo se trabaja aquí: protocolo, convenciones, trampas | Al cambiar una convención o encontrar una trampa nueva |
 | [../README.md](../README.md) | La portada, para quien llega de fuera | Al cambiar lo que se ve o cómo se descarga |
 
