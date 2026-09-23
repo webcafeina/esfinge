@@ -179,6 +179,12 @@ No se cambian sin preguntar.
   se aparta y no se borra nunca** (ADR 0039). **El registro, por invitación** mientras no se decida abrirlo. Rompe
   dos promesas públicas —«sin servidores» y «Webcafeína no recibe nada»— que hay que cambiar antes de que
   nadie tenga cuenta.
+- **Y compartir es mandar una copia a la cuenta de otra persona** (ADR 0043), en la ventana y en el panel
+  de la extensión. Tres cosas que no se cambian: **se manda una copia y al llegar es suya** —si luego
+  cambia aquí, hay que volver a mandarla—; **lo que llega espera en un buzón** hasta que alguien lo acepta,
+  que si no cualquiera que sepa tu correo te escribe dentro de la bóveda; y **la huella se enseña siempre y
+  antes**, porque es lo único que protege del servidor en el primer envío y una huella que nadie mira no
+  protege nada. **Hasta la B3 no se publica**: hoy un envío a quien no tiene cuenta se pierde en silencio.
 
 ## Trampas que ya costaron encontrarse
 
@@ -588,6 +594,16 @@ quien lo mira ni a quien lo va a arreglar; y **el trabajador de fondo se compila
 pieza y sin `import`**, porque en cuanto comparte un módulo con el panel el empaquetador saca un
 trozo común, mete un `import` en el trabajador y eso obliga a declararlo como módulo en el
 manifiesto —que es justo la clase de detalle que funciona en un navegador y no en el otro—.
+
+**Para poder recibir hay que haber publicado, y quien nunca manda no publicaba nunca.** Las llaves de la
+identidad se publicaban al entrar en «Compartir», que es lo que parece natural: se publican cuando se van a
+usar. Pero para **recibir** una copia hacen falta las llaves de quien la recibe, y quien no ha mandado nada
+en su vida no había entrado ahí jamás. Entonces el servidor le da a quien manda **unas llaves inventadas
+pero fijas** —que es a propósito, así es como no dice quién tiene cuenta— y el sobre llega cifrado hacia
+nadie: los dos lados hacen lo suyo bien y el buzón enseña «No se puede abrir» sin que ninguno de los dos
+pueda entender por qué. Ahora las publica la ventana al arrancar la sincronización y la extensión en cada
+pasada, de cortesía las dos. **La regla general:** cuando algo hay que publicarlo para que *otro* pueda
+usarlo, el momento de publicarlo no lo marca lo que hace su dueño.
 
 **Un freno que vive en la conexión no frena nada, si cada pregunta trae una conexión.** El canal
 limitaba a sesenta preguntas por minuto para que nadie reconstruyera la lista de sitios de la bóveda

@@ -30,6 +30,9 @@ import { api } from "./api";
 import { Boveda, ErrorBoveda } from "./nucleo/boveda";
 import { Cliente, ErrorDeRed, RAIZ_POR_DEFECTO, sesionCaducada, sinBoveda, type Sesion } from "./nucleo/cliente";
 import { derivarAcceso, normalizarCorreo } from "./nucleo/cuenta";
+import { base64url, desdeBase64 } from "./nucleo/esf1";
+import { abrirEnvio, mandarEntrada, type Envio } from "./nucleo/envio";
+import { huellaDeIdentidad, identidadDeSemilla } from "./nucleo/identidad";
 import { fundir } from "./nucleo/fundir";
 import { atender } from "./nucleo/fuente";
 import { pasada, pendiente, type Memoria, type Recuerdo } from "./nucleo/sincro";
@@ -44,6 +47,8 @@ const L = {
   recuerdo: "cuenta-recuerdo",
   /** La que había aquí cuando una fusión no se pudo hacer. **No se borra sola.** */
   apartada: "cuenta-boveda-apartada",
+  /** La huella ya publicada en el servidor, para no repetir el envío cada minuto. */
+  llaves: "cuenta-llaves-publicadas",
 } as const;
 const S = {
   llave: "cuenta-llave",
@@ -94,10 +99,30 @@ export type PeticionDeCuenta =
   | { cuenta: "bloquear" }
   | { cuenta: "salir" }
   /** Con `igual`, acepta una fusión que se lleve media bóveda: la salida de la parada. */
-  | { cuenta: "sincronizar"; igual?: boolean };
+  | { cuenta: "sincronizar"; igual?: boolean }
+  // Compartir (ADR 0043). **Como todo lo de la cuenta, solo por el puerto del
+  // panel**: una página no puede pedir nada de esto.
+  | { cuenta: "miHuella" }
+  | { cuenta: "huellaDe"; correo: string }
+  | { cuenta: "compartir"; id: string; correo: string }
+  | { cuenta: "buzon" }
+  | { cuenta: "aceptar"; envio: string }
+  | { cuenta: "tirar"; envio: string };
+
+/** Lo que el panel enseña de un envío: de quién viene y qué es, sin secretos. */
+export type EnvioParaElPanel = {
+  id: string;
+  huella: string;
+  titulo: string;
+  usuario: string;
+  error?: string;
+};
 
 export type RespuestaDeCuenta = {
   ok: boolean;
+  /** La huella pedida, si la petición era una de las dos que la traen. */
+  huella?: string;
+  buzon?: EnvioParaElPanel[];
   error?: string;
   estado?: EstadoDeCuenta;
   /** Ha llegado un código al correo: se sigue con `codigo`. */
@@ -364,7 +389,7 @@ async function salir(): Promise<void> {
   }
   await olvidarEntrada();
   await bloquear();
-  await api.storage.local.remove([L.datos, L.boveda, L.base, L.recuerdo]);
+  await api.storage.local.remove([L.datos, L.boveda, L.base, L.recuerdo, L.llaves]);
   await api.storage.session.remove(S.sincro);
 }
 
@@ -422,6 +447,107 @@ export function sincronizar(aunqueBorreMucho = false): Promise<void> {
   return enMarcha;
 }
 
+// ------------------------------------------------------------------ compartir
+//
+// Lo mismo que hace la ventana (`internal/app/compartir.go`), con la misma regla:
+// **lo que llega espera en el buzón**, y la huella se enseña siempre.
+
+/** Con la bóveda abierta y la sesión lista, o se dice por qué no. */
+async function conSesion<T>(hacer: (b: Boveda, cliente: Cliente, token: string) => Promise<T>): Promise<T> {
+  const d = await datos();
+  const b = await laBoveda();
+  if (!d || !b) throw new Error("Abre la bóveda de la cuenta para hacer esto");
+  if (!d.sesion) throw new Error("Vuelve a entrar en la cuenta para hacer esto");
+  return hacer(b, new Cliente(d.servidor), await b.abrirSecreto(d.sesion));
+}
+
+/**
+ * Publica las llaves de esta bóveda, **que es lo que hace falta para recibir**.
+ *
+ * Va con cada sincronización y no al entrar en «Compartir»: quien nunca ha
+ * mandado nada tiene que poder recibir igual. Sin publicarlas, el servidor da a
+ * quien manda una llave inventada —así es como no dice quién tiene cuenta— y el
+ * sobre llega ilegible sin que ninguno de los dos entienda por qué.
+ *
+ * Se apunta la huella publicada para no repetir el envío cada minuto.
+ */
+async function publicarLasLlaves(b: Boveda, cliente: Cliente, token: string) {
+  const i = await identidadDeSemilla(await b.semillaDeIdentidad());
+  if ((await local<string>(L.llaves)) === i.huella) return i;
+  await cliente.publicarLlaves(token, { suite: i.suite, cifrado: base64url(i.cifrado), firma: base64url(i.firma) });
+  await api.storage.local.set({ [L.llaves]: i.huella });
+  return i;
+}
+
+/** La identidad de esta bóveda, creándola si hace falta, y publicada. */
+async function miIdentidad(): Promise<{ huella: string; cifrado: Uint8Array; firma: Uint8Array; suite: string }> {
+  return conSesion(async (b, cliente, token) => {
+    // Publicarlas es de cortesía: que el servidor no esté no puede impedir ver la
+    // propia huella.
+    try {
+      return await publicarLasLlaves(b, cliente, token);
+    } catch {
+      return identidadDeSemilla(await b.semillaDeIdentidad());
+    }
+  });
+}
+
+async function huellaDe(correo: string): Promise<string> {
+  return conSesion(async (b, cliente, token) => {
+    void b;
+    const l = await cliente.llavesDe(token, normalizarCorreo(correo));
+    return huellaDeIdentidad(l.suite, desdeBase64(l.cifrado), desdeBase64(l.firma));
+  });
+}
+
+async function compartir(id: string, correo: string): Promise<void> {
+  await conSesion(async (b, cliente, token) => {
+    const e = b.ver(id);
+    if (!e) throw new Error("Esa entrada ya no está");
+    const l = await cliente.llavesDe(token, normalizarCorreo(correo));
+    const semilla = await b.semillaDeIdentidad();
+    const sobre = await mandarEntrada(semilla, e, {
+      suite: l.suite,
+      cifrado: desdeBase64(l.cifrado),
+      firma: desdeBase64(l.firma),
+      huella: "",
+    });
+    await cliente.mandar(token, normalizarCorreo(correo), sobre);
+  });
+}
+
+async function verBuzon(): Promise<EnvioParaElPanel[]> {
+  return conSesion(async (b, cliente, token) => {
+    const semilla = await b.semillaDeIdentidad();
+    const out: EnvioParaElPanel[] = [];
+    for (const x of await cliente.buzon(token)) {
+      try {
+        const { entrada, de } = await abrirEnvio(semilla, x.sobre as Envio);
+        out.push({ id: x.id, huella: de.huella, titulo: entrada.titulo, usuario: entrada.usuario ?? "" });
+      } catch (e) {
+        out.push({ id: x.id, huella: "", titulo: "", usuario: "", error: (e as Error).message });
+      }
+    }
+    return out;
+  });
+}
+
+async function aceptarDelBuzon(envio: string): Promise<void> {
+  await conSesion(async (b, cliente, token) => {
+    const semilla = await b.semillaDeIdentidad();
+    for (const x of await cliente.buzon(token)) {
+      if (x.id !== envio) continue;
+      const { entrada, de } = await abrirEnvio(semilla, x.sobre as Envio);
+      entrada.notas = entrada.notas ? `${entrada.notas}\n\nRecibida de la identidad ${de.huella}` : `Recibida de la identidad ${de.huella}`;
+      await b.poner(entrada);
+      await cliente.tirarDelBuzon(token, envio);
+      pedirSincro(0);
+      return;
+    }
+    throw new Error("Ese envío ya no está en el buzón");
+  });
+}
+
 async function unaPasada(aunqueBorreMucho = false): Promise<void> {
   const d = await datos();
   const b = await laBoveda();
@@ -431,8 +557,16 @@ async function unaPasada(aunqueBorreMucho = false): Promise<void> {
     return;
   }
   const token = await b.abrirSecreto(d.sesion);
+  const cliente = new Cliente(d.servidor);
+  // **Antes de la pasada**, para que la identidad recién creada suba en ella. Que
+  // falle no puede parar la sincronización: se reintenta a la siguiente.
   try {
-    const r = await pasada(b, new Cliente(d.servidor), token, memoria, aunqueBorreMucho);
+    await publicarLasLlaves(b, cliente, token);
+  } catch {
+    /* a la siguiente */
+  }
+  try {
+    const r = await pasada(b, cliente, token, memoria, aunqueBorreMucho);
     await ponerSincro({ estado: "al-dia", ultima: new Date().toISOString() });
     if (r.bajo) avisarDeCambios();
   } catch (e) {
@@ -532,6 +666,33 @@ export async function atenderAlPanel(p: PeticionDeCuenta): Promise<RespuestaDeCu
         break;
       case "sincronizar":
         await sincronizar(p.igual === true);
+        break;
+      case "miHuella":
+        await actividad();
+        r = { ok: true, huella: (await miIdentidad()).huella };
+        break;
+      case "huellaDe":
+        await actividad();
+        r = { ok: true, huella: await huellaDe(p.correo) };
+        break;
+      case "compartir":
+        await actividad();
+        await compartir(p.id, p.correo);
+        break;
+      case "buzon":
+        await actividad();
+        r = { ok: true, buzon: await verBuzon() };
+        break;
+      case "aceptar":
+        await actividad();
+        await aceptarDelBuzon(p.envio);
+        break;
+      case "tirar":
+        await actividad();
+        await conSesion(async (b, cliente, token) => {
+          void b;
+          await cliente.tirarDelBuzon(token, p.envio);
+        });
         break;
     }
     return { ...r, estado: await estado() };

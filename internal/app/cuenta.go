@@ -832,6 +832,26 @@ func (a *App) arrancarSincro(b *boveda.Boveda) {
 	a.cu.mu.Unlock()
 	a.ponerEstado(EstadoSincro{Estado: "sincronizando"})
 	go vig.Vigilar(ctx)
+	// **Las llaves para recibir copias se publican al abrir** (ADR 0043), no al
+	// entrar en «Compartir»: quien nunca ha mandado nada tiene que poder recibir
+	// igual. Sin publicarlas, el servidor le da a quien manda una llave inventada
+	// —así es como no dice quién tiene cuenta— y el sobre llega ilegible. Va en
+	// otra gorrutina porque es de cortesía y no puede retrasar nada.
+	go a.publicarLlaves(b)
+}
+
+// publicarLlaves deja en el servidor la parte pública de la identidad de esta
+// bóveda. Crea la identidad si no la había, y entonces el guardado la sube.
+func (a *App) publicarLlaves(b *boveda.Boveda) {
+	i, err := b.Identidad()
+	if err != nil {
+		return
+	}
+	token, err := a.sesionDeCuenta()
+	if err != nil {
+		return
+	}
+	_ = a.cliente().PublicarLlaves(a.ctxCuenta(), token, cuenta.Llaves{Suite: i.Suite, Cifrado: i.Cifrado, Firma: i.Firma})
 }
 
 // pararSincro para la sincronización, sin olvidar la sesión: la llama también

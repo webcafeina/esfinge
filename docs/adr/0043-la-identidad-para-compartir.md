@@ -1,6 +1,6 @@
 # ADR 0043 — La identidad para compartir: una semilla dentro de la bóveda
 
-**Fecha:** 2026-09-23 · **Estado:** aceptada, en construcción (entrega B1) · **Continúa la [0035](0035-las-cuentas.md)**
+**Fecha:** 2026-09-23 · **Estado:** aceptada, en uso desde la entrega B2 · **Continúa la [0035](0035-las-cuentas.md)**
 y la [0040](0040-la-extension-cliente-de-la-cuenta.md) · **Revisar cuando** se mande la primera copia de verdad
 
 ## Contexto
@@ -59,6 +59,18 @@ Es **TOFU con huella comparable**: la primera vez se confía, y quien quiera est
 por teléfono. Lo que eso no protege —un servidor malicioso que sustituya una llave en el primer envío, si
 nadie compara— se dice tal cual en `docs/seguridad.md`.
 
+### Cuándo se publican las llaves
+
+**Al sincronizar, no al entrar en «Compartir»** (B2d). Esto parece un detalle de implementación y no lo
+es: quien nunca ha mandado nada tiene que poder **recibir**. Si sus llaves no estuvieran publicadas, el
+servidor le daría a quien le manda **unas inventadas pero fijas** —que es como no dice quién tiene cuenta y
+quién no— y el sobre llegaría cifrado hacia nadie. Los dos lados harían lo suyo bien y el buzón enseñaría
+«No se puede abrir» sin que ninguno pudiera entender por qué.
+
+Así que las publican **la ventana al arrancar la sincronización** y **la extensión en cada pasada**, las
+dos de cortesía: que falle no puede parar nada. La extensión apunta la huella publicada para no repetir el
+envío cada minuto.
+
 ### Cómo se funde
 
 `identidad` es una sección más del contenido, pero con una regla propia: **no cambia nunca**, y si dos
@@ -96,6 +108,13 @@ que las llaves derivadas son estables —la misma semilla da las mismas llaves e
 byte, en las pruebas cruzadas—; que la huella coincide en los dos; y que fundir dos bóvedas con identidades
 distintas deja siempre la misma, la mire quien la mire.
 
-**Sin comprobar**: nada de esto se ha usado todavía para mandar nada —eso es la B2— y **la huella no la ha
-leído en voz alta ningún par de personas**, que es la única prueba que vale de que se puede comparar por
-teléfono.
+**Comprobado en la B2**: que una cuenta le manda una copia a otra y la otra la abre, en Go y en
+TypeScript; que el sobre de otra identidad no se abre y que uno manipulado se rechaza por la firma; y, con
+**la extensión cargada de verdad** en un Chromium contra el servidor local, que lo que te mandan espera en
+el buzón del panel, que no se rellena hasta pulsar «Guardar», y que desde el panel se manda una copia que
+la otra cuenta abre con la contraseña dentro.
+
+**Sin comprobar**: **la huella no la ha leído en voz alta ningún par de personas**, que es la única prueba
+que vale de que se puede comparar por teléfono. Y un envío a quien **no** tiene cuenta se pierde en
+silencio: el servidor contesta lo mismo a propósito, y quien lo manda no se entera. Eso lo cierra la B3 con
+las invitaciones, y hasta entonces está en `docs/deuda.md`.

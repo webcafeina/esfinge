@@ -54,6 +54,10 @@ const ICONOS = {
   candado:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
   lupa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
+  // Un sobre, para mandar una copia (ADR 0043). Con la solapa marcada: sin ella,
+  // a quince píxeles es un rectángulo más.
+  sobre:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>',
 };
 
 /**
@@ -378,12 +382,18 @@ function pasoDeCuenta(primero: Paso, ec?: EstadoDeCuenta): Promise<void> {
 }
 
 /**
+ * Si esta bóveda es la de una cuenta. Lo que cuelga de esto es compartir: sin
+ * cuenta no hay a quién mandar una copia ni de quién recibirla.
+ */
+let conCuenta = false;
+
+/**
  * pintarGestos pone lo de abajo: con cuenta, de quién es y «Bloquear» y «Salir»; sin
  * cuenta, la puerta para entrar en una.
  */
 function pintarGestos(ec: EstadoDeCuenta) {
   gestos.hidden = false;
-  const conCuenta = ec.modo === "cuenta";
+  conCuenta = ec.modo === "cuenta";
   (document.getElementById("gestos-correo") as HTMLElement).textContent = conCuenta ? (ec.correo ?? "") : "";
   (document.getElementById("bloquear") as HTMLElement).hidden = !(conCuenta && ec.abierta);
   (document.getElementById("sincronizar") as HTMLElement).hidden = !(conCuenta && ec.abierta && ec.sincro.estado !== "hay-que-entrar");
@@ -396,6 +406,172 @@ function pintarGestos(ec: EstadoDeCuenta) {
   // Y si una fusión dejó aparte la bóveda de este navegador, se dice hasta que se
   // salga de la cuenta: lo guardado aquí y no subido está ahí dentro.
   (document.getElementById("apartada") as HTMLElement).hidden = !(conCuenta && ec.apartada);
+  // El buzón se pide aparte, y solo con la bóveda abierta: sin ella no hay con
+  // qué abrir los sobres.
+  if (conCuenta && ec.abierta) void pintarBuzon();
+  else (document.getElementById("buzon") as HTMLElement).hidden = true;
+}
+
+/**
+ * Lo que te han mandado (ADR 0043).
+ *
+ * **Sale solo si hay algo.** Y cada envío enseña de quién viene por su huella,
+ * porque es lo único que se puede comparar con la otra persona: el correo de
+ * quien manda no viaja en el sobre.
+ */
+async function pintarBuzon() {
+  const caja = document.getElementById("buzon") as HTMLElement;
+  const lista = document.getElementById("buzon-lista") as HTMLElement;
+  const r = await pedirCuenta({ cuenta: "buzon" });
+  const envios = r.ok ? (r.buzon ?? []) : [];
+  caja.hidden = envios.length === 0;
+  lista.replaceChildren();
+  for (const e of envios) {
+    const fila = document.createElement("li");
+    const que = document.createElement("span");
+    que.className = "que";
+    const titulo = document.createElement("span");
+    titulo.className = "titulo";
+    titulo.textContent = e.error ? "No se puede abrir" : e.titulo || "Sin título";
+    const de = document.createElement("span");
+    de.className = "huella";
+    de.textContent = e.error ? e.error : `De ${e.huella}`;
+    que.append(titulo, de);
+
+    const guardar = document.createElement("button");
+    guardar.type = "button";
+    guardar.className = "primario";
+    guardar.textContent = "Guardar";
+    guardar.hidden = Boolean(e.error);
+    guardar.addEventListener("click", async () => {
+      guardar.disabled = true;
+      const hecho = await pedirCuenta({ cuenta: "aceptar", envio: e.id });
+      contar(hecho.ok ? "Copia guardada en tu bóveda." : (hecho.error ?? "No se ha podido guardar."), hecho.ok);
+      await pintarBuzon();
+      await pintarCuentas();
+    });
+
+    const tirar = document.createElement("button");
+    tirar.type = "button";
+    tirar.className = "discreto";
+    tirar.textContent = "Descartar";
+    tirar.addEventListener("click", async () => {
+      tirar.disabled = true;
+      const hecho = await pedirCuenta({ cuenta: "tirar", envio: e.id });
+      contar(hecho.ok ? "Envío descartado." : (hecho.error ?? "No se ha podido descartar."), hecho.ok);
+      await pintarBuzon();
+    });
+
+    fila.append(que, guardar, tirar);
+    lista.append(fila);
+  }
+}
+
+/**
+ * Mandar una copia de una cuenta a otra persona (ADR 0043).
+ *
+ * **Dos pulsaciones a propósito**: primero se ve la huella de quien la va a
+ * recibir y solo después se manda. El servidor contesta lo mismo tenga cuenta esa
+ * dirección o no —así es como no dice quién está en Esfinge—, así que la huella
+ * puede ser la de nadie: lo único que lo distingue es compararla con la otra
+ * persona, y por eso se enseña antes y no después.
+ */
+function pantallaCompartir(cuenta: Cuenta) {
+  const seccion = document.getElementById("compartir") as HTMLElement;
+  const buzon = document.getElementById("buzon") as HTMLElement;
+  const que = document.getElementById("compartir-que") as HTMLElement;
+  const form = document.getElementById("compartir-form") as HTMLFormElement;
+  const correo = document.getElementById("compartir-correo") as HTMLInputElement;
+  const quien = document.getElementById("compartir-quien") as HTMLElement;
+  const huella = document.getElementById("compartir-huella") as HTMLElement;
+  const avisoHuella = document.getElementById("compartir-aviso") as HTMLElement;
+  const error = document.getElementById("compartir-error") as HTMLElement;
+  const enviar = document.getElementById("compartir-enviar") as HTMLButtonElement;
+  const volver = document.getElementById("compartir-volver") as HTMLButtonElement;
+
+  // Lo de la lista se esconde y se devuelve como estaba: el panel es una sola
+  // página, y volver no puede dejar el buzón puesto si no lo estaba.
+  const antes = { lista: lista.hidden, gestos: gestos.hidden, buzon: buzon.hidden, resultado: resultado.hidden };
+  lista.hidden = true;
+  gestos.hidden = true;
+  buzon.hidden = true;
+  resultado.hidden = true;
+  seccion.hidden = false;
+
+  que.textContent = `${cuenta.titulo || "Sin título"}${cuenta.usuario ? ` · ${cuenta.usuario}` : ""}`;
+  correo.value = "";
+  quien.hidden = true;
+  huella.hidden = true;
+  avisoHuella.hidden = true;
+  error.hidden = true;
+  enviar.textContent = "Ver su huella";
+  correo.focus();
+
+  // **Los oyentes se cortan al salir**: los elementos son los mismos cada vez que
+  // se abre esta pantalla, y sin cortarlos se apilarían.
+  const corte = new AbortController();
+  /** El correo cuya huella se está enseñando ahora mismo. */
+  let vista = "";
+
+  const salir = () => {
+    corte.abort();
+    seccion.hidden = true;
+    lista.hidden = antes.lista;
+    gestos.hidden = antes.gestos;
+    buzon.hidden = antes.buzon;
+    resultado.hidden = antes.resultado;
+  };
+
+  // Al cambiar el correo se olvida la huella: mandar con la de la dirección
+  // anterior sería mandar a ciegas, que es justo lo que esto evita.
+  correo.addEventListener(
+    "input",
+    () => {
+      vista = "";
+      quien.hidden = true;
+      huella.hidden = true;
+      avisoHuella.hidden = true;
+      enviar.textContent = "Ver su huella";
+    },
+    { signal: corte.signal },
+  );
+  volver.addEventListener("click", salir, { signal: corte.signal });
+
+  form.addEventListener(
+    "submit",
+    async (e) => {
+      e.preventDefault();
+      if (enviar.disabled) return;
+      const destino = correo.value.trim();
+      if (!destino) return;
+      error.hidden = true;
+      enviar.disabled = true;
+      const mirando = vista !== destino;
+      enviar.textContent = mirando ? "Mirando…" : "Mandando…";
+      const r = mirando
+        ? await pedirCuenta({ cuenta: "huellaDe", correo: destino })
+        : await pedirCuenta({ cuenta: "compartir", id: cuenta.id, correo: destino });
+      enviar.disabled = false;
+      if (!r.ok) {
+        enviar.textContent = mirando ? "Ver su huella" : "Mandar la copia";
+        error.textContent = r.error ?? (mirando ? "No se ha podido mirar esa dirección." : "No se ha podido mandar.");
+        error.hidden = false;
+        return;
+      }
+      if (mirando) {
+        vista = destino;
+        huella.textContent = r.huella ?? "";
+        quien.hidden = false;
+        huella.hidden = false;
+        avisoHuella.hidden = false;
+        enviar.textContent = "Mandar la copia";
+        return;
+      }
+      salir();
+      contar(`Copia de «${cuenta.titulo || "Sin título"}» mandada a ${destino}.`, true);
+    },
+    { signal: corte.signal },
+  );
 }
 
 function atenderGestos() {
@@ -720,6 +896,16 @@ function fila(cuenta: Cuenta, origen: string, pestana: number | undefined): HTML
     hueco.className = "icono-hueco";
     hueco.setAttribute("aria-hidden", "true");
     acciones.append(hueco);
+  }
+
+  // Mandar una copia **solo con cuenta** (ADR 0043): sin ella no hay identidad
+  // con que cifrarla ni servidor por donde mandarla.
+  if (conCuenta) {
+    acciones.append(
+      botonIcono("sobre", "Mandar una copia", async () => {
+        pantallaCompartir(cuenta);
+      }),
+    );
   }
 
   li.append(acciones);

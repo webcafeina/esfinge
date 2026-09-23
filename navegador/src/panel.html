@@ -99,6 +99,36 @@
         </form>
       </section>
 
+      <!-- **Mandar una copia** (ADR 0043), desde la fila de una cuenta. Lo mismo
+           que la ventana y con la misma idea: la huella se enseña y se explica
+           **antes** de mandar nada, porque es lo único que protege del servidor
+           en el primer envío. Sale del mismo formulario de la cuenta para que
+           los campos y los botones sean los de siempre. -->
+      <section id="compartir" class="cuenta" hidden>
+        <h1>Mandar una copia</h1>
+        <p id="compartir-que" class="texto"></p>
+        <p class="texto">
+          Se manda <strong>una copia</strong>, cifrada para quien la recibe. Al llegar es suya: si
+          luego cambias la contraseña aquí, la suya se queda como estaba.
+        </p>
+        <form id="compartir-form" novalidate>
+          <div class="campo">
+            <label for="compartir-correo">Correo de quien la recibe</label>
+            <input id="compartir-correo" type="email" autocomplete="off" spellcheck="false" />
+          </div>
+          <p id="compartir-quien" class="texto junto" hidden>Su huella es:</p>
+          <p id="compartir-huella" class="huella" hidden></p>
+          <p id="compartir-aviso" class="texto" hidden>
+            <strong>Compárala con quien va a recibirla</strong>, por teléfono o en persona. Si no
+            coincide, no la mandes: no sabrás quién está al otro lado. Esfinge no puede decirte si
+            esa dirección tiene cuenta.
+          </p>
+          <p id="compartir-error" class="error" role="alert" hidden></p>
+          <button id="compartir-enviar" class="primario" type="submit">Ver su huella</button>
+          <button id="compartir-volver" class="discreto" type="button">Volver</button>
+        </form>
+      </section>
+
       <!-- Lo que no es una lista: la bóveda cerrada, sin permiso, sin Esfinge…
            Con la esfinge grande y tenue detrás, como el historial vacío de la
            ventana: aquí no se trabaja, así que es sitio para la marca. -->
@@ -123,6 +153,17 @@
 
     <!-- El resultado del último gesto: «Rellenado», «Contraseña copiada»… -->
     <p id="resultado" class="resultado" role="status" hidden></p>
+
+    <!-- **Lo que te han mandado** (ADR 0043). Sale solo cuando hay algo: un buzón
+         vacío en un panel de 360 píxeles es sitio gastado. Lo que llega espera
+         aquí; la contraseña no entra en la bóveda hasta pulsar «Guardar». -->
+    <section id="buzon" class="buzon" hidden>
+      <h2>Te han mandado</h2>
+      <ul id="buzon-lista"></ul>
+      <p id="buzon-nota" class="texto">
+        Comprueba la huella con quien te lo manda antes de guardarlo.
+      </p>
+    </section>
 
     <!-- Con cuenta: de quién es y los gestos de la bóveda. Sin cuenta: la puerta
          para entrar en una. -->

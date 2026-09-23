@@ -5,6 +5,27 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-23 (noche) · La B2 entera: compartir copias, en la ventana y en el panel
+
+- **B2d hecha, y con ella la B2 completa** (ADR 0043). El panel de la extensión gana **el buzón** —sale solo
+  cuando hay algo, cada envío con la huella de quien lo manda, «Guardar» o «Descartar»— y **«Mandar una
+  copia»** desde la fila de una cuenta: un sobre en las acciones, y una pantalla de dos pulsaciones donde
+  primero sale la huella de quien la va a recibir y solo después se manda.
+- **Y de escribir la prueba salió el agujero que ninguna pieza enseñaba**: las llaves se publicaban al
+  entrar en «Compartir», así que **quien nunca hubiera mandado nada no podía recibir**. El servidor le daba
+  a quien le mandaba unas llaves inventadas —a propósito, para no decir quién tiene cuenta— y el sobre
+  llegaba cifrado hacia nadie, con los dos lados haciendo lo suyo bien. Ahora las publica la ventana al
+  arrancar la sincronización y la extensión en cada pasada. Escrito como regla en `CLAUDE.md`.
+- Verificado con **la extensión cargada de verdad** (`navegador/pruebas-reales`, 8 pruebas) y **dos cuentas**
+  contra el servidor local: lo que te mandan espera en el buzón, **no se rellena hasta pulsar «Guardar»**, y
+  lo mandado desde el panel lo abre la otra cuenta con la contraseña dentro. Más `make comprobar` entero y
+  `make e2e` (90 en verde).
+- **Miradas las capturas** de la fila con el sobre y de la pantalla de compartir, en los dos temas: el sobre
+  cabe al lado de «Rellenar» sin apretar el nombre, y la huella lleva su rótulo, que sin él era una cadena
+  suelta en monoespaciada.
+- Queda **la B3**, las invitaciones, que es la que cierra que hoy un envío a quien no tiene cuenta se pierda
+  en silencio, y la **B4**, los textos. **Compartir no se publica hasta entonces.**
+
 ## 2026-09-23 (tarde) · Las tiendas publican, y el buzón de pruebas queda cerrado
 
 - **Las dos tiendas sirven la 2.25.7**: AMO en estado `public`, revisada a las 11:31 UTC —dos minutos

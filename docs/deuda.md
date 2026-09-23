@@ -1,6 +1,6 @@
 # Deuda y cabos sueltos
 
-Última actualización: **2026-09-18**
+Última actualización: **2026-09-23**
 
 Lo que sabemos que está a medias, mal o sin comprobar. Los bloqueantes primero. Lo saldado se tacha
 y se queda.

@@ -325,7 +325,7 @@ salen casi todas las reglas de esta sección.
 | **B2a** · **hecha el 2026-09-23** | El sobre: HPKE hacia la llave de quien recibe, firmado con Ed25519, con la entrada dentro sin identificador ni historial | Pruebas cruzadas: **Go cierra sobres que abre la extensión y al revés** |
 | **B2b** · **hecha el 2026-09-23** | El servidor: publicar llaves, preguntar por las de otro sin delatar quién tiene cuenta, dejar un sobre, el buzón y tirar de él | Siete pruebas, incluida la de que preguntar dos veces por un correo sin cuenta dé lo mismo |
 | **B2c** · **hecha el 2026-09-23** | La ventana: «Compartir» en una entrada, la huella con su aviso antes de mandar, y el buzón que se acepta | Go de punta a punta con dos cuentas, y e2e de la interfaz |
-| **B2d** | El panel de la extensión: lo mismo con cuenta | `pruebas-reales`, con la extensión cargada |
+| **B2d** · **hecha el 2026-09-23** | El panel de la extensión: el buzón que se acepta y «Mandar una copia» desde la fila de una cuenta, con la huella delante. Y **las llaves se publican al sincronizar**, que es lo que faltaba para poder *recibir* sin haber mandado nunca | `pruebas-reales`, con la extensión cargada: llega al buzón, no se rellena hasta guardarlo, y lo mandado desde el panel lo abre la otra cuenta |
 | **B3** | Invitaciones por correo a quien no tiene cuenta, con el envío esperando | e2e, y el gasto de correos revisado contra el tope del día |
 | **B4** | Lo que hay que decir: política, condiciones, `VERSION_DEL_AVISO` y las dos fichas | Revisión de los textos, como la de septiembre |
 | **C** | Touch ID o Windows Hello y PIN, como ranuras solo locales | Solo en Mac y Windows reales. **Puede exigir firmar la aplicación**, en contra de la decisión de no firmar: hay que investigarlo antes |

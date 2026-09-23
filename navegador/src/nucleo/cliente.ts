@@ -43,6 +43,12 @@ export function leerEtiqueta(v: string | null): number | null {
   return m ? Number(m[1]) : null;
 }
 
+/** Las llaves públicas de una cuenta, tal como viajan: base64url. */
+export type LlavesEnLaRed = { suite: string; cifrado: string; firma: string };
+
+/** Un sobre esperando en el buzón. */
+export type EnvioEnBuzon = { id: string; momento: number; sobre: unknown };
+
 export class Cliente {
   constructor(readonly raiz = RAIZ_POR_DEFECTO) {}
 
@@ -118,6 +124,39 @@ export class Cliente {
 
   async cerrarSesion(token: string): Promise<void> {
     await this.json("DELETE", "/v1/sesion", undefined, token);
+  }
+
+  // -------------------------------------------------------------- compartir
+
+  /** Publica las llaves públicas de esta cuenta, para que otros puedan mandarle. */
+  async publicarLlaves(token: string, llaves: LlavesEnLaRed): Promise<void> {
+    await this.json("PUT", "/v1/llaves", { llaves }, token);
+  }
+
+  /**
+   * Las llaves de un correo.
+   *
+   * **Siempre contesta**, tenga cuenta o no: el servidor devuelve unas inventadas
+   * pero fijas para las direcciones que no la tienen, y así preguntar no dice
+   * quién está en Esfinge (ADR 0043).
+   */
+  async llavesDe(token: string, correo: string): Promise<LlavesEnLaRed> {
+    return (await this.json<{ llaves: LlavesEnLaRed }>("POST", "/v1/llaves/de", { correo }, token)).datos.llaves;
+  }
+
+  /** Deja un sobre para ese correo. Contesta lo mismo exista o no esa cuenta. */
+  async mandar(token: string, para: string, sobre: unknown): Promise<void> {
+    await this.json("POST", "/v1/envios", { para, sobre }, token);
+  }
+
+  /** Lo que espera en el buzón, lo más nuevo primero. */
+  async buzon(token: string): Promise<EnvioEnBuzon[]> {
+    return (await this.json<{ envios: EnvioEnBuzon[] }>("GET", "/v1/buzon", undefined, token)).datos.envios ?? [];
+  }
+
+  /** Quita uno: lo mismo al aceptarlo que al tirarlo. */
+  async tirarDelBuzon(token: string, id: string): Promise<void> {
+    await this.json("DELETE", `/v1/buzon/${encodeURIComponent(id)}`, undefined, token);
   }
 
   /** La bóveda del servidor; `null` si no ha cambiado desde `siNoCoincide`. Lanza con 404 si no hay. */

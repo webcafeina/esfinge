@@ -614,6 +614,22 @@ button:focus-visible {
   width: 100%;
 }
 
+/* Lo que va pegado a lo de debajo, como el rótulo de la huella. */
+.cuenta .texto.junto {
+  margin-bottom: var(--espacio-1);
+}
+
+/* La huella de quien va a recibir la copia. Entera y partida, como la del buzón:
+ * lo que se hace con ella es leerla en voz alta, no que quepa en una línea. */
+.cuenta .huella {
+  margin: 0 0 var(--espacio-2);
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-chico);
+  color: var(--tinta); /* «títulos sobre el lienzo» */
+  word-break: break-all;
+  user-select: text;
+}
+
 /* El botón discreto va subrayado: sin color que gastar, es lo que dice «se pulsa». */
 .discreto {
   appearance: none;
@@ -662,6 +678,65 @@ button:focus-visible {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* El buzón de lo que te han mandado (ADR 0043). Las parejas de color son las de
+ * siempre —`--tinta` y `--apagado` sobre el lienzo, medidas en contraste_test.go
+ * (ADR 0029)—: aquí no entra ningún color nuevo. */
+.buzon {
+  margin: var(--espacio-3) var(--espacio-1) 0;
+  padding-top: var(--espacio-3);
+  border-top: 1px solid var(--filete);
+}
+
+.buzon h2 {
+  margin: 0 0 var(--espacio-2);
+  font-size: var(--texto-chico);
+  font-weight: 600;
+  color: var(--tinta); /* «títulos sobre el lienzo» */
+}
+
+.buzon ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.buzon li {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.buzon .que {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.buzon .titulo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--tinta); /* «títulos sobre el lienzo» */
+}
+
+/* La huella va entera y partida: lo que se hace con ella es leerla en voz alta
+ * para compararla, no que quepa en una línea. */
+.buzon .huella {
+  font-family: var(--fuente-mono);
+  font-size: 10px;
+  color: var(--apagado); /* «ayudas y pies sobre el lienzo» */
+  word-break: break-all;
+}
+
+.buzon .texto {
+  margin: var(--espacio-2) 0 0;
 }
 
 /* De quién es la cuenta y sus gestos, entre la lista y el pie. */

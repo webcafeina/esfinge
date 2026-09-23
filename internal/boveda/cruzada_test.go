@@ -647,3 +647,31 @@ func conSemilla(t *testing.T, semillaHex string) *Boveda {
 	}
 	return b
 }
+
+// **La identidad tal como la guarda la bóveda**, no solo tal como se deriva.
+//
+// La prueba de arriba compara con semillas sueltas; ésta comprueba el camino
+// entero: Go crea la identidad dentro de una bóveda de verdad, la extensión abre
+// esa bóveda y tiene que sacar la misma huella. Es donde se vería que uno escribe
+// la semilla en base64 con relleno y el otro sin él.
+func TestCruzadaIdentidadGuardadaEnLaBoveda(t *testing.T) {
+	cruzada.Activa(t)
+	b, _, ruta := nueva(t)
+	mia, err := b.Identidad()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.Cerrar()
+	texto, err := os.ReadFile(ruta)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var suyo struct {
+		Huella string `json:"huella"`
+	}
+	cruzada.Pedir(t, map[string]any{"orden": "identidadDeBoveda", "texto": string(texto), "llave": maestra}, &suyo)
+	if suyo.Huella != mia.Huella {
+		t.Fatalf("la extensión saca la huella %s y Go la %s", suyo.Huella, mia.Huella)
+	}
+}

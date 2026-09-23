@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 import { Boveda } from "../src/nucleo/boveda";
 import { Cliente } from "../src/nucleo/cliente";
 import { derivarAcceso } from "../src/nucleo/cuenta";
-import { azarDe, base64url, PERFIL_INTERACTIVO } from "../src/nucleo/esf1";
+import { azarDe, base64url, desdeBase64, PERFIL_INTERACTIVO } from "../src/nucleo/esf1";
+import { abrirEnvio, mandarEntrada, type Envio } from "../src/nucleo/envio";
+import { identidadDeSemilla } from "../src/nucleo/identidad";
 import type { Entrada } from "../src/nucleo/entrada";
 
 /**
@@ -24,11 +26,15 @@ const EXTENSION = fileURLToPath(new URL("../dist/pruebas", import.meta.url));
 const SERVIDOR = "http://127.0.0.1:8793";
 const MAESTRA = "una maestra larga para la extensión con cuenta";
 const CORREO = `extension-${Date.now()}@ejemplo.com`;
+const CORREO_QUE_MANDA = `manda-${Date.now()}@ejemplo.com`;
+const MAESTRA_QUE_MANDA = "la maestra larga de quien manda la copia";
 
 let contexto: BrowserContext;
 let id: string;
 /** La sesión del «otro equipo», que es quien crea la cuenta. */
 let otro: { token: string };
+/** La otra cuenta, la de quien manda y recibe copias. */
+let manda: Awaited<ReturnType<typeof quienManda>>;
 
 // ------------------------------------------------------------------ el otro equipo
 
@@ -88,6 +94,59 @@ async function desdeElOtroEquipo(cambiar: (b: Boveda) => Promise<void>) {
   await c.subir(otro.token, bajada.version, (await b.prepararSubida(bajada.version + 1)).texto);
 }
 
+/**
+ * Otra cuenta, la de quien manda la copia (ADR 0043).
+ *
+ * Se da de alta como cualquiera y **publica sus llaves**, que es lo que hace que
+ * la huella del buzón sea comparable: el correo de quien manda no viaja dentro
+ * del sobre, así que lo único que se puede cotejar con la otra persona es esto.
+ */
+async function quienManda() {
+  await fetch(`${SERVIDOR}/v1/registro/inicio`, { method: "POST", body: JSON.stringify({ correo: CORREO_QUE_MANDA }) });
+  const codigo = await codigoDelBuzon(CORREO_QUE_MANDA);
+  const sal = azarDe(16);
+  const argon2 = { memoria: PERFIL_INTERACTIVO.memoria, pasadas: PERFIL_INTERACTIVO.pasadas, paralelismo: PERFIL_INTERACTIVO.paralelismo };
+  const clave = await derivarAcceso(MAESTRA_QUE_MANDA, sal, argon2);
+  const { boveda } = await Boveda.crear(MAESTRA_QUE_MANDA);
+  const r = await fetch(`${SERVIDOR}/v1/registro/fin`, {
+    method: "POST",
+    body: JSON.stringify({
+      correo: CORREO_QUE_MANDA,
+      codigo,
+      sal: base64url(sal),
+      argon2,
+      claveDeAcceso: base64url(clave),
+      posesion: base64url(await boveda.posesion()),
+      dispositivo: "Quien manda",
+      confiar: true,
+    }),
+  });
+  if (!r.ok) throw new Error(`Alta de quien manda: ${r.status} ${await r.text()}`);
+  const { sesion } = (await r.json()) as { sesion: string };
+  const cliente = new Cliente(SERVIDOR);
+  const semilla = await boveda.semillaDeIdentidad();
+  const yo = await identidadDeSemilla(semilla);
+  await cliente.publicarLlaves(sesion, { suite: yo.suite, cifrado: base64url(yo.cifrado), firma: base64url(yo.firma) });
+  return {
+    huella: yo.huella,
+    /** Lo que espera en su buzón, ya abierto: es lo que prueba que le llegó de verdad. */
+    async buzon() {
+      const envios = await cliente.buzon(sesion);
+      return Promise.all(envios.map(async (x) => (await abrirEnvio(semilla, x.sobre as Envio)).entrada));
+    },
+    async mandar(entrada: Entrada, a: string) {
+      const l = await cliente.llavesDe(sesion, a);
+      const sobre = await mandarEntrada(semilla, entrada, {
+        suite: l.suite,
+        cifrado: desdeBase64(l.cifrado),
+        firma: desdeBase64(l.firma),
+        huella: "",
+      });
+      await cliente.mandar(sesion, a, sobre);
+    },
+  };
+}
+
 async function titulosEnElServidor(): Promise<string[]> {
   const bajada = (await new Cliente(SERVIDOR).bajar(otro.token, 0))!;
   return (await Boveda.abrir(bajada.datos, MAESTRA)).buscar("").map((e) => e.titulo).sort();
@@ -97,6 +156,7 @@ async function titulosEnElServidor(): Promise<string[]> {
 
 test.beforeAll(async () => {
   otro = await crearCuenta();
+  manda = await quienManda();
   contexto = await chromium.launchPersistentContext(mkdtempSync(join(tmpdir(), "esfinge-perfil-")), {
     channel: "chromium",
     headless: true,
@@ -226,6 +286,64 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
     expect(r.ok, r.error).toBe(true);
     await expect.poll(titulosEnElServidor, { timeout: 20_000 }).toEqual(["Nuevo", "Otro", "Sitio"]);
     await p.close();
+  });
+
+  test("lo que te mandan espera en el buzón hasta que lo guardas", async () => {
+    await manda.mandar(credencial("Regalo", "yo@regalo.prueba", "clave-regalada", "https://regalo.prueba"), CORREO);
+
+    const p = await panel();
+    await expect(p.locator("#buzon")).toBeVisible({ timeout: 20_000 });
+    await expect(p.locator("#buzon-lista .titulo")).toHaveText("Regalo");
+    // **La huella es la de quien manda**, no la de la cuenta: es lo único que se
+    // puede comparar por teléfono con la otra persona.
+    await expect(p.locator("#buzon-lista .huella")).toHaveText(`De ${manda.huella}`);
+    await retratar(p, "buzon");
+    // Y hasta que alguien pulsa «Guardar», la contraseña no entra en la bóveda:
+    // en ese sitio todavía no se rellena nada.
+    expect(await contrasenaRellenada("regalo.prueba", false)).toBe("");
+
+    await p.click("#buzon-lista button.primario");
+    await expect(p.locator("#resultado")).toHaveText("Copia guardada en tu bóveda.", { timeout: 20_000 });
+    await expect(p.locator("#buzon")).toBeHidden();
+    await p.close();
+
+    expect(await contrasenaRellenada("regalo.prueba")).toBe("clave-regalada");
+    // Y lo aceptado sube a la cuenta, como cualquier otro guardado del navegador.
+    await expect.poll(titulosEnElServidor, { timeout: 20_000 }).toEqual(["Nuevo", "Otro", "Regalo", "Sitio"]);
+  });
+
+  test("y desde el panel se manda una copia, con la huella delante", async () => {
+    // **El panel mira la pestaña activa**, y aquí es una pestaña más. Así que se
+    // abre el sitio, se pone delante y se recarga el panel: entonces pregunta por
+    // las cuentas de `sitio.prueba`, como el panel de verdad, que no es pestaña.
+    const sitio = await contexto.newPage();
+    await sitio.goto("https://sitio.prueba/entrar");
+    const p = await panel();
+    await sitio.bringToFront();
+    await p.reload();
+    await expect(p.locator("#lista li")).toHaveCount(1, { timeout: 20_000 });
+    // La fila entera, que es donde el sobre tiene que caber sin apretar a los demás.
+    await retratar(p, "lista");
+    await p.click('#lista li button[aria-label="Mandar una copia"]');
+    await expect(p.locator("#compartir")).toBeVisible();
+
+    await p.fill("#compartir-correo", CORREO_QUE_MANDA);
+    await p.click("#compartir-enviar");
+    // **La huella antes que el envío**, y es la de quien la va a recibir.
+    await expect(p.locator("#compartir-huella")).toHaveText(manda.huella, { timeout: 20_000 });
+    await retratar(p, "compartir");
+    await expect(p.locator("#compartir-enviar")).toHaveText("Mandar la copia");
+
+    await p.click("#compartir-enviar");
+    await expect(p.locator("#resultado")).toContainText(`mandada a ${CORREO_QUE_MANDA}`, { timeout: 20_000 });
+    await expect(p.locator("#compartir")).toBeHidden();
+    await p.close();
+    await sitio.close();
+
+    // Y al otro lado se abre con su identidad, con la contraseña dentro.
+    const suyo = await manda.buzon();
+    expect(suyo.map((e) => e.titulo)).toEqual(["Sitio"]);
+    expect(suyo[0].secreto).toBe("clave-del-sitio");
   });
 
   test("bloqueada no rellena, y se desbloquea con la maestra", async () => {

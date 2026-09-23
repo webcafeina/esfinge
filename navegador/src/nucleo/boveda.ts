@@ -25,6 +25,7 @@ import {
   sellarTexto,
 } from "./esf1";
 import { entradaAJSON, entradaDesde, rfc3339, sinSecretos, coincide, copiar, type Entrada } from "./entrada";
+import { SUITE } from "./identidad";
 import { ERR_CHECKSUM, normalizar, nuevaRecuperacion, pareceRecuperacion } from "./recuperacion";
 
 export const FORMATO = 1;
@@ -533,6 +534,33 @@ export class Boveda {
     this.cuerpoSucio = true;
     await this._guardarSinCola();
     return copiar(e);
+  }
+
+  /**
+   * La semilla de la identidad de esta bóveda, **creándola la primera vez y
+   * guardando** (ADR 0043). Espejo de `Identidad()` en Go.
+   *
+   * Vive en la sección `identidad` del contenido, que esta implementación trata
+   * como desconocida salvo aquí y al fundir: así una versión que no la entienda
+   * la conserva igual.
+   */
+  semillaDeIdentidad(): Promise<Uint8Array> {
+    return this._exclusivo(async () => {
+      const guardada = this.cont.extra?.identidad as { semilla?: string } | undefined;
+      if (guardada?.semilla) return desdeBase64(guardada.semilla);
+      const semilla = azarDe(32);
+      this.cont.extra = {
+        ...(this.cont.extra ?? {}),
+        identidad: {
+          semilla: base64url(semilla),
+          creada: rfc3339(ahora()),
+          suite: SUITE,
+        } as unknown as ValorJSON,
+      };
+      this.cuerpoSucio = true;
+      await this._guardarSinCola();
+      return semilla;
+    });
   }
 
   /** A la papelera, entera (ADR 0026). */

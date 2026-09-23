@@ -515,6 +515,24 @@ firmar, con una huella que se puede leer por teléfono. En Go y en TypeScript, c
 servidor y sin interfaz todavía**: lo siguiente es la B2, mandar y recibir. Y una corrección: la tabla de
 entregas decía que la A2 había creado la identidad, y no era verdad.
 
+**La B2, hecha (2026-09-23)** — compartir de punta a punta, en las dos caras. El sobre HPKE firmado con
+Ed25519 en Go y en TypeScript, con pruebas cruzadas; el servidor con las llaves, el envío y el buzón, sin
+delatar quién tiene cuenta; **la ventana**, con «Compartir» en una entrada, la huella con su aviso antes de
+mandar y el buzón que se acepta; y **el panel de la extensión**, con lo mismo: el buzón sale solo cuando
+hay algo, la copia no entra en la bóveda hasta pulsar «Guardar», y desde la fila de una cuenta se manda una
+copia en dos pulsaciones —primero la huella de quien la recibe, después el envío—. Lo ejercita todo
+`navegador/pruebas-reales` con **la extensión cargada de verdad** y dos cuentas contra el servidor local.
+
+De escribir esa prueba salió lo que faltaba y no se veía: **las llaves se publicaban solo al abrir
+«Compartir»**, así que quien nunca hubiera mandado nada **no podía recibir** —el servidor le daba a quien le
+mandaba una llave inventada y el sobre llegaba ilegible, sin que ninguno de los dos pudiera saber por qué—.
+Ahora las publica la ventana al arrancar la sincronización y la extensión en cada pasada ([ADR
+0043](adr/0043-la-identidad-para-compartir.md)).
+
+**La siguiente acción concreta es la B3**, las invitaciones por correo: es la que cierra el agujero de que
+hoy un envío a quien no tiene cuenta se pierda en silencio. Después la **B4**, los textos —política,
+condiciones, `VERSION_DEL_AVISO` y las dos fichas—. **Compartir no se publica hasta entonces.**
+
 **Lo que viene después de todo esto (2026-09-23)**: el cliente pidió **passkeys**, «como Dashlane, que
 sale un banner y es darle a Aceptar». Está estudiado y escrito en [`docs/passkeys.md`](passkeys.md), con lo
 que ya se ha comprobado de los navegadores para no volver a empezar: **en Chrome no hay API de extensión

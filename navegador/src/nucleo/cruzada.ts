@@ -134,6 +134,14 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
       return await mandarEntrada(deHex(p.semilla as string), entradaDesde(p.entrada), para);
     }
 
+    // La identidad **tal como la guarda la bóveda**: Go la crea, la extensión abre
+    // esa bóveda y tiene que sacar la misma huella. Cazaría, por ejemplo, que uno
+    // escribiera la semilla en base64 con relleno y el otro sin él.
+    case "identidadDeBoveda": {
+      const b = await Boveda.abrir(p.texto as string, p.llave as string);
+      return { huella: (await identidadDeSemilla(await b.semillaDeIdentidad())).huella };
+    }
+
     case "acceso":
       return hex(
         await derivarAcceso(p.maestra as string, deHex(p.sal as string), p.parametros as { memoria: number; pasadas: number; paralelismo: number }),

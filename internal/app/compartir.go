@@ -59,11 +59,9 @@ func (a *App) MiIdentidad() (IdentidadParaCompartir, error) {
 	if err != nil {
 		return IdentidadParaCompartir{}, err
 	}
-	// Publicarlas es de cortesía y no puede impedir ver la propia huella: si el
-	// servidor no está, se dice en el registro y se sigue.
-	if token, err := a.sesionDeCuenta(); err == nil {
-		_ = a.cliente().PublicarLlaves(a.ctxCuenta(), token, cuenta.Llaves{Suite: i.Suite, Cifrado: i.Cifrado, Firma: i.Firma})
-	}
+	// Ya se publicaron al abrir; aquí se repite por si aquello falló, y sin poder
+	// impedir que se vea la propia huella.
+	a.publicarLlaves(b)
 	return IdentidadParaCompartir{Huella: i.Huella, Suite: i.Suite}, nil
 }
 
