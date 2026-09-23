@@ -498,8 +498,17 @@ testigo de confianza que se va al cambiar la contraseña, el código de alta at�
 Argon2id— ya están en el servidor que usan sus dos Macs.
 
 **La 2.25.7 se publicó el 2026-09-23** con todo lo anterior, decidido por el cliente, y **con los siete
-trabajos en verde, tiendas incluidas**. La extensión está en la cola de revisión de Chrome y de Firefox.
-**La sesión se cerró aquí**, a la espera de que las tiendas la aprueben.
+trabajos en verde, tiendas incluidas**.
+
+**Y las dos tiendas la sirven ya** (comprobado el 2026-09-23 por la tarde): AMO da `2.25.7` en estado
+`public`, revisada a las 11:31 UTC —dos minutos después de la publicación—, y el manifiesto de
+actualización de Chrome entrega el `.crx` de la `2.25.7`. Se comprueba sin abrir el navegador:
+
+```sh
+curl -s https://addons.mozilla.org/api/v5/addons/addon/esfinge/   # .current_version.version
+curl -s "https://clients2.google.com/service/update2/crx?response=updatecheck&prodversion=131\
+&acceptformat=crx3&x=id%3Djfkkegampjamnnlopobepjoanebemegp%26uc"   # atributo version=
+```
 
 **Y con ella, las tres tareas que quedan, en el orden que puso el cliente:**
 
