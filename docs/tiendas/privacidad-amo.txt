@@ -113,8 +113,6 @@ Qué guardamos
 
 - De cada versión de tu bóveda, su tamaño y su huella, para saber si ha cambiado sin tener que abrirla.
 
-- Mientras las cuentas sean por invitación, una lista de a quién se le permite crear una. Desaparecerá el día que el registro se abra.
-
 Si empiezas a crear una cuenta y no terminas, el código caduca a los diez minutos y tu dirección se borra de nuestra base en la hora siguiente, sola. Lo que no podemos borrar es el correo que ya te mandamos: ése lo conserva Resend, abajo.
 
 No guardamos tu dirección IP en claro. Para frenar a quien pruebe contraseñas contamos una huella seudonimizada de ella, que se borra a los dos o tres días. Eso sigue siendo un dato personal, así que lo decimos: no es un anonimato, es que no nos hace falta más. Cloudflare, que aloja el servidor, sí ve la IP de cada petición, como cualquier alojamiento. No hay analítica ni publicidad.

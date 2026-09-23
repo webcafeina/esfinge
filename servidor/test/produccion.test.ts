@@ -40,9 +40,20 @@ describe("lo que solo es de pruebas no está en producción", () => {
 		const conf = JSON.parse(sinComentarios);
 		expect(conf.vars.JURISDICCION).toBe("eu");
 		expect(conf.env.pruebas.vars.JURISDICCION).toBe("eu");
-		// Y producción empieza por invitación: abrir el registro se decide aparte.
-		expect(conf.vars.REGISTRO).toBe("lista");
 		expect(conf.observability.enabled).toBe(false);
+	});
+
+	// **Con el registro abierto, el tope del día tiene que caber en lo que da el
+	// correo** (ADR 0041). El plan gratuito de Resend son cien correos al día y cada
+	// alta gasta dos —el código y la constancia—, así que subir este número sin
+	// mirar el correo deja a la gente a medias: cuenta creada y sin poder entrar
+	// desde otro equipo, o alta que no llega a su código.
+	it("si el registro está abierto, las altas del día caben en los cien correos de Resend", () => {
+		const conf = JSON.parse(env.CONFIGURACION.replace(/^\s*\/\/.*$/gm, ""));
+		if (conf.vars.REGISTRO !== "abierto") return;
+		const altas = Number(conf.vars.TOPE_ALTAS_DIA);
+		expect(Number.isInteger(altas)).toBe(true);
+		expect(altas * 2).toBeLessThanOrEqual(80); // los otros veinte, para lo demás
 	});
 });
 

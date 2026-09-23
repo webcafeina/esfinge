@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-09-18 · **Estado:** aceptada, sin empezar · **Matiza la [0023](0023-la-boveda.md)** («sin
 servidor») **y la [0014](0014-comprobacion-de-actualizaciones.md)** (qué sale de la máquina) ·
-**Revisar cuando** se abra el registro
+**Revisar cuando** haya cuentas de fuera de la casa, o al pasar a la fase B
 
 ## Contexto
 
@@ -27,7 +27,7 @@ Decidido con el cliente el 2026-09-18, por preguntas con opciones:
 | Pregunta | Elegido |
 |---|---|
 | Para quién | Webcafeína y sus clientes |
-| Registro | **Libre** cuando la política de privacidad y las condiciones de uso estén revisadas y publicadas; hasta entonces, por lista de admisión |
+| Registro | **Libre** cuando la política de privacidad y las condiciones de uso estén revisadas y publicadas; hasta entonces, por lista de admisión. **Abierto el 2026-09-23**, cumplida esa condición |
 | Servidor | Propio, en **Cloudflare**, con los datos en la **UE** (D1, Durable Objects y R2 con jurisdicción `eu`) |
 | Dirección | `esfinge-cuentas.webcafeina.com` |
 | Entrar | **Correo + contraseña maestra**, y **código por correo** en cada equipo nuevo; Touch ID o PIN más adelante |

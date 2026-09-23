@@ -33,8 +33,7 @@ Textos en español, que es el idioma de la extensión.
 >   el canal con el navegador encendido en sus Ajustes— y habla solo con ella: no se conecta a internet.
 >   Se descarga gratis en https://webcafeina.github.io/esfinge/
 > • Con tu cuenta de Esfinge funciona sola, sin la aplicación: guarda tu bóveda cifrada en el navegador y
->   la sincroniza con el servidor de cuentas de Webcafeína, en la UE, que no puede leerla. Por ahora, las
->   cuentas son por invitación.
+>   la sincroniza con el servidor de cuentas de Webcafeína, en la UE, que no puede leerla.
 > • No lleva analítica ni servicios de terceros.
 > • La primera vez que abras su panel te explica qué datos toca. Hasta que lo aceptas, no lee ninguna
 >   página.

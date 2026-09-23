@@ -28,9 +28,20 @@
 		// Dónde viven las cuentas. Solo «eu»: el código no acepta otra cosa, y las
 		// pruebas lo vacían porque el motor local no sabe de jurisdicciones.
 		"JURISDICCION": "eu",
-		// cerrado · lista · abierto. Abrirlo pide la política y las condiciones publicadas.
-		"REGISTRO": "lista",
-		"REMITENTE": "Esfinge <esfinge@webcafeina.com>"
+		// cerrado · lista · abierto. **Abierto el 2026-09-23** (entrega A4), una vez
+		// publicadas la política y las condiciones de uso y hecho lo que ellas
+		// prometen: la constancia del alta, el cierre de cuentas y la limpieza por
+		// reloj. La tabla `admision` se queda donde está, sin usarse, por si hay que
+		// volver a cerrarlo.
+		"REGISTRO": "abierto",
+		"REMITENTE": "Esfinge <esfinge@webcafeina.com>",
+		// **Los topes del día caben en lo que da el correo** (ADR 0041). El plan
+		// gratuito de Resend son cien correos al día y **cada alta gasta dos** —el
+		// código y la constancia—, así que treinta altas son sesenta correos y dejan
+		// cuarenta para lo demás: entradas desde equipos nuevos, recuperaciones y
+		// cambios de contraseña. El día que esto se quede corto, la salida es el plan
+		// de pago y no subir el número.
+		"TOPE_ALTAS_DIA": "30"
 	},
 
 	"d1_databases": [

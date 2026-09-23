@@ -18,7 +18,7 @@ cuándo te conectas.
 | Pregunta | Elegido |
 |---|---|
 | Para quién | Webcafeína y sus clientes |
-| Registro | **Libre** cuando la política de privacidad y las condiciones de uso estén revisadas y publicadas; hasta entonces, por lista de admisión |
+| Registro | **Libre** cuando la política de privacidad y las condiciones de uso estén revisadas y publicadas; hasta entonces, por lista de admisión. **Abierto el 2026-09-23** |
 | Servidor | Propio, en **Cloudflare**, con los datos en la **UE** (D1 y Durable Objects con jurisdicción `eu`, comprobado en su documentación) |
 | Dirección | `esfinge-cuentas.webcafeina.com` |
 | Entrar | **Correo + contraseña maestra**, y **código por correo** en cada equipo nuevo; Touch ID o PIN más adelante |
@@ -320,7 +320,7 @@ salen casi todas las reglas de esta sección.
 | **A2** · **hecha el 2026-09-18, sin publicar** (ADR 0039) | Bienvenida, registro, entrada con código, sincronización, identidad creada. Servidor con `REGISTRO=lista` (solo la casa) | **e2e de dos equipos**: dos `cmd/dev` y dos Vite contra `wrangler dev` local. A crea la cuenta y guarda; B entra y la ve; los dos editan a la vez y la contraseña perdedora sale en el historial; A borra y en B desaparece. **En el Mac: dos máquinas reales** |
 | **A3** · **hecha el 2026-09-21** (2.24.0) | Cambio de contraseña, recuperación, equipos, borrado, exportación, cuenta → local, restaurar una versión | e2e de cada flujo; ensayo de recuperación con la clave en papel |
 | **E**, 2.26.0 y extensión | La extensión, cliente de la cuenta: ESF1, fusión y TOTP en TypeScript, entrar, desbloquear, bloquear, sincronizar, guardar y actualizar; fichas, aviso y privacidad al día | Vectores de ESF1 en los dos lenguajes; fusión cruzada Go ↔ TypeScript byte a byte; Playwright con la extensión de verdad contra `wrangler dev` (**salda la deuda alta de las pruebas con la extensión cargada**); en el Mac: rellenar y guardar con la aplicación cerrada, y un cambio en el navegador que aparece en la aplicación |
-| **A4** (solo configuración) | `REGISTRO=abierto`, con la web, la privacidad y las condiciones publicadas antes, los topes diarios por debajo de lo que da Resend y los encargos de tratamiento firmados | Revisión de los textos con un modelo especializado (ADR 0041) |
+| **A4** · **hecha el 2026-09-23** | `REGISTRO=abierto`, con la web, la privacidad y las condiciones publicadas antes, los topes diarios por debajo de lo que da Resend y los encargos de tratamiento firmados | Revisión de los textos con un modelo especializado (ADR 0041) |
 | **B** | Contactos, huellas, envío y recepción de copias, invitaciones | e2e con dos cuentas |
 | **C** | Touch ID o Windows Hello y PIN, como ranuras solo locales | Solo en Mac y Windows reales. **Puede exigir firmar la aplicación**, en contra de la decisión de no firmar: hay que investigarlo antes |
 

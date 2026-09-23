@@ -92,7 +92,6 @@ export function Bienvenida({
             </button>
             <button onClick={alEntrar}>Ya tengo cuenta</button>
           </div>
-          <p className="nota">Por ahora, las cuentas son por invitación.</p>
         </section>
       </div>
 
