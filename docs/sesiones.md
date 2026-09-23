@@ -21,6 +21,31 @@ Plantilla al final.
 - **Y abre**, que es lo que no se puede comprobar desde aquí: el cliente entró con el código que le llegó al
   correo y vio el buzón vacío. Se hizo en el momento y no el día que hiciera falta, que era el riesgo.
 
+## 2026-09-23 (noche) · El registro abierto, y la B1: la identidad para compartir
+
+- **Registro abierto** (entrega A4), cumplida la condición de la ADR 0035: los textos revisados y
+  publicados. Producción contesta `{"registro":"abierto"}`. Con ello, **el tope baja a treinta altas al
+  día** —cada una gasta dos correos y Resend da cien— con una prueba que vigila que quepa, y las frases de
+  «por invitación» salen de los **cinco** sitios donde estaban.
+- **Y la deuda de la pimienta pasa a estar vencida**: su condición era «antes de abrir el registro».
+- **Passkeys, estudiadas y escritas** (`docs/passkeys.md`), que el cliente pidió como «lo de Dashlane».
+  Lo importante de esa investigación: **en Chrome no hay API de extensión para esto**; la que lo parece
+  suspende todo el WebAuthn del navegador. El camino es el de los demás gestores, reemplazar
+  `navigator.credentials` en el mundo principal, y eso convierte la idea en una fase, no en una tarea.
+- **B1 hecha** (ADR 0043): la identidad para compartir. Semilla de 32 bytes en el cuerpo cifrado, X25519 y
+  Ed25519 derivadas con HKDF, huella comparable con el alfabeto de la clave de recuperación, y su regla de
+  fusión —gana la más antigua, y en los dos lados la misma—. **En Go y en TypeScript**, con pruebas
+  cruzadas que caen si una letra de una etiqueta cambia.
+- **Y una cosa que la tabla de entregas decía y no era verdad**: la A2 se apuntaba «identidad creada». No
+  existía nada; solo un hueco en el protocolo que acepta unas `llaves` al registrarse **y no las lee
+  nadie**. Corregido en `docs/cuentas.md`.
+- **Tres decisiones del cliente para la B**: compartir irá **en la ventana y en la extensión**, lo recibido
+  llega a **un buzón que se acepta**, y **se podrá invitar por correo** a quien no tenga cuenta. Las tres
+  son la opción grande; la entrega queda partida en B1 a B4.
+- **Sin dependencia nueva en el navegador**: X25519 y Ed25519 están en WebCrypto, comprobado ejecutándolo
+  en el Chromium de las pruebas y no leyendo una tabla de compatibilidad.
+- Verificado: `make comprobar` entero —con las cruzadas— y `make e2e`.
+
 ## 2026-09-23 (noche) · Lo que el informe dejaba abierto
 
 - **Todo lo que quedaba propuesto, hecho**, con su prueba y con la prueba comprobada al revés —quitando el

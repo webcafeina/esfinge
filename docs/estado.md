@@ -509,6 +509,12 @@ curl -s "https://clients2.google.com/service/update2/crx?response=updatecheck&pr
 &acceptformat=crx3&x=id%3Djfkkegampjamnnlopobepjoanebemegp%26uc"   # atributo version=
 ```
 
+**La B1, hecha (2026-09-23)** — [ADR 0043](adr/0043-la-identidad-para-compartir.md). La identidad para
+compartir: una semilla de 32 bytes en el cuerpo cifrado, de la que salen X25519 para recibir y Ed25519 para
+firmar, con una huella que se puede leer por teléfono. En Go y en TypeScript, con pruebas cruzadas. **Sin
+servidor y sin interfaz todavía**: lo siguiente es la B2, mandar y recibir. Y una corrección: la tabla de
+entregas decía que la A2 había creado la identidad, y no era verdad.
+
 **Lo que viene después de todo esto (2026-09-23)**: el cliente pidió **passkeys**, «como Dashlane, que
 sale un banner y es darle a Aceptar». Está estudiado y escrito en [`docs/passkeys.md`](passkeys.md), con lo
 que ya se ha comprobado de los navegadores para no volver a empezar: **en Chrome no hay API de extensión

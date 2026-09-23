@@ -85,12 +85,30 @@ JSON en claro, `formato: 1`. Los campos criptográficos son líneas `ESF1.…` c
 {
   "entradas": [ … ],
   "sitiosExcluidos": ["dominio.com"],
-  "lapidas": { "id de entrada": "RFC3339" }
+  "lapidas": { "id de entrada": "RFC3339" },
+  "identidad": { "semilla": "…", "creada": "RFC3339", "suite": "…" }
 }
 ```
 
 **Las claves que no se conocen se conservan tal cual**, en el contenido y en cada entrada. Una versión que
 no entiende algo no puede borrarlo al guardar.
+
+### La identidad
+
+`identidad` es la de esta bóveda **para compartir copias** ([ADR 0043](adr/0043-la-identidad-para-compartir.md)):
+una **semilla de 32 bytes** en base64url, cuándo nació y con qué conjunto de HPKE se cifra hacia ella. De la
+semilla salen, con HKDF-SHA256:
+
+| Etiqueta | Llave |
+|---|---|
+| `esfinge/identidad/cifrado/v1` | **X25519**, para que otros cifren hacia ti |
+| `esfinge/identidad/firma/v1` | **Ed25519**, para firmar lo que mandas |
+
+La **huella** que se compara por teléfono es el SHA-256 de `suite`, `0x00`, la llave de cifrado, `0x00` y la
+de firma; de ahí, los primeros 28 símbolos del alfabeto de la clave de recuperación, en grupos de cuatro
+separados por guiones.
+
+**Se crea una vez y no cambia.** Una versión que no la conozca la conserva como sección desconocida.
 
 ### Una entrada
 
@@ -157,6 +175,10 @@ Ordenados.
 
 **Secciones del contenido que no se conocen**: como un valor entero, a tres bandas; si cambió en los dos
 lados, gana R.
+
+**La identidad**, en cambio, **no se funde: se elige una**, y las dos implementaciones tienen que elegir la
+misma. Gana la de `creada` menor; si empatan, la de `semilla` menor como texto. Solo puede haber dos si dos
+equipos crearon la suya antes de verse.
 
 **Sobres**, por tipo: los de un solo equipo, los de aquí. Si el tipo solo está en un lado, ése. Iguales →
 ése. Con B: L igual a B → R; R igual a B → L. Si no, el de `creado` mayor, y si empatan, el de

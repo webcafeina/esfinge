@@ -12,6 +12,7 @@
  */
 
 import { canonico, compararComoGo, huella, type ValorJSON } from "./canon";
+import { fundirIdentidad, type IdentidadGuardada } from "./identidad";
 import {
   ahora,
   Boveda,
@@ -203,6 +204,12 @@ async function fundirContenido(
   if (excluidos.length > 0) out.sitiosExcluidos = excluidos;
   const extra = fundirSecciones(l.extra ?? {}, r.extra ?? {}, b?.extra ?? {});
   if (extra) out.extra = extra;
+  // **La identidad no se funde como una sección cualquiera: se elige una**
+  // (ADR 0043). Go hace lo mismo, y tiene que ser la misma: como sección
+  // desconocida ganaría la del servidor, y cada lado podría quedarse con una.
+  const identidad = fundirIdentidad(identidadDe(l), identidadDe(r));
+  if (identidad) out.extra = { ...(out.extra ?? {}), identidad: identidad as unknown as ValorJSON };
+  else if (out.extra) delete out.extra.identidad;
   return out;
 }
 
@@ -397,6 +404,15 @@ function fundirConjunto(l: string[], r: string[], b: string[], hayBase: boolean)
     if ((sl.has(x) && sr.has(x)) || !hayBase || (sl.has(x) && !sb.has(x)) || (sr.has(x) && !sb.has(x))) out.push(x);
   }
   return out.sort(compararComoGo);
+}
+
+/** La identidad guardada de un contenido, si la lleva y se entiende. */
+function identidadDe(c: Contenido): IdentidadGuardada | undefined {
+  const i = c.extra?.identidad as unknown;
+  if (!i || typeof i !== "object") return undefined;
+  const { semilla, creada } = i as Record<string, unknown>;
+  if (typeof semilla !== "string" || typeof creada !== "string") return undefined;
+  return i as IdentidadGuardada;
 }
 
 /** Las secciones que no se conocen, enteras: si cambió en los dos lados, gana la del servidor. */

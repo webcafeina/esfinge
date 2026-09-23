@@ -638,6 +638,10 @@ func fundirContenido(l, r contenido, b *contenido, ahora time.Time, f *Fusion) c
 		excluidosB = b.SitiosExcluidos
 	}
 	out.SitiosExcluidos = fundirConjunto(l.SitiosExcluidos, r.SitiosExcluidos, excluidosB, b != nil)
+	// **La identidad no se funde campo a campo: se elige una** (ADR 0043). No cambia
+	// nunca, así que solo puede haber dos si dos equipos crearon la suya antes de
+	// verse, y entonces hace falta que los dos elijan la misma.
+	out.Identidad = fundirIdentidad(l.Identidad, r.Identidad)
 	var extraB map[string]json.RawMessage
 	if b != nil {
 		extraB = b.Extra

@@ -11,6 +11,7 @@
 import { canonico, type ValorJSON } from "./canon";
 import { Boveda, canonContenido, contenidoDesde, relojParaPruebas, type Sobre } from "./boveda";
 import { codigoEn, leerSemilla } from "./codigos";
+import { identidadDeSemilla } from "./identidad";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
 import { dominioDeOrigen, dominioDeSitio } from "./dominios";
 import { canonEntrada, entradaDesde } from "./entrada";
@@ -105,6 +106,17 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
         } catch (e) {
           out.push("error: " + (e as Error).message);
         }
+      }
+      return out;
+    }
+
+    // La identidad para compartir (ADR 0043): las mismas llaves y la misma huella
+    // que Go para la misma semilla, o lo que se mande no lo podrá abrir nadie.
+    case "identidad": {
+      const out = [];
+      for (const semilla of p.semillas as string[]) {
+        const i = await identidadDeSemilla(deHex(semilla));
+        out.push({ cifrado: hex(i.cifrado), firma: hex(i.firma), huella: i.huella, suite: i.suite });
       }
       return out;
     }

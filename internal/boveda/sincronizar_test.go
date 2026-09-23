@@ -471,14 +471,17 @@ func TestLosSitiosExcluidosSeFundenComoConjunto(t *testing.T) {
 
 func TestUnaSeccionDesconocidaViajaEntera(t *testing.T) {
 	a, b, s := dosEquipos(t)
-	a.b.cont.Extra = map[string]json.RawMessage{"identidad": json.RawMessage(`{"semilla":"abc"}`)}
+	// El nombre da igual **mientras no lo conozca ninguna versión**: éste era
+	// «identidad» hasta que la identidad dejó de ser desconocida (ADR 0043), y
+	// entonces esta prueba empezó a mirar un sitio donde ya no llega nada.
+	a.b.cont.Extra = map[string]json.RawMessage{"loDeMañana": json.RawMessage(`{"algo":"abc"}`)}
 	a.b.cuerpoSucio = true
 	if err := a.b.Guardar(); err != nil {
 		t.Fatal(err)
 	}
 	a.sincronizar(t, s)
 	b.sincronizar(t, s)
-	if string(b.b.cont.Extra["identidad"]) != `{"semilla":"abc"}` {
+	if string(b.b.cont.Extra["loDeMañana"]) != `{"algo":"abc"}` {
 		t.Fatalf("la sección que esta versión no conoce no llega: %v", b.b.cont.Extra)
 	}
 }

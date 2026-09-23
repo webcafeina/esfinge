@@ -9,6 +9,7 @@ package boveda
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
@@ -478,4 +479,89 @@ func TestCruzadaSubidaYFusion(t *testing.T) {
 	cruzada.Pedir(t, map[string]any{"orden": "fundirBoveda", "local": suya.Texto, "remoto": string(deGo), "version": 6,
 		"base": string(base), "llave": maestra, "ahora": "2026-09-22T13:14:15Z"}, &fundida)
 	mismoResumen(t, "la extensión funde lo que subió Go", resumenDe(t, b), fundida)
+}
+
+// La identidad para compartir, igual en los dos (ADR 0043).
+//
+// **Si las llaves no coinciden, lo que se manda desde la ventana no lo abre el
+// navegador**, y al revés. Y si la huella no coincide, dos personas comparándola
+// por teléfono creerían que están hablando de identidades distintas.
+func TestCruzadaIdentidad(t *testing.T) {
+	cruzada.Activa(t)
+	semillas := []string{
+		"0000000000000000000000000000000000000000000000000000000000000000",
+		"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+	}
+	var suyas []struct {
+		Cifrado string `json:"cifrado"`
+		Firma   string `json:"firma"`
+		Huella  string `json:"huella"`
+		Suite   string `json:"suite"`
+	}
+	cruzada.Pedir(t, map[string]any{"orden": "identidad", "semillas": semillas}, &suyas)
+	if len(suyas) != len(semillas) {
+		t.Fatalf("la extensión ha devuelto %d identidades de %d semillas", len(suyas), len(semillas))
+	}
+	for i, s := range semillas {
+		semilla, _ := hex.DecodeString(s)
+		mia, err := publicaDe(&identidad{Semilla: b64.EncodeToString(semilla), Suite: Suite})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if suyas[i].Suite != mia.Suite {
+			t.Errorf("semilla %s: suites distintas, %q y %q", s[:8], mia.Suite, suyas[i].Suite)
+		}
+		if suyas[i].Cifrado != hex.EncodeToString(mia.Cifrado) {
+			t.Errorf("semilla %s: la llave de cifrado de Go es %x y la de la extensión %s", s[:8], mia.Cifrado, suyas[i].Cifrado)
+		}
+		if suyas[i].Firma != hex.EncodeToString(mia.Firma) {
+			t.Errorf("semilla %s: la llave de firma de Go es %x y la de la extensión %s", s[:8], mia.Firma, suyas[i].Firma)
+		}
+		if suyas[i].Huella != mia.Huella {
+			t.Errorf("semilla %s: la huella de Go es %s y la de la extensión %s", s[:8], mia.Huella, suyas[i].Huella)
+		}
+	}
+}
+
+// **Y al fundir, los dos eligen la misma identidad.** Como sección desconocida
+// ganaría la del servidor y cada lado podría quedarse con una distinta; entonces
+// lo que le mandaran a uno no lo abriría el otro.
+func TestCruzadaFundirIdentidad(t *testing.T) {
+	cruzada.Activa(t)
+	conIdentidad := func(semilla, creada string) contenido {
+		return contenido{
+			Entradas:  []Entrada{{ID: "a", Tipo: TipoCredencial, Titulo: "Uno", Creada: "2026-09-01T00:00:00Z", Cambiada: "2026-09-01T00:00:00Z", Revision: 1}},
+			Identidad: &identidad{Semilla: semilla, Creada: creada, Suite: Suite},
+		}
+	}
+	// La de la izquierda es más antigua: tiene que ganar la mire quien la mire.
+	l := conIdentidad("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "2026-01-01T00:00:00Z")
+	r := conIdentidad("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", "2026-06-01T00:00:00Z")
+
+	var f Fusion
+	mio := fundirContenido(l, r, nil, time.Unix(0, 0).UTC(), &f)
+	if mio.Identidad == nil || mio.Identidad.Semilla != l.Identidad.Semilla {
+		t.Fatalf("en Go no gana la más antigua: %+v", mio.Identidad)
+	}
+
+	// Y la extensión, con el mismo caso, tiene que dar el mismo contenido: se
+	// compara la forma canónica entera, no solo la identidad.
+	var suyos []struct {
+		Contenido string `json:"contenido"`
+	}
+	cruzada.Pedir(t, map[string]any{
+		"orden": "fundir",
+		"casos": []map[string]any{{
+			"l": l, "r": r, "b": nil,
+			"sobresL": []sobre{}, "sobresR": []sobre{}, "sobresB": []sobre{},
+			"ahora": "1970-01-01T00:00:00Z",
+		}},
+	}, &suyos)
+	if len(suyos) != 1 {
+		t.Fatalf("la extensión ha devuelto %d resultados", len(suyos))
+	}
+	if suyos[0].Contenido != canonDeContenido(t, mio) {
+		t.Fatalf("funden distinto:\nGo:        %s\nextensión: %s", canonDeContenido(t, mio), suyos[0].Contenido)
+	}
 }

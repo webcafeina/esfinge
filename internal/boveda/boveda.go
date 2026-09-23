@@ -209,6 +209,11 @@ type contenido struct {
 	// (PlazoLapidas), para que un equipo que pase semanas sin conectar se entere.
 	Lapidas map[string]string `json:"lapidas,omitempty"`
 
+	// Identidad es la de esta bóveda para compartir copias (ADR 0043): una semilla
+	// de la que salen las llaves de cifrado y de firma. **Se crea una vez y no
+	// cambia**, y una versión que no la conozca la conserva por `Extra`.
+	Identidad *identidad `json:"identidad,omitempty"`
+
 	// Extra son las secciones que esta versión no conoce. Ver Entrada.Extra.
 	Extra map[string]json.RawMessage `json:"-"`
 }
