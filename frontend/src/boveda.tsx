@@ -5,6 +5,7 @@ import {
   alHaberIconos,
   esfinge,
   type EntradaBoveda,
+  type EnvioRecibido,
   type EstadoBoveda,
   type ResumenImportacion,
   type TipoEntrada,
@@ -12,6 +13,7 @@ import {
   alCambiarElEstadoDeLaBoveda,
 } from "./puente";
 import { CampoClave, dominioDe, Icono, Monograma, Segmentado } from "./componentes";
+import { Buzon, Compartir } from "./compartir";
 import { LineaSincro, usaCuenta } from "./cuenta";
 
 /**
@@ -517,6 +519,7 @@ function Dentro({
   alRotar: (clave: string) => void;
   alVolverAEntrar: (correo: string) => void;
 }) {
+  const [cuenta] = usaCuenta();
   const [q, setQ] = useState("");
   const [tipo, setTipo] = useState<Filtro>("todo");
   const [orden, setOrden] = useState<Orden>("nombre");
@@ -525,6 +528,12 @@ function Dentro({
   const [mirando, setMirando] = useState<EntradaBoveda | null>(null);
   const [editando, setEditando] = useState<EntradaBoveda | null>(null);
   const [enLaPapelera, setEnLaPapelera] = useState(false);
+  // Compartir y el buzón (ADR 0043). El buzón se pregunta al entrar en la bóveda
+  // y después de cada cambio: **solo con cuenta**, porque sin ella no hay adónde
+  // preguntar y el botón no llevaría a ninguna parte.
+  const [compartiendo, setCompartiendo] = useState<EntradaBoveda | null>(null);
+  const [enElBuzon, setEnElBuzon] = useState(false);
+  const [buzon, setBuzon] = useState<EnvioRecibido[]>([]);
   // Lo que se dice después de borrar. **Hace falta decirlo**: lo borrado va a la
   // papelera y se puede recuperar, y quien acaba de dar al botón no tiene forma
   // de saberlo si nadie se lo cuenta.
@@ -557,6 +566,25 @@ function Dentro({
     traerIconos();
     return alHaberIconos(traerIconos);
   }, [traerIconos]);
+
+  // El buzón: al entrar y cada vez que cambia algo. **Solo con cuenta**: sin ella
+  // no hay servidor al que preguntar, y preguntar de todos modos llenaría el
+  // registro de errores que no son errores.
+  const mirarElBuzon = useCallback(async () => {
+    if (cerrada.current || cuenta?.modo !== "cuenta") {
+      setBuzon([]);
+      return;
+    }
+    try {
+      setBuzon(await esfinge.buzon());
+    } catch {
+      setBuzon([]);
+    }
+  }, [cuenta?.modo]);
+
+  useEffect(() => {
+    void mirarElBuzon();
+  }, [mirarElBuzon]);
 
   // **Y cuando el navegador guarda o actualiza una cuenta, la lista se pide otra vez.**
   // Lo escribe otro —la extensión, por el canal—, y sin este aviso la lista seguía
@@ -619,6 +647,37 @@ function Dentro({
     alCambiar();
   }
 
+  if (compartiendo) {
+    return (
+      <Compartir
+        entrada={compartiendo}
+        alVolver={() => setCompartiendo(null)}
+        alHecho={(d) => {
+          setCompartiendo(null);
+          setDicho(d);
+          // Por si se ha mandado a la propia cuenta: el buzón se mira otra vez sin
+          // esperar a volver a entrar.
+          void mirarElBuzon();
+        }}
+      />
+    );
+  }
+
+  if (enElBuzon) {
+    return (
+      <Buzon
+        envios={buzon}
+        alVolver={() => setEnElBuzon(false)}
+        alCambiar={async (d) => {
+          setDicho(d);
+          await mirarElBuzon();
+          await buscar(q);
+          alCambiar();
+        }}
+      />
+    );
+  }
+
   if (editando) {
     return (
       <Editor
@@ -641,6 +700,14 @@ function Dentro({
         entrada={mirando}
         alVolver={() => setMirando(null)}
         alEditar={() => setEditando(mirando)}
+        alCompartir={
+          cuenta?.modo === "cuenta"
+            ? () => {
+                setCompartiendo(mirando);
+                setMirando(null);
+              }
+            : undefined
+        }
         alBorrar={async () => {
           const era = mirando.titulo || "Sin título";
           await esfinge.borrarDeBoveda(mirando.id);
@@ -690,6 +757,18 @@ function Dentro({
             }}
           >
             Papelera ({estado.enLaPapelera})
+          </button>
+        )}
+        {/* Como la papelera: solo cuando hay algo. Un buzón vacío en la barra
+            es un botón que no lleva a ninguna parte. */}
+        {buzon.length > 0 && (
+          <button
+            onClick={() => {
+              setDicho("");
+              setEnElBuzon(true);
+            }}
+          >
+            Te han mandado ({buzon.length})
           </button>
         )}
         <button onClick={cerrar}>Cerrar la bóveda</button>
@@ -1053,11 +1132,14 @@ function Detalle({
   alVolver,
   alEditar,
   alBorrar,
+  alCompartir,
 }: {
   entrada: EntradaBoveda;
   alVolver: () => void;
   alEditar: () => void;
   alBorrar: () => void;
+  /** Solo con cuenta: sin ella no hay a quién mandar nada. */
+  alCompartir?: () => void;
 }) {
   // Borrar pide una segunda pulsación en vez de un diálogo. El diálogo del
   // sistema pararía la ventana entera para una pregunta que se contesta aquí.
@@ -1069,6 +1151,7 @@ function Detalle({
       <div className="boveda-barra">
         <button onClick={alVolver}>← Volver</button>
         <span className="crece" />
+        {alCompartir && <button onClick={alCompartir}>Compartir</button>}
         <button onClick={alEditar}>Editar</button>
         {/* La segunda pulsación dice **adónde va**, y no es un adorno: es el
             único momento en que alguien que duda se entera de que esto se puede

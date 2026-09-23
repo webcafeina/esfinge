@@ -244,6 +244,21 @@ export type EstadoCuenta = {
 };
 
 /** Un equipo con sesión en la cuenta. */
+/** Lo que se enseña de una identidad: su huella, y nada más. */
+export type IdentidadParaCompartir = { huella: string; suite: string };
+
+/** Un envío esperando en el buzón, ya abierto y comprobado. */
+export type EnvioRecibido = {
+  id: string;
+  huella: string;
+  titulo: string;
+  usuario: string;
+  tipo: string;
+  momento: number;
+  /** Por qué no se puede abrir, si es el caso. Se enseña en vez de esconderlo. */
+  error?: string;
+};
+
 export type EquipoDeCuenta = {
   id: string;
   nombre: string;
@@ -451,6 +466,36 @@ export const esfinge = {
 
   /** Guarda en un fichero lo que el servidor tiene de la cuenta; devuelve dónde. */
   exportarDatosDeCuenta: () => llamar<string>("ExportarDatosDeCuenta"),
+
+  // ---------------------------------------------------------------- compartir
+  //
+  // **Lo que cruza de una identidad es su huella**, nunca la semilla ni las
+  // llaves (ADR 0043). Y del buzón, de quién viene y qué es: la contraseña solo
+  // entra en la bóveda al aceptarla, como el resto de los secretos.
+
+  /** La huella de esta bóveda. La crea si aún no la tiene y la publica. */
+  miIdentidad: () => llamar<IdentidadParaCompartir>("MiIdentidad"),
+
+  /**
+   * La huella de quien tiene ese correo, para comparar antes de mandar.
+   *
+   * **Siempre contesta**, tenga cuenta o no esa dirección: el servidor no dice
+   * quién está en Esfinge. Por eso lo que se enseña al lado es «compárala con
+   * quien la tenga delante» y no «esta persona existe».
+   */
+  huellaDe: (correo: string) => llamar<IdentidadParaCompartir>("HuellaDe", correo),
+
+  /** Manda una copia de esa entrada a ese correo. */
+  mandarCopia: (id: string, correo: string) => llamar<void>("MandarCopia", id, correo),
+
+  /** Lo que ha llegado, abierto y con la firma comprobada, pero sin secretos. */
+  buzon: () => llamar<EnvioRecibido[] | null>("Buzon").then((l) => l ?? []),
+
+  /** Mete la copia en la bóveda, con identificador nuevo, y la quita del buzón. */
+  aceptarDelBuzon: (id: string) => llamar<void>("AceptarDelBuzon", id),
+
+  /** La tira sin abrirla. */
+  tirarDelBuzon: (id: string) => llamar<void>("TirarDelBuzon", id),
 
   /** Manda el código al correo para crear la cuenta. */
   empezarRegistro: (correo: string) => llamar<void>("EmpezarRegistro", correo),

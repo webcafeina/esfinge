@@ -519,3 +519,88 @@ func leerHasta(r io.Reader, n int64) ([]byte, error) {
 	}
 	return datos, nil
 }
+
+// ------------------------------------------------------------------ compartir
+
+// Llaves son las públicas de una cuenta: con ellas se le cifra y se comprueba lo
+// que firma (ADR 0043).
+type Llaves struct {
+	Suite   string `json:"suite"`
+	Cifrado []byte `json:"-"`
+	Firma   []byte `json:"-"`
+}
+
+// llavesEnLaRed es la forma en que viajan: base64url, como todo lo demás.
+type llavesEnLaRed struct {
+	Suite   string `json:"suite"`
+	Cifrado string `json:"cifrado"`
+	Firma   string `json:"firma"`
+}
+
+func (l Llaves) enLaRed() llavesEnLaRed {
+	return llavesEnLaRed{Suite: l.Suite, Cifrado: b64.EncodeToString(l.Cifrado), Firma: b64.EncodeToString(l.Firma)}
+}
+
+func (l llavesEnLaRed) deLaRed() (Llaves, error) {
+	cifrado, err := b64.DecodeString(l.Cifrado)
+	if err != nil {
+		return Llaves{}, err
+	}
+	firma, err := b64.DecodeString(l.Firma)
+	if err != nil {
+		return Llaves{}, err
+	}
+	return Llaves{Suite: l.Suite, Cifrado: cifrado, Firma: firma}, nil
+}
+
+// PublicarLlaves deja en el servidor las llaves públicas de esta cuenta.
+func (c *Cliente) PublicarLlaves(ctx context.Context, token string, l Llaves) error {
+	_, err := c.json(ctx, "PUT", "/v1/llaves", token, map[string]any{"llaves": l.enLaRed()}, nil)
+	return err
+}
+
+// LlavesDe pregunta por las de un correo.
+//
+// **Siempre contesta algo**, tenga cuenta o no: el servidor devuelve unas llaves
+// inventadas pero fijas para los correos que no la tienen, y así preguntar no
+// dice quién está en Esfinge. Lo que cuesta está en `docs/deuda.md`: hoy, mandar
+// a una dirección sin cuenta se pierde en silencio hasta que haya invitaciones.
+func (c *Cliente) LlavesDe(ctx context.Context, token, correo string) (Llaves, error) {
+	var r struct {
+		Llaves llavesEnLaRed `json:"llaves"`
+	}
+	if _, err := c.json(ctx, "POST", "/v1/llaves/de", token, map[string]any{"correo": correo}, &r); err != nil {
+		return Llaves{}, err
+	}
+	return r.Llaves.deLaRed()
+}
+
+// Mandar deja un sobre para `para`. El sobre viaja tal cual: aquí no se mira
+// dentro, y el servidor tampoco puede.
+func (c *Cliente) Mandar(ctx context.Context, token, para string, sobre any) error {
+	_, err := c.json(ctx, "POST", "/v1/envios", token, map[string]any{"para": para, "sobre": sobre}, nil)
+	return err
+}
+
+// EnvioEnBuzon es lo que espera en el buzón.
+type EnvioEnBuzon struct {
+	ID      string          `json:"id"`
+	Momento int64           `json:"momento"`
+	Sobre   json.RawMessage `json:"sobre"`
+}
+
+// Buzon lista lo que ha llegado, lo más nuevo primero.
+func (c *Cliente) Buzon(ctx context.Context, token string) ([]EnvioEnBuzon, error) {
+	var r struct {
+		Envios []EnvioEnBuzon `json:"envios"`
+	}
+	_, err := c.json(ctx, "GET", "/v1/buzon", token, nil, &r)
+	return r.Envios, err
+}
+
+// TirarDelBuzon quita uno. Vale para aceptarlo —ya está en la bóveda— y para
+// rechazarlo.
+func (c *Cliente) TirarDelBuzon(ctx context.Context, token, id string) error {
+	_, err := c.json(ctx, "DELETE", "/v1/buzon/"+id, token, nil, nil)
+	return err
+}

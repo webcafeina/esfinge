@@ -1183,6 +1183,17 @@ p {
   gap: var(--espacio-2);
 }
 
+/* La huella de una identidad (ADR 0043). Va en la tipografía de ancho fijo y se
+ * deja partir: son siete grupos de cuatro y lo que se hace con ella es **leerla
+ * en voz alta y compararla**, no que quepa en una línea. Sin color propio: hereda
+ * el del texto donde esté, que ya es una pareja medida. */
+.huella {
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-chico);
+  letter-spacing: 0.04em;
+  word-break: break-all;
+}
+
 /* Un dato de una entrada. No es un campo: no se edita aquí, se lee. Por eso no
  * lleva el relleno ni el borde de un input, que prometerían lo contrario. */
 .dato {

@@ -974,3 +974,113 @@ func TestExportarYBorrarLaCuenta(t *testing.T) {
 		t.Fatal("la cuenta borrada deja entrar")
 	}
 }
+
+// Compartir una copia entre **dos cuentas distintas**, de punta a punta: la
+// identidad, las llaves publicadas, el sobre, el buzón y aceptar (ADR 0043).
+//
+// Es la prueba que junta todo lo de la B2, y la que enseña lo que se decidió con
+// el cliente: **lo que llega espera a que alguien lo acepte**, y al aceptarlo es
+// una copia con su propio identificador.
+func TestCompartirUnaCopiaEntreDosCuentas(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	maestra := "una contraseña maestra bien larga"
+
+	ana := nuevoEquipo(t, raiz)
+	correoAna := correoDePrueba()
+	crearCuenta(t, raiz, ana, correoAna, maestra)
+
+	luis := nuevoEquipo(t, raiz)
+	correoLuis := correoDePrueba()
+	crearCuenta(t, raiz, luis, correoLuis, maestra)
+
+	// Cada uno mira su huella: eso la crea y la publica.
+	mia, err := ana.a.MiIdentidad()
+	if err != nil {
+		t.Fatal(err)
+	}
+	suya, err := luis.a.MiIdentidad()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mia.Huella == suya.Huella {
+		t.Fatal("dos bóvedas distintas con la misma identidad")
+	}
+
+	// Ana mira la huella de Luis antes de mandarle nada, que es lo que hay que
+	// comparar por otro canal.
+	vista, err := ana.a.HuellaDe(correoLuis)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if vista.Huella != suya.Huella {
+		t.Fatalf("la huella que ve Ana (%s) no es la de Luis (%s)", vista.Huella, suya.Huella)
+	}
+
+	if err := ana.a.GuardarEnBoveda(boveda.Entrada{Tipo: boveda.TipoCredencial, Titulo: "Wifi de la oficina", Usuario: "invitados", Secreto: "la de siempre"}); err != nil {
+		t.Fatal(err)
+	}
+	suyasDeAna, err := ana.a.BuscarEnBoveda("Wifi")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var id string
+	for _, e := range suyasDeAna {
+		id = e.ID
+	}
+	if id == "" {
+		t.Fatal("no se encuentra la entrada recién puesta")
+	}
+	if err := ana.a.MandarCopia(id, correoLuis); err != nil {
+		t.Fatal(err)
+	}
+
+	// A Luis le espera en el buzón, con la huella de Ana y sin secretos.
+	esperando, err := luis.a.Buzon()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(esperando) != 1 {
+		t.Fatalf("en el buzón de Luis hay %d envíos", len(esperando))
+	}
+	if esperando[0].Error != "" {
+		t.Fatalf("el envío no se abre: %s", esperando[0].Error)
+	}
+	if esperando[0].Huella != mia.Huella {
+		t.Fatalf("el buzón dice que viene de %s y Ana es %s", esperando[0].Huella, mia.Huella)
+	}
+	if esperando[0].Titulo != "Wifi de la oficina" {
+		t.Fatalf("el buzón enseña el título %q", esperando[0].Titulo)
+	}
+
+	// **Y hasta que no se acepta, no está en la bóveda.**
+	if antes, _ := luis.a.BuscarEnBoveda("Wifi"); len(antes) != 0 {
+		t.Fatalf("lo recibido ha entrado solo en la bóveda de Luis (%d)", len(antes))
+	}
+
+	if err := luis.a.AceptarDelBuzon(esperando[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	suyas, err := luis.a.BuscarEnBoveda("Wifi")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(suyas) != 1 {
+		t.Fatalf("tras aceptar hay %d entradas", len(suyas))
+	}
+	if suyas[0].ID == id {
+		t.Fatal("la copia tiene el identificador de la entrada de Ana; es una copia, no la misma entrada")
+	}
+	completa, _ := luis.a.VerDeBoveda(suyas[0].ID)
+	if completa.Secreto != "la de siempre" {
+		t.Fatalf("la contraseña recibida es %q", completa.Secreto)
+	}
+	if !strings.Contains(completa.Notas, mia.Huella) {
+		t.Fatalf("la copia no dice de quién viene: %q", completa.Notas)
+	}
+
+	// Y el buzón queda vacío.
+	vacio, err := luis.a.Buzon()
+	if err != nil || len(vacio) != 0 {
+		t.Fatalf("el buzón sigue con %d envíos (%v)", len(vacio), err)
+	}
+}

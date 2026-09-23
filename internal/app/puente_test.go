@@ -90,6 +90,13 @@ var loQuePuedeCruzarElPuente = []string{
 	"DispositivosDeCuenta", "OlvidarDispositivo",
 	"PedirCodigoParaBorrarCuenta", "BorrarCuenta", "ExportarDatosDeCuenta",
 	"RepetidasEnBoveda", "QuitarRepetidasDeBoveda",
+
+	// La B: compartir copias (ADR 0043). **Lo que cruza de la identidad es su
+	// huella, nunca la semilla ni las llaves**, y del buzón, de quién viene y qué
+	// es; el secreto solo entra en la bóveda al aceptarlo. Mandar recibe el
+	// identificador de una entrada y un correo, y devuelve lo que devuelve el
+	// servidor: nada.
+	"MiIdentidad", "HuellaDe", "MandarCopia", "Buzon", "AceptarDelBuzon", "TirarDelBuzon",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

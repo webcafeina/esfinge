@@ -346,3 +346,104 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   expect(conLaNueva.ok(), await conLaNueva.text()).toBe(true);
   expect(erroresB, erroresB.join(" | ")).toEqual([]);
 });
+
+/**
+ * Compartir una copia desde la ventana, y el buzón (B2, ADR 0043).
+ *
+ * **Se manda a la propia cuenta**, y no es pereza: las dos ventanas de esta tanda
+ * ya están en la misma cuenta cuando llega aquí —la prueba de antes las dejó
+ * así—, y montar dos cuentas nuevas exigiría otro par de servidores. Lo que esta
+ * prueba tiene que cubrir es **la interfaz**: que la huella se enseñe con su
+ * aviso antes de mandar, que lo que llega **espere en el buzón** en vez de entrar
+ * solo, y que al guardarlo aparezca. Que dos cuentas distintas se entiendan de
+ * verdad lo prueba Go de punta a punta (`TestCompartirUnaCopiaEntreDosCuentas`).
+ */
+test("compartir una copia y recogerla del buzón", async ({ page, request }) => {
+  test.skip(test.info().project.name !== "claro", "Usa la cuenta que deja la prueba anterior");
+  test.setTimeout(180_000);
+
+  // **Se usa el equipo B y no el A**, y con la contraseña que la prueba de arriba
+  // le deja: allí se cambia la maestra a propósito y se sale de la cuenta para
+  // crear otra. Esto es una dependencia entre pruebas, así que va escrita: el
+  // fichero comparte dos ventanas para toda la tanda porque levantar otra pareja
+  // de servidores por prueba costaría más de lo que arregla.
+  const CLAVE_DE_B = MAESTRA + " nueva";
+  await page.goto(B);
+
+  // **Vale sola y vale detrás de la otra.** En una tanda entera, la prueba de
+  // arriba ya dejó este equipo en una cuenta; ejecutando solo ésta, el equipo se
+  // estrena y hay que crearla. Mirar cuál de las dos cosas es sale más barato que
+  // depender del orden de las pruebas.
+  // Y se espera a que haya algo que mirar: preguntar antes de que React pinte
+  // contesta «no» a las dos cosas y manda por el camino equivocado.
+  const bienvenida = page.getByRole("heading", { name: "Te damos la bienvenida a Esfinge" });
+  await expect(bienvenida.or(page.locator(".lateral")).first()).toBeVisible({ timeout: 30_000 });
+
+  if (await bienvenida.isVisible()) {
+    const correo = `comparte-${Date.now()}@ejemplo.com`;
+    await accion(page, "Crear una cuenta").click();
+    await page.locator("#cuenta-correo").fill(correo);
+    await accion(page, "Mandarme el código").click();
+    await expect(page.locator("#cuenta-codigo")).toBeVisible({ timeout: 20_000 });
+    await page.locator("#cuenta-codigo").fill(await codigo(request, correo));
+    await page.locator("#cuenta-maestra").fill(MAESTRA);
+    await page.locator("#cuenta-maestra-2").fill(MAESTRA);
+    await accion(page, "Crear la cuenta").click();
+    await expect(page.locator(".clave-recuperacion")).toBeVisible({ timeout: 20_000 });
+    await page.getByText("La he apuntado en un sitio seguro").click();
+    await accion(page, "Continuar").click();
+  } else {
+    // La ventana arranca en Cifrar: a la bóveda se va por la barra lateral, y el
+    // selector se acota ahí porque «Bóveda» también es el título de la pantalla.
+    await page.locator(".lateral").getByRole("button", { name: "Bóveda" }).click();
+    // Y otra vez: se espera a que la pantalla esté, y solo entonces se mira si
+    // está cerrada. Preguntar antes contesta «no» y deja la bóveda sin abrir.
+    const cerrada = page.locator("#boveda-llave");
+    await expect(cerrada.or(page.locator("#boveda-buscar")).first()).toBeVisible({ timeout: 30_000 });
+    if (await cerrada.isVisible()) {
+      await cerrada.fill(CLAVE_DE_B);
+      await accion(page, "Abrir la bóveda").click();
+    }
+  }
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 30_000 });
+
+  const estado = (await (await request.post(`${B}/api/EstadoDeCuenta`, { data: [] })).json()) as { correo: string };
+  expect(estado.correo, "esta prueba necesita la ventana en una cuenta").toBeTruthy();
+
+  const titulo = `Wifi compartido ${Date.now()}`;
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(titulo);
+  await page.locator("#boveda-secreto").fill("la-de-siempre");
+  await accion(page, "Guardar").click();
+  await page.getByRole("button", { name: new RegExp(titulo) }).click();
+  await accion(page, "Compartir").click();
+
+  await page.locator("#compartir-correo").fill(estado.correo);
+  await accion(page, "Ver su huella").click();
+  // **La huella con su aviso**: es lo único que protege del servidor aquí, y si
+  // no se enseña, no protege nada.
+  await expect(page.locator(".huella").first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Compárala con quien va a recibirla")).toBeVisible();
+  await retratar(page, "compartir");
+  await accion(page, "Mandar la copia").click();
+  await expect(page.getByText(/Copia de «/)).toBeVisible({ timeout: 20_000 });
+
+  // **Lo que llega espera**: aparece el botón del buzón, y la copia todavía no
+  // está en la lista (sigue habiendo una sola entrada con ese título).
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 30_000 });
+  await expect(accion(page, "Te han mandado (1)")).toBeVisible({ timeout: 30_000 });
+  await page.locator("#boveda-buscar").fill(titulo);
+  await expect(page.getByRole("button", { name: new RegExp(titulo) })).toHaveCount(1);
+
+  await accion(page, "Te han mandado (1)").click();
+  await expect(page.getByRole("heading", { name: "Te han mandado" })).toBeVisible();
+  await expect(page.locator(".lista-papelera")).toContainText(titulo);
+  await retratar(page, "buzon");
+
+  await accion(page, "Guardar").click();
+  await expect(page.getByText("Copia guardada en tu bóveda")).toBeVisible({ timeout: 20_000 });
+  await accion(page, "← Volver").click();
+  // Y ahora son dos: la original y la copia, con identificadores distintos.
+  await page.locator("#boveda-buscar").fill(titulo);
+  await expect(page.getByRole("button", { name: new RegExp(titulo) })).toHaveCount(2, { timeout: 20_000 });
+});
