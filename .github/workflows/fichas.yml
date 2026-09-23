@@ -1,0 +1,42 @@
+# La política de privacidad de la ficha de Firefox, al día sola.
+#
+# La política se escribe en `web/privacidad.html` y su copia en texto vive en
+# `docs/tiendas/privacidad-amo.txt` (ADR 0033: la web, el aviso del panel y las dos
+# fichas tienen que decir lo mismo). En Chrome la política es **una dirección**, así
+# que no hay nada que actualizar; en Firefox es **un texto pegado en la ficha**, y
+# eso es lo que este flujo deja de ser un paso a mano.
+#
+# Se dispara cuando cambia ese fichero, y también a mano por si hay que repetirlo.
+# Sin las claves de AMO no hace nada: lo dice y sale en verde.
+name: Fichas de las tiendas
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/tiendas/privacidad-amo.txt"
+      - "navegador/herramientas/politica-amo.mjs"
+      - ".github/workflows/fichas.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fichas
+  cancel-in-progress: false
+
+jobs:
+  privacidad:
+    name: Política de privacidad en Firefox
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Ponerla en la ficha
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_API_SECRET }}
+        run: node navegador/herramientas/politica-amo.mjs
