@@ -172,7 +172,9 @@ No se cambian sin preguntar.
   cuentas, código por correo en cada equipo nuevo, bienvenida «En este ordenador / Con cuenta» reversible,
   **maestra «fuerte» obligatoria con cuenta**, y **la extensión como cliente completo de la cuenta, siempre
   por ella** —hecha en la 2.25.0 (ADR 0040): con cuenta, rellena, da códigos y guarda **sin la
-  aplicación**, y copiar desde su panel no se borra solo del portapapeles—. La bienvenida sale **solo a quien estrena Esfinge sin nada** —quien ya tenía bóveda
+  aplicación**, y copiar desde su panel no se borra solo del portapapeles—. **Con una excepción elegida
+  por el cliente**: si se olvida la contraseña maestra, **recuperar se hace en la aplicación**, porque
+  exige volver a envolver la bóveda y eso el núcleo del navegador no lo sabe hacer. El panel lo dice. La bienvenida sale **solo a quien estrena Esfinge sin nada** —quien ya tenía bóveda
   trabaja en local sin que se le pregunte—, y **la bóveda que hubiera en un equipo al entrar en una cuenta
   se aparta y no se borra nunca** (ADR 0039). **El registro, por invitación** mientras no se decida abrirlo. Rompe
   dos promesas públicas —«sin servidores» y «Webcafeína no recibe nada»— que hay que cambiar antes de que

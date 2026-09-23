@@ -61,6 +61,22 @@ Por entregas, cada una publicable sin romper lo anterior:
 - Con la E2, **la extensión se conecta a internet** y guarda la bóveda cifrada en el navegador: cambian el
   aviso del panel, la política y lo declarado en las dos tiendas.
 
+### Matizada el 2026-09-23: recuperar la contraseña maestra se hace en la aplicación
+
+«Con cuenta, la extensión lo hace todo sin la aplicación» tiene **una excepción, y es a propósito**: si se
+olvida la contraseña maestra, se recupera **desde la aplicación de Esfinge, en cualquier ordenador**, con
+la clave de recuperación. El panel lo dice donde se pregunta la contraseña, en vez de callarlo.
+
+El porqué es que recuperar no es entrar: hay que **volver a envolver la bóveda** con una contraseña nueva,
+y el núcleo de TypeScript no sabe hacerlo —esta misma ficha dejó fuera crear una bóveda, cambiar la maestra
+y rotar la clave de recuperación, que siguen siendo de la aplicación—. Cerrarlo sería implementar el cambio
+de maestra en el núcleo y las tres rutas de recuperación en su cliente.
+
+**Se le preguntó al cliente y eligió que se mande a la aplicación** (2026-09-23). Lo que se acepta con eso,
+dicho en voz alta: quien solo tenga el navegador y olvide su contraseña **tiene que instalar Esfinge** para
+volver a entrar. No pierde nada —la bóveda está en el servidor y la clave de recuperación la abre— pero da
+un rodeo.
+
 ### Matizado en la 2.25.4: el interruptor del canal se queda, y con cuenta lo dice
 
 Con cuenta, «Dejar que la extensión del navegador consulte la bóveda» (ADR 0027) **no hace falta**: la
