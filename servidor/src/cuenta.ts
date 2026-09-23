@@ -102,6 +102,19 @@ export class Cuenta extends DurableObject<Env> {
 			CREATE TABLE IF NOT EXISTS subidas (momento INTEGER NOT NULL);
 			CREATE TABLE IF NOT EXISTS eventos (momento INTEGER NOT NULL, tipo TEXT NOT NULL, detalle TEXT NOT NULL DEFAULT '');
 		`);
+
+		// **Y lo que le falte a una cuenta que ya existía.** `CREATE TABLE IF NOT
+		// EXISTS` no añade columnas: las cuentas creadas antes tienen la tabla vieja, y
+		// escribir en una columna que no está revienta la petición. Pasó al separar el
+		// cupo de códigos por propósito (revisión del 2026-09-23). Se mira la tabla
+		// antes de tocarla, que es barato y no depende de atrapar el error bueno.
+		const columnas = this.sql
+			.exec<{ name: string }>("SELECT name FROM pragma_table_info('retos_creados')")
+			.toArray()
+			.map((c) => c.name);
+		if (!columnas.includes("proposito")) {
+			this.sql.exec("ALTER TABLE retos_creados ADD COLUMN proposito TEXT NOT NULL DEFAULT 'entrar'");
+		}
 	}
 
 	// ---------------------------------------------------------------- ajustes
