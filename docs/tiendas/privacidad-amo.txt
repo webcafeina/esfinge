@@ -5,19 +5,26 @@
 
 Política de privacidad
 
-Última actualización: 22 de septiembre de 2026.
+Última actualización: 23 de septiembre de 2026.
 
 Usada en tu ordenador, Esfinge no recoge ningún dato tuyo. Todo lo que toca se queda ahí, y Webcafeína no recibe nada: ni contraseñas, ni direcciones, ni estadísticas de uso. Si creas una cuenta para tener tu bóveda en varios equipos, lo que guardamos y por qué está más abajo: tu bóveda viaja cifrada y no podemos abrirla.
 
-Esta política cubre la aplicación Esfinge —para macOS, Windows y Linux— y su extensión para Chrome, Edge, Brave, Vivaldi, Opera y Firefox. La hace Webcafeína, que puedes contactar en info@webcafeina.com.
+Esta política cubre la aplicación Esfinge —para macOS, Windows y Linux— y su extensión para Chrome, Edge, Brave, Vivaldi, Opera y Firefox.
 
-LA EXTENSIÓN DEL NAVEGADOR
+Quién responde de tus datos
+
+Webcafeína S.L.U., con NIF B10463990, domicilio en Calle Santa Cristina S/N, Edificio Embarcadero, Local A2, 10195 Cáceres, e inscrita en el Registro Mercantil de Cáceres, Tomo 957, Libro 784, Folio 49, Hoja CC-13926, Inscripción 1.ª. En esta página la llamamos Webcafeína. Para cualquier cosa relacionada con tus datos, incluido ejercer tus derechos: info@webcafeina.com.
+
+Sin cuenta, lo que Esfinge toca se queda en tu ordenador y nosotros no tratamos nada, así que todo lo que sigue sobre bases, plazos y derechos se refiere a la cuenta. Esta web tampoco usa cookies ni analítica; la aloja GitHub, que ve tu dirección IP como cualquier alojamiento.
+
+La extensión del navegador
 
 Qué datos toca
 
 Para rellenar y guardar contraseñas, la extensión lee en las páginas https:
 
 - Los formularios de entrar: el usuario o el correo, la contraseña y el código de un solo uso que escribes o que ella rellena.
+
 - La dirección de la página, para saber de qué sitio son las cuentas.
 
 No lee el resto del contenido de las páginas, ni tu historial, ni tus marcadores.
@@ -33,62 +40,129 @@ En ningún caso descarga código, ni lleva analítica ni servicios de terceros.
 Qué guarda
 
 - En el almacenamiento de la extensión: que has aceptado el aviso de datos, con la fecha, y el permiso que le da Esfinge para hablar con ella.
-- Con cuenta, además: tu bóveda cifrada y la última versión que coincidía con el servidor, también cifrada; tu correo; la sesión con el servidor, cifrada con la clave de tu bóveda; y el testigo de «este navegador es de confianza», que evita pedirte un código cada vez. Mientras la bóveda está abierta, su clave vive solo en la memoria del navegador, y se va al bloquearla, a los quince minutos sin usarla o al cerrar el navegador.
+
+- Con cuenta, además: tu bóveda cifrada y la última versión que coincidía con el servidor, también cifrada; tu correo; la sesión con el servidor, cifrada con la clave de tu bóveda; y el testigo de «este navegador es de confianza» —en claro, como en la aplicación—, que evita pedirte un código cada vez. Mientras la bóveda está abierta, su clave vive solo en la memoria del navegador, y se va al bloquearla, a los quince minutos sin usarla o al cerrar el navegador.
+
 - En memoria, un momento: cuando envías un formulario, la contraseña espera como mucho dos minutos a que decidas si guardarla, y el usuario que escribes en una página de dos pasos, cinco minutos. Nunca se escriben en disco.
+
 - Los sitios en los que pides que no te ofrezca guardar se apuntan dentro de tu bóveda, cifrados, no en el navegador.
 
 Para qué pide cada permiso
 
 - nativeMessaging: hablar con la aplicación Esfinge de tu ordenador.
+
 - storage: guardar que has aceptado el aviso, el permiso de Esfinge y, con cuenta, tu bóveda cifrada.
+
 - alarms: comprobar cada minuto si la bóveda sigue abierta, para que el icono lo diga, y con cuenta, sincronizarla y cerrarla si no se usa.
+
 - favicon (solo Chrome): enseñar el icono del sitio en el panel desde la caché del navegador, sin descargarlo.
+
 - Acceso a las páginas https: encontrar los formularios de entrar y rellenarlos, y con cuenta, hablar con nuestro servidor de cuentas.
+
 - Ejecutar WebAssembly: derivar la clave de tu bóveda de tu contraseña (Argon2id) dentro del navegador, con cuenta.
 
 Antes de aceptar
 
 La primera vez que abres el panel de la extensión te explica todo esto. Hasta que lo aceptas no lee ninguna página ni habla con Esfinge ni con el servidor. Si esta política cambia en lo que hace la extensión con tus datos, te lo vuelve a preguntar: pasó al llegar las cuentas a la extensión.
 
-LA APLICACIÓN ESFINGE
+La aplicación Esfinge
 
 Tus contraseñas y tus ficheros cifrados viven en tu ordenador, en una bóveda cifrada con tu contraseña maestra. Sin cuenta, no hay copia en ningún servidor: ni Webcafeína ni nadie más puede abrirla.
 
 La aplicación solo sale a internet para estas cosas:
 
-- Buscar actualizaciones, una vez al día, preguntando a GitHub cuál es la última versión.
-- El icono de cada sitio de tu bóveda, pedido directamente al propio sitio y nunca a un intermediario.
+- Buscar actualizaciones, una vez al día, preguntando a GitHub cuál es la última versión. GitHub ve tu dirección IP y la versión que tienes instalada; nosotros no recibimos nada de eso.
+
+- El icono de cada sitio de tu bóveda, pedido directamente al propio sitio y nunca a un intermediario. Cada sitio ve tu IP, como si lo visitaras.
+
 - Si creas una cuenta, sincronizar tu bóveda con nuestro servidor, cifrada.
 
 Las dos primeras se apagan en sus Ajustes; la tercera, dejando la cuenta.
 
-SI CREAS UNA CUENTA
+Si creas una cuenta
 
 Con una cuenta, tu bóveda está en todos tus equipos. Se cifra en tu ordenador antes de salir, con una clave que sale de tu contraseña maestra, y así llega a nuestro servidor: nosotros no tenemos esa clave ni tu contraseña, así que no podemos leer nada de lo que hay dentro, ni recuperarlo si las pierdes.
+
+Con qué base
+
+- Para darte el servicio —tu correo, tu bóveda cifrada, tus equipos y las sesiones—: la ejecución del contrato que aceptas al crear la cuenta (art. 6.1.b del RGPD). Sin correo no hay forma de identificarte ni de mandarte los códigos.
+
+- Para protegerla —los frenos por IP y por cuenta, los avisos de seguridad y el registro de los últimos movimientos—: nuestro interés legítimo en que el servicio no se pueda reventar ni usar contra su dueño (art. 6.1.f).
+
+- Para avisarte de cambios en el servicio o en las condiciones, y de cualquier incidente de seguridad que te afecte: la ejecución del contrato y nuestras obligaciones legales (arts. 6.1.b y 6.1.c). El correo es el único canal que tenemos contigo, y por ahí te avisaríamos también de una brecha.
+
+No tomamos ninguna decisión automatizada sobre ti, no te perfilamos y no hay publicidad.
+
+Edad
+
+La cuenta es para mayores de catorce años, que es la edad a partir de la cual la ley española deja consentir el tratamiento de los propios datos. Si sabemos que una cuenta es de alguien más joven, la borraremos.
 
 Qué guardamos
 
 - Tu correo y cuándo creaste la cuenta.
-- Tu bóveda, cifrada: la de ahora, las diez versiones anteriores y la última de cada uno de los treinta días anteriores, para poder deshacer un error al juntar los cambios de dos equipos.
-- Tus equipos: el nombre de cada ordenador o navegador con el que entras y cuándo lo usaste por última vez.
-- Los doscientos últimos avisos de la cuenta: cuándo se entra, se cambia la contraseña o se recupera la cuenta.
-- Lo justo para comprobar que eres tú: una huella de la clave de acceso que sale de tu contraseña —no tu contraseña— y los códigos que te mandamos, que caducan a los diez minutos.
 
-Tu dirección IP no la guardamos: para frenar a quien pruebe contraseñas se cuenta una huella de ella, que se tira a los dos días. No hay analítica ni publicidad.
+- Tu bóveda, cifrada: la de ahora, las diez versiones anteriores y la última de cada uno de los treinta días anteriores, para poder deshacer un error al juntar los cambios de dos equipos.
+
+- Tus equipos: el nombre de cada ordenador o navegador con el que entras y cuándo lo usaste por última vez.
+
+- Los doscientos últimos movimientos de la cuenta: altas, entradas —también las fallidas—, equipos nuevos u olvidados, cambios de contraseña y recuperaciones, con la fecha y el nombre del equipo.
+
+- Para comprobar que eres tú: la sal y los parámetros con los que tu Esfinge deriva la clave de acceso, una huella de esa clave y otra de que tienes la bóveda —nunca tu contraseña—, y los códigos que te mandamos, que caducan a los diez minutos.
+
+- El sobre de recuperación de tu bóveda, que solo abre tu clave de recuperación. Lo guardamos para que puedas recuperar la cuenta desde un equipo nuevo, y se lo entregamos a quien demuestre que tiene acceso a tu correo: por eso tu buzón importa tanto como tus claves.
+
+- De cada versión de tu bóveda, su tamaño y su huella, para saber si ha cambiado sin tener que abrirla.
+
+- Mientras las cuentas sean por invitación, una lista de a quién se le permite crear una. Desaparecerá el día que el registro se abra.
+
+Si empiezas a crear una cuenta y no terminas, el código caduca a los diez minutos y tu dirección se borra de nuestra base en la hora siguiente, sola. Lo que no podemos borrar es el correo que ya te mandamos: ése lo conserva Resend, abajo.
+
+No guardamos tu dirección IP en claro. Para frenar a quien pruebe contraseñas contamos una huella seudonimizada de ella, que se borra a los dos o tres días. Eso sigue siendo un dato personal, así que lo decimos: no es un anonimato, es que no nos hace falta más. Cloudflare, que aloja el servidor, sí ve la IP de cada petición, como cualquier alojamiento. No hay analítica ni publicidad.
 
 Quién más interviene
 
 - Cloudflare aloja el servidor. Los datos de las cuentas se guardan en centros de la Unión Europea.
-- Resend manda los correos con los códigos, y para eso ve tu dirección y el código.
+
+- Resend manda los correos. Ve tu dirección, el código, el nombre del equipo desde el que entras y de qué aviso se trata —una entrada, un cambio de contraseña, un borrado—, y conserva esos correos y sus registros treinta días.
+
+Las dos son empresas de Estados Unidos, y cada una guarda las cosas en un sitio distinto:
+
+- Tu cuenta y tu bóveda cifrada se guardan en la Unión Europea, en Cloudflare. Está exigido en el código del servidor y comprobado con una prueba, no es una preferencia que se pueda cambiar sin darse cuenta. Aun así, el servidor se ejecuta en el centro de datos más cercano a quien lo usa: si entras desde fuera de la UE, ahí se atiende tu petición aunque tus datos sigan guardados aquí.
+
+- Los correos, no. Resend trata los datos de la cuenta y los registros de envío en Estados Unidos: elegir una región europea cambia desde dónde salen los correos, no dónde se guardan. Así que tu dirección y los códigos que te mandamos pasan por allí.
+
+Las dos lo hacen como encargadas nuestras, con el contrato que el RGPD exige, y las dos amparan las transferencias con las cláusulas contractuales tipo de la Comisión Europea y con su adhesión al marco de adecuación UE-EE. UU. (Data Privacy Framework).
 
 Para qué y hasta cuándo
 
-Solo para darte el servicio que pides —tener tu bóveda en tus equipos— y protegerlo. Lo guardamos mientras tengas la cuenta; al borrarla, se borra todo lo de arriba del servidor. Lo que tengas en tus equipos se queda en ellos.
+Solo para darte el servicio que pides —tener tu bóveda en tus equipos— y protegerlo. Lo guardamos mientras tengas la cuenta. Al borrarla, se borra de nuestras bases en el momento: la bóveda y sus versiones, tus equipos, tus sesiones y tus movimientos. Y hay dos cosas que sobreviven un tiempo y que no dependen de nosotros: Cloudflare conserva copias de recuperación hasta treinta días, y Resend, los correos que ya te mandó. Te enviamos además un último correo confirmando el borrado. Lo que tengas en tus equipos se queda en ellos.
+
+Y antes de eso, cada cosa dura lo suyo:
+
+- Los códigos: diez minutos.
+
+- La huella de tu IP, la que usan los frenos: dos días.
+
+- Las versiones anteriores de tu bóveda: las diez últimas y una por día del último mes.
+
+- Los avisos de la cuenta: los doscientos últimos.
+
+- Las sesiones de tus equipos: caducan a los treinta días sin usarse, y como mucho a los noventa.
+
+- El permiso de «este equipo es de confianza», que evita pedirte un código cada vez: noventa días.
+
+- Tus equipos: hasta que los olvides en Ajustes o borres la cuenta.
+
+Las versiones anteriores se recortan cada vez que subes la bóveda, así que si un equipo deja de sincronizar, las suyas esperan ahí a la siguiente subida.
 
 Lo que puedes pedir
 
-Desde los Ajustes de Esfinge puedes ver tus equipos y quitarle la sesión a cualquiera, llevarte lo que tenemos de tu cuenta, dejar la cuenta en un equipo y borrarla entera del servidor. Para cualquier otra cosa, escríbenos a info@webcafeina.com. Por ahora, las cuentas son por invitación.
+Desde los propios Ajustes de Esfinge, sin pedírnoslo a nosotros y sin esperar: ver tus equipos y quitarle la sesión a cualquiera, llevarte todo lo que tenemos de tu cuenta en un fichero, dejar la cuenta en un equipo y borrarla entera del servidor.
 
-BORRAR LO QUE HAYA
+Eso cubre el acceso, la portabilidad y la supresión, y en el fichero que te llevas van tu correo, tus equipos, tus movimientos y tu bóveda cifrada. Tienes además derecho a rectificar lo que sea inexacto y a limitar u oponerte a un tratamiento. Para cualquiera de ellos, escríbenos a info@webcafeina.com: contestamos en el plazo de un mes, y te pediremos que lo hagas desde la dirección de la cuenta para no entregarle tus datos a otra persona.
+
+Y si crees que no lo hacemos bien, puedes reclamar ante la Agencia Española de Protección de Datos.
+
+Borrar lo que haya
 
 Desinstalar la extensión borra lo que guarda en el navegador. Lo de la aplicación —la bóveda, el historial y las preferencias— se borra desde la propia Esfinge o eliminando su carpeta de configuración. Sin cuenta, Webcafeína no tiene ningún dato tuyo que borrar; con cuenta, mira lo que puedes pedir. Si tienes cualquier duda, escríbenos a info@webcafeina.com.

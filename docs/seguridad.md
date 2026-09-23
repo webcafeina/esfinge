@@ -341,8 +341,11 @@ entra. Se eligió así con el cliente.
 - **Los plazos los decide el reloj del equipo que abre la bóveda.** La papelera de treinta días y las
   lápidas de ciento ochenta se purgan al abrir, y un equipo muy adelantado purga para toda la cuenta. No
   hace falta un servidor malicioso: basta con un ordenador con la hora mal puesta.
-- **Resend guarda lo que manda** mientras dure su retención, y en esos correos van los códigos de entrada
-  y de borrado. Caducan en diez minutos, pero quien pueda leer esa consola los ve.
+- **Resend guarda lo que manda durante treinta días, y en Estados Unidos.** En esos correos van los
+  códigos de entrada y de borrado, el nombre del equipo desde el que se entra y de qué aviso se trata.
+  Los códigos caducan en diez minutos, pero quien pueda leer esa consola ve el resto. Elegir una región
+  europea en Resend cambia desde dónde salen los correos, **no dónde se guardan**: eso vale para
+  Cloudflare, que sí guarda las cuentas en la UE, y no para el correo.
 - **El servidor sabe quién tiene cuenta.** La pre-entrada contesta igual con cuenta que sin ella, así que
   preguntar desde fuera no lo desvela; al servidor, sí.
 
