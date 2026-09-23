@@ -471,6 +471,10 @@ giran → **2.25.3**, comprobada: «funciona perfecto». **La siguiente acción 
 dos tiendas aprueben la extensión** y probarla entonces en Firefox —lo único que queda de la E3—, con la
 versión de la tienda en Chrome en vez de la cargada a mano. Después, **la auditoría externa**.
 
+**2.25.4 publicada (2026-09-23)**: la nota del canal con cuenta, el vigilante que ya no se duerme al
+encontrarse el turno cogido, y las pruebas de la ventana dejando informe, traza y captura cuando fallan en
+la máquina de GitHub. La puerta la paró dos veces; la segunda no se reproduce aquí y está en la deuda.
+
 **Firefox, probado por encima y aplazado (2026-09-23)**: el cliente lo miró un poco y prefiere seguir con
 lo pendiente; **la prueba de la extensión en Firefox queda para cuando se acabe todo lo demás**, y con ella
 lo único que falta de la E3. Lo que hay que probar entonces, con **Esfinge cerrada**: entrar con la cuenta

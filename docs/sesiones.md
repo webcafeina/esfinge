@@ -24,6 +24,9 @@ Plantilla al final.
   deuda hasta entonces.
 - Y lo que el fallo destapó: **en la máquina de GitHub un fallo no dejaba nada que mirar** —el informe no se
   generaba y el artefacto venía vacío—. Ahora deja informe, traza y captura. A la deuda, saldada.
+- **La 2.25.4 salió a la tercera**, en verde y con las tiendas: la misma prueba pasó sin tocar nada más, así
+  que el fallo de la puerta es intermitente y solo de esa máquina. Queda en la deuda, ya con el estado de Go
+  a la vista para cuando vuelva.
 - La nota sale solo con cuenta, y las pruebas de interfaz lo vigilan por los dos lados: en local no aparece
   y con cuenta sí, con el interruptor apagado. Capturas miradas en los dos temas.
 
