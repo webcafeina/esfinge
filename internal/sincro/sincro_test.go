@@ -508,3 +508,45 @@ func TestVaciarSubeLoPendiente(t *testing.T) {
 		t.Fatalf("en el servidor hay %s", titulos(m))
 	}
 }
+
+// Una pasada que se encuentra con otra en marcha **no puede dejar al vigilante
+// dormido**. Con el `continue` de antes se saltaba el rearme del reloj: no volvía
+// a haber pasadas cada minuto y la ventana se quedaba en «Sincronizando…» hasta el
+// siguiente guardado. Pasa al abrir la bóveda mientras corre la pasada del
+// vigilante anterior —entrar con la contraseña nueva—, y lo cazó la puerta de
+// publicación de la 2.25.4, no esta máquina.
+func TestElVigilanteSigueDespuesDeEncontrarseOcupado(t *testing.T) {
+	srv := &enMemoria{}
+	e := nuevoEquipo(t, srv, crear(t))
+
+	// Una pasada de fuera, parada a mitad: el turno está cogido.
+	dentro := make(chan struct{})
+	seguir := make(chan struct{})
+	srv.antesDeSubir = func() { close(dentro); <-seguir }
+	_ = e.b.Poner(boveda.Entrada{Titulo: "De la otra pasada"})
+	go func() { _, _ = e.s.Sincronizar(ctx) }()
+	<-dentro
+	srv.antesDeSubir = nil
+
+	pasadas := make(chan Resultado, 10)
+	v := &Vigilante{S: e.s, Espera: 20 * time.Millisecond, Avisar: func(r Resultado, _ error) { pasadas <- r }}
+	c, cancelar := context.WithCancel(ctx)
+	defer cancelar()
+	go v.Vigilar(c)
+
+	// La del arranque se encuentra el turno cogido y no cuenta nada.
+	select {
+	case r := <-pasadas:
+		t.Fatalf("ha contado una pasada que no pudo hacer: %+v", r)
+	case <-time.After(300 * time.Millisecond):
+	}
+
+	// Al soltarse el turno, el vigilante tiene que volver **solo**: nadie le pide
+	// nada y la pasada de cada minuto no llega en lo que dura esta prueba.
+	close(seguir)
+	select {
+	case <-pasadas:
+	case <-time.After(10 * time.Second):
+		t.Fatal("el vigilante se ha quedado dormido tras encontrarse el turno cogido")
+	}
+}

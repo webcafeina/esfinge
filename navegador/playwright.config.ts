@@ -12,5 +12,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./pruebas",
   fullyParallel: true,
-  reporter: process.env.CI ? "list" : "line",
+  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "line",
+  // Como en `frontend/`: en la máquina de GitHub, un fallo deja traza y captura.
+  use: process.env.CI ? { trace: "retain-on-failure", screenshot: "only-on-failure" } : {},
 });

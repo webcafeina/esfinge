@@ -17,10 +17,17 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: false,
   workers: 1,
-  reporter: process.env.CI ? "list" : [["list"]],
+  // **En la máquina de GitHub, un fallo tiene que dejar algo que mirar.** Hasta la
+  // 2.25.4 el informe no se generaba allí, así que el artefacto que la puerta sube
+  // cuando falla venía vacío —«no valid artifacts found»— y lo único que quedaba
+  // del fallo eran tres líneas de texto. La traza y la captura dicen en qué estaba
+  // la ventana; sin ellas hay que adivinar, que es lo que este proyecto no hace.
+  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : [["list"]],
   use: {
     baseURL: "http://127.0.0.1:5173",
     viewport: { width: 820, height: 620 },
+    trace: process.env.CI ? "retain-on-failure" : "off",
+    screenshot: process.env.CI ? "only-on-failure" : "off",
     ...(ejecutable ? { launchOptions: { executablePath: ejecutable } } : {}),
   },
   projects: [

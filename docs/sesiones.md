@@ -12,6 +12,13 @@ Plantilla al final.
 - El pendiente que iba antes de la auditoría: con cuenta, el canal con el navegador sobra. Se le preguntó y
   eligió **dejarlo como está y avisar**; las otras dos —apagarlo al entrar en una cuenta, o quitarlo de
   Ajustes— dejaban de rellenar sin avisar o hacían aparecer y desaparecer un ajuste. ADR 0040 matizada.
+- **La puerta de publicación cazó un fallo de verdad**, no de la prueba: al encontrarse el turno cogido, el
+  vigilante de la sincronización hacía `continue` y **se saltaba rearmar su reloj**, así que se quedaba
+  dormido —sin pasadas cada minuto— y la ventana, en «Sincronizando…». Pasa al abrir la bóveda mientras
+  corre la pasada del vigilante anterior, que es lo que hace entrar con la contraseña nueva; aquí no salía
+  porque la pasada anterior terminaba antes. Ahora reintenta en un segundo, y hay una prueba que lo caza.
+- Y lo que el fallo destapó: **en la máquina de GitHub un fallo no dejaba nada que mirar** —el informe no se
+  generaba y el artefacto venía vacío—. Ahora deja informe, traza y captura. A la deuda, saldada.
 - La nota sale solo con cuenta, y las pruebas de interfaz lo vigilan por los dos lados: en local no aparece
   y con cuenta sí, con el interruptor apagado. Capturas miradas en los dos temas.
 

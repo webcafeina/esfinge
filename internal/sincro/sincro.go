@@ -233,6 +233,10 @@ const (
 	CadaCuanto = time.Minute
 	// ReintentoMaximo es lo más que se espera tras un fallo de red.
 	ReintentoMaximo = 5 * time.Minute
+	// TrasOcupado es lo que se espera cuando la pasada se encontró con otra en
+	// marcha. Corto: lo único que hace falta es volver a mirar cuando la otra haya
+	// terminado.
+	TrasOcupado = time.Second
 )
 
 // Vigilante hace pasadas cuando se le pide y cada cierto tiempo, hasta que se
@@ -320,18 +324,31 @@ func (v *Vigilante) Vigilar(ctx context.Context) {
 		}
 		r, err := v.S.Sincronizar(ctx)
 		if errors.Is(err, ErrOcupado) {
-			continue
-		}
-		if v.Avisar != nil {
-			v.Avisar(r, err)
-		}
-		if err != nil && !errors.Is(err, context.Canceled) {
-			// Espera creciente: 5 s, 10 s, 20 s… hasta el máximo.
-			fallos++
-			espera = min(5*time.Second<<min(fallos-1, 10), ReintentoMaximo)
+			// Otra pasada estaba en marcha y ésta no tiene nada que contar. **Pero
+			// hay que rearmar el reloj igual**: con un `continue` se saltaba el
+			// rearme de abajo y el vigilante se quedaba dormido para siempre —sin
+			// pasadas cada minuto—, y la ventana, en «Sincronizando…» hasta el
+			// siguiente guardado. Pasa al abrir la bóveda mientras la pasada del
+			// vigilante anterior todavía corre, que es justo lo que hace entrar con
+			// la contraseña nueva. Lo cazó la puerta de publicación de la 2.25.4, no
+			// esta máquina.
+			//
+			// Y se reintenta pronto: la pasada que estaba en marcha puede ser de un
+			// vigilante ya cancelado, y ésa no cuenta nada (alSincronizar se calla
+			// con `context.Canceled`).
+			espera = TrasOcupado
 		} else {
-			fallos = 0
-			espera = CadaCuanto
+			if v.Avisar != nil {
+				v.Avisar(r, err)
+			}
+			if err != nil && !errors.Is(err, context.Canceled) {
+				// Espera creciente: 5 s, 10 s, 20 s… hasta el máximo.
+				fallos++
+				espera = min(5*time.Second<<min(fallos-1, 10), ReintentoMaximo)
+			} else {
+				fallos = 0
+				espera = CadaCuanto
+			}
 		}
 		if !temporizador.Stop() {
 			select {

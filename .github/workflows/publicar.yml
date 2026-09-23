@@ -132,7 +132,9 @@ jobs:
           name: informe-pruebas
           path: |
             frontend/playwright-report/
+            frontend/test-results/
             navegador/playwright-report/
+            navegador/test-results/
           retention-days: 7
 
   macos:

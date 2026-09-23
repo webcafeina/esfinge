@@ -471,6 +471,13 @@ giran → **2.25.3**, comprobada: «funciona perfecto». **La siguiente acción 
 dos tiendas aprueben la extensión** y probarla entonces en Firefox —lo único que queda de la E3—, con la
 versión de la tienda en Chrome en vez de la cargada a mano. Después, **la auditoría externa**.
 
+**Firefox, probado por encima y aplazado (2026-09-23)**: el cliente lo miró un poco y prefiere seguir con
+lo pendiente; **la prueba de la extensión en Firefox queda para cuando se acabe todo lo demás**, y con ella
+lo único que falta de la E3. Lo que hay que probar entonces, con **Esfinge cerrada**: entrar con la cuenta
+en el panel, rellenar, un código de un solo uso, guardar algo, y que ese cambio aparezca luego en la
+aplicación. Y darle a la extensión los permisos de sitios a mano, que en MV3 de Firefox no se conceden al
+instalar.
+
 **Las dos tiendas han aprobado la 2.25.3** (comprobado el 2026-09-23: la ficha de AMO la sirve, y el canal
 de actualizaciones de Chrome también). **La siguiente acción concreta es que el cliente termine la E3**:
 quitar de Chrome la copia cargada a mano y usar la de la tienda, y probar en Firefox —donde hay que darle
