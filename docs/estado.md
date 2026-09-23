@@ -471,6 +471,14 @@ giran → **2.25.3**, comprobada: «funciona perfecto». **La siguiente acción 
 dos tiendas aprueben la extensión** y probarla entonces en Firefox —lo único que queda de la E3—, con la
 versión de la tienda en Chrome en vez de la cargada a mano. Después, **la auditoría externa**.
 
+**El paquete de la auditoría, escrito (2026-09-23)**: [`docs/auditoria.md`](auditoria.md) dice qué es
+Esfinge para alguien de fuera, **qué mirar por orden de riesgo** —servidor y protocolo de cuenta, la
+extensión con cuenta, formato y criptografía, la fusión, el canal, las actualizaciones y los textos—, lo
+que se promete y lo que no, qué se entrega, lo que ya tiene red aquí, lo que sabemos flojo y qué se espera
+del informe. **La siguiente acción concreta es del cliente**: elegir quién la hace y cerrar el alcance y el
+presupuesto con ese documento delante; después se crea la cuenta de prueba en el servidor de pruebas —nunca
+la suya—.
+
 **2.25.4 publicada (2026-09-23)**: la nota del canal con cuenta, el vigilante que ya no se duerme al
 encontrarse el turno cogido, y las pruebas de la ventana dejando informe, traza y captura cuando fallan en
 la máquina de GitHub. La puerta la paró dos veces; la segunda no se reproduce aquí y está en la deuda.

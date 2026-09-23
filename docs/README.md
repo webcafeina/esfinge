@@ -12,6 +12,7 @@ dónde está y por qué está así. Todo en español, fechas en formato `AAAA-MM
 | [deuda.md](deuda.md) | Lo que sabemos que está a medias o mal | Al descubrir deuda, y al saldarla |
 | [sesiones.md](sesiones.md) | Bitácora: qué se hizo en cada sesión | Al cerrar cada sesión |
 | [seguridad.md](seguridad.md) | Qué protege Esfinge y qué no | Al tocar el cifrado, el historial o lo que se guarda |
+| [auditoria.md](auditoria.md) | Lo que se le entrega a quien haga la auditoría externa, y qué se le pide | Al cambiar algo que el auditor tendría que mirar |
 | [../CLAUDE.md](../CLAUDE.md) | Cómo se trabaja aquí: protocolo, convenciones, trampas | Al cambiar una convención o encontrar una trampa nueva |
 | [../README.md](../README.md) | La portada, para quien llega de fuera | Al cambiar lo que se ve o cómo se descarga |
 
