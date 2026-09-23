@@ -24,6 +24,7 @@ import {
 	argon2Valido,
 	nombreDeEquipo,
 	normalizarCorreo,
+	SUITE_POR_DEFECTO,
 } from "./protocolo";
 
 export { Cuenta };
@@ -128,6 +129,13 @@ async function atender(p: Request, env: Env, ctx: ExecutionContext): Promise<Res
 	if (r("POST", "/v1/cuenta/borrado")) return pedirBorrado(p, env);
 	if (r("DELETE", "/v1/cuenta")) return borrarCuenta(p, env, ctx);
 	if (r("GET", "/v1/cuenta/exportacion")) return exportar(p, env);
+	if (r("PUT", "/v1/llaves")) return publicarLlaves(p, env);
+	if (r("POST", "/v1/llaves/de")) return llavesDe(p, env);
+	if (r("POST", "/v1/envios")) return mandarEnvio(p, env);
+	if (r("GET", "/v1/buzon")) return verBuzon(p, env);
+	if (metodo === "DELETE" && ruta.startsWith("/v1/buzon/")) {
+		return tirarDelBuzon(p, env, decodeURIComponent(ruta.slice("/v1/buzon/".length)));
+	}
 
 	throw new Fallo(404, "No existe.");
 }
@@ -261,6 +269,81 @@ async function terminarAlta(p: Request, env: Env, ctx: ExecutionContext): Promis
 	// falle no puede dejar a medias una cuenta que ya existe.
 	ctx.waitUntil(mandar(env, cartas.cuentaCreada(c)));
 	return json(201, { cuenta, ...creada.datos });
+}
+
+// ================================================================ compartir
+
+async function publicarLlaves(p: Request, env: Env): Promise<Response> {
+	const { token, cuenta } = sesionDe(p);
+	const d = await leerJSON(p);
+	return json(200, abrir(await objeto(env, cuenta).ponerLlaves(token, d.llaves)));
+}
+
+/**
+ * Las llaves de un correo, **sin decir si ese correo tiene cuenta**.
+ *
+ * Es el mismo problema que la pre-entrada y se resuelve igual: si no hay cuenta
+ * —o todavía no ha publicado llaves— se devuelven unas **inventadas pero fijas**,
+ * derivadas del correo con `SECRETO_PRELOGIN`. Así, preguntar por direcciones no
+ * dice cuáles están en Esfinge, que es justo lo que el resto del servidor cuida.
+ *
+ * Lo que cuesta: quien mande a una dirección sin cuenta **cifra hacia una llave
+ * que no abre nadie**. Hoy ese envío se pierde en silencio, y por eso la B3 —las
+ * invitaciones— va justo detrás.
+ */
+async function llavesDe(p: Request, env: Env): Promise<Response> {
+	await frenar(env.FRENO_ENTRAR, p, env);
+	sesionDe(p); // solo quien tiene cuenta puede preguntar
+	const d = await leerJSON(p);
+	const c = correoValido(d.correo);
+	const cuenta = await cuentaDeCorreo(env, c);
+	const suyas = cuenta ? await objeto(env, cuenta).llaves() : null;
+	if (suyas) return json(200, { llaves: suyas });
+
+	const cifrado = (await hmac(env.SECRETO_PRELOGIN, `llave-cifrado|${c}`)).slice(0, 32);
+	const firma = (await hmac(env.SECRETO_PRELOGIN, `llave-firma|${c}`)).slice(0, 32);
+	return json(200, {
+		llaves: { suite: SUITE_POR_DEFECTO, cifrado: aBase64url(cifrado), firma: aBase64url(firma) },
+	});
+}
+
+/**
+ * Deja un sobre en el buzón de quien lo recibe.
+ *
+ * **Contesta lo mismo exista o no** esa cuenta, por lo mismo de arriba. Si no
+ * existe, hoy el sobre se tira: el emisor ya lo cifró hacia unas llaves que no
+ * abren nada, así que guardarlo no serviría para nada.
+ */
+async function mandarEnvio(p: Request, env: Env): Promise<Response> {
+	const { cuenta: mia } = sesionDe(p);
+	await frenar(env.FRENO_ENTRAR, p, env);
+	const d = await leerJSON(p);
+	const c = correoValido(d.para);
+	if (typeof d.sobre !== "object" || d.sobre === null) throw new Fallo(400, "Falta el envío.");
+
+	const ip = await claveDeIP(p, env);
+	await contar(env, `envios:${ip}`, tope(env.TOPE_ENVIOS_IP_DIA, 50), "Se han mandado demasiadas cosas desde aquí hoy.");
+	await contar(env, `envios-cuenta:${mia}`, tope(env.TOPE_ENVIOS_DIA, 50), "Has mandado demasiadas cosas hoy. Prueba mañana.");
+
+	const destino = await cuentaDeCorreo(env, c);
+	if (destino) {
+		const hecho = await objeto(env, destino).recibir(JSON.stringify(d.sobre));
+		// Un buzón lleno o un sobre demasiado grande sí se dicen: no delatan nada
+		// —cualquiera puede llenar el suyo— y callarlos dejaría al que manda
+		// creyendo que ha llegado.
+		if (!hecho.ok && hecho.estado !== 404) throw new Fallo(hecho.estado, hecho.error);
+	}
+	return json(202, {});
+}
+
+async function verBuzon(p: Request, env: Env): Promise<Response> {
+	const { token, cuenta } = sesionDe(p);
+	return json(200, abrir(await objeto(env, cuenta).buzon(token)));
+}
+
+async function tirarDelBuzon(p: Request, env: Env, id: string): Promise<Response> {
+	const { token, cuenta } = sesionDe(p);
+	return json(200, abrir(await objeto(env, cuenta).tirarDelBuzon(token, id)));
 }
 
 // ================================================================ entrar

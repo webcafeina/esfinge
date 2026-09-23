@@ -51,6 +51,24 @@ const SUBIDAS_POR_HORA = 60;
 const VERSIONES_RECIENTES = 10;
 const DIAS_CON_VERSION = 30;
 const EVENTOS_GUARDADOS = 200;
+/** Un sobre lleva una entrada cifrada; 64 KiB son de sobra y frenan el abuso. */
+const TAMANO_DE_ENVIO = 64 * 1024;
+const ENVIOS_EN_BUZON = 50;
+
+/** Las llaves públicas de una cuenta, en base64url. */
+export type Llaves = { suite: string; cifrado: string; firma: string };
+
+export function llavesValidas(l: unknown): l is Llaves {
+	if (!l || typeof l !== "object") return false;
+	const { suite, cifrado, firma } = l as Record<string, unknown>;
+	return (
+		typeof suite === "string" &&
+		suite.length > 0 &&
+		suite.length <= 80 &&
+		deBase64url(cifrado, 32) !== null &&
+		deBase64url(firma, 32) !== null
+	);
+}
 
 export const SESION_CADUCADA = "La sesión ha caducado; vuelve a entrar.";
 const NO_VALE = "Correo o contraseña no válidos.";
@@ -101,6 +119,7 @@ export class Cuenta extends DurableObject<Env> {
 			CREATE TABLE IF NOT EXISTS fallos (momento INTEGER NOT NULL);
 			CREATE TABLE IF NOT EXISTS subidas (momento INTEGER NOT NULL);
 			CREATE TABLE IF NOT EXISTS eventos (momento INTEGER NOT NULL, tipo TEXT NOT NULL, detalle TEXT NOT NULL DEFAULT '');
+			CREATE TABLE IF NOT EXISTS buzon (id TEXT PRIMARY KEY, sobre TEXT NOT NULL, momento INTEGER NOT NULL);
 		`);
 
 		// **Y lo que le falte a una cuenta que ya existía.** `CREATE TABLE IF NOT
@@ -649,6 +668,70 @@ export class Cuenta extends DurableObject<Env> {
 	}
 
 	/** Comprueba una sesión y la alarga. La restringida —la de una recuperación— solo vale donde se diga. */
+	// ============================================================ compartir
+
+	/**
+	 * Publica las llaves públicas de esta cuenta, para que otros puedan cifrar
+	 * hacia ella (ADR 0043). Se pueden volver a publicar: una bóveda restaurada de
+	 * una copia vieja conserva su identidad, pero una bóveda nueva trae otra.
+	 */
+	async ponerLlaves(token: string, llaves: unknown): Promise<Resultado<Record<string, never>>> {
+		const s = await this.sesion(token, false);
+		if (!s.ok) return s;
+		if (!llavesValidas(llaves)) return mal(400, "Esas llaves no son válidas.");
+		this.ponerAjuste("llaves", JSON.stringify(llaves));
+		return bien({});
+	}
+
+	/** Las llaves publicadas, o null si esta cuenta no tiene o no existe. */
+	llaves(): Llaves | null {
+		if (!this.existe()) return null;
+		const crudo = this.leerAjuste("llaves");
+		if (!crudo) return null;
+		try {
+			const l = JSON.parse(crudo);
+			return llavesValidas(l) ? l : null;
+		} catch {
+			return null;
+		}
+	}
+
+	/**
+	 * Guarda un sobre en el buzón de esta cuenta.
+	 *
+	 * **El servidor no puede abrirlo** —va cifrado hacia la llave de esta cuenta—,
+	 * así que lo único que hace aquí es contarlo y guardarlo. Los topes son lo que
+	 * impide que el buzón de alguien se use como vertedero.
+	 */
+	async recibir(sobre: string): Promise<Resultado<{ id: string }>> {
+		if (!this.existe()) return mal(404, "No hay cuenta.");
+		if (sobre.length > TAMANO_DE_ENVIO) return mal(413, "Ese envío es demasiado grande.");
+		const cuantos = this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM buzon").one().n;
+		if (cuantos >= ENVIOS_EN_BUZON) return mal(429, "El buzón de esa persona está lleno.");
+		const id = aHex(azar(16));
+		this.sql.exec("INSERT INTO buzon (id, sobre, momento) VALUES (?, ?, ?)", id, sobre, Date.now());
+		this.apuntar("envio-recibido", "");
+		return bien({ id });
+	}
+
+	/** Lo que espera en el buzón, lo más nuevo primero. */
+	async buzon(token: string): Promise<Resultado<{ envios: { id: string; momento: number; sobre: unknown }[] }>> {
+		const s = await this.sesion(token, false);
+		if (!s.ok) return s;
+		const filas = this.sql
+			.exec<{ id: string; sobre: string; momento: number }>("SELECT id, sobre, momento FROM buzon ORDER BY momento DESC")
+			.toArray();
+		return bien({ envios: filas.map((f) => ({ id: f.id, momento: f.momento, sobre: JSON.parse(f.sobre) })) });
+	}
+
+	/** Quita uno del buzón: lo mismo vale para aceptarlo que para tirarlo. */
+	async tirarDelBuzon(token: string, id: string): Promise<Resultado<Record<string, never>>> {
+		const s = await this.sesion(token, false);
+		if (!s.ok) return s;
+		this.sql.exec("DELETE FROM buzon WHERE id = ?", id);
+		return bien({});
+	}
+
 	private async sesion(token: string, admiteRestringida: boolean): Promise<Resultado<Sesion>> {
 		const h = await this.huellaDeSesion(token);
 		if (!h || !this.existe()) return mal(401, SESION_CADUCADA);

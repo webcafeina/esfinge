@@ -66,6 +66,24 @@ El correo se normaliza **igual en los dos lados**: sin espacios alrededor, NFC y
 - Cambiar la contraseña es **todo o nada**: bóveda nueva, verificador nuevo y las demás sesiones fuera.
   Se demuestra con la `posesion`, no con la contraseña vieja.
 
+### Compartir copias
+
+| Ruta | Envía | Devuelve |
+|---|---|---|
+| `PUT /v1/llaves` | `{llaves: {suite, cifrado, firma}}` | `200`. Publica las llaves públicas de la cuenta |
+| `POST /v1/llaves/de` | `{correo}` | `200 {llaves}` **siempre**, existan o no |
+| `POST /v1/envios` | `{para, sobre}` | `202` **siempre**, exista o no esa cuenta |
+| `GET /v1/buzon` | — | `{envios: [{id, momento, sobre}]}`, lo más nuevo primero |
+| `DELETE /v1/buzon/<id>` | — | `200`. Vale para aceptarlo y para tirarlo |
+
+- **El servidor no puede abrir ningún sobre**: van cifrados hacia la llave de quien los recibe
+  ([ADR 0043](../docs/adr/0043-la-identidad-para-compartir.md)).
+- **Ni `llaves/de` ni `envios` dicen si un correo tiene cuenta.** Para un correo sin cuenta se devuelven
+  unas llaves inventadas pero **fijas**, derivadas con `SECRETO_PRELOGIN`, igual que la sal de la
+  pre-entrada. Lo que cuesta: quien mande ahí cifra hacia una llave que no abre nadie, y **hoy ese envío
+  se pierde**. Lo arregla la B3, las invitaciones.
+- Topes: 64 KiB por sobre, 50 en el buzón, y 50 envíos al día por cuenta y por IP.
+
 ### Recuperar, equipos y borrar
 
 | Ruta | Envía | Devuelve |

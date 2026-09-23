@@ -20,6 +20,8 @@ export interface Env {
 	TOPE_ALTAS_DIA?: string;
 	TOPE_ALTAS_IP_DIA?: string;
 	TOPE_CODIGOS_IP_DIA?: string;
+	TOPE_ENVIOS_DIA?: string;
+	TOPE_ENVIOS_IP_DIA?: string;
 }
 
 /** Lo que devuelve cada operación de una cuenta: o datos, o un error con su estado. */
@@ -94,6 +96,15 @@ export function nombreDeEquipo(n: unknown): string {
 	const limpio = n.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 80);
 	return limpio || "Equipo sin nombre";
 }
+
+/**
+ * El conjunto de HPKE con el que se cifra hacia una identidad (ADR 0043).
+ *
+ * El servidor **no cifra ni descifra nada**; solo lo necesita para inventarse unas
+ * llaves creíbles cuando le preguntan por un correo que no tiene cuenta, y así no
+ * delatar quién la tiene.
+ */
+export const SUITE_POR_DEFECTO = "DHKEM(X25519)/HKDF-SHA256/ChaCha20-Poly1305";
 
 /** Tope de una bóveda subida. Una de veinte mil entradas ronda los 4 MB. */
 export const TAMANO_MAXIMO = 8 * 1024 * 1024;
