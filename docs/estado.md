@@ -497,9 +497,27 @@ pruebas da 404 allí, como debe. Con ello, los cambios de cuenta de la revisión
 testigo de confianza que se va al cambiar la contraseña, el código de alta atómico y con freno, y el tope de
 Argon2id— ya están en el servidor que usan sus dos Macs.
 
-**La siguiente acción concreta**: decidir si todo esto sale como **2.25.7**. Después,
-lo de siempre: que las tiendas aprueben, **probar la extensión en Firefox** —lo último de la E3, aplazado
-por el cliente a cuando no queden tareas— y la decisión sobre el registro abierto.
+**La 2.25.7 se publicó el 2026-09-23** con todo lo anterior, decidido por el cliente.
+
+**Y con ella, las tres tareas que quedan, en el orden que puso el cliente:**
+
+1. **Cerrar el Worker de pruebas** —Cloudflare Access delante de `esfinge-cuentas-pruebas`, cuyo buzón
+   entrega hoy los códigos de cualquier cuenta de ese servidor—. **Cuando la versión nueva esté publicada**;
+   lo hace él en su panel.
+2. **Probar la extensión en Firefox**, lo último de la E3. **Cuando no quede ninguna otra tarea**, dicho así
+   por él dos veces.
+3. **Abrir el registro**, que **ya estaba contemplado**: es la entrega **A4** del plan
+   ([`docs/cuentas.md`](cuentas.md)), «solo configuración» —`REGISTRO=abierto`— pero con cuatro puertas
+   delante, y tres siguen cerradas:
+   - **La auditoría externa** ([ADR 0035](adr/0035-las-cuentas.md)). El cliente la descartó el 2026-09-23 y
+     pidió la revisión de aquí en su lugar, así que **abrir el registro es cambiar esa condición**: pide su
+     decisión escrita y una matización de la ADR, no darla por cumplida.
+   - **La revisión legal** de la política de privacidad y unas condiciones de uso que todavía no existen
+     (está en [`deuda.md`](deuda.md) como obligatoria antes de abrir).
+   - **El plan de pago de Resend**: el gratuito da cien correos al día, y cada alta y cada equipo nuevo
+     gastan uno.
+   - Y si se abre a clientes de Colombia, **mirar en la fuente** lo que dice la Ley 1581 de 2012 sobre
+     guardar los datos en la UE, que la ADR 0035 dejó sin comprobar.
 
 **El paquete de la auditoría, escrito (2026-09-23)**: [`docs/auditoria.md`](auditoria.md) dice qué es
 Esfinge para alguien de fuera, **qué mirar por orden de riesgo** —servidor y protocolo de cuenta, la
