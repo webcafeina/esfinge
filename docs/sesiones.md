@@ -5,6 +5,22 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-23 (tarde) · Las tiendas publican, y el buzón de pruebas queda cerrado
+
+- **Las dos tiendas sirven la 2.25.7**: AMO en estado `public`, revisada a las 11:31 UTC —dos minutos
+  después de la publicación—, y el manifiesto de Chrome entrega el `.crx` de la 2.25.7. Se comprueba sin
+  abrir un navegador, con la API de AMO y el `update2/crx` de Google; las dos órdenes están en `estado.md`.
+- **Cerrado el buzón del Worker de pruebas**, que era la primera de las tres tareas que quedaban. El cliente
+  creó la aplicación en Zero Trust y aquí se decidió **lo importante: va sobre la ruta, no sobre el
+  Worker**. Access ofrece atar la política al Worker entero —cubre `workers.dev`, rutas y vistas previas de
+  una vez—, y eso habría cerrado también `/v1/…`: una Esfinge apuntada al servidor de pruebas recibiría la
+  pantalla de identificación en vez de JSON.
+- **Comprobado desde fuera, y no solo el camino recto**: el buzón contesta 302 a
+  `webcafeina.cloudflareaccess.com` con barra final, con barra doble y en mayúsculas, y lo que no encaja con
+  la ruta lo rechaza el propio Worker con 404. `/v1/salud` y `/v1/prelogin` siguen en 200.
+- **Lo que no se puede comprobar desde aquí**: que la puerta **se abra**. Entrar con el correo y ver el
+  buzón es cosa del cliente, y conviene hacerlo una vez ahora y no el día que haga falta de verdad.
+
 ## 2026-09-23 (noche) · Lo que el informe dejaba abierto
 
 - **Todo lo que quedaba propuesto, hecho**, con su prueba y con la prueba comprobada al revés —quitando el
