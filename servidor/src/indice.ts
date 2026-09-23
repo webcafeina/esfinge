@@ -64,7 +64,33 @@ export default {
 			return json(500, { error: "Algo ha fallado en el servidor. Prueba otra vez en un momento.", ...detalle });
 		}
 	},
+
+	/**
+	 * La limpieza de D1, cada hora (revisión de los textos, 2026-09-23).
+	 *
+	 * **Una limpieza que solo corre dentro de una petición no cumple ningún plazo.**
+	 * Las tres tablas con datos de alguien —el correo de un alta a medias, el correo
+	 * de cada envío y la huella de IP de los contadores— se barrían de paso, en
+	 * `empezarAlta` y en `contar`: con el registro por invitación eso puede tardar
+	 * semanas en volver a pasar, así que «se borra a los diez minutos» era falso.
+	 * Con el reloj del Worker, el plazo escrito es el plazo de verdad.
+	 */
+	async scheduled(_evento: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+		ctx.waitUntil(limpiar(env));
+	},
 } satisfies ExportedHandler<Env>;
+
+/** Lo que caduca, fuera. Devuelve cuántas filas se ha llevado, para las pruebas. */
+export async function limpiar(env: Env): Promise<number> {
+	const ahora = Date.now();
+	const dosDias = new Date(ahora - 2 * 24 * HORA).toISOString().slice(0, 10);
+	const hechos = await env.BD.batch([
+		env.BD.prepare("DELETE FROM altas WHERE caduca <= ?").bind(ahora),
+		env.BD.prepare("DELETE FROM envios_alta WHERE momento <= ?").bind(ahora - HORA),
+		env.BD.prepare("DELETE FROM contadores WHERE dia < ?").bind(dosDias),
+	]);
+	return hechos.reduce((n, r) => n + (r.meta?.changes ?? 0), 0);
+}
 
 async function atender(p: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const url = new URL(p.url);
@@ -139,6 +165,12 @@ async function empezarAlta(p: Request, env: Env): Promise<Response> {
 	await env.BD.batch([
 		env.BD.prepare("DELETE FROM envios_alta WHERE momento <= ?").bind(ahora - HORA),
 		env.BD.prepare("INSERT INTO envios_alta (correo, momento) VALUES (?, ?)").bind(c, ahora),
+		// **Y el correo de quien pidió un código y no terminó, no se queda ahí para
+		// siempre** (revisión de los textos, 2026-09-23). La fila del alta solo se
+		// borraba al completarla, así que quien probara y se arrepintiera dejaba su
+		// dirección en la base sin cuenta ni nada que la sostuviera. El código ya no
+		// vale pasados diez minutos: la fila tampoco.
+		env.BD.prepare("DELETE FROM altas WHERE caduca <= ?").bind(ahora),
 	]);
 
 	// Si ya tiene cuenta no se dice aquí —la respuesta es la misma—, sino en su buzón.

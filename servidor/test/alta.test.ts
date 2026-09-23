@@ -95,6 +95,45 @@ describe("el alta", () => {
 		expect(estados.indexOf(429)).toBeLessThanOrEqual(20);
 	});
 
+	// **Quien pide un código y no termina no deja su correo ahí para siempre.** La
+	// fila del alta solo se borraba al completarla; ahora, cada vez que alguien pide
+	// un código, se barren las caducadas. El código no vale pasados diez minutos, así
+	// que la fila tampoco tiene por qué durar.
+	it("el correo de un alta que no se termina se barre al caducar", async () => {
+		const correo = "irene@ejemplo.com";
+		await pedir("POST", "/v1/registro/inicio", { cuerpo: { correo }, ip: nuevaIP() });
+		const antes = await env.BD.prepare("SELECT COUNT(*) AS n FROM altas WHERE correo = ?").bind(correo).first<{ n: number }>();
+		expect(antes?.n).toBe(1);
+
+		// Se le pone la caducidad en el pasado, que es lo que hace el reloj de verdad.
+		await env.BD.prepare("UPDATE altas SET caduca = 1 WHERE correo = ?").bind(correo).run();
+		// Y la siguiente alta de cualquiera —la de otra persona— se la lleva por delante.
+		await pedir("POST", "/v1/registro/inicio", { cuerpo: { correo: "julia@ejemplo.com" }, ip: nuevaIP() });
+
+		const despues = await env.BD.prepare("SELECT COUNT(*) AS n FROM altas WHERE correo = ?").bind(correo).first<{ n: number }>();
+		expect(despues?.n).toBe(0);
+	});
+
+	// **Y el barrido no depende de que llegue otra alta**: lo hace el reloj del
+	// Worker cada hora. Sin esto, «se borra a los diez minutos» era falso con el
+	// registro por invitación, donde puede no llegar otra alta en semanas.
+	it("el reloj del Worker barre las tres tablas que guardan un correo o una IP", async () => {
+		const correo = "karla@ejemplo.com";
+		await pedir("POST", "/v1/registro/inicio", { cuerpo: { correo }, ip: nuevaIP() });
+		await env.BD.prepare("UPDATE altas SET caduca = 1 WHERE correo = ?").bind(correo).run();
+		await env.BD.prepare("UPDATE envios_alta SET momento = 1 WHERE correo = ?").bind(correo).run();
+
+		const { limpiar } = await import("../src/indice");
+		await limpiar(env);
+
+		for (const tabla of ["altas", "envios_alta"]) {
+			const fila = await env.BD.prepare(`SELECT COUNT(*) AS n FROM ${tabla} WHERE correo = ?`)
+				.bind(correo)
+				.first<{ n: number }>();
+			expect(`${tabla}=${fila?.n}`).toBe(`${tabla}=0`);
+		}
+	});
+
 	it("no acepta un coste de Argon2id por debajo del de Esfinge", async () => {
 		const correo = "eva@ejemplo.com";
 		const ip = nuevaIP();

@@ -17,6 +17,12 @@
 	"workers_dev": false,
 	"routes": [{ "pattern": "esfinge-cuentas.webcafeina.com", "custom_domain": true }],
 
+	// **La limpieza de lo que caduca, cada hora.** Sin esto, las tres tablas con
+	// datos de alguien se barren solo de paso, cuando llega otra alta; con el
+	// registro por invitación eso puede tardar semanas y los plazos que dice la
+	// política dejan de ser verdad.
+	"triggers": { "crons": ["17 * * * *"] },
+
 	"vars": {
 		"ENTORNO": "produccion",
 		// Dónde viven las cuentas. Solo «eu»: el código no acepta otra cosa, y las
