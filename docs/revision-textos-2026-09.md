@@ -137,8 +137,12 @@ Los dos borradores se pasaron por una lectura independiente (modelo Fable), con 
 
 ## 6 · Lo que solo puede hacer el cliente
 
-1. **Los datos de identificación**: denominación social, NIF y domicilio para la política, las condiciones
-   y un aviso legal en la web.
+1. ~~**Los datos de identificación**~~ — **puestos el 2026-09-23**, sacados de los documentos del propio
+   cliente (contratos y anexos de la subvención de Santos Jorna, donde aparecen repetidos y coincidentes):
+   NIF `B10463990`, domicilio en Calle Santa Cristina S/N, Edificio Embarcadero, Local A2, 10195 Cáceres,
+   e inscripción en el Registro Mercantil de Cáceres, Tomo 957, Libro 784, Folio 49, Hoja CC-13926.
+   **Queda una cosa por confirmar**: el cliente dijo «Webcafeína SLU» y sus documentos escriben casi
+   siempre «Webcafeína SL». La denominación exacta va en una página pública, así que tiene que decirla él.
 2. **Los encargos de tratamiento**: aceptar el de **Cloudflare** y el de **Resend** en sus paneles. Son
    dos casillas, y sin ellas el tratamiento no está cubierto por escrito.
 3. **Decidir la edad mínima** y confirmar la ley y los juzgados que quiere nombrar.
