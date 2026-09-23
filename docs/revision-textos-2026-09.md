@@ -21,7 +21,7 @@ conste porque es lo que sostiene la promesa del producto:
 | Lo que dice la política | Dónde se comprueba |
 |---|---|
 | La bóveda sale cifrada y el servidor no puede abrirla | El servidor solo ve `sobres`, `sello` y `cuerpo` ya sellados; la clave sale de la maestra con Argon2id en el cliente |
-| «Tu dirección IP no la guardamos»: se cuenta una huella y se tira a los dos días | `claveDeIP` es un HMAC de la IP con `SECRETO_PRELOGIN`; `contar` borra lo anterior a dos días |
+| La IP no se guarda en claro: se cuenta una huella con HMAC y se borra a los dos o tres días | `claveDeIP` es un HMAC con `SECRETO_PRELOGIN`; `contar` borra lo anterior a dos días. **Ojo**: eso es seudonimizar, no anonimizar, y Cloudflare sí ve la IP (ver §5) |
 | Diez versiones anteriores y una por día del último mes | `VERSIONES_RECIENTES = 10`, `DIAS_CON_VERSION = 30` |
 | Los doscientos últimos avisos | `EVENTOS_GUARDADOS = 200`, recortado en cada escritura |
 | Los códigos caducan a los diez minutos | `RETO = 10 * MINUTO` |
@@ -39,8 +39,11 @@ completar el registro**. Quien pedía un código, se lo pensaba y no seguía, de
 sin cuenta, sin servicio y sin nada que la sostuviera. La política no lo decía porque nadie lo había
 mirado.
 
-Se arregla en el código y no en el texto, que es lo que toca: cada vez que alguien pide un código se barren
-las caducadas. El código no vale pasados diez minutos; la fila tampoco. Con su prueba, comprobada al revés.
+Se arregla en el código y no en el texto, que es lo que toca. **Y en dos pasos**, porque el primero no
+bastaba: barrer las caducadas cada vez que alguien pide un código deja el plazo a merced de que llegue otra
+alta, y con el registro por invitación eso puede tardar semanas (lo cazó la segunda lectura, §5). Lo hace
+ahora **el reloj del Worker, cada hora**, con las tres tablas que guardan un correo o una huella de IP:
+`altas`, `envios_alta` y los contadores. Con sus dos pruebas, comprobadas al revés.
 
 ### 2.2 · La lista de admisión no se menciona
 
