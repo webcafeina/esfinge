@@ -491,8 +491,13 @@ congelar o bifurcar la cadena de versiones, que los plazos de la papelera depend
 equipo, el Worker de pruebas público con su buzón abierto —eso lo tiene que cerrar el cliente en su panel
 de Cloudflare— y si algún día se recifra al rotar la clave de recuperación.
 
-**La siguiente acción concreta**: **desplegar el servidor** —`servidor.yml` a mano, primero `pruebas` y
-luego `produccion`, que pide su aprobación en GitHub— y decidir si todo esto sale como **2.25.7**. Después,
+**El servidor está desplegado (2026-09-23)**: `pruebas` y `produccion`, los dos en verde. Producción
+contesta `{"registro":"lista","protocolo":1}`, la pre-entrada devuelve sal y coste, y la ruta del buzón de
+pruebas da 404 allí, como debe. Con ello, los cambios de cuenta de la revisión —los cupos por propósito, el
+testigo de confianza que se va al cambiar la contraseña, el código de alta atómico y con freno, y el tope de
+Argon2id— ya están en el servidor que usan sus dos Macs.
+
+**La siguiente acción concreta**: decidir si todo esto sale como **2.25.7**. Después,
 lo de siempre: que las tiendas aprueben, **probar la extensión en Firefox** —lo último de la E3, aplazado
 por el cliente a cuando no queden tareas— y la decisión sobre el registro abierto.
 

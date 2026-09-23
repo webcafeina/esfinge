@@ -29,6 +29,8 @@ Plantilla al final.
   los plazos que dependen del reloj de cada equipo, el Worker de pruebas público con su buzón abierto —lo
   tiene que cerrar el cliente con Cloudflare Access— y el nombre del equipo dentro del correo. A
   `seguridad.md` y a `deuda.md`.
+- **Servidor desplegado**, `pruebas` y `produccion`, los dos en verde: es donde viven los arreglos de la
+  revisión que son del servidor. Producción sigue en `lista` —por invitación— y su ruta de buzón da 404.
 - **Un tropiezo que conviene no repetir**: para deshacer una mutación de prueba se usó
   `git checkout <fichero>`, y eso se llevó por delante **el trabajo sin comprometer que había en ese
   fichero** —el arreglo del hallazgo 10—. Se rehízo entero y las pruebas lo confirman. Para deshacer una
