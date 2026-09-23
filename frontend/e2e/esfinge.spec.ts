@@ -1027,6 +1027,15 @@ test("la clave de recuperación abre la bóveda", async ({ page }) => {
   await accion(page, "Cerrar la bóveda").click();
   await expect(accion(page, "Abrir la bóveda")).toBeVisible();
 
+  // **Y con la bóveda cerrada, quien haya olvidado la maestra tiene dónde mirar.**
+  // Sin cuenta no hay asistente que recupere nada, así que lo único que puede hacer
+  // la ventana es decir que la clave de recuperación se escribe en ese mismo campo
+  // —que no se adivina— y qué pasa si tampoco se tiene (revisión de los textos).
+  await accion(page, "¿Has olvidado la contraseña maestra?").click();
+  const ayuda = page.locator(".contenido .nota", { hasText: "clave de recuperación" }).first();
+  await expect(ayuda).toBeVisible();
+  await expect(ayuda).toContainText("no hay forma de abrir esta bóveda");
+
   await page.locator("#boveda-llave").fill(recuperacion);
   await accion(page, "Abrir la bóveda").click();
   await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });

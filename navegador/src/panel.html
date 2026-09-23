@@ -54,8 +54,13 @@
           Webcafeína, en la UE, que <strong>no puede leerla</strong>: le llegan tu correo, la
           bóveda cifrada y el nombre de este navegador.
         </p>
+        <!-- **Las condiciones, al lado de la política** (revisión de los textos,
+             2026-09-23): crear una cuenta desde aquí es contratar un servicio, y
+             hay que poder leerlas antes. No sube VERSION_DEL_AVISO: no cambia nada
+             de lo que la extensión hace con los datos, solo se puede leer más. -->
         <p class="enlaces">
           <a href="https://webcafeina.github.io/esfinge/privacidad.html" target="_blank" rel="noopener">Política de privacidad</a>
+          <a href="https://webcafeina.github.io/esfinge/condiciones.html" target="_blank" rel="noopener">Condiciones de uso</a>
           <a href="https://webcafeina.github.io/esfinge/soporte.html" target="_blank" rel="noopener">Soporte</a>
         </p>
         <button id="aceptar" class="primario" type="button">Aceptar y empezar</button>
@@ -75,6 +80,14 @@
           <div id="paso-maestra" class="campo">
             <label for="cuenta-maestra">Contraseña maestra</label>
             <input id="cuenta-maestra" type="password" autocomplete="current-password" />
+            <!-- **Qué hacer si se ha olvidado, dicho donde se pregunta.** Recuperar
+                 exige volver a envolver la bóveda con una contraseña nueva, y eso
+                 el núcleo del navegador todavía no lo sabe hacer: es de la
+                 aplicación. Callarlo dejaba a quien la olvida sin ningún camino. -->
+            <p id="cuenta-olvidada" class="texto">
+              ¿La has olvidado? Se recupera con tu clave de recuperación desde la aplicación de
+              Esfinge, en cualquier ordenador. Desde aquí no se puede.
+            </p>
           </div>
           <div id="paso-codigo" class="campo" hidden>
             <label for="cuenta-codigo">Código que te ha llegado al correo</label>

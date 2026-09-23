@@ -361,6 +361,22 @@ function CrearCuenta({
           Volver
         </button>
       </div>
+
+      {/* **Las condiciones y la política, antes de crear la cuenta y no después.**
+          Crear una cuenta es contratar un servicio a distancia, y el artículo 27 de
+          la LSSI pide que se puedan leer antes; hasta la 2.25.7 no se enlazaban
+          desde ninguna parte de la ventana (revisión de los textos, 2026-09-23). */}
+      <p className="nota">
+        Al crear la cuenta aceptas las{" "}
+        <a href="https://webcafeina.github.io/esfinge/condiciones.html" target="_blank" rel="noreferrer">
+          condiciones de uso
+        </a>{" "}
+        y la{" "}
+        <a href="https://webcafeina.github.io/esfinge/privacidad.html" target="_blank" rel="noreferrer">
+          política de privacidad
+        </a>
+        .
+      </p>
     </>
   );
 }

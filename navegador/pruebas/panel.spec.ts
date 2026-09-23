@@ -465,8 +465,11 @@ test("aviso de datos: los enlaces van a la web del proyecto, en otra pestaña", 
   const enlaces = await page.locator("#aviso a").evaluateAll((as) =>
     as.map((a) => [(a as HTMLAnchorElement).href, (a as HTMLAnchorElement).target]),
   );
+  // **Las condiciones van con la política**: desde aquí se puede crear una cuenta,
+  // y eso es contratar un servicio (revisión de los textos, 2026-09-23).
   expect(enlaces).toEqual([
     ["https://webcafeina.github.io/esfinge/privacidad.html", "_blank"],
+    ["https://webcafeina.github.io/esfinge/condiciones.html", "_blank"],
     ["https://webcafeina.github.io/esfinge/soporte.html", "_blank"],
   ]);
 });

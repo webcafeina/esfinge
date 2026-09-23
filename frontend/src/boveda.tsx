@@ -339,6 +339,11 @@ function Cerrada({
   const [llave, setLlave] = useState("");
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState("");
+  // **Y en local, qué hacer si se ha olvidado la maestra**, que hasta la 2.25.7 no
+  // lo decía nadie (revisión de los textos, 2026-09-23). Con cuenta hay un
+  // asistente que la recupera; sin cuenta no hay adónde ir, pero **la clave de
+  // recuperación se escribe en este mismo campo** y eso no se adivina.
+  const [ayudaOlvidada, setAyudaOlvidada] = useState(false);
   // Con cuenta, la contraseña nueva puede no bastar: si este equipo no es de
   // confianza —caducó, o venía de la 2.24.0—, el servidor pide el código del
   // correo. Se pide aquí mismo, sin mandar a nadie a otro asistente.
@@ -469,6 +474,23 @@ function Cerrada({
             ¿La has olvidado?
           </button>
         </div>
+      )}
+
+      {cuenta?.modo !== "cuenta" && (
+        <div className="botones">
+          <button className="discreto" onClick={() => setAyudaOlvidada((a) => !a)} aria-expanded={ayudaOlvidada}>
+            ¿Has olvidado la contraseña maestra?
+          </button>
+        </div>
+      )}
+
+      {cuenta?.modo !== "cuenta" && ayudaOlvidada && (
+        <p className="nota">
+          <strong>Escribe arriba tu clave de recuperación</strong>, la que se te enseñó una sola vez al
+          crear la bóveda. Abre igual que la contraseña maestra, y luego puedes poner una contraseña
+          nueva en Ajustes. Si tampoco la tienes, <strong>no hay forma de abrir esta bóveda</strong>: ni
+          nosotros podemos. Lo que queda es empezar una nueva desde Ajustes, y lo de dentro se pierde.
+        </p>
       )}
 
       {estado.minutosParaBloquear > 0 && (
