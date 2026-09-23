@@ -522,10 +522,16 @@ curl -s "https://clients2.google.com/service/update2/crx?response=updatecheck&pr
 3. **Abrir el registro**, que **ya estaba contemplado**: es la entrega **A4** del plan
    ([`docs/cuentas.md`](cuentas.md)), «solo configuración» —`REGISTRO=abierto`— pero con tres puertas
    delante:
-   - **La revisión legal** de la política de privacidad y unas condiciones de uso que todavía no existen
-     (está en [`deuda.md`](deuda.md) como obligatoria antes de abrir).
-   - **El plan de pago de Resend**: el gratuito da cien correos al día, y cada alta y cada equipo nuevo
-     gastan uno.
+   - **La revisión de la política de privacidad y unas condiciones de uso que todavía no existen.** El
+     cliente decidió el 2026-09-23 que **la hace un modelo especializado**, no un abogado
+     ([ADR 0041](adr/0041-los-papeles-de-la-cuenta.md)).
+   - **Los encargos de tratamiento con Cloudflare y con Resend**, que son papeles que firma él en cada
+     panel y que hoy no constan.
+   - **Los topes diarios del servidor, por debajo de lo que da Resend.** El plan gratuito se queda
+     ([ADR 0041](adr/0041-los-papeles-de-la-cuenta.md)): cien correos al día, y cada alta y cada equipo
+     nuevo gastan uno. Hoy `TOPE_ALTAS_DIA` viene en **200**, el doble, y cuando Resend diga que no, el
+     servidor contesta «No se ha podido mandar el correo. Prueba otra vez en un momento», que el día que
+     se agote el cupo **no es verdad**: es hasta mañana. Se baja y se arregla la frase **antes** de abrir.
    - Y si se abre a clientes de Colombia, **mirar en la fuente** lo que dice la Ley 1581 de 2012 sobre
      guardar los datos en la UE, que la ADR 0035 dejó sin comprobar.
 

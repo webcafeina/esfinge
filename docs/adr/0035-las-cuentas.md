@@ -85,7 +85,8 @@ Y tres cosas de fondo que no se discutieron porque sin ellas no hay producto:
 - **La extensión abre la bóveda dentro del navegador**, que es lo más expuesto de todo el producto, y **se
   conecta a internet**, que hoy prometen las tiendas que no hace.
 - **Registro abierto obliga a papeles**: condiciones de uso, encargos de tratamiento con Cloudflare y
-  Resend, y revisión legal. Y el plan de pago de Resend.
+  Resend, y una revisión de los textos ([ADR 0041](0041-los-papeles-de-la-cuenta.md)). Y a que los topes
+  diarios del servidor quepan en lo que da el correo.
 - **El código de un solo uso y la contraseña, juntos en el servidor**, cifrados. Es lo mismo que dijo la ADR
   0025 de la bóveda abierta, ahora en todos los equipos.
 

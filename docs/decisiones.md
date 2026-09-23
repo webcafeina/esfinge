@@ -50,6 +50,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0038](adr/0038-sincronizar-la-boveda.md) | Sincronizar la bóveda: entera y con la versión sellada, fusión a tres bandas donde la edición gana al borrado y ninguna contraseña se pierde, y lápidas de seis meses | 2026-09-18 | aceptada, sin interfaz · matiza la 0026 · revisar al usarla en dos equipos |
 | [0039](adr/0039-la-bienvenida-y-la-cuenta-en-la-ventana.md) | La bienvenida y la cuenta en la ventana: elegir local o cuenta al estrenar, el asistente para crearla y entrar, juntar o apartar la bóveda que ya había, y dejar la cuenta desde Ajustes | 2026-09-18 | aceptada, sin publicar · continúa la 0035 · revisar en el Mac con dos equipos |
 | [0040](adr/0040-la-extension-cliente-de-la-cuenta.md) | La extensión, cliente de la cuenta: el formato de la bóveda en TypeScript vigilado contra Go, por entregas (E1 núcleo invisible, E2 la extensión con cuenta, E3 en el Mac) | 2026-09-22 | aceptada; E1 y E2 hechas (2.25.0), falta la E3 en su Mac · continúa la 0035 |
+| [0041](adr/0041-los-papeles-de-la-cuenta.md) | Los papeles de la cuenta: los textos los revisa un modelo especializado y no un despacho, y Resend se queda en el plan gratuito, así que los topes del servidor tienen que caber en cien correos al día | 2026-09-23 | aceptada, sin empezar · continúa la 0035 · revisar cuando el uso se acerque al tope |
 
 ## Cuándo escribir una
 
