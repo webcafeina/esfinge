@@ -564,6 +564,23 @@ api.runtime.onConnect.addListener((puerto) => {
     return;
   }
 
+  // **Quién está al otro lado lo dice el navegador, no el nombre del puerto.**
+  // Hasta la revisión del 2026-09-23, «esto solo se pide desde el panel» se
+  // comprobaba mirando `puerto.name === "panel"`, que lo elige quien abre el
+  // puerto: cualquier guion de contenido podía llamarse así y pedir entrar en la
+  // cuenta, salir, o contar como actividad de una persona. No se conoce forma de
+  // que una web llegue ahí —no hay `externally_connectable` y el mundo está
+  // aislado—, pero toda la valla se apoyaba en el código que corre en la página del
+  // atacante. `sender.tab` solo lo tiene un guion de contenido; el panel no.
+  //
+  // Y se mira **la dirección de quien habla**, no solo si tiene pestaña: el panel
+  // se puede abrir en una pestaña —las pruebas con la extensión cargada lo hacen—,
+  // y entonces también tiene `sender.tab`. Lo que no puede falsear un guion de
+  // contenido es venir de `chrome-extension://<lo nuestro>/`.
+  const suyo = api.runtime.getURL("");
+  const esPanel = (puerto.sender?.url ?? "").startsWith(suyo);
+  const deUnaPagina = !esPanel && puerto.sender?.tab !== undefined;
+
   puerto.onMessage.addListener((p) => {
     const contestar = (r: Respuesta) => {
       // Quien preguntaba puede haberse ido mientras se preguntaba —el panel se
@@ -607,7 +624,7 @@ api.runtime.onConnect.addListener((puerto) => {
         // fuera eso parece un fallo de Esfinge y no un permiso que falta, que es
         // exactamente la clase de silencio que ya costó cinco versiones con
         // `storage`. Aquí se convierte en una frase que dice qué hacer.
-        if (puerto.name === "pagina") {
+        if (deUnaPagina) {
           const donde = puerto.sender?.tab?.url ?? "";
           if (!donde) {
             contestar({
@@ -633,7 +650,7 @@ api.runtime.onConnect.addListener((puerto) => {
         // **Lo de la cuenta solo desde el panel.** Una página no puede entrar, salir
         // ni desbloquear: por su puerto, eso ni se mira.
         if ((p as PeticionDeCuenta).cuenta !== undefined) {
-          if (puerto.name !== "panel") {
+          if (!esPanel) {
             contestar({ ok: false, motivo: "no-entiendo", error: "Eso solo se pide desde el panel" });
             return;
           }
@@ -646,13 +663,13 @@ api.runtime.onConnect.addListener((puerto) => {
           return;
         }
 
-        pedir(p as Peticion, puerto.name === "panel")
+        pedir(p as Peticion, esPanel)
           .then((r) => {
             contestar(r);
             // **Al abrir el panel, el icono se pone al día con lo que el panel acaba de
             // saber**, sin volver a preguntar: el panel pide las cuentas nada más abrirse.
             const peticion = p as Peticion;
-            if (puerto.name === "panel" && peticion.que === "cuentas" && peticion.origen) {
+            if (esPanel && peticion.que === "cuentas" && peticion.origen) {
               api.tabs
                 .query({ active: true, currentWindow: true })
                 .then(([pestana]) => {

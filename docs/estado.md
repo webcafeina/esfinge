@@ -471,6 +471,18 @@ giran → **2.25.3**, comprobada: «funciona perfecto». **La siguiente acción 
 dos tiendas aprueben la extensión** y probarla entonces en Firefox —lo único que queda de la E3—, con la
 versión de la tienda en Chrome en vez de la cargada a mano. Después, **la auditoría externa**.
 
+**Revisión de seguridad hecha aquí (2026-09-23)** — [`docs/revision-2026-09.md`](revision-2026-09.md). El
+cliente decidió **no contratar auditoría externa** y pedir una revisión interna: cuatro pasadas del modelo
+Fable —servidor, extensión, criptografía y fusión—, con cada hallazgo verificado a mano. Salieron **tres
+graves**: un campo escondido por su contenedor se rellenaba solo (arreglado), la extensión puede pisar su
+bóveda si la fusión falla (propuesto), y «muchos borrados» salta al usar la papelera y no tiene salida
+(propuesto). Arreglados también: la enumeración de correos por el freno, el testigo de confianza que
+sobrevivía al cambio de contraseña —ahora el otro equipo pide el código una vez, elegido por el cliente—,
+quién puede pedir lo de la cuenta en la extensión, y la tarjeta que se podía pulsar nada más aparecer.
+**El registro sigue por invitación**: una revisión interna no es la auditoría externa que pide la ADR 0035.
+**La siguiente acción concreta es decidir los tres pendientes** del informe (2, 3 y 5) y si se recifra al
+rotar la clave de recuperación o se queda dicho lo que hace.
+
 **El paquete de la auditoría, escrito (2026-09-23)**: [`docs/auditoria.md`](auditoria.md) dice qué es
 Esfinge para alguien de fuera, **qué mirar por orden de riesgo** —servidor y protocolo de cuenta, la
 extensión con cuenta, formato y criptografía, la fusión, el canal, las actualizaciones y los textos—, lo

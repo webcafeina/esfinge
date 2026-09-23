@@ -18,6 +18,41 @@ async function otroEquipo(correo: string, claveDeAcceso: string, ip: string): Pr
 }
 
 describe("cambiar la contraseña", () => {
+	// **Y se lleva por delante los testigos de confianza de los demás equipos**
+	// (revisión del 2026-09-23). Sin esto, quien hubiera pasado una vez el segundo
+	// factor —o hubiera copiado `cuenta.json`, que lleva el testigo en claro— entraba
+	// sin código en cuanto consiguiera la contraseña nueva, y cambiarla porque
+	// alguien la sabe es justo ese caso.
+	it("deja sin confianza a los demás equipos, y al que cambia no", async () => {
+		const a = await conBoveda("elena@ejemplo.com");
+		// Otro equipo entra con su código y se queda con su testigo de confianza.
+		const r = await pedir("POST", "/v1/sesion", { ip: a.ip, cuerpo: { correo: a.correo, claveDeAcceso: a.claveDeAcceso, dispositivo: "El perdido" } });
+		const { reto } = (await r.json()) as { reto: string };
+		const hecho = await pedir("POST", "/v1/sesion/codigo", { ip: a.ip, cuerpo: { reto, codigo: await ultimoCodigo(a.correo), confiar: true } });
+		const perdido = (await hecho.json()) as { confianza: string };
+		expect(perdido.confianza).toMatch(/^c1\./);
+
+		const nueva = azarB64(32);
+		const cambio = await pedir("PUT", "/v1/cuenta/clave", {
+			token: a.sesion,
+			cuerpo: { posesion: a.posesion, sal: azarB64(16), argon2: ARGON2, claveDeAcceso: nueva, version: 1, documento: boveda(ID, "sin confianza") },
+		});
+		expect(cambio.status).toBe(200);
+
+		// El equipo perdido, con la contraseña nueva y su testigo, tiene que pasar por
+		// el código otra vez; el que cambió, no.
+		const conTestigo = await pedir("POST", "/v1/sesion", {
+			ip: a.ip,
+			cuerpo: { correo: a.correo, claveDeAcceso: nueva, confianza: perdido.confianza, dispositivo: "El perdido" },
+		});
+		expect(conTestigo.status).toBe(202);
+		const elQueCambio = await pedir("POST", "/v1/sesion", {
+			ip: a.ip,
+			cuerpo: { correo: a.correo, claveDeAcceso: nueva, confianza: a.confianza },
+		});
+		expect(elQueCambio.status).toBe(200);
+	});
+
 	it("es todo o nada: bóveda, verificador y sal nuevos, y las demás sesiones fuera", async () => {
 		const a = await conBoveda("sara@ejemplo.com");
 		const otra = await otroEquipo(a.correo, a.claveDeAcceso, a.ip);

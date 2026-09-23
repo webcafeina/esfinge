@@ -97,6 +97,18 @@ bóveda» dice por qué.
   caducada**—: en las dos hace falta volver a entrar, y en la primera cerrar es además lo prudente.
 - **Lo que no hace**: borrar nada, ni cerrar un equipo apagado o sin conexión. Dicho en `docs/seguridad.md`.
 
+### Matizado en la 2.25.5: cambiar la contraseña se lleva los testigos de confianza
+
+De la revisión del 2026-09-23 (`docs/revision-2026-09.md`): cambiar la contraseña cerraba las sesiones de
+los demás equipos pero **les dejaba el testigo de «este equipo es de confianza»**. Como ese testigo va en
+claro en `cuenta.json`, quien copiara ese fichero y consiguiera después la contraseña nueva entraba **sin
+código** —y cambiar la contraseña porque alguien la sabe es justo ese caso—.
+
+Ahora, al cambiar la contraseña se van los testigos de los demás equipos, y al recuperar la cuenta se van
+todos; los retos de segundo factor pendientes, también. **El precio, elegido por el cliente**: el otro
+equipo, la primera vez, pide la contraseña nueva **y** el código del correo. Es una vuelta de tuerca más
+sobre lo que ya decidió el 2026-09-21 («pedir la nueva una vez»).
+
 ## Alternativas descartadas
 
 - **Posesión atada a la cuenta**, con el identificador de la cuenta como sal del HKDF, que era el plan.

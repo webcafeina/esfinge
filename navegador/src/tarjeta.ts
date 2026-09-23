@@ -154,14 +154,25 @@ export function mostrarTarjeta(
 
   const cerrar = () => anfitrion.remove();
 
-  /** Un botón que solo hace caso a los clics de una persona. */
+  /**
+   * Cuándo apareció lo que se está enseñando. **Un clic que llega antes de que dé
+   * tiempo a leer la tarjeta no cuenta** (revisión del 2026-09-23): `isTrusted`
+   * demuestra que hubo una persona, no que supiera dónde pulsaba. La página de
+   * debajo puede poner un botón suyo justo donde va a salir la tarjeta —o encima,
+   * con `pointer-events: none`, para que el clic la atraviese— y quedarse con la
+   * decisión. Un cuarto de segundo es lo que cuesta caer en la cuenta.
+   */
+  let desde = Date.now();
+  const ESPERA = 250;
+
+  /** Un botón que solo hace caso a los clics de una persona, y no a los de rebote. */
   const boton = (texto: string, clase: string, alPulsar: () => void) => {
     const b = doc.createElement("button");
     b.type = "button";
     b.textContent = texto;
     if (clase) b.className = clase;
     b.addEventListener("click", (e) => {
-      if (!e.isTrusted) return;
+      if (!e.isTrusted || Date.now() - desde < ESPERA) return;
       alPulsar();
     });
     return b;

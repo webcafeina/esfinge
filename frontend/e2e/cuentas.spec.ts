@@ -230,6 +230,12 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   expect(cambiada.ok(), await cambiada.text()).toBe(true);
   await a.locator("#boveda-llave").fill(NUEVA);
   await accion(a, "Abrir la bóveda").click();
+  // **Y pide el código una vez**: cambiar la contraseña se lleva los testigos de
+  // confianza de los demás equipos (revisión del 2026-09-23).
+  await expect(a.getByText("Es la contraseña nueva de tu cuenta.")).toBeVisible({ timeout: 20_000 });
+  expect(erroresA.splice(erroresA.indexOf("400 /api/AbrirBoveda"), 1)).toEqual(["400 /api/AbrirBoveda"]);
+  await a.locator("#abrir-codigo").fill(await codigo(request, correo));
+  await accion(a, "Abrir la bóveda").click();
   await expect(a.locator(".lista-boveda").getByRole("button", { name: "Llega sin reabrir" })).toBeVisible({
     timeout: 20_000,
   });
@@ -290,8 +296,8 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await retratar(b, "ajustes-canal-con-cuenta");
 
   await expect(b.getByRole("heading", { name: "Equipos con tu cuenta" })).toBeVisible();
-  // Solo B: a A lo acaba de olvidar.
-  await expect(b.locator(".lista-equipos li")).toHaveCount(1);
+  // Dos: B, y el A que volvió a entrar con su código después de que B lo olvidara.
+  await expect(b.locator(".lista-equipos li")).toHaveCount(2);
   await expect(b.locator(".lista-equipos")).toContainText("Este equipo");
   await retratar(b, "ajustes-cuenta");
   await b.getByRole("heading", { name: "Equipos con tu cuenta" }).scrollIntoViewIfNeeded();

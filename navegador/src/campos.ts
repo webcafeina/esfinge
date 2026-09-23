@@ -171,15 +171,60 @@ function sePuedeEscribir(campo: HTMLInputElement): boolean {
  * **No se usa `offsetParent`**, que es lo primero que se escribe y está mal: vale
  * nulo para cualquier elemento con `position: fixed`, y un formulario de entrar
  * dentro de un cuadro flotante es exactamente eso.
+ *
+ * **Y no basta con mirar el estilo del campo** (revisión del 2026-09-23). La
+ * opacidad no se hereda en el estilo calculado: dentro de un `div` con
+ * `opacity: 0`, el campo dice `opacity: 1` y pasaba por visible. Lo mismo un campo
+ * puesto en `left: -9999px` o recortado con `clip-path`. Eso convertía la promesa
+ * de `docs/seguridad.md` —«nunca uno invisible o de un píxel»— en mentira, y con
+ * ella un formulario escondido en una página del mismo dominio se rellenaba solo.
+ * `checkVisibility` sí mira los ancestros, y la caja tiene que cortar el
+ * documento.
  */
 function esVisible(campo: HTMLInputElement): boolean {
   const caja = campo.getBoundingClientRect();
   // Ocho píxeles: un campo de verdad es más grande, y los de mentira que ponen
   // algunos sitios para engañar a los rellenadores miden uno o cero.
   if (caja.width < 8 || caja.height < 8) return false;
+  // Fuera del documento: nadie lo ve y nadie lo va a rellenar a mano.
+  const doc = campo.ownerDocument.documentElement;
+  if (caja.right <= 0 || caja.bottom <= 0 || caja.left >= doc.scrollWidth || caja.top >= doc.scrollHeight) {
+    return false;
+  }
+  // `checkVisibility` mira también lo de fuera: un ancestro transparente, oculto o
+  // con `content-visibility`. Está en Chrome desde la 105 y en Firefox desde la
+  // 106, y el manifiesto pide 140.
+  const mirar = campo.checkVisibility?.bind(campo);
+  if (mirar && !mirar({ checkOpacity: true, checkVisibilityCSS: true, contentVisibilityAuto: true })) {
+    return false;
+  }
   const estilo = getComputedStyle(campo);
   if (estilo.visibility === "hidden" || estilo.display === "none") return false;
-  return Number(estilo.opacity || "1") >= 0.1;
+  if (Number(estilo.opacity || "1") < 0.1) return false;
+  return !recortado(campo);
+}
+
+/**
+ * recortado busca las dos recetas con las que se esconde algo sin quitarlo del
+ * documento: `clip-path: inset(100%)` y el `clip: rect(0,0,0,0)` de toda la vida.
+ *
+ * **Y lo que no se puede detectar, dicho aquí**: un recorte cualquiera —una
+ * ventana de `overflow: hidden` en un ancestro lejano, un `clip-path` con formas—
+ * no se ve ni en el estilo del campo ni en su caja, y las dos formas de salir de
+ * dudas tienen su propio precio: `elementFromPoint` trabaja en coordenadas de la
+ * pantalla y diría que no se ve cualquier formulario que esté más abajo del pliegue,
+ * y un `IntersectionObserver` con el mirador por raíz, lo mismo. Preferimos no
+ * rellenar de menos: rellenar de más en un campo recortado tiene un dueño —quien ya
+ * puede meter HTML en esa página— y no rellenar en un formulario de verdad lo sufre
+ * todo el mundo.
+ */
+function recortado(campo: HTMLInputElement): boolean {
+  for (let e: Element | null = campo; e && e !== campo.ownerDocument.documentElement; e = e.parentElement) {
+    const s = getComputedStyle(e);
+    if (/^inset\(100%/.test(s.clipPath)) return true;
+    if (s.clip.replace(/\s/g, "") === "rect(0px,0px,0px,0px)") return true;
+  }
+  return false;
 }
 
 /**

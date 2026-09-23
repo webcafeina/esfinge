@@ -12,6 +12,31 @@ describe("entrar", () => {
 		expect(await mala.text()).toBe(await nadie.text());
 	});
 
+	// **El freno no puede delatar que la cuenta existe** (revisión del 2026-09-23).
+	// Hasta entonces, tras diez fallos una cuenta real contestaba 429 y un correo
+	// desconocido contestaba siempre 401: once intentos con una contraseña inventada
+	// decían si ese correo está registrado.
+	it("tras muchos fallos sigue sin distinguirse de un correo sin cuenta", async () => {
+		const a = await darDeAlta("frenada@ejemplo.com");
+		const ip = nuevaIP();
+		for (let i = 0; i < 12; i++) {
+			await pedir("POST", "/v1/sesion", { ip, cuerpo: { correo: a.correo, claveDeAcceso: azarB64(32) } });
+		}
+		const mala = await pedir("POST", "/v1/sesion", { ip, cuerpo: { correo: a.correo, claveDeAcceso: azarB64(32) } });
+		const nadie = await pedir("POST", "/v1/sesion", { ip, cuerpo: { correo: "tampoco@ejemplo.com", claveDeAcceso: azarB64(32) } });
+		expect(mala.status).toBe(401);
+		expect(nadie.status).toBe(401);
+		expect(await mala.text()).toBe(await nadie.text());
+
+		// Y a quien acierta la contraseña sí se le dice que está frenada: ése ya sabe
+		// que la cuenta existe, y necesita entender por qué no entra.
+		const buena = await pedir("POST", "/v1/sesion", {
+			ip,
+			cuerpo: { correo: a.correo, claveDeAcceso: a.claveDeAcceso, dispositivo: "Uno nuevo" },
+		});
+		expect(buena.status).toBe(429);
+	});
+
 	it("desde un equipo nuevo pide el código **después** de comprobar la contraseña", async () => {
 		const a = await darDeAlta("hugo@ejemplo.com");
 		const antes = (await buzon(a.correo)).length;

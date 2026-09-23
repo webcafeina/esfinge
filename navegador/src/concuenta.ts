@@ -82,7 +82,7 @@ export type EstadoDeCuenta = {
 /** Lo que el panel —y solo el panel— le puede pedir a la cuenta. */
 export type PeticionDeCuenta =
   | { cuenta: "estado" }
-  | { cuenta: "entrar"; correo: string; maestra: string; servidor?: string }
+  | { cuenta: "entrar"; correo: string; maestra: string }
   | { cuenta: "codigo"; codigo: string }
   /** Deja la entrada a medias: se vuelve a empezar. */
   | { cuenta: "cancelar" }
@@ -453,6 +453,13 @@ function avisarDeCambios() {
  */
 export async function tic(ahora = Date.now()): Promise<void> {
   if (!(await conCuenta())) return;
+  // **La contraseña maestra a medias no espera a que alguien la lea.** Mientras se
+  // va al correo a por el código, la entrada a medias la guarda con ella (ver
+  // `Entrando`), y hasta la revisión del 2026-09-23 solo caducaba al leerla: si
+  // nadie volvía, se quedaba los diez minutos y más. Aquí se barre.
+  const aMedias = await sesion<{ hasta: number }>(S.entrando);
+  if (aMedias && ahora > aMedias.hasta) await api.storage.session.remove(S.entrando);
+
   const ultima = await sesion<number>(S.actividad);
   if ((await sesion<string>(S.llave)) && ultima !== undefined && ahora - ultima >= MINUTOS_DE_BLOQUEO * 60_000) {
     // Antes de cerrar, lo pendiente se sube: cerrada ya no se puede.
@@ -479,7 +486,11 @@ export async function atenderAlPanel(p: PeticionDeCuenta): Promise<RespuestaDeCu
         if (await sesion<string>(S.llave)) pedirSincro(0);
         break;
       case "entrar":
-        r = await entrar(p.correo, p.maestra, p.servidor || (await datos())?.servidor || RAIZ_POR_DEFECTO);
+        // **El servidor no viaja en el mensaje** (revisión del 2026-09-23): lo pone
+        // la compilación, y la de pruebas apunta al servidor local. Aceptarlo desde
+        // fuera era dejar que quien pudiera mandar un mensaje se llevara a otro
+        // sitio la clave de acceso derivada de la maestra.
+        r = await entrar(p.correo, p.maestra, (await datos())?.servidor || RAIZ_POR_DEFECTO);
         break;
       case "codigo":
         r = await confirmar(p.codigo);

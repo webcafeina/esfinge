@@ -76,6 +76,10 @@ async function centro(page: Page, selector: string) {
 }
 
 async function pulsar(page: Page, selector: string) {
+  // **Se deja pasar el cuarto de segundo de rebote**: la tarjeta no hace caso a un
+  // clic que llegue antes de que dé tiempo a leerla (revisión del 2026-09-23). Lo
+  // vigila la prueba de abajo, «un clic nada más aparecer no cuenta».
+  await page.waitForTimeout(300);
   const { x, y } = await centro(page, selector);
   await page.mouse.click(x, y);
 }
@@ -95,6 +99,21 @@ test("tarjeta: va cerrada y un clic fabricado por la página no hace nada", asyn
     ((window as unknown as Ventana).tarjeta.raiz.querySelector("button.principal") as HTMLButtonElement).click(),
   );
   expect(await decisiones(page)).toEqual([]);
+});
+
+// **Un clic que llega antes de que dé tiempo a leer la tarjeta no cuenta.**
+// `isTrusted` demuestra que hubo una persona, no que supiera dónde pulsaba: la
+// página puede poner un botón suyo donde va a salir la tarjeta, o encima con
+// «pointer-events: none» para que el clic la atraviese, y quedarse con la
+// decisión.
+test("tarjeta: un clic nada más aparecer no cuenta", async ({ page }) => {
+  await abrir(page, GUARDAR);
+  const { x, y } = await centro(page, "button.principal");
+  await page.mouse.click(x, y);
+  expect(await decisiones(page)).toEqual([]);
+  await page.waitForTimeout(300);
+  await page.mouse.click(x, y);
+  expect(await decisiones(page)).toHaveLength(1);
 });
 
 test("tarjeta: guardar con el título sugerido cambiado", async ({ page }) => {
@@ -162,6 +181,7 @@ test("tarjeta: «Nunca en este sitio» y «Ahora no»", async ({ page }) => {
     const r = b.getBoundingClientRect();
     return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
   });
+  await page.waitForTimeout(300); // el rebote de la tarjeta, como en `pulsar`
   await page.mouse.click(ahoraNo.x, ahoraNo.y);
   await expect.poll(() => decisiones(page)).toEqual([{ accion: "ahora-no" }]);
   await expect(page.locator("esfinge-tarjeta")).toHaveCount(0);

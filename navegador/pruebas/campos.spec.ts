@@ -110,6 +110,51 @@ const casos: { nombre: string; html: string; espera: { usuario: string | null; s
     espera: [],
   },
   {
+    // **Lo de fuera cuenta**: la opacidad no se hereda en el estilo calculado, así
+    // que hasta la revisión del 2026-09-23 el campo de dentro decía «opacity: 1» y
+    // se rellenaba solo. Quien pudiera meter HTML en una página del dominio —un
+    // XSS, un subdominio abandonado— se llevaba la contraseña sin un clic.
+    nombre: "un formulario dentro de algo transparente no se rellena",
+    html: `<div style="opacity:0">
+      <form>
+        <input id="u" type="email">
+        <input id="p" type="password">
+      </form>
+    </div>`,
+    espera: [],
+  },
+  {
+    nombre: "un formulario sacado de la pantalla no se rellena",
+    html: `<form style="position:absolute;left:-9999px;top:0">
+      <input id="u" type="email">
+      <input id="p" type="password">
+    </form>`,
+    espera: [],
+  },
+  {
+    nombre: "un formulario recortado del todo no se rellena",
+    html: `<div style="clip-path:inset(100%)">
+      <form>
+        <input id="u" type="email">
+        <input id="p" type="password">
+      </form>
+    </div>`,
+    espera: [],
+  },
+  {
+    // Y el que sí: dentro de algo que se ve a medias, se rellena. Bajar la opacidad
+    // es una animación de entrada corriente, y negarse ahí sería no rellenar en
+    // media web.
+    nombre: "un formulario a media opacidad sí se rellena",
+    html: `<div style="opacity:0.6">
+      <form>
+        <input id="u" type="email">
+        <input id="p" type="password">
+      </form>
+    </div>`,
+    espera: [{ usuario: "u", secreto: "p" }],
+  },
+  {
     nombre: "una contraseña nueva no se rellena con la vieja",
     html: `<form>
       <input id="u" type="email">

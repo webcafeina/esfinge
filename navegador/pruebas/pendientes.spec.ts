@@ -39,6 +39,11 @@ test("pendiente: otro sitio no, ni con un sufijo corto compartido", () => {
   expect(mismoSitio("login.brevo.com", "login.otro.com")).toBe(false);
   expect(mismoSitio("banco.co.uk", "malo.co.uk")).toBe(false);
   expect(mismoSitio("agencia.com.es", "otra.com.es")).toBe(false);
+  // Con la lista de sufijos públicos, dos alojamientos de terceros no son el mismo
+  // sitio aunque compartan el dominio de debajo (revisión del 2026-09-23).
+  expect(mismoSitio("evil.github.io", "victima.github.io")).toBe(false);
+  expect(mismoSitio("uno.herokuapp.com", "otro.herokuapp.com")).toBe(false);
+  expect(mismoSitio("localhost", "localhost")).toBe(true);
   expect(mismoSitio("", "brevo.com")).toBe(false);
 });
 

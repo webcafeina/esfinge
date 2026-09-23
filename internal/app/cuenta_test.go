@@ -634,8 +634,17 @@ func TestElOtroEquipoAbreConLaContrasenaNueva(t *testing.T) {
 	if err := b.a.AbrirBoveda("una que no es ninguna de las dos"); !errors.Is(err, boveda.ErrSinRanura) {
 		t.Fatalf("una contraseña mala: quiero ErrSinRanura, tengo %v", err)
 	}
-	if err := b.a.AbrirBoveda(nueva); err != nil {
-		t.Fatalf("B no abre con la nueva: %v", err)
+	// **Y con la nueva hace falta también el código** (revisión del 2026-09-23):
+	// cambiar la contraseña se lleva por delante los testigos de confianza de los
+	// demás equipos, porque quien copie el fichero de la cuenta se lleva el testigo
+	// y cambiar la contraseña es justo lo que se hace cuando alguien la sabe. Lo
+	// decidió el cliente sabiendo el precio: el otro equipo pasa una vez por el
+	// correo.
+	if err := b.a.AbrirBoveda(nueva); !errors.Is(err, ErrFaltaElCodigo) {
+		t.Fatalf("con la nueva: quiero ErrFaltaElCodigo, tengo %v", err)
+	}
+	if r, err := b.a.ConfirmarEntrada(codigoDelBuzon(t, raiz, correo)); err != nil || !r.Listo {
+		t.Fatalf("con el código: %+v, %v", r, err)
 	}
 	alDia(t, b.a, time.Now())
 	if got := titulosDe(t, b.a); got != "De A, De A con la nueva, De B sin subir" {

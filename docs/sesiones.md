@@ -5,6 +5,24 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-23 (tarde) · La revisión de seguridad, hecha aquí
+
+- El cliente **descartó la auditoría externa** y pidió que la hiciera yo. Se le dijo lo que eso no puede
+  dar —independencia: reviso mi propio trabajo— y eligió «revisión interna ahora y decidir después».
+- Cuatro pasadas del modelo Fable (servidor, extensión, criptografía, fusión), **cada hallazgo verificado a
+  mano**. Informe en `docs/revision-2026-09.md`.
+- **Arreglado ya (2.25.5)**: el relleno de un campo escondido por su contenedor —rompía la promesa de
+  `seguridad.md` y bastaba un XSS en el dominio para llevarse la contraseña sin un clic—; la enumeración de
+  correos por el freno del servidor; el testigo de confianza que sobrevivía al cambio de contraseña; quién
+  puede pedir lo de la cuenta en la extensión —por `sender`, no por el nombre del puerto— y el servidor que
+  ya no viaja en el mensaje; la tarjeta de guardar, que ignora un clic en el primer cuarto de segundo; la
+  maestra a medias que no se barría; y «el mismo sitio» sin lista de sufijos.
+- **Decisión del cliente**: cambiar la contraseña se lleva los testigos de confianza de los demás equipos,
+  aunque eso obligue a pasar una vez por el código. ADR 0037 matizada; `seguridad.md` corregido también en
+  lo que rotar la clave de recuperación **no** hace.
+- **Queda por decidir**: que la extensión no pise su bóveda, que «muchos borrados» no cuente la papelera y
+  tenga salida, y los cupos de códigos del servidor.
+
 ## 2026-09-23 · 2.25.4: el interruptor del canal, con su nota
 
 - **Las dos tiendas han aprobado la 2.25.3**: AMO la sirve y el canal de actualizaciones de Chrome también.

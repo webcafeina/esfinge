@@ -186,6 +186,19 @@ export class Cuenta extends DurableObject<Env> {
 		}
 		const ahora = Date.now();
 		const equipoDeConfianza = await this.equipoDeConfianza(p.confianza);
+		// **La contraseña se comprueba antes que el freno**, y el orden importa
+		// (revisión del 2026-09-23). Al revés, una cuenta que existe contestaba 429
+		// tras diez fallos y un correo desconocido contestaba siempre 401: once
+		// intentos con una contraseña inventada decían si ese correo tiene cuenta,
+		// justo lo que `docs/seguridad.md` promete que no se puede saber. Quien
+		// acierta la contraseña ya sabe que la cuenta existe, así que a ése sí se le
+		// puede decir que está frenada; a los demás se les contesta lo de siempre.
+		if (typeof p.claveDeAcceso !== "string" || !(await this.coincide("acceso", p.claveDeAcceso))) {
+			this.sql.exec("INSERT INTO fallos (momento) VALUES (?)", ahora);
+			this.sql.exec("DELETE FROM fallos WHERE momento <= ?", ahora - VENTANA_DE_FALLOS);
+			this.apuntar("entrada-fallida");
+			return mal(401, NO_VALE);
+		}
 		const fallos = this.sql
 			.exec<{ n: number }>("SELECT COUNT(*) AS n FROM fallos WHERE momento > ?", ahora - VENTANA_DE_FALLOS)
 			.one().n;
@@ -193,12 +206,6 @@ export class Cuenta extends DurableObject<Env> {
 		// Bloquear la cuenta entera sería dejar que cualquiera la cierre a su dueño.
 		if (fallos >= FALLOS_PARA_FRENAR && !equipoDeConfianza) {
 			return mal(429, "Demasiados intentos fallidos. Espera unos minutos o entra desde un equipo de confianza.");
-		}
-		if (typeof p.claveDeAcceso !== "string" || !(await this.coincide("acceso", p.claveDeAcceso))) {
-			this.sql.exec("INSERT INTO fallos (momento) VALUES (?)", ahora);
-			this.sql.exec("DELETE FROM fallos WHERE momento <= ?", ahora - VENTANA_DE_FALLOS);
-			this.apuntar("entrada-fallida");
-			return mal(401, NO_VALE);
 		}
 
 		if (equipoDeConfianza) {
@@ -350,6 +357,19 @@ export class Cuenta extends DurableObject<Env> {
 			// Fuera las demás sesiones. La de quien cambia sigue, salvo que fuera la
 			// restringida de una recuperación: ésa se cambia por una normal.
 			this.sql.exec("DELETE FROM sesiones WHERE huella != ?", huellaActual ?? "");
+			// **Y fuera los testigos de confianza de los demás equipos, y los retos
+			// vivos** (revisión del 2026-09-23). Sin esto, quien hubiera pasado una vez
+			// el segundo factor —o hubiera copiado `cuenta.json`, que lo lleva en
+			// claro— entraba **sin código** en cuanto consiguiera la contraseña nueva,
+			// y cambiar la contraseña porque alguien la sabe es justo ese caso. Si
+			// quien cambia viene de una recuperación no hay equipo al que respetar:
+			// se van todos.
+			const respetar = s.datos.restringida ? "" : (s.datos.dispositivo ?? "");
+			this.sql.exec(
+				"UPDATE dispositivos SET confianza = NULL, confianza_caduca = 0 WHERE id != ?",
+				respetar,
+			);
+			this.sql.exec("DELETE FROM retos");
 			if (nueva) {
 				this.sql.exec("DELETE FROM sesiones WHERE huella = ?", huellaActual ?? "");
 				this.sql.exec(

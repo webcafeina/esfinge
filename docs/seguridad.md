@@ -74,8 +74,13 @@ La bóveda guarda contraseñas, así que **cambia el modelo de amenazas del prop
 un fallo perdía un fichero; ahora puede perderlas todas. Lo que hay que tener claro:
 
 - **La clave de recuperación es una segunda puerta a todo.** Quien la consiga tiene la bóveda
-  entera, y no caduca: hasta que no se rote —lo que genera una clave nueva y deja la anterior
-  inservible— sigue abriendo. Se enseña **una sola vez** al crear la bóveda, no se guarda en ninguna
+  entera, y no caduca: hasta que no se rote —lo que genera una clave nueva y deja la anterior sin
+  poder abrir **el fichero de ahora**— sigue abriendo. Y hay que decir lo que rotar **no** hace
+  (revisión del 2026-09-23): la clave que cifra la bóveda por dentro no cambia nunca, así que quien
+  tenga la clave de recuperación vieja **y una copia anterior del fichero** —la `.anterior` que deja
+  cada guardado, una copia de seguridad, o una versión guardada en el servidor— saca de ahí esa clave
+  y con ella abre la bóveda actual. Si una clave de recuperación se ha perdido de verdad, lo que
+  protege no es rotarla: es **crear una bóveda nueva** y llevarse las entradas. Se enseña **una sola vez** al crear la bóveda, no se guarda en ninguna
   parte, y no se puede volver a ver. Guardarla es tan importante como guardar la maestra, y en otro
   sitio distinto.
 - **El historial de contraseñas conserva las anteriores.** Cambiar una contraseña no borra la vieja:

@@ -15,6 +15,8 @@
  *   - **Caduca a los dos minutos.** Una oferta que llega tarde no se enseña.
  *   - **Solo sirve para el mismo sitio.** Si la pestaña se va a otro, se olvida.
  */
+import { dominioRegistrable } from "./nucleo/dominios";
+
 import type { Forma } from "./protocolo";
 
 export const VIDA_DEL_PENDIENTE = 2 * 60 * 1000;
@@ -64,11 +66,14 @@ function anfitrion(url: string): string {
 export function mismoSitio(a: string, b: string): boolean {
   if (!a || !b) return false;
   if (a === b) return true;
-  const pa = a.split(".");
-  const pb = b.split(".");
-  const cuantas = pa.length >= 2 && pa[pa.length - 2].length <= 3 ? 3 : 2;
-  if (pa.length < cuantas || pb.length < cuantas) return false;
-  return pa.slice(-cuantas).join(".") === pb.slice(-cuantas).join(".");
+  // **Con la lista de sufijos públicos**, que desde la 2.25.0 ya va dentro de la
+  // extensión (revisión del 2026-09-23). Contando etiquetas a ojo,
+  // `evil.github.io` y `victima.github.io` eran «el mismo sitio»: no se entrega
+  // ningún secreto por ahí —lo que se guarda va al origen del envío—, pero el
+  // usuario tecleado en uno salía propuesto en la tarjeta del otro.
+  const da = dominioRegistrable(a);
+  const db = dominioRegistrable(b);
+  return da !== null && da === db;
 }
 
 export function vigente(p: Recuerdo, ahora: number, vida = VIDA_DEL_PENDIENTE): boolean {
