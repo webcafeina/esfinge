@@ -2,6 +2,7 @@ package cripto
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"strings"
 	"testing"
@@ -197,6 +198,15 @@ func TestCabeceraAbusiva(t *testing.T) {
 
 	if _, err := Abrir(abusivo, []byte("clave")); !errors.Is(err, ErrFormato) {
 		t.Errorf("quiero ErrFormato ante una memoria imposible, tengo %v", err)
+	}
+
+	// **Y el tope son 256 MiB, no un giga** (revisión del 2026-09-23). Medio giga
+	// no tumba un ordenador, y por eso pasaba: tumba al trabajador de fondo del
+	// navegador, que es quien abre los sobres de una bóveda que ha elegido otro.
+	medioGiga := bytes.Clone(sellado)
+	binary.BigEndian.PutUint32(medioGiga[6:10], 512*1024)
+	if _, err := Abrir(medioGiga, []byte("clave")); !errors.Is(err, ErrFormato) {
+		t.Errorf("quiero ErrFormato ante medio giga de memoria, tengo %v", err)
 	}
 }
 

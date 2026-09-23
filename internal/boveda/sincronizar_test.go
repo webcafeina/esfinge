@@ -1066,3 +1066,116 @@ func TestContarRepetidasNoTocaLaBoveda(t *testing.T) {
 		}
 	}
 }
+
+// **La edición gana al borrado también cuando el borrado es suave** (revisión del
+// 2026-09-23). Antes, con la papelera, el reparto campo a campo se quedaba con las
+// dos cosas: la entrada acababa en la papelera **con la contraseña nueva**, fuera
+// de la lista, y a los treinta días se purgaba.
+// **Una fusión que no se guarda no cambia nada.**
+//
+// Guardar falla de verdad: basta con que otro Esfinge haya tocado el fichero desde
+// que se abrió éste. Si la fusión ya hubiera sustituido el contenido en memoria,
+// la ventana enseñaría una bóveda que no está en ningún sitio y el siguiente
+// guardado la escribiría sin que nadie lo decidiera.
+func TestUnaFusionQueNoSeGuardaNoDejaRastroEnMemoria(t *testing.T) {
+	a, b, s := dosEquipos(t)
+	mustPoner(t, b.b, Entrada{Titulo: "Solo de B", Usuario: "yo", Secreto: "x"})
+	b.sincronizar(t, s)
+
+	// Entre medias, otro Esfinge escribe en el fichero de A: la serie del disco deja
+	// de ser la que A tiene cargada.
+	crudo, err := os.ReadFile(a.b.ruta)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(crudo, &doc); err != nil {
+		t.Fatal(err)
+	}
+	doc["serie"] = doc["serie"].(float64) + 1
+	otro, _ := json.Marshal(doc)
+	if err := os.WriteFile(a.b.ruta, otro, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := a.b.Fundir(s.datos, s.version, a.base, OpcionesDeFusion{}); !errors.Is(err, ErrCambiada) {
+		t.Fatalf("quiero ErrCambiada, tengo %v", err)
+	}
+	for _, e := range a.b.cont.Entradas {
+		if e.Titulo == "Solo de B" {
+			t.Fatal("la fusión que no se guardó se ha quedado en memoria")
+		}
+	}
+}
+
+// **Restaurar es un cambio, y sin base lo único que lo dice es la fecha.**
+//
+// Con base, sacar una entrada de la papelera se ve porque la entrada ya no es la
+// que había; sin base —un equipo que entra en la cuenta sin haberse sincronizado
+// nunca, o al que se le ha perdido el fichero `.base`— la única regla que queda es
+// «vive si se cambió después de borrarse». Restaurar no tocaba la fecha de cambio,
+// así que la entrada rescatada aquí perdía contra la purga de allí y se volvía a
+// ir, en silencio y para siempre: la papelera de la otra ya estaba vacía.
+func TestRestaurarGanaALaPurgaDeOtroEquipoAunqueSeFundaSinBase(t *testing.T) {
+	a, b, s := dosEquipos(t)
+	id := buscar(t, a.b, "Banco").ID
+	_ = a.b.Borrar(id)
+	a.sincronizar(t, s)
+	b.sincronizar(t, s)
+
+	// Una hora después, A vacía la papelera: deja su lápida y sube.
+	conReloj(t, func() time.Time { return time.Now().Add(time.Hour) }, func() {
+		if _, err := a.b.VaciarPapelera(); err != nil {
+			t.Fatal(err)
+		}
+	})
+	a.sincronizar(t, s)
+
+	// Y dos horas después B la rescata de su papelera, sin saber nada de aquello.
+	conReloj(t, func() time.Time { return time.Now().Add(2 * time.Hour) }, func() {
+		if err := b.b.Restaurar(id); err != nil {
+			t.Fatal(err)
+		}
+	})
+	b.base = nil // el equipo que funde sin base
+	b.sincronizar(t, s)
+
+	viva, hay := b.b.Ver(id)
+	if !hay || viva.Papelera {
+		t.Fatalf("lo que B acababa de restaurar se ha ido con la purga de A: hay=%v %+v", hay, viva)
+	}
+	a.sincronizar(t, s)
+	if _, hay := a.b.Ver(id); !hay {
+		t.Fatal("A no ha recuperado la entrada que B rescató")
+	}
+}
+
+func TestLaPapeleraDeUnEquipoNoSeLlevaLoQueOtroAcabaDeCambiar(t *testing.T) {
+	a, b, s := dosEquipos(t)
+	mustPoner(t, a.b, Entrada{Titulo: "Banco", Usuario: "yo", Secreto: "la vieja"})
+	a.sincronizar(t, s)
+	b.sincronizar(t, s)
+	id := buscar(t, a.b, "Banco").ID
+
+	// A la manda a la papelera; B le cambia la contraseña, en su equipo.
+	_ = a.b.Borrar(id)
+	e, _ := b.b.Ver(id)
+	e.CambiarSecreto("la nueva", ahora())
+	mustPoner(t, b.b, e)
+	a.sincronizar(t, s)
+	b.sincronizar(t, s)
+
+	viva, hay := b.b.Ver(id)
+	if !hay || viva.Papelera {
+		t.Fatalf("la entrada que B acababa de cambiar se ha ido a la papelera: %+v", viva)
+	}
+	if viva.Secreto != "la nueva" {
+		t.Fatalf("la contraseña es %q", viva.Secreto)
+	}
+	// Y converge: A ve lo mismo.
+	a.sincronizar(t, s)
+	enA, _ := a.b.Ver(id)
+	if enA.Papelera || enA.Secreto != "la nueva" {
+		t.Fatalf("en A: papelera=%v secreto=%q", enA.Papelera, enA.Secreto)
+	}
+}

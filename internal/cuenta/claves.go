@@ -49,9 +49,9 @@ func (p Parametros) Validar() error {
 	if p.Memoria < PorDefecto.Memoria || p.Pasadas < PorDefecto.Pasadas || p.Paralelismo < 1 {
 		return ErrCosteBajo
 	}
-	// Los mismos topes que al abrir un contenedor: un servidor que pidiera 64 GiB
-	// tumbaría el proceso antes de que nadie pudiera decir nada.
-	if p.Memoria > 1024*1024 || p.Pasadas > 16 || p.Paralelismo > 16 {
+	// Los mismos topes que al abrir un contenedor —256 MiB—: un servidor que
+	// pidiera gigas tumbaría el proceso antes de que nadie pudiera decir nada.
+	if p.Memoria > 256*1024 || p.Pasadas > 16 || p.Paralelismo > 16 {
 		return errors.New("El servidor pide un coste de derivación imposible")
 	}
 	return nil

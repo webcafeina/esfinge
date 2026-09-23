@@ -115,4 +115,11 @@ test("esf1: una cabecera que pide memoria de más no se intenta derivar", async 
   new DataView(malo.buffer).setUint32(6, 64 * 1024 * 1024, false); // 64 GiB
   const err = await abrir(malo, "k").catch((e: unknown) => e);
   expect((err as ErrorESF1).tipo).toBe("formato");
+
+  // Y medio giga tampoco, que es el que no tumba un ordenador pero sí esto: el
+  // tope son 256 MiB, el mismo número que en Go.
+  const medioGiga = bueno.slice();
+  new DataView(medioGiga.buffer).setUint32(6, 512 * 1024, false);
+  const otro = await abrir(medioGiga, "k").catch((e: unknown) => e);
+  expect((otro as ErrorESF1).tipo).toBe("formato");
 });

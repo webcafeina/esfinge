@@ -52,14 +52,28 @@ JSON en claro, `formato: 1`. Los campos criptográficos son líneas `ESF1.…` c
 `sello` es, cifrado con la clave de bóveda:
 
 ```json
-{ "id": "…", "serie": 42, "sincro": 17, "huellas": { "maestra": "…", "recuperacion": "…" }, "cuerpo": "…" }
+{
+  "id": "…", "serie": 42,
+  "huellas": { "maestra": "…", "recuperacion": "…" },
+  "sobres":  { "maestra": "…", "recuperacion": "…" },
+  "sincro": 17, "cuerpo": "…"
+}
 ```
 
 - `huellas[tipo]` es el SHA-256 en hexadecimal del texto `contenedor` de ese sobre, y `cuerpo`, el del
   texto `cuerpo` del fichero.
+- **`sobres[tipo]` es la huella del sobre entero**: el SHA-256 de `tipo`, `creado`, `codificacion` (vacía
+  si no la lleva) y `contenedor`, en ese orden y pegados con saltos de línea —que no pueden aparecer dentro
+  de ninguno de los cuatro—. Es **una cadena y no JSON** a propósito, para que las dos implementaciones no
+  tengan que ponerse de acuerdo en nada más. Existe porque `creado` decide qué ranura gana al fundir sin
+  base, y sin sellarlo un servidor podía envejecer una ranura sin tocar su contenedor (revisión del
+  2026-09-23).
 - **Al abrir se comprueba**: `id` y `serie` iguales a los de fuera, la huella del cuerpo, la de cada sobre
-  que el sello conoce, y que no falte ningún sobre que el sello conozca. Un sobre que el sello no conoce se
-  acepta (puede ser de una versión más nueva). Cualquier otra cosa es `ErrManipulada`.
+  que el sello conoce —y la del sobre entero, si el sello la trae—, y que no falte ningún sobre que el
+  sello conozca. Un sobre que el sello no conoce se acepta (puede ser de una versión más nueva). Cualquier
+  otra cosa es `ErrManipulada`.
+- **`sobres` puede no estar**: las bóvedas escritas antes de la 2.25.7 no lo traen y se abren igual. No se
+  puede quitar para esquivar la comprobación, porque el sello va cifrado con la clave de bóveda.
 - **`sincro`** es la versión del servidor que tiene o va a tener este documento; 0 si nunca se ha
   sincronizado. Al fundir, la versión que dice el servidor tiene que ser igual a ésta.
 
@@ -85,7 +99,7 @@ no entiende algo no puede borrarlo al guardar.
 | `id` | 32 cifras hexadecimales al azar. No cambia nunca |
 | `tipo` | `credencial` · `nota` · `tarjeta` · `identidad` |
 | `titulo`, `notas`, `etiquetas`, `carpeta` | Comunes |
-| `creada`, `cambiada` | RFC3339, resolución de un segundo |
+| `creada`, `cambiada` | RFC3339, resolución de un segundo. **`cambiada` la tocan también mandar a la papelera y restaurar**: sin base, «vive si se cambió después de borrarse» es la única regla que queda, y una entrada rescatada aquí perdía contra la purga de allí |
 | `revision` | Cuántas veces ha cambiado. **La pone la bóveda al guardar**, nunca quien edita: 1 al crear, +1 al editar, al mandar a la papelera y al sacar |
 | `papelera`, `borradaEn` | Borrado suave |
 | `usuario`, `secreto`, `sitios`, `totp`, `historial` | Credencial. `historial`: `[{secreto, hasta}]`, lo más reciente primero, diez como mucho |
@@ -126,6 +140,11 @@ texto; si empatan, la de SHA-256 de la forma canónica mayor en hexadecimal.
 
 - Con B, clave a clave de la forma JSON: iguales en L y R → ése; L igual a B → R; R igual a B → L; si no,
   el de la mayor. Sin B, la mayor entera.
+- **Papelera contra edición**: si un lado, respecto a B, **no ha hecho más que mandarla a la papelera** y
+  el otro ha tocado contenido, la entrada **se queda fuera de la papelera** (`papelera` y `borradaEn`, los
+  del lado que tocó contenido). La edición gana al borrado también cuando el borrado es suave. «No ha hecho
+  más» se mira sin `papelera`, `borradaEn`, `revision` ni `cambiada`, porque mandar a la papelera toca las
+  cuatro.
 - `historial`: la unión de los de L y R, más **el `secreto` de la que no es la mayor** si es distinto del
   que queda, con `hasta` = ahora; sin repetir secretos (se queda el `hasta` mayor), sin el secreto actual,
   lo más reciente primero y diez como mucho.

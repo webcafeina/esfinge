@@ -233,7 +233,10 @@ func (b *Boveda) prepararSubida(version int64, cambio *sobre) ([]byte, int64, er
 	}
 	doc := b.doc
 	doc.Sobres = nil
-	sel := sello{ID: doc.ID, Serie: doc.Serie, Sincro: version, Cuerpo: huellaDe(doc.Cuerpo), Huellas: map[string]string{}}
+	sel := sello{
+		ID: doc.ID, Serie: doc.Serie, Sincro: version, Cuerpo: huellaDe(doc.Cuerpo),
+		Huellas: map[string]string{}, Sobres: map[string]string{},
+	}
 	puesto := false
 	for _, s := range b.doc.Sobres {
 		if ranurasLocales[s.Tipo] {
@@ -244,10 +247,12 @@ func (b *Boveda) prepararSubida(version int64, cambio *sobre) ([]byte, int64, er
 		}
 		doc.Sobres = append(doc.Sobres, s)
 		sel.Huellas[s.Tipo] = huellaDe(s.Contenedor)
+		sel.Sobres[s.Tipo] = huellaDeSobre(s)
 	}
 	if cambio != nil && !puesto {
 		doc.Sobres = append(doc.Sobres, *cambio)
 		sel.Huellas[cambio.Tipo] = huellaDe(cambio.Contenedor)
+		sel.Sobres[cambio.Tipo] = huellaDeSobre(*cambio)
 	}
 	crudo, err := json.Marshal(sel)
 	if err != nil {
@@ -457,12 +462,24 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 			}
 		}
 	}
+	// **Si el guardado no sale bien, en memoria se queda lo que había** (revisión
+	// del 2026-09-23). Guardar falla de verdad: `ErrCambiada` cuando otro Esfinge ha
+	// tocado el fichero entre medias, o el disco. Dejando puesto el resultado de la
+	// fusión, la ventana enseñaría una bóveda que no está en ninguna parte y el
+	// siguiente guardado —cambiar cualquier cosa— la escribiría sin que nadie
+	// hubiera decidido eso. Con el error, quien llama vuelve a sincronizar, que es
+	// justo lo que hay que hacer.
+	contAntes, sobresAntes, sucioAntes := b.cont, b.doc.Sobres, b.cuerpoSucio
 	b.cont = cont
 	b.doc.Sobres = sobres
 	b.cuerpoSucio = true
-	err = b.guardar()
+	if err := b.guardar(); err != nil {
+		b.cont, b.doc.Sobres, b.cuerpoSucio = contAntes, sobresAntes, sucioAntes
+		f.Cambio, f.Subir = false, false
+		return f, err
+	}
 	f.Serie = b.doc.Serie
-	return f, err
+	return f, nil
 }
 
 // ------------------------------------------------------------------ piezas
@@ -806,6 +823,22 @@ func fundirCampos(l, r Entrada, b *Entrada, ahora time.Time) Entrada {
 		}
 	}
 
+	// **Papelera contra edición: gana la edición** (revisión del 2026-09-23). La
+	// regla de la ADR 0038 valía solo para el borrado definitivo: con la papelera,
+	// un lado que solo la manda a la papelera y otro que le cambia la contraseña
+	// juntaban las dos cosas campo a campo y la entrada acababa **en la papelera con
+	// la contraseña nueva**, fuera de la lista y purgada a los treinta días.
+	if b != nil {
+		soloL, soloR := soloALaPapelera(l, *b), soloALaPapelera(r, *b)
+		if soloL != soloR {
+			conContenido := r
+			if soloR {
+				conContenido = l
+			}
+			out.Papelera, out.BorradaEn = conContenido.Papelera, conContenido.BorradaEn
+		}
+	}
+
 	var historial [][]Antigua
 	historial = append(historial, l.Historial, r.Historial)
 	if perdedora.Secreto != "" && perdedora.Secreto != out.Secreto {
@@ -815,6 +848,21 @@ func fundirCampos(l, r Entrada, b *Entrada, ahora time.Time) Entrada {
 	out.Revision = max(l.Revision, r.Revision) + 1
 	out.Cambiada = max(l.Cambiada, r.Cambiada)
 	return out
+}
+
+// soloALaPapelera dice si este lado, respecto a la versión común, **no ha hecho
+// más que mandarla a la papelera**: ni contraseña, ni título, ni nada.
+func soloALaPapelera(x, b Entrada) bool {
+	if !x.Papelera || x.Papelera == b.Papelera {
+		return false
+	}
+	sinPapelera := func(e Entrada) string {
+		// `Cambiada` también, porque borrar la toca: si no, cualquier borrado
+		// parecería un cambio de contenido y esto no diría nunca que sí.
+		e.Papelera, e.BorradaEn, e.Revision, e.Cambiada = false, "", 0, ""
+		return canon(e)
+	}
+	return sinPapelera(x) == sinPapelera(b)
 }
 
 // mayor dice si `a` gana a `b` en un choque. El orden es total: dos entradas

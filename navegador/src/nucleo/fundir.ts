@@ -320,6 +320,20 @@ async function fundirCampos(l: Entrada, r: Entrada, b: Entrada | null, cuando: D
     }
   }
 
+  // **La edición gana al borrado también con la papelera** (revisión del
+  // 2026-09-23): ver el mismo trozo en `internal/boveda/sincronizar.go`.
+  if (b) {
+    const soloL = soloALaPapelera(l, b);
+    const soloR = soloALaPapelera(r, b);
+    if (soloL !== soloR) {
+      const conContenido = soloR ? l : r;
+      if (conContenido.papelera) out.papelera = true;
+      else delete out.papelera;
+      if (conContenido.borradaEn) out.borradaEn = conContenido.borradaEn;
+      else delete out.borradaEn;
+    }
+  }
+
   const listas: Antigua[][] = [l.historial ?? [], r.historial ?? []];
   if (perdedora.secreto && perdedora.secreto !== (out.secreto ?? "")) {
     listas.push([{ secreto: perdedora.secreto, hasta: rfc3339(cuando) }]);
@@ -330,6 +344,26 @@ async function fundirCampos(l: Entrada, r: Entrada, b: Entrada | null, cuando: D
   out.revision = Math.max(l.revision ?? 0, r.revision ?? 0) + 1;
   out.cambiada = l.cambiada > r.cambiada ? l.cambiada : r.cambiada;
   return out;
+}
+
+/**
+ * Si este lado, respecto a la versión común, **no ha hecho más que mandarla a la
+ * papelera**: ni contraseña, ni título, ni nada.
+ */
+function soloALaPapelera(x: Entrada, b: Entrada): boolean {
+  if (!x.papelera || Boolean(x.papelera) === Boolean(b.papelera)) return false;
+  const sinPapelera = (e: Entrada) => {
+    const c = { ...e };
+    delete c.papelera;
+    delete c.borradaEn;
+    delete c.revision;
+    // `cambiada` también: borrar la toca, así que dejarla haría que cualquier
+    // borrado pareciera un cambio de contenido. Va siempre, así que se vacía en
+    // vez de quitarse; lo mismo hace Go.
+    c.cambiada = "";
+    return canonEntrada(c);
+  };
+  return sinPapelera(x) === sinPapelera(b);
 }
 
 /** Si `a` gana a `b`: más revisiones, luego la fecha, luego la huella de su forma canónica. */

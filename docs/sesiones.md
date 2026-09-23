@@ -5,6 +5,35 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-23 (noche) · Lo que el informe dejaba abierto
+
+- **Todo lo que quedaba propuesto, hecho**, con su prueba y con la prueba comprobada al revés —quitando el
+  arreglo, se pone roja—:
+  - **Papelera contra edición** (hallazgo 10): si un lado solo manda la entrada a la papelera y el otro le
+    cambia el contenido, la entrada **se queda viva**. En Go y en TypeScript, con las pruebas cruzadas
+    vigilando que las dos fusiones digan lo mismo.
+  - **Y con ello, `cambiada` se toca al borrar y al restaurar.** Sin base, «vive si se cambió después de
+    borrarse» es la única regla que queda: restaurar no tocaba la fecha, así que lo rescatado en un equipo
+    **se volvía a ir** con la purga de otro, en silencio.
+  - **El código de alta** (hallazgo 11): una sola sentencia atómica —`UPDATE … WHERE intentos < 5
+    RETURNING codigo`— y la ruta pasa por el freno por IP. Veinte intentos a la vez gastan cinco.
+  - **El sello cubre ahora el sobre entero**, no solo su contenedor: `creado` decide qué ranura gana al
+    fundir sin base. Campo nuevo `sobres` en el sello, **compatible hacia atrás** —una bóveda de antes no lo
+    trae y se abre igual— y que nadie puede quitar, porque el sello va cifrado con la clave de bóveda.
+  - **`Fundir` ya no cambia la memoria sin saber si el guardado sale bien.**
+  - **El tope de Argon2id baja a 256 MiB** en los cuatro sitios que lo declaran. Un giga no tumba un
+    ordenador; sí al trabajador de fondo del navegador, que desde la E2 abre sobres que **elige otro**.
+- **Verificado**: `make comprobar` entero en verde —con `ESFINGE_CRUZADA=1`, el servidor de verdad en local
+  y la extensión cargada— y `make e2e`. Cada arreglo, además, mutado a mano para ver su prueba en rojo.
+- **Lo que no se arregla y queda dicho**: la cadena de versiones que el servidor puede congelar o bifurcar,
+  los plazos que dependen del reloj de cada equipo, el Worker de pruebas público con su buzón abierto —lo
+  tiene que cerrar el cliente con Cloudflare Access— y el nombre del equipo dentro del correo. A
+  `seguridad.md` y a `deuda.md`.
+- **Un tropiezo que conviene no repetir**: para deshacer una mutación de prueba se usó
+  `git checkout <fichero>`, y eso se llevó por delante **el trabajo sin comprometer que había en ese
+  fichero** —el arreglo del hallazgo 10—. Se rehízo entero y las pruebas lo confirman. Para deshacer una
+  mutación, copia del fichero antes y copia de vuelta después; nunca `git checkout`.
+
 ## 2026-09-23 (tarde) · La revisión de seguridad, hecha aquí
 
 - El cliente **descartó la auditoría externa** y pidió que la hiciera yo. Se le dijo lo que eso no puede

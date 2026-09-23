@@ -159,6 +159,14 @@ async function empezarAlta(p: Request, env: Env): Promise<Response> {
 async function terminarAlta(p: Request, env: Env): Promise<Response> {
 	const d = await leerJSON(p);
 	const c = correoValido(d.correo);
+	// **Esta ruta también pasa por el freno por IP** (revisión del 2026-09-23): es
+	// donde se prueba el código de seis cifras, y sin freno la única cuenta eran los
+	// cinco intentos de la fila —que vuelven a cero pidiendo otro código—. Va con el
+	// freno de entrar, no con el de altas, porque lo que hace es **comprobar un
+	// secreto**, como `/v1/sesion` y `/v1/sesion/codigo`; el de altas ya lo gastó
+	// `/v1/registro/inicio` al mandar el código, y cobrarlo dos veces por el mismo
+	// registro dejaría al tercer intento de alta del día sin poder terminar.
+	await frenar(env.FRENO_ENTRAR, p, env);
 	await puedeDarseDeAlta(env, c);
 	if (!deBase64url(d.sal, 16)) throw new Fallo(400, "Falta la sal o no es válida.");
 	if (!argon2Valido(d.argon2)) throw new Fallo(400, "Los parámetros de Argon2id no son válidos.");
@@ -166,19 +174,23 @@ async function terminarAlta(p: Request, env: Env): Promise<Response> {
 	if (!deBase64url(d.posesion, 32)) throw new Fallo(400, "Falta la prueba de posesión o no es válida.");
 
 	const ahora = Date.now();
-	const alta = await env.BD.prepare("SELECT codigo, caduca, intentos FROM altas WHERE correo = ?")
-		.bind(c)
-		.first<{ codigo: string; caduca: number; intentos: number }>();
+	// **El intento se apunta en la misma sentencia que lo lee** (revisión del
+	// 2026-09-23). Antes eran tres viajes a D1 —leer, comparar, sumar el intento—, y
+	// con peticiones a la vez toda la que leyera antes de la quinta escritura se
+	// evaluaba igual: los cinco intentos de un código de seis cifras dejaban de ser
+	// cinco. Con `RETURNING`, quien no cabe no lee el código.
+	const alta = await env.BD.prepare(
+		"UPDATE altas SET intentos = intentos + 1 WHERE correo = ? AND intentos < ? AND caduca >= ? RETURNING codigo",
+	)
+		.bind(c, INTENTOS_DE_ALTA, ahora)
+		.first<{ codigo: string }>();
 	const limpio = typeof d.codigo === "string" ? d.codigo.replace(/\s/g, "") : "";
 	const calculado = await huellaDeAlta(env, c, limpio);
 	const vale =
 		!!alta &&
-		alta.caduca >= ahora &&
-		alta.intentos < INTENTOS_DE_ALTA &&
 		/^\d{6}$/.test(limpio) &&
 		iguales(new TextEncoder().encode(calculado), new TextEncoder().encode(alta.codigo));
 	if (!vale) {
-		if (alta) await env.BD.prepare("UPDATE altas SET intentos = intentos + 1 WHERE correo = ?").bind(c).run();
 		throw new Fallo(401, "El código no es correcto o ha caducado. Pide otro.");
 	}
 

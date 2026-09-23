@@ -89,7 +89,19 @@ export type Documento = {
   cuerpo: string;
 };
 
-export type Sello = { id: string; serie: number; huellas: Record<string, string>; sincro?: number; cuerpo: string };
+export type Sello = {
+  id: string;
+  serie: number;
+  huellas: Record<string, string>;
+  /**
+   * Las huellas del **sobre entero**, no solo de su contenedor: `huellas` deja
+   * fuera `creado`, que es lo que decide qué ranura gana al fundir sin base.
+   * Un fichero de antes no la trae y se abre igual (ver `huellaDeSobre`).
+   */
+  sobres?: Record<string, string>;
+  sincro?: number;
+  cuerpo: string;
+};
 
 export type Contenido = {
   entradas: Entrada[];
@@ -199,6 +211,7 @@ export async function desempaquetar(doc: Documento, llave: string): Promise<{ se
       huellas: (s.huellas && typeof s.huellas === "object" ? s.huellas : {}) as Record<string, string>,
       cuerpo: typeof s.cuerpo === "string" ? s.cuerpo : "",
     };
+    if (s.sobres && typeof s.sobres === "object") sel.sobres = s.sobres as Record<string, string>;
     if (typeof s.sincro === "number" && s.sincro !== 0) sel.sincro = s.sincro;
     cont = contenidoDesde(JSON.parse(deUtf8.decode(await abrirTexto(doc.cuerpo, llave))));
   } catch {
@@ -222,6 +235,8 @@ async function coherente(doc: Documento, sel: Sello): Promise<void> {
     const esperada = sel.huellas[s.tipo];
     if (esperada === undefined) continue; // de una versión más nueva: no impide abrir
     if ((await huella(s.contenedor)) !== esperada) throw new ErrorBoveda("manipulada");
+    const entera = sel.sobres?.[s.tipo];
+    if (entera !== undefined && (await huellaDeSobre(s)) !== entera) throw new ErrorBoveda("manipulada");
   }
   for (const tipo of Object.keys(sel.huellas)) if (!tiene.has(tipo)) throw new ErrorBoveda("manipulada");
 }
@@ -417,8 +432,11 @@ export class Boveda {
     if (this.cuerpoSucio || !doc.cuerpo) {
       doc.cuerpo = await sellarTexto(utf8.encode(JSON.stringify(contenidoAJSON(this.cont))), llave, PERFIL_LLAVE);
     }
-    const sel: Sello = { id: doc.id, serie: doc.serie, huellas: {}, cuerpo: await huella(doc.cuerpo) };
-    for (const s of doc.sobres) sel.huellas[s.tipo] = await huella(s.contenedor);
+    const sel: Sello = { id: doc.id, serie: doc.serie, huellas: {}, sobres: {}, cuerpo: await huella(doc.cuerpo) };
+    for (const s of doc.sobres) {
+      sel.huellas[s.tipo] = await huella(s.contenedor);
+      sel.sobres![s.tipo] = await huellaDeSobre(s);
+    }
     if (this.sel.sincro) sel.sincro = this.sel.sincro;
     doc.sello = await sellarTexto(utf8.encode(JSON.stringify(ordenSello(sel))), llave, PERFIL_LLAVE);
     this.doc = doc;
@@ -441,8 +459,13 @@ export class Boveda {
     const llave = this.clave();
     if (this.cuerpoSucio) throw new Error("La bóveda tiene cambios sin guardar");
     const sobres = this.doc.sobres.filter((s) => !RANURAS_LOCALES.has(s.tipo));
-    const sel: Sello = { id: this.doc.id, serie: this.doc.serie, huellas: {}, cuerpo: await huella(this.doc.cuerpo) };
-    for (const s of sobres) sel.huellas[s.tipo] = await huella(s.contenedor);
+    const sel: Sello = {
+      id: this.doc.id, serie: this.doc.serie, huellas: {}, sobres: {}, cuerpo: await huella(this.doc.cuerpo),
+    };
+    for (const s of sobres) {
+      sel.huellas[s.tipo] = await huella(s.contenedor);
+      sel.sobres![s.tipo] = await huellaDeSobre(s);
+    }
     if (version) sel.sincro = version;
     const doc: Documento = {
       ...this.doc,
@@ -522,7 +545,9 @@ export class Boveda {
     const e = this.cont.entradas.find((x) => x.id === id && !x.papelera);
     if (!e) return;
     e.papelera = true;
-    e.borradaEn = rfc3339(ahora());
+    // **La fecha de cambio se toca al borrar y al restaurar**, igual que en Go: una
+    // entrada sobrevive a la lápida de otro equipo si cambió después de borrarse.
+    e.borradaEn = e.cambiada = rfc3339(ahora());
     e.revision = (e.revision ?? 0) + 1;
     this.cuerpoSucio = true;
     await this._guardarSinCola();
@@ -538,6 +563,7 @@ export class Boveda {
     if (!e) throw new Error("Esa entrada ya no está en la papelera");
     delete e.papelera;
     delete e.borradaEn;
+    e.cambiada = rfc3339(ahora());
     e.revision = (e.revision ?? 0) + 1;
     this.cuerpoSucio = true;
     await this._guardarSinCola();
@@ -657,9 +683,20 @@ export class Boveda {
   }
 }
 
+/**
+ * La huella del sobre entero, igual que `huellaDeSobre` en Go: los cuatro campos
+ * pegados con saltos de línea, que no pueden aparecer dentro de ninguno de ellos.
+ * **A propósito una cadena y no JSON**, para que las dos implementaciones no
+ * tengan que ponerse de acuerdo en nada más.
+ */
+export function huellaDeSobre(s: Sobre): Promise<string> {
+  return huella([s.tipo, s.creado, s.codificacion ?? "", s.contenedor].join("\n"));
+}
+
 /** El sello con sus claves en el orden de Go, para que el JSON se lea igual en los dos. */
 function ordenSello(s: Sello): Record<string, unknown> {
   const o: Record<string, unknown> = { id: s.id, serie: s.serie, huellas: s.huellas };
+  if (s.sobres && Object.keys(s.sobres).length) o.sobres = s.sobres;
   if (s.sincro) o.sincro = s.sincro;
   o.cuerpo = s.cuerpo;
   return o;

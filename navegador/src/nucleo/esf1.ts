@@ -49,7 +49,10 @@ export const PREFIJO = MAGIA + ".";
 // Los mismos límites de cordura que Go al abrir algo ajeno: sin ellos, una
 // cabecera manipulada pidiendo gigas de memoria tumba el navegador antes de que
 // se pueda comprobar la etiqueta.
-const MEMORIA_MAXIMA = 1024 * 1024;
+// 256 MiB, cuatro veces el perfil de siempre, y el mismo número que Go: con la
+// bóveda llegando del servidor, los sobres que se abren los elige otro, y aquí lo
+// que se muere es el trabajador de fondo, sin decir por qué.
+const MEMORIA_MAXIMA = 256 * 1024;
 const PASADAS_MAXIMO = 16;
 
 /**

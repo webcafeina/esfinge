@@ -144,6 +144,19 @@ type sello struct {
 	ID      string            `json:"id"`
 	Serie   int64             `json:"serie"`
 	Huellas map[string]string `json:"huellas"`
+	// Sobres son las huellas del **sobre entero**, no solo de su contenedor
+	// (revisión del 2026-09-23).
+	//
+	// `Huellas` deja fuera `creado` y `codificacion`, y `creado` no es adorno: es
+	// lo que decide qué ranura gana al fundir sin base. Un servidor que quisiera
+	// hacer daño podía envejecer o rejuvenecer una ranura sin tocar su contenedor,
+	// y colarle a un equipo rezagado una contraseña maestra vieja.
+	//
+	// Va en un campo aparte y no dentro de `Huellas` para que **un fichero de
+	// antes se siga abriendo**: si no está, se comprueba lo de siempre. Nadie puede
+	// quitarlo para esquivarlo, porque el sello viaja cifrado con la clave de
+	// bóveda: sin ella no se puede reescribir.
+	Sobres map[string]string `json:"sobres,omitempty"`
 	// Sincro es la versión del servidor que tiene o va a tener este documento.
 	//
 	// Va aquí, **dentro de lo cifrado con la clave de bóveda**, porque es lo que
@@ -551,6 +564,12 @@ func coherente(doc documento, sel sello) error {
 		if huellaDe(s.Contenedor) != esperada {
 			return ErrManipulada
 		}
+		// Y si el sello es de los que cubren el sobre entero, también la fecha y
+		// la codificación. Un fichero de antes no lo trae, y eso no es motivo para
+		// no abrirlo.
+		if h, hay := sel.Sobres[s.Tipo]; hay && h != huellaDeSobre(s) {
+			return ErrManipulada
+		}
 	}
 	// Y al revés: una ranura que el sello conoce y ya no está en el fichero.
 	for tipo := range sel.Huellas {
@@ -574,6 +593,15 @@ func azarHex() (string, error) {
 func huellaDe(s string) string {
 	h := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(h[:])
+}
+
+// huellaDeSobre cubre el sobre entero. Los campos van separados por saltos de
+// línea, que no pueden aparecer dentro de ninguno de ellos —un tipo, una fecha
+// RFC 3339, una palabra y un contenedor en base64—, así que dos sobres distintos
+// no pueden dar la misma cadena. Es a propósito **una cadena y no JSON**: la
+// tiene que escribir igual la extensión, en TypeScript (docs/formato-boveda.md).
+func huellaDeSobre(s sobre) string {
+	return huellaDe(strings.Join([]string{s.Tipo, s.Creado, s.Codificacion, s.Contenedor}, "\n"))
 }
 
 func (b *Boveda) ranura(tipo string) int {
@@ -644,8 +672,10 @@ func (b *Boveda) guardar() error {
 	b.sel.Serie = b.doc.Serie
 	b.sel.Cuerpo = huellaDe(b.doc.Cuerpo)
 	b.sel.Huellas = map[string]string{}
+	b.sel.Sobres = map[string]string{}
 	for _, s := range b.doc.Sobres {
 		b.sel.Huellas[s.Tipo] = huellaDe(s.Contenedor)
+		b.sel.Sobres[s.Tipo] = huellaDeSobre(s)
 	}
 	crudoSello, err := json.Marshal(b.sel)
 	if err != nil {
@@ -880,8 +910,15 @@ func (b *Boveda) Borrar(id string) error {
 	}
 	for i, e := range b.cont.Entradas {
 		if e.ID == id && !e.Papelera {
+			cuando := ahora().UTC().Format(time.RFC3339)
 			b.cont.Entradas[i].Papelera = true
-			b.cont.Entradas[i].BorradaEn = ahora().UTC().Format(time.RFC3339)
+			b.cont.Entradas[i].BorradaEn = cuando
+			// **Mandar a la papelera y sacar de ella son cambios, y la fecha lo
+			// tiene que decir** (revisión del 2026-09-23). Una entrada sobrevive a
+			// la lápida de otro equipo si se cambió después de que se borrara
+			// (`p.Cambiada >= lapidaDelOtro`): sin tocar la fecha, restaurar una
+			// entrada aquí perdía contra la purga de allí y se volvía a ir.
+			b.cont.Entradas[i].Cambiada = cuando
 			b.cont.Entradas[i].Revision++
 			b.cuerpoSucio = true
 			return b.guardar()
@@ -921,6 +958,7 @@ func (b *Boveda) Restaurar(id string) error {
 		if e.ID == id && e.Papelera {
 			b.cont.Entradas[i].Papelera = false
 			b.cont.Entradas[i].BorradaEn = ""
+			b.cont.Entradas[i].Cambiada = ahora().UTC().Format(time.RFC3339)
 			b.cont.Entradas[i].Revision++
 			b.cuerpoSucio = true
 			return b.guardar()

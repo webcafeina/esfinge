@@ -64,7 +64,13 @@ test("bóveda: quitar una ranura o volver a un cuerpo viejo se detecta", async (
 
   const sinRecuperacion = { ...nuevo, sobres: nuevo.sobres.filter((s: { tipo: string }) => s.tipo !== "recuperacion") };
   const cuerpoViejo = { ...nuevo, cuerpo: viejo.cuerpo };
-  for (const malo of [sinRecuperacion, cuerpoViejo]) {
+  // Y la fecha de una ranura, que no es un adorno: al fundir sin base decide qué
+  // ranura gana, así que envejecerla colaría una contraseña maestra vieja.
+  const fechaCambiada = {
+    ...nuevo,
+    sobres: nuevo.sobres.map((s: { creado: string }, i: number) => (i === 0 ? { ...s, creado: "2019-01-01T00:00:00Z" } : s)),
+  };
+  for (const malo of [sinRecuperacion, cuerpoViejo, fechaCambiada]) {
     const err = await Boveda.abrir(JSON.stringify(malo), MAESTRA).catch((e: unknown) => e);
     expect((err as ErrorBoveda).codigo).toBe("manipulada");
   }

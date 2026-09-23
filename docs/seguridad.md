@@ -333,6 +333,16 @@ entra. Se eligió así con el cliente.
 - **Un servidor malicioso puede enseñar a un equipo una versión vieja de la bóveda** y no la última. Lo
   que no puede es hacerla pasar por nueva —la versión va sellada dentro, con la clave de la bóveda— ni
   fabricar una ranura para abrirla.
+- **Y puede congelar o bifurcar**: la versión es un número, no una cadena que ate cada documento al
+  anterior, así que un servidor podría dejar a un equipo parado en la versión que ya tiene, o servirle a
+  cada equipo su propia rama, y ninguno se enteraría de que el otro ha subido nada. **No puede inventarse
+  contenido**, porque no tiene con qué cifrarlo. Se cerraría sellando también la huella del documento
+  anterior; está apuntado en `deuda.md`.
+- **Los plazos los decide el reloj del equipo que abre la bóveda.** La papelera de treinta días y las
+  lápidas de ciento ochenta se purgan al abrir, y un equipo muy adelantado purga para toda la cuenta. No
+  hace falta un servidor malicioso: basta con un ordenador con la hora mal puesta.
+- **Resend guarda lo que manda** mientras dure su retención, y en esos correos van los códigos de entrada
+  y de borrado. Caducan en diez minutos, pero quien pueda leer esa consola los ve.
 - **El servidor sabe quién tiene cuenta.** La pre-entrada contesta igual con cuenta que sin ella, así que
   preguntar desde fuera no lo desvela; al servidor, sí.
 

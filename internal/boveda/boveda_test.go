@@ -200,6 +200,49 @@ func TestDetectaQueHanEditadoElFicheroAMano(t *testing.T) {
 		}
 	})
 
+	// **La fecha de una ranura también va sellada** (revisión del 2026-09-23). No
+	// es un adorno: al fundir sin base, `creado` decide qué ranura gana, así que
+	// envejecer o rejuvenecer una desde el servidor le colaría a un equipo rezagado
+	// una contraseña maestra vieja. El contenedor no se toca, y hasta ahora el
+	// sello solo miraba el contenedor.
+	t.Run("cambiando la fecha de una ranura", func(t *testing.T) {
+		b, _, ruta := nueva(t)
+		b.Cerrar()
+
+		var doc documento
+		datos, _ := os.ReadFile(ruta)
+		json.Unmarshal(datos, &doc)
+		doc.Sobres[0].Creado = "2019-01-01T00:00:00Z"
+		fuera, _ := json.Marshal(doc)
+		os.WriteFile(ruta, fuera, 0o600)
+
+		if _, err := Abrir(ruta, maestra); !errors.Is(err, ErrManipulada) {
+			t.Errorf("quiero ErrManipulada, tengo %v", err)
+		}
+	})
+
+	// Y el otro lado de lo mismo: **una bóveda de antes de este sello se abre
+	// igual**. No trae las huellas del sobre entero, y eso no es motivo para dejar
+	// a nadie fuera de sus contraseñas.
+	t.Run("una bóveda cuyo sello no cubre los sobres enteros", func(t *testing.T) {
+		b, _, ruta := nueva(t)
+		// Se vuelve a sellar como lo hacía la versión anterior: sin `Sobres`.
+		b.sel.Sobres = nil
+		crudo, _ := json.Marshal(b.sel)
+		sellado, err := cripto.SellarTexto(crudo, b.llave, cripto.PerfilLlave)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b.doc.Sello = sellado
+		fuera, _ := json.MarshalIndent(b.doc, "", "  ")
+		os.WriteFile(ruta, append(fuera, '\n'), 0o600)
+		b.Cerrar()
+
+		if _, err := Abrir(ruta, maestra); err != nil {
+			t.Errorf("una bóveda de antes no se abre: %v", err)
+		}
+	})
+
 	t.Run("revirtiendo el cuerpo a uno viejo", func(t *testing.T) {
 		b, _, ruta := nueva(t)
 		b.Poner(Entrada{Titulo: "Uno"})

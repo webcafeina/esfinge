@@ -33,8 +33,16 @@ const (
 // límites de cordura al abrir un contenedor ajeno: sin ellos, una cabecera
 // manipulada pidiendo 64 GiB de memoria tumba el proceso antes de que nadie
 // pueda comprobar la etiqueta de autenticación.
+//
+// **El tope es 256 MiB, cuatro veces el perfil de siempre** (revisión del
+// 2026-09-23). Estaba en 1 GiB, que no tumba un ordenador pero sí al trabajador
+// de fondo del navegador, y desde que la bóveda llega por el servidor los sobres
+// que se abren **los elige otro**: con un sobre por cada mil doscientos KiB de
+// más, desbloquear en la extensión se convertía en un cierre sin explicación.
+// Nada de lo que escribe Esfinge pasa de 64 MiB, así que no deja fuera ningún
+// contenedor de verdad; subir el coste algún día tendrá que subir también esto.
 const (
-	memoriaMaxima = 1024 * 1024 // 1 GiB en KiB
+	memoriaMaxima = 256 * 1024 // 256 MiB en KiB
 	pasadasMaximo = 16
 )
 

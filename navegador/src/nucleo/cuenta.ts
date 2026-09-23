@@ -14,9 +14,10 @@ export const ERR_COSTE_BAJO = "El servidor pide proteger la contraseña con meno
 export function validarCoste(p: ParametrosDeCuenta): void {
   const d = PERFIL_INTERACTIVO;
   if (p.memoria < d.memoria || p.pasadas < d.pasadas || p.paralelismo < 1) throw new Error(ERR_COSTE_BAJO);
-  // Los mismos topes que al abrir un contenedor: un servidor que pidiera gigas
-  // tumbaría el navegador antes de que nadie pudiera decir nada.
-  if (p.memoria > 1024 * 1024 || p.pasadas > 16 || p.paralelismo > 16) {
+  // Los mismos topes que al abrir un contenedor —256 MiB—: un servidor que
+  // pidiera gigas tumbaría el trabajador de fondo antes de que nadie pudiera
+  // decir nada.
+  if (p.memoria > 256 * 1024 || p.pasadas > 16 || p.paralelismo > 16) {
     throw new Error("El servidor pide un coste de derivación imposible");
   }
 }

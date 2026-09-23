@@ -29,8 +29,11 @@ func TestLaClaveDeAccesoNoSeDerivaConPocoCoste(t *testing.T) {
 			t.Errorf("deriva con %+v: %v", p, err)
 		}
 	}
-	if _, err := DerivarAcceso("maestra", sal, Parametros{Memoria: 4 * 1024 * 1024, Pasadas: 3, Paralelismo: 4}); err == nil {
-		t.Error("deriva pidiendo 4 GiB")
+	// Ni 4 GiB ni medio: el tope es el mismo que al abrir un sobre, 256 MiB.
+	for _, m := range []uint32{512 * 1024, 4 * 1024 * 1024} {
+		if _, err := DerivarAcceso("maestra", sal, Parametros{Memoria: m, Pasadas: 3, Paralelismo: 4}); err == nil {
+			t.Errorf("deriva pidiendo %d KiB", m)
+		}
 	}
 }
 

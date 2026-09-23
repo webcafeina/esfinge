@@ -24,9 +24,9 @@ externa**: mientras no la haya, las cuentas siguen por invitación.
 | 7 | Extensión: quién puede pedir lo de la cuenta se decidía por el nombre del puerto | Media | **Arreglado** |
 | 8 | Extensión: la tarjeta de guardar se podía pulsar en el instante en que aparece | Media | **Arreglado** |
 | 9 | Bóveda: rotar la clave de recuperación no invalida una copia antigua | Media | Decisión: cambiar el texto o recifrar |
-| 10 | Fusión: un borrado suave gana a una edición | Media | Propuesto |
-| 11 | Servidor: el código de alta admite más de cinco intentos en una ráfaga | Media | Propuesto |
-| 12 | Varios menores | Baja | Ver abajo |
+| 10 | Fusión: un borrado suave gana a una edición | Media | **Arreglado** |
+| 11 | Servidor: el código de alta admite más de cinco intentos en una ráfaga | Media | **Arreglado** |
+| 12 | Varios menores | Baja | Ver abajo · cuatro arreglados, cuatro apuntados |
 
 ## Lo que ya está arreglado (2.25.5)
 
@@ -96,7 +96,7 @@ que lo comprueba por los dos lados.
 - **«El mismo sitio»** para las ofertas pendientes contaba etiquetas a ojo, así que `evil.github.io` y
   `victima.github.io` eran el mismo. Ahora usa la lista de sufijos públicos, que ya iba dentro.
 
-## Lo que se arregló después (2.25.6)
+## Lo que se arregló después (2.25.6 y 2.25.7)
 
 ### 2 · La extensión pisa su bóveda si la fusión falla al volver a entrar — **alta**
 
@@ -144,21 +144,49 @@ borrado definitivo. Con la papelera no: si un equipo manda una entrada a la pape
 contraseña, la fusión campo a campo se queda con las dos cosas —la entrada acaba **en la papelera con la
 contraseña nueva**—, desaparece de la lista y a los treinta días se purga.
 
-**Propuesta**: si un lado solo ha tocado la papelera y el otro ha cambiado contenido, la entrada se queda
-fuera de la papelera. En las dos implementaciones, con caso en las pruebas cruzadas, y dicho en
-`docs/formato-boveda.md`.
+**Hecho (2.25.7)**: si un lado, respecto a la base, no ha hecho más que mandarla a la papelera y el otro ha
+tocado contenido, la entrada se queda fuera de la papelera (`soloALaPapelera`, en Go y en TypeScript). La
+prueba borra en un equipo, cambia la contraseña en el otro y exige que la entrada siga viva y con la
+contraseña nueva; quitando el arreglo, se va a la papelera.
+
+**Y con ello, `cambiada` se toca al borrar y al restaurar.** Era el tercero de los menores: sin base, la
+única regla que queda es «vive si se cambió después de borrarse», y restaurar no tocaba la fecha, así que
+una entrada rescatada en un equipo perdía contra la purga de otro y **se iba otra vez, sin decir nada y con
+la papelera del otro ya vacía**. Las dos cosas están en `docs/formato-boveda.md`.
 
 ### 11 · El código de alta admite más de cinco intentos en una ráfaga — **media**
 
 `servidor/src/indice.ts`. Leer el código, comprobarlo y apuntar el intento son tres viajes a D1, y
 `terminarAlta` es la única ruta que no pasa por el freno por IP. Con peticiones a la vez, los «cinco
 intentos» de un código de seis cifras no son cinco. No se reproduce en el simulador; contra D1 de verdad
-se espera que sí. **Propuesta**: una sola sentencia atómica (`UPDATE … WHERE intentos < 5 RETURNING codigo`)
-y pasar también esa ruta por el freno.
+se espera que sí. **Hecho (2.25.7)**: una sola sentencia atómica
+(`UPDATE … WHERE intentos < 5 RETURNING codigo`), que además deja en cinco el contador de la fila en vez de
+subirlo con cada petición de la ráfaga, y la ruta pasa por el freno por IP —el de entrar, 20 por minuto, que
+es el de comprobar un secreto; el de altas ya lo gastó pedir el código—. Dos pruebas: veinte intentos a la
+vez gastan cinco, y veinticinco seguidos desde una IP acaban en 429.
 
 **Lo que queda del 2 y del 3**: el estado de la extensión no se marca como «hay que subir» cuando la fusión
 de la entrada deja cambios sin subir (hallazgo menor 4 de esa pasada); se autocura en la siguiente pasada,
 y está apuntado en `docs/deuda.md`.
+
+### Y los menores que también se arreglaron (2.25.7)
+
+- **El sello no cubría `creado` ni `codificacion` de cada sobre**, y `creado` decide qué ranura gana al
+  fundir sin base: un servidor podía envejecer una ranura sin tocar su contenedor y colarle a un equipo
+  rezagado una contraseña maestra vieja. Ahora el sello lleva un campo `sobres` con la huella del sobre
+  entero. **No rompe nada de antes**: si no está, se comprueba lo de siempre, y nadie puede quitarlo, porque
+  el sello va cifrado con la clave de bóveda. En las dos implementaciones, con las pruebas cruzadas
+  vigilando que calculen la misma huella.
+- **`Fundir` sustituía el contenido en memoria antes de saber si el guardado salía bien.** Si guardar
+  fallaba —otro Esfinge tocando el fichero, o el disco—, la ventana se quedaba enseñando una bóveda que no
+  estaba en ninguna parte. Ahora se deshace.
+- **Parámetros de Argon2id hostiles**: el tope al abrir un sobre baja de 1 GiB a 256 MiB, cuatro veces el
+  perfil de siempre. Un giga no tumba un ordenador, pero sí al trabajador de fondo del navegador, que desde
+  la E2 abre sobres que **ha elegido otro**. En los cuatro sitios que lo declaran: los dos ESF1, los dos
+  costes de cuenta y el servidor, que ya no acepta registrar un coste que sus propios clientes rechazarían.
+- **Lo demás queda apuntado**, no arreglado: la bifurcación de versiones y los plazos que dependen del reloj
+  de cada equipo van a `docs/seguridad.md` y a `docs/deuda.md`; el Worker de pruebas público y el nombre del
+  equipo dentro del correo, a `docs/deuda.md`.
 
 ## Decisiones que no son un arreglo, sino una elección
 
@@ -186,25 +214,30 @@ protocolo de cuenta.
 
 ## Lo demás, menor
 
-- **El sello no cubre `creado` ni `codificacion` de cada sobre**, y `creado` decide qué ranura gana al fundir
-  sin base: un servidor malicioso podría hacer que un equipo rezagado reimponga una contraseña maestra vieja.
-  Estrecho, pero se cierra haciendo que la huella cubra el sobre entero, con subida de formato.
+- ~~**El sello no cubre `creado` ni `codificacion` de cada sobre**~~ → **arreglado en la 2.25.7**, y sin
+  subir el formato: un campo `sobres` en el sello, que las versiones de antes no traen y que nadie puede
+  quitar.
 - **La versión de la bóveda es un número, no una cadena**: el servidor no puede fabricar contenido, pero sí
   bifurcar (enseñar a cada equipo su propia rama) o congelar. Se cerraría sellando la huella del documento
-  anterior. Como mínimo hay que decirlo en `docs/seguridad.md`, donde hoy solo se habla de «una versión
-  vieja».
-- **Restaurar y borrar no tocan la fecha de cambio**, así que restaurar puede perder contra una purga si se
-  funde sin base.
+  anterior. **Dicho ya en `docs/seguridad.md` y apuntado en `docs/deuda.md`** (2026-09-23); cerrarlo es una
+  subida de formato y no se ha hecho.
+- ~~**Restaurar y borrar no tocan la fecha de cambio**~~ → **arreglado en la 2.25.7**: las dos la tocan, en
+  Go y en TypeScript, con su prueba de restaurar contra una purga fundiendo sin base.
 - **Los plazos de la papelera y de las lápidas los decide el reloj del equipo que abre**: uno muy adelantado
-  purga para toda la cuenta.
-- **`Fundir` sustituye el contenido en memoria antes de saber si el guardado sale bien.**
-- **Parámetros de Argon2id hostiles en los sobres**: un documento del servidor puede pedir 1 GiB por sobre y
-  tumbar el trabajador de fondo. Solo disponibilidad.
+  purga para toda la cuenta. **Dicho en `docs/seguridad.md` y en `docs/deuda.md`**; arreglarlo pide una hora
+  de referencia que hoy no hay.
+- ~~**`Fundir` sustituye el contenido en memoria antes de saber si el guardado sale bien.**~~ →
+  **arreglado en la 2.25.7**: si guardar falla, en memoria se queda lo que había.
+- ~~**Parámetros de Argon2id hostiles en los sobres**~~ → **arreglado en la 2.25.7**: el tope baja a
+  256 MiB en los dos ESF1, en los dos costes de cuenta y en el servidor.
 - **El Worker de pruebas es público y su buzón no pide nada**: cualquiera lee los códigos de esas cuentas.
   Conviene ponerle Cloudflare Access delante y asegurarse de que sus secretos no son los de producción.
+  **Apuntado en `docs/deuda.md`: lo tiene que hacer el cliente en su panel de Cloudflare.**
 - **El nombre del equipo lo escribe quien entra y sale dentro del correo** que recibe el dueño: 80
-  caracteres a su gusto.
-- **Resend conserva los cuerpos** de los correos durante su retención, y ahí van los códigos.
+  caracteres a su gusto, sin caracteres de control y en un correo de texto, no de HTML. **Aceptado**, y
+  apuntado en `docs/deuda.md`.
+- **Resend conserva los cuerpos** de los correos durante su retención, y ahí van los códigos. **Dicho en
+  `docs/seguridad.md`.**
 
 ## Lo que se miró y está bien
 
