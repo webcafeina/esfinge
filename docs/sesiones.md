@@ -18,8 +18,8 @@ Plantilla al final.
 - **Comprobado desde fuera, y no solo el camino recto**: el buzón contesta 302 a
   `webcafeina.cloudflareaccess.com` con barra final, con barra doble y en mayúsculas, y lo que no encaja con
   la ruta lo rechaza el propio Worker con 404. `/v1/salud` y `/v1/prelogin` siguen en 200.
-- **Lo que no se puede comprobar desde aquí**: que la puerta **se abra**. Entrar con el correo y ver el
-  buzón es cosa del cliente, y conviene hacerlo una vez ahora y no el día que haga falta de verdad.
+- **Y abre**, que es lo que no se puede comprobar desde aquí: el cliente entró con el código que le llegó al
+  correo y vio el buzón vacío. Se hizo en el momento y no el día que hiciera falta, que era el riesgo.
 
 ## 2026-09-23 (noche) · Lo que el informe dejaba abierto
 

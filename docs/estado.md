@@ -514,9 +514,9 @@ curl -s "https://clients2.google.com/service/update2/crx?response=updatecheck&pr
 
 1. ~~**Cerrar el Worker de pruebas**~~ **— hecho el 2026-09-23 por la tarde.** Aplicación de Access sobre
    la ruta `_pruebas/buzon`, con «Emails ending in `@webcafeina.com`»; el buzón redirige a la pantalla de
-   identificación y la API sigue intacta (detalle y comprobaciones en [`deuda.md`](deuda.md)). Queda una
-   comprobación que solo puede hacer él: **entrar una vez** con su correo y ver que el buzón se abre.
-   Lo de antes decía: **cerrar el Worker de pruebas** —Cloudflare Access delante de `esfinge-cuentas-pruebas`, cuyo buzón
+   identificación y la API sigue intacta (detalle y comprobaciones en [`deuda.md`](deuda.md)). **Y abre**:
+   el cliente entró con el código que le llegó a su correo y vio el buzón vacío, así que la puerta
+   funciona en los dos sentidos. Lo de antes decía: **cerrar el Worker de pruebas** —Cloudflare Access delante de `esfinge-cuentas-pruebas`, cuyo buzón
    entrega hoy los códigos de cualquier cuenta de ese servidor—. **Cuando las tiendas hayan publicado la
    versión nueva**; lo hace él en su panel. Lo suyo es una aplicación de Access **por ruta**, sobre
    `/_pruebas/buzon`: protegiendo el Worker entero, una Esfinge apuntada al servidor de pruebas recibiría
