@@ -633,12 +633,28 @@ jobs:
           fi
           n="${{ steps.v.outputs.n }}"
           # Sin esperar a la revisión: una cola de revisión no es un fallo de la publicación.
-          npx --yes web-ext@10.6.0 sign \
+          #
+          # Y **subir una versión que ya está subida es un aviso, no un fallo**, como
+          # con Chrome desde la 2.23.2: pasa si se mueve una etiqueta y se vuelve a
+          # publicar. Lo que no puede pasar es que el correo de «ha fallado» deje de
+          # significar algo.
+          salida="$RUNNER_TEMP/firefox.log"
+          # **Con `pipefail`**, que si no el código de salida sería el de `tee` —cero
+          # siempre— y un fallo de verdad pasaría por bueno (CLAUDE.md).
+          set -o pipefail
+          if npx --yes web-ext@10.6.0 sign \
             --channel=listed \
             --approval-timeout=0 \
             --source-dir paquete \
             --upload-source-code "adjuntos/esfinge-extension-$n-fuente.zip" \
-            --amo-metadata docs/tiendas/amo-metadata.json
+            --amo-metadata docs/tiendas/amo-metadata.json 2>&1 | tee "$salida"; then
+            exit 0
+          fi
+          if grep -q "already exists" "$salida"; then
+            echo "::warning::Firefox ya tenía la versión $n: no se vuelve a subir"
+            exit 0
+          fi
+          exit 1
 
       - name: Chrome
         env:
