@@ -778,6 +778,7 @@ function Ajustes({
   alCrearCuenta: () => void;
   alEntrar: (correo?: string, deNuevo?: boolean) => void;
 }) {
+  const [cuenta] = usaCuenta();
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
   const [navegador, setNavegador] = useState<EstadoDelNavegador | null>(null);
   const [vidrio, setVidrio] = useState<boolean | null>(null);
@@ -1000,6 +1001,21 @@ function Ajustes({
           que nadie pueda conectarse desde fuera. Por él salen las cuentas del sitio que estés
           mirando y, cuando las pides, una contraseña cada vez. Nunca la contraseña maestra.
         </p>
+
+        {/* **Con cuenta, este canal sobra, y hay que decirlo donde se ve.** Desde la
+            2.25.0 la extensión entra con la cuenta en su propio panel y va siempre
+            por ella, esté Esfinge abierta o cerrada (ADR 0040). El interruptor se
+            queda —en local sigue siendo la única forma— y quien estrene Esfinge lo
+            tiene apagado, que es como viene de fábrica. Lo que no se hace es
+            apagarlo solo al entrar en una cuenta: en un navegador donde todavía no
+            se haya entrado con la cuenta, eso dejaría de rellenar sin avisar. */}
+        {cuenta?.modo === "cuenta" && (
+          <p className="nota">
+            <strong>Con cuenta no hace falta.</strong> Entra con tu cuenta en el panel de la
+            extensión y funcionará sola, también con Esfinge cerrada. Esto solo sirve si prefieres
+            que el navegador le pregunte a esta aplicación; si no lo usas, déjalo apagado.
+          </p>
+        )}
 
         {navegador?.error && <p className="error">{navegador.error}</p>}
 

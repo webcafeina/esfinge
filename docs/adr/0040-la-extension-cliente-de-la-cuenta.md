@@ -61,6 +61,20 @@ Por entregas, cada una publicable sin romper lo anterior:
 - Con la E2, **la extensión se conecta a internet** y guarda la bóveda cifrada en el navegador: cambian el
   aviso del panel, la política y lo declarado en las dos tiendas.
 
+### Matizado en la 2.25.4: el interruptor del canal se queda, y con cuenta lo dice
+
+Con cuenta, «Dejar que la extensión del navegador consulte la bóveda» (ADR 0027) **no hace falta**: la
+extensión entra con la cuenta en su panel y va por ella. Lo preguntó el cliente al cerrar el 2026-09-22 y
+eligió **dejarlo como está y avisar**:
+
+- El interruptor **se queda**, porque en local sigue siendo la única forma de que la extensión pregunte.
+- Con cuenta sale una nota debajo: «Con cuenta no hace falta…».
+- Quien estrene Esfinge lo tiene **apagado**, que es como viene de fábrica desde la ADR 0027; con cuenta,
+  igual.
+- **No se apaga solo al entrar en una cuenta**, que era la alternativa. En un navegador donde todavía no se
+  hubiera entrado con la cuenta, eso dejaría de rellenar **sin avisar**; y quitarlo de Ajustes con cuenta
+  haría aparecer y desaparecer un ajuste según el modo.
+
 ## Verificación
 
 **E1, hecha el 2026-09-22**, sin publicar: no cambia nada de lo que se instala —el núcleo no entra en ningún

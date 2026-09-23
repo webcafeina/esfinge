@@ -986,6 +986,9 @@ test("el canal con el navegador viene apagado y se enciende en Ajustes", async (
 
   const casilla = page.getByLabel("Dejar que la extensión del navegador consulte la bóveda");
   await expect(casilla).toBeVisible({ timeout: 20_000 });
+  // Sin cuenta, el canal es la única forma de que la extensión pregunte: la nota
+  // que dice que sobra no puede salir aquí.
+  await expect(page.getByText("Con cuenta no hace falta.")).toHaveCount(0);
   // Punto de partida propio: el fichero de preferencias dura entre tandas.
   if (await casilla.isChecked()) {
     await casilla.uncheck();

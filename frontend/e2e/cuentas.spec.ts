@@ -264,6 +264,13 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await expect(b.getByRole("heading", { name: "Cuenta y sincronización" })).toBeVisible();
   await expect(b.getByText(correo)).toBeVisible();
   // El equipo de ahora, marcado; y exportar lo que hay de la cuenta.
+  // Y el canal con el navegador, que con cuenta sobra: sigue estando —en local es
+  // la única forma— y lo dice donde se ve (2.25.4).
+  await expect(b.getByLabel("Dejar que la extensión del navegador consulte la bóveda")).not.toBeChecked();
+  await expect(b.getByText("Con cuenta no hace falta.")).toBeVisible();
+  await b.getByText("Con cuenta no hace falta.").scrollIntoViewIfNeeded();
+  await retratar(b, "ajustes-canal-con-cuenta");
+
   await expect(b.getByRole("heading", { name: "Equipos con tu cuenta" })).toBeVisible();
   // Solo B: a A lo acaba de olvidar.
   await expect(b.locator(".lista-equipos li")).toHaveCount(1);

@@ -471,7 +471,16 @@ giran → **2.25.3**, comprobada: «funciona perfecto». **La siguiente acción 
 dos tiendas aprueben la extensión** y probarla entonces en Firefox —lo único que queda de la E3—, con la
 versión de la tienda en Chrome en vez de la cargada a mano. Después, **la auditoría externa**.
 
-**Pendiente, y va antes de la auditoría y de todo lo demás (lo pidió el cliente al cerrar el 2026-09-22)**: en Ajustes de la aplicación,
+**Las dos tiendas han aprobado la 2.25.3** (comprobado el 2026-09-23: la ficha de AMO la sirve, y el canal
+de actualizaciones de Chrome también). **La siguiente acción concreta es que el cliente termine la E3**:
+quitar de Chrome la copia cargada a mano y usar la de la tienda, y probar en Firefox —donde hay que darle
+los permisos de sitios a mano, que en MV3 no se conceden al instalar—. Después, **preparar el paquete para
+la auditoría externa**.
+
+~~**Pendiente, y va antes de la auditoría**~~ — **hecho en la 2.25.4 (2026-09-23)**: el cliente eligió
+«dejarlo como está y avisar», así que el interruptor se queda y con cuenta lleva una nota que dice que no
+hace falta. No se apaga solo al entrar en una cuenta: en un navegador donde no se haya entrado con la
+cuenta, eso dejaría de rellenar sin avisar (ADR 0040). Lo que decía el pendiente: en Ajustes de la aplicación,
 «Dejar que la extensión del navegador consulte la bóveda» **con cuenta sobra** —la extensión va siempre por
 la cuenta—, pero sigue haciendo falta en local. Propuesta: mantenerlo, con una nota en modo cuenta («la
 extensión no lo necesita: entra con tu cuenta en su panel») y apagado por defecto para quien estrene

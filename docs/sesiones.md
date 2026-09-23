@@ -5,6 +5,16 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-23 · 2.25.4: el interruptor del canal, con su nota
+
+- **Las dos tiendas han aprobado la 2.25.3**: AMO la sirve y el canal de actualizaciones de Chrome también.
+  Queda que el cliente pruebe con la de la tienda en Chrome y en Firefox (resto de la E3).
+- El pendiente que iba antes de la auditoría: con cuenta, el canal con el navegador sobra. Se le preguntó y
+  eligió **dejarlo como está y avisar**; las otras dos —apagarlo al entrar en una cuenta, o quitarlo de
+  Ajustes— dejaban de rellenar sin avisar o hacían aparecer y desaparecer un ajuste. ADR 0040 matizada.
+- La nota sale solo con cuenta, y las pruebas de interfaz lo vigilan por los dos lados: en local no aparece
+  y con cuenta sí, con el interruptor apagado. Capturas miradas en los dos temas.
+
 ## 2026-09-22 (noche, cierre) · A la espera de las tiendas
 
 - La 2.25.3, comprobada: «funciona perfecto». **Sesión cerrada aquí** a petición del cliente, a la
