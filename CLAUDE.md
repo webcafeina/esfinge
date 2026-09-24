@@ -602,6 +602,20 @@ pieza y sin `import`**, porque en cuanto comparte un módulo con el panel el emp
 trozo común, mete un `import` en el trabajador y eso obliga a declararlo como módulo en el
 manifiesto —que es justo la clase de detalle que funciona en un navegador y no en el otro—.
 
+**Un correo no es una página, y el botón de la invitación lo enseñó.** Se escribió como un `<a>` con
+`background:` abreviado —lo que funciona en cualquier navegador— y **Gmail no lo pintó**: se quedó en un
+enlace suelto. Lo vio el cliente en su buzón; aquí no lo decía nada, porque el único sitio donde se puede
+ver un correo es un cliente de correo. Dos reglas que salen de ahí y valen para cualquier correo que se
+añada: **el color de un botón vive en una celda con `bgcolor`**, que es un atributo de HTML y no hay cliente
+que lo tire —y además Outlook de escritorio compone con Word e ignora el relleno de un enlace—; y **nada de
+forma abreviada en CSS**, que Gmail tira `background:` y respeta `background-color:`. Lo vigila
+`TestElCorreoDeInvitacionSeLee`, que lee el propio `correo.ts`.
+
+Y con ello, lo que el correo **no** puede dar por hecho: **las imágenes**. La invitación lleva el icono
+porque lo pidió el cliente sabiendo lo que cuesta —pedirla le dice a quien la sirve que el correo se ha
+abierto, con hora e IP—, pero **el nombre va escrito al lado**: con las imágenes bloqueadas, que es como
+llegan de entrada a casi todo el mundo, la cabecera se sigue leyendo.
+
 **Y lo que no se nota tiene que no notarse por los dos lados: ni en la respuesta ni en lo que tarda.** El
 servidor contesta lo mismo tenga cuenta o no la dirección a la que mandas —es media protección contra la
 enumeración de correos—, y la B3 le añadió un camino entero por debajo: mandar la invitación. Ese camino

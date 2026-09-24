@@ -99,6 +99,18 @@ const PIE = "\n\n—\nEsfinge · Webcafeína\nNunca te pediremos tu contraseña 
 /** Dónde se descarga Esfinge y se crea la cuenta. No hay alta desde la web. */
 export const DONDE_CREARLA = "https://webcafeina.github.io/esfinge/#descargar";
 
+/**
+ * El icono de la cabecera, servido desde la web del proyecto.
+ *
+ * **Lo eligió el cliente el 2026-09-24, con el coste delante**: pedir esta imagen
+ * le cuenta a quien la sirve que el correo se ha abierto —a Google si es Gmail,
+ * que hace de intermediario; directamente a GitHub, con IP y hora, en Apple Mail o
+ * en Outlook—. Por eso el nombre va **al lado en texto** y el `alt` va vacío: con
+ * las imágenes bloqueadas no se pierde nada, que es lo único que esto sí puede
+ * garantizar. Está dicho en la política de privacidad.
+ */
+const ICONO = "https://webcafeina.github.io/esfinge/imagenes/icono.png";
+
 /** Lo que dura una invitación antes de que haya que volver a mandarla. */
 export const DIAS_DE_INVITACION = 30;
 
@@ -111,27 +123,46 @@ function escapar(s: string): string {
  * 2026-09-24). Tres cosas que un correo obliga y una página no:
  *
  * - **Estilos en línea y nada más**: no hay hoja de estilos, ni variables, ni
- *   clases que sobrevivan. Los colores son los de siempre escritos a mano, y **la
- *   pareja oro-piedra es la que ya mide `contraste_test.go`** (ADR 0021).
+ *   clases que sobrevivan. Los colores son los de siempre escritos a mano, y **las
+ *   parejas son las que ya mide `internal/tema`** (ADR 0021).
+ * - **El botón es una tabla con `bgcolor`, no un enlace con fondo.** Se hizo con un
+ *   `<a>` y `background:` abreviado, y **Gmail no lo pintó**: lo vio el cliente en
+ *   su buzón el 2026-09-24, aquí no lo decía ninguna prueba. Gmail se come la forma
+ *   abreviada, y Outlook de escritorio —que compone con Word— ignora el relleno de
+ *   un enlace, así que el color y el tamaño tienen que vivir en una celda. El
+ *   `bgcolor` va **además** del `background-color`: es un atributo de HTML y no hay
+ *   cliente que lo tire.
  * - **El enlace va también debajo, en texto**, porque un botón que no pinta deja
  *   un correo sin salida; y la versión en texto pelado lleva la misma dirección.
- * - **Nada de imágenes**: casi ningún cliente las enseña de entrada, así que un
- *   correo que dependa de ellas llega vacío.
+ * - **La marca va en la banda de arriba: el icono y el nombre escrito al lado.** El
+ *   icono es una imagen de fuera y eso tiene su precio, dicho en `ICONO`; el nombre
+ *   en texto es lo que hace que un cliente con las imágenes bloqueadas siga
+ *   enseñando una cabecera y no un hueco.
  */
 function cuerpoDeInvitacion(de: string, enlace: string): string {
 	const quien = escapar(de);
-	return `<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#f2f2f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#3c3c43;">
-<div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #d8d8de;border-radius:12px;padding:28px;">
+	const letra = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+	return `<!doctype html><html lang="es"><body style="margin:0;padding:24px;background-color:#f2f2f7;font-family:${letra};color:#3c3c43;">
+<div style="max-width:520px;margin:0 auto;background-color:#ffffff;border:1px solid #d8d8de;border-radius:12px;overflow:hidden;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+<td bgcolor="#2b2b31" style="background-color:#2b2b31;padding:14px 28px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td style="padding-right:10px;line-height:0;"><img src="${ICONO}" alt="" width="28" height="28" style="display:block;width:28px;height:28px;border:0;border-radius:6px;"></td>
+<td style="font-family:${letra};font-size:17px;font-weight:700;color:#ffffff;letter-spacing:.01em;">Esfinge</td>
+</tr></table></td>
+</tr></table>
+<div style="padding:28px;">
 <p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#1c1c1e;line-height:1.35;">${quien} te quiere mandar una contraseña</p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">${quien}, que usa Esfinge, quiere mandarte una contraseña de forma segura.</p>
 <p style="margin:0 0 24px;font-size:15px;line-height:1.5;">Esfinge es un gestor de contraseñas que las cifra en tu propio ordenador: ni Webcafeína ni nadie más puede leerlas. Para recibirla necesitas tu cuenta.</p>
-<p style="margin:0 0 24px;"><a href="${enlace}" style="display:inline-block;padding:13px 24px;background:#f2c14e;color:#2b2b31;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;">Crear mi cuenta de Esfinge</a></p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;"><tr>
+<td align="center" bgcolor="#f2c14e" style="background-color:#f2c14e;border-radius:8px;"><a href="${enlace}" style="display:inline-block;padding:13px 24px;font-family:${letra};font-size:15px;font-weight:600;color:#2b2b31;text-decoration:none;">Crear mi cuenta de Esfinge</a></td>
+</tr></table>
 <p style="margin:0 0 24px;font-size:13px;line-height:1.5;color:#3c3c43;">Si el botón no funciona, copia esta dirección en tu navegador:<br><span style="word-break:break-all;">${escapar(enlace)}</span></p>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">En cuanto la tengas, la copia te llegará a tu buzón de Esfinge y podrás guardarla o descartarla. La invitación dura ${DIAS_DE_INVITACION} días.</p>
 <p style="margin:0;font-size:13px;line-height:1.5;color:#3c3c43;">Si no esperabas esto, ignora este correo: sin cuenta no te llega nada.</p>
 <hr style="border:0;border-top:1px solid #d8d8de;margin:24px 0 16px;">
 <p style="margin:0;font-size:12px;line-height:1.5;color:#3c3c43;">Esfinge · Webcafeína<br>Nunca te pediremos tu contraseña maestra ni tu clave de recuperación.</p>
-</div></body></html>`;
+</div></div></body></html>`;
 }
 
 export const cartas = {

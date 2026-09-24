@@ -135,6 +135,8 @@ Si esa dirección todavía no tiene cuenta de Esfinge, le mandamos una invitaci�
 
 - Como cada cuenta puede invitar a cinco direcciones al día, esto no sirve para mandar correo en masa. Quien lo intente pierde la cuenta.
 
+- Lleva el icono de Esfinge, y eso conviene saberlo: para enseñarlo, el programa de correo se lo pide a GitHub, que es donde está nuestra web. Quien sirve esa imagen se entera de que el correo se ha abierto, con la hora y la dirección IP —salvo en Gmail, que la pide por ti y la guarda—. El correo se lee igual con las imágenes bloqueadas: el nombre va escrito al lado.
+
 La base para tratar la dirección de quien recibe es ejecutar el contrato contigo, que eres quien nos pide que le llegue (art. 6.1.b), y nuestro interés legítimo en que ese aviso se pueda entregar (art. 6.1.f). Quien reciba una invitación puede ignorarla —sin cuenta no le llega nada— o escribirnos a info@webcafeina.com para que borremos su dirección antes de los treinta días.
 
 Quién más interviene

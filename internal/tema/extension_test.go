@@ -139,6 +139,8 @@ func TestElCorreoDeInvitacionSeLee(t *testing.T) {
 		}
 	}
 
+	// La banda de marca de arriba: el icono y, al lado, el nombre escrito.
+	mide(lienzo, piedra, AANormal, "«Esfinge» en la banda de la invitación")
 	mide(tinta, lienzo, AANormal, "el titular de la invitación")
 	mide(cuerpo, lienzo, AANormal, "el texto de la invitación")
 	// **El oro rellena y la piedra escribe**, como en toda la aplicación: sobre el
@@ -157,9 +159,20 @@ func TestElCorreoDeInvitacionSeLee(t *testing.T) {
 			t.Errorf("el correo ya no usa %s, que es lo que se mide aquí: mide el color nuevo", c)
 		}
 	}
-	// Y lo que un correo no puede llevar, porque casi ningún cliente lo enseña de
-	// entrada: una imagen de fuera.
-	if strings.Contains(texto, "<img") {
-		t.Error("el correo lleva una imagen: casi ningún cliente las enseña, y lo que dependa de ella no se lee")
+	// **El icono de la cabecera puede faltar, y la cabecera tiene que seguir ahí.**
+	// Lo eligió el cliente sabiendo lo que cuesta (2026-09-24), y lo que no se
+	// negocia es que el correo dependa de una imagen: casi ningún cliente las enseña
+	// de entrada, así que el nombre va escrito al lado.
+	if strings.Contains(texto, "<img") && !strings.Contains(texto, `>esfinge</td>`) {
+		t.Error("la cabecera del correo es solo la imagen: con las imágenes bloqueadas queda un hueco")
+	}
+	// **El botón va en una celda con `bgcolor`, no en un enlace con fondo.** Con un
+	// `<a style="background:…">` Gmail no lo pinta, y eso solo se vio mandándolo a un
+	// buzón de verdad (2026-09-24).
+	if !strings.Contains(texto, `bgcolor="#f2c14e"`) {
+		t.Error("el botón de la invitación ya no lleva bgcolor: en Gmail se queda sin fondo")
+	}
+	if strings.Contains(texto, "background:#") {
+		t.Error("el correo usa la forma abreviada `background:`, que Gmail tira: va `background-color:`")
 	}
 }
