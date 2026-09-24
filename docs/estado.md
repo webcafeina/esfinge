@@ -4,10 +4,11 @@
 
 ## Dónde estamos
 
-Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que
-comparte núcleo y formato. Va por la **2.24.4**, con **las cuentas, por invitación** y ya gestionables desde Ajustes, y la extensión está publicada en las dos tiendas y se sube sola a las dos. Funciona de punta a punta: cifra y descifra textos y
-ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**, lleva un historial de qué
-y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
+Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que comparte
+núcleo y formato. Va por la **2.26.0**, con **las cuentas abiertas**, la extensión publicada en las dos
+tiendas —y subiéndose sola a las dos— y **compartir copias** entre cuentas. Funciona de punta a punta:
+cifra y descifra textos y ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**,
+lleva un historial de qué y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
 
 Desde la 2.12.0 Esfinge **deja de ser un cifrador sin estado**. La bóveda es la fase 1 de sustituir a
 Dashlane, decidida con el cliente y con las fases 2 a 4 —autorrelleno, cuentas y compartir— sin
@@ -566,6 +567,15 @@ las capturas del panel salían del aviso de datos y nadie lo había visto.
 
 **Con esto, compartir se puede publicar.** Lo que queda de la B es nada.
 
+**Y se publica: la 2.26.0** (2026-09-24), decidida por el cliente. Lleva la B entera —compartir copias en la
+ventana y en la extensión, el buzón que se acepta, las invitaciones a quien no tiene cuenta— y **los diez
+correos maquetados**. Dos cosas que hay que saber de esta versión:
+
+- **`VERSION_DEL_AVISO` sube a 3**, así que el panel de la extensión vuelve a preguntar «Esfinge y tus
+  datos» a todo el mundo una vez. Es a propósito: por el canal sale un dato nuevo, la dirección de quien
+  recibe la copia.
+- **Las dos tiendas la revisan**, como cada versión de la extensión.
+
 **La C, estudiada (2026-09-24) y sin empezar** — [`desbloqueo-del-sistema.md`](desbloqueo-del-sistema.md).
 El plan avisaba de que había que mirarla antes por si exigía firmar, y lo que ha salido **cambia de qué
 va**: sin firmar, en los dos sistemas «desbloquear con el sistema» es **un cerrojo y no una llave**.
@@ -600,7 +610,8 @@ de tu ordenador desbloqueado, no de un programa que corra como tú.
   Si algún día hay cuentas de fuera, ese aviso deja de ser una formalidad.
 
 Lo que queda sin mirar de esto: **el modo oscuro de los clientes de correo**, que algunos invierten los
-colores por su cuenta y ahí la piedra sobre el oro podría acabar en blanco sobre oro, 1,68:1.
+colores por su cuenta y ahí la piedra sobre el oro podría acabar en blanco sobre oro, 1,68:1. Y la forma de
+comprobarlo de ahora en adelante la dijo el cliente: **los correos de verdad que se vayan mandando**.
 
 **Y con ello, los diez correos dejan de ser texto pelado** (2026-09-24, pedido por el cliente): una maqueta
 compartida con la banda de marca, el código grande y seleccionable, el recuadro de aviso y botón solo donde
