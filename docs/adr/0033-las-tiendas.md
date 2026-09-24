@@ -191,6 +191,15 @@ https://chromewebstore.google.com/detail/esfinge/jfkkegampjamnnlopobepjoanebemeg
 **Comprobado por el cliente en su Mac con la 2.22.0 instalada a mano** (2026-09-14): «todo parece
 correcto», con el aviso de datos.
 
+**Y desde la B4 (2026-09-24), la copia en texto de la política se genera y no se escribe.** Vivía a mano en
+`docs/tiendas/privacidad-amo.txt` —lo mismo dicho en dos sitios, la trampa de siempre aquí—, así que el día
+que alguien cambiara la política y no volviera a pegarla, la ficha de Firefox diría otra cosa que la web y
+nadie se enteraría. Ahora la saca `navegador/herramientas/politica-a-texto.mjs` de `web/privacidad.html`, y
+`make comprobar` **falla** si lo guardado no es lo que saldría: lo que hay que respetar tiene que parar algo.
+Al escribirlo apareció lo mismo en un tercer sitio: `herramientas/capturas.mjs` daba por aceptada la
+**versión 1** del aviso, así que desde que subió a 2 todas las capturas del panel salían del aviso. Ahora lee
+el número del código.
+
 **Sin comprobar:**
 
 - **Nada de la subida a las tiendas contra las tiendas de verdad**: las direcciones de la API v2 de

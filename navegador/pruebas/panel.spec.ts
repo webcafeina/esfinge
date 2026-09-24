@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tinteDe } from "../../frontend/src/monograma";
+import { VERSION_DEL_AVISO } from "../src/consentimiento";
 
 const aqui = dirname(fileURLToPath(import.meta.url));
 
@@ -49,6 +50,12 @@ type Guion = {
   favicon?: string;
   /** Si ya se ha aceptado el aviso de datos (ADR 0033). Por defecto, sí. */
   aceptado?: boolean;
+  /**
+   * La versión del aviso que se da por aceptada. **Se pasa y no se escribe a
+   * mano**: subirla es lo que hace que el panel vuelva a preguntar, y una prueba
+   * con el número escrito dentro se cae sola en cuanto alguien la sube.
+   */
+  aviso?: number;
 };
 
 /** Lo que la `chrome` de mentira deja a la vista de las pruebas. */
@@ -67,6 +74,7 @@ const TIPOS: Record<string, string> = {
 };
 
 async function abrir(page: Page, guion: Guion) {
+  guion = { aviso: VERSION_DEL_AVISO, ...guion };
   const errores: string[] = [];
   page.on("pageerror", (e) => errores.push(String(e)));
   page.on("console", (m) => m.type() === "error" && errores.push(m.text()));
@@ -99,7 +107,7 @@ async function abrir(page: Page, guion: Guion) {
     const rastro = globalThis as unknown as Rastro;
     rastro.__mensajes = [];
     rastro.__guardado =
-      g.aceptado === false ? {} : { consentimiento: { version: 2 } };
+      g.aceptado === false ? {} : { consentimiento: { version: g.aviso ?? 0 } };
     (globalThis as Record<string, unknown>).chrome = {
       storage: {
         local: {
@@ -443,7 +451,7 @@ test("aviso de datos: aceptarlo lo guarda con su versión y trae las cuentas", a
   await expect(page.locator("#lista li")).toHaveCount(3);
   await expect(page.locator("#aviso")).toBeHidden();
   const r = await rastro(page);
-  expect(r.__guardado.consentimiento.version).toBe(2);
+  expect(r.__guardado.consentimiento.version).toBe(VERSION_DEL_AVISO);
   // Primero el estado de la cuenta —¿hay cuenta y está cerrada?— y luego las
   // cuentas del sitio. Nada antes de aceptar, que es lo que mira la prueba de arriba.
   expect(r.__mensajes.map((m) => (m as { que?: string; cuenta?: string }).que ?? `cuenta:${(m as { cuenta?: string }).cuenta}`)).toEqual([

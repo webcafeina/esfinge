@@ -545,13 +545,32 @@ sus errores —el tope de cinco por cuenta y día, un fallo de Resend, su cupo�
 `waitUntil`, porque esperar a Resend también se mide desde fuera. Y de ahí que lo que dice la pantalla valga
 para los dos casos: «Si ya tiene cuenta, le espera en su buzón; si no, le hemos mandado una invitación».
 
-**La siguiente acción concreta es la B4**, los textos: política, condiciones, `VERSION_DEL_AVISO` y las dos
-fichas. Hay dos cosas nuevas que decir ahí y que antes no existían: **el servidor sabe con quién compartes**
-y **le manda correo a gente que no es cliente nuestro, con tu dirección dentro**. **Compartir no se publica
-hasta entonces.**
+**La B4, hecha (2026-09-24)** — lo que hay que decir, que es lo que faltaba para poder publicar compartir:
 
-Y una que solo puede comprobar el cliente: **cómo se ve la invitación en un buzón de verdad** —el botón en
-Gmail y en Outlook, y si cae en spam—. Aquí el correo se lee de una tabla.
+- **La política de privacidad** cuenta que el servidor ve **a quién le mandas** una copia, qué guarda de
+  compartir —tus claves públicas y los sobres del buzón, que no puede abrir— y, sobre todo, **la
+  invitación**: un correo a alguien que no es cliente nuestro, con la dirección de quien invita dentro, que
+  no lleva nada del secreto, se manda una vez y cuya dirección se borra a los treinta días.
+- **Las condiciones** ganan «Compartir una copia» —es una copia y deja de ser tuya, no se dice si ha
+  llegado, y si no tiene cuenta hay que abrir Esfinge antes de treinta días—, sus topes, y una línea en lo
+  que se pide: **las invitaciones no se usan para escribir a quien no lo espera**.
+- **`VERSION_DEL_AVISO` sube a 3**, así que el panel vuelve a preguntar: por él sale ahora un dato nuevo, la
+  dirección de quien recibe la copia.
+- Y con ello, **las dos fichas, la portada y el README**.
+
+De hacerlo salió una trampa que llevaba tiempo puesta: la copia en texto de la política —la que se pega en
+la ficha de Firefox— **se mantenía a mano**, que es lo mismo escrito en dos sitios. Ahora se genera desde la
+web y `make comprobar` falla si no está al día. Y al escribir eso apareció lo mismo en un tercer sitio:
+`herramientas/capturas.mjs` daba por aceptada la **versión 1** del aviso, así que desde que subió a 2 todas
+las capturas del panel salían del aviso de datos y nadie lo había visto.
+
+**Con esto, compartir se puede publicar.** Lo que queda de la B es nada; el plan sigue con la **C** —Touch
+ID, Windows Hello y PIN—, que hay que investigar antes porque puede exigir firmar la aplicación.
+
+Y dos cosas que solo puede comprobar el cliente: **cómo se ve la invitación en un buzón de verdad** —el
+botón en Gmail y en Outlook, y si cae en spam— y, si quiere, **avisar a las cuentas que haya** de que las
+condiciones han cambiado: el punto 13 promete treinta días de aviso por correo, y hoy la única cuenta es la
+de la casa.
 
 **Lo que viene después de todo esto (2026-09-23)**: el cliente pidió **passkeys**, «como Dashlane, que
 sale un banner y es darle a Aceptar». Está estudiado y escrito en [`docs/passkeys.md`](passkeys.md), con lo

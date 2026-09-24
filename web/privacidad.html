@@ -31,7 +31,7 @@
     <main class="contenedor seccion">
       <article class="lectura documento">
         <h1>Política de privacidad</h1>
-        <p class="apagado">Última actualización: 23 de septiembre de 2026.</p>
+        <p class="apagado">Última actualización: 24 de septiembre de 2026.</p>
 
         <p class="entradilla">
           <strong>Usada en tu ordenador, Esfinge no recoge ningún dato tuyo.</strong> Todo lo que
@@ -82,6 +82,12 @@
           es lo que se cuenta en <a href="#cuenta">Si creas una cuenta</a>: tu correo, la bóveda
           cifrada y el nombre de este navegador —por ejemplo, «Chrome en Mac»— en la lista de tus
           equipos. Es la única conexión que hace la extensión.
+        </p>
+        <p>
+          <strong>Y desde el panel se puede mandar una copia de una contraseña a otra persona</strong>,
+          como desde la aplicación. Entonces al servidor le llega también <strong>la dirección de quien
+          la recibe</strong>, y el sobre, cerrado. Está contado en
+          <a href="#cuenta">Si compartes una copia</a>.
         </p>
         <p>
           En ningún caso descarga código, ni lleva analítica ni servicios de terceros.
@@ -194,6 +200,11 @@
             importa tanto como tus claves.</li>
           <li>De cada versión de tu bóveda, <strong>su tamaño y su huella</strong>, para saber si ha
             cambiado sin tener que abrirla.</li>
+          <li><strong>Si compartes copias</strong>: tus dos claves públicas —para que otros puedan
+            cifrar hacia ti y comprobar tu firma—, y <strong>los sobres que te hayan mandado</strong>,
+            hasta que los guardes o los descartes. Los sobres van cifrados hacia ti:
+            <strong>no podemos abrirlos</strong>, ni sabemos qué llevan dentro ni de quién vienen.
+            Caben cincuenta.</li>
         </ul>
         <p>
           <strong>Si empiezas a crear una cuenta y no terminas</strong>, el código caduca a los diez
@@ -207,6 +218,42 @@
           <strong>Cloudflare, que aloja el servidor, sí ve la IP de cada petición</strong>, como
           cualquier alojamiento. No hay analítica ni publicidad.
         </p>
+        <h3>Si compartes una copia</h3>
+        <p class="apagado">
+          Esto llega con la próxima versión de Esfinge. Se cuenta ya para que se pueda leer antes de
+          usarlo.
+        </p>
+        <p>
+          Esfinge deja <strong>mandarle una copia de una contraseña a otra persona</strong>. Va cifrada
+          hacia ella y solo ella puede abrirla: nosotros llevamos el sobre cerrado.
+          <strong>Lo que sí vemos es a quién se la mandas</strong> —su dirección de correo—, y eso hay
+          que decirlo aunque no podamos leer nada de lo que va dentro.
+        </p>
+        <p>
+          <strong>Si esa dirección todavía no tiene cuenta de Esfinge, le mandamos una invitación.</strong>
+          Es un correo a alguien que no es cliente nuestro, y <strong>lleva tu dirección dentro</strong>:
+          le decimos quién le quiere mandar algo, porque un correo anónimo pidiendo darse de alta no lo
+          abre nadie. Tres cosas de ese correo:
+        </p>
+        <ul>
+          <li><strong>No lleva nada del secreto</strong>, ni nada con que sacarlo. La copia no sale de tu
+            Esfinge hasta que esa persona tiene cuenta y sus propias claves; mientras tanto espera
+            <strong>dentro de tu bóveda, cifrada</strong>, y tampoco podemos leerla.</li>
+          <li><strong>Se manda una vez</strong>, y solo si tú lo pides mandando la copia. Guardamos esa
+            dirección <strong>treinta días</strong> —lo justo para no mandarle otro— y después se borra
+            sola. No la usamos para nada más, no la añadimos a ninguna lista y no le mandamos publicidad.</li>
+          <li>Como cada cuenta puede invitar a <strong>cinco direcciones al día</strong>, esto no sirve
+            para mandar correo en masa. Quien lo intente pierde la cuenta.</li>
+        </ul>
+        <p>
+          La base para tratar la dirección de quien recibe es <strong>ejecutar el contrato</strong>
+          contigo, que eres quien nos pide que le llegue (art. 6.1.b), y nuestro <strong>interés
+          legítimo</strong> en que ese aviso se pueda entregar (art. 6.1.f). Quien reciba una invitación
+          puede ignorarla —sin cuenta no le llega nada— o escribirnos a
+          <a href="mailto:info@webcafeina.com">info@webcafeina.com</a> para que borremos su dirección
+          antes de los treinta días.
+        </p>
+
         <h3>Quién más interviene</h3>
         <ul>
           <li><strong>Cloudflare</strong> aloja el servidor. Los datos de las cuentas se guardan en centros de la <strong>Unión Europea</strong>.</li>
@@ -260,6 +307,8 @@
           <li><strong>El permiso de «este equipo es de confianza»</strong>, que evita pedirte un código
             cada vez: noventa días.</li>
           <li><strong>Tus equipos</strong>: hasta que los olvides en Ajustes o borres la cuenta.</li>
+          <li><strong>Los sobres que te manden</strong>: hasta que los guardes o los descartes.</li>
+          <li><strong>La dirección de quien invitas</strong>, si no tenía cuenta: treinta días.</li>
         </ul>
         <p>
           Las versiones anteriores se recortan <strong>cada vez que subes la bóveda</strong>, así que si

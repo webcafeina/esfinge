@@ -20,6 +20,19 @@ import { build } from "vite";
 import { mkdirSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 
+/**
+ * La versión del aviso, **leída del código y no escrita aquí**: estuvo en 1 desde
+ * que subió a 2 y nadie se enteró, porque esto no es una prueba y no para nada. Con
+ * el número viejo el panel vuelve a preguntar y las capturas salen todas del aviso.
+ *
+ * Y **se le pasa a la `chrome` de mentira como argumento**: lo que `addInitScript`
+ * manda al navegador es el código de la función, así que una constante de aquí
+ * fuera allí no existe.
+ */
+const VERSION_DEL_AVISO = Number(
+  /VERSION_DEL_AVISO = (\d+)/.exec(readFileSync(new URL("../src/consentimiento.ts", import.meta.url), "utf8"))?.[1],
+);
+
 const raiz = new URL("..", import.meta.url).pathname;
 const compilado = join(raiz, "dist", "chrome");
 const salida = join(raiz, "capturas");
@@ -69,7 +82,7 @@ estados.aviso = estados.una;
  * La `chrome` de mentira. Se inyecta antes de que cargue el panel, y contesta por
  * puerto igual que el trabajador de verdad.
  */
-function falsa([respuesta, aceptado]) {
+function falsa([respuesta, aceptado, versionDelAviso]) {
   const puerto = (alMandar) => {
     const oyentes = [];
     const alIrse = [];
@@ -95,7 +108,8 @@ function falsa([respuesta, aceptado]) {
     },
     storage: {
       local: {
-        get: async () => (aceptado ? { consentimiento: { version: 1, cuando: "2026-09-14" } } : {}),
+        get: async () =>
+          aceptado ? { consentimiento: { version: versionDelAviso, cuando: "2026-09-14" } } : {},
         set: async () => {},
       },
       onChanged: { addListener() {}, removeListener() {} },
@@ -128,7 +142,7 @@ for (const tema of ["light", "dark"]) {
     const errores = [];
     pagina.on("pageerror", (e) => errores.push(String(e)));
     pagina.on("console", (m) => m.type() === "error" && errores.push(m.text()));
-    await pagina.addInitScript(falsa, [respuesta, nombre !== "aviso"]);
+    await pagina.addInitScript(falsa, [respuesta, nombre !== "aviso", VERSION_DEL_AVISO]);
     await pagina.goto(panel);
     await pagina.waitForTimeout(250);
     if (nombre === "rellenado") {

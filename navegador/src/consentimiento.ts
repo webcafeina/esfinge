@@ -22,8 +22,14 @@ export const CLAVE_DEL_CONSENTIMIENTO = "consentimiento";
 /**
  * **2 desde la E2** (ADR 0040): con cuenta, la extensión se conecta al servidor de
  * cuentas y guarda la bóveda cifrada en el navegador, y el aviso lo dice.
+ *
+ * **3 desde la B4** (ADR 0043): desde el panel se puede mandar una copia a otra
+ * persona, así que por el canal sale **la dirección de quien la recibe**, y a quien
+ * no tenga cuenta el servidor le manda una invitación con la del que la manda. Es
+ * un dato nuevo que sale del navegador y va a un tercero: sube y se vuelve a
+ * preguntar, aunque eso cueste que todo el mundo vea el aviso otra vez.
  */
-export const VERSION_DEL_AVISO = 2;
+export const VERSION_DEL_AVISO = 3;
 
 /** vale dice si lo guardado es la aceptación del aviso de ahora. */
 export function vale(guardado: unknown): boolean {

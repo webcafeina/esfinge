@@ -1,11 +1,11 @@
 # Esta es la política de privacidad de web/privacidad.html en texto plano, para pegarla donde
 # addons.mozilla.org pide el texto («Esta extensión tiene una política de privacidad»). Se genera
-# desde la web: si cambia la política, se cambia allí y se vuelve a sacar este fichero.
-# (Estas tres líneas no se pegan.)
+# desde la web con `node navegador/herramientas/politica-a-texto.mjs`, y `make comprobar` falla si
+# no está al día. (Estas cuatro líneas no se pegan.)
 
 Política de privacidad
 
-Última actualización: 23 de septiembre de 2026.
+Última actualización: 24 de septiembre de 2026.
 
 Usada en tu ordenador, Esfinge no recoge ningún dato tuyo. Todo lo que toca se queda ahí, y Webcafeína no recibe nada: ni contraseñas, ni direcciones, ni estadísticas de uso. Si creas una cuenta para tener tu bóveda en varios equipos, lo que guardamos y por qué está más abajo: tu bóveda viaja cifrada y no podemos abrirla.
 
@@ -34,6 +34,8 @@ Adónde van
 Sin cuenta, solo a la aplicación Esfinge, en tu mismo ordenador, por el canal que los navegadores tienen para hablar con programas instalados (native messaging). Así, la extensión no se conecta a internet.
 
 Si entras con tu cuenta de Esfinge en la extensión, ya no necesita la aplicación: guarda tu bóveda en el navegador y la sincroniza con nuestro servidor de cuentas, igual que la aplicación. La bóveda sale del navegador cifrada, con una clave que sale de tu contraseña maestra, y el servidor no puede leerla. Lo que le llega es lo que se cuenta en Si creas una cuenta: tu correo, la bóveda cifrada y el nombre de este navegador —por ejemplo, «Chrome en Mac»— en la lista de tus equipos. Es la única conexión que hace la extensión.
+
+Y desde el panel se puede mandar una copia de una contraseña a otra persona, como desde la aplicación. Entonces al servidor le llega también la dirección de quien la recibe, y el sobre, cerrado. Está contado en Si compartes una copia.
 
 En ningún caso descarga código, ni lleva analítica ni servicios de terceros.
 
@@ -113,9 +115,27 @@ Qué guardamos
 
 - De cada versión de tu bóveda, su tamaño y su huella, para saber si ha cambiado sin tener que abrirla.
 
+- Si compartes copias: tus dos claves públicas —para que otros puedan cifrar hacia ti y comprobar tu firma—, y los sobres que te hayan mandado, hasta que los guardes o los descartes. Los sobres van cifrados hacia ti: no podemos abrirlos, ni sabemos qué llevan dentro ni de quién vienen. Caben cincuenta.
+
 Si empiezas a crear una cuenta y no terminas, el código caduca a los diez minutos y tu dirección se borra de nuestra base en la hora siguiente, sola. Lo que no podemos borrar es el correo que ya te mandamos: ése lo conserva Resend, abajo.
 
 No guardamos tu dirección IP en claro. Para frenar a quien pruebe contraseñas contamos una huella seudonimizada de ella, que se borra a los dos o tres días. Eso sigue siendo un dato personal, así que lo decimos: no es un anonimato, es que no nos hace falta más. Cloudflare, que aloja el servidor, sí ve la IP de cada petición, como cualquier alojamiento. No hay analítica ni publicidad.
+
+Si compartes una copia
+
+Esto llega con la próxima versión de Esfinge. Se cuenta ya para que se pueda leer antes de usarlo.
+
+Esfinge deja mandarle una copia de una contraseña a otra persona. Va cifrada hacia ella y solo ella puede abrirla: nosotros llevamos el sobre cerrado. Lo que sí vemos es a quién se la mandas —su dirección de correo—, y eso hay que decirlo aunque no podamos leer nada de lo que va dentro.
+
+Si esa dirección todavía no tiene cuenta de Esfinge, le mandamos una invitación. Es un correo a alguien que no es cliente nuestro, y lleva tu dirección dentro: le decimos quién le quiere mandar algo, porque un correo anónimo pidiendo darse de alta no lo abre nadie. Tres cosas de ese correo:
+
+- No lleva nada del secreto, ni nada con que sacarlo. La copia no sale de tu Esfinge hasta que esa persona tiene cuenta y sus propias claves; mientras tanto espera dentro de tu bóveda, cifrada, y tampoco podemos leerla.
+
+- Se manda una vez, y solo si tú lo pides mandando la copia. Guardamos esa dirección treinta días —lo justo para no mandarle otro— y después se borra sola. No la usamos para nada más, no la añadimos a ninguna lista y no le mandamos publicidad.
+
+- Como cada cuenta puede invitar a cinco direcciones al día, esto no sirve para mandar correo en masa. Quien lo intente pierde la cuenta.
+
+La base para tratar la dirección de quien recibe es ejecutar el contrato contigo, que eres quien nos pide que le llegue (art. 6.1.b), y nuestro interés legítimo en que ese aviso se pueda entregar (art. 6.1.f). Quien reciba una invitación puede ignorarla —sin cuenta no le llega nada— o escribirnos a info@webcafeina.com para que borremos su dirección antes de los treinta días.
 
 Quién más interviene
 
@@ -150,6 +170,10 @@ Y antes de eso, cada cosa dura lo suyo:
 - El permiso de «este equipo es de confianza», que evita pedirte un código cada vez: noventa días.
 
 - Tus equipos: hasta que los olvides en Ajustes o borres la cuenta.
+
+- Los sobres que te manden: hasta que los guardes o los descartes.
+
+- La dirección de quien invitas, si no tenía cuenta: treinta días.
 
 Las versiones anteriores se recortan cada vez que subes la bóveda, así que si un equipo deja de sincronizar, las suyas esperan ahí a la siguiente subida.
 

@@ -72,6 +72,12 @@ con Esfinge por un **canal local** —ni cuenta, ni servidor, ni nada que salga 
 apagado y se enciende en Ajustes ([cómo está hecho](docs/adr/0027-el-canal-con-el-navegador.md), [qué
 cambia al rellenar](docs/adr/0028-rellenar-en-la-pagina.md)).
 
+**Y con cuenta, manda una copia de una contraseña a otra persona.** Va cifrada hacia ella y solo ella
+puede abrirla: nuestro servidor lleva el sobre cerrado. Al llegar es suya, así que si luego la cambias
+aquí, hay que volver a mandarla. Si esa dirección todavía no usa Esfinge, le llega una invitación —y la
+copia sale sola cuando cree su cuenta—, pero **la contraseña no pasa nunca por el correo**
+([cómo está hecho](docs/adr/0043-la-identidad-para-compartir.md)).
+
 **Lleva un historial** de qué se cifró y cuándo. Nunca el contenido, ni la clave, ni el texto
 cifrado, ni nada de lo que haya en la bóveda.
 

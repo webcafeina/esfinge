@@ -27,6 +27,7 @@ Textos en español, que es el idioma de la extensión.
 > • Rellena también el código de un solo uso, si la cuenta lo tiene.
 > • Cuando entras, te registras o cambias la contraseña, te ofrece guardarla o actualizarla.
 > • Con varias cuentas del mismo sitio, eliges cuál en su panel.
+> • Con cuenta, manda una copia de una contraseña a otra persona, cifrada para ella.
 >
 > Lo que tienes que saber:
 > • Sin cuenta, necesita la aplicación Esfinge instalada en tu ordenador —para macOS, Windows o Linux, con
@@ -34,6 +35,8 @@ Textos en español, que es el idioma de la extensión.
 >   Se descarga gratis en https://webcafeina.github.io/esfinge/
 > • Con tu cuenta de Esfinge funciona sola, sin la aplicación: guarda tu bóveda cifrada en el navegador y
 >   la sincroniza con el servidor de cuentas de Webcafeína, en la UE, que no puede leerla.
+> • Al mandar una copia, el servidor ve la dirección de quien la recibe, no lo que le mandas. Si esa
+>   persona no tiene cuenta, Webcafeína le manda una invitación con tu dirección dentro.
 > • No lleva analítica ni servicios de terceros.
 > • La primera vez que abras su panel te explica qué datos toca. Hasta que lo aceptas, no lee ninguna
 >   página.
@@ -58,6 +61,8 @@ Textos en español, que es el idioma de la extensión.
 
 > Rellenar y guardar en el navegador las contraseñas de la bóveda de Esfinge: la de la aplicación
 > instalada en el mismo ordenador o, con cuenta, la que la extensión sincroniza con el servidor de cuentas.
+> Con cuenta, desde el panel se puede además mandar una copia de una contraseña de la bóveda a otra
+> persona, cifrada para ella.
 
 **Justificación de cada permiso:**
 
@@ -76,7 +81,8 @@ paquete; por eso la política de contenido lleva `'wasm-unsafe-eval'`.
 
 - **Información de autenticación**: usuario, contraseña y código de un solo uso de los formularios de
   entrar, para rellenarlos y para guardarlos en la bóveda.
-- **Información personal identificable**: el usuario o el correo con el que se entra.
+- **Información personal identificable**: el usuario o el correo con el que se entra y, al mandar una
+  copia, la dirección de correo de quien la recibe.
 - **Actividad de navegación web**: la dirección de la pestaña, para saber de qué sitio son las cuentas.
 
 Y no marcar el resto: ni datos de salud, ni financieros, ni comunicaciones, ni ubicación, ni contenido
@@ -106,7 +112,8 @@ al dar de alta la cuenta (`pasos.md`).
 (`all-rights-reserved`), que es la del repositorio.
 
 **Declaración de datos** —ya va en el manifiesto, `data_collection_permissions`—: `authenticationInfo`,
-`personallyIdentifyingInfo` y `browsingActivity`. Firefox la enseña al instalar.
+`personallyIdentifyingInfo` y `browsingActivity`. Firefox la enseña al instalar. **Compartir no añade
+ninguna**: la dirección de quien recibe la copia entra en `personallyIdentifyingInfo`, que ya estaba.
 
 **Notas para quien revise** (*Notes to reviewer*):
 
@@ -114,11 +121,17 @@ al dar de alta la cuenta (`pasos.md`).
 >
 > - Without an account, it only talks to the Esfinge desktop app installed on the same computer, through
 >   native messaging (host `com.webcafeina.esfinge`), and makes no network requests.
-> - With an Esfinge account (by invitation for now), it keeps the user's vault **encrypted** in extension
+> - With an Esfinge account, it keeps the user's vault **encrypted** in extension
 >   storage and syncs it with our account server, https://esfinge-cuentas.webcafeina.com (Cloudflare, EU).
 >   The vault is end-to-end encrypted with a key derived from the master password (Argon2id via the bundled
 >   hash-wasm WebAssembly, hence `'wasm-unsafe-eval'`, and XChaCha20-Poly1305 via @noble/ciphers); the
 >   server only sees the e-mail address, the encrypted vault and the browser's device name.
+>
+> The panel can also send a copy of one vault entry to another person: the entry is sealed with
+> HPKE towards that account's published public key and signed with Ed25519, so the server only relays a
+> sealed envelope and sees the recipient's e-mail address. If that address has no account, the server sends
+> it a one-off invitation e-mail naming the sender; the envelope itself never leaves the sender's vault
+> until the recipient has keys of their own, so no secret travels by e-mail.
 >
 > To try it you need the desktop app (free, https://github.com/webcafeina/esfinge/releases/latest) with
 > "canal con el navegador" enabled in its settings; without it the panel explains that Esfinge cannot be

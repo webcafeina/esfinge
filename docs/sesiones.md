@@ -5,7 +5,27 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
-## 2026-09-24 · La B3: invitar a quien no tiene cuenta, sin mandar la contraseña por correo
+## 2026-09-24 (tarde) · La B4: decir lo que compartir cambia
+
+- **La política, las condiciones, el aviso del panel, las dos fichas, la portada y el README**, con las dos
+  cosas nuevas que compartir trae y que antes no existían: **el servidor sabe con quién compartes** y
+  **manda correo a gente que no es cliente nuestro, con tu dirección dentro**.
+- **`VERSION_DEL_AVISO` a 3**, así que el panel vuelve a preguntar. Se sube porque por el canal sale un dato
+  nuevo —la dirección de quien recibe la copia—, aunque cueste que todo el mundo vea el aviso otra vez.
+- **Y la trampa que estaba puesta desde hacía tiempo**: la copia en texto de la política, la que se pega en
+  la ficha de Firefox, **se mantenía a mano**. Es lo mismo escrito en dos sitios, y el día que alguien
+  cambiara la política sin volver a pegarla, la ficha diría otra cosa que la web sin que nadie se enterara.
+  Ahora la genera `navegador/herramientas/politica-a-texto.mjs` y **`make comprobar` falla** si no está al
+  día. Se comprobó que el generador saca el fichero de antes **byte a byte** salvo lo que hoy cambia.
+- **Y al escribirlo, lo mismo en un tercer sitio**: `herramientas/capturas.mjs` daba por aceptada la versión
+  **1** del aviso. Desde que subió a 2 —hace dos días— todas las capturas del panel salían del aviso de
+  datos, y no se había visto porque eso no es una prueba y no para nada. Ahora lee el número del código.
+- Las pruebas del panel llevaban el número escrito dentro (`version: 2`): pasan a usar la constante.
+- Verificado: `make comprobar` entero, la web armada con su comprobación de enlaces, y **miradas** las
+  capturas del aviso nuevo en el panel y de la política a 400 px y en ventana ancha, sin desbordar y sin
+  errores en la consola.
+
+## 2026-09-24 (mañana) · La B3: invitar a quien no tiene cuenta, sin mandar la contraseña por correo
 
 - **Dos decisiones del cliente antes de escribir nada**, y son las que mandan sobre el resto: **el envío
   espera en tu bóveda** —no viaja con la invitación— y **el correo lleva quién invita, con un botón** y el
