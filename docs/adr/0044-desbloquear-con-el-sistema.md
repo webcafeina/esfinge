@@ -1,0 +1,138 @@
+# ADR 0044 — Desbloquear con el sistema: un cerrojo, dicho por su nombre
+
+**Fecha:** 2026-09-24 · **Estado:** aceptada, C1 y C2 hechas, C3 por escribir · **Es la fase C de la
+[0035](0035-las-cuentas.md)** · **Matiza la [0014](0014-comprobacion-de-actualizaciones.md)**, cuyo «no se firma»
+es lo que decide todo lo de aquí · **Revisar cuando** se reabra lo de firmar en macOS, o cuando el
+cliente diga qué pregunta su Mac al actualizar
+
+## Contexto
+
+El plan de cuentas (`docs/cuentas.md`) dejó para el final «Touch ID o Windows Hello y PIN, como ranuras
+solo locales», **con un aviso puesto a propósito**: «puede exigir firmar la aplicación, en contra de la
+decisión de no firmar; hay que investigarlo antes». Se investigó el 2026-09-24, y el estudio entero —con
+sus fuentes— está en [`../desbloqueo-del-sistema.md`](../desbloqueo-del-sistema.md).
+
+Lo que salió cambia de qué va la fase, y por eso hay ficha:
+
+> **Sin firmar, en los dos sistemas, «desbloquear con el sistema» es un cerrojo y no una llave.** Pide la
+> huella y, si el sistema dice que sí, Esfinge abre la bóveda con una clave que estaba ahí de todos modos.
+> Protege de quien se sienta delante de tu ordenador desbloqueado. **No** protege de un programa que corra
+> como tú, que es de lo que sí protege hoy la contraseña maestra.
+
+En macOS el camino fuerte —Secure Enclave, o control de acceso biométrico en el llavero de protección de
+datos— **exige la entitlement `keychain-access-groups`**, que solo lleva una compilación firmada con un
+perfil de aprovisionamiento; sin ella `SecItemAdd` devuelve -34018. En Windows, `KeyCredentialManager`
+funciona sin empaquetar, pero Microsoft dice que en un Win32 sin empaquetar **la credencial está atada a
+la cuenta de usuario y no a la aplicación**: otro programa tuyo que sepa su nombre la usa. Su propia
+recomendación es contraseña **y** Hello, no Hello en lugar de la contraseña.
+
+## Decisión
+
+### Se hace, y se dice lo que es
+
+**No se firma en macOS** (cliente, 2026-09-24, reafirmando la 0014), **se hace en los tres sistemas**
+—Touch ID, Windows Hello y, en Linux, nada— y **la pantalla donde se activa dice que es un cerrojo**, con
+esas palabras y no en la documentación solamente. Lo mismo en `seguridad.md`.
+
+### Sin PIN
+
+**«Siempre será la contraseña maestra»**, dicho así por el cliente. Lo único que la sustituye es la
+biometría del sistema; donde no la haya —Linux, un Mac sin Touch ID, un Windows sin Hello— se teclea la
+maestra y **la pantalla lo dice en vez de ofrecer algo que no está**.
+
+### La ranura nunca es la única
+
+`llavero-del-sistema` es un tipo de ranura más, de los que el formato admite desde la
+[0023](0023-la-boveda.md), y **no se sube nunca** (`ranurasLocales` en Go, `RANURAS_LOCALES` en
+TypeScript). La maestra y la clave de recuperación siguen abriendo, y quitar el desbloqueo no puede dejar
+a nadie fuera. Activarlo **exige la bóveda abierta**, que es lo que impide ponerlo sin saber la maestra.
+
+### En macOS, dos piezas: `LAContext` pregunta y el llavero guarda
+
+`LAContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics)` pide la huella y devuelve **un sí o
+un no**. El secreto de 32 bytes que envuelve la ranura vive en el **llavero de inicio de sesión**, el de
+toda la vida, que no necesita entitlements. Sin fallback a la contraseña del Mac: lo que esto promete es
+la huella.
+
+### Y el orden importa: primero el sistema, después la ranura
+
+`ActivarDesbloqueo` le da a guardar al sistema **antes** de poner la ranura, y deshace lo de fuera si la
+ranura falla. Al revés quedaría una ranura que no abre nadie y un botón que promete algo que no funciona.
+`QuitarDesbloqueo`, al contrario, **quita la ranura aunque el sistema falle al borrar**: lo que importa es
+que la puerta se cierre, y lo que quede suelto en el llavero son bytes que ya no abren nada.
+
+### Y esto no cuenta como actividad
+
+Leer el secreto es parte de abrir, y abrir ya toca el reloj por su cuenta. Es la regla de siempre —lo que
+se repite solo no cuenta— aplicada aquí.
+
+## Alternativas descartadas
+
+**Firmar la aplicación (99 $/año).** Compra el camino fuerte —Secure Enclave y llavero de protección de
+datos— y de paso quita el aviso de Gatekeeper de la primera instalación. Es una decisión de producto, no
+técnica, y el cliente la mantuvo cerrada: «de momento no firmaremos Mac». Queda dicho aquí para que
+reabrirla sea una frase y no una investigación otra vez.
+
+**El secreto en un fichero de 0600 junto a la bóveda.** Era lo predecible: sobrevive a las
+actualizaciones, no pregunta nada, y se puede probar entero en esta máquina. Se descartó al escribir la C2
+por una razón que conviene no volver a discutir:
+
+> Con el secreto en un fichero, **quien copie tu carpeta abre la bóveda sin poner el dedo**. Eso no es un
+> cerrojo peor: es quitar la puerta. Activar Touch ID pasaría de «no tengo que teclear la maestra» a «mi
+> bóveda la abre quien se lleve mi carpeta de usuario», y eso es **bajar** la protección de la bóveda a
+> cambio de una comodidad.
+
+En el llavero de inicio de sesión está cifrado con la contraseña de macOS. Sigue siendo un cerrojo, pero
+**un disco copiado no lo lleva dentro**.
+
+**Un PIN de cuatro o seis cifras.** No puede proteger una bóveda por sí solo: el espacio es tan pequeño
+que probarlos todos contra el fichero es instantáneo, y Argon2id no arregla eso —subir el coste hasta que
+un millón de intentos duelan haría que abrir tardara minutos—. Solo vale si algo limita los intentos, y
+eso solo lo hace el hardware: el Secure Enclave o el TPM, o sea los dos problemas de arriba otra vez.
+
+**Un PIN como desbloqueo rápido dentro de una sesión ya abierta**, que es la salida honesta que usan los
+demás: no protege la bóveda, protege un atajo, y al reiniciar se pone la maestra. Daba la misma protección
+real **sin una línea de código nativo** y se podía probar aquí entera. El cliente la descartó igual: lo
+único que sustituya a la maestra ha de ser la huella, y no un número corto.
+
+## Consecuencias
+
+- **Hay dos ficheros de cgo que esta máquina no compila**, y uno de ellos para un sistema que nadie ha
+  ejecutado nunca. La lección de [`vidrio_darwin.go`](0017-vidrio-solo-en-el-marco.md) manda aquí entera: que
+  el trabajo de macOS pase en verde **solo dice que compila, no que arranque**.
+- **Puede preguntar al actualizar.** La lista de aplicaciones de confianza de un elemento del llavero se
+  ata a la firma de quien lo guardó, y Esfinge no está firmada: macOS puede pedir permiso tras cada
+  actualización, porque el binario cambia. Se contesta «Permitir siempre». Si preguntara en cada apertura,
+  o fallara, el arreglo es **borrar la ranura y pedir que se active otra vez** —que es lo que ya hace el
+  código cuando el secreto deja de abrir— y decirlo en la pantalla.
+- **Quien activa esto deja de escribir su contraseña maestra**, y una contraseña que no se escribe se
+  olvida. Por eso la pantalla dice que la maestra y la clave de recuperación siguen haciendo falta.
+- **Y no cambia nada de la sincronización**: la ranura es de un equipo y no sube, así que activarlo en un
+  Mac no lo activa en el otro ni le da al servidor una segunda puerta.
+
+## Verificación
+
+**Lo que se ha comprobado de verdad:**
+
+- Pruebas de Go de la C1: la ranura abre, **la maestra sigue abriendo**, no viaja en `PrepararSubida`,
+  cancelar no deja nada a medias y un secreto que ya no abre se olvida. La ranura del sistema se envuelve
+  con `PerfilLlave` y la maestra con `PerfilInteractivo`, **leído en la cabecera ESF1 del fichero** —8192
+  KiB contra 65536— y no medido por lo que tarda, que es lo que hacía la primera versión de esa prueba y
+  fallaba sola.
+- e2e de las dos pantallas —el interruptor de Ajustes y el botón de desbloquear— en los dos temas, con un
+  llavero de mentira detrás (`llavero.DeMentira`, y `cmd/dev -sin-llavero` para el caso de que no haya).
+- `TestLoQueCruzaElPuenteEstaEnLaLista` cubre los cuatro métodos nuevos, y **`AbrirBovedaConElSistema` está
+  en esa lista a conciencia**: abre la bóveda sin la contraseña maestra.
+- Que el cgo de macOS **compila y enlaza** contra LocalAuthentication y Security: `compilar.yml` entero en
+  verde en los tres sistemas el 2026-09-24.
+- Y los seis objetivos de la línea de comandos, que ahora cruza `make comprobar`.
+
+**Lo que no se ha comprobado, y solo puede comprobarse en un Mac de verdad:**
+
+- **Que arranque.** Nada de aquí lo dice.
+- **Qué pregunta el llavero al actualizar**, que es la consecuencia de arriba y la decisión 3 del documento
+  de la fase.
+- **Cómo se lee el diálogo del sistema** —el motivo que se le pasa sale en pantalla— y si Touch ID responde
+  cuando se espera que responda.
+- **Windows entero**: la C3 no está escrita, y cuando lo esté seguirá sin haberse ejecutado nunca en un
+  Windows.

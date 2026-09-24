@@ -192,6 +192,18 @@ No se cambian sin preguntar.
   Dos consecuencias que hay que decir en voz alta: **Webcafeína le manda correo a alguien que no es cliente
   suyo, con tu dirección dentro**, y **esa copia puede no llegar nunca** —hace falta que abras Esfinge
   mientras la nota viva, treinta días—.
+- **Y la bóveda se abre con Touch ID o Windows Hello, sabiendo que es un cerrojo y no una llave**
+  (ADR 0044). Sin firmar, el sistema no puede atar ese secreto a Esfinge: protege de quien se sienta
+  delante de tu ordenador desbloqueado, **no de un programa que corra como tú**. Se hace igual, **se dice
+  con esas palabras en la pantalla donde se activa** y no solo en la documentación, y **no se debe escribir
+  de otra forma**. Tres cosas que decidió el cliente el 2026-09-24 y no se cambian sin preguntar: **no se
+  firma el Mac** —«de momento»—, **se hace en los tres sistemas** aunque el de Windows se escriba a ciegas,
+  y **no hay PIN**: «siempre será la contraseña maestra», así que lo único que la sustituye es la huella y
+  donde no la haya la pantalla lo dice en vez de ofrecer algo que no está. Se descartó con ello un PIN como
+  desbloqueo rápido de sesión, que daba la misma protección real **sin una línea de código nativo**.
+  Y una decisión técnica de la misma familia: **el secreto va al llavero del sistema, nunca a un fichero
+  al lado de la bóveda**, porque entonces quien copiara la carpeta abriría la bóveda sin poner el dedo —eso
+  no es un cerrojo peor, es quitar la puerta—.
 
 ## Trampas que ya costaron encontrarse
 

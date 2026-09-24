@@ -1,6 +1,6 @@
 # Decisiones
 
-Última actualización: **2026-09-22**
+Última actualización: **2026-09-24**
 
 Una ficha por decisión no trivial, en [adr/](adr/). Las que se superan **no se borran**: se marcan y
 se quedan, porque saber qué se pensaba antes explica por qué el código es como es.
@@ -51,6 +51,7 @@ Cada ficha lleva Contexto, Decisión, Alternativas descartadas, Consecuencias y 
 | [0039](adr/0039-la-bienvenida-y-la-cuenta-en-la-ventana.md) | La bienvenida y la cuenta en la ventana: elegir local o cuenta al estrenar, el asistente para crearla y entrar, juntar o apartar la bóveda que ya había, y dejar la cuenta desde Ajustes | 2026-09-18 | aceptada, sin publicar · continúa la 0035 · revisar en el Mac con dos equipos |
 | [0040](adr/0040-la-extension-cliente-de-la-cuenta.md) | La extensión, cliente de la cuenta: el formato de la bóveda en TypeScript vigilado contra Go, por entregas (E1 núcleo invisible, E2 la extensión con cuenta, E3 en el Mac) | 2026-09-22 | aceptada; E1 y E2 hechas (2.25.0), falta la E3 en su Mac · continúa la 0035 |
 | [0041](adr/0041-los-papeles-de-la-cuenta.md) | Los papeles de la cuenta: los textos los revisa un modelo especializado y no un despacho, y Resend se queda en el plan gratuito, así que los topes del servidor tienen que caber en cien correos al día | 2026-09-23 | aceptada, sin empezar · continúa la 0035 · revisar cuando el uso se acerque al tope |
+| [0044](adr/0044-desbloquear-con-el-sistema.md) | Desbloquear con el sistema es **un cerrojo y no una llave**, y se dice donde se activa: sin firmar no hay Secure Enclave. Sin PIN, la ranura nunca es la única, y el secreto va al llavero de inicio de sesión y no a un fichero | 2026-09-24 | aceptada, C1 y C2 hechas · es la fase C de la 0035 · matiza la 0014 |
 | [0043](adr/0043-la-identidad-para-compartir.md) | La identidad para compartir: una semilla de 32 bytes dentro del cuerpo cifrado, `DHKEM(X25519)` en vez de X-Wing porque el navegador tiene que hacer lo mismo, y huella comparable por teléfono | 2026-09-23 | aceptada, B1 hecha · continúa la 0035 y la 0040 |
 | [0042](adr/0042-cerrar-una-cuenta-sin-puerta-de-administracion.md) | Cerrar una cuenta con una marca en D1 que se pone con `wrangler`, y ninguna ruta de administración en el servidor: suspendida no entra ni sube, pero sigue pudiendo bajar y exportar | 2026-09-23 | aceptada, hecha en el servidor · continúa la 0036 y la 0041 |
 

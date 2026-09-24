@@ -7,6 +7,11 @@ Plantilla al final.
 
 ## 2026-09-24 (noche) · La C2, y un Windows que llevaba roto desde por la tarde
 
+- **Ficha de la fase, [ADR 0044](adr/0044-desbloquear-con-el-sistema.md)**, que faltaba: «desbloquear con
+  el sistema es un cerrojo y no una llave», sin PIN, la ranura nunca es la única, y el secreto al llavero
+  y no a un fichero. Con las tres alternativas descartadas escritas —firmar, el fichero, el PIN— para que
+  reabrir cualquiera sea una frase y no volver a investigarlo.
+
 - **`internal/llavero/llavero_darwin.go`**: Touch ID por cgo. Dos piezas, porque sin firmar no hay una:
   `LAContext` pide la huella y devuelve **un sí o un no**, y el secreto lo guarda el **llavero de inicio
   de sesión**. La alternativa —un fichero de 0600 junto a la bóveda— se descartó a conciencia: sería

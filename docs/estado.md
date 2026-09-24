@@ -2,6 +2,25 @@
 
 Última actualización: **2026-09-24**
 
+## Dónde se paró, y por dónde se sigue
+
+**Sesión cerrada la noche del 2026-09-24**, a petición del cliente, para seguir esa misma tarde. Trabajo
+limpio: todo comprometido y empujado, `make comprobar` en verde y `compilar.yml` en verde en los tres
+sistemas.
+
+- **Publicada la 2.26.0**: la B entera —compartir copias, invitaciones a quien no tiene cuenta— con los
+  correos ya maquetados.
+- **En marcha la fase C**, desbloquear con el sistema ([ADR 0044](adr/0044-desbloquear-con-el-sistema.md),
+  estudio en [`desbloqueo-del-sistema.md`](desbloqueo-del-sistema.md)). **C1 y C2 hechas y sin publicar**:
+  la ranura local con sus dos pantallas, y Touch ID por cgo.
+- **Lo siguiente es la C3**, Windows Hello, que se escribe a ciegas porque nadie ha ejecutado nunca Esfinge
+  en un Windows. Antes de empezarla conviene releer la ADR 0044: la credencial de Hello en un Win32 sin
+  empaquetar **está atada a la cuenta de usuario y no a la aplicación**, así que ahí el cerrojo es todavía
+  más cerrojo.
+- **Y lo que queda para el cliente**, que se hace junto: **probar Firefox** y **comprobar compartir entre
+  sus dos Macs**. De la C2, lo que solo dice un Mac de verdad: que arranque, qué pregunta el llavero al
+  actualizar y cómo se lee el diálogo del sistema.
+
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que comparte
