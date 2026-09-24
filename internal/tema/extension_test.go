@@ -109,17 +109,16 @@ func TestLaExtensionSeVeDondeLaPintanOtros(t *testing.T) {
 	}
 }
 
-// **Y el correo de invitación, que lo pinta el cliente de correo de otro** (ADR
-// 0043, entrega B3). Es el único correo con formato, y va con los colores
-// escritos a mano: en un correo no hay hoja de estilos, ni variables, ni clases
-// que sobrevivan.
+// **Y los correos, que los pinta el cliente de correo de otro.** Van con los
+// colores escritos a mano: en un correo no hay hoja de estilos, ni variables, ni
+// clases que sobrevivan.
 //
 // Aquí se mide lo mismo que en la ventana y por la misma regla —el contraste se
 // mide siempre, y que el sistema de origen cumpla no dice nada de la combinación
 // resultante—, y se comprueba que los colores medidos son los que están en el
 // fichero: si alguien cambia uno allí y no aquí, esto se pone rojo en vez de
 // seguir midiendo el color viejo.
-func TestElCorreoDeInvitacionSeLee(t *testing.T) {
+func TestLosCorreosSeLeen(t *testing.T) {
 	var (
 		oro    = MustParseHex("#f2c14e")
 		piedra = MustParseHex("#2b2b31")
@@ -140,20 +139,34 @@ func TestElCorreoDeInvitacionSeLee(t *testing.T) {
 	}
 
 	// La banda de marca de arriba: el icono y, al lado, el nombre escrito.
-	mide(lienzo, piedra, AANormal, "«Esfinge» en la banda de la invitación")
-	mide(tinta, lienzo, AANormal, "el titular de la invitación")
-	mide(cuerpo, lienzo, AANormal, "el texto de la invitación")
+	mide(lienzo, piedra, AANormal, "«Esfinge» en la banda de la cabecera")
+	// El código y el recuadro de aviso, que van sobre el gris del propio correo.
+	mide(tinta, fondo, AANormal, "el código de seis cifras")
+	mide(cuerpo, fondo, AANormal, "el texto de un recuadro de aviso")
+	mide(piedra, fondo, AAGrande, "el filete del recuadro de aviso")
+	mide(tinta, lienzo, AANormal, "el titular de un correo")
+	mide(cuerpo, lienzo, AANormal, "el texto de un correo")
+	mide(tinta, lienzo, AANormal, "un enlace dentro de un párrafo")
 	// **El oro rellena y la piedra escribe**, como en toda la aplicación: sobre el
 	// oro, el blanco daría 1,68:1 (ADR 0021).
 	mide(piedra, oro, AANormal, "«Crear mi cuenta de Esfinge», el botón")
 	mide(filete, fondo, 1.0, "la línea de la tarjeta sobre el fondo del correo")
 	mide(lienzo, fondo, 1.0, "la tarjeta sobre el fondo del correo")
 
-	datos, err := os.ReadFile("../../servidor/src/correo.ts")
+	// **Y que todos los correos van con formato desde el 2026-09-24**, que lo pidió
+	// el cliente: hasta entonces solo lo llevaba la invitación. Uno que se quede en
+	// texto pelado no se nota —llega igual— así que se cuenta aquí.
+	crudo, err := os.ReadFile("../../servidor/src/correo.ts")
 	if err != nil {
 		t.Fatalf("no se puede leer el correo: %v", err)
 	}
-	texto := strings.ToLower(string(datos))
+	conTexto := strings.Count(string(crudo), "\n\t\ttexto: ")
+	conFormato := strings.Count(string(crudo), "html: hoja(")
+	if conTexto == 0 || conTexto != conFormato {
+		t.Errorf("hay %d cartas con texto y %d con formato: todas llevan las dos cosas", conTexto, conFormato)
+	}
+
+	texto := strings.ToLower(string(crudo))
 	for _, c := range []string{"#f2c14e", "#2b2b31", "#1c1c1e", "#3c3c43", "#ffffff", "#f2f2f7", "#d8d8de"} {
 		if !strings.Contains(texto, c) {
 			t.Errorf("el correo ya no usa %s, que es lo que se mide aquí: mide el color nuevo", c)

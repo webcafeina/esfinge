@@ -611,10 +611,21 @@ que lo tire —y además Outlook de escritorio compone con Word e ignora el rell
 forma abreviada en CSS**, que Gmail tira `background:` y respeta `background-color:`. Lo vigila
 `TestElCorreoDeInvitacionSeLee`, que lee el propio `correo.ts`.
 
-Y con ello, lo que el correo **no** puede dar por hecho: **las imágenes**. La invitación lleva el icono
+Y con ello, lo que el correo **no** puede dar por hecho: **las imágenes**. Los correos llevan el icono
 porque lo pidió el cliente sabiendo lo que cuesta —pedirla le dice a quien la sirve que el correo se ha
 abierto, con hora e IP—, pero **el nombre va escrito al lado**: con las imágenes bloqueadas, que es como
 llegan de entrada a casi todo el mundo, la cabecera se sigue leyendo.
+
+**Y desde que los correos son HTML, lo que se interpola en ellos es una inyección.** El nombre de un equipo
+son ochenta caracteres libres que manda el cliente, y en texto pelado eso daba igual; en un correo con
+formato, `<img src=x onerror=…>` es una etiqueta. Todo lo que entra en un correo pasa por `escapar`, y hay
+una prueba que lo mete de verdad y comprueba que sale escrito y no ejecutado. **El asunto no se escapa**, y
+tampoco debe: ahí no hay HTML.
+
+Y dos reglas de los correos de código, que no son de estilo: **el código va en texto**, grande y
+seleccionable, nunca en una imagen —si no, no se puede copiar ni leer con un lector de pantalla—; y
+**ninguno lleva un enlace que entre por ti**. Un correo de un gestor de contraseñas que diga «pulsa aquí
+para entrar» es entrenar a su gente para el phishing. Lo vigila una prueba del servidor.
 
 **Y lo que no se nota tiene que no notarse por los dos lados: ni en la respuesta ni en lo que tarda.** El
 servidor contesta lo mismo tenga cuenta o no la dirección a la que mandas —es media protección contra la

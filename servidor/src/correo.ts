@@ -94,82 +94,132 @@ class CarteroDePruebas implements Cartero {
 	}
 }
 
-const PIE = "\n\n—\nEsfinge · Webcafeína\nNunca te pediremos tu contraseña maestra ni tu clave de recuperación.";
 
-/** Dónde se descarga Esfinge y se crea la cuenta. No hay alta desde la web. */
-export const DONDE_CREARLA = "https://webcafeina.github.io/esfinge/#descargar";
+// ================================================================ la maqueta
+//
+// **Todos los correos van con formato desde el 2026-09-24**, decidido con el
+// cliente: hasta entonces solo lo llevaba la invitación y el resto era texto pelado.
+// Lo que un correo obliga y una página no, y que aquí está resuelto de una vez para
+// todos:
+//
+//   - **Estilos en línea y nada más.** No hay hoja de estilos, ni variables, ni
+//     clases que sobrevivan al cliente de correo. Los colores van escritos, y **las
+//     parejas son las que mide `internal/tema/extension_test.go`** (ADR 0021).
+//   - **Los botones son celdas con `bgcolor`.** Un `<a>` con fondo no lo pinta
+//     Gmail —lo vio el cliente en su buzón— y Outlook de escritorio, que compone
+//     con Word, ignora su relleno. El atributo de HTML no lo tira nadie.
+//   - **Nada de forma abreviada en CSS**: `background-color:`, nunca `background:`.
+//   - **Todo lo que se interpola va escapado.** El nombre de un equipo es texto
+//     libre que manda el cliente, y en un correo con formato eso es una inyección.
+//   - **El texto pelado sigue yendo, y dice lo mismo.** Hay quien lee el correo en
+//     texto, y además es lo que leen las pruebas.
+//   - **El código se copia, así que es texto**, grande y separado, nunca una imagen.
+//     Y **nunca hay un enlace que entre por ti**: esto es un gestor de contraseñas y
+//     un correo que dice «pulsa aquí para entrar» es una clase de phishing gratis.
 
-/**
- * El icono de la cabecera, servido desde la web del proyecto.
- *
- * **Lo eligió el cliente el 2026-09-24, con el coste delante**: pedir esta imagen
- * le cuenta a quien la sirve que el correo se ha abierto —a Google si es Gmail,
- * que hace de intermediario; directamente a GitHub, con IP y hora, en Apple Mail o
- * en Outlook—. Por eso el nombre va **al lado en texto** y el `alt` va vacío: con
- * las imágenes bloqueadas no se pierde nada, que es lo único que esto sí puede
- * garantizar. Está dicho en la política de privacidad.
- */
-const ICONO = "https://webcafeina.github.io/esfinge/imagenes/icono.png";
-
-/** Lo que dura una invitación antes de que haya que volver a mandarla. */
-export const DIAS_DE_INVITACION = 30;
+const LETRA = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace";
 
 function escapar(s: string): string {
 	return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
 }
 
+/** Un párrafo. El texto ya viene escapado por quien lo arma. */
+const p = (html: string) => `<p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#3c3c43;">${html}</p>`;
+
+/** Lo pequeño del final de un bloque: plazos, «si no has sido tú», la letra chica. */
+const nota = (html: string) => `<p style="margin:0 0 16px;font-size:13px;line-height:1.5;color:#3c3c43;">${html}</p>`;
+
 /**
- * El único correo con formato, y solo por el botón (decisión del cliente,
- * 2026-09-24). Tres cosas que un correo obliga y una página no:
+ * El código, para copiarlo con los ojos o con el ratón.
  *
- * - **Estilos en línea y nada más**: no hay hoja de estilos, ni variables, ni
- *   clases que sobrevivan. Los colores son los de siempre escritos a mano, y **las
- *   parejas son las que ya mide `internal/tema`** (ADR 0021).
- * - **El botón es una tabla con `bgcolor`, no un enlace con fondo.** Se hizo con un
- *   `<a>` y `background:` abreviado, y **Gmail no lo pintó**: lo vio el cliente en
- *   su buzón el 2026-09-24, aquí no lo decía ninguna prueba. Gmail se come la forma
- *   abreviada, y Outlook de escritorio —que compone con Word— ignora el relleno de
- *   un enlace, así que el color y el tamaño tienen que vivir en una celda. El
- *   `bgcolor` va **además** del `background-color`: es un atributo de HTML y no hay
- *   cliente que lo tire.
- * - **El enlace va también debajo, en texto**, porque un botón que no pinta deja
- *   un correo sin salida; y la versión en texto pelado lleva la misma dirección.
- * - **La marca va en la banda de arriba: el icono y el nombre escrito al lado.** El
- *   icono es una imagen de fuera y eso tiene su precio, dicho en `ICONO`; el nombre
- *   en texto es lo que hace que un cliente con las imágenes bloqueadas siga
- *   enseñando una cabecera y no un hueco.
+ * **Es texto**: se selecciona, se copia y se lee con un lector de pantalla. En una
+ * imagen no se podría hacer ninguna de las tres cosas.
  */
-function cuerpoDeInvitacion(de: string, enlace: string): string {
-	const quien = escapar(de);
-	const letra = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-	return `<!doctype html><html lang="es"><body style="margin:0;padding:24px;background-color:#f2f2f7;font-family:${letra};color:#3c3c43;">
-<div style="max-width:520px;margin:0 auto;background-color:#ffffff;border:1px solid #d8d8de;border-radius:12px;overflow:hidden;">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
-<td bgcolor="#2b2b31" style="background-color:#2b2b31;padding:14px 28px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-<td style="padding-right:10px;line-height:0;"><img src="${ICONO}" alt="" width="28" height="28" style="display:block;width:28px;height:28px;border:0;border-radius:6px;"></td>
-<td style="font-family:${letra};font-size:17px;font-weight:700;color:#ffffff;letter-spacing:.01em;">Esfinge</td>
-</tr></table></td>
-</tr></table>
-<div style="padding:28px;">
-<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#1c1c1e;line-height:1.35;">${quien} te quiere mandar una contraseña</p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.5;">${quien}, que usa Esfinge, quiere mandarte una contraseña de forma segura.</p>
-<p style="margin:0 0 24px;font-size:15px;line-height:1.5;">Esfinge es un gestor de contraseñas que las cifra en tu propio ordenador: ni Webcafeína ni nadie más puede leerlas. Para recibirla necesitas tu cuenta.</p>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;"><tr>
-<td align="center" bgcolor="#f2c14e" style="background-color:#f2c14e;border-radius:8px;"><a href="${enlace}" style="display:inline-block;padding:13px 24px;font-family:${letra};font-size:15px;font-weight:600;color:#2b2b31;text-decoration:none;">Crear mi cuenta de Esfinge</a></td>
-</tr></table>
-<p style="margin:0 0 24px;font-size:13px;line-height:1.5;color:#3c3c43;">Si el botón no funciona, copia esta dirección en tu navegador:<br><span style="word-break:break-all;">${escapar(enlace)}</span></p>
-<p style="margin:0 0 16px;font-size:15px;line-height:1.5;">En cuanto la tengas, la copia te llegará a tu buzón de Esfinge y podrás guardarla o descartarla. La invitación dura ${DIAS_DE_INVITACION} días.</p>
-<p style="margin:0;font-size:13px;line-height:1.5;color:#3c3c43;">Si no esperabas esto, ignora este correo: sin cuenta no te llega nada.</p>
-<hr style="border:0;border-top:1px solid #d8d8de;margin:24px 0 16px;">
-<p style="margin:0;font-size:12px;line-height:1.5;color:#3c3c43;">Esfinge · Webcafeína<br>Nunca te pediremos tu contraseña maestra ni tu clave de recuperación.</p>
-</div></div></body></html>`;
+const codigo = (c: string) =>
+	`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 20px;"><tr>` +
+	`<td align="center" bgcolor="#f2f2f7" style="background-color:#f2f2f7;border-radius:10px;padding:18px 12px;` +
+	`font-family:${MONO};font-size:30px;font-weight:600;letter-spacing:.18em;color:#1c1c1e;">${escapar(c)}</td>` +
+	`</tr></table>`;
+
+/** Lo que hay que mirar dos veces: un recuadro con su filete a la izquierda. */
+const aviso = (html: string) =>
+	`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 16px;"><tr>` +
+	`<td bgcolor="#f2f2f7" style="background-color:#f2f2f7;border-left:3px solid #2b2b31;border-radius:0 8px 8px 0;` +
+	`padding:14px 16px;font-family:${LETRA};font-size:14px;line-height:1.5;color:#3c3c43;">${html}</td>` +
+	`</tr></table>`;
+
+/**
+ * El botón. **El color vive en la celda**, no en el enlace: ver arriba.
+ *
+ * Solo lo llevan los correos donde de verdad hay algo que abrir; los del código no,
+ * porque lo que hay que hacer con un código es escribirlo en Esfinge.
+ */
+const boton = (texto: string, url: string) =>
+	`<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;"><tr>` +
+	`<td align="center" bgcolor="#f2c14e" style="background-color:#f2c14e;border-radius:8px;">` +
+	`<a href="${url}" style="display:inline-block;padding:13px 24px;font-family:${LETRA};font-size:15px;` +
+	`font-weight:600;color:#2b2b31;text-decoration:none;">${escapar(texto)}</a></td></tr></table>`;
+
+/** Un enlace dentro de un párrafo, con el color de la tinta: el oro como línea no se ve. */
+const enlace = (texto: string, url: string) =>
+	`<a href="${url}" style="color:#1c1c1e;text-decoration:underline;">${escapar(texto)}</a>`;
+
+/**
+ * La hoja entera: la banda de marca, el titular, lo que sea, y el pie.
+ *
+ * El icono de la cabecera **lo eligió el cliente con el coste delante** el
+ * 2026-09-24: para enseñarlo, el programa de correo se lo pide a GitHub, y quien
+ * sirve esa imagen se entera de que el correo se ha abierto —con hora e IP salvo en
+ * Gmail, que la pide por ti—. Está dicho en la política de privacidad. Por eso el
+ * nombre va **escrito al lado** y el `alt` va vacío: con las imágenes bloqueadas, que
+ * es como llegan de entrada a casi todo el mundo, se sigue leyendo una cabecera y no
+ * queda un hueco.
+ */
+function hoja(titulo: string, ...bloques: string[]): string {
+	return (
+		`<!doctype html><html lang="es"><body style="margin:0;padding:24px;background-color:#f2f2f7;font-family:${LETRA};color:#3c3c43;">` +
+		`<div style="max-width:520px;margin:0 auto;background-color:#ffffff;border:1px solid #d8d8de;border-radius:12px;overflow:hidden;">` +
+		`<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>` +
+		`<td bgcolor="#2b2b31" style="background-color:#2b2b31;padding:14px 28px;">` +
+		`<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>` +
+		`<td style="padding-right:10px;line-height:0;"><img src="${ICONO}" alt="" width="28" height="28" style="display:block;width:28px;height:28px;border:0;border-radius:6px;"></td>` +
+		`<td style="font-family:${LETRA};font-size:17px;font-weight:700;color:#ffffff;letter-spacing:.01em;">Esfinge</td>` +
+		`</tr></table></td></tr></table>` +
+		`<div style="padding:28px;">` +
+		`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#1c1c1e;line-height:1.35;">${titulo}</p>` +
+		bloques.join("") +
+		`<hr style="border:0;border-top:1px solid #d8d8de;margin:24px 0 16px;">` +
+		`<p style="margin:0;font-size:12px;line-height:1.5;color:#3c3c43;">Esfinge · Webcafeína<br>` +
+		`Nunca te pediremos tu contraseña maestra ni tu clave de recuperación.</p>` +
+		`</div></div></body></html>`
+	);
 }
 
+const PIE = "\n\n—\nEsfinge · Webcafeína\nNunca te pediremos tu contraseña maestra ni tu clave de recuperación.";
+
+/** Dónde se descarga Esfinge y se crea la cuenta. No hay alta desde la web. */
+export const DONDE_CREARLA = "https://webcafeina.github.io/esfinge/#descargar";
+const CONDICIONES = "https://webcafeina.github.io/esfinge/condiciones.html";
+const PRIVACIDAD = "https://webcafeina.github.io/esfinge/privacidad.html";
+
+/** El icono de la cabecera, servido desde la web del proyecto. Ver `hoja`. */
+const ICONO = "https://webcafeina.github.io/esfinge/imagenes/icono.png";
+
+/** Lo que dura una invitación antes de que haya que volver a mandarla. */
+export const DIAS_DE_INVITACION = 30;
+
 export const cartas = {
-	codigoDeAlta: (para: string, codigo: string): Carta => ({
+	codigoDeAlta: (para: string, c: string): Carta => ({
 		para,
 		asunto: "Tu código para crear la cuenta de Esfinge",
-		texto: `Tu código para crear la cuenta de Esfinge es:\n\n    ${codigo}\n\nCaduca en diez minutos. Si no lo has pedido tú, ignora este correo: sin el código no se crea nada.${PIE}`,
+		texto: `Tu código para crear la cuenta de Esfinge es:\n\n    ${c}\n\nCaduca en diez minutos. Si no lo has pedido tú, ignora este correo: sin el código no se crea nada.${PIE}`,
+		html: hoja(
+			"Tu código para crear la cuenta",
+			p("Escríbelo en Esfinge para terminar de crear tu cuenta:"),
+			codigo(c),
+			nota("Caduca en diez minutos. Si no lo has pedido tú, ignora este correo: sin el código no se crea nada."),
+		),
 	}),
 	/**
 	 * La confirmación del alta, que **pide el artículo 28 de la LSSI**: quien
@@ -182,37 +232,96 @@ export const cartas = {
 	cuentaCreada: (para: string): Carta => ({
 		para,
 		asunto: "Tu cuenta de Esfinge está creada",
-		texto: `Tu cuenta de Esfinge está creada con este correo.\n\nTres cosas que conviene no olvidar:\n\n  · Tu bóveda se cifra en tu ordenador antes de salir. No podemos leerla, ni recuperarla si pierdes tus claves.\n  · Guarda tu clave de recuperación fuera del ordenador. Es lo único que abre la bóveda si olvidas la contraseña maestra.\n  · Tu buzón de correo importa tanto como tus claves: por aquí van los códigos.\n\nLas condiciones de uso y la política de privacidad, en https://webcafeina.github.io/esfinge/condiciones.html y https://webcafeina.github.io/esfinge/privacidad.html${PIE}`,
+		texto: `Tu cuenta de Esfinge está creada con este correo.\n\nTres cosas que conviene no olvidar:\n\n  · Tu bóveda se cifra en tu ordenador antes de salir. No podemos leerla, ni recuperarla si pierdes tus claves.\n  · Guarda tu clave de recuperación fuera del ordenador. Es lo único que abre la bóveda si olvidas la contraseña maestra.\n  · Tu buzón de correo importa tanto como tus claves: por aquí van los códigos.\n\nLas condiciones de uso y la política de privacidad, en ${CONDICIONES} y ${PRIVACIDAD}${PIE}`,
+		html: hoja(
+			"Tu cuenta de Esfinge está creada",
+			p("Ya tienes cuenta con este correo. Tres cosas que conviene no olvidar:"),
+			aviso(
+				"<strong>Tu bóveda se cifra en tu ordenador antes de salir.</strong> No podemos leerla, ni recuperarla si pierdes tus claves.<br><br>" +
+					"<strong>Guarda tu clave de recuperación fuera del ordenador.</strong> Es lo único que abre la bóveda si olvidas la contraseña maestra.<br><br>" +
+					"<strong>Tu buzón de correo importa tanto como tus claves</strong>: por aquí van los códigos.",
+			),
+			nota(`Las ${enlace("condiciones de uso", CONDICIONES)} y la ${enlace("política de privacidad", PRIVACIDAD)}.`),
+		),
 	}),
 	yaTienesCuenta: (para: string): Carta => ({
 		para,
 		asunto: "Ya tienes una cuenta de Esfinge",
 		texto: `Alguien ha intentado crear una cuenta de Esfinge con este correo, y ya tienes una.\n\nSi has sido tú, entra con tu contraseña maestra. Si la has olvidado, usa tu clave de recuperación desde «¿La has olvidado?». Si no has sido tú, no tienes que hacer nada.${PIE}`,
+		html: hoja(
+			"Ya tienes una cuenta de Esfinge",
+			p("Alguien ha intentado crear una cuenta con este correo, y ya tienes una."),
+			p("Si has sido tú, entra con tu contraseña maestra. Si la has olvidado, usa tu clave de recuperación desde «¿La has olvidado?»."),
+			nota("Si no has sido tú, no tienes que hacer nada: con este correo no se puede crear otra cuenta."),
+		),
 	}),
-	codigoDeEntrada: (para: string, codigo: string, equipo: string): Carta => ({
+	codigoDeEntrada: (para: string, c: string, equipo: string): Carta => ({
 		para,
 		asunto: "Tu código para entrar en Esfinge",
-		texto: `Tu código para entrar en Esfinge desde «${equipo}» es:\n\n    ${codigo}\n\nCaduca en diez minutos. Si no estás entrando tú, alguien conoce tu contraseña maestra: cámbiala cuanto antes.${PIE}`,
+		texto: `Tu código para entrar en Esfinge desde «${equipo}» es:\n\n    ${c}\n\nCaduca en diez minutos. Si no estás entrando tú, alguien conoce tu contraseña maestra: cámbiala cuanto antes.${PIE}`,
+		html: hoja(
+			"Tu código para entrar",
+			p(`Alguien está entrando en tu cuenta desde <strong>${escapar(equipo)}</strong>. Si eres tú, escribe este código:`),
+			codigo(c),
+			nota("Caduca en diez minutos."),
+			aviso("<strong>Si no estás entrando tú, alguien conoce tu contraseña maestra.</strong> Cámbiala cuanto antes."),
+		),
 	}),
 	equipoNuevo: (para: string, equipo: string): Carta => ({
 		para,
 		asunto: "Un equipo nuevo ha entrado en tu cuenta de Esfinge",
 		texto: `«${equipo}» acaba de entrar en tu cuenta de Esfinge.\n\nSi no has sido tú, cambia tu contraseña maestra y olvida ese equipo en Ajustes → Cuenta.${PIE}`,
+		html: hoja(
+			"Un equipo nuevo ha entrado en tu cuenta",
+			p(`<strong>${escapar(equipo)}</strong> acaba de entrar en tu cuenta de Esfinge.`),
+			aviso("<strong>Si no has sido tú</strong>, cambia tu contraseña maestra y olvida ese equipo en Ajustes → Cuenta."),
+		),
 	}),
-	codigoDeRecuperacion: (para: string, codigo: string): Carta => ({
+	codigoDeRecuperacion: (para: string, c: string): Carta => ({
 		para,
 		asunto: "Tu código para recuperar la cuenta de Esfinge",
-		texto: `Tu código para recuperar la cuenta de Esfinge es:\n\n    ${codigo}\n\nCon él y con tu clave de recuperación podrás poner una contraseña maestra nueva. Caduca en diez minutos. Si no lo has pedido tú, ignora este correo: sin la clave de recuperación no sirve de nada.${PIE}`,
+		texto: `Tu código para recuperar la cuenta de Esfinge es:\n\n    ${c}\n\nCon él y con tu clave de recuperación podrás poner una contraseña maestra nueva. Caduca en diez minutos. Si no lo has pedido tú, ignora este correo: sin la clave de recuperación no sirve de nada.${PIE}`,
+		html: hoja(
+			"Tu código para recuperar la cuenta",
+			p("Con este código y con tu clave de recuperación podrás poner una contraseña maestra nueva:"),
+			codigo(c),
+			nota("Caduca en diez minutos."),
+			aviso("Si no lo has pedido tú, <strong>ignora este correo</strong>: sin tu clave de recuperación no sirve de nada."),
+		),
 	}),
 	claveCambiada: (para: string): Carta => ({
 		para,
 		asunto: "Has cambiado la contraseña de Esfinge",
 		texto: `La contraseña maestra de tu cuenta de Esfinge acaba de cambiar, y los demás equipos te la pedirán al volver.\n\nSi no has sido tú, recupera la cuenta con tu clave de recuperación cuanto antes.${PIE}`,
+		html: hoja(
+			"Has cambiado la contraseña de Esfinge",
+			p("La contraseña maestra de tu cuenta acaba de cambiar. Los demás equipos te la pedirán al volver."),
+			aviso("<strong>Si no has sido tú</strong>, recupera la cuenta con tu clave de recuperación cuanto antes."),
+		),
 	}),
-	codigoDeBorrado: (para: string, codigo: string): Carta => ({
+	codigoDeBorrado: (para: string, c: string): Carta => ({
 		para,
 		asunto: "Tu código para borrar la cuenta de Esfinge",
-		texto: `Tu código para borrar la cuenta de Esfinge es:\n\n    ${codigo}\n\nBorrar la cuenta no tiene vuelta atrás: se va la bóveda del servidor y todo lo demás. Lo que tengas en tus equipos se queda en ellos. Si no lo has pedido tú, cambia tu contraseña maestra.${PIE}`,
+		texto: `Tu código para borrar la cuenta de Esfinge es:\n\n    ${c}\n\nBorrar la cuenta no tiene vuelta atrás: se va la bóveda del servidor y todo lo demás. Lo que tengas en tus equipos se queda en ellos. Si no lo has pedido tú, cambia tu contraseña maestra.${PIE}`,
+		html: hoja(
+			"Tu código para borrar la cuenta",
+			p("Escríbelo en Esfinge para borrar tu cuenta:"),
+			codigo(c),
+			aviso(
+				"<strong>Borrar la cuenta no tiene vuelta atrás</strong>: se va la bóveda del servidor y todo lo demás. " +
+					"Lo que tengas en tus equipos se queda en ellos.<br><br>Si no lo has pedido tú, <strong>cambia tu contraseña maestra</strong>.",
+			),
+		),
+	}),
+	cuentaBorrada: (para: string): Carta => ({
+		para,
+		asunto: "Tu cuenta de Esfinge se ha borrado",
+		texto: `Tu cuenta de Esfinge y todo lo que había en el servidor se han borrado. Lo que tengas en tus equipos se queda en ellos.${PIE}`,
+		html: hoja(
+			"Tu cuenta de Esfinge se ha borrado",
+			p("Tu cuenta y todo lo que había en el servidor se han borrado."),
+			p("Lo que tengas en tus equipos se queda en ellos: Esfinge sigue funcionando ahí, sin cuenta."),
+		),
 	}),
 	/**
 	 * La invitación a quien todavía no tiene cuenta (ADR 0043, entrega B3).
@@ -230,11 +339,14 @@ export const cartas = {
 		para,
 		asunto: `${de} te quiere mandar una contraseña`,
 		texto: `${de}, que usa Esfinge, quiere mandarte una contraseña de forma segura.\n\nEsfinge es un gestor de contraseñas que las cifra en tu propio ordenador: ni Webcafeína ni nadie más puede leerlas. Para recibirla necesitas tu cuenta.\n\nCrea la tuya aquí:\n\n    ${DONDE_CREARLA}\n\nEn cuanto la tengas, la copia te llegará a tu buzón de Esfinge y podrás guardarla o descartarla. La invitación dura ${DIAS_DE_INVITACION} días.\n\nSi no esperabas esto, ignora este correo: sin cuenta no te llega nada.${PIE}`,
-		html: cuerpoDeInvitacion(de, DONDE_CREARLA),
-	}),
-	cuentaBorrada: (para: string): Carta => ({
-		para,
-		asunto: "Tu cuenta de Esfinge se ha borrado",
-		texto: `Tu cuenta de Esfinge y todo lo que había en el servidor se han borrado. Lo que tengas en tus equipos se queda en ellos.${PIE}`,
+		html: hoja(
+			`${escapar(de)} te quiere mandar una contraseña`,
+			p(`<strong>${escapar(de)}</strong>, que usa Esfinge, quiere mandarte una contraseña de forma segura.`),
+			p("Esfinge es un gestor de contraseñas que las cifra en tu propio ordenador: ni Webcafeína ni nadie más puede leerlas. Para recibirla necesitas tu cuenta."),
+			boton("Crear mi cuenta de Esfinge", DONDE_CREARLA),
+			nota(`Si el botón no funciona, copia esta dirección en tu navegador:<br><span style="word-break:break-all;">${escapar(DONDE_CREARLA)}</span>`),
+			p(`En cuanto la tengas, la copia te llegará a tu buzón de Esfinge y podrás guardarla o descartarla. La invitación dura ${DIAS_DE_INVITACION} días.`),
+			nota("Si no esperabas esto, ignora este correo: sin cuenta no te llega nada."),
+		),
 	}),
 };

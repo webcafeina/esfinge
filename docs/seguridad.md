@@ -321,6 +321,12 @@ se deriva aparte una clave de acceso, y el servidor guarda un HMAC de ella.
 - **Qué equipos hay en la cuenta**: el nombre de cada ordenador y cuándo se usó por última vez.
 - **Cuándo se entra, se cambia la contraseña o se recupera la cuenta**: los doscientos últimos eventos.
 
+**Nuestros correos llevan el icono de Esfinge**, que sale de la web del proyecto en GitHub. Para
+enseñarlo, el programa de correo se lo pide, y quien sirve esa imagen se entera de que el correo se ha
+abierto —con la hora y la IP, salvo en Gmail, que la pide por ti—. Se eligió así con el cliente el
+2026-09-24, con el coste delante, y **los correos se leen igual con las imágenes bloqueadas**. Lo que no
+hay es ninguna marca de seguimiento nuestra: nosotros no sabemos si un correo se ha abierto.
+
 **Los códigos llegan por correo** y los manda Resend, que ve la dirección y el código. Un correo no es un
 segundo factor tan fuerte como una aplicación de códigos: quien entre en el buzón y sepa la contraseña,
 entra. Se eligió así con el cliente.

@@ -5,6 +5,32 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-24 (tarde) · Todos los correos con formato, y la C decidida a medias
+
+- **Los diez correos dejan de ser texto pelado** (decisión del cliente). Una maqueta compartida —banda de
+  marca con el icono, titular, párrafos, recuadro de aviso con su filete, código grande y seleccionable, y
+  botón solo donde hay algo que abrir—, con **el texto pelado sigue yendo y diciendo lo mismo**: hay quien
+  lee el correo así, y es lo que leen las pruebas.
+- **Y convertir un correo en HTML abrió un agujero que en texto no existía**: el nombre del equipo son
+  ochenta caracteres libres que manda el cliente, y ahí dentro `<img src=x onerror=…>` es una etiqueta.
+  Todo lo interpolado pasa por `escapar`, con una prueba que lo mete de verdad y mira que salga escrito.
+- Dos reglas más, que no son de estilo y quedan en `CLAUDE.md`: **el código va en texto** —grande y
+  seleccionable, nunca una imagen, o no se puede copiar ni leer con un lector de pantalla— y **ningún
+  correo con código lleva un enlace que entre por ti**, que en un gestor de contraseñas es entrenar a su
+  gente para el phishing. Las dos con prueba.
+- **Mis propias pruebas encontraron dos cosas**: que el asunto de la invitación empieza por una dirección
+  de correo y por tanto en minúscula —es la única excepción a «toda frase empieza en mayúscula», y se
+  nombra, porque poner en mayúscula la dirección de otro sería escribirla mal—, y que la primera aserción
+  del escapado estaba mal escrita: lo que importa no es que la palabra «onerror» no aparezca, sino que no
+  pueda ser un atributo.
+- **El icono pasa a ir en todos los correos**, así que lo que costaba en la invitación cuesta ahora en
+  todos: dicho en la política y en `seguridad.md`, con la frase que faltaba —**nosotros no sabemos si un
+  correo se ha abierto**, no hay marca de seguimiento nuestra—.
+- **Y la C, decidida a medias**: el cliente dice que **de momento no se firma en macOS**. Con eso,
+  desbloquear con el sistema sería el camino del cerrojo, y hay que escribirlo donde se active.
+- Verificado: `make comprobar` entero, y **miradas las diez maquetas**, incluida una con un nombre de
+  equipo que intenta inyectar.
+
 ## 2026-09-24 (tarde) · Las dos comprobaciones que no podía hacer yo
 
 - **La invitación, en un buzón de verdad.** Cuenta de usar y tirar en producción —`alvaro+…`, que Esfinge

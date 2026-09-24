@@ -581,9 +581,10 @@ va**: sin firmar, en los dos sistemas «desbloquear con el sistema» es **un cer
 - Y **un PIN de cuatro cifras no protege un fichero**: sin hardware que limite los intentos, se prueban
   todos. Solo vale como desbloqueo rápido dentro de una sesión ya abierta, y hay que llamarlo así.
 
-El documento deja **cuatro cosas que decidir antes de escribir nada**, y la primera es la que manda: si se
-acepta que esto sea un cerrojo —que es lo que hacen Dashlane y 1Password en escritorio— o si se reabre lo
-de firmar en macOS, que son 99 $ al año y de paso se lleva el aviso de Gatekeeper.
+El documento deja **cuatro cosas que decidir antes de escribir nada**, y la primera ya está contestada:
+**de momento no se firma en macOS** (cliente, 2026-09-24). Con eso, si la C se hace, es el camino del
+cerrojo, y **hay que escribirlo donde se active y en `seguridad.md`**: protege de quien se sienta delante
+de tu ordenador desbloqueado, no de un programa que corra como tú.
 
 **Y las dos cosas que solo podía comprobar el cliente, hechas el mismo 2026-09-24:**
 
@@ -600,6 +601,12 @@ de firmar en macOS, que son 99 $ al año y de paso se lleva el aviso de Gatekeep
 
 Lo que queda sin mirar de esto: **el modo oscuro de los clientes de correo**, que algunos invierten los
 colores por su cuenta y ahí la piedra sobre el oro podría acabar en blanco sobre oro, 1,68:1.
+
+**Y con ello, los diez correos dejan de ser texto pelado** (2026-09-24, pedido por el cliente): una maqueta
+compartida con la banda de marca, el código grande y seleccionable, el recuadro de aviso y botón solo donde
+hay algo que abrir. **El texto pelado sigue yendo** y dice lo mismo. Convertirlos a HTML abrió un agujero
+que en texto no existía —el nombre del equipo es texto libre del cliente, y ahí `<img src=x onerror=…>` es
+una etiqueta—, así que todo lo interpolado va escapado y hay una prueba que lo intenta de verdad.
 
 **Lo que viene después de todo esto (2026-09-23)**: el cliente pidió **passkeys**, «como Dashlane, que
 sale un banner y es darle a Aceptar». Está estudiado y escrito en [`docs/passkeys.md`](passkeys.md), con lo

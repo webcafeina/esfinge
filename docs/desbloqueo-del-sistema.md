@@ -104,6 +104,10 @@ maestra. Eso se puede hacer sin hardware, y hay que llamarlo por su nombre.
 
 ## Lo que hay que decidir antes de escribir nada
 
+> **Contestada la 2, el 2026-09-24: de momento no se firma en macOS.** Así que, si esta fase se hace, es
+> el camino del cerrojo, y eso hay que escribirlo donde se active y en `seguridad.md`. Las otras tres
+> siguen abiertas.
+
 1. **¿Se acepta que esto sea un cerrojo y no una llave?** Con la decisión de no firmar, en macOS es lo
    único que hay; en Windows, lo único que hay sin aceptar que otra aplicación tuya pueda pedir lo mismo.
    Si la respuesta es sí, **hay que escribirlo en la ventana**, donde se activa, y en `seguridad.md`.
