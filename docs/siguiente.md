@@ -10,6 +10,9 @@ saber qué se hizo.
 - **Probar la extensión en Firefox**, lo último del plan de cuentas (E3) y la última tarea del plan,
   dicho así por el cliente tres veces: va cuando no quede ninguna otra. La lista de lo que hay que mirar
   está en [`estado.md`](estado.md).
+- **Desbloquear con el sistema** ([`desbloqueo-del-sistema.md`](desbloqueo-del-sistema.md)), la fase **C**
+  del plan de cuentas. **Estudiada y sin empezar**, y con cuatro cosas que decidir antes: la primera, si se
+  acepta que sin firmar esto es un cerrojo y no una llave.
 - **Passkeys** ([`passkeys.md`](passkeys.md)), pedidas por el cliente el 2026-09-23: «como Dashlane, que
   sale un banner y es darle a Aceptar». Va **fuera y después** del plan de cuentas. Estudiada la
   viabilidad y escritas las cuatro entregas y las cinco decisiones previas; **sin empezar**.

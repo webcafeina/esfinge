@@ -22,6 +22,13 @@ Plantilla al final.
 - La lección, que va a `CLAUDE.md`: **el único sitio donde se puede ver un correo es un cliente de correo**.
   Aquí se puede medir el contraste y comprobar que el HTML dice lo que tiene que decir, y aun así el botón no
   se veía.
+- **Y la C, estudiada** ([`desbloqueo-del-sistema.md`](desbloqueo-del-sistema.md)). El plan mandaba mirarla
+  antes de escribir código por si exigía firmar, y lo que sale **cambia de qué va la fase**: sin firmar,
+  «desbloquear con el sistema» es **un cerrojo y no una llave** en los dos sistemas. En macOS el camino
+  fuerte exige una entitlement que solo lleva una compilación firmada; en Windows sin empaquetar, la
+  credencial de Hello **está atada a la cuenta de usuario y no a la aplicación**, así que otro programa
+  tuyo la puede usar —lo dice Microsoft, y recomienda contraseña **y** Hello, no en lugar de—. Quedan
+  cuatro cosas que decidir antes de empezar.
 
 ## 2026-09-24 (mediodía) · La B4: decir lo que compartir cambia
 

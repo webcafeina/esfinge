@@ -564,8 +564,26 @@ web y `make comprobar` falla si no está al día. Y al escribir eso apareció lo
 `herramientas/capturas.mjs` daba por aceptada la **versión 1** del aviso, así que desde que subió a 2 todas
 las capturas del panel salían del aviso de datos y nadie lo había visto.
 
-**Con esto, compartir se puede publicar.** Lo que queda de la B es nada; el plan sigue con la **C** —Touch
-ID, Windows Hello y PIN—, que hay que investigar antes porque puede exigir firmar la aplicación.
+**Con esto, compartir se puede publicar.** Lo que queda de la B es nada.
+
+**La C, estudiada (2026-09-24) y sin empezar** — [`desbloqueo-del-sistema.md`](desbloqueo-del-sistema.md).
+El plan avisaba de que había que mirarla antes por si exigía firmar, y lo que ha salido **cambia de qué
+va**: sin firmar, en los dos sistemas «desbloquear con el sistema» es **un cerrojo y no una llave**.
+
+- En **macOS**, el camino fuerte —Secure Enclave o control de acceso biométrico en el llavero— vive en el
+  llavero de protección de datos, que **exige la entitlement `keychain-access-groups`**, y ésa solo la
+  lleva una compilación firmada con un perfil de aprovisionamiento. Es justo lo que descartó la ADR 0014.
+  Lo que sí funciona sin firmar es `LAContext`, que devuelve **un sí o un no**: la clave la guarda otra
+  cosa, y quien lea eso abre la bóveda sin poner el dedo.
+- En **Windows** se puede sin empaquetar, pero Microsoft lo dice claro: la credencial de Hello **está
+  atada a la cuenta de usuario, no a la aplicación**, así que otro programa tuyo que sepa su nombre la
+  usa. Su propia recomendación es contraseña **y** Hello, no Hello en lugar de la contraseña.
+- Y **un PIN de cuatro cifras no protege un fichero**: sin hardware que limite los intentos, se prueban
+  todos. Solo vale como desbloqueo rápido dentro de una sesión ya abierta, y hay que llamarlo así.
+
+El documento deja **cuatro cosas que decidir antes de escribir nada**, y la primera es la que manda: si se
+acepta que esto sea un cerrojo —que es lo que hacen Dashlane y 1Password en escritorio— o si se reabre lo
+de firmar en macOS, que son 99 $ al año y de paso se lleva el aviso de Gatekeeper.
 
 **Y las dos cosas que solo podía comprobar el cliente, hechas el mismo 2026-09-24:**
 
