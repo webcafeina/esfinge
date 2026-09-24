@@ -30,6 +30,16 @@ Plantilla al final.
   desbloquear con el sistema sería el camino del cerrojo, y hay que escribirlo donde se active.
 - Verificado: `make comprobar` entero, y **miradas las diez maquetas**, incluida una con un nombre de
   equipo que intenta inyectar.
+- **Y una falsa alarma que conviene no volver a perseguir.** Se le mandó al cliente una muestra con las diez
+  maquetas **por su propio Gmail**, y ahí el icono de la cabecera no salía. No era la maqueta: **Gmail borra
+  las `<img>` al componer un envío por su API** —en el mensaje tal y como salió queda una celda vacía donde
+  iba la imagen— y de paso reescribe los enlaces por `google.com/url` y convierte las direcciones en
+  `mailto:`. Los correos de Esfinge no pasan por ahí: los manda Resend, y por ese camino el icono se vio el
+  día anterior. Si alguna vez hay que mandar una muestra por Gmail, el icono va **adjunto en línea**, no
+  enlazado.
+- Y la forma buena de comprobar esto de ahora en adelante, dicha por el cliente: **los correos de verdad que
+  se vayan mandando**. Cada alta, cada entrada desde un equipo nuevo y cada invitación es una prueba de
+  cómo sale en un buzón.
 
 ## 2026-09-24 (tarde) · Las dos comprobaciones que no podía hacer yo
 
