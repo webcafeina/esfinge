@@ -5,7 +5,25 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
-## 2026-09-24 (tarde) · La B4: decir lo que compartir cambia
+## 2026-09-24 (tarde) · Las dos comprobaciones que no podía hacer yo
+
+- **La invitación, en un buzón de verdad.** Cuenta de usar y tirar en producción —`alvaro+…`, que Esfinge
+  trata como otra cuenta porque no quita lo que va tras el `+`—, copia mandada a una dirección sin cuenta y
+  el cliente mirando el correo en Gmail. **Salió un fallo que aquí no decía nada**: el botón era un `<a>` con
+  `background:` abreviado y **Gmail no lo pintaba**. Ahora es una celda con `bgcolor`, que ningún cliente
+  tira y que además arregla Outlook de escritorio, que compone con Word e ignora el relleno de un enlace.
+  Comprobado después por él: **botón, icono y sin spam**.
+- **Y el icono en la cabecera**, que pidió él para que el correo se vea de la casa. Se le puso el coste
+  delante —pedir esa imagen le cuenta a quien la sirve que el correo se ha abierto, con hora e IP salvo en
+  Gmail, que la pide por ti— y lo eligió igual. Queda en la política de privacidad, y **el nombre va escrito
+  al lado** para que con las imágenes bloqueadas no quede un hueco.
+- **El aviso del cambio de condiciones: no hacía falta.** Se miró en producción y hay **una sola cuenta**, la
+  de la casa. El punto 13 promete treinta días de aviso y no hay a quién avisar.
+- La lección, que va a `CLAUDE.md`: **el único sitio donde se puede ver un correo es un cliente de correo**.
+  Aquí se puede medir el contraste y comprobar que el HTML dice lo que tiene que decir, y aun así el botón no
+  se veía.
+
+## 2026-09-24 (mediodía) · La B4: decir lo que compartir cambia
 
 - **La política, las condiciones, el aviso del panel, las dos fichas, la portada y el README**, con las dos
   cosas nuevas que compartir trae y que antes no existían: **el servidor sabe con quién compartes** y

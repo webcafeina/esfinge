@@ -567,10 +567,21 @@ las capturas del panel salían del aviso de datos y nadie lo había visto.
 **Con esto, compartir se puede publicar.** Lo que queda de la B es nada; el plan sigue con la **C** —Touch
 ID, Windows Hello y PIN—, que hay que investigar antes porque puede exigir firmar la aplicación.
 
-Y dos cosas que solo puede comprobar el cliente: **cómo se ve la invitación en un buzón de verdad** —el
-botón en Gmail y en Outlook, y si cae en spam— y, si quiere, **avisar a las cuentas que haya** de que las
-condiciones han cambiado: el punto 13 promete treinta días de aviso por correo, y hoy la única cuenta es la
-de la casa.
+**Y las dos cosas que solo podía comprobar el cliente, hechas el mismo 2026-09-24:**
+
+- **La invitación, en un buzón de verdad.** Se creó una cuenta de usar y tirar en producción, se le mandó
+  una copia a una dirección sin cuenta y el cliente miró el correo en Gmail. **Salió un fallo que aquí no
+  decía nada**: el botón estaba escrito como un `<a>` con `background:` abreviado —lo que vale en cualquier
+  navegador— y **Gmail no lo pintaba**. Ahora es una celda con `bgcolor`, que además arregla Outlook de
+  escritorio. Comprobado después: **botón, icono y sin spam**, y bien en el móvil. Y de paso pidió el icono
+  de Esfinge en la cabecera, que se puso **con el coste delante** —pedir esa imagen cuenta a quien la sirve
+  que el correo se ha abierto— y queda dicho en la política.
+- **El aviso del cambio de condiciones: no hace falta.** En producción hay **una sola cuenta**, la de la
+  casa. El punto 13 promete treinta días de aviso por correo antes de cambiarlas, y no hay a quién avisar.
+  Si algún día hay cuentas de fuera, ese aviso deja de ser una formalidad.
+
+Lo que queda sin mirar de esto: **el modo oscuro de los clientes de correo**, que algunos invierten los
+colores por su cuenta y ahí la piedra sobre el oro podría acabar en blanco sobre oro, 1,68:1.
 
 **Lo que viene después de todo esto (2026-09-23)**: el cliente pidió **passkeys**, «como Dashlane, que
 sale un banner y es darle a Aceptar». Está estudiado y escrito en [`docs/passkeys.md`](passkeys.md), con lo

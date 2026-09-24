@@ -156,7 +156,20 @@ espera dentro de la bóveda **sin el secreto** y las dos implementaciones la fun
 azar); y, de punta a punta, que la copia sale sola cuando esa persona crea su cuenta —en Go con dos
 aplicaciones, y con **la extensión cargada de verdad** contra el servidor local—.
 
+**Y la invitación, en un buzón de verdad** (2026-09-24). Se creó una cuenta de usar y tirar en producción y
+se le mandó una copia a una dirección sin cuenta; el cliente miró el correo en Gmail. **De ahí salió un
+fallo que aquí no decía nada**: el botón estaba escrito como un `<a>` con `background:` abreviado —lo que
+vale en cualquier navegador— y **Gmail no lo pintaba**. Ahora es una celda con `bgcolor`, que ningún cliente
+tira y que además arregla Outlook de escritorio, que compone con Word e ignora el relleno de un enlace.
+Comprobado después: **el botón se ve, el icono de la cabecera se ve y no cae en spam**, y se lee bien en el
+móvil.
+
+**El icono de la cabecera lo pidió el cliente** para que el correo se vea de la casa, y se eligió con el
+coste delante: pedir esa imagen le cuenta a quien la sirve que el correo se ha abierto, con hora e IP salvo
+en Gmail, que la pide por ti. Queda dicho en la política de privacidad, y **el nombre va escrito al lado**
+para que con las imágenes bloqueadas la cabecera se siga leyendo.
+
 **Sin comprobar**: **la huella no la ha leído en voz alta ningún par de personas**, que es la única prueba
-que vale de que se puede comparar por teléfono. Y **nadie ha recibido la invitación en un buzón de verdad**:
-aquí el correo se lee de una tabla, así que cómo se ve el botón en Gmail o en Outlook, y si el correo cae en
-spam, solo lo dice mandarlo.
+que vale de que se puede comparar por teléfono. Y **el modo oscuro de los clientes de correo**: algunos
+invierten los colores por su cuenta, y ahí la piedra sobre el oro podría acabar en blanco sobre oro, que son
+1,68:1. No se pudo mirar.
