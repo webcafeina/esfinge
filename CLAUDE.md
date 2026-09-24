@@ -306,6 +306,16 @@ compone como opaca aunque su color tenga alfa cero; (2) desde macOS 12 se suma e
 10.14 y que hoy se dibuja plano. Las tres las remata `vidrio_darwin.go` con cgo (ADR 0017), y **ese
 fichero no se puede compilar en esta máquina**: lo comprueba el trabajo de macOS de la publicación.
 
+**Una etiqueta `//go:build` que excluye un sistema es una promesa, y aquí no se ve si no se cumple.**
+`internal/llavero` se partió por sistemas y al de Linux se le puso `!darwin && !windows` dando por hecho
+que los otros dos llegarían enseguida: **los dos objetivos de Windows se quedaron sin `delSistema`** y
+nada lo dijo, porque `go vet ./...` mira solo esta máquina y **la línea de comandos se cruza en `make
+publicar`**, o sea en medio de una publicación. Con ello va una segunda trampa que no es la misma:
+**un fichero de cgo no entra cuando `CGO_ENABLED=0`**, que es como se cruza esa línea de comandos, así
+que un `_darwin.go` con cgo **no cubre darwin** y hace falta su pareja `darwin && !cgo`. Ahora
+`make comprobar` compila los seis objetivos sin cgo, que tarda segundos; lo que eso **no** comprueba son
+precisamente los ficheros de cgo, y ésos siguen siendo cosa del trabajo de macOS.
+
 **Y el atajo que se tardó demasiado en usar: el código de Wails está aquí**, en
 `~/go/pkg/mod/github.com/wailsapp/wails/v2@v2.15.0`. Las tres carencias de arriba se leen en
 `internal/frontend/desktop/darwin/WailsContext.m` en dos minutos. Antes de razonar sobre lo que Wails

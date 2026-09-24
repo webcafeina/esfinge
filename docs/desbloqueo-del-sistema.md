@@ -65,6 +65,21 @@ la **firma de código** de quien lo guardó. Sin firma, esa atadura no se puede 
 cada vez que el binario cambia, y **cada actualización de Esfinge lo cambia**. Una firma ad hoc no vale,
 porque cambia en cada compilación.
 
+### Y aun así es donde va el secreto (decidido el 2026-09-24, al escribir la C2)
+
+La alternativa era **un fichero de 0600 al lado de la bóveda**, que es predecible, sobrevive a las
+actualizaciones y no pregunta nada. Se descartó, y conviene que quede dicho por qué:
+
+> Con el secreto en un fichero, **cualquiera que pueda leer tu carpeta abre la bóveda sin poner el dedo**.
+> Eso no es un cerrojo peor: es quitar la puerta. Activar Touch ID pasaría de «no tengo que teclear la
+> maestra» a «mi bóveda la abre quien copie mi carpeta de usuario», y eso es **bajar** la protección de la
+> bóveda a cambio de una comodidad.
+
+En el llavero de inicio de sesión el secreto está cifrado con la contraseña de macOS. Sigue siendo un
+cerrojo —un programa que corra como tú puede pedirle al llavero lo mismo que le pide Esfinge—, pero **un
+disco copiado no lo lleva dentro**. Lo que se paga por eso es la pregunta al actualizar de la que habla el
+apartado anterior, y ése es el orden de prioridades correcto en un gestor de contraseñas.
+
 ## Windows
 
 ### Se puede sin empaquetar, pero la credencial no es tuya, es de la sesión
@@ -127,6 +142,13 @@ maestra. Eso se puede hacer sin hardware, y hay que llamarlo por su nombre.
 3. **¿Qué pasa al actualizar?** Cada versión nueva de Esfinge es un binario nuevo. En Windows la credencial
    de Hello sobrevive; en macOS, con el llavero de siempre, no necesariamente. Hay que probarlo, y hay que
    decidir qué se le dice a alguien cuya huella «deja de funcionar» tras actualizar.
+
+   **Escrita la C2, esto es lo único que queda por ver de macOS**, y solo se ve actualizando de verdad:
+   si al abrir tras una actualización macOS pregunta «¿Permitir que Esfinge use esta información?», se
+   contesta **«Permitir siempre»** y a partir de ahí no vuelve a preguntar hasta la siguiente. Si
+   preguntara en cada apertura, o si en vez de preguntar fallara, hay que volver aquí: el arreglo sería
+   **borrar la ranura y pedir que se active otra vez**, que es lo que ya hace el código cuando el secreto
+   deja de abrir, y decirlo en la pantalla.
 4. **¿Y si se pierde la huella?** La ranura del sistema **nunca** puede ser la única: la maestra y la clave
    de recuperación siguen abriendo. Eso ya está resuelto por el formato, pero hay que decirlo en la
    pantalla, porque quien activa Touch ID tiende a olvidar la contraseña que ya no escribe.
@@ -136,7 +158,7 @@ maestra. Eso se puede hacer sin hardware, y hay que llamarlo por su nombre.
 | Entrega | Qué lleva | Cómo se comprueba |
 |---|---|---|
 | **C1** · **hecha el 2026-09-24** | La ranura local, el interruptor de Ajustes y el botón de la pantalla de desbloquear, con un llavero de mentira detrás para poder moverlo aquí. **Sin PIN**: donde no hay biometría se teclea la maestra y la pantalla lo dice | Pruebas de Go —abre, la maestra sigue abriendo, no viaja en `PrepararSubida`, cancelar no deja nada a medias, un secreto que ya no abre se olvida— y e2e de las dos pantallas en los dos temas |
-| **C2** | macOS: `LAContext` por cgo, en un fichero que **no se puede compilar aquí**, como `vidrio_darwin.go` | El trabajo de macOS de la publicación; y **solo un Mac de verdad dice si arranca** |
+| **C2** · **escrita el 2026-09-24** | macOS: `LAContext` por cgo más el llavero de inicio de sesión, en un fichero que **no se puede compilar aquí**, como `vidrio_darwin.go` | El trabajo de macOS de la publicación dice que compila; **solo un Mac de verdad dice si arranca, si pregunta al actualizar y si el diálogo se lee bien** |
 | **C3** | Windows: `UserConsentVerifier` o `KeyCredentialManager` | La máquina de Windows de la publicación compila; **nadie lo ha ejecutado nunca en un Windows** |
 | ~~**C4**~~ | ~~El PIN como desbloqueo rápido de sesión~~ → **descartado por el cliente el 2026-09-24**: «siempre será la contraseña maestra». La ranura `pin` se queda reservada en el formato y sin usar | — |
 

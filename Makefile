@@ -18,6 +18,17 @@ todo: comprobar esfinge
 comprobar:
 	$(GO) vet ./...
 	$(GO) vet -tags dev ./...
+	@# **Y que compile para los seis objetivos, no solo para esta máquina.**
+	@# Una etiqueta `//go:build` que excluye un sistema deja un agujero que aquí no
+	@# se ve: la C1 dejó a Windows sin `delSistema` y no lo dijo nadie, porque la
+	@# línea de comandos se cruza **en `make publicar`**, o sea en medio de una
+	@# publicación. Es rápido, va sin cgo, y por eso **no comprueba los ficheros de
+	@# cgo** —`vidrio_darwin.go`, `llavero_darwin.go`—: ésos solo los ve el trabajo
+	@# de macOS, y aun así solo dicen que compilan.
+	@for objetivo in darwin/amd64 darwin/arm64 windows/amd64 windows/arm64 linux/amd64 linux/arm64; do \
+		os=$${objetivo%%/*}; arch=$${objetivo##*/}; \
+		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build ./... || exit 1; \
+	done
 	$(GO) test ./...
 	cd $(FRONT) && $(PNPM) exec tsc -b --noEmit
 	@# Y la extensión: tipos, que el manifiesto declare lo que el código usa, y

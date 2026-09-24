@@ -597,9 +597,25 @@ sistemas** y **no hay PIN** —«siempre será la contraseña maestra»—. Lo q
 cuatro métodos de la aplicación, el interruptor de Ajustes —donde se dice que esto **es un cerrojo**— y el
 botón de la pantalla de desbloquear. Con pruebas de Go y e2e de las dos pantallas en los dos temas.
 
-**Lo siguiente de la C es C2 y C3**, que es el código nativo: `LAContext` por cgo en macOS y Hello en
-Windows. Los dos son ficheros que **esta máquina no compila**, y la lección de `vidrio_darwin.go` es que
-verlos en verde en la publicación no dice que arranquen.
+**Y la C2, escrita el 2026-09-24**: `internal/llavero/llavero_darwin.go`, cgo con `LAContext` para pedir
+la huella y el **llavero de inicio de sesión** para guardar el secreto. Lo que se decidió al escribirla, y
+está razonado en el documento de la fase: el secreto **no** va a un fichero al lado de la bóveda, aunque
+eso sería predecible y sobreviviría a las actualizaciones, porque entonces **quien copie tu carpeta abre
+la bóveda sin poner el dedo** — eso no es un cerrojo peor, es quitar la puerta. En el llavero está cifrado
+con la contraseña de macOS, y lo que se paga a cambio es que macOS puede preguntar tras cada
+actualización, porque el binario cambia y Esfinge no está firmada.
+
+**Y al escribirla salió que Windows llevaba roto desde la C1.** Al partir `internal/llavero` por sistemas,
+el fichero de Linux se marcó `!darwin && !windows` contando con que los otros dos llegarían enseguida, y
+**los dos objetivos de Windows se quedaron sin `delSistema`**: se habría caído en medio de una
+publicación, porque `go vet` mira solo esta máquina y la línea de comandos se cruza en `make publicar`.
+Con ello salió la segunda mitad, que no es lo mismo: **un fichero de cgo no entra cuando `CGO_ENABLED=0`**,
+que es como se cruza esa línea de comandos, así que un `_darwin.go` de cgo necesita su pareja
+`darwin && !cgo`. Ahora **`make comprobar` compila los seis objetivos**, que tarda segundos y para algo.
+
+**Lo siguiente de la C es la C3**, Windows Hello, que se escribe a ciegas: nadie ha ejecutado nunca Esfinge
+en un Windows. Y de la C2 queda lo que solo dice un Mac de verdad: que arranque, qué pregunta al
+actualizar, y cómo se lee el diálogo.
 
 El documento deja **cuatro cosas que decidir antes de escribir nada**, y la primera ya está contestada:
 **de momento no se firma en macOS** (cliente, 2026-09-24). Con eso, si la C se hace, es el camino del

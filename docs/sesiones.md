@@ -5,6 +5,27 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-24 (noche) · La C2, y un Windows que llevaba roto desde por la tarde
+
+- **`internal/llavero/llavero_darwin.go`**: Touch ID por cgo. Dos piezas, porque sin firmar no hay una:
+  `LAContext` pide la huella y devuelve **un sí o un no**, y el secreto lo guarda el **llavero de inicio
+  de sesión**. La alternativa —un fichero de 0600 junto a la bóveda— se descartó a conciencia: sería
+  predecible y sobreviviría a las actualizaciones, pero **quien copie tu carpeta abriría la bóveda sin
+  poner el dedo**, y eso no es un cerrojo peor, es quitar la puerta. Se paga con que macOS puede preguntar
+  tras cada actualización, porque el binario cambia y no está firmado.
+- **Y al ir a comprobarlo salió que los dos objetivos de Windows no compilaban desde la C1**: al partir el
+  paquete por sistemas, al fichero de Linux se le puso `!darwin && !windows` contando con que los otros
+  dos llegarían enseguida, y `delSistema` se quedó sin definir. No lo dijo nada, porque `go vet` mira solo
+  esta máquina y **la línea de comandos se cruza en `make publicar`**: se habría caído en medio de una
+  publicación. Con ello la segunda mitad, que no es la misma trampa: **un fichero de cgo no entra cuando
+  `CGO_ENABLED=0`**, así que un `_darwin.go` de cgo no cubre darwin y necesita su pareja `darwin && !cgo`.
+- **`make comprobar` compila ahora los seis objetivos** sin cgo, en segundos. Lo que eso no comprueba son
+  justo los ficheros de cgo, y se dice: ésos siguen siendo cosa del trabajo de macOS, que solo dice que
+  compilan.
+- Verificado: `make comprobar` en verde (salida 0) y los seis cruces. **El cgo se manda a compilar al
+  trabajo de macOS**, que es lo único que aquí puede decir algo de él. Y queda lo que solo dice un Mac de
+  verdad: que arranque, qué pregunta al actualizar y cómo se lee el diálogo del sistema.
+
 ## 2026-09-24 (tarde) · Todos los correos con formato, y la C decidida a medias
 
 - **Los diez correos dejan de ser texto pelado** (decisión del cliente). Una maqueta compartida —banda de
