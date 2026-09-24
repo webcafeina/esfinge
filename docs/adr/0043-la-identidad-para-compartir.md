@@ -71,6 +71,24 @@ Así que las publican **la ventana al arrancar la sincronización** y **la exten
 dos de cortesía: que falle no puede parar nada. La extensión apunta la huella publicada para no repetir el
 envío cada minuto.
 
+### Y a quien todavía no tiene cuenta, una invitación (entrega B3)
+
+Hasta aquí faltaba la mitad: **mandar una copia a una dirección sin cuenta no hacía nada**, y lo hacía en
+silencio. El servidor devuelve para ella unas llaves inventadas pero fijas —así es como no dice quién está
+en Esfinge—, de modo que el sobre salía cifrado hacia nadie y se tiraba.
+
+Lo que se hace, decidido con el cliente el 2026-09-24:
+
+- **El servidor le manda una invitación** con **quién le invita** y un botón para crear su cuenta. Lo eligió
+  así frente a un correo anónimo: sin nombre, un correo que pide darse de alta en algo no lo abre nadie.
+- **El sobre no sale y no espera en el servidor.** Se queda una nota dentro de la bóveda de quien lo manda
+  —sección `envios`, cifrada como todo lo demás y sincronizada a sus equipos—, y el sobre se manda de verdad
+  cuando esa dirección publica sus llaves. Lo que dispara es **que la huella cambie**: mientras sea la
+  inventada, es siempre la misma.
+- **Lo que se dice al mandar vale para los dos casos.** «Si ya tiene cuenta, le espera en su buzón; si no,
+  le hemos mandado una invitación.» No es vaguedad: distinguirlos exigiría que el servidor contestara
+  distinto, y eso convertiría compartir en una forma de averiguar quién tiene cuenta.
+
 ### Cómo se funde
 
 `identidad` es una sección más del contenido, pero con una regla propia: **no cambia nunca**, y si dos
@@ -86,6 +104,16 @@ empatan, la de huella menor. Simétrico y sin sorpresas: los dos equipos llegan 
   día se recifra (ver la revisión de septiembre), la identidad no tiene por qué irse con ella.
 - **Guardar las llaves ya derivadas** en vez de la semilla. Ocupa más, se puede desincronizar y no aporta:
   derivarlas cuesta microsegundos.
+- **Que el sobre viaje con la invitación**, cifrado con una clave al azar que va en el enlace del correo.
+  Es lo que hacen otros y llega aunque quien la manda no vuelva a abrir Esfinge nunca. Descartada por el
+  cliente con la razón dicha en una frase: **la contraseña pasaría por el correo**, así que quien tenga
+  acceso a ese buzón —o su proveedor— la tiene. En un gestor de contraseñas eso es justo lo que se vende no
+  hacer. El coste de lo elegido está en las consecuencias.
+- **Que el servidor guarde el sobre hasta que haya cuenta.** No sirve: está cifrado hacia unas llaves que no
+  abre nadie, y guardarlo solo sería guardar basura.
+- **Que `POST /v1/envios` diga si esa dirección tenía cuenta**, que haría la pantalla mucho más clara
+  —«entregada» o «invitada»—. Descartada: sería una forma de enumerar correos sin más coste que un envío, y
+  es exactamente lo que el resto del servidor cuida.
 - **Una identidad por equipo** en vez de por cuenta. Sería más fino —revocar un equipo revocaría su
   identidad— pero obliga a cifrar cada envío para cada equipo del destinatario y a que el emisor sepa
   cuántos tiene. La cuenta es la unidad que el cliente eligió para todo lo demás.
@@ -98,8 +126,15 @@ empatan, la de huella menor. Simétrico y sin sorpresas: los dos equipos llegan 
   mandaron sigue abriéndose.
 - **Quien cambie de bóveda cambia de identidad**, y a quien le hubieran mandado algo antes tendrá que
   pedir que se lo manden otra vez. Es el precio de que la identidad viva en la bóveda y no en el servidor.
-- **El servidor sabrá con quién compartes.** No es de esta entrega, pero es la consecuencia que hay que
-  decir en la política cuando llegue la B2.
+- **El servidor sabe con quién compartes.** Hay que decirlo en la política (B4).
+- **Y desde la B3 manda correo a terceros en tu nombre**, con tu dirección dentro. Eso es nuevo y hay que
+  decirlo igual: Webcafeína le cuenta a alguien que no es cliente suyo que tú usas Esfinge. Lo frena un tope
+  de cinco invitaciones por cuenta y día, pero el hecho no se quita con un tope.
+- **Una copia a quien no tiene cuenta no llega el mismo día**, y puede no llegar nunca: hace falta que
+  Esfinge se abra en alguno de tus equipos mientras la nota siga viva, y la nota dura treinta días. Es el
+  precio de que la contraseña no pase por el correo, y se dice en la pantalla.
+- **Quien manda no sabe si ha llegado**, ni siquiera si esa dirección tenía cuenta. Es deliberado y es la
+  misma decisión de no delatar quién está en Esfinge.
 
 ## Verificación
 
@@ -114,7 +149,14 @@ TypeScript; que el sobre de otra identidad no se abre y que uno manipulado se re
 el buzón del panel, que no se rellena hasta pulsar «Guardar», y que desde el panel se manda una copia que
 la otra cuenta abre con la contraseña dentro.
 
+**Comprobado en la B3**: que a quien no tiene cuenta le llega la invitación con quién le invita y dónde
+crearla; que **la respuesta del servidor no cambia** aunque el tope de invitaciones salte, y que el correo
+va por `waitUntil` para que tampoco lo diga el tiempo; que invitar dos veces manda un correo; que la nota
+espera dentro de la bóveda **sin el secreto** y las dos implementaciones la funden igual (prueba cruzada al
+azar); y, de punta a punta, que la copia sale sola cuando esa persona crea su cuenta —en Go con dos
+aplicaciones, y con **la extensión cargada de verdad** contra el servidor local—.
+
 **Sin comprobar**: **la huella no la ha leído en voz alta ningún par de personas**, que es la única prueba
-que vale de que se puede comparar por teléfono. Y un envío a quien **no** tiene cuenta se pierde en
-silencio: el servidor contesta lo mismo a propósito, y quien lo manda no se entera. Eso lo cierra la B3 con
-las invitaciones, y hasta entonces está en `docs/deuda.md`.
+que vale de que se puede comparar por teléfono. Y **nadie ha recibido la invitación en un buzón de verdad**:
+aquí el correo se lee de una tabla, así que cómo se ve el botón en Gmail o en Outlook, y si el correo cae en
+spam, solo lo dice mandarlo.

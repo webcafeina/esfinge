@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-09-23**
+Última actualización: **2026-09-24**
 
 ## Dónde estamos
 
@@ -529,9 +529,29 @@ mandaba una llave inventada y el sobre llegaba ilegible, sin que ninguno de los 
 Ahora las publica la ventana al arrancar la sincronización y la extensión en cada pasada ([ADR
 0043](adr/0043-la-identidad-para-compartir.md)).
 
-**La siguiente acción concreta es la B3**, las invitaciones por correo: es la que cierra el agujero de que
-hoy un envío a quien no tiene cuenta se pierda en silencio. Después la **B4**, los textos —política,
-condiciones, `VERSION_DEL_AVISO` y las dos fichas—. **Compartir no se publica hasta entonces.**
+**La B3, hecha (2026-09-24)** — las invitaciones, que cierran el agujero de que un envío a quien no tiene
+cuenta se perdiera en silencio. Lo eligió el cliente con dos decisiones que mandan sobre todo lo demás:
+**la contraseña no pasa por el correo** y **el correo lleva quién invita, con un botón**.
+
+Cómo queda: al mandar una copia, el servidor mira si esa dirección tiene cuenta. Si la tiene, el sobre va a
+su buzón; si no, **el sobre no sale** —iría cifrado hacia unas llaves inventadas— y le manda una invitación.
+Quien la mandó se queda **una nota dentro de su bóveda**, cifrada y sincronizada a sus equipos, y en cuanto
+esa dirección publica sus llaves —o sea, cuando crea su cuenta— la copia sale sola en la siguiente pasada de
+sincronización. A los treinta días se deja de intentar.
+
+Lo que sostiene todo eso: **el servidor contesta exactamente lo mismo en los dos casos**, así que compartir
+no se convierte en una forma de averiguar quién tiene cuenta. De ahí que el camino de la invitación se trague
+sus errores —el tope de cinco por cuenta y día, un fallo de Resend, su cupo— y que el correo salga en
+`waitUntil`, porque esperar a Resend también se mide desde fuera. Y de ahí que lo que dice la pantalla valga
+para los dos casos: «Si ya tiene cuenta, le espera en su buzón; si no, le hemos mandado una invitación».
+
+**La siguiente acción concreta es la B4**, los textos: política, condiciones, `VERSION_DEL_AVISO` y las dos
+fichas. Hay dos cosas nuevas que decir ahí y que antes no existían: **el servidor sabe con quién compartes**
+y **le manda correo a gente que no es cliente nuestro, con tu dirección dentro**. **Compartir no se publica
+hasta entonces.**
+
+Y una que solo puede comprobar el cliente: **cómo se ve la invitación en un buzón de verdad** —el botón en
+Gmail y en Outlook, y si cae en spam—. Aquí el correo se lee de una tabla.
 
 **Lo que viene después de todo esto (2026-09-23)**: el cliente pidió **passkeys**, «como Dashlane, que
 sale un banner y es darle a Aceptar». Está estudiado y escrito en [`docs/passkeys.md`](passkeys.md), con lo

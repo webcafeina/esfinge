@@ -26,6 +26,7 @@ import {
 } from "./esf1";
 import { entradaAJSON, entradaDesde, rfc3339, sinSecretos, coincide, copiar, type Entrada } from "./entrada";
 import { SUITE } from "./identidad";
+import { pendientesDe, ponerPendientes, purgarPendientes, type Pendiente } from "./pendiente";
 import { ERR_CHECKSUM, normalizar, nuevaRecuperacion, pareceRecuperacion } from "./recuperacion";
 
 export const FORMATO = 1;
@@ -367,7 +368,12 @@ export class Boveda {
     const b = new Boveda(doc, sel, cont, llave, doc.formato < FORMATO);
     if (opciones.purgar) {
       const t = ahora().getTime();
-      if (b.purgarPapelera(new Date(t - PLAZO_PAPELERA_MS)) + b.purgarLapidas(new Date(t - PLAZO_LAPIDAS_MS)) > 0) {
+      // Y de paso, las copias que llevan más de un mes esperando (B3).
+      const antes = pendientesDe(b.cont.extra);
+      const quedan = purgarPendientes(antes, ahora());
+      const menos = quedan.length !== antes.length;
+      if (menos) b.cont.extra = ponerPendientes(b.cont.extra, quedan);
+      if (b.purgarPapelera(new Date(t - PLAZO_PAPELERA_MS)) + b.purgarLapidas(new Date(t - PLAZO_LAPIDAS_MS)) > 0 || menos) {
         b.cuerpoSucio = true;
         await b.guardar();
       }
@@ -560,6 +566,44 @@ export class Boveda {
       this.cuerpoSucio = true;
       await this._guardarSinCola();
       return semilla;
+    });
+  }
+
+  // ------------------------------------------------------- lo que espera (B3)
+
+  /** Las copias que esperan a que quien las recibe tenga cuenta. Las caducadas no salen. */
+  pendientes(): Pendiente[] {
+    return purgarPendientes(pendientesDe(this.cont.extra), ahora()).sort((a, b) =>
+      a.creado !== b.creado ? (a.creado < b.creado ? -1 : 1) : compararComoGo(a.id, b.id),
+    );
+  }
+
+  /**
+   * Deja dicho que esa copia sigue esperando, **una por entrada y correo**: volver
+   * a mandarle lo mismo a la misma persona actualiza la nota, no añade otra.
+   */
+  anotarPendiente(entrada: string, correo: string, huella: string): Promise<void> {
+    return this._exclusivo(async () => {
+      const cuando = rfc3339(ahora());
+      const lista = pendientesDe(this.cont.extra);
+      const i = lista.findIndex((p) => p.entrada === entrada && p.correo === correo);
+      if (i >= 0) lista[i] = { ...lista[i], huella, creado: cuando };
+      else lista.push({ id: azarHex(), entrada, correo, huella, creado: cuando });
+      this.cont.extra = ponerPendientes(this.cont.extra, lista);
+      this.cuerpoSucio = true;
+      await this._guardarSinCola();
+    });
+  }
+
+  /** Quita uno: se mandó, caducó o la entrada ya no está. */
+  olvidarPendiente(id: string): Promise<void> {
+    return this._exclusivo(async () => {
+      const lista = pendientesDe(this.cont.extra);
+      const quedan = lista.filter((p) => p.id !== id);
+      if (quedan.length === lista.length) return;
+      this.cont.extra = ponerPendientes(this.cont.extra, quedan);
+      this.cuerpoSucio = true;
+      await this._guardarSinCola();
     });
   }
 

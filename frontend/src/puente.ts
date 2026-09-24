@@ -247,6 +247,18 @@ export type EstadoCuenta = {
 /** Lo que se enseña de una identidad: su huella, y nada más. */
 export type IdentidadParaCompartir = { huella: string; suite: string };
 
+/**
+ * Una copia mandada a quien todavía no tenía cuenta, esperando (ADR 0043, B3).
+ * **No lleva el secreto**: dice a quién, cuándo y con qué llaves se intentó.
+ */
+export type EnvioEsperando = {
+  id: string;
+  entrada: string;
+  correo: string;
+  huella: string;
+  creado: string;
+};
+
 /** Un envío esperando en el buzón, ya abierto y comprobado. */
 export type EnvioRecibido = {
   id: string;
@@ -487,6 +499,9 @@ export const esfinge = {
 
   /** Manda una copia de esa entrada a ese correo. */
   mandarCopia: (id: string, correo: string) => llamar<void>("MandarCopia", id, correo),
+
+  /** Las copias de esa entrada que esperan a que quien las recibe tenga cuenta. */
+  enviosPendientes: (id: string) => llamar<EnvioEsperando[] | null>("EnviosPendientes", id).then((l) => l ?? []),
 
   /** Lo que ha llegado, abierto y con la firma comprobada, pero sin secretos. */
   buzon: () => llamar<EnvioRecibido[] | null>("Buzon").then((l) => l ?? []),

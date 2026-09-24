@@ -11,7 +11,7 @@
 //   el freno del canal con el navegador. Los frenos van en el enlace `ratelimit`,
 //   en D1 o en el Durable Object de la cuenta.
 
-import { cartas, carteroPara, type Carta, type Entregado } from "./correo";
+import { cartas, carteroPara, DIAS_DE_INVITACION, type Carta, type Entregado } from "./correo";
 import { Cuenta, SESION_CADUCADA, cuentaDeReto, cuentaDeSesion } from "./cuenta";
 import { aBase64url, aHex, azar, codigoDeSeisCifras, deBase64url, hmac, iguales } from "./cripto";
 import {
@@ -31,6 +31,8 @@ export { Cuenta };
 
 const LIMITE_JSON = 64 * 1024;
 const CODIGOS_DE_ALTA_POR_HORA = 3;
+/** Cuánta gente puede invitar una cuenta en un día. Cada invitación gasta un correo. */
+const INVITACIONES_POR_DIA = 5;
 const INTENTOS_DE_ALTA = 5;
 
 /**
@@ -89,6 +91,7 @@ export async function limpiar(env: Env): Promise<number> {
 		env.BD.prepare("DELETE FROM altas WHERE caduca <= ?").bind(ahora),
 		env.BD.prepare("DELETE FROM envios_alta WHERE momento <= ?").bind(ahora - HORA),
 		env.BD.prepare("DELETE FROM contadores WHERE dia < ?").bind(dosDias),
+		env.BD.prepare("DELETE FROM invitaciones WHERE caduca <= ?").bind(ahora),
 	]);
 	return hechos.reduce((n, r) => n + (r.meta?.changes ?? 0), 0);
 }
@@ -131,7 +134,7 @@ async function atender(p: Request, env: Env, ctx: ExecutionContext): Promise<Res
 	if (r("GET", "/v1/cuenta/exportacion")) return exportar(p, env);
 	if (r("PUT", "/v1/llaves")) return publicarLlaves(p, env);
 	if (r("POST", "/v1/llaves/de")) return llavesDe(p, env);
-	if (r("POST", "/v1/envios")) return mandarEnvio(p, env);
+	if (r("POST", "/v1/envios")) return mandarEnvio(p, env, ctx);
 	if (r("GET", "/v1/buzon")) return verBuzon(p, env);
 	if (metodo === "DELETE" && ruta.startsWith("/v1/buzon/")) {
 		return tirarDelBuzon(p, env, decodeURIComponent(ruta.slice("/v1/buzon/".length)));
@@ -308,13 +311,23 @@ async function llavesDe(p: Request, env: Env): Promise<Response> {
 }
 
 /**
- * Deja un sobre en el buzón de quien lo recibe.
+ * Deja un sobre en el buzón de quien lo recibe, **o le manda una invitación** si
+ * esa dirección todavía no tiene cuenta (ADR 0043, entrega B3).
  *
- * **Contesta lo mismo exista o no** esa cuenta, por lo mismo de arriba. Si no
- * existe, hoy el sobre se tira: el emisor ya lo cifró hacia unas llaves que no
- * abren nada, así que guardarlo no serviría para nada.
+ * **Contesta exactamente lo mismo en los dos casos**, por lo de arriba: si la
+ * respuesta cambiara, cualquiera con cuenta podría averiguar quién está en
+ * Esfinge mandando envíos, y compartir desharía lo que el resto del servidor
+ * cuida. De ahí sale casi todo lo raro de `invitar`:
+ *
+ *   - **no lanza nunca**, ni cuando se pasa del tope ni cuando el correo falla;
+ *   - **el correo va en `waitUntil`**, para que tardar en mandarlo no distinga un
+ *     caso del otro desde fuera.
+ *
+ * El sobre de una dirección sin cuenta **no se guarda**: está cifrado hacia unas
+ * llaves inventadas y no lo abriría nadie. Quien lo manda se queda un pendiente
+ * dentro de su bóveda y lo manda de verdad cuando esas llaves cambien.
  */
-async function mandarEnvio(p: Request, env: Env): Promise<Response> {
+async function mandarEnvio(p: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const { cuenta: mia } = sesionDe(p);
 	await frenar(env.FRENO_ENTRAR, p, env);
 	const d = await leerJSON(p);
@@ -332,8 +345,55 @@ async function mandarEnvio(p: Request, env: Env): Promise<Response> {
 		// —cualquiera puede llenar el suyo— y callarlos dejaría al que manda
 		// creyendo que ha llegado.
 		if (!hecho.ok && hecho.estado !== 404) throw new Fallo(hecho.estado, hecho.error);
+	} else {
+		await invitar(env, ctx, c, mia);
 	}
 	return json(202, {});
+}
+
+/**
+ * Le manda a `para` la invitación de `mia`, **si no le mandó ya una**.
+ *
+ * Nada de lo que pase aquí puede salir por la respuesta ni por lo que tarda, así
+ * que esta función **se traga todo**: pasarse del tope del día, un fallo de
+ * Resend o su cupo agotado se quedan aquí. No se pierde nada por ello: el
+ * pendiente sigue en la bóveda de quien invita y su siguiente pasada lo vuelve a
+ * intentar, ya con otro día y otro contador.
+ */
+async function invitar(env: Env, ctx: ExecutionContext, para: string, mia: string) {
+	try {
+		const ahora = Date.now();
+		const viva = await env.BD.prepare("SELECT 1 FROM invitaciones WHERE correo = ? AND de_cuenta = ? AND caduca > ?")
+			.bind(para, mia, ahora)
+			.first();
+		if (viva) return;
+
+		// El tope vive aquí y no en `mandarEnvio` porque solo cuenta lo que gasta un
+		// correo: mandar a quien ya tiene cuenta no manda ninguno.
+		// El mensaje no lo lee nadie —el `catch` de abajo se lo come— y aun así se
+		// escribe: el día que este freno se mueva a un sitio donde sí se diga, tiene
+		// que decir algo.
+		await contar(
+			env,
+			`invita:${mia}`,
+			tope(env.TOPE_INVITACIONES_DIA, INVITACIONES_POR_DIA),
+			"Has invitado a demasiada gente hoy. Prueba mañana.",
+		);
+
+		const quien = await env.BD.prepare("SELECT correo FROM cuentas WHERE cuenta = ?")
+			.bind(mia)
+			.first<{ correo: string }>();
+		if (!quien) return;
+
+		// Se anota **antes** de mandar: si el correo falla, mejor una invitación de
+		// menos que un buzón recibiendo una cada pocos minutos.
+		await env.BD.prepare("INSERT OR REPLACE INTO invitaciones (correo, de_cuenta, caduca) VALUES (?, ?, ?)")
+			.bind(para, mia, ahora + DIAS_DE_INVITACION * 24 * HORA)
+			.run();
+		ctx.waitUntil(mandar(env, cartas.invitacion(para, quien.correo)).then(() => {}));
+	} catch {
+		/* ni se dice ni se nota: ver arriba */
+	}
 }
 
 async function verBuzon(p: Request, env: Env): Promise<Response> {

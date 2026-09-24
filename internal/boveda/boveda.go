@@ -214,6 +214,10 @@ type contenido struct {
 	// cambia**, y una versión que no la conozca la conserva por `Extra`.
 	Identidad *identidad `json:"identidad,omitempty"`
 
+	// Envios son las copias que esperan a que quien las recibe tenga cuenta
+	// (ADR 0043, entrega B3). Ver `pendiente.go`: son notas, no secretos.
+	Envios []Pendiente `json:"envios,omitempty"`
+
 	// Extra son las secciones que esta versión no conoce. Ver Entrada.Extra.
 	Extra map[string]json.RawMessage `json:"-"`
 }
@@ -490,7 +494,8 @@ func abrir(ruta string, datos []byte, llaveTecleada string, purgar bool) (*Boved
 	// contaría mientras la aplicación estuviera puesta y el plazo dependería de
 	// cuánto la usa cada uno. Al abrir se sabe qué día es y se puede decidir de
 	// una vez. Y lo mismo las lápidas que ya han cumplido su plazo.
-	if b.purgarPapelera(ahora().Add(-PlazoPapelera))+b.purgarLapidas(ahora().Add(-PlazoLapidas)) > 0 {
+	purgados := b.purgarPendientes(ahora().Add(-PlazoPendientes))
+	if b.purgarPapelera(ahora().Add(-PlazoPapelera))+b.purgarLapidas(ahora().Add(-PlazoLapidas)) > 0 || purgados {
 		b.cuerpoSucio = true
 		if err := b.guardar(); err != nil {
 			return nil, err

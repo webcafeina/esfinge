@@ -1084,3 +1084,96 @@ func TestCompartirUnaCopiaEntreDosCuentas(t *testing.T) {
 		t.Fatalf("el buzón sigue con %d envíos (%v)", len(vacio), err)
 	}
 }
+
+// Mandar una copia a quien **todavía no tiene cuenta** (ADR 0043, entrega B3).
+//
+// Es la prueba que cierra el agujero de la B2: hasta ahora ese envío se perdía en
+// silencio. Recorre las tres partes de la solución —la nota que espera dentro de
+// la bóveda, la invitación que manda el servidor y el repaso que suelta el sobre
+// cuando esa persona ya tiene llaves— y sobre todo comprueba lo que no se ve:
+// **que hasta entonces no ha salido ningún sobre hacia nadie**.
+func TestUnaCopiaEsperaAQuienTodaviaNoTieneCuenta(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	maestra := "una contraseña maestra bien larga"
+
+	ana := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, ana, correoDePrueba(), maestra)
+
+	// A esta dirección todavía no hay nadie detrás.
+	correoLuis := correoDePrueba()
+
+	if err := ana.a.GuardarEnBoveda(boveda.Entrada{Tipo: boveda.TipoCredencial, Titulo: "Router", Usuario: "admin", Secreto: "la del router"}); err != nil {
+		t.Fatal(err)
+	}
+	suyas, _ := ana.a.BuscarEnBoveda("Router")
+	if len(suyas) != 1 {
+		t.Fatalf("hay %d entradas «Router»", len(suyas))
+	}
+	id := suyas[0].ID
+
+	if err := ana.a.MandarCopia(id, correoLuis); err != nil {
+		t.Fatal(err)
+	}
+
+	// La nota se queda esperando, y **no lleva el secreto dentro**.
+	esperando, err := ana.a.EnviosPendientes(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(esperando) != 1 {
+		t.Fatalf("hay %d envíos esperando", len(esperando))
+	}
+	if esperando[0].Correo != correoLuis {
+		t.Fatalf("el pendiente es para %q", esperando[0].Correo)
+	}
+	if strings.Contains(fmt.Sprint(esperando[0]), "la del router") {
+		t.Fatal("el pendiente lleva la contraseña dentro")
+	}
+
+	// Ahora Luis crea su cuenta en su equipo, y mira su huella: eso publica sus
+	// llaves, que es lo que hace que la copia pueda salir.
+	luis := nuevoEquipo(t, raiz)
+	crearCuenta(t, raiz, luis, correoLuis, maestra)
+	suya, err := luis.a.MiIdentidad()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// **Antes del repaso, su buzón está vacío**: lo que se mandó al principio iba
+	// cifrado hacia unas llaves inventadas y el servidor ni lo guardó.
+	if antes, err := luis.a.Buzon(); err != nil || len(antes) != 0 {
+		t.Fatalf("el buzón de Luis tiene %d envíos antes de tiempo (%v)", len(antes), err)
+	}
+
+	ana.a.repasarPendientes(ana.a.boveda())
+
+	llegado, err := luis.a.Buzon()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(llegado) != 1 {
+		t.Fatalf("tras el repaso, el buzón de Luis tiene %d envíos", len(llegado))
+	}
+	if llegado[0].Error != "" {
+		t.Fatalf("el envío no se abre: %s", llegado[0].Error)
+	}
+	if llegado[0].Titulo != "Router" {
+		t.Fatalf("ha llegado %q", llegado[0].Titulo)
+	}
+	mia, _ := ana.a.MiIdentidad()
+	if llegado[0].Huella != mia.Huella {
+		t.Fatalf("dice venir de %s y Ana es %s", llegado[0].Huella, mia.Huella)
+	}
+	_ = suya
+
+	// Y la nota se va: mandado una vez, no dos.
+	if quedan, _ := ana.a.EnviosPendientes(id); len(quedan) != 0 {
+		t.Fatalf("quedan %d envíos esperando tras haberse mandado", len(quedan))
+	}
+
+	// Un repaso más no manda nada: no queda nada que mandar.
+	ana.a.repasarPendientes(ana.a.boveda())
+	if otra, _ := luis.a.Buzon(); len(otra) != 1 {
+		t.Fatalf("un repaso de más ha dejado %d envíos", len(otra))
+	}
+}

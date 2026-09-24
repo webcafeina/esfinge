@@ -1,12 +1,15 @@
 # Lo siguiente
 
-Última actualización: **2026-09-23**
+Última actualización: **2026-09-24**
 
 Por prioridad. Lo cerrado se tacha y se queda, con la fecha: saber qué se descartó vale tanto como
 saber qué se hizo.
 
 ## Alta
 
+- **Mirar la invitación en un buzón de verdad** (B3, 2026-09-24). Aquí el correo se lee de una tabla, así
+  que cómo se ve el botón en Gmail y en Outlook —y si el correo cae en spam— solo lo dice mandarlo. Basta
+  con compartir algo con una dirección que no tenga cuenta.
 - **Probar la extensión en Firefox**, lo último del plan de cuentas (E3) y la última tarea del plan,
   dicho así por el cliente tres veces: va cuando no quede ninguna otra. La lista de lo que hay que mirar
   está en [`estado.md`](estado.md).

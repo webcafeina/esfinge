@@ -96,7 +96,7 @@ var loQuePuedeCruzarElPuente = []string{
 	// es; el secreto solo entra en la bóveda al aceptarlo. Mandar recibe el
 	// identificador de una entrada y un correo, y devuelve lo que devuelve el
 	// servidor: nada.
-	"MiIdentidad", "HuellaDe", "MandarCopia", "Buzon", "AceptarDelBuzon", "TirarDelBuzon",
+	"MiIdentidad", "HuellaDe", "MandarCopia", "EnviosPendientes", "Buzon", "AceptarDelBuzon", "TirarDelBuzon",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

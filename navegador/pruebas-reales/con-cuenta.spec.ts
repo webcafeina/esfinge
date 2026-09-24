@@ -101,27 +101,27 @@ async function desdeElOtroEquipo(cambiar: (b: Boveda) => Promise<void>) {
  * la huella del buzón sea comparable: el correo de quien manda no viaja dentro
  * del sobre, así que lo único que se puede cotejar con la otra persona es esto.
  */
-async function quienManda() {
-  await fetch(`${SERVIDOR}/v1/registro/inicio`, { method: "POST", body: JSON.stringify({ correo: CORREO_QUE_MANDA }) });
-  const codigo = await codigoDelBuzon(CORREO_QUE_MANDA);
+async function quienManda(correo = CORREO_QUE_MANDA, maestra = MAESTRA_QUE_MANDA) {
+  await fetch(`${SERVIDOR}/v1/registro/inicio`, { method: "POST", body: JSON.stringify({ correo }) });
+  const codigo = await codigoDelBuzon(correo);
   const sal = azarDe(16);
   const argon2 = { memoria: PERFIL_INTERACTIVO.memoria, pasadas: PERFIL_INTERACTIVO.pasadas, paralelismo: PERFIL_INTERACTIVO.paralelismo };
-  const clave = await derivarAcceso(MAESTRA_QUE_MANDA, sal, argon2);
-  const { boveda } = await Boveda.crear(MAESTRA_QUE_MANDA);
+  const clave = await derivarAcceso(maestra, sal, argon2);
+  const { boveda } = await Boveda.crear(maestra);
   const r = await fetch(`${SERVIDOR}/v1/registro/fin`, {
     method: "POST",
     body: JSON.stringify({
-      correo: CORREO_QUE_MANDA,
+      correo,
       codigo,
       sal: base64url(sal),
       argon2,
       claveDeAcceso: base64url(clave),
       posesion: base64url(await boveda.posesion()),
-      dispositivo: "Quien manda",
+      dispositivo: `Equipo de ${correo}`,
       confiar: true,
     }),
   });
-  if (!r.ok) throw new Error(`Alta de quien manda: ${r.status} ${await r.text()}`);
+  if (!r.ok) throw new Error(`Alta de ${correo}: ${r.status} ${await r.text()}`);
   const { sesion } = (await r.json()) as { sesion: string };
   const cliente = new Cliente(SERVIDOR);
   const semilla = await boveda.semillaDeIdentidad();
@@ -344,6 +344,49 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
     const suyo = await manda.buzon();
     expect(suyo.map((e) => e.titulo)).toEqual(["Sitio"]);
     expect(suyo[0].secreto).toBe("clave-del-sitio");
+  });
+
+  test("a quien no tiene cuenta, la copia le espera y sale cuando la crea", async () => {
+    const correoInvitado = `invitado-${Date.now()}@ejemplo.com`;
+
+    // Se manda desde el panel, igual que antes, pero a una dirección detrás de la
+    // cual todavía no hay nadie.
+    const sitio = await contexto.newPage();
+    await sitio.goto("https://sitio.prueba/entrar");
+    const p = await panel();
+    await sitio.bringToFront();
+    await p.reload();
+    await expect(p.locator("#lista li")).toHaveCount(1, { timeout: 20_000 });
+    await p.click('#lista li button[aria-label="Mandar una copia"]');
+    await p.fill("#compartir-correo", correoInvitado);
+    await p.click("#compartir-enviar");
+    await expect(p.locator("#compartir-huella")).not.toBeEmpty({ timeout: 20_000 });
+    await p.click("#compartir-enviar");
+    // **Lo que se dice vale tenga cuenta o no**: desde aquí no se puede saber cuál
+    // de las dos cosas ha pasado, y por eso la frase habla de la invitación.
+    await expect(p.locator("#resultado")).toContainText("invitación", { timeout: 20_000 });
+    await p.close();
+    await sitio.close();
+
+    // Y al buzón de esa dirección le ha llegado la invitación, con quién invita.
+    const invitacion = await fetch(`${SERVIDOR}/_pruebas/buzon?correo=${encodeURIComponent(correoInvitado)}`);
+    const { mensajes } = (await invitacion.json()) as { mensajes: { asunto: string; cuerpo: string }[] };
+    expect(mensajes[0]?.asunto).toContain(CORREO);
+    expect(mensajes[0]?.cuerpo).toContain("webcafeina.github.io/esfinge");
+
+    // Ahora esa persona crea su cuenta y publica sus llaves.
+    const invitado = await quienManda(correoInvitado, "la maestra larga de quien recibe la copia");
+    expect(await invitado.buzon()).toHaveLength(0);
+
+    // Y en la siguiente sincronización de la extensión, la copia sale sola.
+    const p2 = await panel();
+    await p2.click("#sincronizar");
+    await expect(p2.locator("#resultado")).toContainText("Sincronizada con tu cuenta.", { timeout: 20_000 });
+    await p2.close();
+
+    await expect.poll(async () => (await invitado.buzon()).map((e) => e.titulo), { timeout: 20_000 }).toEqual(["Sitio"]);
+    const [recibida] = await invitado.buzon();
+    expect(recibida.secreto).toBe("clave-del-sitio");
   });
 
   test("bloqueada no rellena, y se desbloquea con la maestra", async () => {

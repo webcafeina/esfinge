@@ -13,6 +13,7 @@
 
 import { canonico, compararComoGo, huella, type ValorJSON } from "./canon";
 import { fundirIdentidad, type IdentidadGuardada } from "./identidad";
+import { fundirPendientes, pendientesDe, ponerPendientes } from "./pendiente";
 import {
   ahora,
   Boveda,
@@ -210,6 +211,18 @@ async function fundirContenido(
   const identidad = fundirIdentidad(identidadDe(l), identidadDe(r));
   if (identidad) out.extra = { ...(out.extra ?? {}), identidad: identidad as unknown as ValorJSON };
   else if (out.extra) delete out.extra.identidad;
+  // **Y las copias que esperan, como un conjunto** (ADR 0043, B3): como sección
+  // desconocida, la lista entera del servidor ganaría y se perdería la nota de un
+  // envío hecho aquí, que es una copia que ya no sale nunca.
+  out.extra = ponerPendientes(
+    out.extra,
+    fundirPendientes(
+      pendientesDe(l.extra),
+      pendientesDe(r.extra),
+      pendientesDe(b?.extra),
+      b !== null,
+    ),
+  );
   return out;
 }
 

@@ -212,6 +212,17 @@ func (g generador) lado(base []Entrada, ids []string) contenido {
 	if g.r.IntN(2) == 0 {
 		c.SitiosExcluidos = []string{g.de("a.com", "b.com", "c.com")}
 	}
+	// Las copias que esperan (B3). Van al azar como todo lo demás: lo que se
+	// comprueba es que los dos lenguajes las junten igual, incluido quitar la que
+	// estaba en la base y ya no está en un lado.
+	for _, id := range []string{"e1", "e2", "e3"} {
+		if g.r.IntN(3) == 0 {
+			c.Envios = append(c.Envios, Pendiente{
+				ID: id, Entrada: g.de("0a", "0b"), Correo: g.de("ana@x.com", "luis@x.com"),
+				Huella: g.de("AAAA-BBBB", "CCCC-DDDD"), Creado: g.fecha(),
+			})
+		}
+	}
 	if g.r.IntN(5) == 0 {
 		c.Extra = map[string]json.RawMessage{"seccionNueva": json.RawMessage(g.de(`[1]`, `{"x":"<&>"}`))}
 	}
@@ -251,6 +262,9 @@ func (g generador) caso() casoDeFusion {
 		}
 		if g.r.IntN(3) == 0 {
 			b.SitiosExcluidos = []string{g.de("a.com", "b.com")}
+		}
+		if g.r.IntN(2) == 0 {
+			b.Envios = []Pendiente{{ID: "e1", Entrada: "0a", Correo: "ana@x.com", Huella: "AAAA-BBBB", Creado: g.fecha()}}
 		}
 		c.B = &b
 		c.SobresB = g.sobres()

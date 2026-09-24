@@ -500,20 +500,51 @@ async function huellaDe(correo: string): Promise<string> {
   });
 }
 
+/**
+ * Manda una copia y **deja siempre la nota** (ADR 0043, B3), igual que
+ * `MandarCopia` en Go: desde aquí no se puede saber si esa dirección tenía cuenta
+ * —el servidor contesta lo mismo a propósito—, así que se anota en los dos casos.
+ * Si la tenía, la nota caduca sin hacer nada; si no, es lo que hará salir la copia
+ * cuando cree la suya.
+ */
 async function compartir(id: string, correo: string): Promise<void> {
   await conSesion(async (b, cliente, token) => {
     const e = b.ver(id);
     if (!e) throw new Error("Esa entrada ya no está");
-    const l = await cliente.llavesDe(token, normalizarCorreo(correo));
+    const c = normalizarCorreo(correo);
+    const l = await cliente.llavesDe(token, c);
     const semilla = await b.semillaDeIdentidad();
-    const sobre = await mandarEntrada(semilla, e, {
-      suite: l.suite,
-      cifrado: desdeBase64(l.cifrado),
-      firma: desdeBase64(l.firma),
-      huella: "",
-    });
-    await cliente.mandar(token, normalizarCorreo(correo), sobre);
+    const para = { suite: l.suite, cifrado: desdeBase64(l.cifrado), firma: desdeBase64(l.firma), huella: "" };
+    await cliente.mandar(token, c, await mandarEntrada(semilla, e, para));
+    await b.anotarPendiente(id, c, await huellaDeIdentidad(l.suite, para.cifrado, para.firma));
   });
+}
+
+/**
+ * Mira si alguna de las copias que esperan ya tiene a quién mandarse, y la manda.
+ * Espejo de `repasarPendientes` en Go, y con los mismos frenos: **no cuenta como
+ * actividad** y no dice nada por el panel.
+ *
+ * Va detrás de cada pasada de sincronización, que es cuando se sabe que hay red y
+ * que la sesión vale.
+ */
+async function repasarPendientes(b: Boveda, cliente: Cliente, token: string): Promise<void> {
+  for (const p of b.pendientes()) {
+    const e = b.ver(p.entrada);
+    if (!e) {
+      await b.olvidarPendiente(p.id);
+      continue;
+    }
+    const l = await cliente.llavesDe(token, p.correo);
+    const cifrado = desdeBase64(l.cifrado);
+    const firma = desdeBase64(l.firma);
+    // **Que las llaves hayan cambiado es la señal**: mientras sean las inventadas
+    // son siempre las mismas, así que cambiar solo puede ser que ya publica las suyas.
+    if ((await huellaDeIdentidad(l.suite, cifrado, firma)) === p.huella) continue;
+    const semilla = await b.semillaDeIdentidad();
+    await cliente.mandar(token, p.correo, await mandarEntrada(semilla, e, { suite: l.suite, cifrado, firma, huella: "" }));
+    await b.olvidarPendiente(p.id);
+  }
 }
 
 async function verBuzon(): Promise<EnvioParaElPanel[]> {
@@ -567,6 +598,9 @@ async function unaPasada(aunqueBorreMucho = false): Promise<void> {
   }
   try {
     const r = await pasada(b, cliente, token, memoria, aunqueBorreMucho);
+    // **Y de paso, las copias que esperaban** (B3). Que falle no ensucia la
+    // sincronización, que sí ha ido bien: se repasa en la siguiente.
+    await repasarPendientes(b, cliente, token).catch(() => {});
     await ponerSincro({ estado: "al-dia", ultima: new Date().toISOString() });
     if (r.bajo) avisarDeCambios();
   } catch (e) {

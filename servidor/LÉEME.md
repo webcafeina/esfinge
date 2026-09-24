@@ -80,9 +80,16 @@ El correo se normaliza **igual en los dos lados**: sin espacios alrededor, NFC y
   ([ADR 0043](../docs/adr/0043-la-identidad-para-compartir.md)).
 - **Ni `llaves/de` ni `envios` dicen si un correo tiene cuenta.** Para un correo sin cuenta se devuelven
   unas llaves inventadas pero **fijas**, derivadas con `SECRETO_PRELOGIN`, igual que la sal de la
-  pre-entrada. Lo que cuesta: quien mande ahí cifra hacia una llave que no abre nadie, y **hoy ese envío
-  se pierde**. Lo arregla la B3, las invitaciones.
-- Topes: 64 KiB por sobre, 50 en el buzón, y 50 envíos al día por cuenta y por IP.
+  pre-entrada.
+- **Y a quien no la tiene, `envios` le manda una invitación** (B3): un correo con quién le invita y dónde
+  crear la cuenta. **El sobre no se guarda**, porque va cifrado hacia unas llaves que no abre nadie; quien
+  lo manda se queda una nota dentro de su bóveda y lo manda de verdad cuando esas llaves cambien.
+- **Nada de eso se nota en la respuesta**, que es la regla que sostiene todo lo anterior: pasarse del tope
+  de invitaciones, un fallo del correo o el cupo de Resend **no cambian el `202`**, y el correo se manda en
+  `waitUntil` para que tampoco lo diga el tiempo que tarda.
+- Topes: 64 KiB por sobre, 50 en el buzón, 50 envíos al día por cuenta y por IP, y **5 invitaciones al día
+  por cuenta** (cada una gasta un correo de los cien de Resend). Las invitaciones duran 30 días y las barre
+  la limpieza de cada hora.
 
 ### Recuperar, equipos y borrar
 

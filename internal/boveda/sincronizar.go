@@ -642,6 +642,11 @@ func fundirContenido(l, r contenido, b *contenido, ahora time.Time, f *Fusion) c
 	// nunca, así que solo puede haber dos si dos equipos crearon la suya antes de
 	// verse, y entonces hace falta que los dos elijan la misma.
 	out.Identidad = fundirIdentidad(l.Identidad, r.Identidad)
+	var enviosB []Pendiente
+	if b != nil {
+		enviosB = b.Envios
+	}
+	out.Envios = fundirPendientes(l.Envios, r.Envios, enviosB, b != nil)
 	var extraB map[string]json.RawMessage
 	if b != nil {
 		extraB = b.Extra

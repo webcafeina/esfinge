@@ -82,7 +82,8 @@
 				"TOPE_ALTAS_IP_DIA": "100000",
 				"TOPE_CODIGOS_IP_DIA": "100000",
 				"TOPE_ENVIOS_DIA": "100000",
-				"TOPE_ENVIOS_IP_DIA": "100000"
+				"TOPE_ENVIOS_IP_DIA": "100000",
+				"TOPE_INVITACIONES_DIA": "100000"
 			},
 			"d1_databases": [
 				{ "binding": "BD", "database_name": "esfinge-cuentas-local", "database_id": "local", "migrations_dir": "migraciones" }

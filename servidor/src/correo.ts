@@ -14,6 +14,17 @@ export interface Carta {
 	para: string;
 	asunto: string;
 	texto: string;
+	/**
+	 * La versión con formato, **solo donde hace falta pulsar algo**.
+	 *
+	 * Todos los demás correos van en texto pelado a propósito: llevan un código que
+	 * se copia, y un correo con formato solo añade sitio donde esconder cosas. La
+	 * invitación es la excepción, porque lo que se pide ahí es **ir a un sitio**, y
+	 * un enlace desnudo en medio de un párrafo se lee como el correo que nadie
+	 * pulsa. Cuando va, **el texto sigue yendo y dice lo mismo**: hay quien lee el
+	 * correo en texto, y la dirección tiene que estar también ahí.
+	 */
+	html?: string;
 	/** Para que un reintento no mande el mismo correo dos veces. */
 	idempotencia?: string;
 }
@@ -52,7 +63,13 @@ class CarteroResend implements Cartero {
 			const r = await fetch("https://api.resend.com/emails", {
 				method: "POST",
 				headers: cabeceras,
-				body: JSON.stringify({ from: this.remitente, to: [c.para], subject: c.asunto, text: c.texto }),
+				body: JSON.stringify({
+					from: this.remitente,
+					to: [c.para],
+					subject: c.asunto,
+					text: c.texto,
+					...(c.html ? { html: c.html } : {}),
+				}),
 			});
 			if (r.ok) return "ok";
 			// 429 es «demasiados»; Resend lo usa tanto para el cupo del día como para su
@@ -78,6 +95,44 @@ class CarteroDePruebas implements Cartero {
 }
 
 const PIE = "\n\n—\nEsfinge · Webcafeína\nNunca te pediremos tu contraseña maestra ni tu clave de recuperación.";
+
+/** Dónde se descarga Esfinge y se crea la cuenta. No hay alta desde la web. */
+export const DONDE_CREARLA = "https://webcafeina.github.io/esfinge/#descargar";
+
+/** Lo que dura una invitación antes de que haya que volver a mandarla. */
+export const DIAS_DE_INVITACION = 30;
+
+function escapar(s: string): string {
+	return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
+}
+
+/**
+ * El único correo con formato, y solo por el botón (decisión del cliente,
+ * 2026-09-24). Tres cosas que un correo obliga y una página no:
+ *
+ * - **Estilos en línea y nada más**: no hay hoja de estilos, ni variables, ni
+ *   clases que sobrevivan. Los colores son los de siempre escritos a mano, y **la
+ *   pareja oro-piedra es la que ya mide `contraste_test.go`** (ADR 0021).
+ * - **El enlace va también debajo, en texto**, porque un botón que no pinta deja
+ *   un correo sin salida; y la versión en texto pelado lleva la misma dirección.
+ * - **Nada de imágenes**: casi ningún cliente las enseña de entrada, así que un
+ *   correo que dependa de ellas llega vacío.
+ */
+function cuerpoDeInvitacion(de: string, enlace: string): string {
+	const quien = escapar(de);
+	return `<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#f2f2f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#3c3c43;">
+<div style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #d8d8de;border-radius:12px;padding:28px;">
+<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#1c1c1e;line-height:1.35;">${quien} te quiere mandar una contraseña</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.5;">${quien}, que usa Esfinge, quiere mandarte una contraseña de forma segura.</p>
+<p style="margin:0 0 24px;font-size:15px;line-height:1.5;">Esfinge es un gestor de contraseñas que las cifra en tu propio ordenador: ni Webcafeína ni nadie más puede leerlas. Para recibirla necesitas tu cuenta.</p>
+<p style="margin:0 0 24px;"><a href="${enlace}" style="display:inline-block;padding:13px 24px;background:#f2c14e;color:#2b2b31;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;">Crear mi cuenta de Esfinge</a></p>
+<p style="margin:0 0 24px;font-size:13px;line-height:1.5;color:#3c3c43;">Si el botón no funciona, copia esta dirección en tu navegador:<br><span style="word-break:break-all;">${escapar(enlace)}</span></p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.5;">En cuanto la tengas, la copia te llegará a tu buzón de Esfinge y podrás guardarla o descartarla. La invitación dura ${DIAS_DE_INVITACION} días.</p>
+<p style="margin:0;font-size:13px;line-height:1.5;color:#3c3c43;">Si no esperabas esto, ignora este correo: sin cuenta no te llega nada.</p>
+<hr style="border:0;border-top:1px solid #d8d8de;margin:24px 0 16px;">
+<p style="margin:0;font-size:12px;line-height:1.5;color:#3c3c43;">Esfinge · Webcafeína<br>Nunca te pediremos tu contraseña maestra ni tu clave de recuperación.</p>
+</div></body></html>`;
+}
 
 export const cartas = {
 	codigoDeAlta: (para: string, codigo: string): Carta => ({
@@ -127,6 +182,24 @@ export const cartas = {
 		para,
 		asunto: "Tu código para borrar la cuenta de Esfinge",
 		texto: `Tu código para borrar la cuenta de Esfinge es:\n\n    ${codigo}\n\nBorrar la cuenta no tiene vuelta atrás: se va la bóveda del servidor y todo lo demás. Lo que tengas en tus equipos se queda en ellos. Si no lo has pedido tú, cambia tu contraseña maestra.${PIE}`,
+	}),
+	/**
+	 * La invitación a quien todavía no tiene cuenta (ADR 0043, entrega B3).
+	 *
+	 * **Lleva el correo de quien invita**, que lo eligió el cliente: sin él es un
+	 * correo anónimo pidiendo que te des de alta en algo, y eso no lo abre nadie. A
+	 * cambio, el servidor le cuenta a un desconocido que esa persona usa Esfinge, y
+	 * deja mandar un correo con el nombre de alguien dentro. Lo segundo lo frena el
+	 * tope de invitaciones por cuenta y día; lo primero está dicho en la ADR.
+	 *
+	 * **Lo que no lleva es la contraseña**, ni nada con que sacarla: el sobre no ha
+	 * salido todavía y espera en la bóveda de quien lo manda.
+	 */
+	invitacion: (para: string, de: string): Carta => ({
+		para,
+		asunto: `${de} te quiere mandar una contraseña`,
+		texto: `${de}, que usa Esfinge, quiere mandarte una contraseña de forma segura.\n\nEsfinge es un gestor de contraseñas que las cifra en tu propio ordenador: ni Webcafeína ni nadie más puede leerlas. Para recibirla necesitas tu cuenta.\n\nCrea la tuya aquí:\n\n    ${DONDE_CREARLA}\n\nEn cuanto la tengas, la copia te llegará a tu buzón de Esfinge y podrás guardarla o descartarla. La invitación dura ${DIAS_DE_INVITACION} días.\n\nSi no esperabas esto, ignora este correo: sin cuenta no te llega nada.${PIE}`,
+		html: cuerpoDeInvitacion(de, DONDE_CREARLA),
 	}),
 	cuentaBorrada: (para: string): Carta => ({
 		para,

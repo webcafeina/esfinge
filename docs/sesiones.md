@@ -5,6 +5,35 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-24 · La B3: invitar a quien no tiene cuenta, sin mandar la contraseña por correo
+
+- **Dos decisiones del cliente antes de escribir nada**, y son las que mandan sobre el resto: **el envío
+  espera en tu bóveda** —no viaja con la invitación— y **el correo lleva quién invita, con un botón** y el
+  enlace debajo por si el botón no pinta.
+- **Y una consecuencia que se resolvió aquí para no romper la ADR 0043**: el servidor **contesta lo mismo**
+  tenga cuenta o no esa dirección, así que quien manda no se entera de cuál de las dos cosas ha pasado. Eso
+  obliga a que el camino de la invitación **no lance nada** —ni el tope, ni un fallo de Resend, ni su cupo—
+  y a que el correo salga en `ctx.waitUntil`, porque esperar a Resend se mide desde fuera igual que un
+  código de estado. Escrito como regla en `CLAUDE.md`.
+- **Servidor**: tabla `invitaciones` (30 días, limpiada por el reloj de cada hora), la carta con formato
+  —el único correo con HTML, y el porqué está escrito al lado—, y **cinco invitaciones por cuenta y día**,
+  que caben en los cien correos de Resend.
+- **Núcleo, en los dos lenguajes**: la sección `envios` del cuerpo cifrado, que es **una nota y no un
+  secreto** —a quién, qué entrada y con qué llaves se intentó—, con su regla de fusión de conjunto por
+  identificador. La prueba cruzada al azar la genera ahora, y se comprobó que se pone roja si una de las
+  dos implementaciones la funde distinto.
+- **Y el disparo es que la huella cambie**: mientras el servidor dé las llaves inventadas son siempre las
+  mismas, así que un cambio solo puede querer decir que esa dirección ya publica las suyas.
+- Verificado: pruebas del servidor —incluida la de que pasarse del tope no cambia la respuesta—, `make
+  comprobar` entero, `make e2e`, y **de punta a punta en los dos clientes**: en Go con dos aplicaciones, y
+  con **la extensión cargada de verdad** mandando a una dirección sin cuenta que luego se crea. Las dos
+  mutadas para verlas en rojo.
+- **Los colores del correo se miden** (`internal/tema`), como los de la extensión que no pinta nuestro CSS,
+  y esa prueba lee el propio `correo.ts`.
+- Queda **la B4**, los textos, con dos cosas nuevas que decir: **el servidor sabe con quién compartes** y
+  **manda correo a gente que no es cliente nuestro con tu dirección dentro**. Y una que solo puede ver el
+  cliente: **cómo se ve la invitación en un buzón de verdad**.
+
 ## 2026-09-23 (noche) · La B2 entera: compartir copias, en la ventana y en el panel
 
 - **B2d hecha, y con ella la B2 completa** (ADR 0043). El panel de la extensión gana **el buzón** —sale solo

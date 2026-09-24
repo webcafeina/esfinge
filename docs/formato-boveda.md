@@ -86,7 +86,8 @@ JSON en claro, `formato: 1`. Los campos criptográficos son líneas `ESF1.…` c
   "entradas": [ … ],
   "sitiosExcluidos": ["dominio.com"],
   "lapidas": { "id de entrada": "RFC3339" },
-  "identidad": { "semilla": "…", "creada": "RFC3339", "suite": "…" }
+  "identidad": { "semilla": "…", "creada": "RFC3339", "suite": "…" },
+  "envios": [ { "id": "…", "entrada": "…", "correo": "…", "huella": "…", "creado": "RFC3339" } ]
 }
 ```
 
@@ -109,6 +110,23 @@ de firma; de ahí, los primeros 28 símbolos del alfabeto de la clave de recuper
 separados por guiones.
 
 **Se crea una vez y no cambia.** Una versión que no la conozca la conserva como sección desconocida.
+
+### Lo que espera
+
+`envios` son las copias mandadas a quien **todavía no tenía cuenta**, esperando a que la cree
+([ADR 0043](adr/0043-la-identidad-para-compartir.md), entrega B3).
+
+| Campo | Qué es |
+|---|---|
+| `id` | 16 bytes al azar en hexadecimal |
+| `entrada` | a qué entrada apunta. Si ya no está, la nota se cae |
+| `correo` | a quién se le mandó |
+| `huella` | la de las llaves que dio el servidor entonces. **Es el disparo**: cuando cambie, hay a quién mandar |
+| `creado` | RFC3339. A los **30 días** se deja de intentar |
+
+**No lleva el secreto**, y no es un detalle: el secreto sigue en su entrada, y esto es una nota de a quién
+se le debe una copia. Una por `entrada` y `correo`: volver a mandar lo mismo a la misma persona actualiza la
+que había.
 
 ### Una entrada
 
@@ -208,6 +226,11 @@ lados, gana R.
 **La identidad**, en cambio, **no se funde: se elige una**, y las dos implementaciones tienen que elegir la
 misma. Gana la de `creada` menor; si empatan, la de `semilla` menor como texto. Solo puede haber dos si dos
 equipos crearon la suya antes de verse.
+
+**Lo que espera** (`envios`): como un conjunto **por `id`**, con la regla de los sitios excluidos —lo que
+estaba en B y falta en un lado, lo quitó ese lado—, y con lo de R cuando está en los dos. **Ordenado por
+`id`**, que es el único orden que los dos equipos calculan igual. No hay desempates finos a propósito:
+perder una nota entregada o conservarla de más cuesta lo mismo, que esa copia llegue dos veces.
 
 **Sobres**, por tipo: los de un solo equipo, los de aquí. Si el tipo solo está en un lado, ése. Iguales →
 ése. Con B: L igual a B → R; R igual a B → L. Si no, el de `creado` mayor, y si empatan, el de

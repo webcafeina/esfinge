@@ -435,6 +435,21 @@ test("compartir una copia y recogerla del buzón", async ({ page, request }) => 
   await page.locator("#boveda-buscar").fill(titulo);
   await expect(page.getByRole("button", { name: new RegExp(titulo) })).toHaveCount(1);
 
+  // **Y la copia queda apuntada como esperando** (B3). Aquí quien la recibe ya
+  // tenía cuenta y la copia está en su buzón, pero desde la ventana **no se puede
+  // saber** —el servidor contesta lo mismo a propósito—, así que la nota se queda
+  // hasta caducar y se enseña tal cual. Es lo que hace que una copia mandada a
+  // quien todavía no tiene cuenta salga sola el día que la cree.
+  await page.getByRole("button", { name: new RegExp(titulo) }).click();
+  await accion(page, "Compartir").click();
+  await expect(page.getByRole("heading", { name: "Esperando" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".lista-papelera")).toContainText(estado.correo);
+  await retratar(page, "compartir-esperando");
+  // Un solo «Volver»: al entrar en Compartir se deja de mirar la entrada, así que
+  // se vuelve a la lista y no al detalle.
+  await accion(page, "← Volver").click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
   await accion(page, "Te han mandado (1)").click();
   await expect(page.getByRole("heading", { name: "Te han mandado" })).toBeVisible();
   await expect(page.locator(".lista-papelera")).toContainText(titulo);

@@ -22,6 +22,7 @@ export interface Env {
 	TOPE_CODIGOS_IP_DIA?: string;
 	TOPE_ENVIOS_DIA?: string;
 	TOPE_ENVIOS_IP_DIA?: string;
+	TOPE_INVITACIONES_DIA?: string;
 }
 
 /** Lo que devuelve cada operación de una cuenta: o datos, o un error con su estado. */

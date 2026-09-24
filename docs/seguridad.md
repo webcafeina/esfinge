@@ -348,6 +348,15 @@ entra. Se eligió así con el cliente.
   Cloudflare, que sí guarda las cuentas en la UE, y no para el correo.
 - **El servidor sabe quién tiene cuenta.** La pre-entrada contesta igual con cuenta que sin ella, así que
   preguntar desde fuera no lo desvela; al servidor, sí.
+- **Y sabe con quién compartes**: al mandar una copia le llega la dirección de quien la recibe, aunque no
+  pueda abrir el sobre ([ADR 0043](adr/0043-la-identidad-para-compartir.md)).
+- **Al compartir con quien no tiene cuenta, Webcafeína le manda un correo con tu dirección dentro.** Es la
+  invitación, y le cuenta a alguien que no es cliente nuestro que tú usas Esfinge. Está topada en cinco
+  invitaciones por cuenta y día, pero el hecho no lo quita un tope. **Lo que ese correo no lleva es nada del
+  secreto**: el sobre no ha salido todavía y espera dentro de tu bóveda.
+- **Y esa copia puede no llegar nunca.** Sale sola cuando esa persona crea su cuenta, pero solo si Esfinge
+  se abre en alguno de tus equipos mientras tanto, y a los treinta días se deja de intentar. Es lo que se
+  paga por no mandar la contraseña por correo, que era la alternativa.
 
 Si se descarga una actualización, se comprueba su SHA256 contra el publicado. **Eso protege de una
 descarga rota, no de una publicación manipulada**: el resumen sale del mismo sitio que el fichero. Lo

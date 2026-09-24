@@ -899,6 +899,12 @@ func (a *App) alSincronizar(r sincro.Resultado, err error) {
 			// Ha llegado algo de otro equipo: la lista se vuelve a pedir.
 			a.sistema.Avisar(EventoBovedaCambiada, nil)
 		}
+		// **Y de paso, las copias que esperaban** (ADR 0043, B3): es el momento en
+		// que se sabe que hay red y que la sesión vale. Va en otra gorrutina porque
+		// habla con la red y ésta es la del vigilante.
+		if b := a.boveda(); b != nil {
+			go a.repasarPendientes(b)
+		}
 	case errors.Is(err, context.Canceled):
 		return
 	case errors.Is(err, cuenta.ErrSinRed):

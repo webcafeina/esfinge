@@ -91,6 +91,15 @@ func (a *App) HuellaDe(correo string) (IdentidadParaCompartir, error) {
 }
 
 // MandarCopia manda una copia de la entrada `id` a `correo`.
+//
+// **Y deja siempre un pendiente** (ADR 0043, entrega B3). Desde aquí no se puede
+// saber si esa dirección tenía cuenta —el servidor contesta lo mismo a propósito,
+// y esa es media protección contra la enumeración de correos—, así que se anota
+// en los dos casos:
+//
+//   - si la tenía, el sobre ya está en su buzón y la nota caduca sin hacer nada;
+//   - si no, el servidor le ha mandado una invitación y esta nota es lo que hará
+//     que la copia salga de verdad cuando cree su cuenta.
 func (a *App) MandarCopia(id, correo string) error {
 	b := a.boveda()
 	if b == nil {
@@ -116,7 +125,73 @@ func (a *App) MandarCopia(id, correo string) error {
 	if err != nil {
 		return err
 	}
-	return a.cliente().Mandar(a.ctxCuenta(), token, c, sobre)
+	if err := a.cliente().Mandar(a.ctxCuenta(), token, c, sobre); err != nil {
+		return err
+	}
+	return b.AnotarPendiente(id, c, boveda.HuellaDeIdentidad(l.Suite, l.Cifrado, l.Firma))
+}
+
+// EnviosPendientes son las copias de esa entrada que siguen esperando a que la
+// otra persona cree su cuenta. Es lo que la ventana enseña debajo del formulario.
+func (a *App) EnviosPendientes(id string) ([]boveda.Pendiente, error) {
+	b := a.boveda()
+	if b == nil {
+		return nil, boveda.ErrCerrada
+	}
+	out := []boveda.Pendiente{}
+	for _, p := range b.Pendientes() {
+		if p.Entrada == id {
+			out = append(out, p)
+		}
+	}
+	return out, nil
+}
+
+// repasarPendientes mira si alguno de los que esperan ya tiene a quién mandarse, y
+// lo manda. Corre **después de cada sincronización**, que es cuando hay conexión
+// segura y token fresco.
+//
+// Dos cosas que hay que respetar aquí y que ya costaron caras en otros sitios:
+//
+//   - **no cuenta como actividad**, como el goteo de iconos o el código de un solo
+//     uso: si contara, una bóveda abierta encima de la mesa no se cerraría nunca;
+//   - **no dice nada por la interfaz**. Lo que pasa aquí pasa solo, y un aviso por
+//     cada pendiente que sigue esperando sería ruido cada cinco minutos.
+func (a *App) repasarPendientes(b *boveda.Boveda) {
+	pendientes := b.Pendientes()
+	if len(pendientes) == 0 {
+		return
+	}
+	token, err := a.sesionDeCuenta()
+	if err != nil {
+		return
+	}
+	for _, p := range pendientes {
+		e, hay := b.Ver(p.Entrada)
+		if !hay {
+			// La entrada ya no está: no hay nada que mandar y la nota sobra.
+			_ = b.OlvidarPendiente(p.ID)
+			continue
+		}
+		l, err := a.cliente().LlavesDe(a.ctxCuenta(), token, p.Correo)
+		if err != nil {
+			return // sin red o sin sesión: se repasa en la siguiente pasada
+		}
+		// **Que las llaves hayan cambiado es la señal**, y la única que hay: mientras
+		// sean las inventadas siguen siendo las mismas, así que cambiar solo puede
+		// querer decir que esa dirección ya publica las suyas.
+		if boveda.HuellaDeIdentidad(l.Suite, l.Cifrado, l.Firma) == p.Huella {
+			continue
+		}
+		sobre, err := b.MandarEntrada(e, boveda.Identidad{Suite: l.Suite, Cifrado: l.Cifrado, Firma: l.Firma})
+		if err != nil {
+			continue
+		}
+		if err := a.cliente().Mandar(a.ctxCuenta(), token, p.Correo, sobre); err != nil {
+			return
+		}
+		_ = b.OlvidarPendiente(p.ID)
+	}
 }
 
 // Buzon lista lo que ha llegado, **ya abierto y con la firma comprobada**, pero

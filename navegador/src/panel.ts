@@ -568,7 +568,14 @@ function pantallaCompartir(cuenta: Cuenta) {
         return;
       }
       salir();
-      contar(`Copia de «${cuenta.titulo || "Sin título"}» mandada a ${destino}.`, true);
+      // **Lo mismo que dice la ventana, y vale tenga cuenta o no quien la recibe**:
+      // desde aquí no se puede saber cuál de las dos cosas ha pasado, porque el
+      // servidor contesta igual a propósito (ADR 0043).
+      contar(
+        `Copia de «${cuenta.titulo || "Sin título"}» mandada a ${destino}. Si todavía no tiene cuenta de ` +
+          `Esfinge, le hemos mandado una invitación y se le entregará sola en cuanto cree la suya.`,
+        true,
+      );
     },
     { signal: corte.signal },
   );

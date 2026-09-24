@@ -10,7 +10,19 @@
  */
 
 import { useEffect, useState } from "react";
-import { esfinge, type EntradaBoveda, type EnvioRecibido } from "./puente";
+import { esfinge, type EntradaBoveda, type EnvioEsperando, type EnvioRecibido } from "./puente";
+
+/**
+ * Lo que se dice al mandar, **y vale tenga cuenta o no quien la recibe**.
+ *
+ * No es vaguedad: desde aquí no se puede saber cuál de las dos cosas ha pasado,
+ * porque el servidor contesta lo mismo a propósito (ADR 0043). Decir «entregada»
+ * sería mentir la mitad de las veces, y preguntarlo sería convertir compartir en
+ * una forma de averiguar quién tiene cuenta.
+ */
+const MANDADA =
+  "Si ya tiene cuenta de Esfinge, la copia le espera en su buzón. Si no, le hemos mandado una invitación " +
+  "y se le entregará sola en cuanto cree la suya.";
 
 /** La huella, en su tipografía y partida como se dicta. */
 function Huella({ valor }: { valor: string }) {
@@ -35,13 +47,18 @@ export function Compartir({
   const [mia, setMia] = useState("");
   const [error, setError] = useState("");
   const [trabajando, setTrabajando] = useState(false);
+  const [esperando, setEsperando] = useState<EnvioEsperando[]>([]);
 
   useEffect(() => {
     esfinge
       .miIdentidad()
       .then((i) => setMia(i.huella))
       .catch(() => setMia(""));
-  }, []);
+    esfinge
+      .enviosPendientes(entrada.id)
+      .then(setEsperando)
+      .catch(() => setEsperando([]));
+  }, [entrada.id]);
 
   const mirar = async () => {
     setError("");
@@ -61,7 +78,7 @@ export function Compartir({
     setTrabajando(true);
     try {
       await esfinge.mandarCopia(entrada.id, correo);
-      alHecho(`Copia de «${entrada.titulo || "Sin título"}» mandada a ${correo}.`);
+      alHecho(`Copia de «${entrada.titulo || "Sin título"}» mandada a ${correo}. ${MANDADA}`);
     } catch (e) {
       setError(String(e));
       setTrabajando(false);
@@ -137,8 +154,35 @@ export function Compartir({
           La tuya, por si te la piden: <Huella valor={mia} />
         </p>
       )}
+
+      {/* Lo que sigue esperando. **Se enseña porque lo que no se ve no se
+          entiende**: una copia mandada a quien no tenía cuenta no llega el mismo
+          día, y sin esto parecería que no ha pasado nada. */}
+      {esperando.length > 0 && (
+        <>
+          <h3>Esperando</h3>
+          <p className="nota">
+            A estas direcciones se les mandó una invitación. La copia sale sola en cuanto creen su
+            cuenta, y Esfinge tiene que estar abierta en algún equipo tuyo para mandarla. Al mes se
+            deja de intentar.
+          </p>
+          <ul className="lista-papelera">
+            {esperando.map((e) => (
+              <li key={e.id}>
+                <span className="nombre">{e.correo}</span>
+                <span className="nota">Desde el {fecha(e.creado)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
+}
+
+function fecha(iso: string): string {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? iso : d.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
 }
 
 /** El buzón: lo que te han mandado, para aceptarlo o tirarlo. */

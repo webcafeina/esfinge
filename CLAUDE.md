@@ -184,7 +184,14 @@ No se cambian sin preguntar.
   cambia aquí, hay que volver a mandarla—; **lo que llega espera en un buzón** hasta que alguien lo acepta,
   que si no cualquiera que sepa tu correo te escribe dentro de la bóveda; y **la huella se enseña siempre y
   antes**, porque es lo único que protege del servidor en el primer envío y una huella que nadie mira no
-  protege nada. **Hasta la B3 no se publica**: hoy un envío a quien no tiene cuenta se pierde en silencio.
+  protege nada.
+- **Y a quien todavía no tiene cuenta se le invita** (ADR 0043, B3): el servidor le manda un correo **con
+  quién le invita y un botón** —lo eligió así el cliente—, **el sobre no sale** y se queda una nota dentro
+  de la bóveda de quien lo manda, que lo suelta cuando esa dirección publica sus llaves. Lo que **no** se
+  hace, y no se cambia sin preguntar: **mandar la contraseña por correo**, ni siquiera dentro de un enlace.
+  Dos consecuencias que hay que decir en voz alta: **Webcafeína le manda correo a alguien que no es cliente
+  suyo, con tu dirección dentro**, y **esa copia puede no llegar nunca** —hace falta que abras Esfinge
+  mientras la nota viva, treinta días—.
 
 ## Trampas que ya costaron encontrarse
 
@@ -594,6 +601,15 @@ quien lo mira ni a quien lo va a arreglar; y **el trabajador de fondo se compila
 pieza y sin `import`**, porque en cuanto comparte un módulo con el panel el empaquetador saca un
 trozo común, mete un `import` en el trabajador y eso obliga a declararlo como módulo en el
 manifiesto —que es justo la clase de detalle que funciona en un navegador y no en el otro—.
+
+**Y lo que no se nota tiene que no notarse por los dos lados: ni en la respuesta ni en lo que tarda.** El
+servidor contesta lo mismo tenga cuenta o no la dirección a la que mandas —es media protección contra la
+enumeración de correos—, y la B3 le añadió un camino entero por debajo: mandar la invitación. Ese camino
+**no puede lanzar nada** —ni pasarse del tope de invitaciones, ni un fallo de Resend, ni su cupo agotado—
+porque cualquiera de esas cosas sería un `429` o un `503` que solo sale cuando esa dirección **no** tiene
+cuenta. Y el correo va en `ctx.waitUntil`, porque esperar a Resend son cientos de milisegundos y eso se
+mide desde fuera igual de bien que un código de estado. **La regla:** cuando dos caminos tienen que parecer
+uno, el que sobra se traga sus errores y no alarga la respuesta.
 
 **Para poder recibir hay que haber publicado, y quien nunca manda no publicaba nunca.** Las llaves de la
 identidad se publicaban al entrar en «Compartir», que es lo que parece natural: se publican cuando se van a

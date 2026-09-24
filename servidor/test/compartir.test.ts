@@ -1,5 +1,7 @@
+import { env } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import { azarB64, darDeAlta, nuevaIP, pedir } from "./ayuda";
+import { limpiar } from "../src/indice";
+import { azarB64, buzon, darDeAlta, nuevaIP, pedir } from "./ayuda";
 
 /**
  * Compartir copias: publicar las llaves, preguntar por las de otro y el buzón
@@ -77,6 +79,65 @@ describe("compartir", () => {
 		const sinCuenta = await pedir("POST", "/v1/envios", { token: luis.sesion, ip: nuevaIP(), cuerpo: { para: "nadie-de-nada@ejemplo.com", sobre: sobre() } });
 		expect(sinCuenta.status).toBe(conCuenta.status);
 		expect(await sinCuenta.text()).toBe(await conCuenta.text());
+	});
+
+	it("a quien no tiene cuenta le llega una invitación, con quién le invita y dónde crearla", async () => {
+		const luis = await darDeAlta("luis-invita@ejemplo.com");
+		const r = await pedir("POST", "/v1/envios", {
+			token: luis.sesion, ip: nuevaIP(), cuerpo: { para: "sin-cuenta@ejemplo.com", sobre: sobre() },
+		});
+		expect(r.status).toBe(202);
+
+		const [carta] = await buzon("sin-cuenta@ejemplo.com");
+		expect(carta.asunto).toBe("luis-invita@ejemplo.com te quiere mandar una contraseña");
+		expect(carta.cuerpo).toContain("luis-invita@ejemplo.com");
+		expect(carta.cuerpo).toContain("https://webcafeina.github.io/esfinge/#descargar");
+		// **Del sobre no sale nada**: espera en la bóveda de quien lo manda, y el
+		// servidor ni lo guarda. Si algo suyo apareciera aquí, la contraseña estaría
+		// viajando por correo, que es justo lo que este camino evita.
+		expect(carta.cuerpo).not.toContain("esfinge/envío");
+	});
+
+	it("invitar dos veces a la misma dirección manda un solo correo", async () => {
+		const luis = await darDeAlta("luis-dos-veces@ejemplo.com");
+		for (let i = 0; i < 3; i++) {
+			await pedir("POST", "/v1/envios", {
+				token: luis.sesion, ip: nuevaIP(), cuerpo: { para: "una-sola@ejemplo.com", sobre: sobre() },
+			});
+		}
+		expect(await buzon("una-sola@ejemplo.com")).toHaveLength(1);
+	});
+
+	// **Lo que no puede pasar aunque el freno salte.** Si pasarse del tope diera otra
+	// respuesta, mandar envíos sería otra forma de averiguar quién tiene cuenta.
+	it("pasarse del tope de invitaciones no cambia la respuesta: deja de mandar y calla", async () => {
+		const luis = await darDeAlta("luis-tope-invita@ejemplo.com");
+		const ana = await darDeAlta("ana-con-cuenta@ejemplo.com");
+		const respuestas: string[] = [];
+		for (let i = 0; i < 8; i++) {
+			const r = await pedir("POST", "/v1/envios", {
+				token: luis.sesion, ip: nuevaIP(), cuerpo: { para: `gente-${i}@ejemplo.com`, sobre: sobre() },
+			});
+			respuestas.push(`${r.status} ${await r.text()}`);
+		}
+		const conCuenta = await pedir("POST", "/v1/envios", {
+			token: luis.sesion, ip: nuevaIP(), cuerpo: { para: ana.correo, sobre: sobre() },
+		});
+		expect(new Set(respuestas).size).toBe(1);
+		expect(`${conCuenta.status} ${await conCuenta.text()}`).toBe(respuestas[0]);
+
+		// Cinco invitaciones al día: las tres últimas no han mandado nada.
+		const mandadas = await Promise.all([...Array(8).keys()].map((i) => buzon(`gente-${i}@ejemplo.com`)));
+		expect(mandadas.filter((m) => m.length > 0)).toHaveLength(5);
+	});
+
+	it("la limpieza se lleva las invitaciones caducadas", async () => {
+		await env.BD.prepare("INSERT INTO invitaciones (correo, de_cuenta, caduca) VALUES (?, ?, ?)")
+			.bind("vieja@ejemplo.com", "c".repeat(32), Date.now() - 1000)
+			.run();
+		await limpiar(env);
+		const queda = await env.BD.prepare("SELECT 1 FROM invitaciones WHERE correo = ?").bind("vieja@ejemplo.com").first();
+		expect(queda).toBeNull();
 	});
 
 	it("sin sesión no se puede preguntar ni mandar ni mirar el buzón", async () => {
