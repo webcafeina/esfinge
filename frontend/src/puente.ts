@@ -248,6 +248,15 @@ export type EstadoCuenta = {
 export type IdentidadParaCompartir = { huella: string; suite: string };
 
 /**
+ * Lo que la ventana necesita del desbloqueo del sistema (fase C).
+ *
+ * `nombre` es cómo lo llama cada sistema —«Touch ID», «Windows Hello»— y viene
+ * vacío donde no hay ninguno: entonces **no se ofrece nada**, en vez de enseñar
+ * un botón que no puede funcionar.
+ */
+export type EstadoDesbloqueo = { hay: boolean; nombre: string; puesto: boolean };
+
+/**
  * Una copia mandada a quien todavía no tenía cuenta, esperando (ADR 0043, B3).
  * **No lleva el secreto**: dice a quién, cuándo y con qué llaves se intentó.
  */
@@ -502,6 +511,13 @@ export const esfinge = {
 
   /** Las copias de esa entrada que esperan a que quien las recibe tenga cuenta. */
   enviosPendientes: (id: string) => llamar<EnvioEsperando[] | null>("EnviosPendientes", id).then((l) => l ?? []),
+
+  // Desbloquear con el sistema: Touch ID o Windows Hello (fase C). **El secreto
+  // no cruza por aquí**: vive en el llavero del sistema y lo lee Go.
+  estadoDelDesbloqueo: () => llamar<EstadoDesbloqueo>("EstadoDelDesbloqueo"),
+  activarDesbloqueo: () => llamar<void>("ActivarDesbloqueo"),
+  quitarDesbloqueo: () => llamar<void>("QuitarDesbloqueo"),
+  abrirBovedaConElSistema: () => llamar<void>("AbrirBovedaConElSistema"),
 
   /** Lo que ha llegado, abierto y con la firma comprobada, pero sin secretos. */
   buzon: () => llamar<EnvioRecibido[] | null>("Buzon").then((l) => l ?? []),

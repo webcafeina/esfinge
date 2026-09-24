@@ -15,6 +15,7 @@ import {
   type Avance,
   type Entrada,
   type EstadoDelNavegador,
+  type EstadoDesbloqueo,
   type Medida,
   type Novedad,
   type Preferencias,
@@ -767,6 +768,109 @@ function Generar({ alUsarComoClave }: { alUsarComoClave: (clave: string) => void
  * ordenador, y a partir de la comprobación de versiones sale una petición. Si se
  * hace, se dice, y se deja apagar.
  */
+/**
+ * Desbloquear la bóveda con el sistema: Touch ID o Windows Hello (fase C).
+ *
+ * **Lo que esta pantalla tiene que decir, y por eso lleva tanto texto**: sin
+ * firmar la aplicación —que es la decisión de la ADR 0012— esto es un cerrojo y
+ * no una llave. Protege de quien se siente delante de tu ordenador desbloqueado;
+ * no protege de un programa que corra como tú, que es de lo que sí protege la
+ * contraseña maestra. Quien lo activa tiene derecho a saberlo aquí y no en un
+ * documento.
+ *
+ * Y donde no hay biometría —Linux, un Mac sin Touch ID— **no se enseña un botón
+ * apagado**: se dice que este equipo no tiene, que es una respuesta y no un
+ * misterio.
+ */
+function DesbloqueoDelSistema() {
+  const [estado, setEstado] = useState<EstadoDesbloqueo | null>(null);
+  const [trabajando, setTrabajando] = useState(false);
+  const [error, setError] = useState("");
+
+  // **Lo mismo que las preferencias, y por lo mismo** (ver `cambiosHechos` más
+  // abajo): esto se lee al montar y otra vez cada vez que la bóveda se abre o se
+  // cierra, así que **una lectura pedida antes de un cambio puede llegar
+  // después** y dejar el interruptor enseñando lo de antes. Con el interruptor,
+  // además, el siguiente clic parte de ahí y deshace lo que se acababa de hacer.
+  //
+  // Y devuelve la promesa a propósito: quien cambia el interruptor la espera
+  // antes de volver a dejarlo pulsable, para que no se pueda pulsar dos veces
+  // sobre un estado que todavía no se sabe.
+  const cambiosHechos = useRef(0);
+  const mirar = useCallback(() => {
+    const cuandoSePidio = cambiosHechos.current;
+    return esfinge
+      .estadoDelDesbloqueo()
+      .then((e) => {
+        if (cambiosHechos.current !== cuandoSePidio) return; // lo leído ya es viejo
+        setEstado(e);
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    void mirar();
+  }, [mirar]);
+  // Activarlo exige la bóveda abierta, así que el estado se vuelve a mirar cuando
+  // se abre o se cierra: si no, el interruptor se queda diciendo lo de antes.
+  useEffect(() => alCambiarElEstadoDeLaBoveda(() => void mirar()), [mirar]);
+
+  async function cambiar(activar: boolean) {
+    setTrabajando(true);
+    setError("");
+    cambiosHechos.current++;
+    try {
+      if (activar) await esfinge.activarDesbloqueo();
+      else await esfinge.quitarDesbloqueo();
+    } catch (e) {
+      setError(mensaje(e));
+    } finally {
+      await mirar();
+      setTrabajando(false);
+    }
+  }
+
+  if (!estado) return null;
+
+  if (!estado.hay) {
+    return (
+      <p className="nota">
+        <strong>Este equipo no tiene desbloqueo del sistema.</strong> Donde lo hay —Touch ID en un
+        Mac, Windows Hello— la bóveda se puede abrir con la huella en vez de con la contraseña
+        maestra. Aquí siempre se escribe.
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <label className="fila-ajuste">
+        <input
+          id="desbloqueo-del-sistema"
+          type="checkbox"
+          checked={estado.puesto}
+          disabled={trabajando}
+          onChange={(e) => cambiar(e.target.checked)}
+        />
+        <span>Abrir la bóveda con {estado.nombre}</span>
+      </label>
+
+      {error && <p className="error">{error}</p>}
+
+      <p className="nota">
+        Para activarlo, la bóveda tiene que estar abierta. <strong>La contraseña maestra sigue
+        abriendo siempre</strong>, y la clave de recuperación también: esto se añade, no sustituye a
+        nada.
+      </p>
+      <p className="aviso">
+        <strong>Protege de quien se siente delante de tu ordenador desbloqueado, no de un programa
+        que corra en él.</strong> Esfinge no está firmada, así que {estado.nombre} guarda la llave
+        sin poder atarla solo a Esfinge. Si eso te importa, deja esto apagado y escribe la
+        contraseña.
+      </p>
+    </>
+  );
+}
+
 function Ajustes({
   version,
   alEncontrar,
@@ -1142,6 +1246,8 @@ function Ajustes({
             abierta hasta que se cierre a mano o se cierre la aplicación.
           </p>
         </div>
+
+        <DesbloqueoDelSistema />
 
         <label className="fila-ajuste">
           <input

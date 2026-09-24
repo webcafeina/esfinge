@@ -591,6 +591,16 @@ va**: sin firmar, en los dos sistemas «desbloquear con el sistema» es **un cer
 - Y **un PIN de cuatro cifras no protege un fichero**: sin hardware que limite los intentos, se prueban
   todos. Solo vale como desbloqueo rápido dentro de una sesión ya abierta, y hay que llamarlo así.
 
+**Y la C1, hecha el mismo día** tras decidirlo contigo: **no se firma en macOS**, **se hace en los tres
+sistemas** y **no hay PIN** —«siempre será la contraseña maestra»—. Lo que hay ya: la ranura
+`llavero-del-sistema` en la bóveda, `internal/llavero` con su llavero de mentira para poder moverlo aquí, los
+cuatro métodos de la aplicación, el interruptor de Ajustes —donde se dice que esto **es un cerrojo**— y el
+botón de la pantalla de desbloquear. Con pruebas de Go y e2e de las dos pantallas en los dos temas.
+
+**Lo siguiente de la C es C2 y C3**, que es el código nativo: `LAContext` por cgo en macOS y Hello en
+Windows. Los dos son ficheros que **esta máquina no compila**, y la lección de `vidrio_darwin.go` es que
+verlos en verde en la publicación no dice que arranquen.
+
 El documento deja **cuatro cosas que decidir antes de escribir nada**, y la primera ya está contestada:
 **de momento no se firma en macOS** (cliente, 2026-09-24). Con eso, si la C se hace, es el camino del
 cerrojo, y **hay que escribirlo donde se active y en `seguridad.md`**: protege de quien se sienta delante

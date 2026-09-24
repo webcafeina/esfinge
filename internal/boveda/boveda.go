@@ -478,6 +478,13 @@ func abrir(ruta string, datos []byte, llaveTecleada string, purgar bool) (*Boved
 		return nil, ErrSinRanura
 	}
 
+	return conLlave(ruta, doc, llave, purgar)
+}
+
+// conLlave arma la bóveda a partir de la clave que ya se ha sacado de un sobre,
+// y purga lo caducado si toca. Lo comparten abrir —la contraseña tecleada— y
+// `AbrirConElSistema`, que prueba una sola ranura.
+func conLlave(ruta string, doc documento, llave []byte, purgar bool) (*Boveda, error) {
 	// Que la llave abriera un sobre y esto no se deje abrir significa que el
 	// fichero está mezclado, no que la clave esté mal.
 	sel, cont, err := desempaquetar(doc, llave)

@@ -7,6 +7,7 @@ import {
   type EntradaBoveda,
   type EnvioRecibido,
   type EstadoBoveda,
+  type EstadoDesbloqueo,
   type ResumenImportacion,
   type TipoEntrada,
   alCambiarLaBoveda,
@@ -351,6 +352,35 @@ function Cerrada({
   // correo. Se pide aquí mismo, sin mandar a nadie a otro asistente.
   const [pidiendoCodigo, setPidiendoCodigo] = useState(false);
   const [codigo, setCodigo] = useState("");
+  // Desbloquear con el sistema (fase C). Se pregunta al montar y **solo se
+  // ofrece si este equipo lo tiene y esta bóveda lo lleva puesto**: donde no hay,
+  // no se enseña nada en vez de un botón que no puede funcionar.
+  const [delSistema, setDelSistema] = useState<EstadoDesbloqueo | null>(null);
+
+  useEffect(() => {
+    esfinge
+      .estadoDelDesbloqueo()
+      .then(setDelSistema)
+      .catch(() => setDelSistema(null));
+  }, []);
+
+  async function abrirConElSistema() {
+    setTrabajando(true);
+    setError("");
+    try {
+      await esfinge.abrirBovedaConElSistema();
+      alAbrir();
+    } catch (e) {
+      // **Cancelar no es un fallo**, así que no se pinta en rojo: se vuelve al
+      // campo de la contraseña, que sigue estando ahí.
+      const m = mensaje(e);
+      setError(m.includes("comprobar quién eres") ? "" : m);
+      // Y si el sistema ya no abre esta bóveda, deja de ofrecerse.
+      setDelSistema(await esfinge.estadoDelDesbloqueo().catch(() => null));
+    } finally {
+      setTrabajando(false);
+    }
+  }
 
   async function abrir() {
     setTrabajando(true);
@@ -463,6 +493,11 @@ function Cerrada({
         <button className="principal" onClick={abrir} disabled={!llave || trabajando}>
           {trabajando ? "Abriendo…" : "Abrir la bóveda"}
         </button>
+        {delSistema?.hay && delSistema.puesto && (
+          <button id="boveda-con-el-sistema" onClick={abrirConElSistema} disabled={trabajando}>
+            Abrir con {delSistema.nombre}
+          </button>
+        )}
       </div>
 
       {/* Con cuenta, la contraseña pudo cambiarse en otro equipo, y la de aquí es la

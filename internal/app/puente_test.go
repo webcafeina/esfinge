@@ -97,6 +97,15 @@ var loQuePuedeCruzarElPuente = []string{
 	// identificador de una entrada y un correo, y devuelve lo que devuelve el
 	// servidor: nada.
 	"MiIdentidad", "HuellaDe", "MandarCopia", "EnviosPendientes", "Buzon", "AceptarDelBuzon", "TirarDelBuzon",
+
+	// La C: desbloquear con el sistema, Touch ID o Windows Hello
+	// (`docs/desbloqueo-del-sistema.md`). El que hay que mirar dos veces es
+	// **`AbrirBovedaConElSistema`: abre la bóveda sin la contraseña maestra**, y
+	// por eso está aquí a conciencia y no de paso. Lo que lo sostiene es que el
+	// secreto no está en Esfinge sino en el llavero del sistema, y que para
+	// sacarlo de ahí el sistema pide la huella. Ninguno de los cuatro recibe ni
+	// devuelve el secreto: entra y sale de `internal/llavero` sin cruzar nada.
+	"EstadoDelDesbloqueo", "ActivarDesbloqueo", "QuitarDesbloqueo", "AbrirBovedaConElSistema",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

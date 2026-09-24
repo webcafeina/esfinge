@@ -1,6 +1,6 @@
 # Desbloquear con el sistema: Touch ID, Windows Hello y un PIN
 
-**Estado: estudiado, sin empezar.** Es la fase **C** del plan de cuentas
+**Estado: decidido, en construcción.** Es la fase **C** del plan de cuentas
 ([`cuentas.md`](cuentas.md)), y el plan ya avisaba de lo que había que mirar antes de tocar código:
 **puede exigir firmar la aplicación**, en contra de una decisión tomada con el cliente. Esto es lo que se
 ha encontrado al mirarlo, el 2026-09-24.
@@ -104,9 +104,19 @@ maestra. Eso se puede hacer sin hardware, y hay que llamarlo por su nombre.
 
 ## Lo que hay que decidir antes de escribir nada
 
-> **Contestada la 2, el 2026-09-24: de momento no se firma en macOS.** Así que, si esta fase se hace, es
-> el camino del cerrojo, y eso hay que escribirlo donde se active y en `seguridad.md`. Las otras tres
-> siguen abiertas.
+> **Decidido con el cliente el 2026-09-24**, después de leer esto:
+>
+> - **No se firma en macOS** (pregunta 2). Así que esto es **el camino del cerrojo**, y hay que escribirlo
+>   donde se active y en `seguridad.md`.
+> - **Se hace en los tres sistemas** —Touch ID, Windows Hello y, en Linux, nada—, sabiendo que el código
+>   de Windows se escribe a ciegas: nadie ha ejecutado nunca Esfinge en un Windows.
+> - **Y no hay PIN.** «Siempre será la contraseña maestra», dicho así. La única alternativa a teclearla es
+>   la biometría del sistema; donde no la haya —Linux, un Mac sin Touch ID, un Windows sin Hello— se
+>   teclea la maestra, y la pantalla lo dice en vez de ofrecer algo que no está.
+>
+> Se descartó a la vez la propuesta de **un desbloqueo rápido con PIN en memoria**, que daba la misma
+> protección real sin código nativo y se podía probar aquí entero. El cliente prefiere que lo único que
+> sustituya a la maestra sea la huella, y no un número corto.
 
 1. **¿Se acepta que esto sea un cerrojo y no una llave?** Con la decisión de no firmar, en macOS es lo
    único que hay; en Windows, lo único que hay sin aceptar que otra aplicación tuya pueda pedir lo mismo.
@@ -125,10 +135,10 @@ maestra. Eso se puede hacer sin hardware, y hay que llamarlo por su nombre.
 
 | Entrega | Qué lleva | Cómo se comprueba |
 |---|---|---|
-| **C1** | La ranura local en la aplicación: crearla, abrir con ella, quitarla, y que **no se suba** —ya está—. Con un «sistema» de mentira detrás, para poder probarlo aquí | Pruebas de Go: la ranura abre, no viaja en `PrepararSubida`, y quitarla no deja restos |
+| **C1** · **hecha el 2026-09-24** | La ranura local, el interruptor de Ajustes y el botón de la pantalla de desbloquear, con un llavero de mentira detrás para poder moverlo aquí. **Sin PIN**: donde no hay biometría se teclea la maestra y la pantalla lo dice | Pruebas de Go —abre, la maestra sigue abriendo, no viaja en `PrepararSubida`, cancelar no deja nada a medias, un secreto que ya no abre se olvida— y e2e de las dos pantallas en los dos temas |
 | **C2** | macOS: `LAContext` por cgo, en un fichero que **no se puede compilar aquí**, como `vidrio_darwin.go` | El trabajo de macOS de la publicación; y **solo un Mac de verdad dice si arranca** |
 | **C3** | Windows: `UserConsentVerifier` o `KeyCredentialManager` | La máquina de Windows de la publicación compila; **nadie lo ha ejecutado nunca en un Windows** |
-| **C4** | El PIN como desbloqueo rápido de sesión, con su límite de intentos y lo que se dice de él | Pruebas de Go |
+| ~~**C4**~~ | ~~El PIN como desbloqueo rápido de sesión~~ → **descartado por el cliente el 2026-09-24**: «siempre será la contraseña maestra». La ranura `pin` se queda reservada en el formato y sin usar | — |
 
 ## Lo que cuesta, dicho de una vez
 

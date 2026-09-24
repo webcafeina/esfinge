@@ -1488,3 +1488,62 @@ test("la barra lateral dice si la bóveda está abierta o cerrada", async ({ pag
   await page.locator(".lateral").screenshot({ path: `test-results/candado-cerrada-${test.info().project.name}.png` });
   expect(errores).toEqual([]);
 });
+
+/**
+ * Desbloquear con el sistema, de punta a punta (fase C).
+ *
+ * Aquí no hay Touch ID ni Windows Hello, así que el servidor de desarrollo lleva
+ * un **llavero de mentira** en memoria (`-sin-llavero` simula el equipo que no
+ * tiene ninguno). Lo que esta prueba comprueba no es la biometría —eso solo lo
+ * dice un Mac— sino **todo lo demás**: que se activa con la bóveda abierta, que
+ * entonces la pantalla de desbloquear lo ofrece, que abre, que la maestra sigue
+ * abriendo, y que al quitarlo desaparece.
+ */
+test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  // Se activa en Ajustes, que es donde se dice lo que protege y lo que no.
+  await seccion(page, "Ajustes").click();
+  const interruptor = page.locator("#desbloqueo-del-sistema");
+  await expect(interruptor).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("no de un programa que corra en él")).toBeVisible();
+  // **Con `click` y no con `check`.** Esta casilla no se marca sola: se desactiva,
+  // se lo pide a Go y se vuelve a dibujar con lo que Go conteste, como el resto de
+  // Ajustes. `check` exige que el estado cambie en el mismo clic y falla con
+  // «clicking the checkbox did not change its state».
+  await interruptor.click();
+  await expect(interruptor).toBeChecked({ timeout: 20_000 });
+
+  // Se cierra a mano y la pantalla de desbloquear ofrece la huella.
+  await seccion(page, "Bóveda").click();
+  await accion(page, "Cerrar la bóveda").click();
+  const conElSistema = page.locator("#boveda-con-el-sistema");
+  await expect(conElSistema).toBeVisible({ timeout: 20_000 });
+  await expect(conElSistema).toHaveText(/Touch ID/);
+
+  await conElSistema.click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
+  // **Y la maestra sigue abriendo**: la ranura del sistema nunca es la única.
+  await accion(page, "Cerrar la bóveda").click();
+  await page.locator("#boveda-llave").fill(MAESTRA);
+  await accion(page, "Abrir la bóveda").click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
+  // Y al quitarlo, la pantalla de desbloquear deja de ofrecerlo.
+  await seccion(page, "Ajustes").click();
+  await page.locator("#desbloqueo-del-sistema").click();
+  await expect(page.locator("#desbloqueo-del-sistema")).not.toBeChecked({ timeout: 20_000 });
+  await seccion(page, "Bóveda").click();
+  await accion(page, "Cerrar la bóveda").click();
+  await expect(page.locator("#boveda-con-el-sistema")).toHaveCount(0);
+
+  // Se deja como estaba, que la bóveda sobrevive entre pruebas.
+  await page.locator("#boveda-llave").fill(MAESTRA);
+  await accion(page, "Abrir la bóveda").click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});

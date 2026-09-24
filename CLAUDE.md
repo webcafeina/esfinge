@@ -627,6 +627,17 @@ seleccionable, nunca en una imagen —si no, no se puede copiar ni leer con un l
 **ninguno lleva un enlace que entre por ti**. Un correo de un gestor de contraseñas que diga «pulsa aquí
 para entrar» es entrenar a su gente para el phishing. Lo vigila una prueba del servidor.
 
+**Una casilla cuyo estado viene de Go no se marca con `check`.** Las de Ajustes se desactivan, le piden
+el cambio a Go y se vuelven a dibujar con lo que Go conteste —que es lo correcto: marcarla antes de saber si
+ha funcionado es prometer—. Playwright's `check` exige que el estado cambie **en el mismo clic** y falla con
+«clicking the checkbox did not change its state», que no se parece en nada a la causa. Se mueven con
+`click()` y se espera con `toBeChecked()`.
+
+Y con ello, la trampa de las preferencias otra vez, que vuelve en cuanto algo se lee más de una vez: **una
+lectura pedida antes de un cambio puede llegar después**. Con un interruptor se ve peor que con un
+desplegable, porque el siguiente clic parte del estado viejo y deshace lo que se acababa de hacer. El
+remedio es el mismo, `cambiosHechos`, y hay que ponerlo desde el principio.
+
 **Y lo que no se nota tiene que no notarse por los dos lados: ni en la respuesta ni en lo que tarda.** El
 servidor contesta lo mismo tenga cuenta o no la dirección a la que mandas —es media protección contra la
 enumeración de correos—, y la B3 le añadió un camino entero por debajo: mandar la invitación. Ese camino

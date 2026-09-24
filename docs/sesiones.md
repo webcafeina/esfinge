@@ -41,6 +41,29 @@ Plantilla al final.
   se vayan mandando**. Cada alta, cada entrada desde un equipo nuevo y cada invitación es una prueba de
   cómo sale en un buzón.
 
+## 2026-09-24 (noche) · La 2.26.0 publicada, y la C1
+
+- **Publicada la 2.26.0** con la B entera y los correos maquetados: los siete trabajos en verde, tiendas
+  incluidas. `VERSION_DEL_AVISO` sube a 3, así que el panel volverá a preguntar una vez a todo el mundo.
+- **La C, decidida con el cliente** tras leer el estudio: **no se firma en macOS**, **se hace en los tres
+  sistemas** y **no hay PIN** —«siempre será la contraseña maestra»—. Se le ofreció un desbloqueo rápido con
+  PIN en memoria, que daba la misma protección real sin código nativo y se podía probar aquí entero, y lo
+  descartó: lo único que sustituya a la maestra tiene que ser la huella.
+- **C1 hecha**: la ranura `llavero-del-sistema` en la bóveda —envuelta con un secreto de 32 bytes y **con el
+  perfil barato**, porque Argon2id interactivo sobre algo que no teclea nadie solo sirve para que abrir tarde
+  un segundo—, `internal/llavero` con su implementación «no hay» y una de mentira, los cuatro métodos de la
+  aplicación, el interruptor de Ajustes y el botón de la pantalla de desbloquear.
+- **Lo que la pantalla dice, que es media entrega**: que esto **protege de quien se sienta delante de tu
+  ordenador desbloqueado y no de un programa que corra en él**, y que la maestra sigue abriendo siempre.
+  Donde no hay biometría no se enseña un botón apagado: se dice que este equipo no tiene.
+- Y dos cosas que salieron al escribir la prueba de interfaz, las dos en `CLAUDE.md`: **una casilla cuyo
+  estado viene de Go no se mueve con `check()`** —exige que cambie en el mismo clic y falla con un mensaje
+  que no se parece a la causa— y **la trampa de las preferencias otra vez**, que con un interruptor se ve
+  peor porque el siguiente clic parte del estado viejo.
+- Y una pérdida de tiempo que conviene no repetir: una tanda de e2e dio **38 fallos** porque reutilizó un
+  servidor de desarrollo que yo había levantado a mano, con otra maestra. `reuseExistingServer` es cómodo y
+  miente si hay algo escuchando en ese puerto.
+
 ## 2026-09-24 (tarde) · Las dos comprobaciones que no podía hacer yo
 
 - **La invitación, en un buzón de verdad.** Cuenta de usar y tirar en producción —`alvaro+…`, que Esfinge

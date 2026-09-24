@@ -24,6 +24,7 @@ import (
 	"github.com/webcafeina/esfinge/internal/cripto"
 	"github.com/webcafeina/esfinge/internal/cuenta"
 	"github.com/webcafeina/esfinge/internal/iconos"
+	"github.com/webcafeina/esfinge/internal/llavero"
 	"github.com/webcafeina/esfinge/internal/navegador"
 )
 
@@ -49,6 +50,11 @@ type App struct {
 
 	// vidrio dice si el sistema ha puesto una ventana translúcida detrás.
 	vidrio bool
+
+	// llavero es lo que guarda el secreto del desbloqueo del sistema —Touch ID,
+	// Windows Hello— fuera de Esfinge (fase C). Se rellena sola la primera vez
+	// que se pregunta; las pruebas y el servidor de desarrollo ponen la suya.
+	llavero llavero.Llavero
 
 	// bov es la bóveda, si está abierta. Nil mientras nadie la haya desbloqueado.
 	//
@@ -146,6 +152,14 @@ func ApuntarAAPI(a *App, raiz string) { a.act.comprobador.API = raiz }
 // por lo de siempre: lo que se exporta como método cruza el puente, y esto es
 // una decisión de arranque, no algo que la ventana deba poder cambiar.
 func MarcarVidrio(a *App, si bool) { a.vidrio = si }
+
+// ApuntarLlaveroA cambia dónde se guarda el secreto del desbloqueo del sistema.
+//
+// **Lo usa el servidor de desarrollo**, que corre en una máquina sin Touch ID ni
+// Windows Hello y necesita uno de mentira para poder mover esa pantalla. Función
+// y no método por lo de siempre: un método dejaría a la ventana elegir dónde se
+// guarda la llave de la bóveda, que es exactamente lo que no puede poder hacer.
+func ApuntarLlaveroA(a *App, l llavero.Llavero) { a.llavero = l }
 
 // Plataforma dice en qué sistema corre, para que la interfaz se organice como
 // se organizan las aplicaciones de ese sistema.

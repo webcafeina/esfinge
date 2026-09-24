@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 
 	"github.com/webcafeina/esfinge/internal/app"
+	"github.com/webcafeina/esfinge/internal/llavero"
 )
 
 func main() {
@@ -23,6 +24,7 @@ func main() {
 	api := flag.String("api", "", "API de publicaciones de mentira, para probar el aviso de versión nueva")
 	config := flag.String("config", "", "Carpeta de configuración; vacío, una temporal recién hecha")
 	cuentas := flag.String("cuentas", "", "Servidor de cuentas, normalmente el local de make servidor (http://127.0.0.1:8790)")
+	sinLlavero := flag.Bool("sin-llavero", false, "Simula un equipo sin Touch ID ni Windows Hello")
 	flag.Parse()
 
 	// **La configuración se aísla, y con la bóveda dentro deja de ser un detalle.**
@@ -78,6 +80,15 @@ func main() {
 	} else {
 		app.ApuntarCuentasA(aplicacion, "http://127.0.0.1:1")
 	}
+
+	// Y el llavero del sistema: aquí no hay Touch ID ni Windows Hello, así que se
+	// le pone uno de mentira. Sin él, la pantalla de desbloquear con el sistema no
+	// se podría mover nunca desde esta máquina.
+	//
+	// `-sin-llavero` simula un equipo que no tiene ninguno, que es lo que hay que
+	// ver para comprobar que entonces **no se ofrece nada** en vez de dejar un
+	// botón muerto.
+	app.ApuntarLlaveroA(aplicacion, &llavero.DeMentira{ComoSeLlama: "Touch ID", NoHay: *sinLlavero})
 
 	log.Fatal(app.Servir(aplicacion, sistema, *direccion))
 }
