@@ -22,9 +22,10 @@ Plantilla al final.
 - **`make comprobar` compila ahora los seis objetivos** sin cgo, en segundos. Lo que eso no comprueba son
   justo los ficheros de cgo, y se dice: ésos siguen siendo cosa del trabajo de macOS, que solo dice que
   compilan.
-- Verificado: `make comprobar` en verde (salida 0) y los seis cruces. **El cgo se manda a compilar al
-  trabajo de macOS**, que es lo único que aquí puede decir algo de él. Y queda lo que solo dice un Mac de
-  verdad: que arranque, qué pregunta al actualizar y cómo se lee el diálogo del sistema.
+- Verificado: `make comprobar` en verde (salida 0), los seis cruces, y **`compilar.yml` entero en verde en
+  los tres sistemas** —o sea que el Objective-C compila y enlaza contra LocalAuthentication y Security, y
+  que Windows vuelve a compilar—. Y queda lo que solo dice un Mac de verdad, que es lo de siempre con el
+  cgo: **que arranque**, qué pregunta al actualizar y cómo se lee el diálogo del sistema.
 
 ## 2026-09-24 (tarde) · Todos los correos con formato, y la C decidida a medias
 
