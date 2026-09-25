@@ -14,7 +14,13 @@ Plantilla al final.
   instancia, así que tampoco es `ErrCambiada`. La causa de que no se sepa es mía: puse un `catch` vacío
   porque «esa pantalla desaparece igual». Ahora **la casilla no activa, lo pide**, y activa la tarjeta de
   dentro, que es la única de las dos que sigue ahí para enseñar el error —con el `OSStatus` de macOS—. En
-  `deuda.md` hasta que él diga qué pone.
+  `deuda.md` hasta que él diga qué pone. **Dice «Touch ID activado»: ya no pasa, y sigue sin saberse por qué
+  pasaba.** Queda escrito así, porque un «ya no pasa» sin causa no es un arreglo. Lo que sí se descartó
+  leyendo, y son las dos hipótesis que daban miedo: **la sincronización no se lleva la ranura local**
+  —`fundirSobres` las conserva— y **no puede pisarla a medias**, porque `Fundir` toma el cerrojo de la bóveda
+  para el merge y el guardado. Con cuenta, abrir la bóveda **arranca la sincronización en ese mismo
+  instante**, que era la ventana; que no sea eso hay que darlo por bueno con el código delante, no por que
+  haya dejado de verse.
 - **2.27.3**: el cliente esperaba la sugerencia **también con la bóveda cerrada**. Tenía razón en el sitio
   y no cabía un botón: activarlo exige la bóveda abierta, que es lo que impide encenderlo sin saber la
   maestra. Sale como **casilla** —«Abrir con Touch ID a partir de ahora»—, que cumple la condición entera:

@@ -60,7 +60,10 @@ Touch ID a partir de ahora»**: se marca, se teclea la maestra y queda activado 
 así que cuando en su Mac falló, la tarjeta volvió a ofrecerlo sin que nada dijera por qué. Aquí no se
 reproduce y leyendo tampoco sale la causa —se descartaron dos hipótesis: la fusión conserva las ranuras
 locales, y `Fundir` va por la misma instancia—. Ahora la casilla **pide** y activa la tarjeta de dentro,
-que sí enseña el error con el `OSStatus`. **Pendiente de lo que ponga en su Mac** (`deuda.md`).
+que sí enseña el error con el `OSStatus`. **Comprobado en su Mac: dice «Touch ID activado»**. Se cierra
+en `deuda.md` **sin saber la causa**, que es como hay que escribirlo, y con dos mecanismos descartados
+leyendo para que nadie los vuelva a investigar: la sincronización ni se lleva la ranura local ni puede
+pisarla a medias.
 
 Y salieron dos cosas que ninguna prueba en verde dijo y sí dijo mirar la captura: **el dibujo medía 0 de
 alto** —todos los botones miden 28 px y lo de dentro se encogía— y **la clase `.huella` ya existía**, la de
