@@ -27,6 +27,12 @@ Plantilla al final.
   preferencias guardan **qué versión consiguió abrir ya**, que no es lo mismo que qué versión corre; con lo
   segundo el aviso se apagaría al arrancar y no habría servido de nada. Prueba de Go, mutada para verla en
   rojo.
+- **Sesión cerrada aquí**, a petición del cliente. Queda **una pregunta suya sin contestar**: la C3 (Windows
+  Hello, a ciegas) o antes Firefox y comprobar compartir entre sus dos Macs, que sí se verifican. Al volver
+  se empieza por ahí.
+- Verificado hoy: `make comprobar` y `make e2e` en verde en cada versión, y **siete publicaciones seguidas
+  con los siete trabajos en verde** (2.27.0 a 2.27.6). Y lo que solo dice su Mac, dicho por él: arranca, la
+  huella funciona, cancelar vuelve a la maestra, y el llavero pregunta **una vez por actualización**.
 - **2.27.5**: se avisa antes de que salga, con el botón que hay que pulsar, en los tres sitios donde se
   activa y **solo en macOS** —en Windows la credencial de Hello no pide nada—.
 

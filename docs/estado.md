@@ -4,21 +4,34 @@
 
 ## Dónde se paró, y por dónde se sigue
 
-**2026-09-25. Publicada la 2.27.0**, con los siete trabajos en verde y las tiendas incluidas: la C1 y la
-C2 —desbloquear la bóveda con Touch ID—. **Y ahí se para hasta que el cliente la pruebe en su Mac.** Se
-eligió así a conciencia: la C2 es cgo que esta máquina no compila, sabemos que compila pero **no que
-arranque**, y escribir la C3 encima de un diseño sin verificar significa rehacer las dos si falla.
+**Sesión cerrada la tarde del 2026-09-25**, a petición del cliente. Trabajo limpio: todo comprometido y
+empujado, `make comprobar` y `make e2e` en verde, y **la 2.27.6 publicada** con los siete trabajos en verde.
 
-- **Publicada la 2.26.0** (24-09): la B entera —compartir copias, invitaciones a quien no tiene cuenta— con
-  los correos ya maquetados.
-- **La fase C**, desbloquear con el sistema ([ADR 0044](adr/0044-desbloquear-con-el-sistema.md), estudio en
-  [`desbloqueo-del-sistema.md`](desbloqueo-del-sistema.md)). **C1 y C2 hechas**: la ranura local con sus
-  dos pantallas, y Touch ID por cgo con el secreto en el llavero de inicio de sesión.
-- **Lo siguiente es la C3**, Windows Hello, a ciegas: nadie ha ejecutado nunca Esfinge en un Windows. Antes
-  de empezarla, releer la ADR 0044 — la credencial de Hello en un Win32 sin empaquetar **está atada a la
-  cuenta de usuario y no a la aplicación**, así que ahí el cerrojo es todavía más cerrojo.
-- **Y lo que queda del plan de cuentas**, que el cliente hace junto: **probar Firefox** y **comprobar
-  compartir entre sus dos Macs**.
+**La fase C está cerrada por el lado de macOS** ([ADR 0044](adr/0044-desbloquear-con-el-sistema.md), estudio
+en [`desbloqueo-del-sistema.md`](desbloqueo-del-sistema.md)). De la 2.27.0 a la 2.27.6, todo probado por el
+cliente en su Mac y casi todo salido de probarlo:
+
+- **C1 y C2**: la ranura local, las dos pantallas, y Touch ID por cgo con el secreto en el llavero de inicio
+  de sesión. **Arranca**, que era lo único que ninguna prueba de aquí podía decir.
+- **La huella se pide sola al llegar** a la pantalla de desbloquear, grande y latiendo (2.27.1).
+- **Y se ofrece activarlo por los dos caminos**: una tarjeta dentro de la bóveda (2.27.2) y una casilla en
+  la pantalla de desbloquear (2.27.3), las dos una sola vez.
+- **Lo que el sistema pregunta, dicho antes de que lo pregunte** (2.27.5 y 2.27.6): la contraseña del Mac al
+  guardar la llave, y otra vez —una sola— tras cada actualización.
+
+**Lo siguiente, y hay una pregunta del cliente sin contestar encima de la mesa.** Se le planteó al cerrar y
+no dio respuesta, así que **al volver se empieza por ahí**:
+
+> ¿La **C3** (Windows Hello) o antes **Firefox y compartir entre sus dos Macs**?
+
+Lo que hay que tener delante para decidirlo: la C3 se escribe **a ciegas y para un sistema donde Esfinge no
+se ha ejecutado nunca** —hay que hablar con WinRT (`UserConsentVerifier`) y con el Administrador de
+credenciales—, y lo único comprobable es que compile en la máquina de Windows de la publicación, que es
+decir muy poco: la lección del cgo de macOS es que compilar no dice que arranque. Firefox y compartir, en
+cambio, **se verifican de verdad** y son lo último que queda del plan de cuentas.
+
+Y si se va a la C3, releer antes la ADR 0044: la credencial de Hello en un Win32 sin empaquetar **está
+atada a la cuenta de usuario y no a la aplicación**, así que ahí el cerrojo es todavía más cerrojo.
 
 ### ~~Lo que hay que mirar en el Mac con la 2.27.0~~ — **probado el 2026-09-25, todo correcto**
 
