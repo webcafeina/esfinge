@@ -7,6 +7,19 @@ Plantilla al final.
 
 ## 2026-09-25 (tarde) · La huella deja de ser un botón, y la bóveda la ofrece sola
 
+- **Y lo que se dio por comprobado y no lo estaba**: «al activarlo el llavero no pregunta nada» era falso.
+  macOS **sí** pide la contraseña del Mac para autorizar a Esfinge a usar el llavero, y con «Permitir
+  siempre» no vuelve. Se dio por bueno con **una sola pasada**, que fue la primera activación: crear un
+  elemento no pide permiso, **acceder a uno que ya está, sí**. Corregido en la ADR 0044 tachado y con la
+  fecha.
+- **Y ahí está, casi seguro, el fallo de ayer**: en la 2.27.3 ese diálogo salía **sin avisar y justo al
+  entrar en la bóveda**. Cancelarlo es lo sensato ante una petición de contraseña que aparece sola —que es
+  lo que un gestor de contraseñas enseña a hacer— y cancelarlo dejaba la activación fallando, con el `catch`
+  vacío tapándolo. No está probado; encaja con todo, incluido que dejara de pasar al activar en otro
+  momento.
+- **2.27.5**: se avisa antes de que salga, con el botón que hay que pulsar, en los tres sitios donde se
+  activa y **solo en macOS** —en Windows la credencial de Hello no pide nada—.
+
 - **2.27.4**: con la casilla marcada, al entrar **la tarjeta volvía a ofrecer lo que se acababa de pedir**.
   Por eliminación, la activación estaba fallando en su Mac —si hubiera funcionado, la tarjeta no puede
   salir—, y **no se sabe por qué**: aquí no se reproduce y leyendo el código tampoco sale. Se descartaron

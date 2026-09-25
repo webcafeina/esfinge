@@ -665,6 +665,18 @@ porque lo pidió el cliente sabiendo lo que cuesta —pedirla le dice a quien la
 abierto, con hora e IP—, pero **el nombre va escrito al lado**: con las imágenes bloqueadas, que es como
 llegan de entrada a casi todo el mundo, la cabecera se sigue leyendo.
 
+**Un diálogo del sistema que pide una contraseña sin avisar es lo que un gestor de contraseñas enseña a
+desconfiar.** Al guardar la llave de Touch ID, macOS pide **la contraseña del Mac** para autorizar a Esfinge
+a usar el llavero —es lo normal en una aplicación sin firmar— y con «Permitir siempre» no vuelve a
+preguntarlo. Se avisa **antes** de que salga y se dice qué botón pulsar, en los tres sitios donde se activa,
+y **solo en macOS**: en Windows la credencial de Hello no pide nada y en Linux no hay nada que pedir. Sin
+ese aviso, lo sensato por parte de quien lo ve es cancelar, y cancelar deja la activación a medias.
+
+Y con ello, una del método y no de macOS: **«no preguntó» tras hacerlo una vez no es «no pregunta»**. Se dio
+por comprobado que activar no pedía nada, y era la primera activación: crear un elemento en el llavero no
+pide permiso, **acceder a uno que ya está, sí**. Lo mismo vale para cualquier cosa que solo se haya visto
+funcionar una vez.
+
 **Un `catch` vacío en algo que ha pedido una persona es un fallo, no una precaución.** La casilla «Abrir
 con Touch ID a partir de ahora» activaba entre abrir la bóveda y entrar, y se tragaba el error con el
 argumento de que esa pantalla desaparece de todos modos. El cliente marcó la casilla, entró, y **la tarjeta

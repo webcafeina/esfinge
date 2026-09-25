@@ -391,7 +391,28 @@ function HuellaDactilar() {
  *     donde se decide: esto es un cerrojo, no cambia quién puede abrir la bóveda
  *     desde dentro de este ordenador.
  */
+/**
+ * Lo que el sistema va a preguntar al guardar la llave, dicho antes.
+ *
+ * En macOS, guardar en el llavero de inicio de sesión desde una aplicación **sin
+ * firmar** hace que el sistema pida la contraseña del Mac para autorizarla. Es
+ * correcto y es lo que protege esa llave; lo que no puede ser es que aparezca sin
+ * que nadie lo haya anunciado, porque un gestor de contraseñas se pasa el día
+ * enseñando a desconfiar exactamente de eso.
+ *
+ * Vive aquí y no en el texto fijo porque **solo vale para macOS**: en Windows la
+ * credencial de Hello no pide nada, y en Linux no hay nada que pedir.
+ */
+export function avisoDelSistemaAlGuardar(): string {
+  if (document.documentElement.dataset.sistema !== "darwin") return "";
+  return (
+    "Al activarlo, macOS te pedirá la contraseña del Mac para dejar que Esfinge guarde la llave " +
+    "en el llavero. Elige «Permitir siempre» y no lo volverá a preguntar."
+  );
+}
+
 function SugerirDesbloqueo({ activarYa }: { activarYa: boolean }) {
+  const avisoDelLlavero = avisoDelSistemaAlGuardar();
   const [estado, setEstado] = useState<EstadoDesbloqueo | null>(null);
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
   const [trabajando, setTrabajando] = useState(false);
@@ -482,6 +503,12 @@ function SugerirDesbloqueo({ activarYa }: { activarYa: boolean }) {
               Protege de quien se siente delante de tu ordenador desbloqueado, no de un programa que
               corra en él. La contraseña maestra y la clave de recuperación siguen haciendo falta.
             </p>
+            {/* **Un diálogo del sistema que pide una contraseña sin avisar es lo
+                que un gestor de contraseñas enseña a desconfiar.** macOS lo saca
+                al guardar la llave en el llavero, y quien no sabe que viene tiene
+                todos los motivos para cancelarlo — que es, casi seguro, lo que
+                pasó con la 2.27.3. Se avisa antes y se dice qué botón pulsar. */}
+            {avisoDelLlavero && <p className="nota">{avisoDelLlavero}</p>}
             {error && <p className="error">{error}</p>}
             <div className="botones">
               <button
@@ -766,6 +793,11 @@ function Cerrada({
           <span>Abrir con {delSistema.nombre} a partir de ahora</span>
         </label>
       )}
+
+      {/* Y aquí también, que es donde se marca: el diálogo del sistema sale justo
+          después de abrir, y sin avisar parece que algo va mal. */}
+      {delSistema?.hay && !delSistema.puesto && prefs && !prefs.desbloqueoSugerido &&
+        avisoDelSistemaAlGuardar() && <p className="nota">{avisoDelSistemaAlGuardar()}</p>}
 
       {error && <p className="error">{error}</p>}
 

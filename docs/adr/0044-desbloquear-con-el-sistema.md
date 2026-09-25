@@ -184,7 +184,19 @@ real **sin una línea de código nativo** y se podía probar aquí entera. El cl
 
 **Comprobado en el Mac del cliente con la 2.27.0 (2026-09-25):** arranca, se activa, abre con la huella,
 cancelar vuelve al campo de la contraseña sin error, la maestra sigue abriendo y al quitarlo desaparece.
-**Y al activarlo el llavero no pregunta nada**, que era media decisión 3.
+
+~~**Y al activarlo el llavero no pregunta nada.**~~ **Falso, corregido el mismo día**: sí pregunta. Al
+guardar la llave, macOS pide **la contraseña del Mac** para autorizar a Esfinge a usar el llavero, y con
+«Permitir siempre» no vuelve a preguntarlo. Se dio por comprobado con una sola pasada —la primera
+activación, que crea el elemento y no pide nada; pedirlo es acceder a uno que ya está—. La lección es de
+método y no de macOS: **«no preguntó» tras hacerlo una vez no es «no pregunta»**.
+
+Y con eso, **la explicación más probable del fallo de la 2.27.3**: la casilla activaba justo al entrar en la
+bóveda, así que ese diálogo del sistema salía **sin que nada lo hubiera anunciado y en el peor momento**.
+Quien lo cancela —que es lo sensato ante una petición de contraseña que aparece sola— deja la activación
+fallando, y el `catch` vacío se tragaba el error. No está probado, pero encaja con todo lo observado y con
+que dejara de pasar al mover la activación a otro momento. Ahora **se avisa antes de que salga**, en la
+tarjeta, en la casilla y en Ajustes, y **solo en macOS**.
 
 **Lo que no se ha comprobado, y solo puede comprobarse en un Mac de verdad:**
 

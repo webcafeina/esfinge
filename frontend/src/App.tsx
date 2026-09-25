@@ -39,7 +39,7 @@ import {
   Segmentado,
   ZonaFicheros,
 } from "./componentes";
-import { Boveda } from "./boveda";
+import { avisoDelSistemaAlGuardar, Boveda } from "./boveda";
 import { Asistente, Bienvenida, GrupoCuenta, usaCuenta, usaSincroAlVolver, type TipoAsistente } from "./cuenta";
 
 type Tarea = "cifrar" | "descifrar" | "generar" | "boveda" | "historial" | "ajustes";
@@ -855,6 +855,11 @@ function DesbloqueoDelSistema() {
       </label>
 
       {error && <p className="error">{error}</p>}
+
+      {/* Lo que el sistema va a preguntar, dicho antes de que lo pregunte. */}
+      {!estado.puesto && avisoDelSistemaAlGuardar() && (
+        <p className="nota">{avisoDelSistemaAlGuardar()}</p>
+      )}
 
       <p className="nota">
         Para activarlo, la bóveda tiene que estar abierta. <strong>La contraseña maestra sigue
