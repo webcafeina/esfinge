@@ -5,6 +5,20 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-25 · Se publica la C para poder probarla, antes de escribir más a ciegas
+
+- **La 2.27.0 sale con la C1 y la C2**, y la C3 espera. Lo eligió el cliente con el coste delante: la C2 es
+  cgo que esta máquina no compila, sabemos que **compila pero no que arranque**, y escribir Windows Hello
+  encima de un diseño sin verificar significa rehacer los dos si falla. Publicar primero convierte una
+  suposición en un dato por el precio de una versión.
+- **La lista de lo que hay que mirar en el Mac está en `estado.md`**, y empieza por «que arranque», que no
+  es retórico: es exactamente lo que le pasó a la 2.9.1.
+- **Y la puerta de la publicación cruzaba a Windows pero no a macOS.** Ahí es donde se habría colado la
+  mitad que costó ayer —un fichero de cgo **no entra con `CGO_ENABLED=0`**—: el trabajo de la línea de
+  comandos se habría caído con tres sistemas ya compilados. Ahora la puerta compila los seis, igual que
+  `make comprobar`. Es la misma lección que ya dejó escrita el propio flujo: **copia a mano lo que hace
+  `make` y se desincroniza**, que es como la extensión estuvo sin comprobarse hasta la 2.18.0.
+
 ## 2026-09-24 (noche) · La C2, y un Windows que llevaba roto desde por la tarde
 
 - **Ficha de la fase, [ADR 0044](adr/0044-desbloquear-con-el-sistema.md)**, que faltaba: «desbloquear con

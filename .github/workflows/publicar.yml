@@ -57,9 +57,16 @@ jobs:
         run: |
           go vet ./...
           go vet -tags dev ./...
-          # Y compilado para Windows, que tiene código propio —el registro— y
-          # ninguna otra puerta lo compila antes de su trabajo.
-          GOOS=windows go vet ./...
+          # Y compilado para los seis objetivos, que es más que «vet de Windows»
+          # y lo es por una razón concreta: aquí solo se miraba Windows —que tiene
+          # código propio, el registro—, y por macOS se coló que un fichero de cgo
+          # **no entra cuando CGO_ENABLED=0**, que es como se cruza la línea de
+          # comandos. Un `_darwin.go` de cgo no cubre darwin, y sin su pareja
+          # `darwin && !cgo` el trabajo de la línea de comandos se cae aquí abajo,
+          # ya con tres sistemas compilados.
+          for objetivo in darwin/amd64 darwin/arm64 windows/amd64 windows/arm64 linux/amd64 linux/arm64; do
+            CGO_ENABLED=0 GOOS=${objetivo%%/*} GOARCH=${objetivo##*/} go build ./... || exit 1
+          done
           go test ./...
 
       - name: Contraste y tokens

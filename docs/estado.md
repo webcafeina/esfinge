@@ -1,25 +1,42 @@
 # Estado
 
-Última actualización: **2026-09-24**
+Última actualización: **2026-09-25**
 
 ## Dónde se paró, y por dónde se sigue
 
-**Sesión cerrada la noche del 2026-09-24**, a petición del cliente, para seguir esa misma tarde. Trabajo
-limpio: todo comprometido y empujado, `make comprobar` en verde y `compilar.yml` en verde en los tres
-sistemas.
+**2026-09-25.** Se publica la **2.27.0** con la C1 y la C2 —desbloquear la bóveda con Touch ID— y **el
+cliente la prueba en su Mac antes de escribir la C3**. Se eligió así a conciencia: la C2 es cgo que esta
+máquina no compila, sabemos que compila pero **no que arranque**, y escribir la C3 encima de un diseño sin
+verificar significa rehacer las dos si falla.
 
-- **Publicada la 2.26.0**: la B entera —compartir copias, invitaciones a quien no tiene cuenta— con los
-  correos ya maquetados.
-- **En marcha la fase C**, desbloquear con el sistema ([ADR 0044](adr/0044-desbloquear-con-el-sistema.md),
-  estudio en [`desbloqueo-del-sistema.md`](desbloqueo-del-sistema.md)). **C1 y C2 hechas y sin publicar**:
-  la ranura local con sus dos pantallas, y Touch ID por cgo.
-- **Lo siguiente es la C3**, Windows Hello, que se escribe a ciegas porque nadie ha ejecutado nunca Esfinge
-  en un Windows. Antes de empezarla conviene releer la ADR 0044: la credencial de Hello en un Win32 sin
-  empaquetar **está atada a la cuenta de usuario y no a la aplicación**, así que ahí el cerrojo es todavía
-  más cerrojo.
-- **Y lo que queda para el cliente**, que se hace junto: **probar Firefox** y **comprobar compartir entre
-  sus dos Macs**. De la C2, lo que solo dice un Mac de verdad: que arranque, qué pregunta el llavero al
-  actualizar y cómo se lee el diálogo del sistema.
+- **Publicada la 2.26.0** (24-09): la B entera —compartir copias, invitaciones a quien no tiene cuenta— con
+  los correos ya maquetados.
+- **La fase C**, desbloquear con el sistema ([ADR 0044](adr/0044-desbloquear-con-el-sistema.md), estudio en
+  [`desbloqueo-del-sistema.md`](desbloqueo-del-sistema.md)). **C1 y C2 hechas**: la ranura local con sus
+  dos pantallas, y Touch ID por cgo con el secreto en el llavero de inicio de sesión.
+- **Lo siguiente es la C3**, Windows Hello, a ciegas: nadie ha ejecutado nunca Esfinge en un Windows. Antes
+  de empezarla, releer la ADR 0044 — la credencial de Hello en un Win32 sin empaquetar **está atada a la
+  cuenta de usuario y no a la aplicación**, así que ahí el cerrojo es todavía más cerrojo.
+- **Y lo que queda del plan de cuentas**, que el cliente hace junto: **probar Firefox** y **comprobar
+  compartir entre sus dos Macs**.
+
+### Lo que hay que mirar en el Mac con la 2.27.0
+
+**Lo primero no es retórico: que arranque.** La 2.9.1 salió con un diagnóstico de Objective-C que compilaba
+en verde y cerraba la aplicación nada más abrirla. Si no arranca, se para aquí y se revierte.
+
+1. **Instalar y abrir.** Si arranca, lo demás son detalles; si no, no hay nada más que probar.
+2. **Activarlo**: abrir la bóveda con la maestra → Ajustes → «Desbloquear con Touch ID». **Decir si macOS
+   pregunta algo** —un diálogo de «Esfinge quiere usar información protegida»— y qué se contestó.
+3. **Usarlo**: cerrar la bóveda y volver a la pantalla de desbloquear. Tiene que salir **«Abrir con Touch
+   ID»**; pulsarlo, poner el dedo, y abrir.
+4. **Cancelar el diálogo del sistema**: tiene que volver al campo de la contraseña **sin error en rojo**,
+   porque cancelar no es un fallo.
+5. **La maestra sigue abriendo** con Touch ID activado. Es la regla que no se puede romper.
+6. **Quitarlo** en Ajustes: el botón desaparece de la pantalla de desbloquear.
+7. **Y la que no se puede probar hoy**: cuando salga la versión siguiente, **al abrir tras actualizar**,
+   ¿vuelve a pedir permiso el llavero? El binario cambia y Esfinge no está firmada, así que puede. Es la
+   decisión 3 del documento de la fase, y la respuesta decide si hace falta decir algo en la pantalla.
 
 ## Dónde estamos
 
