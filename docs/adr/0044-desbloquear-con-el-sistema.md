@@ -96,6 +96,22 @@ Una tarjeta arriba de la bóveda abierta, con tres reglas:
 Que la marca sea local importa: en un equipo sin biometría la sugerencia no tiene sentido, y haberla
 descartado en el portátil no dice nada del ordenador de la oficina.
 
+**Y también en la pantalla de desbloquear, como casilla** (2.27.3). El cliente esperaba encontrarlo ahí, y
+tenía razón en dónde: esa pantalla es el momento en que estás a punto de teclear la maestra otra vez. Lo
+que no cabe ahí es un botón que lo active, porque **activarlo exige la bóveda abierta** —es lo que impide
+encenderlo sin saber la maestra—. Así que lo que hay es **«Abrir con Touch ID a partir de ahora»**: se
+marca, se teclea la maestra, y al abrir queda activado. La condición de seguridad se cumple entera, y no
+hace falta un aviso que solo informe.
+
+Dos reglas de esa casilla:
+
+- **Marcarla no cuenta como haber contestado.** Lo que apunta «ya se ofreció» es activarlo o decir «ahora
+  no» en la tarjeta; si la casilla lo apuntara, quien la deja sin marcar se quedaría sin la tarjeta y sin
+  saber que la función existe.
+- **Si el sistema falla al activar, no se dice nada ahí**, y no es dejarlo en silencio: la bóveda ya se
+  está abriendo y esa pantalla desaparece. Como no se apunta nada, la tarjeta de dentro lo vuelve a
+  ofrecer, que es a la vez la señal y el sitio donde reintentarlo.
+
 ### Y esto no cuenta como actividad
 
 Leer el secreto es parte de abrir, y abrir ya toca el reloj por su cuenta. Es la regla de siempre —lo que

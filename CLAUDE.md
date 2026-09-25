@@ -213,7 +213,10 @@ No se cambian sin preguntar.
   ahí no entra quien no sabe que existe. **Solo donde hay biometría** —donde no la hay no se dice nada, que
   es ruido sobre algo que no se puede arreglar—, **una sola vez** —se apunta al contestar, en las
   preferencias, que son locales como la ranura— y **diciendo que es un cerrojo**, porque ofrecerlo sin
-  decirlo sería venderlo.
+  decirlo sería venderlo. **Y en la pantalla de desbloquear va como casilla** —«Abrir con Touch ID a partir
+  de ahora»— y no como botón: **activarlo exige la bóveda abierta**, que es lo que impide encenderlo sin
+  saber la maestra, así que se marca, se teclea la maestra y queda activado al abrir. Marcarla **no** cuenta
+  como haber contestado: eso lo hacen los dos botones de la tarjeta.
 
 ## Trampas que ya costaron encontrarse
 

@@ -126,6 +126,26 @@ test.describe("Capturas", () => {
     }
     await foto("6-ajustes-desbloqueo");
 
+    // La casilla de la pantalla de desbloquear, la otra cara de la sugerencia.
+    // Hace falta quitarlo antes: la casilla solo sale si **no** está puesto, que
+    // es lo mismo que hace que exista.
+    if (await interruptor.isChecked()) {
+      await interruptor.click();
+      await page.waitForTimeout(1200);
+    }
+    await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
+    await boton("Cerrar la bóveda").click();
+    await page.locator("#boveda-activar-al-abrir").waitFor({ state: "visible", timeout: 20_000 });
+    await page.waitForTimeout(300);
+    await foto("6d-casilla-al-abrir");
+    await page.locator("#boveda-llave").fill(maestra);
+    await boton("Abrir la bóveda").click();
+    await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
+    await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
+    const i2 = page.locator("#desbloqueo-del-sistema");
+    await i2.waitFor({ state: "visible", timeout: 20_000 });
+    if (!(await i2.isChecked())) { await i2.click(); await page.waitForTimeout(1200); }
+
     // **En reposo**: el llavero dice que no, así que la pantalla se queda con la
     // huella quieta. Si dijera que sí abriría sola y no habría nada que retratar.
     await page.request.get("/api/_llavero?dice=no");

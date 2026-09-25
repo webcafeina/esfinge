@@ -46,6 +46,24 @@ test.beforeEach(async ({ request }) => {
   expect(r.ok(), await r.text()).toBe(true);
 });
 
+/**
+ * Deja las preferencias como si nunca se hubiera ofrecido el desbloqueo.
+ *
+ * Va **por el mismo puente que usa la ventana** —`POST /api/<Método>` con los
+ * argumentos en una lista—, no tocando el fichero: así la prueba no depende de
+ * dónde vive ni de cómo se serializa.
+ *
+ * Y manda el objeto entero de vuelta a propósito: `GuardarPreferencias` lo recibe
+ * completo, y un `{desbloqueoSugerido:false}` a secas llegaría con los dos relojes
+ * de la bóveda a cero.
+ */
+async function volverAOfrecerElDesbloqueo(page: Page) {
+  const antes = await (await page.request.post("/api/VerPreferencias", { data: [] })).json();
+  await page.request.post("/api/GuardarPreferencias", {
+    data: [{ ...antes, desbloqueoSugerido: false }],
+  });
+}
+
 function vigilarConsola(page: Page): string[] {
   const errores: string[] = [];
   page.on("console", (m) => m.type() === "error" && errores.push(m.text()));
@@ -1511,13 +1529,39 @@ test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ 
   const ofrecer = page.locator("#sugerencia-activar");
   await expect(ofrecer).toBeVisible({ timeout: 20_000 });
   await expect(ofrecer).toHaveText(/Touch ID/);
-  await ofrecer.click();
-  // Y no desaparece sin más: dice que está hecho. Lo que cambia —la pantalla de
-  // desbloquear— no se ve hasta la próxima vez.
-  await expect(page.getByText("Touch ID activado")).toBeVisible({ timeout: 20_000 });
 
-  // En Ajustes aparece ya marcado, y ahí es donde se dice lo que protege y lo que
-  // no.
+  // Y «Ahora no» la quita **para siempre**, no hasta la próxima vez: una tarjeta
+  // que reaparece cada vez que abres la bóveda deja de ser una sugerencia.
+  await page.locator("#sugerencia-ahora-no").click();
+  await expect(ofrecer).toHaveCount(0);
+  await accion(page, "Cerrar la bóveda").click();
+  await expect(page.locator("#boveda-activar-al-abrir")).toHaveCount(0);
+  await page.locator("#boveda-llave").fill(MAESTRA);
+  await accion(page, "Abrir la bóveda").click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+  await expect(ofrecer).toHaveCount(0);
+
+  // **Y la otra forma de ofrecerlo: la casilla de la pantalla de desbloquear**
+  // (2.27.3). Activarlo exige la bóveda abierta, así que ahí no puede haber un
+  // botón que lo haga; lo que hay es una casilla que lo deja activado **al
+  // abrir**, con la maestra recién escrita.
+  //
+  // Se vuelve a poner como si no se hubiera ofrecido, por el mismo puente que usa
+  // la ventana: en una tanda la bóveda es la misma, y la tarjeta de arriba ya ha
+  // gastado su turno.
+  await volverAOfrecerElDesbloqueo(page);
+  await accion(page, "Cerrar la bóveda").click();
+  const casilla = page.locator("#boveda-activar-al-abrir");
+  await expect(casilla).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator("label", { has: casilla })).toContainText("Touch ID");
+  await casilla.click();
+  await expect(casilla).toBeChecked();
+  await page.locator("#boveda-llave").fill(MAESTRA);
+  await accion(page, "Abrir la bóveda").click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
+  // En Ajustes aparece ya marcado —lo activó abrir, no un botón de allí—, y ahí
+  // es donde se dice lo que protege y lo que no.
   await seccion(page, "Ajustes").click();
   const interruptor = page.locator("#desbloqueo-del-sistema");
   await expect(interruptor).toBeVisible({ timeout: 20_000 });

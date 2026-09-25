@@ -7,6 +7,12 @@ Plantilla al final.
 
 ## 2026-09-25 (tarde) · La huella deja de ser un botón, y la bóveda la ofrece sola
 
+- **2.27.3**: el cliente esperaba la sugerencia **también con la bóveda cerrada**. Tenía razón en el sitio
+  y no cabía un botón: activarlo exige la bóveda abierta, que es lo que impide encenderlo sin saber la
+  maestra. Sale como **casilla** —«Abrir con Touch ID a partir de ahora»—, que cumple la condición entera:
+  se marca, se teclea la maestra y queda activado al abrir. Marcarla no cuenta como haber contestado, y si
+  el sistema falla al activar no se dice nada ahí: la tarjeta de dentro lo vuelve a ofrecer, que es la
+  señal y el sitio donde reintentarlo.
 - **2.27.2**: de probar la 2.27.1 salió lo siguiente —«de primeras debería sugerirte activar el Touch ID si
   es un Mac»—. Ahora la bóveda lo ofrece en una tarjeta arriba: **solo donde hay biometría** —donde no la
   hay no se dice nada, que es ruido sobre algo que no se puede arreglar—, **una vez** y **diciendo que es

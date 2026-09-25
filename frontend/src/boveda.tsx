@@ -507,13 +507,43 @@ function Cerrada({
   // ofrece si este equipo lo tiene y esta bóveda lo lleva puesto**: donde no hay,
   // no se enseña nada en vez de un botón que no puede funcionar.
   const [delSistema, setDelSistema] = useState<EstadoDesbloqueo | null>(null);
+  // **Y ofrecerlo aquí, que es donde duele.** Activarlo exige la bóveda abierta
+  // —es lo que impide encenderlo sin saber la maestra—, así que en esta pantalla
+  // no puede haber un botón que lo haga. Lo que sí puede haber es una casilla:
+  // se marca, se teclea la maestra, y al abrir queda activado. Sigue exigiendo la
+  // maestra, que es la condición entera, y ataja justo cuando estás a punto de
+  // escribirla otra vez. Lo pidió el cliente al ver que la tarjeta solo salía
+  // dentro (2026-09-25).
+  const [prefs, setPrefs] = useState<Preferencias | null>(null);
+  const [activarAlAbrir, setActivarAlAbrir] = useState(false);
 
   useEffect(() => {
     esfinge
       .estadoDelDesbloqueo()
       .then(setDelSistema)
       .catch(() => setDelSistema(null));
+    esfinge
+      .verPreferencias()
+      .then(setPrefs)
+      .catch(() => setPrefs(null));
   }, []);
+
+  // **Marcar la casilla no cuenta como haber contestado.** Lo que apunta «ya se
+  // ofreció» es activarlo o decir «ahora no» en la tarjeta de dentro; si esto lo
+  // apuntara, quien la deja sin marcar se quedaría sin la tarjeta y sin saber que
+  // existe la función.
+  async function activarSiSePidio() {
+    if (!activarAlAbrir) return;
+    try {
+      await esfinge.activarDesbloqueo();
+      if (prefs) await esfinge.guardarPreferencias({ ...prefs, desbloqueoSugerido: true });
+    } catch {
+      // **Si el sistema falla no se dice nada aquí**, y no es dejarlo en silencio:
+      // la bóveda ya se está abriendo y esta pantalla desaparece. Como no se
+      // apunta nada, la tarjeta de dentro lo vuelve a ofrecer, que es la señal de
+      // que no llegó a activarse y además el sitio donde se puede reintentar.
+    }
+  }
 
   // **La huella se pide sola al llegar**, que es lo que se decidió con el cliente
   // (2026-09-25): un botón más no es desbloquear con el sistema, es un botón. Lo
@@ -566,6 +596,7 @@ function Cerrada({
     try {
       await esfinge.abrirBoveda(llave);
       setLlave("");
+      await activarSiSePidio();
       alAbrir();
     } catch (e) {
       const estado = cuenta?.modo === "cuenta" ? await esfinge.estadoDeCuenta().catch(() => null) : null;
@@ -587,6 +618,7 @@ function Cerrada({
       setLlave("");
       setCodigo("");
       setPidiendoCodigo(false);
+      await activarSiSePidio();
       alAbrir();
     } catch (e) {
       setError(mensaje(e));
@@ -693,6 +725,21 @@ function Cerrada({
           />
         </div>
       </div>
+
+      {/* La otra cara de la huella de arriba: si este equipo puede y esta bóveda
+          no lo lleva, se ofrece aquí mismo. Nunca salen las dos. */}
+      {delSistema?.hay && !delSistema.puesto && prefs && !prefs.desbloqueoSugerido && (
+        <label className="fila-ajuste">
+          <input
+            id="boveda-activar-al-abrir"
+            type="checkbox"
+            checked={activarAlAbrir}
+            disabled={trabajando}
+            onChange={(e) => setActivarAlAbrir(e.target.checked)}
+          />
+          <span>Abrir con {delSistema.nombre} a partir de ahora</span>
+        </label>
+      )}
 
       {error && <p className="error">{error}</p>}
 
