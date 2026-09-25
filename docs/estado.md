@@ -30,7 +30,12 @@ activarlo el llavero no pregunta nada**, que era media decisión 3 del documento
 permiso el llavero? El binario cambia y Esfinge no está firmada, así que puede. De la respuesta depende si
 hace falta decir algo en la pantalla.
 
-### Y de probarlo salió el rediseño de la pantalla (2.27.1)
+**Y la 2.27.1 es el experimento que contesta esa mitad**, sin montar nada: se actualiza desde la 2.27.0
+**con Touch ID ya activado**, así que al abrir después se ve si el llavero vuelve a preguntar. Si pregunta,
+se contesta «Permitir siempre» y se anota; si fallara, el arreglo está decidido —borrar la ranura y pedir
+que se active otra vez— y hay que decirlo en la pantalla.
+
+### Y de probarlo salió el rediseño de la pantalla (2.27.1, publicada en verde)
 
 El cliente lo dijo claro: *«el uso del Touch ID debe ser más visual, no con un botón. Que primeramente te
 ofrezca el Touch ID si está activado, con una animación visual, de huella o algo»*. Está en la

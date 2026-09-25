@@ -7,6 +7,10 @@ Plantilla al final.
 
 ## 2026-09-25 (tarde) · La huella deja de ser un botón
 
+- **Publicada la 2.27.1**, los siete trabajos en verde. Y es además **el experimento que contesta la otra
+  mitad de la decisión 3**: se actualiza desde la 2.27.0 con Touch ID ya activado, así que al abrir se ve
+  si el llavero vuelve a preguntar. No hubo que montar nada; bastaba con publicar la siguiente.
+
 - **La 2.27.0 probada en el Mac del cliente: todo correcto**, y **el llavero no pregunta nada al
   activarlo**. Queda la otra mitad de la decisión 3 —qué pasa al actualizar—, que solo contesta la versión
   siguiente.
