@@ -1110,6 +1110,35 @@ p {
  * sin motivo. Lo que dice «te estoy esperando» es el latido de las crestas, y con
  * eso basta. Se vio mirando la captura, no razonándolo. */
 
+/* La tarjeta que ofrece activarlo, arriba de la bóveda abierta y una sola vez.
+ *
+ * Es una fila —dibujo a la izquierda, texto y botones a la derecha— y no una
+ * columna como la pantalla de desbloquear: allí la huella **es** la acción; aquí
+ * solo dice de qué va lo que se lee al lado. */
+.sugerencia {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--espacio-4);
+}
+
+/* Más pequeña que la de desbloquear: aquí acompaña, no manda. */
+.sugerencia .dactilar {
+  width: 40px;
+  height: 40px;
+  color: var(--acento);
+}
+
+.sugerencia-texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  min-width: 0;
+}
+
+.sugerencia-texto p {
+  margin: 0;
+}
+
 /* El «o» entre la huella y la contraseña maestra: dice que son dos caminos para
  * lo mismo, no un paso detrás de otro. */
 .o-bien {

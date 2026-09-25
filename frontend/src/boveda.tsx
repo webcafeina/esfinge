@@ -8,6 +8,7 @@ import {
   type EnvioRecibido,
   type EstadoBoveda,
   type EstadoDesbloqueo,
+  type Preferencias,
   type ResumenImportacion,
   type TipoEntrada,
   alCambiarLaBoveda,
@@ -360,6 +361,120 @@ function HuellaDactilar() {
         <path d="M5 32L5 24A17 19.5 0 0 1 39 24L39 36.5" />
       </g>
     </svg>
+  );
+}
+
+/**
+ * «¿Quieres abrirla con Touch ID?», **una vez y donde se ve**.
+ *
+ * El interruptor vive en Ajustes, y ahí no entra quien no sabe que existe: sin
+ * esto, desbloquear con el sistema es una función que solo encuentra el que ya la
+ * estaba buscando. Lo pidió el cliente al probar la 2.27.1.
+ *
+ * Tres reglas de esta tarjeta:
+ *
+ *   - **Solo donde se puede**: si este equipo no tiene biometría, no se ofrece
+ *     nada. Nada de «tu equipo no lo admite», que es ruido sobre algo que no se
+ *     puede arreglar.
+ *   - **Una vez.** Se apunta en las preferencias —locales, como la propia ranura—
+ *     tanto si se acepta como si no. Una sugerencia que vuelve cada día deja de
+ *     ser una sugerencia.
+ *   - **Y dice lo que es.** Aquí se repite lo que ya dice Ajustes, porque es
+ *     donde se decide: esto es un cerrojo, no cambia quién puede abrir la bóveda
+ *     desde dentro de este ordenador.
+ */
+function SugerirDesbloqueo() {
+  const [estado, setEstado] = useState<EstadoDesbloqueo | null>(null);
+  const [prefs, setPrefs] = useState<Preferencias | null>(null);
+  const [trabajando, setTrabajando] = useState(false);
+  const [hecho, setHecho] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    void Promise.all([
+      esfinge.estadoDelDesbloqueo().catch(() => null),
+      esfinge.verPreferencias().catch(() => null),
+    ]).then(([e, p]) => {
+      setEstado(e);
+      setPrefs(p);
+    });
+  }, []);
+
+  // Se calla mientras no sepa las dos cosas: enseñarla y quitarla medio segundo
+  // después es peor que tardar medio segundo en enseñarla.
+  if (!estado || !prefs) return null;
+  // Tras activarlo la tarjeta **se queda diciendo que está hecho** en vez de
+  // desaparecer: quien acaba de pulsar un botón necesita saber que pasó algo, y
+  // lo que cambia —la pantalla de desbloquear— no se ve hasta la próxima vez.
+  if (!hecho && (!estado.hay || estado.puesto || prefs.desbloqueoSugerido)) return null;
+
+  // **Se manda el objeto entero**, que es como `GuardarPreferencias` lo recibe:
+  // mandar `{desbloqueoSugerido:true}` a secas llegaría con los dos relojes de la
+  // bóveda a cero al deserializar.
+  const noVolverAOfrecer = () => esfinge.guardarPreferencias({ ...prefs, desbloqueoSugerido: true });
+
+  async function activar() {
+    setTrabajando(true);
+    setError("");
+    try {
+      await esfinge.activarDesbloqueo();
+      await noVolverAOfrecer();
+      setEstado({ ...estado!, puesto: true });
+      setHecho(true);
+    } catch (e) {
+      setError(mensaje(e));
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  async function ahoraNo() {
+    await noVolverAOfrecer();
+    setPrefs({ ...prefs!, desbloqueoSugerido: true });
+  }
+
+  return (
+    <div className="grupo sugerencia">
+      <HuellaDactilar />
+      <div className="sugerencia-texto">
+        {hecho ? (
+          <p>
+            <strong>{estado.nombre} activado.</strong> La próxima vez que abras la bóveda te lo pedirá.
+            Se quita en Ajustes.
+          </p>
+        ) : (
+          <>
+            <p>
+              <strong>Puedes abrir esta bóveda con {estado.nombre}</strong>, sin escribir la contraseña
+              maestra cada vez. Se activa aquí y se quita cuando quieras, en Ajustes.
+            </p>
+            <p className="nota">
+              Protege de quien se siente delante de tu ordenador desbloqueado, no de un programa que
+              corra en él. La contraseña maestra y la clave de recuperación siguen haciendo falta.
+            </p>
+            {error && <p className="error">{error}</p>}
+            <div className="botones">
+              <button
+                id="sugerencia-activar"
+                className="principal"
+                onClick={activar}
+                disabled={trabajando}
+              >
+                {trabajando ? "Activando…" : `Activar ${estado.nombre}`}
+              </button>
+              <button
+                id="sugerencia-ahora-no"
+                className="discreto"
+                onClick={ahoraNo}
+                disabled={trabajando}
+              >
+                Ahora no
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -856,6 +971,9 @@ function Dentro({
 
   return (
     <div className="panel">
+      {/* Arriba del todo y antes de la barra: es lo primero que se ve al abrir la
+          bóveda, y solo la primera vez. */}
+      <SugerirDesbloqueo />
       <div className="boveda-barra">
         <input
           id="boveda-buscar"

@@ -110,6 +110,13 @@ test.describe("Capturas", () => {
     }
     await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
 
+    // La bóveda lo ofrece sola la primera vez, y eso es lo primero que se ve.
+    await page.locator("#sugerencia-activar").waitFor({ state: "visible", timeout: 20_000 });
+    await page.waitForTimeout(400);
+    await foto("6a-sugerencia");
+    await page.locator("#sugerencia-activar").screenshot({ path: `${donde}/6b-sugerencia-cerca-${tema}.png`, scale: "css" });
+    await page.locator(".sugerencia").screenshot({ path: `${donde}/6c-sugerencia-tarjeta-${tema}.png`, scale: "css" });
+
     await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
     const interruptor = page.locator("#desbloqueo-del-sistema");
     await interruptor.waitFor({ state: "visible", timeout: 20_000 });

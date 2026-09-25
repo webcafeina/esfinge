@@ -209,6 +209,11 @@ No se cambian sin preguntar.
   debajo separada por un «o». El coste lo eligió sabiéndolo: **para teclear la maestra hay que cancelar el
   diálogo primero**. El dibujo es nuestro —el glifo de Touch ID es de Apple—, igual que los glifos de los
   gestores.
+  **Y la bóveda lo ofrece sola la primera vez**, en una tarjeta arriba: el interruptor vive en Ajustes y
+  ahí no entra quien no sabe que existe. **Solo donde hay biometría** —donde no la hay no se dice nada, que
+  es ruido sobre algo que no se puede arreglar—, **una sola vez** —se apunta al contestar, en las
+  preferencias, que son locales como la ranura— y **diciendo que es un cerrojo**, porque ofrecerlo sin
+  decirlo sería venderlo.
 
 ## Trampas que ya costaron encontrarse
 

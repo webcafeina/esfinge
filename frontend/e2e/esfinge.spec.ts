@@ -1504,17 +1504,25 @@ test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ 
   await page.goto("/");
   await conLaBovedaAbierta(page);
 
-  // Se activa en Ajustes, que es donde se dice lo que protege y lo que no.
+  // **La bóveda lo ofrece sola la primera vez** (2.27.2), que es lo que impide
+  // que esto sea una función que solo encuentra quien ya la buscaba: el
+  // interruptor vive en Ajustes y ahí no entra quien no sabe que existe.
+  await seccion(page, "Bóveda").click();
+  const ofrecer = page.locator("#sugerencia-activar");
+  await expect(ofrecer).toBeVisible({ timeout: 20_000 });
+  await expect(ofrecer).toHaveText(/Touch ID/);
+  await ofrecer.click();
+  // Y no desaparece sin más: dice que está hecho. Lo que cambia —la pantalla de
+  // desbloquear— no se ve hasta la próxima vez.
+  await expect(page.getByText("Touch ID activado")).toBeVisible({ timeout: 20_000 });
+
+  // En Ajustes aparece ya marcado, y ahí es donde se dice lo que protege y lo que
+  // no.
   await seccion(page, "Ajustes").click();
   const interruptor = page.locator("#desbloqueo-del-sistema");
   await expect(interruptor).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText("no de un programa que corra en él")).toBeVisible();
-  // **Con `click` y no con `check`.** Esta casilla no se marca sola: se desactiva,
-  // se lo pide a Go y se vuelve a dibujar con lo que Go conteste, como el resto de
-  // Ajustes. `check` exige que el estado cambie en el mismo clic y falla con
-  // «clicking the checkbox did not change its state».
-  await interruptor.click();
   await expect(interruptor).toBeChecked({ timeout: 20_000 });
+  await expect(page.getByText("no de un programa que corra en él")).toBeVisible();
 
   // **El llavero diciendo que no**, que es la única forma de llegar al campo de la
   // maestra desde que la huella se pide sola: en un Mac se cancela el diálogo, y
@@ -1565,6 +1573,11 @@ test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ 
   await page.locator("#boveda-llave").fill(MAESTRA);
   await accion(page, "Abrir la bóveda").click();
   await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
+  // **Y la sugerencia no vuelve**, aunque el desbloqueo se haya quitado: se
+  // ofreció y se contestó. Una tarjeta que reaparece cada vez que abres la bóveda
+  // deja de ser una sugerencia y pasa a ser una insistencia.
+  await expect(page.locator("#sugerencia-activar")).toHaveCount(0);
 
   // **Los 400 esperados se descuentan, y solo aquí.** En el servidor de
   // desarrollo *cualquier* error de Go vuelve como 400, así que cancelar la huella

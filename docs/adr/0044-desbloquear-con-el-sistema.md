@@ -78,6 +78,24 @@ animación visual, de huella o algo»*. Así que:
 - **El dibujo es nuestro.** El glifo de Touch ID es de Apple; esto son arcos a trazo en `currentColor`,
   por la misma razón por la que los glifos de los gestores no son sus logotipos.
 
+### Y la bóveda lo ofrece sola la primera vez
+
+**Decidido con el cliente el 2026-09-25**, al probar la 2.27.1: *«de primeras debería sugerirte activar el
+Touch ID si es un Mac (o el método que corresponda según el sistema)»*. Sin eso, desbloquear con el sistema
+es una función que **solo encuentra quien ya la estaba buscando**: el interruptor vive en Ajustes.
+
+Una tarjeta arriba de la bóveda abierta, con tres reglas:
+
+- **Solo donde se puede.** Si el equipo no tiene biometría no se ofrece nada, y **no se dice que no la
+  tiene**: es ruido sobre algo que no se puede arreglar.
+- **Una vez.** Se apunta en las preferencias —locales, como la propia ranura— al contestar, con cualquiera
+  de los dos botones. Vuelve mientras no se conteste, y no vuelve nunca después.
+- **Y dice lo que es**, repitiendo lo de Ajustes: es un cerrojo, y la maestra y la clave de recuperación
+  siguen haciendo falta. Ofrecerlo sin decirlo sería venderlo.
+
+Que la marca sea local importa: en un equipo sin biometría la sugerencia no tiene sentido, y haberla
+descartado en el portátil no dice nada del ordenador de la oficina.
+
 ### Y esto no cuenta como actividad
 
 Leer el secreto es parte de abrir, y abrir ya toca el reloj por su cuenta. Es la regla de siempre —lo que

@@ -35,7 +35,7 @@ hace falta decir algo en la pantalla.
 se contesta «Permitir siempre» y se anota; si fallara, el arreglo está decidido —borrar la ranura y pedir
 que se active otra vez— y hay que decirlo en la pantalla.
 
-### Y de probarlo salió el rediseño de la pantalla (2.27.1, publicada en verde)
+### Y de probarlo salió el rediseño de la pantalla (2.27.1 y 2.27.2, publicadas en verde)
 
 El cliente lo dijo claro: *«el uso del Touch ID debe ser más visual, no con un botón. Que primeramente te
 ofrezca el Touch ID si está activado, con una animación visual, de huella o algo»*. Está en la
@@ -46,6 +46,10 @@ ofrezca el Touch ID si está activado, con una animación visual, de huella o al
 - **La huella manda**: 72 px dentro de su tarjeta, con la maestra debajo separada por un «o», y **late
   mientras espera**. En reposo se queda quieta.
 - **El dibujo es nuestro**, a trazo: el glifo de Touch ID es de Apple.
+
+**Y de probar la 2.27.1, la 2.27.2**: *«de primeras debería sugerirte activar el Touch ID si es un Mac»*.
+Ahora la bóveda lo ofrece sola en una tarjeta arriba, **solo donde hay biometría**, **una vez** —se apunta
+al contestar, en las preferencias, que son locales como la ranura— y **diciendo que es un cerrojo**.
 
 Y salieron dos cosas que ninguna prueba en verde dijo y sí dijo mirar la captura: **el dibujo medía 0 de
 alto** —todos los botones miden 28 px y lo de dentro se encogía— y **la clase `.huella` ya existía**, la de

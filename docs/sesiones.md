@@ -5,7 +5,13 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
-## 2026-09-25 (tarde) · La huella deja de ser un botón
+## 2026-09-25 (tarde) · La huella deja de ser un botón, y la bóveda la ofrece sola
+
+- **2.27.2**: de probar la 2.27.1 salió lo siguiente —«de primeras debería sugerirte activar el Touch ID si
+  es un Mac»—. Ahora la bóveda lo ofrece en una tarjeta arriba: **solo donde hay biometría** —donde no la
+  hay no se dice nada, que es ruido sobre algo que no se puede arreglar—, **una vez** y **diciendo que es
+  un cerrojo**. La marca de «ya se ofreció» va en las preferencias, que son **locales como la ranura**:
+  haberla descartado en el portátil no dice nada del ordenador de la oficina.
 
 - **Publicada la 2.27.1**, los siete trabajos en verde. Y es además **el experimento que contesta la otra
   mitad de la decisión 3**: se actualiza desde la 2.27.0 con Touch ID ya activado, así que al abrir se ve

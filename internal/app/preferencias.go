@@ -75,6 +75,21 @@ type Preferencias struct {
 	// bóveda: un guardado a medias llega con `false` y **apaga** el canal, que es
 	// el lado seguro de equivocarse.
 	PuenteDelNavegador bool `json:"puenteDelNavegador"`
+
+	// DesbloqueoSugerido marca que ya se ofreció desbloquear con el sistema
+	// (2.27.2). La bóveda lo propone **una vez** a quien tiene Touch ID o Windows
+	// Hello y no lo lleva puesto, porque el interruptor vive en Ajustes y ahí no
+	// entra quien no sabe que existe.
+	//
+	// **Es local a propósito, como la ranura que ofrece.** Las preferencias no se
+	// sincronizan, y eso es lo correcto: en un equipo sin biometría esta sugerencia
+	// no tiene sentido, y haberla descartado en el portátil no dice nada del
+	// ordenador de la oficina.
+	//
+	// Con la regla del cero juega a favor, como `IconosAvisados`: un guardado a
+	// medias llega con `false` y lo único que hace es volver a ofrecerlo una vez.
+	// Molesto y visible, no silencioso.
+	DesbloqueoSugerido bool `json:"desbloqueoSugerido"`
 }
 
 // Nunca es lo que se manda para apagar uno de los dos relojes.

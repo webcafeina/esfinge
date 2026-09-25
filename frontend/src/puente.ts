@@ -120,6 +120,11 @@ export type Preferencias = {
    * **Viene apagado**: esto no sale a la red, abre una puerta a esta máquina.
    */
   puenteDelNavegador: boolean;
+  /**
+   * Si ya se ofreció desbloquear con el sistema. Se ofrece **una vez**, porque el
+   * interruptor vive en Ajustes y ahí no entra quien no sabe que existe.
+   */
+  desbloqueoSugerido: boolean;
 };
 
 /** Lo que se manda para apagar uno de los dos relojes de la bóveda. */
