@@ -204,6 +204,11 @@ No se cambian sin preguntar.
   Y una decisión técnica de la misma familia: **el secreto va al llavero del sistema, nunca a un fichero
   al lado de la bóveda**, porque entonces quien copiara la carpeta abriría la bóveda sin poner el dedo —eso
   no es un cerrojo peor, es quitar la puerta—.
+  **Y la huella se pide sola al llegar a la pantalla** (2026-09-25, tras probarlo él): un botón más no es
+  desbloquear con el sistema. La huella manda en la pantalla, **late mientras espera** y la maestra queda
+  debajo separada por un «o». El coste lo eligió sabiéndolo: **para teclear la maestra hay que cancelar el
+  diálogo primero**. El dibujo es nuestro —el glifo de Touch ID es de Apple—, igual que los glifos de los
+  gestores.
 
 ## Trampas que ya costaron encontrarse
 
@@ -435,6 +440,19 @@ por su cuenta: **un `<strong>` en medio de una frase se sale a una columna apart
 en vertical, partida en pedazos. No se notó mientras todos los avisos fueron texto pelado, y se vio
 mirando una captura, no en una prueba en verde. Lo que se quería es una sangría francesa
 —`padding-left` más `text-indent` negativo—, y hay una prueba de interfaz que lo vigila.
+
+**Todos los botones miden 28 px de alto, y dentro de uno alto lo que hay se encoge a cero.** La regla
+general de `button` fija `height: 28px`, que es lo correcto para un control del sistema; la huella de
+desbloquear es un botón en columna con un dibujo de 72 px dentro, y sin `height: auto` el dibujo —que es un
+elemento flexible más, y `flex-shrink` vale 1 de fábrica— **salía midiendo 72 de ancho y 0 de alto**. Se
+veía como un botón con su rótulo y sin dibujo, y **no lo dijo ninguna prueba**: se vio sacando la captura y
+mirándola, y la causa la dijo preguntarle a la página por la caja del elemento, no razonar sobre el CSS.
+
+Y con ello, el que costó buscar la causa en el sitio equivocado: **antes de estrenar una clase de CSS hay
+que mirar si ya existe**. `.huella` ya era la huella de identidad que se enseña al compartir —un `<code>`
+en monoespaciada— y la clase nueva del dibujo le estaba poniendo 72×72 **en todas las pantallas de
+compartir**. Aquí conviven dos cosas que se llaman igual en español y no lo son: la huella criptográfica
+(`huella`) y la dactilar (`dactilar`).
 
 **Una respuesta que llega tarde puede deshacer lo que ya se decidió.** Las preferencias se leen más
 de una vez —al montar Ajustes y otra vez al terminar de buscar actualizaciones— y una lectura pedida

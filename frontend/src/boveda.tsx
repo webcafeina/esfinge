@@ -327,6 +327,42 @@ export function Ceremonia({
   );
 }
 
+/**
+ * La huella de la pantalla de desbloquear.
+ *
+ * **Dibujada aquí y no tomada de nadie.** El glifo de Touch ID es de Apple, y la
+ * regla de los glifos de los gestores vale igual para esto: nombrar el producto
+ * con el que se interopera es legítimo —«Touch ID» va escrito al lado— pero
+ * calcar su marca dentro del binario es otra cosa. Son arcos nuestros.
+ *
+ * Va a trazo y en `currentColor`, como la marca, para poder teñirla desde CSS: el
+ * color es `--acento`, **nunca el oro**, que como línea sobre fondo claro da
+ * 1,37-1,68:1 y desaparece.
+ *
+ * Y el grosor va **en el grupo**, no en el `svg`: un atributo de presentación en
+ * el grupo le gana a lo que se herede, así que puesto arriba no haría nada. Eso
+ * ya cortó la esfinge del panel en la 2.20.0.
+ */
+function HuellaDactilar() {
+  return (
+    <svg className="dactilar" viewBox="0 0 44 44" aria-hidden="true" focusable="false">
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M19 27.5L19 24A3 3.5 0 0 1 25 24L25 30.5" />
+        <path d="M15.5 31.5L15.5 24A6.5 7.5 0 0 1 28.5 24L28.5 27.5" />
+        <path d="M12 27.5L12 24A10 11.5 0 0 1 32 24L32 34.5" />
+        <path d="M8.5 35.5L8.5 24A13.5 15.5 0 0 1 35.5 24L35.5 30" />
+        <path d="M5 32L5 24A17 19.5 0 0 1 39 24L39 36.5" />
+      </g>
+    </svg>
+  );
+}
+
 function Cerrada({
   estado,
   alAbrir,
@@ -364,7 +400,33 @@ function Cerrada({
       .catch(() => setDelSistema(null));
   }, []);
 
+  // **La huella se pide sola al llegar**, que es lo que se decidió con el cliente
+  // (2026-09-25): un botón más no es desbloquear con el sistema, es un botón. Lo
+  // que se paga está dicho y es real: si lo que quieres es teclear la maestra,
+  // primero hay que cancelar el diálogo del sistema.
+  //
+  // El cerrojo **no es una optimización**. `StrictMode` monta dos veces en
+  // desarrollo, y sin él el diálogo de macOS saldría por duplicado; y tras
+  // cancelar no se vuelve a pedir sola, porque insistir en un diálogo modal que
+  // alguien acaba de cerrar es pelearse con quien lo cerró.
+  const yaPedida = useRef(false);
+  const conHuella = Boolean(delSistema?.hay && delSistema.puesto);
+
+  useEffect(() => {
+    if (!conHuella || yaPedida.current) return;
+    yaPedida.current = true;
+    void abrirConElSistema();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conHuella]);
+
+  // **Su propio estado, y no `trabajando`.** Los dos caminos abren la bóveda, pero
+  // solo uno tiene un diálogo del sistema delante: compartiendo el estado, teclear
+  // la maestra ponía la huella a decir «pon el dedo» sin que nadie lo hubiera
+  // pedido.
+  const [esperandoHuella, setEsperandoHuella] = useState(false);
+
   async function abrirConElSistema() {
+    setEsperandoHuella(true);
     setTrabajando(true);
     setError("");
     try {
@@ -378,6 +440,7 @@ function Cerrada({
       // Y si el sistema ya no abre esta bóveda, deja de ofrecerse.
       setDelSistema(await esfinge.estadoDelDesbloqueo().catch(() => null));
     } finally {
+      setEsperandoHuella(false);
       setTrabajando(false);
     }
   }
@@ -473,6 +536,35 @@ function Cerrada({
         <p className="aviso">{cuenta.sincro.mensaje}</p>
       )}
 
+      {/* **La huella va primero y ocupa sitio**, que es de lo que se trata: si
+          esto está puesto, es la forma normal de entrar y la maestra es el
+          respaldo. Antes era un botón más debajo del primario, y un botón más no
+          se lee como «pon el dedo». */}
+      {conHuella && delSistema && (
+        <>
+          <div className="grupo dactilar-zona">
+            <button
+              id="boveda-con-el-sistema"
+              className={"dactilar-boton" + (esperandoHuella ? " esperando" : "")}
+              onClick={abrirConElSistema}
+              disabled={trabajando}
+            >
+              <HuellaDactilar />
+              {/* El nombre va **dentro** del botón: es su nombre accesible, y es
+                  por lo único que se puede localizar sin depender del dibujo. */}
+              <span className="dactilar-pie">
+                {esperandoHuella
+                  ? `Pon el dedo en ${delSistema.nombre}`
+                  : `Abrir con ${delSistema.nombre}`}
+              </span>
+            </button>
+          </div>
+          <p className="o-bien">
+            <span>o</span>
+          </p>
+        </>
+      )}
+
       <div className="grupo">
         <div>
           <label htmlFor="boveda-llave">Contraseña maestra o clave de recuperación</label>
@@ -493,11 +585,6 @@ function Cerrada({
         <button className="principal" onClick={abrir} disabled={!llave || trabajando}>
           {trabajando ? "Abriendo…" : "Abrir la bóveda"}
         </button>
-        {delSistema?.hay && delSistema.puesto && (
-          <button id="boveda-con-el-sistema" onClick={abrirConElSistema} disabled={trabajando}>
-            Abrir con {delSistema.nombre}
-          </button>
-        )}
       </div>
 
       {/* Con cuenta, la contraseña pudo cambiarse en otro equipo, y la de aquí es la

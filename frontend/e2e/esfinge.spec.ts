@@ -1516,20 +1516,41 @@ test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ 
   await interruptor.click();
   await expect(interruptor).toBeChecked({ timeout: 20_000 });
 
-  // Se cierra a mano y la pantalla de desbloquear ofrece la huella.
+  // **El llavero diciendo que no**, que es la única forma de llegar al campo de la
+  // maestra desde que la huella se pide sola: en un Mac se cancela el diálogo, y
+  // aquí no hay diálogo que cancelar. Con esto la prueba ejercita además **el
+  // camino de cancelar**, que hasta ahora no miraba nadie.
+  //
+  // Va **antes** de cerrar la bóveda a propósito: puesto después, entre el cierre
+  // y la orden cabe la huella automática, y lo que se mira depende de quién llegue
+  // primero. Así no hay carrera que valga.
+  await page.request.get("/api/_llavero?dice=no");
   await seccion(page, "Bóveda").click();
   await accion(page, "Cerrar la bóveda").click();
   const conElSistema = page.locator("#boveda-con-el-sistema");
   await expect(conElSistema).toBeVisible({ timeout: 20_000 });
   await expect(conElSistema).toHaveText(/Touch ID/);
+  // Cancelar **no se pinta en rojo**: es una decisión, no un fallo.
+  await expect(page.locator(".panel .error")).toHaveCount(0);
 
-  await conElSistema.click();
-  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
-
-  // **Y la maestra sigue abriendo**: la ranura del sistema nunca es la única.
-  await accion(page, "Cerrar la bóveda").click();
+  // **Y la maestra sigue abriendo** con la ranura del sistema puesta: es la regla
+  // que no se puede romper, y por eso se comprueba sin quitarla antes.
   await page.locator("#boveda-llave").fill(MAESTRA);
   await accion(page, "Abrir la bóveda").click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
+  // **Y ahora que se pide sola al llegar** (2.27.1), sin pulsar nada.
+  //
+  // Se comprueba **recargando** con la bóveda cerrada, y no mirando si se vuelve a
+  // abrir al cerrarla: eso último no distingue «la huella la abrió» de «no llegó a
+  // cerrarse», porque las dos cosas dejan la misma pantalla. Tras recargar, la
+  // bóveda está cerrada sin lugar a dudas y nadie ha tocado nada.
+  await page.request.get("/api/_llavero?dice=no");
+  await accion(page, "Cerrar la bóveda").click();
+  await expect(conElSistema).toBeVisible({ timeout: 20_000 });
+  await page.request.get("/api/_llavero?dice=si");
+  await page.reload();
+  await seccion(page, "Bóveda").click();
   await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
 
   // Y al quitarlo, la pantalla de desbloquear deja de ofrecerlo.
@@ -1545,5 +1566,11 @@ test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ 
   await accion(page, "Abrir la bóveda").click();
   await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
 
-  expect(errores, errores.join(" | ")).toEqual([]);
+  // **Los 400 esperados se descuentan, y solo aquí.** En el servidor de
+  // desarrollo *cualquier* error de Go vuelve como 400, así que cancelar la huella
+  // —que es un final legítimo y la razón de ser de esta prueba— deja su línea en
+  // la consola. En la ventana no pasa: allí no hay HTTP. Lo que no se descuenta es
+  // ningún otro error.
+  const inesperados = errores.filter((e) => !/status of 400/.test(e));
+  expect(inesperados, inesperados.join(" | ")).toEqual([]);
 });

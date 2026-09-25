@@ -1003,6 +1003,132 @@ p {
   border-color: var(--acento);
 }
 
+/* --------------------------------------------- desbloquear con el sistema */
+
+/* La huella de la pantalla de desbloquear (fase C, ADR 0044).
+ *
+ * **Manda en la pantalla a propósito.** Con Touch ID puesto es la forma normal de
+ * entrar, y la contraseña maestra es el respaldo; hasta la 2.27.0 era un botón
+ * más debajo del primario y se leía como una opción cualquiera. */
+.dactilar-zona {
+  align-items: center;
+  /* El grupo trae `padding: var(--espacio-4)`, que para esto queda apretado: la
+   * huella necesita aire alrededor o parece un icono dentro de una caja. */
+  padding: var(--espacio-5) var(--espacio-4);
+}
+
+.dactilar-boton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-3);
+  /* **`height: auto`, y no sobra.** La regla general de `button` da 28 px de alto
+   * a todos los botones, que es lo correcto para un control del sistema y ruina
+   * para éste: en una columna flexible de 28 px, la huella —que es un elemento
+   * flexible más— se encoge hasta **medir cero de alto** y desaparece sin dejar
+   * hueco. Se veía como un botón con su rótulo y sin dibujo, y no lo dijo ninguna
+   * prueba: se vio mirando la captura. Vale para cualquier botón alto que se
+   * añada. */
+  height: auto;
+  /* Sin aspecto de botón: lo que se pulsa es la huella, y un marco alrededor la
+   * devolvería a ser «un botón más», que es justo lo que se estaba quitando. */
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: var(--espacio-2) var(--espacio-4);
+  border-radius: var(--radio-grande);
+  color: var(--acento);
+  cursor: pointer;
+}
+
+/* El fondo al pasar por encima es el de la superficie elevada, no un relleno de
+ * acento: esto no es una acción primaria pintada de oro, es una invitación. */
+.dactilar-boton:hover:not(:disabled) {
+  background: var(--elevada);
+}
+
+/* **Deshabilitado no puede significar apagado aquí.** Mientras el diálogo del
+ * sistema está delante, el botón no se puede pulsar, y con el gris de siempre la
+ * huella se borraría justo cuando es lo único que hay que mirar. */
+.dactilar-boton:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.dactilar {
+  width: 72px;
+  height: 72px;
+  /* Y que no la encoja nadie: es un elemento flexible dentro de una columna, y
+   * el valor de fábrica de `flex-shrink` es 1. */
+  flex: none;
+}
+
+.dactilar-pie {
+  font-size: var(--texto-grande);
+  color: var(--acento);
+}
+
+/* El latido, que es lo que dice «te estoy esperando».
+ *
+ * Va de dentro hacia fuera, como se lee una huella, y **solo mientras el diálogo
+ * del sistema está abierto**: en reposo se queda quieta, porque una pantalla que
+ * parpadea sin que nadie haya pedido nada es un nervio, no una invitación.
+ *
+ * La regla global de `prefers-reduced-motion` de más arriba la apaga entera. */
+@keyframes dactilar-latido {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  45% {
+    opacity: 1;
+  }
+}
+
+.dactilar-boton.esperando .dactilar path {
+  animation: dactilar-latido 1.8s ease-in-out infinite;
+}
+.dactilar-boton.esperando .dactilar path:nth-child(1) {
+  animation-delay: 0s;
+}
+.dactilar-boton.esperando .dactilar path:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.dactilar-boton.esperando .dactilar path:nth-child(3) {
+  animation-delay: 0.24s;
+}
+.dactilar-boton.esperando .dactilar path:nth-child(4) {
+  animation-delay: 0.36s;
+}
+.dactilar-boton.esperando .dactilar path:nth-child(5) {
+  animation-delay: 0.48s;
+}
+
+/* **Sin halo.** Se probó un aro de oro pulsando alrededor y en la captura salía
+ * como una placa gris: `box-shadow` con extensión dibuja **un rectángulo
+ * redondeado, no un aro**, y sobre la tarjeta se lee como un recuadro puesto ahí
+ * sin motivo. Lo que dice «te estoy esperando» es el latido de las crestas, y con
+ * eso basta. Se vio mirando la captura, no razonándolo. */
+
+/* El «o» entre la huella y la contraseña maestra: dice que son dos caminos para
+ * lo mismo, no un paso detrás de otro. */
+.o-bien {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  margin: 0;
+  color: var(--apagado);
+  font-size: var(--texto-chico);
+}
+
+.o-bien::before,
+.o-bien::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--filete);
+}
+
 /* ------------------------------------------------------------------- bóveda */
 
 /* La fila de arriba de la bóveda: buscar a la izquierda y las acciones a la

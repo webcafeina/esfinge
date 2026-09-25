@@ -61,6 +61,23 @@ ranura falla. Al revés quedaría una ranura que no abre nadie y un botón que p
 `QuitarDesbloqueo`, al contrario, **quita la ranura aunque el sistema falle al borrar**: lo que importa es
 que la puerta se cierre, y lo que quede suelto en el llavero son bytes que ya no abren nada.
 
+### Y la huella se pide sola al llegar, con la pantalla hecha para ella
+
+**Decidido con el cliente el 2026-09-25, probándolo en su Mac.** La 2.27.0 lo ofrecía como **un botón
+más** debajo del primario, y su respuesta fue que eso no es desbloquear con el sistema: *«el uso del Touch
+ID debe ser más visual, no con un botón. Que primeramente te ofrezca el Touch ID si está activado, con una
+animación visual, de huella o algo»*. Así que:
+
+- **El diálogo del sistema sale al llegar a la pantalla**, sin pulsar nada, como hace Dashlane. Lo eligió
+  él con el coste delante: **para teclear la contraseña maestra hay que cancelar el diálogo primero**, y
+  sale otra vez cada vez que la bóveda se cierra por inactividad.
+- **La huella manda en la pantalla**: un dibujo de 72 px dentro de su tarjeta, con la maestra debajo
+  separada por un «o». Son dos caminos para lo mismo, no un paso detrás de otro.
+- **Y late mientras espera**, de dentro hacia fuera, que es lo que dice «pon el dedo». En reposo —después
+  de cancelar— se queda quieta: una pantalla que parpadea sin que nadie haya pedido nada es un nervio.
+- **El dibujo es nuestro.** El glifo de Touch ID es de Apple; esto son arcos a trazo en `currentColor`,
+  por la misma razón por la que los glifos de los gestores no son sus logotipos.
+
 ### Y esto no cuenta como actividad
 
 Leer el secreto es parte de abrir, y abrir ya toca el reloj por su cuenta. Es la regla de siempre —lo que
@@ -127,11 +144,16 @@ real **sin una línea de código nativo** y se podía probar aquí entera. El cl
   verde en los tres sistemas el 2026-09-24.
 - Y los seis objetivos de la línea de comandos, que ahora cruza `make comprobar`.
 
+**Comprobado en el Mac del cliente con la 2.27.0 (2026-09-25):** arranca, se activa, abre con la huella,
+cancelar vuelve al campo de la contraseña sin error, la maestra sigue abriendo y al quitarlo desaparece.
+**Y al activarlo el llavero no pregunta nada**, que era media decisión 3.
+
 **Lo que no se ha comprobado, y solo puede comprobarse en un Mac de verdad:**
 
-- **Que arranque.** Nada de aquí lo dice.
-- **Qué pregunta el llavero al actualizar**, que es la consecuencia de arriba y la decisión 3 del documento
-  de la fase.
+- **Qué pregunta el llavero al actualizar**, que es la otra mitad de la decisión 3 y **solo la contesta la
+  versión siguiente**: el binario cambia y Esfinge no está firmada.
+- **Cómo se ve el latido en el Mac**, y si el diálogo del sistema al llegar resulta cómodo o cansa cuando
+  la bóveda se cierra sola varias veces al día. Eso es uso, no una prueba.
 - **Cómo se lee el diálogo del sistema** —el motivo que se le pasa sale en pantalla— y si Touch ID responde
   cuando se espera que responda.
 - **Windows entero**: la C3 no está escrita, y cuando lo esté seguirá sin haberse ejecutado nunca en un

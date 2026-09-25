@@ -23,6 +23,15 @@ type DeMentira struct {
 	Lecturas int
 }
 
+// QueDigaQueNo enciende o apaga el «cancelar» desde fuera, con el cerrojo puesto:
+// `DiceQueNo` se lee dentro de `Leer`, así que escribirlo a pelo desde otro hilo
+// —el servidor de desarrollo lo hace desde su manejador HTTP— es una carrera.
+func (l *DeMentira) QueDigaQueNo(sí bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.DiceQueNo = sí
+}
+
 func (l *DeMentira) Nombre() string {
 	if l.ComoSeLlama == "" {
 		return "el sistema"

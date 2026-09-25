@@ -27,6 +27,8 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+
+	"github.com/webcafeina/esfinge/internal/llavero"
 )
 
 // SistemaDeDesarrollo hace de escritorio cuando no hay escritorio.
@@ -120,6 +122,31 @@ func Servir(a *App, s *SistemaDeDesarrollo, direccion string) error {
 	mux.HandleFunc("/api/salud", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"listo":true}`))
+	})
+
+	// **El llavero de mentira, mandado desde la prueba.**
+	//
+	// Desde que la huella se pide sola al llegar (2.27.1), el único camino por el
+	// que se llega a teclear la contraseña maestra con el desbloqueo puesto es
+	// **cancelar el diálogo del sistema**, y eso aquí no lo puede hacer nadie: no
+	// hay diálogo. Sin esto, la prueba de que «la maestra sigue abriendo» dejaría
+	// de comprobar lo que dice.
+	//
+	// Va aquí y **no como método de `App`** a conciencia: todo lo que se exporta
+	// ahí queda expuesto a la ventana por `Bind`, y «haz que el llavero diga que
+	// no» es exactamente la clase de puerta que no se abre por comodidad. Esto
+	// vive tras la etiqueta `dev`, con el resto del servidor, y no existe en el
+	// binario del cliente.
+	mux.HandleFunc("/api/_llavero", func(w http.ResponseWriter, r *http.Request) {
+		l, vale := a.llaveroDelSistema().(*llavero.DeMentira)
+		if !vale {
+			http.Error(w, "Aquí no hay un llavero de mentira", http.StatusNotFound)
+			return
+		}
+		dice := r.URL.Query().Get("dice") == "no"
+		l.QueDigaQueNo(dice)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"diceQueNo":%t}`, dice)
 	})
 
 	mux.HandleFunc("/api/eventos", func(w http.ResponseWriter, r *http.Request) {

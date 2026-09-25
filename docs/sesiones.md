@@ -5,6 +5,29 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-25 (tarde) · La huella deja de ser un botón
+
+- **La 2.27.0 probada en el Mac del cliente: todo correcto**, y **el llavero no pregunta nada al
+  activarlo**. Queda la otra mitad de la decisión 3 —qué pasa al actualizar—, que solo contesta la versión
+  siguiente.
+- **Y de usarlo salió el rediseño**: «el uso del Touch ID debe ser más visual, no con un botón». Ahora **el
+  diálogo del sistema sale al llegar a la pantalla**, la huella manda —72 px, con la maestra debajo
+  separada por un «o»— y **late mientras espera**. El coste lo eligió él sabiéndolo: para teclear la
+  maestra hay que cancelar el diálogo primero. Dibujo nuestro, que el glifo de Touch ID es de Apple.
+- **Dos cosas que solo dijo mirar la captura**, y ninguna prueba: el dibujo salía con **72 de ancho y 0 de
+  alto** —todos los botones miden 28 px y lo de dentro, siendo flexible, se encogía— y **`.huella` ya
+  existía**, la huella de identidad de compartir, así que la clase nueva le ponía 72×72 a todas esas
+  pantallas. Las dos en `CLAUDE.md`. La causa del alto cero la dijo **preguntarle a la página por la caja
+  del elemento**, no razonar sobre el CSS.
+- **Y se probó a poner un halo de oro pulsando**: en la captura salía como una placa gris, porque
+  `box-shadow` con extensión dibuja un rectángulo y no un aro. Fuera; queda el latido de las crestas.
+- La prueba e2e gana **el camino de cancelar**, que no ejercitaba nadie, y para eso el servidor de
+  desarrollo estrena `/api/_llavero` —tras la etiqueta `dev`, **no** como método de `App`—. Y se cambió por
+  qué se comprueba que la huella se pide sola: mirar si la bóveda se reabre al cerrarla no distingue «la
+  abrió la huella» de «no llegó a cerrarse», así que se recarga la página.
+- Tercera aparición de la prueba inestable de la clave de recuperación, con otra cara (`Failed to fetch`).
+  Anotada en `deuda.md`: **a la próxima se arregla, no se anota**.
+
 ## 2026-09-25 · Se publica la C para poder probarla, antes de escribir más a ciegas
 
 - **Publicada la 2.27.0** con la C1 y la C2, **los siete trabajos en verde**, tiendas incluidas; la C3

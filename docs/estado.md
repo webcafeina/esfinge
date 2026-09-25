@@ -20,23 +20,32 @@ arranque**, y escribir la C3 encima de un diseño sin verificar significa rehace
 - **Y lo que queda del plan de cuentas**, que el cliente hace junto: **probar Firefox** y **comprobar
   compartir entre sus dos Macs**.
 
-### Lo que hay que mirar en el Mac con la 2.27.0
+### ~~Lo que hay que mirar en el Mac con la 2.27.0~~ — **probado el 2026-09-25, todo correcto**
 
-**Lo primero no es retórico: que arranque.** La 2.9.1 salió con un diagnóstico de Objective-C que compilaba
-en verde y cerraba la aplicación nada más abrirla. Si no arranca, se para aquí y se revierte.
+Arranca —que era lo único que ninguna prueba de aquí podía decir—, se activa, abre con la huella, cancelar
+vuelve al campo de la contraseña sin error, la maestra sigue abriendo y al quitarlo desaparece. **Y al
+activarlo el llavero no pregunta nada**, que era media decisión 3 del documento de la fase.
 
-1. **Instalar y abrir.** Si arranca, lo demás son detalles; si no, no hay nada más que probar.
-2. **Activarlo**: abrir la bóveda con la maestra → Ajustes → «Desbloquear con Touch ID». **Decir si macOS
-   pregunta algo** —un diálogo de «Esfinge quiere usar información protegida»— y qué se contestó.
-3. **Usarlo**: cerrar la bóveda y volver a la pantalla de desbloquear. Tiene que salir **«Abrir con Touch
-   ID»**; pulsarlo, poner el dedo, y abrir.
-4. **Cancelar el diálogo del sistema**: tiene que volver al campo de la contraseña **sin error en rojo**,
-   porque cancelar no es un fallo.
-5. **La maestra sigue abriendo** con Touch ID activado. Es la regla que no se puede romper.
-6. **Quitarlo** en Ajustes: el botón desaparece de la pantalla de desbloquear.
-7. **Y la que no se puede probar hoy**: cuando salga la versión siguiente, **al abrir tras actualizar**,
-   ¿vuelve a pedir permiso el llavero? El binario cambia y Esfinge no está firmada, así que puede. Es la
-   decisión 3 del documento de la fase, y la respuesta decide si hace falta decir algo en la pantalla.
+**Queda la otra mitad, y solo la contesta la versión siguiente**: al abrir tras actualizar, ¿vuelve a pedir
+permiso el llavero? El binario cambia y Esfinge no está firmada, así que puede. De la respuesta depende si
+hace falta decir algo en la pantalla.
+
+### Y de probarlo salió el rediseño de la pantalla (2.27.1)
+
+El cliente lo dijo claro: *«el uso del Touch ID debe ser más visual, no con un botón. Que primeramente te
+ofrezca el Touch ID si está activado, con una animación visual, de huella o algo»*. Está en la
+[ADR 0044](adr/0044-desbloquear-con-el-sistema.md):
+
+- **El diálogo del sistema sale al llegar a la pantalla**, sin pulsar nada. Lo eligió con el coste delante:
+  para teclear la maestra hay que cancelarlo primero.
+- **La huella manda**: 72 px dentro de su tarjeta, con la maestra debajo separada por un «o», y **late
+  mientras espera**. En reposo se queda quieta.
+- **El dibujo es nuestro**, a trazo: el glifo de Touch ID es de Apple.
+
+Y salieron dos cosas que ninguna prueba en verde dijo y sí dijo mirar la captura: **el dibujo medía 0 de
+alto** —todos los botones miden 28 px y lo de dentro se encogía— y **la clase `.huella` ya existía**, la de
+la huella de identidad de compartir, así que le estaba poniendo 72×72 a todas esas pantallas. Las dos en
+`CLAUDE.md`.
 
 ## Dónde estamos
 

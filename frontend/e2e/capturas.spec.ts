@@ -64,4 +64,87 @@ test.describe("Capturas", () => {
     await page.waitForTimeout(500);
     await foto("5-historial");
   });
+
+  /**
+   * La pantalla de desbloquear con la huella (fase C, ADR 0044).
+   *
+   * Va aparte del recorrido porque necesita una bóveda, y sobre todo porque **hay
+   * que mirarla**: el latido y el halo no los comprueba ninguna aserción, y esta
+   * pantalla se rehízo justo por eso —el cliente vio un botón donde tenía que
+   * haber una huella—.
+   */
+  test("desbloquear con la huella", async ({ page }, info) => {
+    const tema = info.project.name;
+    const donde = process.env.CAPTURAS_EN ?? "capturas";
+    const foto = (n: string) => page.screenshot({ path: `${donde}/${n}-${tema}.png` });
+    const maestra = "caballo grapa batería correcto";
+    const dentro = page.locator(".contenido");
+    const boton = (n: string) => dentro.getByRole("button", { name: n, exact: true });
+
+    await page.setViewportSize({ width: 980, height: 680 });
+    await page.goto("/");
+
+    const bienvenida = page.getByRole("button", { name: "Usar en este ordenador" });
+    await bienvenida.or(page.getByLabel("Qué quieres cifrar")).first().waitFor();
+    if (await bienvenida.isVisible().catch(() => false)) await bienvenida.click();
+
+    await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
+    // **Se espera a que haya algo antes de preguntar cuál hay.** `isVisible` no
+    // espera: con la pantalla aún pintándose contesta que no a las dos, no se crea
+    // ni se abre nada, y lo que falla es la línea de después. Es la misma trampa
+    // que ya está escrita arriba, en la bienvenida del recorrido.
+    await boton("Crear la bóveda")
+      .or(boton("Abrir la bóveda"))
+      .or(page.locator("#boveda-buscar"))
+      .first()
+      .waitFor({ timeout: 20_000 });
+    if (await boton("Crear la bóveda").isVisible().catch(() => false)) {
+      await page.locator("#boveda-maestra").fill(maestra);
+      await page.locator("#boveda-maestra-2").fill(maestra);
+      await boton("Crear la bóveda").click();
+      await page.getByText("La he apuntado en un sitio seguro").click();
+      await boton("Continuar").click();
+    } else if (await boton("Abrir la bóveda").isVisible().catch(() => false)) {
+      await page.locator("#boveda-llave").fill(maestra);
+      await boton("Abrir la bóveda").click();
+    }
+    await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
+
+    await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
+    const interruptor = page.locator("#desbloqueo-del-sistema");
+    await interruptor.waitFor({ state: "visible", timeout: 20_000 });
+    if (!(await interruptor.isChecked())) {
+      await interruptor.click();
+      await page.waitForTimeout(1200);
+    }
+    await foto("6-ajustes-desbloqueo");
+
+    // **En reposo**: el llavero dice que no, así que la pantalla se queda con la
+    // huella quieta. Si dijera que sí abriría sola y no habría nada que retratar.
+    await page.request.get("/api/_llavero?dice=no");
+    await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
+    await boton("Cerrar la bóveda").click();
+    await page.locator("#boveda-con-el-sistema").waitFor({ state: "visible", timeout: 20_000 });
+    await page.waitForTimeout(500);
+    await foto("7-huella-reposo");
+    // Y de cerca, que es donde se juzga el trazo: a tamaño de pantalla completa
+    // esto son setenta píxeles y no se ve si se lee como una huella o como un
+    // arcoíris. La primera versión era lo segundo.
+    await page.locator("#boveda-con-el-sistema").screenshot({ path: `${donde}/7b-huella-cerca-${tema}.png`, scale: "css" });
+
+    // **Esperando**: con el diálogo del sistema delante. Aquí no hay diálogo, así
+    // que se congela la clase a mano para poder ver el latido a medio camino.
+    await page.locator("#boveda-con-el-sistema").evaluate((b) => b.classList.add("esperando"));
+    await page.waitForTimeout(900);
+    await foto("8-huella-esperando");
+
+    // Se deja como estaba.
+    await page.request.get("/api/_llavero?dice=si");
+    await page.locator("#boveda-llave").fill(maestra);
+    await boton("Abrir la bóveda").click();
+    await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
+    await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
+    await page.locator("#desbloqueo-del-sistema").click();
+    await page.waitForTimeout(1200);
+  });
 });
