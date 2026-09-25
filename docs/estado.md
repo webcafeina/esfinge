@@ -31,17 +31,18 @@ vuelve a hacerlo. Se dio por comprobado con **una sola pasada** —la primera ac
 y por eso no pide nada; pedirlo es acceder a uno que ya está—. Desde la **2.27.5 se avisa antes de que
 salga**, con el botón que hay que pulsar, y ahí está la explicación más probable del fallo de la 2.27.3.
 
-**Y sigue abierta la pregunta que de verdad decide la decisión 3, que no es la misma**: no si pregunta al
-**activar** —eso ya se sabe—, sino si pregunta al **abrir la bóveda con la huella después de actualizar**.
-El binario cambia en cada versión y Esfinge no está firmada, así que el permiso del llavero podría caducar
-con cada una. De la respuesta depende si hay que decir algo en la pantalla de desbloquear.
+**Y la decisión 3, contestada (2026-09-25): sí pregunta.** Tras actualizar Esfinge, la **primera** vez que
+se abre la bóveda con la huella, macOS pide la contraseña del Mac; con «Permitir siempre» no vuelve hasta
+la actualización siguiente. Era lo esperable sin firmar: cada versión es un binario nuevo. **Y por eso la 2.27.6 lo dice en la pantalla de
+desbloquear**, que es justo lo que esta decisión existía para decidir — y **solo cuando es verdad**: entre
+una actualización y el primer desbloqueo con huella que funcione.
 
 **Y la 2.27.1 es el experimento que contesta esa mitad**, sin montar nada: se actualiza desde la 2.27.0
 **con Touch ID ya activado**, así que al abrir después se ve si el llavero vuelve a preguntar. Si pregunta,
 se contesta «Permitir siempre» y se anota; si fallara, el arreglo está decidido —borrar la ranura y pedir
 que se active otra vez— y hay que decirlo en la pantalla.
 
-### Y de probarlo salió el rediseño de la pantalla (2.27.1 a 2.27.5, publicadas en verde)
+### Y de probarlo salió el rediseño de la pantalla (2.27.1 a 2.27.6, publicadas en verde)
 
 El cliente lo dijo claro: *«el uso del Touch ID debe ser más visual, no con un botón. Que primeramente te
 ofrezca el Touch ID si está activado, con una animación visual, de huella o algo»*. Está en la

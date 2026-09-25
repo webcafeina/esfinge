@@ -411,6 +411,19 @@ export function avisoDelSistemaAlGuardar(): string {
   );
 }
 
+/**
+ * Y lo mismo la primera vez después de actualizar.
+ *
+ * El permiso que se dio con «Permitir siempre» va atado a **ese** binario, y cada
+ * versión de Esfinge es uno nuevo porque no está firmada (ADR 0044, decisión 3,
+ * contestada en el Mac del cliente). Así que una vez por actualización el sistema
+ * vuelve a preguntar al poner el dedo, y hay que decirlo antes.
+ */
+function avisoTrasActualizar(): string {
+  if (document.documentElement.dataset.sistema !== "darwin") return "";
+  return "Acabas de actualizar: macOS pedirá una vez la contraseña del Mac. Elige «Permitir siempre».";
+}
+
 function SugerirDesbloqueo({ activarYa }: { activarYa: boolean }) {
   const avisoDelLlavero = avisoDelSistemaAlGuardar();
   const [estado, setEstado] = useState<EstadoDesbloqueo | null>(null);
@@ -757,6 +770,14 @@ function Cerrada({
                   ? `Pon el dedo en ${delSistema.nombre}`
                   : `Abrir con ${delSistema.nombre}`}
               </span>
+              {/* **Una vez por actualización, y solo entonces.** Sin firmar, cada
+                  versión es un binario nuevo y el llavero vuelve a pedir permiso
+                  la primera vez. Decirlo siempre sería mentir casi siempre; no
+                  decirlo deja una petición de la contraseña del sistema sin
+                  explicación, en el programa donde eso más asusta. */}
+              {delSistema.trasActualizar && avisoTrasActualizar() && (
+                <span className="dactilar-aviso">{avisoTrasActualizar()}</span>
+              )}
             </button>
           </div>
           <p className="o-bien">

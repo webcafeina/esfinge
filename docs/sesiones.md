@@ -17,6 +17,16 @@ Plantilla al final.
   lo que un gestor de contraseñas enseña a hacer— y cancelarlo dejaba la activación fallando, con el `catch`
   vacío tapándolo. No está probado; encaja con todo, incluido que dejara de pasar al activar en otro
   momento.
+- **Y la decisión 3, contestada: sí pregunta.** Tras actualizar, la primera vez que se abre con la huella
+  macOS pide la contraseña del Mac; con «Permitir siempre» no vuelve hasta la siguiente actualización. Lo
+  primero que contesté fue **que no**, porque pregunté mal —confundiendo el permiso de **activar** con el
+  de **abrir tras actualizar**— y lo llegué a escribir en tres sitios antes de que él lo aclarara. Dos veces
+  el mismo día dando por cerrado lo que no lo estaba.
+- **2.27.6**: y eso es justo lo que la decisión 3 existía para decidir, así que **se dice en la pantalla**,
+  y solo cuando es verdad: entre una actualización y el primer desbloqueo con huella que funcione. Las
+  preferencias guardan **qué versión consiguió abrir ya**, que no es lo mismo que qué versión corre; con lo
+  segundo el aviso se apagaría al arrancar y no habría servido de nada. Prueba de Go, mutada para verla en
+  rojo.
 - **2.27.5**: se avisa antes de que salga, con el botón que hay que pulsar, en los tres sitios donde se
   activa y **solo en macOS** —en Windows la credencial de Hello no pide nada—.
 

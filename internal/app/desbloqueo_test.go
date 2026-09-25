@@ -173,3 +173,54 @@ func TestLaRanuraDelSistemaNoSaleDeEsteEquipo(t *testing.T) {
 		t.Fatal("la ranura del sistema viaja hacia el servidor")
 	}
 }
+
+// **El aviso de «acabas de actualizar» sale una vez por versión, y solo esa vez.**
+//
+// Sin firmar, cada versión de Esfinge es un binario nuevo y el llavero de macOS
+// vuelve a pedir la contraseña del equipo la primera vez que se pone el dedo
+// (ADR 0044, decisión 3, contestada en el Mac del cliente el 2026-09-25). La
+// pantalla lo avisa antes de que salga, y para eso tiene que saber **si esta
+// versión ya consiguió abrir**: no basta con mirar qué versión corre.
+//
+// Aquí no hay Touch ID, así que lo que se comprueba es la contabilidad: cuándo se
+// enciende la marca, cuándo se apaga, y que no se encienda donde no hay nada que
+// avisar.
+func TestElAvisoDeActualizarSaleUnaVezPorVersion(t *testing.T) {
+	a, _ := conLlaveroDeMentira(t)
+	a.version = "2.27.6"
+
+	// Sin la ranura puesta no hay huella que vaya a salir, así que tampoco hay
+	// diálogo del que avisar.
+	if e := a.EstadoDelDesbloqueo(); e.TrasActualizar {
+		t.Fatalf("avisa sin tener el desbloqueo puesto: %+v", e)
+	}
+
+	if _, err := a.CrearBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.ActivarDesbloqueo(); err != nil {
+		t.Fatal(err)
+	}
+	a.CerrarBoveda()
+
+	// Puesto y sin haber abierto nunca con esta versión: se avisa.
+	if e := a.EstadoDelDesbloqueo(); !e.TrasActualizar {
+		t.Fatalf("no avisa con el desbloqueo recién puesto: %+v", e)
+	}
+
+	// Abrir con el sistema es lo que demuestra que el permiso está dado.
+	if err := a.AbrirBovedaConElSistema(); err != nil {
+		t.Fatal(err)
+	}
+	a.CerrarBoveda()
+	if e := a.EstadoDelDesbloqueo(); e.TrasActualizar {
+		t.Fatalf("sigue avisando después de abrir con el sistema: %+v", e)
+	}
+
+	// Y al actualizar vuelve, que es justo lo que pasa en un Mac: el permiso va
+	// atado al binario y el binario es otro.
+	a.version = "2.28.0"
+	if e := a.EstadoDelDesbloqueo(); !e.TrasActualizar {
+		t.Fatalf("no vuelve a avisar tras actualizar: %+v", e)
+	}
+}

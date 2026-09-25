@@ -90,6 +90,20 @@ type Preferencias struct {
 	// medias llega con `false` y lo único que hace es volver a ofrecerlo una vez.
 	// Molesto y visible, no silencioso.
 	DesbloqueoSugerido bool `json:"desbloqueoSugerido"`
+
+	// VersionConPermisoDelLlavero es la última versión de Esfinge que **abrió la
+	// bóveda con el sistema sin que el llavero pidiera nada** (2.27.6).
+	//
+	// Existe por lo que contestó la decisión 3 de la fase C: **tras actualizar, la
+	// primera vez que se pone el dedo macOS pide la contraseña del Mac**, porque
+	// cada versión es un binario nuevo y Esfinge no está firmada. Con «Permitir
+	// siempre» no vuelve a pedirla hasta la actualización siguiente.
+	//
+	// Guardando aquí la versión que ya tiene el permiso, la pantalla de
+	// desbloquear puede avisar **solo cuando toca** —entre una actualización y el
+	// primer desbloqueo que funcione— en vez de repetir siempre un aviso que casi
+	// nunca es cierto.
+	VersionConPermisoDelLlavero string `json:"versionConPermisoDelLlavero"`
 }
 
 // Nunca es lo que se manda para apagar uno de los dos relojes.

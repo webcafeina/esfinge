@@ -672,6 +672,12 @@ preguntarlo. Se avisa **antes** de que salga y se dice qué botón pulsar, en lo
 y **solo en macOS**: en Windows la credencial de Hello no pide nada y en Linux no hay nada que pedir. Sin
 ese aviso, lo sensato por parte de quien lo ve es cancelar, y cancelar deja la activación a medias.
 
+Y **una vez por actualización vuelve a preguntar**, ahora al **abrir** con la huella: el permiso va atado al
+binario y sin firmar cada versión es otro (ADR 0044, decisión 3). Se avisa en la pantalla de desbloquear, y
+**solo entre una actualización y el primer desbloqueo que funcione**: para eso las preferencias guardan qué
+versión consiguió abrir ya, que no es lo mismo que qué versión corre. Decirlo siempre sería mentir casi
+siempre.
+
 Y con ello, una del método y no de macOS: **«no preguntó» tras hacerlo una vez no es «no pregunta»**. Se dio
 por comprobado que activar no pedía nada, y era la primera activación: crear un elemento en el llavero no
 pide permiso, **acceder a uno que ya está, sí**. Lo mismo vale para cualquier cosa que solo se haya visto

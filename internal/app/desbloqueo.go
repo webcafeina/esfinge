@@ -50,6 +50,16 @@ type EstadoDesbloqueo struct {
 	Nombre string `json:"nombre"`
 	// Puesto dice si **esta bóveda** tiene la ranura del sistema.
 	Puesto bool `json:"puesto"`
+	// TrasActualizar avisa de que esta versión **todavía no tiene el permiso del
+	// llavero**, así que la primera huella va a traer un diálogo del sistema
+	// pidiendo la contraseña del equipo.
+	//
+	// Es la consecuencia de la decisión 3 de la ADR 0044, contestada en el Mac del
+	// cliente: sin firmar, cada versión es un binario nuevo y el permiso se
+	// renueva una vez por actualización. Sin avisar, eso se lee como que algo va
+	// mal —justo en el programa donde eso más asusta—, así que la pantalla lo dice
+	// antes de que salga.
+	TrasActualizar bool `json:"trasActualizar"`
 }
 
 func (a *App) llaveroDelSistema() llavero.Llavero {
@@ -67,10 +77,14 @@ func (a *App) llaveroDelSistema() llavero.Llavero {
 // de desbloquear, cuando todavía no hay nada abierto.
 func (a *App) EstadoDelDesbloqueo() EstadoDesbloqueo {
 	l := a.llaveroDelSistema()
+	puesto := boveda.RanuraDelSistemaEn(rutaBoveda())
 	return EstadoDesbloqueo{
 		Hay:    l.Hay(),
 		Nombre: l.Nombre(),
-		Puesto: boveda.RanuraDelSistemaEn(rutaBoveda()),
+		Puesto: puesto,
+		// **Solo cuando hay algo que avisar**: si no está puesto, no va a salir
+		// ninguna huella y no hay diálogo del que hablar.
+		TrasActualizar: puesto && a.ajustes.Ver().VersionConPermisoDelLlavero != a.version,
 	}
 }
 
@@ -152,9 +166,24 @@ func (a *App) AbrirBovedaConElSistema() error {
 	if err != nil {
 		return err
 	}
+	// **Ha abierto, así que esta versión ya tiene el permiso del llavero.** Se
+	// anota aquí y no al arrancar: lo que hay que saber no es qué versión corre,
+	// es cuál ha conseguido que el sistema le diera la llave sin volver a
+	// preguntar. Hasta que eso pasa, la pantalla sigue avisando.
+	a.anotarPermisoDelLlavero()
+
 	a.cambiarBoveda(b)
 	a.Actividad()
 	a.buscarIconosSiProcede(a.ctx)
 	a.alAbrirLaBoveda(b)
 	return nil
+}
+
+func (a *App) anotarPermisoDelLlavero() {
+	p := a.ajustes.Ver()
+	if p.VersionConPermisoDelLlavero == a.version {
+		return
+	}
+	p.VersionConPermisoDelLlavero = a.version
+	_ = a.ajustes.Guardar(p)
 }

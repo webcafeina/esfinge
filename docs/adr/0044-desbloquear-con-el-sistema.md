@@ -200,8 +200,16 @@ tarjeta, en la casilla y en Ajustes, y **solo en macOS**.
 
 **Lo que no se ha comprobado, y solo puede comprobarse en un Mac de verdad:**
 
-- **Qué pregunta el llavero al actualizar**, que es la otra mitad de la decisión 3 y **solo la contesta la
-  versión siguiente**: el binario cambia y Esfinge no está firmada.
+- ~~**Qué pregunta el llavero al actualizar.**~~ **Contestado el 2026-09-25, y la respuesta es que sí
+  pregunta**: después de actualizar Esfinge, **la primera vez que se abre la bóveda con la huella macOS pide
+  la contraseña del Mac**. Con «Permitir siempre» no vuelve a pedirla **hasta la siguiente actualización**.
+  Es lo que cabía esperar sin firmar —cada versión es un binario nuevo y el permiso del llavero se ata a
+  quién lo pide—, y la 0014 lo dijo antes que nadie: firmar no es solo quitar el aviso de Gatekeeper.
+
+  **Consecuencia, y es la que esta decisión existía para tomar: hay que decirlo en la pantalla.** Una
+  petición de la contraseña del sistema al poner el dedo, sin nada que la explique, se lee como que algo va
+  mal justo en el programa donde eso importa más. Se dice **solo cuando toca** —entre una actualización y el
+  primer desbloqueo con huella que funcione— y **solo en macOS**.
 - **Cómo se ve el latido en el Mac**, y si el diálogo del sistema al llegar resulta cómodo o cansa cuando
   la bóveda se cierra sola varias veces al día. Eso es uso, no una prueba.
 - **Cómo se lee el diálogo del sistema** —el motivo que se le pasa sale en pantalla— y si Touch ID responde

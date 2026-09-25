@@ -259,7 +259,17 @@ export type IdentidadParaCompartir = { huella: string; suite: string };
  * vacío donde no hay ninguno: entonces **no se ofrece nada**, en vez de enseñar
  * un botón que no puede funcionar.
  */
-export type EstadoDesbloqueo = { hay: boolean; nombre: string; puesto: boolean };
+export type EstadoDesbloqueo = {
+  hay: boolean;
+  nombre: string;
+  puesto: boolean;
+  /**
+   * Esta versión todavía no tiene el permiso del llavero, así que la primera
+   * huella traerá un diálogo del sistema pidiendo la contraseña del equipo. Pasa
+   * **una vez por actualización**: sin firmar, cada versión es un binario nuevo.
+   */
+  trasActualizar: boolean;
+};
 
 /**
  * Una copia mandada a quien todavía no tenía cuenta, esperando (ADR 0043, B3).
