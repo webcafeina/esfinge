@@ -7,7 +7,8 @@ Plantilla al final.
 
 ## 2026-09-25 · Se publica la C para poder probarla, antes de escribir más a ciegas
 
-- **La 2.27.0 sale con la C1 y la C2**, y la C3 espera. Lo eligió el cliente con el coste delante: la C2 es
+- **Publicada la 2.27.0** con la C1 y la C2, **los siete trabajos en verde**, tiendas incluidas; la C3
+  espera. Lo eligió el cliente con el coste delante: la C2 es
   cgo que esta máquina no compila, sabemos que **compila pero no que arranque**, y escribir Windows Hello
   encima de un diseño sin verificar significa rehacer los dos si falla. Publicar primero convierte una
   suposición en un dato por el precio de una versión.

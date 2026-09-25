@@ -4,10 +4,10 @@
 
 ## Dónde se paró, y por dónde se sigue
 
-**2026-09-25.** Se publica la **2.27.0** con la C1 y la C2 —desbloquear la bóveda con Touch ID— y **el
-cliente la prueba en su Mac antes de escribir la C3**. Se eligió así a conciencia: la C2 es cgo que esta
-máquina no compila, sabemos que compila pero **no que arranque**, y escribir la C3 encima de un diseño sin
-verificar significa rehacer las dos si falla.
+**2026-09-25. Publicada la 2.27.0**, con los siete trabajos en verde y las tiendas incluidas: la C1 y la
+C2 —desbloquear la bóveda con Touch ID—. **Y ahí se para hasta que el cliente la pruebe en su Mac.** Se
+eligió así a conciencia: la C2 es cgo que esta máquina no compila, sabemos que compila pero **no que
+arranque**, y escribir la C3 encima de un diseño sin verificar significa rehacer las dos si falla.
 
 - **Publicada la 2.26.0** (24-09): la B entera —compartir copias, invitaciones a quien no tiene cuenta— con
   los correos ya maquetados.
