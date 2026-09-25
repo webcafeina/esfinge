@@ -7,6 +7,14 @@ Plantilla al final.
 
 ## 2026-09-25 (tarde) · La huella deja de ser un botón, y la bóveda la ofrece sola
 
+- **2.27.4**: con la casilla marcada, al entrar **la tarjeta volvía a ofrecer lo que se acababa de pedir**.
+  Por eliminación, la activación estaba fallando en su Mac —si hubiera funcionado, la tarjeta no puede
+  salir—, y **no se sabe por qué**: aquí no se reproduce y leyendo el código tampoco sale. Se descartaron
+  dos hipótesis mirándolas: la fusión **sí** conserva las ranuras locales, y `Fundir` va por la misma
+  instancia, así que tampoco es `ErrCambiada`. La causa de que no se sepa es mía: puse un `catch` vacío
+  porque «esa pantalla desaparece igual». Ahora **la casilla no activa, lo pide**, y activa la tarjeta de
+  dentro, que es la única de las dos que sigue ahí para enseñar el error —con el `OSStatus` de macOS—. En
+  `deuda.md` hasta que él diga qué pone.
 - **2.27.3**: el cliente esperaba la sugerencia **también con la bóveda cerrada**. Tenía razón en el sitio
   y no cabía un botón: activarlo exige la bóveda abierta, que es lo que impide encenderlo sin saber la
   maestra. Sale como **casilla** —«Abrir con Touch ID a partir de ahora»—, que cumple la condición entera:

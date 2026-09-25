@@ -1560,6 +1560,12 @@ test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ 
   await accion(page, "Abrir la bóveda").click();
   await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
 
+  // **Y dentro no se vuelve a ofrecer lo que se acaba de pedir**, se confirma.
+  // Faltaba esta línea, y por eso la prueba estaba en verde mientras el cliente
+  // veía la tarjeta ofreciéndoselo otra vez después de marcar la casilla.
+  await expect(page.getByText("Touch ID activado")).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator("#sugerencia-activar")).toHaveCount(0);
+
   // En Ajustes aparece ya marcado —lo activó abrir, no un botón de allí—, y ahí
   // es donde se dice lo que protege y lo que no.
   await seccion(page, "Ajustes").click();

@@ -56,6 +56,10 @@ export function Boveda({
   // ve**, así que mientras esté puesta tapa todo lo demás: nada de que se pierda
   // por un clic en otro sitio.
   const [ceremonia, setCeremonia] = useState<{ clave: string; nueva: boolean } | null>(null);
+  // Si se marcó «Abrir con Touch ID a partir de ahora» en la pantalla de
+  // desbloquear. Se decide allí y **se ejecuta dentro**, que es donde hay sitio
+  // para decir que no se ha podido.
+  const [activarDesbloqueo, setActivarDesbloqueo] = useState(false);
 
   const refrescar = useCallback(async () => {
     try {
@@ -114,7 +118,10 @@ export function Boveda({
     return (
       <Cerrada
         estado={estado}
-        alAbrir={refrescar}
+        alAbrir={(activar) => {
+          setActivarDesbloqueo(activar);
+          refrescar();
+        }}
         alEntrarConLaNueva={alEntrarConLaNueva}
         alRecuperar={alRecuperar}
       />
@@ -124,6 +131,7 @@ export function Boveda({
   return (
     <Dentro
       estado={estado}
+      activarDesbloqueo={activarDesbloqueo}
       alVolverAEntrar={alVolverAEntrar}
       alCambiar={refrescar}
       alRotar={(clave) => setCeremonia({ clave, nueva: false })}
@@ -383,7 +391,7 @@ function HuellaDactilar() {
  *     donde se decide: esto es un cerrojo, no cambia quién puede abrir la bóveda
  *     desde dentro de este ordenador.
  */
-function SugerirDesbloqueo() {
+function SugerirDesbloqueo({ activarYa }: { activarYa: boolean }) {
   const [estado, setEstado] = useState<EstadoDesbloqueo | null>(null);
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
   const [trabajando, setTrabajando] = useState(false);
@@ -400,18 +408,14 @@ function SugerirDesbloqueo() {
     });
   }, []);
 
-  // Se calla mientras no sepa las dos cosas: enseñarla y quitarla medio segundo
-  // después es peor que tardar medio segundo en enseñarla.
-  if (!estado || !prefs) return null;
-  // Tras activarlo la tarjeta **se queda diciendo que está hecho** en vez de
-  // desaparecer: quien acaba de pulsar un botón necesita saber que pasó algo, y
-  // lo que cambia —la pantalla de desbloquear— no se ve hasta la próxima vez.
-  if (!hecho && (!estado.hay || estado.puesto || prefs.desbloqueoSugerido)) return null;
-
   // **Se manda el objeto entero**, que es como `GuardarPreferencias` lo recibe:
   // mandar `{desbloqueoSugerido:true}` a secas llegaría con los dos relojes de la
   // bóveda a cero al deserializar.
-  const noVolverAOfrecer = () => esfinge.guardarPreferencias({ ...prefs, desbloqueoSugerido: true });
+  async function noVolverAOfrecer() {
+    if (!prefs) return;
+    await esfinge.guardarPreferencias({ ...prefs, desbloqueoSugerido: true });
+    setPrefs({ ...prefs, desbloqueoSugerido: true });
+  }
 
   async function activar() {
     setTrabajando(true);
@@ -419,18 +423,44 @@ function SugerirDesbloqueo() {
     try {
       await esfinge.activarDesbloqueo();
       await noVolverAOfrecer();
-      setEstado({ ...estado!, puesto: true });
+      setEstado((e) => (e ? { ...e, puesto: true } : e));
       setHecho(true);
     } catch (e) {
+      // **Y aquí sí se dice.** Es el único sitio de este camino con pantalla
+      // delante y con alguien mirando.
       setError(mensaje(e));
     } finally {
       setTrabajando(false);
     }
   }
 
+  // Si se marcó la casilla al abrir, se activa **aquí**, nada más montarse: así lo
+  // hace quien puede enseñar el error si falla, y de paso se ve «Activando…» y
+  // después «Touch ID activado» en vez de que no pase nada visible.
+  //
+  // El cerrojo es por `StrictMode`, que monta dos veces en desarrollo.
+  const yaLanzado = useRef(false);
+  useEffect(() => {
+    if (!activarYa || !estado || !prefs || yaLanzado.current) return;
+    if (!estado.hay || estado.puesto) return;
+    yaLanzado.current = true;
+    void activar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activarYa, estado, prefs]);
+
+  // Se calla mientras no sepa las dos cosas: enseñarla y quitarla medio segundo
+  // después es peor que tardar medio segundo en enseñarla.
+  if (!estado || !prefs) return null;
+  // Tras activarlo la tarjeta **se queda diciendo que está hecho** en vez de
+  // desaparecer: quien acaba de pulsar un botón necesita saber que pasó algo, y
+  // lo que cambia —la pantalla de desbloquear— no se ve hasta la próxima vez.
+  //
+  // Y si venía marcada la casilla, se queda **aunque haya fallado**: ahí es donde
+  // se lee por qué.
+  if (!hecho && !error && (!estado.hay || estado.puesto || prefs.desbloqueoSugerido)) return null;
+
   async function ahoraNo() {
     await noVolverAOfrecer();
-    setPrefs({ ...prefs!, desbloqueoSugerido: true });
   }
 
   return (
@@ -485,7 +515,8 @@ function Cerrada({
   alRecuperar,
 }: {
   estado: EstadoBoveda;
-  alAbrir: () => void;
+  /** `activar` llega a true si se marcó la casilla: lo hace la tarjeta de dentro. */
+  alAbrir: (activar: boolean) => void;
   alEntrarConLaNueva: (correo: string) => void;
   alRecuperar: (correo: string) => void;
 }) {
@@ -532,18 +563,15 @@ function Cerrada({
   // ofreció» es activarlo o decir «ahora no» en la tarjeta de dentro; si esto lo
   // apuntara, quien la deja sin marcar se quedaría sin la tarjeta y sin saber que
   // existe la función.
-  async function activarSiSePidio() {
-    if (!activarAlAbrir) return;
-    try {
-      await esfinge.activarDesbloqueo();
-      if (prefs) await esfinge.guardarPreferencias({ ...prefs, desbloqueoSugerido: true });
-    } catch {
-      // **Si el sistema falla no se dice nada aquí**, y no es dejarlo en silencio:
-      // la bóveda ya se está abriendo y esta pantalla desaparece. Como no se
-      // apunta nada, la tarjeta de dentro lo vuelve a ofrecer, que es la señal de
-      // que no llegó a activarse y además el sitio donde se puede reintentar.
-    }
-  }
+  // **Esta pantalla no activa nada: lo pide.** Lo hace la tarjeta de dentro, que
+  // es la que tiene dónde decir que ha ido mal.
+  //
+  // La primera versión (2.27.3) activaba aquí mismo, entre abrir y entrar, y se
+  // tragaba el error porque la pantalla desaparecía de todos modos. Eso dejó un
+  // fallo mudo: el cliente marcaba la casilla, entraba, y **la tarjeta seguía
+  // ofreciendo lo que él acababa de pedir**, sin que nada dijera por qué. Aquí no
+  // se pudo reproducir —el llavero de mentira no falla— y eso es exactamente lo
+  // que pasa cuando algo se calla: no hay nada que mirar.
 
   // **La huella se pide sola al llegar**, que es lo que se decidió con el cliente
   // (2026-09-25): un botón más no es desbloquear con el sistema, es un botón. Lo
@@ -576,7 +604,7 @@ function Cerrada({
     setError("");
     try {
       await esfinge.abrirBovedaConElSistema();
-      alAbrir();
+      alAbrir(false);
     } catch (e) {
       // **Cancelar no es un fallo**, así que no se pinta en rojo: se vuelve al
       // campo de la contraseña, que sigue estando ahí.
@@ -596,8 +624,7 @@ function Cerrada({
     try {
       await esfinge.abrirBoveda(llave);
       setLlave("");
-      await activarSiSePidio();
-      alAbrir();
+      alAbrir(activarAlAbrir);
     } catch (e) {
       const estado = cuenta?.modo === "cuenta" ? await esfinge.estadoDeCuenta().catch(() => null) : null;
       if (estado?.codigoPendiente) {
@@ -618,8 +645,7 @@ function Cerrada({
       setLlave("");
       setCodigo("");
       setPidiendoCodigo(false);
-      await activarSiSePidio();
-      alAbrir();
+      alAbrir(activarAlAbrir);
     } catch (e) {
       setError(mensaje(e));
     } finally {
@@ -794,11 +820,14 @@ function Cerrada({
 
 function Dentro({
   estado,
+  activarDesbloqueo,
   alCambiar,
   alRotar,
   alVolverAEntrar,
 }: {
   estado: EstadoBoveda;
+  /** Se marcó la casilla al abrir: la tarjeta lo activa nada más montarse. */
+  activarDesbloqueo: boolean;
   alCambiar: () => void;
   alRotar: (clave: string) => void;
   alVolverAEntrar: (correo: string) => void;
@@ -1020,7 +1049,7 @@ function Dentro({
     <div className="panel">
       {/* Arriba del todo y antes de la barra: es lo primero que se ve al abrir la
           bóveda, y solo la primera vez. */}
-      <SugerirDesbloqueo />
+      <SugerirDesbloqueo activarYa={activarDesbloqueo} />
       <div className="boveda-barra">
         <input
           id="boveda-buscar"

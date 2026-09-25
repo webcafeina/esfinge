@@ -216,7 +216,8 @@ No se cambian sin preguntar.
   decirlo sería venderlo. **Y en la pantalla de desbloquear va como casilla** —«Abrir con Touch ID a partir
   de ahora»— y no como botón: **activarlo exige la bóveda abierta**, que es lo que impide encenderlo sin
   saber la maestra, así que se marca, se teclea la maestra y queda activado al abrir. Marcarla **no** cuenta
-  como haber contestado: eso lo hacen los dos botones de la tarjeta.
+  como haber contestado: eso lo hacen los dos botones de la tarjeta. **Y la casilla no activa, lo pide**: lo
+  hace la tarjeta de dentro, que es la única de las dos pantallas que sigue ahí para decir que ha fallado.
 
 ## Trampas que ya costaron encontrarse
 
@@ -663,6 +664,14 @@ Y con ello, lo que el correo **no** puede dar por hecho: **las imágenes**. Los 
 porque lo pidió el cliente sabiendo lo que cuesta —pedirla le dice a quien la sirve que el correo se ha
 abierto, con hora e IP—, pero **el nombre va escrito al lado**: con las imágenes bloqueadas, que es como
 llegan de entrada a casi todo el mundo, la cabecera se sigue leyendo.
+
+**Un `catch` vacío en algo que ha pedido una persona es un fallo, no una precaución.** La casilla «Abrir
+con Touch ID a partir de ahora» activaba entre abrir la bóveda y entrar, y se tragaba el error con el
+argumento de que esa pantalla desaparece de todos modos. El cliente marcó la casilla, entró, y **la tarjeta
+de dentro le ofreció otra vez lo que acababa de pedir**: ni él sabía por qué, ni aquí se pudo reproducir
+—el llavero de mentira no falla— ni leyendo el código salió la causa. Eso es lo que cuesta callar un error.
+La regla: **lo que alguien pide se hace donde haya pantalla para contar que no se ha podido**, y si el sitio
+natural va a desaparecer, se mueve la acción, no se esconde el fallo.
 
 **Y desde que los correos son HTML, lo que se interpola en ellos es una inyección.** El nombre de un equipo
 son ochenta caracteres libres que manda el cliente, y en texto pelado eso daba igual; en un correo con

@@ -108,9 +108,13 @@ Dos reglas de esa casilla:
 - **Marcarla no cuenta como haber contestado.** Lo que apunta «ya se ofreció» es activarlo o decir «ahora
   no» en la tarjeta; si la casilla lo apuntara, quien la deja sin marcar se quedaría sin la tarjeta y sin
   saber que la función existe.
-- **Si el sistema falla al activar, no se dice nada ahí**, y no es dejarlo en silencio: la bóveda ya se
-  está abriendo y esa pantalla desaparece. Como no se apunta nada, la tarjeta de dentro lo vuelve a
-  ofrecer, que es a la vez la señal y el sitio donde reintentarlo.
+- **La casilla no activa: lo pide.** Activa la tarjeta de dentro, nada más montarse. La primera versión
+  (2.27.3) activaba en la propia pantalla de desbloquear y **se tragaba el error**, porque esa pantalla
+  desaparece de todos modos. El cliente marcó la casilla, entró, y la tarjeta le ofreció otra vez lo que
+  acababa de pedir, sin nada que explicara por qué; aquí no se pudo reproducir —el llavero de mentira no
+  falla— y leyendo el código tampoco salió la causa, que es exactamente lo que pasa cuando algo se calla.
+  Ahora activa quien tiene pantalla y sitio para el error, y de paso se ve «Activando…» y después «Touch ID
+  activado» en vez de que no pase nada visible.
 
 ### Y esto no cuenta como actividad
 
