@@ -461,4 +461,32 @@ test("compartir una copia y recogerla del buzón", async ({ page, request }) => 
   // Y ahora son dos: la original y la copia, con identificadores distintos.
   await page.locator("#boveda-buscar").fill(titulo);
   await expect(page.getByRole("button", { name: new RegExp(titulo) })).toHaveCount(2, { timeout: 20_000 });
+
+  // **Y el buzón se entera de lo que llega sin cerrar la bóveda** (2026-09-28).
+  //
+  // Hasta aquí esta prueba solo demostraba el camino fácil: manda a **su propia
+  // cuenta**, y para ese caso el código refresca el buzón a mano nada más mandar.
+  // Por eso estuvo en verde mientras recibir de otra cuenta **no se veía nunca**
+  // con la bóveda abierta: la lista solo se pedía al montar la pantalla. Lo
+  // encontró el cliente en la primera prueba de compartir de verdad, preguntando
+  // «¿dónde está el buzón?».
+  //
+  // Para comprobar lo que dice, la copia se manda **por el puente y no por la
+  // interfaz**: así esta ventana no se entera de nada —ni refresco a mano, ni
+  // pantalla que se vuelva a montar— y lo único que puede hacer aparecer el botón
+  // es la pasada de sincronización. Se dispara con el botón de sincronizar, que
+  // emite el mismo evento que la de cada cinco minutos.
+  const lista = (await (
+    await request.post(`${B}/api/BuscarEnBoveda`, { data: [titulo] })
+  ).json()) as { id: string }[];
+  expect(lista.length, "hacen falta las dos para poder mandar una").toBeGreaterThan(0);
+  await expect(accion(page, "Te han mandado (1)")).toHaveCount(0);
+
+  const mandada = await request.post(`${B}/api/MandarCopia`, { data: [lista[0].id, estado.correo] });
+  expect(mandada.ok(), await mandada.text()).toBeTruthy();
+
+  // Sin tocar nada, el botón no está: es exactamente el fallo que se arregló.
+  await expect(accion(page, "Te han mandado (1)")).toHaveCount(0);
+  await page.getByRole("button", { name: "Sincronizar ahora" }).first().click();
+  await expect(accion(page, "Te han mandado (1)")).toBeVisible({ timeout: 30_000 });
 });

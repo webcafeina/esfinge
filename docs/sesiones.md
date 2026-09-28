@@ -7,6 +7,19 @@ Plantilla al final.
 
 ## 2026-09-28 · La C3: Windows Hello, a ciegas pero comprobando lo que se puede
 
+- **Y compartir, comprobado entre dos cuentas y dos Macs: el plan de cuentas queda cerrado entero.** Las
+  dos huellas coinciden, la copia llega al buzón, se acepta, y al cambiarla en el equipo que la recibe la
+  original no cambia.
+- **Y salió un fallo de verdad, y lo encontró la pregunta más simple: «¿dónde está el buzón?».** No estaba:
+  la lista se pedía solo al montar la pantalla de la bóveda, así que con la bóveda abierta una copia que
+  llegaba **no se veía nunca**. Arreglado en la 2.28.1 colgándolo de la sincronización —sin reloj propio y
+  sin contar como actividad—. **Lo que lo tapaba era la prueba**: mandaba a su propia cuenta, que es el
+  único caso con un refresco escrito a mano, así que demostraba el camino en el que el fallo no ocurre.
+  Ahora manda por el puente para que la ventana no se entere, y se vio roja antes de darla por buena.
+- **Y montar la prueba enseñó dos cosas más**: crear una cuenta **adopta la bóveda que haya**, y con ella
+  **su identidad** —dos cuentas con la misma bóveda dan la misma huella, así que compararlas habría salido
+  bien sin comprobar nada—; y que **tu propia huella solo se ve desde el Compartir de una entrada**, de modo
+  que una cuenta recién creada no tiene de dónde leerla. En `deuda.md` las dos.
 - **Firefox, comprobado por el cliente: «pruebas de Firefox perfectas»**, y con eso se cierra la E3 —la
   última tarea del plan de cuentas, dicha así tres veces— salvo compartir. Con Esfinge cerrada: entrar con
   la cuenta desde el panel, rellenar, el código de un solo uso, guardar desde la página, y ese cambio en la

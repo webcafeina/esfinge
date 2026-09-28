@@ -42,9 +42,26 @@ cambio aparece luego en la aplicación. Con los permisos de sitios dados a mano,
 conceden al instalar. **Con eso se cierra la E3**, que era la última tarea del plan de cuentas dicha así
 tres veces.
 
-**Lo único que queda de todo el plan: comprobar compartir**, con dos cuentas de verdad. Nunca se ha hecho
-de punta a punta: la B se publicó en la 2.26.0 y lo que se probó fue la invitación a quien no tiene cuenta,
-no el envío entre dos cuentas con su buzón y su huella.
+**Y compartir, comprobado el 2026-09-28 entre dos cuentas de verdad y dos Macs.** Con eso **el plan de
+cuentas queda cerrado entero**. Lo que se vio funcionando: **las dos huellas coinciden** —comparadas a
+mano, que es lo único que protege del servidor en el primer envío—, la copia llega al buzón, se acepta, y
+**al cambiarla en el equipo que la recibe la original no cambia**, que es lo que se decidió: se manda una
+copia y al llegar es suya.
+
+**Y salieron tres cosas, una de ellas un fallo de verdad** (todas en [`deuda.md`](deuda.md)):
+
+- **El buzón no se enteraba de nada hasta cerrar y abrir la bóveda.** La lista se pedía solo al montar la
+  pantalla, así que con la bóveda abierta una copia que llegaba no se veía nunca. **Arreglado en la 2.28.1**:
+  se mira en cada pasada de sincronización que sale bien. Y lo que lo tapaba era la prueba: **mandaba a su
+  propia cuenta**, el único caso con un refresco escrito a mano.
+- **Tu propia huella solo se ve desde el Compartir de una entrada**, así que una cuenta recién creada —con
+  la bóveda vacía— no tiene de dónde leerla. Y es justo quien más la necesita.
+- **El botón de borrar la cuenta no se encuentra** buscándolo a propósito.
+
+**Montarlo enseñó algo que no estaba escrito**: crear una cuenta **adopta la bóveda que haya** en ese
+equipo —correcto para quien viene de local, y una trampa para probar—, y con ella **su identidad**: dos
+cuentas con la misma bóveda tienen la misma huella, así que compararlas habría salido bien sin comprobar
+nada.
 
 Y si se va a la C3, releer antes la ADR 0044: la credencial de Hello en un Win32 sin empaquetar **está
 atada a la cuenta de usuario y no a la aplicación**, así que ahí el cerrojo es todavía más cerrojo.

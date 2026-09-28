@@ -12,6 +12,7 @@ import {
   type ResumenImportacion,
   type TipoEntrada,
   alCambiarLaBoveda,
+  alCambiarLaSincro,
   alCambiarElEstadoDeLaBoveda,
 } from "./puente";
 import { CampoClave, dominioDe, Icono, Monograma, Segmentado } from "./componentes";
@@ -951,6 +952,38 @@ function Dentro({
   useEffect(() => {
     void mirarElBuzon();
   }, [mirarElBuzon]);
+
+  // **Y en cada pasada de la sincronización**, que es lo que faltaba.
+  //
+  // Hasta aquí el buzón se pedía **solo al montar esta pantalla**, así que con la
+  // bóveda abierta una copia que llegaba **no se veía nunca**: ni al cambiar de
+  // sección —las secciones se esconden, no se desmontan— ni al sincronizar. Lo
+  // encontró el cliente en la primera prueba de compartir de verdad, con la
+  // pregunta más simple que hay: «¿dónde está el buzón?».
+  //
+  // Se cuelga de la sincronización y **no de un reloj propio**: ya corre cada
+  // cinco minutos, al volver el foco y después de cada guardado, así que no hace
+  // falta inventar otra cadencia. Y se pide **al terminar la pasada**, no al
+  // empezarla, que es cuando el servidor ya tiene lo que haya llegado.
+  //
+  // Esto **no cuenta como actividad**, y es la razón de que se pueda hacer:
+  // `Buzon` no llama a `Actividad()`, así que una bóveda abierta encima de la mesa
+  // se sigue cerrando sola aunque el buzón se mire cada cinco minutos.
+  //
+  // Y **solo cuando la pasada sale bien**, no cada vez que el estado cambia. La
+  // primera versión preguntaba con cualquier estado que no fuera «sincronizando»,
+  // y eso incluye «hay que entrar» —que llega **con la bóveda ya cerrada**, porque
+  // la cuenta ha olvidado este equipo—: entonces el puente contesta 400 y la
+  // consola se llena de errores que no son errores. Lo cazó la prueba de las dos
+  // ventanas. Con el resto de estados tampoco se gana nada: sin conexión ni sesión
+  // no hay buzón que mirar.
+  useEffect(
+    () =>
+      alCambiarLaSincro((e) => {
+        if (e.estado === "al-dia") void mirarElBuzon();
+      }),
+    [mirarElBuzon],
+  );
 
   // **Y cuando el navegador guarda o actualiza una cuenta, la lista se pide otra vez.**
   // Lo escribe otro —la extensión, por el canal—, y sin este aviso la lista seguía
