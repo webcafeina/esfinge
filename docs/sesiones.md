@@ -26,8 +26,10 @@ Plantilla al final.
 - Y se dice lo que en Windows protege menos: allí una credencial genérica **la lee cualquier proceso que
   corra como tú, sin preguntar**, mientras que el llavero de macOS al menos pregunta. No cambia la promesa
   de la ADR 0044, pero el margen es más estrecho.
-- Verificado: `make comprobar` en verde (salida 0), los seis cruces y `GOOS=windows go vet` limpio. **Sin
-  publicar**: no hay quien la pruebe, así que viaja con la próxima versión.
+- Verificado: `make comprobar` en verde (salida 0), los seis cruces, `GOOS=windows go vet` limpio y
+  **`compilar.yml` en verde en los tres sistemas**, o sea que Wails la enlaza en un Windows de verdad, que
+  es más de lo que dice un cruce desde aquí. **Sin publicar**: no hay quien la pruebe, así que viaja con la
+  próxima versión.
 
 ## 2026-09-25 (tarde) · La huella deja de ser un botón, y la bóveda la ofrece sola
 
