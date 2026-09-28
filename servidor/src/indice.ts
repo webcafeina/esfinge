@@ -723,7 +723,7 @@ async function mandarOFallar(env: Env, c: Carta) {
 	// lo tiene que arreglar.
 	// Y si lo que falló fue la autenticación, con **la forma** de lo que hay guardado
 	// —nunca su valor—: un `535` no dice cuál de las dos credenciales no le gusta.
-	const forma = como.porque?.startsWith("AUTH") ? formaDeLasCredenciales(env.SMTP_USUARIO ?? "", env.SMTP_CLAVE ?? "") : "";
+	const forma = como.porque?.startsWith("AUTH") ? await formaDeLasCredenciales(env.SMTP_USUARIO ?? "", env.SMTP_CLAVE ?? "") : "";
 	const detalle = env.ENTORNO === "pruebas" && como.porque ? { detalle: como.porque + forma } : {};
 	if (como.entregado === "cupo") {
 		throw new Fallo(503, "Hoy no se pueden mandar más correos. Vuelve a intentarlo mañana.", detalle);

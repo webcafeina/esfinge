@@ -7,6 +7,7 @@ import {
 	componer,
 	doblarElPunto,
 	formaDeLasCredenciales,
+	huellaDeLaClave,
 	Lector,
 	queHaPasado,
 	soloLaDireccion,
@@ -96,17 +97,31 @@ describe("la forma de las credenciales", () => {
 	 * demás son comodidades para quien la está configurando; esto es la razón de que
 	 * exista una función y no un `${clave}` escrito a mano en el sitio del error.
 	 */
-	it("no enseña la contraseña, ni entera ni en trozos", () => {
+	it("no enseña la contraseña, ni entera ni en trozos", async () => {
 		const clave = "abcdefghijklmnop";
-		const forma = formaDeLasCredenciales("esfinge@webcafeina.com", clave);
+		const forma = await formaDeLasCredenciales("esfinge@webcafeina.com", clave);
 		expect(forma).not.toContain(clave);
 		for (let i = 0; i + 4 <= clave.length; i++) expect(forma).not.toContain(clave.slice(i, i + 4));
 	});
 
-	it("dice cuántos caracteres tiene y quién es el usuario", () => {
-		expect(formaDeLasCredenciales("esfinge@webcafeina.com", "abcdefghijklmnop")).toBe(
-			" · usuario «esfinge@webcafeina.com», clave de 16 caracteres",
+	it("dice cuántos caracteres tiene y quién es el usuario", async () => {
+		expect(await formaDeLasCredenciales("esfinge@webcafeina.com", "abcdefghijklmnop")).toBe(
+			" · usuario «esfinge@webcafeina.com», clave de 16 caracteres, huella f39dac6c",
 		);
+	});
+
+	/**
+	 * **La huella es la misma que saca `shasum` en un Mac**, que es de donde viene la
+	 * otra mitad de la comparación. Si esto se calculara de otra forma —con sal, o
+	 * sobre otra codificación— la comparación no diría nada y nadie se daría cuenta.
+	 */
+	it("saca los primeros cuatro bytes del SHA-256, como shasum", async () => {
+		// printf %s hola | shasum -a 256  →  b221d9db…
+		expect(await huellaDeLaClave("hola")).toBe("b221d9db");
+	});
+
+	it("distingue dos contraseñas de aplicación, que miden las dos dieciséis", async () => {
+		expect(await huellaDeLaClave("abcdefghijklmnop")).not.toBe(await huellaDeLaClave("abcdefghijklmnoq"));
 	});
 
 	/**
@@ -114,9 +129,9 @@ describe("la forma de las credenciales", () => {
 	 * aplicación en grupos de cuatro y el portapapeles se lleva los espacios; lo que
 	 * sale de ahí es un `535` idéntico al de una contraseña equivocada.
 	 */
-	it("avisa de los espacios, que es el error que se comete", () => {
-		expect(formaDeLasCredenciales("x@y.com", "abcd efgh ijkl mnop")).toContain("y lleva espacios");
-		expect(formaDeLasCredenciales("x@y.com", "abcdefghijklmnop\n")).toContain("y lleva espacios");
+	it("avisa de los espacios, que es el error que se comete", async () => {
+		expect(await formaDeLasCredenciales("x@y.com", "abcd efgh ijkl mnop")).toContain("y lleva espacios");
+		expect(await formaDeLasCredenciales("x@y.com", "abcdefghijklmnop\n")).toContain("y lleva espacios");
 	});
 });
 

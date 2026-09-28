@@ -161,9 +161,28 @@ export function doblarElPunto(mensaje: string): string {
  * Lo enseña **solo el Worker de pruebas** (`indice.ts`), como todo lo demás que
  * cuenta por qué ha fallado algo.
  */
-export function formaDeLasCredenciales(usuario: string, clave: string): string {
+export async function formaDeLasCredenciales(usuario: string, clave: string): Promise<string> {
 	const espacios = /\s/.test(clave) ? ", y lleva espacios" : "";
-	return ` · usuario «${usuario}», clave de ${clave.length} caracteres${espacios}`;
+	return ` · usuario «${usuario}», clave de ${clave.length} caracteres${espacios}, huella ${await huellaDeLaClave(clave)}`;
+}
+
+/**
+ * Ocho cifras hexadecimales de su SHA-256: bastan para **comparar** dos
+ * contraseñas sin enseñar ninguna de las dos.
+ *
+ * Existe porque todas las contraseñas de aplicación de Google miden dieciséis
+ * caracteres, así que el largo no distingue una de otra: con una que funciona en un
+ * sitio y falla en otro, la pregunta «¿son la misma?» no se podía contestar. Se
+ * contesta sacando la huella en los dos sitios y mirando si coinciden — el mismo
+ * trato que se le da a la identidad al compartir una entrada.
+ *
+ * **No la revela**: son dieciséis letras minúsculas, 26¹⁶ combinaciones, y de la
+ * huella salen treinta y dos bits. Aun así, esto lo enseña **solo el Worker de
+ * pruebas**, como todo lo demás que cuenta por qué ha fallado algo.
+ */
+export async function huellaDeLaClave(clave: string): Promise<string> {
+	const resumen = await crypto.subtle.digest("SHA-256", utf8.encode(clave));
+	return [...new Uint8Array(resumen).slice(0, 4)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**
