@@ -118,11 +118,15 @@
 				"JURISDICCION": "eu",
 				"REGISTRO": "abierto",
 				"REMITENTE": "Esfinge <esfinge@webcafeina.com>",
-				// **Temporal, de una sesión de diagnóstico** (2026-09-28), igual que
-				// `CARTERO`. Va aquí y no en el panel porque un despliegue con wrangler
-				// borra las variables de texto puestas a mano —los secretos no—, así que
-				// desplegar para poder leerla la habría borrado justo antes.
-				"SMTP_AUTH": "login"
+				// **Temporal, de una sesión de diagnóstico** (2026-09-28). Va aquí y no en
+				// el panel porque un despliegue con wrangler borra las variables de texto
+				// puestas a mano —los secretos no—, así que desplegar para poder leerla la
+				// habría borrado justo antes.
+				//
+				// El relay rechaza desde Cloudflare unas credenciales que acepta desde un
+				// Mac. Contra el servidor de envío de siempre se ve si lo que rechaza es
+				// **la IP** o **la entrada del relay**, que son dos arreglos distintos.
+				"SMTP_HOST": "smtp.gmail.com"
 			},
 			"d1_databases": [
 				{
