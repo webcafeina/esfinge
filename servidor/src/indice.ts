@@ -26,6 +26,7 @@ import {
 	normalizarCorreo,
 	SUITE_POR_DEFECTO,
 } from "./protocolo";
+import { formaDeLasCredenciales } from "./smtp";
 
 export { Cuenta };
 
@@ -720,7 +721,10 @@ async function mandarOFallar(env: Env, c: Carta) {
 	// que falla sin dejar nada que mirar no se depura, y eso costó la primera vez
 	// que se probó el envío por SMTP. En producción no, porque ahí no lo lee quien
 	// lo tiene que arreglar.
-	const detalle = env.ENTORNO === "pruebas" && como.porque ? { detalle: como.porque } : {};
+	// Y si lo que falló fue la autenticación, con **la forma** de lo que hay guardado
+	// —nunca su valor—: un `535` no dice cuál de las dos credenciales no le gusta.
+	const forma = como.porque?.startsWith("AUTH") ? formaDeLasCredenciales(env.SMTP_USUARIO ?? "", env.SMTP_CLAVE ?? "") : "";
+	const detalle = env.ENTORNO === "pruebas" && como.porque ? { detalle: como.porque + forma } : {};
 	if (como.entregado === "cupo") {
 		throw new Fallo(503, "Hoy no se pueden mandar más correos. Vuelve a intentarlo mañana.", detalle);
 	}

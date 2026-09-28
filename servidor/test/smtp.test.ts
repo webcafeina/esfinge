@@ -6,6 +6,7 @@ import {
 	CarteroSmtp,
 	componer,
 	doblarElPunto,
+	formaDeLasCredenciales,
 	Lector,
 	queHaPasado,
 	soloLaDireccion,
@@ -86,6 +87,36 @@ describe("armar el mensaje", () => {
 	it("dobla el punto que empieza una línea", () => {
 		expect(doblarElPunto("uno\r\n.dos\r\ntres")).toBe("uno\r\n..dos\r\ntres");
 		expect(doblarElPunto("uno\r\ndos")).toBe("uno\r\ndos");
+	});
+});
+
+describe("la forma de las credenciales", () => {
+	/**
+	 * Lo único que de verdad importa de esta función: **la contraseña no sale**. Lo
+	 * demás son comodidades para quien la está configurando; esto es la razón de que
+	 * exista una función y no un `${clave}` escrito a mano en el sitio del error.
+	 */
+	it("no enseña la contraseña, ni entera ni en trozos", () => {
+		const clave = "abcdefghijklmnop";
+		const forma = formaDeLasCredenciales("esfinge@webcafeina.com", clave);
+		expect(forma).not.toContain(clave);
+		for (let i = 0; i + 4 <= clave.length; i++) expect(forma).not.toContain(clave.slice(i, i + 4));
+	});
+
+	it("dice cuántos caracteres tiene y quién es el usuario", () => {
+		expect(formaDeLasCredenciales("esfinge@webcafeina.com", "abcdefghijklmnop")).toBe(
+			" · usuario «esfinge@webcafeina.com», clave de 16 caracteres",
+		);
+	});
+
+	/**
+	 * **El caso para el que se escribió.** Google enseña las contraseñas de
+	 * aplicación en grupos de cuatro y el portapapeles se lleva los espacios; lo que
+	 * sale de ahí es un `535` idéntico al de una contraseña equivocada.
+	 */
+	it("avisa de los espacios, que es el error que se comete", () => {
+		expect(formaDeLasCredenciales("x@y.com", "abcd efgh ijkl mnop")).toContain("y lleva espacios");
+		expect(formaDeLasCredenciales("x@y.com", "abcdefghijklmnop\n")).toContain("y lleva espacios");
 	});
 });
 

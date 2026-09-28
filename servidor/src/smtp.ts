@@ -146,6 +146,27 @@ export function doblarElPunto(mensaje: string): string {
 }
 
 /**
+ * La **forma** de las credenciales, nunca su valor.
+ *
+ * Existe porque el `535` de Google dice «usuario o contraseña no aceptados» y no
+ * distingue cuál de los dos, ni si lo que hay guardado en el Worker es lo que se
+ * quiso guardar. Y el error más probable de todos es un espacio: Google enseña las
+ * contraseñas de aplicación **en grupos de cuatro** y el portapapeles se los lleva.
+ *
+ * El usuario sale entero —es una dirección de correo, no un secreto, y es la mitad
+ * del problema—. De la clave salen **cuántos caracteres tiene y si lleva espacios**,
+ * que es lo que hace falta para arreglarlo sin verla nunca. Hay una prueba que mete
+ * una clave de verdad y comprueba que no aparece.
+ *
+ * Lo enseña **solo el Worker de pruebas** (`indice.ts`), como todo lo demás que
+ * cuenta por qué ha fallado algo.
+ */
+export function formaDeLasCredenciales(usuario: string, clave: string): string {
+	const espacios = /\s/.test(clave) ? ", y lleva espacios" : "";
+	return ` · usuario «${usuario}», clave de ${clave.length} caracteres${espacios}`;
+}
+
+/**
  * El mensaje entero, listo para el `DATA`. **Es una función pura**: se le pasan el
  * momento y el identificador para poder compararla byte a byte en una prueba.
  *

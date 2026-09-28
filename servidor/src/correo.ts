@@ -88,8 +88,12 @@ export function carteroPara(env: Env): Cartero {
 			// **Un dominio de verdad.** Con el nombre de la máquina, Google contesta
 			// `421 4.7.0`. Lo aprendió Cronos en producción.
 			ehlo: env.SMTP_EHLO || "esfinge-cuentas.webcafeina.com",
-			usuario: env.SMTP_USUARIO ?? "",
-			clave: env.SMTP_CLAVE ?? "",
+			// **Recortadas.** Un espacio o un salto de línea alrededor de una credencial
+			// no es nunca lo que alguien quiso escribir: es lo que se pega sin querer al
+			// copiarla. Y lo que produce es un `535` idéntico al de una contraseña mal
+			// puesta, que no se distingue ni mirándolo.
+			usuario: (env.SMTP_USUARIO ?? "").trim(),
+			clave: (env.SMTP_CLAVE ?? "").trim(),
 			remitente: env.REMITENTE,
 		},
 		(host, puerto) => connect({ hostname: host, port: puerto }, { secureTransport: "on", allowHalfOpen: false }),
