@@ -1,0 +1,37 @@
+# =============================================================================
+# El cartero de Esfinge en el VPS.
+#
+# **Sin `ports:`**: no se asoma a la máquina. El Caddy compartido llega por la red
+# externa `esfinge-borde`, igual que hacen Cronos y Tempero. Asomarlo pondría en
+# internet, sin TLS, algo que manda correo como webcafeína.
+#
+# Los secretos van en `.env` **al lado de este fichero**, que no se sube:
+#   CARTERO_SECRETO=...   # el mismo que el Worker (openssl rand -hex 32)
+#   SMTP_FROM=Esfinge <esfinge@webcafeina.com>
+# =============================================================================
+services:
+  cartero:
+    image: esfinge-cartero:${ESFINGE_VERSION:-local}
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PUERTO: "8791"
+    networks:
+      borde:
+        # Con lo que lo llama el Caddy. Un alias y no el nombre del contenedor,
+        # que cambia al recrearlo.
+        aliases: [esfinge-cartero]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8791/salud').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+networks:
+  borde:
+    name: esfinge-borde
+    external: true

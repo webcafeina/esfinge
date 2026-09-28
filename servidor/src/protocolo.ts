@@ -16,16 +16,12 @@ export interface Env {
 	REMITENTE: string;
 	PIMIENTA: string;
 	SECRETO_PRELOGIN: string;
-	/** `smtp` **solo en el Worker de pruebas**, a mano, para ejercitar el envío. */
-	CARTERO?: string;
-	SMTP_HOST?: string;
-	SMTP_PUERTO?: string;
-	SMTP_EHLO?: string;
-	/** `plain` o `login` para forzar el mecanismo de autenticación. Diagnóstico. */
-	SMTP_AUTH?: string;
-	/** Usuario de Workspace y su contraseña de aplicación. Los dos, secretos. */
-	SMTP_USUARIO?: string;
-	SMTP_CLAVE?: string;
+	/** `enviar` **solo en el Worker de pruebas**, a mano, para ejercitar el envío. */
+	CORREO?: string;
+	/** Dónde entrega el cartero del VPS. */
+	CARTERO_URL?: string;
+	/** El secreto compartido con él. Secreto de verdad, no variable. */
+	CARTERO_SECRETO?: string;
 	TOPE_ALTAS_DIA?: string;
 	TOPE_ALTAS_IP_DIA?: string;
 	TOPE_CODIGOS_IP_DIA?: string;

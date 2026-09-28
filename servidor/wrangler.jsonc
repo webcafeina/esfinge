@@ -35,17 +35,13 @@
 		// volver a cerrarlo.
 		"REGISTRO": "abierto",
 		"REMITENTE": "Esfinge <esfinge@webcafeina.com>",
-		// El relay SMTP de Google Workspace (ADR 0045). El usuario y la contraseña de
-		// aplicación son secretos y van con `wrangler secret put`.
-		"SMTP_HOST": "smtp-relay.gmail.com",
-		// **465 con TLS implícito, no 587 con STARTTLS.** Con STARTTLS hay una fase en
-		// claro donde un atacante activo puede quitar el anuncio y quedarse con la
-		// contraseña de Workspace y el código de seis cifras.
-		"SMTP_PUERTO": "465",
-		// **Un dominio de verdad**, o Google contesta `421 4.7.0`. Lo aprendió Cronos.
-		"SMTP_EHLO": "esfinge-cuentas.webcafeina.com",
+		// Dónde entrega el cartero del VPS (ADR 0045). **El Worker no puede entregar el
+		// correo él mismo**: Google rechaza la autenticación SMTP cuando la conexión
+		// sale de Cloudflare, y la IPv4 del VPS sí está autorizada en el relé. El
+		// secreto compartido con él va con `wrangler secret put CARTERO_SECRETO`.
+		"CARTERO_URL": "https://cartero.webcafeina.com/entregar",
 		// **Los topes del día caben en lo que da el correo** (ADR 0041, y ahora la
-		// 0045). El relay da **diez mil correos al día** por usuario y **cada alta gasta
+		// 0045). El relé da **diez mil correos al día** y **cada alta gasta
 		// dos** —el código y la constancia—, así que doscientas altas son cuatrocientos
 		// correos: menos de la mitad de la mitad del presupuesto, y queda de sobra para
 		// entradas desde equipos nuevos, recuperaciones, cambios de contraseña e

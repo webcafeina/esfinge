@@ -1,0 +1,38 @@
+# =============================================================================
+# El cartero de Esfinge — https://cartero.webcafeina.com
+# -----------------------------------------------------------------------------
+# **Copia de referencia.** El que manda vive en el VPS, en
+# `~/produccion/webcafeina-local/sites/esfinge.caddy`; si se toca allí, se toca aquí.
+# Los pasos para darlo de alta están en `sites/LEEME.md` de ese mismo sitio.
+#
+# `esfinge-cartero` es un alias de red del compose de `cartero/`, no el nombre del
+# contenedor: el nombre cambia al recrearlo y el alias no.
+#
+# Quién habla con esto: **solo el Worker de cuentas**, que vive en Cloudflare. No hay
+# personas detrás, así que no hace falta nada de lo que llevan los sitios de al lado
+# —ni compresión, ni SPA, ni cabeceras de navegador—.
+# =============================================================================
+
+cartero.webcafeina.com {
+	# El registro es aquí lo único que queda de un envío cuando algo va mal, y este
+	# servicio no guarda nada más. Sin dirección de destino en claro: por el cuerpo
+	# pasan correos de gente, y una lista de a quién le ha escrito Esfinge es
+	# exactamente lo que el resto del proyecto se esfuerza en no tener.
+	log {
+		output file /var/log/caddy/esfinge-cartero-access.log {
+			roll_size 10MiB
+			roll_keep 10
+			roll_keep_for 720h
+		}
+		format filter {
+			wrap json
+			fields {
+				request>headers>X-Esfinge-Secreto delete
+				request>headers>Authorization delete
+				request>headers>Cookie delete
+			}
+		}
+	}
+
+	reverse_proxy esfinge-cartero:8791
+}

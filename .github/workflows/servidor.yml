@@ -5,7 +5,7 @@
 # pasa además por el entorno `produccion` de GitHub, que pide aprobación.
 #
 # Lo que **no** hace este flujo, a propósito: poner los secretos del Worker
-# (`PIMIENTA`, `SECRETO_PRELOGIN`, `SMTP_USUARIO`, `SMTP_CLAVE`). Los pone quien administra la
+# (`PIMIENTA`, `SECRETO_PRELOGIN`, `CARTERO_SECRETO`). Los pone quien administra la
 # cuenta de Cloudflare, una vez, con `wrangler secret put`. Aquí solo hay un token
 # para desplegar, que no sirve para leerlos.
 name: Servidor de cuentas

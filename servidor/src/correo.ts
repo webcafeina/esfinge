@@ -3,15 +3,14 @@
 // **El código va en el cuerpo, nunca en el asunto**: el asunto se ve en la pantalla
 // bloqueada del móvil de cualquiera que esté al lado.
 //
-// En producción salen por el **relay SMTP de Google Workspace** (ADR 0045); en el
-// Worker de pruebas se quedan en una tabla que lee la ruta `/_pruebas/buzon`, y así
-// las pruebas de punta a punta pueden entrar sin un buzón de verdad. **Esa ruta no
-// existe fuera de pruebas**, y hay una prueba que lo vigila.
+// En producción los compone este Worker y los entrega `cartero/`, en el VPS, por el
+// relé de Google Workspace (ADR 0045). En el Worker de pruebas se quedan en una tabla
+// que lee la ruta `/_pruebas/buzon`, y así las pruebas de punta a punta pueden entrar
+// sin un buzón de verdad. **Esa ruta no existe fuera de pruebas**, y hay una prueba
+// que lo vigila.
 
-import { connect } from "cloudflare:sockets";
-
+import { componer } from "./mensaje";
 import type { Env } from "./protocolo";
-import { CarteroSmtp } from "./smtp";
 
 export interface Carta {
 	para: string;
@@ -64,41 +63,73 @@ export interface Cartero {
  * Cómo se manda **de verdad** y dónde se guardan las pruebas son dos cosas
  * distintas, y por eso esto no es un simple `if` sobre `ENTORNO`.
  *
- * **En producción es siempre SMTP, diga lo que diga la variable.** Solo el Worker de
- * pruebas puede promoverse a mandar de verdad, poniéndole `CARTERO=smtp` a mano
- * durante una sesión de comprobación — que es la única forma de ejercitar el
- * transporte, porque la integración continua no puede. Escrito al revés, una errata
- * en una variable apagaría el correo de producción **en silencio**, y sin correo no
- * hay quien se dé de alta ni entre desde un equipo nuevo.
+ * **En producción se manda siempre, diga lo que diga la variable.** Solo el Worker de
+ * pruebas puede promoverse a mandar de verdad, poniéndole `CORREO=enviar` a mano
+ * durante una sesión de comprobación — que es la única forma de ejercitar la entrega,
+ * porque la integración continua no puede. Escrito al revés, una errata en una
+ * variable apagaría el correo de producción **en silencio**, y sin correo no hay
+ * quien se dé de alta ni entre desde un equipo nuevo.
  *
- * Mientras `CARTERO=smtp` esté puesto, las pruebas que leen `/_pruebas/buzon` no
+ * Mientras `CORREO=enviar` esté puesto, las pruebas que leen `/_pruebas/buzon` no
  * encuentran nada: es una sesión acotada, no un estado en el que dejar el Worker.
  */
-export function modoDeCorreo(env: Env): "smtp" | "buzon" {
-	if (env.ENTORNO !== "pruebas") return "smtp";
-	return env.CARTERO === "smtp" ? "smtp" : "buzon";
+export function modoDeCorreo(env: Env): "enviar" | "buzon" {
+	if (env.ENTORNO !== "pruebas") return "enviar";
+	return env.CORREO === "enviar" ? "enviar" : "buzon";
 }
 
 export function carteroPara(env: Env): Cartero {
 	if (modoDeCorreo(env) === "buzon") return new CarteroDePruebas(env.BD);
-	return new CarteroSmtp(
-		{
-			host: env.SMTP_HOST || "smtp-relay.gmail.com",
-			puerto: Number(env.SMTP_PUERTO || "465"),
-			// **Un dominio de verdad.** Con el nombre de la máquina, Google contesta
-			// `421 4.7.0`. Lo aprendió Cronos en producción.
-			ehlo: env.SMTP_EHLO || "esfinge-cuentas.webcafeina.com",
-			// **Recortadas.** Un espacio o un salto de línea alrededor de una credencial
-			// no es nunca lo que alguien quiso escribir: es lo que se pega sin querer al
-			// copiarla. Y lo que produce es un `535` idéntico al de una contraseña mal
-			// puesta, que no se distingue ni mirándolo.
-			mecanismo: env.SMTP_AUTH === "login" || env.SMTP_AUTH === "plain" ? env.SMTP_AUTH : undefined,
-			usuario: (env.SMTP_USUARIO ?? "").trim(),
-			clave: (env.SMTP_CLAVE ?? "").trim(),
-			remitente: env.REMITENTE,
-		},
-		(host, puerto) => connect({ hostname: host, port: puerto }, { secureTransport: "on", allowHalfOpen: false }),
-	);
+	return new CarteroPorElVps({
+		url: env.CARTERO_URL || "https://cartero.webcafeina.com/entregar",
+		// **Recortado.** Un espacio o un salto de línea alrededor de un secreto no es
+		// nunca lo que alguien quiso escribir: es lo que se pega sin querer al copiarlo.
+		secreto: (env.CARTERO_SECRETO ?? "").trim(),
+		remitente: env.REMITENTE,
+	});
+}
+
+/**
+ * Manda el correo ya compuesto a `cartero/`, que lo entrega desde el VPS.
+ *
+ * **El Worker no puede entregarlo él mismo** (ADR 0045): Google rechaza la
+ * autenticación SMTP cuando la conexión sale de Cloudflare. La IPv4 del VPS sí está
+ * autorizada en el relé. Lo que cruza es el mensaje entero, para que la maqueta y su
+ * composición —que son lo que está probado— se queden aquí.
+ *
+ * Tres cosas de las que dependen promesas escritas en otro sitio:
+ *
+ *   - **El plazo.** Cinco de los diez correos son bloqueantes, así que un cartero que
+ *     no conteste dejaría la petición colgada.
+ *   - **«Cupo» no es «fallo»** (ADR 0041): el cartero lo dice con un 429, y decir
+ *     «prueba otra vez en un momento» cuando la verdad es «mañana» sería mentir.
+ *   - **El porqué viaja**, y solo lo enseña el Worker de pruebas. Un correo que falla
+ *     sin dejar nada que mirar no se depura, y eso ya costó una tarde entera.
+ */
+export class CarteroPorElVps implements Cartero {
+	constructor(
+		private a: { url: string; secreto: string; remitente: string; plazo?: number },
+		private pedir: typeof fetch = fetch,
+	) {}
+
+	async mandar(c: Carta): Promise<Envio> {
+		try {
+			const r = await this.pedir(this.a.url, {
+				method: "POST",
+				headers: { "content-type": "message/rfc822", "x-esfinge-secreto": this.a.secreto },
+				body: componer(c, this.a.remitente),
+				signal: AbortSignal.timeout(this.a.plazo ?? 10_000),
+			});
+			if (r.ok) return { entregado: "ok" };
+			// Acotado: lo que contesta el cartero es nuestro, pero lo que contesta un
+			// proxy en medio un día raro puede ser una página entera.
+			const dijo = (await r.text()).slice(0, 200).replace(/\s+/g, " ").trim();
+			if (r.status === 429) return { entregado: "cupo", porque: `el cartero dice que no caben más: ${dijo}` };
+			return { entregado: "fallo", porque: `el cartero contestó ${r.status}: ${dijo}` };
+		} catch (e) {
+			return { entregado: "fallo", porque: `no se pudo hablar con el cartero: ${e}` };
+		}
+	}
 }
 
 class CarteroDePruebas implements Cartero {

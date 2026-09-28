@@ -11,7 +11,7 @@ function con(cambios: Partial<typeof env>, metodo: string, ruta: string, cuerpo?
 
 describe("lo que solo es de pruebas no está en producción", () => {
 	it("el buzón de pruebas da 404 fuera del Worker de pruebas", async () => {
-		expect((await con({ ENTORNO: "produccion", SMTP_USUARIO: "quien@webcafeina.com", SMTP_CLAVE: "la-de-aplicacion" }, "GET", "/_pruebas/buzon?correo=a@ejemplo.com")).status).toBe(404);
+		expect((await con({ ENTORNO: "produccion", CARTERO_SECRETO: "el-secreto-del-cartero" }, "GET", "/_pruebas/buzon?correo=a@ejemplo.com")).status).toBe(404);
 		expect((await con({ ENTORNO: "pruebas" }, "GET", "/_pruebas/buzon?correo=a@ejemplo.com")).status).toBe(200);
 	});
 
@@ -21,17 +21,16 @@ describe("lo que solo es de pruebas no está en producción", () => {
 			{ PIMIENTA: "corta" },
 			{ SECRETO_PRELOGIN: undefined },
 			{ SECRETO_PRELOGIN: env.PIMIENTA },
-			{ ENTORNO: "produccion", SMTP_USUARIO: undefined },
-			{ ENTORNO: "produccion", SMTP_CLAVE: undefined },
+			{ ENTORNO: "produccion", CARTERO_SECRETO: undefined },
 		]) {
 			const r = await con(falta as Partial<typeof env>, "GET", "/v1/salud");
 			expect(r.status, JSON.stringify(falta)).toBe(503);
 		}
-		expect((await con({ ENTORNO: "produccion", SMTP_USUARIO: "quien@webcafeina.com", SMTP_CLAVE: "la-de-aplicacion" }, "GET", "/v1/salud")).status).toBe(200);
+		expect((await con({ ENTORNO: "produccion", CARTERO_SECRETO: "el-secreto-del-cartero" }, "GET", "/v1/salud")).status).toBe(200);
 	});
 
 	it("un fallo por dentro no cuenta nada en producción", async () => {
-		const r = await con({ ENTORNO: "produccion", SMTP_USUARIO: "quien@webcafeina.com", SMTP_CLAVE: "x", JURISDICCION: "us" }, "POST", "/v1/prelogin", { correo: "a@ejemplo.com" });
+		const r = await con({ ENTORNO: "produccion", CARTERO_SECRETO: "el-secreto-del-cartero", JURISDICCION: "us" }, "POST", "/v1/prelogin", { correo: "a@ejemplo.com" });
 		expect(r.status).toBe(500);
 		expect(Object.keys((await r.json()) as object)).toEqual(["error"]);
 	});

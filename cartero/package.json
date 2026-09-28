@@ -1,0 +1,19 @@
+{
+	"name": "esfinge-cartero",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"comprobar": "tsc --noEmit && vitest run",
+		"construir": "tsc -p tsconfig.construir.json",
+		"empezar": "node dist/cartero.js"
+	},
+	"dependencies": {
+		"nodemailer": "7.0.9"
+	},
+	"devDependencies": {
+		"@types/node": "22.19.1",
+		"@types/nodemailer": "7.0.4",
+		"typescript": "5.9.3",
+		"vitest": "4.1.11"
+	}
+}
