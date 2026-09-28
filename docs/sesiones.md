@@ -7,6 +7,11 @@ Plantilla al final.
 
 ## 2026-09-28 · La C3: Windows Hello, a ciegas pero comprobando lo que se puede
 
+- **Firefox, comprobado por el cliente: «pruebas de Firefox perfectas»**, y con eso se cierra la E3 —la
+  última tarea del plan de cuentas, dicha así tres veces— salvo compartir. Con Esfinge cerrada: entrar con
+  la cuenta desde el panel, rellenar, el código de un solo uso, guardar desde la página, y ese cambio en la
+  aplicación después. Los permisos de sitios, dados a mano.
+
 - **`internal/llavero/llavero_windows.go`**: `UserConsentVerifier` por `IUserConsentVerifierInterop` —la
   llamada normal no vale en una aplicación de escritorio, hace falta el identificador de la ventana— y el
   secreto en el **Administrador de credenciales**. Toda la fontanería de WinRT a mano: activar la clase,

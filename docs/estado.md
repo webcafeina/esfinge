@@ -36,8 +36,15 @@ alguien lo abra en un Windows, eso será lo único que haya.
 **Publicada en la 2.28.0** (2026-09-28), por decisión del cliente. No hay quien la pruebe —no tenemos un
 Windows—, así que sale sabiendo que **lo único comprobado es que compila y enlaza**.
 
-**Lo siguiente** es lo último que queda del plan de cuentas, y lo hace el cliente: **probar Firefox** y
-**comprobar compartir entre sus dos Macs**, que dijo de hacer juntos.
+**Y Firefox, comprobado el 2026-09-28: «pruebas de Firefox perfectas»** (cliente). Con Esfinge **cerrada**:
+entra con la cuenta desde el panel, rellena, da el código de un solo uso, guarda desde la página y ese
+cambio aparece luego en la aplicación. Con los permisos de sitios dados a mano, que en MV3 de Firefox no se
+conceden al instalar. **Con eso se cierra la E3**, que era la última tarea del plan de cuentas dicha así
+tres veces.
+
+**Lo único que queda de todo el plan: comprobar compartir**, con dos cuentas de verdad. Nunca se ha hecho
+de punta a punta: la B se publicó en la 2.26.0 y lo que se probó fue la invitación a quien no tiene cuenta,
+no el envío entre dos cuentas con su buzón y su huella.
 
 Y si se va a la C3, releer antes la ADR 0044: la credencial de Hello en un Win32 sin empaquetar **está
 atada a la cuenta de usuario y no a la aplicación**, así que ahí el cerrojo es todavía más cerrojo.
