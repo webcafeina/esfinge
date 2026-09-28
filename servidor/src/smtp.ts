@@ -38,7 +38,7 @@
 //     bloqueantes —los que llevan código—, así que un relay que no conteste dejaría
 //     la petición colgada.
 
-import type { Carta, Cartero, Entregado } from "./correo";
+import type { Carta, Cartero, Entregado, Envio } from "./correo";
 
 /** Lo que este código necesita de un socket. `connect()` lo cumple, y un doble también. */
 export interface Conexion {
@@ -253,8 +253,11 @@ export function queHaPasado(r: Respuesta): Entregado {
 }
 
 class Fallo extends Error {
-	constructor(public entregado: Entregado) {
-		super(entregado);
+	constructor(
+		public entregado: Entregado,
+		public porque: string,
+	) {
+		super(porque);
 	}
 }
 
@@ -264,18 +267,19 @@ export class CarteroSmtp implements Cartero {
 		private conectar: Conectar,
 	) {}
 
-	async mandar(c: Carta): Promise<Entregado> {
+	async mandar(c: Carta): Promise<Envio> {
 		let cx: Conexion | null = null;
 		let reloj: ReturnType<typeof setTimeout> | undefined;
 		try {
 			cx = await this.conectar(this.a.host, this.a.puerto);
 			const conexion = cx;
 			const plazo = new Promise<never>((_, romper) => {
-				reloj = setTimeout(() => romper(new Fallo("fallo")), this.a.plazo ?? PLAZO_POR_DEFECTO);
+				reloj = setTimeout(() => romper(new Fallo("fallo", "se acabó el plazo")), this.a.plazo ?? PLAZO_POR_DEFECTO);
 			});
 			return await Promise.race([this.conversar(conexion, c), plazo]);
 		} catch (e) {
-			return e instanceof Fallo ? e.entregado : "fallo";
+			if (e instanceof Fallo) return { entregado: e.entregado, porque: e.porque };
+			return { entregado: "fallo", porque: `${e}` };
 		} finally {
 			if (reloj !== undefined) clearTimeout(reloj);
 			// **Se cierra siempre**, también por el camino del error: un socket que se
@@ -285,42 +289,44 @@ export class CarteroSmtp implements Cartero {
 		}
 	}
 
-	private async conversar(cx: Conexion, c: Carta): Promise<Entregado> {
+	private async conversar(cx: Conexion, c: Carta): Promise<Envio> {
 		const lector = new Lector(cx.readable);
 		const escritor = cx.writable.getWriter();
 		const decir = async (linea: string) => {
 			await escritor.write(utf8.encode(linea + "\r\n"));
 		};
-		const esperar = async (bueno: (n: number) => boolean) => {
+		// **Cada espera dice en qué paso estaba.** Sin eso, lo único que queda de un
+		// envío que falla es «fallo», que es lo mismo que nada.
+		const esperar = async (paso: string, bueno: (n: number) => boolean) => {
 			const r = await lector.respuesta();
-			if (!bueno(r.codigo)) throw new Fallo(queHaPasado(r));
+			if (!bueno(r.codigo)) throw new Fallo(queHaPasado(r), `${paso}: ${r.texto.split("\n")[0]}`);
 			return r;
 		};
 
 		try {
-			await esperar((n) => n === 220);
+			await esperar("saludo", (n) => n === 220);
 
 			await decir(`EHLO ${this.a.ehlo}`);
-			const saludo = await esperar((n) => n === 250);
+			const saludo = await esperar("EHLO", (n) => n === 250);
 
 			await this.autenticar(saludo.texto, decir, esperar);
 
 			await decir(`MAIL FROM:<${soloLaDireccion(this.a.remitente)}>`);
-			await esperar((n) => n === 250);
+			await esperar("MAIL FROM", (n) => n === 250);
 
 			await decir(`RCPT TO:<${c.para}>`);
-			await esperar((n) => n === 250 || n === 251);
+			await esperar("RCPT TO", (n) => n === 250 || n === 251);
 
 			await decir("DATA");
-			await esperar((n) => n === 354);
+			await esperar("DATA", (n) => n === 354);
 
 			await escritor.write(utf8.encode(componer(c, this.a.remitente)));
 			await decir(".");
-			await esperar((n) => n === 250);
+			await esperar("cuerpo", (n) => n === 250);
 
 			// El adiós es cortesía, no condición: si falla, el correo ya está dentro.
 			await decir("QUIT").catch(() => {});
-			return "ok";
+			return { entregado: "ok" };
 		} finally {
 			await escritor.close().catch(() => {});
 		}
@@ -335,21 +341,21 @@ export class CarteroSmtp implements Cartero {
 	private async autenticar(
 		saludo: string,
 		decir: (l: string) => Promise<void>,
-		esperar: (b: (n: number) => boolean) => Promise<Respuesta>,
+		esperar: (paso: string, b: (n: number) => boolean) => Promise<Respuesta>,
 	) {
 		const anunciado = /^250[ -]AUTH (.*)$/im.exec(saludo)?.[1]?.toUpperCase() ?? "";
 		const { usuario, clave } = this.a;
 
 		if (!anunciado.includes("LOGIN") || anunciado.includes("PLAIN")) {
 			await decir(`AUTH PLAIN ${base64(utf8.encode(`\0${usuario}\0${clave}`))}`);
-			await esperar((n) => n === 235);
+			await esperar("AUTH PLAIN", (n) => n === 235);
 			return;
 		}
 		await decir("AUTH LOGIN");
-		await esperar((n) => n === 334);
+		await esperar("AUTH LOGIN", (n) => n === 334);
 		await decir(base64(utf8.encode(usuario)));
-		await esperar((n) => n === 334);
+		await esperar("AUTH usuario", (n) => n === 334);
 		await decir(base64(utf8.encode(clave)));
-		await esperar((n) => n === 235);
+		await esperar("AUTH clave", (n) => n === 235);
 	}
 }

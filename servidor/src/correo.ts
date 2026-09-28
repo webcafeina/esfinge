@@ -39,8 +39,25 @@ export interface Carta {
  */
 export type Entregado = "ok" | "fallo" | "cupo";
 
+/**
+ * Lo que ha pasado, **y por qué si ha ido mal**.
+ *
+ * El porqué existe por lo que costó la primera vez que el envío falló: el 502 decía
+ * «prueba otra vez en un momento» y no había **nada** que mirar, ni aquí ni en los
+ * registros. Un fallo mudo no se depura, y éste es el de un canal por el que viajan
+ * los códigos de las cuentas.
+ *
+ * **Solo se enseña en el Worker de pruebas** (`indice.ts`), como ya se hacía con los
+ * 500: en producción no lo lee quien lo tiene que arreglar, y una respuesta de
+ * SMTP puede decir más de lo que hace falta contar ahí fuera.
+ */
+export interface Envio {
+	entregado: Entregado;
+	porque?: string;
+}
+
 export interface Cartero {
-	mandar(c: Carta): Promise<Entregado>;
+	mandar(c: Carta): Promise<Envio>;
 }
 
 /**
@@ -82,12 +99,12 @@ export function carteroPara(env: Env): Cartero {
 class CarteroDePruebas implements Cartero {
 	constructor(private bd: D1Database) {}
 
-	async mandar(c: Carta): Promise<Entregado> {
+	async mandar(c: Carta): Promise<Envio> {
 		await this.bd
 			.prepare("INSERT INTO buzon_pruebas (correo, asunto, cuerpo, momento) VALUES (?, ?, ?, ?)")
 			.bind(c.para, c.asunto, c.texto, Date.now())
 			.run();
-		return "ok";
+		return { entregado: "ok" };
 	}
 }
 

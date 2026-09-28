@@ -180,7 +180,7 @@ describe("el diálogo entero", () => {
 
 	it("el camino feliz manda el correo y se despide", async () => {
 		const s = servidorFalso(["220 mx listo", "250-mx\r\n250 AUTH PLAIN LOGIN", "235 ok", "250 ok", "250 ok", "354 dale", "250 aceptado"]);
-		expect(await new CarteroSmtp(ajustes, s.conectar).mandar(carta)).toBe("ok");
+		expect((await new CarteroSmtp(ajustes, s.conectar).mandar(carta)).entregado).toBe("ok");
 
 		expect(s.ordenes[0]).toBe("EHLO esfinge-cuentas.webcafeina.com");
 		expect(s.ordenes[1]).toBe(`AUTH PLAIN ${base64(new TextEncoder().encode("\0quien@webcafeina.com\0la-de-aplicacion"))}`);
@@ -199,7 +199,7 @@ describe("el diálogo entero", () => {
 
 	it("si solo anuncia LOGIN, se autentica con LOGIN", async () => {
 		const s = servidorFalso(["220 mx", "250-mx\r\n250 AUTH LOGIN", "334 usuario", "334 clave", "235 ok", "250 ok", "250 ok", "354 dale", "250 aceptado"]);
-		expect(await new CarteroSmtp(ajustes, s.conectar).mandar(carta)).toBe("ok");
+		expect((await new CarteroSmtp(ajustes, s.conectar).mandar(carta)).entregado).toBe("ok");
 		expect(s.ordenes[1]).toBe("AUTH LOGIN");
 		expect(decodificar(s.ordenes[2])).toBe("quien@webcafeina.com");
 		expect(decodificar(s.ordenes[3])).toBe("la-de-aplicacion");
@@ -207,20 +207,30 @@ describe("el diálogo entero", () => {
 
 	it("el límite del día llega como «cupo» hasta arriba", async () => {
 		const s = servidorFalso(["220 mx", "250 AUTH PLAIN", "235 ok", "250 ok", "250 ok", "354 dale", "550 5.4.5 Daily SMTP relay limit exceeded"]);
-		expect(await new CarteroSmtp(ajustes, s.conectar).mandar(carta)).toBe("cupo");
+		expect((await new CarteroSmtp(ajustes, s.conectar).mandar(carta)).entregado).toBe("cupo");
 		expect(s.cerrado).toBe(true);
 	});
 
-	it("una contraseña que no vale es «fallo», y se cierra igual", async () => {
+	/**
+	 * **Y dice en qué paso se cayó.** Sin esto, lo único que queda de un envío que
+	 * falla es la palabra «fallo», que es lo mismo que nada — y eso costó la primera
+	 * vez que se probó contra Google de verdad.
+	 */
+	it("una contraseña que no vale es «fallo», dice por qué, y se cierra igual", async () => {
 		const s = servidorFalso(["220 mx", "250 AUTH PLAIN", "535 5.7.8 Username and Password not accepted"]);
-		expect(await new CarteroSmtp(ajustes, s.conectar).mandar(carta)).toBe("fallo");
+		const envio = await new CarteroSmtp(ajustes, s.conectar).mandar(carta);
+		expect(envio.entregado).toBe("fallo");
+		expect(envio.porque).toContain("AUTH PLAIN");
+		expect(envio.porque).toContain("535");
+		// Y lo que no puede llevar nunca: la contraseña.
+		expect(envio.porque).not.toContain(ajustes.clave);
 		expect(s.cerrado).toBe(true);
 	});
 
 	it("si el servidor se calla, el plazo lo corta", async () => {
 		const s = servidorFalso(["220 mx"]); // saluda y no contesta nunca más
 		const antes = Date.now();
-		expect(await new CarteroSmtp({ ...ajustes, plazo: 150 }, s.conectar).mandar(carta)).toBe("fallo");
+		expect((await new CarteroSmtp({ ...ajustes, plazo: 150 }, s.conectar).mandar(carta)).entregado).toBe("fallo");
 		expect(Date.now() - antes).toBeLessThan(2_000);
 		expect(s.cerrado).toBe(true);
 	});
@@ -229,7 +239,7 @@ describe("el diálogo entero", () => {
 		const cartero = new CarteroSmtp(ajustes, () => {
 			throw new Error("ECONNREFUSED");
 		});
-		expect(await cartero.mandar(carta)).toBe("fallo");
+		expect((await cartero.mandar(carta)).entregado).toBe("fallo");
 	});
 });
 

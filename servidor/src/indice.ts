@@ -11,7 +11,7 @@
 //   el freno del canal con el navegador. Los frenos van en el enlace `ratelimit`,
 //   en D1 o en el Durable Object de la cuenta.
 
-import { cartas, carteroPara, DIAS_DE_INVITACION, modoDeCorreo, type Carta, type Entregado } from "./correo";
+import { cartas, carteroPara, DIAS_DE_INVITACION, modoDeCorreo, type Carta, type Envio } from "./correo";
 import { Cuenta, SESION_CADUCADA, cuentaDeReto, cuentaDeSesion } from "./cuenta";
 import { aBase64url, aHex, azar, codigoDeSeisCifras, deBase64url, hmac, iguales } from "./cripto";
 import {
@@ -709,18 +709,22 @@ async function contar(env: Env, clave: string, tope: number, mensaje: string) {
 	await env.BD.prepare("DELETE FROM contadores WHERE dia < ?").bind(antes).run();
 }
 
-async function mandar(env: Env, c: Carta): Promise<Entregado> {
+async function mandar(env: Env, c: Carta): Promise<Envio> {
 	return carteroPara(env).mandar(c);
 }
 
 async function mandarOFallar(env: Env, c: Carta) {
 	const como = await mandar(env, c);
-	if (como === "cupo") {
-		throw new Fallo(503, "Hoy no se pueden mandar más correos. Vuelve a intentarlo mañana.");
+	if (como.entregado === "ok") return;
+	// **En el Worker de pruebas se dice por qué**, igual que con los 500: un correo
+	// que falla sin dejar nada que mirar no se depura, y eso costó la primera vez
+	// que se probó el envío por SMTP. En producción no, porque ahí no lo lee quien
+	// lo tiene que arreglar.
+	const detalle = env.ENTORNO === "pruebas" && como.porque ? { detalle: como.porque } : {};
+	if (como.entregado === "cupo") {
+		throw new Fallo(503, "Hoy no se pueden mandar más correos. Vuelve a intentarlo mañana.", detalle);
 	}
-	if (como !== "ok") {
-		throw new Fallo(502, "No se ha podido mandar el correo. Prueba otra vez en un momento.");
-	}
+	throw new Fallo(502, "No se ha podido mandar el correo. Prueba otra vez en un momento.", detalle);
 }
 
 function sesionDe(p: Request): { token: string; cuenta: string } {
