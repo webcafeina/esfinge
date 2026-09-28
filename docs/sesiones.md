@@ -28,8 +28,8 @@ Plantilla al final.
   de la ADR 0044, pero el margen es más estrecho.
 - Verificado: `make comprobar` en verde (salida 0), los seis cruces, `GOOS=windows go vet` limpio y
   **`compilar.yml` en verde en los tres sistemas**, o sea que Wails la enlaza en un Windows de verdad, que
-  es más de lo que dice un cruce desde aquí. **Sin publicar**: no hay quien la pruebe, así que viaja con la
-  próxima versión.
+  es más de lo que dice un cruce desde aquí. **Publicada en la 2.28.0** por decisión del cliente, sabiendo que no hay quien
+  la pruebe: lo único comprobado es que compila y enlaza.
 
 ## 2026-09-25 (tarde) · La huella deja de ser un botón, y la bóveda la ofrece sola
 

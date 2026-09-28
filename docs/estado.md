@@ -33,8 +33,8 @@ puede fallar en silencio y sin arreglo posible desde aquí.
 del cgo de macOS vale entera. Por eso cada paso lleva su `HRESULT` en el mensaje de error: el día que
 alguien lo abra en un Windows, eso será lo único que haya.
 
-**Sin publicar**, a propósito: no hay quien la pruebe, así que viaja con la próxima versión que salga por
-otro motivo.
+**Publicada en la 2.28.0** (2026-09-28), por decisión del cliente. No hay quien la pruebe —no tenemos un
+Windows—, así que sale sabiendo que **lo único comprobado es que compila y enlaza**.
 
 **Lo siguiente** es lo último que queda del plan de cuentas, y lo hace el cliente: **probar Firefox** y
 **comprobar compartir entre sus dos Macs**, que dijo de hacer juntos.
