@@ -58,6 +58,8 @@ export interface Ajustes {
 	clave: string;
 	/** Tal cual va en la cabecera: `Esfinge <esfinge@webcafeina.com>`. */
 	remitente: string;
+	/** Fuerza el mecanismo en vez de elegirlo por lo anunciado. Para diagnosticar. */
+	mecanismo?: "plain" | "login";
 	/** Milisegundos para **todo** el diálogo. */
 	plazo?: number;
 }
@@ -382,6 +384,11 @@ export class CarteroSmtp implements Cartero {
 	 *
 	 * Se mira lo que anuncia en vez de dar uno por hecho, que es lo que separa un
 	 * cliente de un guion: si Google cambia lo que ofrece, esto sigue hablando.
+	 *
+	 * **`mecanismo` lo fuerza**, y existe para diagnosticar: un `535` que sale con
+	 * los dos no puede ser de cómo se manda la credencial, y saber eso es lo que
+	 * separa arreglar el cliente de cambiar por dónde sale la conexión. Los dos
+	 * caminos están probados, así que forzar uno no estrena código.
 	 */
 	private async autenticar(
 		saludo: string,
@@ -389,9 +396,10 @@ export class CarteroSmtp implements Cartero {
 		esperar: (paso: string, b: (n: number) => boolean) => Promise<Respuesta>,
 	) {
 		const anunciado = /^250[ -]AUTH (.*)$/im.exec(saludo)?.[1]?.toUpperCase() ?? "";
-		const { usuario, clave } = this.a;
+		const { usuario, clave, mecanismo } = this.a;
+		const plain = mecanismo ? mecanismo === "plain" : !anunciado.includes("LOGIN") || anunciado.includes("PLAIN");
 
-		if (!anunciado.includes("LOGIN") || anunciado.includes("PLAIN")) {
+		if (plain) {
 			await decir(`AUTH PLAIN ${base64(utf8.encode(`\0${usuario}\0${clave}`))}`);
 			await esperar("AUTH PLAIN", (n) => n === 235);
 			return;

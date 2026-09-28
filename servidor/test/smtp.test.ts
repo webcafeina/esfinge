@@ -251,6 +251,23 @@ describe("el diálogo entero", () => {
 		expect(decodificar(s.ordenes[3])).toBe("la-de-aplicacion");
 	});
 
+	/**
+	 * Para poder preguntarle a un servidor que dice que no si dice que no a las dos
+	 * formas. Un `535` con las dos no puede ser de cómo se manda la credencial, y eso
+	 * es lo que separa arreglar el cliente de cambiar por dónde sale la conexión.
+	 */
+	it("forzando LOGIN se usa LOGIN, aunque anuncie PLAIN", async () => {
+		const s = servidorFalso(["220 mx", "250-mx\r\n250 AUTH PLAIN LOGIN", "334 usuario", "334 clave", "235 ok", "250 ok", "250 ok", "354 dale", "250 aceptado"]);
+		expect((await new CarteroSmtp({ ...ajustes, mecanismo: "login" }, s.conectar).mandar(carta)).entregado).toBe("ok");
+		expect(s.ordenes[1]).toBe("AUTH LOGIN");
+	});
+
+	it("forzando PLAIN se usa PLAIN, aunque solo anuncie LOGIN", async () => {
+		const s = servidorFalso(["220 mx", "250-mx\r\n250 AUTH LOGIN", "235 ok", "250 ok", "250 ok", "354 dale", "250 aceptado"]);
+		expect((await new CarteroSmtp({ ...ajustes, mecanismo: "plain" }, s.conectar).mandar(carta)).entregado).toBe("ok");
+		expect(s.ordenes[1]).toMatch(/^AUTH PLAIN /);
+	});
+
 	it("el límite del día llega como «cupo» hasta arriba", async () => {
 		const s = servidorFalso(["220 mx", "250 AUTH PLAIN", "235 ok", "250 ok", "250 ok", "354 dale", "550 5.4.5 Daily SMTP relay limit exceeded"]);
 		expect((await new CarteroSmtp(ajustes, s.conectar).mandar(carta)).entregado).toBe("cupo");

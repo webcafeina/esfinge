@@ -92,6 +92,7 @@ export function carteroPara(env: Env): Cartero {
 			// no es nunca lo que alguien quiso escribir: es lo que se pega sin querer al
 			// copiarla. Y lo que produce es un `535` idéntico al de una contraseña mal
 			// puesta, que no se distingue ni mirándolo.
+			mecanismo: env.SMTP_AUTH === "login" || env.SMTP_AUTH === "plain" ? env.SMTP_AUTH : undefined,
 			usuario: (env.SMTP_USUARIO ?? "").trim(),
 			clave: (env.SMTP_CLAVE ?? "").trim(),
 			remitente: env.REMITENTE,

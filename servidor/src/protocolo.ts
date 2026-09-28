@@ -21,6 +21,8 @@ export interface Env {
 	SMTP_HOST?: string;
 	SMTP_PUERTO?: string;
 	SMTP_EHLO?: string;
+	/** `plain` o `login` para forzar el mecanismo de autenticación. Diagnóstico. */
+	SMTP_AUTH?: string;
 	/** Usuario de Workspace y su contraseña de aplicación. Los dos, secretos. */
 	SMTP_USUARIO?: string;
 	SMTP_CLAVE?: string;
