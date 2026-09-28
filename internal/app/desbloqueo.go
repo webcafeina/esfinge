@@ -50,6 +50,13 @@ type EstadoDesbloqueo struct {
 	Nombre string `json:"nombre"`
 	// Puesto dice si **esta bóveda** tiene la ranura del sistema.
 	Puesto bool `json:"puesto"`
+	// Sugerir dice si hay que ofrecérselo: este equipo puede, **esta bóveda** no lo
+	// lleva puesto, y a esta bóveda no se le ha ofrecido todavía.
+	//
+	// Lo decide Go y no la interfaz, y eso es el arreglo: mientras la pantalla lo
+	// deducía de un sí/no de las preferencias, una bóveda distinta en el mismo
+	// equipo se quedaba sin oferta. Aquí se compara **con qué bóveda es**.
+	Sugerir bool `json:"sugerir"`
 	// TrasActualizar avisa de que esta versión **todavía no tiene el permiso del
 	// llavero**, así que la primera huella va a traer un diálogo del sistema
 	// pidiendo la contraseña del equipo.
@@ -77,11 +84,22 @@ func (a *App) llaveroDelSistema() llavero.Llavero {
 // de desbloquear, cuando todavía no hay nada abierto.
 func (a *App) EstadoDelDesbloqueo() EstadoDesbloqueo {
 	l := a.llaveroDelSistema()
-	puesto := boveda.RanuraDelSistemaEn(rutaBoveda())
+	ruta := rutaBoveda()
+	puesto := boveda.RanuraDelSistemaEn(ruta)
+	// **Cuál es la bóveda de este equipo, esté abierta o cerrada.** Con la bóveda
+	// abierta se pregunta a ella; con la pantalla de desbloquear delante hay que
+	// mirar el fichero, donde el identificador va en claro.
+	id := ""
+	if b := a.boveda(); b != nil {
+		id = b.ID()
+	} else {
+		id = boveda.IDEn(ruta)
+	}
 	return EstadoDesbloqueo{
-		Hay:    l.Hay(),
-		Nombre: l.Nombre(),
-		Puesto: puesto,
+		Hay:     l.Hay(),
+		Nombre:  l.Nombre(),
+		Puesto:  puesto,
+		Sugerir: l.Hay() && !puesto && id != "" && a.ajustes.Ver().DesbloqueoSugeridoPara != id,
 		// **Solo cuando hay algo que avisar**: si no está puesto, no va a salir
 		// ninguna huella y no hay diálogo del que hablar.
 		TrasActualizar: puesto && a.ajustes.Ver().VersionConPermisoDelLlavero != a.version,
@@ -116,6 +134,7 @@ func (a *App) ActivarDesbloqueo() error {
 		_ = l.Borrar(idEnElLlavero)
 		return err
 	}
+	a.noVolverAOfrecerA(b.ID())
 	a.Actividad()
 	return nil
 }
@@ -179,24 +198,30 @@ func (a *App) AbrirBovedaConElSistema() error {
 	return nil
 }
 
-// volverAOfrecerElDesbloqueo borra la marca de «ya se ofreció», y se llama **al
-// crear una bóveda**.
+// NoOfrecerElDesbloqueo apunta que a **esta** bóveda ya se le ofreció, y por eso
+// recibe la bóveda abierta y no un sí/no.
 //
-// La regla de «una vez» se escribió pensando en equipos: haberlo descartado en el
-// portátil no dice nada del ordenador de la oficina. Faltaba el otro caso, y lo
-// encontró el cliente (2026-09-28) creando una cuenta nueva en un Mac donde ya
-// había contestado: **la ranura del sistema es de cada bóveda** —por eso Ajustes
-// la enseñaba desactivada— pero la marca era del equipo, así que una bóveda nueva
-// nacía sin desbloqueo y **sin que nadie volviera a mencionarlo**. Lo mismo le
-// pasaba a quien borra su bóveda y empieza otra.
-//
-// Sigue siendo una vez: una por bóveda, que es lo que de verdad importa.
-func (a *App) volverAOfrecerElDesbloqueo() {
-	p := a.ajustes.Ver()
-	if !p.DesbloqueoSugerido {
+// Se llama al contestar: tanto al activarlo como al decir «ahora no». Marcar la
+// casilla de la pantalla de desbloquear **no** cuenta, que eso es pedirlo, no
+// contestarlo.
+func (a *App) NoOfrecerElDesbloqueo() error {
+	b := a.boveda()
+	if b == nil {
+		return boveda.ErrCerrada
+	}
+	a.noVolverAOfrecerA(b.ID())
+	return nil
+}
+
+func (a *App) noVolverAOfrecerA(id string) {
+	if id == "" {
 		return
 	}
-	p.DesbloqueoSugerido = false
+	p := a.ajustes.Ver()
+	if p.DesbloqueoSugeridoPara == id {
+		return
+	}
+	p.DesbloqueoSugeridoPara = id
 	_ = a.ajustes.Guardar(p)
 }
 

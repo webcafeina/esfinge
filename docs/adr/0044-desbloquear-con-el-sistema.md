@@ -97,11 +97,20 @@ Que la marca sea local importa: en un equipo sin biometría la sugerencia no tie
 descartado en el portátil no dice nada del ordenador de la oficina.
 
 **Y «una vez» es una vez por bóveda, no por equipo** (corregido el 2026-09-28). Esa regla se razonó entre
-equipos y le faltaba el otro caso, que encontró el cliente creando una cuenta nueva en un Mac donde ya
-había contestado: **la ranura del sistema es de cada bóveda** —Ajustes la enseñaba desactivada, que era
-cierto— pero la marca era del equipo, así que **una bóveda nueva nacía sin desbloqueo y sin que nadie
-volviera a mencionarlo**. Lo mismo le pasaba a quien borra su bóveda y empieza otra. Ahora la marca se
-borra al crear una bóveda, sola o con una cuenta.
+equipos y le faltaba el otro caso, que el cliente encontró **dos veces el mismo día**: creando una cuenta
+nueva en un Mac donde ya había contestado, y después **entrando en la suya**. **La ranura del sistema es de
+cada bóveda** —Ajustes la enseñaba desactivada, que era cierto— pero la marca era del equipo, así que una
+bóveda distinta nacía sin desbloqueo y **sin que nadie volviera a mencionarlo**.
+
+El segundo caso es el que de verdad importa, y el primer arreglo —borrar la marca al *crear*— no lo
+cubría: **entrar en una cuenta trae otra bóveda**, y la ranura no viaja con ella porque es local. Quien
+tenía Touch ID en ese equipo se quedaba sin él **y sin explicación**.
+
+Así que lo que se guarda ya no es un sí/no: es **de qué bóveda se trata**
+(`DesbloqueoSugeridoPara`, comparado con `Boveda.ID()`). Eso contesta la pregunta sola en los cuatro
+caminos —crear, entrar en una cuenta, juntar y restaurar— y de paso **lo decide Go y no la pantalla**, que
+es lo que permitió que se colara: la interfaz deducía la oferta de un sí/no y no tenía forma de saber que
+la bóveda era otra.
 
 **Y también en la pantalla de desbloquear, como casilla** (2.27.3). El cliente esperaba encontrarlo ahí, y
 tenía razón en dónde: esa pantalla es el momento en que estás a punto de teclear la maestra otra vez. Lo

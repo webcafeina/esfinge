@@ -47,20 +47,20 @@ test.beforeEach(async ({ request }) => {
 });
 
 /**
- * Deja las preferencias como si nunca se hubiera ofrecido el desbloqueo.
+ * Deja el equipo como si nunca se hubiera ofrecido el desbloqueo a esta bóveda.
  *
  * Va **por el mismo puente que usa la ventana** —`POST /api/<Método>` con los
  * argumentos en una lista—, no tocando el fichero: así la prueba no depende de
  * dónde vive ni de cómo se serializa.
  *
- * Y manda el objeto entero de vuelta a propósito: `GuardarPreferencias` lo recibe
- * completo, y un `{desbloqueoSugerido:false}` a secas llegaría con los dos relojes
- * de la bóveda a cero.
+ * Desde la 2.28.3 lo que se guarda no es un sí/no sino **de qué bóveda se trata**,
+ * así que para volver a ofrecerlo basta con dejarlo en vacío, que es lo que
+ * significa «a ninguna».
  */
 async function volverAOfrecerElDesbloqueo(page: Page) {
   const antes = await (await page.request.post("/api/VerPreferencias", { data: [] })).json();
   await page.request.post("/api/GuardarPreferencias", {
-    data: [{ ...antes, desbloqueoSugerido: false }],
+    data: [{ ...antes, desbloqueoSugeridoPara: "" }],
   });
 }
 

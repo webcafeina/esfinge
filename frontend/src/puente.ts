@@ -120,11 +120,6 @@ export type Preferencias = {
    * **Viene apagado**: esto no sale a la red, abre una puerta a esta máquina.
    */
   puenteDelNavegador: boolean;
-  /**
-   * Si ya se ofreció desbloquear con el sistema. Se ofrece **una vez**, porque el
-   * interruptor vive en Ajustes y ahí no entra quien no sabe que existe.
-   */
-  desbloqueoSugerido: boolean;
 };
 
 /** Lo que se manda para apagar uno de los dos relojes de la bóveda. */
@@ -263,6 +258,12 @@ export type EstadoDesbloqueo = {
   hay: boolean;
   nombre: string;
   puesto: boolean;
+  /**
+   * Si hay que ofrecérselo: este equipo puede, **esta bóveda** no lo lleva puesto,
+   * y a esta bóveda no se le ha ofrecido todavía. **Lo decide Go**, que es el que
+   * sabe de qué bóveda se trata; la pantalla solo obedece.
+   */
+  sugerir: boolean;
   /**
    * Esta versión todavía no tiene el permiso del llavero, así que la primera
    * huella traerá un diálogo del sistema pidiendo la contraseña del equipo. Pasa
@@ -533,6 +534,8 @@ export const esfinge = {
   activarDesbloqueo: () => llamar<void>("ActivarDesbloqueo"),
   quitarDesbloqueo: () => llamar<void>("QuitarDesbloqueo"),
   abrirBovedaConElSistema: () => llamar<void>("AbrirBovedaConElSistema"),
+  /** Apunta que a esta bóveda ya se le ofreció el desbloqueo del sistema. */
+  noOfrecerElDesbloqueo: () => llamar<void>("NoOfrecerElDesbloqueo"),
 
   /** Lo que ha llegado, abierto y con la firma comprobada, pero sin secretos. */
   buzon: () => llamar<EnvioRecibido[] | null>("Buzon").then((l) => l ?? []),

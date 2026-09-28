@@ -76,20 +76,23 @@ type Preferencias struct {
 	// el lado seguro de equivocarse.
 	PuenteDelNavegador bool `json:"puenteDelNavegador"`
 
-	// DesbloqueoSugerido marca que ya se ofreció desbloquear con el sistema
-	// (2.27.2). La bóveda lo propone **una vez** a quien tiene Touch ID o Windows
-	// Hello y no lo lleva puesto, porque el interruptor vive en Ajustes y ahí no
-	// entra quien no sabe que existe.
+	// DesbloqueoSugeridoPara es **la bóveda** a la que ya se le ofreció desbloquear
+	// con el sistema (2.28.3). Vacío quiere decir que no se ha ofrecido a ninguna.
 	//
-	// **Es local a propósito, como la ranura que ofrece.** Las preferencias no se
-	// sincronizan, y eso es lo correcto: en un equipo sin biometría esta sugerencia
-	// no tiene sentido, y haberla descartado en el portátil no dice nada del
-	// ordenador de la oficina.
+	// Empezó siendo un sí/no por equipo, y estaba mal pensado: **la ranura del
+	// sistema es de cada bóveda**, así que con un sí/no una bóveda distinta en el
+	// mismo equipo nacía sin desbloqueo y **sin que nadie volviera a mencionarlo**.
+	// Lo encontró el cliente dos veces el mismo día (2026-09-28): creando una
+	// cuenta nueva, y luego **entrando en la suya**, que es el caso que de verdad
+	// importa —al entrar en una cuenta llega otra bóveda, y la ranura no viaja con
+	// ella porque es local—.
 	//
-	// Con la regla del cero juega a favor, como `IconosAvisados`: un guardado a
-	// medias llega con `false` y lo único que hace es volver a ofrecerlo una vez.
-	// Molesto y visible, no silencioso.
-	DesbloqueoSugerido bool `json:"desbloqueoSugerido"`
+	// Guardando de qué bóveda se trata, la pregunta se contesta sola en los cuatro
+	// caminos: crear, entrar en una cuenta, juntar y restaurar.
+	//
+	// **Sigue siendo local**, como la ranura: en un equipo sin biometría no tiene
+	// sentido, y lo contestado en el portátil no dice nada del de la oficina.
+	DesbloqueoSugeridoPara string `json:"desbloqueoSugeridoPara"`
 
 	// VersionConPermisoDelLlavero es la última versión de Esfinge que **abrió la
 	// bóveda con el sistema sin que el llavero pidiera nada** (2.27.6).

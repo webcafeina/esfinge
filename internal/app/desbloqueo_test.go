@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"os"
 	"strings"
 	"testing"
 
@@ -225,40 +226,56 @@ func TestElAvisoDeActualizarSaleUnaVezPorVersion(t *testing.T) {
 	}
 }
 
-// **Una bóveda nueva vuelve a ofrecer el desbloqueo, aunque ya se contestara aquí.**
+// **La oferta es una por bóveda, no una por equipo.**
 //
-// La regla de «una vez» se pensó entre equipos, y le faltaba este caso: la ranura
-// del sistema es **de cada bóveda**, pero la marca de «ya se ofreció» es del
-// equipo. Sin esto, quien empieza una bóveda nueva donde una vez dijo «ahora no»
-// —o quien crea una cuenta en un Mac que ya usaba— se queda sin desbloqueo y sin
-// que nadie se lo mencione. Lo encontró el cliente montando la prueba de compartir.
-func TestUnaBovedaNuevaVuelveAOfrecerElDesbloqueo(t *testing.T) {
+// La primera versión guardaba un sí/no y se razonó entre equipos: haberlo
+// descartado en el portátil no dice nada del de la oficina. Le faltaba el otro
+// caso, y el cliente lo encontró dos veces el mismo día (2026-09-28) —creando una
+// cuenta nueva, y luego entrando en la suya—: **la ranura del sistema es de cada
+// bóveda**, así que con un sí/no una bóveda distinta en el mismo equipo nacía sin
+// desbloqueo y **sin que nadie volviera a mencionarlo**.
+//
+// Entrar en una cuenta es el caso que más importa, porque **trae otra bóveda** y
+// la ranura no viaja con ella: quien tenía Touch ID se quedaba sin él y sin
+// explicación.
+func TestLaOfertaDelDesbloqueoEsUnaPorBoveda(t *testing.T) {
 	a, _ := conLlaveroDeMentira(t)
-
-	// Alguien ya contestó en este equipo, por la bóveda de antes.
-	p := a.ajustes.Ver()
-	p.DesbloqueoSugerido = true
-	if err := a.ajustes.Guardar(p); err != nil {
-		t.Fatal(err)
-	}
 
 	if _, err := a.CrearBoveda(maestraDePrueba); err != nil {
 		t.Fatal(err)
 	}
-	if a.ajustes.Ver().DesbloqueoSugerido {
-		t.Error("la bóveda es nueva y el desbloqueo sigue sin ofrecerse")
+	if e := a.EstadoDelDesbloqueo(); !e.Sugerir {
+		t.Fatalf("una bóveda recién creada tiene que ofrecerlo: %+v", e)
 	}
 
-	// Y contestar para ésta vuelve a callarlo: sigue siendo una vez por bóveda.
+	// Se contesta «ahora no»: para ésta ya no se vuelve a ofrecer.
+	if err := a.NoOfrecerElDesbloqueo(); err != nil {
+		t.Fatal(err)
+	}
+	if e := a.EstadoDelDesbloqueo(); e.Sugerir {
+		t.Fatalf("se contestó y sigue ofreciéndolo: %+v", e)
+	}
+
+	// **Y ahora llega otra bóveda al mismo equipo**, que es lo que pasa al entrar
+	// en una cuenta. Se simula como lo hace la aplicación: la de antes se aparta y
+	// en su sitio queda una nueva.
+	a.CerrarBoveda()
+	ruta := rutaBoveda()
+	if err := os.Rename(ruta, ruta+".apartada"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.CrearBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if e := a.EstadoDelDesbloqueo(); !e.Sugerir {
+		t.Fatalf("es otra bóveda y no lo ofrece: %+v", e)
+	}
+
+	// Y activarlo también cuenta como contestar, sin pasar por «ahora no».
 	if err := a.ActivarDesbloqueo(); err != nil {
 		t.Fatal(err)
 	}
-	p = a.ajustes.Ver()
-	p.DesbloqueoSugerido = true
-	if err := a.ajustes.Guardar(p); err != nil {
-		t.Fatal(err)
-	}
-	if !a.ajustes.Ver().DesbloqueoSugerido {
-		t.Error("contestar para esta bóveda tendría que callarlo")
+	if e := a.EstadoDelDesbloqueo(); e.Sugerir {
+		t.Fatalf("está puesto y sigue ofreciéndolo: %+v", e)
 	}
 }

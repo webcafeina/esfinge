@@ -113,6 +113,25 @@ func RanuraDelSistemaEn(ruta string) bool {
 	return false
 }
 
+// IDEn dice de qué bóveda es el fichero, **sin abrirlo**: el identificador va en
+// claro, como la serie, porque la sincronización tiene que poder mirarlo sin la
+// contraseña maestra.
+//
+// Lo usa la pantalla de desbloquear para saber si a **esta** bóveda ya se le
+// ofreció el desbloqueo del sistema, que con la bóveda cerrada no se puede
+// preguntar de otra forma.
+func IDEn(ruta string) string {
+	datos, err := os.ReadFile(ruta)
+	if err != nil {
+		return ""
+	}
+	doc, err := leerDocumento(datos)
+	if err != nil {
+		return ""
+	}
+	return doc.ID
+}
+
 // AbrirConElSistema abre la bóveda del disco con el secreto que guardaba el
 // sistema, **probando solo esa ranura**.
 func AbrirConElSistema(ruta string, secreto []byte) (*Boveda, error) {

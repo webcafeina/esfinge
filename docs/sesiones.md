@@ -11,7 +11,11 @@ Plantilla al final.
   Touch ID no salía en el Mac B, y era correcto —la marca de «ya se ofreció» vive en las preferencias, que
   no se movieron— pero destapó que **«una vez» se había razonado por equipo y la ranura es por bóveda**. Una
   bóveda nueva nacía sin desbloqueo y sin que nadie lo mencionara. Ahora la marca se borra al crear una
-  bóveda, sola o con cuenta, con prueba vista en rojo antes.
+  bóveda, sola o con cuenta, con prueba vista en rojo antes. **Y al probarlo volvió a salir por la otra
+  puerta**, la que más se usa: al **entrar en su cuenta** tampoco se lo ofreció, porque entrar trae otra
+  bóveda y borrar la marca al *crear* no cubre ese camino. Así que la marca deja de ser un sí/no y pasa a
+  ser **de qué bóveda se trata** (2.28.3), comparada con `Boveda.ID()`. Lo decide Go y no la pantalla, que
+  es por donde se coló: la interfaz no tenía forma de saber que la bóveda era otra.
 - **Y compartir, comprobado entre dos cuentas y dos Macs: el plan de cuentas queda cerrado entero.** Las
   dos huellas coinciden, la copia llega al buzón, se acepta, y al cambiarla en el equipo que la recibe la
   original no cambia.

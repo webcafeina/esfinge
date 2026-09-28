@@ -213,9 +213,10 @@ No se cambian sin preguntar.
   ahí no entra quien no sabe que existe. **Solo donde hay biometría** —donde no la hay no se dice nada, que
   es ruido sobre algo que no se puede arreglar—, **una sola vez** —se apunta al contestar, en las
   preferencias, que son locales como la ranura— y **diciendo que es un cerrojo**, porque ofrecerlo sin
-  decirlo sería venderlo. **Y «una vez» es una vez por bóveda**: la marca se borra al crear una bóveda, que
-  si no, quien empieza una nueva donde ya había contestado se queda sin desbloqueo y sin que nadie se lo
-  mencione —la ranura es de la bóveda, la marca era del equipo—. **Y en la pantalla de desbloquear va como casilla** —«Abrir con Touch ID a partir
+  decirlo sería venderlo. **Y «una vez» es una vez por bóveda**: lo que se guarda es **de qué bóveda se
+  trata**, no un sí/no, y lo decide Go y no la pantalla. Con un sí/no, quien entra en una cuenta —que
+  **trae otra bóveda**, sin la ranura, porque es local— se quedaba sin Touch ID **y sin que nadie se lo
+  mencionara**. La ranura es de la bóveda; la marca tenía que serlo también. **Y en la pantalla de desbloquear va como casilla** —«Abrir con Touch ID a partir
   de ahora»— y no como botón: **activarlo exige la bóveda abierta**, que es lo que impide encenderlo sin
   saber la maestra, así que se marca, se teclea la maestra y queda activado al abrir. Marcarla **no** cuenta
   como haber contestado: eso lo hacen los dos botones de la tarjeta. **Y la casilla no activa, lo pide**: lo

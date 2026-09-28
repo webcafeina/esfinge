@@ -106,6 +106,7 @@ var loQuePuedeCruzarElPuente = []string{
 	// sacarlo de ahí el sistema pide la huella. Ninguno de los cuatro recibe ni
 	// devuelve el secreto: entra y sale de `internal/llavero` sin cruzar nada.
 	"EstadoDelDesbloqueo", "ActivarDesbloqueo", "QuitarDesbloqueo", "AbrirBovedaConElSistema",
+	"NoOfrecerElDesbloqueo",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

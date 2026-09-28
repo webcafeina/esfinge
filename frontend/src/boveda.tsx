@@ -8,7 +8,6 @@ import {
   type EnvioRecibido,
   type EstadoBoveda,
   type EstadoDesbloqueo,
-  type Preferencias,
   type ResumenImportacion,
   type TipoEntrada,
   alCambiarLaBoveda,
@@ -428,37 +427,33 @@ function avisoTrasActualizar(): string {
 function SugerirDesbloqueo({ activarYa }: { activarYa: boolean }) {
   const avisoDelLlavero = avisoDelSistemaAlGuardar();
   const [estado, setEstado] = useState<EstadoDesbloqueo | null>(null);
-  const [prefs, setPrefs] = useState<Preferencias | null>(null);
   const [trabajando, setTrabajando] = useState(false);
   const [hecho, setHecho] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    void Promise.all([
-      esfinge.estadoDelDesbloqueo().catch(() => null),
-      esfinge.verPreferencias().catch(() => null),
-    ]).then(([e, p]) => {
-      setEstado(e);
-      setPrefs(p);
-    });
+    esfinge
+      .estadoDelDesbloqueo()
+      .then(setEstado)
+      .catch(() => setEstado(null));
   }, []);
 
-  // **Se manda el objeto entero**, que es como `GuardarPreferencias` lo recibe:
-  // mandar `{desbloqueoSugerido:true}` a secas llegaría con los dos relojes de la
-  // bóveda a cero al deserializar.
+  // **Quien decide si se ofrece es Go**, que es el único que sabe de qué bóveda se
+  // trata. Antes se deducía aquí de un sí/no de las preferencias, y por eso una
+  // bóveda distinta en el mismo equipo —una cuenta nueva, o entrar en la tuya— se
+  // quedaba sin oferta y sin desbloqueo, en silencio.
   async function noVolverAOfrecer() {
-    if (!prefs) return;
-    await esfinge.guardarPreferencias({ ...prefs, desbloqueoSugerido: true });
-    setPrefs({ ...prefs, desbloqueoSugerido: true });
+    await esfinge.noOfrecerElDesbloqueo().catch(() => {});
+    setEstado((e) => (e ? { ...e, sugerir: false } : e));
   }
 
   async function activar() {
     setTrabajando(true);
     setError("");
     try {
+      // Activar ya cuenta como contestar: lo apunta Go al poner la ranura.
       await esfinge.activarDesbloqueo();
-      await noVolverAOfrecer();
-      setEstado((e) => (e ? { ...e, puesto: true } : e));
+      setEstado((e) => (e ? { ...e, puesto: true, sugerir: false } : e));
       setHecho(true);
     } catch (e) {
       // **Y aquí sí se dice.** Es el único sitio de este camino con pantalla
@@ -476,23 +471,23 @@ function SugerirDesbloqueo({ activarYa }: { activarYa: boolean }) {
   // El cerrojo es por `StrictMode`, que monta dos veces en desarrollo.
   const yaLanzado = useRef(false);
   useEffect(() => {
-    if (!activarYa || !estado || !prefs || yaLanzado.current) return;
+    if (!activarYa || !estado || yaLanzado.current) return;
     if (!estado.hay || estado.puesto) return;
     yaLanzado.current = true;
     void activar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activarYa, estado, prefs]);
+  }, [activarYa, estado]);
 
-  // Se calla mientras no sepa las dos cosas: enseñarla y quitarla medio segundo
+  // Se calla mientras no sepa a qué atenerse: enseñarla y quitarla medio segundo
   // después es peor que tardar medio segundo en enseñarla.
-  if (!estado || !prefs) return null;
+  if (!estado) return null;
   // Tras activarlo la tarjeta **se queda diciendo que está hecho** en vez de
   // desaparecer: quien acaba de pulsar un botón necesita saber que pasó algo, y
   // lo que cambia —la pantalla de desbloquear— no se ve hasta la próxima vez.
   //
   // Y si venía marcada la casilla, se queda **aunque haya fallado**: ahí es donde
   // se lee por qué.
-  if (!hecho && !error && (!estado.hay || estado.puesto || prefs.desbloqueoSugerido)) return null;
+  if (!hecho && !error && !estado.sugerir) return null;
 
   async function ahoraNo() {
     await noVolverAOfrecer();
@@ -586,7 +581,6 @@ function Cerrada({
   // maestra, que es la condición entera, y ataja justo cuando estás a punto de
   // escribirla otra vez. Lo pidió el cliente al ver que la tarjeta solo salía
   // dentro (2026-09-25).
-  const [prefs, setPrefs] = useState<Preferencias | null>(null);
   const [activarAlAbrir, setActivarAlAbrir] = useState(false);
 
   useEffect(() => {
@@ -594,10 +588,6 @@ function Cerrada({
       .estadoDelDesbloqueo()
       .then(setDelSistema)
       .catch(() => setDelSistema(null));
-    esfinge
-      .verPreferencias()
-      .then(setPrefs)
-      .catch(() => setPrefs(null));
   }, []);
 
   // **Marcar la casilla no cuenta como haber contestado.** Lo que apunta «ya se
@@ -803,7 +793,7 @@ function Cerrada({
 
       {/* La otra cara de la huella de arriba: si este equipo puede y esta bóveda
           no lo lleva, se ofrece aquí mismo. Nunca salen las dos. */}
-      {delSistema?.hay && !delSistema.puesto && prefs && !prefs.desbloqueoSugerido && (
+      {delSistema?.sugerir && (
         <label className="fila-ajuste">
           <input
             id="boveda-activar-al-abrir"
@@ -818,8 +808,9 @@ function Cerrada({
 
       {/* Y aquí también, que es donde se marca: el diálogo del sistema sale justo
           después de abrir, y sin avisar parece que algo va mal. */}
-      {delSistema?.hay && !delSistema.puesto && prefs && !prefs.desbloqueoSugerido &&
-        avisoDelSistemaAlGuardar() && <p className="nota">{avisoDelSistemaAlGuardar()}</p>}
+      {delSistema?.sugerir && avisoDelSistemaAlGuardar() && (
+        <p className="nota">{avisoDelSistemaAlGuardar()}</p>
+      )}
 
       {error && <p className="error">{error}</p>}
 
