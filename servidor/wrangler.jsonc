@@ -117,7 +117,12 @@
 				"ENTORNO": "pruebas",
 				"JURISDICCION": "eu",
 				"REGISTRO": "abierto",
-				"REMITENTE": "Esfinge <esfinge@webcafeina.com>"
+				"REMITENTE": "Esfinge <esfinge@webcafeina.com>",
+				// **Temporal, de una sesión de diagnóstico** (2026-09-28), igual que
+				// `CARTERO`. Va aquí y no en el panel porque un despliegue con wrangler
+				// borra las variables de texto puestas a mano —los secretos no—, así que
+				// desplegar para poder leerla la habría borrado justo antes.
+				"SMTP_AUTH": "login"
 			},
 			"d1_databases": [
 				{
