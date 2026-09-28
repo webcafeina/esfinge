@@ -65,6 +65,14 @@ no después. Mientras sea por invitación no hace falta tocar nada.
   para cuatro códigos al día es cambiar un problema pequeño por uno grande —reputación de IP, listas
   negras, entregabilidad—.
 
+  > **Matizado el 2026-09-28 ([ADR 0045](0045-el-correo-sale-por-el-vps.md)).** «Un Worker no puede» era
+  > falso: `connect()` de `cloudflare:sockets` abre TCP saliente y solo el 25 está bloqueado. Lo que sí
+  > impide hacerlo desde el Worker es otra cosa que entonces no se sabía — **Google rechaza la
+  > autenticación SMTP cuando la conexión sale de Cloudflare** —, así que la conclusión aguanta por un
+  > motivo distinto del que aquí se escribió. La segunda mitad de la frase sigue siendo cierta y es la
+  > que importa: montar un servidor de correo propio sería cambiar un problema pequeño por uno grande.
+  > Salir por el relé de Google desde el VPS no es eso.
+
 ## Consecuencias
 
 - **La A4 pasa a tener cuatro cosas por delante**, todas fuera del código salvo la última: los textos

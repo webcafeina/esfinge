@@ -2164,6 +2164,37 @@ de ahí.
 - Verificado: `make comprobar`, 16 pruebas de interfaz en los dos temas, y los tres sistemas
   compilando en verde.
 
+## 2026-09-28 · El correo deja Resend, y Google no deja mandar desde Cloudflare
+
+- **Se planteó y se aprobó** dejar Resend por el relé de Google Workspace que la casa ya usa en Cronos
+  ([ADR 0045](adr/0045-el-correo-sale-por-el-vps.md)): quita el techo de cien correos al día —que la
+  [0041](adr/0041-los-papeles-de-la-cuenta.md) llamó «el límite de crecimiento del servicio»— y quita un
+  tercero de un camino por el que viajan los códigos de las cuentas.
+- **Se escribió el cliente SMTP entero en el Worker** y no sirvió: Google contesta
+  `535 5.7.8 … p=BadCredentials` **cuando la conexión sale de Cloudflare**, con credenciales que acepta
+  desde un Mac. Se descartó lo demás midiendo, y ahí estuvo el trabajo de verdad: **la misma huella
+  SHA-256 de la clave en los dos sitios** —que es lo que cerró la hipótesis del secreto mal guardado, y
+  no había forma de cerrarla sin ella—, `AUTH LOGIN` fallando igual tras aceptar el usuario,
+  `smtp.gmail.com` fallando igual, y ninguna alerta de seguridad.
+- **Se preguntó al cliente** con cuatro caminos y sus costes; eligió el VPS.
+- **Se escribió `cartero/`**, el servicio del VPS que hace el relevo, con la configuración ya probada de
+  Cronos. El Worker se queda componiendo, y **el diálogo SMTP se borró**: ya no lo puede ejercitar nada.
+- **Se verificó entregando de verdad**, porque la máquina de desarrollo **es** el VPS: dos correos del
+  `componer` real a la bandeja del cliente, que confirmó bandeja de entrada, acentos, el botón de la
+  invitación y los tres `PASS`. 483 ms y 332 ms. Y el cierre del cartero contra el contenedor montado:
+  401 sin secreto, 400 con el remitente suplantado, con dos destinatarios y con copia oculta.
+- **Se mutaron las cuatro comprobaciones** de `relevo.ts` y las cuatro se ponen rojas.
+- **Hallazgo que no se buscaba**: el **DKIM no alinea** con el dominio —Google firma con su clave
+  genérica porque no existe `google._domainkey.webcafeina.com`—. Hoy no rompe nada porque alinea el SPF,
+  pero un correo reenviado se queda sin autenticación alineada, y es peor que lo que da Resend. A
+  [`deuda.md`](deuda.md), y hay que arreglarlo **antes** de retirar Resend. De paso se vio que los
+  informes de DMARC van a una dirección de fuera de Webcafeína.
+- **Queda abierto**: activar el DKIM de Workspace (consola, es del cliente), desplegar el cartero
+  —secreto, red de borde, Caddy, DNS—, poner los secretos de los Workers, el humo en producción, retirar
+  Resend y **las menciones de la política de privacidad, que se cambian el mismo día que producción**.
+
+---
+
 ## 2026-09-04 · De cero a herramienta de terminal
 
 - Se construyó Esfinge entero: núcleo criptográfico, línea de comandos e interfaz de menús.

@@ -356,7 +356,7 @@ async function mandarEnvio(p: Request, env: Env, ctx: ExecutionContext): Promise
  *
  * Nada de lo que pase aquí puede salir por la respuesta ni por lo que tarda, así
  * que esta función **se traga todo**: pasarse del tope del día, un fallo de
- * Resend o su cupo agotado se quedan aquí. No se pierde nada por ello: el
+ * el cartero caído o su cupo agotado se quedan aquí. No se pierde nada por ello: el
  * pendiente sigue en la bóveda de quien invita y su siguiente pasada lo vuelve a
  * intentar, ya con otro día y otro contador.
  */

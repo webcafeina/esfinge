@@ -719,11 +719,28 @@ remedio es el mismo, `cambiosHechos`, y hay que ponerlo desde el principio.
 **Y lo que no se nota tiene que no notarse por los dos lados: ni en la respuesta ni en lo que tarda.** El
 servidor contesta lo mismo tenga cuenta o no la dirección a la que mandas —es media protección contra la
 enumeración de correos—, y la B3 le añadió un camino entero por debajo: mandar la invitación. Ese camino
-**no puede lanzar nada** —ni pasarse del tope de invitaciones, ni un fallo de Resend, ni su cupo agotado—
+**no puede lanzar nada** —ni pasarse del tope de invitaciones, ni un fallo del correo, ni su cupo agotado—
 porque cualquiera de esas cosas sería un `429` o un `503` que solo sale cuando esa dirección **no** tiene
-cuenta. Y el correo va en `ctx.waitUntil`, porque esperar a Resend son cientos de milisegundos y eso se
+cuenta. Y el correo va en `ctx.waitUntil`, porque esperar a que salga son cientos de milisegundos —más
+desde la ADR 0045, que le añade un salto— y eso se
 mide desde fuera igual de bien que un código de estado. **La regla:** cuando dos caminos tienen que parecer
 uno, el que sobra se traga sus errores y no alarga la respuesta.
+
+**Y el correo no lo entrega el Worker, por mucho que pueda** (ADR 0045). `connect()` de
+`cloudflare:sockets` abre TCP saliente y el 465 funciona —la ADR 0041 decía lo contrario y era falso—,
+pero **Google rechaza la autenticación SMTP cuando la conexión sale de Cloudflare**: contesta
+`535 5.7.8 … p=BadCredentials` a las mismas credenciales que acepta desde un Mac. Se descartó todo lo
+demás midiendo, y eso es lo que no hay que repetir: **la misma huella SHA-256 de la clave en los dos
+sitios**, `AUTH LOGIN` fallando igual tras aceptar el usuario, `smtp.gmail.com` fallando igual y **ninguna
+alerta de seguridad** —que es lo que acompañaría a un bloqueo por ubicación—. Así que el Worker compone
+(`servidor/src/mensaje.ts`, con la maqueta y sus pruebas) y entrega `cartero/`, en el VPS, cuya IPv4 sí
+está autorizada en el relé. Dos cosas que arrastra: **el VPS entra en el camino crítico del alta**, y el
+cartero **revisa lo que le llega aunque venga firmado** —el remitente tiene que ser la cabecera nuestra
+entera, no solo la dirección, o pasaría `Banco Santander <esfinge@webcafeina.com>`—.
+
+**Y `wrangler deploy` borra las variables de texto puestas a mano en el panel de Cloudflare.** Los
+secretos sobreviven; las variables no. Poner una en el panel y desplegar después para que el código la
+lea es borrarla justo antes de usarla, y el síntoma es que no pasa nada. Van en `wrangler.jsonc`.
 
 **Para poder recibir hay que haber publicado, y quien nunca manda no publicaba nunca.** Las llaves de la
 identidad se publicaban al entrar en «Compartir», que es lo que parece natural: se publican cuando se van a

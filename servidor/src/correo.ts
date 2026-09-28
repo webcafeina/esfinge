@@ -33,7 +33,7 @@ export interface Carta {
  * Qué ha pasado al mandar. **«Cupo» no es «fallo»**, y por eso son tres y no dos
  * (ADR 0041): decir «prueba otra vez en un momento» cuando lo que pasa es que se ha
  * acabado el día sería mentir. Con el relay de Google el techo son diez mil correos
- * y llegar es mucho menos probable que con los cien de Resend, pero la diferencia
+ * y llegar es mucho menos probable que con los cien de antes, pero la diferencia
  * entre «ahora» y «mañana» sigue siendo la misma y se sigue diciendo.
  */
 export type Entregado = "ok" | "fallo" | "cupo";
@@ -276,7 +276,7 @@ export const cartas = {
 	 * contrata a distancia tiene que recibir constancia de lo que ha contratado y
 	 * dónde están las condiciones. Va después de crear la cuenta, no antes.
 	 *
-	 * Y cuesta un correo más de los cien al día del plan gratuito de Resend
+	 * Y cuesta un correo más del presupuesto del día
 	 * (ADR 0041): dos por alta en vez de uno.
 	 */
 	cuentaCreada: (para: string): Carta => ({

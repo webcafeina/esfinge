@@ -85,10 +85,10 @@ El correo se normaliza **igual en los dos lados**: sin espacios alrededor, NFC y
   crear la cuenta. **El sobre no se guarda**, porque va cifrado hacia unas llaves que no abre nadie; quien
   lo manda se queda una nota dentro de su bóveda y lo manda de verdad cuando esas llaves cambien.
 - **Nada de eso se nota en la respuesta**, que es la regla que sostiene todo lo anterior: pasarse del tope
-  de invitaciones, un fallo del correo o el cupo de Resend **no cambian el `202`**, y el correo se manda en
+  de invitaciones, un fallo del correo o el cupo del día **no cambian el `202`**, y el correo se manda en
   `waitUntil` para que tampoco lo diga el tiempo que tarda.
 - Topes: 64 KiB por sobre, 50 en el buzón, 50 envíos al día por cuenta y por IP, y **5 invitaciones al día
-  por cuenta** (cada una gasta un correo de los cien de Resend). Las invitaciones duran 30 días y las barre
+  por cuenta** (cada una gasta un correo del presupuesto del día). Las invitaciones duran 30 días y las barre
   la limpieza de cada hora.
 
 ### Recuperar, equipos y borrar

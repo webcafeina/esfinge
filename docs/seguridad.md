@@ -327,9 +327,14 @@ abierto —con la hora y la IP, salvo en Gmail, que la pide por ti—. Se eligi�
 2026-09-24, con el coste delante, y **los correos se leen igual con las imágenes bloqueadas**. Lo que no
 hay es ninguna marca de seguimiento nuestra: nosotros no sabemos si un correo se ha abierto.
 
-**Los códigos llegan por correo** y los manda Resend, que ve la dirección y el código. Un correo no es un
+**Los códigos llegan por correo**, y quien lo entrega ve la dirección y el código. Un correo no es un
 segundo factor tan fuerte como una aplicación de códigos: quien entre en el buzón y sepa la contraseña,
 entra. Se eligió así con el cliente.
+
+**Hoy lo entrega Resend. Desde la [ADR 0045](adr/0045-el-correo-sale-por-el-vps.md) lo entregará el relé
+de Google Workspace, desde el VPS de Webcafeína**, y eso está escrito y probado pero **sin desplegar**:
+mientras no lo esté, manda lo que dice el párrafo de Resend de más abajo. Cuando se despliegue, quien ve
+la dirección y el código pasa a ser Google —que ya es el buzón de la casa— y el VPS, que es nuestro.
 
 **Lo que no protege, dicho tal cual:**
 
@@ -352,6 +357,19 @@ entra. Se eligió así con el cliente.
   Los códigos caducan en diez minutos, pero quien pueda leer esa consola ve el resto. Elegir una región
   europea en Resend cambia desde dónde salen los correos, **no dónde se guardan**: eso vale para
   Cloudflare, que sí guarda las cuentas en la UE, y no para el correo.
+
+  **Esto es lo que la [ADR 0045](adr/0045-el-correo-sale-por-el-vps.md) viene a quitar**, y lo que deja
+  en su lugar hay que decirlo igual de claro: **el correo pasa a salir por el relé de Google Workspace
+  desde el VPS**. Google ve lo mismo —es quien lo entrega— pero **ya es el buzón de Webcafeína**, así
+  que no es un tercero nuevo, es el que ya había. Y el VPS ve el mensaje entero al entregarlo: **no lo
+  guarda**, y en su registro no va ni la dirección ni el cuerpo. Sigue sin haber una copia de treinta
+  días en Estados Unidos.
+
+  **Y un secreto nuevo**: el que comparten el servidor de cuentas y el cartero del VPS. Si se filtra,
+  quien lo tenga puede mandar correo **como Esfinge** —con el SPF del dominio en regla—, de uno en uno y
+  sin poder cambiar el nombre del remitente, porque el cartero lo comprueba. Es menos de lo que daba la
+  alternativa que se descartó, una contraseña de aplicación de Workspace, que deja mandar como cualquier
+  dirección del dominio.
 - **El servidor sabe quién tiene cuenta.** La pre-entrada contesta igual con cuenta que sin ella, así que
   preguntar desde fuera no lo desvela; al servidor, sí.
 - **Y sabe con quién compartes**: al mandar una copia le llega la dirección de quien la recibe, aunque no

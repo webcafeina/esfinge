@@ -22,7 +22,7 @@ cuándo te conectas.
 | Servidor | Propio, en **Cloudflare**, con los datos en la **UE** (D1 y Durable Objects con jurisdicción `eu`, comprobado en su documentación) |
 | Dirección | `esfinge-cuentas.webcafeina.com` |
 | Entrar | **Correo + contraseña maestra**, y **código por correo** en cada equipo nuevo; Touch ID o PIN más adelante |
-| Correo | **Resend**, ya verificado en `webcafeina.com` según el inventario de Cronos (§8) |
+| Correo | **Resend** hasta la [ADR 0045](adr/0045-el-correo-sale-por-el-vps.md); desde ella, el **relé de Google Workspace desde el VPS**, que es lo que ya usa Cronos |
 | Al empezar | **Bienvenida visual al arrancar** por primera vez: «En este ordenador» o «Con cuenta», con ventajas e inconvenientes de cada una. **Reversible en los dos sentidos desde Ajustes** |
 | Equipos u organizaciones | **Ninguno**. Cada persona tiene su bóveda |
 | Compartir | **Una copia, sin permisos**: al recibirla es de quien la recibe. Si cambia, se vuelve a mandar |
@@ -161,9 +161,10 @@ iconos. Cada equipo baja los suyos.
   - **ningún contador en variables globales del Worker**.
 - **`REGISTRO`**: `cerrado`, `lista` o `abierto`, más la tabla `admision`. Abrirlo es un cambio de
   configuración, sin publicar versión de la aplicación.
-- **El correo pasa por una interfaz `Cartero`**, con Resend en producción y un buzón en D1 para las
+- **El correo pasa por una interfaz `Cartero`**, con el cartero del VPS en producción y un buzón en D1 para las
   pruebas. El código va en el cuerpo y no en el asunto, que se ve con la pantalla bloqueada. **Para abrir
-  el registro hace falta el plan de pago de Resend**: el gratuito da 100 correos al día.
+  el registro hacía falta el plan de pago de Resend**: el gratuito daba 100 correos al día. **Ya no**
+  (ADR 0045): el relé da diez mil.
 - **La ruta de pruebas `/_pruebas/buzon`** existe solo con `ENTORNO=pruebas`, y **una prueba exige 404
   en cualquier otro entorno**.
 - **Pruebas**: vitest con `@cloudflare/vitest-pool-workers`. Los frenos se prueban **abriendo una petición

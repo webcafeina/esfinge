@@ -4,6 +4,40 @@
 
 ## Dónde se paró, y por dónde se sigue
 
+**Sesión del 2026-09-28.** Trabajo limpio: todo comprometido y empujado, y las dos suites del servidor y
+del cartero en verde (81 y 15).
+
+**El correo deja Resend y sale por el VPS** ([ADR 0045](adr/0045-el-correo-sale-por-el-vps.md)). Escrito y
+**probado entregando de verdad contra Google** —la máquina de desarrollo es el VPS, así que se pudo—, pero
+**sin desplegar**: producción sigue mandando por Resend.
+
+**La siguiente acción concreta, y es del cliente:** activar el **DKIM de Workspace** para `webcafeina.com`
+en la consola de administración (Gmail → Autenticar correo electrónico → generar la clave de 2048 bits,
+publicar el TXT en Cloudflare, esperar a que propague y **solo entonces** «Iniciar autenticación»). Sin eso,
+Google firma con su clave genérica y **el correo reenviado se queda sin autenticación alineada** — está en
+[`deuda.md`](deuda.md) con la severidad alta. **No se toca nada de Resend**: son la vuelta atrás.
+
+**Y después, por orden:**
+
+1. **Desplegar el cartero** en el VPS, con los pasos de [`../cartero/LÉEME.md`](../cartero/LÉEME.md):
+   secreto compartido en hexadecimal, `.env`, red `esfinge-borde`, sitio de Caddy y DNS de
+   `cartero.webcafeina.com`.
+2. **Los secretos de los Workers**: `CARTERO_SECRETO` en pruebas y en producción, y quitar
+   `RESEND_API_KEY` **solo al final**.
+3. **Humo en producción** con una dirección real: alta completa, entrada desde equipo nuevo, recuperación,
+   cambio de contraseña y borrado.
+4. **Retirar Resend**, 24-48 h después y en este orden: el secreto → el DNS → cerrar la cuenta. **El punto
+   de no retorno es el DNS.**
+5. **La política de privacidad el mismo día que producción**: `web/privacidad.html` y
+   `docs/tiendas/privacidad-amo.txt` siguen nombrando a Resend, **y tienen que seguir haciéndolo mientras
+   producción lo use**. Cambiarlas antes sería publicar una política falsa en el otro sentido.
+
+**Lo de antes del correo, que sigue cerrado:** la fase C entera y las dos verificaciones que quedaban
+—Firefox y compartir— las dio por buenas el cliente el 2026-09-28. La 2.28.3 es la última publicada.
+
+<details>
+<summary>Lo anterior, del 2026-09-25</summary>
+
 **Sesión cerrada la tarde del 2026-09-25**, a petición del cliente. Trabajo limpio: todo comprometido y
 empujado, `make comprobar` y `make e2e` en verde, y **la 2.27.6 publicada** con los siete trabajos en verde.
 
@@ -122,6 +156,8 @@ Y salieron dos cosas que ninguna prueba en verde dijo y sí dijo mirar la captur
 alto** —todos los botones miden 28 px y lo de dentro se encogía— y **la clase `.huella` ya existía**, la de
 la huella de identidad de compartir, así que le estaba poniendo 72×72 a todas esas pantallas. Las dos en
 `CLAUDE.md`.
+
+</details>
 
 ## Dónde estamos
 

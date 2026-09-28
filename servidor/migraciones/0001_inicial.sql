@@ -38,7 +38,7 @@ CREATE TABLE admision (
 );
 
 -- El buzón del Worker de pruebas. En producción esta tabla existe y está vacía:
--- el cartero de verdad es Resend, y la ruta que la lee da 404.
+-- el correo sale de verdad por el cartero del VPS, y la ruta que la lee da 404.
 CREATE TABLE buzon_pruebas (
 	correo TEXT NOT NULL,
 	asunto TEXT NOT NULL,
