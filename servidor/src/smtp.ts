@@ -318,9 +318,14 @@ export class CarteroSmtp implements Cartero {
 		};
 		// **Cada espera dice en qué paso estaba.** Sin eso, lo único que queda de un
 		// envío que falla es «fallo», que es lo mismo que nada.
+		//
+		// Y va **la respuesta entera**, no su primera línea: el `535` de Google ocupa
+		// dos y lo que dice *por qué* está en la segunda —`p=BadCredentials`,
+		// `p=WebLoginRequired`…—. Quedándose con la primera se lee «usuario y
+		// contraseña no aceptados», que es justo lo que ya se sabía.
 		const esperar = async (paso: string, bueno: (n: number) => boolean) => {
 			const r = await lector.respuesta();
-			if (!bueno(r.codigo)) throw new Fallo(queHaPasado(r), `${paso}: ${r.texto.split("\n")[0]}`);
+			if (!bueno(r.codigo)) throw new Fallo(queHaPasado(r), `${paso}: ${r.texto.replace(/\s*\n\s*/g, " · ")}`);
 			return r;
 		};
 
