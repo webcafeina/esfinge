@@ -11,7 +11,7 @@ function con(cambios: Partial<typeof env>, metodo: string, ruta: string, cuerpo?
 
 describe("lo que solo es de pruebas no está en producción", () => {
 	it("el buzón de pruebas da 404 fuera del Worker de pruebas", async () => {
-		expect((await con({ ENTORNO: "produccion", RESEND_API_KEY: "re_x" }, "GET", "/_pruebas/buzon?correo=a@ejemplo.com")).status).toBe(404);
+		expect((await con({ ENTORNO: "produccion", SMTP_USUARIO: "quien@webcafeina.com", SMTP_CLAVE: "la-de-aplicacion" }, "GET", "/_pruebas/buzon?correo=a@ejemplo.com")).status).toBe(404);
 		expect((await con({ ENTORNO: "pruebas" }, "GET", "/_pruebas/buzon?correo=a@ejemplo.com")).status).toBe(200);
 	});
 
@@ -21,16 +21,17 @@ describe("lo que solo es de pruebas no está en producción", () => {
 			{ PIMIENTA: "corta" },
 			{ SECRETO_PRELOGIN: undefined },
 			{ SECRETO_PRELOGIN: env.PIMIENTA },
-			{ ENTORNO: "produccion", RESEND_API_KEY: undefined },
+			{ ENTORNO: "produccion", SMTP_USUARIO: undefined },
+			{ ENTORNO: "produccion", SMTP_CLAVE: undefined },
 		]) {
 			const r = await con(falta as Partial<typeof env>, "GET", "/v1/salud");
 			expect(r.status, JSON.stringify(falta)).toBe(503);
 		}
-		expect((await con({ ENTORNO: "produccion", RESEND_API_KEY: "re_x" }, "GET", "/v1/salud")).status).toBe(200);
+		expect((await con({ ENTORNO: "produccion", SMTP_USUARIO: "quien@webcafeina.com", SMTP_CLAVE: "la-de-aplicacion" }, "GET", "/v1/salud")).status).toBe(200);
 	});
 
 	it("un fallo por dentro no cuenta nada en producción", async () => {
-		const r = await con({ ENTORNO: "produccion", RESEND_API_KEY: "re_x", JURISDICCION: "us" }, "POST", "/v1/prelogin", { correo: "a@ejemplo.com" });
+		const r = await con({ ENTORNO: "produccion", SMTP_USUARIO: "quien@webcafeina.com", SMTP_CLAVE: "x", JURISDICCION: "us" }, "POST", "/v1/prelogin", { correo: "a@ejemplo.com" });
 		expect(r.status).toBe(500);
 		expect(Object.keys((await r.json()) as object)).toEqual(["error"]);
 	});
@@ -44,16 +45,23 @@ describe("lo que solo es de pruebas no está en producción", () => {
 	});
 
 	// **Con el registro abierto, el tope del día tiene que caber en lo que da el
-	// correo** (ADR 0041). El plan gratuito de Resend son cien correos al día y cada
-	// alta gasta dos —el código y la constancia—, así que subir este número sin
-	// mirar el correo deja a la gente a medias: cuenta creada y sin poder entrar
-	// desde otro equipo, o alta que no llega a su código.
-	it("si el registro está abierto, las altas del día caben en los cien correos de Resend", () => {
+	// correo** (ADR 0041, y ahora la 0045). Cada alta gasta dos correos —el código y
+	// la constancia—, así que subir este número sin mirar el correo deja a la gente a
+	// medias: cuenta creada y sin poder entrar desde otro equipo, o alta que no llega
+	// a su código.
+	//
+	// Lo que guarda esta prueba **no es el número, es el invariante**: por eso sigue
+	// aquí después de cambiar de proveedor, solo con otro presupuesto.
+	it("si el registro está abierto, las altas del día caben en lo que da el correo", () => {
+		// El relay de Google Workspace, por usuario y 24 h.
+		const CORREOS_AL_DIA = 10_000;
 		const conf = JSON.parse(env.CONFIGURACION.replace(/^\s*\/\/.*$/gm, ""));
 		if (conf.vars.REGISTRO !== "abierto") return;
 		const altas = Number(conf.vars.TOPE_ALTAS_DIA);
 		expect(Number.isInteger(altas)).toBe(true);
-		expect(altas * 2).toBeLessThanOrEqual(80); // los otros veinte, para lo demás
+		// La mitad del presupuesto para las altas; la otra mitad, para entradas desde
+		// equipos nuevos, recuperaciones, cambios de contraseña e invitaciones.
+		expect(altas * 2).toBeLessThanOrEqual(CORREOS_AL_DIA / 2);
 	});
 });
 

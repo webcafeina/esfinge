@@ -3,12 +3,15 @@
 // **El código va en el cuerpo, nunca en el asunto**: el asunto se ve en la pantalla
 // bloqueada del móvil de cualquiera que esté al lado.
 //
-// En producción los manda Resend; en el Worker de pruebas se quedan en una tabla
-// que lee la ruta `/_pruebas/buzon`, y así las pruebas de punta a punta pueden
-// entrar sin un buzón de verdad. **Esa ruta no existe fuera de pruebas**, y hay una
-// prueba que lo vigila.
+// En producción salen por el **relay SMTP de Google Workspace** (ADR 0045); en el
+// Worker de pruebas se quedan en una tabla que lee la ruta `/_pruebas/buzon`, y así
+// las pruebas de punta a punta pueden entrar sin un buzón de verdad. **Esa ruta no
+// existe fuera de pruebas**, y hay una prueba que lo vigila.
+
+import { connect } from "cloudflare:sockets";
 
 import type { Env } from "./protocolo";
+import { CarteroSmtp } from "./smtp";
 
 export interface Carta {
 	para: string;
@@ -25,15 +28,14 @@ export interface Carta {
 	 * correo en texto, y la dirección tiene que estar también ahí.
 	 */
 	html?: string;
-	/** Para que un reintento no mande el mismo correo dos veces. */
-	idempotencia?: string;
 }
 
 /**
  * Qué ha pasado al mandar. **«Cupo» no es «fallo»**, y por eso son tres y no dos
- * (ADR 0041): con el plan gratuito de Resend —cien correos al día— agotarlo es lo
- * más probable que pase, y decir «prueba otra vez en un momento» sería mentir: no
- * es en un momento, es mañana.
+ * (ADR 0041): decir «prueba otra vez en un momento» cuando lo que pasa es que se ha
+ * acabado el día sería mentir. Con el relay de Google el techo son diez mil correos
+ * y llegar es mucho menos probable que con los cien de Resend, pero la diferencia
+ * entre «ahora» y «mañana» sigue siendo la misma y se sigue diciendo.
  */
 export type Entregado = "ok" | "fallo" | "cupo";
 
@@ -41,45 +43,40 @@ export interface Cartero {
 	mandar(c: Carta): Promise<Entregado>;
 }
 
-export function carteroPara(env: Env): Cartero {
-	if (env.ENTORNO === "pruebas") return new CarteroDePruebas(env.BD);
-	return new CarteroResend(env.RESEND_API_KEY ?? "", env.REMITENTE);
+/**
+ * Cómo se manda **de verdad** y dónde se guardan las pruebas son dos cosas
+ * distintas, y por eso esto no es un simple `if` sobre `ENTORNO`.
+ *
+ * **En producción es siempre SMTP, diga lo que diga la variable.** Solo el Worker de
+ * pruebas puede promoverse a mandar de verdad, poniéndole `CARTERO=smtp` a mano
+ * durante una sesión de comprobación — que es la única forma de ejercitar el
+ * transporte, porque la integración continua no puede. Escrito al revés, una errata
+ * en una variable apagaría el correo de producción **en silencio**, y sin correo no
+ * hay quien se dé de alta ni entre desde un equipo nuevo.
+ *
+ * Mientras `CARTERO=smtp` esté puesto, las pruebas que leen `/_pruebas/buzon` no
+ * encuentran nada: es una sesión acotada, no un estado en el que dejar el Worker.
+ */
+export function modoDeCorreo(env: Env): "smtp" | "buzon" {
+	if (env.ENTORNO !== "pruebas") return "smtp";
+	return env.CARTERO === "smtp" ? "smtp" : "buzon";
 }
 
-class CarteroResend implements Cartero {
-	constructor(
-		private clave: string,
-		private remitente: string,
-	) {}
-
-	async mandar(c: Carta): Promise<Entregado> {
-		if (!this.clave) return "fallo";
-		const cabeceras: Record<string, string> = {
-			Authorization: `Bearer ${this.clave}`,
-			"Content-Type": "application/json",
-		};
-		if (c.idempotencia) cabeceras["Idempotency-Key"] = c.idempotencia;
-		try {
-			const r = await fetch("https://api.resend.com/emails", {
-				method: "POST",
-				headers: cabeceras,
-				body: JSON.stringify({
-					from: this.remitente,
-					to: [c.para],
-					subject: c.asunto,
-					text: c.texto,
-					...(c.html ? { html: c.html } : {}),
-				}),
-			});
-			if (r.ok) return "ok";
-			// 429 es «demasiados»; Resend lo usa tanto para el cupo del día como para su
-			// límite por segundo. Desde fuera no se distinguen, y para quien lo lee el
-			// consejo es el mismo: esto no se arregla volviendo a pulsar.
-			return r.status === 429 ? "cupo" : "fallo";
-		} catch {
-			return "fallo";
-		}
-	}
+export function carteroPara(env: Env): Cartero {
+	if (modoDeCorreo(env) === "buzon") return new CarteroDePruebas(env.BD);
+	return new CarteroSmtp(
+		{
+			host: env.SMTP_HOST || "smtp-relay.gmail.com",
+			puerto: Number(env.SMTP_PUERTO || "465"),
+			// **Un dominio de verdad.** Con el nombre de la máquina, Google contesta
+			// `421 4.7.0`. Lo aprendió Cronos en producción.
+			ehlo: env.SMTP_EHLO || "esfinge-cuentas.webcafeina.com",
+			usuario: env.SMTP_USUARIO ?? "",
+			clave: env.SMTP_CLAVE ?? "",
+			remitente: env.REMITENTE,
+		},
+		(host, puerto) => connect({ hostname: host, port: puerto }, { secureTransport: "on", allowHalfOpen: false }),
+	);
 }
 
 class CarteroDePruebas implements Cartero {

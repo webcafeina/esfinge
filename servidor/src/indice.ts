@@ -11,7 +11,7 @@
 //   el freno del canal con el navegador. Los frenos van en el enlace `ratelimit`,
 //   en D1 o en el Durable Object de la cuenta.
 
-import { cartas, carteroPara, DIAS_DE_INVITACION, type Carta, type Entregado } from "./correo";
+import { cartas, carteroPara, DIAS_DE_INVITACION, modoDeCorreo, type Carta, type Entregado } from "./correo";
 import { Cuenta, SESION_CADUCADA, cuentaDeReto, cuentaDeSesion } from "./cuenta";
 import { aBase64url, aHex, azar, codigoDeSeisCifras, deBase64url, hmac, iguales } from "./cripto";
 import {
@@ -605,7 +605,7 @@ function configuracionCompleta(env: Env) {
 		corto(env.PIMIENTA) ||
 		corto(env.SECRETO_PRELOGIN) ||
 		env.PIMIENTA === env.SECRETO_PRELOGIN ||
-		(env.ENTORNO !== "pruebas" && !env.RESEND_API_KEY);
+		(modoDeCorreo(env) === "smtp" && (!env.SMTP_USUARIO || !env.SMTP_CLAVE));
 	if (falta) throw new Fallo(503, "El servidor no está configurado todavía.");
 }
 

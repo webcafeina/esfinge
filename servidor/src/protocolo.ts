@@ -16,7 +16,14 @@ export interface Env {
 	REMITENTE: string;
 	PIMIENTA: string;
 	SECRETO_PRELOGIN: string;
-	RESEND_API_KEY?: string;
+	/** `smtp` **solo en el Worker de pruebas**, a mano, para ejercitar el envío. */
+	CARTERO?: string;
+	SMTP_HOST?: string;
+	SMTP_PUERTO?: string;
+	SMTP_EHLO?: string;
+	/** Usuario de Workspace y su contraseña de aplicación. Los dos, secretos. */
+	SMTP_USUARIO?: string;
+	SMTP_CLAVE?: string;
 	TOPE_ALTAS_DIA?: string;
 	TOPE_ALTAS_IP_DIA?: string;
 	TOPE_CODIGOS_IP_DIA?: string;
