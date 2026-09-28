@@ -17,13 +17,28 @@ publicar el TXT en Cloudflare, esperar a que propague y **solo entonces** «Inic
 Google firma con su clave genérica y **el correo reenviado se queda sin autenticación alineada** — está en
 [`deuda.md`](deuda.md) con la severidad alta. **No se toca nada de Resend**: son la vuelta atrás.
 
+> **Bloqueado hasta el 2026-09-29.** La consola de administración pide el **segundo factor de Nacho**, que
+> lo aprueba desde su móvil, y no estaba disponible el 28. Es el mismo freno que dejó a medias la
+> contraseña de aplicación de `info@`. **No hay nada que adelantar por aquí**: el orden importa, y
+> desplegar el cartero antes del DKIM pondría a producción a mandar sin firma alineada.
+
+**Cuando publique el TXT**, comprobar la propagación **antes** de que pulse «Iniciar autenticación»:
+
+```sh
+dig +short TXT google._domainkey.webcafeina.com
+```
+
 **Y después, por orden:**
 
 1. **Desplegar el cartero** en el VPS, con los pasos de [`../cartero/LÉEME.md`](../cartero/LÉEME.md):
    secreto compartido en hexadecimal, `.env`, red `esfinge-borde`, sitio de Caddy y DNS de
    `cartero.webcafeina.com`.
 2. **Los secretos de los Workers**: `CARTERO_SECRETO` en pruebas y en producción, y quitar
-   `RESEND_API_KEY` **solo al final**.
+   `RESEND_API_KEY` **solo al final**. Y **quitar ahí mismo `SMTP_USUARIO` y `SMTP_CLAVE`** del Worker de
+   pruebas: ya no los lee nadie, y lo que hay guardado es una contraseña de aplicación **provisional de
+   `alvaro@`** que se puso porque la de `info@` necesitaba el segundo factor de Nacho. Con el cartero no
+   hace falta ninguna —el relé autoriza por la IP del VPS—, así que **esa contraseña se puede revocar** y
+   el asunto se cierra sin esperar a nadie.
 3. **Humo en producción** con una dirección real: alta completa, entrada desde equipo nuevo, recuperación,
    cambio de contraseña y borrado.
 4. **Retirar Resend**, 24-48 h después y en este orden: el secreto → el DNS → cerrar la cuenta. **El punto

@@ -2189,6 +2189,9 @@ de ahí.
   pero un correo reenviado se queda sin autenticación alineada, y es peor que lo que da Resend. A
   [`deuda.md`](deuda.md), y hay que arreglarlo **antes** de retirar Resend. De paso se vio que los
   informes de DMARC van a una dirección de fuera de Webcafeína.
+- **Se paró aquí**, a petición del cliente: el DKIM necesita el segundo factor de Nacho y no se pudo el
+  mismo día — el mismo freno que dejó provisional la contraseña de aplicación, y que con el cartero deja
+  de importar porque el relé autoriza por IP.
 - **Queda abierto**: activar el DKIM de Workspace (consola, es del cliente), desplegar el cartero
   —secreto, red de borde, Caddy, DNS—, poner los secretos de los Workers, el humo en producción, retirar
   Resend y **las menciones de la política de privacidad, que se cambian el mismo día que producción**.
