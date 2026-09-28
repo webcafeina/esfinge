@@ -113,6 +113,9 @@ func (a *App) CrearBoveda(maestra string) (string, error) {
 	}
 	a.ponerBoveda(b)
 	a.Actividad()
+	// Bóveda nueva, oferta nueva: el desbloqueo del sistema se vuelve a ofrecer
+	// aunque en este equipo ya se hubiera contestado por otra bóveda.
+	a.volverAOfrecerElDesbloqueo()
 	// Crearla aquí es elegir trabajar en local, si no se había elegido nada.
 	if d := leerDatosCuenta(); d.Modo == "" {
 		_ = a.ElegirModoLocal()

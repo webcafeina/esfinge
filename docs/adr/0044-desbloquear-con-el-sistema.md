@@ -96,6 +96,13 @@ Una tarjeta arriba de la bóveda abierta, con tres reglas:
 Que la marca sea local importa: en un equipo sin biometría la sugerencia no tiene sentido, y haberla
 descartado en el portátil no dice nada del ordenador de la oficina.
 
+**Y «una vez» es una vez por bóveda, no por equipo** (corregido el 2026-09-28). Esa regla se razonó entre
+equipos y le faltaba el otro caso, que encontró el cliente creando una cuenta nueva en un Mac donde ya
+había contestado: **la ranura del sistema es de cada bóveda** —Ajustes la enseñaba desactivada, que era
+cierto— pero la marca era del equipo, así que **una bóveda nueva nacía sin desbloqueo y sin que nadie
+volviera a mencionarlo**. Lo mismo le pasaba a quien borra su bóveda y empieza otra. Ahora la marca se
+borra al crear una bóveda, sola o con una cuenta.
+
 **Y también en la pantalla de desbloquear, como casilla** (2.27.3). El cliente esperaba encontrarlo ahí, y
 tenía razón en dónde: esa pantalla es el momento en que estás a punto de teclear la maestra otra vez. Lo
 que no cabe ahí es un botón que lo active, porque **activarlo exige la bóveda abierta** —es lo que impide

@@ -393,6 +393,8 @@ func (a *App) TerminarRegistro(correo, codigo, maestra, nueva string) (string, e
 			return "", err
 		}
 		creada = true
+		// Lo mismo que en `CrearBoveda`: bóveda nueva, oferta nueva.
+		a.volverAOfrecerElDesbloqueo()
 	}
 
 	sal, err := cripto.Azar(16)

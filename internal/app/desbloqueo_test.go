@@ -224,3 +224,41 @@ func TestElAvisoDeActualizarSaleUnaVezPorVersion(t *testing.T) {
 		t.Fatalf("no vuelve a avisar tras actualizar: %+v", e)
 	}
 }
+
+// **Una bóveda nueva vuelve a ofrecer el desbloqueo, aunque ya se contestara aquí.**
+//
+// La regla de «una vez» se pensó entre equipos, y le faltaba este caso: la ranura
+// del sistema es **de cada bóveda**, pero la marca de «ya se ofreció» es del
+// equipo. Sin esto, quien empieza una bóveda nueva donde una vez dijo «ahora no»
+// —o quien crea una cuenta en un Mac que ya usaba— se queda sin desbloqueo y sin
+// que nadie se lo mencione. Lo encontró el cliente montando la prueba de compartir.
+func TestUnaBovedaNuevaVuelveAOfrecerElDesbloqueo(t *testing.T) {
+	a, _ := conLlaveroDeMentira(t)
+
+	// Alguien ya contestó en este equipo, por la bóveda de antes.
+	p := a.ajustes.Ver()
+	p.DesbloqueoSugerido = true
+	if err := a.ajustes.Guardar(p); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := a.CrearBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if a.ajustes.Ver().DesbloqueoSugerido {
+		t.Error("la bóveda es nueva y el desbloqueo sigue sin ofrecerse")
+	}
+
+	// Y contestar para ésta vuelve a callarlo: sigue siendo una vez por bóveda.
+	if err := a.ActivarDesbloqueo(); err != nil {
+		t.Fatal(err)
+	}
+	p = a.ajustes.Ver()
+	p.DesbloqueoSugerido = true
+	if err := a.ajustes.Guardar(p); err != nil {
+		t.Fatal(err)
+	}
+	if !a.ajustes.Ver().DesbloqueoSugerido {
+		t.Error("contestar para esta bóveda tendría que callarlo")
+	}
+}

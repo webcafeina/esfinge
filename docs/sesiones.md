@@ -7,6 +7,11 @@ Plantilla al final.
 
 ## 2026-09-28 · La C3: Windows Hello, a ciegas pero comprobando lo que se puede
 
+- **Y una regla que estaba mal pensada, encontrada por él al crear la cuenta nueva**: la sugerencia de
+  Touch ID no salía en el Mac B, y era correcto —la marca de «ya se ofreció» vive en las preferencias, que
+  no se movieron— pero destapó que **«una vez» se había razonado por equipo y la ranura es por bóveda**. Una
+  bóveda nueva nacía sin desbloqueo y sin que nadie lo mencionara. Ahora la marca se borra al crear una
+  bóveda, sola o con cuenta, con prueba vista en rojo antes.
 - **Y compartir, comprobado entre dos cuentas y dos Macs: el plan de cuentas queda cerrado entero.** Las
   dos huellas coinciden, la copia llega al buzón, se acepta, y al cambiarla en el equipo que la recibe la
   original no cambia.

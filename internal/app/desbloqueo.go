@@ -179,6 +179,27 @@ func (a *App) AbrirBovedaConElSistema() error {
 	return nil
 }
 
+// volverAOfrecerElDesbloqueo borra la marca de «ya se ofreció», y se llama **al
+// crear una bóveda**.
+//
+// La regla de «una vez» se escribió pensando en equipos: haberlo descartado en el
+// portátil no dice nada del ordenador de la oficina. Faltaba el otro caso, y lo
+// encontró el cliente (2026-09-28) creando una cuenta nueva en un Mac donde ya
+// había contestado: **la ranura del sistema es de cada bóveda** —por eso Ajustes
+// la enseñaba desactivada— pero la marca era del equipo, así que una bóveda nueva
+// nacía sin desbloqueo y **sin que nadie volviera a mencionarlo**. Lo mismo le
+// pasaba a quien borra su bóveda y empieza otra.
+//
+// Sigue siendo una vez: una por bóveda, que es lo que de verdad importa.
+func (a *App) volverAOfrecerElDesbloqueo() {
+	p := a.ajustes.Ver()
+	if !p.DesbloqueoSugerido {
+		return
+	}
+	p.DesbloqueoSugerido = false
+	_ = a.ajustes.Guardar(p)
+}
+
 func (a *App) anotarPermisoDelLlavero() {
 	p := a.ajustes.Ver()
 	if p.VersionConPermisoDelLlavero == a.version {
