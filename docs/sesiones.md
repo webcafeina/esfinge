@@ -5,6 +5,30 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-28 · La C3: Windows Hello, a ciegas pero comprobando lo que se puede
+
+- **`internal/llavero/llavero_windows.go`**: `UserConsentVerifier` por `IUserConsentVerifierInterop` —la
+  llamada normal no vale en una aplicación de escritorio, hace falta el identificador de la ventana— y el
+  secreto en el **Administrador de credenciales**. Toda la fontanería de WinRT a mano: activar la clase,
+  esperar la operación asíncrona dando vueltas y leer el resultado.
+- **Y aquí sí se comprueba algo**, al revés que con el cgo de macOS: el binario de Windows va **sin cgo**,
+  así que el cruce de `make comprobar` lo compila para los dos objetivos de Windows de verdad. Eso ya pagó:
+  `GOOS=windows go vet` marcó **diez usos de `unsafe.Pointer`** y habría tumbado la puerta de la
+  publicación. Los punteros de COM viajan ahora como `unsafe.Pointer` y no como `uintptr`, que además es lo
+  correcto.
+- **Y una prueba que corre en esta máquina**: los desplazamientos de `CREDENTIALW`. Windows lee esos campos
+  **por su sitio en memoria**, así que un relleno de más deja `CredentialBlob` donde no toca y la llamada
+  guarda cualquier cosa, en un ordenador que aquí no hay. La estructura vive en un fichero **sin etiqueta de
+  compilación** para que la prueba mire la de verdad y no una copia suya.
+- **Se descartó `KeyCredentialManager`**, que es más fuerte —llave en el TPM, firmar exige Hello—, porque el
+  esquema depende de que esa firma sea determinista. Suponer eso en código que nadie puede ejecutar es
+  exactamente lo que este proyecto no hace.
+- Y se dice lo que en Windows protege menos: allí una credencial genérica **la lee cualquier proceso que
+  corra como tú, sin preguntar**, mientras que el llavero de macOS al menos pregunta. No cambia la promesa
+  de la ADR 0044, pero el margen es más estrecho.
+- Verificado: `make comprobar` en verde (salida 0), los seis cruces y `GOOS=windows go vet` limpio. **Sin
+  publicar**: no hay quien la pruebe, así que viaja con la próxima versión.
+
 ## 2026-09-25 (tarde) · La huella deja de ser un botón, y la bóveda la ofrece sola
 
 - **Y lo que se dio por comprobado y no lo estaba**: «al activarlo el llavero no pregunta nada» era falso.

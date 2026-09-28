@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-09-25**
+Última actualización: **2026-09-28**
 
 ## Dónde se paró, y por dónde se sigue
 
@@ -19,16 +19,25 @@ cliente en su Mac y casi todo salido de probarlo:
 - **Lo que el sistema pregunta, dicho antes de que lo pregunte** (2.27.5 y 2.27.6): la contraseña del Mac al
   guardar la llave, y otra vez —una sola— tras cada actualización.
 
-**Lo siguiente, y hay una pregunta del cliente sin contestar encima de la mesa.** Se le planteó al cerrar y
-no dio respuesta, así que **al volver se empieza por ahí**:
+**Y la C3, escrita el 2026-09-28**, que era lo que quedaba de la fase: Windows Hello por
+`UserConsentVerifier` —con la interfaz de interoperación, que es la que vale en una aplicación de
+escritorio— y el secreto en el **Administrador de credenciales**. Está en `internal/llavero/llavero_windows.go`.
 
-> ¿La **C3** (Windows Hello) o antes **Firefox y compartir entre sus dos Macs**?
+**Lo que aquí se puede decir de ella, y no es poco para ser código a ciegas:** es **Go puro, sin cgo**, así
+que el cruce de `make comprobar` la compila para los dos objetivos de Windows y la puerta le pasa
+`GOOS=windows go vet` —que de entrada marcó diez usos de `unsafe.Pointer` y habría tumbado la publicación—.
+Y hay **una prueba que corre en esta máquina**: los desplazamientos de `CREDENTIALW`, que es lo único que
+puede fallar en silencio y sin arreglo posible desde aquí.
 
-Lo que hay que tener delante para decidirlo: la C3 se escribe **a ciegas y para un sistema donde Esfinge no
-se ha ejecutado nunca** —hay que hablar con WinRT (`UserConsentVerifier`) y con el Administrador de
-credenciales—, y lo único comprobable es que compile en la máquina de Windows de la publicación, que es
-decir muy poco: la lección del cgo de macOS es que compilar no dice que arranque. Firefox y compartir, en
-cambio, **se verifican de verdad** y son lo último que queda del plan de cuentas.
+**Lo que no se puede decir**: que arranque. Nadie ha ejecutado nunca Esfinge en un Windows, y la lección
+del cgo de macOS vale entera. Por eso cada paso lleva su `HRESULT` en el mensaje de error: el día que
+alguien lo abra en un Windows, eso será lo único que haya.
+
+**Sin publicar**, a propósito: no hay quien la pruebe, así que viaja con la próxima versión que salga por
+otro motivo.
+
+**Lo siguiente** es lo último que queda del plan de cuentas, y lo hace el cliente: **probar Firefox** y
+**comprobar compartir entre sus dos Macs**, que dijo de hacer juntos.
 
 Y si se va a la C3, releer antes la ADR 0044: la credencial de Hello en un Win32 sin empaquetar **está
 atada a la cuenta de usuario y no a la aplicación**, así que ahí el cerrojo es todavía más cerrojo.

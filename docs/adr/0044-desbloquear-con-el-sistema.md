@@ -116,6 +116,28 @@ Dos reglas de esa casilla:
   Ahora activa quien tiene pantalla y sitio para el error, y de paso se ve «Activando…» y después «Touch ID
   activado» en vez de que no pase nada visible.
 
+### En Windows, `UserConsentVerifier` y el Administrador de credenciales (C3, 2026-09-28)
+
+Las mismas dos piezas que en macOS, por el mismo motivo: **Hello dice sí o no, y el secreto lo guarda otro**.
+
+- **El consentimiento**, con `UserConsentVerifier`. En una aplicación de escritorio no vale la llamada
+  normal: hace falta `IUserConsentVerifierInterop`, que recibe el identificador de la ventana. Eso trae
+  toda la fontanería de WinRT —activar la clase, esperar la operación asíncrona, leer el resultado— y se
+  escribe a mano, porque aquí no hay biblioteca que lo haga.
+- **El secreto, en el Administrador de credenciales** (`CredWriteW`, credencial genérica), que lo cifra con
+  las credenciales de la sesión: un disco copiado no se lo lleva, que es la propiedad que se buscó en macOS.
+
+**Y lo que aquí protege menos, dicho en voz alta.** En macOS el llavero pregunta cuando otra aplicación
+quiere un elemento que no creó; **en Windows no hay nada de eso**: una credencial genérica la lee cualquier
+proceso que corra como tú, sin preguntar. No cambia lo que esta ADR promete —esto no protege de un programa
+que corra como tú—, pero el margen es más estrecho. Es coherente con lo que Microsoft dice de
+`KeyCredentialManager`: la credencial se ata a la cuenta de usuario, no a la aplicación.
+
+**Se descartó `KeyCredentialManager`**, que habría sido más fuerte —la llave vive en el TPM y firmar exige
+Hello, así que el secreto podría cifrarse con esa firma—. El esquema depende de que la firma sea
+**determinista**, y eso es una suposición sobre el relleno que usa Windows al firmar. Suponer eso en código
+que **nadie puede ejecutar** es justo lo que este proyecto no hace.
+
 ### Y esto no cuenta como actividad
 
 Leer el secreto es parte de abrir, y abrir ya toca el reloj por su cuenta. Es la regla de siempre —lo que
