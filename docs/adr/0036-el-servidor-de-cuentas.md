@@ -83,6 +83,10 @@ si alguien la quita. La de D1 no está en el código: se elige al crear la base,
 - **Los secretos los pone el cliente** en el panel de Cloudflare, generados con `openssl rand -hex 32`.
   Cambiar `PIMIENTA` deja fuera a todas las cuentas: su versión se guarda (`pimienta: 1`) para poder
   rotarla algún día sin eso, pero hoy no hay rotación escrita.
+
+  > **Escrita el 2026-09-29 ([ADR 0046](0046-rotar-la-pimienta.md)).** Y el gancho que esta ficha dejó
+  > puesto —una marca por cuenta— **no servía**: los dos verificadores de una cuenta migran en momentos
+  > distintos, así que la versión tuvo que irse a dentro de cada verificador.
 - El puerto de siempre de `wrangler dev`, el 8787, lo ocupa otro programa en la máquina de desarrollo:
   `make servidor` usa el 8790.
 

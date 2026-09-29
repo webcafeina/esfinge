@@ -144,6 +144,7 @@ Quién más interviene
 - Cloudflare aloja el servidor. Los datos de las cuentas se guardan en centros de la Unión Europea.
 
 - Google Workspace entrega los correos, porque es quien ya lleva el correo de Webcafeína: no es un tercero nuevo, es el que ya había. Ve tu dirección, el código, el nombre del equipo desde el que entras y de qué aviso se trata —una entrada, un cambio de contraseña, un borrado—, y conserva treinta días el registro de haberlos enviado. Antes los mandaba Resend, que además guardaba una copia del correo entero otros treinta días, en Estados Unidos; eso ya no ocurre.
+
 - Un servidor nuestro en París es el que se los pasa a Google. No es un tercero —lo llevamos nosotros— pero el correo pasa por ahí, así que hay que decirlo: no guarda ninguno, ni su contenido ni a quién va. Está ahí porque el servidor de la cuenta, que vive en Cloudflare, no puede entregar el correo él mismo.
 
 - GitHub aloja nuestra web, y de ahí sale el icono que llevan nuestros correos. Para enseñarlo, tu programa de correo se lo pide, y quien sirve esa imagen se entera de que el correo se ha abierto: con la hora y tu dirección IP, salvo en Gmail, que la pide por ti. Los correos se leen igual con las imágenes bloqueadas, y ninguno lleva nada que nos cuente si lo has abierto: no usamos marcas de seguimiento.

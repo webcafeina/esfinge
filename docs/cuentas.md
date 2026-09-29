@@ -173,7 +173,7 @@ iconos. Cada equipo baja los suyos.
   - Trabajo de comprobación, y otro de despliegue en el entorno `produccion`, que **solo deja desplegar desde `main`** y **no pide aprobación a nadie** (visto el 2026-09-29: la cabecera del flujo decía que sí, y era mentira).
   - Migraciones de D1 y `wrangler deploy`, envueltos en `herramientas/reintentar.sh`.
   - En GitHub: `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`.
-  - **`PIMIENTA`, `SECRETO_PRELOGIN` y `RESEND_API_KEY` los pone el cliente una sola vez con
+  - **`PIMIENTA`, `SECRETO_PRELOGIN` y `CARTERO_SECRETO` los pone el cliente una sola vez con
     `wrangler secret put`.** Nunca por el chat ni desde el flujo.
   - Habrá un Worker de pruebas aparte.
 - **Registros del Worker**: nunca cuerpos, cabeceras `Authorization`, correos ni IP completas.

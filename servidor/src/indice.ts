@@ -13,7 +13,8 @@
 
 import { cartas, carteroPara, DIAS_DE_INVITACION, modoDeCorreo, type Carta, type Envio } from "./correo";
 import { Cuenta, SESION_CADUCADA, cuentaDeReto, cuentaDeSesion } from "./cuenta";
-import { aBase64url, aHex, azar, codigoDeSeisCifras, deBase64url, hmac, iguales } from "./cripto";
+import { aBase64url, aHex, azar, codigoDeSeisCifras, deBase64url, hmac } from "./cripto";
+import { algunaPimientaDa, conLaPimienta, versionActual } from "./pimienta";
 import {
 	ARGON2_POR_DEFECTO,
 	type Env,
@@ -234,11 +235,10 @@ async function terminarAlta(p: Request, env: Env, ctx: ExecutionContext): Promis
 		.bind(c, INTENTOS_DE_ALTA, ahora)
 		.first<{ codigo: string }>();
 	const limpio = typeof d.codigo === "string" ? d.codigo.replace(/\s/g, "") : "";
-	const calculado = await huellaDeAlta(env, c, limpio);
-	const vale =
-		!!alta &&
-		/^\d{6}$/.test(limpio) &&
-		iguales(new TextEncoder().encode(calculado), new TextEncoder().encode(alta.codigo));
+	// Con las dos pimientas: un código emitido justo antes de rotar tiene que seguir
+	// valiendo sus diez minutos.
+	const cuadra = await algunaPimientaDa(env, datosDelAlta(c, limpio), alta?.codigo ?? "");
+	const vale = !!alta && /^\d{6}$/.test(limpio) && cuadra;
 	if (!vale) {
 		throw new Fallo(401, "El código no es correcto o ha caducado. Pide otro.");
 	}
@@ -686,8 +686,12 @@ function correoValido(correo: unknown): string {
 	return c;
 }
 
+function datosDelAlta(correo: string, codigo: string): string {
+	return `alta|${correo}|${codigo}`;
+}
+
 async function huellaDeAlta(env: Env, correo: string, codigo: string): Promise<string> {
-	return aHex(await hmac(env.PIMIENTA, `alta|${correo}|${codigo}`));
+	return (await conLaPimienta(env, versionActual(env), datosDelAlta(correo, codigo)))!;
 }
 
 /** La IP, nunca en claro: un HMAC con un secreto del servidor. */

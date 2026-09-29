@@ -15,7 +15,8 @@
 // versión y escribirla por el que cabe otra petición.
 
 import { DurableObject } from "cloudflare:workers";
-import { aBase64url, aHex, azar, codigoDeSeisCifras, deBase64url, hmac, iguales, sha256 } from "./cripto";
+import { aBase64url, aHex, azar, codigoDeSeisCifras, deBase64url, sha256 } from "./cripto";
+import { algunaPimientaDa, conLaPimienta, igualesHex, partir, sellar, versionActual } from "./pimienta";
 import {
 	type Argon2,
 	DIA,
@@ -163,17 +164,66 @@ export class Cuenta extends DurableObject<Env> {
 		);
 	}
 
-	private async verificador(proposito: string, clave: Uint8Array): Promise<string> {
-		return aHex(await hmac(this.env.PIMIENTA, `${proposito}|${aBase64url(clave)}`));
+	/** El verificador de una versión de la pimienta, o nulo si esa versión ya no está. */
+	private async verificador(proposito: string, clave: Uint8Array, version: number): Promise<string | null> {
+		return conLaPimienta(this.env, version, `${proposito}|${aBase64url(clave)}`);
 	}
 
-	private async coincide(proposito: "acceso" | "posesion", clave: string): Promise<boolean> {
+	/**
+	 * **Tres respuestas y no dos.** `imposible` es una cuenta que se quedó dos
+	 * generaciones de pimienta por detrás: no es que la contraseña esté mal, es que no
+	 * se puede comprobar, y decirle a alguien que su contraseña falla cuando no falla
+	 * es el peor mensaje que se le puede dar (ver `pimienta.ts`).
+	 */
+	private async coincide(proposito: "acceso" | "posesion", clave: string): Promise<"si" | "no" | "imposible"> {
 		const b = deBase64url(clave, 32);
 		const guardado = this.leerAjuste(proposito);
+		const { version, resumen } = partir(guardado ?? "");
 		// Se calcula el HMAC aunque falte algo, para que un caso no tarde menos que el otro.
-		const calculado = await this.verificador(proposito, b ?? new Uint8Array(32));
-		if (!b || !guardado) return false;
-		return iguales(new TextEncoder().encode(calculado), new TextEncoder().encode(guardado));
+		const calculado = await this.verificador(proposito, b ?? new Uint8Array(32), version);
+		if (!b || !guardado) return "no";
+		if (calculado === null) return "imposible";
+		if (!igualesHex(calculado, resumen)) return "no";
+		// Cuadra: si venía de una pimienta vieja, se reescribe con la de ahora. Aquí y
+		// no en otro sitio, porque **éste es el único momento en que se tiene la clave**.
+		await this.repimentar(proposito, b, version);
+		return "si";
+	}
+
+	/**
+	 * Reescribe un verificador con la pimienta de ahora, y apunta en D1 por dónde va
+	 * esta cuenta.
+	 *
+	 * El orden importa: **primero el objeto y después D1**. Si D1 falla, lo que queda
+	 * apuntado es una versión más vieja de la que hay, y ése es el lado seguro del
+	 * error — se espera de más antes de borrar la pimienta anterior, en vez de borrarla
+	 * creyendo que no queda nadie.
+	 */
+	private async repimentar(proposito: "acceso" | "posesion", clave: Uint8Array, version: number) {
+		const actual = versionActual(this.env);
+		if (version === actual) return;
+		const nuevo = await this.verificador(proposito, clave, actual);
+		if (nuevo === null) return;
+		this.ponerAjuste(proposito, sellar(actual, nuevo));
+		await this.apuntarLaPimientaEnD1();
+	}
+
+	/** La menor de las dos versiones de esta cuenta, a la tabla que se puede contar. */
+	private async apuntarLaPimientaEnD1() {
+		const cuenta = this.leerAjuste("cuenta");
+		if (!cuenta) return;
+		const menor = Math.min(
+			...(["acceso", "posesion"] as const).map((k) => partir(this.leerAjuste(k) ?? "").version),
+		);
+		try {
+			await this.env.BD.prepare("UPDATE cuentas SET pimienta = ? WHERE cuenta = ?").bind(menor, cuenta).run();
+		} catch (e) {
+			// **No se traga en silencio, pero tampoco tumba la entrada**: esto es
+			// contabilidad para saber cuándo se puede borrar la pimienta vieja, no parte
+			// de abrir la cuenta. Quedarse sin apuntarlo retrasa esa decisión; hacer
+			// fallar la entrada por ello sería mucho peor.
+			console.error(JSON.stringify({ nivel: "error", msg: "no se pudo apuntar la pimienta en D1", porque: `${e}` }));
+		}
 	}
 
 	// ---------------------------------------------------------------- alta
@@ -186,8 +236,9 @@ export class Cuenta extends DurableObject<Env> {
 
 	async crear(d: DatosDeAlta): Promise<Resultado<{ sesion: string; dispositivo: string; confianza?: string }>> {
 		if (this.existe()) return mal(409, "Ya hay una cuenta con este correo.");
-		const acceso = await this.verificador("acceso", deBase64url(d.claveDeAcceso, 32)!);
-		const posesion = await this.verificador("posesion", deBase64url(d.posesion, 32)!);
+		const ahoraMismo = versionActual(this.env);
+		const acceso = sellar(ahoraMismo, (await this.verificador("acceso", deBase64url(d.claveDeAcceso, 32)!, ahoraMismo))!);
+		const posesion = sellar(ahoraMismo, (await this.verificador("posesion", deBase64url(d.posesion, 32)!, ahoraMismo))!);
 		const emitido = await this.emitir(d.dispositivo, d.confiar, d.cuenta);
 
 		this.ctx.storage.transactionSync(() => {
@@ -220,7 +271,7 @@ export class Cuenta extends DurableObject<Env> {
 		>
 	> {
 		if (!this.existe()) {
-			await this.verificador("acceso", new Uint8Array(32)); // el mismo trabajo que con cuenta
+			await this.verificador("acceso", new Uint8Array(32), versionActual(this.env)); // el mismo trabajo que con cuenta
 			return mal(401, NO_VALE);
 		}
 		const ahora = Date.now();
@@ -232,7 +283,9 @@ export class Cuenta extends DurableObject<Env> {
 		// justo lo que `docs/seguridad.md` promete que no se puede saber. Quien
 		// acierta la contraseña ya sabe que la cuenta existe, así que a ése sí se le
 		// puede decir que está frenada; a los demás se les contesta lo de siempre.
-		if (typeof p.claveDeAcceso !== "string" || !(await this.coincide("acceso", p.claveDeAcceso))) {
+		const cuadraAcceso = typeof p.claveDeAcceso === "string" ? await this.coincide("acceso", p.claveDeAcceso) : "no";
+		if (cuadraAcceso === "imposible") return mal(409, "Esta cuenta no se puede abrir con esta versión del servidor. Escribe a info@webcafeina.com.");
+		if (cuadraAcceso !== "si") {
 			this.sql.exec("INSERT INTO fallos (momento) VALUES (?)", ahora);
 			this.sql.exec("DELETE FROM fallos WHERE momento <= ?", ahora - VENTANA_DE_FALLOS);
 			this.apuntar("entrada-fallida");
@@ -371,12 +424,14 @@ export class Cuenta extends DurableObject<Env> {
 	): Promise<Resultado<{ version: number; sesion?: string; correo: string }> & { version?: number }> {
 		const s = await this.sesion(token, true);
 		if (!s.ok) return s;
-		if (typeof p.posesion !== "string" || !(await this.coincide("posesion", p.posesion))) {
+		const cuadraPosesion = typeof p.posesion === "string" ? await this.coincide("posesion", p.posesion) : "no";
+		if (cuadraPosesion === "imposible") return mal(409, "Esta cuenta no se puede abrir con esta versión del servidor. Escribe a info@webcafeina.com.");
+		if (cuadraPosesion !== "si") {
 			return mal(403, "Esa clave no abre la bóveda de esta cuenta.");
 		}
 		const comprobado = this.comprobarDocumento(p.documento);
 		if (!comprobado.ok) return comprobado;
-		const acceso = await this.verificador("acceso", deBase64url(p.claveDeAcceso, 32)!);
+		const acceso = sellar(versionActual(this.env), (await this.verificador("acceso", deBase64url(p.claveDeAcceso, 32)!, versionActual(this.env)))!);
 		const huella = aHex(await sha256(new Uint8Array(p.documento)));
 		const huellaActual = await this.huellaDeSesion(token);
 		const nueva = s.datos.restringida ? await this.nuevaSesion() : null;
@@ -472,7 +527,9 @@ export class Cuenta extends DurableObject<Env> {
 		if (!fila || fila.caduca < Date.now() || fila.intentos >= INTENTOS_POR_RETO) {
 			return mal(401, "La recuperación ha caducado. Empieza otra vez.");
 		}
-		if (typeof posesion !== "string" || !(await this.coincide("posesion", posesion))) {
+		const cuadraPosesion = typeof posesion === "string" ? await this.coincide("posesion", posesion) : "no";
+		if (cuadraPosesion === "imposible") return mal(409, "Esta cuenta no se puede abrir con esta versión del servidor. Escribe a info@webcafeina.com.");
+		if (cuadraPosesion !== "si") {
 			this.sql.exec("UPDATE retos SET intentos = intentos + 1 WHERE id = ?", idDeReto(reto));
 			return mal(403, "Esa clave de recuperación no abre la bóveda de esta cuenta.");
 		}
@@ -523,7 +580,9 @@ export class Cuenta extends DurableObject<Env> {
 	async borrar(token: string, p: { claveDeAcceso: unknown; reto: string; codigo: unknown }): Promise<Resultado<{ correo: string }>> {
 		const s = await this.sesion(token, false);
 		if (!s.ok) return s;
-		if (typeof p.claveDeAcceso !== "string" || !(await this.coincide("acceso", p.claveDeAcceso))) {
+		const cuadraAcceso = typeof p.claveDeAcceso === "string" ? await this.coincide("acceso", p.claveDeAcceso) : "no";
+		if (cuadraAcceso === "imposible") return mal(409, "Esta cuenta no se puede abrir con esta versión del servidor. Escribe a info@webcafeina.com.");
+		if (cuadraAcceso !== "si") {
 			return mal(401, "La contraseña no es correcta.");
 		}
 		const r = await this.gastarReto(p.reto, "borrar", p.codigo);
@@ -826,7 +885,7 @@ export class Cuenta extends DurableObject<Env> {
 		}
 		const id = aBase64url(azar(16));
 		const codigo = codigoDeSeisCifras();
-		const huella = aHex(await hmac(this.env.PIMIENTA, `codigo|${id}|${codigo}`));
+		const huella = (await conLaPimienta(this.env, versionActual(this.env), `codigo|${id}|${codigo}`))!;
 		this.ctx.storage.transactionSync(() => {
 			this.sql.exec("DELETE FROM retos WHERE caduca < ?", ahora);
 			this.sql.exec("DELETE FROM retos_creados WHERE momento <= ?", ahora - DIA);
@@ -852,8 +911,10 @@ export class Cuenta extends DurableObject<Env> {
 			.toArray()[0];
 		if (!fila || fila.caduca < Date.now() || fila.intentos >= INTENTOS_POR_RETO) return mal(401, CODIGO_MALO);
 		const limpio = typeof codigo === "string" ? codigo.replace(/\s/g, "") : "";
-		const calculado = aHex(await hmac(this.env.PIMIENTA, `codigo|${id}|${limpio}`));
-		if (!/^\d{6}$/.test(limpio) || !iguales(new TextEncoder().encode(calculado), new TextEncoder().encode(fila.codigo))) {
+		// Con las dos pimientas: un código emitido justo antes de rotar tiene que seguir
+		// valiendo sus diez minutos. No se migra nada, porque caduca antes.
+		const cuadra = await algunaPimientaDa(this.env, `codigo|${id}|${limpio}`, fila.codigo);
+		if (!/^\d{6}$/.test(limpio) || !cuadra) {
 			this.sql.exec("UPDATE retos SET intentos = intentos + 1 WHERE id = ?", id);
 			return mal(401, CODIGO_MALO);
 		}

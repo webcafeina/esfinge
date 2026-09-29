@@ -1,0 +1,12 @@
+-- La versión de la pimienta con la que están calculados los verificadores de cada
+-- cuenta: **la menor de las dos** (acceso y posesión), que es la que decide cuándo se
+-- puede borrar la anterior. Ver `src/pimienta.ts`.
+--
+-- Vive aquí y no dentro del objeto de la cuenta porque la pregunta que tiene que
+-- contestar es «¿cuántas quedan atrás?», y eso no se puede preguntar a un montón de
+-- Durable Objects aislados:
+--
+--     SELECT pimienta, COUNT(*) FROM cuentas GROUP BY pimienta;
+--
+-- Por defecto 1, que es como está escrito todo lo anterior a esto.
+ALTER TABLE cuentas ADD COLUMN pimienta INTEGER NOT NULL DEFAULT 1;

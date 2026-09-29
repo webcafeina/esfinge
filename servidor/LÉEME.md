@@ -120,15 +120,47 @@ Una vez, en este orden. **Ningún secreto pasa por el chat ni por el repositorio
 4. **Sus secretos**, en el panel del Worker (*Settings → Variables and Secrets*, tipo *Secret*). Cada
    uno se genera en el terminal con `openssl rand -hex 32`, **distinto para cada uno y para cada
    Worker**:
-   - `PIMIENTA`: firma los verificadores. **No se cambia nunca**: cambiarla deja fuera a todas las
-     cuentas.
+   - `PIMIENTA`: firma los verificadores. **Se puede rotar** desde el 2026-09-29, y cómo se hace está
+     abajo. Antes de eso, cambiarla dejaba fuera a todas las cuentas.
    - `SECRETO_PRELOGIN`: las sales inventadas y las IP.
-   - `RESEND_API_KEY`: solo en producción. Una clave de Resend con permiso **solo de envío** y **solo
-     para `webcafeina.com`**.
+   - `CARTERO_SECRETO`: el que comparte con el cartero del VPS, que entrega los correos
+     ([ADR 0045](../docs/adr/0045-el-correo-sale-por-el-vps.md)). El **mismo valor** en los dos sitios.
 
    Sin ellos el servidor contesta `503` a todo: no arranca con un secreto que falte.
 5. **Producción**, lo mismo con `produccion`: el entorno de GitHub solo deja desplegar desde `main`.
    Vive en `https://esfinge-cuentas.webcafeina.com`.
+
+## Cómo se rota la pimienta
+
+Hace falta cuando se sospecha que `PIMIENTA` se ha visto: una cuenta de Cloudflare comprometida, alguien
+que se va, un valor pegado donde no tocaba. **Rotar cierra la puerta hacia adelante**; lo que alguien ya
+se hubiera llevado —la base y la pimienta vieja a la vez— le sigue sirviendo. Todo el porqué está en
+[ADR 0046](../docs/adr/0046-rotar-la-pimienta.md) y el cómo en [`src/pimienta.ts`](src/pimienta.ts).
+
+1. **Mirar primero si se puede**, que es lo que no se puede saltar:
+
+   ```sh
+   pnpm exec wrangler d1 execute BD --remote --command \
+     "SELECT pimienta, COUNT(*) AS cuentas FROM cuentas GROUP BY pimienta;"
+   ```
+
+   **Si sale más de una fila, no se rota**: hay cuentas que no han terminado la rotación anterior y
+   rotar otra vez las deja fuera. Se espera o se les avisa.
+
+2. `PIMIENTA_ANTERIOR` ← el valor que tiene ahora `PIMIENTA`. Como *Secret*.
+3. `PIMIENTA` ← uno nuevo, `openssl rand -hex 32`.
+4. `PIMIENTA_VERSION` ← el número siguiente. Como *Secret*, para que sobreviva a un despliegue.
+
+A partir de ahí **cada cuenta se reescribe sola en cuanto se usa**: al entrar migra su verificador de
+acceso, y en cualquier pasada de la sincronización —cada cinco minutos con la aplicación abierta— el de
+posesión. No hay nada que ejecutar.
+
+5. **Volver a la consulta del paso 1 de vez en cuando.** Cuando solo quede la versión nueva, se borra
+   `PIMIENTA_ANTERIOR` y la rotación ha terminado.
+
+Mientras tanto, una cuenta que se quedara **dos** generaciones por detrás contesta `409` con un mensaje
+que manda escribir a `info@webcafeina.com` — **no** «contraseña incorrecta», que sería mentirle a quien
+la tiene bien.
 
 **Hecho todo el 2026-09-18.** Bases: `esfinge-cuentas` (`0122dfb4-…`) y `esfinge-cuentas-pruebas`
 (`62a934bf-…`), las dos con jurisdicción `eu`. El de pruebas vive en

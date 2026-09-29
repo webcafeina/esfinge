@@ -14,7 +14,14 @@ export interface Env {
 	JURISDICCION: string;
 	REGISTRO: string;
 	REMITENTE: string;
+	/**
+	 * La pimienta de ahora. **Se puede rotar** desde 2026-09-29 (`src/pimienta.ts`):
+	 * la anterior se deja en `PIMIENTA_ANTERIOR` y el número sube en
+	 * `PIMIENTA_VERSION`. Sin esos dos, esto es la versión 1 y no cambia nada.
+	 */
 	PIMIENTA: string;
+	PIMIENTA_ANTERIOR?: string;
+	PIMIENTA_VERSION?: string;
 	SECRETO_PRELOGIN: string;
 	/** `enviar` **solo en el Worker de pruebas**, a mano, para ejercitar el envío. */
 	CORREO?: string;
