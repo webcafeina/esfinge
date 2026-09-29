@@ -170,7 +170,7 @@ iconos. Cada equipo baja los suyos.
 - **Pruebas**: vitest con `@cloudflare/vitest-pool-workers`. Los frenos se prueban **abriendo una petición
   nueva por intento**.
 - **Despliegue**: `.github/workflows/servidor.yml`.
-  - Trabajo de comprobación, y otro de despliegue con aprobación en el entorno `produccion`.
+  - Trabajo de comprobación, y otro de despliegue en el entorno `produccion`, que **solo deja desplegar desde `main`** y **no pide aprobación a nadie** (visto el 2026-09-29: la cabecera del flujo decía que sí, y era mentira).
   - Migraciones de D1 y `wrangler deploy`, envueltos en `herramientas/reintentar.sh`.
   - En GitHub: `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`.
   - **`PIMIENTA`, `SECRETO_PRELOGIN` y `RESEND_API_KEY` los pone el cliente una sola vez con

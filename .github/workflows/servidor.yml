@@ -1,8 +1,18 @@
 # El servidor de cuentas en Cloudflare (ADR 0035 y 0036).
 #
 # Se comprueba solo al tocar `servidor/`, y **se despliega solo a mano**, eligiendo
-# a cuál de los dos Workers: el de pruebas o el de producción. Desplegar producción
-# pasa además por el entorno `produccion` de GitHub, que pide aprobación.
+# a cuál de los dos Workers: el de pruebas o el de producción.
+#
+# **Lo único que protege producción es que solo se despliega desde `main`**, con las
+# comprobaciones como puerta delante. El entorno `produccion` de GitHub existe, pero
+# **no tiene revisores**: no pide aprobación a nadie y desplegar es un mandato.
+#
+# Hasta el 2026-09-29 esta cabecera decía que sí la pedía, y era mentira — se vio al
+# lanzar el despliegue del correo y pasar solo. Se eligió borrar la frase en vez de
+# poner el revisor: aquí el que despliega y el que aprobaría son la misma persona, así
+# que el clic no sería una segunda opinión, sería un trámite. **Lo que no se puede
+# hacer es dejar escrita una puerta que no existe**, que es lo que a este proyecto le
+# costó seis versiones con los tests que no paraban una publicación.
 #
 # Lo que **no** hace este flujo, a propósito: poner los secretos del Worker
 # (`PIMIENTA`, `SECRETO_PRELOGIN`, `CARTERO_SECRETO`). Los pone quien administra la
