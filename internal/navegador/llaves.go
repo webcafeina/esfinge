@@ -1,6 +1,12 @@
 package navegador
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha256"
+	"crypto/x509"
+	"errors"
 	"net"
 	"net/url"
 	"strings"
@@ -60,4 +66,72 @@ func RPIDPermitido(rpID, origen string) string {
 		return ""
 	}
 	return pedido
+}
+
+// CrearLlave hace una llave de acceso nueva: la privada en PKCS#8, la pública en
+// SPKI, que es lo mismo que guarda y entiende la extensión.
+func CrearLlave() (privada, publica []byte, err error) {
+	k, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+	privada, err = x509.MarshalPKCS8PrivateKey(k)
+	if err != nil {
+		return nil, nil, err
+	}
+	publica, err = x509.MarshalPKIXPublicKey(&k.PublicKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	return privada, publica, nil
+}
+
+// FirmarConLlave firma con una llave guardada y devuelve la firma **en DER**, que
+// es lo que WebAuthn exige.
+//
+// Aquí sale en DER de una vez (`SignASN1`); la extensión firma en P1363 —`r ‖ s`
+// crudos— porque es lo único que da WebCrypto, y tiene que convertirla. Esa
+// conversión es donde se equivoca todo el mundo, y por eso hay una prueba cruzada
+// que **firma allí y verifica aquí**.
+func FirmarConLlave(privadaPKCS8, datos []byte) ([]byte, error) {
+	k, err := x509.ParsePKCS8PrivateKey(privadaPKCS8)
+	if err != nil {
+		return nil, err
+	}
+	priv, vale := k.(*ecdsa.PrivateKey)
+	if !vale {
+		return nil, errors.New("Esa llave no es de la curva que Esfinge firma")
+	}
+	h := sha256.Sum256(datos)
+	return ecdsa.SignASN1(rand.Reader, priv, h[:])
+}
+
+// VerificarFirma comprueba una firma DER contra una pública en SPKI. Existe para
+// las pruebas: **Esfinge nunca verifica, verifica el sitio**. Pero sin poder
+// verificar aquí, «la firma está bien» no se puede comprobar sin un sitio de
+// verdad, y eso es lo que no se hace en este proyecto.
+func VerificarFirma(publicaSPKI, datos, firma []byte) bool {
+	p, err := x509.ParsePKIXPublicKey(publicaSPKI)
+	if err != nil {
+		return false
+	}
+	pub, vale := p.(*ecdsa.PublicKey)
+	if !vale {
+		return false
+	}
+	h := sha256.Sum256(datos)
+	return ecdsa.VerifyASN1(pub, h[:], firma)
+}
+
+// PublicaDe saca la SPKI de una privada en PKCS#8.
+func PublicaDe(privadaPKCS8 []byte) ([]byte, error) {
+	k, err := x509.ParsePKCS8PrivateKey(privadaPKCS8)
+	if err != nil {
+		return nil, err
+	}
+	priv, vale := k.(*ecdsa.PrivateKey)
+	if !vale {
+		return nil, errors.New("Esa llave no es de la curva que Esfinge firma")
+	}
+	return x509.MarshalPKIXPublicKey(&priv.PublicKey)
 }

@@ -296,6 +296,20 @@ no le parece un error, así que devuelve los bytes anteriores como si nada y la 
 Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
 no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
 
+**Una privada P-256 no se puede importar sabiendo solo el escalar.** WebCrypto exige `x` e `y` y no expone
+ninguna forma de multiplicar por el generador: `importKey("jwk", {kty:"EC", crv:"P-256", d})` contesta
+`DataError`. La ADR 0048 daba por hecho lo contrario —«la parte pública se recalcula»— y solo se vio al
+implementarlo. Las llaves de acceso guardan **PKCS#8**, que lleva las dos partes dentro y lo entienden los
+dos lados sin escribir una línea.
+
+**Y WebCrypto firma y verifica en P1363, nunca en DER.** WebAuthn exige DER, así que la extensión convierte
+`r ‖ s` a ASN.1 a mano. Dos reglas que ese formato no perdona: un `INTEGER` va **sin ceros por delante**, y
+si el primer bit está a uno hay que **añadir un cero** o se lee negativo. La prueba de punta a punta —firmar
+allí y verificar aquí— **no cubre el recorte de ceros**, porque una firma al azar empieza por cero una vez
+de cada 256: eso lleva vectores fijos aparte, y se comprobó mutándolo. La asimetría tiene un corolario útil:
+«firmar aquí y verificar allí» no se puede probar sin escribir un descodificador de DER que no hace falta en
+ningún sitio, así que **no se prueba y se dice por qué**.
+
 **`Encaja` no vale para decidir con qué `rpId` se firma una llave de acceso** (ADR 0048), por mucho que se
 le parezca. `Encaja` compara **dominio registrable contra dominio registrable**, y por eso
 `accounts.google.com` y `mail.google.com` son «el mismo sitio»: es lo que se quiere para ofrecer una

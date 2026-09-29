@@ -18,7 +18,7 @@ ninguna copia de Esfinge se encontrará una clase que no entiende. Es barato aho
 ## Decisión
 
 **Una clase nueva, `llave`, con los campos de una credencial WebAuthn**: `rpId`, `idCredencial`,
-`idUsuario`, `nombreVisible`, `algoritmo` y `clavePrivada`. Los nombres del protocolo se dejan sin traducir,
+`idUsuario`, `nombreVisible`, `algoritmo` y `clavePrivada` —ésta **en PKCS#8**, ver abajo—. Los nombres del protocolo se dejan sin traducir,
 como `TOTP`: tienen que poder compararse con la especificación sin nada por el medio.
 
 ### Sin contador de firmas
@@ -72,6 +72,17 @@ nunca de que ahora hay dos**. Para dejar de compartirla hay que borrar la llave 
 Técnicamente ya funcionaba —`envio.go` manda la entrada entera— y eso era justo el peligro: **funcionaba sin
 que nadie lo hubiera decidido**.
 
+### La clave privada se guarda entera, y eso corrige lo que decía esta ficha
+
+Esta ADR decía, escrita antes de implementarla, que `clavePrivada` sería «el escalar de 32 bytes, no el JWK
+entero: la parte pública se recalcula». **Es falso**, y solo se ve al hacerlo: WebCrypto **no puede importar
+una privada P-256 sin `x` e `y`** —lo rechaza con `DataError`— y no expone ninguna forma de multiplicar un
+escalar por el generador. Se comprobó intentándolo.
+
+Se guarda en **PKCS#8**, que lleva las dos partes dentro, lo entienden los dos lados sin escribir una línea
+—`x509.ParsePKCS8PrivateKey` y `crypto.subtle.importKey("pkcs8", …)`— y son 138 bytes. Queda escrito aquí
+porque es exactamente la clase de detalle que parece un ahorro sobre el papel y no existe.
+
 ## Alternativas descartadas
 
 - **Guardar la llave dentro de la credencial del sitio**, como el código de un solo uso. Menos entradas y
@@ -105,6 +116,15 @@ que nadie lo hubiera decidido**.
 - **La lista blanca del puente cazó el método nuevo** antes de que nadie se acordara de él, que es para lo
   que está.
 - **Las tres pruebas cruzadas**: forma canónica, lo que se vacía y la fusión al azar de tres equipos.
+- **Y la firma, de punta a punta**: la extensión firma con una llave hecha allí y con otra hecha en Go, y
+  **Go las verifica las dos**. Es lo único que dice que la conversión de P1363 a DER está bien sin un sitio
+  de verdad, porque los bytes de una firma ECDSA cambian en cada llamada y compararlos no vale para nada.
+  **La dirección contraria no está a propósito**: WebCrypto solo verifica en P1363, así que probarla exigiría
+  escribir un descodificador de DER que producción no usa, y el DER de Go lo escribe la biblioteca estándar.
+- **El DER, con vectores fijos aparte** (`navegador/pruebas/llaves.spec.ts`), y ésa es la parte que la
+  prueba de punta a punta **no puede cubrir**: una firma al azar empieza por cero una vez de cada
+  doscientas cincuenta y seis, así que el recorte de ceros no se ejercita nunca. Comprobado mutándolo — la
+  cruzada seguía en verde.
 
 **Y una cosa que encontró la fusión al azar y no era de esta clase:** el espejo de TypeScript leía **todos**
 los campos numéricos como si fueran `revision` —el nombre estaba escrito a fuego, de cuando la revisión era

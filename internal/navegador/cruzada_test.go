@@ -155,3 +155,86 @@ func TestCruzadaLoQueSeFirma(t *testing.T) {
 		}
 	}
 }
+
+// **La firma de punta a punta: se firma en un lado y se verifica en el otro.**
+//
+// Es lo único que dice que la conversión de P1363 a DER está bien sin un sitio de
+// verdad. Los bytes de una firma ECDSA **cambian en cada llamada** —lleva azar
+// dentro—, así que compararlos no vale para nada: lo que hay que comprobar es que
+// la otra parte la acepte. Y las dos direcciones, porque cada lado firma con una
+// biblioteca distinta: Go saca DER de una vez con `SignASN1`, y WebCrypto solo da
+// `r ‖ s` crudos y hay que convertirlos a mano.
+func TestCruzadaFirmaDePuntaAPunta(t *testing.T) {
+	// Una llave hecha aquí y otra hecha allí: las dos tienen que valer en los dos
+	// sitios, o guardar una llave con cuenta y usarla sin ella no funcionaría.
+	privadaGo, publicaGo, err := CrearLlave()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var suya struct {
+		Privada string `json:"privada"`
+		Publica string `json:"publica"`
+	}
+	cruzada.Pedir(t, map[string]any{"orden": "crearLlave"}, &suya)
+	privadaExt, err := hex.DecodeString(suya.Privada)
+	if err != nil {
+		t.Fatal(err)
+	}
+	publicaExt, err := hex.DecodeString(suya.Publica)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// **Los datos que se firman de verdad**, no un «hola»: el autenticador y el
+	// hash del cliente, que es lo que va a firmar una llave de acceso.
+	cliente := DatosDelCliente("webauthn.get", []byte("un reto de prueba de 32 bytes.."), "https://github.com")
+	datos := LoQueSeFirma(DatosDelAutenticador("github.com", BanderasAlFirmar), cliente)
+
+	// 1 · Firma la extensión con las dos llaves, y verifica Go.
+	type caso struct {
+		Privada string `json:"privada"`
+		Datos   string `json:"datos"`
+	}
+	var firmas []string
+	cruzada.Pedir(t, map[string]any{"orden": "firmarLlave", "casos": []caso{
+		{hex.EncodeToString(privadaExt), hex.EncodeToString(datos)},
+		{hex.EncodeToString(privadaGo), hex.EncodeToString(datos)},
+	}}, &firmas)
+
+	for i, pub := range [][]byte{publicaExt, publicaGo} {
+		f, err := hex.DecodeString(firmas[i])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !VerificarFirma(pub, datos, f) {
+			t.Errorf("firma %d de la extensión: Go no la acepta (%d bytes, empieza por %#x)", i, len(f), f[0])
+		}
+		// Y que no acepte cualquier cosa, que si no lo de arriba no dice nada.
+		if VerificarFirma(pub, append(datos, 'x'), f) {
+			t.Errorf("firma %d: Go acepta la firma sobre otros datos", i)
+		}
+	}
+
+	// **Y la dirección contraria no está, a propósito.** Sería «firma Go y verifica
+	// la extensión», y no se puede sin escribir código que producción no usa:
+	// WebCrypto **solo verifica en P1363**, los mismos `r ‖ s` crudos con los que
+	// firma, así que para darle la firma de Go habría que escribir un descodificador
+	// de DER que no hace falta en ningún sitio. Y tampoco haría falta probarlo: la
+	// extensión **nunca verifica** —verifica el sitio— y el DER de Go lo escribe la
+	// biblioteca estándar, que no es código nuestro.
+	//
+	// Lo que sí hay que probar es lo de arriba, y es justo lo contrario de lo que
+	// parece: **el DER lo escribimos nosotros solo en la extensión**, a mano, sobre
+	// lo que da WebCrypto.
+
+	// 3 · Y la pública que saca Go de una privada de la extensión es la misma que
+	// sacó la extensión: si no, al crear una llave se le mandaría al sitio una
+	// pública que no corresponde y la cuenta quedaría inaccesible.
+	deLaPrivada, err := PublicaDe(privadaExt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hex.EncodeToString(deLaPrivada) != suya.Publica {
+		t.Error("Go saca de la privada de la extensión otra pública distinta")
+	}
+}

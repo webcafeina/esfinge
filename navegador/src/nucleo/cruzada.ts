@@ -15,7 +15,7 @@ import { identidadDeSemilla } from "./identidad";
 import { abrirEnvio, mandarEntrada, type Envio } from "./envio";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
 import { dominioDeOrigen, dominioDeSitio } from "./dominios";
-import { rpIdPermitido } from "./llaves";
+import { crearLlave, firmarConLlave, rpIdPermitido } from "./llaves";
 import { datosDelAutenticador, datosDelCliente, loQueSeFirma } from "./afirmacion";
 import { canonEntrada, entradaDesde, sinSecretos } from "./entrada";
 import { fundir, fundirPiezas } from "./fundir";
@@ -191,6 +191,44 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
         });
       }
       return out;
+    }
+
+    // **Firmar aquí y verificar allí, y al revés** (ADR 0048). Es lo único que
+    // dice que la conversión de P1363 a DER está bien sin un sitio de verdad: los
+    // bytes de una firma ECDSA cambian en cada llamada, así que compararlos no
+    // vale para nada y lo que hay que comparar es que la otra parte la acepte.
+    case "firmarLlave": {
+      const out = [];
+      for (const c of p.casos as { privada: string; datos: string }[]) {
+        out.push(hex(await firmarConLlave(deHex(c.privada), deHex(c.datos))));
+      }
+      return out;
+    }
+
+    case "verificarFirma": {
+      const out = [];
+      for (const c of p.casos as { publica: string; datos: string; firma: string }[]) {
+        try {
+          const k = await crypto.subtle.importKey(
+            "spki",
+            deHex(c.publica),
+            { name: "ECDSA", namedCurve: "P-256" },
+            false,
+            ["verify"],
+          );
+          out.push(
+            await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, k, deHex(c.firma), deHex(c.datos)),
+          );
+        } catch {
+          out.push(false);
+        }
+      }
+      return out;
+    }
+
+    case "crearLlave": {
+      const { privada, publica } = await crearLlave();
+      return { privada: hex(privada), publica: hex(publica) };
     }
 
     case "correos":

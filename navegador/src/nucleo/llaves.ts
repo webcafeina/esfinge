@@ -59,3 +59,61 @@ export function rpIdPermitido(rpId: string | undefined, origen: string): string 
   if (dominioRegistrable(pedido) === null) return null;
   return pedido;
 }
+
+/**
+ * La firma en formato DER, que es lo que WebAuthn exige.
+ *
+ * WebCrypto firma en **P1363** —`r ‖ s` crudos, 64 bytes en P-256— y el sitio
+ * espera **ASN.1 DER**. La conversión es de treinta líneas y es donde se equivoca
+ * todo el mundo, por dos motivos que el formato no perdona: un `INTEGER` de DER va
+ * **sin ceros por delante**, y si el primer bit está a uno hay que **añadir un cero**
+ * para que no se lea como negativo. Una firma con un cero de más o de menos no se
+ * verifica, y el sitio no dice por qué.
+ */
+function enteroDER(b: Uint8Array): number[] {
+  let i = 0;
+  while (i < b.length - 1 && b[i] === 0) i++;
+  const v = Array.from(b.slice(i));
+  if ((v[0] & 0x80) !== 0) v.unshift(0);
+  return [0x02, v.length, ...v];
+}
+
+export function aDER(p1363: Uint8Array): Uint8Array {
+  const n = p1363.length / 2;
+  const cuerpo = [...enteroDER(p1363.slice(0, n)), ...enteroDER(p1363.slice(n))];
+  // En P-256 el cuerpo mide 70 bytes como mucho, así que la longitud cabe en un
+  // byte y no hace falta la forma larga de DER. Con otra curva habría que mirarlo.
+  if (cuerpo.length > 127) throw new Error("La firma no cabe en la forma corta de DER");
+  return new Uint8Array([0x30, cuerpo.length, ...cuerpo]);
+}
+
+/**
+ * Una llave de acceso nueva: la privada en **PKCS#8**, la pública en SPKI.
+ *
+ * **La privada se guarda entera y no solo el escalar**, y eso corrige lo que decía
+ * la ADR 0048 al escribirla: se dio por hecho que la parte pública «se recalcula»,
+ * y **WebCrypto no puede** — importar una privada P-256 exige `x` e `y`, y no hay
+ * forma de multiplicar un escalar por el generador desde ahí. Se comprobó
+ * intentándolo. PKCS#8 lleva las dos partes dentro, lo entienden los dos lados sin
+ * escribir nada, y son 138 bytes.
+ */
+export async function crearLlave(): Promise<{ privada: Uint8Array; publica: Uint8Array }> {
+  const par = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  return {
+    privada: new Uint8Array(await crypto.subtle.exportKey("pkcs8", par.privateKey)),
+    publica: new Uint8Array(await crypto.subtle.exportKey("spki", par.publicKey)),
+  };
+}
+
+/** Firma con una llave guardada, y devuelve la firma **en DER**. */
+export async function firmarConLlave(privadaPKCS8: Uint8Array, datos: Uint8Array): Promise<Uint8Array> {
+  const k = await crypto.subtle.importKey(
+    "pkcs8",
+    new Uint8Array(privadaPKCS8),
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"],
+  );
+  const cruda = new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, k, new Uint8Array(datos)));
+  return aDER(cruda);
+}
