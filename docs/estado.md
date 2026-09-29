@@ -1,56 +1,44 @@
 # Estado
 
-Última actualización: **2026-09-28**
+Última actualización: **2026-09-29**
 
 ## Dónde se paró, y por dónde se sigue
 
-**Sesión del 2026-09-28.** Trabajo limpio: todo comprometido y empujado, y las dos suites del servidor y
-del cartero en verde (81 y 15).
+**Sesión del 2026-09-29.** Trabajo limpio: todo comprometido y empujado.
 
-**El correo deja Resend y sale por el VPS** ([ADR 0045](adr/0045-el-correo-sale-por-el-vps.md)). Escrito y
-**probado entregando de verdad contra Google** —la máquina de desarrollo es el VPS, así que se pudo—, pero
-**sin desplegar**: producción sigue mandando por Resend.
+**El correo de Esfinge ya no pasa por Resend** ([ADR 0045](adr/0045-el-correo-sale-por-el-vps.md)).
+Producción manda por el relé de Google desde `cartero.webcafeina.com`, un servicio nuestro en el VPS,
+y Resend está retirado del DNS y de los Workers. Comprobado con envíos de verdad antes y después de
+retirarlo.
 
-**La siguiente acción concreta, y es del cliente:** activar el **DKIM de Workspace** para `webcafeina.com`
-en la consola de administración (Gmail → Autenticar correo electrónico → generar la clave de 2048 bits,
-publicar el TXT en Cloudflare, esperar a que propague y **solo entonces** «Iniciar autenticación»). Sin eso,
-Google firma con su clave genérica y **el correo reenviado se queda sin autenticación alineada** — está en
-[`deuda.md`](deuda.md) con la severidad alta. **No se toca nada de Resend**: son la vuelta atrás.
+**No hay una siguiente acción concreta**: el plan de cuentas está cerrado entero y el del correo
+también. Lo que queda es de uso, no de trabajo:
 
-> **Bloqueado hasta el 2026-09-29.** La consola de administración pide el **segundo factor de Nacho**, que
-> lo aprueba desde su móvil, y no estaba disponible el 28. Es el mismo freno que dejó a medias la
-> contraseña de aplicación de `info@`. **No hay nada que adelantar por aquí**: el orden importa, y
-> desplegar el cartero antes del DKIM pondría a producción a mandar sin firma alineada.
+1. **El humo completo sale con el uso real**, no con una sesión de pruebas: entrada desde equipo nuevo,
+   recuperación, cambio de contraseña y borrado. Lo decidió así el cliente el 2026-09-29. Si algo falla
+   ahí, **el sitio donde mirar es el registro de Caddy del cartero** —producción no enseña el porqué—:
+   `docker exec webcafeina-local-caddy-1 sh -c 'cat /var/log/caddy/esfinge-cartero-access.log'`.
+2. **Lo abierto vive en [`deuda.md`](deuda.md)**, y lo primero de esa lista sigue siendo la `PIMIENTA`
+   que no se puede rotar, que está **vencida** desde que se abrió el registro.
 
-**Cuando publique el TXT**, comprobar la propagación **antes** de que pulse «Iniciar autenticación»:
+**Y dos cosas que conviene tener a mano si hay que tocar el correo:**
 
-```sh
-dig +short TXT google._domainkey.webcafeina.com
-```
-
-**Y después, por orden:**
-
-1. **Desplegar el cartero** en el VPS, con los pasos de [`../cartero/LÉEME.md`](../cartero/LÉEME.md):
-   secreto compartido en hexadecimal, `.env`, red `esfinge-borde`, sitio de Caddy y DNS de
-   `cartero.webcafeina.com`.
-2. **Los secretos de los Workers**: `CARTERO_SECRETO` en pruebas y en producción, y quitar
-   `RESEND_API_KEY` **solo al final**. Y **quitar ahí mismo `SMTP_USUARIO` y `SMTP_CLAVE`** del Worker de
-   pruebas: ya no los lee nadie, y lo que hay guardado es una contraseña de aplicación **provisional de
-   `alvaro@`** que se puso porque la de `info@` necesitaba el segundo factor de Nacho. Con el cartero no
-   hace falta ninguna —el relé autoriza por la IP del VPS—, así que **esa contraseña se puede revocar** y
-   el asunto se cierra sin esperar a nadie.
-3. **Humo en producción** con una dirección real: alta completa, entrada desde equipo nuevo, recuperación,
-   cambio de contraseña y borrado.
-4. **Retirar Resend**, 24-48 h después y en este orden: el secreto → el DNS → cerrar la cuenta. **El punto
-   de no retorno es el DNS.**
-5. **La política de privacidad el mismo día que producción**: `web/privacidad.html` y
-   `docs/tiendas/privacidad-amo.txt` siguen nombrando a Resend, **y tienen que seguir haciéndolo mientras
-   producción lo use**. Cambiarlas antes sería publicar una política falsa en el otro sentido.
-
-**Lo de antes del correo, que sigue cerrado:** la fase C entera y las dos verificaciones que quedaban
-—Firefox y compartir— las dio por buenas el cliente el 2026-09-28. La 2.28.3 es la última publicada.
+- El cartero se despliega desde [`../cartero/LÉEME.md`](../cartero/LÉEME.md). Su `.env` vive en el VPS
+  y **no está en git**.
+- `/v1/salud` del Worker de pruebas **dice por dónde manda el correo**, que es lo que evita tener que
+  deducirlo. En producción ese campo no sale.
 
 <details>
+<summary>Lo anterior, del 2026-09-28</summary>
+
+**El correo deja Resend y sale por el VPS**, escrito y probado entregando de verdad pero sin desplegar.
+La siguiente acción era el DKIM del dominio, bloqueado hasta el 29 por el segundo factor de Nacho.
+
+</details>
+
+<details>
+<summary>Lo anterior, del 2026-09-25</summary>
+
 <summary>Lo anterior, del 2026-09-25</summary>
 
 **Sesión cerrada la tarde del 2026-09-25**, a petición del cliente. Trabajo limpio: todo comprometido y

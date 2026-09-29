@@ -1,7 +1,7 @@
 # ADR 0045 — El correo deja Resend y sale por el VPS
 
-**Fecha:** 2026-09-28 · **Estado:** aceptada; **el cartero desplegado y el camino entero comprobado el
-2026-09-29**; producción todavía en Resend · **Continúa la [0041](0041-los-papeles-de-la-cuenta.md)** y **matiza una premisa suya que
+**Fecha:** 2026-09-28 · **Estado:** **hecha el 2026-09-29**: el cartero desplegado, producción mandando
+por él y Resend retirado del DNS · **Continúa la [0041](0041-los-papeles-de-la-cuenta.md)** y **matiza una premisa suya que
 resultó falsa** · **Se apoya en la [0036](0036-el-servidor-de-cuentas.md)** · **Revisar cuando**
 Cloudflare deje de estar vetado por Google, o cuando el VPS se caiga y se vea qué cuesta
 
@@ -137,9 +137,15 @@ solo destinatario**, sin `Cc` ni `Bcc`.
   no tiene ese problema.** Los dos tienen ahora su prueba, y la del `fetch` se mutó para comprobar que
   caza el fallo.
 
-**Lo que no se ha comprobado, y hay que decirlo:**
+**Y comprobado en producción, el mismo día:**
 
-- **Producción sigue en Resend.** Lo desplegado y comprobado es el Worker de pruebas.
+- **Un alta de verdad entregada en 769 ms** y el correo en la bandeja con su código.
+- **Y otra después de retirar Resend del DNS**, en 859 ms, con `d=webcafeina.com; s=google`, `spf=pass`
+  y `dmarc=pass`. Borrar los tres registros de Resend no rozó nada: el SPF del dominio **no lo
+  incluía** —Resend firmaba el sobre con su propio subdominio `send`—, así que la parte peligrosa, que
+  era tocar el `include` de Google y el de Brevo, no llegó a existir.
+
+**Lo que no se ha comprobado, y hay que decirlo:**
 - **Que la invitación siga muda, de punta a punta.** Se sostiene **por construcción** —va en
   `ctx.waitUntil` con el resultado descartado, y `mandar` no lanza—, y eso se comprobó leyendo el
   código; pero ejercitarla exige una cuenta de verdad, y el suite que la crea corre contra un servidor

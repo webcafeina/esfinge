@@ -2164,6 +2164,34 @@ de ahí.
 - Verificado: `make comprobar`, 16 pruebas de interfaz en los dos temas, y los tres sistemas
   compilando en verde.
 
+## 2026-09-29 · El correo sale por el VPS, y Resend se va
+
+- **DKIM del dominio activado** (lo hizo el cliente en la consola, con el segundo factor de Nacho, que
+  era el bloqueo de ayer). Comprobado **leyendo las cabeceras**, no la consola: `d=webcafeina.com;
+  s=google`. Y con la comprobación que de verdad cierra la deuda: **la copia reenviada de `info@` a
+  `nacho@` sigue pasando el DKIM**, que era el caso roto. De paso arregla el correo de Cronos y el de
+  las personas —la clave es del dominio—, comprobado mandando un mensaje como `cronos@`.
+- **El cartero desplegado**: red de borde, sitio de Caddy validado antes de recargar, DNS y
+  certificado. Los tres sitios vecinos siguieron sirviendo. El cierre, comprobado **desde fuera**.
+- **Producción mandando por él**, con un alta de verdad: 769 ms y el correo en la bandeja.
+- **La política de privacidad, el mismo día**, con el servidor de París dicho en voz alta y con que no
+  hay región de datos fijada —el cliente lo decidió con el dato delante—.
+- **Resend retirado**: secreto, los tres registros del DNS y la cuenta. **El SPF del dominio no lo
+  incluía** —firmaba el sobre con su propio subdominio—, así que la parte peligrosa no existía.
+  Comprobado con otro envío después de borrarlos.
+- **Dos fallos que ninguna prueba veía**, y los dos con la misma forma: `CORREO` sin recortar, que
+  dejaba el Worker contestando `202` con el correo cayendo en el buzón de pruebas; y `fetch` guardado
+  como propiedad, que Workers rechaza con «Illegal invocation». **Las seis pruebas del cartero inyectan
+  un doble, y un doble no tiene el problema que solo tiene la cosa de verdad.** Los dos tienen ahora su
+  prueba y la del `fetch` se mutó para confirmar que caza el fallo.
+- **Y una promesa falsa encontrada de rebote**: `servidor.yml` decía que desplegar producción pedía
+  aprobación, y el entorno no tiene revisores. Se vio al mandar al cliente a aprobar algo que ya había
+  pasado solo. El cliente eligió **quitar la frase**, no poner el revisor.
+- **Queda pendiente** el humo completo —entrada desde equipo nuevo, recuperación, cambio de contraseña
+  y borrado—, que el cliente hará **con el uso real** en vez de con una sesión de pruebas.
+
+---
+
 ## 2026-09-28 · El correo deja Resend, y Google no deja mandar desde Cloudflare
 
 - **Se planteó y se aprobó** dejar Resend por el relé de Google Workspace que la casa ya usa en Cronos
