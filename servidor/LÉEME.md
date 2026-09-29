@@ -137,7 +137,15 @@ que se va, un valor pegado donde no tocaba. **Rotar cierra la puerta hacia adela
 se hubiera llevado —la base y la pimienta vieja a la vez— le sigue sirviendo. Todo el porqué está en
 [ADR 0046](../docs/adr/0046-rotar-la-pimienta.md) y el cómo en [`src/pimienta.ts`](src/pimienta.ts).
 
-1. **Mirar primero si se puede**, que es lo que no se puede saltar:
+**Antes de nada, dos condiciones.** Si alguna no se cumple, no se rota todavía:
+
+- **Todos los equipos con la 2.29.0 o posterior.** Antes de esa versión la aplicación no hace la llamada
+  de cortesía que migra el verificador de posesión, así que la cuenta **nunca terminaría de migrar** y la
+  pimienta vieja no se podría borrar jamás.
+- **Alguien tiene que poder abrir Esfinge en cada equipo** en los días siguientes. Sin eso, la rotación se
+  queda a medias por diseño.
+
+1. **Mirar si se puede**, que es lo que no se puede saltar:
 
    ```sh
    pnpm exec wrangler d1 execute BD --remote --command \
@@ -145,27 +153,36 @@ se hubiera llevado —la base y la pimienta vieja a la vez— le sigue sirviendo
    ```
 
    **Si sale más de una fila, no se rota**: hay cuentas que no han terminado la rotación anterior y
-   rotar otra vez las deja fuera. Se espera o se les avisa.
+   rotar otra vez las deja fuera con un `409`. Se espera o se les avisa.
 
-2. **`PIMIENTA_<n>` ← uno nuevo**, `openssl rand -hex 32`, con `n` el número siguiente (`PIMIENTA_2` la
-   primera vez). Como *Secret*.
-3. `PIMIENTA_VERSION` ← ese mismo `n`. Como *Secret*, para que sobreviva a un despliegue.
+2. **Generar la nueva y guardarla donde se guarda la de producción, antes de ponerla en ningún sitio:**
 
-**Y ya está: no se toca ninguna de las que había.** La versión 1 vive en `PIMIENTA` para siempre.
+   ```sh
+   openssl rand -hex 32
+   ```
 
-> **Rotar es añadir, nunca mover**, y no es una preferencia: **un secreto de Cloudflare se escribe y no
-> se puede volver a leer**. La primera versión de estas instrucciones decía «copia el valor de `PIMIENTA`
-> a `PIMIENTA_ANTERIOR`», y eso **nadie lo puede ejecutar** salvo que tuviera una copia guardada aparte.
-> Se descubrió al ir a rotar de verdad (2026-09-29).
+   **Esto no es una formalidad.** En cuanto la primera cuenta migre, ésa es la única pimienta que la
+   abre: perderla es perder esas cuentas, y no hay vuelta atrás porque el verificador viejo ya se
+   reescribió.
 
-A partir de ahí **cada cuenta se reescribe sola en cuanto se usa**, por dos caminos: el verificador de
-acceso **al entrar**, y el de posesión con una llamada de cortesía (`PUT /v1/posesion`) que el cliente
-hace **al arrancar la sincronización**. No hay nada que ejecutar.
+3. **`PIMIENTA_<n>` ← esa**, con `n` el número siguiente (`PIMIENTA_2` la primera vez). Como *Secret*.
+4. **`PIMIENTA_VERSION` ← ese mismo `n`.** Como *Secret*, para que sobreviva a un despliegue.
 
-Eso significa que **una cuenta no termina de migrar hasta que su dueño abre Esfinge**: entrar no basta,
-porque al entrar la bóveda todavía no está abierta y la posesión sale de su clave.
+   **Y ya está: no se toca ninguna de las que había.** La versión 1 vive en `PIMIENTA` para siempre.
 
-5. **Volver a la consulta del paso 1 de vez en cuando.** Cuando solo quede la versión nueva, **se borra
+   > **Rotar es añadir, nunca mover**, y no es una preferencia: **un secreto de Cloudflare se escribe y
+   > no se puede volver a leer**. La primera versión de estas instrucciones decía «copia el valor de
+   > `PIMIENTA` a `PIMIENTA_ANTERIOR`», y eso **nadie lo puede ejecutar** salvo que tuviera una copia
+   > guardada aparte. Se descubrió al ir a rotar de verdad (2026-09-29).
+
+5. **Abrir Esfinge en cada equipo** y dejar que sincronice. Cada cuenta se reescribe sola por dos
+   caminos: el verificador de acceso **al entrar**, y el de posesión con la llamada de cortesía
+   (`PUT /v1/posesion`) que el cliente hace **al arrancar la sincronización**.
+
+   **Entrar no basta**: al entrar la bóveda todavía no está abierta y la posesión sale de su clave. Si
+   el contador no se mueve, es que nadie ha abierto la aplicación en ese equipo.
+
+6. **Volver a la consulta del paso 1** de vez en cuando. Cuando solo quede la versión nueva, **se borra
    la variable de la versión vieja** —`PIMIENTA` si se venía de la 1— y la rotación ha terminado. Borrar
    sí se puede sin conocer su valor.
 
