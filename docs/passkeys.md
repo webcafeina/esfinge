@@ -11,6 +11,37 @@ sin código.
 Esto **no es una tarea, es una fase**, del tamaño de las cuentas. Este documento dice por qué, qué habría
 que construir y qué hay que decidir antes de empezar. **Nada de esto está hecho.**
 
+## Lo que pide GitHub de verdad (2026-09-29)
+
+Pedido por la consola del cliente, en su Mac, al pulsar «Sign in with passkey». **Los nombres de campo y
+los tamaños, sin un solo valor**, que es como se hizo con el relleno y con el código de un solo uso:
+
+```json
+{ "claves": ["publicKey"], "tieneSignal": false,
+  "publicKey": {
+    "claves": ["challenge", "timeout", "rpId", "allowCredentials", "userVerification", "extensions"],
+    "rpId": "github.com", "retoBytes": 32, "timeout": 60000,
+    "userVerification": "discouraged",
+    "allowCredentials": [{ "type": "public-key", "idBytes": 16,
+                           "transports": ["internal", "hybrid"] }],
+    "extensiones": [] } }
+```
+
+Cinco cosas que salen de ahí y que no se sabían:
+
+1. **`userVerification` es `discouraged`.** GitHub **no** pide verificación de usuario. Esfinge firmará con
+   el bit `UV` puesto de todos modos —la bóveda abierta más el clic en el banner *es* verificación, y hay
+   sitios que sí la exigen—, y con `discouraged` eso se acepta. Lo que no se puede hacer es al revés.
+2. **`allowCredentials` viene con una entrada**, así que aquí **no** es una credencial descubrible: el sitio
+   dice qué llave quiere. La búsqueda es por identificador de credencial, no por sitio, y el banner solo
+   puede ofrecer las llaves que estén en esa lista.
+3. **El identificador de GitHub mide 16 bytes.** No hay un tamaño fijo: lo elige quien crea la llave. Los
+   nuestros serán de 32, y lo que importa es devolver **exactamente** los bytes que el sitio guardó.
+4. **`extensions` llega presente y vacío.** La regla de «ceder si hay extensiones que no entendemos» tiene
+   que contar **las claves de dentro**, no que el campo exista: contando el campo, cederíamos siempre.
+5. **No hay `mediation` ni `signal`** en la llamada del botón: es la modal de toda la vida. La condicional
+   —la del autorrelleno del propio navegador— ocurre antes, al cargar, y ahí Esfinge cede.
+
 ## Lo que ya se ha comprobado
 
 Investigado el 2026-09-23 en la documentación de los navegadores, para no volver a empezar de cero:
@@ -50,7 +81,8 @@ firmas además **no se puede fusionar bien** entre equipos —dos pueden increme
 habitual es no usarlo nunca, lo que hay que decidir a conciencia.
 
 **3 · El «banner» es la primera vez que Esfinge sustituye un diálogo del navegador.** Hoy dibuja un filete,
-un aviso de tres segundos y una tarjeta que se pulsa (ADR 0028 y 0032). Esto es otra cosa: es la pantalla
+un aviso de tres segundos (ADR 0031) y una tarjeta que se pulsa (ADR 0032), y la 0028 es la que decidió no
+dibujar nada. Esto es otra cosa: es la pantalla
 donde alguien decide identificarse, y tiene que ser **imposible de confundir** con una de la página.
 
 ## Lo que no es problema
@@ -68,13 +100,17 @@ donde alguien decide identificarse, y tiene que ser **imposible de confundir** c
 2. **¿Qué pasa con el Touch ID del propio usuario?** Si Esfinge se ofrece para todo, compite con el
    llavero del sistema. Lo razonable es ofrecerse **solo cuando la bóveda tenga una passkey de ese sitio**
    o cuando el usuario lo pida, y no siempre.
-3. **¿Se pide la contraseña maestra al usar una passkey?** Una passkey sin desbloquear es una llave sin
-   dueño: quien se siente delante de un navegador con la bóveda abierta entra en todo. Dashlane resuelve
-   esto con su propio desbloqueo.
+3. ~~**¿Se pide la contraseña maestra al usar una passkey?**~~ **Decidido el 2026-09-29**: con la bóveda
+   abierta, solo pulsar «Aceptar». El coste está dicho en la [ADR 0048](adr/0048-las-llaves-de-acceso.md).
+   Cuando se escribió esta línea, Esfinge no tenía desbloqueo propio; lo tiene desde la ADR 0044, del día
+   siguiente — **pero solo en la aplicación**, no en la extensión, que es donde vive el banner.
 4. **El contador de firmas**: dejarlo siempre a cero, que es lo que hace todo el mundo, o intentar
    mantenerlo y aceptar que la sincronización lo estropee.
 5. **Las tiendas.** Un shim sobre `navigator.credentials` con acceso a todas las páginas es de lo más
-   revisado que hay. Conviene contarlo en las notas de revisión antes de que lo pregunten.
+   revisado que hay. Conviene contarlo en las notas de revisión antes de que lo pregunten. **Y con él sube
+   `VERSION_DEL_AVISO`** —de 3 a 4—, y con ella cambian `panel.html`, `web/privacidad.html`,
+   `docs/tiendas/privacidad-amo.txt` (que se genera) y las dos fichas. Esa cadena de cuatro sitios faltaba
+   aquí.
 
 ## Cómo lo partiría
 

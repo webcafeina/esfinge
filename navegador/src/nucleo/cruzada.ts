@@ -16,6 +16,7 @@ import { abrirEnvio, mandarEntrada, type Envio } from "./envio";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
 import { dominioDeOrigen, dominioDeSitio } from "./dominios";
 import { rpIdPermitido } from "./llaves";
+import { datosDelAutenticador, datosDelCliente, loQueSeFirma } from "./afirmacion";
 import { canonEntrada, entradaDesde, sinSecretos } from "./entrada";
 import { fundir, fundirPiezas } from "./fundir";
 
@@ -174,6 +175,23 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
     // sufijos de `tldts` y la de `golang.org/x/net` hayan dejado de coincidir.
     case "rpid":
       return (p.casos as { rpId: string; origen: string }[]).map((c) => rpIdPermitido(c.rpId, c.origen) ?? "");
+
+    // **Los bytes que se firman**, que el sitio verifica byte a byte (ADR 0048).
+    // Si Go y la extensión los escriben distinto, una llave creada con cuenta no
+    // sirve sin ella, y al revés.
+    case "firmado": {
+      const out = [];
+      for (const c of p.casos as { tipo: string; reto: string; origen: string; rpId: string; banderas: number }[]) {
+        const cliente = datosDelCliente(c.tipo as "webauthn.get", deHex(c.reto), c.origen);
+        const autenticador = await datosDelAutenticador(c.rpId, c.banderas);
+        out.push({
+          cliente: hex(cliente),
+          autenticador: hex(autenticador),
+          firmado: hex(await loQueSeFirma(autenticador, cliente)),
+        });
+      }
+      return out;
+    }
 
     case "correos":
       return (p.correos as string[]).map((c) => {

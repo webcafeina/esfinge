@@ -1,6 +1,7 @@
 package navegador
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"github.com/webcafeina/esfinge/internal/cruzada"
@@ -94,6 +95,63 @@ func TestCruzadaRPID(t *testing.T) {
 		quiero := RPIDPermitido(c.RPID, c.Origen)
 		if suyas[i] != quiero {
 			t.Errorf("rpId %q en %q: Go dice %q y la extensión %q", c.RPID, c.Origen, quiero, suyas[i])
+		}
+	}
+}
+
+// **Los bytes que se firman, iguales en los dos lados** (ADR 0048).
+//
+// El sitio los verifica byte a byte, así que esto no admite «parecido»: si Go y
+// la extensión escriben el `clientDataJSON` con otro orden de claves, o el
+// `authenticatorData` con otro contador, una llave creada con cuenta deja de
+// servir sin ella. Y no es teórico: el `clientDataJSON` se escribe a mano en los
+// dos precisamente para poder decir qué bytes salen.
+func TestCruzadaLoQueSeFirma(t *testing.T) {
+	casos := []struct {
+		Tipo     string `json:"tipo"`
+		Reto     string `json:"reto"`
+		Origen   string `json:"origen"`
+		RPID     string `json:"rpId"`
+		Banderas byte   `json:"banderas"`
+	}{
+		// Lo que pide GitHub de verdad: reto de 32 bytes y `rpId` igual al anfitrión.
+		{"webauthn.get", "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+			"https://github.com", "github.com", BanderasAlFirmar},
+		// Un subdominio que firma por el dominio de arriba.
+		{"webauthn.get", "ffeeddccbbaa99887766554433221100",
+			"https://login.ejemplo.com", "ejemplo.com", BanderasAlFirmar},
+		// Al crear, que lleva otra bandera y otro tipo.
+		{"webauthn.create", "0102030405060708",
+			"https://ejemplo.com", "ejemplo.com", BanderasAlFirmar | BanderaAT},
+		// **Un origen con puerto y con caracteres que hay que escapar**: el
+		// `clientDataJSON` es JSON escrito a mano, así que esto es justo lo que puede
+		// salir distinto en los dos lados.
+		{"webauthn.get", "00", "https://ejemplo.com:8443", "ejemplo.com", BanderasAlFirmar},
+		{"webauthn.get", "00", "https://ejemplo.com/\"raro\"\\", "ejemplo.com", BanderasAlFirmar},
+		// Un reto vacío y unas banderas a cero: los extremos.
+		{"webauthn.get", "", "https://ejemplo.com", "ejemplo.com", 0},
+	}
+	type respuesta struct {
+		Cliente      string `json:"cliente"`
+		Autenticador string `json:"autenticador"`
+		Firmado      string `json:"firmado"`
+	}
+	var suyas []respuesta
+	cruzada.Pedir(t, map[string]any{"orden": "firmado", "casos": casos}, &suyas)
+	for i, c := range casos {
+		reto, err := hex.DecodeString(c.Reto)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cliente := DatosDelCliente(c.Tipo, reto, c.Origen)
+		autenticador := DatosDelAutenticador(c.RPID, c.Banderas)
+		quiero := respuesta{
+			Cliente:      hex.EncodeToString(cliente),
+			Autenticador: hex.EncodeToString(autenticador),
+			Firmado:      hex.EncodeToString(LoQueSeFirma(autenticador, cliente)),
+		}
+		if suyas[i] != quiero {
+			t.Errorf("caso %d (%s en %s):\n  Go:        %+v\n  extensión: %+v", i, c.Tipo, c.Origen, quiero, suyas[i])
 		}
 	}
 }
