@@ -154,9 +154,10 @@ campo más en el formato que no guarda nada.
   rótulo salvo la activa, el glifo de la silueta al lado del carné de las identidades y el formulario de
   catorce campos. Las tres se marcaron a propósito como lo que podía chirriar, y el cliente las dio por
   buenas.
-- **No consta que se haya importado el fichero del cliente en su Esfinge**, solo en las pruebas. Es lo
-  único que queda de la lista, y se distingue del resto a propósito: dijo que lo instalado se veía bien,
-  no que hubiera pasado el CSV.
+- ~~**No consta que se haya importado el fichero del cliente en su Esfinge.**~~ **Importado el
+  2026-09-29**, con las dos entradas que trae —su nombre y su correo— entrando bien. Es la comprobación
+  que cierra el asunto y que ninguna prueba de aquí podía hacer: lo de aquí se ejercita con la cabecera
+  que él pasó, no con el fichero que su Dashlane escribe.
 - **La migración de la 2.30.0 no se ha ejercitado sobre una bóveda de verdad**, solo sobre el JSON que
   aquella versión escribía. No había ninguna: se publicó por la tarde y nadie llegó a guardar una
   dirección.

@@ -22,10 +22,11 @@ la activa** —seis rótulos piden 687 px y la columna de contenido está topada
 **Publicada la 2.31.0**, que es la que hay que instalar: la 2.30.0 salió con la dirección compuesta y sin
 el arreglo del mensaje de la contraseña maestra.
 
-**Y vista en su Mac el mismo día**: instaló la 2.31.0 y dio por buenas las tres cosas que se habían
-marcado como lo que podía chirriar —las pestañas sin rótulo salvo la activa, el glifo de la silueta al
-lado del carné y el formulario de catorce campos—. Con eso **no queda nada del proyecto sin comprobar en
-una máquina de verdad salvo Windows y GNOME**.
+**Y comprobada entera en su Mac el mismo día**: instaló la 2.31.0, dio por buenas las tres cosas que se
+habían marcado como lo que podía chirriar —las pestañas sin rótulo salvo la activa, el glifo de la
+silueta al lado del carné y el formulario de catorce campos— e **importó su `personalinfo.csv` de
+verdad**, que entró con sus dos entradas. Con eso **no queda nada del proyecto sin comprobar en una
+máquina de verdad salvo Windows y GNOME**.
 
 **No hay siguiente acción decidida.** Lo que queda abierto está en [`deuda.md`](deuda.md) y es de uso o
 de máquinas que no tenemos.

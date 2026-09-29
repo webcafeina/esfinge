@@ -2221,10 +2221,13 @@ de ahí.
   activa, el glifo de la silueta al lado del carné y el formulario de catorce campos—, que es justo por
   lo que se marcaron: se dicen para que las mire, no para que las descubra.
 
+- **Y el `personalinfo.csv` de verdad, importado en su bóveda**: las dos entradas entraron bien. Con eso
+  la clase nueva queda comprobada de punta a punta —el fichero que escribe su Dashlane, no la cabecera
+  que se copió aquí— y **de todo el proyecto solo quedan sin ver Windows y GNOME**.
+
 **Qué queda abierto**
 
-- **No consta que haya importado su `personalinfo.csv`**, solo que lo instalado se ve bien. Es lo único
-  de la clase nueva que sigue comprobado únicamente en pruebas. En [`deuda.md`](deuda.md).
+- Nada de esta entrega.
 
 ---
 
