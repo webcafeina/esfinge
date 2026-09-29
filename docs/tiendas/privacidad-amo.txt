@@ -117,7 +117,7 @@ Qué guardamos
 
 - Si compartes copias: tus dos claves públicas —para que otros puedan cifrar hacia ti y comprobar tu firma—, y los sobres que te hayan mandado, hasta que los guardes o los descartes. Los sobres van cifrados hacia ti: no podemos abrirlos, ni sabemos qué llevan dentro ni de quién vienen. Caben cincuenta.
 
-Si empiezas a crear una cuenta y no terminas, el código caduca a los diez minutos y tu dirección se borra de nuestra base en la hora siguiente, sola. Lo que no podemos borrar es el correo que ya te mandamos: ése lo conserva Resend, abajo.
+Si empiezas a crear una cuenta y no terminas, el código caduca a los diez minutos y tu dirección se borra de nuestra base en la hora siguiente, sola. Lo que no podemos borrar es el correo que ya te mandamos: ése está en tu buzón, y Google conserva treinta días el registro de habértelo enviado, abajo.
 
 No guardamos tu dirección IP en claro. Para frenar a quien pruebe contraseñas contamos una huella seudonimizada de ella, que se borra a los dos o tres días. Eso sigue siendo un dato personal, así que lo decimos: no es un anonimato, es que no nos hace falta más. Cloudflare, que aloja el servidor, sí ve la IP de cada petición, como cualquier alojamiento. No hay analítica ni publicidad.
 
@@ -143,7 +143,8 @@ Quién más interviene
 
 - Cloudflare aloja el servidor. Los datos de las cuentas se guardan en centros de la Unión Europea.
 
-- Resend manda los correos. Ve tu dirección, el código, el nombre del equipo desde el que entras y de qué aviso se trata —una entrada, un cambio de contraseña, un borrado—, y conserva esos correos y sus registros treinta días.
+- Google Workspace entrega los correos, porque es quien ya lleva el correo de Webcafeína: no es un tercero nuevo, es el que ya había. Ve tu dirección, el código, el nombre del equipo desde el que entras y de qué aviso se trata —una entrada, un cambio de contraseña, un borrado—, y conserva treinta días el registro de haberlos enviado. Antes los mandaba Resend, que además guardaba una copia del correo entero otros treinta días, en Estados Unidos; eso ya no ocurre.
+- Un servidor nuestro en París es el que se los pasa a Google. No es un tercero —lo llevamos nosotros— pero el correo pasa por ahí, así que hay que decirlo: no guarda ninguno, ni su contenido ni a quién va. Está ahí porque el servidor de la cuenta, que vive en Cloudflare, no puede entregar el correo él mismo.
 
 - GitHub aloja nuestra web, y de ahí sale el icono que llevan nuestros correos. Para enseñarlo, tu programa de correo se lo pide, y quien sirve esa imagen se entera de que el correo se ha abierto: con la hora y tu dirección IP, salvo en Gmail, que la pide por ti. Los correos se leen igual con las imágenes bloqueadas, y ninguno lleva nada que nos cuente si lo has abierto: no usamos marcas de seguimiento.
 
@@ -151,13 +152,13 @@ Las dos son empresas de Estados Unidos, y cada una guarda las cosas en un sitio 
 
 - Tu cuenta y tu bóveda cifrada se guardan en la Unión Europea, en Cloudflare. Está exigido en el código del servidor y comprobado con una prueba, no es una preferencia que se pueda cambiar sin darse cuenta. Aun así, el servidor se ejecuta en el centro de datos más cercano a quien lo usa: si entras desde fuera de la UE, ahí se atiende tu petición aunque tus datos sigan guardados aquí.
 
-- Los correos, no. Resend trata los datos de la cuenta y los registros de envío en Estados Unidos: elegir una región europea cambia desde dónde salen los correos, no dónde se guardan. Así que tu dirección y los códigos que te mandamos pasan por allí.
+- Los correos salen de Europa, pero su registro puede acabar fuera. El servidor nuestro que los entrega está en París, y no guarda ninguno. Google los entrega y conserva treinta días el registro de haberlo hecho; no hemos fijado en qué región los guarda en reposo, así que ese registro puede estar fuera de la Unión Europea. Ahí van tu dirección y de qué aviso se trata — no el código, que va en el cuerpo del correo y no en el registro de entrega.
 
 Las dos lo hacen como encargadas nuestras, con el contrato que el RGPD exige, y las dos amparan las transferencias con las cláusulas contractuales tipo de la Comisión Europea y con su adhesión al marco de adecuación UE-EE. UU. (Data Privacy Framework).
 
 Para qué y hasta cuándo
 
-Solo para darte el servicio que pides —tener tu bóveda en tus equipos— y protegerlo. Lo guardamos mientras tengas la cuenta. Al borrarla, se borra de nuestras bases en el momento: la bóveda y sus versiones, tus equipos, tus sesiones y tus movimientos. Y hay dos cosas que sobreviven un tiempo y que no dependen de nosotros: Cloudflare conserva copias de recuperación hasta treinta días, y Resend, los correos que ya te mandó. Te enviamos además un último correo confirmando el borrado. Lo que tengas en tus equipos se queda en ellos.
+Solo para darte el servicio que pides —tener tu bóveda en tus equipos— y protegerlo. Lo guardamos mientras tengas la cuenta. Al borrarla, se borra de nuestras bases en el momento: la bóveda y sus versiones, tus equipos, tus sesiones y tus movimientos. Y hay dos cosas que sobreviven un tiempo y que no dependen de nosotros: Cloudflare conserva copias de recuperación hasta treinta días, y Google, el registro de los correos que ya te mandamos, otros treinta. Te enviamos además un último correo confirmando el borrado. Lo que tengas en tus equipos se queda en ellos.
 
 Y antes de eso, cada cosa dura lo suyo:
 

@@ -209,7 +209,8 @@
         <p>
           <strong>Si empiezas a crear una cuenta y no terminas</strong>, el código caduca a los diez
           minutos y tu dirección se borra de nuestra base en la hora siguiente, sola. Lo que no podemos
-          borrar es el correo que ya te mandamos: ése lo conserva Resend, abajo.
+          borrar es el correo que ya te mandamos: ése está en tu buzón, y Google conserva treinta días
+          el registro de habértelo enviado, abajo.
         </p>
         <p>
           <strong>No guardamos tu dirección IP en claro.</strong> Para frenar a quien pruebe contraseñas
@@ -259,9 +260,16 @@
         <h3>Quién más interviene</h3>
         <ul>
           <li><strong>Cloudflare</strong> aloja el servidor. Los datos de las cuentas se guardan en centros de la <strong>Unión Europea</strong>.</li>
-          <li><strong>Resend</strong> manda los correos. Ve tu dirección, el código, el nombre del equipo
-            desde el que entras y de qué aviso se trata —una entrada, un cambio de contraseña, un
-            borrado—, y <strong>conserva esos correos y sus registros treinta días</strong>.</li>
+          <li><strong>Google Workspace</strong> entrega los correos, porque es quien ya lleva el correo de
+            Webcafeína: no es un tercero nuevo, es el que ya había. Ve tu dirección, el código, el nombre
+            del equipo desde el que entras y de qué aviso se trata —una entrada, un cambio de contraseña,
+            un borrado—, y <strong>conserva treinta días el registro de haberlos enviado</strong>. Antes
+            los mandaba Resend, que además guardaba <strong>una copia del correo entero</strong> otros
+            treinta días, en Estados Unidos; eso ya no ocurre.</li>
+          <li><strong>Un servidor nuestro en París</strong> es el que se los pasa a Google. No es un
+            tercero —lo llevamos nosotros— pero el correo pasa por ahí, así que hay que decirlo:
+            <strong>no guarda ninguno</strong>, ni su contenido ni a quién va. Está ahí porque el servidor
+            de la cuenta, que vive en Cloudflare, no puede entregar el correo él mismo.</li>
           <li><strong>GitHub</strong> aloja nuestra web, y de ahí sale <strong>el icono que llevan nuestros
             correos</strong>. Para enseñarlo, tu programa de correo se lo pide, y quien sirve esa imagen se
             entera de que el correo se ha abierto: con la hora y tu dirección IP, salvo en Gmail, que la
@@ -281,10 +289,12 @@
             petición aunque tus datos sigan guardados aquí.
           </li>
           <li>
-            <strong>Los correos, no.</strong> Resend trata los datos de la cuenta y los registros de
-            envío <strong>en Estados Unidos</strong>: elegir una región europea cambia desde dónde salen
-            los correos, no dónde se guardan. Así que tu dirección y los códigos que te mandamos pasan
-            por allí.
+            <strong>Los correos salen de Europa, pero su registro puede acabar fuera.</strong> El
+            servidor nuestro que los entrega está en <strong>París</strong>, y no guarda ninguno. Google
+            los entrega y conserva treinta días el registro de haberlo hecho; <strong>no hemos fijado en
+            qué región los guarda en reposo</strong>, así que ese registro puede estar fuera de la Unión
+            Europea. Ahí van tu dirección y de qué aviso se trata — <strong>no el código</strong>, que va
+            en el cuerpo del correo y no en el registro de entrega.
           </li>
         </ul>
         <p>
@@ -298,8 +308,8 @@
           guardamos mientras tengas la cuenta. <strong>Al borrarla, se borra de nuestras bases en el
           momento</strong>: la bóveda y sus versiones, tus equipos, tus sesiones y tus movimientos. Y
           hay dos cosas que sobreviven un tiempo y que no dependen de nosotros:
-          <strong>Cloudflare conserva copias de recuperación hasta treinta días</strong>, y Resend, los
-          correos que ya te mandó. Te enviamos además un último correo confirmando el borrado. Lo que
+          <strong>Cloudflare conserva copias de recuperación hasta treinta días</strong>, y Google, el
+          registro de los correos que ya te mandamos, otros treinta. Te enviamos además un último correo confirmando el borrado. Lo que
           tengas en tus equipos se queda en ellos.
         </p>
         <p>Y antes de eso, cada cosa dura lo suyo:</p>
