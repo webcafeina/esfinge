@@ -35,9 +35,27 @@ un Mac**—, **P2** usar una que ya existe, que es lo que se pidió, **P3** crea
 decisiones de producto están en la [ADR 0048](adr/0048-las-llaves-de-acceso.md) y el diseño de la parte de
 navegador, en el plan de esa sesión.
 
-**La siguiente acción concreta es la P2**, y empieza por algo que no es escribir código: **pedir por la
-consola la forma de lo que piden GitHub, Google y Cloudflare** —los parámetros de
-`navigator.credentials.get`, sin valores—, como se hizo con el relleno y con el código de un solo uso.
+**La P1 está publicada en la 2.32.0 y comprobada en su Mac.** De ella salió un fallo que **no está
+publicado todavía**: exportar llaves pedía la clave y abría el diálogo del sistema antes de saber que no
+había ninguna. Arreglado en `main`; sale con la P2.
+
+**La P2 va por la mitad, y lo hecho es todo lo que no toca el navegador:**
+
+- **`RPIDPermitido` / `rpIdPermitido`**, la pieza de seguridad: decide para quién se firma. En los dos
+  lados, con prueba cruzada de tabla y tabla propia de respuestas correctas.
+- **Los bytes que se firman**: `clientDataJSON` a mano y en el orden de la especificación,
+  `authenticatorData` con el contador a cero, y lo que se firma. Prueba cruzada de bytes.
+- **La firma de punta a punta**: la extensión firma y Go verifica, con llaves hechas en los dos lados. Y el
+  DER con vectores fijos aparte, que es lo que la de punta a punta no puede cubrir.
+- **Y lo que pide GitHub de verdad**, pedido por la consola del cliente y escrito en
+  [`passkeys.md`](passkeys.md): `userVerification: discouraged`, `allowCredentials` con una entrada de 16
+  bytes y `extensions` presente y vacío. Las tres cambian el diseño.
+
+**La siguiente acción concreta es el guion del mundo principal** (`navegador/src/mundo.ts`), su puente con
+`MessagePort` y el banner. Empieza por lo más delicado y conviene saberlo antes de tocarlo: **`pagina.ts`
+tiene que pasar de `document_idle` a `document_start`**, porque si el mundo aislado arranca tarde el saludo
+del puente se pierde. Es el fichero que paga las facturas, y la condición es que **las pruebas de `campos`,
+`identidad`, `envios` y `pendientes` pasen sin tocarlas**.
 
 Lo demás abierto está en [`deuda.md`](deuda.md) y es de uso o de máquinas que no tenemos.
 

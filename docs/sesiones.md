@@ -2250,6 +2250,26 @@ de ahí.
   era el único número del formato. `algoritmo` es el segundo de la historia, y se guardaba encima. Llevaba
   ahí desde el principio esperando a que hubiera un segundo número.
 
+- **Publicada la 2.32.0 y comprobada en su Mac**, con un fallo que salió de ahí: exportar llaves pedía la
+  clave y abría el diálogo del sistema **antes** de saber que no había ninguna, que es como sale la bóveda de
+  fábrica. Y la prueba que lo reproducía **pasó en verde al escribirla**: el doble del sistema apuntaba el
+  argumento del diálogo y no si se le había llamado.
+- **Empezada la P2 por todo lo que no toca el navegador**: `rpIdPermitido` en los dos lados, los bytes que
+  se firman, y la firma de punta a punta —la extensión firma y Go verifica—.
+- **Y el cliente pasó por la consola lo que pide GitHub de verdad**, que cambia tres cosas del diseño y está
+  en [`passkeys.md`](passkeys.md).
+
+**Lo que costó, y no era el navegador**
+
+- **Una privada P-256 no se puede importar sabiendo solo el escalar.** La ADR lo daba por hecho y es falso;
+  se vio al intentarlo. Se guarda PKCS#8.
+- **WebCrypto firma y verifica en P1363, nunca en DER**, así que media prueba cruzada no se puede escribir
+  sin código que producción no usa. Se dice en vez de escribirlo.
+- **Tres mutaciones destaparon tres pruebas que no probaban nada**: la tabla del `rpId` no tenía el caso que
+  ataca —`malaejemplo.com` termina en `ejemplo.com`—, el recorte de ceros del DER no se ejercita con firmas
+  al azar, y 132 bytes a cero no desbordan la forma corta.
+- **Y comprometí un commit con `tsc` en rojo** por usar `;` en vez de `&&` al encadenar la comprobación.
+
 **Qué queda abierto**
 
 - **La P1 no se ha visto en un Mac**: el glifo nuevo al lado del de credencial —los dos son una llave, y lo
