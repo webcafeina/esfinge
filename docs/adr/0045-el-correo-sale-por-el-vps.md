@@ -1,7 +1,7 @@
 # ADR 0045 — El correo deja Resend y sale por el VPS
 
-**Fecha:** 2026-09-28 · **Estado:** aceptada, escrita y probada contra Google desde el VPS; sin
-desplegar · **Continúa la [0041](0041-los-papeles-de-la-cuenta.md)** y **matiza una premisa suya que
+**Fecha:** 2026-09-28 · **Estado:** aceptada; **el cartero desplegado y el camino entero comprobado el
+2026-09-29**; producción todavía en Resend · **Continúa la [0041](0041-los-papeles-de-la-cuenta.md)** y **matiza una premisa suya que
 resultó falsa** · **Se apoya en la [0036](0036-el-servidor-de-cuentas.md)** · **Revisar cuando**
 Cloudflare deje de estar vetado por Google, o cuando el VPS se caiga y se vea qué cuesta
 
@@ -91,16 +91,20 @@ solo destinatario**, sin `Cc` ni `Bcc`.
 - **Un salto más de latencia** en las cinco peticiones que esperan al correo. Medido desde el VPS:
   **483 ms** el código y **332 ms** la invitación, contra los cientos de milisegundos de un POST a
   Resend. La invitación sigue yendo en `ctx.waitUntil`, que es lo que la mantiene muda.
-- **Y una que no estaba prevista: el DKIM no alinea.** Google firma con su clave genérica
+- **El DKIM no alineaba**, y era la consecuencia más cara de todas: Google firma con su clave genérica
   (`d=webcafeina-com.20251104.gappssmtp.com`) porque **el dominio no tiene DKIM de Workspace**: no
   existe `google._domainkey.webcafeina.com`. Hoy DMARC pasa igual **porque alinea el SPF**, y el DMARC
   del dominio está en `p=none`; pero **un correo reenviado se queda sin ninguna autenticación
   alineada**, y es peor que lo que da Resend, que sí firma con `d=webcafeina.com`. Está en
   [`../deuda.md`](../deuda.md) y hay que arreglarlo antes de retirar Resend.
 
+  > **Saldado el 2026-09-29.** El cliente generó la clave de 2048 bits en la consola y se publicó
+  > `google._domainkey.webcafeina.com`. Ahora firma `d=webcafeina.com; s=google`. **Y arregla de paso
+  > el correo de Cronos y el de las personas**, porque la clave es del dominio y el selector es único.
+
 ## Verificación
 
-**Comprobado de verdad, el 2026-09-28, entregando desde el VPS contra Google:**
+**Comprobado el 2026-09-28, entregando desde el VPS contra Google:**
 
 - Los dos correos llegan **a la bandeja de entrada**, no a spam. Confirmado por el cliente.
 - **Los acentos salen bien**, en el asunto y dentro.
@@ -114,10 +118,32 @@ solo destinatario**, sin `Cc` ni `Bcc`.
   dejar de mirar las copias, quedarse con la última cabecera, comparar el secreto con `===`— y las
   cuatro se ponen rojas.
 
+**Y comprobado el 2026-09-29, con el cartero desplegado y el camino entero:**
+
+- **`cartero.webcafeina.com` en pie**, con su red de borde, su sitio de Caddy —validado antes de
+  recargar— y su certificado. Los tres sitios vecinos siguieron sirviendo durante todo el proceso.
+- **El cierre, desde fuera y no solo desde dentro**: `401` sin secreto y con uno equivocado, `400` con
+  el remitente suplantado y con dos destinatarios, `404` en cualquier otra ruta. Y **el secreto no
+  aparece en el registro de Caddy**, que es lo que el filtro del sitio tenía que conseguir.
+- **El camino entero**: el Worker compone, el cartero entrega y el correo llega a la bandeja con su
+  código. **Alta bloqueante: 638-931 ms**, contra los cientos de milisegundos de un `POST` a Resend.
+  El cartero tarda 0,27-0,32 s de los suyos.
+- **Con el cartero parado**: `502` en **439 ms** con «Prueba otra vez en un momento», y se recupera
+  solo al levantarlo. Era un punto abierto en `deuda.md` y deja de serlo.
+- **Dos fallos que solo encontró esto**, y los dos con la misma forma —una prueba en verde que no podía
+  verlos—: `CORREO` sin recortar, que dejaba el Worker contestando `202` con el correo cayendo en el
+  buzón de pruebas; y `fetch` guardado como propiedad, que Workers rechaza con «Illegal invocation»
+  porque exige `globalThis` como `this`. **Las seis pruebas del cartero inyectan un doble, y un doble
+  no tiene ese problema.** Los dos tienen ahora su prueba, y la del `fetch` se mutó para comprobar que
+  caza el fallo.
+
 **Lo que no se ha comprobado, y hay que decirlo:**
 
-- **Nada de esto está desplegado.** El cartero se probó en un contenedor suelto de esta máquina, sin
-  Caddy, sin DNS y sin red de borde; y los Workers siguen mandando por Resend.
+- **Producción sigue en Resend.** Lo desplegado y comprobado es el Worker de pruebas.
+- **Que la invitación siga muda, de punta a punta.** Se sostiene **por construcción** —va en
+  `ctx.waitUntil` con el resultado descartado, y `mandar` no lanza—, y eso se comprobó leyendo el
+  código; pero ejercitarla exige una cuenta de verdad, y el suite que la crea corre contra un servidor
+  local que no pasa por el cartero.
 - **El camino de «cupo»**: agotar diez mil correos para ver el `550 5.4.5` no se va a hacer. Si Google
   lo dijera con otro texto, diríamos «prueba otra vez en un momento» cuando la verdad es «mañana» — el
   mismo fallo que la 0041 vino a arreglar, ahora en una esquina mucho más improbable.
