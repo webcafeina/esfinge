@@ -31,8 +31,20 @@ acceso pero no la de posesión; al sincronizar, al revés. Con una sola marca po
 migración mentiría sobre la otra, y el contador que decide cuándo se puede borrar la pimienta vieja
 estaría mal justo en el sentido peligroso.
 
-**Cada cuenta migra sola en cuanto se usa**: al entrar reescribe su verificador de acceso, y en
-cualquier pasada de la sincronización —cada cinco minutos con la aplicación abierta— el de posesión.
+**Cada cuenta migra sola en cuanto se usa**, y los dos verificadores por caminos distintos:
+
+- **El de acceso, al entrar**, que es cuando el cliente manda la clave de acceso.
+- **El de posesión, en una llamada de cortesía** (`PUT /v1/posesion`) que el cliente hace **al arrancar
+  la sincronización**, en el mismo sitio y por la misma razón que publica sus llaves de identidad.
+
+> **Y esto se corrigió al ir a rotar de verdad.** La primera versión de esta ficha decía que el de
+> posesión migraba «en cualquier pasada de la sincronización», y era **falso**: solo se comprueba al
+> cambiar la contraseña maestra y al terminar una recuperación, dos cosas que casi nadie hace nunca. Con
+> eso, **el contador no habría llegado a cero jamás** y todo el argumento de «se borra cuando se pueda
+> contar que no queda nadie» se caía. La segunda idea —mandar la posesión al entrar— tampoco valía: la
+> posesión se deriva de la **clave de la bóveda**, y al entrar la bóveda todavía no está abierta. De ahí
+> la llamada de cortesía, que es el único momento con bóveda abierta **y** sesión.
+
 **El servidor no puede migrarlas él solo**, y eso no es pereza: tendría que poder calcular el
 verificador nuevo, y no puede, porque no conoce la clave. Es exactamente lo que hace útil a la pimienta.
 
@@ -67,6 +79,9 @@ anterior deja de ser una fecha a ciegas y pasa a ser una decisión con el númer
 - **No se rota dos veces seguidas.** Mientras el contador no diga cero, rotar otra vez deja colgadas a
   las que faltaban. Está dicho en `src/pimienta.ts`, en el LÉEME y aquí, y el código **contesta nulo**
   en vez de aceptar a la tercera generación, que es lo que convertiría el descuido en silencio.
+- **Una llamada más por pasada de sincronización**, `PUT /v1/posesion`, de cortesía y sin mirar si
+  falla. **Contesta lo mismo cuadre o no**: decir si cuadró la convertiría en un sitio donde probar
+  claves de posesión con una sesión robada.
 - **Una escritura más en D1** al migrar una cuenta. Va **después** de guardar en el objeto, y si falla
   solo se registra: lo que queda apuntado es una versión más vieja de la real, que es el lado seguro —se
   espera de más antes de borrar la pimienta anterior, en vez de borrarla creyendo que no queda nadie—.
@@ -87,14 +102,24 @@ anterior deja de ser una fecha a ciegas y pasa a ser una decisión con el númer
 - **Y se migra al entrar**: quitada después la pimienta vieja, sigue entrando.
 - **Dos generaciones por detrás da `409`** con un mensaje que no habla de contraseñas.
 - **Un código emitido justo antes de rotar sigue valiendo** sus diez minutos.
-- **D1 apunta la versión menor**: tras migrar solo el de acceso, sigue diciendo 1. Ésa es la prueba de
-  que una marca por cuenta no habría valido.
+- **D1 apunta la versión menor**: tras entrar sigue diciendo 1, y solo pasa a 2 cuando además llega la
+  cortesía con la posesión. Ésa es la prueba de que una marca por cuenta no habría valido, y la que
+  habría cazado el error de la primera versión si se hubiera escrito antes.
+- **La cortesía no cuela una posesión mala**, contesta lo mismo cuadre o no, y **sin sesión no toca
+  nada** — esto último probado **llamando al objeto directamente**, porque desde fuera el Worker rechaza
+  antes cualquier token que se pueda fabricar y la prueba pasaría igual sin la comprobación de dentro.
 - Y `env` mutado en las pruebas **llega al Durable Object**, que era la duda técnica del montaje. Se
   resolvió ejecutándolo, no leyendo la documentación del motor de pruebas.
 
-**Las cinco mutaciones se ponen rojas**: que solo valga la pimienta de ahora, que no se reescriba al
-entrar, que «imposible» se trate como «no», que los códigos usen solo la de ahora, y que D1 apunte la
-mayor en vez de la menor.
+**Ocho mutaciones se ponen rojas**: que solo valga la pimienta de ahora, que no se reescriba al entrar,
+que «imposible» se trate como «no», que los códigos usen solo la de ahora, que D1 apunte la mayor en vez
+de la menor, que la cortesía no refresque, que no compruebe la sesión, y que conteste si la posesión
+cuadró.
+
+**Y tres de ellas se escribieron por segunda vez**, porque la primera pasaba con el fallo dentro: la del
+contador —que sin la cortesía se quedaba en 1 y parecía correcta—, la de la sesión —que daba `401`
+porque lo daba el Worker, no el objeto— y la del orden de comprobaciones, que D1 no podía ver porque
+guarda la **menor**. Una prueba en verde no dice que proteja algo.
 
 **Lo que no se ha comprobado, y hay que decirlo:**
 

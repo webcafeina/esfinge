@@ -129,6 +129,20 @@ export class Cliente {
   // -------------------------------------------------------------- compartir
 
   /** Publica las llaves públicas de esta cuenta, para que otros puedan mandarle. */
+  /**
+   * Pone al día en el servidor el verificador de posesión con la pimienta de ahora
+   * (ADR 0046). **De cortesía y sin mirar si falla.**
+   *
+   * El de acceso se pone al día solo al entrar; el de posesión solo se comprueba al
+   * cambiar la maestra y al recuperar —que casi nadie hace nunca—, así que sin esto
+   * una rotación de la pimienta del servidor no podría terminar nunca. Va aquí y no
+   * al entrar porque la posesión sale de la clave de la bóveda, y al entrar la
+   * bóveda todavía no está abierta.
+   */
+  async refrescarPosesion(token: string, posesion: Uint8Array): Promise<void> {
+    await this.json("PUT", "/v1/posesion", { posesion: base64url(posesion) }, token);
+  }
+
   async publicarLlaves(token: string, llaves: LlavesEnLaRed): Promise<void> {
     await this.json("PUT", "/v1/llaves", { llaves }, token);
   }

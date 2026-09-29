@@ -596,6 +596,13 @@ async function unaPasada(aunqueBorreMucho = false): Promise<void> {
   } catch {
     /* a la siguiente */
   }
+  // Y de paso la posesión, por si en el servidor han rotado la pimienta (ADR 0046).
+  // Misma forma y misma razón que las llaves: quien lo necesita es el servidor.
+  try {
+    await cliente.refrescarPosesion(token, await b.posesion());
+  } catch {
+    /* a la siguiente */
+  }
   try {
     const r = await pasada(b, cliente, token, memoria, aunqueBorreMucho);
     // **Y de paso, las copias que esperaban** (B3). Que falle no ensucia la

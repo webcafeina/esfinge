@@ -139,6 +139,7 @@ async function atender(p: Request, env: Env, ctx: ExecutionContext): Promise<Res
 	if (r("POST", "/v1/cuenta/borrado")) return pedirBorrado(p, env);
 	if (r("DELETE", "/v1/cuenta")) return borrarCuenta(p, env, ctx);
 	if (r("GET", "/v1/cuenta/exportacion")) return exportar(p, env);
+	if (r("PUT", "/v1/posesion")) return refrescarPosesion(p, env);
 	if (r("PUT", "/v1/llaves")) return publicarLlaves(p, env);
 	if (r("POST", "/v1/llaves/de")) return llavesDe(p, env);
 	if (r("POST", "/v1/envios")) return mandarEnvio(p, env, ctx);
@@ -281,6 +282,16 @@ async function terminarAlta(p: Request, env: Env, ctx: ExecutionContext): Promis
 }
 
 // ================================================================ compartir
+
+/**
+ * Pone al día el verificador de posesión con la pimienta de ahora (ADR 0046). De
+ * cortesía: el cliente la llama al arrancar la sincronización y no mira la respuesta.
+ */
+async function refrescarPosesion(p: Request, env: Env): Promise<Response> {
+	const { token, cuenta } = sesionDe(p);
+	const d = await leerJSON(p);
+	return json(200, abrir(await objeto(env, cuenta).refrescarPosesion(token, d.posesion)));
+}
 
 async function publicarLlaves(p: Request, env: Env): Promise<Response> {
 	const { token, cuenta } = sesionDe(p);

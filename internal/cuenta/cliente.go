@@ -559,6 +559,21 @@ func (c *Cliente) PublicarLlaves(ctx context.Context, token string, l Llaves) er
 	return err
 }
 
+// RefrescarPosesion pone al día el verificador de posesión con la pimienta de ahora
+// del servidor (ADR 0046).
+//
+// **Es de cortesía y no hay que mirar si falla.** El verificador de acceso se pone al
+// día solo al entrar, pero el de posesión solo se comprueba al cambiar la maestra y al
+// recuperar —dos cosas que casi nadie hace nunca—, así que sin esto una rotación de la
+// pimienta del servidor no podría terminar nunca.
+//
+// Va aquí y no al entrar porque la posesión se deriva de la clave de la bóveda, y al
+// entrar la bóveda todavía no está abierta.
+func (c *Cliente) RefrescarPosesion(ctx context.Context, token string, posesion []byte) error {
+	_, err := c.json(ctx, "PUT", "/v1/posesion", token, map[string]any{"posesion": b64.EncodeToString(posesion)}, nil)
+	return err
+}
+
 // LlavesDe pregunta por las de un correo.
 //
 // **Siempre contesta algo**, tenga cuenta o no: el servidor devuelve unas llaves

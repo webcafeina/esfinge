@@ -751,6 +751,14 @@ cartero no estaba. De ahí las dos reglas: `.trim()` en todo lo que venga de una
 **que el propio servicio diga en qué modo está** —`/v1/salud` del Worker de pruebas dice por dónde
 manda el correo— en vez de dejar que haya que deducirlo.
 
+**Y la pimienta del servidor se puede rotar, pero una cuenta no migra entera al entrar** (ADR 0046). Los
+verificadores llevan su versión dentro (`2:abc…`) porque **son dos y no migran a la vez**: el de acceso
+se reescribe al entrar, y el de posesión **solo se comprueba al cambiar la maestra y al recuperar**, así
+que hace falta una llamada de cortesía al arrancar la sincronización. Dos cosas que costó encontrar, las
+dos al ir a rotar de verdad y no al escribirlo: que «migra en cada pasada de la sincronización» era falso
+—y con ello el contador de D1 no habría llegado a cero nunca—, y que **mandarla al entrar tampoco vale**,
+porque la posesión sale de la clave de la bóveda y al entrar la bóveda no está abierta.
+
 **Para poder recibir hay que haber publicado, y quien nunca manda no publicaba nunca.** Las llaves de la
 identidad se publicaban al entrar en «Compartir», que es lo que parece natural: se publican cuando se van a
 usar. Pero para **recibir** una copia hacen falta las llaves de quien la recibe, y quien no ha mandado nada

@@ -151,9 +151,12 @@ se hubiera llevado —la base y la pimienta vieja a la vez— le sigue sirviendo
 3. `PIMIENTA` ← uno nuevo, `openssl rand -hex 32`.
 4. `PIMIENTA_VERSION` ← el número siguiente. Como *Secret*, para que sobreviva a un despliegue.
 
-A partir de ahí **cada cuenta se reescribe sola en cuanto se usa**: al entrar migra su verificador de
-acceso, y en cualquier pasada de la sincronización —cada cinco minutos con la aplicación abierta— el de
-posesión. No hay nada que ejecutar.
+A partir de ahí **cada cuenta se reescribe sola en cuanto se usa**, por dos caminos: el verificador de
+acceso **al entrar**, y el de posesión con una llamada de cortesía (`PUT /v1/posesion`) que el cliente
+hace **al arrancar la sincronización**. No hay nada que ejecutar.
+
+Eso significa que **una cuenta no termina de migrar hasta que su dueño abre Esfinge**: entrar no basta,
+porque al entrar la bóveda todavía no está abierta y la posesión sale de su clave.
 
 5. **Volver a la consulta del paso 1 de vez en cuando.** Cuando solo quede la versión nueva, se borra
    `PIMIENTA_ANTERIOR` y la rotación ha terminado.

@@ -742,6 +742,29 @@ export class Cuenta extends DurableObject<Env> {
 		return bien({});
 	}
 
+	/**
+	 * Pone al día el verificador de posesión con la pimienta de ahora, si hacía falta.
+	 *
+	 * **Existe solo para que la rotación pueda terminar** (ADR 0046). El verificador de
+	 * acceso migra al entrar, pero el de posesión solo se comprueba al cambiar la
+	 * maestra y al recuperar —dos cosas que casi nadie hace nunca—, así que sin esto el
+	 * contador de D1 **no llegaría a cero jamás** y la pimienta vieja no se podría
+	 * borrar. Se descubrió al ir a rotar de verdad, no escribiéndolo.
+	 *
+	 * La llama el cliente de cortesía al arrancar la sincronización, que es el momento
+	 * en que tiene la bóveda abierta **y** una sesión. Al entrar no puede: la posesión
+	 * se deriva de la clave de la bóveda, y al entrar la bóveda todavía no está abierta.
+	 *
+	 * **Contesta lo mismo cuadre o no.** Decir si cuadró convertiría esto en un sitio
+	 * donde probar claves de posesión con una sesión robada.
+	 */
+	async refrescarPosesion(token: string, posesion: unknown): Promise<Resultado<Record<string, never>>> {
+		const s = await this.sesion(token, false);
+		if (!s.ok) return s;
+		if (typeof posesion === "string") await this.coincide("posesion", posesion);
+		return bien({});
+	}
+
 	/** Las llaves publicadas, o null si esta cuenta no tiene o no existe. */
 	llaves(): Llaves | null {
 		if (!this.existe()) return null;

@@ -838,6 +838,10 @@ func (a *App) arrancarSincro(b *boveda.Boveda) {
 	// —así es como no dice quién tiene cuenta— y el sobre llega ilegible. Va en
 	// otra gorrutina porque es de cortesía y no puede retrasar nada.
 	go a.publicarLlaves(b)
+	// Y de paso, la posesión a la pimienta de ahora del servidor (ADR 0046). Misma
+	// forma y por la misma razón: el momento de mandarlo no lo marca lo que hace su
+	// dueño, porque quien lo necesita es el servidor para poder terminar una rotación.
+	go a.refrescarPosesion(b)
 }
 
 // publicarLlaves deja en el servidor la parte pública de la identidad de esta
@@ -852,6 +856,21 @@ func (a *App) publicarLlaves(b *boveda.Boveda) {
 		return
 	}
 	_ = a.cliente().PublicarLlaves(a.ctxCuenta(), token, cuenta.Llaves{Suite: i.Suite, Cifrado: i.Cifrado, Firma: i.Firma})
+}
+
+// refrescarPosesion pone al día en el servidor el verificador de posesión de esta
+// cuenta, por si allí han rotado la pimienta (ADR 0046). De cortesía: si falla, la
+// siguiente pasada lo vuelve a intentar y mientras tanto no se rompe nada.
+func (a *App) refrescarPosesion(b *boveda.Boveda) {
+	posesion, err := b.Posesion()
+	if err != nil {
+		return
+	}
+	token, err := a.sesionDeCuenta()
+	if err != nil {
+		return
+	}
+	_ = a.cliente().RefrescarPosesion(a.ctxCuenta(), token, posesion)
 }
 
 // pararSincro para la sincronización, sin olvidar la sesión: la llama también

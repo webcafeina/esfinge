@@ -1,3 +1,4 @@
+import { runInDurableObject } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -156,19 +157,73 @@ describe("una cuenta que venía de la pimienta vieja", () => {
 
 	/**
 	 * Y lo que decide cuándo se puede borrar la pimienta vieja: **que se pueda contar**.
-	 * Sin esto, la decisión sería una fecha a ciegas.
+	 *
+	 * **Las dos mitades son la historia de un error.** Entrar migra el acceso y deja la
+	 * cuenta en 1, porque la menor de las dos sigue siendo la del verificador de
+	 * posesión: con una marca por cuenta esto diría 2 y sería mentira. Y la segunda
+	 * mitad es lo que hizo falta añadir: la primera versión daba por hecho que la
+	 * posesión migraba «en cada pasada de la sincronización», y era falso —solo se
+	 * comprueba al cambiar la maestra y al recuperar—, así que **el contador no habría
+	 * llegado a cero nunca**. Se vio al ir a rotar de verdad.
 	 */
-	it("D1 apunta por dónde va cada cuenta, para poder contarlas", async () => {
+	it("D1 apunta la menor, y llega a la nueva cuando van las dos", async () => {
 		const a = await darDeAlta("contable@ejemplo.com");
 		const dela = async () =>
 			(await env.BD.prepare("SELECT pimienta FROM cuentas WHERE correo = ?").bind(a.correo).first<{ pimienta: number }>())?.pimienta;
 
 		expect(await dela()).toBe(1);
 		rotar("la-que-se-cuenta-0123456789abcd-01234567");
-		await pedir("POST", "/v1/sesion", { ip: nuevaIP(), cuerpo: { correo: a.correo, claveDeAcceso: a.claveDeAcceso } });
 
-		// Solo migró el de acceso; el de posesión sigue en la 1, así que la menor es 1.
-		// **Ése es el punto**: con una sola marca por cuenta, esto diría 2 y sería mentira.
-		expect(await dela()).toBe(1);
+		await pedir("POST", "/v1/sesion", { ip: nuevaIP(), cuerpo: { correo: a.correo, claveDeAcceso: a.claveDeAcceso } });
+		expect(await dela(), "entrar solo migra el acceso").toBe(1);
+
+		const r = await pedir("PUT", "/v1/posesion", { token: a.sesion, cuerpo: { posesion: a.posesion } });
+		expect(r.status).toBe(200);
+		expect(await dela(), "y la cortesía de la sincronización migra la posesión").toBe(2);
+	});
+
+	/**
+	 * **Contesta lo mismo cuadre o no**, y esto lo vigila: si una posesión mala se
+	 * distinguiera de una buena, esto sería un sitio donde probarlas con una sesión
+	 * robada.
+	 */
+	it("una posesión equivocada contesta igual, y no migra nada", async () => {
+		const a = await darDeAlta("posesion-mala@ejemplo.com");
+		rotar("da-igual-la-posesion-0123456789-01234567");
+
+		const r = await pedir("PUT", "/v1/posesion", { token: a.sesion, cuerpo: { posesion: azarB64(32) } });
+		expect(r.status).toBe(200);
+
+		const ns = env.CUENTAS;
+		const guardado = await runInDurableObject(ns.get(ns.idFromName(a.cuenta)), (_i, ctx) =>
+			ctx.storage.sql.exec<{ valor: string }>("SELECT valor FROM ajustes WHERE clave = 'posesion'").one().valor,
+		);
+		expect(guardado.startsWith("1:"), "una posesión mala no puede migrar nada").toBe(true);
+	});
+
+	/**
+	 * Y sin sesión no se toca nada — **probado contra el objeto directamente**.
+	 *
+	 * Desde fuera no se puede: el Worker rechaza cualquier token que no pase
+	 * `cuentaDeSesion`, así que la comprobación de dentro del objeto **es inobservable**
+	 * por HTTP y una prueba que fuera por ahí pasaría igual sin ella. Se descubrió
+	 * mutando: quitada la comprobación, la respuesta seguía siendo `401`, pero la daba
+	 * otro. Es defensa en profundidad y se prueba donde vive.
+	 */
+	it("el objeto no refresca nada con una sesión que no vale", async () => {
+		const a = await darDeAlta("sin-sesion@ejemplo.com");
+		rotar("hace-falta-sesion-0123456789abc-01234567");
+
+		const ns = env.CUENTAS;
+		const stub = ns.get(ns.idFromName(a.cuenta));
+		const r = await runInDurableObject(stub, (c: { refrescarPosesion: (t: string, p: unknown) => Promise<{ ok: boolean }> }) =>
+			c.refrescarPosesion(`${a.cuenta}.${azarB64(32)}`, a.posesion),
+		);
+		expect(r.ok, "una sesión que no vale no puede refrescar").toBe(false);
+
+		const guardado = await runInDurableObject(stub, (_i, ctx) =>
+			ctx.storage.sql.exec<{ valor: string }>("SELECT valor FROM ajustes WHERE clave = 'posesion'").one().valor,
+		);
+		expect(guardado.startsWith("1:"), "sin sesión no se puede migrar nada").toBe(true);
 	});
 });
