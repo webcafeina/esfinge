@@ -90,7 +90,9 @@ func TestCruzadaFormaCanonica(t *testing.T) {
 			ID: fmt.Sprintf("%032x", 100+i), Tipo: TipoPersonal, Titulo: s,
 			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
 			NombreCompleto: s, Correo: s + "@ejemplo.com", Telefono: "+34 600 11 22 33",
-			Direccion: s + "\nCalle Mayor 1\n28001 Madrid", Nacimiento: "1980-01-01",
+			Nacimiento: "1980-01-01", Destinatario: s, Calle: "Calle Mayor 1",
+			Edificio: "Portal B", Piso: "3", Puerta: s, CodigoPostal: "28001",
+			Ciudad: "Madrid", Provincia: s, Pais: "España",
 		})
 	}
 	var suyas []string
@@ -99,6 +101,54 @@ func TestCruzadaFormaCanonica(t *testing.T) {
 		if suyas[i] != canon(e) {
 			t.Errorf("entrada %d:\n  Go:        %s\n  extensión: %s", i, canon(e), suyas[i])
 		}
+	}
+}
+
+// **La dirección de la 2.30.0 se trae igual en los dos lados.**
+//
+// Aquella versión la guardaba compuesta en un solo campo, `direccion`, y ésta la
+// parte en nueve. Si uno de los dos lados la trajera a `calle` y el otro la dejara
+// en `extra`, **la misma entrada daría bytes distintos** y las dos bóvedas se la
+// pasarían sin fin sin que nadie viera nada raro: la sincronización no compara
+// contenidos, compara formas canónicas.
+//
+// Se manda el JSON crudo, no una `Entrada` ya leída: lo que se compara es
+// **cómo lee cada lado lo que escribió la versión de antes**, y una entrada que Go
+// ya ha leído viene con la migración hecha.
+func TestCruzadaLaDireccionDeLaVersionAnterior(t *testing.T) {
+	crudas := []json.RawMessage{
+		json.RawMessage(`{"id":"1","tipo":"personal","titulo":"Casa","creada":"2026-09-29T10:00:00Z",` +
+			`"cambiada":"2026-09-29T10:00:00Z","direccion":"Calle Mayor 1\n28001 Madrid"}`),
+		// Con la calle ya puesta, la de antes **no pisa**: gana lo que esta versión
+		// entiende, que es la regla de `Extra` de siempre.
+		json.RawMessage(`{"id":"2","tipo":"personal","titulo":"Otra","creada":"2026-09-29T10:00:00Z",` +
+			`"cambiada":"2026-09-29T10:00:00Z","direccion":"vieja","calle":"Mayor 1","ciudad":"Madrid"}`),
+		// Y algo desconocido de verdad **sí** se queda en `extra`, que es para lo que
+		// está: si la migración se llevara todo por delante, se perdería lo que
+		// escriba una versión más nueva.
+		json.RawMessage(`{"id":"3","tipo":"personal","titulo":"Con extra","creada":"2026-09-29T10:00:00Z",` +
+			`"cambiada":"2026-09-29T10:00:00Z","direccion":"Mayor 1","loQueVenga":{"a":1}}`),
+	}
+
+	var suyas []string
+	cruzada.Pedir(t, map[string]any{"orden": "canon", "entradas": crudas}, &suyas)
+	for i, cruda := range crudas {
+		var e Entrada
+		if err := json.Unmarshal(cruda, &e); err != nil {
+			t.Fatal(err)
+		}
+		if suyas[i] != canon(e) {
+			t.Errorf("entrada %d:\n  Go:        %s\n  extensión: %s", i, canon(e), suyas[i])
+		}
+	}
+
+	// Y que de verdad la ha traído, no que los dos la hayan tirado igual.
+	var primera Entrada
+	if err := json.Unmarshal(crudas[0], &primera); err != nil {
+		t.Fatal(err)
+	}
+	if primera.Calle != "Calle Mayor 1\n28001 Madrid" {
+		t.Errorf("no ha llegado a la calle: %q", primera.Calle)
 	}
 }
 
@@ -126,7 +176,9 @@ func TestCruzadaLoQueSeVacia(t *testing.T) {
 		{ID: fmt.Sprintf("%032x", 4), Tipo: TipoPersonal, Titulo: "Casa",
 			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
 			NombreCompleto: "Álvaro Cabezas", Correo: "a@b.com", Telefono: "600111222",
-			Direccion: "Calle Mayor 1\n28001 Madrid", Nacimiento: "1980-01-01"},
+			Nacimiento: "1980-01-01", Destinatario: "Álvaro Cabezas", Calle: "Calle Mayor 1",
+			Edificio: "Portal B", Piso: "3", Puerta: "B", CodigoPostal: "28001",
+			Ciudad: "Madrid", Provincia: "Madrid", Pais: "España"},
 	}
 	var suyas []string
 	cruzada.Pedir(t, map[string]any{"orden": "sinSecretos", "entradas": entradas}, &suyas)
@@ -196,8 +248,14 @@ func (g generador) entrada(id string) Entrada {
 		// toca aquí no se compara nunca**: la prueba de tres equipos es la que manda.
 		e.Correo = g.de("a@b.com", "c@d.es", "")
 		e.Telefono = g.de("600111222", "600333444")
-		e.Direccion = g.de("Mayor 1", "Mayor 1\n28001 Madrid")
 		e.Nacimiento = g.de("1980-01-01", "1990-12-31")
+		e.Calle = g.de("Mayor 1", "Menor 2", "")
+		e.CodigoPostal = g.de("28001", "08001")
+		e.Ciudad = g.de("Madrid", "Barcelona")
+		e.Provincia = g.de("Madrid", "", "Barcelona")
+		e.Pais = g.de("España", "")
+		e.Destinatario, e.Edificio = g.de("Yo", ""), g.de("Portal B", "")
+		e.Piso, e.Puerta = g.de("3", ""), g.de("B", "")
 	}
 	if g.r.IntN(5) == 0 {
 		e.Extra = map[string]json.RawMessage{"nuevo": json.RawMessage(g.de(`1`, `"x"`, `{"b":[1,2]}`))}

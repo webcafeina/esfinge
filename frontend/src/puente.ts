@@ -169,8 +169,16 @@ export type EntradaBoveda = {
   numeroDocumento?: string;
   correo?: string;
   telefono?: string;
-  direccion?: string;
   nacimiento?: string;
+  destinatario?: string;
+  calle?: string;
+  edificio?: string;
+  piso?: string;
+  puerta?: string;
+  codigoPostal?: string;
+  ciudad?: string;
+  provincia?: string;
+  pais?: string;
 };
 
 /**

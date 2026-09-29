@@ -111,7 +111,8 @@ No se cambian sin preguntar.
   la costumbre de Go para los errores; manda lo que se ve en pantalla. Lo vigila
   `internal/cripto/textos_test.go`.
 - **Y desde el 2026-09-29 la bóveda guarda también datos personales** (ADR 0047): nombre, correo,
-  teléfono, dirección y fecha de nacimiento, que es el quinto fichero de Dashlane. Es **la primera clase
+  teléfono, fecha de nacimiento y **la dirección en sus nueve trozos**, que es el quinto fichero de
+  Dashlane. Es **la primera clase
   que no guarda un secreto**, y se hace igual porque la alternativa realista no era tenerlo fuera, era
   tenerlo en Dashlane. Lo eligió el cliente frente a la opción barata —cada fila como nota segura—
   sabiendo que **su fichero son dos filas** y que **Esfinge no rellena nada de eso**. Con ello, dos cosas
@@ -288,6 +289,13 @@ descifrador de Go no comprueba el largo cuando no hay relleno**, y un grupo fina
 no le parece un error, así que devuelve los bytes anteriores como si nada y la semilla entra entera.
 Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
 no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
+
+**Un campo que se quita de `Entrada` no da error: cae en `Extra` y no se ve nunca más.** `Extra` existe
+para conservar lo que escribe una versión **más nueva**, y al quitar un campo hace justo lo contrario:
+guarda callado lo que esta versión sí entendería. Pasó al partir la dirección del dato personal en sus
+nueve trozos (ADR 0047): lo que escribió la 2.30.0 se trae a `calle` al leerlo y se deja de escribir. **Y
+eso hay que hacerlo en los dos lados**, porque si uno lo trae y el otro lo deja en `extra`, la misma
+entrada da bytes distintos y las dos bóvedas se la pasan sin fin.
 
 **Y lo que está en la papelera no cuenta para el índice de duplicados del importador.** Desde que la
 papelera guarda la entrada entera (ADR 0026), sin esa línea el importador reconoce lo borrado y

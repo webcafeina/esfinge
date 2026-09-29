@@ -1361,6 +1361,34 @@ function entradaNueva(tipo: Filtro): EntradaBoveda {
   };
 }
 
+/**
+ * La dirección compuesta, para leerla y para copiarla.
+ *
+ * **Es el mismo cálculo que `Entrada.Direccion()` en Go, escrito dos veces**, y eso
+ * pide explicación en un proyecto que vigila que la bóveda diga lo mismo en los dos
+ * lados. La diferencia es qué se pierde si se separan: los formatos canónicos
+ * tienen que dar **los mismos bytes** o las dos bóvedas se pasan la misma entrada
+ * sin fin, y por eso los vigilan pruebas cruzadas; esto es una frase para leer, y
+ * si algún día se escribe de otra forma, lo que pasa es que se lee de otra forma.
+ * Mandarlo por el puente sería un campo más en el formato que no guarda nada.
+ *
+ * Lo que sí importa y por eso está aquí y no en línea: **el orden es el del sobre**,
+ * no el de los campos ni el que usan los gestores.
+ */
+function direccionDe(e: EntradaBoveda): string {
+  const con = (sep: string, ...partes: (string | undefined)[]) =>
+    partes.map((p) => (p ?? "").trim()).filter(Boolean).join(sep);
+
+  let municipio = con(" ", e.codigoPostal, e.ciudad);
+  // La provincia solo cuando añade algo: en media España se llama igual que la
+  // capital y «Madrid (Madrid)» no informa de nada.
+  const provincia = (e.provincia ?? "").trim();
+  if (provincia && provincia.toLowerCase() !== (e.ciudad ?? "").trim().toLowerCase()) {
+    municipio = con(" ", municipio, `(${provincia})`);
+  }
+  return con("\n", e.destinatario, con(", ", e.calle, e.edificio), con(", ", e.piso, e.puerta), municipio, e.pais);
+}
+
 /** El plural de cada clase, que es como se llaman cuando son varias. */
 const PLURAL: Record<TipoEntrada, [string, string]> = {
   credencial: ["credencial", "credenciales"],
@@ -1589,7 +1617,12 @@ function Detalle({
             ver el propio número. */}
         <Dato etiqueta="Correo" valor={entrada.correo} />
         <Dato etiqueta="Teléfono" valor={entrada.telefono} />
-        <Secreto etiqueta="Dirección" valor={entrada.direccion} />
+        {/* **La dirección se guarda en nueve campos y se lee en uno.** Guardada por
+            trozos porque es como la pide un formulario de compra y como la da un
+            gestor; enseñada compuesta porque una dirección se lee y se copia
+            entera, y nueve filas con su ojo y su «Copiar» sería un formulario en
+            una ficha. Componerla es de una línea; partirla sería adivinar. */}
+        <Secreto etiqueta="Dirección" valor={direccionDe(entrada)} />
         <Secreto etiqueta="Fecha de nacimiento" valor={entrada.nacimiento} />
 
         <Dato etiqueta="Notas" valor={entrada.notas} />
@@ -1947,19 +1980,45 @@ function Editor({
             <Campo id="boveda-correo" etiqueta="Correo" valor={e.correo} alCambiar={(v) => pon({ correo: v })} />
             <Campo id="boveda-telefono" etiqueta="Teléfono" valor={e.telefono} alCambiar={(v) => pon({ telefono: v })} />
             <Campo
-              id="boveda-direccion"
-              etiqueta="Dirección"
-              valor={e.direccion}
-              alCambiar={(v) => pon({ direccion: v })}
-              largo
-            />
-            <Campo
               id="boveda-nacimiento"
               etiqueta="Fecha de nacimiento"
               valor={e.nacimiento}
               alCambiar={(v) => pon({ nacimiento: v })}
               pista="AAAA-MM-DD"
             />
+            {/* La dirección, en sus trozos y **en el orden del sobre**, que es el
+                que se sigue al escribirla. No es el orden en que la dan los
+                gestores: Dashlane pone el país antes que la ciudad. */}
+            <Campo
+              id="boveda-destinatario"
+              etiqueta="A nombre de"
+              valor={e.destinatario}
+              alCambiar={(v) => pon({ destinatario: v })}
+              pista="Si el envío no va a tu nombre"
+            />
+            <Campo id="boveda-calle" etiqueta="Calle" valor={e.calle} alCambiar={(v) => pon({ calle: v })} />
+            <Campo
+              id="boveda-edificio"
+              etiqueta="Edificio o portal"
+              valor={e.edificio}
+              alCambiar={(v) => pon({ edificio: v })}
+            />
+            <Campo id="boveda-piso" etiqueta="Piso" valor={e.piso} alCambiar={(v) => pon({ piso: v })} />
+            <Campo id="boveda-puerta" etiqueta="Puerta" valor={e.puerta} alCambiar={(v) => pon({ puerta: v })} />
+            <Campo
+              id="boveda-codigo-postal"
+              etiqueta="Código postal"
+              valor={e.codigoPostal}
+              alCambiar={(v) => pon({ codigoPostal: v })}
+            />
+            <Campo id="boveda-ciudad" etiqueta="Ciudad" valor={e.ciudad} alCambiar={(v) => pon({ ciudad: v })} />
+            <Campo
+              id="boveda-provincia"
+              etiqueta="Provincia"
+              valor={e.provincia}
+              alCambiar={(v) => pon({ provincia: v })}
+            />
+            <Campo id="boveda-pais" etiqueta="País" valor={e.pais} alCambiar={(v) => pon({ pais: v })} />
           </>
         )}
 

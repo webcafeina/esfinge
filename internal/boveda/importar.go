@@ -64,25 +64,25 @@ const (
 	CampoDocumento       = "documento"
 	CampoNumeroDocumento = "numero-documento"
 
-	// Datos personales (ADR 0047). El nombre se compone de hasta tres columnas y
-	// la dirección de hasta nueve, así que cada trozo tiene su campo y se juntan
-	// **en un orden fijo** al terminar la fila: por orden de columna saldría «la
-	// calle, España, Madrid, 28001», porque así es como Dashlane las coloca.
-	CampoCorreo        = "correo"
-	CampoTelefono      = "telefono"
-	CampoNacimiento    = "nacimiento"
-	CampoNombrePila    = "nombre-pila"
-	CampoNombreMedio   = "nombre-medio"
-	CampoApellidos     = "apellidos"
-	CampoCalle         = "calle"
-	CampoCodigoPostal  = "codigo-postal"
-	CampoCiudad        = "ciudad"
-	CampoProvincia     = "provincia"
-	CampoPais          = "pais"
-	CampoDestinatario  = "destinatario"
-	CampoEdificio      = "edificio"
-	CampoPiso          = "piso"
-	CampoPuerta        = "puerta"
+	// Datos personales (ADR 0047). El nombre sí se compone —tres columnas en un
+	// campo— y **la dirección no**: se guarda en sus nueve trozos, que es como la
+	// da el gestor y como la pide un formulario. Componerla para leerla es de una
+	// línea (`Entrada.Direccion`); volver a partirla sería adivinar.
+	CampoCorreo       = "correo"
+	CampoTelefono     = "telefono"
+	CampoNacimiento   = "nacimiento"
+	CampoNombrePila   = "nombre-pila"
+	CampoNombreMedio  = "nombre-medio"
+	CampoApellidos    = "apellidos"
+	CampoCalle        = "calle"
+	CampoCodigoPostal = "codigo-postal"
+	CampoCiudad       = "ciudad"
+	CampoProvincia    = "provincia"
+	CampoPais         = "pais"
+	CampoDestinatario = "destinatario"
+	CampoEdificio     = "edificio"
+	CampoPiso         = "piso"
+	CampoPuerta       = "puerta"
 
 	// CampoTipo solo se lee en el fichero que exporta Esfinge. Ver `tipoDe`.
 	CampoTipo = "tipo"
@@ -185,7 +185,11 @@ var aliasPorForma = map[Forma]map[string]string{
 		"full_name": CampoNombre, "document_type": CampoDocumento,
 		"document_number": CampoNumeroDocumento,
 		"correo":          CampoCorreo, "telefono": CampoTelefono,
-		"direccion": CampoCalle, "nacimiento": CampoNacimiento,
+		"nacimiento": CampoNacimiento, "destinatario": CampoDestinatario,
+		"direccion": CampoCalle, "edificio": CampoEdificio,
+		"piso": CampoPiso, "puerta": CampoPuerta,
+		"codigo_postal": CampoCodigoPostal, "ciudad": CampoCiudad,
+		"provincia": CampoProvincia, "pais": CampoPais,
 		// **«type» se lee aquí y solo aquí**, y es la excepción a la regla de que
 		// la clase se deduce de los campos: éste es nuestro propio fichero y no
 		// miente. Hace falta desde que hay datos personales, porque un dato
@@ -239,7 +243,7 @@ var aliasPorForma = map[Forma]map[string]string{
 		// sitio ni contraseña.
 		"login": CampoNotas,
 		"email": CampoCorreo, "email_type": CampoNotas,
-		"phone_number": CampoTelefono,
+		"phone_number":  CampoTelefono,
 		"date_of_birth": CampoNacimiento, "place_of_birth": CampoNotas,
 		"job_title": CampoNotas,
 		// La dirección, en trozos con su sitio en el sobre.
@@ -330,7 +334,7 @@ func Leer(datos []byte, mapa Correspondencia) ([]Entrada, Lectura, error) {
 		// Una fila sin nada que guardar no es una entrada, es una línea en blanco.
 		if e.Titulo == "" && e.Usuario == "" && e.Secreto == "" && e.Notas == "" &&
 			e.Numero == "" && e.NumeroDocumento == "" &&
-			e.Correo == "" && e.Telefono == "" && e.Direccion == "" && e.Nacimiento == "" {
+			e.Correo == "" && e.Telefono == "" && e.Nacimiento == "" && !e.TieneDireccion() {
 			continue
 		}
 		out = append(out, e)
@@ -412,8 +416,6 @@ func deFila(cabecera, fila []string, mapa Correspondencia, forma Forma) Entrada 
 	var notas []string
 	var mes, ano string
 	var pila, medio, apellidos string
-	var calle, cp, ciudad, provincia, pais string
-	var destinatario, edificio, piso, puerta string
 	var tipoDicho string
 
 	for i, col := range cabecera {
@@ -472,23 +474,23 @@ func deFila(cabecera, fila []string, mapa Correspondencia, forma Forma) Entrada 
 		case CampoApellidos:
 			apellidos = valor
 		case CampoCalle:
-			calle = valor
+			e.Calle = valor
 		case CampoCodigoPostal:
-			cp = valor
+			e.CodigoPostal = valor
 		case CampoCiudad:
-			ciudad = valor
+			e.Ciudad = valor
 		case CampoProvincia:
-			provincia = valor
+			e.Provincia = valor
 		case CampoPais:
-			pais = valor
+			e.Pais = valor
 		case CampoDestinatario:
-			destinatario = valor
+			e.Destinatario = valor
 		case CampoEdificio:
-			edificio = valor
+			e.Edificio = valor
 		case CampoPiso:
-			piso = valor
+			e.Piso = valor
 		case CampoPuerta:
-			puerta = valor
+			e.Puerta = valor
 		case CampoTipo:
 			tipoDicho = valor
 		}
@@ -502,9 +504,6 @@ func deFila(cabecera, fila []string, mapa Correspondencia, forma Forma) Entrada 
 	}
 	if e.NombreCompleto == "" {
 		e.NombreCompleto = juntarCon(" ", pila, medio, apellidos)
-	}
-	if e.Direccion == "" {
-		e.Direccion = componerDireccion(destinatario, calle, edificio, piso, puerta, cp, ciudad, provincia, pais)
 	}
 	e.Notas = strings.Join(notas, "\n")
 
@@ -525,30 +524,6 @@ func juntarCon(sep string, partes ...string) string {
 		}
 	}
 	return strings.Join(hay, sep)
-}
-
-// componerDireccion escribe la dirección **en el orden del sobre**, no en el de
-// las columnas.
-//
-// Dashlane las coloca `address, country, state, city, zip, …`, así que juntarlas
-// por orden de columna da «Calle Mayor 1, España, Madrid, Madrid, 28001», que no
-// es una dirección: es una lista de campos. Aquí el orden es fijo y la línea del
-// municipio se arma como se escribe, «28001 Madrid (Madrid)».
-func componerDireccion(destinatario, calle, edificio, piso, puerta, cp, ciudad, provincia, pais string) string {
-	municipio := juntarCon(" ", cp, ciudad)
-	if p := strings.TrimSpace(provincia); p != "" && !strings.EqualFold(p, strings.TrimSpace(ciudad)) {
-		// La provincia solo cuando añade algo: en media España se llama igual que
-		// la capital y «Madrid (Madrid)» no informa de nada.
-		municipio = juntarCon(" ", municipio, "("+p+")")
-	}
-	lineas := []string{
-		strings.TrimSpace(destinatario),
-		juntarCon(", ", calle, edificio),
-		juntarCon(", ", piso, puerta),
-		municipio,
-		strings.TrimSpace(pais),
-	}
-	return juntarCon("\n", lineas...)
 }
 
 // etiquetar pone delante el nombre de la columna cuando varias caen en las
@@ -574,7 +549,7 @@ func tipoDe(e Entrada, forma Forma, dicho string) Tipo {
 		return TipoTarjeta
 	case e.NumeroDocumento != "" || e.Documento != "":
 		return TipoIdentidad
-	case e.Correo != "" || e.Telefono != "" || e.Direccion != "" || e.Nacimiento != "":
+	case e.Correo != "" || e.Telefono != "" || e.Nacimiento != "" || e.TieneDireccion():
 		return TipoPersonal
 	// **Un nombre a secas no tiene ningún campo que lo distinga**, y es media
 	// exportación de datos personales: la fila `name` de Dashlane solo trae
@@ -600,15 +575,7 @@ func tituloDeReserva(e Entrada) string {
 	// parece a un título está en `item_name`, y solo en algunas clases—. Sin
 	// esto, la fila del nombre entraba sin título, y una entrada sin título es
 	// una entrada que no se encuentra.
-	return primerNoVacio(e.NombreCompleto, e.Usuario, e.Correo, e.Telefono, e.Titular, e.Documento, primeraLinea(e.Direccion))
-}
-
-// primeraLinea, porque una dirección tiene varias y un título es una sola. Sin
-// esto, una fila de dirección sin `item_name` entraba con la calle, el municipio
-// y el país por título.
-func primeraLinea(s string) string {
-	l, _, _ := strings.Cut(s, "\n")
-	return l
+	return primerNoVacio(e.NombreCompleto, e.Usuario, e.Correo, e.Telefono, e.Titular, e.Documento, e.Calle)
 }
 
 func primerNoVacio(ss ...string) string {
@@ -754,7 +721,9 @@ func huellaDeContenido(e Entrada) string {
 		strings.Join(e.Sitios, "\x1f"),
 		e.Titular, soloCifras(e.Numero), e.Caduca, e.Verificacion,
 		e.NombreCompleto, e.Documento, e.NumeroDocumento,
-		e.Correo, e.Telefono, e.Direccion, e.Nacimiento,
+		e.Correo, e.Telefono, e.Nacimiento,
+		e.Destinatario, e.Calle, e.Edificio, e.Piso, e.Puerta,
+		e.CodigoPostal, e.Ciudad, e.Provincia, e.Pais,
 	}, "\x00")
 }
 
@@ -781,8 +750,8 @@ func huellaDeCuenta(e Entrada) string {
 		return "correo\x00" + strings.ToLower(strings.TrimSpace(e.Correo))
 	case e.Telefono != "":
 		return "telefono\x00" + soloCifras(e.Telefono)
-	case e.Direccion != "":
-		return "direccion\x00" + strings.ToLower(strings.Join(strings.Fields(e.Direccion), " "))
+	case e.TieneDireccion():
+		return "direccion\x00" + strings.ToLower(strings.Join(strings.Fields(e.Direccion()), " "))
 	}
 
 	sitio := ""
@@ -830,7 +799,9 @@ func (b *Boveda) Exportar(w io.Writer) error {
 		"title", "url", "username", "password", "otpSecret", "note", "folder",
 		"type", "cardholder", "cc_number", "expiration_date", "cvv",
 		"full_name", "document_type", "document_number",
-		"correo", "telefono", "direccion", "nacimiento",
+		"correo", "telefono", "nacimiento",
+		"destinatario", "direccion", "edificio", "piso", "puerta",
+		"codigo_postal", "ciudad", "provincia", "pais",
 	}); err != nil {
 		return err
 	}
@@ -846,7 +817,9 @@ func (b *Boveda) Exportar(w io.Writer) error {
 			e.Titulo, sitio, e.Usuario, e.Secreto, e.TOTP, e.Notas, e.Carpeta,
 			string(e.Tipo), e.Titular, e.Numero, e.Caduca, e.Verificacion,
 			e.NombreCompleto, e.Documento, e.NumeroDocumento,
-			e.Correo, e.Telefono, e.Direccion, e.Nacimiento,
+			e.Correo, e.Telefono, e.Nacimiento,
+			e.Destinatario, e.Calle, e.Edificio, e.Piso, e.Puerta,
+			e.CodigoPostal, e.Ciudad, e.Provincia, e.Pais,
 		}); err != nil {
 			return err
 		}

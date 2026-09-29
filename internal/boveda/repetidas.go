@@ -47,7 +47,9 @@ func claveDeCuenta(e Entrada) string {
 		// líneas, dos correos distintos guardados con el mismo rótulo —«Correo
 		// electrónico 1» en dos importaciones— son la misma cuenta, y quitar
 		// repetidas borraría uno de los dos. Es el fallo de las tarjetas otra vez.
-		t(e.Correo), t(e.Telefono), t(e.Direccion), t(e.Nacimiento),
+		t(e.Correo), t(e.Telefono), t(e.Nacimiento),
+		t(e.Destinatario), t(e.Calle), t(e.Edificio), t(e.Piso), t(e.Puerta),
+		t(e.CodigoPostal), t(e.Ciudad), t(e.Provincia), t(e.Pais),
 	}
 	if e.Tipo == TipoNota {
 		// En una nota, el texto es el secreto: tiene que ser el mismo.

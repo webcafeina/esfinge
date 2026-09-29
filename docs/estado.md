@@ -12,7 +12,8 @@ y Resend está retirado del DNS y de los Workers. Comprobado con envíos de verd
 retirarlo.
 
 **Los datos personales de Dashlane ya entran** ([ADR 0047](adr/0047-los-datos-personales.md)), con una
-clase nueva, `personal`, y sus cuatro campos. Es **la primera clase de la bóveda que no guarda un
+clase nueva, `personal`, y **la dirección guardada en sus nueve trozos** —se revisó el mismo día, después
+de publicar la 2.30.0 con la dirección compuesta—. Es **la primera clase de la bóveda que no guarda un
 secreto**, y el cliente la eligió sabiendo el coste frente a la opción barata. Dos cosas que hay que
 mirar en su Mac y están en [`deuda.md`](deuda.md): **el glifo nuevo**, que es una silueta de persona y
 convive con el carné de las identidades, y que **las pestañas de clases se han quedado sin rótulo salvo

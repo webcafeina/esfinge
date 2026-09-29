@@ -141,7 +141,8 @@ que había.
 | `usuario`, `secreto`, `sitios`, `totp`, `historial` | Credencial. `historial`: `[{secreto, hasta}]`, lo más reciente primero, diez como mucho |
 | `titular`, `numero`, `caduca`, `verificacion` | Tarjeta |
 | `nombreCompleto`, `documento`, `numeroDocumento` | Identidad |
-| `correo`, `telefono`, `direccion`, `nacimiento` | Dato personal ([ADR 0047](adr/0047-los-datos-personales.md)). `nombreCompleto` se comparte con la identidad: es el mismo dato. `direccion` lleva saltos de línea |
+| `correo`, `telefono`, `nacimiento` | Dato personal ([ADR 0047](adr/0047-los-datos-personales.md)). `nombreCompleto` se comparte con la identidad: es el mismo dato |
+| `destinatario`, `calle`, `edificio`, `piso`, `puerta`, `codigoPostal`, `ciudad`, `provincia`, `pais` | La dirección de un dato personal, **por trozos**: es como la da un gestor y como la pide un formulario. Componerla para leerla es de una línea; partirla sería adivinar. **La 2.30.0 escribía `direccion`, un solo texto**: al leerlo se trae entero a `calle` y se deja de escribir, y eso lo hacen los dos lados igual |
 
 Los vacíos no se escriben.
 

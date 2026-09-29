@@ -433,8 +433,10 @@ func TestLoExportadoVuelveAEntrarConTodo(t *testing.T) {
 			Documento: "passport", NumeroDocumento: "ABC123456"},
 		{Tipo: TipoNota, Titulo: "La caja fuerte", Notas: "la combinación es 1234"},
 		{Tipo: TipoPersonal, Titulo: "Correo electrónico 1", Correo: "yo@ejemplo.com"},
-		{Tipo: TipoPersonal, Titulo: "Casa", Direccion: "Calle Mayor 1\n28001 Madrid",
-			Telefono: "600111222", Nacimiento: "1980-01-01"},
+		{Tipo: TipoPersonal, Titulo: "Casa", Telefono: "600111222", Nacimiento: "1980-01-01",
+			Destinatario: "Yo Mismo", Calle: "Calle Mayor 1", Edificio: "Portal B",
+			Piso: "3", Puerta: "B", CodigoPostal: "28001", Ciudad: "Madrid",
+			Provincia: "Madrid", Pais: "España"},
 		// **Un nombre a secas no tiene ningún campo que diga qué es**, y es media
 		// exportación de datos personales. Volvía convertido en una credencial sin
 		// usuario ni contraseña: por eso la forma de Esfinge lee su columna `type`,
@@ -686,21 +688,32 @@ func TestPersonalinfoDeDashlane(t *testing.T) {
 		t.Errorf("el teléfono: %+v", telefono)
 	}
 
-	// **La dirección, en el orden del sobre.** Por orden de columna saldría «Calle
-	// Mayor 1, España, Madrid, Madrid, 28001», que no es una dirección sino una
-	// lista de campos. Y la provincia no se repite cuando se llama igual que la
-	// ciudad, que en media España es lo normal.
+	// **La dirección entra en sus nueve trozos**, que es como la da Dashlane y como
+	// la pide un formulario (ADR 0047, revisada en la 2.31.0). Se comprueba campo a
+	// campo porque el fallo que esto evita es silencioso: dos columnas que caen en
+	// el mismo campo y una se pierde, como le pasó al piso y a la puerta.
+	if casa.Destinatario != "Álvaro Cabezas" || casa.Calle != "Calle Mayor 1" ||
+		casa.Edificio != "Portal B" || casa.Piso != "3" || casa.Puerta != "B" ||
+		casa.CodigoPostal != "28001" || casa.Ciudad != "Madrid" ||
+		casa.Provincia != "Madrid" || casa.Pais != "España" {
+		t.Errorf("la dirección, por trozos: %+v", casa)
+	}
+
+	// Y compuesta para leerla, **en el orden del sobre**: por orden de columna
+	// saldría «Calle Mayor 1, España, Madrid, Madrid, 28001», que no es una
+	// dirección sino una lista de campos. La provincia no se repite cuando se llama
+	// igual que la ciudad, que en media España es lo normal.
 	quiero := "Álvaro Cabezas\nCalle Mayor 1, Portal B\n3, B\n28001 Madrid\nEspaña"
-	if casa.Direccion != quiero {
-		t.Errorf("la dirección es\n%q\ny la quiero\n%q", casa.Direccion, quiero)
+	if casa.Direccion() != quiero {
+		t.Errorf("la dirección compuesta es\n%q\ny la quiero\n%q", casa.Direccion(), quiero)
 	}
 	// **El código del portal es un secreto**, y lo único que se vacía de lo que se
 	// escribe suelto son las notas.
 	if !strings.Contains(casa.Notas, "1234") {
 		t.Errorf("el código del portal no está en las notas: %q", casa.Notas)
 	}
-	if strings.Contains(casa.Direccion, "1234") {
-		t.Errorf("el código del portal está escrito en la dirección: %q", casa.Direccion)
+	if strings.Contains(casa.Direccion(), "1234") {
+		t.Errorf("el código del portal está escrito en la dirección: %q", casa.Direccion())
 	}
 }
 
@@ -719,8 +732,8 @@ func TestVariosDatosPersonalesNoSonDuplicados(t *testing.T) {
 		{Tipo: TipoPersonal, Titulo: "Correo electrónico 1", Correo: "dos@ejemplo.com"},
 		{Tipo: TipoPersonal, Titulo: "Teléfono 1", Telefono: "600111222"},
 		{Tipo: TipoPersonal, Titulo: "Teléfono 1", Telefono: "600333444"},
-		{Tipo: TipoPersonal, Titulo: "Casa", Direccion: "Calle Mayor 1\n28001 Madrid"},
-		{Tipo: TipoPersonal, Titulo: "Casa", Direccion: "Calle Menor 2\n08001 Barcelona"},
+		{Tipo: TipoPersonal, Titulo: "Casa", Calle: "Calle Mayor 1", CodigoPostal: "28001", Ciudad: "Madrid"},
+		{Tipo: TipoPersonal, Titulo: "Casa", Calle: "Calle Menor 2", CodigoPostal: "08001", Ciudad: "Barcelona"},
 	}
 	r, err := b.Importar(entradas, "Dashlane")
 	if err != nil {
@@ -765,7 +778,10 @@ func TestDosDatosPersonalesConElMismoRotuloNoSeFusionan(t *testing.T) {
 	// lista, la prueba pasaría dejando fuera los otros tres.
 	for _, par := range [][2]Entrada{
 		{{Tipo: TipoPersonal, Telefono: "600111222"}, {Tipo: TipoPersonal, Telefono: "600333444"}},
-		{{Tipo: TipoPersonal, Direccion: "Mayor 1"}, {Tipo: TipoPersonal, Direccion: "Menor 2"}},
+		{{Tipo: TipoPersonal, Calle: "Mayor 1"}, {Tipo: TipoPersonal, Calle: "Menor 2"}},
+		{{Tipo: TipoPersonal, CodigoPostal: "28001"}, {Tipo: TipoPersonal, CodigoPostal: "08001"}},
+		{{Tipo: TipoPersonal, Ciudad: "Madrid"}, {Tipo: TipoPersonal, Ciudad: "Barcelona"}},
+		{{Tipo: TipoPersonal, Piso: "3"}, {Tipo: TipoPersonal, Piso: "4"}},
 		{{Tipo: TipoPersonal, Nacimiento: "1980-01-01"}, {Tipo: TipoPersonal, Nacimiento: "1990-01-01"}},
 	} {
 		if claveDeCuenta(par[0]) == claveDeCuenta(par[1]) {

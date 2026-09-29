@@ -235,8 +235,20 @@ test.describe("Capturas", () => {
     await page.locator("#boveda-personal-nombre").fill("Álvaro Cabezas");
     await page.locator("#boveda-correo").fill("alvaro@webcafeina.com");
     await page.locator("#boveda-telefono").fill("+34 600 11 22 33");
-    await page.locator("#boveda-direccion").fill("Calle Mayor 1, Portal B\n3, B\n28001 Madrid\nEspaña");
     await page.locator("#boveda-nacimiento").fill("1980-01-01");
+    for (const [id, valor] of [
+      ["destinatario", "Álvaro Cabezas"],
+      ["calle", "Calle Mayor 1"],
+      ["edificio", "Portal B"],
+      ["piso", "3"],
+      ["puerta", "B"],
+      ["codigo-postal", "28001"],
+      ["ciudad", "Madrid"],
+      ["provincia", "Madrid"],
+      ["pais", "España"],
+    ]) {
+      await page.locator(`#boveda-${id}`).fill(valor);
+    }
     await foto("8b-dato-personal-formulario");
     await boton("Guardar").click();
     await page.getByText("Correo electrónico 1").first().click();

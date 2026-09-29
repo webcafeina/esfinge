@@ -43,8 +43,16 @@ export type Entrada = {
   numeroDocumento?: string;
   correo?: string;
   telefono?: string;
-  direccion?: string;
   nacimiento?: string;
+  destinatario?: string;
+  calle?: string;
+  edificio?: string;
+  piso?: string;
+  puerta?: string;
+  codigoPostal?: string;
+  ciudad?: string;
+  provincia?: string;
+  pais?: string;
   /** Los campos que esta versión no conoce. */
   extra?: Record<string, ValorJSON>;
 };
@@ -76,8 +84,16 @@ const CAMPOS: [keyof Entrada, "siempre" | "texto" | "lista" | "numero" | "si" | 
   ["numeroDocumento", "texto"],
   ["correo", "texto"],
   ["telefono", "texto"],
-  ["direccion", "texto"],
   ["nacimiento", "texto"],
+  ["destinatario", "texto"],
+  ["calle", "texto"],
+  ["edificio", "texto"],
+  ["piso", "texto"],
+  ["puerta", "texto"],
+  ["codigoPostal", "texto"],
+  ["ciudad", "texto"],
+  ["provincia", "texto"],
+  ["pais", "texto"],
 ];
 const CONOCIDOS = new Set<string>(CAMPOS.map(([k]) => k as string));
 
@@ -142,6 +158,15 @@ export function entradaDesde(crudo: unknown): Entrada {
   for (const [k, v] of Object.entries(o)) {
     if (!CONOCIDOS.has(k)) extra[k] = v as ValorJSON;
   }
+  // **Lo que escribió la 2.30.0**, que guardaba la dirección compuesta en un solo
+  // campo de texto (ADR 0047). Tiene que hacerse **igual que en Go**, o los dos
+  // lados sacarían bytes distintos para la misma entrada y se la pasarían sin fin:
+  // uno la traería a `calle` y el otro la dejaría en `extra`. Lo vigila una prueba
+  // cruzada.
+  if (typeof extra.direccion === "string") {
+    if (!e.calle) e.calle = extra.direccion;
+    delete extra.direccion;
+  }
   if (Object.keys(extra).length > 0) e.extra = extra;
   return e;
 }
@@ -204,8 +229,10 @@ export function sinSecretos(e: Entrada): Entrada {
   // importar, así que vaciarlo no escondería nada mientras el título lo repite.
   delete c.correo;
   delete c.telefono;
-  delete c.direccion;
   delete c.nacimiento;
+  for (const k of ["destinatario", "calle", "edificio", "piso", "puerta", "codigoPostal", "ciudad", "provincia", "pais"] as const) {
+    delete c[k];
+  }
   return c;
 }
 

@@ -104,8 +104,21 @@ type Entrada struct {
 	// es el mismo dato y buscarlo tiene que encontrar las dos.
 	Correo     string `json:"correo,omitempty"`
 	Telefono   string `json:"telefono,omitempty"`
-	Direccion  string `json:"direccion,omitempty"`
 	Nacimiento string `json:"nacimiento,omitempty"`
+
+	// La dirección, **en los trozos en que la da un gestor y en que la pide un
+	// formulario**. La 2.30.0 la guardaba compuesta en un solo texto y se cambió
+	// en la 2.31.0: componerla es de una línea y volver a partirla es adivinar.
+	// Para leerla y para copiarla está `Direccion()`.
+	Destinatario string `json:"destinatario,omitempty"`
+	Calle        string `json:"calle,omitempty"`
+	Edificio     string `json:"edificio,omitempty"`
+	Piso         string `json:"piso,omitempty"`
+	Puerta       string `json:"puerta,omitempty"`
+	CodigoPostal string `json:"codigoPostal,omitempty"`
+	Ciudad       string `json:"ciudad,omitempty"`
+	Provincia    string `json:"provincia,omitempty"`
+	Pais         string `json:"pais,omitempty"`
 
 	// Extra guarda **los campos que esta versión de Esfinge no entiende**.
 	//
@@ -193,9 +206,36 @@ func (e *Entrada) vaciarLoSensible() {
 	// de nacimiento **no** están en el título, así que vaciarlos sí sirve.
 	e.Correo = ""
 	e.Telefono = ""
-	e.Direccion = ""
 	e.Nacimiento = ""
+	e.Destinatario, e.Calle, e.Edificio, e.Piso, e.Puerta = "", "", "", "", ""
+	e.CodigoPostal, e.Ciudad, e.Provincia, e.Pais = "", "", "", ""
 }
+
+// Direccion escribe la dirección **en el orden del sobre**, para leerla y para
+// copiarla.
+//
+// El orden importa y no es el de los campos: un gestor los da en el suyo —Dashlane
+// pone el país antes que la ciudad— y juntarlos por ahí da «Calle Mayor 1, España,
+// Madrid, 28001», que no es una dirección sino una lista de campos.
+func (e Entrada) Direccion() string {
+	municipio := juntarCon(" ", e.CodigoPostal, e.Ciudad)
+	// La provincia solo cuando añade algo: en media España se llama igual que la
+	// capital y «Madrid (Madrid)» no informa de nada.
+	if p := strings.TrimSpace(e.Provincia); p != "" && !strings.EqualFold(p, strings.TrimSpace(e.Ciudad)) {
+		municipio = juntarCon(" ", municipio, "("+p+")")
+	}
+	return juntarCon("\n",
+		strings.TrimSpace(e.Destinatario),
+		juntarCon(", ", e.Calle, e.Edificio),
+		juntarCon(", ", e.Piso, e.Puerta),
+		municipio,
+		strings.TrimSpace(e.Pais),
+	)
+}
+
+// TieneDireccion dice si hay algo que enseñar, que no es lo mismo que que
+// `Direccion()` no esté vacía: podría estarlo por tener solo espacios.
+func (e Entrada) TieneDireccion() bool { return e.Direccion() != "" }
 
 // ---------------------------------------------------------------------------
 // Conservación de campos desconocidos.
@@ -271,6 +311,19 @@ func (e *Entrada) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	e.Extra = extra
+
+	// **Lo que escribió la 2.30.0**, que guardaba la dirección compuesta en un solo
+	// campo de texto. Se trae a la calle —entera, con sus saltos de línea— en vez de
+	// dejarla en `Extra`: ahí se conservaría, pero invisible, que es la clase de
+	// pérdida silenciosa que este formato existe para no tener. Partirla en sus
+	// trozos sería adivinar, así que eso lo hace quien la mire.
+	if crudo, hay := e.Extra["direccion"]; hay {
+		var texto string
+		if json.Unmarshal(crudo, &texto) == nil && e.Calle == "" {
+			e.Calle = texto
+		}
+		delete(e.Extra, "direccion")
+	}
 	return nil
 }
 

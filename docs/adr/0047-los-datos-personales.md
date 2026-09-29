@@ -1,6 +1,7 @@
 # ADR 0047 — Los datos personales, la quinta clase de entrada
 
-**Fecha:** 2026-09-29 · **Estado:** aceptada y escrita, **sin ver en un Mac** · Cierra la última fila de
+**Fecha:** 2026-09-29 · **Estado:** aceptada y escrita; **revisada el mismo día, en la 2.31.0** —la
+dirección se guarda desagregada y no compuesta— · **sin ver en un Mac** · Cierra la última fila de
 [`../deuda.md`](../deuda.md) que quedaba de Dashlane · **Revisar cuando** Esfinge rellene formularios de
 compra, que es lo único que convierte estos datos en algo que se usa y no solo que se guarda
 
@@ -25,8 +26,9 @@ las pestañas y la exportación.
 
 ## Decisión
 
-**Una clase nueva, `personal`, con cuatro campos propios —`correo`, `telefono`, `direccion`,
-`nacimiento`— que comparte `nombreCompleto` con la identidad.**
+**Una clase nueva, `personal`, con `correo`, `telefono`, `nacimiento` y la dirección en sus nueve
+trozos —`destinatario`, `calle`, `edificio`, `piso`, `puerta`, `codigoPostal`, `ciudad`, `provincia`,
+`pais`—, que comparte `nombreCompleto` con la identidad.**
 
 Compartirlo no es ahorrar un campo: es el mismo dato, y buscar «Álvaro» tiene que encontrar el carné y
 la ficha personal de una vez.
@@ -77,13 +79,28 @@ Los dos únicos sitios donde se puede saber qué es:
 - **Meterlo en `identidad`.** Encaja el nombre y no encaja nada más: una identidad es un documento, y un
   correo no tiene número ni tipo de documento. Habría obligado a la misma cantidad de campos nuevos sin
   la claridad de una clase.
-- **Guardar la dirección en nueve campos** —calle, código postal, ciudad, provincia, país, destinatario,
-  edificio, piso, puerta—, que es como la da Dashlane. Es lo correcto el día que haya que rellenar un
-  formulario de compra campo a campo, y hoy son nueve campos en un formulario para escribir una cosa que
-  se lee de un vistazo. Se compone **en el orden del sobre** y se guarda como texto con saltos de línea.
-  Queda apuntado en [`../deuda.md`](../deuda.md).
+- ~~**Guardar la dirección compuesta**, en un solo campo de texto.~~ **Fue lo primero y duró unas horas.**
+  Se eligió por el formulario —nueve casillas para escribir algo que se lee de un vistazo— y se cambió el
+  mismo día, con el cliente, en cuanto se puso encima de la mesa lo que costaba: el día que Esfinge
+  rellene formularios de compra, sacar el código postal de un texto ya compuesto es análisis de texto
+  **sobre algo que venía separado y habíamos juntado nosotros**. Componer es de una línea; partir es
+  adivinar. Como todavía no había ni un dato guardado, cambiarlo no costó ninguna migración de verdad.
 - **No importarlo y que se teclee a mano.** Con dos filas es lo más barato de todo. Descartado por el
   cliente.
+
+### Se guarda por trozos y se lee compuesta
+
+En la ficha, la dirección sale escrita **en el orden del sobre** y con su «Copiar», porque una dirección
+se lee y se copia entera; nueve filas con su ojo y su botón serían un formulario dentro de una ficha. Ese
+orden **no es el de los campos**: por orden de campo saldría «Calle Mayor 1, España, Madrid, 28001», que
+es una lista. Y la provincia no se escribe cuando se llama igual que la ciudad, que en media España es lo
+normal.
+
+Eso deja **la misma composición escrita dos veces**, en Go y en la ventana, y conviene decir por qué no
+es lo mismo que duplicar el formato: las formas canónicas tienen que dar **los mismos bytes** o las dos
+bóvedas se pasan la misma entrada sin fin, y por eso las vigilan pruebas cruzadas. Esto es una frase para
+leer: si algún día se separan, lo que pasa es que se lee de otra forma. Mandarla por el puente sería un
+campo más en el formato que no guarda nada.
 
 ## Consecuencias
 
@@ -94,7 +111,14 @@ Los dos únicos sitios donde se puede saber qué es:
   de contenido está topada en 560 px, los cinco rótulos medían 527 y el sexto pide 160 más. Ver abajo.
 - **Todo cambio del formato se hace dos veces**, en Go y en `navegador/src/nucleo/`, como manda la
   [0040](0040-la-extension-cliente-de-la-cuenta.md).
-- **La exportación gana cuatro columnas** y sigue volviendo a entrar de una vez.
+- **La exportación gana doce columnas** y sigue volviendo a entrar de una vez.
+- **Y el formulario del dato personal es largo**: catorce campos en una columna. Es lo que cuesta guardar
+  por trozos, y es la mitad del cambio que se eligió a sabiendas.
+- **Lo que escribió la 2.30.0 se trae solo.** Un campo que desaparece de la estructura no da error: cae en
+  `Extra`, se conserva y no se ve nunca más, que es justo la pérdida callada que `Extra` existe para no
+  tener —ahí va lo que escribe una versión **más nueva**—. Así que la dirección compuesta entra entera en
+  `calle`, con sus saltos de línea, donde se ve y se reparte a mano. Partirla sería adivinar. **Es una
+  migración de ida**: la 2.30.0 que vuelva a leer esa bóveda verá la dirección vacía.
 
 ## Verificación
 
@@ -130,6 +154,9 @@ Los dos únicos sitios donde se puede saber qué es:
   convive con el carné de las identidades— se han mirado en capturas del navegador, no en la ventana de
   verdad con la tipografía del sistema.
 - **No se ha importado el fichero del cliente en su Esfinge**, solo en las pruebas.
+- **La migración de la 2.30.0 no se ha ejercitado sobre una bóveda de verdad**, solo sobre el JSON que
+  aquella versión escribía. No había ninguna: se publicó por la tarde y nadie llegó a guardar una
+  dirección.
 - **Las clases que Dashlane puede sacar y él no tiene guardadas** —dirección, teléfono, y lo que salga de
   `job_title` y `url`— se han escrito a partir de los nombres de las 24 columnas. La dirección se
   ejercita con una fila inventada, así que **el orden del sobre está comprobado contra lo que creemos que

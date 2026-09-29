@@ -2199,12 +2199,28 @@ de ahí.
   acertaba por doce píxeles. Ahora el rótulo se queda en la activa, y hay prueba que lo compara **con cada
   pestaña activa**.
 
+**Lo que vino después de publicar la 2.30.0**
+
+- **La publicación se cayó a la primera, y por una prueba mía.** La de capturas quedó escrita **debajo del
+  cierre del `describe`**, así que el `test.skip` no la cubría: corría siempre y **la primera de toda la
+  tanda** —`capturas.spec.ts` va antes por orden alfabético—, creando la bóveda de las pruebas con su
+  propia contraseña maestra. Como Go la deja abierta entre pruebas, cuarenta y cinco no se enteraban y
+  caían solo las dos que vuelven a teclearla. Lo resolvió leer la red del rastro de Playwright; antes de
+  eso, dos diagnósticos míos fueron falsos —bisecté devolviendo `frontend/src/` y di por descartada la
+  interfaz sin tocar `frontend/e2e/`, y leí una captura vieja como si fuera del fallo—.
+- **Y de ahí salió un arreglo de verdad**: los cuatro sitios que comprueban la contraseña maestra abriendo
+  la bóveda contestaban «esa no es la contraseña» pasara lo que pasara en `Abrir`. Ahora la ventana sigue
+  viendo lo mismo —decírselo a quien prueba contraseñas es ayudarle— y **lo que no es la llave se
+  registra**. Las contraseñas fallidas de verdad no.
+- **La dirección pasó a guardarse desagregada**, en sus nueve trozos, a petición del cliente después de
+  contarle lo que costaba dejarla compuesta. Se compone para leerla, en el orden del sobre. Lo que
+  escribió la 2.30.0 se trae solo a `calle`, en los dos lados, con prueba cruzada que lo vigila.
+
 **Qué queda abierto**
 
-- **No se ha visto en un Mac**: el glifo nuevo al lado del carné de las identidades, y las pestañas sin
-  rótulo, que es un cambio visible en una pantalla ya aprobada. En [`deuda.md`](deuda.md).
-- **La dirección se guarda como texto y no en sus nueve trozos.** Aceptado a sabiendas; el día que Esfinge
-  rellene formularios de compra hará falta campo a campo. En [`deuda.md`](deuda.md).
+- **No se ha visto en un Mac**: el glifo nuevo al lado del carné de las identidades, las pestañas sin
+  rótulo —un cambio visible en una pantalla ya aprobada— y el formulario del dato personal, que son
+  catorce campos en una columna. En [`deuda.md`](deuda.md).
 
 ---
 

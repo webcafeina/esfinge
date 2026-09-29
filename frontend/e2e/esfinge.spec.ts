@@ -1389,6 +1389,50 @@ test("las clases de la bóveda van sin rótulo, y los gestores con él", async (
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+// **La dirección se guarda en nueve campos y se lee compuesta, en el orden del
+// sobre.**
+//
+// La composición está escrita dos veces —`Entrada.Direccion()` en Go y `direccionDe`
+// en la ventana— porque es una frase para leer y no un formato que tenga que dar los
+// mismos bytes. Esto es lo que ata la de la ventana a lo que se espera: el orden de
+// los campos no es el del sobre, y por orden de campo saldría «Calle Mayor 1,
+// España, Madrid, 28001», que es una lista y no una dirección.
+test("un dato personal guarda la dirección por trozos y la enseña compuesta", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const sello = Date.now();
+  await accion(page, "Nueva").click();
+  await page.getByRole("tab", { name: "Dato personal", exact: true }).click();
+  await page.locator("#boveda-titulo").fill(`Casa ${sello}`);
+  for (const [id, valor] of [
+    ["destinatario", "Álvaro Cabezas"],
+    ["calle", "Calle Mayor 1"],
+    ["edificio", "Portal B"],
+    ["piso", "3"],
+    ["puerta", "B"],
+    ["codigo-postal", "28001"],
+    ["ciudad", "Madrid"],
+    // **La misma que la ciudad a propósito**: así no se repite.
+    ["provincia", "Madrid"],
+    ["pais", "España"],
+  ]) {
+    await page.locator(`#boveda-${id}`).fill(valor);
+  }
+  await accion(page, "Guardar").click();
+
+  await page.getByRole("button", { name: `Casa ${sello}`, exact: false }).first().click();
+  const direccion = page.locator(".grupo > div", { hasText: "Dirección" }).first();
+  await direccion.getByRole("button", { name: "Ver", exact: true }).click();
+  // La provincia no sale: se llama igual que la ciudad.
+  await expect(direccion.locator(".dato")).toHaveText(
+    ["Álvaro Cabezas", "Calle Mayor 1, Portal B", "3, B", "28001 Madrid", "España"].join("\n"),
+  );
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 // **Las seis clases caben en su barra**, que es lo que ninguna aserción miraba.
 //
 // Se añadió la de datos personales, todo siguió en verde y en la captura el

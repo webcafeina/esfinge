@@ -398,8 +398,8 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	// El dato personal (ADR 0047): su contenido son cuatro campos y **ninguno es
 	// la contraseña**, que es justo por lo que se dejaron fuera la primera vez.
 	b.Poner(Entrada{Titulo: "Casa", Tipo: TipoPersonal, NombreCompleto: "Yo Mismo",
-		Correo: "yo@ejemplo.com", Telefono: "600111222",
-		Direccion: "Calle Mayor 1\n28001 Madrid", Nacimiento: "1980-01-01"})
+		Correo: "yo@ejemplo.com", Telefono: "600111222", Nacimiento: "1980-01-01",
+		Calle: "Calle Mayor 1", CodigoPostal: "28001", Ciudad: "Madrid", Pais: "España"})
 
 	for _, e := range b.Buscar("") {
 		if err := b.Borrar(e.ID); err != nil {
@@ -415,7 +415,7 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	// La lista de la papelera es una lista más: **sin secretos**.
 	for _, e := range b.Papelera() {
 		if e.Secreto != "" || e.Notas != "" || e.Numero != "" || e.NumeroDocumento != "" ||
-			e.Correo != "" || e.Telefono != "" || e.Direccion != "" || e.Nacimiento != "" {
+			e.Correo != "" || e.Telefono != "" || e.Nacimiento != "" || e.TieneDireccion() {
 			t.Errorf("la papelera ha traído el secreto de «%s»", e.Titulo)
 		}
 		// **El nombre sí viaja**, y es deliberado: `tituloDeReserva` saca el título
@@ -446,12 +446,12 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	quiero := map[string]string{
 		"Fuera": "s3cr3t0", "Nota": "la combinación es 4242",
 		"Tarjeta": "4111111111111111", "Documento": "12345678Z",
-		"Casa": "yo@ejemplo.com600111222Calle Mayor 1\n28001 Madrid1980-01-01",
+		"Casa": "yo@ejemplo.com6001112221980-01-01Calle Mayor 1\n28001 Madrid\nEspaña",
 	}
 	for _, l := range b.Buscar("") {
 		e, _ := b.Ver(l.ID)
 		suyo := e.Secreto + e.Notas + e.Numero + e.NumeroDocumento +
-			e.Correo + e.Telefono + e.Direccion + e.Nacimiento
+			e.Correo + e.Telefono + e.Nacimiento + e.Direccion()
 		if suyo != quiero[e.Titulo] {
 			t.Errorf("«%s» ha vuelto con %q y se borró con %q",
 				e.Titulo, suyo, quiero[e.Titulo])
