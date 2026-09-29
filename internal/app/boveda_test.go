@@ -285,3 +285,60 @@ func TestUnFalloQueNoEsLaContrasenaSeRegistra(t *testing.T) {
 		t.Errorf("ha borrado la bóveda sin poder comprobar la contraseña: %v", err)
 	}
 }
+
+// **Sin llaves de acceso no se pregunta dónde guardar, y no se escribe nada.**
+//
+// La 2.32.0 salió al revés: `ExportarLlaves` abría el diálogo del sistema y
+// **después** miraba si había algo que exportar, así que con la bóveda sin llaves
+// —que es como sale de fábrica— preguntaba dónde guardar un fichero que nunca iba
+// a existir. Lo vio el cliente en su Mac la misma tarde.
+//
+// Lo que se comprueba son las dos mitades: que **no se llega a preguntar** —eso es
+// lo que se vio— y que **no queda ningún fichero**, que es lo que de verdad
+// importaría si alguien llega a elegir un sitio.
+func TestSinLlavesNoSePreguntaDondeGuardar(t *testing.T) {
+	a, s, _ := conReloj(t)
+	if _, err := a.CrearBoveda("la contraseña de verdad"); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.GuardarEnBoveda(boveda.Entrada{Titulo: "Banco", Secreto: "s3cr3t0"}); err != nil {
+		t.Fatal(err)
+	}
+
+	destino := filepath.Join(t.TempDir(), "llaves.esf")
+	s.guardaEn = destino
+	s.vecesGuardar = 0
+
+	if _, err := a.ExportarLlaves("una clave cualquiera"); err == nil {
+		t.Fatal("ha exportado llaves que no existen")
+	}
+	// **Se cuentan las veces, no el argumento.** Mirando `desdeGuardar` esta prueba
+	// pasaba con el fallo dentro: viene vacío hasta que alguien recuerda una
+	// carpeta, así que «no me han llamado» y «me han llamado» se ven igual.
+	if s.vecesGuardar != 0 {
+		t.Error("ha abierto el diálogo de guardar antes de saber si había algo que guardar")
+	}
+	if _, err := os.Stat(destino); err == nil {
+		t.Error("ha dejado un fichero detrás")
+	}
+
+	// Y con una llave dentro sí pregunta y sí escribe, que es la otra mitad: es
+	// fácil arreglar esto cortando por lo sano y dejando la exportación muerta.
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Titulo: "GitHub", Tipo: boveda.TipoLlave, RPID: "github.com",
+		IDCredencial: "Y3JlZC0x", NombreVisible: "yo@ejemplo.com",
+		Algoritmo: -7, ClavePrivada: "cHJpdmFkYQ",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	donde, err := a.ExportarLlaves("una clave cualquiera")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if donde != destino {
+		t.Errorf("dice que la ha dejado en %q", donde)
+	}
+	if _, err := os.Stat(destino); err != nil {
+		t.Errorf("no ha escrito el fichero: %v", err)
+	}
+}

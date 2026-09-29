@@ -112,6 +112,13 @@ el único número del formato—. `algoritmo` es el segundo número de la histor
 encima de la revisión: la misma bóveda fundía distinto en los dos lados. Estaba ahí desde el principio,
 esperando a que hubiera un segundo número.
 
+**Y un fallo que se vio en el Mac con la 2.32.0 ya publicada:** exportar abría el diálogo del sistema y
+descubría **al ir a escribir** que no había ninguna llave, así que pedía una clave y un sitio para un
+fichero que no iba a existir — con la bóveda recién creada, que es el caso más probable de todos. Arreglado
+en la 2.32.1: se mira antes de preguntar, y la ventana lo dice de entrada. La prueba que lo cubre **pasó en
+verde al escribirla**, porque el doble del sistema apuntaba el argumento del diálogo y no si se le había
+llamado; ahora cuenta las veces.
+
 **Lo que no se ha comprobado y hay que decir**
 
 - **No se ha visto en un Mac**: ni el glifo al lado del de credencial, ni la ficha de una llave, ni la

@@ -38,6 +38,10 @@ type EstadoBoveda struct {
 	// **cada vez que dibuja la lista**, para saber si enseñar el botón de la
 	// papelera, y pedirlo aparte sería un viaje más por el puente en cada tecla.
 	EnLaPapelera int `json:"enLaPapelera"`
+	// Llaves son las llaves de acceso vivas (ADR 0048). Va aquí por la misma razón
+	// que la papelera: la ventana tiene que poder **decir de entrada** que no hay
+	// ninguna que exportar, en vez de pedir una clave y descubrirlo al final.
+	Llaves int `json:"llaves"`
 	// MinutosParaBloquear es lo que dice Ajustes, para poder enseñarlo.
 	MinutosParaBloquear int `json:"minutosParaBloquear"`
 }
@@ -89,6 +93,7 @@ func (a *App) EstadoBoveda() EstadoBoveda {
 		e.Cuantas = b.Cuantas()
 		e.SoloLectura = b.SoloLectura()
 		e.EnLaPapelera = b.EnLaPapelera()
+		e.Llaves = b.CuantasLlaves()
 	}
 	return e
 }
@@ -510,6 +515,11 @@ func (a *App) ExportarLlaves(clave string) (string, error) {
 	}
 	if strings.TrimSpace(clave) == "" {
 		return "", errors.New("Hace falta una clave para cifrar el fichero")
+	}
+	// **Antes de preguntar dónde**, que es el orden que faltaba: preguntar dónde
+	// guardar algo que no existe es pedirle a alguien que decida sobre nada.
+	if b.CuantasLlaves() == 0 {
+		return "", errors.New("No hay ninguna llave de acceso que exportar")
 	}
 	destino, err := a.sistema.ElegirDondeGuardar("Exportar las llaves de acceso",
 		"esfinge-llaves.esf", a.ajustes.CarpetaDeGuardar())

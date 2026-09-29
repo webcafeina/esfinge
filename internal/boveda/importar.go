@@ -777,6 +777,25 @@ func huellaDeCuenta(e Entrada) string {
 	return huella
 }
 
+// CuantasLlaves dice cuántas llaves de acceso vivas hay.
+//
+// Existe para poder **preguntar antes de preguntar**: sin esto, exportar abría el
+// diálogo del sistema y descubría que no había nada al ir a escribir, así que
+// pedía un sitio para un fichero que no iba a existir. Lo vio el cliente con la
+// 2.32.0 recién instalada, que es justo el caso más probable: una bóveda sin
+// llaves todavía.
+func (b *Boveda) CuantasLlaves() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	n := 0
+	for _, e := range b.cont.Entradas {
+		if !e.Papelera && e.Tipo == TipoLlave {
+			n++
+		}
+	}
+	return n
+}
+
 // ExportarLlaves saca las llaves de acceso **cifradas**, y nunca en claro.
 //
 // Es la excepción a «una bóveda de la que no se puede salir es una trampa», y

@@ -1264,10 +1264,13 @@ function Dentro({
           ` · se cierra sola tras ${estado.minutosParaBloquear} minutos sin tocar nada`}
       </p>
 
-      <Traer alTraer={async () => {
-        await buscar(q);
-        alCambiar();
-      }} />
+      <Traer
+        llaves={estado.llaves}
+        alTraer={async () => {
+          await buscar(q);
+          alCambiar();
+        }}
+      />
 
       <Seguridad alRotar={alRotar} alBorrarse={alCambiar} />
     </div>
@@ -2141,7 +2144,7 @@ const GESTORES: { nombre: string; icono: string }[] = [
   { nombre: "Chrome", icono: "chrome" },
 ];
 
-function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
+function Traer({ llaves, alTraer }: { llaves: number; alTraer: () => Promise<void> }) {
   const [deDonde, setDeDonde] = useState(GESTORES[0].nombre);
   const [resumen, setResumen] = useState<ResumenImportacion | null>(null);
   const [borrado, setBorrado] = useState(false);
@@ -2244,11 +2247,26 @@ function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
           cifrada, y con una clave que **no es la maestra**: quien guarda esta copia
           la guarda en otro sitio, y reutilizar la maestra haría que perder este
           fichero fuera perder la bóveda. */}
+      {/* **Se dice antes, no al final.** La 2.32.0 pedía la clave y abría el
+          diálogo del sistema para descubrir al escribir que no había ninguna llave
+          —que es como sale la bóveda de fábrica—. Preguntar dónde guardar algo que
+          no existe es pedirle a alguien que decida sobre nada. */}
       <div>
-        <button className="discreto" onClick={() => setPidiendoLlaves(!pidiendoLlaves)}>
+        <button
+          className="discreto"
+          disabled={llaves === 0}
+          onClick={() => setPidiendoLlaves(!pidiendoLlaves)}
+        >
           {pidiendoLlaves ? "Dejarlo" : "Exportar las llaves de acceso…"}
         </button>
       </div>
+
+      {llaves === 0 && (
+        <p className="nota">
+          Todavía no hay ninguna llave de acceso. Las guarda el navegador cuando un sitio te la
+          pide; no se pueden crear a mano.
+        </p>
+      )}
 
       {pidiendoLlaves && (
         <>

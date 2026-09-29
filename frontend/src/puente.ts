@@ -339,6 +339,8 @@ export type EstadoBoveda = {
   minutosParaBloquear: number;
   /** Cuántas entradas hay en la papelera, para saber si enseñar el botón. */
   enLaPapelera: number;
+  /** Las llaves de acceso vivas (ADR 0048). */
+  llaves: number;
 };
 
 /** Lo que se cuenta después de traer un CSV de otro gestor. */

@@ -25,6 +25,11 @@ type sistemaFalso struct {
 
 	desdeAbrir   string
 	desdeGuardar string
+	// **Cuántas veces se ha preguntado, no solo con qué.** `desdeGuardar` apunta el
+	// argumento, y el argumento está vacío hasta que alguien recuerda una carpeta:
+	// una prueba que mire solo eso **no distingue «no me han llamado» de «me han
+	// llamado sin carpeta»**. Pasó con la exportación de llaves de acceso.
+	vecesGuardar int
 
 	portapapeles string
 	// leerFalla simula un escritorio que no deja leer el portapapeles: ahí lo
@@ -73,6 +78,7 @@ func (s *sistemaFalso) ElegirFicheros(_, desde string, _ bool, _ Filtro) ([]stri
 func (s *sistemaFalso) ElegirDondeGuardar(_, _, desde string) (string, error) {
 	s.mu.Lock()
 	s.desdeGuardar = desde
+	s.vecesGuardar++
 	s.mu.Unlock()
 	return s.guardaEn, nil
 }

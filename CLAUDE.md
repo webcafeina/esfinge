@@ -296,6 +296,18 @@ no le parece un error, así que devuelve los bytes anteriores como si nada y la 
 Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
 no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
 
+**Un doble que apunta el argumento no dice si le han llamado.** `sistemaFalso.ElegirDondeGuardar`
+guardaba el `desde` que recibía, y ese `desde` **viene vacío** hasta que alguien recuerda una carpeta: una
+prueba que comprobara `desdeGuardar == ""` no distingue «no me han llamado» de «me han llamado sin
+carpeta», y pasa en verde con el fallo dentro. Pasó al arreglar la exportación de llaves de acceso. Ahora el
+doble **cuenta las veces**, y eso es lo que se mira.
+
+**Y el fallo que lo destapó, que es de orden y no de código: preguntar antes de preguntar.** `ExportarLlaves`
+abría el diálogo del sistema y descubría **al ir a escribir** que no había ninguna llave —que es como sale
+la bóveda de fábrica—, así que pedía una clave y un sitio para un fichero que no iba a existir. Lo vio el
+cliente en la 2.32.0 recién instalada. La regla: **lo que hace falta para decidir se mira antes de pedirle a
+alguien que decida**, y la ventana lo dice de entrada en vez de dejar que se descubra al final.
+
 **El espejo de TypeScript leía todos los números como si fueran `revision`.** El caso `"numero"` de
 `entradaDesde` tenía el nombre del campo escrito a fuego, de cuando la revisión era el único número del
 formato. `algoritmo`, de la llave de acceso, es **el segundo número de la historia del formato**, y se
