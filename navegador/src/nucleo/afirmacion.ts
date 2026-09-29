@@ -59,7 +59,11 @@ export function deBase64Url(s: string): Uint8Array {
  * exactamente qué bytes salen. Aquí el orden no es alfabético, es el del ejemplo
  * de la especificación, y los sitios que comparan cadenas —los hay— esperan ése.
  */
-export function datosDelCliente(tipo: "webauthn.get" | "webauthn.create", reto: Uint8Array, origen: string): Uint8Array {
+export function datosDelCliente(
+  tipo: "webauthn.get" | "webauthn.create",
+  reto: Uint8Array,
+  origen: string,
+): Uint8Array<ArrayBuffer> {
   const esc = (s: string) => JSON.stringify(s);
   return utf8.encode(
     `{"type":${esc(tipo)},"challenge":${esc(aBase64Url(reto))},"origin":${esc(origen)},"crossOrigin":false}`,
@@ -73,7 +77,7 @@ export function datosDelCliente(tipo: "webauthn.get" | "webauthn.create", reto: 
  * equipos no puede llevarlo coherente, así que se dice que no se lleva la cuenta,
  * que es lo que hacen todos los gestores y lo que ningún sitio rechaza.
  */
-export async function datosDelAutenticador(rpId: string, banderas: number): Promise<Uint8Array> {
+export async function datosDelAutenticador(rpId: string, banderas: number): Promise<Uint8Array<ArrayBuffer>> {
   const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", utf8.encode(rpId)));
   const out = new Uint8Array(37);
   out.set(hash, 0);
@@ -86,7 +90,7 @@ export async function datosDelAutenticador(rpId: string, banderas: number): Prom
 export async function loQueSeFirma(
   autenticador: Uint8Array,
   cliente: Uint8Array<ArrayBuffer>,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", cliente));
   const out = new Uint8Array(autenticador.length + hash.length);
   out.set(autenticador, 0);
