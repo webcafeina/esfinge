@@ -13,6 +13,12 @@ export default defineConfig(async () => {
 				miniflare: {
 					bindings: {
 						PIMIENTA: "pimienta-de-las-pruebas-0123456789abcdef",
+						// **Vacías, pero declaradas.** El `env` de las pruebas deja cambiar una
+						// propiedad que ya existe y **no deja añadir una nueva**, así que sin
+						// esto las pruebas de la rotación no podrían inventarse `PIMIENTA_2`.
+						// Vacío es «no está», que es lo que ve el Worker de verdad.
+						PIMIENTA_2: "",
+						PIMIENTA_3: "",
 						SECRETO_PRELOGIN: "secreto-de-las-pruebas-0123456789abcdef",
 						MIGRACIONES: migraciones,
 						// El motor local no implementa jurisdicciones (ver objeto() en indice.ts).

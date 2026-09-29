@@ -73,9 +73,15 @@ anterior deja de ser una fecha a ciegas y pasa a ser una decisión con el númer
 
 ## Consecuencias
 
-- **Rotar pasa a ser tres variables**: `PIMIENTA_ANTERIOR` ← la de ahora, `PIMIENTA` ← una nueva,
-  `PIMIENTA_VERSION` ← el número siguiente. Sin ninguna de las dos últimas, todo es la versión 1 y no
-  cambia nada — **lo desplegado hoy no se entera**.
+- **Rotar es añadir, nunca mover**: `PIMIENTA_<n>` ← una nueva y `PIMIENTA_VERSION` ← `n`. La versión 1
+  se queda en `PIMIENTA` para siempre. Sin `PIMIENTA_VERSION`, todo es la versión 1 y no cambia nada —
+  **lo desplegado no se entera**.
+
+  > **Esto se corrigió también al ir a rotar.** La primera versión decía «mueve el valor de `PIMIENTA` a
+  > `PIMIENTA_ANTERIOR`», y era **un paso que nadie puede ejecutar**: un secreto de Cloudflare se escribe
+  > y no se vuelve a leer. Con ello, `configuracionCompleta` pasó a mirar **la pimienta de la versión de
+  > ahora** y no la variable `PIMIENTA`: al terminar una rotación esa variable desaparece, y mirándola
+  > el servidor habría contestado `503` a todo justo al acabar bien.
 - **No se rota dos veces seguidas.** Mientras el contador no diga cero, rotar otra vez deja colgadas a
   las que faltaban. Está dicho en `src/pimienta.ts`, en el LÉEME y aquí, y el código **contesta nulo**
   en vez de aceptar a la tercera generación, que es lo que convertiría el descuido en silencio.

@@ -147,9 +147,16 @@ se hubiera llevado —la base y la pimienta vieja a la vez— le sigue sirviendo
    **Si sale más de una fila, no se rota**: hay cuentas que no han terminado la rotación anterior y
    rotar otra vez las deja fuera. Se espera o se les avisa.
 
-2. `PIMIENTA_ANTERIOR` ← el valor que tiene ahora `PIMIENTA`. Como *Secret*.
-3. `PIMIENTA` ← uno nuevo, `openssl rand -hex 32`.
-4. `PIMIENTA_VERSION` ← el número siguiente. Como *Secret*, para que sobreviva a un despliegue.
+2. **`PIMIENTA_<n>` ← uno nuevo**, `openssl rand -hex 32`, con `n` el número siguiente (`PIMIENTA_2` la
+   primera vez). Como *Secret*.
+3. `PIMIENTA_VERSION` ← ese mismo `n`. Como *Secret*, para que sobreviva a un despliegue.
+
+**Y ya está: no se toca ninguna de las que había.** La versión 1 vive en `PIMIENTA` para siempre.
+
+> **Rotar es añadir, nunca mover**, y no es una preferencia: **un secreto de Cloudflare se escribe y no
+> se puede volver a leer**. La primera versión de estas instrucciones decía «copia el valor de `PIMIENTA`
+> a `PIMIENTA_ANTERIOR`», y eso **nadie lo puede ejecutar** salvo que tuviera una copia guardada aparte.
+> Se descubrió al ir a rotar de verdad (2026-09-29).
 
 A partir de ahí **cada cuenta se reescribe sola en cuanto se usa**, por dos caminos: el verificador de
 acceso **al entrar**, y el de posesión con una llamada de cortesía (`PUT /v1/posesion`) que el cliente
@@ -158,8 +165,9 @@ hace **al arrancar la sincronización**. No hay nada que ejecutar.
 Eso significa que **una cuenta no termina de migrar hasta que su dueño abre Esfinge**: entrar no basta,
 porque al entrar la bóveda todavía no está abierta y la posesión sale de su clave.
 
-5. **Volver a la consulta del paso 1 de vez en cuando.** Cuando solo quede la versión nueva, se borra
-   `PIMIENTA_ANTERIOR` y la rotación ha terminado.
+5. **Volver a la consulta del paso 1 de vez en cuando.** Cuando solo quede la versión nueva, **se borra
+   la variable de la versión vieja** —`PIMIENTA` si se venía de la 1— y la rotación ha terminado. Borrar
+   sí se puede sin conocer su valor.
 
 Mientras tanto, una cuenta que se quedara **dos** generaciones por detrás contesta `409` con un mensaje
 que manda escribir a `info@webcafeina.com` — **no** «contraseña incorrecta», que sería mentirle a quien

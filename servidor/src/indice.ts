@@ -14,7 +14,7 @@
 import { cartas, carteroPara, DIAS_DE_INVITACION, modoDeCorreo, type Carta, type Envio } from "./correo";
 import { Cuenta, SESION_CADUCADA, cuentaDeReto, cuentaDeSesion } from "./cuenta";
 import { aBase64url, aHex, azar, codigoDeSeisCifras, deBase64url, hmac } from "./cripto";
-import { algunaPimientaDa, conLaPimienta, versionActual } from "./pimienta";
+import { algunaPimientaDa, conLaPimienta, pimientaDe, versionActual } from "./pimienta";
 import {
 	ARGON2_POR_DEFECTO,
 	type Env,
@@ -618,10 +618,14 @@ async function buzonDePruebas(env: Env, correo: string | null): Promise<Response
  */
 function configuracionCompleta(env: Env) {
 	const corto = (s: unknown) => typeof s !== "string" || s.length < 32;
+	// **La pimienta de ahora, no `PIMIENTA`.** Al terminar una rotación se borra la
+	// versión que ya no usa nadie, y ésa puede ser la 1: entonces `PIMIENTA` no existe
+	// y la que manda es `PIMIENTA_2`. Mirando la variable en vez de la versión, acabar
+	// una rotación dejaría el servidor contestando `503` a todo.
 	const falta =
-		corto(env.PIMIENTA) ||
+		corto(pimientaDe(env, versionActual(env))) ||
 		corto(env.SECRETO_PRELOGIN) ||
-		env.PIMIENTA === env.SECRETO_PRELOGIN ||
+		pimientaDe(env, versionActual(env)) === env.SECRETO_PRELOGIN ||
 		(modoDeCorreo(env) === "enviar" && !env.CARTERO_SECRETO);
 	if (falta) throw new Fallo(503, "El servidor no está configurado todavía.");
 }

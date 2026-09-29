@@ -15,13 +15,19 @@ export interface Env {
 	REGISTRO: string;
 	REMITENTE: string;
 	/**
-	 * La pimienta de ahora. **Se puede rotar** desde 2026-09-29 (`src/pimienta.ts`):
-	 * la anterior se deja en `PIMIENTA_ANTERIOR` y el número sube en
-	 * `PIMIENTA_VERSION`. Sin esos dos, esto es la versión 1 y no cambia nada.
+	 * **La pimienta de la versión 1, y no se toca nunca.** Rotar es **añadir**
+	 * `PIMIENTA_2`, `PIMIENTA_3`… y subir `PIMIENTA_VERSION` (`src/pimienta.ts`): un
+	 * secreto de Cloudflare no se puede volver a leer, así que mover valores de una
+	 * variable a otra no es un paso que nadie pueda dar. Sin `PIMIENTA_VERSION`, todo
+	 * es la versión 1 y no cambia nada.
+	 *
+	 * Al terminar una rotación se borra la de la versión que ya no queda en uso; si la
+	 * que se borra es ésta, `PIMIENTA` deja de existir y manda `PIMIENTA_2`.
 	 */
-	PIMIENTA: string;
-	PIMIENTA_ANTERIOR?: string;
+	PIMIENTA?: string;
 	PIMIENTA_VERSION?: string;
+	/** `PIMIENTA_2`, `PIMIENTA_3`… las de las rotaciones. Se leen por su nombre. */
+	[pimienta: `PIMIENTA_${number}`]: string | undefined;
 	SECRETO_PRELOGIN: string;
 	/** `enviar` **solo en el Worker de pruebas**, a mano, para ejercitar el envío. */
 	CORREO?: string;

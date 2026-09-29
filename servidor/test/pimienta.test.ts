@@ -12,24 +12,40 @@ import { ARGON2, azarB64, darDeAlta, nuevaIP, pedir, ultimoCodigo } from "./ayud
  * motor de pruebas. Si algún día deja de ser cierto, esta prueba se pone roja por sí
  * sola y no en silencio — la de «entra y migra» fallaría.
  */
-const original = { v: env.PIMIENTA_VERSION, a: env.PIMIENTA_ANTERIOR, p: env.PIMIENTA };
+const original = { version: env.PIMIENTA_VERSION ?? "", uno: env.PIMIENTA ?? "" };
+/** Las que estas pruebas inventan, para poder quitarlas todas al terminar. */
+const inventadas: string[] = [];
 
-/** El entorno es de solo lectura para el tipo, pero el objeto es el mismo. */
-const poner = (clave: string, valor: string | undefined) => {
+/**
+ * El entorno es de solo lectura para el tipo, pero el objeto es el mismo.
+ *
+ * **Se borra poniendo `""`, no `undefined`**: un binding puesto a `undefined` no
+ * desaparece, así que la versión se iba acumulando entre pruebas y las últimas pedían
+ * una `PIMIENTA_4` que no existe. Se vio midiendo qué veía cada lado, no leyendo.
+ */
+const poner = (clave: string, valor: string) => {
 	(env as unknown as Record<string, unknown>)[clave] = valor;
 };
 
+/**
+ * **Rotar es añadir**, nunca mover: un secreto de Cloudflare se escribe y no se puede
+ * volver a leer, así que «copia el valor de una variable a otra» no es un paso que
+ * nadie pueda dar. La versión 1 se queda en `PIMIENTA` para siempre.
+ */
 function rotar(nueva: string) {
-	const antes = env.PIMIENTA;
-	poner("PIMIENTA_ANTERIOR", antes);
-	poner("PIMIENTA", nueva);
-	poner("PIMIENTA_VERSION", String(versionActual(env) + 1));
+	const n = versionActual(env) + 1;
+	inventadas.push(`PIMIENTA_${n}`);
+	poner(`PIMIENTA_${n}`, nueva);
+	poner("PIMIENTA_VERSION", String(n));
 }
 
 afterEach(() => {
-	poner("PIMIENTA_VERSION", original.v);
-	poner("PIMIENTA_ANTERIOR", original.a);
-	poner("PIMIENTA", original.p);
+	poner("PIMIENTA_VERSION", original.version);
+	// **Y la 1 también**, que una de estas pruebas la borra para simular el final de una
+	// rotación. Sin esta línea, la siguiente prueba se encuentra el servidor sin
+	// configurar y falla en el alta, antes de llegar a lo suyo.
+	poner("PIMIENTA", original.uno);
+	for (const k of inventadas.splice(0)) poner(k, "");
 });
 
 describe("cómo se guarda la versión", () => {
@@ -115,8 +131,9 @@ describe("una cuenta que venía de la pimienta vieja", () => {
 
 		expect((await pedir("POST", "/v1/sesion", { ip: nuevaIP(), cuerpo: { correo: a.correo, claveDeAcceso: a.claveDeAcceso } })).status).toBe(202);
 
-		// Se tira la vieja, como se haría al terminar la rotación de verdad.
-		poner("PIMIENTA_ANTERIOR", "");
+		// Se tira la vieja, como se haría al terminar la rotación de verdad: se **borra
+		// la variable**, que sí se puede hacer sin conocer su valor.
+		poner("PIMIENTA", "");
 		expect((await pedir("POST", "/v1/sesion", { ip: nuevaIP(), cuerpo: { correo: a.correo, claveDeAcceso: a.claveDeAcceso } })).status).toBe(202);
 	});
 

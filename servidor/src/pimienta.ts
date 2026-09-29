@@ -38,21 +38,29 @@
 //
 // # Cómo se rota, y cuándo se puede terminar
 //
-//  1. `PIMIENTA_ANTERIOR` ← el valor actual de `PIMIENTA`.
-//  2. `PIMIENTA` ← uno nuevo (`openssl rand -hex 32`).
-//  3. `PIMIENTA_VERSION` ← el número siguiente.
+//  1. `PIMIENTA_<n>` ← uno nuevo (`openssl rand -hex 32`), con `n` el número siguiente.
+//  2. `PIMIENTA_VERSION` ← ese mismo `n`.
+//
+// **Y ya está: no se toca ninguna de las que había.** La versión 1 vive en `PIMIENTA`
+// para siempre, y las siguientes en `PIMIENTA_2`, `PIMIENTA_3`… Rotar es **añadir**.
+//
+// La primera versión de esto decía «mueve el valor de `PIMIENTA` a `PIMIENTA_ANTERIOR`»,
+// y era **un paso que nadie puede ejecutar**: un secreto de Cloudflare se escribe y no
+// se vuelve a leer. Se descubrió al ir a rotar, no al escribirlo.
 //
 // A partir de ahí **cada cuenta migra sola en cuanto se usa**: al entrar migra su
 // verificador de acceso y en cualquier pasada de la sincronización —cada cinco
 // minutos con la aplicación abierta— el de posesión.
 //
-// Cuándo se puede borrar `PIMIENTA_ANTERIOR` **se mira, no se supone**: la tabla
+// Cuándo se puede borrar la anterior **se mira, no se supone**: la tabla
 // `cuentas` de D1 guarda la versión menor de cada cuenta, así que
 //
 //     SELECT pimienta, COUNT(*) FROM cuentas GROUP BY pimienta;
 //
 // dice cuántas quedan atrás. **Mientras ese número no sea cero, no se rota otra vez**
 // ni se borra la anterior: quien se quede dos generaciones por detrás queda fuera.
+//
+// Borrar la anterior sí se puede sin conocer su valor: es quitar la variable.
 import { aHex, hmac } from "./cripto";
 import type { Env } from "./protocolo";
 
@@ -73,12 +81,21 @@ export function versionActual(env: Env): number {
  */
 export function pimientaDe(env: Env, version: number): string | null {
 	const actual = versionActual(env);
-	if (version === actual) return env.PIMIENTA;
-	if (version === actual - 1) {
-		const anterior = (env.PIMIENTA_ANTERIOR ?? "").trim();
-		return anterior === "" ? null : anterior;
+	if (version !== actual && version !== actual - 1) return null;
+	// **La 1 es `PIMIENTA` y no se toca nunca**; de la 2 en adelante, `PIMIENTA_<n>`.
+	// Rotar es **añadir** una variable, no mover el valor de una a otra — y eso no es
+	// estética: **un secreto de Cloudflare no se puede volver a leer**, así que «copia
+	// el valor de aquí a allá» es un paso que nadie puede ejecutar salvo que tuviera
+	// una copia guardada aparte. Se descubrió al ir a rotar de verdad.
+	if (version === VERSION_INICIAL) {
+		// Sin recortar, a propósito: si `PIMIENTA` llevara un espacio, los verificadores
+		// de antes se calcularon **con él**, y quitarlo ahora los rompería todos.
+		return env.PIMIENTA ? env.PIMIENTA : null;
 	}
-	return null;
+	// Las nuevas sí se recortan: todavía no hay nada calculado con ellas, así que un
+	// espacio pegado al copiar se puede quitar sin romper nada.
+	const otra = ((env as unknown as Record<string, string | undefined>)[`PIMIENTA_${version}`] ?? "").trim();
+	return otra === "" ? null : otra;
 }
 
 /** `2:abc…` → la versión y el resumen. Sin prefijo, la versión 1. */
@@ -108,7 +125,9 @@ export function sellar(version: number, resumen: string): string {
  */
 export async function conLaPimienta(env: Env, version: number, datos: string): Promise<string | null> {
 	const p = pimientaDe(env, version);
-	const resultado = aHex(await hmac(p ?? env.PIMIENTA, datos));
+	// Cuando la versión ya no está se calcula igual, con la de ahora, y se tira: así una
+	// cuenta colgada no se distingue de una contraseña mala por lo que tarda en fallar.
+	const resultado = aHex(await hmac(p ?? pimientaDe(env, versionActual(env)) ?? "", datos));
 	return p === null ? null : resultado;
 }
 
