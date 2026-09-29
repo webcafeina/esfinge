@@ -525,6 +525,22 @@ Y de ahí una regla del control segmentado: **`compacto` no viene con `conIconos
 bóveda se quedan sin rótulo cuando la ventana se estrecha porque una llave o una tarjeta se adivinan;
 los gestores lo conservan siempre, porque cinco marcas ajenas sin su nombre no las reconoce nadie.
 
+**Un mensaje impreciso no es impreciso: señala a otro sitio.** Las cuatro pantallas que comprueban la
+contraseña maestra lo hacen abriendo la bóveda, y `Abrir` falla por más cosas que por la llave —un
+fichero cortado, una bóveda de una versión más nueva, un JSON que esta versión no sabe leer—. Las cuatro
+contestaban «esa no es la contraseña», y con la 2.30.0 eso mandó a buscar una tarde entera una contraseña
+equivocada que era la correcta. Ahora pasan por `noAbre`: **la ventana sigue viendo siempre lo mismo**
+—decirle a quien prueba contraseñas en qué ha fallado es ayudarle a acertar— y **lo que no es la llave se
+registra**, que es donde puede mirarlo quien arregla. Las contraseñas fallidas de verdad **no** se
+registran: un gestor de contraseñas con el registro lleno de intentos es justo lo que no hay que guardar.
+
+**Y un `test.skip` de un `describe` no cubre lo que se escriba debajo del cierre.** Una prueba de capturas
+escrita fuera del bloque corría siempre, y además **la primera de toda la tanda** —`capturas.spec.ts` va
+antes que `esfinge.spec.ts` por orden alfabético—: creaba la bóveda del 5173 con *su* contraseña maestra.
+Como Go deja la bóveda abierta entre pruebas, cuarenta y cinco no se enteraban y **solo caían las dos que
+vuelven a teclear la maestra**. Tiró una publicación. Al añadir una prueba a un fichero, mirar dónde cierra
+el bloque, no dónde acaba el fichero.
+
 **En las pruebas, «Cifrar» es dos cosas.** Nombra la sección de la barra lateral y el botón que
 cifra, así que los selectores se acotan: `seccion()` mira dentro de `.lateral` y `accion()` dentro de
 `.contenido`. Sin acotar, Playwright encuentra dos y falla por modo estricto.

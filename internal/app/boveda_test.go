@@ -1,7 +1,9 @@
 package app
 
 import (
+	"bytes"
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -213,5 +215,73 @@ func TestNoSePuedeBorrarLoQueNoHay(t *testing.T) {
 	a, _, _ := conReloj(t)
 	if err := a.BorrarBoveda("lo que sea"); err == nil {
 		t.Error("dice que ha borrado una bóveda que no existe")
+	}
+}
+
+// **Un fallo que no es la contraseña deja escrito que no lo es.**
+//
+// `BorrarBoveda`, `SalirDeCuenta`, `CambiarMaestraDeBoveda` y entrar en la cuenta
+// comprueban la contraseña abriendo la bóveda, y `Abrir` falla por más cosas que
+// por la llave: un fichero cortado, una bóveda escrita por una versión más nueva,
+// un JSON que esta versión no sabe leer. Las cuatro contestaban «esa no es la
+// contraseña de esta bóveda», que **no es un mensaje impreciso sino uno que señala
+// a otro sitio**: con la 2.30.0 se buscó una tarde una contraseña equivocada que
+// era la correcta.
+//
+// Lo que se comprueba aquí es lo que no puede cambiar —la ventana sigue viendo
+// siempre lo mismo, porque decirle a quien prueba contraseñas en qué ha fallado es
+// ayudarle— y lo que sí: que el motivo de verdad quede registrado.
+func TestUnFalloQueNoEsLaContrasenaSeRegistra(t *testing.T) {
+	a, _, _ := conReloj(t)
+	if _, err := a.CrearBoveda("la contraseña de verdad"); err != nil {
+		t.Fatal(err)
+	}
+	ruta := rutaBoveda()
+
+	dicho := func(f func() error) (string, string) {
+		t.Helper()
+		var registro bytes.Buffer
+		antes := log.Writer()
+		log.SetOutput(&registro)
+		defer log.SetOutput(antes)
+		err := f()
+		if err == nil {
+			t.Fatal("no ha fallado, y tenía que fallar")
+		}
+		return err.Error(), registro.String()
+	}
+
+	// 1. La contraseña, de verdad, equivocada: **no se registra nada**. Si no, el
+	//    registro se llena de intentos fallidos, que es exactamente lo que no
+	//    interesa guardar de un gestor de contraseñas.
+	visto, apuntado := dicho(func() error { return a.BorrarBoveda("la que no es") })
+	if visto != "Esa no es la contraseña de esta bóveda" {
+		t.Errorf("la ventana ve %q", visto)
+	}
+	if apuntado != "" {
+		t.Errorf("una contraseña fallida ha dejado rastro: %q", apuntado)
+	}
+
+	// 2. Y ahora el fichero, roto por dentro: lo que ve la ventana **no cambia** y
+	//    el motivo sí se apunta.
+	roto, err := os.ReadFile(ruta)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(ruta, roto[:len(roto)/2], 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	visto, apuntado = dicho(func() error { return a.BorrarBoveda("la contraseña de verdad") })
+	if visto != "Esa no es la contraseña de esta bóveda" {
+		t.Errorf("la ventana ve %q, y tiene que ver lo mismo que con una contraseña mala", visto)
+	}
+	if !strings.Contains(apuntado, "borrar la bóveda") || !strings.Contains(apuntado, "no es por la contraseña") {
+		t.Errorf("el motivo no ha quedado escrito: %q", apuntado)
+	}
+
+	// Y el fichero sigue ahí: un fallo al comprobar nunca borra.
+	if _, err := os.Stat(ruta); err != nil {
+		t.Errorf("ha borrado la bóveda sin poder comprobar la contraseña: %v", err)
 	}
 }

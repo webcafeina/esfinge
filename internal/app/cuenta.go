@@ -248,8 +248,8 @@ func (a *App) SalirDeCuenta(maestra string) error {
 		return errors.New("Este equipo no está en ninguna cuenta")
 	}
 	ruta := rutaBoveda()
-	if _, err := boveda.Abrir(ruta, maestra); err != nil {
-		return errors.New("Esa no es la contraseña de esta bóveda")
+	if err := comprobarLaMaestra(ruta, maestra, "salir de la cuenta"); err != nil {
+		return err
 	}
 	// Primero se sube lo que quede, para que no se pierda en el camino, y se cierra
 	// la sesión en el servidor: sin eso seguiría viva hasta caducar. Si no hay red,
@@ -362,7 +362,7 @@ func (a *App) TerminarRegistro(correo, codigo, maestra, nueva string) (string, e
 	if _, err := os.Stat(ruta); err == nil {
 		abierta, err := boveda.Abrir(ruta, maestra)
 		if err != nil {
-			return "", errors.New("La contraseña maestra de tu bóveda no es ésa")
+			return "", noAbre(err, "entrar en la cuenta", "La contraseña maestra de tu bóveda no es ésa")
 		}
 		if nueva != "" {
 			if err := maestraSirveParaCuenta(nueva); err != nil {

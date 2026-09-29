@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -319,7 +320,7 @@ func (a *App) CambiarMaestraDeBoveda(vieja, nueva string) error {
 	}
 
 	if _, err := boveda.Abrir(rutaBoveda(), vieja); err != nil {
-		return errors.New("La contraseña de ahora no es ésa")
+		return noAbre(err, "cambiar la contraseña maestra", "La contraseña de ahora no es ésa")
 	}
 	a.Actividad()
 	// Con cuenta, la contraseña es también la de la cuenta: cambia en el servidor y
@@ -346,13 +347,42 @@ func (a *App) CambiarMaestraDeBoveda(vieja, nueva string) error {
 // Se borran los dos ficheros: el de la bóveda y el `.anterior` con la generación
 // previa, que existe justo para sobrevivir a un desastre y aquí sería un desastre
 // a medias. Y los temporales que hubiera, que llevan una copia entera dentro.
+// noAbre traduce a la ventana un fallo al abrir la bóveda para comprobar una
+// contraseña, **y deja escrito el porqué cuando no es la contraseña**.
+//
+// La respuesta es siempre la misma y tiene que serlo: quien pregunta no puede
+// hacer nada con el motivo, y decirle a quien prueba contraseñas en qué se ha
+// equivocado es ayudarle a acertar. Pero `Abrir` falla por más cosas que por la
+// llave —un fichero cortado a la mitad, una bóveda escrita por una versión más
+// nueva, un JSON que esta versión no sabe leer— y **todas contestaban «esa no es
+// la contraseña»**.
+//
+// Eso no es un mensaje impreciso, es un mensaje que señala a otro sitio: con la
+// 2.30.0 costó una tarde buscar una contraseña equivocada que era correcta. Lo que
+// no es la llave se registra, que es donde puede mirarlo quien arregla y no quien
+// prueba.
+func noAbre(err error, donde, mensaje string) error {
+	if !errors.Is(err, boveda.ErrSinRanura) {
+		log.Printf("esfinge: al %s, la bóveda no se ha podido abrir y no es por la contraseña: %v", donde, err)
+	}
+	return errors.New(mensaje)
+}
+
+// comprobarLaMaestra abre la bóveda solo para saber si esa es su contraseña.
+func comprobarLaMaestra(ruta, maestra, donde string) error {
+	if _, err := boveda.Abrir(ruta, maestra); err != nil {
+		return noAbre(err, donde, "Esa no es la contraseña de esta bóveda")
+	}
+	return nil
+}
+
 func (a *App) BorrarBoveda(maestra string) error {
 	ruta := rutaBoveda()
 	if _, err := os.Stat(ruta); err != nil {
 		return errors.New("Aquí no hay ninguna bóveda que borrar")
 	}
-	if _, err := boveda.Abrir(ruta, maestra); err != nil {
-		return errors.New("Esa no es la contraseña de esta bóveda")
+	if err := comprobarLaMaestra(ruta, maestra, "borrar la bóveda"); err != nil {
+		return err
 	}
 
 	// Primero se cierra la que hubiera abierta: dejarla en memoria después de
