@@ -2216,11 +2216,15 @@ de ahí.
   contarle lo que costaba dejarla compuesta. Se compone para leerla, en el orden del sobre. Lo que
   escribió la 2.30.0 se trae solo a `calle`, en los dos lados, con prueba cruzada que lo vigila.
 
+- **Publicada la 2.31.0 y vista en su Mac**, el mismo día: «todo parece perfecto». Se dieron por buenas
+  las tres cosas que se habían marcado como lo que podía chirriar —las pestañas sin rótulo salvo la
+  activa, el glifo de la silueta al lado del carné y el formulario de catorce campos—, que es justo por
+  lo que se marcaron: se dicen para que las mire, no para que las descubra.
+
 **Qué queda abierto**
 
-- **No se ha visto en un Mac**: el glifo nuevo al lado del carné de las identidades, las pestañas sin
-  rótulo —un cambio visible en una pantalla ya aprobada— y el formulario del dato personal, que son
-  catorce campos en una columna. En [`deuda.md`](deuda.md).
+- **No consta que haya importado su `personalinfo.csv`**, solo que lo instalado se ve bien. Es lo único
+  de la clase nueva que sigue comprobado únicamente en pruebas. En [`deuda.md`](deuda.md).
 
 ---
 

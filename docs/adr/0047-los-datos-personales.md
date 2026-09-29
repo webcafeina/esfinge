@@ -1,7 +1,7 @@
 # ADR 0047 — Los datos personales, la quinta clase de entrada
 
 **Fecha:** 2026-09-29 · **Estado:** aceptada y escrita; **revisada el mismo día, en la 2.31.0** —la
-dirección se guarda desagregada y no compuesta— · **sin ver en un Mac** · Cierra la última fila de
+dirección se guarda desagregada y no compuesta— · **vista en su Mac con la 2.31.0** · Cierra la última fila de
 [`../deuda.md`](../deuda.md) que quedaba de Dashlane · **Revisar cuando** Esfinge rellene formularios de
 compra, que es lo único que convierte estos datos en algo que se usa y no solo que se guarda
 
@@ -150,10 +150,13 @@ campo más en el formato que no guarda nada.
 
 **Lo que no se ha comprobado y hay que decir**
 
-- **No se ha visto en un Mac.** Las pestañas sin rótulo y el glifo nuevo —una silueta de persona que
-  convive con el carné de las identidades— se han mirado en capturas del navegador, no en la ventana de
-  verdad con la tipografía del sistema.
-- **No se ha importado el fichero del cliente en su Esfinge**, solo en las pruebas.
+- ~~**No se ha visto en un Mac.**~~ **Visto el 2026-09-29** con la 2.31.0 instalada: las pestañas sin
+  rótulo salvo la activa, el glifo de la silueta al lado del carné de las identidades y el formulario de
+  catorce campos. Las tres se marcaron a propósito como lo que podía chirriar, y el cliente las dio por
+  buenas.
+- **No consta que se haya importado el fichero del cliente en su Esfinge**, solo en las pruebas. Es lo
+  único que queda de la lista, y se distingue del resto a propósito: dijo que lo instalado se veía bien,
+  no que hubiera pasado el CSV.
 - **La migración de la 2.30.0 no se ha ejercitado sobre una bóveda de verdad**, solo sobre el JSON que
   aquella versión escribía. No había ninguna: se publicó por la tarde y nadie llegó a guardar una
   dirección.

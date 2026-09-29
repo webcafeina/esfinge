@@ -1177,6 +1177,11 @@ lado del otro (2.15.0). Es la comprobación que cierra el asunto y que ninguna p
 hacer: los vectores del RFC dicen que el algoritmo está bien, **no** que la semilla que salió de
 Dashlane sea la que espera el servicio.
 
+Y **la clase de datos personales** (ADR 0047), vista con la 2.31.0: las pestañas de clases sin rótulo
+salvo la activa, el glifo de la silueta al lado del carné de las identidades y el formulario de catorce
+campos. Las tres se le señalaron antes de que las viera, que es la diferencia entre que las mire y que
+las descubra.
+
 Sin verificar todavía, y es lo único que queda en todo el proyecto: **cómo quedan las estructuras de
 Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono de los `.esf`, que en Windows lo
 pone el instalador y en Linux el `.deb`.
