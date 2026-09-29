@@ -1,7 +1,7 @@
 # ADR 0046 — Rotar la pimienta sin dejar a nadie fuera
 
-**Fecha:** 2026-09-29 · **Estado:** aceptada y escrita; **sin rotar todavía** —la pimienta de producción
-sigue siendo la 1— · **Salda una deuda vencida de la [0036](0036-el-servidor-de-cuentas.md)** ·
+**Fecha:** 2026-09-29 · **Estado:** aceptada, escrita y **rotada de verdad en el Worker de pruebas el
+mismo día**; producción sigue en la 1 y no hay motivo para moverla · **Salda una deuda vencida de la [0036](0036-el-servidor-de-cuentas.md)** ·
 **Revisar cuando** haya que rotar de verdad, que es la primera vez que esto se ejercita fuera de las
 pruebas
 
@@ -127,10 +127,27 @@ contador —que sin la cortesía se quedaba en 1 y parecía correcta—, la de l
 porque lo daba el Worker, no el objeto— y la del orden de comprobaciones, que D1 no podía ver porque
 guarda la **menor**. Una prueba en verde no dice que proteja algo.
 
+**Y rotado de verdad contra el Worker de pruebas desplegado**, con el cliente poniendo los secretos:
+
+- **Tras rotar, el servidor sigue sano** (`/v1/salud` en 200): si la pimienta nueva estuviera mal
+  puesta, `configuracionCompleta` daría `503` a todo en el acto.
+- **Una cuenta creada antes de rotar entra con su contraseña de siempre** (`202`), y una inventada sigue
+  dando `401`. Eso es lo que antes de esta ficha era imposible.
+- **La migración, en dos tiempos y vista una a una**: tras entrar, el contador de esa cuenta **sigue en
+  1** —migró el acceso, pero la menor es la posesión—; tras la llamada de cortesía con la posesión, pasa
+  a **2**. Las otras dos cuentas se quedan en 1, que es justo lo que impediría borrar la vieja.
+- **El caso feo, provocado a propósito**: rotando otra vez sin esperar, la cuenta que se queda dos
+  generaciones atrás recibe `409` con el mensaje que no habla de contraseñas — **y el mismo mensaje
+  acierte o no**, porque el servidor no puede saber si la contraseña era buena. Su contador no se mueve.
+- **Y la vuelta atrás**, que solo funcionó porque esas cuentas no habían migrado: devuelta la versión,
+  las dos entran (`202` y `202`).
+
 **Lo que no se ha comprobado, y hay que decirlo:**
 
-- **No se ha rotado nunca de verdad.** La pimienta de producción sigue siendo la 1, y lo primero que se
-  ejercita fuera de las pruebas será la primera rotación real.
-- **El contador no se ha visto llegar a cero** con cuentas reales, porque no ha habido rotación.
-- **Cuánto tarda una cuenta en migrar en la práctica** es una deducción del código —la sincronización
-  toca la posesión cada cinco minutos—, no una medida.
+- **Producción no se ha rotado**, ni hay motivo para hacerlo: nadie ha filtrado nada. La primera
+  rotación real de producción seguirá siendo la primera vez.
+- **El contador no se ha visto llegar a cero**: en pruebas quedaron dos cuentas en la 1 que no van a
+  volver nunca, así que esa rotación se queda a medias a propósito. **Terminar una rotación entera
+  —hasta borrar la vieja— no se ha hecho.**
+- **Cuánto tarda una cuenta real en migrar** sigue siendo una deducción: depende de cuándo su dueño abra
+  Esfinge, y eso no se ha medido.

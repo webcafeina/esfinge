@@ -2192,6 +2192,35 @@ de ahí.
 
 ---
 
+## 2026-09-29 (tarde) · La pimienta se puede rotar, y se rotó
+
+- **Se saldó la única deuda vencida del proyecto** ([ADR 0046](adr/0046-rotar-la-pimienta.md)): cambiar
+  `PIMIENTA` dejaba fuera a todas las cuentas, y la condición era escribirlo antes de abrir el registro
+  —que se abrió el 23 sin ello—.
+- **La versión va dentro de cada verificador**, porque son dos y no migran a la vez. El gancho que la
+  ADR 0036 dejó puesto, una marca por cuenta, **no servía**.
+- **Y tres errores de diseño míos los encontró el hacerlo, no el escribirlo**, los tres antes de tocar
+  nada irreversible:
+  1. «La posesión migra en cada pasada de la sincronización» era **falso** —solo se comprueba al cambiar
+     la maestra y al recuperar—, así que el contador no habría llegado a cero nunca.
+  2. Mandarla al entrar **tampoco valía**: sale de la clave de la bóveda y al entrar la bóveda no está
+     abierta. De ahí la llamada de cortesía, en el mismo sitio que `publicarLlaves`.
+  3. «`PIMIENTA_ANTERIOR` ← el valor actual de `PIMIENTA`» era **un paso imposible**: un secreto de
+     Cloudflare se escribe y no se vuelve a leer. Lo dijo el cliente al ir a ejecutarlo. Rotar pasó a ser
+     **añadir**, y con ello se destapó que `configuracionCompleta` habría dado `503` a todo justo al
+     terminar bien una rotación.
+- **Y seis pruebas hubo que escribirlas dos veces**, porque la primera pasaba con el fallo dentro: el
+  contador se quedaba en 1 y parecía correcto; la de la sesión daba `401` **porque lo daba el Worker y no
+  el objeto**; la del orden de comprobaciones no se veía en D1 porque guarda la menor. Todas salieron de
+  mutar.
+- **Rotado de verdad en el Worker de pruebas**, con el cliente poniendo los secretos: una cuenta vieja
+  entra, la migración en dos tiempos vista una a una, el caso feo provocado a propósito —`409` que no
+  habla de contraseñas, y el mismo mensaje acierte o no— y la vuelta atrás.
+- **Queda sin hacer**: terminar una rotación entera, o sea borrar la vieja. En pruebas quedaron dos
+  cuentas que no van a volver.
+
+---
+
 ## 2026-09-28 · El correo deja Resend, y Google no deja mandar desde Cloudflare
 
 - **Se planteó y se aprobó** dejar Resend por el relé de Google Workspace que la casa ya usa en Cronos

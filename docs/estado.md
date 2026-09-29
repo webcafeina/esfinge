@@ -18,8 +18,11 @@ también. Lo que queda es de uso, no de trabajo:
    recuperación, cambio de contraseña y borrado. Lo decidió así el cliente el 2026-09-29. Si algo falla
    ahí, **el sitio donde mirar es el registro de Caddy del cartero** —producción no enseña el porqué—:
    `docker exec webcafeina-local-caddy-1 sh -c 'cat /var/log/caddy/esfinge-cartero-access.log'`.
-2. **Lo abierto vive en [`deuda.md`](deuda.md)**, y lo primero de esa lista sigue siendo la `PIMIENTA`
-   que no se puede rotar, que está **vencida** desde que se abrió el registro.
+2. **Lo abierto vive en [`deuda.md`](deuda.md)**, y **ya no hay nada vencido**: la `PIMIENTA` rotable se
+   escribió y se rotó de verdad en pruebas el 2026-09-29 ([ADR 0046](adr/0046-rotar-la-pimienta.md)). Lo
+   que queda ahí son cosas de uso y de máquinas que no tenemos: las passkeys, Windows y GNOME de verdad,
+   la huella propia que solo se ve desde Compartir, el botón de borrar cuenta poco visible y el DMARC en
+   `p=none` con los informes yendo fuera de la casa.
 
 **Y dos cosas que conviene tener a mano si hay que tocar el correo:**
 
@@ -27,6 +30,10 @@ también. Lo que queda es de uso, no de trabajo:
   y **no está en git**.
 - `/v1/salud` del Worker de pruebas **dice por dónde manda el correo**, que es lo que evita tener que
   deducirlo. En producción ese campo no sale.
+- **Rotar la pimienta está escrito en [`../servidor/LÉEME.md`](../servidor/LÉEME.md)**, y el paso 1 —mirar
+  el contador— no es una recomendación: rotar dos veces seguidas deja fuera a quien no haya migrado. El
+  Worker de **pruebas** se quedó con una rotación a medias a propósito (`PIMIENTA_VERSION=2`, dos cuentas
+  en la 1): **no se borra `PIMIENTA` ahí**.
 
 <details>
 <summary>Lo anterior, del 2026-09-28</summary>
