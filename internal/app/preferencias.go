@@ -25,9 +25,6 @@ type Preferencias struct {
 	// UltimaComprobacion en RFC3339, como las entradas del historial: al otro
 	// lado del puente no existe time.Time.
 	UltimaComprobacion string `json:"ultimaComprobacion"`
-	// VersionVista es la última que se ofreció. Sirve para no repetir el mismo
-	// aviso en cada arranque cuando ya se dijo «ahora no».
-	VersionVista string `json:"versionVista"`
 	// CarpetaAbrir y CarpetaGuardar son las últimas que se usaron en cada
 	// diálogo. Van separadas porque son gestos distintos: se abre de donde están
 	// los ficheros y se guarda donde va el resultado.
@@ -219,7 +216,6 @@ func (a *Ajustes) Guardar(p Preferencias) error {
 	defer a.mu.Unlock()
 
 	p.UltimaComprobacion = a.p.UltimaComprobacion
-	p.VersionVista = a.p.VersionVista
 	p.CarpetaAbrir = a.p.CarpetaAbrir
 	p.CarpetaGuardar = a.p.CarpetaGuardar
 	a.p = fundir(a.p, p)
@@ -277,16 +273,20 @@ func (a *Ajustes) ReservarComprobacion(cada time.Duration) bool {
 	return true
 }
 
-// AnotarComprobacion deja constancia de que se acaba de mirar, y de qué versión
-// se vio.
-func (a *Ajustes) AnotarComprobacion(version string) {
+// AnotarComprobacion deja constancia de que se acaba de mirar.
+//
+// **Y solo eso.** Hubo aquí un `VersionVista` —«la última que se ofreció, para no
+// repetir el mismo aviso»— que se escribía, se conservaba, viajaba a la ventana y
+// **no la leía nadie**: un gancho para un comportamiento que nunca se implementó. Se
+// le preguntó al cliente en la auditoría del 2026-09-29 y eligió lo contrario: **la
+// banda de versión nueva tiene que reaparecer en cada comprobación**. Así que el
+// gancho sobra, y un campo que no se lee es peor que no tenerlo: parece que algo lo
+// decide.
+func (a *Ajustes) AnotarComprobacion() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	a.p.UltimaComprobacion = time.Now().Format(time.RFC3339)
-	if version != "" {
-		a.p.VersionVista = version
-	}
 	_ = a.guardar()
 }
 

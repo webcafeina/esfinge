@@ -116,10 +116,10 @@ func (a *App) mirarSiToca() {
 			// Un fallo de red no se le cuenta a nadie: no se ha pedido esto, es
 			// una cortesía. Se anota la fecha igual para no reintentar en bucle
 			// —con el reloj puesto, eso sería una petición cada hora—.
-			a.ajustes.AnotarComprobacion("")
+			a.ajustes.AnotarComprobacion()
 			return
 		}
-		a.ajustes.AnotarComprobacion(n.Version)
+		a.ajustes.AnotarComprobacion()
 		if !n.Hay {
 			return
 		}
@@ -140,7 +140,7 @@ func (a *App) ComprobarActualizacion() (Novedad, error) {
 	if err != nil {
 		return Novedad{}, fmt.Errorf("No se ha podido preguntar a GitHub: %w", err)
 	}
-	a.ajustes.AnotarComprobacion(n.Version)
+	a.ajustes.AnotarComprobacion()
 
 	a.act.mu.Lock()
 	a.act.encontrada = n

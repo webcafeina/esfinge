@@ -62,7 +62,7 @@ func TestNoSeSaleALaRedDosVecesElMismoDia(t *testing.T) {
 		t.Fatal("la primera vez siempre toca mirar")
 	}
 
-	a.AnotarComprobacion("2.1.0")
+	a.AnotarComprobacion()
 	if a.TocaMirar(24 * time.Hour) {
 		t.Error("se acaba de mirar y dice que toca otra vez")
 	}
@@ -90,7 +90,7 @@ func TestGuardarNoBorraLaFechaDeLaUltimaComprobacion(t *testing.T) {
 	enConfiguracionDePruebas(t)
 
 	a := AbrirAjustes()
-	a.AnotarComprobacion("2.1.0")
+	a.AnotarComprobacion()
 	antes := a.Ver().UltimaComprobacion
 
 	if err := a.Guardar(Preferencias{BuscarActualizaciones: true}); err != nil {

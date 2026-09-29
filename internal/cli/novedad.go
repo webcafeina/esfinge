@@ -63,11 +63,11 @@ func vigilar(version string) *vigilante {
 	go func() {
 		n, err := actualizacion.Nuevo(version).Mirar()
 		if err != nil {
-			ajus.AnotarComprobacion("")
+			ajus.AnotarComprobacion()
 			v.hecho <- actualizacion.Novedad{}
 			return
 		}
-		ajus.AnotarComprobacion(n.Version)
+		ajus.AnotarComprobacion()
 		v.hecho <- n
 	}()
 	return v

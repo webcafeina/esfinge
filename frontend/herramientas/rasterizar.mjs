@@ -55,7 +55,6 @@ const trabajos = [
     ]),
   ),
 
-  ["build/icono.svg", "frontend/public/icono-256.png", 256],
   ["build/icono.svg", "frontend/public/favicon.png", 64],
   ["build/icono.svg", "docs/imagenes/icono.png", 256],
 

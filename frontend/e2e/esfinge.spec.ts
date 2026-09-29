@@ -1024,59 +1024,42 @@ test("el canal con el navegador viene apagado y se enciende en Ajustes", async (
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
-test("la clave de recuperación abre la bóveda", async ({ page }) => {
+/**
+ * La lista de sitios donde no se ofrece guardar, en Ajustes.
+ *
+ * **El estado se siembra por `/api/_excluir`**, un extremo del servidor de desarrollo
+ * que no existe fuera de la etiqueta `dev`. Y no es un atajo: «Nunca en este sitio» se
+ * decide en la tarjeta de la página y llega por el canal de la extensión (ADR 0032),
+ * así que **desde la ventana solo se puede quitar, nunca poner**. La alternativa era
+ * exportar un método en `App` para comodidad de esta prueba, que es exactamente lo que
+ * la lista blanca del puente existe para impedir.
+ *
+ * Estaba en `docs/deuda.md` desde que se escribió la lista: «Go está probado; la lista
+ * de la ventana no la ejercita `make e2e`».
+ */
+test("la lista de sitios excluidos se ve y se puede quitar", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
   await conLaBovedaAbierta(page);
 
-  // Se genera una nueva en vez de usar la del principio, porque la del principio
-  // solo se ve si esta pasada fue la que creó la bóveda. Y de paso se comprueba
-  // lo que hace rotar: que la de antes deja de valer y sale otra.
-  await page.getByRole("button", { name: "Contraseña maestra y clave de recuperación" }).click();
-  await page.getByRole("button", { name: "Generar otra…" }).click();
+  const sitio = `no-ofrecer-${Date.now()}.ejemplo.com`;
+  const puesto = await page.request.post(`/api/_excluir?dominio=${sitio}`);
+  expect(puesto.ok(), await puesto.text()).toBe(true);
 
-  const clave = page.locator(".clave-recuperacion");
-  await expect(clave).toBeVisible({ timeout: 20_000 });
-  const recuperacion = (await clave.innerText()).trim();
+  await seccion(page, "Ajustes").click();
+  const fila = page.locator(".lista-papelera li", { hasText: sitio });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
 
-  await page.getByText("La he apuntado en un sitio seguro").click();
-  await accion(page, "Continuar").click();
+  await fila.getByRole("button", { name: "Quitar" }).click();
+  await expect(fila).toHaveCount(0);
 
-  await accion(page, "Cerrar la bóveda").click();
-  await expect(accion(page, "Abrir la bóveda")).toBeVisible();
-
-  // **Y con la bóveda cerrada, quien haya olvidado la maestra tiene dónde mirar.**
-  // Sin cuenta no hay asistente que recupere nada, así que lo único que puede hacer
-  // la ventana es decir que la clave de recuperación se escribe en ese mismo campo
-  // —que no se adivina— y qué pasa si tampoco se tiene (revisión de los textos).
-  await accion(page, "¿Has olvidado la contraseña maestra?").click();
-  const ayuda = page.locator(".contenido .nota", { hasText: "clave de recuperación" }).first();
-  await expect(ayuda).toBeVisible();
-  await expect(ayuda).toContainText("no hay forma de abrir esta bóveda");
-
-  await page.locator("#boveda-llave").fill(recuperacion);
-  await accion(page, "Abrir la bóveda").click();
-  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+  // Y no vuelve al recargar: se quitó de la bóveda, no de la pantalla.
+  await page.reload();
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Ajustes").click();
+  await expect(page.locator(".lista-papelera li", { hasText: sitio })).toHaveCount(0);
 
   expect(errores, errores.join(" | ")).toEqual([]);
-});
-
-test("una clave de recuperación con una errata se distingue de una que no abre", async ({ page }) => {
-  // Sin vigilar la consola: aquí se piden dos aperturas que tienen que fallar, y
-  // el navegador anota cada respuesta 400 como error suyo.
-  await page.goto("/");
-  await conLaBovedaAbierta(page);
-  await accion(page, "Cerrar la bóveda").click();
-
-  // La suma de control es la diferencia entre «te has equivocado al copiarla» y
-  // «has perdido la bóveda», y se ve antes de gastar medio segundo derivando.
-  await page.locator("#boveda-llave").fill("ESF-ABCD-EFGH-JKMN-PQRS-TVWX-YZ01-2345-6789");
-  await accion(page, "Abrir la bóveda").click();
-  await expect(page.locator(".error:visible")).toContainText("revísala");
-
-  await page.locator("#boveda-llave").fill("esta no es la contraseña");
-  await accion(page, "Abrir la bóveda").click();
-  await expect(page.locator(".error:visible")).toContainText("no abre esta bóveda");
 });
 
 /** Hace algo y espera a que el guardado de preferencias haya ido y vuelto. */

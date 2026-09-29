@@ -15,7 +15,7 @@ import { createServer } from "node:http";
 import { setDefaultResultOrder } from "node:dns";
 import nodemailer from "nodemailer";
 
-import { elSecretoCuadra, laDireccion, Rechazado, revisar } from "./relevo.js";
+import { elSecretoCuadra, laDireccion, Rechazado, revisar, sinDirecciones } from "./relevo.js";
 
 const pedir = (nombre: string): string => {
 	const v = process.env[nombre]?.trim();
@@ -90,7 +90,9 @@ const servidor = createServer(async (peticion, respuesta) => {
 		// El porqué va **al registro**, no a la respuesta: quien llama es el Worker y no
 		// puede hacer nada con él, y una respuesta de SMTP puede decir más de lo que
 		// hace falta contar. Pero callarlo del todo es lo que costó una tarde entera.
-		console.error(JSON.stringify({ nivel: "error", msg: "no se pudo entregar", porque: `${e}` }));
+		// **Sin la dirección**: un rechazo de SMTP puede traerla dentro, y esto se
+		// registra. Ver `sinDirecciones`.
+		console.error(JSON.stringify({ nivel: "error", msg: "no se pudo entregar", porque: sinDirecciones(`${e}`) }));
 		// **El cupo del día no es un fallo pasajero**, y decir «prueba en un momento»
 		// cuando la verdad es «mañana» es la mitad de la ADR 0041. Google lo dice con
 		// un 550 5.4.5, que nodemailer deja leer en `responseCode`.

@@ -95,7 +95,6 @@ export type Orden = {
 export type Preferencias = {
   buscarActualizaciones: boolean;
   ultimaComprobacion: string;
-  versionVista: string;
   /** Las últimas carpetas de cada diálogo. Las lleva Go; la interfaz no las toca. */
   carpetaAbrir: string;
   carpetaGuardar: string;

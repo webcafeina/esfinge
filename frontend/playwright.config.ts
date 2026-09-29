@@ -65,6 +65,29 @@ export default defineConfig({
       timeout: 120_000,
     },
 
+    // **Y una ventana suya para las pruebas de la clave de recuperación**
+    // (e2e/recuperacion.spec.ts). No es capricho: esas pruebas exigen la consola
+    // limpia y comparten bóveda con todas las demás del fichero grande, así que
+    // cualquier ruido de fondo de otra prueba —el goteo de iconos de unas entradas
+    // que creó la de al lado, una llamada al puente cortada por una navegación— las
+    // ponía rojas. **Tres veces en quince días**, siempre en verde al repetirlas
+    // solas. Con su propio Go y su propia carpeta de configuración, en esa bóveda no
+    // hay nada más que lo que ellas ponen (docs/deuda.md, 2026-09-29).
+    {
+      command: "go run -tags dev ../cmd/dev -direccion 127.0.0.1:34473 -api http://127.0.0.1:34444",
+      url: "http://127.0.0.1:34473/api/salud",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: { PATH: `${process.env.HOME}/.local/go/bin:${process.env.PATH}` },
+    },
+    {
+      command: "vite --port 5176 --host 127.0.0.1",
+      url: "http://127.0.0.1:5176",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: { ESFINGE_GO: "http://127.0.0.1:34473" },
+    },
+
     // **Y dos equipos con cuenta** (e2e/cuentas.spec.ts): el servidor de cuentas
     // de verdad en local, y dos ventanas, cada una con su Go y su carpeta de
     // configuración recién hecha. Es la tubería entera de la cuenta, de la ventana

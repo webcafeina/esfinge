@@ -149,6 +149,33 @@ func Servir(a *App, s *SistemaDeDesarrollo, direccion string) error {
 		_, _ = fmt.Fprintf(w, `{"diceQueNo":%t}`, dice)
 	})
 
+	// Siembra un sitio excluido en la bóveda abierta, para poder probar la lista de
+	// Ajustes.
+	//
+	// **Va aquí por lo mismo que `_llavero`, y merece decirse.** «Nunca en este
+	// sitio» se decide en la tarjeta de la página y llega por el canal de la
+	// extensión (ADR 0032): desde la ventana solo se puede **quitar**, nunca poner.
+	// Así que una prueba de `make e2e` no tenía forma de crear ese estado, y la lista
+	// se quedaba sin probar —estaba en `docs/deuda.md`—. La salida fácil habría sido
+	// exportar un `ExcluirSitio` en `App`, y eso es justo lo que la lista blanca del
+	// puente existe para impedir: sería una puerta nueva a la bóveda abierta **en el
+	// binario del cliente**, para comodidad de una prueba. Esto, en cambio, no existe
+	// fuera de la etiqueta `dev`.
+	mux.HandleFunc("/api/_excluir", func(w http.ResponseWriter, r *http.Request) {
+		b := a.boveda()
+		if b == nil {
+			http.Error(w, "La bóveda está cerrada", http.StatusConflict)
+			return
+		}
+		dominio := r.URL.Query().Get("dominio")
+		if err := b.Excluir(dominio); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"excluido":%q}`, dominio)
+	})
+
 	mux.HandleFunc("/api/eventos", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")

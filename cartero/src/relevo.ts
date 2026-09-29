@@ -119,3 +119,20 @@ export function elSecretoCuadra(dado: string, bueno: string): boolean {
 	for (let i = 0; i < b.length; i++) distintos |= (a[i] ?? 0) ^ (b[i] ?? 0);
 	return distintos === 0;
 }
+
+/**
+ * Tacha las direcciones de correo de un texto antes de registrarlo.
+ *
+ * El porqué: este servicio **no guarda nada**, y eso es lo que la política de
+ * privacidad dice de él. Pero un rechazo de SMTP puede traer la dirección dentro del
+ * mensaje de error —«recipient rejected: fulano@…»— y ese error **sí** se registra, o
+ * sea que Docker lo guarda. **Una lista de a quién le ha escrito Esfinge es justo lo
+ * que el resto del proyecto se esfuerza en no tener.**
+ *
+ * Se tacha el nombre y se deja el dominio: sirve igual para diagnosticar —«lo rechaza
+ * gmail.com»— y no dice a quién. Salió de contrastar el texto de la política con el
+ * código el 2026-09-29, no de escribirlo.
+ */
+export function sinDirecciones(texto: string): string {
+	return texto.replace(/[^\s<>@"',;:]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, "…@$1");
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cabecerasDe, elSecretoCuadra, laDireccion, Rechazado, revisar } from "../src/relevo.js";
+import { cabecerasDe, elSecretoCuadra, laDireccion, Rechazado, revisar, sinDirecciones } from "../src/relevo.js";
 
 const DE = "Esfinge <esfinge@webcafeina.com>";
 
@@ -108,5 +108,35 @@ describe("el secreto", () => {
 	it("no cuadra con el vacío", () => {
 		expect(elSecretoCuadra("", "")).toBe(false);
 		expect(elSecretoCuadra("lo que sea", "")).toBe(false);
+	});
+});
+
+describe("lo que se registra", () => {
+	/**
+	 * **La política de privacidad dice que este servicio no guarda nada**, y de los
+	 * mensajes es verdad. Pero un rechazo de SMTP puede traer la dirección dentro del
+	 * error, y el error sí se registra: Docker lo guarda. Se vio revisando el texto
+	 * contra el código el 2026-09-29, no escribiéndolo.
+	 */
+	it("un error de SMTP no deja la dirección en el registro", () => {
+		const e = "Error: 550 5.1.1 The email account that you tried to reach does not exist. quien@ejemplo.com";
+		const limpio = sinDirecciones(e);
+		expect(limpio).not.toContain("quien@ejemplo.com");
+		expect(limpio).not.toContain("quien");
+		expect(limpio, "el dominio se queda: sirve para diagnosticar y no dice a quién").toContain("ejemplo.com");
+		expect(limpio).toContain("550 5.1.1");
+	});
+
+	/**
+	 * **Lo que esto NO prueba, y se dice aquí:** que `cartero.ts` la llame. Estas
+	 * pruebas son de la función; quitar el `sinDirecciones` del `console.error` las deja
+	 * verdes igual —comprobado mutándolo—. Cerrarlo exige hacer inyectable el transporte
+	 * y montar una petición de verdad contra el manejador, y eso es rehacer el servicio.
+	 * Está apuntado en `docs/deuda.md`.
+	 */
+	it("tacha varias y no se come lo que no es una dirección", () => {
+		expect(sinDirecciones("a@b.com y c@d.org")).toBe("…@b.com y …@d.org");
+		expect(sinDirecciones("sin arrobas aquí")).toBe("sin arrobas aquí");
+		expect(sinDirecciones("550 5.7.1 rechazado")).toBe("550 5.7.1 rechazado");
 	});
 });
