@@ -175,12 +175,15 @@ se hubiera llevado —la base y la pimienta vieja a la vez— le sigue sirviendo
    > `PIMIENTA` a `PIMIENTA_ANTERIOR`», y eso **nadie lo puede ejecutar** salvo que tuviera una copia
    > guardada aparte. Se descubrió al ir a rotar de verdad (2026-09-29).
 
-5. **Abrir Esfinge en cada equipo** y dejar que sincronice. Cada cuenta se reescribe sola por dos
+5. **Entrar en la cuenta en cada equipo** —no basta con abrir Esfinge— y dejar que sincronice. Cada cuenta se reescribe sola por dos
    caminos: el verificador de acceso **al entrar**, y el de posesión con la llamada de cortesía
    (`PUT /v1/posesion`) que el cliente hace **al arrancar la sincronización**.
 
-   **Entrar no basta**: al entrar la bóveda todavía no está abierta y la posesión sale de su clave. Si
-   el contador no se mueve, es que nadie ha abierto la aplicación en ese equipo.
+   **Y hacen falta las dos cosas.** El de posesión migra al abrir la bóveda, pero el de acceso **solo
+   migra al entrar**, y un equipo con la sesión ya abierta no entra por sí solo: hay que salir de la
+   cuenta y volver a entrar. Mientras falte uno de los dos, el contador sigue diciendo el número viejo
+   —guarda la **menor**— y **no se puede distinguir** de que no haya pasado nada. Se vio rotando
+   producción el 2026-09-29.
 
 6. **Volver a la consulta del paso 1** de vez en cuando. Cuando solo quede la versión nueva, **se borra
    la variable de la versión vieja** —`PIMIENTA` si se venía de la 1— y la rotación ha terminado. Borrar

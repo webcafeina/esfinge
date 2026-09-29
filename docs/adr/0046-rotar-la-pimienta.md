@@ -1,7 +1,7 @@
 # ADR 0046 — Rotar la pimienta sin dejar a nadie fuera
 
-**Fecha:** 2026-09-29 · **Estado:** aceptada, escrita y **rotada de verdad en el Worker de pruebas el
-mismo día**; producción sigue en la 1 y no hay motivo para moverla · **Salda una deuda vencida de la [0036](0036-el-servidor-de-cuentas.md)** ·
+**Fecha:** 2026-09-29 · **Estado:** aceptada, escrita y **rotada de verdad en pruebas y en producción el
+mismo día**; producción está en la versión 2 con la rotación **terminada** · **Salda una deuda vencida de la [0036](0036-el-servidor-de-cuentas.md)** ·
 **Revisar cuando** haya que rotar de verdad, que es la primera vez que esto se ejercita fuera de las
 pruebas
 
@@ -160,13 +160,24 @@ guarda la **menor**. Una prueba en verde no dice que proteja algo.
   tabla de contadores**, que es contabilidad antiabuso del día y no datos. En producción el borrado de
   una cuenta se hace por su ruta, no así.
 
-**Lo que no se ha comprobado, y hay que decirlo:**
+**Y rotada en producción el mismo día, como simulacro**, con la cuenta y los dos Mac del cliente:
 
-- **Producción no se ha rotado**, ni hay motivo para hacerlo: nadie ha filtrado nada. La primera
-  rotación real de producción seguirá siendo la primera vez.
-- **La rotación de pruebas se terminó a mano**, borrando las filas de las cuentas que no iban a migrar.
-  En producción eso no valdría: allí habría que esperar a que la gente vuelva, o borrar sus cuentas por
-  la ruta que existe para ello. **Lo que no se ha visto nunca es una rotación que termine sola**, con
-  todas las cuentas migrando porque sus dueños abrieron Esfinge.
+- **Lo que el simulacro venía a saber**: si la aplicación de verdad hace la llamada de cortesía. **La
+  hace.** No se podía saber de otra forma —la ruta no deja rastro mientras no haya nada que migrar— y
+  era el único desconocido que quedaba.
+- **Y enseñó algo que ninguna prueba enseñaba**: con la sesión ya abierta, **abrir Esfinge no basta**.
+  El contador guarda la **menor** de las dos versiones, así que hasta que no hubo una **entrada** de
+  verdad —salir de la cuenta y volver a entrar— siguió diciendo 1 sin poder distinguir si la posesión
+  había migrado. Es el precio de que el contador nunca mienta en el lado optimista, y hay que contarlo
+  al pedirle a alguien que rote: **rotar exige una entrada, no solo abrir la aplicación**.
+- **Terminada del todo**: borrada `PIMIENTA`, el servidor siguió en `200` —el caso que habría dado
+  `503` a todo sin el arreglo de `configuracionCompleta` de ese mismo día— y la bóveda se cerró y se
+  volvió a abrir con normalidad en el Mac del cliente.
+
+**Lo que no se ha comprobado, y hay que decirlo:**
+- **La de pruebas se terminó a mano**, borrando las filas de las cuentas que no iban a migrar. La de
+  producción **no**: ahí migró de verdad, pero es **una cuenta y una persona**. Una rotación con varias
+  cuentas de gente distinta, esperando a que cada uno vuelva, sigue sin verse — y es donde el paso de
+  «avisar y esperar» pasa de ser una línea del LÉEME a ser el trabajo.
 - **Cuánto tarda una cuenta real en migrar** sigue siendo una deducción: depende de cuándo su dueño abra
   Esfinge, y eso no se ha medido.

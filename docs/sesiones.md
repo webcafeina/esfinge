@@ -2221,8 +2221,14 @@ de ahí.
   sin decir la versión, así que toda cuenta creada después de rotar se apuntaba como la 1 aunque sus
   verificadores fueran de la 2 — y con eso el contador no habría vuelto a cero jamás. Se habría
   descubierto el día que hubiera hecho falta rotar producción, que es el peor día para descubrirlo.
-- **Queda sin ver**: una rotación que termine **sola**, con todas las cuentas migrando porque sus dueños
-  abren Esfinge. La de pruebas se cerró borrando a mano las filas de las que no iban a volver.
+- **Y se rotó producción como simulacro**, a petición del cliente, con su cuenta y sus dos Mac: la
+  aplicación de verdad **sí hace la llamada de cortesía** —que era el único desconocido que quedaba y no
+  se podía saber de otra forma—, se borró `PIMIENTA` y todo siguió funcionando.
+- **Y el simulacro enseñó lo que ninguna prueba enseñaba**: con la sesión ya abierta, **abrir Esfinge no
+  basta**. Hasta que no hubo una entrada de verdad, el contador siguió en 1 sin poder distinguir si la
+  posesión había migrado. Está corregido en el LÉEME: el paso dice «entrar en la cuenta», no «abrir».
+- **Queda sin ver**: una rotación con **varias cuentas de gente distinta**, esperando a que cada uno
+  vuelva. Ahí «avisar y esperar» deja de ser una línea del LÉEME y pasa a ser el trabajo.
 
 ---
 

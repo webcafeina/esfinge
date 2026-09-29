@@ -32,8 +32,9 @@ también. Lo que queda es de uso, no de trabajo:
   deducirlo. En producción ese campo no sale.
 - **Rotar la pimienta está escrito en [`../servidor/LÉEME.md`](../servidor/LÉEME.md)**, y el paso 1 —mirar
   el contador— no es una recomendación: rotar dos veces seguidas deja fuera a quien no haya migrado. El
-  Worker de **pruebas** ya está en la versión 2 con la rotación **terminada**: `PIMIENTA` borrada,
-  `PIMIENTA_2` puesta y las tres cuentas en la 2. Producción sigue en la 1 y no hay motivo para moverla.
+  Worker de **pruebas** y el de **producción** están los dos en la **versión 2 con la rotación
+  terminada**: `PIMIENTA` borrada y `PIMIENTA_2` puesta. **La pimienta de producción que vale es la que
+  guarda el cliente desde el 2026-09-29**, no la original.
 
 <details>
 <summary>Lo anterior, del 2026-09-28</summary>
