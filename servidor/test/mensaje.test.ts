@@ -158,6 +158,20 @@ describe("el cartero del VPS", () => {
 	});
 
 	/**
+	 * **Con el `fetch` de verdad, no con un doble.** Guardado como propiedad y llamado
+	 * con `this.pedir(…)`, Workers contesta «Illegal invocation» porque `fetch` exige
+	 * `globalThis` como `this`. Todas las demás pruebas de aquí inyectan un doble, que
+	 * no tiene ese problema, así que **ninguna podía cazarlo**: lo dijo el primer envío
+	 * de verdad contra el cartero. Esta va contra un sitio que no existe: lo que se
+	 * comprueba no es que llegue, es **cómo falla**.
+	 */
+	it("llama al fetch de verdad sin que Workers se queje del `this`", async () => {
+		const envio = await new CarteroPorElVps({ ...ajustes, url: "https://no-existe.invalid/entregar", plazo: 5000 }).mandar(carta);
+		expect(envio.entregado).toBe("fallo");
+		expect(envio.porque).not.toContain("Illegal invocation");
+	});
+
+	/**
 	 * Lo que contesta el cartero es nuestro, pero lo que contesta un proxy en medio un
 	 * día raro puede ser una página entera, y eso acaba en la respuesta del Worker de
 	 * pruebas.

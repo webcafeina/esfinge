@@ -740,7 +740,16 @@ entera, no solo la dirección, o pasaría `Banco Santander <esfinge@webcafeina.c
 
 **Y `wrangler deploy` borra las variables de texto puestas a mano en el panel de Cloudflare.** Los
 secretos sobreviven; las variables no. Poner una en el panel y desplegar después para que el código la
-lea es borrarla justo antes de usarla, y el síntoma es que no pasa nada. Van en `wrangler.jsonc`.
+lea es borrarla justo antes de usarla, y el síntoma es que no pasa nada. Van en `wrangler.jsonc`, o se
+ponen **como Secret** si tienen que sobrevivir a un despliegue aunque no sean sensibles.
+
+**Y todo lo que llega pegado se recorta, no solo lo que parece un secreto.** Una contraseña con un
+espacio de más da un error; **un interruptor con un espacio de más da la apariencia de funcionar**, que
+es peor. `CORREO=" enviar"` dejaba el Worker contestando `202` con el correo cayendo en el buzón de
+pruebas, y se descubrió mirando el registro de Caddy de **otra máquina** para ver que la petición al
+cartero no estaba. De ahí las dos reglas: `.trim()` en todo lo que venga de una variable de entorno, y
+**que el propio servicio diga en qué modo está** —`/v1/salud` del Worker de pruebas dice por dónde
+manda el correo— en vez de dejar que haya que deducirlo.
 
 **Para poder recibir hay que haber publicado, y quien nunca manda no publicaba nunca.** Las llaves de la
 identidad se publicaban al entrar en «Compartir», que es lo que parece natural: se publican cuando se van a

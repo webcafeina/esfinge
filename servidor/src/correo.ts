@@ -113,7 +113,11 @@ export function carteroPara(env: Env): Cartero {
 export class CarteroPorElVps implements Cartero {
 	constructor(
 		private a: { url: string; secreto: string; remitente: string; plazo?: number },
-		private pedir: typeof fetch = fetch,
+		// **`fetch.bind(globalThis)`, no `fetch` a secas.** Guardado como propiedad y
+		// llamado con `this.pedir(…)`, se invoca con este objeto como `this` y Workers
+		// contesta «Illegal invocation». Ninguna prueba lo cazaba porque todas inyectan
+		// un doble, y un doble no tiene ese problema: lo dijo el primer envío de verdad.
+		private pedir: typeof fetch = fetch.bind(globalThis),
 	) {}
 
 	async mandar(c: Carta): Promise<Envio> {
