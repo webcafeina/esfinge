@@ -387,7 +387,7 @@ func TestLaBusquedaNoMiraLosSecretos(t *testing.T) {
 // **Una de cada clase**, y esa es la gracia: el secreto de una credencial es su
 // contraseña, el de una nota segura es su texto y el de una tarjeta es su
 // número, así que una papelera que solo devolviera bien las credenciales sería
-// una papelera rota para cuatro de las cinco.
+// una papelera rota para cinco de las seis.
 func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	b, _, ruta := nueva(t)
 	b.Poner(Entrada{Titulo: "Fuera", Secreto: "s3cr3t0", TOTP: "ABCD"})
@@ -397,6 +397,12 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	b.Poner(Entrada{Titulo: "Documento", Tipo: TipoIdentidad, NumeroDocumento: "12345678Z"})
 	// El dato personal (ADR 0047): su contenido son cuatro campos y **ninguno es
 	// la contraseña**, que es justo por lo que se dejaron fuera la primera vez.
+	// La llave de acceso (ADR 0048). **Aquí la papelera pesa más que en ninguna
+	// otra clase**: una contraseña perdida se restablece por correo, y una llave
+	// perdida se lleva la cuenta por delante.
+	b.Poner(Entrada{Titulo: "GitHub", Tipo: TipoLlave, RPID: "github.com",
+		IDCredencial: "Y3JlZC0x", IDUsuario: "dXN1LTE", NombreVisible: "yo@ejemplo.com",
+		Algoritmo: -7, ClavePrivada: "cHJpdmFkYQ"})
 	b.Poner(Entrada{Titulo: "Casa", Tipo: TipoPersonal, NombreCompleto: "Yo Mismo",
 		Correo: "yo@ejemplo.com", Telefono: "600111222", Nacimiento: "1980-01-01",
 		Calle: "Calle Mayor 1", CodigoPostal: "28001", Ciudad: "Madrid", Pais: "España"})
@@ -409,14 +415,20 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	if b.Cuantas() != 0 {
 		t.Error("siguen contando como vivas")
 	}
-	if b.EnLaPapelera() != 5 {
-		t.Errorf("en la papelera hay %d de 5", b.EnLaPapelera())
+	if b.EnLaPapelera() != 6 {
+		t.Errorf("en la papelera hay %d de 6", b.EnLaPapelera())
 	}
 	// La lista de la papelera es una lista más: **sin secretos**.
 	for _, e := range b.Papelera() {
 		if e.Secreto != "" || e.Notas != "" || e.Numero != "" || e.NumeroDocumento != "" ||
-			e.Correo != "" || e.Telefono != "" || e.Nacimiento != "" || e.TieneDireccion() {
+			e.Correo != "" || e.Telefono != "" || e.Nacimiento != "" || e.TieneDireccion() ||
+			e.ClavePrivada != "" || e.IDCredencial != "" {
 			t.Errorf("la papelera ha traído el secreto de «%s»", e.Titulo)
+		}
+		// **De una llave, el sitio y el nombre sí viajan**: es lo único por lo que
+		// se puede reconocer cuál es en una lista donde no se enseña nada más.
+		if e.Tipo == TipoLlave && (e.RPID == "" || e.NombreVisible == "") {
+			t.Errorf("la llave ha llegado sin nada por lo que reconocerla: %+v", e)
 		}
 		// **El nombre sí viaja**, y es deliberado: `tituloDeReserva` saca el título
 		// de él, así que vaciarlo no escondería nada mientras el título lo repite.
@@ -438,7 +450,7 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if b.Cuantas() != 5 || b.EnLaPapelera() != 0 {
+	if b.Cuantas() != 6 || b.EnLaPapelera() != 0 {
 		t.Fatalf("después de restaurar hay %d vivas y %d en la papelera",
 			b.Cuantas(), b.EnLaPapelera())
 	}
@@ -446,12 +458,14 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	quiero := map[string]string{
 		"Fuera": "s3cr3t0", "Nota": "la combinación es 4242",
 		"Tarjeta": "4111111111111111", "Documento": "12345678Z",
-		"Casa": "yo@ejemplo.com6001112221980-01-01Calle Mayor 1\n28001 Madrid\nEspaña",
+		"Casa":   "yo@ejemplo.com6001112221980-01-01Calle Mayor 1\n28001 Madrid\nEspaña",
+		"GitHub": "cHJpdmFkYQY3JlZC0x",
 	}
 	for _, l := range b.Buscar("") {
 		e, _ := b.Ver(l.ID)
 		suyo := e.Secreto + e.Notas + e.Numero + e.NumeroDocumento +
-			e.Correo + e.Telefono + e.Nacimiento + e.Direccion()
+			e.Correo + e.Telefono + e.Nacimiento + e.Direccion() +
+			e.ClavePrivada + e.IDCredencial
 		if suyo != quiero[e.Titulo] {
 			t.Errorf("«%s» ha vuelto con %q y se borró con %q",
 				e.Titulo, suyo, quiero[e.Titulo])

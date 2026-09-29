@@ -95,6 +95,16 @@ func TestCruzadaFormaCanonica(t *testing.T) {
 			Ciudad: "Madrid", Provincia: s, Pais: "España",
 		})
 	}
+	// La llave de acceso (ADR 0048), que va la última de la estructura: es justo
+	// donde un campo se cae del espejo de TypeScript sin que nada se entere.
+	for i, s := range textosRaros {
+		entradas = append(entradas, Entrada{
+			ID: fmt.Sprintf("%032x", 200+i), Tipo: TipoLlave, Titulo: s,
+			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
+			RPID: "github.com", IDCredencial: "Y3JlZC0x" + s, IDUsuario: "dXN1LTE",
+			NombreVisible: s, Algoritmo: -7, ClavePrivada: "cHJpdmFkYQ" + s,
+		})
+	}
 	var suyas []string
 	cruzada.Pedir(t, map[string]any{"orden": "canon", "entradas": entradas}, &suyas)
 	for i, e := range entradas {
@@ -173,6 +183,10 @@ func TestCruzadaLoQueSeVacia(t *testing.T) {
 		{ID: fmt.Sprintf("%032x", 3), Tipo: TipoIdentidad, Titulo: "Pasaporte",
 			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
 			NombreCompleto: "Yo Mismo", Documento: "passport", NumeroDocumento: "ABC123456"},
+		{ID: fmt.Sprintf("%032x", 5), Tipo: TipoLlave, Titulo: "GitHub",
+			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
+			RPID: "github.com", IDCredencial: "Y3JlZC0x", IDUsuario: "dXN1LTE",
+			NombreVisible: "yo@ejemplo.com", Algoritmo: -7, ClavePrivada: "cHJpdmFkYQ"},
 		{ID: fmt.Sprintf("%032x", 4), Tipo: TipoPersonal, Titulo: "Casa",
 			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
 			NombreCompleto: "Álvaro Cabezas", Correo: "a@b.com", Telefono: "600111222",
@@ -222,7 +236,7 @@ func (g generador) fecha() string {
 
 func (g generador) entrada(id string) Entrada {
 	e := Entrada{
-		ID: id, Tipo: Tipo(g.de("credencial", "credencial", "nota", "tarjeta", "personal")),
+		ID: id, Tipo: Tipo(g.de("credencial", "credencial", "nota", "tarjeta", "personal", "llave")),
 		Titulo: g.de(textosRaros...), Creada: g.fecha(), Cambiada: g.fecha(), Revision: int64(g.r.IntN(4)),
 	}
 	if g.r.IntN(2) == 0 {
@@ -256,6 +270,16 @@ func (g generador) entrada(id string) Entrada {
 		e.Pais = g.de("España", "")
 		e.Destinatario, e.Edificio = g.de("Yo", ""), g.de("Portal B", "")
 		e.Piso, e.Puerta = g.de("3", ""), g.de("B", "")
+	}
+	if g.r.IntN(4) == 0 {
+		// Los de la llave de acceso. Entran en la fusión al azar por la misma razón
+		// que los del dato personal: lo que no se toca aquí no se compara nunca.
+		e.RPID = g.de("github.com", "google.com")
+		e.IDCredencial = g.de("Y3JlZC0x", "Y3JlZC0y", "")
+		e.IDUsuario = g.de("dXN1LTE", "dXN1LTI")
+		e.NombreVisible = g.de("yo@ejemplo.com", "tu@ejemplo.com")
+		e.Algoritmo = g.r.IntN(2) - 7
+		e.ClavePrivada = g.de("cHJpdmFkYQ", "b3RyYQ")
 	}
 	if g.r.IntN(5) == 0 {
 		e.Extra = map[string]json.RawMessage{"nuevo": json.RawMessage(g.de(`1`, `"x"`, `{"b":[1,2]}`))}

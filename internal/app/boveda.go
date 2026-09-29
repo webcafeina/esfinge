@@ -2,9 +2,11 @@ package app
 
 import (
 	"errors"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/webcafeina/esfinge/internal/boveda"
@@ -484,6 +486,45 @@ func (a *App) ExportarBoveda() (string, error) {
 	a.ajustes.RecordarCarpetaDeGuardar(filepath.Dir(destino))
 
 	err = escritura.Atomica(destino, escritura.Opciones{}, b.Exportar)
+	if err != nil {
+		return "", err
+	}
+	a.Actividad()
+	return destino, nil
+}
+
+// ExportarLlaves saca las llaves de acceso a un fichero **cifrado** (ADR 0048).
+//
+// Es la única exportación de Esfinge que no sale en claro, y la excepción está
+// razonada en la ADR: una llave de acceso **sustituye** a la contraseña, así que
+// escribirla en un CSV sería poner en el disco lo que abre la cuenta; y además no
+// le serviría a ningún gestor, porque ninguno sabe leerla.
+//
+// La clave del fichero **no es la maestra** y se pide aparte: quien guarda esta
+// copia la guarda en otro sitio, y reutilizar la maestra haría que perder ese
+// fichero fuera perder la bóveda.
+func (a *App) ExportarLlaves(clave string) (string, error) {
+	b := a.boveda()
+	if b == nil {
+		return "", boveda.ErrCerrada
+	}
+	if strings.TrimSpace(clave) == "" {
+		return "", errors.New("Hace falta una clave para cifrar el fichero")
+	}
+	destino, err := a.sistema.ElegirDondeGuardar("Exportar las llaves de acceso",
+		"esfinge-llaves.esf", a.ajustes.CarpetaDeGuardar())
+	if err != nil || destino == "" {
+		return "", err
+	}
+	a.ajustes.RecordarCarpetaDeGuardar(filepath.Dir(destino))
+
+	// **Sin llaves no se escribe nada**: `ExportarLlaves` devuelve error, la
+	// escritura atómica no llega a mover el fichero y el mensaje sube tal cual. Un
+	// contenedor vacío cifrado es un fichero que parece una copia y no lo es.
+	err = escritura.Atomica(destino, escritura.Opciones{}, func(w io.Writer) error {
+		_, err := b.ExportarLlaves(w, clave)
+		return err
+	})
 	if err != nil {
 		return "", err
 	}

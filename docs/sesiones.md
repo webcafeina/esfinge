@@ -2227,7 +2227,35 @@ de ahí.
 
 **Qué queda abierto**
 
-- Nada de esta entrega.
+- Nada de los datos personales.
+
+---
+
+## 2026-09-29 (tarde, 4) · Las llaves de acceso, la primera entrega
+
+- **Se planificó la fase entera** antes de tocar nada: tres exploraciones del código, un diseño de la parte
+  de navegador y **once decisiones de producto con el cliente**, que están en la
+  [ADR 0048](adr/0048-las-llaves-de-acceso.md) y en el plan.
+- **Hecha la P1**: la clase `llave`, con sus campos, en Go y en TypeScript; la séptima pestaña; la
+  exportación cifrada aparte; y el aviso propio al compartir, que **funcionaba sin que nadie lo hubiera
+  decidido**.
+
+**Qué se verificó, y con qué**
+
+- **Cinco mutaciones, las cinco rojas.** Y la lista blanca del puente cazó el método nuevo sola.
+- **La prueba de duplicados mira `Conflictos` desde el principio**, que es la lección de los datos
+  personales aplicada sin tener que volver a aprenderla.
+- **La fusión al azar de tres equipos encontró un fallo que no era de esta clase**: el espejo de TypeScript
+  leía **todos** los campos numéricos como `revision`, con el nombre escrito a fuego de cuando la revisión
+  era el único número del formato. `algoritmo` es el segundo de la historia, y se guardaba encima. Llevaba
+  ahí desde el principio esperando a que hubiera un segundo número.
+
+**Qué queda abierto**
+
+- **La P1 no se ha visto en un Mac**: el glifo nuevo al lado del de credencial —los dos son una llave, y lo
+  que los separa es la orientación—, la ficha de una llave y la exportación cifrada.
+- **No hay ninguna llave de verdad todavía.** La primera la creará el navegador en la P2, y hasta entonces
+  no se sabe si los campos que se guardan son los que hacen falta para firmar.
 
 ---
 

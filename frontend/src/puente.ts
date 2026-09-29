@@ -125,7 +125,7 @@ export type Preferencias = {
 export const NUNCA = -1;
 
 /** Las cuatro clases de cosa que caben en la bóveda. Los nombres los fija Go. */
-export type TipoEntrada = "credencial" | "nota" | "tarjeta" | "identidad" | "personal";
+export type TipoEntrada = "credencial" | "nota" | "tarjeta" | "identidad" | "personal" | "llave";
 
 /** Una contraseña que se sustituyó, con la fecha en que dejó de valer. */
 export type Antigua = {
@@ -179,6 +179,12 @@ export type EntradaBoveda = {
   ciudad?: string;
   provincia?: string;
   pais?: string;
+  /** La llave de acceso (ADR 0048). `clavePrivada` **no cruza nunca**: se vacía antes de salir. */
+  rpId?: string;
+  idCredencial?: string;
+  idUsuario?: string;
+  nombreVisible?: string;
+  algoritmo?: number;
 };
 
 /**
@@ -672,6 +678,9 @@ export const esfinge = {
 
   /** Escribe las entradas **en claro**, por el diálogo del sistema. */
   exportarBoveda: () => llamar<string>("ExportarBoveda"),
+
+  /** Las llaves de acceso, aparte y **cifradas** (ADR 0048). La clave no es la maestra. */
+  exportarLlaves: (clave: string) => llamar<string>("ExportarLlaves", clave),
 
   borrarElCSVImportado: (ruta: string) => llamar<void>("BorrarElCSVImportado", ruta),
 

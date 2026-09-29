@@ -118,6 +118,12 @@ No se cambian sin preguntar.
   sabiendo que **su fichero son dos filas** y que **Esfinge no rellena nada de eso**. Con ello, dos cosas
   que se dicen en voz alta: lo que Esfinge dice de sí mismo ya no es «solo secretos», y **las pestañas de
   clases se han quedado sin rótulo salvo la activa**, porque seis no caben.
+- **Y va a guardar llaves de acceso** (ADR 0048), que es la sexta clase y la primera de las cuatro
+  entregas de `docs/passkeys.md`. Lo que hay que saber sin abrir la ficha: **no hay contador de firmas**
+  —se firma siempre con cero, como todos los gestores, y por eso esta clase no necesita regla de fusión
+  propia—; **no se crean a mano**, porque una llave la emite el sitio; **la clave privada no se enseña, no
+  se copia y no cruza el puente**, y cuando llegue la P2 lo que saldrá será la firma ya hecha; y **no salen
+  en el CSV en claro**, sino aparte, en un contenedor ESF1 con una clave que no es la maestra.
 - **El historial guarda solo qué y cuándo**: nunca el contenido, la clave ni el texto cifrado. Vive
   en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar. **La bóveda no
   escribe en él**, y es una regla absoluta: `credenciales-dashlane.csv` ahí sería una señal de
@@ -289,6 +295,14 @@ descifrador de Go no comprueba el largo cuando no hay relleno**, y un grupo fina
 no le parece un error, así que devuelve los bytes anteriores como si nada y la semilla entra entera.
 Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
 no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
+
+**El espejo de TypeScript leía todos los números como si fueran `revision`.** El caso `"numero"` de
+`entradaDesde` tenía el nombre del campo escrito a fuego, de cuando la revisión era el único número del
+formato. `algoritmo`, de la llave de acceso, es **el segundo número de la historia del formato**, y se
+guardaba encima de la revisión: la misma bóveda fundía distinto en los dos lados. Llevaba ahí desde el
+principio esperando a que hubiera un segundo número, y lo cazó `TestCruzadaFusionAlAzar` —no la forma
+canónica, que solo compara lo que cada lado escribe—. La regla que deja: **en el espejo, un campo se escribe
+por su nombre, nunca a mano**.
 
 **Un campo que se quita de `Entrada` no da error: cae en `Extra` y no se ve nunca más.** `Extra` existe
 para conservar lo que escribe una versión **más nueva**, y al quitar un campo hace justo lo contrario:

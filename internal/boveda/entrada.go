@@ -24,6 +24,16 @@ const (
 	// que el gestor al que sustituye guardaba, y porque la alternativa realista
 	// no era tenerlo fuera: era tenerlo en Dashlane.
 	TipoPersonal Tipo = "personal"
+	// TipoLlave es una llave de acceso —una passkey— (ADR 0048): la que un sitio
+	// acepta en vez de la contraseña.
+	//
+	// **Es la clase que más pesa de todas**, y por dos razones que no son la
+	// criptografía. La primera: lo que guarda **sustituye** a la contraseña en vez
+	// de acompañarla, así que perderla no es perder un secreto que se puede
+	// restablecer por correo, es perder la cuenta. La segunda: es la única clase
+	// cuyo secreto **no se enseña nunca** —no hay nada que copiar ni que leer en
+	// voz alta—, así que lo que sale de aquí es una firma y jamás la clave.
+	TipoLlave Tipo = "llave"
 )
 
 // Antigua es una contraseña que se sustituyó.
@@ -120,6 +130,32 @@ type Entrada struct {
 	Provincia    string `json:"provincia,omitempty"`
 	Pais         string `json:"pais,omitempty"`
 
+	// Llave de acceso (ADR 0048). Los nombres de WebAuthn se dejan como están
+	// —igual que `TOTP`—: son los del protocolo y tienen que poder compararse con
+	// lo que dice la especificación sin traducir nada por el camino.
+	//
+	// **No hay contador de firmas**, y es una decisión, no un olvido: WebAuthn
+	// define uno para que un sitio detecte una llave clonada, y una llave
+	// sincronizada entre equipos **no puede llevarlo coherente**. Se firma siempre
+	// con cero, que es lo que hacen todos los gestores y lo que ningún sitio
+	// rechaza. Con ello, esta clase no necesita ninguna regla de fusión propia.
+	RPID string `json:"rpId,omitempty"`
+	// IDCredencial es lo que el sitio guarda para reconocer esta llave, en
+	// base64url. Es lo que la identifica: dos llaves del mismo sitio para la misma
+	// persona son dos llaves distintas.
+	IDCredencial string `json:"idCredencial,omitempty"`
+	// IDUsuario es el identificador opaco que el sitio da a la cuenta, en
+	// base64url. No es el usuario que se escribe: eso es `NombreVisible`.
+	IDUsuario     string `json:"idUsuario,omitempty"`
+	NombreVisible string `json:"nombreVisible,omitempty"`
+	// Algoritmo es el de COSE: -7 es ECDSA con P-256 y SHA-256, que es el único
+	// que se emite. Se guarda de todos modos porque una llave importada de otro
+	// sitio podría traer otro y hay que saber que no se sabe firmarla.
+	Algoritmo int `json:"algoritmo,omitempty"`
+	// ClavePrivada es el escalar de 32 bytes en base64url, no el JWK entero: la
+	// parte pública se recalcula y guardarla sería guardar lo mismo dos veces.
+	ClavePrivada string `json:"clavePrivada,omitempty"`
+
 	// Extra guarda **los campos que esta versión de Esfinge no entiende**.
 	//
 	// Es lo más subestimado de todo el formato. En cuanto haya dos Esfinges de
@@ -160,7 +196,11 @@ func (e Entrada) Coincide(q string) bool {
 	// corre **dentro** de la bóveda, sobre la entrada entera, y lo que se vacía es
 	// la copia que sale hacia la ventana. Sin ellos, la única forma de encontrar
 	// «Correo electrónico 1» sería acordarse de que se llama así.
-	campos := append([]string{e.Titulo, e.Usuario, e.Carpeta, e.NombreCompleto, e.Titular, e.Correo, e.Telefono},
+	// De una llave de acceso se busca **el sitio y el nombre que enseña**, que es
+	// lo único que una persona sabe de ella. Nunca el identificador de credencial:
+	// es opaco, nadie lo recuerda, y es lo que la identifica.
+	campos := append([]string{e.Titulo, e.Usuario, e.Carpeta, e.NombreCompleto, e.Titular, e.Correo, e.Telefono,
+		e.RPID, e.NombreVisible},
 		append(e.Sitios, e.Etiquetas...)...)
 	for _, c := range campos {
 		if strings.Contains(strings.ToLower(c), q) {
@@ -209,6 +249,14 @@ func (e *Entrada) vaciarLoSensible() {
 	e.Nacimiento = ""
 	e.Destinatario, e.Calle, e.Edificio, e.Piso, e.Puerta = "", "", "", "", ""
 	e.CodigoPostal, e.Ciudad, e.Provincia, e.Pais = "", "", "", ""
+	// La llave de acceso (ADR 0048). **Solo la clave privada**, y el resto se
+	// queda: el sitio y el nombre son lo que la lista tiene que enseñar para que
+	// alguien reconozca la llave, y no son secretos. El identificador de
+	// credencial tampoco lo es —el sitio ya lo tiene, se lo dio él— pero se va
+	// igual: no hace falta en ninguna lista, y lo que no hace falta no viaja.
+	e.ClavePrivada = ""
+	e.IDCredencial = ""
+	e.IDUsuario = ""
 }
 
 // Direccion escribe la dirección **en el orden del sobre**, para leerla y para

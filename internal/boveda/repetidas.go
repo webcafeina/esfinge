@@ -47,6 +47,12 @@ func claveDeCuenta(e Entrada) string {
 		// líneas, dos correos distintos guardados con el mismo rótulo —«Correo
 		// electrónico 1» en dos importaciones— son la misma cuenta, y quitar
 		// repetidas borraría uno de los dos. Es el fallo de las tarjetas otra vez.
+		// La llave de acceso (ADR 0048). **El identificador de credencial la
+		// identifica él solo** —lo emite el sitio y no se repite—, pero los demás
+		// van igual: esta lista decide qué es «la misma cuenta» al juntar dos
+		// bóvedas, y una llave que se diera por repetida se borraría. Lo que se
+		// pierde ahí no se restablece por correo.
+		t(e.RPID), t(e.IDCredencial), t(e.IDUsuario), t(e.NombreVisible), e.ClavePrivada,
 		t(e.Correo), t(e.Telefono), t(e.Nacimiento),
 		t(e.Destinatario), t(e.Calle), t(e.Edificio), t(e.Piso), t(e.Puerta),
 		t(e.CodigoPostal), t(e.Ciudad), t(e.Provincia), t(e.Pais),

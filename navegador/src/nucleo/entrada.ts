@@ -13,7 +13,7 @@
 
 import { canonico, type ValorJSON } from "./canon";
 
-export type Tipo = "credencial" | "nota" | "tarjeta" | "identidad" | "personal";
+export type Tipo = "credencial" | "nota" | "tarjeta" | "identidad" | "personal" | "llave";
 
 export type Antigua = { secreto: string; hasta: string };
 
@@ -53,6 +53,13 @@ export type Entrada = {
   ciudad?: string;
   provincia?: string;
   pais?: string;
+  /** La llave de acceso (ADR 0048). Sin contador de firmas: se firma siempre con cero. */
+  rpId?: string;
+  idCredencial?: string;
+  idUsuario?: string;
+  nombreVisible?: string;
+  algoritmo?: number;
+  clavePrivada?: string;
   /** Los campos que esta versión no conoce. */
   extra?: Record<string, ValorJSON>;
 };
@@ -94,6 +101,12 @@ const CAMPOS: [keyof Entrada, "siempre" | "texto" | "lista" | "numero" | "si" | 
   ["ciudad", "texto"],
   ["provincia", "texto"],
   ["pais", "texto"],
+  ["rpId", "texto"],
+  ["idCredencial", "texto"],
+  ["idUsuario", "texto"],
+  ["nombreVisible", "texto"],
+  ["algoritmo", "numero"],
+  ["clavePrivada", "texto"],
 ];
 const CONOCIDOS = new Set<string>(CAMPOS.map(([k]) => k as string));
 
@@ -131,9 +144,17 @@ export function entradaDesde(crudo: unknown): Entrada {
         break;
       }
       case "numero": {
+        // **El campo se escribe por su nombre, no a mano.** Esto decía
+        // `e.revision = v` a fuego, escrito cuando la revisión era el único número
+        // del formato: el segundo campo numérico de la historia —`algoritmo`, de la
+        // llave de acceso— se guardaba encima de la revisión, y con ella la fusión
+        // salía distinta en los dos lados. Lo cazó `TestCruzadaFusionAlAzar`, que es
+        // para lo que está.
         if (v === null || v === undefined) break;
-        if (typeof v !== "number" || !Number.isInteger(v)) throw new ErrorDeForma("La revisión no es un número entero");
-        if (v !== 0) e.revision = v;
+        if (typeof v !== "number" || !Number.isInteger(v)) {
+          throw new ErrorDeForma(`El campo «${String(k)}» no es un número entero`);
+        }
+        if (v !== 0) (e as Record<string, unknown>)[k] = v;
         break;
       }
       case "si": {
@@ -233,6 +254,12 @@ export function sinSecretos(e: Entrada): Entrada {
   for (const k of ["destinatario", "calle", "edificio", "piso", "puerta", "codigoPostal", "ciudad", "provincia", "pais"] as const) {
     delete c[k];
   }
+  // La llave de acceso (ADR 0048). **El sitio y el nombre se quedan**: son lo
+  // único por lo que se puede reconocer una llave en una lista donde no se
+  // enseña nada más. Lo demás se va, y la clave privada la primera.
+  delete c.clavePrivada;
+  delete c.idCredencial;
+  delete c.idUsuario;
   return c;
 }
 
@@ -245,6 +272,7 @@ export function coincide(e: Entrada, q: string): boolean {
   // la copia que sale hacia el panel.
   const campos = [
     e.titulo, e.usuario, e.carpeta, e.nombreCompleto, e.titular, e.correo, e.telefono,
+    e.rpId, e.nombreVisible,
     ...(e.sitios ?? []), ...(e.etiquetas ?? []),
   ];
   return campos.some((c) => (c ?? "").toLowerCase().includes(b));

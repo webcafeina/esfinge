@@ -1447,7 +1447,7 @@ test("las clases de la bóveda caben en su barra", async ({ page }) => {
   // **Con cada una activa, no solo con la primera.** La activa es la única que
   // lleva rótulo, así que el caso peor es la de nombre más largo —«Datos
   // personales», 160 px— y mirando solo la que viene puesta se comprueba el mejor.
-  const clases = ["Todo", "Credenciales", "Notas", "Tarjetas", "Identidades", "Datos personales"];
+  const clases = ["Todo", "Credenciales", "Notas", "Tarjetas", "Identidades", "Datos personales", "Llaves de acceso"];
   for (const ancho of [700, 980, 1400]) {
     await page.setViewportSize({ width: ancho, height: 620 });
     for (const nombre of clases) {

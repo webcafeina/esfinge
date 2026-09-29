@@ -229,6 +229,11 @@ test.describe("Capturas", () => {
     // ve lo que se ve en un Mac.
     // La segunda `.boveda-barra`: la primera es la de «Nueva» y «Cerrar la bóveda».
     await page.locator(".boveda-barra").nth(1).screenshot({ path: `${donde}/8a-clases-${tema}.png`, scale: "css" });
+    // Y con la de llaves activa, que es el glifo nuevo y el que convive con el de
+    // credencial: los dos son una llave y lo que los separa es la orientación.
+    await page.getByRole("tab", { name: "Llaves de acceso", exact: true }).click();
+    await page.locator(".boveda-barra").nth(1).screenshot({ path: `${donde}/8d-clases-llave-${tema}.png`, scale: "css" });
+    await page.getByRole("tab", { name: "Todo", exact: true }).click();
     await boton("Nueva").click();
     await dentro.getByRole("tab", { name: "Dato personal", exact: true }).click();
     await page.locator("#boveda-titulo").fill("Correo electrónico 1");

@@ -260,6 +260,15 @@ export function Icono({ nombre }: { nombre: string }) {
         <path d="M3.5 15.2c.5-3 2.7-4.7 5.5-4.7s5 1.7 5.5 4.7" />
       </>
     ),
+    // Una llave de acceso: la llave vista de frente, con su anilla arriba y los
+    // dientes a un lado. **No es la de `credencial`**, que va tumbada y es la de
+    // una contraseña: a quince píxeles lo que las separa es la orientación.
+    llave: (
+      <>
+        <circle cx="9" cy="5.2" r="2.7" />
+        <path d="M9 7.9v7.3M9 10.8h2.6M9 13.2h1.9" />
+      </>
+    ),
     // Los gestores de los que se sabe importar.
     //
     // **Son marcas de otras empresas, y por eso no son sus logotipos.** Nombrar un

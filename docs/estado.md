@@ -28,8 +28,18 @@ silueta al lado del carné y el formulario de catorce campos— e **importó su 
 verdad**, que entró con sus dos entradas. Con eso **no queda nada del proyecto sin comprobar en una
 máquina de verdad salvo Windows y GNOME**.
 
-**No hay siguiente acción decidida.** Lo que queda abierto está en [`deuda.md`](deuda.md) y es de uso o
-de máquinas que no tenemos.
+**Y lo siguiente empezó el mismo día: las llaves de acceso** —passkeys—, que el cliente pidió el
+2026-09-23 y que se planificó entera el 2026-09-29. Es **una fase, no una tarea**, partida en cuatro
+entregas que se publican una a una: **P1** la llave dentro de la bóveda sin navegador —**escrita, sin ver en
+un Mac**—, **P2** usar una que ya existe, que es lo que se pidió, **P3** crearlas y **P4** Firefox. Las
+decisiones de producto están en la [ADR 0048](adr/0048-las-llaves-de-acceso.md) y el diseño de la parte de
+navegador, en el plan de esa sesión.
+
+**La siguiente acción concreta es la P2**, y empieza por algo que no es escribir código: **pedir por la
+consola la forma de lo que piden GitHub, Google y Cloudflare** —los parámetros de
+`navigator.credentials.get`, sin valores—, como se hizo con el relleno y con el código de un solo uso.
+
+Lo demás abierto está en [`deuda.md`](deuda.md) y es de uso o de máquinas que no tenemos.
 
 El plan de cuentas y el del correo están cerrados enteros. Lo demás es de uso, no de trabajo:
 

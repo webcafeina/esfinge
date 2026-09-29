@@ -2,9 +2,12 @@ package boveda
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/webcafeina/esfinge/internal/cripto"
 )
 
 // Los formatos que de verdad va a traer alguien. Se mapea por nombre de columna
@@ -787,5 +790,146 @@ func TestDosDatosPersonalesConElMismoRotuloNoSeFusionan(t *testing.T) {
 		if claveDeCuenta(par[0]) == claveDeCuenta(par[1]) {
 			t.Errorf("no distingue: %+v y %+v", par[0], par[1])
 		}
+	}
+}
+
+// **Las llaves de acceso no salen en la exportación en claro** (ADR 0048).
+//
+// Una fila de CSV con una clave privada dentro es lo más peligroso que Esfinge
+// escribiría nunca en el disco, y además no le sirve a ningún gestor: ninguno
+// sabe leerla. Lo que esta prueba vigila es que salga **todo lo demás**: dejar
+// fuera una clase entera es fácil de hacer de más.
+func TestLaExportacionEnClaroNoLlevaLlaves(t *testing.T) {
+	b, _, _ := nueva(t)
+	todo := []Entrada{
+		{Tipo: TipoCredencial, Titulo: "Banco", Usuario: "yo", Secreto: "s3cr3t0"},
+		{Tipo: TipoLlave, Titulo: "GitHub", RPID: "github.com", IDCredencial: "Y3JlZC0x",
+			NombreVisible: "yo@ejemplo.com", Algoritmo: -7, ClavePrivada: "no-tiene-que-salir"},
+		{Tipo: TipoPersonal, Titulo: "Correo electrónico 1", Correo: "yo@ejemplo.com"},
+	}
+	if _, err := b.Importar(todo, "una prueba"); err != nil {
+		t.Fatal(err)
+	}
+
+	var salida bytes.Buffer
+	if err := b.Exportar(&salida); err != nil {
+		t.Fatal(err)
+	}
+	texto := salida.String()
+	if strings.Contains(texto, "no-tiene-que-salir") {
+		t.Error("la clave privada está escrita en claro en el CSV")
+	}
+	if strings.Contains(texto, "GitHub") {
+		t.Error("la llave sale en la exportación en claro")
+	}
+	// Y lo demás sí, que es la otra mitad.
+	if !strings.Contains(texto, "s3cr3t0") || !strings.Contains(texto, "Correo electrónico 1") {
+		t.Errorf("se ha llevado por delante lo que sí tenía que salir:\n%s", texto)
+	}
+}
+
+// **Y salen por su puerta, cifradas.**
+//
+// Es la excepción a «una bóveda de la que no se puede salir es una trampa», y lo
+// que la sostiene: se puede salir, pero lo que sale está en un contenedor ESF1
+// con su clave. Lo que se comprueba es lo que importa de verdad: que **la clave
+// privada no aparece en el fichero** —si el cifrado no se hubiera aplicado, ahí
+// estaría en claro— y que lo que sale se vuelve a abrir entero.
+func TestLasLlavesSalenCifradas(t *testing.T) {
+	b, _, _ := nueva(t)
+	if _, err := b.Importar([]Entrada{
+		{Tipo: TipoCredencial, Titulo: "Banco", Secreto: "s3cr3t0"},
+		{Tipo: TipoLlave, Titulo: "GitHub", RPID: "github.com", IDCredencial: "Y3JlZC0x",
+			NombreVisible: "yo@ejemplo.com", Algoritmo: -7, ClavePrivada: "la-privada-de-github"},
+		{Tipo: TipoLlave, Titulo: "Google", RPID: "google.com", IDCredencial: "Y3JlZC0y",
+			NombreVisible: "yo@ejemplo.com", Algoritmo: -7, ClavePrivada: "la-privada-de-google"},
+	}, "una prueba"); err != nil {
+		t.Fatal(err)
+	}
+
+	var fuera bytes.Buffer
+	cuantas, err := b.ExportarLlaves(&fuera, "la clave del fichero")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cuantas != 2 {
+		t.Errorf("dice que ha sacado %d y son 2", cuantas)
+	}
+	if bytes.Contains(fuera.Bytes(), []byte("la-privada-de-github")) {
+		t.Fatal("la clave privada está en claro dentro del fichero «cifrado»")
+	}
+	if bytes.Contains(fuera.Bytes(), []byte("github.com")) {
+		t.Error("hasta el sitio sale en claro: eso es una lista de dónde tienes llaves")
+	}
+
+	// Se abre con su clave y está entero.
+	dentro, err := cripto.Abrir(fuera.Bytes(), []byte("la clave del fichero"))
+	if err != nil {
+		t.Fatalf("no se puede volver a abrir: %v", err)
+	}
+	var leido struct {
+		Esfinge string    `json:"esfinge"`
+		Version int       `json:"version"`
+		Llaves  []Entrada `json:"llaves"`
+	}
+	if err := json.Unmarshal(dentro, &leido); err != nil {
+		t.Fatal(err)
+	}
+	if leido.Esfinge != "llaves de acceso" || leido.Version != 1 || len(leido.Llaves) != 2 {
+		t.Fatalf("lo de dentro no cuadra: %+v", leido)
+	}
+	if leido.Llaves[0].ClavePrivada == "" {
+		t.Error("ha salido sin la clave privada, que es lo único que no se puede rehacer")
+	}
+
+	// Y con otra clave no se abre, que es lo que significa que estaba cifrado.
+	if _, err := cripto.Abrir(fuera.Bytes(), []byte("otra cualquiera")); err == nil {
+		t.Error("se abre con cualquier clave")
+	}
+}
+
+// **Varias llaves de acceso no son la misma llave**, ni siquiera dos del mismo
+// sitio para la misma persona.
+//
+// Es el fallo de las tarjetas con la peor cara posible: una llave no tiene ni
+// sitio ni usuario en los campos que mira la huella de una credencial, así que
+// sin huella propia todas caen en la del título — y dos llaves de GitHub se
+// titulan igual. Lo que hay que mirar es **`Conflictos`**, no `Metidas`: una
+// huella que choca no impide que la entrada entre, la marca y la mete igual, así
+// que contando las metidas esta prueba pasaría en verde con la huella rota.
+func TestVariasLlavesNoSonLaMisma(t *testing.T) {
+	b, _, _ := nueva(t)
+	llaves := []Entrada{
+		{Tipo: TipoLlave, Titulo: "GitHub", RPID: "github.com", IDCredencial: "Y3JlZC0x",
+			NombreVisible: "yo@ejemplo.com", Algoritmo: -7, ClavePrivada: "una"},
+		// La misma persona, el mismo sitio, **otra llave**: pasa cada vez que se
+		// registra un equipo nuevo.
+		{Tipo: TipoLlave, Titulo: "GitHub", RPID: "github.com", IDCredencial: "Y3JlZC0y",
+			NombreVisible: "yo@ejemplo.com", Algoritmo: -7, ClavePrivada: "otra"},
+		{Tipo: TipoLlave, Titulo: "Google", RPID: "google.com", IDCredencial: "Y3JlZC0z",
+			NombreVisible: "yo@ejemplo.com", Algoritmo: -7, ClavePrivada: "tercera"},
+	}
+	r, err := b.Importar(llaves, "una prueba")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Metidas != 3 || r.Repetidas != 0 || r.Conflictos != 0 {
+		t.Fatalf("%+v, y las tres son distintas", r)
+	}
+
+	// Y por el otro lado: la misma, dos veces, sí es la misma.
+	r2, err := b.Importar(llaves, "una prueba")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r2.Metidas != 0 || r2.Repetidas != 3 {
+		t.Fatalf("a la segunda: %+v", r2)
+	}
+
+	// Y al juntar dos bóvedas (ADR 0039), que es otra lista y otro camino: dos
+	// llaves distintas no pueden salir como la misma cuenta, o quitar repetidas
+	// **borraría una llave**, y eso no se restablece por correo.
+	if claveDeCuenta(llaves[0]) == claveDeCuenta(llaves[1]) {
+		t.Error("dos llaves del mismo sitio salen como la misma cuenta")
 	}
 }

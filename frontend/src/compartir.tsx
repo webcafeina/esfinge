@@ -103,6 +103,21 @@ export function Compartir({
         luego cambias la contraseña aquí, la suya se queda como está y hay que volver a mandarla.
       </p>
 
+      {/* **Una llave de acceso no es una contraseña, y compartirla no es lo mismo**
+          (ADR 0048). Una contraseña compartida se puede cambiar, y el sitio avisa
+          de que ha cambiado; una llave compartida es la identidad en ese sitio, no
+          se puede revocar desde aquí y el sitio no se entera nunca de que ahora hay
+          dos. Se puede hacer porque se pidió, y por eso se dice antes y no
+          después. */}
+      {entrada.tipo === "llave" && (
+        <p className="aviso">
+          Una llave de acceso es <strong>tu identidad en ese sitio</strong>. Quien la reciba podrá
+          entrar en esa cuenta, <strong>no se la puedes quitar desde aquí</strong> y el sitio no se
+          enterará de que ahora hay dos. Para dejar de compartirla hay que borrar la llave en el
+          sitio y crear otra.
+        </p>
+      )}
+
       <div className="grupo">
         <div>
           <label htmlFor="compartir-correo">Correo de quien la recibe</label>

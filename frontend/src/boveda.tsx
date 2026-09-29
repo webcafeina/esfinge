@@ -1203,6 +1203,7 @@ function Dentro({
             { valor: "tarjeta", etiqueta: "Tarjetas", icono: "tarjeta" },
             { valor: "identidad", etiqueta: "Identidades", icono: "identidad" },
             { valor: "personal", etiqueta: "Datos personales", icono: "personal" },
+            { valor: "llave", etiqueta: "Llaves de acceso", icono: "llave" },
           ]}
         />
         {/* A la derecha, porque son dos preguntas distintas: las pestañas dicen
@@ -1279,7 +1280,17 @@ const NOMBRE_TIPO: Record<TipoEntrada, string> = {
   tarjeta: "Tarjeta",
   identidad: "Identidad",
   personal: "Dato personal",
+  llave: "Llave de acceso",
 };
+
+/**
+ * Las clases que se pueden crear a mano, que **no son todas**.
+ *
+ * Una llave de acceso no se inventa: la emite el sitio y la guarda Esfinge cuando
+ * el navegador se la pide. Una llave escrita a mano no abre nada, así que
+ * ofrecerla en «Nueva» sería ofrecer una entrada que no puede funcionar.
+ */
+const CLASES_A_MANO = (Object.keys(NOMBRE_TIPO) as TipoEntrada[]).filter((t) => t !== "llave");
 
 /**
  * iconoDe busca el icono que le toca a una entrada.
@@ -1396,6 +1407,7 @@ const PLURAL: Record<TipoEntrada, [string, string]> = {
   tarjeta: ["tarjeta", "tarjetas"],
   identidad: ["identidad", "identidades"],
   personal: ["dato personal", "datos personales"],
+  llave: ["llave de acceso", "llaves de acceso"],
 };
 
 function cuantasDe(cuantas: number, tipo: Filtro): string {
@@ -1615,6 +1627,19 @@ function Detalle({
             y la fecha de nacimiento, que son las dos que no se quieren en pantalla
             con alguien al lado. Un correo y un teléfono tapados serían un ojo para
             ver el propio número. */}
+        {/* La llave de acceso (ADR 0048). **No lleva ningún «Ver» ni «Copiar»**, y
+            no es un olvido: de una llave no hay nada que leer ni que teclear en
+            ningún sitio. La clave privada no sale de la bóveda ni siquiera hacia
+            esta pantalla —`SinSecretos` la vacía—, así que aquí no hay nada que
+            enseñar aunque se quisiera. */}
+        <Dato etiqueta="Sitio" valor={entrada.rpId} />
+        <Dato etiqueta="Cuenta" valor={entrada.nombreVisible} />
+        {entrada.tipo === "llave" && (
+          <p className="nota">
+            Una llave de acceso no se puede ver ni copiar: se usa firmando, y la firma la hace Esfinge.
+          </p>
+        )}
+
         <Dato etiqueta="Correo" valor={entrada.correo} />
         <Dato etiqueta="Teléfono" valor={entrada.telefono} />
         {/* **La dirección se guarda en nueve campos y se lee en uno.** Guardada por
@@ -1890,7 +1915,7 @@ function Editor({
             <Segmentado<TipoEntrada>
               valor={e.tipo}
               alCambiar={(t) => pon({ tipo: t })}
-              opciones={(Object.keys(NOMBRE_TIPO) as TipoEntrada[]).map((t) => ({
+              opciones={CLASES_A_MANO.map((t) => ({
                 valor: t,
                 etiqueta: NOMBRE_TIPO[t],
               }))}
@@ -2022,6 +2047,23 @@ function Editor({
           </>
         )}
 
+        {e.tipo === "llave" && (
+          <>
+            {/* Se puede cambiar cómo se llama y poco más: el sitio y la cuenta los
+                puso el sitio, y tocarlos no cambiaría la llave, la dejaría sin
+                encontrar. Por eso salen desactivados en vez de no salir: que estén
+                dice qué llave es ésta. */}
+            <Campo id="boveda-rpid" etiqueta="Sitio" valor={e.rpId} alCambiar={() => {}} desactivado />
+            <Campo
+              id="boveda-nombre-visible"
+              etiqueta="Cuenta"
+              valor={e.nombreVisible}
+              alCambiar={() => {}}
+              desactivado
+            />
+          </>
+        )}
+
         <Campo id="boveda-notas" etiqueta="Notas" valor={e.notas} alCambiar={(v) => pon({ notas: v })} largo />
         <Campo
           id="boveda-etiquetas"
@@ -2044,6 +2086,7 @@ function Campo({
   alCambiar,
   largo,
   pista,
+  desactivado,
 }: {
   id: string;
   etiqueta: string;
@@ -2051,18 +2094,26 @@ function Campo({
   alCambiar: (v: string) => void;
   largo?: boolean;
   pista?: string;
+  /** Se enseña y no se toca: lo puso otro y cambiarlo aquí no cambiaría nada allí. */
+  desactivado?: boolean;
 }) {
   return (
     <div>
       <label htmlFor={id}>{etiqueta}</label>
       {largo ? (
-        <textarea id={id} value={valor ?? ""} onChange={(ev) => alCambiar(ev.target.value)} />
+        <textarea
+          id={id}
+          value={valor ?? ""}
+          disabled={desactivado}
+          onChange={(ev) => alCambiar(ev.target.value)}
+        />
       ) : (
         <input
           id={id}
           type="text"
           autoComplete="off"
           value={valor ?? ""}
+          disabled={desactivado}
           onChange={(ev) => alCambiar(ev.target.value)}
         />
       )}
@@ -2096,6 +2147,8 @@ function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
   const [borrado, setBorrado] = useState(false);
   const [salida, setSalida] = useState("");
   const [seguro, setSeguro] = useState(false);
+  const [claveDeLlaves, setClaveDeLlaves] = useState("");
+  const [pidiendoLlaves, setPidiendoLlaves] = useState(false);
   const [error, setError] = useState("");
   const [trabajando, setTrabajando] = useState(false);
 
@@ -2123,6 +2176,19 @@ function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
       const donde = await esfinge.exportarBoveda();
       if (donde) setSalida(donde);
       setSeguro(false);
+    } catch (e) {
+      setError(mensaje(e));
+    }
+  }
+
+  async function exportarLlaves() {
+    setError("");
+    setSalida("");
+    try {
+      const donde = await esfinge.exportarLlaves(claveDeLlaves);
+      if (donde) setSalida(donde);
+      setPidiendoLlaves(false);
+      setClaveDeLlaves("");
     } catch (e) {
       setError(mensaje(e));
     }
@@ -2167,8 +2233,41 @@ function Traer({ alTraer }: { alTraer: () => Promise<void> }) {
       {seguro && (
         <p className="aviso">
           Lo que sale es una lista de contraseñas <strong>sin cifrar</strong>. Piensa dónde la
-          dejas y bórrala cuando termines.
+          dejas y bórrala cuando termines. <strong>Las llaves de acceso no van ahí</strong>: salen
+          aparte y cifradas, con el botón de abajo.
         </p>
+      )}
+
+      {/* **Las llaves de acceso no salen en claro** (ADR 0048). Una llave
+          sustituye a la contraseña, así que escribirla en un CSV sería poner en el
+          disco lo que abre la cuenta; y además ningún otro gestor sabe leerla. Sale
+          cifrada, y con una clave que **no es la maestra**: quien guarda esta copia
+          la guarda en otro sitio, y reutilizar la maestra haría que perder este
+          fichero fuera perder la bóveda. */}
+      <div>
+        <button className="discreto" onClick={() => setPidiendoLlaves(!pidiendoLlaves)}>
+          {pidiendoLlaves ? "Dejarlo" : "Exportar las llaves de acceso…"}
+        </button>
+      </div>
+
+      {pidiendoLlaves && (
+        <>
+          <p className="nota">
+            Salen en un fichero <strong>cifrado</strong>, y solo las abre Esfinge. Ponle una clave
+            que no sea la maestra y guárdala aparte: sin ella, este fichero no sirve para nada.
+          </p>
+          <Campo
+            id="boveda-clave-llaves"
+            etiqueta="Clave del fichero"
+            valor={claveDeLlaves}
+            alCambiar={setClaveDeLlaves}
+          />
+          <div className="botones">
+            <button onClick={exportarLlaves} disabled={claveDeLlaves.trim() === ""}>
+              Exportar las llaves
+            </button>
+          </div>
+        </>
       )}
 
       {salida && <p className="exito seleccionable">Exportada en {salida}</p>}

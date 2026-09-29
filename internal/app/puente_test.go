@@ -52,6 +52,11 @@ var loQuePuedeCruzarElPuente = []string{
 	"BuscarEnBoveda", "VerDeBoveda", "GuardarEnBoveda", "BorrarDeBoveda",
 	"CambiarMaestraDeBoveda", "RotarRecuperacionDeBoveda", "BorrarBoveda",
 	"ImportarEnBoveda", "ExportarBoveda", "BorrarElCSVImportado",
+	// **Cruza una clave, y por eso está dicho aquí**: la del fichero cifrado de las
+	// llaves de acceso (ADR 0048), que no es la maestra y se pide aparte. Lo que
+	// **no** cruza en ningún sentido es la clave privada de una llave: sale
+	// cifrada dentro del fichero y nunca por el puente.
+	"ExportarLlaves",
 	// La papelera. `PapeleraDeBoveda` devuelve la lista **sin secretos**, como
 	// cualquier otra lista: estar borrada no hace a una entrada menos secreta.
 	"PapeleraDeBoveda", "RestaurarDeBoveda", "BorrarDelTodoDeBoveda",

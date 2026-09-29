@@ -3,12 +3,15 @@ package boveda
 import (
 	"bytes"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/webcafeina/esfinge/internal/cripto"
 )
 
 // Importar credenciales de otro gestor.
@@ -724,6 +727,7 @@ func huellaDeContenido(e Entrada) string {
 		e.Correo, e.Telefono, e.Nacimiento,
 		e.Destinatario, e.Calle, e.Edificio, e.Piso, e.Puerta,
 		e.CodigoPostal, e.Ciudad, e.Provincia, e.Pais,
+		e.RPID, e.IDCredencial, e.IDUsuario, e.NombreVisible, e.ClavePrivada,
 	}, "\x00")
 }
 
@@ -746,6 +750,12 @@ func huellaDeCuenta(e Entrada) string {
 	// **caían todas en la huella del título**, que es donde ya pasó lo de las
 	// tarjetas. El nombre no entra aquí a propósito: se queda con la huella del
 	// título, que para un nombre *es* el nombre.
+	// La llave de acceso, por lo que la identifica de verdad: el identificador que
+	// emitió el sitio. Va **antes que el correo** porque una llave puede llevar un
+	// nombre visible que sea un correo, y entonces dos llaves distintas del mismo
+	// sitio compartirían huella.
+	case e.IDCredencial != "":
+		return "llave\x00" + strings.ToLower(strings.TrimSpace(e.RPID)) + "\x00" + e.IDCredencial
 	case e.Correo != "":
 		return "correo\x00" + strings.ToLower(strings.TrimSpace(e.Correo))
 	case e.Telefono != "":
@@ -765,6 +775,58 @@ func huellaDeCuenta(e Entrada) string {
 		return "titulo\x00" + strings.ToLower(e.Titulo)
 	}
 	return huella
+}
+
+// ExportarLlaves saca las llaves de acceso **cifradas**, y nunca en claro.
+//
+// Es la excepción a «una bóveda de la que no se puede salir es una trampa», y
+// está pensada para seguir cumpliéndola sin lo que costaría cumplirla del todo:
+// una fila de CSV con una clave privada dentro es lo más peligroso que Esfinge
+// escribiría nunca en el disco, y además **no le sirve a ningún gestor**, porque
+// ninguno sabe leerla. Así que se puede salir, pero el fichero que sale está en
+// un contenedor `ESF1` con su propia clave, que es la misma forma con la que
+// Esfinge cifra cualquier cosa desde la 1.0.
+//
+// Lo de dentro es JSON y no CSV a propósito: esto no lo va a leer una hoja de
+// cálculo, lo va a leer otra Esfinge.
+func (b *Boveda) ExportarLlaves(w io.Writer, clave string) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return 0, ErrCerrada
+	}
+	if clave == "" {
+		return 0, errors.New("Hace falta una clave para cifrar el fichero")
+	}
+
+	var llaves []Entrada
+	for _, e := range b.cont.Entradas {
+		if e.Papelera || e.Tipo != TipoLlave {
+			continue
+		}
+		llaves = append(llaves, e)
+	}
+	if len(llaves) == 0 {
+		return 0, errors.New("No hay ninguna llave de acceso que exportar")
+	}
+
+	datos, err := json.Marshal(struct {
+		Esfinge string    `json:"esfinge"`
+		Version int       `json:"version"`
+		Llaves  []Entrada `json:"llaves"`
+	}{"llaves de acceso", 1, llaves})
+	if err != nil {
+		return 0, err
+	}
+
+	sellado, err := cripto.Sellar(datos, []byte(clave), cripto.PerfilInteractivo)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := w.Write(sellado); err != nil {
+		return 0, err
+	}
+	return len(llaves), nil
 }
 
 // soloCifras compara los números de tarjeta sin importar cómo estén escritos:
@@ -807,6 +869,14 @@ func (b *Boveda) Exportar(w io.Writer) error {
 	}
 	for _, e := range b.cont.Entradas {
 		if e.Papelera {
+			continue
+		}
+		// **Las llaves de acceso no salen por aquí** (ADR 0048). Una fila de CSV con
+		// una clave privada dentro es lo más peligroso que Esfinge escribiría nunca
+		// en claro, y además no le sirve a ningún gestor: ninguno sabe leerla. Salen
+		// por `ExportarLlaves`, en un contenedor ESF1 con su clave, y quien exporta
+		// **lo ve dicho en la pantalla**, no lo descubre contando filas.
+		if e.Tipo == TipoLlave {
 			continue
 		}
 		sitio := ""
