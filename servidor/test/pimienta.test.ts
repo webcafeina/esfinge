@@ -200,6 +200,23 @@ describe("una cuenta que venía de la pimienta vieja", () => {
 	});
 
 	/**
+	 * **Una cuenta nueva se apunta con la pimienta de ahora, no con la 1.**
+	 *
+	 * La columna tiene `DEFAULT 1` —lo correcto para las filas de antes de todo esto— y
+	 * el alta no lo decía, así que **cada cuenta creada después de una rotación se
+	 * apuntaba como versión 1 aunque sus verificadores fueran de la 2**. Con eso el
+	 * contador no habría vuelto a llegar a cero nunca y el criterio para borrar la
+	 * pimienta vieja quedaba inservible. Lo encontró **terminar una rotación de verdad
+	 * en el servidor desplegado**, no una prueba.
+	 */
+	it("una cuenta nueva se apunta con la pimienta de ahora", async () => {
+		rotar("la-de-un-alta-nueva-0123456789ab-01234567");
+		const a = await darDeAlta("nueva-tras-rotar@ejemplo.com");
+		const fila = await env.BD.prepare("SELECT pimienta FROM cuentas WHERE correo = ?").bind(a.correo).first<{ pimienta: number }>();
+		expect(fila?.pimienta, "nace en la de ahora, no en la 1").toBe(2);
+	});
+
+	/**
 	 * **Contesta lo mismo cuadre o no**, y esto lo vigila: si una posesión mala se
 	 * distinguiera de una buena, esto sería un sitio donde probarlas con una sesión
 	 * robada.

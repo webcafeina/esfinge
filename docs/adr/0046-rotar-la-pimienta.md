@@ -141,6 +141,16 @@ guarda la **menor**. Una prueba en verde no dice que proteja algo.
   acierte o no**, porque el servidor no puede saber si la contraseña era buena. Su contador no se mueve.
 - **Y la vuelta atrás**, que solo funcionó porque esas cuentas no habían migrado: devuelta la versión,
   las dos entran (`202` y `202`).
+- **Y una rotación terminada entera**: borradas las dos cuentas de pruebas que nunca iban a migrar, el
+  contador se quedó solo con la versión 2, se **borró la variable `PIMIENTA`** y el servidor siguió
+  sano (`200`) con la cuenta migrada entrando igual. Ése es el caso que habría dado `503` a todo si
+  `configuracionCompleta` mirase la variable en vez de la versión de ahora.
+
+  > **Y terminarla encontró un fallo que ninguna prueba veía**: la fila de D1 se insertaba sin decir la
+  > versión, así que tomaba el `DEFAULT 1` y **toda cuenta creada después de una rotación se apuntaba
+  > como versión 1 aunque sus verificadores fueran de la 2**. Con eso el contador no habría vuelto a
+  > llegar a cero jamás y el criterio entero —el que se acababa de usar para decidir que se podía
+  > borrar la vieja— quedaba inservible. Arreglado y con su prueba, que se pone roja al quitarlo.
 
 **Lo que no se ha comprobado, y hay que decirlo:**
 

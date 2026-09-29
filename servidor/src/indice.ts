@@ -254,9 +254,13 @@ async function terminarAlta(p: Request, env: Env, ctx: ExecutionContext): Promis
 		// Una fila huérfana —la de una cuenta cuyo borrado no llegó a D1— se reutiliza;
 		// una cuenta viva, no.
 		if (await objeto(env, previa).prelogin()) throw new Fallo(409, "Ya hay una cuenta con este correo.");
-		await env.BD.prepare("UPDATE cuentas SET cuenta = ?, creada = ? WHERE correo = ?").bind(cuenta, ahora, c).run();
+		await env.BD.prepare("UPDATE cuentas SET cuenta = ?, creada = ?, pimienta = ? WHERE correo = ?")
+			.bind(cuenta, ahora, versionActual(env), c)
+			.run();
 	} else {
-		await env.BD.prepare("INSERT INTO cuentas (correo, cuenta, creada) VALUES (?, ?, ?)").bind(c, cuenta, ahora).run();
+		await env.BD.prepare("INSERT INTO cuentas (correo, cuenta, creada, pimienta) VALUES (?, ?, ?, ?)")
+			.bind(c, cuenta, ahora, versionActual(env))
+			.run();
 	}
 
 	const creada = await objeto(env, cuenta).crear({
