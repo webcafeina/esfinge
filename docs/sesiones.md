@@ -2192,6 +2192,30 @@ de ahí.
 
 ---
 
+## 2026-09-29 (tarde, 2) · Auditoría de la deuda antes de seguir
+
+- **El cliente paró la funcionalidad nueva para auditar la deuda primero.** Rindió: cinco cerradas y dos
+  encontradas.
+- **Y la primera sorpresa fue la propia lista**: una entrada llevaba **seis días saldada** figurando como
+  «Abierto · antes de la A4» —la revisión de los textos y las condiciones de uso son del 23—. Una lista
+  pesimista se deja de leer igual que una optimista, que es lo que le pasó a la `PIMIENTA` con el defecto
+  contrario.
+- **Revisar la política contra el código encontró un fallo real**: el cartero imprimía el error de SMTP
+  tal cual, y un rechazo puede traer dentro la dirección del destinatario — que Docker guarda. Ahora se
+  tacha el nombre y se deja el dominio.
+- **Y dejó una deuda nueva que es mía**: la política publicada **ya no es la revisada**, porque se cambió
+  esta tarde. Contrastada con el código, sin lectura legal.
+- **La prueba intermitente de la clave de recuperación**, cerrada quince días después haciendo lo que su
+  propia ficha decía: su propio Go y su propia carpeta de configuración.
+- **La lista de sitios excluidos** ya tiene prueba, sembrando por `/api/_excluir` —un extremo que no
+  existe fuera de la etiqueta `dev`—. La salida fácil era exportar un método en `App`, y eso es justo lo
+  que la lista blanca del puente existe para impedir.
+- **Y una corrección de método**: llamé baratas a cuatro cosas y solo una lo era. Puntué el coste leyendo
+  la descripción de una línea en vez de abrir el código. El mismo error del día, ahora auditando.
+- **Queda para la tarde siguiente**: `personalinfo.csv`, decidido que sí y dimensionado en su ficha.
+
+---
+
 ## 2026-09-29 (tarde) · La pimienta se puede rotar, y se rotó
 
 - **Se saldó la única deuda vencida del proyecto** ([ADR 0046](adr/0046-rotar-la-pimienta.md)): cambiar

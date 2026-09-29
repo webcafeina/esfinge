@@ -11,8 +11,13 @@ Producción manda por el relé de Google desde `cartero.webcafeina.com`, un serv
 y Resend está retirado del DNS y de los Workers. Comprobado con envíos de verdad antes y después de
 retirarlo.
 
-**No hay una siguiente acción concreta**: el plan de cuentas está cerrado entero y el del correo
-también. Lo que queda es de uso, no de trabajo:
+**La siguiente acción concreta es `personalinfo.csv`** (importar los datos personales de Dashlane), que
+el cliente decidió hacer el 2026-09-29 y que **deja de ser deuda para ser trabajo**: su ficha en
+[`deuda.md`](deuda.md) lo dimensiona, y empieza por lo que no es obvio — hace falta **una huella de
+identidad propia** para la clase nueva, o `claveDeCuenta` marcaría cuatro de cada cinco como duplicadas,
+que es el fallo que ya pasó con las tarjetas. Va con ADR.
+
+El plan de cuentas y el del correo están cerrados enteros. Lo demás es de uso, no de trabajo:
 
 1. **El humo completo sale con el uso real**, no con una sesión de pruebas: entrada desde equipo nuevo,
    recuperación, cambio de contraseña y borrado. Lo decidió así el cliente el 2026-09-29. Si algo falla
