@@ -150,14 +150,23 @@ guarda la **menor**. Una prueba en verde no dice que proteja algo.
   > versión, así que tomaba el `DEFAULT 1` y **toda cuenta creada después de una rotación se apuntaba
   > como versión 1 aunque sus verificadores fueran de la 2**. Con eso el contador no habría vuelto a
   > llegar a cero jamás y el criterio entero —el que se acababa de usar para decidir que se podía
-  > borrar la vieja— quedaba inservible. Arreglado y con su prueba, que se pone roja al quitarlo.
+  > borrar la vieja— quedaba inservible. Arreglado y con su prueba, que se pone roja al quitarlo. Y
+  > comprobado después contra el servidor desplegado: un alta nueva nace ya en la versión de ahora.
+
+  Al terminarla se tocó D1 a mano, y conviene que esté dicho: se **borraron las filas** de las dos
+  cuentas de pruebas que nunca iban a migrar —lo que deja sus Durable Objects huérfanos, basura
+  inalcanzable, porque desde aquí no se puede hacer el `deleteAll()` que sí haría un borrado de
+  verdad—, se **corrigió a mano** la fila que había nacido con el `1` mal apuntado, y se **vació la
+  tabla de contadores**, que es contabilidad antiabuso del día y no datos. En producción el borrado de
+  una cuenta se hace por su ruta, no así.
 
 **Lo que no se ha comprobado, y hay que decirlo:**
 
 - **Producción no se ha rotado**, ni hay motivo para hacerlo: nadie ha filtrado nada. La primera
   rotación real de producción seguirá siendo la primera vez.
-- **El contador no se ha visto llegar a cero**: en pruebas quedaron dos cuentas en la 1 que no van a
-  volver nunca, así que esa rotación se queda a medias a propósito. **Terminar una rotación entera
-  —hasta borrar la vieja— no se ha hecho.**
+- **La rotación de pruebas se terminó a mano**, borrando las filas de las cuentas que no iban a migrar.
+  En producción eso no valdría: allí habría que esperar a que la gente vuelva, o borrar sus cuentas por
+  la ruta que existe para ello. **Lo que no se ha visto nunca es una rotación que termine sola**, con
+  todas las cuentas migrando porque sus dueños abrieron Esfinge.
 - **Cuánto tarda una cuenta real en migrar** sigue siendo una deducción: depende de cuándo su dueño abra
   Esfinge, y eso no se ha medido.

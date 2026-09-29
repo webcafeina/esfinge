@@ -2216,8 +2216,13 @@ de ahí.
 - **Rotado de verdad en el Worker de pruebas**, con el cliente poniendo los secretos: una cuenta vieja
   entra, la migración en dos tiempos vista una a una, el caso feo provocado a propósito —`409` que no
   habla de contraseñas, y el mismo mensaje acierte o no— y la vuelta atrás.
-- **Queda sin hacer**: terminar una rotación entera, o sea borrar la vieja. En pruebas quedaron dos
-  cuentas que no van a volver.
+- **Y se terminó la rotación**, a petición del cliente, que era lo único que la ficha decía que no se
+  había hecho nunca. **Encontró un segundo fallo que ninguna prueba veía**: la fila de D1 se insertaba
+  sin decir la versión, así que toda cuenta creada después de rotar se apuntaba como la 1 aunque sus
+  verificadores fueran de la 2 — y con eso el contador no habría vuelto a cero jamás. Se habría
+  descubierto el día que hubiera hecho falta rotar producción, que es el peor día para descubrirlo.
+- **Queda sin ver**: una rotación que termine **sola**, con todas las cuentas migrando porque sus dueños
+  abren Esfinge. La de pruebas se cerró borrando a mano las filas de las que no iban a volver.
 
 ---
 
