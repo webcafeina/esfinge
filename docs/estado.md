@@ -19,8 +19,13 @@ mirar en su Mac y están en [`deuda.md`](deuda.md): **el glifo nuevo**, que es u
 convive con el carné de las identidades, y que **las pestañas de clases se han quedado sin rótulo salvo
 la activa** —seis rótulos piden 687 px y la columna de contenido está topada en 560—.
 
+**Publicada la 2.31.0**, que es la que hay que instalar: la 2.30.0 salió con la dirección compuesta y sin
+el arreglo del mensaje de la contraseña maestra.
+
 **No hay siguiente acción decidida.** Lo que queda abierto está en [`deuda.md`](deuda.md) y es de uso o
-de máquinas que no tenemos.
+de máquinas que no tenemos. Lo primero que puede volver es **lo que el cliente vea en su Mac** de la clase
+nueva: las pestañas sin rótulo, el glifo de la silueta al lado del carné y el formulario de catorce
+campos. Ninguno de los tres es caro de cambiar.
 
 El plan de cuentas y el del correo están cerrados enteros. Lo demás es de uso, no de trabajo:
 
