@@ -79,11 +79,61 @@ func TestCruzadaFormaCanonica(t *testing.T) {
 		}
 		entradas = append(entradas, e)
 	}
+	// **El dato personal, con sus cuatro campos** (ADR 0047). Van al final del
+	// orden de la estructura, y ahí es donde un campo nuevo se puede caer del
+	// espejo de TypeScript sin que nada más se entere: la entrada seguiría
+	// leyéndose y **la forma canónica saldría distinta en cada lado**, o sea las
+	// dos bóvedas pasándose la misma entrada sin fin. La dirección lleva saltos de
+	// línea a propósito.
+	for i, s := range textosRaros {
+		entradas = append(entradas, Entrada{
+			ID: fmt.Sprintf("%032x", 100+i), Tipo: TipoPersonal, Titulo: s,
+			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
+			NombreCompleto: s, Correo: s + "@ejemplo.com", Telefono: "+34 600 11 22 33",
+			Direccion: s + "\nCalle Mayor 1\n28001 Madrid", Nacimiento: "1980-01-01",
+		})
+	}
 	var suyas []string
 	cruzada.Pedir(t, map[string]any{"orden": "canon", "entradas": entradas}, &suyas)
 	for i, e := range entradas {
 		if suyas[i] != canon(e) {
 			t.Errorf("entrada %d:\n  Go:        %s\n  extensión: %s", i, canon(e), suyas[i])
+		}
+	}
+}
+
+// **Lo que se vacía antes de salir, tiene que vaciarse igual en los dos lados.**
+//
+// No lo cubre `TestCruzadaFormaCanonica` y conviene decir por qué, porque parece
+// que sí: la forma canónica **ordena las claves**, así que un campo que se caiga
+// de la lista del espejo de TypeScript vuelve por `extra` y sale con los mismos
+// bytes. Lo que se rompe entonces es otra cosa —`sinSecretos` lo borra por su
+// nombre y ya no está ahí—, y el efecto es que **el secreto cruza hacia el panel**
+// con todas las pruebas en verde. Comprobado quitando `correo` y `telefono` del
+// espejo: la canónica seguía verde y ésta se pone roja.
+func TestCruzadaLoQueSeVacia(t *testing.T) {
+	entradas := []Entrada{
+		{ID: fmt.Sprintf("%032x", 1), Tipo: TipoCredencial, Titulo: "Banco",
+			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
+			Usuario: "yo", Secreto: "s3cr3t0", TOTP: "JBSWY3DP", Notas: "una nota",
+			Historial: []Antigua{{Secreto: "viejo", Hasta: "2026-01-01T00:00:00Z"}}},
+		{ID: fmt.Sprintf("%032x", 2), Tipo: TipoTarjeta, Titulo: "La azul",
+			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
+			Titular: "Yo Mismo", Numero: "4111111111111111", Verificacion: "111"},
+		{ID: fmt.Sprintf("%032x", 3), Tipo: TipoIdentidad, Titulo: "Pasaporte",
+			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
+			NombreCompleto: "Yo Mismo", Documento: "passport", NumeroDocumento: "ABC123456"},
+		{ID: fmt.Sprintf("%032x", 4), Tipo: TipoPersonal, Titulo: "Casa",
+			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
+			NombreCompleto: "Álvaro Cabezas", Correo: "a@b.com", Telefono: "600111222",
+			Direccion: "Calle Mayor 1\n28001 Madrid", Nacimiento: "1980-01-01"},
+	}
+	var suyas []string
+	cruzada.Pedir(t, map[string]any{"orden": "sinSecretos", "entradas": entradas}, &suyas)
+	for i, e := range entradas {
+		mio := canon(e.SinSecretos())
+		if suyas[i] != mio {
+			t.Errorf("entrada %d (%s):\n  Go:        %s\n  extensión: %s", i, e.Tipo, mio, suyas[i])
 		}
 	}
 }
@@ -120,7 +170,7 @@ func (g generador) fecha() string {
 
 func (g generador) entrada(id string) Entrada {
 	e := Entrada{
-		ID: id, Tipo: Tipo(g.de("credencial", "credencial", "nota", "tarjeta")),
+		ID: id, Tipo: Tipo(g.de("credencial", "credencial", "nota", "tarjeta", "personal")),
 		Titulo: g.de(textosRaros...), Creada: g.fecha(), Cambiada: g.fecha(), Revision: int64(g.r.IntN(4)),
 	}
 	if g.r.IntN(2) == 0 {
@@ -140,6 +190,14 @@ func (g generador) entrada(id string) Entrada {
 	}
 	if g.r.IntN(5) == 0 {
 		e.Papelera, e.BorradaEn = true, g.fecha()
+	}
+	if g.r.IntN(4) == 0 {
+		// Los del dato personal. Entran en la fusión al azar porque **lo que no se
+		// toca aquí no se compara nunca**: la prueba de tres equipos es la que manda.
+		e.Correo = g.de("a@b.com", "c@d.es", "")
+		e.Telefono = g.de("600111222", "600333444")
+		e.Direccion = g.de("Mayor 1", "Mayor 1\n28001 Madrid")
+		e.Nacimiento = g.de("1980-01-01", "1990-12-31")
 	}
 	if g.r.IntN(5) == 0 {
 		e.Extra = map[string]json.RawMessage{"nuevo": json.RawMessage(g.de(`1`, `"x"`, `{"b":[1,2]}`))}

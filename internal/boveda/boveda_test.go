@@ -387,7 +387,7 @@ func TestLaBusquedaNoMiraLosSecretos(t *testing.T) {
 // **Una de cada clase**, y esa es la gracia: el secreto de una credencial es su
 // contraseña, el de una nota segura es su texto y el de una tarjeta es su
 // número, así que una papelera que solo devolviera bien las credenciales sería
-// una papelera rota para tres de las cuatro.
+// una papelera rota para cuatro de las cinco.
 func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	b, _, ruta := nueva(t)
 	b.Poner(Entrada{Titulo: "Fuera", Secreto: "s3cr3t0", TOTP: "ABCD"})
@@ -395,6 +395,11 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	b.Poner(Entrada{Titulo: "Tarjeta", Tipo: TipoTarjeta,
 		Numero: "4111111111111111", Verificacion: "737"})
 	b.Poner(Entrada{Titulo: "Documento", Tipo: TipoIdentidad, NumeroDocumento: "12345678Z"})
+	// El dato personal (ADR 0047): su contenido son cuatro campos y **ninguno es
+	// la contraseña**, que es justo por lo que se dejaron fuera la primera vez.
+	b.Poner(Entrada{Titulo: "Casa", Tipo: TipoPersonal, NombreCompleto: "Yo Mismo",
+		Correo: "yo@ejemplo.com", Telefono: "600111222",
+		Direccion: "Calle Mayor 1\n28001 Madrid", Nacimiento: "1980-01-01"})
 
 	for _, e := range b.Buscar("") {
 		if err := b.Borrar(e.ID); err != nil {
@@ -404,13 +409,19 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	if b.Cuantas() != 0 {
 		t.Error("siguen contando como vivas")
 	}
-	if b.EnLaPapelera() != 4 {
-		t.Errorf("en la papelera hay %d de 4", b.EnLaPapelera())
+	if b.EnLaPapelera() != 5 {
+		t.Errorf("en la papelera hay %d de 5", b.EnLaPapelera())
 	}
 	// La lista de la papelera es una lista más: **sin secretos**.
 	for _, e := range b.Papelera() {
-		if e.Secreto != "" || e.Notas != "" || e.Numero != "" || e.NumeroDocumento != "" {
+		if e.Secreto != "" || e.Notas != "" || e.Numero != "" || e.NumeroDocumento != "" ||
+			e.Correo != "" || e.Telefono != "" || e.Direccion != "" || e.Nacimiento != "" {
 			t.Errorf("la papelera ha traído el secreto de «%s»", e.Titulo)
+		}
+		// **El nombre sí viaja**, y es deliberado: `tituloDeReserva` saca el título
+		// de él, así que vaciarlo no escondería nada mientras el título lo repite.
+		if e.Tipo == TipoPersonal && e.NombreCompleto == "" {
+			t.Error("el nombre se ha ido, y el título lo dice igual")
 		}
 	}
 
@@ -427,7 +438,7 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if b.Cuantas() != 4 || b.EnLaPapelera() != 0 {
+	if b.Cuantas() != 5 || b.EnLaPapelera() != 0 {
 		t.Fatalf("después de restaurar hay %d vivas y %d en la papelera",
 			b.Cuantas(), b.EnLaPapelera())
 	}
@@ -435,10 +446,12 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	quiero := map[string]string{
 		"Fuera": "s3cr3t0", "Nota": "la combinación es 4242",
 		"Tarjeta": "4111111111111111", "Documento": "12345678Z",
+		"Casa": "yo@ejemplo.com600111222Calle Mayor 1\n28001 Madrid1980-01-01",
 	}
 	for _, l := range b.Buscar("") {
 		e, _ := b.Ver(l.ID)
-		suyo := e.Secreto + e.Notas + e.Numero + e.NumeroDocumento
+		suyo := e.Secreto + e.Notas + e.Numero + e.NumeroDocumento +
+			e.Correo + e.Telefono + e.Direccion + e.Nacimiento
 		if suyo != quiero[e.Titulo] {
 			t.Errorf("«%s» ha vuelto con %q y se borró con %q",
 				e.Titulo, suyo, quiero[e.Titulo])

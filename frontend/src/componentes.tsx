@@ -252,6 +252,14 @@ export function Icono({ nombre }: { nombre: string }) {
         <path d="M11 7.6h2.8M11 10.4h2.8" />
       </>
     ),
+    // Un dato personal: quien es, sin el carné alrededor. Es lo que lo separa de
+    // la identidad, que es el documento y no la persona.
+    personal: (
+      <>
+        <circle cx="9" cy="6.1" r="2.9" />
+        <path d="M3.5 15.2c.5-3 2.7-4.7 5.5-4.7s5 1.7 5.5 4.7" />
+      </>
+    ),
     // Los gestores de los que se sabe importar.
     //
     // **Son marcas de otras empresas, y por eso no son sus logotipos.** Nombrar un

@@ -1202,6 +1202,7 @@ function Dentro({
             { valor: "nota", etiqueta: "Notas", icono: "nota" },
             { valor: "tarjeta", etiqueta: "Tarjetas", icono: "tarjeta" },
             { valor: "identidad", etiqueta: "Identidades", icono: "identidad" },
+            { valor: "personal", etiqueta: "Datos personales", icono: "personal" },
           ]}
         />
         {/* A la derecha, porque son dos preguntas distintas: las pestañas dicen
@@ -1277,6 +1278,7 @@ const NOMBRE_TIPO: Record<TipoEntrada, string> = {
   nota: "Nota",
   tarjeta: "Tarjeta",
   identidad: "Identidad",
+  personal: "Dato personal",
 };
 
 /**
@@ -1365,6 +1367,7 @@ const PLURAL: Record<TipoEntrada, [string, string]> = {
   nota: ["nota", "notas"],
   tarjeta: ["tarjeta", "tarjetas"],
   identidad: ["identidad", "identidades"],
+  personal: ["dato personal", "datos personales"],
 };
 
 function cuantasDe(cuantas: number, tipo: Filtro): string {
@@ -1577,6 +1580,17 @@ function Detalle({
         <Dato etiqueta="Nombre completo" valor={entrada.nombreCompleto} />
         <Dato etiqueta="Documento" valor={entrada.documento} />
         <Secreto etiqueta="Número del documento" valor={entrada.numeroDocumento} />
+
+        {/* El dato personal (ADR 0047). **El ojo y lo que cruza el puente contestan
+            preguntas distintas**, y por eso no coinciden: de la lista se vacían los
+            cuatro, porque una lista no los necesita; con ojo van solo la dirección
+            y la fecha de nacimiento, que son las dos que no se quieren en pantalla
+            con alguien al lado. Un correo y un teléfono tapados serían un ojo para
+            ver el propio número. */}
+        <Dato etiqueta="Correo" valor={entrada.correo} />
+        <Dato etiqueta="Teléfono" valor={entrada.telefono} />
+        <Secreto etiqueta="Dirección" valor={entrada.direccion} />
+        <Secreto etiqueta="Fecha de nacimiento" valor={entrada.nacimiento} />
 
         <Dato etiqueta="Notas" valor={entrada.notas} />
         <Dato etiqueta="Etiquetas" valor={entrada.etiquetas?.join(", ")} />
@@ -1918,6 +1932,33 @@ function Editor({
               etiqueta="Número del documento"
               valor={e.numeroDocumento}
               alCambiar={(v) => pon({ numeroDocumento: v })}
+            />
+          </>
+        )}
+
+        {e.tipo === "personal" && (
+          <>
+            <Campo
+              id="boveda-personal-nombre"
+              etiqueta="Nombre completo"
+              valor={e.nombreCompleto}
+              alCambiar={(v) => pon({ nombreCompleto: v })}
+            />
+            <Campo id="boveda-correo" etiqueta="Correo" valor={e.correo} alCambiar={(v) => pon({ correo: v })} />
+            <Campo id="boveda-telefono" etiqueta="Teléfono" valor={e.telefono} alCambiar={(v) => pon({ telefono: v })} />
+            <Campo
+              id="boveda-direccion"
+              etiqueta="Dirección"
+              valor={e.direccion}
+              alCambiar={(v) => pon({ direccion: v })}
+              largo
+            />
+            <Campo
+              id="boveda-nacimiento"
+              etiqueta="Fecha de nacimiento"
+              valor={e.nacimiento}
+              alCambiar={(v) => pon({ nacimiento: v })}
+              pista="AAAA-MM-DD"
             />
           </>
         )}

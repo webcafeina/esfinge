@@ -15,6 +15,15 @@ const (
 	TipoNota       Tipo = "nota"
 	TipoTarjeta    Tipo = "tarjeta"
 	TipoIdentidad  Tipo = "identidad"
+	// TipoPersonal es un dato personal: un nombre, un correo, un teléfono, una
+	// dirección, una fecha de nacimiento (ADR 0047).
+	//
+	// **Es la primera clase que no guarda un secreto**, y eso cambia lo que
+	// Esfinge dice de sí mismo: hasta aquí era «lo que hay dentro no se puede
+	// perder ni enseñar», y un teléfono no es eso. Se guarda igual porque es lo
+	// que el gestor al que sustituye guardaba, y porque la alternativa realista
+	// no era tenerlo fuera: era tenerlo en Dashlane.
+	TipoPersonal Tipo = "personal"
 )
 
 // Antigua es una contraseña que se sustituyó.
@@ -91,6 +100,13 @@ type Entrada struct {
 	Documento       string `json:"documento,omitempty"`
 	NumeroDocumento string `json:"numeroDocumento,omitempty"`
 
+	// Dato personal. `NombreCompleto` se comparte con la identidad a propósito:
+	// es el mismo dato y buscarlo tiene que encontrar las dos.
+	Correo     string `json:"correo,omitempty"`
+	Telefono   string `json:"telefono,omitempty"`
+	Direccion  string `json:"direccion,omitempty"`
+	Nacimiento string `json:"nacimiento,omitempty"`
+
 	// Extra guarda **los campos que esta versión de Esfinge no entiende**.
 	//
 	// Es lo más subestimado de todo el formato. En cuanto haya dos Esfinges de
@@ -126,7 +142,12 @@ func (e Entrada) Coincide(q string) bool {
 	if q == "" {
 		return true
 	}
-	campos := append([]string{e.Titulo, e.Usuario, e.Carpeta, e.NombreCompleto, e.Titular},
+	// El correo y el teléfono se buscan aunque `vaciarLoSensible` los quite de la
+	// lista, y las dos cosas son correctas porque pasan en sitios distintos: esto
+	// corre **dentro** de la bóveda, sobre la entrada entera, y lo que se vacía es
+	// la copia que sale hacia la ventana. Sin ellos, la única forma de encontrar
+	// «Correo electrónico 1» sería acordarse de que se llama así.
+	campos := append([]string{e.Titulo, e.Usuario, e.Carpeta, e.NombreCompleto, e.Titular, e.Correo, e.Telefono},
 		append(e.Sitios, e.Etiquetas...)...)
 	for _, c := range campos {
 		if strings.Contains(strings.ToLower(c), q) {
@@ -165,6 +186,15 @@ func (e *Entrada) vaciarLoSensible() {
 	e.Numero = ""
 	e.NumeroDocumento = ""
 	e.Notas = ""
+	// El dato personal (ADR 0047). **El nombre se queda y lo demás no**, y la
+	// razón es la misma en los dos sentidos: `tituloDeReserva` saca el título del
+	// nombre, así que vaciarlo no protegería nada mientras el título lo repite en
+	// la lista y en la papelera. El correo, el teléfono, la dirección y la fecha
+	// de nacimiento **no** están en el título, así que vaciarlos sí sirve.
+	e.Correo = ""
+	e.Telefono = ""
+	e.Direccion = ""
+	e.Nacimiento = ""
 }
 
 // ---------------------------------------------------------------------------

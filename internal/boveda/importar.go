@@ -64,6 +64,29 @@ const (
 	CampoDocumento       = "documento"
 	CampoNumeroDocumento = "numero-documento"
 
+	// Datos personales (ADR 0047). El nombre se compone de hasta tres columnas y
+	// la dirección de hasta nueve, así que cada trozo tiene su campo y se juntan
+	// **en un orden fijo** al terminar la fila: por orden de columna saldría «la
+	// calle, España, Madrid, 28001», porque así es como Dashlane las coloca.
+	CampoCorreo        = "correo"
+	CampoTelefono      = "telefono"
+	CampoNacimiento    = "nacimiento"
+	CampoNombrePila    = "nombre-pila"
+	CampoNombreMedio   = "nombre-medio"
+	CampoApellidos     = "apellidos"
+	CampoCalle         = "calle"
+	CampoCodigoPostal  = "codigo-postal"
+	CampoCiudad        = "ciudad"
+	CampoProvincia     = "provincia"
+	CampoPais          = "pais"
+	CampoDestinatario  = "destinatario"
+	CampoEdificio      = "edificio"
+	CampoPiso          = "piso"
+	CampoPuerta        = "puerta"
+
+	// CampoTipo solo se lee en el fichero que exporta Esfinge. Ver `tipoDe`.
+	CampoTipo = "tipo"
+
 	CampoIgnorar = ""
 )
 
@@ -90,6 +113,13 @@ const (
 	FormaCredencial Forma = iota
 	FormaTarjeta
 	FormaIdentidad
+	// FormaPersonal es `personalinfo.csv`, y es el **único** de Dashlane que se
+	// declara fila a fila: trae una columna `type` que dice si esa línea es un
+	// nombre, un correo, un teléfono o una dirección. No hace falta creerle
+	// —dos clases cualesquiera no comparten ni una columna rellena—, pero sí hay
+	// que saber que las 24 columnas son de seis cosas distintas y que **casi
+	// todas vienen vacías en cada fila**.
+	FormaPersonal
 	// FormaEsfinge es lo que exporta Esfinge: **una sola tabla con todas las
 	// columnas**, justo lo contrario que Dashlane. Se reconoce sola para que lo
 	// que sale de aquí pueda volver a entrar de una vez, que es la mitad de lo
@@ -112,6 +142,12 @@ func FormaDeLaCabecera(cabecera []string) Forma {
 	// tarjeta y de documento, porque es el único que no separa por clases.
 	case hay["cc_number"] && hay["document_number"]:
 		return FormaEsfinge
+	// Los datos personales, por columnas que no existen en ningún otro fichero de
+	// ningún gestor. No se mira `type` ni `item_name`: `type` está en tres de los
+	// cinco de Dashlane queriendo decir cosas distintas, que es el problema que
+	// `Forma` vino a resolver.
+	case hay["email_type"] || hay["address_door_code"] || hay["place_of_birth"] || hay["address_recipient"]:
+		return FormaPersonal
 	case hay["cc_number"] || hay["card_number"] || hay["cardnumber"]:
 		return FormaTarjeta
 	case hay["number"] && (hay["code"] || hay["expiration_month"] || hay["issuing_bank"]):
@@ -148,8 +184,16 @@ var aliasPorForma = map[Forma]map[string]string{
 		"expiration_date": CampoCaduca, "cvv": CampoVerificacion,
 		"full_name": CampoNombre, "document_type": CampoDocumento,
 		"document_number": CampoNumeroDocumento,
-		// «type» no se lee: la clase de entrada se deduce de los campos que vengan
-		// rellenos, que es lo que no puede mentir.
+		"correo":          CampoCorreo, "telefono": CampoTelefono,
+		"direccion": CampoCalle, "nacimiento": CampoNacimiento,
+		// **«type» se lee aquí y solo aquí**, y es la excepción a la regla de que
+		// la clase se deduce de los campos: éste es nuestro propio fichero y no
+		// miente. Hace falta desde que hay datos personales, porque un dato
+		// personal que solo lleva un nombre **no tiene ningún campo que lo
+		// distinga de nada**: exportado y vuelto a importar salía convertido en
+		// una credencial sin usuario ni contraseña. Se usa en último lugar, cuando
+		// los campos no deciden (ver `tipoDe`).
+		"type": CampoTipo,
 	},
 	FormaTarjeta: {
 		"cc_number": CampoNumero, "card_number": CampoNumero,
@@ -175,6 +219,41 @@ var aliasPorForma = map[Forma]map[string]string{
 		"expiration_date": CampoCaduca, "expiry": CampoCaduca,
 		"issue_date": CampoNotas, "place_of_issue": CampoNotas,
 		"state": CampoNotas, "country": CampoNotas,
+	},
+	FormaPersonal: {
+		// El título: Dashlane deja `title` vacío en todas las filas y pone el
+		// rótulo que se inventa —«Correo electrónico 1»— en `item_name`.
+		//
+		// **`title` tiene que salir de `titulo` o `item_name` no entra nunca**:
+		// `Adivinar` se queda con la primera columna que reclama un campo y `title`
+		// va antes en la cabecera, así que la reclamaba ella y se quedaba vacía. Y
+		// no se tira, se manda a las notas: si algún día Dashlane la rellena, lo
+		// que traiga se conserva en vez de desaparecer sin que nadie lo note.
+		"title": CampoNotas, "item_name": CampoTitulo,
+		// El nombre, en tres trozos.
+		"first_name": CampoNombrePila, "middle_name": CampoNombreMedio,
+		"last_name": CampoApellidos,
+		// **`login` aquí no es un usuario de ninguna cuenta**: es el alias que esa
+		// persona suele usar. Dejándolo en `usuario` —que es lo que dice la tabla
+		// común— la fila salía clasificada como credencial, con un usuario y sin
+		// sitio ni contraseña.
+		"login": CampoNotas,
+		"email": CampoCorreo, "email_type": CampoNotas,
+		"phone_number": CampoTelefono,
+		"date_of_birth": CampoNacimiento, "place_of_birth": CampoNotas,
+		"job_title": CampoNotas,
+		// La dirección, en trozos con su sitio en el sobre.
+		"address": CampoCalle, "zip": CampoCodigoPostal, "city": CampoCiudad,
+		"state": CampoProvincia, "country": CampoPais,
+		"address_recipient": CampoDestinatario,
+		// El piso y la puerta **no pueden caer en el mismo campo**: `Adivinar` se
+		// queda con la primera columna que lo reclama y la otra se perdería sin
+		// decir nada.
+		"address_building": CampoEdificio, "address_floor": CampoPiso,
+		"address_apartment": CampoPuerta,
+		// **El código del portal es un secreto y va a las notas**, que es lo único
+		// que `vaciarLoSensible` limpia de lo que se escribe suelto.
+		"address_door_code": CampoNotas,
 	},
 }
 
@@ -245,11 +324,13 @@ func Leer(datos []byte, mapa Correspondencia) ([]Entrada, Lectura, error) {
 	}
 
 	var out []Entrada
+	forma := FormaDeLaCabecera(cabecera)
 	for _, fila := range filas[1:] {
-		e := deFila(cabecera, fila, mapa)
+		e := deFila(cabecera, fila, mapa, forma)
 		// Una fila sin nada que guardar no es una entrada, es una línea en blanco.
 		if e.Titulo == "" && e.Usuario == "" && e.Secreto == "" && e.Notas == "" &&
-			e.Numero == "" && e.NumeroDocumento == "" {
+			e.Numero == "" && e.NumeroDocumento == "" &&
+			e.Correo == "" && e.Telefono == "" && e.Direccion == "" && e.Nacimiento == "" {
 			continue
 		}
 		out = append(out, e)
@@ -312,19 +393,28 @@ func (m Correspondencia) tiene(campo string) bool {
 
 // sirve dice si con este mapa se puede sacar algo aprovechable.
 //
-// Lo que cuenta es que haya **algo que merezca la pena guardar bajo llave**: una
-// contraseña, una nota, el número de una tarjeta o el de un documento. Hasta la
-// 2.12.4 solo valían las dos primeras, y por eso `payments.csv` e `ids.csv` de
-// Dashlane se rechazaban enteros.
+// Hasta la 2.12.4 lo que contaba era que hubiera **algo que merezca la pena
+// guardar bajo llave** —una contraseña o una nota—, y por eso `payments.csv` e
+// `ids.csv` de Dashlane se rechazaban enteros. Con la ADR 0047 el listón se
+// mueve otra vez, y conviene decirlo en voz alta en vez de añadir cuatro campos
+// a una lista: **un correo y un teléfono no son secretos**, y desde que hay
+// datos personales lo que decide no es si algo hay que esconderlo sino si la
+// bóveda lo guarda.
 func (m Correspondencia) sirve() bool {
 	return m.tiene(CampoSecreto) || m.tiene(CampoNotas) ||
-		m.tiene(CampoNumero) || m.tiene(CampoNumeroDocumento)
+		m.tiene(CampoNumero) || m.tiene(CampoNumeroDocumento) ||
+		m.tiene(CampoCorreo) || m.tiene(CampoTelefono) ||
+		m.tiene(CampoCalle) || m.tiene(CampoNacimiento)
 }
 
-func deFila(cabecera, fila []string, mapa Correspondencia) Entrada {
+func deFila(cabecera, fila []string, mapa Correspondencia, forma Forma) Entrada {
 	var e Entrada
 	var notas []string
 	var mes, ano string
+	var pila, medio, apellidos string
+	var calle, cp, ciudad, provincia, pais string
+	var destinatario, edificio, piso, puerta string
+	var tipoDicho string
 
 	for i, col := range cabecera {
 		if i >= len(fila) {
@@ -369,6 +459,38 @@ func deFila(cabecera, fila []string, mapa Correspondencia) Entrada {
 			e.Documento = valor
 		case CampoNumeroDocumento:
 			e.NumeroDocumento = valor
+		case CampoCorreo:
+			e.Correo = valor
+		case CampoTelefono:
+			e.Telefono = valor
+		case CampoNacimiento:
+			e.Nacimiento = valor
+		case CampoNombrePila:
+			pila = valor
+		case CampoNombreMedio:
+			medio = valor
+		case CampoApellidos:
+			apellidos = valor
+		case CampoCalle:
+			calle = valor
+		case CampoCodigoPostal:
+			cp = valor
+		case CampoCiudad:
+			ciudad = valor
+		case CampoProvincia:
+			provincia = valor
+		case CampoPais:
+			pais = valor
+		case CampoDestinatario:
+			destinatario = valor
+		case CampoEdificio:
+			edificio = valor
+		case CampoPiso:
+			piso = valor
+		case CampoPuerta:
+			puerta = valor
+		case CampoTipo:
+			tipoDicho = valor
 		}
 	}
 
@@ -378,13 +500,55 @@ func deFila(cabecera, fila []string, mapa Correspondencia) Entrada {
 		e.Caduca = strings.TrimPrefix(mes+"/"+ano, "/")
 		e.Caduca = strings.TrimSuffix(e.Caduca, "/")
 	}
+	if e.NombreCompleto == "" {
+		e.NombreCompleto = juntarCon(" ", pila, medio, apellidos)
+	}
+	if e.Direccion == "" {
+		e.Direccion = componerDireccion(destinatario, calle, edificio, piso, puerta, cp, ciudad, provincia, pais)
+	}
 	e.Notas = strings.Join(notas, "\n")
 
-	e.Tipo = tipoDe(e)
+	e.Tipo = tipoDe(e, forma, tipoDicho)
 	if e.Titulo == "" {
 		e.Titulo = tituloDeReserva(e)
 	}
 	return e
+}
+
+// juntarCon pega los trozos que no están vacíos. Existe porque
+// `strings.Join` de tres cosas con dos vacías deja dos separadores seguidos.
+func juntarCon(sep string, partes ...string) string {
+	var hay []string
+	for _, p := range partes {
+		if p = strings.TrimSpace(p); p != "" {
+			hay = append(hay, p)
+		}
+	}
+	return strings.Join(hay, sep)
+}
+
+// componerDireccion escribe la dirección **en el orden del sobre**, no en el de
+// las columnas.
+//
+// Dashlane las coloca `address, country, state, city, zip, …`, así que juntarlas
+// por orden de columna da «Calle Mayor 1, España, Madrid, Madrid, 28001», que no
+// es una dirección: es una lista de campos. Aquí el orden es fijo y la línea del
+// municipio se arma como se escribe, «28001 Madrid (Madrid)».
+func componerDireccion(destinatario, calle, edificio, piso, puerta, cp, ciudad, provincia, pais string) string {
+	municipio := juntarCon(" ", cp, ciudad)
+	if p := strings.TrimSpace(provincia); p != "" && !strings.EqualFold(p, strings.TrimSpace(ciudad)) {
+		// La provincia solo cuando añade algo: en media España se llama igual que
+		// la capital y «Madrid (Madrid)» no informa de nada.
+		municipio = juntarCon(" ", municipio, "("+p+")")
+	}
+	lineas := []string{
+		strings.TrimSpace(destinatario),
+		juntarCon(", ", calle, edificio),
+		juntarCon(", ", piso, puerta),
+		municipio,
+		strings.TrimSpace(pais),
+	}
+	return juntarCon("\n", lineas...)
 }
 
 // etiquetar pone delante el nombre de la columna cuando varias caen en las
@@ -404,12 +568,21 @@ func etiquetar(col, valor string, mapa Correspondencia) string {
 
 // tipoDe decide qué clase de entrada es por lo que se ha podido rellenar, no por
 // lo que decía el fichero: un CSV puede mentir sobre sí mismo, y los campos no.
-func tipoDe(e Entrada) Tipo {
+func tipoDe(e Entrada, forma Forma, dicho string) Tipo {
 	switch {
 	case e.Numero != "" || e.Verificacion != "":
 		return TipoTarjeta
 	case e.NumeroDocumento != "" || e.Documento != "":
 		return TipoIdentidad
+	case e.Correo != "" || e.Telefono != "" || e.Direccion != "" || e.Nacimiento != "":
+		return TipoPersonal
+	// **Un nombre a secas no tiene ningún campo que lo distinga**, y es media
+	// exportación de datos personales: la fila `name` de Dashlane solo trae
+	// `first_name` y `last_name`. Los dos únicos sitios donde se puede saber qué
+	// es son el fichero del que salió y lo que Esfinge escribió de sí misma al
+	// exportarlo. Fuera de ahí sigue mandando lo que dicen los campos.
+	case e.NombreCompleto != "" && (forma == FormaPersonal || dicho == string(TipoPersonal)):
+		return TipoPersonal
 	case e.Secreto == "" && e.Usuario == "" && e.Notas != "":
 		return TipoNota
 	default:
@@ -422,7 +595,20 @@ func tituloDeReserva(e Entrada) string {
 	if t := primerNoVacio(e.Sitios...); t != "" {
 		return t
 	}
-	return primerNoVacio(e.Usuario, e.NombreCompleto, e.Titular, e.Documento)
+	// El nombre antes que el usuario: en un dato personal es lo único que hay, y
+	// `personalinfo.csv` **deja `title` vacío en todas las filas** —lo que se
+	// parece a un título está en `item_name`, y solo en algunas clases—. Sin
+	// esto, la fila del nombre entraba sin título, y una entrada sin título es
+	// una entrada que no se encuentra.
+	return primerNoVacio(e.NombreCompleto, e.Usuario, e.Correo, e.Telefono, e.Titular, e.Documento, primeraLinea(e.Direccion))
+}
+
+// primeraLinea, porque una dirección tiene varias y un título es una sola. Sin
+// esto, una fila de dirección sin `item_name` entraba con la calle, el municipio
+// y el país por título.
+func primeraLinea(s string) string {
+	l, _, _ := strings.Cut(s, "\n")
+	return l
 }
 
 func primerNoVacio(ss ...string) string {
@@ -568,6 +754,7 @@ func huellaDeContenido(e Entrada) string {
 		strings.Join(e.Sitios, "\x1f"),
 		e.Titular, soloCifras(e.Numero), e.Caduca, e.Verificacion,
 		e.NombreCompleto, e.Documento, e.NumeroDocumento,
+		e.Correo, e.Telefono, e.Direccion, e.Nacimiento,
 	}, "\x00")
 }
 
@@ -584,6 +771,18 @@ func huellaDeCuenta(e Entrada) string {
 		return "tarjeta\x00" + soloCifras(e.Numero)
 	case e.NumeroDocumento != "":
 		return "documento\x00" + strings.ToLower(e.NumeroDocumento)
+	// El dato personal se identifica por lo suyo, igual que los demás: un correo
+	// y un teléfono son únicos por sí solos, y una dirección lo es de sobra. Sin
+	// esto, las seis filas de `personalinfo.csv` no tienen ni sitio ni usuario y
+	// **caían todas en la huella del título**, que es donde ya pasó lo de las
+	// tarjetas. El nombre no entra aquí a propósito: se queda con la huella del
+	// título, que para un nombre *es* el nombre.
+	case e.Correo != "":
+		return "correo\x00" + strings.ToLower(strings.TrimSpace(e.Correo))
+	case e.Telefono != "":
+		return "telefono\x00" + soloCifras(e.Telefono)
+	case e.Direccion != "":
+		return "direccion\x00" + strings.ToLower(strings.Join(strings.Fields(e.Direccion), " "))
 	}
 
 	sitio := ""
@@ -631,6 +830,7 @@ func (b *Boveda) Exportar(w io.Writer) error {
 		"title", "url", "username", "password", "otpSecret", "note", "folder",
 		"type", "cardholder", "cc_number", "expiration_date", "cvv",
 		"full_name", "document_type", "document_number",
+		"correo", "telefono", "direccion", "nacimiento",
 	}); err != nil {
 		return err
 	}
@@ -646,6 +846,7 @@ func (b *Boveda) Exportar(w io.Writer) error {
 			e.Titulo, sitio, e.Usuario, e.Secreto, e.TOTP, e.Notas, e.Carpeta,
 			string(e.Tipo), e.Titular, e.Numero, e.Caduca, e.Verificacion,
 			e.NombreCompleto, e.Documento, e.NumeroDocumento,
+			e.Correo, e.Telefono, e.Direccion, e.Nacimiento,
 		}); err != nil {
 			return err
 		}

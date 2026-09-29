@@ -133,7 +133,7 @@ que había.
 | Campo | Qué es |
 |---|---|
 | `id` | 32 cifras hexadecimales al azar. No cambia nunca |
-| `tipo` | `credencial` · `nota` · `tarjeta` · `identidad` |
+| `tipo` | `credencial` · `nota` · `tarjeta` · `identidad` · `personal` |
 | `titulo`, `notas`, `etiquetas`, `carpeta` | Comunes |
 | `creada`, `cambiada` | RFC3339, resolución de un segundo. **`cambiada` la tocan también mandar a la papelera y restaurar**: sin base, «vive si se cambió después de borrarse» es la única regla que queda, y una entrada rescatada aquí perdía contra la purga de allí |
 | `revision` | Cuántas veces ha cambiado. **La pone la bóveda al guardar**, nunca quien edita: 1 al crear, +1 al editar, al mandar a la papelera y al sacar |
@@ -141,6 +141,7 @@ que había.
 | `usuario`, `secreto`, `sitios`, `totp`, `historial` | Credencial. `historial`: `[{secreto, hasta}]`, lo más reciente primero, diez como mucho |
 | `titular`, `numero`, `caduca`, `verificacion` | Tarjeta |
 | `nombreCompleto`, `documento`, `numeroDocumento` | Identidad |
+| `correo`, `telefono`, `direccion`, `nacimiento` | Dato personal ([ADR 0047](adr/0047-los-datos-personales.md)). `nombreCompleto` se comparte con la identidad: es el mismo dato. `direccion` lleva saltos de línea |
 
 Los vacíos no se escriben.
 

@@ -1354,7 +1354,7 @@ test("la lista sale ordenada por nombre, y el orden se puede cambiar", async ({ 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
-test("con la ventana estrecha se van los rótulos de las clases, pero no los de los gestores", async ({
+test("las clases de la bóveda van sin rótulo, y los gestores con él", async ({
   page,
 }) => {
   const errores = vigilarConsola(page);
@@ -1376,12 +1376,62 @@ test("con la ventana estrecha se van los rótulos de las clases, pero no los de 
 
   const anchoDe = (l: typeof clase) => l.evaluate((el) => el.getBoundingClientRect().width);
   const claseEstrecha = await anchoDe(clase);
-  const gestorAncho = await anchoDe(gestor);
-  expect(claseEstrecha).toBeLessThan(gestorAncho);
+  expect(claseEstrecha).toBeLessThan(await anchoDe(gestor));
 
-  // Y al ensanchar, la clase recupera el suyo.
-  await page.setViewportSize({ width: 900, height: 620 });
-  await expect.poll(() => anchoDe(clase)).toBeGreaterThan(claseEstrecha);
+  // **Y al ensanchar no vuelven, que es lo contrario de lo que esta prueba decía
+  // hasta la ADR 0047.** La columna de contenido está topada en 560 px y no crece
+  // con la ventana, así que lo que quepa no lo decide el ancho de la ventana. Con
+  // cinco clases los rótulos medían 527 y entraban por doce píxeles; la sexta pide
+  // 160 más. La regla que los devolvía miraba la ventana y acertaba de milagro.
+  await page.setViewportSize({ width: 1400, height: 620 });
+  await expect.poll(() => anchoDe(clase)).toBe(claseEstrecha);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+// **Las seis clases caben en su barra**, que es lo que ninguna aserción miraba.
+//
+// Se añadió la de datos personales, todo siguió en verde y en la captura el
+// rótulo de la última salía cortado por el borde del panel. Comparar lo que la
+// barra necesita con lo que mide es la pregunta que el CSS no contesta solo, y
+// vale para cualquier clase que se añada después de ésta.
+test("las clases de la bóveda caben en su barra", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  // **Con cada una activa, no solo con la primera.** La activa es la única que
+  // lleva rótulo, así que el caso peor es la de nombre más largo —«Datos
+  // personales», 160 px— y mirando solo la que viene puesta se comprueba el mejor.
+  const clases = ["Todo", "Credenciales", "Notas", "Tarjetas", "Identidades", "Datos personales"];
+  for (const ancho of [700, 980, 1400]) {
+    await page.setViewportSize({ width: ancho, height: 620 });
+    for (const nombre of clases) {
+      await page.getByRole("tab", { name: nombre, exact: true }).click();
+      const m = await page
+        .locator(".segmentado.compacto")
+        .evaluate((el) => ({
+          necesita: el.scrollWidth,
+          mide: el.clientWidth,
+          cabe: el.parentElement ? el.parentElement.clientWidth : 0,
+        }));
+      expect(m.necesita, `«${nombre}» activa con la ventana de ${ancho}: ${JSON.stringify(m)}`)
+        .toBeLessThanOrEqual(m.mide);
+      expect(m.mide, `«${nombre}» activa con la ventana de ${ancho}: ${JSON.stringify(m)}`)
+        .toBeLessThanOrEqual(m.cabe);
+    }
+    const medidas = await page
+      .locator(".segmentado.compacto")
+      .evaluate((el) => ({
+        necesita: el.scrollWidth,
+        mide: el.clientWidth,
+        cabe: el.parentElement ? el.parentElement.clientWidth : 0,
+      }));
+    expect(medidas.necesita, `con la ventana de ${ancho}: ${JSON.stringify(medidas)}`)
+      .toBeLessThanOrEqual(medidas.mide);
+    expect(medidas.mide, `con la ventana de ${ancho}: ${JSON.stringify(medidas)}`)
+      .toBeLessThanOrEqual(medidas.cabe);
+  }
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });

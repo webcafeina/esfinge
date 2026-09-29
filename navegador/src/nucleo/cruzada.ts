@@ -15,7 +15,7 @@ import { identidadDeSemilla } from "./identidad";
 import { abrirEnvio, mandarEntrada, type Envio } from "./envio";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
 import { dominioDeOrigen, dominioDeSitio } from "./dominios";
-import { canonEntrada, entradaDesde } from "./entrada";
+import { canonEntrada, entradaDesde, sinSecretos } from "./entrada";
 import { fundir, fundirPiezas } from "./fundir";
 
 const hex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
@@ -42,6 +42,16 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
   switch (p.orden) {
     case "canon":
       return (p.entradas as unknown[]).map((e) => canonEntrada(entradaDesde(e)));
+
+    // **Lo que se vacía antes de salir hacia el panel, comparado con Go.**
+    //
+    // Hace falta aparte de `canon` porque `canon` no puede cazar esto: la forma
+    // canónica ordena las claves, así que un campo que se caiga de `CAMPOS` vuelve
+    // por `extra` y **los bytes salen idénticos**. Lo que cambia es que
+    // `sinSecretos` ya no lo encuentra donde lo borra, y entonces el secreto
+    // **viaja al panel** sin que nada se ponga rojo. Comprobado quitando dos campos.
+    case "sinSecretos":
+      return (p.entradas as unknown[]).map((e) => canonEntrada(sinSecretos(entradaDesde(e))));
 
     case "fundir": {
       const out = [];

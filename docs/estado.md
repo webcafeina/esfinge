@@ -11,11 +11,15 @@ Producción manda por el relé de Google desde `cartero.webcafeina.com`, un serv
 y Resend está retirado del DNS y de los Workers. Comprobado con envíos de verdad antes y después de
 retirarlo.
 
-**La siguiente acción concreta es `personalinfo.csv`** (importar los datos personales de Dashlane), que
-el cliente decidió hacer el 2026-09-29 y que **deja de ser deuda para ser trabajo**: su ficha en
-[`deuda.md`](deuda.md) lo dimensiona, y empieza por lo que no es obvio — hace falta **una huella de
-identidad propia** para la clase nueva, o `claveDeCuenta` marcaría cuatro de cada cinco como duplicadas,
-que es el fallo que ya pasó con las tarjetas. Va con ADR.
+**Los datos personales de Dashlane ya entran** ([ADR 0047](adr/0047-los-datos-personales.md)), con una
+clase nueva, `personal`, y sus cuatro campos. Es **la primera clase de la bóveda que no guarda un
+secreto**, y el cliente la eligió sabiendo el coste frente a la opción barata. Dos cosas que hay que
+mirar en su Mac y están en [`deuda.md`](deuda.md): **el glifo nuevo**, que es una silueta de persona y
+convive con el carné de las identidades, y que **las pestañas de clases se han quedado sin rótulo salvo
+la activa** —seis rótulos piden 687 px y la columna de contenido está topada en 560—.
+
+**No hay siguiente acción decidida.** Lo que queda abierto está en [`deuda.md`](deuda.md) y es de uso o
+de máquinas que no tenemos.
 
 El plan de cuentas y el del correo están cerrados enteros. Lo demás es de uso, no de trabajo:
 

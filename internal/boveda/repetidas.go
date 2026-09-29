@@ -42,6 +42,12 @@ func claveDeCuenta(e Entrada) string {
 		string(e.Tipo), t(e.Titulo), t(e.Usuario), e.Secreto,
 		t(e.Titular), soloCifras(e.Numero), t(e.Caduca), e.Verificacion,
 		t(e.NombreCompleto), t(e.Documento), t(e.NumeroDocumento),
+		// **Los campos de un dato personal tienen que estar aquí** (ADR 0047). Es
+		// una lista escrita a mano y por eso hay que acordarse: sin estas cuatro
+		// líneas, dos correos distintos guardados con el mismo rótulo —«Correo
+		// electrónico 1» en dos importaciones— son la misma cuenta, y quitar
+		// repetidas borraría uno de los dos. Es el fallo de las tarjetas otra vez.
+		t(e.Correo), t(e.Telefono), t(e.Direccion), t(e.Nacimiento),
 	}
 	if e.Tipo == TipoNota {
 		// En una nota, el texto es el secreto: tiene que ser el mismo.

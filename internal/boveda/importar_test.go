@@ -324,6 +324,25 @@ func TestLosCincoFicherosDeDashlane(t *testing.T) {
 				t.Errorf("notas: %q", e.Notas)
 			}
 		},
+	}, {
+		// **El quinto, que faltaba y le daba nombre a esta prueba** (ADR 0047).
+		// Aquí va una fila para que la tabla diga la verdad; lo que este fichero
+		// tiene de particular se ejercita entero en `TestPersonalinfoDeDashlane`.
+		nombre: "personalinfo.csv",
+		csv: "type,title,first_name,last_name,email,email_type,item_name,phone_number,place_of_birth\n" +
+			"email,,,,alvaro@webcafeina.com,personal,Correo electrónico 1,,\n",
+		forma: FormaPersonal,
+		tipo:  TipoPersonal,
+		revisar: func(t *testing.T, e Entrada) {
+			if e.Correo != "alvaro@webcafeina.com" || e.Titulo != "Correo electrónico 1" {
+				t.Errorf("dato personal mal leído: %+v", e)
+			}
+			// Un correo **no** es el usuario de una cuenta, y la tabla común dice
+			// que sí. Si se cuela, esto entra como credencial sin sitio.
+			if e.Usuario != "" {
+				t.Errorf("el correo ha caído en el usuario: %+v", e)
+			}
+		},
 	}}
 
 	for _, c := range casos {
@@ -413,6 +432,14 @@ func TestLoExportadoVuelveAEntrarConTodo(t *testing.T) {
 		{Tipo: TipoIdentidad, Titulo: "Pasaporte", NombreCompleto: "Yo Mismo",
 			Documento: "passport", NumeroDocumento: "ABC123456"},
 		{Tipo: TipoNota, Titulo: "La caja fuerte", Notas: "la combinación es 1234"},
+		{Tipo: TipoPersonal, Titulo: "Correo electrónico 1", Correo: "yo@ejemplo.com"},
+		{Tipo: TipoPersonal, Titulo: "Casa", Direccion: "Calle Mayor 1\n28001 Madrid",
+			Telefono: "600111222", Nacimiento: "1980-01-01"},
+		// **Un nombre a secas no tiene ningún campo que diga qué es**, y es media
+		// exportación de datos personales. Volvía convertido en una credencial sin
+		// usuario ni contraseña: por eso la forma de Esfinge lee su columna `type`,
+		// que es lo que nosotros mismos escribimos y no puede mentir.
+		{Tipo: TipoPersonal, Titulo: "Álvaro Cabezas", NombreCompleto: "Álvaro Cabezas"},
 	}
 	if _, err := b.Importar(todo, "una prueba"); err != nil {
 		t.Fatal(err)
@@ -588,5 +615,161 @@ func TestLeerCuentaLasFilasDelFichero(t *testing.T) {
 	if len(entradas)+lectura.Vacias != lectura.Filas {
 		t.Errorf("la cuenta no cierra: %d + %d ≠ %d",
 			len(entradas), lectura.Vacias, lectura.Filas)
+	}
+}
+
+// **`personalinfo.csv`, el sexto fichero de Dashlane** (ADR 0047).
+//
+// La cabecera es la de verdad, entera y con las columnas en su orden: son 24 para
+// seis clases de dato, y **en cada fila vienen casi todas vacías**. Las dos
+// primeras filas son las del cliente tal cual las exportó él; las otras dos
+// ejercitan las clases que él no tenía guardadas.
+//
+// Tres cosas que este fichero hace y ningún otro:
+//
+//   - **`title` viene vacío en todas las filas.** Lo que se parece a un título está
+//     en `item_name`, y solo en algunas clases: la del nombre no lo trae. Sin
+//     `tituloDeReserva` mirando el nombre, esa fila entraba sin título.
+//   - **`login` no es el usuario de ninguna cuenta**, y dejarlo en el campo usuario
+//     —que es lo que dice la tabla común— clasificaba la fila como credencial.
+//   - **La dirección viene en nueve columnas y en el orden de Dashlane**, que no es
+//     el del sobre: `address, country, state, city, zip`.
+func TestPersonalinfoDeDashlane(t *testing.T) {
+	const cabecera = "type,title,first_name,middle_name,last_name,login,date_of_birth," +
+		"place_of_birth,email,email_type,item_name,phone_number,address,country,state,city," +
+		"zip,address_recipient,address_building,address_apartment,address_floor," +
+		"address_door_code,job_title,url"
+	const fichero = cabecera + "\n" +
+		"name,,Álvaro,,Cabezas,alvarocabezas,,,,,,,,,,,,,,,,,,\n" +
+		"email,,,,,,,,alvaro@webcafeina.com,personal,Correo electrónico 1,,,,,,,,,,,,,\n" +
+		"phone,,,,,,,,,,Teléfono 1,+34 600 11 22 33,,,,,,,,,,,,\n" +
+		"address,,,,,,,,,,Casa,,Calle Mayor 1,España,Madrid,Madrid,28001,Álvaro Cabezas,Portal B,B,3,1234,,\n"
+
+	if f := FormaDeLaCabecera(cabeceraDe(fichero)); f != FormaPersonal {
+		t.Fatalf("forma %d, y quiero FormaPersonal (%d)", f, FormaPersonal)
+	}
+
+	entradas, lectura, err := Leer([]byte(fichero), nil)
+	if err != nil {
+		t.Fatalf("no se ha podido leer: %v", err)
+	}
+	if len(entradas) != 4 || lectura.Vacias != 0 {
+		t.Fatalf("%d entradas y %d vacías, de 4 filas", len(entradas), lectura.Vacias)
+	}
+	for _, e := range entradas {
+		if e.Tipo != TipoPersonal {
+			t.Errorf("«%s» ha entrado como %q", e.Titulo, e.Tipo)
+		}
+		if e.Titulo == "" {
+			t.Errorf("una entrada sin título es una entrada que no se encuentra: %+v", e)
+		}
+		if e.Usuario != "" || e.Secreto != "" {
+			t.Errorf("«%s» ha salido con usuario o contraseña: %+v", e.Titulo, e)
+		}
+	}
+
+	nombre, correo, telefono, casa := entradas[0], entradas[1], entradas[2], entradas[3]
+
+	// El nombre: tres columnas en una, y el título sale de él porque no hay otro.
+	if nombre.NombreCompleto != "Álvaro Cabezas" || nombre.Titulo != "Álvaro Cabezas" {
+		t.Errorf("el nombre: %+v", nombre)
+	}
+	// `login` es el alias que esa persona usa, no la cuenta de ningún sitio.
+	if !strings.Contains(nombre.Notas, "alvarocabezas") {
+		t.Errorf("el login se ha perdido: %q", nombre.Notas)
+	}
+
+	if correo.Correo != "alvaro@webcafeina.com" || correo.Titulo != "Correo electrónico 1" {
+		t.Errorf("el correo: %+v", correo)
+	}
+	if telefono.Telefono != "+34 600 11 22 33" || telefono.Titulo != "Teléfono 1" {
+		t.Errorf("el teléfono: %+v", telefono)
+	}
+
+	// **La dirección, en el orden del sobre.** Por orden de columna saldría «Calle
+	// Mayor 1, España, Madrid, Madrid, 28001», que no es una dirección sino una
+	// lista de campos. Y la provincia no se repite cuando se llama igual que la
+	// ciudad, que en media España es lo normal.
+	quiero := "Álvaro Cabezas\nCalle Mayor 1, Portal B\n3, B\n28001 Madrid\nEspaña"
+	if casa.Direccion != quiero {
+		t.Errorf("la dirección es\n%q\ny la quiero\n%q", casa.Direccion, quiero)
+	}
+	// **El código del portal es un secreto**, y lo único que se vacía de lo que se
+	// escribe suelto son las notas.
+	if !strings.Contains(casa.Notas, "1234") {
+		t.Errorf("el código del portal no está en las notas: %q", casa.Notas)
+	}
+	if strings.Contains(casa.Direccion, "1234") {
+		t.Errorf("el código del portal está escrito en la dirección: %q", casa.Direccion)
+	}
+}
+
+// **Cuatro datos personales no son el mismo dato personal.**
+//
+// Es el fallo de las tarjetas con otra cara y por eso hay prueba: ninguna de estas
+// filas tiene sitio ni usuario, así que con la huella de una credencial todas
+// tienen la misma, y con la del título tampoco se salvan —«Correo electrónico 1»
+// y «Correo electrónico 2» sí, pero dos exportaciones del mismo Dashlane traen el
+// mismo rótulo—. Lo que las distingue es lo suyo: el correo, el teléfono, la
+// dirección.
+func TestVariosDatosPersonalesNoSonDuplicados(t *testing.T) {
+	b, _, _ := nueva(t)
+	entradas := []Entrada{
+		{Tipo: TipoPersonal, Titulo: "Correo electrónico 1", Correo: "uno@ejemplo.com"},
+		{Tipo: TipoPersonal, Titulo: "Correo electrónico 1", Correo: "dos@ejemplo.com"},
+		{Tipo: TipoPersonal, Titulo: "Teléfono 1", Telefono: "600111222"},
+		{Tipo: TipoPersonal, Titulo: "Teléfono 1", Telefono: "600333444"},
+		{Tipo: TipoPersonal, Titulo: "Casa", Direccion: "Calle Mayor 1\n28001 Madrid"},
+		{Tipo: TipoPersonal, Titulo: "Casa", Direccion: "Calle Menor 2\n08001 Barcelona"},
+	}
+	r, err := b.Importar(entradas, "Dashlane")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// **`Conflictos` es lo que hay que mirar aquí, y no `Metidas`.** Una huella que
+	// choca no impide que la entrada entre: la marca como «la misma cuenta con otro
+	// secreto» y la mete igual. Así que contando solo las metidas, esta prueba
+	// pasaba en verde con la huella del dato personal quitada —comprobado
+	// mutándola—, y lo que el cliente habría visto es «6 conflictos» al importar
+	// seis datos que no tienen nada que ver entre sí.
+	if r.Metidas != 6 || r.Repetidas != 0 || r.Conflictos != 0 {
+		t.Fatalf("%+v, y las seis son distintas", r)
+	}
+
+	// Y lo de siempre por el otro lado: pasar el mismo fichero dos veces no lo
+	// duplica. Sin esto, la huella podría ser «distinta cada vez» y la prueba de
+	// arriba pasaría igual.
+	r2, err := b.Importar(entradas, "Dashlane")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r2.Metidas != 0 || r2.Repetidas != 6 {
+		t.Fatalf("a la segunda: %d metidas y %d repetidas", r2.Metidas, r2.Repetidas)
+	}
+}
+
+// **Dos datos personales con el mismo rótulo no son la misma cuenta.**
+//
+// `claveDeCuenta` es una lista de campos escrita a mano, y lo que no esté en ella
+// no distingue: con los cuatro campos nuevos fuera, «Correo electrónico 1» con dos
+// direcciones distintas era la misma cuenta y **quitar repetidas borraba una**.
+// Es el camino de «Juntar» al entrar en una cuenta (ADR 0039), no el del
+// importador, y por eso no lo cubre la prueba de arriba.
+func TestDosDatosPersonalesConElMismoRotuloNoSeFusionan(t *testing.T) {
+	uno := Entrada{Tipo: TipoPersonal, Titulo: "Correo electrónico 1", Correo: "uno@ejemplo.com"}
+	dos := Entrada{Tipo: TipoPersonal, Titulo: "Correo electrónico 1", Correo: "dos@ejemplo.com"}
+	if claveDeCuenta(uno) == claveDeCuenta(dos) {
+		t.Fatal("dos correos distintos con el mismo rótulo salen como la misma cuenta")
+	}
+	// Y el teléfono, la dirección y la fecha por separado: con uno solo en la
+	// lista, la prueba pasaría dejando fuera los otros tres.
+	for _, par := range [][2]Entrada{
+		{{Tipo: TipoPersonal, Telefono: "600111222"}, {Tipo: TipoPersonal, Telefono: "600333444"}},
+		{{Tipo: TipoPersonal, Direccion: "Mayor 1"}, {Tipo: TipoPersonal, Direccion: "Menor 2"}},
+		{{Tipo: TipoPersonal, Nacimiento: "1980-01-01"}, {Tipo: TipoPersonal, Nacimiento: "1990-01-01"}},
+	} {
+		if claveDeCuenta(par[0]) == claveDeCuenta(par[1]) {
+			t.Errorf("no distingue: %+v y %+v", par[0], par[1])
+		}
 	}
 }

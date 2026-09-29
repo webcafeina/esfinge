@@ -2164,6 +2164,50 @@ de ahí.
 - Verificado: `make comprobar`, 16 pruebas de interfaz en los dos temas, y los tres sistemas
   compilando en verde.
 
+## 2026-09-29 (tarde, 3) · Los datos personales, la quinta clase
+
+- **Se importó el fichero antes de diseñar nada.** No había ninguna muestra en el disco, el cliente pasó
+  la cabecera entera y sus dos filas, y lo primero fue **ejecutarlas contra el importador de entonces**
+  para ver qué hacía: rechazarlas enteras, reconociendo tres columnas de veinticuatro y mal.
+- **Se le puso el precio delante antes de empezar**: su fichero son dos filas —su nombre y un correo—,
+  Esfinge no rellena ninguna de las dos cosas, y la opción barata era meterlas como notas seguras. Eligió
+  **la clase nueva completa** ([ADR 0047](adr/0047-los-datos-personales.md)), y por eso está escrito en la
+  ficha: para no volver a discutirlo.
+- **Y se corrigió lo que se había escrito por la mañana sin mirar el código.** El aviso de que hacía falta
+  «una huella de identidad propia o `claveDeCuenta` marcaría cuatro de cada cinco como duplicadas»
+  mezclaba dos funciones, y el riesgo de verdad era otro: **`title` viene vacío en todas las filas** de
+  Dashlane.
+- Hecho: la clase `personal` con `correo`, `telefono`, `direccion` y `nacimiento`, compartiendo
+  `nombreCompleto` con la identidad; la sexta forma del importador; el formulario y la ficha; **lo mismo
+  en el núcleo de TypeScript**; y la exportación, que sigue volviendo a entrar de una vez.
+
+**Qué se verificó, y con qué**
+
+- **Cuatro mutaciones, las cuatro rojas**: sin leer `type` en nuestro fichero, sin la huella propia del
+  dato personal, sin la forma del fichero en `tipoDe` y sin el vaciado de la papelera.
+- **Y una prueba que pasaba con el fallo dentro.** La de duplicados miraba `Metidas` y `Repetidas`, y una
+  huella que choca no produce ninguna de las dos: produce `Conflictos` y la entrada entra igual. Con la
+  huella quitada seguía verde. Ahora mira las tres.
+- **Una prueba cruzada nueva**, `TestCruzadaLoQueSeVacia`, porque la forma canónica **no puede** cazar que
+  un campo se caiga del espejo de TypeScript: ordena las claves, el campo vuelve por `extra` y los bytes
+  salen idénticos. Lo que se rompe es que `sinSecretos` ya no lo encuentra, y **el secreto cruza al panel
+  con todo en verde**. Comprobado quitando dos campos. Era un hueco abierto para las cuatro clases
+  anteriores.
+- **La barra de pestañas se midió.** La captura enseñó el rótulo de la sexta cortado; medir la barra a
+  siete anchos dijo la causa, que no era la que parecía: la columna de contenido **está topada en 560 px**
+  y el `@media (min-width: 740px)` que devolvía los rótulos preguntaba por la ventana. Con cinco clases
+  acertaba por doce píxeles. Ahora el rótulo se queda en la activa, y hay prueba que lo compara **con cada
+  pestaña activa**.
+
+**Qué queda abierto**
+
+- **No se ha visto en un Mac**: el glifo nuevo al lado del carné de las identidades, y las pestañas sin
+  rótulo, que es un cambio visible en una pantalla ya aprobada. En [`deuda.md`](deuda.md).
+- **La dirección se guarda como texto y no en sus nueve trozos.** Aceptado a sabiendas; el día que Esfinge
+  rellene formularios de compra hará falta campo a campo. En [`deuda.md`](deuda.md).
+
+---
+
 ## 2026-09-29 · El correo sale por el VPS, y Resend se va
 
 - **DKIM del dominio activado** (lo hizo el cliente en la consola, con el segundo factor de Nacho, que

@@ -13,7 +13,7 @@
 
 import { canonico, type ValorJSON } from "./canon";
 
-export type Tipo = "credencial" | "nota" | "tarjeta" | "identidad";
+export type Tipo = "credencial" | "nota" | "tarjeta" | "identidad" | "personal";
 
 export type Antigua = { secreto: string; hasta: string };
 
@@ -41,6 +41,10 @@ export type Entrada = {
   nombreCompleto?: string;
   documento?: string;
   numeroDocumento?: string;
+  correo?: string;
+  telefono?: string;
+  direccion?: string;
+  nacimiento?: string;
   /** Los campos que esta versión no conoce. */
   extra?: Record<string, ValorJSON>;
 };
@@ -70,6 +74,10 @@ const CAMPOS: [keyof Entrada, "siempre" | "texto" | "lista" | "numero" | "si" | 
   ["nombreCompleto", "texto"],
   ["documento", "texto"],
   ["numeroDocumento", "texto"],
+  ["correo", "texto"],
+  ["telefono", "texto"],
+  ["direccion", "texto"],
+  ["nacimiento", "texto"],
 ];
 const CONOCIDOS = new Set<string>(CAMPOS.map(([k]) => k as string));
 
@@ -192,6 +200,12 @@ export function sinSecretos(e: Entrada): Entrada {
   delete c.numero;
   delete c.numeroDocumento;
   delete c.notas;
+  // El dato personal (ADR 0047). **El nombre se queda**: el título sale de él al
+  // importar, así que vaciarlo no escondería nada mientras el título lo repite.
+  delete c.correo;
+  delete c.telefono;
+  delete c.direccion;
+  delete c.nacimiento;
   return c;
 }
 
@@ -199,7 +213,13 @@ export function sinSecretos(e: Entrada): Entrada {
 export function coincide(e: Entrada, q: string): boolean {
   const b = q.trim().toLowerCase();
   if (!b) return true;
-  const campos = [e.titulo, e.usuario, e.carpeta, e.nombreCompleto, e.titular, ...(e.sitios ?? []), ...(e.etiquetas ?? [])];
+  // El correo y el teléfono se buscan aunque `sinSecretos` los quite de la lista:
+  // esto corre sobre la entrada entera, dentro de la bóveda, y lo que se vacía es
+  // la copia que sale hacia el panel.
+  const campos = [
+    e.titulo, e.usuario, e.carpeta, e.nombreCompleto, e.titular, e.correo, e.telefono,
+    ...(e.sitios ?? []), ...(e.etiquetas ?? []),
+  ];
   return campos.some((c) => (c ?? "").toLowerCase().includes(b));
 }
 

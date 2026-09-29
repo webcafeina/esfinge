@@ -110,6 +110,13 @@ No se cambian sin preguntar.
 - **Español**, y **todas las frases empiezan en mayúscula**, aunque sean de una palabra. Va contra
   la costumbre de Go para los errores; manda lo que se ve en pantalla. Lo vigila
   `internal/cripto/textos_test.go`.
+- **Y desde el 2026-09-29 la bóveda guarda también datos personales** (ADR 0047): nombre, correo,
+  teléfono, dirección y fecha de nacimiento, que es el quinto fichero de Dashlane. Es **la primera clase
+  que no guarda un secreto**, y se hace igual porque la alternativa realista no era tenerlo fuera, era
+  tenerlo en Dashlane. Lo eligió el cliente frente a la opción barata —cada fila como nota segura—
+  sabiendo que **su fichero son dos filas** y que **Esfinge no rellena nada de eso**. Con ello, dos cosas
+  que se dicen en voz alta: lo que Esfinge dice de sí mismo ya no es «solo secretos», y **las pestañas de
+  clases se han quedado sin rótulo salvo la activa**, porque seis no caben.
 - **El historial guarda solo qué y cuándo**: nunca el contenido, la clave ni el texto cifrado. Vive
   en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar. **La bóveda no
   escribe en él**, y es una regla absoluta: `credenciales-dashlane.csv` ahí sería una señal de
@@ -384,6 +391,15 @@ fichero. Desde aquí, `go test -race` deja de ser una cortesía.
 macOS dibuja su propia banda de barra de herramientas justo donde va nuestro título: se ve un fondo
 que no cuadra con el resto de la ventana. La barra de herramientas la dibujamos nosotros.
 
+**La columna de contenido está topada en 560 px y no crece con la ventana**, así que una regla que
+decida qué cabe mirando `@media (min-width: …)` está preguntando por lo que no manda. Los rótulos de las
+pestañas de clases volvían así a partir de 740 px de ventana y funcionaba de milagro: cinco rótulos
+medían 527 y cabían por doce píxeles. La sexta clase pide 160 más y **no cabe a ningún tamaño de
+ventana**. Ahora el rótulo se queda solo en la pestaña activa, y hay una prueba que compara lo que la
+barra necesita con lo que mide **con cada pestaña activa**, porque la activa es la única con rótulo y
+mirando solo la primera se comprueba el mejor caso. Se vio en una captura; la causa la dijo **medir la
+barra a siete anchos**, no razonar sobre el CSS.
+
 **En la barra lateral, la fila activa no se resalta al pasar por encima**, y hace falta escribirlo:
 `.lateral button` **empata en peso** con la regla general de `button:hover`, que vive más abajo en el
 fichero y por eso ganaba. Los selectores de la barra lateral llevan `nav` para desempatar, y hay una
@@ -445,6 +461,21 @@ diga de sí mismo.
 Con ello va una regla: **cada clase de entrada se identifica por lo suyo** (`huellaDeCuenta`). La
 huella de una credencial es «sitio + usuario», y una tarjeta no tiene ninguno de los dos: con esa
 huella todas las tarjetas del mundo son la misma y importar cinco marcaba cuatro como duplicadas.
+
+**Y son cinco ficheros, no cuatro: el quinto es `personalinfo.csv`** (ADR 0047), y trae tres cosas que
+ningún otro. **Se declara fila a fila** —una columna `type` que dice si esa línea es un nombre, un correo
+o una dirección—, así que es el único donde la clase de cada entrada no se puede sacar solo de sus
+campos: **un nombre a secas no tiene ninguno que lo distinga**, y por eso `tipoDe` recibe la forma del
+fichero. **`title` viene vacío en todas las filas** y el rótulo está en `item_name`, que además hay que
+mandar `title` a las notas para que llegue: `Adivinar` se queda con la primera columna que reclama un
+campo, y `title` va antes. Y **la dirección viene en nueve columnas en el orden de Dashlane**, que no es
+el del sobre: por orden de columna sale «Calle Mayor 1, España, Madrid, Madrid, 28001».
+
+**Y una huella que choca no impide que la entrada entre: la marca.** `Importar` cuenta `Metidas`,
+`Repetidas` y `Conflictos`, y una huella común a todo cae en la tercera. Una prueba que compruebe
+«entraron las seis y ninguna repetida» **pasa en verde con la huella rota** —comprobado mutándola—: lo
+que hay que mirar es `Conflictos`, que es lo que el cliente vería como «6 duplicadas» al importar seis
+cosas que no tienen nada que ver.
 
 **Los avisos y las notas no pueden ser contenedores flexibles.** Lo fueron desde el principio, para
 colocar el glifo delante, y con `display: flex` cada trozo del párrafo se convierte en un elemento
@@ -1032,6 +1063,12 @@ y secreto (`claveDeCuenta`), y lo demás se junta (`juntarEn`, sobre una `copiaH
 comparte listas y mapas, y contar habría escrito en la bóveda). Quitar las repetidas se queda **la de
 identificador menor**, para que dos equipos limpiando a la vez no se queden sin ninguna. Cualquier
 limpieza que corra en varios equipos tiene que elegir igual en todos.
+
+**La forma canónica no caza que un campo se caiga del espejo de TypeScript**, y eso costó creer que
+estaba cubierto. Ordena las claves, así que un campo que no esté en `CAMPOS` vuelve por `extra` y **los
+bytes salen idénticos**. Lo que se rompe es otra cosa: `sinSecretos` lo borra por su nombre, ya no está
+ahí, y **el secreto cruza al panel con todo en verde**. Lo vigila `TestCruzadaLoQueSeVacia`, que compara
+lo vaciado y no lo escrito, y que era un hueco abierto para las cuatro clases anteriores.
 
 **Desde la E1, la bóveda existe dos veces: en Go y en `navegador/src/nucleo/`** (ADR 0040), y **cualquier
 cambio del formato, de la fusión o de los códigos se hace en las dos**. Lo vigilan las pruebas cruzadas

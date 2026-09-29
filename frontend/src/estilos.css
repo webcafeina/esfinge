@@ -325,8 +325,8 @@ body {
   flex-shrink: 0;
 }
 
-/* Cuando la ventana se estrecha se quedan los iconos y el rótulo **se recorta
- * sin salir del DOM**.
+/* En el control de las clases de la bóveda se quedan los iconos y el rótulo **se
+ * recorta sin salir del DOM**.
  *
  * Con «display: none» desaparecería también el nombre accesible del botón, y con
  * él lo que oye quien lee la pantalla en voz alta y lo que buscan las pruebas.
@@ -344,15 +344,36 @@ body {
   white-space: nowrap;
 }
 
-@media (min-width: 740px) {
-  .segmentado.compacto .rotulo {
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 0;
-    overflow: visible;
-    clip-path: none;
-  }
+/* **Y se queda recortado siempre, no solo con la ventana estrecha** (ADR 0047).
+ *
+ * Aquí había un «@media (min-width: 740px)» que devolvía los rótulos en cuanto la
+ * ventana daba de sí, y funcionaba de milagro: la columna de contenido **está
+ * topada y mide 560 px** a partir de 860 de ventana, no crece más, y las cinco
+ * pestañas de entonces medían 527 con rótulo. Cabían por doce píxeles.
+ *
+ * La sexta clase pide 160 más, o sea 687 contra 560, y **eso no cabe a ningún
+ * tamaño de ventana**: la regla preguntaba por la ventana cuando lo que manda es
+ * una columna que deja de crecer. Se vio sacando la captura y mirándola, y la
+ * causa la dijo medir la barra a siete anchos, no razonar sobre el CSS.
+ *
+ * Lo vigila `las clases de la bóveda caben en su barra`, que compara lo que la
+ * barra mide con lo que necesita. */
+
+/* **Menos en la activa, que sí lo lleva.**
+ *
+ * Seis glifos pelados dicen qué se puede filtrar y no dicen por qué está filtrado,
+ * y aquí hay dos que son una persona: el carné de las identidades y la silueta de
+ * los datos personales. Con el rótulo puesto solo en la activa, la fila mide 385
+ * de los 560 que hay —cinco glifos a 45 y uno con su nombre— y la pantalla vuelve
+ * a decir qué está enseñando. Es lo que costó la sexta clase: antes cabían los
+ * seis rótulos a la vez, y ahora no. */
+.segmentado.compacto button[aria-selected="true"] .rotulo {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip-path: none;
 }
 
 .segmentado button {

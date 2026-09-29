@@ -125,7 +125,7 @@ export type Preferencias = {
 export const NUNCA = -1;
 
 /** Las cuatro clases de cosa que caben en la bóveda. Los nombres los fija Go. */
-export type TipoEntrada = "credencial" | "nota" | "tarjeta" | "identidad";
+export type TipoEntrada = "credencial" | "nota" | "tarjeta" | "identidad" | "personal";
 
 /** Una contraseña que se sustituyó, con la fecha en que dejó de valer. */
 export type Antigua = {
@@ -167,6 +167,10 @@ export type EntradaBoveda = {
   nombreCompleto?: string;
   documento?: string;
   numeroDocumento?: string;
+  correo?: string;
+  telefono?: string;
+  direccion?: string;
+  nacimiento?: string;
 };
 
 /**
