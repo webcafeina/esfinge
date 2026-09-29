@@ -29,6 +29,11 @@ El plan de cuentas y el del correo están cerrados enteros. Lo demás es de uso,
    la huella propia que solo se ve desde Compartir, el botón de borrar cuenta poco visible y el DMARC en
    `p=none` con los informes yendo fuera de la casa.
 
+**Lo que hay levantado en el VPS**, por si algún día aparece de más: un solo contenedor,
+`cartero-cartero-1`, desde `cartero/docker-compose.yml`, en la red `esfinge-borde`. **Si aparece otro
+—un `cartero-prueba` o parecido—, es basura de una sesión de comprobación y se tira**: dos servicios que
+pueden mandar correo como webcafeína cuando solo hace falta uno.
+
 **Y dos cosas que conviene tener a mano si hay que tocar el correo:**
 
 - El cartero se despliega desde [`../cartero/LÉEME.md`](../cartero/LÉEME.md). Su `.env` vive en el VPS
