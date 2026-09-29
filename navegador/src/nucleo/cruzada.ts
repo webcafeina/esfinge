@@ -15,6 +15,7 @@ import { identidadDeSemilla } from "./identidad";
 import { abrirEnvio, mandarEntrada, type Envio } from "./envio";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
 import { dominioDeOrigen, dominioDeSitio } from "./dominios";
+import { rpIdPermitido } from "./llaves";
 import { canonEntrada, entradaDesde, sinSecretos } from "./entrada";
 import { fundir, fundirPiezas } from "./fundir";
 
@@ -167,6 +168,12 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
         }
         return { origen, sitio: dominioDeSitio(c) };
       });
+
+    // **Con qué `rpId` se puede firmar** (ADR 0048). Es la pieza que decide si una
+    // llave de acceso firma para el sitio bueno, y la que caza que la lista de
+    // sufijos de `tldts` y la de `golang.org/x/net` hayan dejado de coincidir.
+    case "rpid":
+      return (p.casos as { rpId: string; origen: string }[]).map((c) => rpIdPermitido(c.rpId, c.origen) ?? "");
 
     case "correos":
       return (p.correos as string[]).map((c) => {

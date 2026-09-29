@@ -296,6 +296,19 @@ no le parece un error, así que devuelve los bytes anteriores como si nada y la 
 Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
 no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
 
+**`Encaja` no vale para decidir con qué `rpId` se firma una llave de acceso** (ADR 0048), por mucho que se
+le parezca. `Encaja` compara **dominio registrable contra dominio registrable**, y por eso
+`accounts.google.com` y `mail.google.com` son «el mismo sitio»: es lo que se quiere para ofrecer una
+contraseña. WebAuthn pide otra cosa y más estrecha —**el anfitrión o un sufijo suyo separado por punto, y
+nunca un sufijo público**— y además **el hash se calcula sobre la cadena exacta**, así que dar por buenos dos
+nombres distintos no es ser tolerante: es firmar para quien no es. Eso vive aparte, en `RPIDPermitido` /
+`rpIdPermitido`, con tabla propia en los dos lados y prueba cruzada.
+
+Y el caso que hay que tener en la tabla, que **lo encontró una mutación y no la lectura**: sin exigir el
+punto que separa, `malaejemplo.com` **termina en** `ejemplo.com` y firmaría por él. La tabla tenía
+`ejemplo.com.malo.com` —que no ataca nada, porque ahí el nombre va en medio— y con ella la comprobación se
+podía quitar entera sin que nada se pusiera rojo.
+
 **Un doble que apunta el argumento no dice si le han llamado.** `sistemaFalso.ElegirDondeGuardar`
 guardaba el `desde` que recibía, y ese `desde` **viene vacío** hasta que alguien recuerda una carpeta: una
 prueba que comprobara `desdeGuardar == ""` no distingue «no me han llamado» de «me han llamado sin
