@@ -174,11 +174,20 @@ test.describe("Capturas", () => {
     await page.locator("#desbloqueo-del-sistema").click();
     await page.waitForTimeout(1200);
   });
-});
 
   /**
    * El dato personal (ADR 0047): el glifo nuevo en las pestañas, el formulario y
    * la ficha.
+   *
+   * **Va dentro del `describe`, y eso no es orden sino lo único que la apaga.** El
+   * `test.skip(!CAPTURAS)` de arriba es del bloque, así que una prueba escrita
+   * debajo del cierre corre siempre — y ésta corre **la primera de toda la tanda**,
+   * porque `capturas.spec.ts` va antes por orden alfabético. Escrita fuera, creaba
+   * la bóveda del 5173 con la contraseña maestra de aquí, que no es la de
+   * `esfinge.spec.ts`; como Go deja la bóveda abierta entre pruebas, cuarenta y
+   * cinco no se enteraban y **solo caían las dos que de verdad teclean la maestra**
+   * —borrar la bóveda y abrirla con el sistema—, con un «esa no es la contraseña»
+   * que no señalaba a ningún sitio. Tiró la publicación de la 2.30.0.
    *
    * Va aquí y no en una aserción porque **lo que hay que saber de un dibujo
    * nuevo no se comprueba, se mira**: el glifo del dato personal convive con el
@@ -193,14 +202,11 @@ test.describe("Capturas", () => {
     const maestra = "caballo grapa batería correcto";
     const dentro = page.locator(".contenido");
     const boton = (n: string) => dentro.getByRole("button", { name: n, exact: true });
-
     await page.setViewportSize({ width: 980, height: 680 });
     await page.goto("/");
-
     const bienvenida = page.getByRole("button", { name: "Usar en este ordenador" });
     await bienvenida.or(page.getByLabel("Qué quieres cifrar")).first().waitFor();
     if (await bienvenida.isVisible().catch(() => false)) await bienvenida.click();
-
     await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
     await boton("Crear la bóveda")
       .or(boton("Abrir la bóveda"))
@@ -218,13 +224,11 @@ test.describe("Capturas", () => {
       await boton("Abrir la bóveda").click();
     }
     await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
-
     // Las pestañas, que es donde el glifo nuevo tiene que distinguirse del de la
     // identidad. De cerca y con la escala de CSS, que a tamaño de pantalla no se
     // ve lo que se ve en un Mac.
     // La segunda `.boveda-barra`: la primera es la de «Nueva» y «Cerrar la bóveda».
     await page.locator(".boveda-barra").nth(1).screenshot({ path: `${donde}/8a-clases-${tema}.png`, scale: "css" });
-
     await boton("Nueva").click();
     await dentro.getByRole("tab", { name: "Dato personal", exact: true }).click();
     await page.locator("#boveda-titulo").fill("Correo electrónico 1");
@@ -234,9 +238,9 @@ test.describe("Capturas", () => {
     await page.locator("#boveda-direccion").fill("Calle Mayor 1, Portal B\n3, B\n28001 Madrid\nEspaña");
     await page.locator("#boveda-nacimiento").fill("1980-01-01");
     await foto("8b-dato-personal-formulario");
-
     await boton("Guardar").click();
     await page.getByText("Correo electrónico 1").first().click();
     await page.waitForTimeout(300);
     await foto("8c-dato-personal-ficha");
   });
+});
