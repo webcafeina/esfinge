@@ -75,7 +75,11 @@ export interface Cartero {
  */
 export function modoDeCorreo(env: Env): "enviar" | "buzon" {
 	if (env.ENTORNO !== "pruebas") return "enviar";
-	return env.CORREO === "enviar" ? "enviar" : "buzon";
+	// **Recortado**, por lo mismo que el secreto de abajo: un espacio pegado al copiar
+	// no es lo que nadie quiso escribir, y aquí el síntoma es peor que un error —el
+	// Worker sigue contestando `202` y el correo se va al buzón de pruebas, así que
+	// desde fuera parece que ha funcionado—. Costó una vuelta el 2026-09-29.
+	return (env.CORREO ?? "").trim() === "enviar" ? "enviar" : "buzon";
 }
 
 export function carteroPara(env: Env): Cartero {

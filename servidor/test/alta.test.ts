@@ -6,7 +6,10 @@ describe("la salud", () => {
 	it("dice cómo está el registro", async () => {
 		const r = await pedir("GET", "/v1/salud");
 		expect(r.status).toBe(200);
-		expect(await r.json()).toEqual({ registro: "abierto", protocolo: 1 });
+		// **Toda la forma, no solo los campos que interesan**: es lo que impide que se
+		// cuele un campo de más. El `correo` solo sale en el Worker de pruebas, que es
+		// donde corren estas pruebas, y dice por dónde se manda.
+		expect(await r.json()).toEqual({ registro: "abierto", protocolo: 1, correo: "buzon" });
 	});
 });
 

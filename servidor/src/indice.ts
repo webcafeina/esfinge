@@ -108,7 +108,13 @@ async function atender(p: Request, env: Env, ctx: ExecutionContext): Promise<Res
 		return buzonDePruebas(env, url.searchParams.get("correo"));
 	}
 
-	if (r("GET", "/v1/salud")) return json(200, { registro: modoDeRegistro(env), protocolo: 1 });
+	if (r("GET", "/v1/salud")) {
+		// **El Worker de pruebas dice por dónde manda el correo.** Sin esto, que el
+		// interruptor no esté haciendo efecto se ve igual que que funcione: `202` y
+		// nada en el buzón de verdad. Hubo que deducirlo del registro de otra máquina.
+		const como = env.ENTORNO === "pruebas" ? { correo: modoDeCorreo(env) } : {};
+		return json(200, { registro: modoDeRegistro(env), protocolo: 1, ...como });
+	}
 	if (r("POST", "/v1/prelogin")) return prelogin(p, env);
 	if (r("POST", "/v1/registro/inicio")) return empezarAlta(p, env);
 	if (r("POST", "/v1/registro/fin")) return terminarAlta(p, env, ctx);

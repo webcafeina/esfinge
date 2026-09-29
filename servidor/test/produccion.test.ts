@@ -2,6 +2,7 @@ import { createExecutionContext } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 import trabajador from "../src/indice";
+import { modoDeCorreo } from "../src/correo";
 import { peticion } from "./ayuda";
 
 /** El Worker con otra configuración: la de producción, u otro modo de registro. */
@@ -27,6 +28,28 @@ describe("lo que solo es de pruebas no está en producción", () => {
 			expect(r.status, JSON.stringify(falta)).toBe(503);
 		}
 		expect((await con({ ENTORNO: "produccion", CARTERO_SECRETO: "el-secreto-del-cartero" }, "GET", "/v1/salud")).status).toBe(200);
+	});
+
+	/**
+	 * Un espacio pegado al copiar dejaba el interruptor sin efecto, y el síntoma era
+	 * **que parecía funcionar**: `202` y el correo al buzón de pruebas. Se vio mirando
+	 * el registro del servidor de la otra punta, no aquí.
+	 */
+	it("el interruptor del correo aguanta los espacios de un copiar y pegar", () => {
+		for (const v of ["enviar", " enviar", "enviar\n", "  enviar  "]) {
+			expect(modoDeCorreo({ ...env, CORREO: v } as Partial<typeof env> as never), JSON.stringify(v)).toBe("enviar");
+		}
+		for (const v of [undefined, "", "buzon", "enviarr"]) {
+			expect(modoDeCorreo({ ...env, CORREO: v } as Partial<typeof env> as never), JSON.stringify(v)).toBe("buzon");
+		}
+	});
+
+	/** Y el Worker de pruebas lo dice, para no tener que deducirlo de otro registro. */
+	it("la salud del Worker de pruebas dice por dónde manda el correo", async () => {
+		const r = await con({ ENTORNO: "pruebas" }, "GET", "/v1/salud");
+		expect(((await r.json()) as { correo: string }).correo).toBe("buzon");
+		const q = await con({ ENTORNO: "produccion", CARTERO_SECRETO: "el-secreto-del-cartero" }, "GET", "/v1/salud");
+		expect((await q.json()) as object).not.toHaveProperty("correo");
 	});
 
 	it("un fallo por dentro no cuenta nada en producción", async () => {
@@ -73,6 +96,6 @@ describe("el registro por invitación", () => {
 		const fuera = await con(lista, "POST", "/v1/registro/inicio", { correo: "otro@ejemplo.com" });
 		expect(fuera.status).toBe(403);
 		expect((await con({ REGISTRO: "cerrado" }, "POST", "/v1/registro/inicio", { correo: "info@webcafeina.com" })).status).toBe(403);
-		expect((await (await con(lista, "GET", "/v1/salud")).json()) as object).toEqual({ registro: "lista", protocolo: 1 });
+		expect((await (await con(lista, "GET", "/v1/salud")).json()) as object).toEqual({ registro: "lista", protocolo: 1, correo: "buzon" });
 	});
 });
