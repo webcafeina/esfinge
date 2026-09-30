@@ -69,9 +69,15 @@ no podía todavía, y ningún gestor las exporta en su CSV—. Está en la [ADR 
 con lo que trae: `create` atendido, el objeto de atestación, el COSE de la pública, el banner de crear y
 decirle al sitio que aquí hay un autenticador de plataforma.
 
-**La siguiente acción concreta es publicar la P3** —falta pegar tres campos en la consola de Chrome, que
-están en `referencias/chrome-2.34.0.md`, y `pnpm run comprobar` está **rojo a propósito** hasta entonces— y
-que el cliente cree una llave en GitHub de verdad. Lo que hay que
+**La siguiente acción concreta es que el cliente cree una llave de acceso en GitHub de verdad**, y para
+eso **no hace falta esperar a nadie**: puede cargar a mano la extensión de desarrollo con la P3, que está en
+`referencias/esfinge-extension-2.34.0-chrome-desarrollo.zip` y lleva la `key`, así que Esfinge la reconoce.
+
+**Publicar la 2.34.0, en cambio, sí espera.** Chrome no deja editar la ficha mientras revisa una versión, y
+está revisando la 2.33.0; los tres campos que cambian están en `referencias/chrome-2.34.0.md`. Hasta que se
+peguen, `pnpm run comprobar` está **rojo a propósito** —lo para `ficha-de-chrome.mjs`—, y eso trae un
+interbloqueo que está apuntado en [`deuda.md`](deuda.md): con la puerta roja no se puede publicar nada, ni
+siquiera algo que no toque esa ficha. Lo que hay que
 mirar ahí está al final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md) y en [`deuda.md`](deuda.md), y lo
 primero es lo que él pidió con esas palabras: **entrar en GitHub y darle a Aceptar**. Con la versión salió
 además el arreglo de exportar llaves.
