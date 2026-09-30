@@ -39,7 +39,19 @@ test.beforeAll(async () => {
  */
 async function conElShim(
   page: import("@playwright/test").Page,
-  { atender, hay = false, afirmacion = null }: { atender: boolean; hay?: boolean; afirmacion?: unknown },
+  {
+    atender,
+    hay = false,
+    sePuedeCrear = false,
+    afirmacion = null,
+    atestacion = null,
+  }: {
+    atender: boolean;
+    hay?: boolean;
+    sePuedeCrear?: boolean;
+    afirmacion?: unknown;
+    atestacion?: unknown;
+  },
 ) {
   await page.addInitScript(`
     window.__llamadas = [];
@@ -72,9 +84,17 @@ async function conElShim(
     // (Sin acentos graves: esto va dentro de un literal de plantilla y lo cerrarían.)
     class PublicKeyCredential {}
     class AuthenticatorAssertionResponse {}
+    class AuthenticatorAttestationResponse {}
+    // El estático que los sitios preguntan para saber si ofrecen llaves. Contesta que
+    // no, que es lo que diría un equipo sin biometría: así se ve si el shim lo tapa.
+    PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable = function () {
+      window.__llamadas.push({ que: "disponible" });
+      return Promise.resolve(false);
+    };
     for (const [tipo, nombres] of [
       [PublicKeyCredential, ["id", "rawId", "type", "response", "authenticatorAttachment"]],
       [AuthenticatorAssertionResponse, ["clientDataJSON", "authenticatorData", "signature", "userHandle"]],
+      [AuthenticatorAttestationResponse, ["clientDataJSON", "attestationObject"]],
     ]) {
       for (const n of nombres) {
         Object.defineProperty(tipo.prototype, n, {
@@ -85,6 +105,7 @@ async function conElShim(
     }
     window.PublicKeyCredential = PublicKeyCredential;
     window.AuthenticatorAssertionResponse = AuthenticatorAssertionResponse;
+    window.AuthenticatorAttestationResponse = AuthenticatorAttestationResponse;
   `);
   // **`addInitScript` envuelve el código en una función**, así que el `var` del
   // paquete no llega a `window` y `window.P` salía `undefined`: el saludo no tenía
@@ -95,12 +116,16 @@ async function conElShim(
       window.__pedidos = [];
       window.P.atenderElPuente((p) => {
         window.__puerto = p;
-        p.postMessage({ hay: ${hay} });
+        p.postMessage({ hay: ${hay}, sePuedeCrear: ${sePuedeCrear} });
         // El otro lado, de mentira: apunta lo que le piden y contesta lo que se le
         // haya dicho. Sin afirmación, ceder — que es el caso normal.
         p.onmessage = (e) => {
           window.__pedidos.push(e.data);
-          p.postMessage({ n: e.data.n, afirmacion: ${JSON.stringify(afirmacion)} ?? undefined });
+          p.postMessage({
+            n: e.data.n,
+            afirmacion: ${JSON.stringify(afirmacion)} ?? undefined,
+            atestacion: ${JSON.stringify(atestacion)} ?? undefined,
+          });
         };
       });
     `);
@@ -288,4 +313,162 @@ test("mundo: con una afirmación, devuelve una credencial con la forma buena", a
     json: "ZmlybWE",
     esCredencial: true,
   });
+});
+
+/* -------------------------------------------------- crear una llave (P3) */
+
+/**
+ * **Con `create` y sin poder crear, se cede sin preguntar a nadie.**
+ *
+ * Es la puerta que hace que el 99 % de las páginas no paguen nada, y al crear importa
+ * más que al firmar: `create()` exige **activación de usuario**, que dura unos
+ * segundos, y esperar a un trabajador dormido puede agotarla. Lo que se cede aquí se
+ * cede en la misma vuelta del bucle de eventos.
+ *
+ * Y se mira que **no se haya preguntado nada**, no solo que devuelva la original: con
+ * una pregunta por medio la prueba pasaría igual y el riesgo seguiría ahí.
+ */
+test("mundo: sin poder crear, create se cede en el momento", async ({ page }) => {
+  await conElShim(page, { atender: true, hay: true, sePuedeCrear: false });
+  const r = await page.evaluate(async () => {
+    const cc = (window as any).navigator.__cc;
+    const salida = await cc.create({ publicKey: { challenge: new Uint8Array(8), rp: {}, user: {} } });
+    return { salida, pedidos: (window as any).__pedidos.length };
+  });
+  expect(r.salida).toBe("original");
+  expect(r.pedidos, "ha preguntado al otro lado antes de ceder").toBe(0);
+});
+
+/**
+ * **Y las dos banderas son distintas**, que es lo que dice que no se ha reutilizado
+ * una por comodidad: con llaves para este sitio pero sin poder crear, `get` atiende y
+ * `create` cede. Cambiar una por la otra en el shim pone esto rojo.
+ */
+test("mundo: las banderas de usar y de crear no son la misma", async ({ page }) => {
+  await conElShim(page, {
+    atender: true,
+    hay: false,
+    sePuedeCrear: true,
+    atestacion: {
+      idCredencial: "Y3JlZC1udWV2YQ",
+      datosDelCliente: "eyJ0IjoxfQ",
+      objeto: "o2NmbXQ",
+      datosDelAutenticador: "YXV0aA",
+      publica: "cHViYQ",
+    },
+  });
+  const r = await page.evaluate(async () => {
+    const cc = (window as any).navigator.__cc;
+    const creada = await cc.create({ publicKey: { challenge: new Uint8Array(8), rp: {}, user: {} } });
+    const usada = await cc.get({ publicKey: { challenge: new Uint8Array(8) } });
+    return {
+      creadaEsNuestra: creada !== "original" && creada.id === "Y3JlZC1udWV2YQ",
+      usadaEsOriginal: usada === "original",
+      pedidos: (window as any).__pedidos.map((p: any) => p.crear === true),
+    };
+  });
+  expect(r.creadaEsNuestra, "con sePuedeCrear no ha atendido create").toBe(true);
+  expect(r.usadaEsOriginal, "sin llaves tenía que ceder get").toBe(true);
+  // Y solo se ha preguntado una vez, la de crear: `get` cedió sin preguntar.
+  expect(r.pedidos).toEqual([true]);
+});
+
+/**
+ * **La credencial de crear, con la forma que el sitio espera.**
+ *
+ * Lo que se mira no es que exista: es que **se pueda leer**. Un objeto con el
+ * prototipo puesto y sin propiedades propias da «Illegal invocation» al leer `id`, y
+ * los cuatro métodos que los sitios llaman —`getAuthenticatorData`, `getPublicKey`,
+ * `getPublicKeyAlgorithm` y `getTransports`— tienen que estar, o el sitio revienta
+ * mirando lo que le hemos devuelto.
+ */
+test("mundo: con una atestación, la credencial se puede leer entera", async ({ page }) => {
+  await conElShim(page, {
+    atender: true,
+    sePuedeCrear: true,
+    atestacion: {
+      idCredencial: "Y3JlZC1udWV2YQ",
+      datosDelCliente: "eyJ0IjoxfQ",
+      objeto: "o2NmbXQ",
+      datosDelAutenticador: "YXV0aA",
+      publica: "cHViYQ",
+    },
+  });
+  const r = await page.evaluate(async () => {
+    const cc = (window as any).navigator.__cc;
+    const c: any = await cc.create({
+      publicKey: {
+        challenge: new Uint8Array([1, 2, 3]),
+        rp: { id: "ejemplo.com", name: "Ejemplo" },
+        user: { id: new Uint8Array([9, 9]), name: "yo@ejemplo.com", displayName: "Yo" },
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+        excludeCredentials: [{ type: "public-key", id: new Uint8Array([7]) }],
+      },
+    });
+    const largo = (x: unknown) => (x instanceof ArrayBuffer ? x.byteLength : -1);
+    return {
+      id: c.id,
+      tipo: c.type,
+      adjunto: c.authenticatorAttachment,
+      rawId: largo(c.rawId),
+      cliente: largo(c.response.clientDataJSON),
+      objeto: largo(c.response.attestationObject),
+      autenticador: largo(c.response.getAuthenticatorData()),
+      publica: largo(c.response.getPublicKey()),
+      alg: c.response.getPublicKeyAlgorithm(),
+      transportes: c.response.getTransports(),
+      extensiones: c.getClientExtensionResults(),
+      json: c.toJSON().response.attestationObject,
+      // Y lo que se le pidió al otro lado: todo lo que dijo el sitio, entero.
+      pedido: (window as any).__pedidos[0],
+    };
+  });
+  expect(r.id).toBe("Y3JlZC1udWV2YQ");
+  expect(r.tipo).toBe("public-key");
+  expect(r.adjunto).toBe("platform");
+  expect(r.rawId).toBeGreaterThan(0);
+  expect(r.cliente).toBeGreaterThan(0);
+  expect(r.objeto).toBeGreaterThan(0);
+  expect(r.autenticador).toBeGreaterThan(0);
+  expect(r.publica).toBeGreaterThan(0);
+  expect(r.alg).toBe(-7);
+  expect(r.transportes).toEqual(["internal", "hybrid"]);
+  expect(r.extensiones).toEqual({});
+  expect(r.json).toBe("o2NmbXQ");
+  // **Lo que el sitio dijo llega entero**, que es lo que evita crear una llave sin
+  // usuario o sin saber qué algoritmos acepta.
+  expect(r.pedido).toMatchObject({
+    crear: true,
+    rpId: "ejemplo.com",
+    titulo: "Ejemplo",
+    usuario: "yo@ejemplo.com",
+    algoritmos: [-7],
+  });
+  expect(r.pedido.excluidas).toHaveLength(1);
+  expect(r.pedido.idUsuario).toBeTruthy();
+});
+
+/**
+ * **Y se le dice al sitio que aquí hay autenticador de plataforma** (P3).
+ *
+ * Es lo que decide si un sitio ofrece crear una llave, y hay que contestar que sí o
+ * Esfinge no serviría justo en el equipo que no tiene Touch ID. Se comprueba las dos
+ * mitades: que con Esfinge disponible **tapa** al navegador —que aquí dice que no—, y
+ * que **sin poder crear no miente**: contesta lo que conteste él.
+ */
+test("mundo: dice que hay autenticador de plataforma, y solo cuando lo hay", async ({ page }) => {
+  await conElShim(page, { atender: true, sePuedeCrear: true });
+  expect(
+    await page.evaluate(() => (window as any).PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()),
+  ).toBe(true);
+});
+
+test("mundo: con las llaves apagadas, no se miente sobre el autenticador", async ({ page }) => {
+  await conElShim(page, { atender: true, sePuedeCrear: false });
+  const r = await page.evaluate(async () => {
+    const si = await (window as any).PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    return { si, llamoAlOriginal: (window as any).__llamadas.some((l: any) => l.que === "disponible") };
+  });
+  expect(r.si, "ha dicho que hay autenticador con las llaves apagadas").toBe(false);
+  expect(r.llamoAlOriginal, "no ha preguntado al navegador").toBe(true);
 });

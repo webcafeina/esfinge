@@ -248,6 +248,18 @@ type Atestacion struct {
 	DatosDelCliente string `json:"datosDelCliente"`
 	// Objeto es el `attestationObject` en CBOR, en base64url.
 	Objeto string `json:"objeto"`
+	// DatosDelAutenticador y Publica son **el mismo dato que ya va dentro de
+	// `Objeto`**, y se mandan aparte a propósito.
+	//
+	// Los sitios modernos llaman a `getAuthenticatorData()`, `getPublicKey()` y
+	// `getPublicKeyAlgorithm()` sobre la respuesta, y sacarlos del objeto exigiría
+	// **descodificar CBOR en el mundo principal** — dentro de la página de otro, sobre
+	// bytes que hemos escrito nosotros pero con un descodificador que no existe en este
+	// proyecto y que no se va a escribir. Duplicar una clave pública es más barato y
+	// más seguro que eso, y ninguno de los dos es secreto.
+	DatosDelAutenticador string `json:"datosDelAutenticador"`
+	// Publica es la clave pública en SPKI, que es lo que `getPublicKey()` devuelve.
+	Publica string `json:"publica"`
 }
 
 // Envio es lo que se sabe de un formulario que se acaba de enviar.
@@ -359,6 +371,12 @@ type Respuesta struct {
 	Llaves     []LlaveParaElBanner `json:"llaves,omitempty"`
 	Afirmacion *Afirmacion         `json:"afirmacion,omitempty"`
 	Atestacion *Atestacion         `json:"atestacion,omitempty"`
+	// PuedeCrear dice si Esfinge está en disposición de crear una llave de acceso, y
+	// **vuelve con `Dominios`, en la misma pregunta**. Es otra cosa que `Llaves`
+	// vacía: ahí no se distingue «en este sitio no hay ninguna» de «están apagadas en
+	// Ajustes», y el banner de crear necesita saberlo para no ofrecer lo que luego va
+	// a ceder.
+	PuedeCrear bool `json:"puedeCrear,omitempty"`
 	// Dominios son los dominios registrables con llave, y **vuelven solo al
 	// preguntar por las llaves sin decir de qué sitio**. El navegador se los queda
 	// para saber, con la bóveda cerrada, si aquí merece la pena ofrecer abrirla.

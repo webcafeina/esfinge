@@ -42,7 +42,22 @@
  * **No dice cuáles ni cuántas**: un número o una lista serían contar por el puente
  * lo que hay en la bóveda, y por ahí no pasa nada secreto.
  */
-export type Aviso = { hay: boolean };
+export type Aviso = {
+  /** Si en este dominio hay alguna llave que ofrecer, para `get`. */
+  hay: boolean;
+  /**
+   * Y si Esfinge **puede crear** una, para `create` (P3).
+   *
+   * Es otra bandera y no la misma: al crear, Esfinge se ofrece siempre —lo decidió el
+   * cliente— así que no depende de que haya llaves. De lo que sí depende es del
+   * interruptor de Ajustes, y **por eso hace falta decirlo aquí**: con él apagado, sin
+   * esta bandera saldría el banner, la persona aceptaría y entonces se cedería al
+   * navegador. O sea, prometer y no cumplir.
+   *
+   * Mientras no llegue vale `false`, como `hay`: ante la duda, ceder.
+   */
+  sePuedeCrear: boolean;
+};
 
 /**
  * Lo que el mundo principal pide, y lo único que pide.
@@ -56,12 +71,31 @@ export type Aviso = { hay: boolean };
 export type PeticionDelMundo = {
   /** Para emparejar la respuesta con su pregunta: puede haber dos a la vez. */
   n: number;
+  /**
+   * Qué se pide: usar una llave o crear una. **Ausente es usar**, para que una
+   * extensión nueva entienda a una página vieja — aunque las dos vayan siempre
+   * juntas, la que se queda a medias en una recarga no.
+   */
+  crear?: true;
   rpId?: string;
   permitidas: string[];
   reto: string;
+  /**
+   * Y lo que hace falta **solo para crear** (P3), todo dicho por el sitio: el nombre
+   * de la cuenta, el `user.id` —bytes opacos—, cómo se llama el sitio, las llaves que
+   * él dice tener ya y los algoritmos que acepta.
+   */
+  usuario?: string;
+  idUsuario?: string;
+  titulo?: string;
+  excluidas?: string[];
+  algoritmos?: number[];
 };
 
-/** Lo que vuelve. **Sin afirmación significa ceder**, y es el caso normal. */
+/**
+ * Lo que vuelve. **Sin afirmación ni atestación significa ceder**, y es el caso
+ * normal: no hay llave, o el banner se cerró con «Ahora no».
+ */
 export type RespuestaAlMundo = {
   n: number;
   afirmacion?: {
@@ -70,6 +104,13 @@ export type RespuestaAlMundo = {
     datosDelCliente: string;
     datosDelAutenticador: string;
     firma: string;
+  };
+  atestacion?: {
+    idCredencial: string;
+    datosDelCliente: string;
+    objeto: string;
+    datosDelAutenticador: string;
+    publica: string;
   };
 };
 

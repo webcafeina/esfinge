@@ -611,6 +611,15 @@ func (f fuenteDelNavegador) DominiosConLlave() []string {
 	return out
 }
 
+// PuedeCrearLlaves dice si crear una llave está disponible en este equipo.
+//
+// Hoy es solo el interruptor: la bóveda puede estar cerrada y aun así se puede crear,
+// porque el banner ofrece abrirla igual que al firmar. Lo que no se hace es decir que
+// sí y luego ceder, que es lo que pasaría sin esta pregunta.
+func (f fuenteDelNavegador) PuedeCrearLlaves() bool {
+	return f.a.ajustes.Ver().LlavesDeAccesoEnElNavegador
+}
+
 // CrearLlave genera una llave de acceso, la guarda en la bóveda y devuelve lo que
 // el sitio se queda (ADR 0048, P3).
 //
@@ -717,9 +726,11 @@ func (f fuenteDelNavegador) CrearLlave(origen, rpID string, nueva navegador.Llav
 	cliente := navegador.DatosDelCliente("webauthn.create", desafio, suyo)
 	datos := navegador.DatosDelAutenticadorAlCrear(pedido, navegador.BanderasAlCrear, idCredencial, cose)
 	return navegador.Atestacion{
-		IDCredencial:    entrada.IDCredencial,
-		DatosDelCliente: navegador.B64URL.EncodeToString(cliente),
-		Objeto:          navegador.B64URL.EncodeToString(navegador.ObjetoDeAtestacion(datos)),
+		IDCredencial:         entrada.IDCredencial,
+		DatosDelCliente:      navegador.B64URL.EncodeToString(cliente),
+		Objeto:               navegador.B64URL.EncodeToString(navegador.ObjetoDeAtestacion(datos)),
+		DatosDelAutenticador: navegador.B64URL.EncodeToString(datos),
+		Publica:              navegador.B64URL.EncodeToString(publica),
 	}, nil
 }
 

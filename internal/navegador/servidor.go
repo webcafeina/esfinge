@@ -84,6 +84,11 @@ type Fuente interface {
 	// FirmarLlave firma una aserción con una de ellas. **Devuelve la firma, nunca
 	// la clave**: es la misma regla que el código de un solo uso.
 	FirmarLlave(origen, rpID, id, reto string) (Afirmacion, error)
+	// PuedeCrearLlaves dice si crear está disponible, **sin decir por qué no**.
+	//
+	// Existe porque `Llaves` vacía no distingue «aquí no hay ninguna» de «están
+	// apagadas», y el banner de crear tiene que saberlo antes de prometer nada.
+	PuedeCrearLlaves() bool
 	// CrearLlave genera una llave de acceso **y la guarda en la bóveda** (P3).
 	//
 	// Es lo más consecuente que el navegador puede pedir: lo que se guarda aquí es
@@ -459,7 +464,9 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 		// cargar. Al firmar no se manda: ahí ya se sabe de qué sitio se habla, y
 		// repetirla sería mandar la lista entera de la bóveda en cada firma.
 		if p.RPID == "" {
-			return Respuesta{OK: true, Llaves: l, Dominios: s.fuente.DominiosConLlave()}
+			return Respuesta{OK: true, Llaves: l,
+				Dominios:   s.fuente.DominiosConLlave(),
+				PuedeCrear: s.fuente.PuedeCrearLlaves()}
 		}
 		return Respuesta{OK: true, Llaves: l}
 

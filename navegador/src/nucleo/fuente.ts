@@ -160,6 +160,10 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
             ok: true,
             llaves: usables.map((x) => ({ id: x.id, nombre: x.nombreVisible || x.titulo })),
             dominios: [...new Set(conLlave.map((x) => x.rpId as string))].sort(),
+            // **Con cuenta siempre se puede crear**: el interruptor vive en los
+            // Ajustes de la aplicación y aquí no hay aplicación que preguntar. Está
+            // apuntado en `docs/deuda.md` como la laguna que es.
+            puedeCrear: !b.soloLectura,
           };
         }
         const rp = rpIdPermitido(p.rpId, p.origen ?? "");
@@ -257,6 +261,8 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
             idCredencial: aBase64Url(id),
             datosDelCliente: aBase64Url(cliente),
             objeto: aBase64Url(objetoDeAtestacion(datos)),
+            datosDelAutenticador: aBase64Url(datos),
+            publica: aBase64Url(par.publica),
           },
         };
       }

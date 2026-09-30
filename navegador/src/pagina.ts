@@ -635,10 +635,14 @@ function atenderLasLlaves(puerto: MessagePort) {
       // preguntar. Sin esta rama el shim cedería antes de preguntar y el banner que
       // ofrece abrir la bóveda no podría salir nunca.
       const hay = r.ok ? (r.llaves ?? []).length > 0 : r.quizas === true;
-      puerto.postMessage({ hay } satisfies Aviso);
+      // **Crear es otra bandera**: Esfinge se ofrece siempre a crear, así que no
+      // depende de que haya llaves aquí. Lo que sí la apaga es el interruptor de
+      // Ajustes, y con la bóveda cerrada se puede igual —el banner ofrece abrirla—.
+      const sePuedeCrear = r.ok ? r.puedeCrear === true : r.motivo === "cerrada";
+      puerto.postMessage({ hay, sePuedeCrear } satisfies Aviso);
     } catch {
       // Ante la duda, que ceda: es lo que ya vale por defecto al otro lado.
-      puerto.postMessage({ hay: false } satisfies Aviso);
+      puerto.postMessage({ hay: false, sePuedeCrear: false } satisfies Aviso);
     }
   };
   void avisar();
@@ -648,6 +652,7 @@ function atenderLasLlaves(puerto: MessagePort) {
     if (!p || typeof p.n !== "number") return;
     const ceder = () => puerto.postMessage({ n: p.n } satisfies RespuestaAlMundo);
     try {
+      if (p.crear === true) return await atenderCrear(puerto, p, ceder);
       const r = await pedir({ que: "llaves", rpId: p.rpId, permitidas: p.permitidas });
       // Con la bóveda cerrada se dice, y se ofrece abrirla. Con cualquier otro «no»
       // —el sitio no encaja, no hay nada— se cede sin dibujar nada: en la página de
@@ -678,6 +683,54 @@ function atenderLasLlaves(puerto: MessagePort) {
       ceder();
     }
   };
+}
+
+/**
+ * Crear una llave de acceso: el banner y, si se acepta, la escritura (ADR 0048, P3).
+ *
+ * Va aparte de firmar aunque se parezca, y no por longitud: **lo que está en juego es
+ * distinto**. Al firmar, «Ahora no» deja al navegador hacer lo suyo y no se pierde
+ * nada. Al crear, lo que se decide es **dónde va a vivir la única forma de entrar en
+ * esa cuenta** — y si se cede, la llave la guarda el sistema y Esfinge no la tendrá
+ * nunca.
+ *
+ * Con la bóveda cerrada se ofrece abrirla, igual que al firmar: lo que no se hace es
+ * crear la llave sin que la bóveda esté abierta, porque entonces no habría dónde
+ * guardarla.
+ */
+async function atenderCrear(
+  puerto: MessagePort,
+  p: PeticionDelMundo,
+  ceder: () => void,
+): Promise<void> {
+  const rpId = p.rpId ?? location.hostname;
+  const estado = await (async (): Promise<EstadoDelBanner | null> => {
+    const r = await pedir({ que: "llaves", rpId: p.rpId, permitidas: [] });
+    if (r.ok) return { tipo: "crear", rpId, cuenta: p.usuario ?? "" };
+    return r.motivo === "cerrada" ? { tipo: "cerrada", rpId } : null;
+  })();
+  if (!estado) return ceder();
+
+  const decision = await new Promise<{ accion: string }>((listo) => {
+    mostrarBanner(estado, listo);
+  });
+  if (decision.accion !== "aceptar") return ceder();
+
+  const creada = await pedir({
+    que: "crear-llave",
+    rpId: p.rpId,
+    reto: p.reto,
+    usuario: p.usuario,
+    idUsuario: p.idUsuario,
+    titulo: p.titulo,
+    excluidas: p.excluidas,
+    algoritmos: p.algoritmos,
+  });
+  // **Si no se ha podido crear, se cede**, y entonces sale el diálogo del navegador:
+  // eso es mejor que dejar a alguien sin llave. El caso que más va a ocurrir es que el
+  // sitio diga que ya tiene una nuestra.
+  if (!creada.ok || !creada.atestacion) return ceder();
+  puerto.postMessage({ n: p.n, atestacion: creada.atestacion } satisfies RespuestaAlMundo);
 }
 
 arrancar().catch(() => {});

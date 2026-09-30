@@ -30,6 +30,15 @@
 import { abrirPuente, type Aviso, type PeticionDelMundo, type RespuestaAlMundo } from "./puente";
 import { aBase64Url, deBase64Url } from "./nucleo/afirmacion";
 
+/**
+ * Lo que se espera al aviso antes de contestar si hay autenticador de plataforma.
+ *
+ * Medio segundo: es una pregunta que el sitio hace al cargar y cuya respuesta cambia
+ * su pantalla, así que esperar un poco es mejor que contestar mal. **No se espera
+ * nunca en `create()` ni en `get()`**, que es donde esperar tiene un coste real.
+ */
+const PLAZO_DEL_AVISO = 500;
+
 /** Lo que una llamada trae y hay que mirar **sin esperar a nadie**. */
 type Opciones = CredentialRequestOptions & CredentialCreationOptions;
 
@@ -53,8 +62,10 @@ function enMarcoAjeno(): boolean {
  * se cede **en la misma vuelta del bucle de eventos**.
  */
 function podemosAtender(o: Opciones | undefined, hay: boolean): boolean {
-  // Lo primero y lo más barato: si en este dominio no hay nada que ofrecer, esto
-  // se acaba aquí sin mirar nada más.
+  // Lo primero y lo más barato: si no hay nada que ofrecer, esto se acaba aquí sin
+  // mirar nada más. Al usar, «nada que ofrecer» es que no haya llave en este dominio;
+  // al crear, que Esfinge no pueda crearla — y quien decide cuál de las dos banderas
+  // se mira es el llamante, porque **son preguntas distintas**.
   if (!hay) return false;
   if (!o || !o.publicKey) return false;
   // `conditional` es la interfaz de autorrelleno del **propio navegador**. No se
@@ -105,12 +116,27 @@ async function arrancar() {
   // conectar y cada vez que cambie —al abrirse o cerrarse la bóveda—, y mientras no
   // llegue vale `false`: ante la duda, ceder.
   let hayLlaves = false;
+  let sePuedeCrear = false;
+  /**
+   * Se resuelve con el primer aviso del otro lado.
+   *
+   * **Solo la usa `isUserVerifyingPlatformAuthenticatorAvailable`**, y ahí sí se puede
+   * esperar: ese método no consume activación de usuario, que es lo único que hace
+   * peligroso esperar en `create()`. Un sitio lo llama al cargar, mucho antes de que
+   * nadie pulse nada, y de su respuesta depende que ofrezca llaves de acceso o no.
+   */
+  let llegoElAviso!: () => void;
+  const elAviso = new Promise<void>((listo) => (llegoElAviso = listo));
   let siguiente = 0;
   const esperando = new Map<number, (r: RespuestaAlMundo) => void>();
   puerto.onmessage = (e: MessageEvent) => {
     const d = e.data as (Aviso & Partial<RespuestaAlMundo>) | null;
     if (!d) return;
     if (typeof d.hay === "boolean") hayLlaves = d.hay;
+    if (typeof d.sePuedeCrear === "boolean") {
+      sePuedeCrear = d.sePuedeCrear;
+      llegoElAviso();
+    }
     if (typeof d.n === "number") {
       const quien = esperando.get(d.n);
       esperando.delete(d.n);
@@ -184,6 +210,69 @@ async function arrancar() {
     return cred;
   };
 
+  /**
+   * La credencial que se devuelve al **crear** (P3).
+   *
+   * Misma forma que la de firmar —prototipo puesto a mano y propiedades propias de
+   * datos, que si no `cred.id` da «Illegal invocation»— pero con una respuesta de otra
+   * clase y **cuatro métodos que los sitios llaman**: `getAuthenticatorData`,
+   * `getPublicKey`, `getPublicKeyAlgorithm` y `getTransports`.
+   *
+   * `getTransports()` dice `internal` e `hybrid` porque es lo que una llave de Esfinge
+   * **es**: vive en este equipo y se sincroniza con los demás. Es lo que el sitio usa
+   * para decidir qué enseñar la próxima vez, así que decir otra cosa le haría dibujar
+   * mal su propia pantalla.
+   */
+  const credencialCreada = (a: NonNullable<RespuestaAlMundo["atestacion"]>) => {
+    const bytes = (s: string) => {
+      const b = deBase64Url(s);
+      return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
+    };
+    const respuesta = Object.create(
+      typeof AuthenticatorAttestationResponse === "undefined"
+        ? Object.prototype
+        : AuthenticatorAttestationResponse.prototype,
+    ) as Record<string, unknown>;
+    Object.defineProperties(respuesta, {
+      clientDataJSON: { value: bytes(a.datosDelCliente), enumerable: true },
+      attestationObject: { value: bytes(a.objeto), enumerable: true },
+      getAuthenticatorData: { value: () => bytes(a.datosDelAutenticador) },
+      getPublicKey: { value: () => bytes(a.publica) },
+      getPublicKeyAlgorithm: { value: () => -7 },
+      getTransports: { value: () => ["internal", "hybrid"] },
+    });
+
+    const cred = Object.create(
+      typeof PublicKeyCredential === "undefined" ? Object.prototype : PublicKeyCredential.prototype,
+    ) as Record<string, unknown>;
+    Object.defineProperties(cred, {
+      id: { value: a.idCredencial, enumerable: true },
+      rawId: { value: bytes(a.idCredencial), enumerable: true },
+      type: { value: "public-key", enumerable: true },
+      authenticatorAttachment: { value: "platform", enumerable: true },
+      response: { value: respuesta, enumerable: true },
+      getClientExtensionResults: { value: () => ({}) },
+      toJSON: {
+        value: () => ({
+          id: a.idCredencial,
+          rawId: a.idCredencial,
+          type: "public-key",
+          authenticatorAttachment: "platform",
+          clientExtensionResults: {},
+          response: {
+            clientDataJSON: a.datosDelCliente,
+            attestationObject: a.objeto,
+            authenticatorData: a.datosDelAutenticador,
+            publicKey: a.publica,
+            publicKeyAlgorithm: -7,
+            transports: ["internal", "hybrid"],
+          },
+        }),
+      },
+    });
+    return cred;
+  };
+
   const nuestro = (cual: "get" | "create") =>
     async function (this: CredentialsContainer, ...argumentos: unknown[]) {
       // **El `catch` de todo, y cede.** De aquí no puede salir una excepción hacia
@@ -191,12 +280,30 @@ async function arrancar() {
       // nuestro, que es el riesgo número uno de esta fase.
       try {
         const o = argumentos[0] as Opciones | undefined;
-        if (!podemosAtender(o, hayLlaves)) {
+        if (!podemosAtender(o, cual === "create" ? sePuedeCrear : hayLlaves)) {
           return Reflect.apply(original[cual], this, argumentos);
         }
-        // **Crear llaves es la entrega siguiente** (P3). Hasta entonces se cede, que
-        // es lo que tiene que hacer esta pieza cuando no tiene nada que aportar.
-        if (cual === "create") return Reflect.apply(original[cual], this, argumentos);
+
+        if (cual === "create") {
+          const pk = o!.publicKey as PublicKeyCredentialCreationOptions;
+          const r = await preguntar({
+            crear: true,
+            rpId: pk.rp?.id,
+            permitidas: [],
+            reto: aBase64Url(new Uint8Array(pk.challenge as ArrayBuffer)),
+            usuario: pk.user?.name,
+            idUsuario: pk.user?.id ? aBase64Url(new Uint8Array(pk.user.id as ArrayBuffer)) : undefined,
+            titulo: pk.rp?.name,
+            excluidas: (pk.excludeCredentials ?? []).map((c) => aBase64Url(new Uint8Array(c.id as ArrayBuffer))),
+            algoritmos: (pk.pubKeyCredParams ?? []).map((x) => x.alg),
+          });
+          // Sin atestación se cede, y ése es el caso normal: el banner se cerró con
+          // «Ahora no», o el sitio ya tenía una llave nuestra. Ceder es llamar a la
+          // original, así que sale el diálogo del navegador — exactamente lo que se
+          // habría visto sin Esfinge.
+          if (!r.atestacion) return Reflect.apply(original[cual], this, argumentos);
+          return credencialCreada(r.atestacion);
+        }
 
         const pk = o!.publicKey as PublicKeyCredentialRequestOptions;
         const r = await preguntar({
@@ -214,6 +321,46 @@ async function arrancar() {
         return Reflect.apply(original[cual], this, argumentos);
       }
     };
+
+  /**
+   * **Decirle al sitio que aquí hay un autenticador de plataforma** (ADR 0048, P3).
+   *
+   * Es lo que los sitios preguntan para decidir si ofrecen crear una llave de acceso,
+   * y hay que contestar que sí: si no, un ordenador sin Touch ID ni Hello no vería la
+   * oferta nunca y Esfinge no serviría justo donde más falta hace. **Eso es decir que
+   * hay un autenticador de plataforma cuando el sistema puede no tener ninguno**, y se
+   * hace a sabiendas porque es lo que la decisión del cliente exige — «Esfinge se
+   * ofrece siempre».
+   *
+   * Lo que acota la mentira: solo se dice que sí **cuando Esfinge de verdad puede
+   * crear**. Con el interruptor apagado se contesta lo que conteste el navegador, que
+   * es la verdad de este equipo.
+   *
+   * Y se espera al aviso, con plazo: aquí no hay activación de usuario que agotar.
+   */
+  const disponible = PublicKeyCredential?.isUserVerifyingPlatformAuthenticatorAvailable;
+  if (typeof disponible === "function") {
+    const nuestra = async function (this: unknown) {
+      try {
+        await Promise.race([elAviso, new Promise((x) => setTimeout(x, PLAZO_DEL_AVISO))]);
+        if (sePuedeCrear) return true;
+      } catch {
+        /* lo de abajo */
+      }
+      return Reflect.apply(disponible, this, []);
+    };
+    try {
+      Object.defineProperty(PublicKeyCredential, "isUserVerifyingPlatformAuthenticatorAvailable", {
+        value: nuestra,
+        writable: false,
+        configurable: false,
+        enumerable: false,
+      });
+    } catch {
+      // Si no se deja, se queda la del navegador. No es motivo para no instalar lo
+      // demás: lo que se pierde es que algunos sitios no ofrezcan crear.
+    }
+  }
 
   // **Los mismos argumentos y la misma identidad de objeto** al ceder: nada de
   // clonar. Clonando se pierde `options.signal` —el `AbortSignal` deja de abortar

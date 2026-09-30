@@ -101,6 +101,17 @@ export type Atestacion = {
   datosDelCliente: string;
   /** El `attestationObject` en CBOR, en base64url. */
   objeto: string;
+  /**
+   * `datosDelAutenticador` y `publica` son **el mismo dato que ya va dentro de
+   * `objeto`**, y se mandan aparte a propósito: los sitios llaman a
+   * `getAuthenticatorData()`, `getPublicKey()` y `getPublicKeyAlgorithm()`, y sacarlos
+   * del objeto exigiría descodificar CBOR **en el mundo principal**, con un
+   * descodificador que aquí no existe y no se va a escribir. Duplicar una pública es
+   * más barato y más seguro, y ninguno de los dos es secreto.
+   */
+  datosDelAutenticador: string;
+  /** La pública en SPKI, que es lo que `getPublicKey()` devuelve. */
+  publica: string;
 };
 
 /**
@@ -208,6 +219,13 @@ export type Respuesta = {
   afirmacion?: Afirmacion;
   /** Lo que sale de crear una (P3). */
   atestacion?: Atestacion;
+  /**
+   * Si Esfinge puede **crear** una llave, y vuelve con `dominios` en la misma
+   * pregunta. Es otra cosa que `llaves` vacía: ahí no se distingue «aquí no hay
+   * ninguna» de «están apagadas en Ajustes», y el banner de crear tiene que saberlo
+   * antes de prometer nada.
+   */
+  puedeCrear?: boolean;
   /**
    * Los dominios que tienen llave, **solo al preguntar sin decir de qué sitio**.
    *

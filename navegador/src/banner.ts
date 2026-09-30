@@ -41,7 +41,9 @@ export type DecisionDelBanner =
 
 export type EstadoDelBanner =
   | { tipo: "elegir"; rpId: string; llaves: LlaveParaElBanner[] }
-  | { tipo: "cerrada"; rpId: string };
+  | { tipo: "cerrada"; rpId: string }
+  /** Crear una llave nueva (P3). `cuenta` es el `user.name` que dice el sitio. */
+  | { tipo: "crear"; rpId: string; cuenta: string };
 
 export type Banner = {
   poner: (estado: EstadoDelBanner) => void;
@@ -248,7 +250,33 @@ export function mostrarBanner(
     const botones = doc.createElement("div");
     botones.className = "botones";
 
-    if (nuevo.tipo === "cerrada") {
+    // **Crear es la pantalla más consecuente de Esfinge en la web de otro** (P3), y
+    // el texto lo dice en vez de disimularlo: lo que se decide aquí es dónde va a
+    // vivir la única forma de entrar en esa cuenta. Una contraseña olvidada se
+    // recupera por correo; una llave de acceso perdida, no.
+    //
+    // Y por eso lleva **la frase del respaldo**: la llave se guarda cifrada y
+    // sincronizada, que es la respuesta a la pregunta que cualquiera se hace al leer
+    // lo de arriba. Sin ella, lo honesto daría miedo y lo que da miedo se cancela.
+    if (nuevo.tipo === "crear") {
+      if (nuevo.cuenta) {
+        const eti = doc.createElement("span");
+        eti.className = "etiqueta";
+        eti.textContent = "Cuenta";
+        banner.append(eti, parrafo("dato", nuevo.cuenta));
+      }
+      banner.append(
+        parrafo(
+          "aviso",
+          "Esfinge creará tu llave de acceso y la guardará en tu bóveda, cifrada y sincronizada " +
+            "con tus equipos. Será la forma de entrar en esta cuenta.",
+        ),
+      );
+      botones.append(boton("Ahora no", "", ESPERA, () => decidir({ accion: "ahora-no" })));
+      botones.append(
+        boton("Crear la llave", "principal", ESPERA_DE_ACEPTAR, () => decidir({ accion: "aceptar", id: "" })),
+      );
+    } else if (nuevo.tipo === "cerrada") {
       banner.append(
         parrafo("aviso", "Abre Esfinge para usar tu llave de acceso. Cuando la tengas abierta, vuelve a intentarlo."),
       );
