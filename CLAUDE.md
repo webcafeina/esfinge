@@ -296,6 +296,11 @@ no le parece un error, así que devuelve los bytes anteriores como si nada y la 
 Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
 no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
 
+**Un acento grave dentro de un literal de plantilla lo cierra**, y los comentarios también cuentan. Los
+guiones que las pruebas inyectan en la página van en plantillas, así que un comentario en español bien
+escrito —con `código` entre acentos— **rompe el fichero entero** con un error de sintaxis que señala a otra
+línea. Dentro de esas plantillas, las comillas angulares.
+
 **`addInitScript` envuelve el código en una función**, así que el `var` de un paquete `iife` inyectado así
 **no llega a `window`**. Con `addScriptTag` sí, y por eso el resto de las pruebas de la extensión no se
 topan con esto. Hace falta `addInitScript` cuando lo que se prueba es que algo llegue **antes que la

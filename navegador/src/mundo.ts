@@ -27,7 +27,8 @@
  * en la primera línea, dentro de la página de otro, y nadie se entera.
  */
 
-import { abrirPuente, type Aviso } from "./puente";
+import { abrirPuente, type Aviso, type PeticionDelMundo, type RespuestaAlMundo } from "./puente";
+import { aBase64Url, deBase64Url } from "./nucleo/afirmacion";
 
 /** Lo que una llamada trae y hay que mirar **sin esperar a nadie**. */
 type Opciones = CredentialRequestOptions & CredentialCreationOptions;
@@ -104,9 +105,83 @@ async function arrancar() {
   // conectar y cada vez que cambie —al abrirse o cerrarse la bóveda—, y mientras no
   // llegue vale `false`: ante la duda, ceder.
   let hayLlaves = false;
+  let siguiente = 0;
+  const esperando = new Map<number, (r: RespuestaAlMundo) => void>();
   puerto.onmessage = (e: MessageEvent) => {
-    const a = e.data as Aviso | null;
-    if (a && typeof a.hay === "boolean") hayLlaves = a.hay;
+    const d = e.data as (Aviso & Partial<RespuestaAlMundo>) | null;
+    if (!d) return;
+    if (typeof d.hay === "boolean") hayLlaves = d.hay;
+    if (typeof d.n === "number") {
+      const quien = esperando.get(d.n);
+      esperando.delete(d.n);
+      quien?.(d as RespuestaAlMundo);
+    }
+  };
+
+  /**
+   * Pregunta al otro lado y espera. **Sin plazo**, y eso es a propósito: a partir de
+   * aquí hay un banner delante de una persona, y ponerle prisa a una persona es
+   * decidir por ella. El plazo que importa ya ha pasado —el de decidir si se
+   * pregunta— y lo resuelve la bandera, sin esperar a nadie.
+   */
+  const preguntar = (p: Omit<PeticionDelMundo, "n">) =>
+    new Promise<RespuestaAlMundo>((listo) => {
+      const n = ++siguiente;
+      esperando.set(n, listo);
+      puerto.postMessage({ n, ...p } satisfies PeticionDelMundo);
+    });
+
+  /**
+   * La credencial que se le devuelve al sitio.
+   *
+   * **No se construye un `PublicKeyCredential`**: no se puede. Se hace un objeto con
+   * su prototipo y **propiedades propias de datos**, que tapan los accesores del
+   * prototipo — sin eso, leer `cred.id` da «Illegal invocation». Lleva también
+   * `getClientExtensionResults` y `toJSON`, que los sitios modernos llaman.
+   */
+  const credencial = (a: NonNullable<RespuestaAlMundo["afirmacion"]>) => {
+    const bytes = (s: string) => {
+      const b = deBase64Url(s);
+      // Un `ArrayBuffer` propio, no la vista: es lo que el sitio espera leer.
+      return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
+    };
+    const respuesta = Object.create(
+      typeof AuthenticatorAssertionResponse === "undefined" ? Object.prototype : AuthenticatorAssertionResponse.prototype,
+    ) as Record<string, unknown>;
+    Object.defineProperties(respuesta, {
+      clientDataJSON: { value: bytes(a.datosDelCliente), enumerable: true },
+      authenticatorData: { value: bytes(a.datosDelAutenticador), enumerable: true },
+      signature: { value: bytes(a.firma), enumerable: true },
+      userHandle: { value: a.idUsuario ? bytes(a.idUsuario) : null, enumerable: true },
+    });
+
+    const cred = Object.create(
+      typeof PublicKeyCredential === "undefined" ? Object.prototype : PublicKeyCredential.prototype,
+    ) as Record<string, unknown>;
+    Object.defineProperties(cred, {
+      id: { value: a.idCredencial, enumerable: true },
+      rawId: { value: bytes(a.idCredencial), enumerable: true },
+      type: { value: "public-key", enumerable: true },
+      authenticatorAttachment: { value: "platform", enumerable: true },
+      response: { value: respuesta, enumerable: true },
+      getClientExtensionResults: { value: () => ({}) },
+      toJSON: {
+        value: () => ({
+          id: a.idCredencial,
+          rawId: a.idCredencial,
+          type: "public-key",
+          authenticatorAttachment: "platform",
+          clientExtensionResults: {},
+          response: {
+            clientDataJSON: a.datosDelCliente,
+            authenticatorData: a.datosDelAutenticador,
+            signature: a.firma,
+            userHandle: a.idUsuario ?? null,
+          },
+        }),
+      },
+    });
+    return cred;
   };
 
   const nuestro = (cual: "get" | "create") =>
@@ -119,10 +194,22 @@ async function arrancar() {
         if (!podemosAtender(o, hayLlaves)) {
           return Reflect.apply(original[cual], this, argumentos);
         }
-        // **Todavía no hay nada que ofrecer**: la búsqueda de llaves llega en el
-        // paso siguiente. Hasta entonces se cede siempre, que es exactamente lo que
-        // tiene que hacer esta pieza cuando no tiene nada que aportar.
-        return Reflect.apply(original[cual], this, argumentos);
+        // **Crear llaves es la entrega siguiente** (P3). Hasta entonces se cede, que
+        // es lo que tiene que hacer esta pieza cuando no tiene nada que aportar.
+        if (cual === "create") return Reflect.apply(original[cual], this, argumentos);
+
+        const pk = o!.publicKey as PublicKeyCredentialRequestOptions;
+        const r = await preguntar({
+          rpId: pk.rpId,
+          permitidas: (pk.allowCredentials ?? []).map((c) => aBase64Url(new Uint8Array(c.id as ArrayBuffer))),
+          reto: aBase64Url(new Uint8Array(pk.challenge as ArrayBuffer)),
+        });
+        // **Sin afirmación se cede, y ése es el caso normal**: no hay llave, el
+        // banner se ha cerrado con «Ahora no» o con «Usar otra llave». Ceder es
+        // llamar a la original, así que a continuación sale el diálogo del
+        // navegador: exactamente lo que se habría visto sin Esfinge.
+        if (!r.afirmacion) return Reflect.apply(original[cual], this, argumentos);
+        return credencial(r.afirmacion);
       } catch {
         return Reflect.apply(original[cual], this, argumentos);
       }

@@ -44,6 +44,35 @@
  */
 export type Aviso = { hay: boolean };
 
+/**
+ * Lo que el mundo principal pide, y lo único que pide.
+ *
+ * **Nada de esto es secreto y por eso puede viajar**: el reto y los
+ * identificadores de credencial los acaba de mandar el sitio, y el `rpId` lo dice
+ * él. Lo que **no** viaja en ningún sentido es la clave privada — de vuelta sube la
+ * firma ya hecha— ni el `rpId` decide nada: se comprueba contra el origen que pone
+ * el navegador, al otro lado.
+ */
+export type PeticionDelMundo = {
+  /** Para emparejar la respuesta con su pregunta: puede haber dos a la vez. */
+  n: number;
+  rpId?: string;
+  permitidas: string[];
+  reto: string;
+};
+
+/** Lo que vuelve. **Sin afirmación significa ceder**, y es el caso normal. */
+export type RespuestaAlMundo = {
+  n: number;
+  afirmacion?: {
+    idCredencial: string;
+    idUsuario?: string;
+    datosDelCliente: string;
+    datosDelAutenticador: string;
+    firma: string;
+  };
+};
+
 /** Lo que identifica nuestro saludo entre todo el `postMessage` de una página. */
 export const MARCA = "esfinge:llaves:1";
 

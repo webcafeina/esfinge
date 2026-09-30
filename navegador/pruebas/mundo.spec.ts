@@ -39,7 +39,7 @@ test.beforeAll(async () => {
  */
 async function conElShim(
   page: import("@playwright/test").Page,
-  { atender, hay = false }: { atender: boolean; hay?: boolean },
+  { atender, hay = false, afirmacion = null }: { atender: boolean; hay?: boolean; afirmacion?: unknown },
 ) {
   await page.addInitScript(`
     window.__llamadas = [];
@@ -64,6 +64,27 @@ async function conElShim(
     };
     window.CredentialsContainer = CredentialsContainer;
     window.navigator.__cc = new CredentialsContainer();
+
+    // **Y los dos tipos que hay que devolver**, que en about:blank no existen.
+    // Con los accesores que lanzan, que es la trampa de verdad: un objeto con el
+    // prototipo puesto y **sin propiedades propias** da «Illegal invocation» al leer
+    // «id», y el sitio revienta al mirar lo que le hemos devuelto.
+    // (Sin acentos graves: esto va dentro de un literal de plantilla y lo cerrarían.)
+    class PublicKeyCredential {}
+    class AuthenticatorAssertionResponse {}
+    for (const [tipo, nombres] of [
+      [PublicKeyCredential, ["id", "rawId", "type", "response", "authenticatorAttachment"]],
+      [AuthenticatorAssertionResponse, ["clientDataJSON", "authenticatorData", "signature", "userHandle"]],
+    ]) {
+      for (const n of nombres) {
+        Object.defineProperty(tipo.prototype, n, {
+          get() { throw new TypeError("Illegal invocation"); },
+          configurable: true,
+        });
+      }
+    }
+    window.PublicKeyCredential = PublicKeyCredential;
+    window.AuthenticatorAssertionResponse = AuthenticatorAssertionResponse;
   `);
   // **`addInitScript` envuelve el código en una función**, así que el `var` del
   // paquete no llega a `window` y `window.P` salía `undefined`: el saludo no tenía
@@ -71,7 +92,17 @@ async function conElShim(
   await page.addInitScript(puente + "\nwindow.P = P;");
   if (atender) {
     await page.addInitScript(`
-      window.P.atenderElPuente((p) => { window.__puerto = p; p.postMessage({ hay: ${hay} }); });
+      window.__pedidos = [];
+      window.P.atenderElPuente((p) => {
+        window.__puerto = p;
+        p.postMessage({ hay: ${hay} });
+        // El otro lado, de mentira: apunta lo que le piden y contesta lo que se le
+        // haya dicho. Sin afirmación, ceder — que es el caso normal.
+        p.onmessage = (e) => {
+          window.__pedidos.push(e.data);
+          p.postMessage({ n: e.data.n, afirmacion: ${JSON.stringify(afirmacion)} ?? undefined });
+        };
+      });
     `);
   }
   await page.addInitScript(codigo);
@@ -153,10 +184,9 @@ test("mundo: al ceder, la original recibe el mismo objeto y el mismo this", asyn
  * peor riesgo de la fase: `create()` exige activación de usuario, dura unos
  * segundos, y esperar a un trabajador dormido la agota.
  */
-test("mundo: lo que no es suyo se cede, y en la misma vuelta", async ({ page }) => {
+test("mundo: lo que no es suyo se cede sin preguntar a nadie", async ({ page }) => {
   // **Con la bandera puesta**, que si no la primera línea de `podemosAtender` corta
-  // y no se llega a mirar ninguna de las otras condiciones: la prueba pasaría sin
-  // ejercitar nada de lo que dice comprobar.
+  // y no se llega a mirar ninguna de las otras condiciones.
   await conElShim(page, { atender: true, hay: true });
   const r = await page.evaluate(async () => {
     const cc = (window as any).navigator.__cc;
@@ -169,18 +199,24 @@ test("mundo: lo que no es suyo se cede, y en la misma vuelta", async ({ page }) 
       "extensions vacío": { publicKey: { challenge: new Uint8Array(1), extensions: {} } },
     };
     const out: Record<string, string> = {};
-    for (const [nombre, o] of Object.entries(casos)) out[nombre] = String(await cc.get(o));
-    return { out, cuantas: (window as any).__llamadas.length };
+    const preguntados: string[] = [];
+    for (const [nombre, o] of Object.entries(casos)) {
+      const antes = (window as any).__pedidos.length;
+      out[nombre] = String(await cc.get(o));
+      if ((window as any).__pedidos.length > antes) preguntados.push(nombre);
+    }
+    return { out, cuantas: (window as any).__llamadas.length, preguntados };
   });
-  // **Y aquí hay que decir lo que esta prueba todavía NO comprueba.** Hoy ceden los
-  // cuatro por el mismo sitio —no hay llaves que ofrecer—, así que quitar la
-  // comprobación de `mediation` o cambiar la de `extensions` la deja en verde:
-  // comprobado mutándolas. Es una fijación para cuando el banner exista, y entonces
-  // el «extensions vacío» tendrá que dejar de ceder mientras los otros tres siguen
-  // cediendo. Se escribe ahora para que el caso de GitHub no se pierda por el
-  // camino, no porque esté cubierto.
+  // **Lo que distingue es a quién se le ha preguntado.** Los cuatro acaban cediendo
+  // —el otro lado de mentira contesta sin afirmación—, así que contar cesiones no
+  // dice nada. Lo que dice algo es que los tres primeros ni preguntan, y que el
+  // cuarto sí: `extensions` presente y vacío es lo que manda GitHub, y contarlo como
+  // extensión desconocida haría que Esfinge no funcionara nunca.
   expect(r.cuantas).toBe(4);
   expect(Object.values(r.out)).toEqual(["original", "original", "original", "original"]);
+  expect(r.preguntados, "se ha preguntado por algo que no es nuestro, o no se ha preguntado por lo que sí").toEqual([
+    "extensions vacío",
+  ]);
 });
 
 test("mundo: si algo revienta dentro, se cede igual", async ({ page }) => {
@@ -199,4 +235,57 @@ test("mundo: si algo revienta dentro, se cede igual", async ({ page }) => {
     return String(await cc.get(malo));
   });
   expect(r).toBe("original");
+});
+
+/**
+ * **El camino entero, con una firma de vuelta**: lo que se le devuelve al sitio
+ * tiene que parecerse a lo que le devolvería el navegador, o el sitio lo rechaza
+ * —o peor, revienta— y quien no usa Esfinge se queda sin entrar.
+ */
+test("mundo: con una afirmación, devuelve una credencial con la forma buena", async ({ page }) => {
+  await conElShim(page, {
+    atender: true,
+    hay: true,
+    afirmacion: {
+      idCredencial: "Y3JlZC0x",
+      idUsuario: "dXN1LTE",
+      datosDelCliente: "Y2xpZW50ZQ",
+      datosDelAutenticador: "YXV0ZW50aWNhZG9y",
+      firma: "ZmlybWE",
+    },
+  });
+  const r = await page.evaluate(async () => {
+    const cc = (window as any).navigator.__cc;
+    const cred: any = await cc.get({ publicKey: { challenge: new Uint8Array(32), rpId: "github.com" } });
+    const texto = (b: ArrayBuffer) => new TextDecoder().decode(new Uint8Array(b));
+    return {
+      // No se ha cedido: el sitio recibe lo nuestro.
+      cedio: (window as any).__llamadas.length > 0,
+      id: cred.id,
+      tipo: cred.type,
+      // **Leer `id` y `response` no puede lanzar**: sin propiedades propias, los
+      // accesores del prototipo dan «Illegal invocation».
+      rawId: texto(cred.rawId),
+      cliente: texto(cred.response.clientDataJSON),
+      autenticador: texto(cred.response.authenticatorData),
+      firma: texto(cred.response.signature),
+      usuario: texto(cred.response.userHandle),
+      extensiones: JSON.stringify(cred.getClientExtensionResults()),
+      json: cred.toJSON().response.signature,
+      esCredencial: cred instanceof PublicKeyCredential,
+    };
+  });
+  expect(r).toEqual({
+    cedio: false,
+    id: "Y3JlZC0x",
+    tipo: "public-key",
+    rawId: "cred-1",
+    cliente: "cliente",
+    autenticador: "autenticador",
+    firma: "firma",
+    usuario: "usu-1",
+    extensiones: "{}",
+    json: "ZmlybWE",
+    esCredencial: true,
+  });
 });

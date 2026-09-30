@@ -58,7 +58,8 @@ import { aceptado, alAceptar } from "./consentimiento";
 import { vigilarEnvios, vigilarIdentificador } from "./envios";
 import { cuentaParaRellenarSola } from "./identidad";
 import { avisar, ponerFilete } from "./marcas";
-import { atenderElPuente, type Aviso } from "./puente";
+import { atenderElPuente, type Aviso, type PeticionDelMundo, type RespuestaAlMundo } from "./puente";
+import { mostrarBanner, type EstadoDelBanner } from "./banner";
 import {
   VERSION_DEL_PROTOCOLO,
   type Forma,
@@ -588,9 +589,7 @@ function empezar() {
   // correcto: aceptar el aviso no debe instalar un shim en una página que ya está
   // corriendo. En la siguiente ya estará.
   atenderElPuente((puerto) => {
-    // Todavía no hay búsqueda de llaves: se dice que no hay nada, que es lo que hace
-    // que el shim ceda siempre. El sí llega con el banner.
-    puerto.postMessage({ hay: false } satisfies Aviso);
+    atenderLasLlaves(puerto);
   });
 
   if (document.readyState === "loading") {
@@ -614,6 +613,66 @@ function conElDocumento() {
   });
   observador.observe(document.documentElement, { childList: true, subtree: true });
   setTimeout(() => observador.disconnect(), PLAZO_DE_OBSERVACION);
+}
+
+/**
+ * Lo que se le contesta al mundo principal sobre las llaves de acceso (ADR 0048).
+ *
+ * Aquí viven las dos mitades: **empujar la bandera** —«en este sitio hay algo que
+ * ofrecer»—, que es lo que permite al shim ceder sin esperar a nadie, y atender la
+ * petición de firmar, que saca el banner y espera a una persona.
+ *
+ * **Nada de esto decide el `rpId`.** Lo que llegue por el puerto se le pasa al
+ * trabajador tal cual, y es él quien lo comprueba contra el origen que pone el
+ * navegador. Aquí solo se dibuja y se espera.
+ */
+function atenderLasLlaves(puerto: MessagePort) {
+  const avisar = async () => {
+    try {
+      const r = await pedir({ que: "llaves" });
+      puerto.postMessage({ hay: (r.llaves ?? []).length > 0 } satisfies Aviso);
+    } catch {
+      // Ante la duda, que ceda: es lo que ya vale por defecto al otro lado.
+      puerto.postMessage({ hay: false } satisfies Aviso);
+    }
+  };
+  void avisar();
+
+  puerto.onmessage = async (e: MessageEvent) => {
+    const p = e.data as PeticionDelMundo | null;
+    if (!p || typeof p.n !== "number") return;
+    const ceder = () => puerto.postMessage({ n: p.n } satisfies RespuestaAlMundo);
+    try {
+      const r = await pedir({ que: "llaves", rpId: p.rpId, permitidas: p.permitidas });
+      // Con la bóveda cerrada se dice, y se ofrece abrirla. Con cualquier otro «no»
+      // —el sitio no encaja, no hay nada— se cede sin dibujar nada: en la página de
+      // otro no se dibuja para no decir nada.
+      const estado: EstadoDelBanner | null = r.ok
+        ? (r.llaves ?? []).length > 0
+          ? { tipo: "elegir", rpId: p.rpId ?? location.hostname, llaves: r.llaves ?? [] }
+          : null
+        : r.motivo === "cerrada"
+          ? { tipo: "cerrada", rpId: p.rpId ?? location.hostname }
+          : null;
+      if (!estado) return ceder();
+
+      const decision = await new Promise<{ accion: string; id?: string }>((listo) => {
+        mostrarBanner(estado, listo);
+      });
+      if (decision.accion !== "aceptar" || !decision.id) return ceder();
+
+      const firmada = await pedir({
+        que: "firmar-llave",
+        rpId: p.rpId,
+        id: decision.id,
+        reto: p.reto,
+      });
+      if (!firmada.ok || !firmada.afirmacion) return ceder();
+      puerto.postMessage({ n: p.n, afirmacion: firmada.afirmacion } satisfies RespuestaAlMundo);
+    } catch {
+      ceder();
+    }
+  };
 }
 
 arrancar().catch(() => {});

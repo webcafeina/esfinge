@@ -227,3 +227,36 @@ test("llaves: lo que sale de firmar tiene la forma buena y no lleva la privada",
   // Y la privada no aparece por ningún lado de lo que sale.
   expect(JSON.stringify(a)).not.toContain("clavePrivada");
 });
+
+/**
+ * **Sin `rpId`, lo que este origen podría usar.** Es la pregunta que hay que hacer
+ * *antes* de que el sitio diga nada, para saber si Esfinge se ofrece. Y no es la
+ * misma que preguntar por el anfitrión: una llave guardada como `ejemplo.com`
+ * sirve en `login.ejemplo.com`, y preguntando por el anfitrión no saldría.
+ */
+test("llaves: sin rpId salen las que este origen puede usar, incluida la del dominio de arriba", async () => {
+  const { boveda } = await Boveda.crear(MAESTRA);
+  const { crearLlave } = await import("../src/nucleo/llaves");
+  const { aBase64Url } = await import("../src/nucleo/afirmacion");
+  const par = await crearLlave();
+  const llave = (rpId: string, nombre: string) =>
+    ({
+      id: "", tipo: "llave", titulo: nombre, rpId, idCredencial: "c-" + rpId,
+      nombreVisible: nombre, algoritmo: -7, clavePrivada: aBase64Url(par.privada),
+      creada: "", cambiada: "",
+    }) as Entrada;
+  await boveda.poner(llave("ejemplo.com", "la del dominio"));
+  await boveda.poner(llave("login.ejemplo.com", "la del subdominio"));
+  await boveda.poner(llave("otro.com", "la de otro sitio"));
+
+  const desdeElSubdominio = await atender(p({ que: "llaves", origen: "https://login.ejemplo.com/" }), {
+    existe: true,
+    boveda,
+  });
+  expect(desdeElSubdominio.llaves?.map((l) => l.nombre).sort()).toEqual(["la del dominio", "la del subdominio"]);
+
+  // Y desde el dominio de arriba **no** sale la del subdominio: un `rpId` tiene que
+  // ser el anfitrión o un sufijo suyo, no al revés.
+  const desdeElDominio = await atender(p({ que: "llaves", origen: "https://ejemplo.com/" }), { existe: true, boveda });
+  expect(desdeElDominio.llaves?.map((l) => l.nombre)).toEqual(["la del dominio"]);
+});

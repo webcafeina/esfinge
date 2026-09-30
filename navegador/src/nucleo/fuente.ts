@@ -129,6 +129,20 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
       // `rpId` que pide el sitio se comprueba contra el origen que pone el
       // navegador. `encaja` no sirve aquí y el porqué está en `llaves.ts`.
       case "llaves": {
+        // **Sin `rpId` se contesta «lo que este origen podría usar»**, que es otra
+        // pregunta y hace falta: para saber si hay que ofrecerse hay que mirar antes
+        // de que el sitio diga nada, y una llave guardada como `ejemplo.com` sirve
+        // en `login.ejemplo.com`. Preguntando por el anfitrión a secas esa llave no
+        // saldría nunca.
+        if (p.rpId === undefined) {
+          const usables = b
+            .buscar("")
+            .filter((x) => x.tipo === "llave" && rpIdPermitido(x.rpId, p.origen ?? "") === x.rpId)
+            .map((x) => b.ver(x.id))
+            .filter((x): x is Entrada => Boolean(x))
+            .filter((x) => Boolean(x.clavePrivada));
+          return { ok: true, llaves: usables.map((x) => ({ id: x.id, nombre: x.nombreVisible || x.titulo })) };
+        }
         const rp = rpIdPermitido(p.rpId, p.origen ?? "");
         if (!rp) return mal("no-encaja", "Ese sitio no puede pedir esa llave de acceso");
         // **`buscar` devuelve las entradas pasadas por `sinSecretos`**, y eso vacía
