@@ -17,6 +17,8 @@
  * rechazar, o peor, firmar para quien no es.
  */
 
+import { deBase64Url } from "./afirmacion";
+import { claveCOSE } from "./cbor";
 import { dominioRegistrable, hostDe } from "./dominios";
 import type { Entrada } from "./entrada";
 
@@ -122,6 +124,40 @@ export async function crearLlave(): Promise<{ privada: Uint8Array; publica: Uint
     privada: new Uint8Array(await crypto.subtle.exportKey("pkcs8", par.privateKey)),
     publica: new Uint8Array(await crypto.subtle.exportKey("spki", par.publicKey)),
   };
+}
+
+/**
+ * Los bytes de azar que identifican una llave. **Treinta y dos**, igual que en Go.
+ *
+ * El número no lo fija WebAuthn: lo elige el autenticador. Se escoge así porque el
+ * sitio lo guarda y lo usa como nombre de la credencial, y dos llaves con el mismo
+ * identificador en el mismo sitio serían la misma para él.
+ */
+export const LARGO_DEL_ID_DE_CREDENCIAL = 32;
+
+export function idDeCredencial(): Uint8Array<ArrayBuffer> {
+  return crypto.getRandomValues(new Uint8Array(LARGO_DEL_ID_DE_CREDENCIAL));
+}
+
+/**
+ * Una pública en SPKI convertida al COSE que guarda el sitio.
+ *
+ * Las coordenadas salen por **JWK**, que es lo único que WebCrypto da desmontado: de
+ * una SPKI no se pueden leer sin escribir un analizador de ASN.1, y eso ya se decidió
+ * que no. Vienen en base64url y **de 32 bytes con los ceros de delante puestos**, que
+ * es justo lo que el COSE pide.
+ */
+export async function publicaEnCOSE(publicaSPKI: Uint8Array): Promise<Uint8Array<ArrayBuffer>> {
+  const k = await crypto.subtle.importKey(
+    "spki",
+    new Uint8Array(publicaSPKI),
+    { name: "ECDSA", namedCurve: "P-256" },
+    true,
+    ["verify"],
+  );
+  const jwk = (await crypto.subtle.exportKey("jwk", k)) as { x?: string; y?: string };
+  if (!jwk.x || !jwk.y) throw new Error("Esa clave pública no se entiende");
+  return claveCOSE(deBase64Url(jwk.x), deBase64Url(jwk.y));
 }
 
 /** Firma con una llave guardada, y devuelve la firma **en DER**. */

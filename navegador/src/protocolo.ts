@@ -26,7 +26,8 @@ export type Peticion = {
     | "nunca-aqui"
     // Las llaves de acceso (ADR 0048).
     | "llaves"
-    | "firmar-llave";
+    | "firmar-llave"
+    | "crear-llave";
   origen?: string;
   id?: string;
   testigo?: string;
@@ -49,6 +50,18 @@ export type Peticion = {
   rpId?: string;
   permitidas?: string[];
   reto?: string;
+  /**
+   * Lo que hace falta para **crear** una llave (P3), y lo dice el sitio.
+   *
+   * `usuario` y `titulo` ya están arriba y se reutilizan. `idUsuario` es el `user.id`
+   * del sitio: **bytes opacos** que hay que devolver tal cual al firmar y que no
+   * significan nada aquí —no es el correo—. `excluidas` son las llaves que el sitio
+   * dice tener ya para esa cuenta, y `algoritmos` los que acepta: **sin `-7` no se
+   * crea nada**, porque es el único que Esfinge sabe firmar.
+   */
+  idUsuario?: string;
+  excluidas?: string[];
+  algoritmos?: number[];
 };
 
 /** Una llave de acceso, **tal como se enseña en el banner**: sin nada de dentro. */
@@ -73,6 +86,21 @@ export type Afirmacion = {
   datosDelCliente: string;
   datosDelAutenticador: string;
   firma: string;
+};
+
+/**
+ * Lo que sale de crear una llave, y **lo que el sitio se queda para siempre** (P3).
+ *
+ * No lleva firma: con `fmt: "none"` no hay nada que firmar, y la clave pública viaja
+ * **dentro** del objeto de atestación, en su `authData`. Sacarla aparte sería tener el
+ * mismo dato en dos sitios.
+ */
+export type Atestacion = {
+  idCredencial: string;
+  /** Los bytes exactos que se hashearon, en base64url. */
+  datosDelCliente: string;
+  /** El `attestationObject` en CBOR, en base64url. */
+  objeto: string;
 };
 
 /**
@@ -178,6 +206,8 @@ export type Respuesta = {
   llaves?: LlaveParaElBanner[];
   /** Lo que sale de firmar con una de ellas. */
   afirmacion?: Afirmacion;
+  /** Lo que sale de crear una (P3). */
+  atestacion?: Atestacion;
   /**
    * Los dominios que tienen llave, **solo al preguntar sin decir de qué sitio**.
    *

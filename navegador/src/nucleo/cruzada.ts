@@ -15,7 +15,7 @@ import { identidadDeSemilla } from "./identidad";
 import { abrirEnvio, mandarEntrada, type Envio } from "./envio";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
 import { dominioDeOrigen, dominioDeSitio } from "./dominios";
-import { crearLlave, firmarConLlave, origenDe, rpIdPermitido } from "./llaves";
+import { crearLlave, firmarConLlave, origenDe, publicaEnCOSE, rpIdPermitido } from "./llaves";
 import { cborDeMapa, claveCOSE, objetoDeAtestacion } from "./cbor";
 import { atender } from "./fuente";
 import {
@@ -228,6 +228,34 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
         const cose = claveCOSE(deHex(c.x), deHex(c.y));
         const datos = await datosDelAutenticadorAlCrear(c.rpId, c.banderas, deHex(c.idCredencial), cose);
         out.push({ cose: hex(cose), datos: hex(datos), objeto: hex(objetoDeAtestacion(datos)) });
+      }
+      return out;
+    }
+
+    // **El COSE de una pública dada**, para los vectores fijos de la P3. Las llaves
+    // al azar casi nunca tienen una coordenada que empiece por cero —una vez de cada
+    // 256—, así que ese caso se fija a mano y no se deja al azar.
+    case "coseDeUnaPublica": {
+      const out = [];
+      for (const c of p.casos as { spki: string }[]) {
+        out.push(hex(await publicaEnCOSE(deHex(c.spki))));
+      }
+      return out;
+    }
+
+    // **El COSE de una pública recién creada aquí** (P3), para que Go compruebe que
+    // puede verificar con ella. Es la mitad que dice que una llave creada con cuenta
+    // sirve sin ella: lo que el sitio guarda es esto, y si los dos lados sacaran
+    // coordenadas distintas de la misma clave, la llave solo valdría donde se creó.
+    case "coseDeUnaLlaveNueva": {
+      const out = [];
+      for (let i = 0; i < (p.cuantas as number); i++) {
+        const par = await crearLlave();
+        out.push({
+          privada: hex(par.privada),
+          publica: hex(par.publica),
+          cose: hex(await publicaEnCOSE(par.publica)),
+        });
       }
       return out;
     }

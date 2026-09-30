@@ -132,11 +132,12 @@ func PublicaEnCOSE(publicaSPKI []byte) ([]byte, error) {
 	if !vale || ec.Curve != elliptic.P256() {
 		return nil, errors.New("Esfinge solo sabe de llaves P-256")
 	}
-	// `FillBytes` deja cada coordenada en sus 32 bytes **con los ceros de delante**,
-	// que es lo que el COSE pide y lo contrario de lo que pide el DER de una firma.
-	x := make([]byte, 32)
-	y := make([]byte, 32)
-	return ClaveCOSE(ec.X.FillBytes(x), ec.Y.FillBytes(y)), nil
+	// **Aquí solo se extrae; rellenar a 32 es de `ClaveCOSE`.** Estaba en los dos
+	// sitios, y eso hacía que ninguna de las dos líneas estuviera probada: quitando
+	// una, la otra tapaba el fallo y todas las mutaciones pasaban en verde. El relleno
+	// es una invariante del **formato**, así que vive donde se escribe el formato y se
+	// prueba allí, con coordenadas cortas metidas a mano.
+	return ClaveCOSE(ec.X.Bytes(), ec.Y.Bytes()), nil
 }
 
 // CrearLlave hace una llave de acceso nueva: la privada en PKCS#8, la pública en

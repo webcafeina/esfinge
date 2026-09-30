@@ -481,3 +481,88 @@ func TestCruzadaOrdenDelMapaCBOR(t *testing.T) {
 		}
 	}
 }
+
+// **El COSE de la misma clave, igual en los dos lados** (ADR 0048, P3).
+//
+// Es lo que dice que una llave creada con cuenta sirve sin ella y al revés: lo que el
+// sitio se guarda es el COSE de la pública, y si los dos lados sacaran coordenadas
+// distintas de la misma clave —o las rellenaran distinto— la llave **solo valdría
+// donde se creó**, y quien la usara en el otro equipo no podría entrar.
+//
+// Las llaves las genera la extensión, con su WebCrypto, y Go saca el COSE de la misma
+// pública por su camino: `ParsePKIXPublicKey` y `FillBytes`, que no se parece en nada
+// a exportar un JWK. Diez, no una: **una `x` empieza por cero una vez de cada 256**, y
+// con una sola llave esa rama no se tocaría casi nunca.
+func TestCruzadaCOSEDeUnaLlaveNueva(t *testing.T) {
+	const cuantas = 10
+	var suyas []struct {
+		Privada string `json:"privada"`
+		Publica string `json:"publica"`
+		COSE    string `json:"cose"`
+	}
+	cruzada.Pedir(t, map[string]any{"orden": "coseDeUnaLlaveNueva", "cuantas": cuantas}, &suyas)
+	if len(suyas) != cuantas {
+		t.Fatalf("han venido %d llaves y se pidieron %d", len(suyas), cuantas)
+	}
+	for i, c := range suyas {
+		publica, err := hex.DecodeString(c.Publica)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cose, err := PublicaEnCOSE(publica)
+		if err != nil {
+			t.Fatalf("llave %d: Go no entiende la pública que hizo la extensión: %v", i, err)
+		}
+		if hex.EncodeToString(cose) != c.COSE {
+			t.Errorf("llave %d: el COSE no coincide\n  Go:        %s\n  extensión: %s",
+				i, hex.EncodeToString(cose), c.COSE)
+		}
+	}
+}
+
+// **Una clave cuyas dos coordenadas empiezan por cero, fijada a mano** (ADR 0048, P3).
+//
+// Existe porque la cruzada de arriba —diez llaves al azar— **no caza el relleno**: una
+// coordenada de P-256 empieza por cero una vez de cada 256, así que con veinte
+// coordenadas la rama se toca el 7 % de las veces. Comprobado mutándolo: quitando el
+// `FillBytes` de Go, aquella prueba seguía en verde.
+//
+// Y dejarlo al azar sería peor que no probarlo: una prueba que falla una de cada
+// trece veces es un intermitente, que es exactamente lo que este proyecto acaba de
+// aprender a no dar por bueno. Así que **vector fijo**, igual que con el recorte de
+// ceros del DER, y por el mismo motivo.
+//
+// La clave se buscó generando hasta encontrar una con `len(x) < 32` **y** `len(y) < 32`,
+// para que cubra las dos posiciones del mapa COSE a la vez. La privada no hace falta:
+// lo que se compara es cómo se escribe la pública.
+func TestCruzadaCOSEConCoordenadasCortas(t *testing.T) {
+	casos := []struct {
+		SPKI string `json:"spki"`
+	}{
+		// x de 31 bytes y y de 31 bytes: las dos piden un cero por delante.
+		{"3059301306072a8648ce3d020106082a8648ce3d0301070342000400a4c0403261d347d6fa3eace236e6cc4c6ff9fa241" +
+			"fe39acd68691f30a925bf002213f187c80776a89f51a0ac8df343d9a697a886e154e961af2976e9dd9290"},
+	}
+	var suyas []string
+	cruzada.Pedir(t, map[string]any{"orden": "coseDeUnaPublica", "casos": casos}, &suyas)
+	for i, c := range casos {
+		spki, err := hex.DecodeString(c.SPKI)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cose, err := PublicaEnCOSE(spki)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// **Y se comprueba que de verdad llevan el cero**, no solo que coincidan: si
+		// los dos lados se equivocaran igual, coincidirían y estarían mal los dos.
+		// El COSE tiene `-2` (`0x21`) seguido de `0x5820` —32 bytes— y luego la `x`.
+		marca := []byte{0x21, 0x58, 0x20, 0x00}
+		if !bytes.Contains(cose, marca) {
+			t.Errorf("la x no lleva el cero de delante: %s", hex.EncodeToString(cose))
+		}
+		if hex.EncodeToString(cose) != suyas[i] {
+			t.Errorf("caso %d: Go dice %s y la extensión %s", i, hex.EncodeToString(cose), suyas[i])
+		}
+	}
+}

@@ -23,11 +23,22 @@ import { codigoEn, leerSemilla, quedan } from "./codigos";
 import { dominioDeOrigen, encaja, hostDe } from "./dominios";
 import { cambiarSecreto, type Entrada } from "./entrada";
 import type { Afirmacion, Cuenta, Oferta, Peticion, Respuesta } from "../protocolo";
-import { llavesDe, origenDe, rpIdPermitido, firmarConLlave } from "./llaves";
+import {
+  crearLlave,
+  firmarConLlave,
+  idDeCredencial,
+  llavesDe,
+  origenDe,
+  publicaEnCOSE,
+  rpIdPermitido,
+} from "./llaves";
+import { objetoDeAtestacion } from "./cbor";
 import {
   aBase64Url,
+  BANDERAS_AL_CREAR,
   BANDERAS_AL_FIRMAR,
   datosDelAutenticador,
+  datosDelAutenticadorAlCrear,
   datosDelCliente,
   deBase64Url,
   loQueSeFirma,
@@ -182,6 +193,73 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
         }
         return { ok: true, afirmacion: await afirmar(x, rp, p.origen ?? "", p.reto ?? "") };
       }
+      // **Crear una llave de acceso** (ADR 0048, P3), espejo de `CrearLlave` de Go.
+      //
+      // El orden de las comprobaciones es parte del diseño: primero lo que no depende
+      // de la bóveda, y solo al final se genera y se escribe. Lo que se va a rechazar
+      // se rechaza sin tocar nada.
+      case "crear-llave": {
+        if (b.soloLectura) throw new Error(SOLO_LECTURA);
+        const rp = rpIdPermitido(p.rpId, p.origen ?? "");
+        if (!rp) return mal("no-encaja", "Ese sitio no puede crear una llave de acceso para ese dominio");
+        const suyo = origenDe(p.origen ?? "");
+        if (!suyo) return mal("no-encaja", "Esa dirección no vale");
+        // **Sin `-7` no se crea nada**: es el único que Esfinge sabe firmar, y crearla
+        // con otro la registraría en el sitio dejando la cuenta con una llave muerta.
+        // Una lista vacía es «me da igual», que sí vale.
+        if ((p.algoritmos ?? []).length > 0 && !(p.algoritmos ?? []).includes(-7)) {
+          return mal("no-encaja", "Ese sitio pide un tipo de llave que Esfinge no sabe hacer");
+        }
+        const desafio = deBase64Url(p.reto ?? "");
+
+        // Si el sitio dice que ya tiene una llave nuestra, no se hace otra.
+        const excluidas = new Set(p.excluidas ?? []);
+        if (excluidas.size > 0) {
+          const suyas = b
+            .buscar("")
+            .filter((x) => x.tipo === "llave" && x.rpId === rp)
+            .map((x) => b.ver(x.id))
+            .filter((x): x is Entrada => Boolean(x));
+          if (suyas.some((x) => x.idCredencial && excluidas.has(x.idCredencial))) {
+            return mal("no-encaja", "Ya hay una llave de acceso de Esfinge para esa cuenta");
+          }
+        }
+
+        const par = await crearLlave();
+        const cose = await publicaEnCOSE(par.publica);
+        const id = idDeCredencial();
+        const nombre = (p.usuario ?? "").trim();
+        const entrada = {
+          id: "",
+          tipo: "llave",
+          titulo: (p.titulo ?? "").trim().slice(0, 120) || rp,
+          rpId: rp,
+          idCredencial: aBase64Url(id),
+          idUsuario: p.idUsuario ?? "",
+          nombreVisible: nombre,
+          usuario: nombre,
+          algoritmo: -7,
+          clavePrivada: aBase64Url(par.privada),
+          sitios: ["https://" + rp],
+          creada: "",
+          cambiada: "",
+        } as Entrada;
+        await b.poner(entrada);
+
+        // **Los bytes, al final y con lo guardado.** Si guardar fallara, lo que no
+        // puede pasar es que el sitio se quede con una llave que aquí no existe: eso
+        // es una cuenta con una credencial registrada y sin forma de firmar con ella.
+        const cliente = datosDelCliente("webauthn.create", desafio, suyo);
+        const datos = await datosDelAutenticadorAlCrear(rp, BANDERAS_AL_CREAR, id, cose);
+        return {
+          ok: true,
+          atestacion: {
+            idCredencial: aBase64Url(id),
+            datosDelCliente: aBase64Url(cliente),
+            objeto: aBase64Url(objetoDeAtestacion(datos)),
+          },
+        };
+      }
       case "nunca-aqui":
         if (b.soloLectura) throw new Error(SOLO_LECTURA);
         await b.excluir(dominio);
@@ -196,7 +274,12 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
 const SOLO_LECTURA = "Esta bóveda es de una versión más nueva de Esfinge y aquí no se puede escribir en ella";
 
 function esEscritura(que: Peticion["que"]): boolean {
-  return que === "guardar-cuenta" || que === "actualizar-cuenta" || que === "nunca-aqui";
+  // **Crear una llave de acceso es la escritura más cara de todas**, y por eso está
+  // aquí y no en su `case`: una contraseña de más es molesta, y una llave de más en un
+  // sitio es una credencial que él guarda sin que nadie la haya pedido.
+  return (
+    que === "guardar-cuenta" || que === "actualizar-cuenta" || que === "nunca-aqui" || que === "crear-llave"
+  );
 }
 
 const leEncaja = (x: Entrada, dominio: string) => (x.sitios ?? []).some((s) => encaja(s, dominio));
