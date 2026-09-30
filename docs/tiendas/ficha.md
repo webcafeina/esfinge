@@ -6,6 +6,33 @@ que el aviso del panel (`navegador/src/panel.html`) y que la política de privac
 
 Textos en español, que es el idioma de la extensión.
 
+## La ficha de Chrome se pega a mano, y por eso hay marcas
+
+**Firefox recibe la suya con cada etiqueta** —`amo-metadata.json` va en el flujo de publicación—, pero
+**la de Chrome se escribe en su consola y su API no la edita**: sube el paquete y nada más. Así que todo
+lo que cambie aquí de la parte de Chrome **hay que ir a pegarlo**, y nada lo recuerda.
+
+Ya costó una: lo que la entrega de compartir cambió el **2026-09-24** nunca se pegó, y la ficha se quedó
+seis días diciendo otra cosa que el aviso del panel. Lo vio el cliente el 2026-09-30, buscando en su
+consola una línea que yo daba por puesta.
+
+Por eso los bloques que se pegan van entre `<!-- consola de Chrome: empieza -->` y
+`<!-- … acaba -->`, y **`make comprobar` falla si cambian sin que nadie diga que los ha pegado**:
+
+```sh
+node navegador/herramientas/ficha-de-chrome.mjs            # dice si hay algo sin pegar
+node navegador/herramientas/ficha-de-chrome.mjs --pegado   # después de pegarlo en la consola
+```
+
+Lo que queda **fuera** de las marcas es para nosotros: el porqué de cada cosa, y las casillas de uso de
+datos, que **no tienen ningún campo donde escribir**.
+
+Y de ahí una regla que hace falta para que la huella signifique algo: **dentro de las marcas no va
+markdown**. La consola no lo interpreta, así que un `**` o una comilla invertida quedarían escritos en la
+ficha; y si aquí hubiera markdown y allí prosa, la herramienta vigilaría un texto que no es el de la
+tienda. Eso ya pasó: las justificaciones de los permisos eran una tabla con negritas, y lo que se le pasó
+al cliente para pegar era otra cosa.
+
 ---
 
 ## Lo común a las dos
@@ -14,39 +41,42 @@ Textos en español, que es el idioma de la extensión.
 
 **Resumen** —en Chrome es el `description` del manifiesto, 132 caracteres como máximo; en Firefox, 250—:
 
-> Rellena las contraseñas de tu bóveda de Esfinge sin salir del navegador.
+Rellena las contraseñas de tu bóveda de Esfinge sin salir del navegador.
 
 **Descripción:**
 
-> Esfinge es un gestor de contraseñas que guarda tus contraseñas en una bóveda cifrada: en tu ordenador,
-> o en todos tus equipos con una cuenta que no puede leer nadie más que tú. Esta extensión lo trae a tu
-> navegador.
->
-> Qué hace:
-> • Rellena el usuario y la contraseña al entrar en un sitio del que tienes una cuenta guardada.
-> • Rellena también el código de un solo uso, si la cuenta lo tiene.
-> • Cuando entras, te registras o cambias la contraseña, te ofrece guardarla o actualizarla.
-> • Con varias cuentas del mismo sitio, eliges cuál en su panel.
-> • Con cuenta, manda una copia de una contraseña a otra persona, cifrada para ella.
-> • Entra con tus llaves de acceso: cuando un sitio pide una, te ofrece la tuya y basta con aceptar.
->
-> Lo que tienes que saber:
-> • Sin cuenta, necesita la aplicación Esfinge instalada en tu ordenador —para macOS, Windows o Linux, con
->   el canal con el navegador encendido en sus Ajustes— y habla solo con ella: no se conecta a internet.
->   Se descarga gratis en https://webcafeina.github.io/esfinge/
-> • Con tu cuenta de Esfinge funciona sola, sin la aplicación: guarda tu bóveda cifrada en el navegador y
->   la sincroniza con el servidor de cuentas de Webcafeína, en la UE, que no puede leerla.
-> • Al mandar una copia, el servidor ve la dirección de quien la recibe, no lo que le mandas. Si esa
->   persona no tiene cuenta, Webcafeína le manda una invitación con tu dirección dentro.
-> • Para las llaves de acceso pone una pieza dentro de cada página https, que es la única forma de
->   enterarse de cuándo un sitio pide una. La clave privada no sale nunca de tu bóveda: al sitio le
->   llega solo la firma. Se puede apagar en los Ajustes de la aplicación.
-> • No lleva analítica ni servicios de terceros.
-> • La primera vez que abras su panel te explica qué datos toca. Hasta que lo aceptas, no lee ninguna
->   página.
->
-> Política de privacidad: https://webcafeina.github.io/esfinge/privacidad.html
-> Soporte: https://webcafeina.github.io/esfinge/soporte.html
+<!-- consola de Chrome: empieza -->
+Esfinge es un gestor de contraseñas que guarda tus contraseñas en una bóveda cifrada: en tu ordenador,
+o en todos tus equipos con una cuenta que no puede leer nadie más que tú. Esta extensión lo trae a tu
+navegador.
+
+Qué hace:
+• Rellena el usuario y la contraseña al entrar en un sitio del que tienes una cuenta guardada.
+• Rellena también el código de un solo uso, si la cuenta lo tiene.
+• Cuando entras, te registras o cambias la contraseña, te ofrece guardarla o actualizarla.
+• Con varias cuentas del mismo sitio, eliges cuál en su panel.
+• Con cuenta, manda una copia de una contraseña a otra persona, cifrada para ella.
+• Entra con tus llaves de acceso: cuando un sitio pide una, te ofrece la tuya y basta con aceptar.
+
+Lo que tienes que saber:
+• Sin cuenta, necesita la aplicación Esfinge instalada en tu ordenador —para macOS, Windows o Linux, con
+  el canal con el navegador encendido en sus Ajustes— y habla solo con ella: no se conecta a internet.
+  Se descarga gratis en https://webcafeina.github.io/esfinge/
+• Con tu cuenta de Esfinge funciona sola, sin la aplicación: guarda tu bóveda cifrada en el navegador y
+  la sincroniza con el servidor de cuentas de Webcafeína, en la UE, que no puede leerla.
+• Al mandar una copia, el servidor ve la dirección de quien la recibe, no lo que le mandas. Si esa
+  persona no tiene cuenta, Webcafeína le manda una invitación con tu dirección dentro.
+• Para las llaves de acceso pone una pieza dentro de cada página https, que es la única forma de
+  enterarse de cuándo un sitio pide una. La clave privada no sale nunca de tu bóveda: al sitio le
+  llega solo la firma. Se puede apagar en los Ajustes de la aplicación.
+• No lleva analítica ni servicios de terceros.
+• La primera vez que abras su panel te explica qué datos toca. Hasta que lo aceptas, no lee ninguna
+  página.
+
+Política de privacidad: https://webcafeina.github.io/esfinge/privacidad.html
+Soporte: https://webcafeina.github.io/esfinge/soporte.html
+
+<!-- consola de Chrome: acaba -->
 
 **Web:** https://webcafeina.github.io/esfinge/
 **Soporte:** https://webcafeina.github.io/esfinge/soporte.html
@@ -63,36 +93,91 @@ Textos en español, que es el idioma de la extensión.
 
 **Propósito único** (*Single purpose*):
 
-> Rellenar y guardar en el navegador las contraseñas de la bóveda de Esfinge: la de la aplicación
-> instalada en el mismo ordenador o, con cuenta, la que la extensión sincroniza con el servidor de cuentas.
-> Con cuenta, desde el panel se puede además mandar una copia de una contraseña de la bóveda a otra
-> persona, cifrada para ella. Y cuando un sitio pide una llave de acceso, ofrecer la que está guardada en
-> esa misma bóveda y firmar con ella.
+<!-- consola de Chrome: empieza -->
+Rellenar y guardar en el navegador las contraseñas de la bóveda de Esfinge: la de la aplicación
+instalada en el mismo ordenador o, con cuenta, la que la extensión sincroniza con el servidor de cuentas.
+Con cuenta, desde el panel se puede además mandar una copia de una contraseña de la bóveda a otra
+persona, cifrada para ella. Y cuando un sitio pide una llave de acceso, ofrecer la que está guardada en
+esa misma bóveda y firmar con ella.
 
-**Justificación de cada permiso:**
+<!-- consola de Chrome: acaba -->
 
-| Permiso | Justificación |
-|---|---|
-| `nativeMessaging` | Sin cuenta, es la única forma de hablar con la aplicación Esfinge instalada en el ordenador, que es donde están las contraseñas. |
-| `storage` | Guarda que la persona ha aceptado el aviso de datos y el permiso de la aplicación para hablar con ella. Con cuenta, además, la bóveda **cifrada**, su última versión común con el servidor —cifrada— y la sesión, cifrada con la clave de la bóveda. La clave de la bóveda abierta va solo en `storage.session`, en memoria. |
-| `alarms` | Una vez por minuto: comprobar si la bóveda sigue abierta, para que el icono lo diga; con cuenta, sincronizarla con el servidor y cerrarla a los quince minutos sin usarla. |
-| `favicon` | Enseña en el panel el icono del sitio de la pestaña, sacado de la caché del navegador, sin descargarlo de internet. |
-| Acceso a `https://*/*` | Para rellenar hay que encontrar el formulario de entrar en cualquier sitio donde la persona tenga una cuenta guardada, y para ofrecer guardar hay que leer lo que envía. **Y para las llaves de acceso, un guion en el mundo principal** (`world: "MAIN"`), que es la única forma de enterarse de que un sitio ha pedido una: sustituye `navigator.credentials.get`/`create` y **cede al método original** siempre que no tenga nada que ofrecer. Solo en `https`: nunca en `http` ni en marcos de otro origen. Con cuenta, cubre también el servidor de cuentas, `https://esfinge-cuentas.webcafeina.com`. |
+**Justificación de cada permiso**, uno por campo de la consola. **Sin markdown, sin negritas y sin
+comillas invertidas**: la consola no las interpreta y quedarían escritas tal cual. Lo de dentro de las
+marcas se pega **literalmente**, y eso es lo que hace que la huella de `ficha-de-chrome.mjs` signifique
+algo: si aquí hubiera markdown y allí prosa, la herramienta vigilaría un texto que no es el de la tienda.
 
-**Código remoto:** No, no uso código remoto. El WebAssembly —Argon2id, de `hash-wasm`— va dentro del
-paquete; por eso la política de contenido lleva `'wasm-unsafe-eval'`.
+`nativeMessaging`:
 
-**Uso de datos** —marcar—:
+<!-- consola de Chrome: empieza -->
+Sin cuenta, es la única forma de hablar con la aplicación Esfinge instalada en el ordenador, que es
+donde están las contraseñas.
+<!-- consola de Chrome: acaba -->
 
-- **Información de autenticación**: usuario, contraseña y código de un solo uso de los formularios de
+`storage`:
+
+<!-- consola de Chrome: empieza -->
+Guarda que la persona ha aceptado el aviso de datos y el permiso de la aplicación para hablar con ella.
+Con cuenta, además, la bóveda cifrada, su última versión común con el servidor —cifrada— y la sesión,
+cifrada con la clave de la bóveda. La clave de la bóveda abierta va solo en storage.session, en memoria,
+y se va al cerrar el navegador.
+<!-- consola de Chrome: acaba -->
+
+`alarms`:
+
+<!-- consola de Chrome: empieza -->
+Una vez por minuto: comprobar si la bóveda sigue abierta, para que el icono lo diga; con cuenta,
+sincronizarla con el servidor y cerrarla a los quince minutos sin usarla.
+<!-- consola de Chrome: acaba -->
+
+`favicon`:
+
+<!-- consola de Chrome: empieza -->
+Enseña en el panel el icono del sitio de la pestaña, sacado de la caché del navegador, sin descargarlo
+de internet.
+<!-- consola de Chrome: acaba -->
+
+Acceso a los sitios `https` (*host permissions*) — **el que más se mira**, y el que Chrome ya señaló en
+la 2.22.1:
+
+<!-- consola de Chrome: empieza -->
+Para rellenar hay que encontrar el formulario de entrar en cualquier sitio donde la persona tenga
+una cuenta guardada, y para ofrecer guardar hay que leer lo que envía. Y para las llaves de acceso,
+un guion en el mundo principal (world: "MAIN"), que es la única forma de enterarse de que un sitio
+ha pedido una: sustituye navigator.credentials.get y .create, y cede al método original siempre que
+no tenga nada que ofrecer — cuando no hay ninguna llave guardada para ese sitio, en un marco de otro
+origen, con mediation: "conditional", ante cualquier forma de petición que no reconozca, o si algo
+falla. La clave privada de una llave nunca cruza a la página: la firma se hace donde está la bóveda
+y solo la firma ya hecha llega al sitio. La persona puede apagarlo en los Ajustes de la aplicación.
+Solo en https: nunca en http. Con cuenta, cubre también el servidor de cuentas,
+https://esfinge-cuentas.webcafeina.com.
+<!-- consola de Chrome: acaba -->
+
+**Código remoto:** se contesta **no**, y el campo de explicación lleva esto:
+
+<!-- consola de Chrome: empieza -->
+No se usa código remoto. El WebAssembly —Argon2id, de hash-wasm— va dentro del paquete; por eso la
+política de contenido lleva 'wasm-unsafe-eval'.
+<!-- consola de Chrome: acaba -->
+
+**Uso de datos** —**solo hay casillas**, sin ningún campo donde escribir. Comprobado en la consola por
+el cliente el 2026-09-30, y conviene saberlo: lo de debajo **no se pega en ninguna parte**. Es la nota de
+por qué se marca cada una, para que la próxima vez que cambie lo que la extensión toca se pueda decidir
+si hay que marcar una casilla más—:
+
+- **Información de autenticación** ✓ — usuario, contraseña y código de un solo uso de los formularios de
   entrar, para rellenarlos y para guardarlos en la bóveda.
-- **Información personal identificable**: el usuario o el correo con el que se entra y, al mandar una
+- **Información personal identificable** ✓ — el usuario o el correo con el que se entra y, al mandar una
   copia, la dirección de correo de quien la recibe.
-- **Actividad de navegación web**: la dirección de la pestaña, para saber de qué sitio son las cuentas, y
-  el sitio para el que un sitio pide una llave de acceso.
+- **Actividad de navegación web** ✓ — la dirección de la pestaña, para saber de qué sitio son las cuentas,
+  y el sitio para el que un sitio pide una llave de acceso.
 
 Y no marcar el resto: ni datos de salud, ni financieros, ni comunicaciones, ni ubicación, ni contenido
 del sitio más allá del formulario de entrar.
+
+**Las llaves de acceso no añaden ninguna casilla**, y hace falta decirlo para no volver a mirarlo: el
+`rpId` que un sitio pide es actividad de navegación, que ya estaba marcada, y **la firma no es un dato de
+la persona que se recoja**: se calcula, sale hacia el sitio y no se guarda en ninguna parte.
 
 **Certificaciones** —marcar las tres—: no se venden ni se transfieren datos a terceros fuera de los usos
 aprobados; no se usan ni transfieren para fines ajenos al propósito único; no se usan para calcular
