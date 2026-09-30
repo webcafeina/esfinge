@@ -34,6 +34,17 @@ Plantilla al final.
   de la extensión (172), `make e2e` (100, los dos temas), y **cada pieza nueva comprobada por mutación**: el
   anuncio del puente y su oyente, la lista de dominios filtrada por origen, una llave sin clave privada, la
   rama de `quizas`, y las tres puertas del freno una por una.
+- **Y de paso apareció que la ficha de Chrome llevaba desde el 24 desfasada.** Firefox recibe la suya con
+  cada etiqueta; **la API de la Chrome Web Store sube el paquete y no edita la ficha**, así que lo que la
+  entrega de compartir cambió el 24 nunca se pegó y nada lo dijo. Lo vio el cliente buscando en su consola
+  una línea que yo daba por puesta. Ahora los bloques que se pegan van marcados en `ficha.md` y
+  `ficha-de-chrome.mjs` guarda su huella, así que olvidarse **para** la comprobación. Y al escribirlo salió
+  el fallo de fondo: la ficha tenía los textos **en markdown** y lo que se pegaba era prosa, así que la
+  huella habría vigilado un texto que no era el de la tienda.
+- **Tres campos de esa consola no existen**, y los tres se descubrieron preguntándole a quien la mira: las
+  casillas de uso de datos no tienen descripción, «Código remoto» pierde la explicación al contestar «no»,
+  y la viñeta que faltaba. De ahí la regla: **solo se marca lo que tiene un campo donde pegarlo**, porque
+  esta ficha describe una pantalla que desde aquí no se puede abrir.
 - **Queda abierto:** publicar la P2 y que el cliente la vea —lo primero, entrar en GitHub de verdad—, y tres
   cosas nuevas en [`deuda.md`](deuda.md): que con cuenta y sin aplicación el interruptor no existe, que en el
   primer segundo de una página Esfinge cede la llave —deliberado: esperar agota la activación de usuario— y

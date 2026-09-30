@@ -58,6 +58,10 @@ había ninguna. Arreglado en `main`; sale con la P2.
 - **El aviso de datos en la versión 4**, con la política, el texto de Firefox y las dos fichas de tienda
   diciendo lo mismo.
 
+**La ficha de Chrome está pegada y al día** (2026-09-30), con los ocho campos de texto diciendo lo mismo
+que `ficha.md`, y guardada como borrador sin enviar a revisión: la revisión empieza cuando suba el paquete.
+Desde ahora **olvidarse de pegarla para la comprobación** (`ficha-de-chrome.mjs`).
+
 **La siguiente acción concreta es publicar la P2** y que el cliente la vea en su Mac. Lo que hay que
 mirar ahí está al final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md), y lo primero es lo que él pidió
 con esas palabras: **entrar en GitHub y darle a Aceptar**. Con la versión sale además el arreglo de exportar
