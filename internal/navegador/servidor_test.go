@@ -24,6 +24,7 @@ type bovedaFalsa struct {
 	ultimoOrigen    string     // con qué origen llegó la última petición de llaves
 	vecesDominios   int        // cuántas veces se ha pedido la lista de dominios
 	vecesCrear      int        // cuántas veces se ha pedido crear una llave
+	noPuedeCrear    bool       // para el caso en que crear no está disponible
 	ultimaNueva     LlaveNueva // con qué llegó la última petición de crear
 }
 
@@ -129,6 +130,10 @@ func (b *bovedaFalsa) Llaves(origen, rpID string, permitidas []string) ([]LlaveP
 	}
 	return []LlaveParaElBanner{{ID: "l1", Nombre: "yo@ejemplo.com"}}, nil
 }
+
+// PuedeCrearLlaves: el doble siempre puede, salvo que se le diga lo contrario. Así lo
+// que se prueba del interruptor se prueba donde vive, que es en `internal/app`.
+func (b *bovedaFalsa) PuedeCrearLlaves() bool { return !b.noPuedeCrear }
 
 // CrearLlave apunta lo que le llega y cuenta las veces: **es una escritura**, y lo
 // que hay que poder comprobar es que no se llama cuando no debe.

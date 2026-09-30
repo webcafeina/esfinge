@@ -232,6 +232,47 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
       return out;
     }
 
+    // **La extensión crea una llave y firma con ella; Go verifica** (ADR 0048, P3).
+    //
+    // Es el agujero que la prueba con la extensión de verdad **no** puede tapar: allí
+    // se comprueba que firmar funciona, pero no que el sitio pueda verificar esa firma,
+    // porque WebCrypto solo verifica en P1363 y WebAuthn manda DER. Comprobado
+    // mutándolo: guardando en la bóveda una privada distinta de la que se le dice al
+    // sitio, aquella prueba seguía en verde — y eso es una cuenta con una credencial
+    // registrada y sin forma de entrar.
+    //
+    // Aquí se cierra por el único sitio donde se puede: el núcleo crea, guarda y firma
+    // con lo guardado, y **Go verifica la firma contra la pública que fue al sitio**.
+    case "crearLlaveYFirmar": {
+      const { boveda } = await Boveda.crear("una maestra larga para la cruzada de llaves");
+      const estado = { existe: true, boveda };
+      const origen = (p.origen as string) ?? "https://ejemplo.com/registro";
+      const rpId = p.rpId as string;
+      const creada = await atender(
+        {
+          version: 1,
+          que: "crear-llave",
+          origen,
+          rpId,
+          reto: p.reto as string,
+          usuario: "yo@ejemplo.com",
+          idUsuario: "dXN1YXJpbw",
+          titulo: "Ejemplo",
+          algoritmos: [-7],
+        },
+        estado,
+      );
+      if (!creada.ok || !creada.atestacion) throw new Error("no ha creado la llave: " + creada.error);
+      const suyas = await atender({ version: 1, que: "llaves", origen, rpId }, estado);
+      if ((suyas.llaves ?? []).length !== 1) throw new Error("la llave creada no sale al buscarla");
+      const firmada = await atender(
+        { version: 1, que: "firmar-llave", origen, rpId, id: suyas.llaves![0].id, reto: p.retoDeFirmar as string },
+        estado,
+      );
+      if (!firmada.ok || !firmada.afirmacion) throw new Error("no ha firmado: " + firmada.error);
+      return { atestacion: creada.atestacion, afirmacion: firmada.afirmacion };
+    }
+
     // **El COSE de una pública dada**, para los vectores fijos de la P3. Las llaves
     // al azar casi nunca tienen una coordenada que empiece por cero —una vez de cada
     // 256—, así que ese caso se fija a mano y no se deja al azar.

@@ -201,7 +201,18 @@ async function retratar(p: Page, nombre: string) {
 }
 
 /** Lo que mandaría el panel por su puerto, con su respuesta. */
-function alTrabajador(p: Page, mensaje: unknown): Promise<{ ok: boolean; error?: string; estado?: { abierta: boolean; sincro: { estado: string; mensaje?: string } } }> {
+function alTrabajador(
+  p: Page,
+  mensaje: unknown,
+): Promise<{
+  ok: boolean;
+  error?: string;
+  motivo?: string;
+  estado?: { abierta: boolean; sincro: { estado: string; mensaje?: string } };
+  atestacion?: { idCredencial: string; datosDelCliente: string; objeto: string; datosDelAutenticador: string; publica: string };
+  afirmacion?: { idCredencial: string; datosDelCliente: string; datosDelAutenticador: string; firma: string };
+  llaves?: { id: string; nombre: string }[];
+}> {
   return p.evaluate(
     (m) =>
       new Promise((resolver) => {
@@ -214,6 +225,29 @@ function alTrabajador(p: Page, mensaje: unknown): Promise<{ ok: boolean; error?:
       }),
     mensaje,
   ) as never;
+}
+
+/**
+ * Como `alTrabajador`, pero **esperando si el freno está lleno**.
+ *
+ * No es un apaño: es un hecho del diseño. El freno de sesenta preguntas por minuto
+ * vive en el trabajador de fondo y su ventana es de un minuto, así que una tanda larga
+ * lo agota y las últimas pruebas se lo encuentran cerrado. Reintentar es lo que haría
+ * el panel, y esperar aquí es más honesto que mover la prueba a donde el freno esté
+ * fresco: eso la haría depender del orden de las demás.
+ */
+async function conPaciencia(p: Page, mensaje: unknown): Promise<Awaited<ReturnType<typeof alTrabajador>>> {
+  let ultima!: Awaited<ReturnType<typeof alTrabajador>>;
+  await expect
+    .poll(
+      async () => {
+        ultima = await alTrabajador(p, mensaje);
+        return ultima.motivo === "demasiado" ? "esperando" : "listo";
+      },
+      { timeout: 75_000, intervals: [1000, 5000, 10_000] },
+    )
+    .toBe("listo");
+  return ultima;
 }
 
 /** Abre un sitio `.prueba` y devuelve lo que la extensión haya escrito en la contraseña. */
@@ -507,6 +541,104 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
     await abrir.click("#cuenta-enviar");
     await expect(abrir.locator("#bloquear")).toBeVisible({ timeout: 20_000 });
     await abrir.close();
+  });
+
+  /**
+   * **Crear una llave de acceso con la extensión de verdad, y que sirva** (ADR 0048, P3).
+   *
+   * Es la prueba que el plan pedía antes de publicar la P3, y lo que comprueba es el
+   * ciclo entero con las piezas de verdad: el trabajador de fondo, la bóveda del
+   * navegador y el servidor de cuentas. No hay dobles.
+   *
+   * Se pide por el puerto del panel y no pulsando el banner, por la razón de siempre:
+   * **el banner va en una sombra cerrada** y desde aquí no se llega a sus botones. Que
+   * el banner sale lo comprueba la segunda mitad; que lo que hay detrás funciona, la
+   * primera.
+   *
+   * Y lo último es lo que de verdad importa: **se firma con la llave recién creada**. Si
+   * al crear se guardara algo incompleto, esto sería una cuenta con una credencial
+   * registrada en el sitio y sin forma de entrar — el peor fallo posible de esta clase.
+   */
+  test("crea una llave de acceso, la guarda y luego firma con ella", async () => {
+    const p = await panel();
+    const reto = "MDEyMzQ1Njc4OWFiY2RlZg";
+    const creada = await conPaciencia(p, {
+      version: 1,
+      que: "crear-llave",
+      origen: "https://llaves.prueba/registro",
+      rpId: "llaves.prueba",
+      reto,
+      usuario: "yo@llaves.prueba",
+      idUsuario: "dXN1YXJpby1kZWwtc2l0aW8",
+      titulo: "Llaves de prueba",
+      algoritmos: [-7],
+    });
+    expect(creada.ok, creada.error).toBe(true);
+    expect(creada.atestacion?.idCredencial).toBeTruthy();
+    expect(creada.atestacion?.publica).toBeTruthy();
+
+    // **El clientDataJSON dice que se está creando y con el origen que puso el
+    // trabajador**, no el que mandó nadie.
+    const cliente = Buffer.from(creada.atestacion!.datosDelCliente, "base64url").toString();
+    expect(cliente).toContain('"type":"webauthn.create"');
+    expect(cliente).toContain('"origin":"https://llaves.prueba"');
+
+    // Está en la bóveda y el sitio la ve como suya.
+    const suyas = await conPaciencia(p, {
+      version: 1,
+      que: "llaves",
+      origen: "https://llaves.prueba/entrar",
+      rpId: "llaves.prueba",
+    });
+    expect(suyas.ok, suyas.error).toBe(true);
+    expect(suyas.llaves).toHaveLength(1);
+    expect(suyas.llaves?.[0].nombre).toBe("yo@llaves.prueba");
+
+    // **Y se firma con ella.** Es la mitad que dice que lo guardado sirve.
+    const firmada = await conPaciencia(p, {
+      version: 1,
+      que: "firmar-llave",
+      origen: "https://llaves.prueba/entrar",
+      rpId: "llaves.prueba",
+      id: suyas.llaves![0].id,
+      reto: "b3Ryby1yZXRvLWN1YWxxdWllcmE",
+    });
+    expect(firmada.ok, firmada.error).toBe(true);
+    expect(firmada.afirmacion?.firma).toBeTruthy();
+    expect(firmada.afirmacion?.idCredencial).toBe(creada.atestacion?.idCredencial);
+
+    // Y sube a la cuenta como cualquier otra entrada.
+    await p.click("#sincronizar");
+    await expect(p.locator("#resultado")).toContainText("Sincronizada con tu cuenta.", { timeout: 20_000 });
+    await p.close();
+    await expect.poll(titulosEnElServidor, { timeout: 20_000 }).toContain("Llaves de prueba");
+
+    // **La segunda mitad: que en una página de verdad salga el banner de crear.**
+    // Sin esperar la promesa, que con el banner delante no se resuelve hasta que
+    // alguien decide. Se insiste porque la bandera llega después de cargar la página.
+    const sitio = await contexto.newPage();
+    await sitio.goto("https://otro.llaves.prueba/registro");
+    await expect
+      .poll(
+        async () => {
+          await sitio.evaluate(() => {
+            navigator.credentials
+              .create({
+                publicKey: {
+                  challenge: new Uint8Array(32).fill(5),
+                  rp: { id: "otro.llaves.prueba", name: "Otro" },
+                  user: { id: new Uint8Array(16).fill(6), name: "otro@llaves.prueba", displayName: "Otro" },
+                  pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                },
+              })
+              .catch(() => {});
+          });
+          return sitio.locator("esfinge-llave").count();
+        },
+        { timeout: 30_000, intervals: [500, 1000, 2000] },
+      )
+      .toBe(1);
+    await sitio.close();
   });
 
   test("sin tocarla quince minutos, se cierra sola", async () => {

@@ -566,3 +566,82 @@ func TestCruzadaCOSEConCoordenadasCortas(t *testing.T) {
 		}
 	}
 }
+
+// **La extensión crea una llave, firma con ella y Go verifica** (ADR 0048, P3).
+//
+// Cierra el único agujero que la prueba con la extensión de verdad no puede tapar: allí
+// se comprueba que firmar funciona, pero **no que el sitio pueda verificar esa firma**,
+// porque WebCrypto solo verifica en P1363 y WebAuthn manda DER. Y no es teórico:
+// guardando en la bóveda una privada distinta de la que se le dice al sitio, aquella
+// prueba seguía en verde. Eso sería una cuenta con una credencial registrada en el
+// sitio y sin ninguna forma de entrar, que es el peor fallo de esta clase.
+//
+// Lo que se hace aquí es lo que hará el sitio: coger la pública **de la atestación** y
+// verificar con ella una firma hecha después. Si al crear se guardara otra llave, o si
+// la pública que sale no fuera la de la guardada, esto se pone rojo.
+//
+// La pública se saca del campo que va aparte y no del COSE de dentro del objeto: aquí
+// no hay descodificador de CBOR a propósito, y esa duplicación existe justo para esto
+// y para los métodos que los sitios llaman.
+func TestCruzadaCrearLlaveYFirmar(t *testing.T) {
+	var suya struct {
+		Atestacion struct {
+			IDCredencial string `json:"idCredencial"`
+			Publica      string `json:"publica"`
+			Objeto       string `json:"objeto"`
+		} `json:"atestacion"`
+		Afirmacion struct {
+			IDCredencial         string `json:"idCredencial"`
+			DatosDelCliente      string `json:"datosDelCliente"`
+			DatosDelAutenticador string `json:"datosDelAutenticador"`
+			Firma                string `json:"firma"`
+		} `json:"afirmacion"`
+	}
+	cruzada.Pedir(t, map[string]any{
+		"orden":        "crearLlaveYFirmar",
+		"origen":       "https://ejemplo.com/registro",
+		"rpId":         "ejemplo.com",
+		"reto":         "cmV0by1kZS1jcmVhcg",
+		"retoDeFirmar": "cmV0by1kZS1maXJtYXI",
+	}, &suya)
+
+	if suya.Afirmacion.IDCredencial != suya.Atestacion.IDCredencial {
+		t.Errorf("la llave con la que se firma no es la que se creó: %q y %q",
+			suya.Afirmacion.IDCredencial, suya.Atestacion.IDCredencial)
+	}
+	publica, err := B64URL.DecodeString(suya.Atestacion.Publica)
+	if err != nil {
+		t.Fatal(err)
+	}
+	datos, err := B64URL.DecodeString(suya.Afirmacion.DatosDelAutenticador)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cliente, err := B64URL.DecodeString(suya.Afirmacion.DatosDelCliente)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firma, err := B64URL.DecodeString(suya.Afirmacion.Firma)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !VerificarFirma(publica, LoQueSeFirma(datos, cliente), firma) {
+		t.Error("con la pública que la extensión le mandó al sitio no se puede verificar su propia firma: " +
+			"esa cuenta se quedaría sin forma de entrar")
+	}
+
+	// **Y la pública que va aparte es la misma que va dentro del objeto**, que es lo
+	// que el sitio guardará de verdad. Si se separaran, `getPublicKey()` daría una y el
+	// servidor guardaría otra.
+	cose, err := PublicaEnCOSE(publica)
+	if err != nil {
+		t.Fatal(err)
+	}
+	objeto, err := B64URL.DecodeString(suya.Atestacion.Objeto)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(objeto, cose) {
+		t.Error("la pública que va aparte no es la que va dentro del objeto de atestación")
+	}
+}
