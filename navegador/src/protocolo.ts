@@ -23,7 +23,10 @@ export type Peticion = {
     | "ofrecer"
     | "guardar-cuenta"
     | "actualizar-cuenta"
-    | "nunca-aqui";
+    | "nunca-aqui"
+    // Las llaves de acceso (ADR 0048).
+    | "llaves"
+    | "firmar-llave";
   origen?: string;
   id?: string;
   testigo?: string;
@@ -33,6 +36,43 @@ export type Peticion = {
   secreto?: string;
   titulo?: string;
   forma?: Forma;
+
+  /**
+   * Las llaves de acceso (ADR 0048).
+   *
+   * `rpId` es **el que ha pedido el sitio**, y se comprueba contra el origen que
+   * pone el navegador: es la única vía por la que esto podría firmar para quien no
+   * es. `permitidas` son los identificadores de credencial que el sitio dice
+   * aceptar —no son secretos: los emitió él y acaba de mandarlos—, y `reto` es su
+   * desafío, también suyo.
+   */
+  rpId?: string;
+  permitidas?: string[];
+  reto?: string;
+};
+
+/** Una llave de acceso, **tal como se enseña en el banner**: sin nada de dentro. */
+export type LlaveParaElBanner = {
+  /** El identificador de la entrada en la bóveda, no el de la credencial. */
+  id: string;
+  /** Lo que se lee: la cuenta a la que corresponde. */
+  nombre: string;
+};
+
+/**
+ * Lo que sale de firmar, que es **lo único que sale**: la clave privada no cruza
+ * ningún puente, ni éste ni el de la ventana.
+ *
+ * Todo en base64url, que es como WebAuthn escribe lo binario, y **son los bytes
+ * exactos que se han hasheado**: el sitio los compara byte a byte, así que volver a
+ * serializarlos al otro lado daría otra cosa.
+ */
+export type Afirmacion = {
+  idCredencial: string;
+  idUsuario?: string;
+  datosDelCliente: string;
+  datosDelAutenticador: string;
+  firma: string;
 };
 
 /**
@@ -134,6 +174,10 @@ export type Respuesta = {
    */
   paraCopiar?: string;
   testigo?: string;
+  /** Las llaves de acceso que hay para ese sitio (ADR 0048). */
+  llaves?: LlaveParaElBanner[];
+  /** Lo que sale de firmar con una de ellas. */
+  afirmacion?: Afirmacion;
 };
 
 export type Motivo =

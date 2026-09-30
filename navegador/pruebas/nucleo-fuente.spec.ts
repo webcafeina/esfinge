@@ -95,3 +95,135 @@ test("verbos: el freno de rellenos, doce por minuto", async () => {
   }
   expect(bien).toBe(12);
 });
+
+// --------------------------------------------------------- las llaves de acceso
+
+/**
+ * Los dos verbos de las llaves de acceso (ADR 0048).
+ *
+ * Lo que de verdad importa aquí es **uno solo**: que un sitio no pueda firmar por
+ * otro. Lo demás son comodidades; eso es la única vía por la que esta fase puede
+ * entregarle algo a un atacante, y por eso hay tres pruebas sobre ello y una sobre
+ * lo que se enseña.
+ */
+async function conLlaves() {
+  const { boveda } = await Boveda.crear(MAESTRA);
+  const { crearLlave } = await import("../src/nucleo/llaves");
+  const { aBase64Url } = await import("../src/nucleo/afirmacion");
+  const par = await crearLlave();
+  const github = await boveda.poner({
+    id: "",
+    tipo: "llave",
+    titulo: "GitHub",
+    rpId: "github.com",
+    idCredencial: "Y3JlZC1kZS1naXRodWI",
+    idUsuario: "dXN1YXJpbw",
+    nombreVisible: "yo@ejemplo.com",
+    algoritmo: -7,
+    clavePrivada: aBase64Url(par.privada),
+    creada: "",
+    cambiada: "",
+  } as Entrada);
+  await boveda.poner({
+    id: "",
+    tipo: "llave",
+    titulo: "Otro sitio",
+    rpId: "ejemplo.com",
+    idCredencial: "Y3JlZC1kZS1lamVtcGxv",
+    nombreVisible: "yo@ejemplo.com",
+    algoritmo: -7,
+    clavePrivada: aBase64Url(par.privada),
+    creada: "",
+    cambiada: "",
+  } as Entrada);
+  return { b: boveda, github, publica: par.publica };
+}
+
+test("llaves: solo las de ese sitio, y solo lo que el banner enseña", async () => {
+  const { b } = await conLlaves();
+  const r = await atender(p({ que: "llaves", origen: "https://github.com/login", rpId: "github.com" }), {
+    existe: true,
+    boveda: b,
+  });
+  expect(r.llaves).toEqual([{ id: expect.any(String), nombre: "yo@ejemplo.com" }]);
+  // **Ni el identificador de credencial ni el de usuario**: no hacen falta para
+  // elegir, y lo que no hace falta no sale.
+  expect(JSON.stringify(r.llaves)).not.toContain("Y3JlZC1kZS1naXRodWI");
+});
+
+test("llaves: con allowCredentials, solo la que el sitio dice querer", async () => {
+  const { b } = await conLlaves();
+  const sinLaSuya = await atender(
+    p({ que: "llaves", origen: "https://github.com/", rpId: "github.com", permitidas: ["otra-cualquiera"] }),
+    { existe: true, boveda: b },
+  );
+  expect(sinLaSuya.llaves).toEqual([]);
+  const conLaSuya = await atender(
+    p({ que: "llaves", origen: "https://github.com/", rpId: "github.com", permitidas: ["Y3JlZC1kZS1naXRodWI"] }),
+    { existe: true, boveda: b },
+  );
+  expect(conLaSuya.llaves).toHaveLength(1);
+});
+
+/** **Lo único que puede entregar algo a un atacante**, y por eso va con su tabla. */
+test("llaves: un sitio no puede pedir la llave de otro", async () => {
+  const { b, github } = await conLlaves();
+  const casos: [string, string][] = [
+    ["https://malo.com/", "github.com"],
+    ["https://github.com.malo.com/", "github.com"],
+    ["https://malogithub.com/", "github.com"],
+    ["https://foo.github.io/", "github.io"],
+    ["http://github.com/", "github.com"],
+  ];
+  for (const [origen, rpId] of casos) {
+    const listar = await atender(p({ que: "llaves", origen, rpId }), { existe: true, boveda: b });
+    expect(listar.llaves ?? [], `listar desde ${origen} pidiendo ${rpId}`).toEqual([]);
+    const firmar = await atender(p({ que: "firmar-llave", origen, rpId, id: github.id, reto: "AAAA" }), {
+      existe: true,
+      boveda: b,
+    });
+    expect(firmar.ok, `firmar desde ${origen} pidiendo ${rpId}`).toBe(false);
+  }
+});
+
+test("llaves: y tampoco firmar con una llave que no es de ese sitio", async () => {
+  const { b, github } = await conLlaves();
+  // El origen y el rpId cuadran, pero la llave que se pide es de otro sitio.
+  const r = await atender(
+    p({ que: "firmar-llave", origen: "https://ejemplo.com/", rpId: "ejemplo.com", id: github.id, reto: "AAAA" }),
+    { existe: true, boveda: b },
+  );
+  expect(r.ok).toBe(false);
+});
+
+/**
+ * Lo que sale de firmar: la forma, el origen y que no lleve nada de dentro.
+ *
+ * **Aquí no se verifica la firma, y hay que decir por qué**: sale en DER, que es lo
+ * que WebAuthn exige, y **WebCrypto solo verifica en P1363**. Comprobarla desde
+ * aquí obligaría a escribir un descodificador de DER que producción no usa. La
+ * verificación de verdad la hace Go, en `TestCruzadaAfirmarLlave`.
+ */
+test("llaves: lo que sale de firmar tiene la forma buena y no lleva la privada", async () => {
+  const { b, github } = await conLlaves();
+  const r = await atender(
+    p({ que: "firmar-llave", origen: "https://github.com/login", rpId: "github.com", id: github.id, reto: "cmV0bw" }),
+    { existe: true, boveda: b },
+  );
+  expect(r.ok).toBe(true);
+  const a = r.afirmacion!;
+  expect(a.idCredencial).toBe("Y3JlZC1kZS1naXRodWI");
+
+  const { deBase64Url } = await import("../src/nucleo/afirmacion");
+  const cliente = deBase64Url(a.datosDelCliente);
+  // El origen que se firma lo pone este lado, del que dio el navegador.
+  expect(new TextDecoder().decode(cliente)).toContain(String.raw`"origin":"https://github.com"`);
+  // El autenticador son 37 bytes: el hash del sitio, las banderas y el contador.
+  expect(deBase64Url(a.datosDelAutenticador).length).toBe(37);
+  // Y la firma, DER: empieza por 0x30 y no son los 64 crudos de WebCrypto.
+  const firma = deBase64Url(a.firma);
+  expect(firma[0]).toBe(0x30);
+  expect(firma.length).toBeGreaterThan(64);
+  // Y la privada no aparece por ningún lado de lo que sale.
+  expect(JSON.stringify(a)).not.toContain("clavePrivada");
+});

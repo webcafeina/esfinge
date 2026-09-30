@@ -22,7 +22,16 @@ import type { Boveda } from "./boveda";
 import { codigoEn, leerSemilla, quedan } from "./codigos";
 import { dominioDeOrigen, encaja, hostDe } from "./dominios";
 import { cambiarSecreto, type Entrada } from "./entrada";
-import type { Cuenta, Oferta, Peticion, Respuesta } from "../protocolo";
+import type { Afirmacion, Cuenta, Oferta, Peticion, Respuesta } from "../protocolo";
+import { llavesDe, rpIdPermitido, firmarConLlave } from "./llaves";
+import {
+  aBase64Url,
+  BANDERAS_AL_FIRMAR,
+  datosDelAutenticador,
+  datosDelCliente,
+  deBase64Url,
+  loQueSeFirma,
+} from "./afirmacion";
 
 const PREGUNTAS_POR_MINUTO = 60;
 const RELLENOS_POR_MINUTO = 12;
@@ -116,6 +125,41 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
         return { ok: true, guardada: await guardarCuenta(b, p.origen ?? "", dominio, p) };
       case "actualizar-cuenta":
         return { ok: true, guardada: await actualizarCuenta(b, p.id ?? "", dominio, p) };
+      // **Las llaves de acceso** (ADR 0048). Las dos empiezan por lo mismo: el
+      // `rpId` que pide el sitio se comprueba contra el origen que pone el
+      // navegador. `encaja` no sirve aquí y el porqué está en `llaves.ts`.
+      case "llaves": {
+        const rp = rpIdPermitido(p.rpId, p.origen ?? "");
+        if (!rp) return mal("no-encaja", "Ese sitio no puede pedir esa llave de acceso");
+        // **`buscar` devuelve las entradas pasadas por `sinSecretos`**, y eso vacía
+        // la clave privada y el identificador de credencial — que es justo por lo
+        // que hay que filtrar. Se cogen las candidatas por lo que sí viaja —clase y
+        // sitio— y se miran enteras con `ver`, que es la regla que este proyecto ya
+        // tiene escrita y en la que se cayó igual.
+        const enteras = b
+          .buscar("")
+          .filter((x) => x.tipo === "llave" && x.rpId === rp)
+          .map((x) => b.ver(x.id))
+          .filter((x): x is Entrada => Boolean(x));
+        return {
+          ok: true,
+          llaves: llavesDe(enteras, rp, p.permitidas).map((x) => ({
+            id: x.id,
+            // Lo que se lee en el banner, y nada más. Ni el identificador de
+            // credencial ni el de usuario: no hacen falta para elegir.
+            nombre: x.nombreVisible || x.titulo,
+          })),
+        };
+      }
+      case "firmar-llave": {
+        const rp = rpIdPermitido(p.rpId, p.origen ?? "");
+        if (!rp) return mal("no-encaja", "Ese sitio no puede pedir esa llave de acceso");
+        const x = b.ver(p.id ?? "");
+        if (!x || x.tipo !== "llave" || x.papelera || x.rpId !== rp || !x.clavePrivada) {
+          return mal("no-encaja", "Esa llave no es de este sitio");
+        }
+        return { ok: true, afirmacion: await afirmar(x, rp, p.origen ?? "", p.reto ?? "") };
+      }
       case "nunca-aqui":
         if (b.soloLectura) throw new Error(SOLO_LECTURA);
         await b.excluir(dominio);
@@ -134,6 +178,26 @@ function esEscritura(que: Peticion["que"]): boolean {
 }
 
 const leEncaja = (x: Entrada, dominio: string) => (x.sitios ?? []).some((s) => encaja(s, dominio));
+
+/**
+ * Firma una aserción con una llave de acceso.
+ *
+ * **El origen lo construye este lado**, del que puso el navegador, y jamás el que
+ * mande la página: es lo que va dentro de `clientDataJSON` y lo que el sitio
+ * compara. Y lo que sale son **los bytes exactos** que se han hasheado.
+ */
+async function afirmar(x: Entrada, rpId: string, origen: string, reto: string): Promise<Afirmacion> {
+  const cliente = datosDelCliente("webauthn.get", deBase64Url(reto), new URL(origen).origin);
+  const autenticador = await datosDelAutenticador(rpId, BANDERAS_AL_FIRMAR);
+  const firma = await firmarConLlave(deBase64Url(x.clavePrivada ?? ""), await loQueSeFirma(autenticador, cliente));
+  return {
+    idCredencial: x.idCredencial ?? "",
+    idUsuario: x.idUsuario,
+    datosDelCliente: aBase64Url(cliente),
+    datosDelAutenticador: aBase64Url(autenticador),
+    firma: aBase64Url(firma),
+  };
+}
 
 const cuentaDe = (x: Entrada): Cuenta => ({
   id: x.id,

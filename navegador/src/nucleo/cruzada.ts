@@ -16,6 +16,8 @@ import { abrirEnvio, mandarEntrada, type Envio } from "./envio";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
 import { dominioDeOrigen, dominioDeSitio } from "./dominios";
 import { crearLlave, firmarConLlave, rpIdPermitido } from "./llaves";
+import { atender } from "./fuente";
+import { aBase64Url } from "./afirmacion";
 import { datosDelAutenticador, datosDelCliente, loQueSeFirma } from "./afirmacion";
 import { canonEntrada, entradaDesde, sinSecretos } from "./entrada";
 import { fundir, fundirPiezas } from "./fundir";
@@ -229,6 +231,41 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
     case "crearLlave": {
       const { privada, publica } = await crearLlave();
       return { privada: hex(privada), publica: hex(publica) };
+    }
+
+    // **El verbo entero de firmar una llave de acceso** (ADR 0048): se guarda una
+    // llave en una bóveda de verdad, se pide firmar como lo pediría el navegador, y
+    // **Go verifica la firma**. Es lo único que dice que todo el camino está bien
+    // —el `clientDataJSON`, el `authenticatorData`, el DER— sin un sitio de verdad,
+    // porque WebCrypto no sabe verificar DER y aquí no hay quien lo haga.
+    case "afirmarLlave": {
+      const par = await crearLlave();
+      const { boveda } = await Boveda.crear(p.maestra as string);
+      const puesta = await boveda.poner({
+        id: "",
+        tipo: "llave",
+        titulo: "GitHub",
+        rpId: p.rpId as string,
+        idCredencial: "Y3JlZC0x",
+        idUsuario: "dXN1LTE",
+        nombreVisible: "yo@ejemplo.com",
+        algoritmo: -7,
+        clavePrivada: aBase64Url(par.privada),
+        creada: "",
+        cambiada: "",
+      });
+      const r = await atender(
+        {
+          version: 1,
+          que: "firmar-llave",
+          origen: p.origen as string,
+          rpId: p.rpId as string,
+          id: puesta.id,
+          reto: p.reto as string,
+        },
+        { existe: true, boveda },
+      );
+      return { publica: hex(par.publica), ok: r.ok, afirmacion: r.afirmacion ?? null };
     }
 
     case "correos":

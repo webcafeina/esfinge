@@ -18,6 +18,7 @@
  */
 
 import { dominioRegistrable, hostDe } from "./dominios";
+import type { Entrada } from "./entrada";
 
 /**
  * El `rpId` con el que se puede firmar en ese origen, o `null`.
@@ -116,4 +117,25 @@ export async function firmarConLlave(privadaPKCS8: Uint8Array, datos: Uint8Array
   );
   const cruda = new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, k, new Uint8Array(datos)));
   return aDER(cruda);
+}
+
+
+/**
+ * Las llaves de acceso de un sitio, **ya filtradas por lo que el sitio acepta**.
+ *
+ * `permitidas` son los identificadores de credencial que el sitio ha mandado en
+ * `allowCredentials`. Cuando viene con algo —y GitHub lo manda—, **no es una
+ * credencial descubrible**: el sitio dice exactamente qué llave quiere, y ofrecer
+ * otra sería ofrecer algo que va a rechazar. Vacío significa «la que tengas».
+ */
+export function llavesDe(entradas: Entrada[], rpId: string, permitidas?: string[]): Entrada[] {
+  const quiere = new Set(permitidas ?? []);
+  return entradas.filter(
+    (x) =>
+      x.tipo === "llave" &&
+      !x.papelera &&
+      x.rpId === rpId &&
+      Boolean(x.clavePrivada) &&
+      (quiere.size === 0 || (x.idCredencial !== undefined && quiere.has(x.idCredencial))),
+  );
 }

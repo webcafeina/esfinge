@@ -1,6 +1,7 @@
 package navegador
 
 import (
+	"bytes"
 	"encoding/hex"
 	"testing"
 
@@ -236,5 +237,74 @@ func TestCruzadaFirmaDePuntaAPunta(t *testing.T) {
 	}
 	if hex.EncodeToString(deLaPrivada) != suya.Publica {
 		t.Error("Go saca de la privada de la extensión otra pública distinta")
+	}
+}
+
+// **El camino entero de firmar una llave de acceso, verificado por Go** (ADR 0048).
+//
+// La extensión guarda una llave en una bóveda de verdad, atiende el verbo como lo
+// pediría el navegador y devuelve la aserción; aquí se comprueba que **la firma la
+// acepta la pública**, que el `clientDataJSON` dice lo que tiene que decir y que el
+// `authenticatorData` lleva el hash del sitio y el contador a cero.
+//
+// Es lo único que puede decirlo: WebCrypto **no sabe verificar DER**, así que desde
+// la extensión «ha firmado» solo significa que no ha lanzado.
+func TestCruzadaAfirmarLlave(t *testing.T) {
+	var r struct {
+		Publica    string `json:"publica"`
+		OK         bool   `json:"ok"`
+		Afirmacion *struct {
+			IDCredencial         string `json:"idCredencial"`
+			IDUsuario            string `json:"idUsuario"`
+			DatosDelCliente      string `json:"datosDelCliente"`
+			DatosDelAutenticador string `json:"datosDelAutenticador"`
+			Firma                string `json:"firma"`
+		} `json:"afirmacion"`
+	}
+	cruzada.Pedir(t, map[string]any{
+		"orden":   "afirmarLlave",
+		"maestra": "una maestra larga para la prueba cruzada de las llaves",
+		"origen":  "https://github.com/login",
+		"rpId":    "github.com",
+		"reto":    B64URL.EncodeToString([]byte("un reto de treinta y dos bytes..")),
+	}, &r)
+
+	if !r.OK || r.Afirmacion == nil {
+		t.Fatalf("la extensión no ha firmado: %+v", r)
+	}
+	a := r.Afirmacion
+	if a.IDCredencial != "Y3JlZC0x" || a.IDUsuario != "dXN1LTE" {
+		t.Errorf("identificadores: %+v", a)
+	}
+
+	de := func(s string) []byte {
+		b, err := B64URL.DecodeString(s)
+		if err != nil {
+			t.Fatalf("no es base64url: %q", s)
+		}
+		return b
+	}
+	cliente, autenticador, firma := de(a.DatosDelCliente), de(a.DatosDelAutenticador), de(a.Firma)
+
+	// **Lo que se firma lo escribe este lado también**, así que se compara: el
+	// cliente tiene que ser exactamente el que Go escribiría para esos datos.
+	quiero := DatosDelCliente("webauthn.get", []byte("un reto de treinta y dos bytes.."), "https://github.com")
+	if !bytes.Equal(cliente, quiero) {
+		t.Errorf("clientDataJSON:\n  extensión: %s\n  Go:        %s", cliente, quiero)
+	}
+	if !bytes.Equal(autenticador, DatosDelAutenticador("github.com", BanderasAlFirmar)) {
+		t.Errorf("authenticatorData: %x", autenticador)
+	}
+
+	publica, err := hex.DecodeString(r.Publica)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !VerificarFirma(publica, LoQueSeFirma(autenticador, cliente), firma) {
+		t.Error("la firma de la extensión no la acepta su propia pública")
+	}
+	// Y que no valga para otra cosa, que si no lo de arriba no dice nada.
+	if VerificarFirma(publica, LoQueSeFirma(autenticador, append(cliente, 'x')), firma) {
+		t.Error("la firma vale para unos datos que no son los suyos")
 	}
 }
