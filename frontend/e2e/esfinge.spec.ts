@@ -272,6 +272,40 @@ test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
 test("las llaves de acceso se pueden apagar en Ajustes, y se quedan apagadas", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
+
+  // **Se prepara su punto de partida, y aquí no es una precaución: es la regla del
+  // cero mordiendo.** La prueba de arriba guarda las preferencias **a medias** —solo
+  // `buscarActualizaciones`, a propósito, para ejercitar esa trampa— y eso llega con
+  // todos los demás campos a `false`, así que **apaga las llaves de acceso**. Es el
+  // lado seguro de equivocarse y está decidido así, pero significa que este valor de
+  // fábrica no se puede dar por hecho.
+  //
+  // **Y por qué pasaba aquí y caía en GitHub**, que es la parte que no se adivina:
+  // la prueba de arriba, después del guardado a medias, hace `check()` y React manda
+  // las preferencias **enteras con lo que tenga en memoria**. Si las había leído antes
+  // del guardado a medias, las restaura sin querer; si las lee después, las manda ya
+  // apagadas. O sea, **depende de qué lectura gana la carrera** —la misma de
+  // `cambiosHechos`—, y eso lo decide lo rápida que sea la máquina. Reproducido aquí
+  // forzando el guardado a medias: Go contesta `false` y el síntoma es idéntico al de
+  // GitHub, un `<input checked>` en el HTML con el estado real en `unchecked`, porque
+  // React deja el atributo del primer render y cambia solo la propiedad.
+  //
+  // Se leen y se vuelven a guardar **enteras**, que es lo que hace la ventana: un
+  // objeto a medias aquí volvería a apagar media pantalla.
+  await page.evaluate(async () => {
+    const leer = await fetch("/api/VerPreferencias", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "[]",
+    });
+    const prefs = (await leer.json()) as Record<string, unknown>;
+    await fetch("/api/GuardarPreferencias", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify([{ ...prefs, llavesDeAccesoEnElNavegador: true }]),
+    });
+  });
+  await page.reload();
   await seccion(page, "Ajustes").click();
 
   const llaves = page.getByRole("checkbox", { name: /llaves de acceso/ });

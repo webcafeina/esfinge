@@ -876,6 +876,20 @@ seleccionable, nunca en una imagen —si no, no se puede copiar ni leer con un l
 **ninguno lleva un enlace que entre por ti**. Un correo de un gestor de contraseñas que diga «pulsa aquí
 para entrar» es entrenar a su gente para el phishing. Lo vigila una prueba del servidor.
 
+**Y una prueba no puede dar por hecho el valor de fábrica de una preferencia, porque otra las guarda a
+medias a propósito.** La prueba del interruptor de actualizaciones manda `{"buscarActualizaciones":true}`
+para ejercitar la regla del cero, y eso llega con **todos los demás booleanos en `false`**: apaga las llaves
+de acceso en el navegador. Luego, al hacer `check()`, React vuelve a mandar las preferencias enteras **con
+lo que tenga en memoria**, así que si las había leído antes del guardado a medias las restaura sin querer y
+si las lee después las manda apagadas. **Qué lectura gana la carrera lo decide lo rápida que sea la
+máquina**: la prueba de las llaves pasaba en verde aquí y caía en los dos temas en GitHub, y **tiró una
+publicación**. La regla: si una prueba mira el valor de una preferencia, **se lo pone ella primero**, leyendo
+y guardando el objeto entero, que es lo que hace la ventana.
+
+Y el síntoma no se parece a la causa: Playwright dice `Received: unchecked` enseñando un
+`<input checked type="checkbox"/>`. No es una contradicción — React deja el atributo del primer render, con
+las preferencias todavía sin llegar, y al llegar cambia solo la propiedad.
+
 **Una casilla cuyo estado viene de Go no se marca con `check`.** Las de Ajustes se desactivan, le piden
 el cambio a Go y se vuelven a dibujar con lo que Go conteste —que es lo correcto: marcarla antes de saber si
 ha funcionado es prometer—. Playwright's `check` exige que el estado cambie **en el mismo clic** y falla con
