@@ -594,3 +594,114 @@ test("mundo: credProps no se contesta si no se ha pedido", async ({ page }) => {
   });
   expect(r).toEqual({});
 });
+
+/**
+ * **Una biblioteca tiene que poder escribir encima de los métodos** (ADR 0048).
+ *
+ * Esto lo encontró el cliente en la primera prueba de verdad, y no lo habría encontrado
+ * ninguna prueba de las de arriba: **GitHub usa `@github/webauthn-json`, cuyo ponyfill
+ * asigna `credential.toJSON = …`** sobre lo que recibe. Con `toJSON` definido como solo
+ * lectura, eso lanza `TypeError: Cannot assign to read only property 'toJSON'` —y lanza
+ * **después** de que la llave se haya creado y guardado, así que quedaba en la bóveda y
+ * el sitio no la registraba—.
+ *
+ * En un `PublicKeyCredential` de verdad esos métodos viven en el **prototipo**, así que
+ * asignarlos en la instancia crea una propiedad propia y funciona. Blindarlos aquí no
+ * protegía nada: el objeto es nuestro y se lo estamos dando a la página.
+ *
+ * Se comprueban **las dos credenciales**, la de firmar y la de crear, porque el fallo
+ * estaba en las dos y la de firmar no lo había enseñado solo porque no había llaves con
+ * las que entrar.
+ */
+test("mundo: una biblioteca puede sustituir toJSON, como hace la de GitHub", async ({ page }) => {
+  await conElShim(page, {
+    atender: true,
+    hay: true,
+    sePuedeCrear: true,
+    afirmacion: {
+      idCredencial: "Y3JlZC0x",
+      datosDelCliente: "eyJ0IjoxfQ",
+      datosDelAutenticador: "YXV0aA",
+      firma: "ZmlybWE",
+    },
+    atestacion: {
+      idCredencial: "Y3JlZC1udWV2YQ",
+      datosDelCliente: "eyJ0IjoxfQ",
+      objeto: "o2NmbXQ",
+      datosDelAutenticador: "YXV0aA",
+      publica: "cHViYQ",
+    },
+  });
+  const r = await page.evaluate(async () => {
+    const cc = (window as any).navigator.__cc;
+    // Lo que hace el ponyfill de GitHub, literalmente: asignar encima.
+    const comoGitHub = (c: any) => {
+      "use strict";
+      try {
+        c.toJSON = () => ({ mío: true });
+        c.getClientExtensionResults = () => ({ mío: true });
+        return { ok: true, vale: c.toJSON().mío === true };
+      } catch (e) {
+        return { ok: false, error: String(e) };
+      }
+    };
+    const creada = await cc.create({
+      publicKey: { challenge: new Uint8Array(8), rp: {}, user: {}, extensions: { credProps: true } },
+    });
+    const usada = await cc.get({ publicKey: { challenge: new Uint8Array(8) } });
+    return { alCrear: comoGitHub(creada), alEntrar: comoGitHub(usada) };
+  });
+  expect(r.alCrear, "al crear no se puede sustituir toJSON: GitHub falla justo aquí").toEqual({
+    ok: true,
+    vale: true,
+  });
+  expect(r.alEntrar, "al entrar no se puede sustituir toJSON").toEqual({ ok: true, vale: true });
+});
+
+/**
+ * Y los **datos** siguen sin poder asignarse, que es lo que hace el real: ahí son
+ * captadores sin asignador y `cred.id = x` lanza. Lo que sí se les deja es que se puedan
+ * **redefinir** con `defineProperty`, como sobre una credencial de verdad.
+ *
+ * Sin esta prueba, «arreglar» lo de `toJSON` podía haber sido poner todo escribible, y
+ * entonces el objeto dejaría de parecerse al que dice ser en la otra dirección.
+ */
+test("mundo: los datos de la credencial no se asignan, pero se pueden redefinir", async ({ page }) => {
+  await conElShim(page, {
+    atender: true,
+    hay: true,
+    afirmacion: {
+      idCredencial: "Y3JlZC0x",
+      datosDelCliente: "eyJ0IjoxfQ",
+      datosDelAutenticador: "YXV0aA",
+      firma: "ZmlybWE",
+    },
+  });
+  const r = await page.evaluate(async () => {
+    const c: any = await (window as any).navigator.__cc.get({ publicKey: { challenge: new Uint8Array(8) } });
+    // **Se mira el descriptor y no se intenta asignar**, y esa fue la primera versión
+    // de esta prueba: `page.evaluate` no corre en modo estricto, así que asignar a una
+    // propiedad no escribible **falla en silencio** y el `catch` no se ejecuta nunca. La
+    // prueba pasaba diciendo lo contrario de lo que quería decir.
+    const dato = Object.getOwnPropertyDescriptor(c, "id");
+    const metodo = Object.getOwnPropertyDescriptor(c, "toJSON");
+    let redefinir = "no se pudo";
+    try {
+      Object.defineProperty(c, "id", { value: "redefinido", enumerable: true, configurable: true });
+      redefinir = c.id;
+    } catch {
+      /* se queda en «no se pudo» */
+    }
+    return {
+      dato: { w: dato?.writable, c: dato?.configurable },
+      metodo: { w: metodo?.writable, c: metodo?.configurable },
+      redefinir,
+    };
+  });
+  // El dato, como el real: no se asigna —allí es un captador sin asignador— pero se
+  // puede redefinir.
+  expect(r.dato).toEqual({ w: false, c: true });
+  expect(r.redefinir).toBe("redefinido");
+  // Y el método, escribible: es lo que la biblioteca de GitHub necesita.
+  expect(r.metodo).toEqual({ w: true, c: true });
+});

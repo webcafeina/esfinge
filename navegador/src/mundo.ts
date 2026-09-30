@@ -40,6 +40,38 @@ import { aBase64Url, deBase64Url } from "./nucleo/afirmacion";
 const PLAZO_DEL_AVISO = 500;
 
 /**
+ * Los métodos de una credencial, **escribibles y configurables**.
+ *
+ * Y eso no es descuido: **es lo que hace un `PublicKeyCredential` de verdad**. Ahí
+ * `toJSON` y `getClientExtensionResults` viven en el **prototipo**, así que
+ * `cred.toJSON = …` crea una propiedad propia y funciona. En el nuestro son propiedades
+ * de la instancia, y puestas como solo lectura **la asignación lanza**.
+ *
+ * No es hipotético: GitHub usa `@github/webauthn-json`, cuyo ponyfill asigna
+ * `credential.toJSON` sobre lo que recibe. Con los métodos blindados, registrar una
+ * llave moría con «Cannot assign to read only property 'toJSON'» **después** de haberla
+ * creado y guardado — la llave quedaba en la bóveda y el sitio no la registraba. Lo vio
+ * el cliente en su Mac el 2026-09-30, en la primera prueba de verdad.
+ *
+ * Los **datos** (`id`, `rawId`, `type`, `response`…) se quedan sin `writable`, que
+ * también es lo que hace el real: ahí son captadores sin asignador, y asignarlos lanza.
+ * Lo que sí se les deja es `configurable`, para que una biblioteca pueda redefinirlos
+ * con `defineProperty` como podría hacer sobre una credencial de verdad.
+ *
+ * **La regla, que es la lección:** un objeto que se devuelve a la página tiene que
+ * imitar al de verdad **en mutabilidad**, no solo en forma. Blindar aquí no protege
+ * nada —el objeto es nuestro y se lo estamos dando— y rompe a quien lo trate como lo
+ * que dice ser.
+ */
+function metodos(unos: Record<string, unknown>): PropertyDescriptorMap {
+  const salida: PropertyDescriptorMap = {};
+  for (const [nombre, valor] of Object.entries(unos)) {
+    salida[nombre] = { value: valor, writable: true, configurable: true };
+  }
+  return salida;
+}
+
+/**
  * Las extensiones de WebAuthn que Esfinge sabe atender. **Ante cualquier otra, se
  * cede**, y esa regla no se toca: una extensión que no se entiende puede cambiar lo
  * que el sitio espera recibir, y devolverle algo que no cuadra es peor que no estar.
@@ -201,24 +233,24 @@ async function arrancar() {
       typeof AuthenticatorAssertionResponse === "undefined" ? Object.prototype : AuthenticatorAssertionResponse.prototype,
     ) as Record<string, unknown>;
     Object.defineProperties(respuesta, {
-      clientDataJSON: { value: bytes(a.datosDelCliente), enumerable: true },
-      authenticatorData: { value: bytes(a.datosDelAutenticador), enumerable: true },
-      signature: { value: bytes(a.firma), enumerable: true },
-      userHandle: { value: a.idUsuario ? bytes(a.idUsuario) : null, enumerable: true },
+      clientDataJSON: { value: bytes(a.datosDelCliente), enumerable: true, configurable: true },
+      authenticatorData: { value: bytes(a.datosDelAutenticador), enumerable: true, configurable: true },
+      signature: { value: bytes(a.firma), enumerable: true, configurable: true },
+      userHandle: { value: a.idUsuario ? bytes(a.idUsuario) : null, enumerable: true, configurable: true },
     });
 
     const cred = Object.create(
       typeof PublicKeyCredential === "undefined" ? Object.prototype : PublicKeyCredential.prototype,
     ) as Record<string, unknown>;
     Object.defineProperties(cred, {
-      id: { value: a.idCredencial, enumerable: true },
-      rawId: { value: bytes(a.idCredencial), enumerable: true },
-      type: { value: "public-key", enumerable: true },
-      authenticatorAttachment: { value: "platform", enumerable: true },
-      response: { value: respuesta, enumerable: true },
-      getClientExtensionResults: { value: () => ({}) },
-      toJSON: {
-        value: () => ({
+      id: { value: a.idCredencial, enumerable: true, configurable: true },
+      rawId: { value: bytes(a.idCredencial), enumerable: true, configurable: true },
+      type: { value: "public-key", enumerable: true, configurable: true },
+      authenticatorAttachment: { value: "platform", enumerable: true, configurable: true },
+      response: { value: respuesta, enumerable: true, configurable: true },
+      ...metodos({
+        getClientExtensionResults: () => ({}),
+        toJSON: () => ({
           id: a.idCredencial,
           rawId: a.idCredencial,
           type: "public-key",
@@ -231,7 +263,7 @@ async function arrancar() {
             userHandle: a.idUsuario ?? null,
           },
         }),
-      },
+      }),
     });
     return cred;
   };
@@ -260,12 +292,14 @@ async function arrancar() {
         : AuthenticatorAttestationResponse.prototype,
     ) as Record<string, unknown>;
     Object.defineProperties(respuesta, {
-      clientDataJSON: { value: bytes(a.datosDelCliente), enumerable: true },
-      attestationObject: { value: bytes(a.objeto), enumerable: true },
-      getAuthenticatorData: { value: () => bytes(a.datosDelAutenticador) },
-      getPublicKey: { value: () => bytes(a.publica) },
-      getPublicKeyAlgorithm: { value: () => -7 },
-      getTransports: { value: () => ["internal", "hybrid"] },
+      clientDataJSON: { value: bytes(a.datosDelCliente), enumerable: true, configurable: true },
+      attestationObject: { value: bytes(a.objeto), enumerable: true, configurable: true },
+      ...metodos({
+        getAuthenticatorData: () => bytes(a.datosDelAutenticador),
+        getPublicKey: () => bytes(a.publica),
+        getPublicKeyAlgorithm: () => -7,
+        getTransports: () => ["internal", "hybrid"],
+      }),
     });
 
     const cred = Object.create(
@@ -277,14 +311,14 @@ async function arrancar() {
     // residentes, no hay ninguna que no se pueda descubrir.
     const resultados = pidioCredProps ? { credProps: { rk: true } } : {};
     Object.defineProperties(cred, {
-      id: { value: a.idCredencial, enumerable: true },
-      rawId: { value: bytes(a.idCredencial), enumerable: true },
-      type: { value: "public-key", enumerable: true },
-      authenticatorAttachment: { value: "platform", enumerable: true },
-      response: { value: respuesta, enumerable: true },
-      getClientExtensionResults: { value: () => resultados },
-      toJSON: {
-        value: () => ({
+      id: { value: a.idCredencial, enumerable: true, configurable: true },
+      rawId: { value: bytes(a.idCredencial), enumerable: true, configurable: true },
+      type: { value: "public-key", enumerable: true, configurable: true },
+      authenticatorAttachment: { value: "platform", enumerable: true, configurable: true },
+      response: { value: respuesta, enumerable: true, configurable: true },
+      ...metodos({
+        getClientExtensionResults: () => resultados,
+        toJSON: () => ({
           id: a.idCredencial,
           rawId: a.idCredencial,
           type: "public-key",
@@ -299,7 +333,7 @@ async function arrancar() {
             transports: ["internal", "hybrid"],
           },
         }),
-      },
+      }),
     });
     return cred;
   };

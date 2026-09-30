@@ -1062,6 +1062,24 @@ dicha al lado de cada regla. Si hace falta una nueva, se añade primero ahí. La
 texto apagado sobre la superficie elevada no está medido, así que al pasar el puntero por una fila el
 usuario sube a `--cuerpo`.
 
+**Un objeto que se devuelve a la página tiene que imitar al de verdad en mutabilidad, no solo en forma.**
+Los métodos de la credencial —`toJSON`, `getClientExtensionResults`— se pusieron con `defineProperty` sin
+`writable`, por reflejo defensivo. En un `PublicKeyCredential` de verdad viven en el **prototipo**, así que
+`cred.toJSON = …` crea una propiedad propia y funciona; en el nuestro son de la instancia y **la asignación
+lanza**. GitHub usa `@github/webauthn-json`, cuyo ponyfill hace exactamente eso, y registrar una llave moría
+con «Cannot assign to read only property 'toJSON'» **después** de haberla creado y guardado: la llave
+quedaba en la bóveda y el sitio no la registraba. Ahora los **métodos** van `writable` y `configurable`, y
+los **datos** solo `configurable`, que es lo que hace el real —allí son captadores sin asignador—. Blindar
+ahí no protegía nada: el objeto es nuestro y se lo estamos dando.
+
+Y estaba en **las dos** credenciales, la de firmar y la de crear. La de firmar no lo había enseñado solo
+porque no había ninguna llave con la que entrar, así que **el fallo llevaba una entrega entera esperando**.
+
+Con ello, una de método: **una prueba que compruebe que algo no se puede asignar no vale dentro de
+`page.evaluate`**, que no corre en modo estricto: asignar a una propiedad no escribible **falla en silencio**
+y el `catch` no se ejecuta nunca. La primera versión pasaba diciendo lo contrario de lo que quería decir. Se
+mira el **descriptor**.
+
 **`extensions` viene vacío al entrar y lleno al crear, y eso costó la primera prueba en su Mac.** La regla
 de la P2 —«cualquier clave dentro de `extensions`, se cede»— se escribió con el diagnóstico de
 `navigator.credentials.get`, donde GitHub lo manda **presente y vacío**. Al **crear** manda
