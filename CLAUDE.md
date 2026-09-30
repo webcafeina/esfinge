@@ -1080,6 +1080,21 @@ puerto y no lanza el puente al refrescar el icono, y el guion de la página no a
 basta: los oyentes de envío de la página leen contraseñas sin preguntar a nadie. **Si cambia lo que dice
 el aviso, sube `VERSION_DEL_AVISO`**, y con él la política de privacidad y lo declarado en las tiendas.
 
+**La ficha de Chrome se pega a mano, y describir una consola que no se ve sale mal tres veces de tres.**
+Firefox recibe su ficha con cada etiqueta (`amo-metadata.json`); **la API de la Chrome Web Store sube el
+paquete y no edita la ficha**, así que cambiar `docs/tiendas/ficha.md` no cambia lo que la tienda enseña y
+**nada avisa**: lo que la entrega de compartir cambió el 2026-09-24 se quedó seis días sin pegar, y lo vio
+el cliente buscando una línea que se daba por puesta. Ahora los bloques que se pegan van marcados en esa
+ficha y `ficha-de-chrome.mjs` guarda su huella, así que olvidarse **para** `pnpm run comprobar`. Se hashea
+solo lo marcado: un aviso que salta al arreglar una coma de una nota interna se deja de leer.
+
+Y dos reglas de esa ficha que costaron el mismo día, las dos por escribir para una pantalla que desde aquí
+no se puede abrir: **dentro de las marcas no va markdown** —la consola no lo interpreta, y si aquí hay
+negritas y allí prosa la huella vigila un texto que no es el de la tienda—, y **solo se marca lo que tiene
+un campo donde pegarlo**. Esto último apareció tres veces en una tarde: las casillas de uso de datos no
+tienen descripción, «Código remoto» pierde la explicación al contestar «no», y la viñeta que faltaba. Qué
+campos existen **lo dice quien mira la consola**, no lo que parezca razonable desde aquí.
+
 **La política de privacidad de la web tiene que decir lo mismo que el aviso del panel** (ADR 0033), y las
 dos lo mismo que lo declarado en las tiendas. Viven en `web/privacidad.html` y `navegador/src/panel.html`,
 y las enlazan las fichas de Chrome y Firefox: cambiar lo que la extensión hace con los datos sin tocar las

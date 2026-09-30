@@ -1,0 +1,10 @@
+# Lo que hay pegado en la consola de la Chrome Web Store, y cuándo se pegó.
+#
+# La ficha de Chrome no la actualiza el flujo de publicación: su API sube el paquete y no
+# edita la ficha. Así que los bloques marcados de docs/tiendas/ficha.md se pegan a mano, y
+# esto es lo que hace que olvidarse pare algo en vez de pasar desapercibido.
+#
+# Tras pegarlos: node navegador/herramientas/ficha-de-chrome.mjs --pegado
+
+huella: b0f1b16ab9774ee3
+fecha: 2026-09-30

@@ -27,11 +27,19 @@ node navegador/herramientas/ficha-de-chrome.mjs --pegado   # después de pegarlo
 Lo que queda **fuera** de las marcas es para nosotros: el porqué de cada cosa, y las casillas de uso de
 datos, que **no tienen ningún campo donde escribir**.
 
-Y de ahí una regla que hace falta para que la huella signifique algo: **dentro de las marcas no va
-markdown**. La consola no lo interpreta, así que un `**` o una comilla invertida quedarían escritos en la
-ficha; y si aquí hubiera markdown y allí prosa, la herramienta vigilaría un texto que no es el de la
-tienda. Eso ya pasó: las justificaciones de los permisos eran una tabla con negritas, y lo que se le pasó
-al cliente para pegar era otra cosa.
+Y de ahí dos reglas, las dos aprendidas el mismo día y ninguna obvia desde aquí.
+
+**Dentro de las marcas no va markdown.** La consola no lo interpreta, así que un `**` o una comilla
+invertida quedarían escritos en la ficha; y si aquí hubiera markdown y allí prosa, la herramienta
+vigilaría un texto que no es el de la tienda. Eso ya pasó: las justificaciones de los permisos eran una
+tabla con negritas, y lo que se le pasó al cliente para pegar era otra cosa.
+
+**Y solo se marca lo que tiene un campo donde pegarlo.** Esta ficha describe una consola que desde aquí
+**no se puede ver**, así que qué campos existen es cosa de quien los mira. En un solo día aparecieron
+tres sitios donde se había escrito texto para un campo inexistente: las casillas de uso de datos —solo
+casillas—, «Código remoto» —marcando «no», la explicación desaparece— y, antes, una viñeta que yo daba
+por puesta y llevaba seis días sin pegar. Lo que va entre marcas es **lo que se ha confirmado que tiene
+hueco**; lo demás se queda fuera, como nota, y se dice que no se pega.
 
 ---
 
@@ -153,12 +161,11 @@ Solo en https: nunca en http. Con cuenta, cubre también el servidor de cuentas,
 https://esfinge-cuentas.webcafeina.com.
 <!-- consola de Chrome: acaba -->
 
-**Código remoto:** se contesta **no**, y el campo de explicación lleva esto:
-
-<!-- consola de Chrome: empieza -->
-No se usa código remoto. El WebAssembly —Argon2id, de hash-wasm— va dentro del paquete; por eso la
-política de contenido lleva 'wasm-unsafe-eval'.
-<!-- consola de Chrome: acaba -->
+**Código remoto:** se contesta **no**, y **no hay nada que escribir**: marcando «no uso código remoto»
+la consola no deja explicación. Comprobado por el cliente el 2026-09-30. Así que esto es nota nuestra,
+para saber por qué se contesta eso: el WebAssembly —Argon2id, de `hash-wasm`— va dentro del paquete, y
+por eso la política de contenido lleva `'wasm-unsafe-eval'`. Si algún día hubiera que bajar algo, esta
+respuesta cambia y con ella la revisión entera.
 
 **Uso de datos** —**solo hay casillas**, sin ningún campo donde escribir. Comprobado en la consola por
 el cliente el 2026-09-30, y conviene saberlo: lo de debajo **no se pega en ninguna parte**. Es la nota de
