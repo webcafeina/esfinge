@@ -278,6 +278,24 @@ func TestLosCincoFicherosDeDashlane(t *testing.T) {
 			}
 		},
 	}, {
+		// **La columna del segundo factor se llama de las dos formas**, y por eso se
+		// prueban las dos: el cliente recuerda `otp` a secas en su exportación y aquí
+		// estaba escrito `otpSecret`. Las dos están en la tabla de alias, así que la
+		// semilla entra igual — lo que no puede quedar es una prueba que diga que
+		// comprueba la cabecera de Dashlane comprobando solo una de las dos. **Y la
+		// forma no depende de este nombre**: `FormaCredencial` es el caso por defecto,
+		// que es lo que hay que saber antes de preocuparse por cómo se llame.
+		nombre: "credentials.csv con la columna llamada «otp»",
+		csv: "username,username2,username3,title,password,note,url,category,otp\n" +
+			"yo@ejemplo.com,,,Banco,s3cr3t0,una nota,https://banco.es,Finanzas,JBSWY3DP\n",
+		forma: FormaCredencial,
+		tipo:  TipoCredencial,
+		revisar: func(t *testing.T, e Entrada) {
+			if e.TOTP != "JBSWY3DP" {
+				t.Errorf("con la columna «otp» se pierde el segundo factor: %+v", e)
+			}
+		},
+	}, {
 		nombre: "securenotes.csv",
 		csv:    "title,note\nLa caja fuerte,la combinación es 1234\n",
 		forma:  FormaCredencial,
