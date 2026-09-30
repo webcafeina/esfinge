@@ -139,6 +139,15 @@ No se cambian sin preguntar.
   interruptor en Ajustes**, encendido de fábrica, que apaga **las tres puertas** —ofrecer, apuntar y
   firmar—. Lo que ese interruptor **no** cubre, y está en `deuda.md`: la extensión con cuenta, que no le
   pregunta nada a la ventana.
+  **Y desde la P3 las crea** (2026-09-30), lo que trae dos cosas que hay que decir en voz alta: **se le dice
+  al sitio que este equipo tiene un autenticador de plataforma aunque no tenga ninguno** —es lo que los
+  sitios preguntan para ofrecer llaves, y sin eso Esfinge no serviría justo donde más falta hace; solo se
+  dice cuando Esfinge de verdad puede crear, y ese método **sí puede esperar** la bandera porque no consume
+  la activación de usuario—; y **una llave creada en Esfinge y perdida es una cuenta perdida**, que es la
+  razón de que la exportación cifrada se hiciera en la P1. El AAGUID va a ceros a propósito: con
+  `fmt: "none"` es lo que dice la especificación, y el coste es que el sitio dirá «una llave de acceso» y no
+  «Esfinge». Y **no se crea nada** sin `-7`, ni si el sitio dice que ya tiene una llave nuestra, ni con un
+  `rpId` que no case con el origen.
 - **El historial guarda solo qué y cuándo**: nunca el contenido, la clave ni el texto cifrado. Vive
   en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar. **La bóveda no
   escribe en él**, y es una regla absoluta: `credenciales-dashlane.csv` ahí sería una señal de
@@ -381,6 +390,20 @@ Y la mitad de método, que vale para cualquier protocolo entre dos piezas: **las
 atendían antes de saludar**, o sea el caso que no ocurre. La que faltaba **fuerza el orden** y es la única
 que lo caza siempre; la real solo lo caza cuando pierde la carrera. Cuando algo se sincroniza entre dos
 piezas, hay que probar **las dos órdenes**, y probar la mala primero.
+
+**Cuando un lado no puede comprobar su propio resultado, la comprobación se pasa al lado que sí puede.**
+La prueba de crear una llave con la extensión de verdad comprobaba que firma, pero **no que el sitio pueda
+verificar esa firma** — y en TypeScript no se puede, porque WebCrypto solo verifica en P1363 y WebAuthn
+manda DER. Con eso, guardar en la bóveda una privada distinta de la que se le dice al sitio **pasaba en
+verde**, y eso es una cuenta con una credencial registrada y sin forma de entrar. Se cerró con una cruzada
+donde el núcleo crea, guarda y firma, y **Go verifica con la pública que fue al sitio**. Omitir la
+comprobación porque «aquí no se puede» es dejar el agujero con una excusa.
+
+**Y un procedimiento se ejecuta antes de escribirlo, también a escala de entrega.** La P2 —«usar una llave
+que ya existe»— se planificó, se escribió y **se publicó** sin que nadie se preguntara de dónde iba a salir
+esa llave: a mano no se pueden crear, el navegador no podía todavía y ningún gestor las exporta en su CSV.
+Recorrer «probar la P2 en el Mac» paso a paso se para en el primero. Lo mismo que costó `ExportarLlaves`
+—preguntar antes de preguntar—, una escala más arriba.
 
 **Y «pasó tres veces» no es «funciona».** Vale para el puente y volvió el mismo día con una prueba de frenos
 del servidor: lo que hay que hacer con un intermitente es **apuntarlo con lo que se vio**, no volver a

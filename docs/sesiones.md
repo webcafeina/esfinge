@@ -50,7 +50,23 @@ Plantilla al final.
   medias, y qué lectura gana la carrera lo decide la velocidad de la máquina—. Como no había llegado a
   publicarse nada, la etiqueta se movió al commit arreglado en vez de saltar a una 2.33.1. Las dos tiendas la
   tienen en revisión, con la ficha de Chrome enviada con ella.
-- **Queda abierto:** que el cliente la vea —lo primero, entrar en GitHub de verdad—, y tres
+- **Y la P3, el mismo día, porque la P2 no se podía usar sin ella.** Al ir a guiar al cliente en la
+  primera prueba apareció que **no había ninguna forma de que existiera una llave**: a mano no, el navegador
+  no podía todavía y ningún gestor las exporta. La P2 quedó publicada protegiendo a quien no usa Esfinge y
+  sin poder hacer lo que se pidió. Es «preguntar antes de preguntar» a escala de entrega, y la regla que lo
+  habría cazado ya estaba escrita: un procedimiento se ejecuta antes de escribirlo.
+- **La P3 trae** el CBOR —solo codificador—, el COSE de la pública, el objeto de atestación, `create`
+  atendido en el `shim` con los cuatro métodos que los sitios llaman, el banner de crear, el verbo en los dos
+  núcleos y **decirle al sitio que aquí hay un autenticador de plataforma** aunque el equipo no tenga
+  ninguno, que es lo que hace que ofrezcan llaves.
+- **Tres cosas que encontraron las mutaciones y no la lectura:** que el orden canónico de los mapas CBOR no
+  estaba comprobado en ninguna parte —ninguno de los dos mapas reales lo distingue—; que el relleno de las
+  coordenadas estaba en dos sitios, así que ninguna de las dos líneas estaba probada; y, la peor, que
+  **guardar una privada distinta de la que se le dice al sitio pasaba en verde** en la prueba con la
+  extensión de verdad, porque en TypeScript no se puede verificar DER. Esa se cerró pasándole la
+  verificación a Go.
+- **Queda abierto:** publicar la P3 —tres campos en la consola de Chrome— y que el cliente cree una llave en
+  GitHub de verdad —lo primero, entrar en GitHub de verdad—, y tres
   cosas nuevas en [`deuda.md`](deuda.md): que con cuenta y sin aplicación el interruptor no existe, que en el
   primer segundo de una página Esfinge cede la llave —deliberado: esperar agota la activación de usuario— y
   un intermitente de las pruebas de frenos del servidor, apuntado en vez de darlo por bueno.

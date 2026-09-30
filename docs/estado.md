@@ -62,8 +62,16 @@ había ninguna. Arreglado en `main`; sale con la P2.
 que `ficha.md`, y guardada como borrador sin enviar a revisión: la revisión empieza cuando suba el paquete.
 Desde ahora **olvidarse de pegarla para la comprobación** (`ficha-de-chrome.mjs`).
 
-**La P2 está publicada en la 2.33.0** y **en revisión en las dos tiendas**, con la ficha de Chrome
-enviada con ella. **La siguiente acción concreta es que el cliente la vea en su Mac.** Lo que hay que
+**La P2 está publicada en la 2.33.0** y en revisión en las dos tiendas. **Y la P3 está escrita y sin
+publicar**, porque al ir a guiar al cliente en la primera prueba apareció que **la P2 no se puede usar sin
+ella**: no había ninguna forma de que existiera una llave de acceso —a mano no se pueden crear, el navegador
+no podía todavía, y ningún gestor las exporta en su CSV—. Está en la [ADR 0048](adr/0048-las-llaves-de-acceso.md)
+con lo que trae: `create` atendido, el objeto de atestación, el COSE de la pública, el banner de crear y
+decirle al sitio que aquí hay un autenticador de plataforma.
+
+**La siguiente acción concreta es publicar la P3** —falta pegar tres campos en la consola de Chrome, que
+están en `referencias/chrome-2.34.0.md`, y `pnpm run comprobar` está **rojo a propósito** hasta entonces— y
+que el cliente cree una llave en GitHub de verdad. Lo que hay que
 mirar ahí está al final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md) y en [`deuda.md`](deuda.md), y lo
 primero es lo que él pidió con esas palabras: **entrar en GitHub y darle a Aceptar**. Con la versión salió
 además el arreglo de exportar llaves.

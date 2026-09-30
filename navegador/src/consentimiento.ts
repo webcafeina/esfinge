@@ -36,8 +36,17 @@ export const CLAVE_DEL_CONSENTIMIENTO = "consentimiento";
  * un sitio identifica a la gente. Que lo que sale sea una firma y nunca la clave no
  * quita que eso sea una práctica de datos distinta, y darlo por sabido sería
  * decidirlo por quien lo instaló antes.
+ *
+ * **5 desde la P3** (ADR 0048): la extensión ya no solo usa llaves, **las crea y las
+ * guarda**. Sube aunque la 4 no haya llegado a nadie todavía —la versión que la lleva
+ * está en revisión en las tiendas— y aunque no haya ninguna categoría de datos nueva:
+ * lo que hay es una **frase del aviso que dejaría de ser cierta**, porque decía que lo
+ * que sale hacia el sitio es la firma, y ahora también sale una clave pública recién
+ * hecha. La regla de la ADR 0033 no dice «si cambian los datos», dice **si cambia lo
+ * que dice el aviso**, y es mejor preguntar una vez de más que dejar aceptado un texto
+ * que ya no describe lo que pasa.
  */
-export const VERSION_DEL_AVISO = 4;
+export const VERSION_DEL_AVISO = 5;
 
 /** vale dice si lo guardado es la aceptación del aviso de ahora. */
 export function vale(guardado: unknown): boolean {

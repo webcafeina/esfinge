@@ -1,8 +1,8 @@
 # ADR 0048 — Las llaves de acceso, la sexta clase de entrada
 
-**Fecha:** 2026-09-29, ampliada el 2026-09-30 con la P2 · **Estado:** aceptada; **la P1 vista en el Mac
-(2.32.0); la P2 escrita, sin ver** · Primeras dos de las cuatro entregas de `docs/passkeys.md` ·
-**Revisar** al empezar la P3, que es cuando se crean llaves
+**Fecha:** 2026-09-29, ampliada el 2026-09-30 con la P2 y la P3 · **Estado:** aceptada; **la P1 vista en
+el Mac (2.32.0); la P2 y la P3 escritas, sin ver** · Tres de las cuatro entregas de `docs/passkeys.md` ·
+**Revisar** al empezar la P4, que es Firefox
 
 ## Contexto
 
@@ -156,6 +156,56 @@ salga hacia el sitio sea una firma y nunca la clave no quita que sea una prácti
 declarado, y darlo por sabido sería decidirlo por quien instaló la extensión antes. Con él cambian el aviso
 del panel, `web/privacidad.html`, el texto generado de Firefox y las dos fichas de tienda.
 
+## La P3: crear llaves, y por qué salió antes de lo previsto (2026-09-30)
+
+**La P3 se adelantó porque sin ella la P2 no se puede usar.** Al ir a guiar al cliente en la primera
+prueba apareció que **no hay ninguna forma de que exista una llave de acceso**: a mano no —el selector de
+clases excluye `llave` a propósito—, desde el navegador no —crear era esta entrega— e importando tampoco,
+porque ningún gestor exporta passkeys en su CSV. La P2 quedó publicada protegiendo a quien no usa Esfinge
+y sin poder hacer lo que se pidió.
+
+Es el fallo de «preguntar antes de preguntar» a escala de entrega, y la regla que lo habría cazado ya
+estaba escrita: **un procedimiento se ejecuta antes de escribirlo**. Recorrer «probar la P2 en el Mac»
+paso a paso se para en el primero.
+
+### Se le dice al sitio que aquí hay un autenticador de plataforma
+
+`isUserVerifyingPlatformAuthenticatorAvailable` contesta `true`. **Eso es decir que el equipo tiene un
+autenticador de plataforma cuando puede no tener ninguno**, y se hace a sabiendas: es lo que los sitios
+preguntan para decidir si ofrecen crear una llave, y sin eso Esfinge no serviría justo en el ordenador sin
+Touch ID ni Hello, que es donde más falta hace.
+
+Lo que acota la afirmación, y no es poco: **solo se dice que sí cuando Esfinge de verdad puede crear**. Con
+el interruptor apagado se devuelve lo que conteste el navegador, que es la verdad de ese equipo.
+
+Y una diferencia técnica que importa: **ese método sí puede esperar** a que llegue la bandera del mundo
+aislado, medio segundo, porque **no consume la activación de usuario**. Esperar en `create()` o en `get()`
+es lo que puede agotarla y romper el inicio de sesión de quien no usa Esfinge; aquí no hay nada que agotar.
+
+### Lo que no se crea, y cada cosa por su motivo
+
+- **Sin `-7` en `pubKeyCredParams` no se crea nada.** Es el único algoritmo que Esfinge sabe firmar, y
+  crear la llave la registraría en el sitio dejando la cuenta con **una credencial muerta**.
+- **Si el sitio dice en `excludeCredentials` que ya tiene una llave nuestra, tampoco.** El motivo es suyo y
+  no nuestro: dos llaves de Esfinge para la misma cuenta son dos credenciales que él guarda sin que nadie
+  las haya pedido. Lo que hace el `shim` entonces es **ceder**, así que sale el diálogo del navegador.
+- **Y el `rpId` se comprueba contra el origen igual que al firmar.** Aquí es peor que al firmar: crearía en
+  la bóveda una llave atada a un sitio que no la pidió.
+
+### El AAGUID va a ceros
+
+Identifica el modelo de autenticador, y los gestores suelen poner el suyo para que el sitio enseñe su
+nombre. Aquí va a cero porque **con `fmt: "none"` es lo que dice la especificación** —sin atestación no hay
+nada que identificar— y porque inventarse un identificador de modelo es afirmar algo que nadie ha
+certificado. **El coste es que el sitio dirá «una llave de acceso» y no «Esfinge»**, y se acepta.
+
+### Y el aviso de datos sube otra vez, de 4 a 5
+
+Sube aunque la 4 no haya llegado a nadie —la versión que la lleva está en revisión— y aunque **no haya
+ninguna categoría de datos nueva**. Lo que hay es una frase del aviso que dejaría de ser cierta: decía que
+lo que sale hacia el sitio es la firma, y ahora también sale una clave pública recién hecha. La regla de la
+ADR 0033 no dice «si cambian los datos», dice **si cambia lo que dice el aviso**.
+
 ## Alternativas descartadas
 
 - **Guardar la llave dentro de la credencial del sitio**, como el código de un solo uso. Menos entradas y
@@ -188,6 +238,21 @@ Y de la P2:
   saldría siempre, que es mejor producto. Descartado: eso es la lista de sitios de la bóveda escrita en el
   perfil, sin cifrar, que es exactamente lo que la regla de `fondo.ts` prohíbe.
 
+Y de la P3:
+
+- **Dejar crear una llave a mano en la ventana**, para poder probar la P2 sin la P3. Se descartó en cuanto
+  se dijo en voz alta: una llave creada aquí **no sirve para entrar en ningún sitio**, porque el sitio tiene
+  que conocer su parte pública y solo la conoce si él la pidió. Habría sido una pantalla que no lleva a
+  ninguna parte.
+- **Poner un AAGUID propio** para que los sitios enseñen «Esfinge». Ver arriba.
+- **Rechazar con `InvalidStateError`** cuando el sitio dice que ya tiene una llave nuestra, que es lo que la
+  especificación pide para que el sitio diga «ya tienes una». Descartado porque **de esta pieza no sale
+  nunca una excepción hacia la página**, que es la regla que protege el inicio de sesión de todo el mundo.
+  Se cede, y el coste es que el navegador ofrecerá crear una del sistema.
+- **Sacar la pública y el `authData` del objeto de atestación** en vez de mandarlos aparte. Exigiría
+  **descodificar CBOR en el mundo principal**, dentro de la página de otro, y aquí no hay descodificador de
+  CBOR a propósito. Duplicar una clave pública es más barato y más seguro; ninguno de los dos es secreto.
+
 ## Consecuencias
 
 - **Séptima pestaña en la bóveda.** Medido: los siete glifos con el rótulo de la activa ocupan ~475 px de
@@ -211,6 +276,17 @@ Y de la P2:
   mundo principal **no puede usar `api.`/`chrome.`/`browser.`** —no existen ahí—, si hay uno **todos** los
   guiones de contenido van a `document_start`, y todo `js` del manifiesto tiene que estar en `COMPILAR.md`,
   que es lo que Mozilla compara byte a byte.
+
+Y de la P3:
+
+- **Una llave creada en Esfinge y perdida es una cuenta perdida.** Es la consecuencia que ordena todo lo
+  demás, y por eso la exportación cifrada se hizo en la P1: cuando se pudiera crear la primera, ya tenía que
+  haber por dónde sacarla.
+- **Los sitios sin Touch ID empezarán a ofrecer llaves de acceso**, porque se les dice que este navegador
+  puede guardarlas. Es lo que se quería, y a la vez significa que la oferta aparecerá en equipos donde antes
+  no aparecía.
+- **Y hay un CBOR escrito a mano en el proyecto**, solo codificador. Un descodificador sería superficie de
+  ataque sobre bytes de fuera y no hace falta en ningún sitio.
 
 ## Verificación
 
@@ -302,3 +378,50 @@ síntoma original y no un fallo limpio.
   por Playwright.
 - Que **los antibot** de los sitios que usa no marcan el navegador. No se puede saber sin probarlo, y por eso
   el disfraz de `Function.prototype.toString` **no se ha puesto**.
+
+**Lo que se comprobó de la P3, y cómo**
+
+- **El ciclo entero en Go**: crear y luego **firmar con lo guardado**, verificando que la pública que fue al
+  sitio es la de esa llave. Sin esa segunda mitad, verificar la firma solo demostraría que ECDSA funciona.
+  Cinco mutaciones, las cinco rojas — incluida guardar una privada y mandar la pública de otra.
+- **Las cuatro puertas de antes de escribir**, cada una con su caso: el algoritmo, el `rpId`, el reto y las
+  excluidas. La del algoritmo casi se queda sin probar: quitarla del código **no hacía caer nada**, y la
+  mutación solo se ponía roja porque dejaba un `import` sin usar. Eso no es una prueba, es una casualidad
+  del compilador.
+- **Los bytes, cruzados**: el COSE, el `authenticatorData` con la credencial dentro y el objeto de
+  atestación, con casos elegidos por lo que puede divergir —una coordenada que empieza por cero, una corta,
+  un identificador de más de 255 bytes y un `rpId` con acentos—.
+- **Y el orden canónico de los mapas CBOR, que no estaba comprobado en ninguna parte.** Lo dijo una
+  mutación que pasó en verde: ninguno de los dos mapas reales distingue «ordenar por largo y luego por
+  bytes» de «solo por bytes», porque en el COSE todas las claves miden uno. Ahora hay una cruzada con
+  claves donde sí discrepa.
+- **Un vector fijo con las dos coordenadas cortas.** Diez llaves al azar **no cazan el relleno**: una
+  coordenada de P-256 empieza por cero una vez de cada 256, así que con veinte la rama se toca el 7 % de las
+  veces. Dejarlo al azar sería peor que no probarlo — una prueba que falla una de cada trece veces es un
+  intermitente. Es lo mismo que se hizo con el recorte de ceros del DER.
+- **Y el relleno estaba en dos sitios**, así que quitando uno el otro lo tapaba y ninguna de las dos líneas
+  estaba probada. Ahora rellenar es del formato y vive donde se escribe el formato.
+- **Cinco mutaciones del `shim`**, las cinco rojas: cambiar la bandera de crear por la de usar, atender sin
+  poder crear, quitar `getPublicKey`, decir siempre que hay autenticador y perder las excluidas.
+- **Con la extensión de verdad** (`pruebas-reales/con-cuenta.spec.ts`): crear, que esté en la bóveda, firmar
+  con ella, verla subir a la cuenta y que el banner de crear salga en una página.
+
+**Y la mutación que destapó el agujero de esa última**, que es la lección de método de la P3: guardando en
+la bóveda **una privada distinta de la que se le dice al sitio**, la prueba con la extensión de verdad
+seguía en verde. Comprueba que firmar funciona, no que el sitio pueda verificar esa firma — y en TypeScript
+no se puede verificar, porque WebCrypto solo hace P1363 y WebAuthn manda DER.
+
+Eso es una cuenta con una credencial registrada y sin ninguna forma de entrar. Se cerró por el único sitio
+donde se podía: una cruzada en la que **el núcleo de la extensión crea, guarda y firma, y Go verifica con la
+pública que fue al sitio**. La regla que deja: cuando un lado no puede comprobar su propio resultado, la
+comprobación no se omite — **se pasa al lado que sí puede**.
+
+**Lo que no se ha comprobado de la P3, y hay que verlo en su Mac**
+
+- **Crear una llave en GitHub de verdad** y volver a entrar con ella. Es lo que cierra la fase.
+- Que el banner de crear **se distingue** del diálogo del navegador y que su texto se entiende: dice que esa
+  llave será la forma de entrar en esa cuenta, y eso hay que leerlo en pantalla, no en un fichero.
+- Que los sitios **empiezan a ofrecer** llaves de acceso donde antes no lo hacían, que es la consecuencia
+  de decir que hay autenticador de plataforma.
+- Y **la exportación cifrada con llaves de verdad dentro**, que hasta ahora se ha probado con entradas
+  escritas por las pruebas.

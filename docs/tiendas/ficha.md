@@ -65,6 +65,7 @@ Qué hace:
 • Con varias cuentas del mismo sitio, eliges cuál en su panel.
 • Con cuenta, manda una copia de una contraseña a otra persona, cifrada para ella.
 • Entra con tus llaves de acceso: cuando un sitio pide una, te ofrece la tuya y basta con aceptar.
+• Y cuando un sitio te ofrece crear una llave de acceso, Esfinge la crea y la guarda en tu bóveda.
 
 Lo que tienes que saber:
 • Sin cuenta, necesita la aplicación Esfinge instalada en tu ordenador —para macOS, Windows o Linux, con
@@ -76,7 +77,8 @@ Lo que tienes que saber:
   persona no tiene cuenta, Webcafeína le manda una invitación con tu dirección dentro.
 • Para las llaves de acceso pone una pieza dentro de cada página https, que es la única forma de
   enterarse de cuándo un sitio pide una. La clave privada no sale nunca de tu bóveda: al sitio le
-  llega solo la firma. Se puede apagar en los Ajustes de la aplicación.
+  llega la firma al entrar y la parte pública al crear. Se puede apagar en los Ajustes de la
+  aplicación.
 • No lleva analítica ni servicios de terceros.
 • La primera vez que abras su panel te explica qué datos toca. Hasta que lo aceptas, no lee ninguna
   página.
@@ -106,7 +108,7 @@ Rellenar y guardar en el navegador las contraseñas de la bóveda de Esfinge: la
 instalada en el mismo ordenador o, con cuenta, la que la extensión sincroniza con el servidor de cuentas.
 Con cuenta, desde el panel se puede además mandar una copia de una contraseña de la bóveda a otra
 persona, cifrada para ella. Y cuando un sitio pide una llave de acceso, ofrecer la que está guardada en
-esa misma bóveda y firmar con ella.
+esa misma bóveda y firmar con ella, o crear una nueva y guardarla ahí.
 
 <!-- consola de Chrome: acaba -->
 
@@ -152,11 +154,14 @@ la 2.22.1:
 Para rellenar hay que encontrar el formulario de entrar en cualquier sitio donde la persona tenga
 una cuenta guardada, y para ofrecer guardar hay que leer lo que envía. Y para las llaves de acceso,
 un guion en el mundo principal (world: "MAIN"), que es la única forma de enterarse de que un sitio
-ha pedido una: sustituye navigator.credentials.get y .create, y cede al método original siempre que
-no tenga nada que ofrecer — cuando no hay ninguna llave guardada para ese sitio, en un marco de otro
-origen, con mediation: "conditional", ante cualquier forma de petición que no reconozca, o si algo
-falla. La clave privada de una llave nunca cruza a la página: la firma se hace donde está la bóveda
-y solo la firma ya hecha llega al sitio. La persona puede apagarlo en los Ajustes de la aplicación.
+ha pedido una, para entrar o para crearla: sustituye navigator.credentials.get y .create, y cede al
+método original siempre que no tenga nada que ofrecer — cuando no hay ninguna llave guardada para ese
+sitio, cuando las llaves están apagadas, en un marco de otro origen, con mediation: "conditional",
+ante cualquier forma de petición que no reconozca, o si algo falla. La clave privada de una llave
+nunca cruza a la página: se genera y se firma donde está la bóveda, y al sitio le llega la firma al
+entrar y la parte pública al crear. También se responde que este navegador puede guardar llaves de
+acceso, para que los sitios las ofrezcan en equipos sin lector de huella; con las llaves apagadas se
+deja de responder eso. La persona puede apagarlo en los Ajustes de la aplicación.
 Solo en https: nunca en http. Con cuenta, cubre también el servidor de cuentas,
 https://esfinge-cuentas.webcafeina.com.
 <!-- consola de Chrome: acaba -->

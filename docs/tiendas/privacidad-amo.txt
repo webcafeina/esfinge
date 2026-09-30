@@ -27,7 +27,7 @@ Para rellenar y guardar contraseñas, la extensión lee en las páginas https:
 
 - La dirección de la página, para saber de qué sitio son las cuentas.
 
-- Y cuándo un sitio pide una llave de acceso: el sitio para el que la pide y el dato al azar que manda para que se firme. Para eso, y solo para eso, Esfinge pone una pieza dentro de la página, no aislada de ella.
+- Y cuándo un sitio pide una llave de acceso, para entrar o para crear una: el sitio, el dato al azar que manda para que se firme y, al crear, el nombre de la cuenta que él propone. Para eso, y solo para eso, Esfinge pone una pieza dentro de la página, no aislada de ella.
 
 No lee el resto del contenido de las páginas, ni tu historial, ni tus marcadores.
 
@@ -36,6 +36,10 @@ Las llaves de acceso
 Si guardas llaves de acceso en Esfinge, la extensión se ofrece a poner la tuya cuando un sitio la pide. Para enterarse de que la pide tiene que mirar desde dentro de la página, y eso es distinto de todo lo demás que hace: el resto va aislado, donde la página no lo ve.
 
 La clave privada de una llave no sale nunca de tu bóveda. Cuando aceptas, la firma se hace donde está la bóveda —en la aplicación, o en el navegador si usas tu cuenta— y al sitio le llega solo la firma ya hecha, que es lo mismo que le llegaría de una llave guardada en tu sistema operativo. Nunca se manda a nadie más.
+
+Y cuando un sitio te ofrece crear una llave, Esfinge puede crearla. La clave se genera en tu ordenador, se guarda dentro de tu bóveda como cualquier otra entrada, y al sitio le llega solo la parte pública y un identificador — lo que necesita para reconocerte la próxima vez. Te lo pregunta antes de hacerlo. Ten en cuenta que entonces esa llave será tu forma de entrar en esa cuenta: se sincroniza con tus equipos si usas cuenta, y puedes sacarla de Esfinge con la exportación cifrada de llaves.
+
+Para que los sitios te ofrezcan crear llaves, Esfinge les responde que este navegador puede guardarlas, también cuando tu ordenador no tiene lector de huella ni reconocimiento facial: el que las guarda es Esfinge. Si apagas las llaves de acceso en los Ajustes de la aplicación, deja de responder eso.
 
 Si en ese sitio no tienes ninguna llave guardada, Esfinge no hace nada y el navegador pregunta como si no estuviera. Y para saber en qué sitios te la puede ofrecer con la bóveda cerrada, el navegador guarda solo la lista de dominios que tienen llave, mientras el navegador está abierto: ni cuentas, ni usuarios, ni claves.
 
