@@ -563,10 +563,32 @@ async function arrancar() {
 /** Que no empiece dos veces si el aviso se acepta mientras se comprobaba. */
 let empezado = false;
 
+/**
+ * **Este guion corre en `document_start`, y por eso hay dos mitades.**
+ *
+ * Antes corría en `document_idle`, con el documento ya montado, y todo esto podía
+ * ir de una vez. Se adelantó porque el guion del mundo principal —el de las llaves
+ * de acceso (ADR 0048)— **tiene que instalarse antes que el primer `<script>` de
+ * la página**, y le transfiere su puerto a este de aquí nada más arrancar: si este
+ * llegara tarde, el saludo se perdería y no habría puente.
+ *
+ * Lo que se adelanta es solo el guardián y el aviso de datos. Todo lo que mira el
+ * documento espera a que lo haya: en `document_start` el `<body>` **todavía no
+ * existe**, buscar formularios no encontraría ninguno —y gastaría una de las cinco
+ * preguntas por carga— y una tarjeta dibujada ahí saldría antes que la página.
+ */
 function empezar() {
   if (empezado) return;
   empezado = true;
 
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", conElDocumento, { once: true });
+  } else {
+    conElDocumento();
+  }
+}
+
+function conElDocumento() {
   atenderAlPanel();
   vigilarLoQueSeEnvia();
   mirar().catch(() => {});

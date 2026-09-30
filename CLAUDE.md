@@ -296,6 +296,14 @@ no le parece un error, así que devuelve los bytes anteriores como si nada y la 
 Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
 no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
 
+**`postMessage` no está en `Window.prototype`: es propiedad propia del objeto global, y se puede
+sustituir.** Capturarla del prototipo para tener «la de verdad» —que es lo que parecía obvio— devuelve
+`undefined` y revienta con «Cannot read properties of undefined». Lo dijo preguntárselo a un Chromium, no
+razonarlo. Es `writable` y `configurable`, así que la página **puede cambiarla**, y por eso el puente de las
+llaves de acceso la captura **al cargar el módulo**, que en el mundo principal es `document_start`: antes
+del primer `<script>` de la página. Esa es la mitad del porqué de `document_start`; la otra es que el saludo
+del puente se perdería si el mundo aislado arrancara tarde.
+
 **Una privada P-256 no se puede importar sabiendo solo el escalar.** WebCrypto exige `x` e `y` y no expone
 ninguna forma de multiplicar por el generador: `importKey("jwk", {kty:"EC", crv:"P-256", d})` contesta
 `DataError`. La ADR 0048 daba por hecho lo contrario —«la parte pública se recalcula»— y solo se vio al
