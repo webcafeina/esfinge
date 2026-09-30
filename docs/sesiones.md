@@ -72,8 +72,18 @@ Plantilla al final.
   ponyfill de GitHub no podía asignarlo encima y el registro moría **después** de crear y guardar la llave.
   El segundo estaba en **las dos** credenciales, así que entrar con la P2 habría fallado igual: llevaba una
   entrega entera esperando a que hubiera una llave con la que entrar.
-- **Queda abierto:** que el cliente pruebe la P3 esta tarde con la extensión de desarrollo —solo funciona con
-  cuenta—, y publicar la 2.34.0 cuando Chrome apruebe la 2.33.0 y deje editar la ficha —lo primero, entrar en GitHub de verdad—, y tres
+- **Y por la tarde la probó, y funcionó de punta a punta**: creó una llave en GitHub, cerró sesión y entró
+  con ella. Con eso está hecho lo que pidió el 2026-09-23. De esa prueba salieron tres cosas más: que **dos
+  llaves del mismo sitio y la misma cuenta se veían idénticas** —ahora llevan cuándo se crearon, con
+  segundos, porque las suyas se crearon en el mismo minuto—; que **crear guarda antes de entregar**, así que
+  un registro que falla deja una llave huérfana que nadie puede distinguir; y que **el shim sí se instala en
+  Firefox**, que era la incógnita reservada para la P4 — allí la 2.33.0 le rompió el inicio de sesión de
+  GitHub, y la causa que encaja es el `toJSON` ya arreglado.
+- **Publicada la 2.34.0**, y para eso hubo que estrenar el aplazamiento de la ficha de Chrome: la tienda no
+  deja editarla mientras revisa, pero tampoco admite el paquete nuevo, así que publicar era seguro y lo único
+  que lo bloqueaba era nuestro propio freno. Ahora se aplaza con motivo y **caduca a los siete días**.
+- **Queda abierto para mañana**, en este orden: Firefox con la 2.34.0, pegar los tres campos de Chrome,
+  entrar en GitHub desde el otro Mac, y la P4 —lo primero, entrar en GitHub de verdad—, y tres
   cosas nuevas en [`deuda.md`](deuda.md): que con cuenta y sin aplicación el interruptor no existe, que en el
   primer segundo de una página Esfinge cede la llave —deliberado: esperar agota la activación de usuario— y
   un intermitente de las pruebas de frenos del servidor, apuntado en vez de darlo por bueno.

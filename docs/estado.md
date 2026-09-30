@@ -69,11 +69,26 @@ no podía todavía, y ningún gestor las exporta en su CSV—. Está en la [ADR 
 con lo que trae: `create` atendido, el objeto de atestación, el COSE de la pública, el banner de crear y
 decirle al sitio que aquí hay un autenticador de plataforma.
 
-**La siguiente acción concreta es que el cliente pruebe la P3 en su Mac**, la tarde del 2026-09-30. Para
-eso **no hace falta esperar a nadie**: carga a mano la extensión de desarrollo, que está en
-`referencias/esfinge-extension-2.34.0-chrome-desarrollo.zip` y lleva la `key`, así que Esfinge la reconoce.
-**Solo funciona con cuenta**: en modo local el verbo `crear-llave` lo tendría que atender Go, y su aplicación
-es la 2.33.0, que no lo conoce —cede limpiamente, así que no rompe nada—.
+**La P3 está publicada en la 2.34.0 y probada en su Mac el 2026-09-30**: creó una llave de acceso en GitHub
+de verdad, cerró sesión y entró con ella. Con eso, lo que el cliente pidió el 2026-09-23 —«que salga un
+banner y sea darle a Aceptar»— está hecho de punta a punta.
+
+**Quedan cuatro cosas, y ése es el orden de mañana (2026-10-01):**
+
+1. **Firefox con la 2.34.0**, en cuanto Mozilla la apruebe (subida el 2026-09-30, versión 6528615). Cierra dos
+   cosas a la vez: el «Authentication failed» que el cliente vio con la 2.33.0 y **la incógnita que el plan
+   reservaba para la P4**, porque ahora se sabe que el shim **sí se instala** allí.
+2. **Los tres campos en la consola de Chrome**, cuando apruebe la 2.33.0. Están en
+   `referencias/chrome-2.34.0.md`, y al pegarlos se cierra con
+   `node navegador/herramientas/ficha-de-chrome.mjs --pegado`. **El aplazamiento caduca el 2026-10-07** y
+   entonces vuelve a parar la comprobación.
+3. **Entrar en GitHub desde el otro Mac** con la llave creada aquí. Es lo único de las llaves de acceso que
+   no ha tocado nadie: que se sincronice y sirva donde no se creó.
+4. **La P4**, que cierra la fase.
+
+**Y una cosa que no se arregla sola: el paquete de la 2.34.0 no está en Chrome.** No se subió porque la
+tienda estaba revisando la 2.33.0 —aviso, no fallo—, y **no llega solo cuando aprueben**: hace falta *otra*
+publicación. Lo natural es que la traiga la de la P4, sin inventarse una versión vacía para eso.
 
 **Ya lo intentó una vez y aparecieron dos fallos, los dos arreglados y comprometidos.** Los dos los cazó
 **la consola de la página** en cinco minutos, con mis pruebas en verde, y los dos tienen la misma forma:
@@ -97,7 +112,7 @@ prueba la 2.34.0 en su Firefox**, y eso cierra a la vez esa deuda y la incógnit
 de passkeys, que salga en la bóveda como sexta clase y —lo que de verdad cierra la fase— **cerrar sesión y
 volver a entrar con ella**, que ejercita el camino de firmar.
 
-**La 2.34.0 se publica igual, y no es un atajo.** Chrome no admite una versión nueva mientras revisa la
+**Por qué se publicó la 2.34.0 sin la ficha pegada, que no fue un atajo.** Chrome no admite una versión nueva mientras revisa la
 anterior, así que el paquete **ni se sube** —`tienda-chrome.mjs` lo da como aviso— y no hay ninguna
 posibilidad de que revise el paquete nuevo con la ficha vieja. Firefox y las descargas de GitHub sí la
 reciben. Lo que bloqueaba era la puerta de `ficha-de-chrome.mjs`, que ahora admite **aplazamiento con
