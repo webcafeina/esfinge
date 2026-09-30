@@ -62,10 +62,16 @@ había ninguna. Arreglado en `main`; sale con la P2.
 que `ficha.md`, y guardada como borrador sin enviar a revisión: la revisión empieza cuando suba el paquete.
 Desde ahora **olvidarse de pegarla para la comprobación** (`ficha-de-chrome.mjs`).
 
-**La siguiente acción concreta es publicar la P2** y que el cliente la vea en su Mac. Lo que hay que
-mirar ahí está al final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md), y lo primero es lo que él pidió
-con esas palabras: **entrar en GitHub y darle a Aceptar**. Con la versión sale además el arreglo de exportar
-llaves de la 2.32.1.
+**La P2 está publicada en la 2.33.0** y **en revisión en las dos tiendas**, con la ficha de Chrome
+enviada con ella. **La siguiente acción concreta es que el cliente la vea en su Mac.** Lo que hay que
+mirar ahí está al final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md) y en [`deuda.md`](deuda.md), y lo
+primero es lo que él pidió con esas palabras: **entrar en GitHub y darle a Aceptar**. Con la versión salió
+además el arreglo de exportar llaves.
+
+**Y la publicación se cayó una vez, por una prueba mía y no por el código:** la de las llaves en Ajustes
+daba por hecho el valor de fábrica de una preferencia que otra prueba apaga a propósito con un guardado a
+medias. Pasaba aquí y caía en los dos temas en GitHub, porque **qué lectura gana la carrera lo decide la
+velocidad de la máquina**. Está en `CLAUDE.md` con su síntoma, que no se parece a la causa.
 
 **Y dos cosas de la P2 que conviene saber antes de tocarla**, las dos aprendidas a golpes y escritas en la
 ADR: **el saludo del puente va en los dos sentidos** —en uno solo el shim no se instalaba y no había error

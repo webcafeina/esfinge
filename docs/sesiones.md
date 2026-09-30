@@ -45,7 +45,12 @@ Plantilla al final.
   casillas de uso de datos no tienen descripción, «Código remoto» pierde la explicación al contestar «no»,
   y la viñeta que faltaba. De ahí la regla: **solo se marca lo que tiene un campo donde pegarlo**, porque
   esta ficha describe una pantalla que desde aquí no se puede abrir.
-- **Queda abierto:** publicar la P2 y que el cliente la vea —lo primero, entrar en GitHub de verdad—, y tres
+- **Publicada la 2.33.0**, y a la segunda: la primera etiqueta se cayó en las comprobaciones por la prueba
+  nueva de las llaves en Ajustes —daba por hecho una preferencia que otra prueba apaga con un guardado a
+  medias, y qué lectura gana la carrera lo decide la velocidad de la máquina—. Como no había llegado a
+  publicarse nada, la etiqueta se movió al commit arreglado en vez de saltar a una 2.33.1. Las dos tiendas la
+  tienen en revisión, con la ficha de Chrome enviada con ella.
+- **Queda abierto:** que el cliente la vea —lo primero, entrar en GitHub de verdad—, y tres
   cosas nuevas en [`deuda.md`](deuda.md): que con cuenta y sin aplicación el interruptor no existe, que en el
   primer segundo de una página Esfinge cede la llave —deliberado: esperar agota la activación de usuario— y
   un intermitente de las pruebas de frenos del servidor, apuntado en vez de darlo por bueno.
