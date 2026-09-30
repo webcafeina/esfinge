@@ -1,6 +1,6 @@
 # Lo siguiente
 
-Última actualización: **2026-09-24**
+Última actualización: **2026-09-30**
 
 Por prioridad. Lo cerrado se tacha y se queda, con la fecha: saber qué se descartó vale tanto como
 saber qué se hizo.
@@ -38,6 +38,16 @@ saber qué se hizo.
 - **Traducción al inglés.** Hoy está todo en español, a propósito. Solo hace falta si el programa
   sale de la casa.
 - **Empaquetar para Homebrew** (`brew install --cask esfinge`), que exige una URL estable y firma.
+- **Compilar la aplicación para ARM64 en Windows y en Linux.** Hoy la ventana sale solo `amd64` en esos dos
+  —`darwin/universal` en macOS, así que el Mac ya va nativo—, mientras que **la línea de comandos sí cruza a
+  los seis objetivos**. Lo pidió el cliente el 2026-09-30 pensando en máquinas virtuales: en un M1 las VM
+  nativas son ARM64, y ahí **el `.deb` no instala** —declara `arch: amd64` y `dpkg` lo rechaza— aunque el
+  instalador de Windows x64 debería funcionar emulado, que Windows 11 on ARM lo hace. **No es urgente**: lo
+  eligió así, y para lo que queda por ver —el marco de Fluent, la cabecera de GNOME, el icono de los `.esf`—
+  la emulación no falsea el aspecto. Lo que costaría: **Linux ARM64** necesita un runner ARM, porque la app
+  usa cgo por WebKit y no cruza desde x86, más un `.deb` con `arch: arm64`; **Windows ARM64** hay que
+  **probarlo en el flujo de «Compilar» primero**, porque si Wails cruza a arm64 desde x64 no lo sé y es
+  justo la clase de cosa que aquí solo se descubre compilando de verdad.
 
 ## Cerrado
 
