@@ -65,8 +65,15 @@ Plantilla al final.
   **guardar una privada distinta de la que se le dice al sitio pasaba en verde** en la prueba con la
   extensión de verdad, porque en TypeScript no se puede verificar DER. Esa se cerró pasándole la
   verificación a Go.
-- **Queda abierto:** publicar la P3 —tres campos en la consola de Chrome— y que el cliente cree una llave en
-  GitHub de verdad —lo primero, entrar en GitHub de verdad—, y tres
+- **Y la probó, y encontró dos fallos que mis pruebas daban por buenos**, los dos con la misma forma —código
+  nuestro hablando con algo real que aquí no se puede ejecutar— y los dos cazados por **la consola de la
+  página** en cinco minutos: que `extensions` viene **vacío al entrar y lleno al crear**, así que el shim
+  cedía y salía el diálogo del navegador sin Esfinge; y que **`toJSON` estaba en solo lectura**, así que el
+  ponyfill de GitHub no podía asignarlo encima y el registro moría **después** de crear y guardar la llave.
+  El segundo estaba en **las dos** credenciales, así que entrar con la P2 habría fallado igual: llevaba una
+  entrega entera esperando a que hubiera una llave con la que entrar.
+- **Queda abierto:** que el cliente pruebe la P3 esta tarde con la extensión de desarrollo —solo funciona con
+  cuenta—, y publicar la 2.34.0 cuando Chrome apruebe la 2.33.0 y deje editar la ficha —lo primero, entrar en GitHub de verdad—, y tres
   cosas nuevas en [`deuda.md`](deuda.md): que con cuenta y sin aplicación el interruptor no existe, que en el
   primer segundo de una página Esfinge cede la llave —deliberado: esperar agota la activación de usuario— y
   un intermitente de las pruebas de frenos del servidor, apuntado en vez de darlo por bueno.

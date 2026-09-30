@@ -69,9 +69,27 @@ no podía todavía, y ningún gestor las exporta en su CSV—. Está en la [ADR 
 con lo que trae: `create` atendido, el objeto de atestación, el COSE de la pública, el banner de crear y
 decirle al sitio que aquí hay un autenticador de plataforma.
 
-**La siguiente acción concreta es que el cliente cree una llave de acceso en GitHub de verdad**, y para
-eso **no hace falta esperar a nadie**: puede cargar a mano la extensión de desarrollo con la P3, que está en
+**La siguiente acción concreta es que el cliente pruebe la P3 en su Mac**, la tarde del 2026-09-30. Para
+eso **no hace falta esperar a nadie**: carga a mano la extensión de desarrollo, que está en
 `referencias/esfinge-extension-2.34.0-chrome-desarrollo.zip` y lleva la `key`, así que Esfinge la reconoce.
+**Solo funciona con cuenta**: en modo local el verbo `crear-llave` lo tendría que atender Go, y su aplicación
+es la 2.33.0, que no lo conoce —cede limpiamente, así que no rompe nada—.
+
+**Ya lo intentó una vez y aparecieron dos fallos, los dos arreglados y comprometidos.** Los dos los cazó
+**la consola de la página** en cinco minutos, con mis pruebas en verde, y los dos tienen la misma forma:
+código nuestro hablando con algo real que aquí no se puede ejecutar.
+
+1. **`extensions` viene vacío al entrar y lleno al crear.** GitHub manda `appidExclude` y `credProps`, y la
+   regla era ceder con cualquier clave — escrita en la P2 con el diagnóstico de `get`, donde las manda
+   vacías. Salía el diálogo del navegador con Dashlane, el llavero de Apple y Chrome, **y sin Esfinge**.
+2. **`toJSON` estaba definido como solo lectura.** `@github/webauthn-json` lo **asigna** encima, así que
+   registrar la llave moría con «Cannot assign to read only property» **después** de haberla creado y
+   guardado. Estaba en **las dos** credenciales: entrar con la P2 habría fallado igual, y el fallo llevaba
+   una entrega entera esperando a que hubiera una llave con la que entrar.
+
+**Lo que falta por mirar cuando lo pruebe**, en este orden: que GitHub acepte la llave, que salga en su lista
+de passkeys, que salga en la bóveda como sexta clase y —lo que de verdad cierra la fase— **cerrar sesión y
+volver a entrar con ella**, que ejercita el camino de firmar.
 
 **Publicar la 2.34.0, en cambio, sí espera.** Chrome no deja editar la ficha mientras revisa una versión, y
 está revisando la 2.33.0; los tres campos que cambian están en `referencias/chrome-2.34.0.md`. Hasta que se
