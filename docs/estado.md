@@ -87,6 +87,12 @@ código nuestro hablando con algo real que aquí no se puede ejecutar.
    guardado. Estaba en **las dos** credenciales: entrar con la P2 habría fallado igual, y el fallo llevaba
    una entrega entera esperando a que hubiera una llave con la que entrar.
 
+**Y en Firefox el shim se instala**, que era la incógnita reservada para la P4: con la 2.33.0 de la tienda,
+GitHub contesta «Authentication failed» al entrar con la llave. La causa que encaja es el `toJSON` de solo
+lectura —GitHub usa el mismo ponyfill al entrar que al crear—, **arreglado en la 2.34.0**. Solo le puede
+pasar a él, porque sin llaves en la bóveda el shim cede y nadie más puede tener una todavía. **Mañana se
+prueba la 2.34.0 en su Firefox**, y eso cierra a la vez esa deuda y la incógnita de la P4.
+
 **Lo que falta por mirar cuando lo pruebe**, en este orden: que GitHub acepte la llave, que salga en su lista
 de passkeys, que salga en la bóveda como sexta clase y —lo que de verdad cierra la fase— **cerrar sesión y
 volver a entrar con ella**, que ejercita el camino de firmar.
