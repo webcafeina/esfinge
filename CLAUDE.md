@@ -296,6 +296,16 @@ no le parece un error, así que devuelve los bytes anteriores como si nada y la 
 Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
 no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
 
+**`addInitScript` envuelve el código en una función**, así que el `var` de un paquete `iife` inyectado así
+**no llega a `window`**. Con `addScriptTag` sí, y por eso el resto de las pruebas de la extensión no se
+topan con esto. Hace falta `addInitScript` cuando lo que se prueba es que algo llegue **antes que la
+página** —el guion del mundo principal—, y entonces el global se asigna a mano (`codigo + "\nwindow.X = X;"`).
+El síntoma es `undefined` y una prueba que dice que no se instaló nada por el motivo equivocado.
+
+**Y un doble no engaña a `Function.prototype.toString.call`.** Poner un `toString` propio en una función no
+sirve: `call` va al del prototipo y devuelve el fuente de verdad. Para que un doble parezca nativo hay que
+sustituir `Function.prototype.toString`, que además es lo que haría otro gestor de verdad.
+
 **`postMessage` no está en `Window.prototype`: es propiedad propia del objeto global, y se puede
 sustituir.** Capturarla del prototipo para tener «la de verdad» —que es lo que parecía obvio— devuelve
 `undefined` y revienta con «Cannot read properties of undefined». Lo dijo preguntárselo a un Chromium, no

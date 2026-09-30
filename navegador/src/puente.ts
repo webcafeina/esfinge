@@ -30,6 +30,20 @@
  *     mundo aislado. Un mensaje forjado, como mucho, saca un banner.
  */
 
+/**
+ * Lo que el mundo aislado le **empuja** al principal, sin que nadie pregunte.
+ *
+ * Es una sola cosa —«en este dominio hay algo que ofrecer»— y es lo que permite que
+ * el shim **ceda en la misma vuelta del bucle de eventos** en el 99 % de las
+ * páginas. Sin esto habría que preguntar, preguntar es esperar al trabajador, y
+ * esperar al trabajador puede agotar la activación de usuario que `create()`
+ * exige: o sea, romper el inicio de sesión de quien no usa Esfinge.
+ *
+ * **No dice cuáles ni cuántas**: un número o una lista serían contar por el puente
+ * lo que hay en la bóveda, y por ahí no pasa nada secreto.
+ */
+export type Aviso = { hay: boolean };
+
 /** Lo que identifica nuestro saludo entre todo el `postMessage` de una página. */
 export const MARCA = "esfinge:llaves:1";
 

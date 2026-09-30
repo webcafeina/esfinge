@@ -51,7 +51,8 @@ const fuentes = readdirSync(join(raiz, "src"), { recursive: true })
 
 // Se mira **el código, no los comentarios**: un ejemplo dentro de un comentario
 // no usa nada, y hacerlo fallar por eso enseña a desactivar la comprobación.
-const codigo = fuentes.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const sinComentarios = (t) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const codigo = sinComentarios(fuentes);
 
 const usadas = new Set();
 for (const [, api] of codigo.matchAll(/\bapi\.(\w+)\./g)) usadas.add(api);
@@ -131,6 +132,65 @@ for (const navegador of ["chrome", "firefox"]) {
         console.error(
           `manifiesto.${navegador}.json: el guion se pone en «${donde}» y eso no ` +
             `está en «host_permissions».`,
+        );
+        mal++;
+      }
+    }
+
+    // **Un guion del mundo principal no tiene `chrome` ni `browser`** (ADR 0048).
+    // Ahí las API de la extensión no existen, así que un `api.storage` o un
+    // `import { api }` compila, se publica y **revienta en la primera línea dentro
+    // de la página de otro**, sin que nadie se entere. Es el fallo mudo de
+    // `storage` otra vez, y en el peor sitio posible.
+    if (guion.world === "MAIN") {
+      for (const js of guion.js ?? []) {
+        const fuente = join(raiz, "src", js.replace(/\.js$/, ".ts"));
+        if (!existsSync(fuente)) continue;
+        const texto = sinComentarios(readFileSync(fuente, "utf8"));
+        const usa = /\b(?:api|chrome|browser)\.\w+/.exec(texto);
+        const importa = /from\s+["']\.\/api["']/.test(texto);
+        if (usa || importa) {
+          console.error(
+            `manifiesto.${navegador}.json: «${js}» corre en el mundo principal y ` +
+              `usa ${usa ? `«${usa[0]}»` : "«./api»"}.\n` +
+              `  Ahí no existe: revienta en la primera línea, dentro de la página de otro. ` +
+              `Todo lo que haga falta preguntar va por el puente.`,
+          );
+          mal++;
+        }
+      }
+    }
+  }
+
+  // **Con un guion en el mundo principal, todos van en `document_start`.** El del
+  // mundo principal transfiere su puerto nada más arrancar y el aislado tiene que
+  // estar oyendo: si llega más tarde, el saludo se pierde y no hay puente. Y eso no
+  // da error, da que las llaves de acceso no funcionan.
+  const guiones = manifiesto.content_scripts ?? [];
+  if (guiones.some((g) => g.world === "MAIN")) {
+    for (const g of guiones) {
+      if (g.run_at !== "document_start") {
+        console.error(
+          `manifiesto.${navegador}.json: «${(g.js ?? []).join(", ")}» va en ` +
+            `«${g.run_at ?? "document_idle"}», y con un guion en el mundo principal ` +
+            `todos tienen que ir en «document_start» o el puente no se establece.`,
+        );
+        mal++;
+      }
+    }
+  }
+
+  // **Y lo que el manifiesto nombra tiene que estar en `COMPILAR.md`.** Mozilla
+  // compila el fuente y lo **compara byte a byte**: un artefacto de más o de menos
+  // tumba la versión de Firefox, y eso se descubre al publicar.
+  const compilar = readFileSync(join(raiz, "COMPILAR.md"), "utf8");
+  for (const g of guiones) {
+    for (const js of g.js ?? []) {
+      if (!compilar.includes(js)) {
+        console.error(
+          `COMPILAR.md no nombra «${js}», que el manifiesto declara.\n` +
+            `  Mozilla compila el fuente y lo compara byte a byte: un fichero que no ` +
+            `esté ahí tumba la versión de Firefox.`,
         );
         mal++;
       }

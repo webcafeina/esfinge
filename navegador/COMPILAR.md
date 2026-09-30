@@ -36,14 +36,16 @@ NAVEGADOR=firefox VERSION={{VERSION}} pnpm run build
 ```
 
 El paquete queda en `navegador/dist/firefox/`: `manifest.json`, `fondo.js`, `pagina.js`,
-`panel.html`, `panel.js`, `panel.css` y `iconos/`. / *The package is written to
+`mundo.js`, `panel.html`, `panel.js`, `panel.css` y `iconos/`. / *The package is written to
 `navegador/dist/firefox/`.*
 
 ## Qué hay aquí / What is here
 
 - `navegador/`: la extensión. `src/` es el código en TypeScript; `vite.config.ts`,
-  `vite.fondo.config.ts` y `vite.pagina.config.ts` lo empaquetan en `panel.js`, `fondo.js`
-  y `pagina.js`. **No se ofusca**: Vite solo agrupa y minimiza.
+  `vite.fondo.config.ts`, `vite.pagina.config.ts` y `vite.mundo.config.ts` lo empaquetan en
+  `panel.js`, `fondo.js`, `pagina.js` y `mundo.js`. **No se ofusca**: Vite solo agrupa y
+  minimiza. / *Four separate bundles; `mundo.js` is the only one that runs in the page's own
+  world, and it only intercepts `navigator.credentials` for passkeys.*
 - `build/marca.svg` y `build/icono-barra.svg`: dibujos de la marca que la extensión incluye
   en línea.
 - `frontend/src/monograma.ts` y `frontend/src/tokens.css`: el cuadro con la inicial de cada

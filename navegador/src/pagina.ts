@@ -58,6 +58,7 @@ import { aceptado, alAceptar } from "./consentimiento";
 import { vigilarEnvios, vigilarIdentificador } from "./envios";
 import { cuentaParaRellenarSola } from "./identidad";
 import { avisar, ponerFilete } from "./marcas";
+import { atenderElPuente, type Aviso } from "./puente";
 import {
   VERSION_DEL_PROTOCOLO,
   type Forma,
@@ -580,6 +581,17 @@ let empezado = false;
 function empezar() {
   if (empezado) return;
   empezado = true;
+
+  // **El puente, ya**: el saludo del mundo principal llega en `document_start` y un
+  // oyente puesto después no lo ve. Si el aviso de datos se acepta con la página ya
+  // abierta, esto llega tarde y **esa carga se queda sin puente**, que es lo
+  // correcto: aceptar el aviso no debe instalar un shim en una página que ya está
+  // corriendo. En la siguiente ya estará.
+  atenderElPuente((puerto) => {
+    // Todavía no hay búsqueda de llaves: se dice que no hay nada, que es lo que hace
+    // que el shim ceda siempre. El sí llega con el banner.
+    puerto.postMessage({ hay: false } satisfies Aviso);
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", conElDocumento, { once: true });
