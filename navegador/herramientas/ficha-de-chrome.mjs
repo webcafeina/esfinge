@@ -22,6 +22,16 @@
 // Lo que **no** puede comprobar, y hay que decirlo: que lo pegado sea de verdad esto.
 // Sigue siendo palabra de quien pasa `--pegado`. Lo que consigue es que **haya que
 // decirlo**, en vez de olvidarse sin que nada pase.
+//
+// **Y hay un aplazamiento, porque el freno se trababa.** Chrome no deja editar la ficha
+// mientras revisa una versión, así que entre cambiar el texto y poder pegarlo pasan
+// días — y en ese hueco esto dejaba sin publicar **todo**, incluidos Firefox y las
+// descargas de GitHub, que no tienen nada que ver con esa ficha. Apareció el mismo día
+// de escribirlo.
+//
+// El aplazamiento **caduca**, y ahí está la diferencia con quitar el freno: esperar es
+// algo acotado y con motivo escrito, olvidarse sigue parando. Pasados los días, vuelve
+// a fallar solo.
 
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -61,30 +71,98 @@ function loQueSePega(texto) {
 const trozos = loQueSePega(readFileSync(FICHA, "utf8"));
 const huella = createHash("sha256").update(trozos.join("\n\n")).digest("hex").slice(0, 16);
 
+/** Cuánto vale un aplazamiento. Una revisión de Chrome tarda días, no semanas. */
+const DIAS_DE_APLAZAMIENTO = 7;
+
+const hoy = () => new Date().toISOString().slice(0, 10);
+
+/** Los días entre dos fechas `AAAA-MM-DD`, sin horas que compliquen nada. */
+function diasDesde(fecha) {
+  const d = Date.parse(fecha + "T00:00:00Z");
+  if (Number.isNaN(d)) return Infinity;
+  return Math.floor((Date.parse(hoy() + "T00:00:00Z") - d) / 86400000);
+}
+
 const CABECERA = `# Lo que hay pegado en la consola de la Chrome Web Store, y cuándo se pegó.
 #
 # La ficha de Chrome no la actualiza el flujo de publicación: su API sube el paquete y no
 # edita la ficha. Así que los bloques marcados de docs/tiendas/ficha.md se pegan a mano, y
 # esto es lo que hace que olvidarse pare algo en vez de pasar desapercibido.
 #
-# Tras pegarlos: node navegador/herramientas/ficha-de-chrome.mjs --pegado`;
+# Tras pegarlos: node navegador/herramientas/ficha-de-chrome.mjs --pegado
+#
+# Y si Chrome no deja editarla todavía —está revisando otra versión—, se aplaza con
+# motivo:  node navegador/herramientas/ficha-de-chrome.mjs --aplazado "por qué"
+# El aplazamiento caduca a los ${DIAS_DE_APLAZAMIENTO} días y entonces vuelve a parar.`;
 
 const escribir = () => {
-  const hoy = new Date().toISOString().slice(0, 10);
-  writeFileSync(ESTADO, `${CABECERA}\n\nhuella: ${huella}\nfecha: ${hoy}\n`);
-  console.log(`Apuntado: la ficha de Chrome está al día (${huella}, ${hoy}).`);
+  writeFileSync(ESTADO, `${CABECERA}\n\nhuella: ${huella}\nfecha: ${hoy()}\n`);
+  console.log(`Apuntado: la ficha de Chrome está al día (${huella}, ${hoy()}).`);
 };
+
+const aplazar = (porque) => {
+  const guardado = leer();
+  const pegada = /^huella: (\w+)$/m.exec(guardado)?.[1] ?? "";
+  const fechaPegada = /^fecha: ([\d-]+)$/m.exec(guardado)?.[1] ?? "";
+  writeFileSync(
+    ESTADO,
+    `${CABECERA}\n\nhuella: ${pegada}\nfecha: ${fechaPegada}\n` +
+      `pendiente: ${huella}\naplazado: ${hoy()}\nporque: ${porque}\n`,
+  );
+  console.log(
+    `Aplazado hasta ${DIAS_DE_APLAZAMIENTO} días: ${porque}\n` +
+      "La ficha de Chrome sigue sin pegar, y esto lo volverá a decir cada vez.",
+  );
+};
+
+function leer() {
+  try {
+    return readFileSync(ESTADO, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+const porque = (() => {
+  const i = process.argv.indexOf("--aplazado");
+  return i === -1 ? null : (process.argv[i + 1] ?? "").trim();
+})();
 
 if (process.argv.includes("--pegado")) {
   escribir();
-} else {
-  let guardado = "";
-  try {
-    guardado = readFileSync(ESTADO, "utf8");
-  } catch {
-    /* no está: se dirá abajo */
+} else if (porque !== null) {
+  if (!porque) {
+    console.error("Un aplazamiento sin motivo no vale: di por qué no se puede pegar todavía.");
+    process.exit(1);
   }
+  aplazar(porque);
+} else {
+  const guardado = leer();
   const puesta = /^huella: (\w+)$/m.exec(guardado)?.[1] ?? "";
+  const pendiente = /^pendiente: (\w+)$/m.exec(guardado)?.[1] ?? "";
+  const aplazado = /^aplazado: ([\d-]+)$/m.exec(guardado)?.[1] ?? "";
+  const razon = /^porque: (.+)$/m.exec(guardado)?.[1] ?? "";
+
+  // **Un aplazamiento vale mientras no caduque y siga siendo el mismo texto.** Si
+  // `ficha.md` vuelve a cambiar, la huella deja de cuadrar y esto para otra vez: lo
+  // aplazado era aquello, no lo que se escriba después.
+  if (puesta !== huella && pendiente === huella) {
+    const dias = diasDesde(aplazado);
+    if (dias <= DIAS_DE_APLAZAMIENTO) {
+      console.log(
+        `La ficha de Chrome está sin pegar, aplazado hace ${dias} ${dias === 1 ? "día" : "días"}: ${razon}\n` +
+          `  Caduca a los ${DIAS_DE_APLAZAMIENTO} y entonces esto vuelve a fallar.\n` +
+          "  Cuando se pegue: node navegador/herramientas/ficha-de-chrome.mjs --pegado",
+      );
+      process.exit(0);
+    }
+    console.error(
+      `El aplazamiento de la ficha de Chrome ha caducado: ${dias} días desde «${razon}».\n` +
+        "Si sigue sin poder pegarse, vuelve a aplazarlo diciendo por qué.",
+    );
+    process.exit(1);
+  }
+
   if (puesta !== huella) {
     console.error(
       "Lo que hay que pegar en la consola de Chrome ha cambiado y la ficha de la tienda sigue como estaba.\n" +

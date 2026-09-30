@@ -91,11 +91,15 @@ código nuestro hablando con algo real que aquí no se puede ejecutar.
 de passkeys, que salga en la bóveda como sexta clase y —lo que de verdad cierra la fase— **cerrar sesión y
 volver a entrar con ella**, que ejercita el camino de firmar.
 
-**Publicar la 2.34.0, en cambio, sí espera.** Chrome no deja editar la ficha mientras revisa una versión, y
-está revisando la 2.33.0; los tres campos que cambian están en `referencias/chrome-2.34.0.md`. Hasta que se
-peguen, `pnpm run comprobar` está **rojo a propósito** —lo para `ficha-de-chrome.mjs`—, y eso trae un
-interbloqueo que está apuntado en [`deuda.md`](deuda.md): con la puerta roja no se puede publicar nada, ni
-siquiera algo que no toque esa ficha. Lo que hay que
+**La 2.34.0 se publica igual, y no es un atajo.** Chrome no admite una versión nueva mientras revisa la
+anterior, así que el paquete **ni se sube** —`tienda-chrome.mjs` lo da como aviso— y no hay ninguna
+posibilidad de que revise el paquete nuevo con la ficha vieja. Firefox y las descargas de GitHub sí la
+reciben. Lo que bloqueaba era la puerta de `ficha-de-chrome.mjs`, que ahora admite **aplazamiento con
+caducidad** (`--aplazado "motivo"`, siete días): está aplazado con el motivo real, y lo dice en cada
+comprobación.
+
+**Lo que queda por hacer a mano:** cuando Chrome apruebe la 2.33.0, pegar los tres campos de
+`referencias/chrome-2.34.0.md` y cerrar con `node navegador/herramientas/ficha-de-chrome.mjs --pegado`. Lo que hay que
 mirar ahí está al final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md) y en [`deuda.md`](deuda.md), y lo
 primero es lo que él pidió con esas palabras: **entrar en GitHub y darle a Aceptar**. Con la versión salió
 además el arreglo de exportar llaves.
