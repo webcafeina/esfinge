@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -553,6 +554,48 @@ func (f fuenteDelNavegador) Llaves(origen, rpID string, permitidas []string) ([]
 		out = append(out, navegador.LlaveParaElBanner{ID: entera.ID, Nombre: nombre})
 	}
 	return out, nil
+}
+
+// DominiosConLlave son los dominios que tienen alguna llave de acceso usable.
+//
+// Es lo único de la bóveda que el navegador se queda, y para lo que se queda:
+// **saber, con la bóveda cerrada, si aquí merece la pena ofrecer abrirla**. Con la
+// bóveda cerrada no hay a quién preguntar, así que sin esta lista el banner no
+// podría salir nunca y la decisión del cliente —«sale y ofrece abrirla»— no se
+// cumpliría.
+//
+// Va el `rpId` tal cual y no su dominio registrable, que es lo que decía el plan.
+// Con el registrable, una llave de `accounts.google.com` haría salir el banner en
+// `mail.google.com`, donde no sirve: la regla de WebAuthn es más estrecha. No es
+// más información de la que se decidió guardar —sigue siendo un dominio, sin
+// secretos ni identificadores— y evita ofrecer lo que luego no se puede dar.
+//
+// **Con la bóveda cerrada devuelve nada, no la lista de antes**: aquí no se
+// recuerda nada entre aperturas. Quien recuerda es el navegador, y hasta que
+// cierre.
+func (f fuenteDelNavegador) DominiosConLlave() []string {
+	b := f.a.boveda()
+	if b == nil {
+		return nil
+	}
+	visto := map[string]bool{}
+	var out []string
+	for _, e := range b.Buscar("") {
+		if e.Tipo != boveda.TipoLlave || e.RPID == "" || visto[e.RPID] {
+			continue
+		}
+		// La entera, por la razón de siempre: `Buscar` pasa por `SinSecretos` y una
+		// entrada de tipo llave sin clave privada dentro no sirve para firmar, así que
+		// tampoco para ofrecerse.
+		entera, hay := b.Ver(e.ID)
+		if !hay || entera.ClavePrivada == "" {
+			continue
+		}
+		visto[e.RPID] = true
+		out = append(out, e.RPID)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // FirmarLlave firma una aserción con una llave de acceso.

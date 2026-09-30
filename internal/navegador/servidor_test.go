@@ -22,6 +22,7 @@ type bovedaFalsa struct {
 	portapapeles    string // lo que Esfinge ha copiado
 	escritas        int    // cuántas veces se ha escrito en la bóveda
 	ultimoOrigen    string // con qué origen llegó la última petición de llaves
+	vecesDominios   int    // cuántas veces se ha pedido la lista de dominios
 }
 
 func nuevaFalsa() *bovedaFalsa {
@@ -125,6 +126,13 @@ func (b *bovedaFalsa) Llaves(origen, rpID string, permitidas []string) ([]LlaveP
 		return nil, nil
 	}
 	return []LlaveParaElBanner{{ID: "l1", Nombre: "yo@ejemplo.com"}}, nil
+}
+
+// Cuenta las veces, que es lo único que distingue «no me han llamado» de «me han
+// llamado y no había nada».
+func (b *bovedaFalsa) DominiosConLlave() []string {
+	b.vecesDominios++
+	return []string{"ejemplo.com"}
 }
 
 func (b *bovedaFalsa) FirmarLlave(origen, rpID, id, reto string) (Afirmacion, error) {
@@ -711,6 +719,43 @@ func TestLasLlavesLleganConElOrigenDelNavegador(t *testing.T) {
 		Origen: "https://github.com/login", RPID: "github.com", ID: "l1", Reto: "cmV0bw", Testigo: "el-testigo"})
 	if !f.OK || f.Afirmacion == nil || f.Afirmacion.IDCredencial != "c1" {
 		t.Fatalf("no ha firmado: %+v", f)
+	}
+}
+
+// La lista de dominios viaja **solo en la pregunta de antes de que el sitio hable**
+// (ADR 0048).
+//
+// Es la que el guion de la página hace una vez al cargar, y la que le permite saber
+// con la bóveda cerrada si aquí hay algo. En la de firmar no tiene nada que hacer: el
+// sitio ya está dicho, y mandarla sería repetir la lista entera de la bóveda en cada
+// firma. Las dos mitades hacen falta, y por eso se miran las dos: quitar la
+// condición pone en rojo la segunda, y quitar la llamada, la primera.
+func TestLaListaDeDominiosSoloVaEnLaPreguntaDeAntes(t *testing.T) {
+	b := nuevaFalsa()
+	s := Servidor{fuente: b}
+
+	sin := s.Atender(Peticion{Version: VersionDelProtocolo, Que: QueLlaves,
+		Origen: "https://ejemplo.com/entrar", Testigo: "el-testigo"})
+	if !sin.OK {
+		t.Fatalf("no ha contestado: %+v", sin)
+	}
+	if len(sin.Dominios) != 1 || sin.Dominios[0] != "ejemplo.com" {
+		t.Errorf("sin rpId tienen que venir los dominios, y han venido %v", sin.Dominios)
+	}
+	if b.vecesDominios != 1 {
+		t.Errorf("la lista se ha pedido %d veces y tenía que pedirse una", b.vecesDominios)
+	}
+
+	con := s.Atender(Peticion{Version: VersionDelProtocolo, Que: QueLlaves,
+		Origen: "https://ejemplo.com/entrar", RPID: "ejemplo.com", Testigo: "el-testigo"})
+	if !con.OK {
+		t.Fatalf("no ha contestado: %+v", con)
+	}
+	if len(con.Dominios) != 0 {
+		t.Errorf("con rpId no tienen que venir los dominios, y han venido %v", con.Dominios)
+	}
+	if b.vecesDominios != 1 {
+		t.Errorf("la lista se ha pedido %d veces; con rpId no se pide", b.vecesDominios)
 	}
 }
 

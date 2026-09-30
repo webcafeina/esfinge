@@ -84,6 +84,16 @@ type Fuente interface {
 	// FirmarLlave firma una aserción con una de ellas. **Devuelve la firma, nunca
 	// la clave**: es la misma regla que el código de un solo uso.
 	FirmarLlave(origen, rpID, id, reto string) (Afirmacion, error)
+	// DominiosConLlave son los dominios registrables que tienen alguna llave de
+	// acceso, y **es lo único de la bóveda que el navegador guarda** (ADR 0048).
+	//
+	// Existe porque el banner tiene que poder salir con la bóveda cerrada, y con la
+	// bóveda cerrada no hay a quién preguntar: el navegador se queda esta lista
+	// mientras está abierta —en `storage.session`, que muere al cerrarlo— y con ella
+	// sabe si aquí merece la pena ofrecer abrirla. **Solo dominios, ningún secreto y
+	// ningún identificador**, y aun así relaja por escrito la regla de que en el
+	// navegador no se cachea nada de la bóveda: está dicho así en la ADR.
+	DominiosConLlave() []string
 }
 
 // Los topes de preguntas, que son **del canal y no de una conexión**.
@@ -437,6 +447,13 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 		l, err := s.fuente.Llaves(p.Origen, p.RPID, p.Permitidas)
 		if err != nil {
 			return mal(MotivoNoEncaja, err.Error())
+		}
+		// **La lista de dominios viaja solo cuando el sitio no ha pedido nada
+		// todavía**, que es la pregunta que el guion de la página hace una vez al
+		// cargar. Al firmar no se manda: ahí ya se sabe de qué sitio se habla, y
+		// repetirla sería mandar la lista entera de la bóveda en cada firma.
+		if p.RPID == "" {
+			return Respuesta{OK: true, Llaves: l, Dominios: s.fuente.DominiosConLlave()}
 		}
 		return Respuesta{OK: true, Llaves: l}
 

@@ -406,6 +406,92 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
     expect(await contrasenaRellenada("sitio.prueba")).toBe("clave-del-sitio");
   });
 
+  /**
+   * **El banner de la llave de acceso sale con la bóveda cerrada** (ADR 0048), que es
+   * lo que decidió el cliente y lo que no se puede probar en ninguna otra parte.
+   *
+   * Hacen falta las tres piezas juntas y de verdad: la llave dentro de la bóveda, la
+   * lista de dominios apuntada en `storage.session` mientras estaba abierta, y el
+   * shim del mundo principal preguntando en vez de ceder. Con la bóveda cerrada no hay
+   * a quién preguntar, así que **sin la lista el shim cedería** y saldría el diálogo
+   * del navegador: la decisión —«sale y ofrece abrirla»— quedaría escrita y no hecha.
+   *
+   * Lo que se mira es que aparezca el anfitrión del banner. **No se pulsa**: va en una
+   * sombra cerrada, y desde aquí no se llega a sus botones. Lo que se decide pulsando
+   * lo prueban `banner.spec.ts` y `mundo.spec.ts`; lo que esta prueba dice, y solo
+   * ella, es que las tres piezas están conectadas.
+   *
+   * Y deja la bóveda **abierta**, como se la encontró: esto es una serie.
+   */
+  test("con la bóveda cerrada, el banner de la llave sale igual", async () => {
+    const { crearLlave } = await import("../src/nucleo/llaves");
+    const { aBase64Url } = await import("../src/nucleo/afirmacion");
+    const par = await crearLlave();
+    await desdeElOtroEquipo(async (b) => {
+      await b.poner({
+        id: "",
+        tipo: "llave",
+        titulo: "Sitio de prueba",
+        rpId: "sitio.prueba",
+        idCredencial: "Y3JlZC1kZWwtc2l0aW8",
+        idUsuario: "dXN1YXJpbw",
+        nombreVisible: "yo@sitio.prueba",
+        algoritmo: -7,
+        clavePrivada: aBase64Url(par.privada),
+        creada: "",
+        cambiada: "",
+      } as Entrada);
+    });
+    const p = await panel();
+    await p.click("#sincronizar");
+    await expect(p.locator("#resultado")).toContainText("Sincronizada con tu cuenta.", { timeout: 20_000 });
+    await p.close();
+
+    // **Una visita con la bóveda abierta**, que es lo que apunta la lista. Sin esta
+    // vuelta no hay nada apuntado, y eso es justo lo que la ADR dice en voz alta:
+    // recién abierto el navegador, y hasta abrir la bóveda una vez, el banner no sale.
+    const abierta = await contexto.newPage();
+    await abierta.goto("https://sitio.prueba/entrar");
+    await expect
+      .poll(
+        () =>
+          contexto.serviceWorkers()[0].evaluate(
+            async () => ((await chrome.storage.session.get("dominios-con-llave"))["dominios-con-llave"] as string[]) ?? [],
+          ),
+        { timeout: 15_000 },
+      )
+      .toContain("sitio.prueba");
+    await abierta.close();
+
+    const cerrar = await panel();
+    await cerrar.click("#bloquear");
+    await expect(cerrar.locator("#cuenta-titulo")).toHaveText("Tu bóveda está cerrada");
+    await cerrar.close();
+
+    const sitio = await contexto.newPage();
+    await sitio.goto("https://sitio.prueba/entrar");
+    // **Sin esperar la promesa**: con el banner delante no se resuelve hasta que
+    // alguien decide, y aquí no se puede pulsar. Lo que se comprueba es que salga.
+    await sitio.evaluate(() => {
+      void navigator.credentials.get({
+        publicKey: {
+          challenge: new Uint8Array(32).fill(7),
+          rpId: "sitio.prueba",
+          userVerification: "discouraged",
+          allowCredentials: [],
+        },
+      });
+    });
+    await expect(sitio.locator("esfinge-llave")).toHaveCount(1, { timeout: 20_000 });
+    await sitio.close();
+
+    const abrir = await panel();
+    await abrir.fill("#cuenta-maestra", MAESTRA);
+    await abrir.click("#cuenta-enviar");
+    await expect(abrir.locator("#bloquear")).toBeVisible({ timeout: 20_000 });
+    await abrir.close();
+  });
+
   test("sin tocarla quince minutos, se cierra sola", async () => {
     // El reloj de la bóveda es la alarma de cada minuto. Se hace sonar ya, con la
     // última actividad de hace dieciséis minutos, desde el propio trabajador.

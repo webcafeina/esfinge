@@ -293,6 +293,10 @@ type Respuesta struct {
 	// Las llaves de acceso (ADR 0048).
 	Llaves     []LlaveParaElBanner `json:"llaves,omitempty"`
 	Afirmacion *Afirmacion         `json:"afirmacion,omitempty"`
+	// Dominios son los dominios registrables con llave, y **vuelven solo al
+	// preguntar por las llaves sin decir de qué sitio**. El navegador se los queda
+	// para saber, con la bóveda cerrada, si aquí merece la pena ofrecer abrirla.
+	Dominios []string `json:"dominios,omitempty"`
 	// Testigo solo vuelve al emparejar, y una sola vez.
 	Testigo string `json:"testigo,omitempty"`
 }

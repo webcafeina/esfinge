@@ -22,6 +22,15 @@
  *     que hay, ni cuándo. Un caché aquí sería la lista de sitios de la bóveda
  *     escrita en el perfil del navegador, sin cifrar, que es exactamente lo que
  *     Esfinge cifra en su disco.
+ *
+ *     **Con una excepción, y está decidida por escrito en la ADR 0048**: los
+ *     dominios que tienen llave de acceso. Van en `storage.session`, que muere al
+ *     cerrar el navegador y nunca llega al disco, y son solo dominios —ni cuentas,
+ *     ni usuarios, ni identificadores—. Hacen falta porque el banner de una llave
+ *     tiene que poder salir **con la bóveda cerrada**, y entonces no hay a quién
+ *     preguntar: sin la lista, la decisión del cliente —«sale y ofrece abrirla»— no
+ *     se puede cumplir. Es una relajación de esta regla y se dice así, no se
+ *     esconde detrás de la palabra «caché».
  */
 import { api } from "./api";
 import { aceptado, alAceptar } from "./consentimiento";
@@ -34,6 +43,7 @@ import {
   type PeticionDeCuenta,
 } from "./concuenta";
 import { hostDe, queMostrar, TEXTO_DE_INSIGNIA, type QueMostrar } from "./insignia";
+import { rpIdPermitido } from "./nucleo/llaves";
 import {
   sirvePara,
   vigente,
@@ -52,6 +62,47 @@ const HOST = "com.webcafeina.esfinge";
 
 /** Dónde se guarda el permiso. Es lo único que sobrevive a este trabajador. */
 const CLAVE_TESTIGO = "testigo";
+
+/**
+ * Dónde van los dominios con llave de acceso (ADR 0048).
+ *
+ * En `storage.session`, y eso es la mitad de la decisión: **sobrevive al autobloqueo
+ * de la bóveda y muere al cerrar el navegador**. Es el mismo sitio donde vive la
+ * clave de la bóveda abierta con cuenta, y donde nunca entra `storage.local`.
+ */
+const CLAVE_DOMINIOS = "dominios-con-llave";
+
+/**
+ * Apunta la lista cuando llega, y la usa cuando no hay a quién preguntar.
+ *
+ * Las dos mitades de lo mismo: con la bóveda abierta la respuesta es autoritativa y
+ * se guarda tal cual —**también vacía**, que si no borrar la última llave dejaría la
+ * lista de antes ofreciéndose para siempre—; con la bóveda cerrada se contesta
+ * `quizas`, que es lo que hace que el shim no ceda y salga el banner que ofrece
+ * abrirla.
+ *
+ * **Y `quizas` se calcula con `rpIdPermitido`, no comparando dominios**: una llave de
+ * `accounts.google.com` no sirve en `mail.google.com`, y ofrecer abrir la bóveda para
+ * algo que luego no se puede dar es un banner que estorba y no ayuda.
+ */
+async function llavesAlDia(p: Peticion, r: Respuesta): Promise<Respuesta> {
+  if (p.que !== "llaves") return r;
+  try {
+    if (r.ok && p.rpId === undefined) {
+      await api.storage.session.set({ [CLAVE_DOMINIOS]: r.dominios ?? [] });
+      return r;
+    }
+    if (!r.ok && r.motivo === "cerrada" && p.rpId === undefined && p.origen) {
+      const guardado = await api.storage.session.get(CLAVE_DOMINIOS);
+      const dominios = (guardado[CLAVE_DOMINIOS] as string[] | undefined) ?? [];
+      const origen = p.origen;
+      return { ...r, quizas: dominios.some((d) => rpIdPermitido(d, origen) === d) };
+    }
+  } catch {
+    // Sin `storage.session` no se ofrece nada, que es ceder: lo correcto ante la duda.
+  }
+  return r;
+}
 
 /**
  * hablar manda una petición y espera la respuesta.
@@ -664,6 +715,7 @@ api.runtime.onConnect.addListener((puerto) => {
         }
 
         pedir(p as Peticion, esPanel)
+          .then((r) => llavesAlDia(p as Peticion, r))
           .then((r) => {
             contestar(r);
             // **Al abrir el panel, el icono se pone al día con lo que el panel acaba de

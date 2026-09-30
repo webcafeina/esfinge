@@ -259,4 +259,37 @@ test("llaves: sin rpId salen las que este origen puede usar, incluida la del dom
   // ser el anfitrión o un sufijo suyo, no al revés.
   const desdeElDominio = await atender(p({ que: "llaves", origen: "https://ejemplo.com/" }), { existe: true, boveda });
   expect(desdeElDominio.llaves?.map((l) => l.nombre)).toEqual(["la del dominio"]);
+
+  // **Y la lista de dominios, que es otra cosa y por eso se mira aparte** (ADR 0048):
+  // no son las llaves de este sitio sino **todas**, porque lo que el navegador tiene
+  // que poder decir con la bóveda cerrada es «aquí hay algo» en cualquier sitio, no
+  // solo en el que estaba abierto cuando se apuntó. Un filtro por origen aquí la
+  // dejaría sirviendo únicamente para el sitio desde el que se preguntó.
+  expect(desdeElDominio.dominios).toEqual(["ejemplo.com", "login.ejemplo.com", "otro.com"]);
+
+  // Y al preguntar por un sitio concreto no viaja: ahí ya se sabe de qué se habla, y
+  // repetirla sería mandar la lista entera de la bóveda en cada firma.
+  const alFirmar = await atender(p({ que: "llaves", origen: "https://ejemplo.com/", rpId: "ejemplo.com" }), {
+    existe: true,
+    boveda,
+  });
+  expect(alFirmar.dominios).toBeUndefined();
+});
+
+/**
+ * **Una llave sin clave privada dentro no cuenta**, ni para ofrecerse ni para la
+ * lista. No es un caso inventado: es lo que `sinSecretos` deja al cruzar una entrada
+ * hacia el panel, y una bóveda traída de otra versión puede tener la clase sin el
+ * campo. Ofrecerse con ella sería sacar un banner que no puede firmar nada.
+ */
+test("llaves: una llave sin clave privada no sale ni en la lista de dominios", async () => {
+  const { boveda } = await Boveda.crear(MAESTRA);
+  await boveda.poner({
+    id: "", tipo: "llave", titulo: "media llave", rpId: "vacia.com", idCredencial: "c-vacia",
+    nombreVisible: "media llave", algoritmo: -7, clavePrivada: "", creada: "", cambiada: "",
+  } as Entrada);
+
+  const r = await atender(p({ que: "llaves", origen: "https://vacia.com/" }), { existe: true, boveda });
+  expect(r.llaves).toEqual([]);
+  expect(r.dominios).toEqual([]);
 });

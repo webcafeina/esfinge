@@ -178,6 +178,22 @@ export type Respuesta = {
   llaves?: LlaveParaElBanner[];
   /** Lo que sale de firmar con una de ellas. */
   afirmacion?: Afirmacion;
+  /**
+   * Los dominios que tienen llave, **solo al preguntar sin decir de qué sitio**.
+   *
+   * Es lo único de la bóveda que el navegador guarda —en `storage.session`, que
+   * muere al cerrarlo—, y es lo que permite que el banner salga con la bóveda
+   * cerrada, cuando no hay a quién preguntar (ADR 0048).
+   */
+  dominios?: string[];
+  /**
+   * «Aquí hay llave, pero la bóveda está cerrada.»
+   *
+   * Lo pone **el trabajador de fondo**, no la bóveda: viene de la lista de arriba y
+   * es lo que hace que el shim no ceda y salga el banner que ofrece abrirla. Va con
+   * `ok: false` y `motivo: "cerrada"`.
+   */
+  quizas?: boolean;
 };
 
 export type Motivo =

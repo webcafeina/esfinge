@@ -630,7 +630,12 @@ function atenderLasLlaves(puerto: MessagePort) {
   const avisar = async () => {
     try {
       const r = await pedir({ que: "llaves" });
-      puerto.postMessage({ hay: (r.llaves ?? []).length > 0 } satisfies Aviso);
+      // **Con la bóveda cerrada también hay algo que ofrecer**, y eso es `quizas`: lo
+      // pone el trabajador desde la lista de dominios, porque cerrada no hay a quién
+      // preguntar. Sin esta rama el shim cedería antes de preguntar y el banner que
+      // ofrece abrir la bóveda no podría salir nunca.
+      const hay = r.ok ? (r.llaves ?? []).length > 0 : r.quizas === true;
+      puerto.postMessage({ hay } satisfies Aviso);
     } catch {
       // Ante la duda, que ceda: es lo que ya vale por defecto al otro lado.
       puerto.postMessage({ hay: false } satisfies Aviso);

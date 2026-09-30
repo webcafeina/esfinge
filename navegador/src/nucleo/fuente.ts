@@ -135,13 +135,21 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
         // en `login.ejemplo.com`. Preguntando por el anfitrión a secas esa llave no
         // saldría nunca.
         if (p.rpId === undefined) {
-          const usables = b
+          const conLlave = b
             .buscar("")
-            .filter((x) => x.tipo === "llave" && rpIdPermitido(x.rpId, p.origen ?? "") === x.rpId)
+            .filter((x) => x.tipo === "llave")
             .map((x) => b.ver(x.id))
             .filter((x): x is Entrada => Boolean(x))
-            .filter((x) => Boolean(x.clavePrivada));
-          return { ok: true, llaves: usables.map((x) => ({ id: x.id, nombre: x.nombreVisible || x.titulo })) };
+            .filter((x) => Boolean(x.clavePrivada) && Boolean(x.rpId));
+          const usables = conLlave.filter((x) => rpIdPermitido(x.rpId ?? "", p.origen ?? "") === x.rpId);
+          // **Y con ello la lista de dominios, solo aquí** (ADR 0048): es lo único de
+          // la bóveda que el navegador se queda, para que el banner pueda salir con la
+          // bóveda cerrada. En la pregunta de firmar no va: el sitio ya está dicho.
+          return {
+            ok: true,
+            llaves: usables.map((x) => ({ id: x.id, nombre: x.nombreVisible || x.titulo })),
+            dominios: [...new Set(conLlave.map((x) => x.rpId as string))].sort(),
+          };
         }
         const rp = rpIdPermitido(p.rpId, p.origen ?? "");
         if (!rp) return mal("no-encaja", "Ese sitio no puede pedir esa llave de acceso");
