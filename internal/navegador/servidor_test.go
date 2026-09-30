@@ -6,6 +6,7 @@ import (
 	"net"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -20,6 +21,7 @@ type bovedaFalsa struct {
 	pedidos         int    // cuántas veces se ha preguntado por un secreto
 	portapapeles    string // lo que Esfinge ha copiado
 	escritas        int    // cuántas veces se ha escrito en la bóveda
+	ultimoOrigen    string // con qué origen llegó la última petición de llaves
 }
 
 func nuevaFalsa() *bovedaFalsa {
@@ -108,6 +110,29 @@ func (b *bovedaFalsa) ActualizarCuenta(id, dominio string, e Envio) (Cuenta, err
 func (b *bovedaFalsa) NuncaAqui(dominio string) error {
 	b.escritas++
 	return nil
+}
+
+// Las llaves de acceso (ADR 0048). El doble guarda **una sola**, y lo que
+// comprueban las pruebas de aquí es el camino del servidor: que el verbo llega con
+// el origen que puso el navegador. Quién puede firmar por quién lo decide
+// `RPIDPermitido`, y eso tiene su propia tabla en `llaves_test.go`.
+func (b *bovedaFalsa) Llaves(origen, rpID string, permitidas []string) ([]LlaveParaElBanner, error) {
+	b.ultimoOrigen = origen
+	if rpID != "" && RPIDPermitido(rpID, origen) == "" {
+		return nil, errors.New("Ese sitio no puede pedir esa llave de acceso")
+	}
+	if len(permitidas) > 0 && permitidas[0] != "c1" {
+		return nil, nil
+	}
+	return []LlaveParaElBanner{{ID: "l1", Nombre: "yo@ejemplo.com"}}, nil
+}
+
+func (b *bovedaFalsa) FirmarLlave(origen, rpID, id, reto string) (Afirmacion, error) {
+	b.ultimoOrigen = origen
+	if RPIDPermitido(rpID, origen) == "" || id != "l1" {
+		return Afirmacion{}, errors.New("Esa llave no es de este sitio")
+	}
+	return Afirmacion{IDCredencial: "c1", DatosDelCliente: reto, DatosDelAutenticador: "a", Firma: "f"}, nil
 }
 
 func (b *bovedaFalsa) Emparejar(string) (string, error) {
@@ -637,5 +662,64 @@ func TestActualizarSoloDesdeSuSitio(t *testing.T) {
 	r = pedir(s, Peticion{Que: QueGuardarCuenta, Testigo: "el-testigo", Origen: "http://banco.es", Secreto: "x"})
 	if r.OK || r.Motivo != MotivoOrigenInvalido || b.escritas != 0 {
 		t.Errorf("ha guardado sobre http: %+v", r)
+	}
+}
+
+// **Las llaves de acceso no pasan por el dominio registrable** (ADR 0048), y eso es
+// lo que hay que ver aquí: todo lo demás del canal compara dominio contra dominio
+// —`mail.google.com` y `accounts.google.com` son «el mismo sitio»—, y para firmar
+// eso es demasiado ancho. Lo decide `RPIDPermitido` con **el origen que puso el
+// navegador**, que es el que llega hasta la fuente sin tocar.
+func TestLasLlavesLleganConElOrigenDelNavegador(t *testing.T) {
+	b := nuevaFalsa()
+	s := Servidor{fuente: b}
+
+	r := s.Atender(Peticion{Version: VersionDelProtocolo, Que: QueLlaves,
+		Origen: "https://github.com/login", RPID: "github.com", Testigo: "el-testigo"})
+	if !r.OK || len(r.Llaves) != 1 {
+		t.Fatalf("no ha contestado con la llave: %+v", r)
+	}
+	if b.ultimoOrigen != "https://github.com/login" {
+		t.Errorf("a la fuente le ha llegado el origen %q, y tiene que llegar entero", b.ultimoOrigen)
+	}
+	// **Y lo que sale es lo que se enseña, y nada más.** Ni el identificador de
+	// credencial ni el de usuario: no hacen falta para elegir.
+	if r.Llaves[0].ID == "" || r.Llaves[0].Nombre == "" {
+		t.Errorf("la llave sale sin nada por lo que reconocerla: %+v", r.Llaves[0])
+	}
+
+	// Un sitio pidiendo la llave de otro no pasa, ni para listar ni para firmar.
+	for _, c := range []struct{ origen, rpID string }{
+		{"https://malo.com/", "github.com"},
+		{"https://github.com.malo.com/", "github.com"},
+		{"https://malogithub.com/", "github.com"},
+	} {
+		listar := s.Atender(Peticion{Version: VersionDelProtocolo, Que: QueLlaves,
+			Origen: c.origen, RPID: c.rpID, Testigo: "el-testigo"})
+		if listar.OK {
+			t.Errorf("listar desde %q pidiendo %q ha contestado que sí", c.origen, c.rpID)
+		}
+		firmar := s.Atender(Peticion{Version: VersionDelProtocolo, Que: QueFirmarLlave,
+			Origen: c.origen, RPID: c.rpID, ID: "l1", Reto: "AAAA", Testigo: "el-testigo"})
+		if firmar.OK {
+			t.Errorf("firmar desde %q pidiendo %q ha contestado que sí", c.origen, c.rpID)
+		}
+	}
+
+	// Y firmar contesta la afirmación, **sin nada de la clave dentro**.
+	f := s.Atender(Peticion{Version: VersionDelProtocolo, Que: QueFirmarLlave,
+		Origen: "https://github.com/login", RPID: "github.com", ID: "l1", Reto: "cmV0bw", Testigo: "el-testigo"})
+	if !f.OK || f.Afirmacion == nil || f.Afirmacion.IDCredencial != "c1" {
+		t.Fatalf("no ha firmado: %+v", f)
+	}
+}
+
+// **Y están en la lista blanca**, que es lo que hace que añadir un verbo sea una
+// decisión y no el efecto de haber escrito un `case` más.
+func TestLosVerbosDeLasLlavesEstanEnLaLista(t *testing.T) {
+	for _, q := range []string{QueLlaves, QueFirmarLlave} {
+		if !slices.Contains(LoQueSePuedePedir, q) {
+			t.Errorf("%q se atiende y no está en LoQueSePuedePedir", q)
+		}
 	}
 }

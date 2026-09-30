@@ -333,6 +333,13 @@ de cada 256: eso lleva vectores fijos aparte, y se comprobó mutándolo. La asim
 «firmar aquí y verificar allí» no se puede probar sin escribir un descodificador de DER que no hace falta en
 ningún sitio, así que **no se prueba y se dice por qué**.
 
+**Y el origen que va dentro del `clientDataJSON` no es pegar esquema y anfitrión.** Con el puerto por
+defecto escrito a mano —`https://github.com:443/`— eso da `https://github.com:443` y el navegador y el
+sitio dicen `https://github.com`: cuatro caracteres de diferencia y la firma se rechaza **sin decir por
+qué**. En la extensión lo escribe `new URL(x).origin`; en Go, `OrigenDe`, que además tiene que **devolver
+los corchetes de una IPv6** porque `Hostname()` se los come. Las dos cosas las cazó la prueba cruzada de
+tabla, no la lectura.
+
 **`Encaja` no vale para decidir con qué `rpId` se firma una llave de acceso** (ADR 0048), por mucho que se
 le parezca. `Encaja` compara **dominio registrable contra dominio registrable**, y por eso
 `accounts.google.com` y `mail.google.com` son «el mismo sitio»: es lo que se quiere para ofrecer una

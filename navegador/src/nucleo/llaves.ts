@@ -62,6 +62,24 @@ export function rpIdPermitido(rpId: string | undefined, origen: string): string 
 }
 
 /**
+ * El origen **como lo escribe el navegador**, que es lo que el sitio compara.
+ *
+ * Es `new URL(x).origin` y no pegar esquema y anfitrión: con el puerto por defecto
+ * escrito a mano —`https://github.com:443/`— pegarlo daría `https://github.com:443`
+ * y el sitio dice `https://github.com`. Cuatro caracteres de diferencia dentro del
+ * `clientDataJSON` y la firma se rechaza sin decir por qué. Go tiene su pareja,
+ * `OrigenDe`, y una prueba cruzada de tabla.
+ */
+export function origenDe(origen: string): string {
+  try {
+    const u = new URL(origen.trim());
+    return u.origin === "null" ? "" : u.origin;
+  } catch {
+    return "";
+  }
+}
+
+/**
  * La firma en formato DER, que es lo que WebAuthn exige.
  *
  * WebCrypto firma en **P1363** —`r ‖ s` crudos, 64 bytes en P-256— y el sitio

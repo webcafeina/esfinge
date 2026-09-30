@@ -498,6 +498,109 @@ func (f fuenteDelNavegador) NuncaAqui(dominio string) error {
 	return nil
 }
 
+// Llaves son las llaves de acceso que se pueden usar en ese origen (ADR 0048).
+//
+// **Aquí no se usa `leEncaja` ni el dominio registrable**, y ésa es toda la
+// diferencia con el resto de este fichero: para ofrecer una contraseña vale que
+// dos subdominios sean «el mismo sitio», y para firmar no. Manda `RPIDPermitido`,
+// que es el anfitrión o un sufijo suyo separado por punto, y nunca un sufijo
+// público.
+func (f fuenteDelNavegador) Llaves(origen, rpID string, permitidas []string) ([]navegador.LlaveParaElBanner, error) {
+	b := f.a.boveda()
+	if b == nil {
+		return nil, boveda.ErrCerrada
+	}
+	// Con `rpID` dado hay que comprobarlo; sin él, se contesta lo que este origen
+	// podría usar, que es la pregunta de antes de que el sitio hable.
+	pedido := ""
+	if rpID != "" {
+		pedido = navegador.RPIDPermitido(rpID, origen)
+		if pedido == "" {
+			return nil, errors.New("Ese sitio no puede pedir esa llave de acceso")
+		}
+	}
+	quiere := map[string]bool{}
+	for _, c := range permitidas {
+		quiere[c] = true
+	}
+
+	var out []navegador.LlaveParaElBanner
+	for _, e := range b.Buscar("") {
+		if e.Tipo != boveda.TipoLlave {
+			continue
+		}
+		if pedido != "" {
+			if e.RPID != pedido {
+				continue
+			}
+		} else if navegador.RPIDPermitido(e.RPID, origen) != e.RPID {
+			continue
+		}
+		// **`Buscar` devuelve las entradas pasadas por `SinSecretos`**, que vacía la
+		// clave privada y el identificador de credencial — que es justo por lo que hay
+		// que filtrar. Se mira la entera, como manda la regla de siempre.
+		entera, hay := b.Ver(e.ID)
+		if !hay || entera.ClavePrivada == "" {
+			continue
+		}
+		if len(quiere) > 0 && !quiere[entera.IDCredencial] {
+			continue
+		}
+		nombre := entera.NombreVisible
+		if nombre == "" {
+			nombre = entera.Titulo
+		}
+		out = append(out, navegador.LlaveParaElBanner{ID: entera.ID, Nombre: nombre})
+	}
+	return out, nil
+}
+
+// FirmarLlave firma una aserción con una llave de acceso.
+//
+// **El origen lo construye este lado**, del que puso el navegador, y jamás el que
+// mande la página: es lo que va dentro del `clientDataJSON` y lo que el sitio
+// compara byte a byte.
+func (f fuenteDelNavegador) FirmarLlave(origen, rpID, id, reto string) (navegador.Afirmacion, error) {
+	b := f.a.boveda()
+	if b == nil {
+		return navegador.Afirmacion{}, boveda.ErrCerrada
+	}
+	pedido := navegador.RPIDPermitido(rpID, origen)
+	if pedido == "" {
+		return navegador.Afirmacion{}, errors.New("Ese sitio no puede pedir esa llave de acceso")
+	}
+	e, hay := b.Ver(id)
+	if !hay || e.Papelera || e.Tipo != boveda.TipoLlave || e.RPID != pedido || e.ClavePrivada == "" {
+		return navegador.Afirmacion{}, errors.New("Esa llave no es de este sitio")
+	}
+	privada, err := navegador.B64URL.DecodeString(e.ClavePrivada)
+	if err != nil {
+		return navegador.Afirmacion{}, errors.New("Esa llave está guardada de una forma que Esfinge no entiende")
+	}
+	desafio, err := navegador.B64URL.DecodeString(reto)
+	if err != nil {
+		return navegador.Afirmacion{}, errors.New("El reto de ese sitio no se entiende")
+	}
+	suyo := navegador.OrigenDe(origen)
+	if suyo == "" {
+		return navegador.Afirmacion{}, errors.New("Esa dirección no vale")
+	}
+
+	cliente := navegador.DatosDelCliente("webauthn.get", desafio, suyo)
+	autenticador := navegador.DatosDelAutenticador(pedido, navegador.BanderasAlFirmar)
+	firma, err := navegador.FirmarConLlave(privada, navegador.LoQueSeFirma(autenticador, cliente))
+	if err != nil {
+		return navegador.Afirmacion{}, err
+	}
+	return navegador.Afirmacion{
+		IDCredencial:         e.IDCredencial,
+		IDUsuario:            e.IDUsuario,
+		DatosDelCliente:      navegador.B64URL.EncodeToString(cliente),
+		DatosDelAutenticador: navegador.B64URL.EncodeToString(autenticador),
+		Firma:                navegador.B64URL.EncodeToString(firma),
+	}, nil
+}
+
 // bovedaParaEscribir es la bóveda abierta **y en la que se puede escribir**. Una
 // bóveda de una versión más nueva de Esfinge se abre en solo lectura, y ahí el
 // navegador no escribe.

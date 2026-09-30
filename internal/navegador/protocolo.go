@@ -102,6 +102,16 @@ const (
 	// así que el proceso se relanza decenas de veces por sesión: un saludo caro
 	// —una derivación, un diálogo— se pagaría todo el rato.
 	QueEmparejar = "emparejar"
+	// QueLlaves dice qué llaves de acceso hay para un sitio (ADR 0048).
+	//
+	// **Sin `RPID` contesta lo que ese origen podría usar**, que es otra pregunta y
+	// hace falta: para saber si Esfinge se ofrece hay que mirar antes de que el
+	// sitio diga nada, y una llave guardada como `ejemplo.com` sirve en
+	// `login.ejemplo.com`.
+	QueLlaves = "llaves"
+	// QueFirmarLlave firma una aserción. **Lo que sale es la firma, nunca la clave**,
+	// igual que `copiar-codigo` saca el código y jamás la semilla.
+	QueFirmarLlave = "firmar-llave"
 )
 
 // LoQueSePuedePedir es la lista, en un sitio, para que añadir algo sea una
@@ -110,6 +120,7 @@ var LoQueSePuedePedir = []string{
 	QueEstado, QueEmparejar, QueCuentas, QueCopiarSecreto, QueCopiarCodigo,
 	QueRellenar, QueRellenarCodigo,
 	QueOfrecer, QueGuardarCuenta, QueActualizarCuenta, QueNuncaAqui,
+	QueLlaves, QueFirmarLlave,
 }
 
 // VersionDelProtocolo la manda la extensión en cada petición.
@@ -143,6 +154,35 @@ type Peticion struct {
 	Secreto string `json:"secreto,omitempty"`
 	Titulo  string `json:"titulo,omitempty"`
 	Forma   string `json:"forma,omitempty"`
+
+	// Las llaves de acceso (ADR 0048). **Nada de esto es secreto**: el `rpId` lo
+	// dice el sitio, y el reto y los identificadores de credencial los acaba de
+	// mandar él. El `rpId` **no decide nada**: se comprueba contra el origen.
+	RPID string `json:"rpId,omitempty"`
+	// Permitidas son los identificadores de `allowCredentials`, en base64url.
+	Permitidas []string `json:"permitidas,omitempty"`
+	// Reto es el desafío del sitio, en base64url.
+	Reto string `json:"reto,omitempty"`
+}
+
+// LlaveParaElBanner es una llave de acceso **tal como se enseña**: sin nada de
+// dentro. Ni el identificador de credencial ni el de usuario, que no hacen falta
+// para elegir.
+type LlaveParaElBanner struct {
+	// ID es el de la entrada en la bóveda, no el de la credencial.
+	ID string `json:"id"`
+	// Nombre es la cuenta a la que corresponde, que es lo que se lee.
+	Nombre string `json:"nombre"`
+}
+
+// Afirmacion es lo que sale de firmar, y **lo único que sale**. Todo en base64url,
+// y son los bytes exactos que se han hasheado: el sitio los compara byte a byte.
+type Afirmacion struct {
+	IDCredencial         string `json:"idCredencial"`
+	IDUsuario            string `json:"idUsuario,omitempty"`
+	DatosDelCliente      string `json:"datosDelCliente"`
+	DatosDelAutenticador string `json:"datosDelAutenticador"`
+	Firma                string `json:"firma"`
 }
 
 // Envio es lo que se sabe de un formulario que se acaba de enviar.
@@ -250,6 +290,9 @@ type Respuesta struct {
 	Oferta   *Oferta             `json:"oferta,omitempty"`
 	Guardada *Cuenta             `json:"guardada,omitempty"`
 	Codigo   *CodigoParaRellenar `json:"codigo,omitempty"`
+	// Las llaves de acceso (ADR 0048).
+	Llaves     []LlaveParaElBanner `json:"llaves,omitempty"`
+	Afirmacion *Afirmacion         `json:"afirmacion,omitempty"`
 	// Testigo solo vuelve al emparejar, y una sola vez.
 	Testigo string `json:"testigo,omitempty"`
 }

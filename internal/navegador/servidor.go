@@ -76,6 +76,14 @@ type Fuente interface {
 	Emparejar(quien string) (string, error)
 	// Emparejado dice si ese testigo es uno de los que se dieron.
 	Emparejado(testigo string) bool
+
+	// Llaves son las llaves de acceso que se pueden usar en ese origen (ADR 0048).
+	// **Con `rpID` vacío, todas las que ese origen podría usar**, que es lo que
+	// decide si Esfinge se ofrece antes de que el sitio diga nada.
+	Llaves(origen, rpID string, permitidas []string) ([]LlaveParaElBanner, error)
+	// FirmarLlave firma una aserción con una de ellas. **Devuelve la firma, nunca
+	// la clave**: es la misma regla que el código de un solo uso.
+	FirmarLlave(origen, rpID, id, reto string) (Afirmacion, error)
 }
 
 // Los topes de preguntas, que son **del canal y no de una conexión**.
@@ -420,6 +428,24 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 			return mal(MotivoNoEncaja, err.Error())
 		}
 		return Respuesta{OK: true}
+
+	// **Las llaves de acceso no pasan por `dominio`** (ADR 0048), y es lo que hay
+	// que ver aquí: todo lo demás compara dominio registrable contra dominio
+	// registrable, y para firmar eso es demasiado ancho. Lo decide `RPIDPermitido`
+	// con el origen que puso el navegador, dentro de la fuente.
+	case QueLlaves:
+		l, err := s.fuente.Llaves(p.Origen, p.RPID, p.Permitidas)
+		if err != nil {
+			return mal(MotivoNoEncaja, err.Error())
+		}
+		return Respuesta{OK: true, Llaves: l}
+
+	case QueFirmarLlave:
+		a, err := s.fuente.FirmarLlave(p.Origen, p.RPID, p.ID, p.Reto)
+		if err != nil {
+			return mal(MotivoNoEncaja, err.Error())
+		}
+		return Respuesta{OK: true, Afirmacion: &a}
 	}
 
 	return mal(MotivoNoEntiendo, "Esfinge no sabe hacer eso")

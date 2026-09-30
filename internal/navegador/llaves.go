@@ -68,6 +68,38 @@ func RPIDPermitido(rpID, origen string) string {
 	return pedido
 }
 
+// OrigenDe escribe el origen **como lo escribe el navegador**, que es lo que el
+// sitio compara.
+//
+// No vale pegar esquema y anfitrión: con el puerto por defecto escrito a mano
+// —`https://github.com:443/`— eso da `https://github.com:443`, y el navegador y el
+// sitio dicen `https://github.com`. Una diferencia de cuatro caracteres dentro del
+// `clientDataJSON` y el sitio rechaza la firma sin decir por qué. Lo mismo hace
+// `new URL(x).origin` en la extensión, y hay una prueba cruzada de tabla.
+func OrigenDe(origen string) string {
+	u, err := url.Parse(strings.TrimSpace(origen))
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return ""
+	}
+	esquema := strings.ToLower(u.Scheme)
+	// **Con los corchetes puestos si es IPv6.** `Hostname()` los quita, y sin ellos
+	// `https://::1:8443` no es un origen: el navegador escribe `https://[::1]:8443`.
+	// Aquí no se va a firmar nunca —una IP no tiene `rpId`— pero una función que
+	// contesta mal contesta mal, y lo cazó la prueba cruzada.
+	anfitrion := strings.ToLower(u.Hostname())
+	if strings.Contains(anfitrion, ":") {
+		anfitrion = "[" + anfitrion + "]"
+	}
+	puerto := u.Port()
+	if (esquema == "https" && puerto == "443") || (esquema == "http" && puerto == "80") {
+		puerto = ""
+	}
+	if puerto != "" {
+		return esquema + "://" + anfitrion + ":" + puerto
+	}
+	return esquema + "://" + anfitrion
+}
+
 // CrearLlave hace una llave de acceso nueva: la privada en PKCS#8, la pública en
 // SPKI, que es lo mismo que guarda y entiende la extensión.
 func CrearLlave() (privada, publica []byte, err error) {

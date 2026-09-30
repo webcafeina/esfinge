@@ -15,7 +15,7 @@ import { identidadDeSemilla } from "./identidad";
 import { abrirEnvio, mandarEntrada, type Envio } from "./envio";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
 import { dominioDeOrigen, dominioDeSitio } from "./dominios";
-import { crearLlave, firmarConLlave, rpIdPermitido } from "./llaves";
+import { crearLlave, firmarConLlave, origenDe, rpIdPermitido } from "./llaves";
 import { atender } from "./fuente";
 import { aBase64Url } from "./afirmacion";
 import { datosDelAutenticador, datosDelCliente, loQueSeFirma } from "./afirmacion";
@@ -267,6 +267,12 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
       );
       return { publica: hex(par.publica), ok: r.ok, afirmacion: r.afirmacion ?? null };
     }
+
+    // **El origen tal como lo escribe el navegador**, que va dentro del
+    // `clientDataJSON` y que el sitio compara. Cuatro caracteres de diferencia y la
+    // firma se rechaza sin decir por qué.
+    case "origen":
+      return (p.casos as string[]).map((c) => origenDe(c));
 
     case "correos":
       return (p.correos as string[]).map((c) => {

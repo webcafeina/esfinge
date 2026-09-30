@@ -308,3 +308,35 @@ func TestCruzadaAfirmarLlave(t *testing.T) {
 		t.Error("la firma vale para unos datos que no son los suyos")
 	}
 }
+
+// **El origen se escribe igual en los dos lados** (ADR 0048).
+//
+// Va dentro del `clientDataJSON` y el sitio lo compara: cuatro caracteres de
+// diferencia y la firma se rechaza sin decir por qué. En la extensión lo escribe
+// `new URL(x).origin` y en Go `OrigenDe`, y lo que los podría separar es
+// precisamente lo que nadie escribe a mano: el puerto por defecto.
+func TestCruzadaOrigen(t *testing.T) {
+	casos := []string{
+		"https://github.com/login",
+		// **El que separa las dos formas.** Pegando esquema y anfitrión daría
+		// `https://github.com:443`, y el navegador dice `https://github.com`.
+		"https://github.com:443/login",
+		"https://github.com:8443/x?y#z",
+		"http://ejemplo.com:80/",
+		"http://ejemplo.com:8080/",
+		"https://LOGIN.EJEMPLO.COM/",
+		"https://usuario:clave@github.com/",
+		"https://[::1]:8443/",
+		"https://github.com.",
+		"",
+		"javascript:alert(1)",
+		"about:blank",
+	}
+	var suyos []string
+	cruzada.Pedir(t, map[string]any{"orden": "origen", "casos": casos}, &suyos)
+	for i, c := range casos {
+		if quiero := OrigenDe(c); suyos[i] != quiero {
+			t.Errorf("%q: Go dice %q y la extensión %q", c, quiero, suyos[i])
+		}
+	}
+}

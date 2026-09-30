@@ -23,7 +23,7 @@ import { codigoEn, leerSemilla, quedan } from "./codigos";
 import { dominioDeOrigen, encaja, hostDe } from "./dominios";
 import { cambiarSecreto, type Entrada } from "./entrada";
 import type { Afirmacion, Cuenta, Oferta, Peticion, Respuesta } from "../protocolo";
-import { llavesDe, rpIdPermitido, firmarConLlave } from "./llaves";
+import { llavesDe, origenDe, rpIdPermitido, firmarConLlave } from "./llaves";
 import {
   aBase64Url,
   BANDERAS_AL_FIRMAR,
@@ -201,7 +201,7 @@ const leEncaja = (x: Entrada, dominio: string) => (x.sitios ?? []).some((s) => e
  * compara. Y lo que sale son **los bytes exactos** que se han hasheado.
  */
 async function afirmar(x: Entrada, rpId: string, origen: string, reto: string): Promise<Afirmacion> {
-  const cliente = datosDelCliente("webauthn.get", deBase64Url(reto), new URL(origen).origin);
+  const cliente = datosDelCliente("webauthn.get", deBase64Url(reto), origenDe(origen));
   const autenticador = await datosDelAutenticador(rpId, BANDERAS_AL_FIRMAR);
   const firma = await firmarConLlave(deBase64Url(x.clavePrivada ?? ""), await loQueSeFirma(autenticador, cliente));
   return {
