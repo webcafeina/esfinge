@@ -28,8 +28,16 @@ export const CLAVE_DEL_CONSENTIMIENTO = "consentimiento";
  * no tenga cuenta el servidor le manda una invitación con la del que la manda. Es
  * un dato nuevo que sale del navegador y va a un tercero: sube y se vuelve a
  * preguntar, aunque eso cueste que todo el mundo vea el aviso otra vez.
+ *
+ * **4 desde la P2 de las llaves de acceso** (ADR 0048), y es la subida menos
+ * discutible de las cuatro: **cambia dónde corre el código**. Hasta ahora todo lo de
+ * Esfinge iba en el mundo aislado —la página no lo veía ni lo podía tocar— y ahora
+ * hay una pieza **dentro** de cada página `https`, sustituyendo el método con el que
+ * un sitio identifica a la gente. Que lo que sale sea una firma y nunca la clave no
+ * quita que eso sea una práctica de datos distinta, y darlo por sabido sería
+ * decidirlo por quien lo instaló antes.
  */
-export const VERSION_DEL_AVISO = 3;
+export const VERSION_DEL_AVISO = 4;
 
 /** vale dice si lo guardado es la aceptación del aviso de ahora. */
 export function vale(guardado: unknown): boolean {

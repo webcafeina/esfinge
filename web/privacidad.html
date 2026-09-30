@@ -31,7 +31,7 @@
     <main class="contenedor seccion">
       <article class="lectura documento">
         <h1>Política de privacidad</h1>
-        <p class="apagado">Última actualización: 24 de septiembre de 2026.</p>
+        <p class="apagado">Última actualización: 30 de septiembre de 2026.</p>
 
         <p class="entradilla">
           <strong>Usada en tu ordenador, Esfinge no recoge ningún dato tuyo.</strong> Todo lo que
@@ -65,8 +65,37 @@
         <ul>
           <li><strong>Los formularios de entrar</strong>: el usuario o el correo, la contraseña y el código de un solo uso que escribes o que ella rellena.</li>
           <li><strong>La dirección de la página</strong>, para saber de qué sitio son las cuentas.</li>
+          <li>
+            <strong>Y cuándo un sitio pide una llave de acceso</strong>: el sitio para el que la pide y
+            el dato al azar que manda para que se firme. Para eso, y solo para eso, Esfinge pone una
+            pieza <strong>dentro</strong> de la página, no aislada de ella.
+          </li>
         </ul>
         <p>No lee el resto del contenido de las páginas, ni tu historial, ni tus marcadores.</p>
+
+        <h3>Las llaves de acceso</h3>
+        <p>
+          Si guardas llaves de acceso en Esfinge, la extensión se ofrece a poner la tuya cuando un
+          sitio la pide. Para enterarse de que la pide tiene que <strong>mirar desde dentro de la
+          página</strong>, y eso es distinto de todo lo demás que hace: el resto va aislado, donde la
+          página no lo ve.
+        </p>
+        <p>
+          <strong>La clave privada de una llave no sale nunca de tu bóveda.</strong> Cuando aceptas, la
+          firma se hace donde está la bóveda —en la aplicación, o en el navegador si usas tu cuenta— y
+          al sitio le llega solo <strong>la firma ya hecha</strong>, que es lo mismo que le llegaría de
+          una llave guardada en tu sistema operativo. Nunca se manda a nadie más.
+        </p>
+        <p>
+          Si en ese sitio no tienes ninguna llave guardada, Esfinge <strong>no hace nada</strong> y el
+          navegador pregunta como si no estuviera. Y para saber en qué sitios te la puede ofrecer con la
+          bóveda cerrada, el navegador guarda <strong>solo la lista de dominios</strong> que tienen
+          llave, mientras el navegador está abierto: ni cuentas, ni usuarios, ni claves.
+        </p>
+        <p>
+          Todo esto se puede <strong>apagar</strong> en los Ajustes de la aplicación Esfinge, y tus
+          llaves se quedan guardadas igual.
+        </p>
 
         <h3>Adónde van</h3>
         <p>
@@ -124,7 +153,7 @@
           <li><code>storage</code>: guardar que has aceptado el aviso, el permiso de Esfinge y, con cuenta, tu bóveda cifrada.</li>
           <li><code>alarms</code>: comprobar cada minuto si la bóveda sigue abierta, para que el icono lo diga, y con cuenta, sincronizarla y cerrarla si no se usa.</li>
           <li><code>favicon</code> (solo Chrome): enseñar el icono del sitio en el panel desde la caché del navegador, sin descargarlo.</li>
-          <li>Acceso a las páginas <code>https</code>: encontrar los formularios de entrar y rellenarlos, y con cuenta, hablar con nuestro servidor de cuentas.</li>
+          <li>Acceso a las páginas <code>https</code>: encontrar los formularios de entrar y rellenarlos, enterarse de cuándo un sitio pide una llave de acceso, y con cuenta, hablar con nuestro servidor de cuentas.</li>
           <li>Ejecutar WebAssembly: derivar la clave de tu bóveda de tu contraseña (Argon2id) dentro del navegador, con cuenta.</li>
         </ul>
 
@@ -133,7 +162,7 @@
           La primera vez que abres el panel de la extensión te explica todo esto. <strong>Hasta que lo
           aceptas no lee ninguna página ni habla con Esfinge ni con el servidor.</strong> Si esta
           política cambia en lo que hace la extensión con tus datos, te lo vuelve a preguntar: pasó
-          al llegar las cuentas a la extensión.
+          al llegar las cuentas a la extensión, y otra vez al llegar las llaves de acceso.
         </p>
 
         <h2>La aplicación Esfinge</h2>

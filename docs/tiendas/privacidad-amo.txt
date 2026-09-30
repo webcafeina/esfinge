@@ -5,7 +5,7 @@
 
 Política de privacidad
 
-Última actualización: 24 de septiembre de 2026.
+Última actualización: 30 de septiembre de 2026.
 
 Usada en tu ordenador, Esfinge no recoge ningún dato tuyo. Todo lo que toca se queda ahí, y Webcafeína no recibe nada: ni contraseñas, ni direcciones, ni estadísticas de uso. Si creas una cuenta para tener tu bóveda en varios equipos, lo que guardamos y por qué está más abajo: tu bóveda viaja cifrada y no podemos abrirla.
 
@@ -27,7 +27,19 @@ Para rellenar y guardar contraseñas, la extensión lee en las páginas https:
 
 - La dirección de la página, para saber de qué sitio son las cuentas.
 
+- Y cuándo un sitio pide una llave de acceso: el sitio para el que la pide y el dato al azar que manda para que se firme. Para eso, y solo para eso, Esfinge pone una pieza dentro de la página, no aislada de ella.
+
 No lee el resto del contenido de las páginas, ni tu historial, ni tus marcadores.
+
+Las llaves de acceso
+
+Si guardas llaves de acceso en Esfinge, la extensión se ofrece a poner la tuya cuando un sitio la pide. Para enterarse de que la pide tiene que mirar desde dentro de la página, y eso es distinto de todo lo demás que hace: el resto va aislado, donde la página no lo ve.
+
+La clave privada de una llave no sale nunca de tu bóveda. Cuando aceptas, la firma se hace donde está la bóveda —en la aplicación, o en el navegador si usas tu cuenta— y al sitio le llega solo la firma ya hecha, que es lo mismo que le llegaría de una llave guardada en tu sistema operativo. Nunca se manda a nadie más.
+
+Si en ese sitio no tienes ninguna llave guardada, Esfinge no hace nada y el navegador pregunta como si no estuviera. Y para saber en qué sitios te la puede ofrecer con la bóveda cerrada, el navegador guarda solo la lista de dominios que tienen llave, mientras el navegador está abierto: ni cuentas, ni usuarios, ni claves.
+
+Todo esto se puede apagar en los Ajustes de la aplicación Esfinge, y tus llaves se quedan guardadas igual.
 
 Adónde van
 
@@ -59,13 +71,13 @@ Para qué pide cada permiso
 
 - favicon (solo Chrome): enseñar el icono del sitio en el panel desde la caché del navegador, sin descargarlo.
 
-- Acceso a las páginas https: encontrar los formularios de entrar y rellenarlos, y con cuenta, hablar con nuestro servidor de cuentas.
+- Acceso a las páginas https: encontrar los formularios de entrar y rellenarlos, enterarse de cuándo un sitio pide una llave de acceso, y con cuenta, hablar con nuestro servidor de cuentas.
 
 - Ejecutar WebAssembly: derivar la clave de tu bóveda de tu contraseña (Argon2id) dentro del navegador, con cuenta.
 
 Antes de aceptar
 
-La primera vez que abres el panel de la extensión te explica todo esto. Hasta que lo aceptas no lee ninguna página ni habla con Esfinge ni con el servidor. Si esta política cambia en lo que hace la extensión con tus datos, te lo vuelve a preguntar: pasó al llegar las cuentas a la extensión.
+La primera vez que abres el panel de la extensión te explica todo esto. Hasta que lo aceptas no lee ninguna página ni habla con Esfinge ni con el servidor. Si esta política cambia en lo que hace la extensión con tus datos, te lo vuelve a preguntar: pasó al llegar las cuentas a la extensión, y otra vez al llegar las llaves de acceso.
 
 La aplicación Esfinge
 
