@@ -124,6 +124,21 @@ No se cambian sin preguntar.
   propia—; **no se crean a mano**, porque una llave la emite el sitio; **la clave privada no se enseña, no
   se copia y no cruza el puente**, y cuando llegue la P2 lo que saldrá será la firma ya hecha; y **no salen
   en el CSV en claro**, sino aparte, en un contenedor ESF1 con una clave que no es la maestra.
+- **Y desde la P2 de las llaves de acceso hay código de Esfinge dentro de cada página `https`** (ADR 0048).
+  Es lo más caro de todo el proyecto y conviene saber por qué antes de tocar `navegador/src/mundo.ts`:
+  `navigator.credentials` solo existe en el mundo de la página, así que un fallo ahí **no deja el relleno a
+  medias, deja el sitio sin poder entrar**, también a quien no use Esfinge en esa cuenta. Todo está escrito
+  en negativo —en marco ajeno no se instala nada, sin acuse del puente no se instala nada, si otro gestor ya
+  parcheó no se instala nada, y ante cualquier duda se cede llamando al original con el mismo `this`—, y
+  **el `shim` cede en la misma vuelta del bucle de eventos** cuando aquí no hay nada: no es una
+  optimización, es lo que impide que esperar a un trabajador dormido se coma la activación de usuario. Tres
+  cosas más que no se cambian sin preguntar: **el banner sale también con la bóveda cerrada** y para eso el
+  navegador se queda **la lista de dominios con llave** en `storage.session` —lo único de la bóveda que
+  guarda, y relaja por escrito la regla de la cabecera de `fondo.ts`—; **en esa lista va el `rpId` y no su
+  dominio registrable**, porque una llave de `accounts.google.com` no sirve en `mail.google.com`; y **hay un
+  interruptor en Ajustes**, encendido de fábrica, que apaga **las tres puertas** —ofrecer, apuntar y
+  firmar—. Lo que ese interruptor **no** cubre, y está en `deuda.md`: la extensión con cuenta, que no le
+  pregunta nada a la ventana.
 - **El historial guarda solo qué y cuándo**: nunca el contenido, la clave ni el texto cifrado. Vive
   en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar. **La bóveda no
   escribe en él**, y es una regla absoluta: `credenciales-dashlane.csv` ahí sería una señal de
@@ -352,6 +367,24 @@ Y el caso que hay que tener en la tabla, que **lo encontró una mutación y no l
 punto que separa, `malaejemplo.com` **termina en** `ejemplo.com` y firmaría por él. La tabla tenía
 `ejemplo.com.malo.com` —que no ataca nada, porque ahí el nombre va en medio— y con ella la comprobación se
 podía quitar entera sin que nada se pusiera rojo.
+
+**Un saludo en un solo sentido entre dos guiones de contenido no se tiende, y el fallo es mudo.** Los dos
+—el del mundo aislado y el del principal— entran en `document_start` y **su orden no está garantizado**;
+peor aún, el aislado **no puede escuchar hasta haber leído el consentimiento**, y eso es un `await` a
+`storage`. Así que el saludo del principal se dispara contra un `window` sin oyentes y se pierde: el shim no
+se instala, la página funciona como si Esfinge no estuviera y **no hay error en ningún sitio**. Dio la cara
+como una prueba real que pasaba tres veces y a la cuarta no. Ahora cada lado anuncia y cada lado escucha, y
+el que saluda **deja de tender en cuanto tiene acuse** —un puerto transferido por `window.postMessage` lo
+puede recoger cualquier oyente, así que solo se manda mientras no existe el primer `<script>` del sitio—.
+
+Y la mitad de método, que vale para cualquier protocolo entre dos piezas: **las cuatro pruebas que había
+atendían antes de saludar**, o sea el caso que no ocurre. La que faltaba **fuerza el orden** y es la única
+que lo caza siempre; la real solo lo caza cuando pierde la carrera. Cuando algo se sincroniza entre dos
+piezas, hay que probar **las dos órdenes**, y probar la mala primero.
+
+**Y «pasó tres veces» no es «funciona».** Vale para el puente y volvió el mismo día con una prueba de frenos
+del servidor: lo que hay que hacer con un intermitente es **apuntarlo con lo que se vio**, no volver a
+correrlo hasta que salga verde y seguir. Un flake que se da por bueno es un fallo con una coartada.
 
 **Un doble que apunta el argumento no dice si le han llamado.** `sistemaFalso.ElegirDondeGuardar`
 guardaba el `desde` que recibía, y ese `desde` **viene vacío** hasta que alguien recuerda una carpeta: una

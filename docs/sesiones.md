@@ -5,6 +5,42 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-09-30 · La P2 de las llaves de acceso, entera
+
+- **Se cerró el fallo con el que empezó el día, y era el diseño y no un flake.** La prueba del autenticador
+  virtual pasaba tres veces y a la cuarta decía «el shim no se ha instalado». Causa: **el saludo del puente
+  iba en un solo sentido**. Los dos guiones entran en `document_start` sin orden garantizado y, sobre todo,
+  el lado aislado **no puede escuchar hasta haber leído el consentimiento** —un `await` a `storage`—, así que
+  el saludo del mundo principal se disparaba contra un `window` sin oyentes y se perdía. El shim no se
+  instalaba, la página funcionaba como si Esfinge no estuviera y **no había error en ninguna parte**. Ahora
+  cada lado anuncia y cada lado escucha, idempotente, y el que saluda deja de tender en cuanto tiene acuse.
+- **Y la prueba que faltaba era la del orden malo.** Las cuatro que había atendían **antes** de saludar, o sea
+  el caso que no ocurre. La nueva fuerza el orden y lo caza siempre; quitando el anuncio, la prueba real
+  vuelve a ser **intermitente**, que es el síntoma original.
+- **El banner sale con la bóveda cerrada**, que es lo que el cliente decidió y hasta hoy estaba escrito y no
+  hecho: con la bóveda cerrada el shim cedía **antes de preguntar**. Lo resuelve la lista de dominios con
+  llave en `storage.session`, que **relaja por escrito la regla de la cabecera de `fondo.ts`** y por eso va
+  dicha así en la ADR. Dos correcciones del plan, las dos por implementarlo: va el `rpId` y no su dominio
+  registrable —una llave de `accounts.google.com` no sirve en `mail.google.com`— y la lista viaja solo en la
+  pregunta de antes de que el sitio hable.
+- **El interruptor de Ajustes**, encendido de fábrica, apagando **las tres puertas**: ofrecer, apuntar y
+  firmar. Y su prueba enseñó que **un doble no basta**: con la clave privada inventada, `FirmarLlave` falla
+  igual por no poder leerla, así que la comprobación del freno se podía quitar entera y la prueba seguía en
+  verde.
+- **El aviso de datos sube a 4**, que es la subida menos discutible de las cuatro: cambia **dónde corre el
+  código**. Con él, la política, el texto generado de Firefox y las dos fichas de tienda, más una nota nueva
+  sobre lo que hay que declarar del mundo principal —es lo que Chrome ya señaló en la 2.22.1—.
+- **Verificado:** `make comprobar` entero —incluidas las cruzadas y las pruebas reales—, `pnpm run comprobar`
+  de la extensión (172), `make e2e` (100, los dos temas), y **cada pieza nueva comprobada por mutación**: el
+  anuncio del puente y su oyente, la lista de dominios filtrada por origen, una llave sin clave privada, la
+  rama de `quizas`, y las tres puertas del freno una por una.
+- **Queda abierto:** publicar la P2 y que el cliente la vea —lo primero, entrar en GitHub de verdad—, y tres
+  cosas nuevas en [`deuda.md`](deuda.md): que con cuenta y sin aplicación el interruptor no existe, que en el
+  primer segundo de una página Esfinge cede la llave —deliberado: esperar agota la activación de usuario— y
+  un intermitente de las pruebas de frenos del servidor, apuntado en vez de darlo por bueno.
+
+---
+
 ## 2026-09-28 · La C3: Windows Hello, a ciegas pero comprobando lo que se puede
 
 - **Y una regla que estaba mal pensada, encontrada por él al crear la cuenta nueva**: la sugerencia de

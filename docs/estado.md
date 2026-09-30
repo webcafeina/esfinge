@@ -1,10 +1,10 @@
 # Estado
 
-Última actualización: **2026-09-29**
+Última actualización: **2026-09-30**
 
 ## Dónde se paró, y por dónde se sigue
 
-**Sesión del 2026-09-29.** Trabajo limpio: todo comprometido y empujado.
+**Sesión del 2026-09-30.** Trabajo limpio: todo comprometido.
 
 **El correo de Esfinge ya no pasa por Resend** ([ADR 0045](adr/0045-el-correo-sale-por-el-vps.md)).
 Producción manda por el relé de Google desde `cartero.webcafeina.com`, un servicio nuestro en el VPS,
@@ -39,7 +39,7 @@ navegador, en el plan de esa sesión.
 publicado todavía**: exportar llaves pedía la clave y abría el diálogo del sistema antes de saber que no
 había ninguna. Arreglado en `main`; sale con la P2.
 
-**La P2 va por la mitad, y lo hecho es todo lo que no toca el navegador:**
+**La P2 está escrita entera y sin publicar.** Lo que trae, de dentro afuera:
 
 - **`RPIDPermitido` / `rpIdPermitido`**, la pieza de seguridad: decide para quién se firma. En los dos
   lados, con prueba cruzada de tabla y tabla propia de respuestas correctas.
@@ -47,15 +47,27 @@ había ninguna. Arreglado en `main`; sale con la P2.
   `authenticatorData` con el contador a cero, y lo que se firma. Prueba cruzada de bytes.
 - **La firma de punta a punta**: la extensión firma y Go verifica, con llaves hechas en los dos lados. Y el
   DER con vectores fijos aparte, que es lo que la de punta a punta no puede cubrir.
-- **Y lo que pide GitHub de verdad**, pedido por la consola del cliente y escrito en
-  [`passkeys.md`](passkeys.md): `userVerification: discouraged`, `allowCredentials` con una entrada de 16
-  bytes y `extensions` presente y vacío. Las tres cambian el diseño.
+- **El guion del mundo principal** (`navegador/src/mundo.ts`), el puente con `MessagePort`, el banner y
+  `pagina.ts` movido a `document_start` — con las pruebas de `campos`, `identidad`, `envios` y `pendientes`
+  pasando **sin tocarlas**, que era la condición.
+- **Los dos verbos nuevos del canal en los dos núcleos**, Go y TypeScript, así que funciona con la
+  aplicación y con cuenta.
+- **El banner sale también con la bóveda cerrada**, que es lo que decidió el cliente, y para eso el
+  navegador se queda la lista de dominios con llave en `storage.session`.
+- **El interruptor de Ajustes**, encendido de fábrica, que apaga las tres puertas.
+- **El aviso de datos en la versión 4**, con la política, el texto de Firefox y las dos fichas de tienda
+  diciendo lo mismo.
 
-**La siguiente acción concreta es el guion del mundo principal** (`navegador/src/mundo.ts`), su puente con
-`MessagePort` y el banner. Empieza por lo más delicado y conviene saberlo antes de tocarlo: **`pagina.ts`
-tiene que pasar de `document_idle` a `document_start`**, porque si el mundo aislado arranca tarde el saludo
-del puente se pierde. Es el fichero que paga las facturas, y la condición es que **las pruebas de `campos`,
-`identidad`, `envios` y `pendientes` pasen sin tocarlas**.
+**La siguiente acción concreta es publicar la P2** y que el cliente la vea en su Mac. Lo que hay que
+mirar ahí está al final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md), y lo primero es lo que él pidió
+con esas palabras: **entrar en GitHub y darle a Aceptar**. Con la versión sale además el arreglo de exportar
+llaves de la 2.32.1.
+
+**Y dos cosas de la P2 que conviene saber antes de tocarla**, las dos aprendidas a golpes y escritas en la
+ADR: **el saludo del puente va en los dos sentidos** —en uno solo el shim no se instalaba y no había error
+en ninguna parte, y la prueba real pasaba tres veces y a la cuarta no—, y **la bandera «aquí hay algo» llega
+después de cargar la página**, así que quien pulse «Entrar» en el primer segundo verá el diálogo del
+navegador. Lo segundo es deliberado: esperar es lo que agota la activación de usuario.
 
 Lo demás abierto está en [`deuda.md`](deuda.md) y es de uso o de máquinas que no tenemos.
 

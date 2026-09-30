@@ -1,7 +1,8 @@
 # ADR 0048 — Las llaves de acceso, la sexta clase de entrada
 
-**Fecha:** 2026-09-29 · **Estado:** aceptada; **la P1 escrita, sin ver en un Mac** · Primera de las cuatro
-entregas de `docs/passkeys.md` · **Revisar** al empezar la P2, que es cuando aparece el navegador
+**Fecha:** 2026-09-29, ampliada el 2026-09-30 con la P2 · **Estado:** aceptada; **la P1 vista en el Mac
+(2.32.0); la P2 escrita, sin ver** · Primeras dos de las cuatro entregas de `docs/passkeys.md` ·
+**Revisar** al empezar la P3, que es cuando se crean llaves
 
 ## Contexto
 
@@ -83,6 +84,78 @@ Se guarda en **PKCS#8**, que lleva las dos partes dentro, lo entienden los dos l
 —`x509.ParsePKCS8PrivateKey` y `crypto.subtle.importKey("pkcs8", …)`— y son 138 bytes. Queda escrito aquí
 porque es exactamente la clase de detalle que parece un ahorro sobre el papel y no existe.
 
+## La P2: usar una llave que ya existe (2026-09-30)
+
+Lo que pidió el cliente con esas palabras: entrar en GitHub y darle a Aceptar. Cuatro decisiones que no
+estaban en la P1 y que no se cambian sin preguntar.
+
+### Hay código de Esfinge dentro de cada página `https`, y es lo más caro de toda la fase
+
+`navigator.credentials` solo existe en el mundo de la página, así que para enterarse de que un sitio pide
+una llave hay que estar ahí. Hasta ahora todo lo de Esfinge iba en el mundo aislado: la página no lo veía
+ni lo podía tocar, y **un fallo nuestro rompía el relleno**. Ahora un fallo **rompe el inicio de sesión del
+sitio**, también para quien no use Esfinge en esa cuenta.
+
+De ahí que `navegador/src/mundo.ts` esté escrito entero en negativo, y que el orden de sus comprobaciones
+sea parte de la decisión: **en un marco ajeno no se instala nada**, **sin acuse del puente no se instala
+nada**, **si otro gestor ya ha parcheado no se instala nada**, y **ante cualquier duda se cede**, donde
+ceder es llamar al método original con los mismos argumentos y el mismo `this`. Un `catch` que envuelve
+todo cede también: de ahí no sale nunca una excepción hacia la página.
+
+Y una consecuencia que hay que decir en voz alta porque nadie la va a deducir: **el shim cede en la misma
+vuelta del bucle de eventos** cuando en este sitio no hay nada que ofrecer. No es una optimización. Es lo
+que impide que esperar a un trabajador MV3 dormido se coma la activación de usuario que `create()` exige,
+que es literalmente el escenario «rompemos a quien no usa Esfinge».
+
+### El navegador se queda la lista de dominios con llave, y eso relaja una regla escrita
+
+La cabecera de `navegador/src/fondo.ts` dice, desde que existe, que **no se guarda nada de lo que se
+pregunta**: «un caché aquí sería la lista de sitios de la bóveda escrita en el perfil del navegador, sin
+cifrar, que es exactamente lo que Esfinge cifra en su disco».
+
+**Esta entrega abre una excepción a esa regla, y se dice con esas palabras**, no en un comentario que se
+pueda leer como un detalle: el navegador guarda **los dominios que tienen llave de acceso**. Van en
+`storage.session` —que muere al cerrar el navegador y nunca llega al disco— y son solo dominios: ni
+cuentas, ni usuarios, ni identificadores de credencial, ni nada de la llave.
+
+Hace falta porque el cliente decidió que **con la bóveda cerrada el banner sale y ofrece abrirla**, y con la
+bóveda cerrada no hay a quién preguntar. Sin la lista, esa decisión quedaba escrita y no hecha: el shim
+cedía antes de preguntar y salía el diálogo del navegador.
+
+Dos correcciones de lo que decía el plan, las dos por implementarlo:
+
+- **Va el `rpId`, no su dominio registrable.** Con el registrable, una llave de `accounts.google.com`
+  sacaría el banner en `mail.google.com`, donde WebAuthn no la deja usar: ofrecer abrir la bóveda para algo
+  que luego no se puede dar es un banner que estorba. Sigue siendo un dominio y nada más.
+- **La lista viaja solo en la pregunta de antes de que el sitio hable.** En la de firmar el sitio ya está
+  dicho, y repetirla sería mandar la lista entera de la bóveda en cada firma.
+
+Y la consecuencia que hay que decir en la pantalla y no solo aquí: **recién abierto el navegador, y hasta
+abrir la bóveda una vez, el banner no sale.**
+
+### Se publica encendida, con un interruptor en Ajustes
+
+«Usar tus llaves de acceso en el navegador», en los Ajustes de la ventana, **encendido de fábrica**. Es el
+freno de emergencia de la fase: si un sitio grande cambia y deja de entrar, esto se apaga y se sigue
+trabajando **sin esperar a una versión**, que en una tienda son días.
+
+Apaga **en las tres puertas** y no en una: `Llaves` contesta que no hay ninguna —sin error, para que el
+banner no diga nada y Esfinge no se note—, `DominiosConLlave` deja de apuntar nada, y `FirmarLlave` se
+niega. Las tres se pueden olvidar por separado.
+
+Va en Go y no en la extensión a propósito, que es la regla de la ADR 0032: **lo que decide qué se ofrece
+vive en el núcleo**, porque publicar un arreglo en Go es empujar una etiqueta. Con ello, **una laguna que
+se apunta y no se esconde**: la extensión con cuenta no le pregunta nada a la ventana (ADR 0040), así que
+para quien use solo la extensión ese interruptor no existe y su único freno es desactivarla entera. Está
+en `docs/deuda.md` y se decide en la P3.
+
+### El aviso de datos sube de 3 a 4
+
+Lo pide la ADR 0033 y aquí no hay margen de interpretación: **cambia dónde corre el código**. Que lo que
+salga hacia el sitio sea una firma y nunca la clave no quita que sea una práctica de datos distinta de lo
+declarado, y darlo por sabido sería decidirlo por quien instaló la extensión antes. Con él cambian el aviso
+del panel, `web/privacidad.html`, el texto generado de Firefox y las dos fichas de tienda.
+
 ## Alternativas descartadas
 
 - **Guardar la llave dentro de la credencial del sitio**, como el código de un solo uso. Menos entradas y
@@ -94,6 +167,27 @@ porque es exactamente la clase de detalle que parece un ahorro sobre el papel y 
 - **No exportarlas en absoluto**, que es lo que hacen los demás gestores. Se descartó con el cliente: deja
   la bóveda sin salida para esa clase.
 
+Y de la P2:
+
+- **Un identificador secreto en el primer mensaje, en vez de un `MessagePort`.** No vale, y por una razón que
+  se ve sola en cuanto se escribe: el identificador **viaja en ese primer mensaje**, que cualquier oyente de
+  la página puede leer, y a partir de ahí lo tiene. El puerto sí, porque no se puede escribir en él sin
+  tenerlo. La marca sirve para distinguir nuestro tráfico del de Stripe o Intercom, **no para autenticar**.
+- **Pedirle la bandera al mundo aislado en vez de que él la empuje.** Preguntar es esperar, y esperar es lo
+  que puede agotar la activación de usuario. Se empuja.
+- **Un plazo corto de espera cuando la bandera todavía no ha llegado.** Descartado por lo mismo, y con un
+  coste que se acepta y se apunta: quien pulse «Entrar con llave» en el primer segundo de cargar la página
+  verá el diálogo del navegador. Está en `docs/deuda.md`, y lo que haría falta para reconsiderarlo es
+  **medir** cuánto tarda de verdad un trabajador frío, que hoy es una estimación.
+- **Usar `encaja()` de `dominios.ts` para decidir con qué `rpId` se firma.** Es la alternativa que más se
+  parecía a la buena y la más peligrosa: compara dominios registrables, así que `accounts.google.com` y
+  `mail.google.com` serían el mismo sitio. WebAuthn pide el anfitrión o un sufijo suyo separado por punto, y
+  **el hash se calcula sobre la cadena exacta**: dar por buenos dos nombres distintos no es ser tolerante,
+  es firmar para quien no es.
+- **Guardar la lista de dominios en `storage.local`.** Sobreviviría al cierre del navegador y el banner
+  saldría siempre, que es mejor producto. Descartado: eso es la lista de sitios de la bóveda escrita en el
+  perfil, sin cifrar, que es exactamente lo que la regla de `fondo.ts` prohíbe.
+
 ## Consecuencias
 
 - **Séptima pestaña en la bóveda.** Medido: los siete glifos con el rótulo de la activa ocupan ~475 px de
@@ -103,6 +197,20 @@ porque es exactamente la clase de detalle que parece un ahorro sobre el papel y 
 - **Todo cambio del formato se hace dos veces**, como manda la 0040.
 - **La exportación gana una puerta**, y con ella un método más en la lista blanca del puente. Cruza una
   clave: la del fichero. No cruza ninguna clave privada.
+
+Y de la P2:
+
+- **Hay código nuestro en cada página `https` que se abra**, y un fallo ahí no deja el relleno a medias: deja
+  el sitio sin poder entrar. Es el riesgo número uno de la fase y lo que justifica el interruptor.
+- **`pagina.ts` se ha movido de `document_idle` a `document_start`**, porque el puerto se transfiere antes de
+  que exista el primer `<script>` de la página. Ahí no hay `<body>`, así que el arranque está partido en dos:
+  el puente y el consentimiento al principio, y todo lo demás tras `DOMContentLoaded`.
+- **El navegador guarda algo de la bóveda**, por primera vez sin que esté cifrado: la lista de dominios. Ver
+  arriba.
+- **Tres reglas nuevas en `herramientas/permisos.mjs`**, porque los tres fallos serían mudos: un guion del
+  mundo principal **no puede usar `api.`/`chrome.`/`browser.`** —no existen ahí—, si hay uno **todos** los
+  guiones de contenido van a `document_start`, y todo `js` del manifiesto tiene que estar en `COMPILAR.md`,
+  que es lo que Mozilla compara byte a byte.
 
 ## Verificación
 
@@ -146,3 +254,51 @@ llamado; ahora cuenta las veces.
 - **No hay ninguna llave de verdad todavía.** Todo lo probado son entradas escritas por las pruebas; la
   primera llave de verdad la creará el navegador en la P2, y hasta entonces no se sabe si los campos que se
   guardan son exactamente los que hacen falta para firmar.
+
+**Lo que se comprobó de la P2, y cómo**
+
+- **El autenticador virtual de CDP, con una llave que no está en Esfinge** (`pruebas-reales/llaves.spec.ts`).
+  Es la prueba de «no rompemos a quien no usa Esfinge», y el plan decía que sin ella la P2 no se publica:
+  crear y entrar siguen funcionando con la extensión puesta, en los dos estados que importan —el aviso sin
+  aceptar, donde el guion ni arranca, y con el shim instalado—. Dos mutaciones: **devolver una credencial
+  inventada en vez de ceder** la pone roja, y **quitar el bloque `world: "MAIN"` del manifiesto** también,
+  porque la prueba comprueba primero que el shim está de verdad ahí.
+- **El banner con la bóveda cerrada, de punta a punta** (`pruebas-reales/con-cuenta.spec.ts`), con la
+  extensión de verdad: la llave llega por la sincronización, se visita el sitio con la bóveda abierta para
+  que la lista se apunte, se bloquea y el banner sale. Es la única prueba que dice que **las tres piezas
+  están conectadas**, y cae al quitar la rama de `quizas`.
+- **El `rpId` permitido, con tabla cruzada en los dos lados.** El caso que hay que tener y que lo encontró
+  una mutación y no la lectura: sin exigir el punto que separa, `malaejemplo.com` **termina en**
+  `ejemplo.com` y firmaría por él. La tabla tenía `ejemplo.com.malo.com` —que no ataca nada, porque ahí el
+  nombre va en medio— y con ella la comprobación se podía quitar entera sin que nada se pusiera rojo.
+- **El freno de Ajustes, en las tres puertas**, y esa prueba enseñó de paso que **un doble no basta**: con la
+  clave privada inventada, `FirmarLlave` falla igual por no poder leerla, así que la comprobación del freno
+  se podía quitar entera y la prueba seguía verde. Ahora la llave es de verdad y se firma con ella **antes**
+  de apagar.
+
+**Y el fallo de la P2 que más costó, que es el que nadie habría buscado:** el saludo del puente iba en un
+solo sentido. Los dos guiones entran en `document_start` y **su orden no está garantizado** —el plan lo dejó
+escrito como lo que había que comprobar—, pero lo que lo rompía de verdad es otra cosa: el lado aislado **no
+puede escuchar hasta haber leído el consentimiento**, y eso es un `await` a `storage`. Así que el saludo del
+mundo principal se disparaba contra un `window` sin oyentes y se perdía; el shim no se instalaba, la página
+funcionaba como si Esfinge no estuviera, y **no había error en ninguna parte**. Dio la cara como la prueba
+real pasando tres veces y a la cuarta no.
+
+Ahora cada lado anuncia y cada lado escucha, idempotente por los dos: el que atiende **se anuncia** en
+cuanto puede, el que saluda **vuelve a tender** si le llega ese anuncio sin tener acuse, y **deja de tender
+en cuanto lo tiene** —eso último no es cosmético: un puerto transferido por `window.postMessage` lo puede
+recoger cualquier oyente, así que solo se manda mientras no existe el primer `<script>` del sitio—.
+
+Y la lección de método, que vale para cualquier protocolo entre dos piezas: **las cuatro pruebas que había
+atendían antes de saludar**, o sea el caso que no ocurre. La que faltaba fuerza el orden de verdad, y es la
+única que lo caza siempre; quitando el anuncio, la prueba real vuelve a ser **intermitente**, que es el
+síntoma original y no un fallo limpio.
+
+**Lo que no se ha comprobado de la P2, y hay que verlo en su Mac**
+
+- Que el banner **se ve y se distingue** del diálogo del navegador. Aquí solo hay capturas.
+- **Entrar en GitHub de verdad**, que es lo que pidió el cliente con esas palabras.
+- Que **sin llave guardada el diálogo del navegador sale igual**, en un sitio de verdad y no en uno servido
+  por Playwright.
+- Que **los antibot** de los sitios que usa no marcan el navegador. No se puede saber sin probarlo, y por eso
+  el disfraz de `Function.prototype.toString` **no se ha puesto**.
