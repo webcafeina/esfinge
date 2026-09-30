@@ -79,7 +79,44 @@ export const MARCA = "esfinge:llaves:1";
 /** Cuánto se espera al acuse antes de darse por no instalado. */
 const PLAZO_DEL_SALUDO = 2000;
 
-type Saludo = { esfinge: typeof MARCA };
+/**
+ * Cuántas veces se vuelve a tender el puente si el otro lado llega tarde.
+ *
+ * Tres, no una: el saludo se repite **solo cuando el mundo aislado se anuncia**, así
+ * que en el caso normal se tiende una vez y las otras dos no se gastan nunca.
+ */
+const SALUDOS = 3;
+
+/**
+ * **El saludo va en los dos sentidos, y esto no es una precaución: es la única forma
+ * de que el puente se tienda.**
+ *
+ * Los dos guiones entran en `document_start` y **el orden entre ellos no está
+ * garantizado** —el plan lo dejó escrito como lo que había que comprobar, y la
+ * respuesta es que no—. Peor aún: el lado aislado no puede escuchar hasta haber
+ * leído el consentimiento, y eso es un `await` a `storage`, así que **llega tarde
+ * casi siempre**. Con el saludo en un solo sentido, el mensaje del mundo principal
+ * se dispara contra un `window` donde todavía no hay nadie y se pierde: el shim no
+ * se instala, la página funciona como si Esfinge no estuviera, y **no hay error en
+ * ningún sitio**. Dio la cara como una prueba que pasaba tres veces y a la cuarta
+ * no.
+ *
+ * Así que cada lado anuncia y cada lado escucha:
+ *
+ *  - el mundo principal manda `de: "mundo"` **con un puerto**, que es lo único que
+ *    de verdad autentica el canal;
+ *  - el aislado manda `de: "aislado"` **sin nada**, en cuanto puede escuchar, y eso
+ *    hace que el principal vuelva a tender si su primer saludo se perdió.
+ *
+ * Es idempotente por los dos lados: el que atiende **se quita el oyente al
+ * enganchar**, así que un segundo canal no sustituye al primero, y el que saluda
+ * **deja de tender en cuanto tiene acuse**, así que después del saludo no se
+ * transfiere ningún puerto más. Eso último importa: un puerto transferido por
+ * `window.postMessage` lo puede recoger cualquier oyente de la página, y por eso
+ * solo se manda mientras no existe todavía el primer `<script>` del sitio.
+ */
+type Saludo = { esfinge: typeof MARCA; de: "mundo" };
+type Aqui = { esfinge: typeof MARCA; de: "aislado" };
 
 /**
  * `postMessage` capturada **al cargar el módulo**, que en el mundo principal es
@@ -109,28 +146,48 @@ const mandarOriginal: MandarConPuerto | undefined =
 export function abrirPuente(ventana: Window = window, plazo = PLAZO_DEL_SALUDO): Promise<MessagePort | null> {
   return new Promise((listo) => {
     let contestado = false;
+    let quedan = SALUDOS;
+
     const acabar = (p: MessagePort | null) => {
       if (contestado) return;
       contestado = true;
+      ventana.removeEventListener("message", oirAlAislado);
       listo(p);
     };
 
-    let canal: MessageChannel;
-    try {
-      canal = new MessageChannel();
-    } catch {
-      acabar(null);
-      return;
-    }
+    /** Un canal nuevo cada vez: un puerto ya transferido no se puede volver a mandar. */
+    const tender = (): boolean => {
+      if (!mandarOriginal || quedan <= 0) return false;
+      quedan--;
+      let canal: MessageChannel;
+      try {
+        canal = new MessageChannel();
+      } catch {
+        return false;
+      }
+      canal.port1.onmessage = () => acabar(canal.port1);
+      try {
+        mandarOriginal.call(ventana, { esfinge: MARCA, de: "mundo" } satisfies Saludo, "/", [canal.port2]);
+      } catch {
+        return false;
+      }
+      return true;
+    };
 
-    canal.port1.onmessage = () => acabar(canal.port1);
-    if (!mandarOriginal) {
-      acabar(null);
-      return;
-    }
-    try {
-      mandarOriginal.call(ventana, { esfinge: MARCA } satisfies Saludo, "/", [canal.port2]);
-    } catch {
+    /**
+     * El anuncio del otro lado. **Solo mientras no haya acuse**: en cuanto lo hay,
+     * este oyente se quita y de aquí no sale ningún puerto más, así que un anuncio
+     * forjado por la página no consigue que se le transfiera uno.
+     */
+    const oirAlAislado = (e: MessageEvent) => {
+      if (contestado || e.source !== ventana) return;
+      const d = e.data as Aqui | null;
+      if (!d || d.esfinge !== MARCA || d.de !== "aislado") return;
+      tender();
+    };
+    ventana.addEventListener("message", oirAlAislado);
+
+    if (!tender()) {
       acabar(null);
       return;
     }
@@ -139,19 +196,20 @@ export function abrirPuente(ventana: Window = window, plazo = PLAZO_DEL_SALUDO):
 }
 
 /**
- * Atiende el saludo desde el mundo aislado y se queda con el puerto.
+ * Atiende el saludo desde el mundo aislado, se queda con el puerto **y se anuncia**.
  *
- * Hay que llamarlo **en la primera línea del guion aislado**: el saludo llega en
- * `document_start` y un oyente puesto después no lo ve.
+ * Anunciarse es la mitad que falta: este lado no puede escuchar hasta haber leído el
+ * consentimiento, así que el saludo del mundo principal ya se ha perdido cuando
+ * llegamos. El anuncio es lo que hace que vuelva a tenderlo.
  */
 export function atenderElPuente(alLlegar: (puerto: MessagePort) => void, ventana: Window = window): void {
   const oir = (e: MessageEvent) => {
-    // `source` y la marca son para no confundirse con el ruido de la página; lo que
-    // de verdad decide es que traiga **un** puerto, porque el puerto es lo que
-    // luego no se puede falsificar.
+    // `source`, la marca y `de` son para no confundirse con el ruido de la página
+    // —y con nuestro propio anuncio—; lo que de verdad decide es que traiga **un**
+    // puerto, porque el puerto es lo que luego no se puede falsificar.
     if (e.source !== ventana) return;
     const d = e.data as Saludo | null;
-    if (!d || d.esfinge !== MARCA) return;
+    if (!d || d.esfinge !== MARCA || d.de !== "mundo") return;
     if (e.ports.length !== 1) return;
     ventana.removeEventListener("message", oir);
     const puerto = e.ports[0];
@@ -161,4 +219,12 @@ export function atenderElPuente(alLlegar: (puerto: MessagePort) => void, ventana
     alLlegar(puerto);
   };
   ventana.addEventListener("message", oir);
+
+  // **Después de escuchar, nunca antes**: si el otro lado contestara al anuncio
+  // mientras todavía no hay oyente, se perdería el saludo bueno.
+  try {
+    ventana.postMessage({ esfinge: MARCA, de: "aislado" } satisfies Aqui, "/");
+  } catch {
+    // Que no se pueda anunciar no rompe nada: queda el saludo del otro lado.
+  }
 }

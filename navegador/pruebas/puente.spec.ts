@@ -77,8 +77,8 @@ test("puente: un saludo sin puerto no engancha a nadie, y no deja sordo al puent
     const P = (window as any).P;
     let recibido = false;
     P.atenderElPuente(() => (recibido = true));
-    window.postMessage({ esfinge: P.MARCA }, "/");
-    window.postMessage({ esfinge: "otra cosa" }, "/");
+    window.postMessage({ esfinge: P.MARCA, de: "mundo" }, "/");
+    window.postMessage({ esfinge: "otra cosa", de: "mundo" }, "/");
     await new Promise((x) => setTimeout(x, 100));
     const tras = recibido;
     // **Y esto es lo que de verdad hay que mirar.** Comprobar solo que no ha
@@ -103,9 +103,45 @@ test("puente: el segundo saludo no sustituye al primero", async ({ page }) => {
     P.atenderElPuente(() => veces++);
     await P.abrirPuente(window, 500);
     const suyo = new MessageChannel();
-    window.postMessage({ esfinge: P.MARCA }, "/", [suyo.port2]);
+    window.postMessage({ esfinge: P.MARCA, de: "mundo" }, "/", [suyo.port2]);
     await new Promise((r) => setTimeout(r, 100));
     return veces;
   });
   expect(cuantos).toBe(1);
+});
+
+/**
+ * **El orden de verdad, que es el que faltaba.**
+ *
+ * Las cuatro pruebas de arriba atienden **antes** de saludar, y así el saludo nunca
+ * se pierde: son el caso que no ocurre. En la extensión de verdad los dos guiones
+ * entran en `document_start` sin orden garantizado, y encima el lado aislado tiene
+ * que leer el consentimiento antes de poder escuchar —un `await` a `storage`—, así
+ * que **el que atiende llega tarde casi siempre**.
+ *
+ * Con el saludo en un solo sentido esto pasaba tres veces y a la cuarta no, sin un
+ * error en ningún sitio: el shim simplemente no se instalaba. Lo que lo arregla es
+ * que el que atiende **se anuncie**, y quitar ese anuncio —o el oyente que lo
+ * escucha— tiene que poner esta prueba en rojo. Comprobado quitando los dos.
+ */
+test("puente: el que atiende llega tarde y el puente se tiende igual", async ({ page }) => {
+  await conElPuente(page);
+  const r = await page.evaluate(async () => {
+    const P = (window as any).P;
+    let recibido: MessagePort | null = null;
+    // Se saluda contra un `window` donde todavía no escucha nadie.
+    const esperando = P.abrirPuente(window, 2000);
+    await new Promise((x) => setTimeout(x, 150));
+    P.atenderElPuente((p: MessagePort) => (recibido = p));
+    const puerto = await esperando;
+    if (!puerto || !recibido) return { hayPuerto: puerto !== null, hayRecibido: recibido !== null, vuelta: "" };
+    // Y que sea un canal de verdad, no un puerto suelto que no lleva a ninguna parte.
+    const vuelta = await new Promise<string>((listo) => {
+      recibido!.onmessage = (e: MessageEvent) => recibido!.postMessage("eco:" + e.data);
+      puerto.onmessage = (e: MessageEvent) => listo(String(e.data));
+      puerto.postMessage("tarde");
+    });
+    return { hayPuerto: true, hayRecibido: true, vuelta };
+  });
+  expect(r).toEqual({ hayPuerto: true, hayRecibido: true, vuelta: "eco:tarde" });
 });
