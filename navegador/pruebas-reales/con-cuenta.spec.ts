@@ -470,19 +470,36 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
 
     const sitio = await contexto.newPage();
     await sitio.goto("https://sitio.prueba/entrar");
-    // **Sin esperar la promesa**: con el banner delante no se resuelve hasta que
-    // alguien decide, y aquí no se puede pulsar. Lo que se comprueba es que salga.
-    await sitio.evaluate(() => {
-      void navigator.credentials.get({
-        publicKey: {
-          challenge: new Uint8Array(32).fill(7),
-          rpId: "sitio.prueba",
-          userVerification: "discouraged",
-          allowCredentials: [],
+    // **Se pide varias veces, y eso no es paciencia: es el diseño.** La bandera «aquí
+    // hay algo» la **empuja** el mundo aislado después de cargar la página —tiene que
+    // preguntárselo al trabajador, que puede estar dormido—, y mientras no llega vale
+    // `false` y el shim cede sin esperar a nadie. Es a propósito: esperar es lo que
+    // puede agotar la activación de usuario y romper el inicio de sesión de quien no
+    // usa Esfinge. Una persona tarda segundos en pulsar «Entrar»; una prueba, cero.
+    //
+    // Así que se llama hasta que el banner sale, que además comprueba lo que importa:
+    // **en cuanto la bandera llega, sale**. Cada llamada que cede acaba en el diálogo
+    // del navegador, que aquí no tiene autenticador y rechaza — de ahí el `catch`.
+    await expect
+      .poll(
+        async () => {
+          await sitio.evaluate(() => {
+            navigator.credentials
+              .get({
+                publicKey: {
+                  challenge: new Uint8Array(32).fill(7),
+                  rpId: "sitio.prueba",
+                  userVerification: "discouraged",
+                  allowCredentials: [],
+                },
+              })
+              .catch(() => {});
+          });
+          return sitio.locator("esfinge-llave").count();
         },
-      });
-    });
-    await expect(sitio.locator("esfinge-llave")).toHaveCount(1, { timeout: 20_000 });
+        { timeout: 30_000, intervals: [500, 1000, 2000] },
+      )
+      .toBe(1);
     await sitio.close();
 
     const abrir = await panel();

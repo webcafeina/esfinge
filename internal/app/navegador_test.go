@@ -405,3 +405,80 @@ func TestNuncaEnEsteSitio(t *testing.T) {
 		t.Error("una lista vacía llega como nula, y a la ventana como null")
 	}
 }
+
+// El freno de los Ajustes apaga las llaves de acceso **en las tres puertas**
+// (ADR 0048).
+//
+// Es el freno de emergencia de toda la fase: existe para que un sitio que se rompa
+// se pueda arreglar apagando un interruptor, sin esperar a una versión en una
+// tienda. Por eso no basta con que el banner no salga.
+//
+//   - `Llaves` tiene que contestar **que no hay ninguna, sin error**: el `shim` cede
+//     y sale el diálogo del navegador, que es lo que se vería sin Esfinge. Con un
+//     error, el banner diría algo, y lo que tiene que pasar es que Esfinge no se
+//     note.
+//   - `DominiosConLlave` tiene que quedarse vacía, o el navegador seguiría creyendo
+//     que aquí hay algo y con la bóveda cerrada sacaría «abre Esfinge» para nada.
+//   - Y `FirmarLlave` tiene que negarse, aunque nadie deba llegar ahí: un freno que
+//     solo frena donde se ofrece, y no donde se hace lo consecuente, no es un freno.
+//
+// Las tres se miran porque las tres se pueden olvidar por separado, y quitar
+// cualquiera de ellas deja las otras dos en verde.
+func TestElFrenoDeLosAjustesApagaLasLlaves(t *testing.T) {
+	a, _, _, f, _ := conBoveda(t)
+	// **Una llave de verdad, y no una cualquiera con la clave inventada.** Con una
+	// inventada, `FirmarLlave` falla igual por no poder leerla y la comprobación del
+	// freno se puede quitar entera sin que nada se ponga rojo: comprobado mutándolo.
+	privada, _, err := navegador.CrearLlave()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Titulo: "GitHub", Tipo: boveda.TipoLlave, RPID: "github.com",
+		IDCredencial: "Y3JlZC0x", IDUsuario: "dXN1YXJpbw", NombreVisible: "yo@ejemplo.com",
+		Algoritmo: -7, ClavePrivada: navegador.B64URL.EncodeToString(privada),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var laLlave string
+	for _, e := range a.boveda().Buscar("") {
+		if e.Tipo == boveda.TipoLlave {
+			laLlave = e.ID
+		}
+	}
+
+	// Y firmar con ella funciona **antes** de apagar, que es la otra mitad: sin esto,
+	// «no ha firmado» al final no distingue el freno de una llave que no servía.
+	if _, err := f.FirmarLlave("https://github.com/login", "github.com", laLlave, "cmV0bw"); err != nil {
+		t.Fatalf("con el interruptor puesto no firma: %v", err)
+	}
+
+	// Encendido —como viene de fábrica— se ve la llave y el dominio se apunta.
+	hay, err2 := f.Llaves("https://github.com/login", "github.com", nil)
+	if err2 != nil || len(hay) != 1 {
+		t.Fatalf("con el interruptor puesto no sale la llave: %+v, %v", hay, err2)
+	}
+	if d := f.DominiosConLlave(); len(d) != 1 || d[0] != "github.com" {
+		t.Fatalf("con el interruptor puesto los dominios son %v", d)
+	}
+
+	p := a.ajustes.Ver()
+	p.LlavesDeAccesoEnElNavegador = false
+	if err := a.GuardarPreferencias(p); err != nil {
+		t.Fatal(err)
+	}
+
+	apagadas, err := f.Llaves("https://github.com/login", "github.com", nil)
+	if err != nil {
+		t.Errorf("apagado tiene que contestar que no hay, no fallar: %v", err)
+	}
+	if len(apagadas) != 0 {
+		t.Errorf("apagado sigue ofreciendo %d llaves", len(apagadas))
+	}
+	if d := f.DominiosConLlave(); len(d) != 0 {
+		t.Errorf("apagado sigue apuntando los dominios %v", d)
+	}
+	if _, err := f.FirmarLlave("https://github.com/login", "github.com", laLlave, "cmV0bw"); err == nil {
+		t.Error("apagado ha firmado igual")
+	}
+}

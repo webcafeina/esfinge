@@ -507,6 +507,13 @@ func (f fuenteDelNavegador) NuncaAqui(dominio string) error {
 // que es el anfitrión o un sufijo suyo separado por punto, y nunca un sufijo
 // público.
 func (f fuenteDelNavegador) Llaves(origen, rpID string, permitidas []string) ([]navegador.LlaveParaElBanner, error) {
+	// **El freno de emergencia, y va aquí y no en la extensión**: apagado, no hay
+	// ninguna llave para nadie, el `shim` cede y sale el diálogo del navegador. Se
+	// contesta que no hay, no un error: un error haría que el banner dijera algo,
+	// y lo que tiene que pasar es que Esfinge no se note.
+	if !f.a.ajustes.Ver().LlavesDeAccesoEnElNavegador {
+		return nil, nil
+	}
 	b := f.a.boveda()
 	if b == nil {
 		return nil, boveda.ErrCerrada
@@ -574,6 +581,11 @@ func (f fuenteDelNavegador) Llaves(origen, rpID string, permitidas []string) ([]
 // recuerda nada entre aperturas. Quien recuerda es el navegador, y hasta que
 // cierre.
 func (f fuenteDelNavegador) DominiosConLlave() []string {
+	// Apagado, tampoco se apunta nada: si no, con la bóveda cerrada el navegador
+	// seguiría creyendo que aquí hay algo y sacaría el banner de «abre Esfinge».
+	if !f.a.ajustes.Ver().LlavesDeAccesoEnElNavegador {
+		return nil
+	}
 	b := f.a.boveda()
 	if b == nil {
 		return nil
@@ -604,6 +616,11 @@ func (f fuenteDelNavegador) DominiosConLlave() []string {
 // mande la página: es lo que va dentro del `clientDataJSON` y lo que el sitio
 // compara byte a byte.
 func (f fuenteDelNavegador) FirmarLlave(origen, rpID, id, reto string) (navegador.Afirmacion, error) {
+	// Y apagado no se firma, aunque nadie deba llegar hasta aquí: el freno tiene que
+	// frenar en el sitio donde se hace lo consecuente, no solo donde se ofrece.
+	if !f.a.ajustes.Ver().LlavesDeAccesoEnElNavegador {
+		return navegador.Afirmacion{}, errors.New("Las llaves de acceso están apagadas en los Ajustes de Esfinge")
+	}
 	b := f.a.boveda()
 	if b == nil {
 		return navegador.Afirmacion{}, boveda.ErrCerrada

@@ -119,6 +119,12 @@ export type Preferencias = {
    * **Viene apagado**: esto no sale a la red, abre una puerta a esta máquina.
    */
   puenteDelNavegador: boolean;
+  /**
+   * Deja que la extensión use tus llaves de acceso en las páginas (ADR 0048).
+   * **Viene encendida**, y es el freno de emergencia de esa fase: apagada, el
+   * navegador pregunta como si Esfinge no estuviera.
+   */
+  llavesDeAccesoEnElNavegador: boolean;
 };
 
 /** Lo que se manda para apagar uno de los dos relojes de la bóveda. */

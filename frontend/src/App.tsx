@@ -1145,6 +1145,29 @@ function Ajustes({
           </>
         )}
 
+        {/* **El freno de las llaves de acceso** (ADR 0048).
+            Va aquí, con lo del navegador, porque es de lo que apaga: no toca nada
+            de la bóveda ni de la ventana, solo lo que la extensión puede hacer
+            dentro de una página. Viene encendido, que es como se decidió
+            publicarlo, y existe porque hay código de Esfinge dentro de cada página
+            `https`: si un sitio cambia y deja de entrar, esto se apaga y se sigue
+            trabajando sin esperar a una versión. */}
+        <label className="fila-ajuste">
+          <input
+            type="checkbox"
+            checked={prefs?.llavesDeAccesoEnElNavegador ?? true}
+            disabled={cargando}
+            onChange={(e) => cambiar({ llavesDeAccesoEnElNavegador: e.target.checked })}
+          />
+          <span>Usar tus llaves de acceso en el navegador</span>
+        </label>
+
+        <p className="nota">
+          Cuando un sitio pida una llave de acceso, Esfinge se ofrecerá a poner la tuya. Si lo
+          apagas, el navegador preguntará como si Esfinge no estuviera y tus llaves seguirán
+          guardadas aquí. Apágalo si algún sitio deja de dejarte entrar.
+        </p>
+
         {/* Lo que pide permiso. Va en «peligro» a propósito: es la única pregunta
             de esta pantalla cuya respuesta le abre la bóveda a otro programa. */}
         {navegador?.pide && (

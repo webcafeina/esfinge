@@ -262,6 +262,34 @@ test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
 });
 
 /**
+ * **El freno de las llaves de acceso está en Ajustes y viene encendido** (ADR 0048).
+ *
+ * Es la única pieza de toda la fase que se puede usar cuando algo se rompe, así que
+ * lo que hay que comprobar no es que la casilla exista: es que **viene puesta de
+ * fábrica** —que es como se decidió publicarla— y que **apagarla sobrevive a cerrar
+ * la ventana**, porque un freno que se suelta al reiniciar no sirve para lo que está.
+ */
+test("las llaves de acceso se pueden apagar en Ajustes, y se quedan apagadas", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await seccion(page, "Ajustes").click();
+
+  const llaves = page.getByRole("checkbox", { name: /llaves de acceso/ });
+  await expect(llaves).toBeChecked();
+
+  await llaves.uncheck();
+  await page.reload();
+  await seccion(page, "Ajustes").click();
+  await expect(page.getByRole("checkbox", { name: /llaves de acceso/ })).not.toBeChecked();
+
+  // Como el de arriba: el fichero de preferencias lo comparten las demás pruebas.
+  await page.getByRole("checkbox", { name: /llaves de acceso/ }).check();
+  await expect(page.getByRole("checkbox", { name: /llaves de acceso/ })).toBeChecked();
+
+  expect(errores, errores.join(' | ')).toEqual([]);
+});
+
+/**
  * ordenar manda una orden como la mandaría el menú del sistema.
  *
  * Se reintenta porque el flujo de eventos del servidor de desarrollo solo llega

@@ -104,6 +104,27 @@ type Preferencias struct {
 	// primer desbloqueo que funcione— en vez de repetir siempre un aviso que casi
 	// nunca es cierto.
 	VersionConPermisoDelLlavero string `json:"versionConPermisoDelLlavero"`
+
+	// LlavesDeAccesoEnElNavegador deja que la extensión use las llaves de acceso de
+	// la bóveda (ADR 0048). **Viene encendida**, que es como se decidió publicarla.
+	//
+	// Es el freno de emergencia de toda la fase, y por eso existe: hay código de
+	// Esfinge dentro de cada página `https`, sustituyendo el método con el que un
+	// sitio identifica a la gente. Si un sitio grande cambia y deja de entrar, esto
+	// se apaga aquí y se sigue trabajando **sin esperar a una versión nueva**, que
+	// en una tienda son días.
+	//
+	// Apagado, la ventana contesta que no hay ninguna llave y el `shim` cede
+	// siempre: sale el diálogo del navegador, exactamente lo que se vería sin
+	// Esfinge. No hace falta que la extensión se entere de nada, y eso es a
+	// propósito — **lo que decide qué se ofrece vive en el núcleo**, no en la
+	// página, porque publicar un arreglo en Go es empujar una etiqueta.
+	//
+	// **Se guarda en positivo, y con la regla del cero eso importa**: un guardado a
+	// medias llega con `false` y **apaga** las llaves. Es el lado seguro de
+	// equivocarse, porque apagarlas es ceder al navegador y ceder siempre funciona;
+	// al revés, un descuido soltaría el freno que alguien acababa de echar.
+	LlavesDeAccesoEnElNavegador bool `json:"llavesDeAccesoEnElNavegador"`
 }
 
 // Nunca es lo que se manda para apagar uno de los dos relojes.
@@ -165,10 +186,11 @@ func AbrirAjustes() *Ajustes {
 	a := &Ajustes{
 		ruta: rutaPreferencias(),
 		p: Preferencias{
-			BuscarActualizaciones:  true,
-			MinutosParaBloquear:    minutosBloqueoPorDefecto,
-			SegundosDePortapapeles: segundosPortapapelesPorDefecto,
-			DescargarIconos:        true,
+			BuscarActualizaciones:       true,
+			MinutosParaBloquear:         minutosBloqueoPorDefecto,
+			SegundosDePortapapeles:      segundosPortapapelesPorDefecto,
+			DescargarIconos:             true,
+			LlavesDeAccesoEnElNavegador: true,
 		},
 	}
 	if a.ruta == "" {
