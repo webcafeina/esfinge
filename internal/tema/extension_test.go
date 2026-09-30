@@ -86,10 +86,17 @@ func TestLaExtensionSeVeDondeLaPintanOtros(t *testing.T) {
 	mide(piedra, blanco, AANormal, "lo que se escribe en el título de la tarjeta")
 	mide(oro, piedra, AAGrande, "el foco de los botones de la tarjeta")
 
+	// **El banner de las llaves de acceso** (ADR 0048) usa las mismas cuatro, y eso
+	// es la decisión: no estrena ninguna pareja. Se mide igual porque su pie va a 11
+	// píxeles —el texto más pequeño de toda la extensión— y ahí el secundario sobre
+	// la piedra tiene que seguir cumpliendo, que es lo que dice esta línea.
+	mide(MustParseHex("#d8d8de"), piedra, AANormal, "el pie del banner de la llave de acceso")
+
 	// Y que lo medido es lo que se usa.
 	usan := map[string][]string{
 		"../../navegador/src/insignia.ts":     {"#2b2b31", "#1d6f31", "#8f5300", "#ffffff"},
 		"../../navegador/src/tarjeta.ts":      {"#2b2b31", "#ffffff", "#f2c14e", "#d8d8de"},
+		"../../navegador/src/banner.ts":       {"#2b2b31", "#ffffff", "#f2c14e", "#d8d8de"},
 		"../../navegador/src/marcas.ts":       {"#f2c14e", "#2b2b31", "#ffffff"},
 		"../../build/icono-barra.svg":         {"#f2c14e", "#2b2b31", "#e8dcc4"},
 		"../../build/icono-barra-apagado.svg": {"#a1a1a8", "#2b2b31"},
