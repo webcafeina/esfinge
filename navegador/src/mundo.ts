@@ -39,6 +39,26 @@ import { aBase64Url, deBase64Url } from "./nucleo/afirmacion";
  */
 const PLAZO_DEL_AVISO = 500;
 
+/**
+ * Las extensiones de WebAuthn que Esfinge sabe atender. **Ante cualquier otra, se
+ * cede**, y esa regla no se toca: una extensión que no se entiende puede cambiar lo
+ * que el sitio espera recibir, y devolverle algo que no cuadra es peor que no estar.
+ *
+ * Las dos que hay son las que GitHub manda al crear, y cada una está aquí por su
+ * motivo:
+ *
+ *  - **`credProps`** solo pide que la respuesta diga si la llave es *residente* —o
+ *    «descubrible»—. Las de Esfinge lo son todas, así que se contesta `rk: true`. No
+ *    cambia nada de lo que se firma ni de lo que se guarda.
+ *  - **`appidExclude`** es la extensión antigua de U2F: pide que `excludeCredentials`
+ *    se interprete también contra un AppID heredado. **Se ignora, y es correcto
+ *    ignorarla**: una llave de Esfinge nunca es una credencial U2F heredada, así que
+ *    por ese camino no hay nada que excluir. Lo que se pierde es que GitHub no pueda
+ *    avisar de un duplicado con una llave física antigua, que no es un problema de
+ *    seguridad sino una credencial de más en su lista.
+ */
+const EXTENSIONES_QUE_SABEMOS = new Set(["credProps", "appidExclude"]);
+
 /** Lo que una llamada trae y hay que mirar **sin esperar a nadie**. */
 type Opciones = CredentialRequestOptions & CredentialCreationOptions;
 
@@ -73,10 +93,16 @@ function podemosAtender(o: Opciones | undefined, hay: boolean): boolean {
   // ocurre fuera de nuestro alcance. Se cede siempre.
   if ("mediation" in o && o.mediation === "conditional") return false;
   // **Se cuentan las claves de dentro, no que el campo exista**: GitHub manda
-  // `extensions` presente y vacío, así que mirando el campo cederíamos siempre y
-  // Esfinge no funcionaría nunca. Lo dijo el diagnóstico del 2026-09-29.
+  // `extensions` presente y vacío al entrar, así que mirando el campo cederíamos
+  // siempre y Esfinge no funcionaría nunca. Lo dijo el diagnóstico del 2026-09-29.
+  //
+  // **Y al crear no viene vacío**, que es lo que costó la primera prueba de la P3: en
+  // GitHub llega con `appidExclude` y `credProps`, así que con la regla de «cualquier
+  // clave, se cede» el banner no salía nunca y aparecía el diálogo del navegador con
+  // Dashlane, el llavero de Apple y Chrome — y sin Esfinge. Lo dijo otro diagnóstico
+  // por la consola, el del 2026-09-30, no la lectura del código.
   const ext = o.publicKey.extensions;
-  if (ext && Object.keys(ext).length > 0) return false;
+  if (ext && Object.keys(ext).some((k) => !EXTENSIONES_QUE_SABEMOS.has(k))) return false;
   return true;
 }
 
@@ -223,7 +249,7 @@ async function arrancar() {
    * para decidir qué enseñar la próxima vez, así que decir otra cosa le haría dibujar
    * mal su propia pantalla.
    */
-  const credencialCreada = (a: NonNullable<RespuestaAlMundo["atestacion"]>) => {
+  const credencialCreada = (a: NonNullable<RespuestaAlMundo["atestacion"]>, pidioCredProps: boolean) => {
     const bytes = (s: string) => {
       const b = deBase64Url(s);
       return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
@@ -245,20 +271,25 @@ async function arrancar() {
     const cred = Object.create(
       typeof PublicKeyCredential === "undefined" ? Object.prototype : PublicKeyCredential.prototype,
     ) as Record<string, unknown>;
+    // **`credProps` se contesta solo si lo han pedido**, que es lo que dice la
+    // especificación: una extensión que el sitio no pidió no aparece en el resultado.
+    // Y se contesta `rk: true` porque es verdad: todas las llaves de Esfinge son
+    // residentes, no hay ninguna que no se pueda descubrir.
+    const resultados = pidioCredProps ? { credProps: { rk: true } } : {};
     Object.defineProperties(cred, {
       id: { value: a.idCredencial, enumerable: true },
       rawId: { value: bytes(a.idCredencial), enumerable: true },
       type: { value: "public-key", enumerable: true },
       authenticatorAttachment: { value: "platform", enumerable: true },
       response: { value: respuesta, enumerable: true },
-      getClientExtensionResults: { value: () => ({}) },
+      getClientExtensionResults: { value: () => resultados },
       toJSON: {
         value: () => ({
           id: a.idCredencial,
           rawId: a.idCredencial,
           type: "public-key",
           authenticatorAttachment: "platform",
-          clientExtensionResults: {},
+          clientExtensionResults: resultados,
           response: {
             clientDataJSON: a.datosDelCliente,
             attestationObject: a.objeto,
@@ -302,7 +333,7 @@ async function arrancar() {
           // original, así que sale el diálogo del navegador — exactamente lo que se
           // habría visto sin Esfinge.
           if (!r.atestacion) return Reflect.apply(original[cual], this, argumentos);
-          return credencialCreada(r.atestacion);
+          return credencialCreada(r.atestacion, Boolean(pk.extensions?.credProps));
         }
 
         const pk = o!.publicKey as PublicKeyCredentialRequestOptions;

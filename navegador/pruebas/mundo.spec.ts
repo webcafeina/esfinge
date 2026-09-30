@@ -472,3 +472,125 @@ test("mundo: con las llaves apagadas, no se miente sobre el autenticador", async
   expect(r.si, "ha dicho que hay autenticador con las llaves apagadas").toBe(false);
   expect(r.llamoAlOriginal, "no ha preguntado al navegador").toBe(true);
 });
+
+/**
+ * **La forma que GitHub manda de verdad al crear** (ADR 0048, P3).
+ *
+ * Es el caso que tiró la primera prueba en el Mac del cliente: pulsó «Add passkey» y
+ * salió el diálogo del navegador con Dashlane, el llavero de Apple y Chrome — **y sin
+ * Esfinge**. El shim estaba instalado y había cedido, porque GitHub manda
+ * `extensions: { appidExclude, credProps }` y la regla era «cualquier clave que venga
+ * en `extensions`, se cede».
+ *
+ * Esa regla se escribió en la P2 con el diagnóstico de `get`, donde GitHub manda
+ * `extensions` **presente y vacío**. Al crear no viene vacío, y nadie lo comprobó.
+ *
+ * Los valores de esta prueba son los que dijo la consola del cliente el 2026-09-30,
+ * no una invención: dos extensiones, `[-7, -257]` en ese orden, una llave excluida,
+ * `userVerification` y `residentKey` en `required`, atestación `none` y reto de 32.
+ */
+test("mundo: la petición de crear de GitHub se atiende, con sus dos extensiones", async ({ page }) => {
+  await conElShim(page, {
+    atender: true,
+    sePuedeCrear: true,
+    atestacion: {
+      idCredencial: "Y3JlZC1udWV2YQ",
+      datosDelCliente: "eyJ0IjoxfQ",
+      objeto: "o2NmbXQ",
+      datosDelAutenticador: "YXV0aA",
+      publica: "cHViYQ",
+    },
+  });
+  const r = await page.evaluate(async () => {
+    const cc = (window as any).navigator.__cc;
+    const c: any = await cc.create({
+      publicKey: {
+        challenge: new Uint8Array(32).fill(3),
+        rp: { id: "github.com", name: "GitHub" },
+        user: { id: new Uint8Array(16).fill(4), name: "yo@ejemplo.com", displayName: "Yo" },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },
+          { type: "public-key", alg: -257 },
+        ],
+        excludeCredentials: [{ type: "public-key", id: new Uint8Array([1, 2, 3]) }],
+        authenticatorSelection: { userVerification: "required", residentKey: "required" },
+        attestation: "none",
+        extensions: { appidExclude: "https://github.com/u2f", credProps: true },
+      },
+    });
+    return {
+      esNuestra: c !== "original",
+      extensiones: c === "original" ? null : c.getClientExtensionResults(),
+      json: c === "original" ? null : c.toJSON().clientExtensionResults,
+    };
+  });
+  expect(r.esNuestra, "ha cedido con las extensiones que GitHub manda al crear").toBe(true);
+  // **Y `credProps` se contesta**, porque el sitio lo pidió y es verdad: las llaves de
+  // Esfinge son todas residentes.
+  expect(r.extensiones).toEqual({ credProps: { rk: true } });
+  expect(r.json).toEqual({ credProps: { rk: true } });
+});
+
+/**
+ * **Y con una extensión que no conocemos se sigue cediendo**, que es la mitad que
+ * evita convertir la lista blanca en una puerta abierta.
+ *
+ * Sin esta prueba, «arreglar» lo de GitHub podía haber sido quitar la comprobación
+ * entera — y entonces Esfinge contestaría a peticiones cuya forma no entiende,
+ * devolviéndole al sitio algo que no cuadra con lo que pidió.
+ */
+test("mundo: una extensión que no conocemos sigue cediendo", async ({ page }) => {
+  await conElShim(page, {
+    atender: true,
+    sePuedeCrear: true,
+    atestacion: {
+      idCredencial: "Y3JlZC1udWV2YQ",
+      datosDelCliente: "eyJ0IjoxfQ",
+      objeto: "o2NmbXQ",
+      datosDelAutenticador: "YXV0aA",
+      publica: "cHViYQ",
+    },
+  });
+  const r = await page.evaluate(async () => {
+    const cc = (window as any).navigator.__cc;
+    const conRara = await cc.create({
+      publicKey: {
+        challenge: new Uint8Array(8),
+        rp: {},
+        user: {},
+        extensions: { credProps: true, algoQueNoConocemos: true },
+      },
+    });
+    return { conRara, pedidos: (window as any).__pedidos.length };
+  });
+  expect(r.conRara).toBe("original");
+  expect(r.pedidos, "ha preguntado antes de ceder con una extensión desconocida").toBe(0);
+});
+
+/**
+ * Y **sin pedir `credProps` no se contesta**, que es lo que dice la especificación: una
+ * extensión que el sitio no pidió no aparece en el resultado. Devolverla igual es
+ * decirle algo que no preguntó, y hay sitios que comparan lo que piden con lo que les
+ * llega.
+ */
+test("mundo: credProps no se contesta si no se ha pedido", async ({ page }) => {
+  await conElShim(page, {
+    atender: true,
+    sePuedeCrear: true,
+    atestacion: {
+      idCredencial: "Y3JlZC1udWV2YQ",
+      datosDelCliente: "eyJ0IjoxfQ",
+      objeto: "o2NmbXQ",
+      datosDelAutenticador: "YXV0aA",
+      publica: "cHViYQ",
+    },
+  });
+  const r = await page.evaluate(async () => {
+    const cc = (window as any).navigator.__cc;
+    const c: any = await cc.create({
+      publicKey: { challenge: new Uint8Array(8), rp: {}, user: {}, extensions: { appidExclude: "x" } },
+    });
+    return c.getClientExtensionResults();
+  });
+  expect(r).toEqual({});
+});

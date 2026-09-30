@@ -1062,6 +1062,19 @@ dicha al lado de cada regla. Si hace falta una nueva, se añade primero ahí. La
 texto apagado sobre la superficie elevada no está medido, así que al pasar el puntero por una fila el
 usuario sube a `--cuerpo`.
 
+**`extensions` viene vacío al entrar y lleno al crear, y eso costó la primera prueba en su Mac.** La regla
+de la P2 —«cualquier clave dentro de `extensions`, se cede»— se escribió con el diagnóstico de
+`navigator.credentials.get`, donde GitHub lo manda **presente y vacío**. Al **crear** manda
+`appidExclude` y `credProps`, así que el `shim` cedía siempre: el cliente pulsó «Add passkey» y salió el
+diálogo del navegador con Dashlane, el llavero de Apple y Chrome, **y sin Esfinge**. Ahora hay lista blanca
+—`credProps` se contesta `rk: true`, que es verdad porque todas las llaves de Esfinge son residentes;
+`appidExclude` se ignora porque una llave nuestra nunca es una credencial U2F heredada— y **ante cualquier
+otra se sigue cediendo**, con su prueba para que arreglar esto no se convierta en abrir la puerta.
+
+La lección no es de WebAuthn: **un diagnóstico de un verbo no vale para el verbo de al lado.** La forma de
+`get` se pidió por la consola y se usó para decidir también lo de `create`, que nadie había mirado. Y lo que
+lo destapó fue otra vez la consola del cliente, no una prueba ni la lectura del código.
+
 **Unas casillas de código no siempre llevan `maxlength="1"`, y seis campos declarados pueden ser una
 sola cosa.** El formulario de segundo factor de Cloudflare son seis casillas que declaran **todas**
 `one-time-code`, y ninguna tiene `maxlength="1"`: la primera admite seis cifras para el autorrelleno
