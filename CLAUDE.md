@@ -1062,6 +1062,18 @@ dicha al lado de cada regla. Si hace falta una nueva, se añade primero ahí. La
 texto apagado sobre la superficie elevada no está medido, así que al pasar el puntero por una fila el
 usuario sube a `--cuerpo`.
 
+**Dos entradas de la misma clase pueden ser idénticas en pantalla, y en las llaves de acceso eso duele.**
+El título de una llave es el nombre del sitio y la segunda línea de la lista es la cuenta, así que **cuatro
+llaves de GitHub de la misma persona se ven como cuatro filas iguales**. En una contraseña es molesto; en una
+llave no se puede recrear ni corregir, así que borrar la que no es cuesta perder la forma de entrar. Lo único
+que las separa es **cuándo se crearon**, y va en la lista y en la ficha —no solo en el editor: el dato que
+distingue tiene que estar donde se mira primero—. **Con segundos**: las del cliente se crearon en pocos
+minutos y varias en el mismo, así que hasta el minuto seguían saliendo idénticas.
+
+Y el porqué de que hubiera cuatro, que es la otra mitad: **crear guarda antes de entregarle la credencial al
+sitio**, a propósito —lo contrario deja al sitio con una llave que aquí no existe—, así que un registro que
+falla después deja una huérfana **y el navegador no puede enterarse**. Está en `deuda.md`.
+
 **Un objeto que se devuelve a la página tiene que imitar al de verdad en mutabilidad, no solo en forma.**
 Los métodos de la credencial —`toJSON`, `getClientExtensionResults`— se pusieron con `defineProperty` sin
 `writable`, por reflejo defensivo. En un `PublicKeyCredential` de verdad viven en el **prototipo**, así que

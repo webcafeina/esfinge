@@ -1776,3 +1776,77 @@ test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ 
   const inesperados = errores.filter((e) => !/status of 400/.test(e));
   expect(inesperados, inesperados.join(" | ")).toEqual([]);
 });
+
+/**
+ * **Dos llaves de acceso del mismo sitio se distinguen** (ADR 0048, P3).
+ *
+ * Lo encontró el cliente en la primera prueba de verdad: creó una llave en GitHub,
+ * abrió la bóveda y **había cuatro**, todas de GitHub y todas con la misma cuenta —las
+ * tres primeras eran de los intentos que fallaron después de guardarse—. Y en pantalla
+ * eran **cuatro filas idénticas**: el título es el nombre del sitio y la segunda línea,
+ * la cuenta. No había ningún dato que dijera cuál era cuál.
+ *
+ * Eso en una contraseña es molesto; en una llave de acceso es otra cosa, porque **no se
+ * puede recrear ni corregir**: borrar la que no es cuesta perder la forma de entrar.
+ *
+ * Lo único que las separa es cuándo se crearon, así que la hora tiene que estar. Se
+ * comprueban **los dos sitios** —la lista y la ficha—, porque tener que abrir cuatro
+ * entradas para compararlas no es distinguirlas.
+ */
+test("dos llaves del mismo sitio y la misma cuenta se distinguen por cuándo se crearon", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const sitio = `llaves-${Date.now()}.prueba`;
+  for (const cual of ["una", "otra"]) {
+    await page.evaluate(
+      ([s, c]) =>
+        fetch("/api/GuardarEnBoveda", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify([
+            {
+              tipo: "llave",
+              titulo: s,
+              rpId: s,
+              idCredencial: `cred-${c}`,
+              nombreVisible: "yo@ejemplo.com",
+              usuario: "yo@ejemplo.com",
+              algoritmo: -7,
+              clavePrivada: `privada-${c}`,
+            },
+          ]),
+        }),
+      [sitio, cual],
+    );
+    // Un segundo entre las dos: las fechas de la bóveda tienen resolución de un
+    // segundo, así que sin esperar saldrían **con la misma hora** y la prueba diría
+    // que no se distinguen cuando lo que pasa es que se crearon a la vez.
+    //
+    // Y esta espera es la que destapó que la primera versión llegaba **solo hasta el
+    // minuto**: las dos llaves caían en el mismo y salían idénticas, que es justo lo
+    // que le pasó al cliente con cuatro intentos seguidos.
+    await page.waitForTimeout(1100);
+  }
+  await page.reload();
+  await conLaBovedaAbierta(page);
+  await page.locator("#boveda-buscar").fill(sitio);
+
+  const filas = page.locator(".panel:visible .lista-boveda li");
+  await expect(filas).toHaveCount(2);
+  // **Lo que de verdad se comprueba**: que las dos segundas líneas no dicen lo mismo.
+  // Mirar solo que aparece una hora pasaría en verde con las dos idénticas.
+  const notas = await filas.locator(".nota").allTextContents();
+  expect(notas[0], "las dos filas dicen lo mismo: no hay forma de saber cuál es cuál").not.toBe(notas[1]);
+  expect(notas[0]).toContain("yo@ejemplo.com");
+
+  // Y en la ficha —la que se abre al pulsar la fila, no el editor— su propia línea.
+  // La primera versión miraba el campo del editor y fallaba por eso: **el dato que
+  // distingue tiene que estar donde se mira primero**, no detrás de otro clic.
+  await filas.first().locator("button").click();
+  const ficha = page.locator(".panel:visible");
+  await expect(ficha.getByText("Creada", { exact: true })).toBeVisible();
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});

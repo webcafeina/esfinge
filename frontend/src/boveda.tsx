@@ -1321,6 +1321,15 @@ function anfitrionCrudo(sitio: string): string {
 
 /** Lo que va debajo del título en la lista: de quién es esta entrada. */
 function deQuien(e: EntradaBoveda): string {
+  // **Una llave de acceso lleva cuándo se creó**, y no es un adorno: de un mismo
+  // sitio puede haber varias con el mismo título y la misma cuenta, así que sin la
+  // hora la lista enseña cuatro filas idénticas. Las demás clases no lo necesitan:
+  // ahí el usuario o el sitio ya distinguen.
+  if (e.tipo === "llave") {
+    const cuando = fechaYHora(e.creada);
+    const quien = e.nombreVisible || e.usuario || "";
+    return cuando ? (quien ? `${quien} · ${cuando}` : cuando) : quien;
+  }
   return e.usuario || e.sitios?.[0] || e.titular || e.nombreCompleto || "";
 }
 
@@ -1638,9 +1647,17 @@ function Detalle({
         <Dato etiqueta="Sitio" valor={entrada.rpId} />
         <Dato etiqueta="Cuenta" valor={entrada.nombreVisible} />
         {entrada.tipo === "llave" && (
-          <p className="nota">
-            Una llave de acceso no se puede ver ni copiar: se usa firmando, y la firma la hace Esfinge.
-          </p>
+          <>
+            {/* **Cuándo se creó, con la hora**, y va aquí y no solo en el editor:
+                de un mismo sitio puede haber varias con el mismo título y la misma
+                cuenta, y entonces esto es lo único que dice cuál es cuál. Tener que
+                abrir el editor para verlo sería esconder el único dato que
+                distingue. */}
+            <Dato etiqueta="Creada" valor={fechaYHora(entrada.creada)} />
+            <p className="nota">
+              Una llave de acceso no se puede ver ni copiar: se usa firmando, y la firma la hace Esfinge.
+            </p>
+          </>
         )}
 
         <Dato etiqueta="Correo" valor={entrada.correo} />
@@ -2061,6 +2078,15 @@ function Editor({
               id="boveda-nombre-visible"
               etiqueta="Cuenta"
               valor={e.nombreVisible}
+              alCambiar={() => {}}
+              desactivado
+            />
+            {/* **Cuándo se creó, con la hora**, porque puede ser lo único que la
+                distinga de otra del mismo sitio y la misma cuenta. */}
+            <Campo
+              id="boveda-creada"
+              etiqueta="Creada"
+              valor={fechaYHora(e.creada)}
               alCambiar={() => {}}
               desactivado
             />
@@ -2573,6 +2599,33 @@ function Borrar({ alBorrarse }: { alBorrarse: () => void }) {
       </div>
     </div>
   );
+}
+
+/**
+ * Fecha **con hora**, para lo que puede ocurrir varias veces el mismo día.
+ *
+ * Existe por las llaves de acceso: de un mismo sitio puede haber varias, todas con
+ * el mismo título y la misma cuenta, y entonces **lo único que las distingue es
+ * cuándo se crearon**. Con el día a secas, cuatro llaves de GitHub del mismo día se
+ * ven idénticas y no hay forma de saber cuál borrar — y una llave de acceso no se
+ * puede recrear ni corregir, así que borrar la que no es cuesta la cuenta.
+ *
+ * **Con segundos, y no es un exceso.** Las cuatro llaves que el cliente se encontró se
+ * crearon en pocos minutos, y varias en el mismo: con la hora hasta el minuto seguían
+ * saliendo idénticas. Un segundo es además la resolución de las fechas de la bóveda,
+ * así que es todo lo que se puede distinguir.
+ */
+function fechaYHora(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString(undefined, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 function fecha(iso: string): string {
