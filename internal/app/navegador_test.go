@@ -1,6 +1,9 @@
 package app
 
 import (
+	"bytes"
+	"crypto/ecdsa"
+	"crypto/x509"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -480,5 +483,196 @@ func TestElFrenoDeLosAjustesApagaLasLlaves(t *testing.T) {
 	}
 	if _, err := f.FirmarLlave("https://github.com/login", "github.com", laLlave, "cmV0bw"); err == nil {
 		t.Error("apagado ha firmado igual")
+	}
+}
+
+// Lo que se rechaza al crear, y **cada cosa por su motivo** (ADR 0048, P3).
+//
+// Son las cuatro puertas de antes de tocar la bóveda, y se miran por separado porque
+// cada una se puede quitar sola. La del algoritmo es la que casi se queda sin probar:
+// quitarla del código **no hacía caer nada** —la prueba del ciclo le pasa `-7`, que
+// es lo que sí sabemos— y la mutación solo se puso roja porque dejaba un `import` sin
+// usar. Eso no es una prueba, es una casualidad del compilador.
+func TestLoQueNoSeCreaYPorQue(t *testing.T) {
+	a, _, _, f, _ := conBoveda(t)
+	reto := navegador.B64URL.EncodeToString([]byte("un reto cualquiera"))
+
+	// **Un algoritmo que Esfinge no sabe firmar.** Crear la llave la registraría en el
+	// sitio y la cuenta se quedaría con una credencial muerta, así que no se crea.
+	if _, err := f.CrearLlave("https://github.com/", "github.com", navegador.LlaveNueva{
+		Reto: reto, Algoritmos: []int{-257, -8},
+	}); err == nil {
+		t.Error("ha creado una llave con un algoritmo que no sabe firmar")
+	}
+	// Y una lista vacía es «me da igual», que sí vale.
+	if _, err := f.CrearLlave("https://github.com/", "github.com", navegador.LlaveNueva{Reto: reto}); err != nil {
+		t.Errorf("sin lista de algoritmos tenía que crearla: %v", err)
+	}
+
+	// **Un sitio pidiendo para otro dominio.** Es la misma regla que al firmar, y aquí
+	// es peor: crearía en la bóveda una llave atada a un sitio que no la pidió.
+	for _, origen := range []string{"https://malo.com/", "https://github.com.malo.com/", "https://malogithub.com/"} {
+		if _, err := f.CrearLlave(origen, "github.com", navegador.LlaveNueva{Reto: reto}); err == nil {
+			t.Errorf("desde %q ha creado una llave de github.com", origen)
+		}
+	}
+
+	// **Un reto que no es base64url.** Se mira antes de generar nada.
+	if _, err := f.CrearLlave("https://github.com/", "github.com", navegador.LlaveNueva{
+		Reto: "esto no es base64url!!",
+	}); err == nil {
+		t.Error("ha creado una llave con un reto que no se entiende")
+	}
+
+	// **Y si el sitio dice que ya tiene una llave nuestra, no se hace otra.** Se coge
+	// el identificador de la que se acaba de crear, que es lo que el sitio mandaría.
+	var suya string
+	for _, e := range a.boveda().Buscar("") {
+		if e.Tipo == boveda.TipoLlave {
+			entera, _ := a.boveda().Ver(e.ID)
+			suya = entera.IDCredencial
+		}
+	}
+	if suya == "" {
+		t.Fatal("no hay ninguna llave con la que probar la exclusión")
+	}
+	if _, err := f.CrearLlave("https://github.com/", "github.com", navegador.LlaveNueva{
+		Reto: reto, Excluidas: []string{suya},
+	}); err == nil {
+		t.Error("ha creado una segunda llave para una cuenta que ya tenía la nuestra")
+	}
+	// Pero una excluida que **no** es nuestra no impide nada: es la llave que esa
+	// persona tenga en su Touch ID, y ahí Esfinge sí puede ofrecer la suya.
+	if _, err := f.CrearLlave("https://github.com/", "github.com", navegador.LlaveNueva{
+		Reto: reto, Excluidas: []string{navegador.B64URL.EncodeToString([]byte("la del sistema"))},
+	}); err != nil {
+		t.Errorf("una llave excluida que no es nuestra no tenía que estorbar: %v", err)
+	}
+}
+
+// Crear una llave de acceso y **poder firmar con ella** (ADR 0048, P3).
+//
+// Es el ciclo que importa y el que ninguna prueba de las piezas cubre: lo que se
+// guarda al crear tiene que ser exactamente lo que hace falta para firmar después.
+// Si faltara un campo —el identificador, la privada, el `rpId`— la llave se
+// registraría en el sitio y **la cuenta se quedaría sin forma de entrar**, que es el
+// peor fallo posible de esta clase.
+//
+// Y se comprueba **verificando la firma contra la pública que salió en la
+// atestación**, no contra la de la bóveda: la que cuenta es la que el sitio se
+// guardó. Con las dos distintas, todo estaría en verde y nadie podría entrar.
+func TestCrearUnaLlaveYFirmarConElla(t *testing.T) {
+	a, _, _, f, _ := conBoveda(t)
+
+	at, err := f.CrearLlave("https://github.com/registro", "github.com", navegador.LlaveNueva{
+		Usuario:    "yo@ejemplo.com",
+		IDUsuario:  navegador.B64URL.EncodeToString([]byte("el-usuario-del-sitio")),
+		Titulo:     "GitHub",
+		Reto:       navegador.B64URL.EncodeToString([]byte("un reto de treinta y dos bytes.")),
+		Algoritmos: []int{-7},
+	})
+	if err != nil {
+		t.Fatalf("no ha creado la llave: %v", err)
+	}
+	if at.IDCredencial == "" || at.Objeto == "" || at.DatosDelCliente == "" {
+		t.Fatalf("la atestación sale incompleta: %+v", at)
+	}
+
+	// **Lo que el sitio recibe dice lo que tiene que decir.** El tipo es el de crear
+	// —no el de firmar— y el origen lo puso este lado, sin el puerto por defecto.
+	cliente, err := navegador.B64URL.DecodeString(at.DatosDelCliente)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(cliente), `"type":"webauthn.create"`) {
+		t.Errorf("el clientDataJSON no dice que se está creando: %s", cliente)
+	}
+	if !strings.Contains(string(cliente), `"origin":"https://github.com"`) {
+		t.Errorf("el origen no es el que puso este lado: %s", cliente)
+	}
+
+	// La entrada está en la bóveda, es del sitio y **no se ve la privada en la lista**.
+	var laLlave boveda.Entrada
+	for _, e := range a.boveda().Buscar("") {
+		if e.Tipo == boveda.TipoLlave {
+			laLlave, _ = a.boveda().Ver(e.ID)
+			if e.ClavePrivada != "" {
+				t.Error("la clave privada sale en lo que se enseña")
+			}
+		}
+	}
+	if laLlave.ID == "" {
+		t.Fatal("la llave no se ha guardado en la bóveda")
+	}
+	if laLlave.RPID != "github.com" || laLlave.IDCredencial != at.IDCredencial {
+		t.Errorf("lo guardado no cuadra con lo que se le dijo al sitio: %+v", laLlave)
+	}
+	if laLlave.Algoritmo != -7 || laLlave.ClavePrivada == "" {
+		t.Errorf("la llave se ha guardado sin lo que hace falta para firmar: %+v", laLlave)
+	}
+	idDeCredencial, err := navegador.B64URL.DecodeString(at.IDCredencial)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// **Y ahora lo que de verdad prueba esto**, en dos mitades y sin descodificar
+	// CBOR —que a propósito no existe en este proyecto—:
+	//
+	//  1. que **la pública que se le mandó al sitio es la de la llave guardada**, o
+	//     sea que el COSE que va dentro de la atestación son exactamente esos bytes;
+	//  2. y que una firma hecha con la llave guardada **se verifica con esa pública**.
+	//
+	// Las dos juntas dicen lo que hará el sitio la próxima vez que se entre. Solo la
+	// segunda no diría nada: verificar con la pública de la privada que acabo de usar
+	// para firmar es comprobar que ECDSA funciona.
+	privadaGuardada, err := navegador.B64URL.DecodeString(laLlave.ClavePrivada)
+	if err != nil {
+		t.Fatal(err)
+	}
+	k, err := x509.ParsePKCS8PrivateKey(privadaGuardada)
+	if err != nil {
+		t.Fatal(err)
+	}
+	suya := k.(*ecdsa.PrivateKey)
+	publicaSPKI, err := x509.MarshalPKIXPublicKey(&suya.PublicKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	coseGuardada, err := navegador.PublicaEnCOSE(publicaSPKI)
+	if err != nil {
+		t.Fatal(err)
+	}
+	objeto, err := navegador.B64URL.DecodeString(at.Objeto)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(objeto, coseGuardada) {
+		t.Error("la pública que se le mandó al sitio no es la de la llave guardada: " +
+			"la cuenta se quedaría con una llave con la que no se puede entrar")
+	}
+	// **Y el identificador también va dentro**, que es lo otro que el sitio guarda.
+	if !bytes.Contains(objeto, idDeCredencial) {
+		t.Error("el identificador de la credencial no está en la atestación")
+	}
+
+	af, err := f.FirmarLlave("https://github.com/login", "github.com", laLlave.ID,
+		navegador.B64URL.EncodeToString([]byte("otro reto cualquiera")))
+	if err != nil {
+		t.Fatalf("no ha firmado con la llave que acaba de crear: %v", err)
+	}
+	datos, err := navegador.B64URL.DecodeString(af.DatosDelAutenticador)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cli, err := navegador.B64URL.DecodeString(af.DatosDelCliente)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firma, err := navegador.B64URL.DecodeString(af.Firma)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !navegador.VerificarFirma(publicaSPKI, navegador.LoQueSeFirma(datos, cli), firma) {
+		t.Error("el sitio no podría verificar la firma de esa llave")
 	}
 }

@@ -84,6 +84,12 @@ type Fuente interface {
 	// FirmarLlave firma una aserción con una de ellas. **Devuelve la firma, nunca
 	// la clave**: es la misma regla que el código de un solo uso.
 	FirmarLlave(origen, rpID, id, reto string) (Afirmacion, error)
+	// CrearLlave genera una llave de acceso **y la guarda en la bóveda** (P3).
+	//
+	// Es lo más consecuente que el navegador puede pedir: lo que se guarda aquí es
+	// lo único con lo que se vuelve a entrar en esa cuenta. Devuelve la atestación,
+	// que es lo que el sitio se queda; la clave privada no sale de la bóveda.
+	CrearLlave(origen, rpID string, nueva LlaveNueva) (Atestacion, error)
 	// DominiosConLlave son los dominios registrables que tienen alguna llave de
 	// acceso, y **es lo único de la bóveda que el navegador guarda** (ADR 0048).
 	//
@@ -463,6 +469,23 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 			return mal(MotivoNoEncaja, err.Error())
 		}
 		return Respuesta{OK: true, Afirmacion: &a}
+
+	// **Crear una llave escribe en la bóveda**, y su freno se aplica arriba con los
+	// demás: `esEscritura` lo cuenta, que es donde tiene que estar para que nadie lo
+	// quite sin verlo.
+	case QueCrearLlave:
+		a, err := s.fuente.CrearLlave(p.Origen, p.RPID, LlaveNueva{
+			Usuario:    p.Usuario,
+			IDUsuario:  p.IDUsuario,
+			Titulo:     p.Titulo,
+			Reto:       p.Reto,
+			Excluidas:  p.Excluidas,
+			Algoritmos: p.Algoritmos,
+		})
+		if err != nil {
+			return mal(MotivoNoEncaja, err.Error())
+		}
+		return Respuesta{OK: true, Atestacion: &a}
 	}
 
 	return mal(MotivoNoEntiendo, "Esfinge no sabe hacer eso")
@@ -470,7 +493,12 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 
 // esEscritura dice si un verbo cambia la bóveda.
 func esEscritura(que string) bool {
-	return que == QueGuardarCuenta || que == QueActualizarCuenta || que == QueNuncaAqui
+	// **Crear una llave de acceso es la escritura más cara de todas**, y por eso
+	// está aquí y no en su `case`: guardar una contraseña de más es molesto, y una
+	// llave de más en un sitio es una credencial que el sitio guarda y que puede
+	// dejar la cuenta con dos llaves sin que nadie lo haya pedido.
+	return que == QueGuardarCuenta || que == QueActualizarCuenta || que == QueNuncaAqui ||
+		que == QueCrearLlave
 }
 
 // envioDe saca de una petición lo que se sabe del formulario enviado.

@@ -112,6 +112,18 @@ const (
 	// QueFirmarLlave firma una aserción. **Lo que sale es la firma, nunca la clave**,
 	// igual que `copiar-codigo` saca el código y jamás la semilla.
 	QueFirmarLlave = "firmar-llave"
+	// QueCrearLlave crea una llave de acceso y **la guarda en la bóveda** (ADR 0048,
+	// P3).
+	//
+	// Es el segundo verbo que escribe en la bóveda desde el navegador —el primero
+	// fue guardar una contraseña (ADR 0032)— y el más consecuente de los dos: lo que
+	// se guarda aquí es **lo único con lo que se puede volver a entrar en esa
+	// cuenta**. Una contraseña perdida se recupera por correo; una llave de acceso
+	// perdida, no.
+	//
+	// Devuelve la atestación, que es lo que el sitio se queda para siempre. La clave
+	// privada **no sale**: se genera aquí, se guarda cifrada y nunca cruza.
+	QueCrearLlave = "crear-llave"
 )
 
 // LoQueSePuedePedir es la lista, en un sitio, para que añadir algo sea una
@@ -120,7 +132,7 @@ var LoQueSePuedePedir = []string{
 	QueEstado, QueEmparejar, QueCuentas, QueCopiarSecreto, QueCopiarCodigo,
 	QueRellenar, QueRellenarCodigo,
 	QueOfrecer, QueGuardarCuenta, QueActualizarCuenta, QueNuncaAqui,
-	QueLlaves, QueFirmarLlave,
+	QueLlaves, QueFirmarLlave, QueCrearLlave,
 }
 
 // VersionDelProtocolo la manda la extensión en cada petición.
@@ -163,6 +175,23 @@ type Peticion struct {
 	Permitidas []string `json:"permitidas,omitempty"`
 	// Reto es el desafío del sitio, en base64url.
 	Reto string `json:"reto,omitempty"`
+	// Lo que hace falta para crear una llave, y lo dice el sitio (ADR 0048, P3).
+	//
+	// `Usuario` y `Titulo` ya existen arriba y se reutilizan: el nombre de la cuenta
+	// y cómo se llama el sitio. Lo que falta es lo suyo.
+	//
+	// IDUsuario es el `user.id` del sitio, en base64url: **bytes opacos que hay que
+	// devolver tal cual** al firmar, y que el sitio usa para saber de quién es la
+	// llave. No es el correo.
+	IDUsuario string `json:"idUsuario,omitempty"`
+	// Excluidas son los identificadores de `excludeCredentials`: llaves que el sitio
+	// **ya tiene** para esa cuenta. Si una es nuestra hay que negarse, que es lo que
+	// pide la especificación para no crear dos veces la misma.
+	Excluidas []string `json:"excluidas,omitempty"`
+	// Algoritmos son los `pubKeyCredParams` que el sitio acepta, en su orden de
+	// preferencia. Esfinge solo sabe de `-7`: si no está, **se cede** en vez de
+	// crear una llave con un algoritmo que luego no se puede firmar.
+	Algoritmos []int `json:"algoritmos,omitempty"`
 }
 
 // LlaveParaElBanner es una llave de acceso **tal como se enseña**: sin nada de
@@ -183,6 +212,42 @@ type Afirmacion struct {
 	DatosDelCliente      string `json:"datosDelCliente"`
 	DatosDelAutenticador string `json:"datosDelAutenticador"`
 	Firma                string `json:"firma"`
+}
+
+// LlaveNueva es lo que el sitio pide al crear una llave de acceso (ADR 0048, P3).
+//
+// Va en su propio tipo y no en seis argumentos porque **todo esto lo dice el sitio**
+// y ninguno decide nada por sí solo: el `rpId` se comprueba aparte contra el origen
+// que puso el navegador, y lo de aquí se guarda o se rechaza en bloque.
+type LlaveNueva struct {
+	// Usuario es el `user.name` del sitio: el correo o el nombre de la cuenta.
+	Usuario string
+	// IDUsuario es el `user.id`, en base64url. **Bytes opacos**: hay que devolverlos
+	// tal cual al firmar y no significan nada aquí.
+	IDUsuario string
+	// Titulo es cómo se llama el sitio (`rp.name`), para que la entrada tenga nombre.
+	Titulo string
+	// Reto es el desafío, en base64url.
+	Reto string
+	// Excluidas son las llaves que el sitio dice tener ya para esa cuenta.
+	Excluidas []string
+	// Algoritmos son los que el sitio acepta. Sin `-7` no se crea nada.
+	Algoritmos []int
+}
+
+// Atestacion es lo que sale de crear una llave, y **lo que el sitio se queda para
+// siempre** (ADR 0048, P3).
+//
+// No lleva firma: con `fmt: "none"` no hay nada que firmar, y la clave pública viaja
+// **dentro** del objeto de atestación, en su `authData`. Por eso aquí no hay un
+// campo para ella: sacarla aparte sería tener el mismo dato en dos sitios, que es lo
+// que este proyecto ya ha pagado varias veces.
+type Atestacion struct {
+	IDCredencial string `json:"idCredencial"`
+	// DatosDelCliente son los bytes exactos que se hashearon, en base64url.
+	DatosDelCliente string `json:"datosDelCliente"`
+	// Objeto es el `attestationObject` en CBOR, en base64url.
+	Objeto string `json:"objeto"`
 }
 
 // Envio es lo que se sabe de un formulario que se acaba de enviar.
@@ -293,6 +358,7 @@ type Respuesta struct {
 	// Las llaves de acceso (ADR 0048).
 	Llaves     []LlaveParaElBanner `json:"llaves,omitempty"`
 	Afirmacion *Afirmacion         `json:"afirmacion,omitempty"`
+	Atestacion *Atestacion         `json:"atestacion,omitempty"`
 	// Dominios son los dominios registrables con llave, y **vuelven solo al
 	// preguntar por las llaves sin decir de qué sitio**. El navegador se los queda
 	// para saber, con la bóveda cerrada, si aquí merece la pena ofrecer abrirla.

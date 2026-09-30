@@ -17,12 +17,14 @@ import (
 type bovedaFalsa struct {
 	existe, abierta bool
 	testigos        map[string]bool
-	niega           bool   // la persona dice que no al emparejar
-	pedidos         int    // cuántas veces se ha preguntado por un secreto
-	portapapeles    string // lo que Esfinge ha copiado
-	escritas        int    // cuántas veces se ha escrito en la bóveda
-	ultimoOrigen    string // con qué origen llegó la última petición de llaves
-	vecesDominios   int    // cuántas veces se ha pedido la lista de dominios
+	niega           bool       // la persona dice que no al emparejar
+	pedidos         int        // cuántas veces se ha preguntado por un secreto
+	portapapeles    string     // lo que Esfinge ha copiado
+	escritas        int        // cuántas veces se ha escrito en la bóveda
+	ultimoOrigen    string     // con qué origen llegó la última petición de llaves
+	vecesDominios   int        // cuántas veces se ha pedido la lista de dominios
+	vecesCrear      int        // cuántas veces se ha pedido crear una llave
+	ultimaNueva     LlaveNueva // con qué llegó la última petición de crear
 }
 
 func nuevaFalsa() *bovedaFalsa {
@@ -126,6 +128,18 @@ func (b *bovedaFalsa) Llaves(origen, rpID string, permitidas []string) ([]LlaveP
 		return nil, nil
 	}
 	return []LlaveParaElBanner{{ID: "l1", Nombre: "yo@ejemplo.com"}}, nil
+}
+
+// CrearLlave apunta lo que le llega y cuenta las veces: **es una escritura**, y lo
+// que hay que poder comprobar es que no se llama cuando no debe.
+func (b *bovedaFalsa) CrearLlave(origen, rpID string, nueva LlaveNueva) (Atestacion, error) {
+	b.vecesCrear++
+	b.ultimoOrigen = origen
+	if RPIDPermitido(rpID, origen) == "" {
+		return Atestacion{}, errors.New("Ese sitio no puede crear una llave de acceso para ese dominio")
+	}
+	b.ultimaNueva = nueva
+	return Atestacion{IDCredencial: "c-nueva", DatosDelCliente: nueva.Reto, Objeto: "el-objeto"}, nil
 }
 
 // Cuenta las veces, que es lo único que distingue «no me han llamado» de «me han
@@ -762,9 +776,53 @@ func TestLaListaDeDominiosSoloVaEnLaPreguntaDeAntes(t *testing.T) {
 // **Y están en la lista blanca**, que es lo que hace que añadir un verbo sea una
 // decisión y no el efecto de haber escrito un `case` más.
 func TestLosVerbosDeLasLlavesEstanEnLaLista(t *testing.T) {
-	for _, q := range []string{QueLlaves, QueFirmarLlave} {
+	for _, q := range []string{QueLlaves, QueFirmarLlave, QueCrearLlave} {
 		if !slices.Contains(LoQueSePuedePedir, q) {
 			t.Errorf("%q se atiende y no está en LoQueSePuedePedir", q)
 		}
+	}
+}
+
+// **Crear una llave gasta del freno de escrituras, no del de preguntas** (ADR 0048,
+// P3), y eso es lo que hay que comprobar aquí y no en la fuente.
+//
+// Es la escritura más cara que el navegador puede pedir: cada una deja en la bóveda
+// una credencial nueva y la registra en un sitio. Si contara como pregunta, el tope
+// sería el de sesenta por minuto, que para esto es no tener ninguno.
+//
+// Se mira también que **lo que el sitio dice llega entero** a la fuente: el `user.id`
+// son bytes opacos que hay que devolver tal cual al firmar, y perderlos por el camino
+// daría una llave que el sitio no reconoce como de esa cuenta.
+func TestCrearUnaLlaveEsUnaEscritura(t *testing.T) {
+	if !esEscritura(QueCrearLlave) {
+		t.Error("crear una llave no cuenta como escritura, así que gasta del freno equivocado")
+	}
+
+	b := nuevaFalsa()
+	s := Servidor{fuente: b}
+	r := s.Atender(Peticion{Version: VersionDelProtocolo, Que: QueCrearLlave,
+		Origen: "https://github.com/registro", RPID: "github.com", Testigo: "el-testigo",
+		Usuario: "yo@ejemplo.com", IDUsuario: "dXN1YXJpbw", Titulo: "GitHub",
+		Reto: "cmV0bw", Algoritmos: []int{-7}})
+	if !r.OK || r.Atestacion == nil {
+		t.Fatalf("no ha creado la llave: %+v", r)
+	}
+	if b.ultimaNueva.IDUsuario != "dXN1YXJpbw" || b.ultimaNueva.Usuario != "yo@ejemplo.com" ||
+		b.ultimaNueva.Titulo != "GitHub" || b.ultimaNueva.Reto != "cmV0bw" ||
+		len(b.ultimaNueva.Algoritmos) != 1 {
+		t.Errorf("a la fuente no le ha llegado entero lo que dijo el sitio: %+v", b.ultimaNueva)
+	}
+
+	// **Y un sitio pidiendo para otro dominio no llega a escribir.** Se cuentan las
+	// veces: comprobar solo que contesta que no pasaría en verde si la comprobación
+	// viviera después de haber guardado.
+	antes := b.vecesCrear
+	mal := s.Atender(Peticion{Version: VersionDelProtocolo, Que: QueCrearLlave,
+		Origen: "https://malo.com/", RPID: "github.com", Testigo: "el-testigo", Reto: "cmV0bw"})
+	if mal.OK {
+		t.Error("ha dejado crear una llave de github.com desde malo.com")
+	}
+	if b.vecesCrear != antes+1 {
+		t.Errorf("la fuente se ha llamado %d veces más de lo esperado", b.vecesCrear-antes-1)
 	}
 }

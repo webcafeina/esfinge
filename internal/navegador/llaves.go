@@ -100,6 +100,45 @@ func OrigenDe(origen string) string {
 	return esquema + "://" + anfitrion
 }
 
+// LargoDelIDDeCredencial son los bytes de azar que identifican una llave.
+//
+// Treinta y dos, y el número no lo fija WebAuthn: lo elige el autenticador. Se
+// escoge así porque **el sitio lo guarda y lo usa como nombre**, y dos llaves con el
+// mismo identificador en el mismo sitio serían la misma para él. Con 32 bytes de
+// azar eso no ocurre.
+const LargoDelIDDeCredencial = 32
+
+// IDDeCredencial saca un identificador nuevo.
+func IDDeCredencial() ([]byte, error) {
+	b := make([]byte, LargoDelIDDeCredencial)
+	if _, err := rand.Read(b); err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+// PublicaEnCOSE convierte una pública en SPKI al COSE que guarda el sitio.
+//
+// Va aquí y no en `cbor.go` porque es lo que junta las dos mitades: sacar las
+// coordenadas de la clave es cosa de `crypto`, y escribirlas es cosa del formato. El
+// llamante no tiene que tocar coordenadas, que es donde está la trampa de los ceros
+// por delante.
+func PublicaEnCOSE(publicaSPKI []byte) ([]byte, error) {
+	k, err := x509.ParsePKIXPublicKey(publicaSPKI)
+	if err != nil {
+		return nil, errors.New("Esa clave pública no se entiende")
+	}
+	ec, vale := k.(*ecdsa.PublicKey)
+	if !vale || ec.Curve != elliptic.P256() {
+		return nil, errors.New("Esfinge solo sabe de llaves P-256")
+	}
+	// `FillBytes` deja cada coordenada en sus 32 bytes **con los ceros de delante**,
+	// que es lo que el COSE pide y lo contrario de lo que pide el DER de una firma.
+	x := make([]byte, 32)
+	y := make([]byte, 32)
+	return ClaveCOSE(ec.X.FillBytes(x), ec.Y.FillBytes(y)), nil
+}
+
 // CrearLlave hace una llave de acceso nueva: la privada en PKCS#8, la pública en
 // SPKI, que es lo mismo que guarda y entiende la extensión.
 func CrearLlave() (privada, publica []byte, err error) {

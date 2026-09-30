@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -608,6 +609,118 @@ func (f fuenteDelNavegador) DominiosConLlave() []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// CrearLlave genera una llave de acceso, la guarda en la bóveda y devuelve lo que
+// el sitio se queda (ADR 0048, P3).
+//
+// **Es la escritura más consecuente que el navegador puede pedir.** Lo que se guarda
+// aquí es lo único con lo que se vuelve a entrar en esa cuenta: una contraseña
+// perdida se recupera por correo, una llave de acceso perdida no se recupera. De ahí
+// que la exportación cifrada se hiciera en la P1, antes de que se pudiera crear la
+// primera.
+//
+// El orden de las comprobaciones es parte del diseño: **primero lo que no depende de
+// la bóveda** —el interruptor, el sitio, el algoritmo, las excluidas— y solo al final
+// se genera y se escribe. Así, lo que se va a rechazar se rechaza sin tocar nada.
+func (f fuenteDelNavegador) CrearLlave(origen, rpID string, nueva navegador.LlaveNueva) (navegador.Atestacion, error) {
+	if !f.a.ajustes.Ver().LlavesDeAccesoEnElNavegador {
+		return navegador.Atestacion{}, errors.New("Las llaves de acceso están apagadas en los Ajustes de Esfinge")
+	}
+	pedido := navegador.RPIDPermitido(rpID, origen)
+	if pedido == "" {
+		return navegador.Atestacion{}, errors.New("Ese sitio no puede crear una llave de acceso para ese dominio")
+	}
+	suyo := navegador.OrigenDe(origen)
+	if suyo == "" {
+		return navegador.Atestacion{}, errors.New("Esa dirección no vale")
+	}
+	// **Sin `-7` no se crea nada.** Es el único algoritmo que Esfinge sabe firmar, y
+	// crear una llave con otro sería guardar algo que no puede volver a usarse: el
+	// sitio la registraría y la cuenta se quedaría con una llave muerta. Una lista
+	// vacía es «me da igual», que sí vale.
+	if len(nueva.Algoritmos) > 0 && !slices.Contains(nueva.Algoritmos, -7) {
+		return navegador.Atestacion{}, errors.New("Ese sitio pide un tipo de llave que Esfinge no sabe hacer")
+	}
+	desafio, err := navegador.B64URL.DecodeString(nueva.Reto)
+	if err != nil {
+		return navegador.Atestacion{}, errors.New("El reto de ese sitio no se entiende")
+	}
+
+	b, err := f.bovedaParaEscribir()
+	if err != nil {
+		return navegador.Atestacion{}, err
+	}
+	// **Si el sitio dice que ya tiene una llave nuestra, no se hace otra.** Es lo que
+	// pide WebAuthn con `excludeCredentials`, y el motivo es del sitio y no nuestro:
+	// dos llaves de Esfinge para la misma cuenta son dos credenciales que él guarda
+	// sin que nadie las haya pedido. Lo que hace el `shim` al recibir este error es
+	// **ceder**, así que sale el diálogo del navegador.
+	if len(nueva.Excluidas) > 0 {
+		ya := map[string]bool{}
+		for _, id := range nueva.Excluidas {
+			ya[id] = true
+		}
+		for _, e := range b.Buscar("") {
+			if e.Tipo != boveda.TipoLlave || e.RPID != pedido {
+				continue
+			}
+			entera, hay := b.Ver(e.ID)
+			if hay && ya[entera.IDCredencial] {
+				return navegador.Atestacion{}, errors.New("Ya hay una llave de acceso de Esfinge para esa cuenta")
+			}
+		}
+	}
+
+	privada, publica, err := navegador.CrearLlave()
+	if err != nil {
+		return navegador.Atestacion{}, err
+	}
+	cose, err := navegador.PublicaEnCOSE(publica)
+	if err != nil {
+		return navegador.Atestacion{}, err
+	}
+	idCredencial, err := navegador.IDDeCredencial()
+	if err != nil {
+		return navegador.Atestacion{}, err
+	}
+
+	titulo := strings.TrimSpace(nueva.Titulo)
+	if titulo == "" {
+		titulo = tituloDeSitio(pedido)
+	}
+	if r := []rune(titulo); len(r) > 120 {
+		titulo = string(r[:120])
+	}
+	nombre := strings.TrimSpace(nueva.Usuario)
+	entrada := boveda.Entrada{
+		Tipo:          boveda.TipoLlave,
+		Titulo:        titulo,
+		RPID:          pedido,
+		IDCredencial:  navegador.B64URL.EncodeToString(idCredencial),
+		IDUsuario:     nueva.IDUsuario,
+		NombreVisible: nombre,
+		Usuario:       nombre,
+		Algoritmo:     -7,
+		ClavePrivada:  navegador.B64URL.EncodeToString(privada),
+		Sitios:        []string{"https://" + pedido},
+	}
+	if err := b.Poner(entrada); err != nil {
+		return navegador.Atestacion{}, err
+	}
+	f.a.sistema.Avisar(EventoBovedaCambiada, nil)
+
+	// **Los bytes se hacen al final y con lo guardado**, no antes: si guardar
+	// fallara, lo que no puede pasar es que el sitio se quede con una llave que aquí
+	// no existe. Eso sería una cuenta con una credencial registrada y sin forma de
+	// firmar con ella.
+	cliente := navegador.DatosDelCliente("webauthn.create", desafio, suyo)
+	datos := navegador.DatosDelAutenticadorAlCrear(pedido, navegador.BanderasAlCrear, idCredencial, cose)
+	return navegador.Atestacion{
+		IDCredencial:    entrada.IDCredencial,
+		DatosDelCliente: navegador.B64URL.EncodeToString(cliente),
+		Objeto:          navegador.B64URL.EncodeToString(navegador.ObjetoDeAtestacion(datos)),
+	}, nil
 }
 
 // FirmarLlave firma una aserción con una llave de acceso.
