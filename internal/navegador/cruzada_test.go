@@ -3,6 +3,7 @@ package navegador
 import (
 	"bytes"
 	"encoding/hex"
+	"strings"
 	"testing"
 
 	"github.com/webcafeina/esfinge/internal/cruzada"
@@ -337,6 +338,146 @@ func TestCruzadaOrigen(t *testing.T) {
 	for i, c := range casos {
 		if quiero := OrigenDe(c); suyos[i] != quiero {
 			t.Errorf("%q: Go dice %q y la extensión %q", c, quiero, suyos[i])
+		}
+	}
+}
+
+// **Los bytes que el sitio se guarda para siempre** (ADR 0048, P3).
+//
+// Al crear una llave, lo que sale hacia el sitio no es una firma que caduca: es el
+// identificador de la credencial y **su clave pública**, que el sitio guarda y con
+// la que verificará todas las firmas futuras. Si Go y la extensión los escriben
+// distinto, una llave creada con cuenta no sirve sin ella y al revés — y eso no se
+// ve hasta que alguien no puede entrar.
+//
+// Los casos están elegidos por lo que puede salir distinto, no por variedad:
+//
+//   - **Una `x` o una `y` que empiezan por cero.** En el COSE las coordenadas son de
+//     largo fijo y **el cero se conserva**; en el DER de una firma se **quita**. Es la
+//     misma pareja de reglas contrarias que ya costó un rodeo en la P2, así que aquí
+//     va explícita y en las dos coordenadas.
+//   - **Una coordenada más corta de 32 bytes**, que es lo que devuelve una biblioteca
+//     que recorta: hay que rellenar por delante, no por detrás.
+//   - **Identificadores de credencial de largos raros**, incluido uno de más de 255
+//     bytes: su largo va en dos bytes, y con el orden cambiado el sitio lee basura.
+//   - **Un `rpId` con acentos**, porque el hash es sobre los bytes UTF-8.
+func TestCruzadaAtestacion(t *testing.T) {
+	treinta := "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e"
+	casos := []struct {
+		RPID         string `json:"rpId"`
+		Banderas     byte   `json:"banderas"`
+		IDCredencial string `json:"idCredencial"`
+		X            string `json:"x"`
+		Y            string `json:"y"`
+	}{
+		// Lo normal: 32 bytes cada coordenada y un identificador de 16.
+		{"github.com", BanderasAlCrear, "00112233445566778899aabbccddeeff",
+			"1111111111111111111111111111111111111111111111111111111111111111",
+			"2222222222222222222222222222222222222222222222222222222222222222"},
+		// **La `x` empieza por cero**, que es el caso que el DER trata al revés.
+		{"ejemplo.com", BanderasAlCrear, "aabb",
+			"0011111111111111111111111111111111111111111111111111111111111111",
+			"2222222222222222222222222222222222222222222222222222222222222222"},
+		// Y la `y`, que es un sitio distinto del mapa.
+		{"ejemplo.com", BanderasAlCrear, "aabb",
+			"1111111111111111111111111111111111111111111111111111111111111111",
+			"0000222222222222222222222222222222222222222222222222222222222222"},
+		// Coordenadas **cortas**: hay que rellenar por delante hasta 32.
+		{"ejemplo.com", BanderasAlCrear, "cc", treinta, treinta},
+		// Un identificador **de más de 255 bytes**, para que su largo use los dos bytes.
+		{"ejemplo.com", BanderasAlCrear, strings.Repeat("ab", 200),
+			"1111111111111111111111111111111111111111111111111111111111111111",
+			"2222222222222222222222222222222222222222222222222222222222222222"},
+		// Y uno vacío, que es el extremo del otro lado.
+		{"ejemplo.com", BanderasAlCrear, "",
+			"1111111111111111111111111111111111111111111111111111111111111111",
+			"2222222222222222222222222222222222222222222222222222222222222222"},
+		// **Un `rpId` que no es ASCII**: el hash es sobre sus bytes UTF-8.
+		{"bücher.de", BanderasAlCrear, "dd",
+			"1111111111111111111111111111111111111111111111111111111111111111",
+			"2222222222222222222222222222222222222222222222222222222222222222"},
+	}
+	type respuesta struct {
+		COSE   string `json:"cose"`
+		Datos  string `json:"datos"`
+		Objeto string `json:"objeto"`
+	}
+	var suyas []respuesta
+	cruzada.Pedir(t, map[string]any{"orden": "atestacion", "casos": casos}, &suyas)
+	for i, c := range casos {
+		id, err := hex.DecodeString(c.IDCredencial)
+		if err != nil {
+			t.Fatal(err)
+		}
+		x, err := hex.DecodeString(c.X)
+		if err != nil {
+			t.Fatal(err)
+		}
+		y, err := hex.DecodeString(c.Y)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cose := ClaveCOSE(x, y)
+		datos := DatosDelAutenticadorAlCrear(c.RPID, c.Banderas, id, cose)
+		quiero := respuesta{
+			COSE:   hex.EncodeToString(cose),
+			Datos:  hex.EncodeToString(datos),
+			Objeto: hex.EncodeToString(ObjetoDeAtestacion(datos)),
+		}
+		if suyas[i] != quiero {
+			t.Errorf("caso %d (%s):\n  Go:        %+v\n  extensión: %+v", i, c.RPID, quiero, suyas[i])
+		}
+	}
+}
+
+// **El orden canónico de un mapa CBOR, ejercitado a propósito** (ADR 0048).
+//
+// Esta prueba existe porque una mutación pasó en verde: quitando la comparación por
+// **largo** de `cborDeMapa`, `TestCruzadaAtestacion` seguía pasando. Y con razón —
+// ninguno de los dos mapas que Esfinge escribe de verdad distingue las dos reglas:
+// en el COSE todas las claves miden un byte, y en el objeto de atestación ordenar
+// por largo y ordenar por bytes dan el mismo resultado.
+//
+// O sea: la regla de CTAP2 —primero el largo, luego los bytes— **no estaba
+// comprobada en ninguna parte**, en ninguno de los dos lados. Se comprueba aquí con
+// claves donde sí discrepa, para que el día que haya un mapa con claves de largos
+// distintos ya esté bien. Y se comprueba cruzada, porque el espejo de TypeScript
+// ordena con su propio comparador y **comparar cadenas allí daría el orden de
+// UTF-16**, que es la trampa de la forma canónica de la bóveda otra vez.
+func TestCruzadaOrdenDelMapaCBOR(t *testing.T) {
+	casos := []struct {
+		Pares [][2]string `json:"pares"`
+	}{
+		// **El caso que la atestación no cubre**: una clave larga que en bytes iría
+		// antes que una corta. Ordenando solo por bytes saldría `0x40…` delante de
+		// `0x61`; con el largo primero, detrás.
+		{[][2]string{{"4041424344", "01"}, {"61", "02"}}},
+		// Las claves del COSE, en el orden en que se leen: tienen que salir al revés.
+		{[][2]string{{"22", "01"}, {"21", "02"}, {"20", "03"}, {"03", "04"}, {"01", "05"}}},
+		// Dos del mismo largo, que se desempatan por bytes.
+		{[][2]string{{"ff", "01"}, {"00", "02"}, {"80", "03"}}},
+		// Uno vacío y uno de una sola clave: los extremos.
+		{nil},
+		{[][2]string{{"01", "f6"}}},
+	}
+	var suyas []string
+	cruzada.Pedir(t, map[string]any{"orden": "cbor", "casos": casos}, &suyas)
+	for i, c := range casos {
+		pares := make([][2][]byte, 0, len(c.Pares))
+		for _, p := range c.Pares {
+			k, err := hex.DecodeString(p[0])
+			if err != nil {
+				t.Fatal(err)
+			}
+			v, err := hex.DecodeString(p[1])
+			if err != nil {
+				t.Fatal(err)
+			}
+			pares = append(pares, [2][]byte{k, v})
+		}
+		quiero := hex.EncodeToString(cborDeMapa(pares))
+		if suyas[i] != quiero {
+			t.Errorf("caso %d: Go dice %s y la extensión %s", i, quiero, suyas[i])
 		}
 	}
 }

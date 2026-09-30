@@ -86,6 +86,54 @@ export async function datosDelAutenticador(rpId: string, banderas: number): Prom
   return out;
 }
 
+/**
+ * Las de arriba **más los datos de la credencial** (ADR 0048).
+ *
+ * `AT` dice que detrás del contador vienen el identificador de la llave y su clave
+ * pública, que es lo único que el sitio se lleva de aquí para siempre: con eso
+ * verificará todas las firmas futuras.
+ */
+export const BANDERAS_AL_CREAR = BANDERAS_AL_FIRMAR | BANDERA_AT;
+
+/**
+ * El AAGUID, **todo ceros a propósito**.
+ *
+ * Identifica el modelo de autenticador, y los gestores suelen poner el suyo para que
+ * el sitio enseñe su nombre. Aquí va a cero porque **con `fmt: "none"` es lo que dice
+ * la especificación** —sin atestación no hay nada que identificar— y porque
+ * inventarse un identificador de modelo es afirmar algo que nadie ha certificado. El
+ * coste es que el sitio dirá «una llave de acceso» y no «Esfinge».
+ */
+export const AAGUID = new Uint8Array(16);
+
+/**
+ * Lo de firmar **más** el AAGUID, el identificador de la credencial y su pública.
+ *
+ * El largo del identificador va en **dos bytes y en orden de red**, que es lo que más
+ * se equivoca la gente al escribir esto a mano: con el orden cambiado el sitio lee un
+ * largo enorme, se sale del buffer y rechaza la llave sin decir por qué.
+ */
+export async function datosDelAutenticadorAlCrear(
+  rpId: string,
+  banderas: number,
+  idCredencial: Uint8Array,
+  claveCOSE: Uint8Array,
+): Promise<Uint8Array<ArrayBuffer>> {
+  const base = await datosDelAutenticador(rpId, banderas);
+  const out = new Uint8Array(base.length + AAGUID.length + 2 + idCredencial.length + claveCOSE.length);
+  let i = 0;
+  out.set(base, i);
+  i += base.length;
+  out.set(AAGUID, i);
+  i += AAGUID.length;
+  out[i++] = (idCredencial.length >> 8) & 0xff;
+  out[i++] = idCredencial.length & 0xff;
+  out.set(idCredencial, i);
+  i += idCredencial.length;
+  out.set(claveCOSE, i);
+  return out;
+}
+
 /** Lo que se firma: el autenticador y el hash de los datos del cliente, pegados. */
 export async function loQueSeFirma(
   autenticador: Uint8Array,

@@ -70,6 +70,36 @@ func DatosDelAutenticador(rpID string, banderas byte) []byte {
 	return out
 }
 
+// BanderasAlCrear son las de arriba **más los datos de la credencial**.
+//
+// `AT` dice que detrás del contador vienen el identificador de la llave y su clave
+// pública, que es lo único que el sitio se lleva de aquí para siempre: con eso
+// verificará todas las firmas futuras.
+const BanderasAlCrear = BanderasAlFirmar | BanderaAT
+
+// AAGUID es **todo ceros, a propósito** (ADR 0048).
+//
+// Identifica el modelo de autenticador, y los gestores suelen poner el suyo para
+// que el sitio enseñe su nombre. Aquí va a cero porque **con `fmt: "none"` es lo
+// que dice la especificación** —sin atestación no hay nada que identificar— y
+// porque inventarse un identificador de modelo es afirmar algo que nadie ha
+// certificado. El coste es que el sitio dirá «una llave de acceso» y no «Esfinge».
+var AAGUID = make([]byte, 16)
+
+// DatosDelAutenticadorAlCrear: lo de firmar **más** el AAGUID, el identificador de
+// la credencial y su clave pública en COSE.
+//
+// El largo del identificador va en **dos bytes y en orden de red**, que es lo que
+// más se equivoca la gente al escribir esto a mano: con el orden cambiado, el sitio
+// lee un largo enorme, se sale del buffer y rechaza la llave sin decir por qué.
+func DatosDelAutenticadorAlCrear(rpID string, banderas byte, idCredencial, claveCOSE []byte) []byte {
+	out := DatosDelAutenticador(rpID, banderas)
+	out = append(out, AAGUID...)
+	out = append(out, byte(len(idCredencial)>>8), byte(len(idCredencial)))
+	out = append(out, idCredencial...)
+	return append(out, claveCOSE...)
+}
+
 // LoQueSeFirma: el autenticador y el hash de los datos del cliente, pegados.
 func LoQueSeFirma(autenticador, cliente []byte) []byte {
 	h := sha256.Sum256(cliente)

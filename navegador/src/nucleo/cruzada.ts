@@ -16,9 +16,15 @@ import { abrirEnvio, mandarEntrada, type Envio } from "./envio";
 import { derivarAcceso, normalizarCorreo } from "./cuenta";
 import { dominioDeOrigen, dominioDeSitio } from "./dominios";
 import { crearLlave, firmarConLlave, origenDe, rpIdPermitido } from "./llaves";
+import { cborDeMapa, claveCOSE, objetoDeAtestacion } from "./cbor";
 import { atender } from "./fuente";
-import { aBase64Url } from "./afirmacion";
-import { datosDelAutenticador, datosDelCliente, loQueSeFirma } from "./afirmacion";
+import {
+  aBase64Url,
+  datosDelAutenticador,
+  datosDelAutenticadorAlCrear,
+  datosDelCliente,
+  loQueSeFirma,
+} from "./afirmacion";
 import { canonEntrada, entradaDesde, sinSecretos } from "./entrada";
 import { fundir, fundirPiezas } from "./fundir";
 
@@ -191,6 +197,37 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
           autenticador: hex(autenticador),
           firmado: hex(await loQueSeFirma(autenticador, cliente)),
         });
+      }
+      return out;
+    }
+
+    // **El orden canónico de un mapa CBOR, ejercitado a propósito.**
+    //
+    // Ninguno de los mapas que Esfinge escribe de verdad lo distingue: en el COSE
+    // todas las claves miden un byte, y en el objeto de atestación ordenar por largo
+    // y ordenar por bytes dan el mismo resultado. Lo descubrió una mutación —quitar
+    // la comparación por largo y la cruzada seguía verde—, así que la regla se prueba
+    // aquí con claves donde **sí** discrepa. Es la regla de CTAP2, y el día que haya
+    // un mapa con claves de largos distintos tiene que estar bien ya.
+    case "cbor": {
+      const out = [];
+      for (const c of p.casos as { pares: [string, string][] }[]) {
+        // `?? []` porque un slice nulo de Go llega como `null`, y el caso vacío es uno de los casos.
+        out.push(hex(cborDeMapa((c.pares ?? []).map(([k, v]) => [deHex(k), deHex(v)]))));
+      }
+      return out;
+    }
+
+    // **Los bytes de crear una llave** (ADR 0048, P3): el COSE de la pública, el
+    // `authenticatorData` con la credencial dentro y el objeto de atestación. Son
+    // los que **el sitio se guarda para siempre**, así que una divergencia entre
+    // los dos lados es una llave que solo sirve donde se creó.
+    case "atestacion": {
+      const out = [];
+      for (const c of p.casos as { rpId: string; banderas: number; idCredencial: string; x: string; y: string }[]) {
+        const cose = claveCOSE(deHex(c.x), deHex(c.y));
+        const datos = await datosDelAutenticadorAlCrear(c.rpId, c.banderas, deHex(c.idCredencial), cose);
+        out.push({ cose: hex(cose), datos: hex(datos), objeto: hex(objetoDeAtestacion(datos)) });
       }
       return out;
     }
