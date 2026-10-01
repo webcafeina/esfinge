@@ -453,6 +453,114 @@ incógnita no es una entrega, es una comprobación**, y conviene hacerla antes d
 plan. La P2 se publicó sin poder usarse porque nadie recorrió su procedimiento; la P4 se planificó durante
 días y se resolvió con un inicio de sesión.
 
-**Lo que queda sin comprobar de Firefox, y es lo único:** **crear** una llave desde allí. Lo probado es
-usarla. Son los dos caminos del `shim` y el de crear tiene más piezas —el banner de crear, el objeto de
-atestación, los métodos que el ponyfill del sitio llama—, así que no se da por bueno porque el otro funcione.
+**Y crear también funciona en Firefox, el mismo día.** Se dejó dicho aquí como lo único que quedaba —son
+los dos caminos del `shim` y el de crear tiene más piezas: el banner de crear, el objeto de atestación, los
+métodos que el ponyfill del sitio llama—, así que no se dio por bueno porque el otro funcionara. El cliente
+borró la llave de GitHub y la volvió a crear **desde Firefox**: salió el banner de Esfinge, bastó con
+«Aceptar», y **no apareció ningún diálogo del navegador ni de ningún otro gestor**. Y la usó **desde el otro
+Mac**, que era lo último que nadie había tocado: la llave se sincroniza y sirve donde no se creó.
+
+## Una llave la confirma el sitio, no la firma (2026-10-01)
+
+La P3 dejó una deuda conocida y escrita: **crear guarda en la bóveda antes de entregarle la credencial al
+sitio** —a propósito, porque lo contrario deja al sitio con una llave que aquí no existe—, así que un registro
+que falla **después** deja una huérfana y **el navegador no puede enterarse**: `create()` devuelve la
+credencial y el sitio la registra por su cuenta, sin decir nada de vuelta. No es teórico: los dos fallos del
+2026-09-30 fallaban justo ahí y el cliente se encontró **cuatro llaves de GitHub** de las que solo una
+servía.
+
+Lo urgente se hizo entonces —se distinguen por **cuándo se crearon**, con segundos—, y lo que cierra el
+asunto es esto: un campo `confirmada` con la fecha en que **se supo que el sitio la conoce**. Una huérfana no
+se confirma nunca, así que se ve sola.
+
+**Y lo que confirma no es firmar, es que el sitio la nombre.** Parecía más natural apuntarlo al firmar —«ha
+servido para entrar»— y es peor por dos motivos. El sitio manda en `allowCredentials` los identificadores de
+las llaves que tiene registradas para esa cuenta, así que **nombrarla ya es la prueba**, y llega antes:
+cuando el banner sale, sin esperar a que nadie acepte. Y si hay varias llaves nuestras para el mismo sitio,
+el usuario firma con una y **las demás quedarían sin marcar aunque el sitio las conozca todas**, que es
+exactamente el falso negativo que haría borrar la buena. Se marcan **todas las que el sitio nombre**, y por
+eso el campo se llama «confirmada» y la ficha dice *«Reconocida por el sitio»* y no «Usada».
+
+Tres consecuencias que hay que decir:
+
+- **Lo escribe el navegador**, que es la primera vez que una lectura de la bóveda provoca una escritura. Se
+  salta **si la bóveda está en solo lectura** —lo que la extensión sin cuenta hace con la de la aplicación—
+  y un fallo al guardar **no interrumpe la firma**: confirmar es información, entrar es el trabajo.
+- **No cuenta como actividad.** Pasa por el camino de `Llaves`, que ya era una lectura, y la regla de la
+  casa manda: lo que se repite solo no toca el reloj del autobloqueo.
+- **Una llave sin confirmar no se da por mala.** La ficha dice que *el sitio todavía no la ha pedido* y deja
+  claro que puede ser simplemente que no se haya entrado aún. Marcarla de rojo sería afirmar algo que no se
+  sabe, y lo que se pierde al borrar una llave buena no se recupera.
+
+**Lo que el campo no hace:** no borra nada, no avisa y no ordena la lista. Es un dato más de la ficha, y qué
+hacer con una llave que lleva meses sin que el sitio la pida se decide **con el uso**, no ahora.
+
+### Qué se comprobó, y qué dejó claro una mutación
+
+En los dos núcleos, por mutación: que se marca cuando el sitio nombra la llave, que **no se vuelve a
+escribir** si ya estaba marcada —si no, cada inicio de sesión sería un guardado y una subida—, y que no se
+marca cuando el sitio no nombra ninguna. En Go, `TestUnaLlaveSeConfirmaCuandoElSitioLaNombra`; en TypeScript,
+una prueba de comportamiento en `nucleo-fuente.spec.ts`.
+
+**Y esa prueba de TypeScript hubo que escribirla porque las cruzadas no lo cazaban**, lo que es la trampa ya
+escrita vista una vez más: quitar `confirmada` de la lista `CAMPOS` del espejo **no pone roja ninguna
+cruzada**, porque la forma canónica ordena las claves y el campo vuelve por `extra` con los mismos bytes. Lo
+que se rompe no es el formato: es que el campo deja de poder escribirse por su nombre. Las cruzadas comparan
+lo que cada lado **escribe**; para esto hace falta comprobar lo que cada lado **hace**.
+
+En la ventana, una prueba de punta a punta guarda una llave sin confirmar y otra confirmada y comprueba lo
+que la ficha dice de cada una. Dejó su propia lección, pequeña y repetible: **`conLaBovedaAbierta` no
+funciona con una ficha abierta**, porque entonces no hay ni buscador ni botón que esperar, y el síntoma es un
+plazo vencido buscando un elemento que no podía estar.
+
+## Lo que el intermitente tenía dentro (2026-10-01)
+
+La prueba de la extensión de verdad falló **dos tandas completas seguidas** de `make comprobar`, con dos
+síntomas distintos, mientras **cada fichero por separado pasaba**. El 2026-09-30 un intermitente de la misma
+familia se cerró con el saludo bidireccional del puente, así que la tentación era darlo por el mismo flake y
+seguir. Dentro había **dos fallos de producto**, y ninguno lo dijo la lectura del código.
+
+**Lo primero fue ponerle voz a la prueba**, porque lo único que dejó la primera caída fue «contó 0»: nada. Al
+vencer el plazo, ahora dice si el `shim` está instalado y qué dominios hay apuntados —las dos causas posibles,
+distinguibles desde fuera—. La segunda caída cantó **«shim instalado: true · dominios apuntados:
+["sitio.prueba"]»**, lo que descartó el puente y señaló la bandera. Y dejó un corolario pequeño y repetible:
+el `error-context.md` de la caída se lo llevó la tanda siguiente, así que **de la primera solo quedó el
+registro**.
+
+**Uno: una pregunta sin contestar no es una respuesta.** `pedir` no lanza cuando el trabajador de fondo no
+contesta —devuelve `ok: false` con un `error` y **sin `motivo`**, porque el motivo lo pone el núcleo y ahí no
+ha hablado nadie—, y eso se empujaba como un «aquí no hay nada». La bandera se quedaba en falso **el resto de
+la vida de la pestaña**: el `shim` cedía en todas las llamadas y el banner no salía aunque hubiera llaves, sin
+un error en ninguna parte. Y no es un caso raro: el trabajador de MV3 **se muere cada pocos minutos**, así que
+la primera pregunta de una página puede llegarle dormido. Ahora vive en `bandera.ts` y **insiste solo cuando
+no se ha podido preguntar**: una respuesta que dice que ahí no hay llaves no se repite, porque insistir sobre
+eso gastaría una pregunta del freno en cada carga de cada sitio, que es casi siempre el caso.
+
+**Dos: el puente se rendía antes de que el otro lado pudiera hablar.** El plazo del saludo era de **dos
+segundos**, y lo que hay al otro lado es un `await` a `storage` —el consentimiento— que en una máquina cargada
+pasa de eso. El anuncio del aislado llegaba cuando el mundo principal ya había quitado su oyente: el `shim` no
+se instalaba. Es **la misma carrera que el saludo bidireccional vino a arreglar**, con el plazo como límite
+nuevo, y la prueba que la vigilaba retrasaba al que atiende **150 ms**, o sea dentro del plazo: el caso bueno
+otra vez. Ahora son quince segundos y la prueba espera **más que el plazo viejo**, usando el de serie, así que
+volver a bajarlo la pone en rojo.
+
+Esperar ahí no cuesta lo que cuesta esperar en otros sitios: pasa en `document_start`, antes de que nadie
+pueda pulsar nada, así que no hay activación de usuario que agotar. **Lo que relaja, y va dicho en el fichero
+y aquí**: antes el puerto solo se transfería mientras no existía el primer `<script>` del sitio, y con quince
+segundos puede transferirse con la página corriendo. Un anuncio con la marca lo puede forjar la página, así
+que **la página puede hacerse con un puerto**. Lo que gana con él es nada que no tuviera: por el puente no
+pasa nada secreto, **el origen lo pone el trabajador** con `sender.tab.url`, y firmar exige un clic
+`isTrusted` en la sombra cerrada. Como mucho consigue que salga el banner de su propio sitio, que es lo que
+consigue llamando a `navigator.credentials.get`.
+
+**Y tres, que salió de paso y es de las que más duelen: `mundo.ts` documentaba que la bandera llega «cada vez
+que cambie —al abrirse o cerrarse la bóveda—», y nadie reavisaba nunca.** El comentario está corregido y la
+laguna, en `deuda.md`: si la página se cargó con la bóveda cerrada y sin dominios apuntados, abrirla no
+enciende la bandera de esa pestaña hasta recargar. No se arregla aquí porque **es una decisión, no un olvido**
+—reavisar al volver a la pestaña gasta una pregunta del freno cada vez, casi siempre para oír que ahí no hay
+llaves—, y el caso se estrecha solo: con una visita previa con la bóveda abierta, la lista de dominios ya hace
+salir el banner.
+
+**La lección de método, que no es de WebAuthn:** un intermitente conocido es la mejor tapadera que tiene un
+fallo de verdad. Lo que separó una cosa de la otra no fue volver a correrlo —pasó, y seguía roto— sino
+**hacer que la prueba dijera en qué tramo se había quedado**.

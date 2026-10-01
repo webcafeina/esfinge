@@ -145,3 +145,29 @@ test("puente: el que atiende llega tarde y el puente se tiende igual", async ({ 
   });
   expect(r).toEqual({ hayPuerto: true, hayRecibido: true, vuelta: "eco:tarde" });
 });
+
+/**
+ * **Y tardando más de lo que el plazo viejo aguantaba.** La prueba de arriba retrasa al
+ * que atiende 150 ms, o sea dentro del plazo: con ella en verde, el puente seguía sin
+ * tenderse en la tanda completa de `make comprobar` porque leer el consentimiento pasaba
+ * de los dos segundos que el plazo daba. Ésta espera **más que ese plazo** y usa el de
+ * serie —no uno escrito aquí—, así que bajarlo a dos segundos otra vez la pone en rojo.
+ *
+ * Es la mitad que faltaba del método ya escrito: cuando algo se sincroniza entre dos
+ * piezas hay que probar **las dos órdenes**, y la mala con el retraso que de verdad se
+ * ha visto, no con uno de adorno.
+ */
+test("puente: el que atiende tarda más de dos segundos y el puente se tiende igual", async ({ page }) => {
+  await conElPuente(page);
+  const r = await page.evaluate(async () => {
+    const P = (window as any).P;
+    let recibido: MessagePort | null = null;
+    // Sin plazo: el de serie es el que se está comprobando.
+    const esperando = P.abrirPuente(window);
+    await new Promise((x) => setTimeout(x, 2500));
+    P.atenderElPuente((p: MessagePort) => (recibido = p));
+    const puerto = await esperando;
+    return { hayPuerto: puerto !== null, hayRecibido: recibido !== null };
+  });
+  expect(r).toEqual({ hayPuerto: true, hayRecibido: true });
+});

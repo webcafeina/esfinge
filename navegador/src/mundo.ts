@@ -171,8 +171,13 @@ async function arrancar() {
   if (!puerto) return;
 
   // **Lo que el otro lado empuja**, y nunca lo que este lado pregunta. Llega al
-  // conectar y cada vez que cambie —al abrirse o cerrarse la bóveda—, y mientras no
-  // llegue vale `false`: ante la duda, ceder.
+  // conectar —insistiendo si no se ha podido preguntar, ver `bandera.ts`— y mientras
+  // no llegue vale `false`: ante la duda, ceder.
+  //
+  // **Y no vuelve a llegar si la bóveda se abre con la pestaña ya abierta**, que es la
+  // laguna que hay y está en `deuda.md`. Aquí decía lo contrario —«y cada vez que
+  // cambie»— y era falso: nadie reavisaba. Mientras no se decida si refrescar cuesta
+  // una pregunta del freno en cada vuelta a la pestaña, lo que hay es recargar.
   let hayLlaves = false;
   let sePuedeCrear = false;
   /**

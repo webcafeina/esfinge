@@ -5,6 +5,51 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-01 · Firefox, el campo que distingue una llave huérfana, y un intermitente con dos fallos dentro
+
+- **La P4 resultó estar hecha**, y se supo de rebote. Lo mecánico ya se había hecho en la P2 sin pensarlo
+  —el bloque `world: "MAIN"` en los dos manifiestos, `mundo.js` en `COMPILAR.md`, el SVG del banner en el
+  fuente de Mozilla— y la incógnita, que era toda la entrega, la contestó el cliente entrando en GitHub con
+  Firefox y la 2.34.0: **sale el banner de Esfinge y no aparece ningún diálogo del navegador**. Después borró
+  la llave y **la volvió a crear desde Firefox**, así que los dos caminos del `shim` funcionan en los dos
+  navegadores; y la usó **desde el otro Mac**, que era lo último que nadie había tocado.
+- **La lección de planificación, que es el espejo de la de la P2**: una entrega cuyo contenido es una
+  incógnita no es una entrega, es una comprobación. La P2 se publicó sin poder usarse porque nadie recorrió su
+  procedimiento; la P4 se planificó durante días y se resolvió con un inicio de sesión.
+- **Se cerró la deuda de las llaves huérfanas con un campo nuevo, `confirmada`** (ADR 0048), que es lo que la
+  2.35.0 lleva dentro: el cliente eligió «una 2.35.0 que lleve algo» en vez de una versión vacía para igualar
+  los números de las tiendas. **Y lo que confirma una llave no es firmar, es que el sitio la nombre** en
+  `allowCredentials`: llega antes —cuando sale el banner, sin esperar a que nadie acepte— y marca **todas** las
+  que el sitio conoce, no solo la elegida, que era el falso negativo que haría borrar la buena. La ficha dice
+  «Reconocida por el sitio» con su fecha, y una sin confirmar dice que el sitio todavía no la ha pedido: no se
+  da por mala.
+- **Se verificó por mutación en los dos núcleos** —que marca, que **no reescribe** si ya estaba marcada, y que
+  no marca si el sitio no nombra ninguna— más una de punta a punta de la ficha. Y hubo que escribir la de
+  TypeScript **porque las cruzadas no lo cazaban**: quitar el campo de `CAMPOS` no pone roja ninguna, porque la
+  forma canónica ordena las claves y vuelve por `extra` con los mismos bytes. Las cruzadas comparan lo que cada
+  lado **escribe**; esto pedía comprobar lo que cada lado **hace**.
+- **Y el hallazgo del día, que no se buscaba: el intermitente del `shim` tenía dos fallos de producto dentro.**
+  La prueba de la extensión de verdad falló **dos tandas completas seguidas** con dos síntomas distintos,
+  mientras cada fichero por separado pasaba. La tentación era el flake de la víspera, de la misma familia.
+  Lo que los separó fue **ponerle voz al tramo**: al vencer el plazo, la prueba dice si el `shim` está instalado
+  y qué dominios hay apuntados, y cantó «instalado: true · dominios: [sitio.prueba]», o sea que lo que faltaba
+  era la bandera.
+  - **Una pregunta sin contestar no es una respuesta que diga «no».** `pedir` devuelve `ok: false` sin `motivo`
+    cuando el trabajador no contesta, y eso se empujaba como «aquí no hay nada» **sin corregirlo nunca**: el
+    `shim` cedía el resto de la vida de la pestaña. Ahora `bandera.ts` insiste **solo cuando no se ha podido
+    preguntar**, que es lo que evita gastar una pregunta del freno en cada carga de cada sitio.
+  - **El puente se rendía a los dos segundos**, menos de lo que tarda leer el consentimiento en una máquina
+    cargada. La prueba que lo vigilaba retrasaba al que atiende 150 ms: el caso bueno otra vez. Quince
+    segundos, con lo que eso relaja escrito en el fichero y en la ADR.
+  - **Y `mundo.ts` documentaba que la bandera llega «cada vez que cambie» y nadie reavisaba.** Comentario
+    corregido; la laguna —abrir la bóveda con la pestaña ya abierta— a `deuda.md`, porque arreglarla es una
+    decisión sobre el freno y no un olvido.
+- **Queda abierto**: pegar los tres campos de la ficha de Chrome (`referencias/chrome-2.34.0.md`, el
+  aplazamiento caduca el 2026-10-07) y publicar la 2.35.0, que **tiene que llevar el paquete de la 2.34.0 a
+  Chrome**: no llega solo porque la tienda aprobara la 2.33.0.
+
+---
+
 ## 2026-09-30 · La P2 de las llaves de acceso, entera
 
 - **Se cerró el fallo con el que empezó el día, y era el diseño y no un flake.** La prueba del autenticador

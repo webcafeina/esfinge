@@ -117,8 +117,32 @@ export type RespuestaAlMundo = {
 /** Lo que identifica nuestro saludo entre todo el `postMessage` de una página. */
 export const MARCA = "esfinge:llaves:1";
 
-/** Cuánto se espera al acuse antes de darse por no instalado. */
-const PLAZO_DEL_SALUDO = 2000;
+/**
+ * Cuánto se espera al acuse antes de darse por no instalado.
+ *
+ * **Quince segundos, y no es generosidad: dos no llegaban.** Lo que hay al otro lado
+ * es un `await` a `storage` —el consentimiento— y en una máquina cargada eso pasa de
+ * dos segundos, así que el anuncio del aislado llegaba cuando este lado ya se había
+ * rendido y había quitado su oyente: el shim no se instalaba y **no había error en
+ * ningún sitio**. Es la misma carrera que el saludo bidireccional vino a arreglar, con
+ * el plazo como límite nuevo. Se vio el 2026-10-01, en la tanda completa de
+ * `make comprobar` y nunca corriendo las pruebas sueltas.
+ *
+ * **Esperar aquí no cuesta nada de lo que cuesta esperar en otros sitios**: esto pasa
+ * en `document_start`, antes de que nadie pueda pulsar nada, así que no hay activación
+ * de usuario que agotar. Mientras no haya puente el shim no está instalado y la página
+ * funciona como si Esfinge no estuviera.
+ *
+ * **Lo que sí relaja, y hay que decirlo**: antes el puerto solo se transfería mientras
+ * no existía el primer `<script>` del sitio, y con quince segundos puede transferirse
+ * con la página ya corriendo. Un anuncio con la marca lo puede forjar la página, así
+ * que **la página puede hacerse con un puerto**. Lo que gana con él es nada que no
+ * tuviera ya: por el puente no pasa nada secreto, **el origen lo pone el trabajador**
+ * con `sender.tab.url` y no lo que diga nadie, y firmar exige un clic `isTrusted` en la
+ * sombra cerrada. Como mucho consigue que salga el banner de su propio sitio, que es
+ * lo que consigue llamando a `navigator.credentials.get`.
+ */
+const PLAZO_DEL_SALUDO = 15_000;
 
 /**
  * Cuántas veces se vuelve a tender el puente si el otro lado llega tarde.

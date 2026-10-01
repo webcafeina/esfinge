@@ -1,10 +1,38 @@
 # Estado
 
-Última actualización: **2026-09-30**
+Última actualización: **2026-10-01**
 
 ## Dónde se paró, y por dónde se sigue
 
-**Sesión del 2026-09-30.** Trabajo limpio: todo comprometido.
+**Sesión del 2026-10-01.** Trabajo limpio: todo comprometido.
+
+**Las llaves de acceso están cerradas por completo, y comprobadas en máquinas de verdad.** Las cuatro
+entregas: la llave en la bóveda (2.32.0), usarla (2.33.0), crearla (2.34.0) y Firefox —que **resultó estar
+hecha**—. El cliente ha creado y usado una llave de GitHub **en Chrome y en Firefox**, y la ha usado **desde
+el otro Mac**: se sincroniza y sirve donde no se creó. Lo único de la fase sin mirar está dicho en
+[`deuda.md`](deuda.md): la exportación cifrada con llaves de verdad dentro, y si algún antibot marca el
+navegador —no se ha visto ninguno, pero tampoco se ha buscado—.
+
+**Lo que hay escrito y sin publicar es la 2.35.0**, que el cliente eligió así: «una 2.35.0 que lleve algo» en
+vez de una versión vacía para igualar los números de las tiendas. Lleva dos cosas:
+
+1. **El campo `confirmada`** (ADR 0048), que cierra la deuda de las llaves huérfanas: la ficha dice
+   **«Reconocida por el sitio»** con su fecha, y lo que confirma una llave es que **el sitio la nombre**, no
+   haber firmado con ella. Una sin confirmar dice que el sitio todavía no la ha pedido; no se da por mala.
+2. **Dos fallos de producto que estaban escondidos detrás de un intermitente** (ADR 0048, «Lo que el
+   intermitente tenía dentro»): la bandera de las llaves tomaba «no he podido preguntar» por «aquí no hay
+   nada» y **no lo corregía en toda la vida de la pestaña**, y el puente se rendía a los dos segundos, menos de
+   lo que tarda leer el consentimiento en una máquina cargada. Los dos los destapó **hacer que la prueba dijera
+   en qué tramo se quedó**, no la lectura.
+
+**Y al publicarla hay que mirar una cosa concreta**: que el paso de Chrome **suba** el paquete en vez de avisar
+de que hay otra versión en revisión. El de la 2.34.0 no está en la tienda y **no llega solo** porque aprobaran
+la 2.33.0: hace falta esta publicación. Antes de publicar, el cliente pega los tres campos de
+`referencias/chrome-2.34.0.md` y se cierra con `node navegador/herramientas/ficha-de-chrome.mjs --pegado`
+—**el aplazamiento caduca el 2026-10-07** y entonces vuelve a parar la comprobación—.
+
+<details>
+<summary>Lo anterior, del 2026-09-30</summary>
 
 **El correo de Esfinge ya no pasa por Resend** ([ADR 0045](adr/0045-el-correo-sale-por-el-vps.md)).
 Producción manda por el relé de Google desde `cartero.webcafeina.com`, un servicio nuestro en el VPS,
@@ -305,6 +333,8 @@ Y salieron dos cosas que ninguna prueba en verde dijo y sí dijo mirar la captur
 alto** —todos los botones miden 28 px y lo de dentro se encogía— y **la clase `.huella` ya existía**, la de
 la huella de identidad de compartir, así que le estaba poniendo 72×72 a todas esas pantallas. Las dos en
 `CLAUDE.md`.
+
+</details>
 
 </details>
 

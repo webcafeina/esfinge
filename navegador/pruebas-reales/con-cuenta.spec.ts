@@ -514,26 +514,45 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
     // Así que se llama hasta que el banner sale, que además comprueba lo que importa:
     // **en cuanto la bandera llega, sale**. Cada llamada que cede acaba en el diálogo
     // del navegador, que aquí no tiene autenticador y rechaza — de ahí el `catch`.
-    await expect
-      .poll(
-        async () => {
-          await sitio.evaluate(() => {
-            navigator.credentials
-              .get({
-                publicKey: {
-                  challenge: new Uint8Array(32).fill(7),
-                  rpId: "sitio.prueba",
-                  userVerification: "discouraged",
-                  allowCredentials: [],
-                },
-              })
-              .catch(() => {});
-          });
-          return sitio.locator("esfinge-llave").count();
-        },
-        { timeout: 30_000, intervals: [500, 1000, 2000] },
-      )
-      .toBe(1);
+    //
+    // **Y si no sale, la prueba dice en qué tramo se quedó**, que es lo que faltó el
+    // 2026-10-01: falló una vez en la tanda entera y lo único que quedó fue «contó 0»,
+    // o sea nada. Son dos causas distintas y se distinguen desde fuera: si
+    // `credentials.get` **sigue siendo nativa** el `shim` no se instaló —puente o
+    // consentimiento—, y si la lista de dominios está vacía lo que no llegó es la
+    // bandera. Está en `deuda.md`.
+    try {
+      await expect
+        .poll(
+          async () => {
+            await sitio.evaluate(() => {
+              navigator.credentials
+                .get({
+                  publicKey: {
+                    challenge: new Uint8Array(32).fill(7),
+                    rpId: "sitio.prueba",
+                    userVerification: "discouraged",
+                    allowCredentials: [],
+                  },
+                })
+                .catch(() => {});
+            });
+            return sitio.locator("esfinge-llave").count();
+          },
+          { timeout: 30_000, intervals: [500, 1000, 2000] },
+        )
+        .toBe(1);
+    } catch (e) {
+      const nativa = await sitio.evaluate(() =>
+        /\[native code\]/.test(Function.prototype.toString.call(navigator.credentials.get)),
+      );
+      const dominios = await contexto
+        .serviceWorkers()[0]
+        .evaluate(async () => (await chrome.storage.session.get("dominios-con-llave"))["dominios-con-llave"]);
+      throw new Error(
+        `el banner no salió · shim instalado: ${!nativa} · dominios apuntados: ${JSON.stringify(dominios)}\n${String(e)}`,
+      );
+    }
     await sitio.close();
 
     const abrir = await panel();

@@ -58,6 +58,7 @@ import { aceptado, alAceptar } from "./consentimiento";
 import { vigilarEnvios, vigilarIdentificador } from "./envios";
 import { cuentaParaRellenarSola } from "./identidad";
 import { avisar, ponerFilete } from "./marcas";
+import { empujarLaBandera } from "./bandera";
 import { atenderElPuente, type Aviso, type PeticionDelMundo, type RespuestaAlMundo } from "./puente";
 import { mostrarBanner, type EstadoDelBanner } from "./banner";
 import {
@@ -627,25 +628,14 @@ function conElDocumento() {
  * navegador. Aquí solo se dibuja y se espera.
  */
 function atenderLasLlaves(puerto: MessagePort) {
-  const avisar = async () => {
-    try {
-      const r = await pedir({ que: "llaves" });
-      // **Con la bóveda cerrada también hay algo que ofrecer**, y eso es `quizas`: lo
-      // pone el trabajador desde la lista de dominios, porque cerrada no hay a quién
-      // preguntar. Sin esta rama el shim cedería antes de preguntar y el banner que
-      // ofrece abrir la bóveda no podría salir nunca.
-      const hay = r.ok ? (r.llaves ?? []).length > 0 : r.quizas === true;
-      // **Crear es otra bandera**: Esfinge se ofrece siempre a crear, así que no
-      // depende de que haya llaves aquí. Lo que sí la apaga es el interruptor de
-      // Ajustes, y con la bóveda cerrada se puede igual —el banner ofrece abrirla—.
-      const sePuedeCrear = r.ok ? r.puedeCrear === true : r.motivo === "cerrada";
-      puerto.postMessage({ hay, sePuedeCrear } satisfies Aviso);
-    } catch {
-      // Ante la duda, que ceda: es lo que ya vale por defecto al otro lado.
-      puerto.postMessage({ hay: false, sePuedeCrear: false } satisfies Aviso);
-    }
-  };
-  void avisar();
+  // **Y si no se ha podido preguntar, se vuelve a preguntar** (`bandera.ts`): el
+  // trabajador de MV3 se muere cada pocos minutos, así que la primera pregunta de una
+  // página puede llegarle dormido, y tomar ese silencio por un «aquí no hay nada»
+  // dejaba la bandera en falso **para el resto de la vida de la pestaña**.
+  void empujarLaBandera(
+    () => pedir({ que: "llaves" }),
+    (a) => puerto.postMessage(a satisfies Aviso),
+  );
 
   puerto.onmessage = async (e: MessageEvent) => {
     const p = e.data as PeticionDelMundo | null;

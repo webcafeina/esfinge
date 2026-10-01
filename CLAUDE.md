@@ -124,6 +124,11 @@ No se cambian sin preguntar.
   propia—; **no se crean a mano**, porque una llave la emite el sitio; **la clave privada no se enseña, no
   se copia y no cruza el puente**, y cuando llegue la P2 lo que saldrá será la firma ya hecha; y **no salen
   en el CSV en claro**, sino aparte, en un contenedor ESF1 con una clave que no es la maestra.
+  **Y una llave la confirma el sitio al nombrarla, no la firma** (2026-10-01): la ficha dice «Reconocida por
+  el sitio» con su fecha, y eso es lo único que distingue una huérfana —creada aquí y nunca registrada allí—
+  de una que sirve. Nombrarla llega antes que firmar y marca **todas** las que el sitio conoce, no solo la
+  elegida, que es el falso negativo que haría borrar la buena. Una sin confirmar **no se da por mala**: puede
+  ser que no se haya entrado aún.
 - **Y desde la P2 de las llaves de acceso hay código de Esfinge dentro de cada página `https`** (ADR 0048).
   Es lo más caro de todo el proyecto y conviene saber por qué antes de tocar `navegador/src/mundo.ts`:
   `navigator.credentials` solo existe en el mundo de la página, así que un fallo ahí **no deja el relleno a
@@ -408,6 +413,30 @@ Recorrer «probar la P2 en el Mac» paso a paso se para en el primero. Lo mismo 
 **Y «pasó tres veces» no es «funciona».** Vale para el puente y volvió el mismo día con una prueba de frenos
 del servidor: lo que hay que hacer con un intermitente es **apuntarlo con lo que se vio**, no volver a
 correrlo hasta que salga verde y seguir. Un flake que se da por bueno es un fallo con una coartada.
+
+Y la otra mitad, del 2026-10-01: **un intermitente conocido es la mejor tapadera que tiene un fallo nuevo.**
+La prueba de las llaves con la extensión de verdad falló dos tandas completas seguidas con dos síntomas
+distintos, y pasaba corriendo cada fichero por separado; la tentación era el flake de la víspera —el saludo
+del puente, de la misma familia— y dentro había **dos fallos de producto**. Lo que los separó no fue volver a
+correrlo, que pasó estando roto, sino **hacer que la prueba dijera en qué tramo se quedó**: al vencer el plazo
+cuenta si el `shim` está instalado y qué dominios hay apuntados, y con eso cantó «instalado: true · dominios:
+[…]», o sea que lo que faltaba era la bandera. Y un detalle logístico que costó la primera caída: el
+`error-context.md` **se lo lleva la tanda siguiente**, así que lo que no se copie del registro se pierde.
+
+**Una pregunta sin contestar no es una respuesta que diga «no».** `pedir` no lanza cuando el trabajador de
+fondo no contesta: devuelve `ok: false` con un `error` y **sin `motivo`** —el motivo lo pone el núcleo, y ahí
+no ha hablado nadie—. La bandera de las llaves empujaba eso como «aquí no hay nada» y **no lo corregía nunca**:
+el `shim` cedía el resto de la vida de la pestaña y el banner no salía aunque hubiera llaves, sin error en
+ninguna parte. Y pasa de verdad, porque el trabajador de MV3 se muere cada pocos minutos y la primera pregunta
+de una página puede llegarle dormido. Está en `bandera.ts`, que **insiste solo cuando no se ha podido
+preguntar**: una respuesta que dice que no hay llaves no se repite, que insistir sobre eso gastaría una
+pregunta del freno en cada carga de cada sitio del mundo.
+
+**Y un plazo es una decisión sobre el caso malo, así que la prueba tiene que pasarse de ese plazo.** El puente
+se rendía a los dos segundos y lo que hay al otro lado es un `await` a `storage`: en una máquina cargada pasa
+de eso, y el anuncio del aislado llegaba cuando el otro lado ya había quitado el oyente. La prueba que lo
+vigilaba retrasaba al que atiende **150 ms** —dentro del plazo, o sea el caso bueno otra vez—. Ahora son quince
+segundos, la prueba espera **más que el plazo viejo** y usa el de serie, así que bajarlo la pone en rojo.
 
 **Un doble que apunta el argumento no dice si le han llamado.** `sistemaFalso.ElegirDondeGuardar`
 guardaba el `desde` que recibía, y ese `desde` **viene vacío** hasta que alguien recuerda una carpeta: una
