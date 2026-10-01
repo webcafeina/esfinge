@@ -75,16 +75,19 @@ banner y sea darle a Aceptar»— está hecho de punta a punta.
 
 **Quedan cuatro cosas, y ése es el orden de mañana (2026-10-01):**
 
-1. **Firefox con la 2.34.0**, en cuanto Mozilla la apruebe (subida el 2026-09-30, versión 6528615). Cierra dos
-   cosas a la vez: el «Authentication failed» que el cliente vio con la 2.33.0 y **la incógnita que el plan
-   reservaba para la P4**, porque ahora se sabe que el shim **sí se instala** allí.
+1. ~~**Firefox con la 2.34.0**~~ **Hecho el 2026-10-01**: entró en GitHub **con el banner de Esfinge**, sin
+   ningún diálogo del navegador. El shim funciona allí igual que en Chrome, así que **la P4 resultó estar
+   hecha** —era toda su incógnita— y el `toJSON` era toda la causa del «Authentication failed».
 2. **Los tres campos en la consola de Chrome**, cuando apruebe la 2.33.0. Están en
    `referencias/chrome-2.34.0.md`, y al pegarlos se cierra con
    `node navegador/herramientas/ficha-de-chrome.mjs --pegado`. **El aplazamiento caduca el 2026-10-07** y
    entonces vuelve a parar la comprobación.
 3. **Entrar en GitHub desde el otro Mac** con la llave creada aquí. Es lo único de las llaves de acceso que
    no ha tocado nadie: que se sincronice y sirva donde no se creó.
-4. **La P4**, que cierra la fase.
+4. ~~**La P4**~~ **Resuelta sin escribir código** (ver el final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md)).
+   Lo único que queda sin comprobar de Firefox es **crear** una llave desde allí: lo probado es usarla, y el
+   camino de crear tiene más piezas. Hace falta un sitio donde no haya ya una llave de Esfinge, porque en
+   GitHub el propio sitio la excluye y Esfinge cede a propósito.
 
 **Y una cosa que no se arregla sola: el paquete de la 2.34.0 no está en Chrome.** No se subió porque la
 tienda estaba revisando la 2.33.0 —aviso, no fallo—, y **no llega solo cuando aprueben**: hace falta *otra*

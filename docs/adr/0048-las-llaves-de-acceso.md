@@ -425,3 +425,34 @@ comprobación no se omite — **se pasa al lado que sí puede**.
   de decir que hay autenticador de plataforma.
 - Y **la exportación cifrada con llaves de verdad dentro**, que hasta ahora se ha probado con entradas
   escritas por las pruebas.
+
+## La P4 resultó estar hecha (2026-10-01)
+
+Se planificó como la cuarta entrega —«el segundo navegador»— y al ir a empezarla no quedaba nada que
+escribir. Lo que decía el plan que había que hacer eran dos cosas, y las dos estaban:
+
+- **Lo mecánico**, ya hecho en la P2 sin pensarlo: el bloque `world: "MAIN"` se añadió **a los dos
+  manifiestos**, `mundo.js` está en `COMPILAR.md` y el único fichero de fuera de `navegador/` que el banner
+  importa —`build/icono-barra.svg`— ya iba en `herramientas/fuente-de-la-extension.sh`. La prueba de que
+  bastaba es que **Mozilla aprobó la 2.34.0**, y su revisión compila el código fuente y lo compara byte a
+  byte con el paquete.
+- **Y la incógnita, que era toda la entrega**: «`world: "MAIN"` existe en Firefox desde la 128, pero su
+  comportamiento en `document_start` y con `MessageChannel` entre mundos no es necesariamente el de Chrome»,
+  y el plan decía que eso **hay que comprobarlo en un Firefox de verdad, no deducirlo**. El cliente lo probó
+  el 2026-10-01 con la 2.34.0: entró en GitHub **con el banner de Esfinge**, sin que apareciera ningún
+  diálogo del navegador. Funciona igual que en Chrome.
+
+**Y hay que decir cómo se supo, porque no fue probándolo a propósito.** Con la 2.33.0 —la que llevaba el
+`toJSON` de solo lectura— Firefox le dijo «Authentication failed» al entrar, y eso **ya demostraba que el
+shim se instalaba allí**. Apareció de rebote, preguntando por los números de versión de las dos tiendas, y
+mientras tanto en `deuda.md` había una deducción mía —«lo más probable es que allí no haga nada»— que era
+falsa por los dos lados: se instala, y funciona.
+
+De ahí la lección de planificación, que es el espejo de la de la P2: **una entrega cuyo contenido es una
+incógnita no es una entrega, es una comprobación**, y conviene hacerla antes de reservarle un hueco en el
+plan. La P2 se publicó sin poder usarse porque nadie recorrió su procedimiento; la P4 se planificó durante
+días y se resolvió con un inicio de sesión.
+
+**Lo que queda sin comprobar de Firefox, y es lo único:** **crear** una llave desde allí. Lo probado es
+usarla. Son los dos caminos del `shim` y el de crear tiene más piezas —el banner de crear, el objeto de
+atestación, los métodos que el ponyfill del sitio llama—, así que no se da por bueno porque el otro funcione.
