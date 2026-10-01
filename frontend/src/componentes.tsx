@@ -208,7 +208,7 @@ export function Icono({ nombre }: { nombre: string }) {
         <path d="M9 5.4V9l2.6 1.8" />
       </>
     ),
-    // Las cuatro clases de la bóveda, más el «todo» que las junta.
+    // Las siete clases de la bóveda, más el «todo» que las junta.
     //
     // **Sustituyen a unos emoji**, que es lo que había y lo que este mismo
     // comentario prohibía cuatro líneas más arriba: son de color, no se tiñen, y
@@ -267,6 +267,18 @@ export function Icono({ nombre }: { nombre: string }) {
       <>
         <circle cx="9" cy="5.2" r="2.7" />
         <path d="M9 7.9v7.3M9 10.8h2.6M9 13.2h1.9" />
+      </>
+    ),
+    // Una red wifi: las tres ondas y el punto, que es el dibujo que entiende todo el
+    // mundo y el único de esta tira que no se confunde con nada. Las ondas son arcos
+    // concéntricos abiertos hacia arriba, no semicírculos: a quince píxeles un
+    // semicírculo se cierra y parece una ceja.
+    wifi: (
+      <>
+        <path d="M2.4 7.3a9.5 9.5 0 0 1 13.2 0" />
+        <path d="M4.9 10a6 6 0 0 1 8.2 0" />
+        <path d="M7.3 12.6a2.5 2.5 0 0 1 3.4 0" />
+        <circle cx="9" cy="14.9" r=".35" fill="currentColor" stroke="none" />
       </>
     ),
     // Los gestores de los que se sabe importar.

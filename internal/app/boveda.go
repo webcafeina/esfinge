@@ -11,7 +11,9 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/escritura"
+	"github.com/webcafeina/esfinge/internal/qr"
 	"github.com/webcafeina/esfinge/internal/sincro"
+	"github.com/webcafeina/esfinge/internal/wifi"
 )
 
 // Lo que la ventana puede pedirle a la bóveda.
@@ -553,4 +555,41 @@ func (a *App) BorrarElCSVImportado(ruta string) error {
 		return nil
 	}
 	return os.Remove(ruta)
+}
+
+// CodigoDeWifi devuelve el código QR de una red: el lado y las filas en `0` y `1`.
+//
+// **Lo compone este lado entero** (ADR 0049). La interfaz podría armar la cadena
+// `WIFI:…` y pedir solo el dibujo, y sería peor por dos razones: el formato tiene
+// escapes y un caso de nombres hexadecimales que no se pueden olvidar en un sitio y
+// recordar en otro, y así la contraseña de la red **no cruza el puente para esto** —
+// cruza cuando alguien pulsa el ojo, que es otra decisión y se ve.
+//
+// La matriz va **sin el margen blanco**: la zona tranquila no es parte del código y la
+// pone quien dibuja, que en la ventana es un SVG y en la terminal son caracteres.
+func (a *App) CodigoDeWifi(id string) (CodigoQR, error) {
+	b := a.boveda()
+	if b == nil {
+		return CodigoQR{}, boveda.ErrCerrada
+	}
+	e, hay := b.Ver(id)
+	if !hay || e.Papelera || e.Tipo != boveda.TipoWifi {
+		return CodigoQR{}, errors.New("Esa entrada no es una red wifi")
+	}
+	enlace, err := wifi.Enlace(e.SSID, e.Secreto, e.Seguridad, e.Oculta)
+	if err != nil {
+		return CodigoQR{}, err
+	}
+	c, err := qr.Nuevo(enlace)
+	if err != nil {
+		return CodigoQR{}, err
+	}
+	a.Actividad()
+	return CodigoQR{Lado: c.Lado(), Filas: c.Filas()}, nil
+}
+
+// CodigoQR es lo que cruza el puente para dibujar un código.
+type CodigoQR struct {
+	Lado  int      `json:"lado"`
+	Filas []string `json:"filas"`
 }

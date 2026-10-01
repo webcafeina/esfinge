@@ -1509,7 +1509,7 @@ test("las clases de la bóveda caben en su barra", async ({ page }) => {
   // **Con cada una activa, no solo con la primera.** La activa es la única que
   // lleva rótulo, así que el caso peor es la de nombre más largo —«Datos
   // personales», 160 px— y mirando solo la que viene puesta se comprueba el mejor.
-  const clases = ["Todo", "Credenciales", "Notas", "Tarjetas", "Identidades", "Datos personales", "Llaves de acceso"];
+  const clases = ["Todo", "Credenciales", "Notas", "Tarjetas", "Identidades", "Datos personales", "Llaves de acceso", "Wi-Fi"];
   for (const ancho of [700, 980, 1400]) {
     await page.setViewportSize({ width: ancho, height: 620 });
     for (const nombre of clases) {
@@ -1937,6 +1937,52 @@ test("la ficha de una llave dice si se ha usado y si el sitio la reconoce", asyn
   await expect(ficha.getByText("Reconocida por el sitio", { exact: true })).toBeVisible();
   await expect(ficha.getByText("Usada", { exact: true })).toBeVisible();
   await expect(ficha.getByText("Todavía no has entrado con esta llave", { exact: false })).toHaveCount(0);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * **Una red wifi guarda sus campos y la ficha dibuja su código** (ADR 0049).
+ *
+ * Lo que de verdad se comprueba aquí es que el código **llega y se dibuja**: que tenga
+ * tantos módulos como dice su lado y que no sea un cuadro vacío. Si lo que dibuja se
+ * puede escanear no lo dice ninguna prueba de aquí —eso lo cerró un móvil—, pero que la
+ * matriz cruce el puente entera y la ficha la pinte, sí.
+ */
+test("una red wifi guarda su nombre y la ficha dibuja su código", async ({ page }) => {
+  const errores: string[] = [];
+  page.on("pageerror", (e) => errores.push(String(e)));
+  // El modo local lo elige el beforeEach de arriba, como en todas las demás.
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const dentro = page.locator(".contenido");
+  await dentro.getByRole("button", { name: "Nueva", exact: true }).click();
+  await dentro.getByRole("tab", { name: "Wi-Fi", exact: true }).click();
+  await page.locator("#boveda-titulo").fill("La oficina");
+  await page.locator("#boveda-ssid").fill("WEBCAFEINA");
+  await page.locator("#boveda-clave-wifi").fill("una-clave-de-prueba");
+  await page.locator("#boveda-oculta").check();
+  await dentro.getByRole("button", { name: "Guardar", exact: true }).click();
+
+  await page.locator("#boveda-buscar").fill("WEBCAFEINA");
+  await page.locator(".panel:visible .lista-boveda li").first().locator("button").click();
+
+  const ficha = page.locator(".panel:visible");
+  await expect(ficha.getByText("Nombre de la red", { exact: true })).toBeVisible();
+  await expect(ficha.getByText("WEBCAFEINA", { exact: true })).toBeVisible();
+  await expect(ficha.getByText("WPA / WPA2 / WPA3", { exact: true })).toBeVisible();
+  await expect(ficha.getByText("Sí, no anuncia su nombre", { exact: true })).toBeVisible();
+
+  // El código: un SVG con sus módulos dentro, y el aviso de lo que es.
+  const codigo = ficha.locator(".codigo-wifi svg");
+  await expect(codigo).toBeVisible();
+  const cuantos = await codigo.locator("rect").count();
+  // Uno es el fondo blanco; los demás son módulos oscuros. Un código de red tiene
+  // cientos, así que con exigir más de cien se distingue de un cuadro vacío sin atarse
+  // a una matriz concreta.
+  expect(cuantos, "el código ha salido sin módulos").toBeGreaterThan(100);
+  await expect(ficha.getByText("Este dibujo es la contraseña", { exact: false })).toBeVisible();
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });

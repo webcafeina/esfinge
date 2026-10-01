@@ -131,7 +131,7 @@ export type Preferencias = {
 export const NUNCA = -1;
 
 /** Las cuatro clases de cosa que caben en la bóveda. Los nombres los fija Go. */
-export type TipoEntrada = "credencial" | "nota" | "tarjeta" | "identidad" | "personal" | "llave";
+export type TipoEntrada = "credencial" | "nota" | "tarjeta" | "identidad" | "personal" | "llave" | "wifi";
 
 /** Una contraseña que se sustituyó, con la fecha en que dejó de valer. */
 export type Antigua = {
@@ -206,6 +206,12 @@ export type EntradaBoveda = {
    * el «entrar con llave de acceso» de GitHub el sitio no nombra ninguna.
    */
   usada?: string;
+  /** El nombre que emite la red, que no es el título: el título es cómo la llamas tú. */
+  ssid?: string;
+  /** `wpa`, `wep` o `abierta`. */
+  seguridad?: string;
+  /** Si la red no anuncia su nombre; el código lo necesita para que el móvil la busque. */
+  oculta?: boolean;
 };
 
 /**
@@ -704,6 +710,15 @@ export const esfinge = {
 
   /** Las llaves de acceso, aparte y **cifradas** (ADR 0048). La clave no es la maestra. */
   exportarLlaves: (clave: string) => llamar<string>("ExportarLlaves", clave),
+
+  /**
+   * El código QR de una red (ADR 0049): el lado y las filas en `0` y `1`.
+   *
+   * **Lo compone Go entero**, incluida la cadena `WIFI:…` con sus escapes. Lo que llega
+   * aquí es la matriz, y el margen blanco lo pone el dibujo: la zona tranquila no es
+   * parte del código.
+   */
+  codigoDeWifi: (id: string) => llamar<{ lado: number; filas: string[] }>("CodigoDeWifi", id),
 
   borrarElCSVImportado: (ruta: string) => llamar<void>("BorrarElCSVImportado", ruta),
 

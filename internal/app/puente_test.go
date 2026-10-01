@@ -57,6 +57,12 @@ var loQuePuedeCruzarElPuente = []string{
 	// **no** cruza en ningún sentido es la clave privada de una llave: sale
 	// cifrada dentro del fichero y nunca por el puente.
 	"ExportarLlaves",
+	// **Devuelve la contraseña de una red, aunque no lo parezca** (ADR 0049): un código
+	// QR es su clave escrita de otra forma, y quien reciba esa matriz puede sacarla sin
+	// pedir nada más. Está aquí porque es exactamente lo que tiene que hacer —la ficha
+	// lo enseña a propósito, para que un invitado se conecte sin que nadie dicte nada—,
+	// y conviene que quien lea esta lista lo sepa: no es un dato de dibujo.
+	"CodigoDeWifi",
 	// La papelera. `PapeleraDeBoveda` devuelve la lista **sin secretos**, como
 	// cualquier otra lista: estar borrada no hace a una entrada menos secreta.
 	"PapeleraDeBoveda", "RestaurarDeBoveda", "BorrarDelTodoDeBoveda",

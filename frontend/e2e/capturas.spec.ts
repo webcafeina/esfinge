@@ -259,5 +259,34 @@ test.describe("Capturas", () => {
     await page.getByText("Correo electrónico 1").first().click();
     await page.waitForTimeout(300);
     await foto("8c-dato-personal-ficha");
+
+    // La red wifi (ADR 0049): el formulario y, sobre todo, **la ficha con el código**.
+    // Es lo que no dice ninguna aserción: si el QR se ve del tamaño que una cámara lee,
+    // si el blanco del código pelea con el fondo en tema oscuro y si el aviso de que ese
+    // dibujo es la contraseña se lee antes de que alguien lo enseñe a nadie.
+    // **Se vuelve recargando, no con un botón.** La ficha no tiene ninguno que lleve a
+    // la lista, y un `click()` sobre uno que no existe se come treinta segundos de plazo
+    // antes de decirlo. La bóveda sigue abierta: la tiene Go, no la página.
+    const aLaLista = async () => {
+      await page.reload();
+      await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
+      await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
+    };
+    await aLaLista();
+    await boton("Nueva").click();
+    await dentro.getByRole("tab", { name: "Wi-Fi", exact: true }).click();
+    await page.locator("#boveda-titulo").fill("La oficina");
+    await page.locator("#boveda-ssid").fill("WEBCAFEINA");
+    await page.locator("#boveda-clave-wifi").fill("una-clave-de-ejemplo");
+    await foto("8e-wifi-formulario");
+    await boton("Guardar").click();
+    await page.getByText("La oficina").first().click();
+    await page.waitForTimeout(300);
+    await foto("8f-wifi-ficha");
+
+    // Y la tira de clases con la de Wi-Fi activa, que es el glifo nuevo.
+    await aLaLista();
+    await page.getByRole("tab", { name: "Wi-Fi", exact: true }).click();
+    await page.locator(".boveda-barra").nth(1).screenshot({ path: `${donde}/8g-clases-wifi-${tema}.png`, scale: "css" });
   });
 });

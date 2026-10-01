@@ -367,6 +367,20 @@ body {
  * de los 560 que hay —cinco glifos a 45 y uno con su nombre— y la pantalla vuelve
  * a decir qué está enseñando. Es lo que costó la sexta clase: antes cabían los
  * seis rótulos a la vez, y ahora no. */
+/* **Y los botones se aprietan, que con ocho clases no caben.**
+ *
+ * Medido, no razonado: con la ventana a 700 px la barra tiene 427 px útiles —225 de
+ * barra lateral y 48 de márgenes— y las ocho pestañas pedían 451. Cuatro píxeles menos
+ * por lado en cada botón son 64 px y vuelve a caber con sitio de sobra. Solo en
+ * `compacto`: el otro segmentado del proyecto, el de los gestores a importar, lleva sus
+ * nombres siempre y no se toca.
+ *
+ * Si algún día no basta, lo siguiente no es seguir apretando: es dejar que la fila se
+ * parta en dos, que es feo un momento y legible siempre. */
+.segmentado.compacto button {
+  padding: 0 var(--espacio-2);
+}
+
 .segmentado.compacto button[aria-selected="true"] .rotulo {
   position: static;
   width: auto;
@@ -1933,4 +1947,24 @@ select {
 .lista-equipos .equipo-visto {
   color: var(--apagado);
   font-size: var(--texto-chico);
+}
+
+/* --- el código QR de una red wifi (ADR 0049)
+ *
+ * Mide 180 px, que es lo que una cámara de móvil lee sin acercarse a la pantalla y
+ * cabe en la ficha sin empujar lo demás. **El fondo blanco lo pinta el propio SVG**,
+ * no esta regla: así el código es el mismo dibujo en los dos temas, y en oscuro no
+ * queda un cuadro gris que ninguna cámara distingue. */
+.codigo-wifi {
+  display: flex;
+  justify-content: center;
+  padding: var(--espacio-2) 0;
+}
+
+.codigo-wifi svg {
+  width: 180px;
+  height: 180px;
+  /* Las esquinas, suaves como el resto de la interfaz; el margen blanco del propio
+   * código deja sitio de sobra para redondear sin comerse ningún módulo. */
+  border-radius: var(--radio-chico);
 }

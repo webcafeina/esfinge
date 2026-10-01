@@ -1185,7 +1185,7 @@ function Dentro({
         </div>
       )}
 
-      {/* **Las cuatro clases, separadas.** Con sesenta y cinco entradas dentro un
+      {/* **Las siete clases, separadas.** Con sesenta y cinco entradas dentro un
           listado único deja de navegarse, y las tarjetas y los documentos no se
           buscan escribiendo: se buscan mirando, porque son cuatro y se sabe cuáles
           son. Las pestañas están siempre, incluso vacías: que la de tarjetas
@@ -1204,6 +1204,7 @@ function Dentro({
             { valor: "identidad", etiqueta: "Identidades", icono: "identidad" },
             { valor: "personal", etiqueta: "Datos personales", icono: "personal" },
             { valor: "llave", etiqueta: "Llaves de acceso", icono: "llave" },
+            { valor: "wifi", etiqueta: "Wi-Fi", icono: "wifi" },
           ]}
         />
         {/* A la derecha, porque son dos preguntas distintas: las pestañas dicen
@@ -1284,6 +1285,7 @@ const NOMBRE_TIPO: Record<TipoEntrada, string> = {
   identidad: "Identidad",
   personal: "Dato personal",
   llave: "Llave de acceso",
+  wifi: "Wi-Fi",
 };
 
 /**
@@ -1375,13 +1377,20 @@ function ordenar(lista: EntradaBoveda[], orden: Orden): EntradaBoveda[] {
 }
 
 function entradaNueva(tipo: Filtro): EntradaBoveda {
-  return {
+  const e: EntradaBoveda = {
     id: "",
     tipo: tipo === "todo" ? "credencial" : tipo,
     titulo: "",
     creada: "",
     cambiada: "",
   };
+  // **Una red nace con su seguridad puesta**, y no es un adorno: el desplegable enseña
+  // «WPA» desde el primer momento, así que sin esto quien no lo toque guarda una red con
+  // el campo vacío y la ficha no dice de qué tipo es. Se vio mirando la captura, no en
+  // una prueba. El código QR sale bien igual —lo normaliza Go al dibujarlo—, pero lo que
+  // se enseña y lo que se guarda tienen que decir lo mismo.
+  if (e.tipo === "wifi") e.seguridad = "wpa";
+  return e;
 }
 
 /**
@@ -1413,6 +1422,81 @@ function direccionDe(e: EntradaBoveda): string {
 }
 
 /** El plural de cada clase, que es como se llaman cuando son varias. */
+/** Cómo se lee en la ficha lo que se guarda en `seguridad`. */
+const NOMBRE_SEGURIDAD: Record<string, string> = {
+  wpa: "WPA / WPA2 / WPA3",
+  wep: "WEP (antigua)",
+  abierta: "Abierta, sin contraseña",
+};
+
+/**
+ * El código QR de una red, dibujado en SVG desde la matriz que da Go (ADR 0049).
+ *
+ * **En SVG y no en imagen** por dos razones: se ve nítido a cualquier tamaño, que es lo
+ * que decide si una cámara lo lee de lejos, y no hace falta codificar un PNG ni meterlo
+ * en un `data:` que acabaría en la memoria del webview como una cadena con la contraseña
+ * dentro.
+ *
+ * El margen blanco —cuatro módulos, la «zona tranquila»— lo pone este dibujo: no es parte
+ * del código y sin él muchos lectores no lo encuentran.
+ *
+ * **Y los colores van a mano, negro sobre blanco, no con la paleta.** Es la única cosa de
+ * toda la interfaz que se salta los tokens, y a propósito: un código con poco contraste
+ * no lo lee ninguna cámara, y en tema oscuro los colores del tema lo dejarían gris sobre
+ * gris. No se mide en `contraste_test.go` porque no es texto que alguien vaya a leer.
+ */
+function CodigoDeRed({ id }: { id: string }) {
+  const [codigo, setCodigo] = useState<{ lado: number; filas: string[] } | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let vivo = true;
+    esfinge
+      .codigoDeWifi(id)
+      .then((c) => vivo && setCodigo(c))
+      .catch((e) => vivo && setError(String(e)));
+    return () => {
+      vivo = false;
+    };
+  }, [id]);
+
+  if (error) return <p className="nota">No se ha podido dibujar el código: {error}</p>;
+  if (!codigo) return null;
+
+  const margen = 4;
+  const lado = codigo.lado + margen * 2;
+  // Un `<rect>` por módulo oscuro. Con un código de red son unos cuatrocientos, que el
+  // navegador dibuja sin despeinarse y se lee mucho mejor que un `<path>` gigante.
+  const modulos = [];
+  for (let y = 0; y < codigo.lado; y++) {
+    for (let x = 0; x < codigo.lado; x++) {
+      if (codigo.filas[y][x] === "1") {
+        modulos.push(<rect key={`${x}-${y}`} x={x + margen} y={y + margen} width={1} height={1} />);
+      }
+    }
+  }
+
+  return (
+    <div className="grupo">
+      <label>Código para conectarse</label>
+      <div className="codigo-wifi">
+        <svg viewBox={`0 0 ${lado} ${lado}`} role="img" aria-label="Código QR de la red">
+          <rect x={0} y={0} width={lado} height={lado} fill="#ffffff" />
+          <g fill="#000000" shapeRendering="crispEdges">
+            {modulos}
+          </g>
+        </svg>
+      </div>
+      {/* **Esto se dice aquí y no solo en la documentación** (ADR 0049): es la primera
+          vez que Esfinge enseña un secreto sin que nadie lo pida, y quien lo ve tiene
+          que saber qué está mirando. */}
+      <p className="nota">
+        <strong>Este dibujo es la contraseña.</strong> Apunta con la cámara del móvil y se conecta solo. Quien
+        lo fotografíe entra en la red igual que tú.
+      </p>
+    </div>
+  );
+}
+
 const PLURAL: Record<TipoEntrada, [string, string]> = {
   credencial: ["credencial", "credenciales"],
   nota: ["nota", "notas"],
@@ -1420,6 +1504,7 @@ const PLURAL: Record<TipoEntrada, [string, string]> = {
   identidad: ["identidad", "identidades"],
   personal: ["dato personal", "datos personales"],
   llave: ["llave de acceso", "llaves de acceso"],
+  wifi: ["red wifi", "redes wifi"],
 };
 
 function cuantasDe(cuantas: number, tipo: Filtro): string {
@@ -1619,6 +1704,10 @@ function Detalle({
       </p>
 
       <div className="grupo">
+        {/* **El nombre de la red va antes que la clave**, al revés que en una credencial:
+            lo que identifica una red es su nombre, y mirando la ficha se leía «Contraseña»
+            antes de saber de qué red. Se vio en una captura. */}
+        {entrada.tipo === "wifi" && <Dato etiqueta="Nombre de la red" valor={entrada.ssid} />}
         <Dato etiqueta="Usuario" valor={entrada.usuario} />
         <Secreto etiqueta="Contraseña" valor={entrada.secreto} />
         <Dato etiqueta="Sitios" valor={entrada.sitios?.join("\n")} />
@@ -1692,9 +1781,23 @@ function Detalle({
         <Secreto etiqueta="Dirección" valor={direccionDe(entrada)} />
         <Secreto etiqueta="Fecha de nacimiento" valor={entrada.nacimiento} />
 
+        {/* La red wifi (ADR 0049). El nombre que emite va aparte del título porque no
+            son lo mismo: el título es cómo la llamas tú y esto es lo que el móvil
+            busca. La clave va con su ojo, **como cualquier otra contraseña**, aunque el
+            código de abajo la lleve dentro: el código lo lee una cámara apuntada a
+            propósito y el texto lo lee de un vistazo quien pase por detrás. */}
+        {entrada.tipo === "wifi" && (
+          <>
+            <Dato etiqueta="Seguridad" valor={NOMBRE_SEGURIDAD[entrada.seguridad ?? ""] ?? entrada.seguridad} />
+            {entrada.oculta && <Dato etiqueta="Red oculta" valor="Sí, no anuncia su nombre" />}
+          </>
+        )}
+
         <Dato etiqueta="Notas" valor={entrada.notas} />
         <Dato etiqueta="Etiquetas" valor={entrada.etiquetas?.join(", ")} />
       </div>
+
+      {entrada.tipo === "wifi" && <CodigoDeRed id={entrada.id} />}
 
       {entrada.historial && entrada.historial.length > 0 && (
         <div className="grupo">
@@ -1956,7 +2059,11 @@ function Editor({
             <label>Qué es</label>
             <Segmentado<TipoEntrada>
               valor={e.tipo}
-              alCambiar={(t) => pon({ tipo: t })}
+              // **Cambiar de clase aquí no recrea la entrada**, solo le cambia el tipo,
+              // así que lo que una clase necesita de salida hay que ponerlo también
+              // aquí: una red abierta en este segmentado se quedaba sin seguridad y la
+              // ficha no decía de qué tipo era, aunque el desplegable enseñara «WPA».
+              alCambiar={(t) => pon(t === "wifi" && !e.seguridad ? { tipo: t, seguridad: "wpa" } : { tipo: t })}
               opciones={CLASES_A_MANO.map((t) => ({
                 valor: t,
                 etiqueta: NOMBRE_TIPO[t],
@@ -2112,6 +2219,57 @@ function Editor({
               alCambiar={() => {}}
               desactivado
             />
+          </>
+        )}
+
+        {/* La red wifi (ADR 0049). Se crea a mano como cualquier otra —al contrario que
+            una llave de acceso—, porque una red es un dato que alguien teclea. */}
+        {e.tipo === "wifi" && (
+          <>
+            <Campo
+              id="boveda-ssid"
+              etiqueta="Nombre de la red"
+              valor={e.ssid}
+              alCambiar={(v) => pon({ ssid: v })}
+              pista="El que sale en la lista del móvil, con sus mayúsculas"
+            />
+            {/* **Con su ojo, como cualquier contraseña**, aunque el código de la ficha la
+                lleve dentro. Y con «Generar una» porque una red nueva la pone alguien y
+                una clave de wifi es de las que más tiempo duran sin cambiarse. */}
+            <CampoClave
+              id="boveda-clave-wifi"
+              etiqueta="Contraseña"
+              valor={e.secreto ?? ""}
+              alCambiar={(v) => pon({ secreto: v })}
+              alGenerar={async () => {
+                const m = await esfinge.medirPorCaracteres(20, "alnum");
+                pon({ secreto: await esfinge.generarContrasena(m.bytes, "alnum") });
+              }}
+            />
+            <div className="campo">
+              <label htmlFor="boveda-seguridad">Seguridad</label>
+              <select
+                id="boveda-seguridad"
+                value={e.seguridad || "wpa"}
+                onChange={(ev) => pon({ seguridad: ev.target.value })}
+              >
+                <option value="wpa">WPA / WPA2 / WPA3</option>
+                <option value="wep">WEP (antigua)</option>
+                <option value="abierta">Abierta, sin contraseña</option>
+              </select>
+            </div>
+            <label className="fila-ajuste">
+              <input
+                type="checkbox"
+                id="boveda-oculta"
+                checked={e.oculta ?? false}
+                onChange={(ev) => pon({ oculta: ev.target.checked })}
+              />
+              {/* Se dice para qué sirve, porque si no parece un dato de adorno: una red
+                  oculta no sale en la lista del móvil y el código tiene que decirle que
+                  la busque. */}
+              <span>Red oculta — no anuncia su nombre, y el código se lo dice al móvil</span>
+            </label>
           </>
         )}
 
