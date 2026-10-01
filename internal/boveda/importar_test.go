@@ -463,6 +463,10 @@ func TestLoExportadoVuelveAEntrarConTodo(t *testing.T) {
 		// usuario ni contraseña: por eso la forma de Esfinge lee su columna `type`,
 		// que es lo que nosotros mismos escribimos y no puede mentir.
 		{Tipo: TipoPersonal, Titulo: "Álvaro Cabezas", NombreCompleto: "Álvaro Cabezas"},
+		// La red wifi: **con `oculta` a verdadero**, porque un booleano que se escribe
+		// como columna vacía cuando es falso solo se comprueba de verdad en el otro caso.
+		{Tipo: TipoWifi, Titulo: "La oficina", SSID: "WEBCAFEINA",
+			Secreto: "la-clave", Seguridad: "wpa", Oculta: true},
 	}
 	if _, err := b.Importar(todo, "una prueba"); err != nil {
 		t.Fatal(err)
@@ -949,5 +953,93 @@ func TestVariasLlavesNoSonLaMisma(t *testing.T) {
 	// **borraría una llave**, y eso no se restablece por correo.
 	if claveDeCuenta(llaves[0]) == claveDeCuenta(llaves[1]) {
 		t.Error("dos llaves del mismo sitio salen como la misma cuenta")
+	}
+}
+
+// **`wifi.csv`, el sexto fichero de Dashlane** (ADR 0049).
+//
+// La cabecera es la de verdad, con su `encription_type` mal escrito en origen. Las dos
+// filas imitan el fichero del cliente en lo que importa: **dicen `unsecured` teniendo
+// contraseña**, **traen `name` y `note` vacíos** y **comparten la misma clave**. Las tres
+// cosas rompen algo distinto si se hace lo obvio.
+func TestWifiDeDashlane(t *testing.T) {
+	const cabecera = "ssid,passphrase,name,note,hidden,encription_type"
+	const fichero = cabecera + "\n" +
+		"WEBCAFEINA_PLUS,unaclavecompartida,,,false,unsecured\n" +
+		"WEBCAFEINA,unaclavecompartida,,,false,unsecured\n"
+
+	if f := FormaDeLaCabecera(cabeceraDe(fichero)); f != FormaWifi {
+		t.Fatalf("forma %d, y quiero FormaWifi (%d)", f, FormaWifi)
+	}
+
+	entradas, lectura, err := Leer([]byte(fichero), nil)
+	if err != nil {
+		t.Fatalf("no se ha podido leer: %v", err)
+	}
+	if len(entradas) != 2 || lectura.Vacias != 0 {
+		t.Fatalf("%d entradas y %d vacías, de 2 filas", len(entradas), lectura.Vacias)
+	}
+
+	for _, e := range entradas {
+		if e.Tipo != TipoWifi {
+			t.Errorf("«%s» ha entrado como %q", e.Titulo, e.Tipo)
+		}
+		// **El título sale del nombre de la red**: `name` viene vacío en todas las filas,
+		// y una entrada sin título es una entrada que no se encuentra.
+		if e.Titulo != e.SSID {
+			t.Errorf("el título es %q y la red se llama %q", e.Titulo, e.SSID)
+		}
+		// **Y la seguridad se corrige.** Esto es lo que separa un código que funciona de
+		// uno que no: creyendo al fichero, el QR saldría como red abierta y el móvil
+		// intentaría entrar sin clave.
+		if e.Seguridad != "wpa" {
+			t.Errorf("«%s» dice que su seguridad es %q, y tiene contraseña", e.SSID, e.Seguridad)
+		}
+		if e.Oculta {
+			t.Errorf("«%s» ha entrado como oculta y el fichero dice que no", e.SSID)
+		}
+		if e.Secreto != "unaclavecompartida" {
+			t.Errorf("«%s» ha entrado con la clave %q", e.SSID, e.Secreto)
+		}
+	}
+
+	// **Y las dos entran**: comparten contraseña y son redes distintas. Mirando
+	// `Conflictos` y no solo `Metidas`, que es lo que ya pasó con las tarjetas — una
+	// huella común las habría marcado como duplicadas y la segunda no entraría.
+	b, _, _ := nueva(t)
+	r, err := b.Importar(entradas, "dashlane")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Metidas != 2 || r.Repetidas != 0 || r.Conflictos != 0 {
+		t.Errorf("%d metidas, %d repetidas y %d conflictos, de dos redes distintas",
+			r.Metidas, r.Repetidas, r.Conflictos)
+	}
+}
+
+// Una red abierta de verdad: sin contraseña, la seguridad es «abierta» diga lo que diga.
+func TestUnaRedSinClaveEsAbierta(t *testing.T) {
+	const fichero = "ssid,passphrase,name,note,hidden,encription_type\n" +
+		"Wifi del bar,,El bar de abajo,la de la terraza,true,wpa2\n"
+	entradas, _, err := Leer([]byte(fichero), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entradas) != 1 {
+		t.Fatalf("%d entradas de una fila", len(entradas))
+	}
+	e := entradas[0]
+	if e.Seguridad != "abierta" {
+		t.Errorf("sin contraseña, la seguridad es %q", e.Seguridad)
+	}
+	if !e.Oculta {
+		t.Error("el fichero dice que es oculta y no ha entrado así")
+	}
+	// Con `name` relleno, el título es el suyo y el SSID se queda aparte.
+	if e.Titulo != "El bar de abajo" || e.SSID != "Wifi del bar" {
+		t.Errorf("título %q y red %q", e.Titulo, e.SSID)
+	}
+	if e.Notas != "la de la terraza" {
+		t.Errorf("las notas son %q", e.Notas)
 	}
 }

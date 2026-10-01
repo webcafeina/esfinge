@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/webcafeina/esfinge/internal/cripto"
+	"github.com/webcafeina/esfinge/internal/wifi"
 )
 
 // Importar credenciales de otro gestor.
@@ -51,6 +52,11 @@ const (
 	CampoNotas   = "notas"
 	CampoTOTP    = "totp"
 	CampoCarpeta = "carpeta"
+
+	// La red wifi (ADR 0049).
+	CampoSSID      = "ssid"
+	CampoSeguridad = "seguridad"
+	CampoOculta    = "oculta"
 
 	// Tarjetas.
 	CampoTitular      = "titular"
@@ -123,6 +129,13 @@ const (
 	// que saber que las 24 columnas son de seis cosas distintas y que **casi
 	// todas vienen vacías en cada fila**.
 	FormaPersonal
+	// FormaWifi es `wifi.csv`, el **sexto** fichero de Dashlane (ADR 0049).
+	//
+	// Es el más pequeño y el que más miente: su columna de seguridad dice
+	// `unsecured` en redes que tienen contraseña, así que lo que trae ahí **no se
+	// copia**, se normaliza mirando si hay clave. Lo demás es directo: `ssid`,
+	// `passphrase`, `name`, `note` y `hidden`.
+	FormaWifi
 	// FormaEsfinge es lo que exporta Esfinge: **una sola tabla con todas las
 	// columnas**, justo lo contrario que Dashlane. Se reconoce sola para que lo
 	// que sale de aquí pueda volver a entrar de una vez, que es la mitad de lo
@@ -151,6 +164,11 @@ func FormaDeLaCabecera(cabecera []string) Forma {
 	// `Forma` vino a resolver.
 	case hay["email_type"] || hay["address_door_code"] || hay["place_of_birth"] || hay["address_recipient"]:
 		return FormaPersonal
+	// La red, por dos columnas que no existen en ningún otro fichero de ningún
+	// gestor. Va antes que las tarjetas porque no comparte ninguna con ellas y
+	// cuanto más arriba esté lo inconfundible, menos depende del orden.
+	case hay["ssid"] || hay["passphrase"]:
+		return FormaWifi
 	case hay["cc_number"] || hay["card_number"] || hay["cardnumber"]:
 		return FormaTarjeta
 	case hay["number"] && (hay["code"] || hay["expiration_month"] || hay["issuing_bank"]):
@@ -193,6 +211,7 @@ var aliasPorForma = map[Forma]map[string]string{
 		"piso": CampoPiso, "puerta": CampoPuerta,
 		"codigo_postal": CampoCodigoPostal, "ciudad": CampoCiudad,
 		"provincia": CampoProvincia, "pais": CampoPais,
+
 		// **«type» se lee aquí y solo aquí**, y es la excepción a la regla de que
 		// la clase se deduce de los campos: éste es nuestro propio fichero y no
 		// miente. Hace falta desde que hay datos personales, porque un dato
@@ -226,6 +245,17 @@ var aliasPorForma = map[Forma]map[string]string{
 		"expiration_date": CampoCaduca, "expiry": CampoCaduca,
 		"issue_date": CampoNotas, "place_of_issue": CampoNotas,
 		"state": CampoNotas, "country": CampoNotas,
+	},
+	FormaWifi: {
+		// `wifi.csv` de Dashlane. **El título sale del nombre que le pusiera quien lo
+		// guardó**, y cuando viene vacío —que es lo que pasa en el fichero del
+		// cliente— lo pone `tituloDeReserva` con el SSID.
+		"ssid": CampoSSID, "passphrase": CampoSecreto,
+		"name": CampoTitulo, "note": CampoNotas,
+		"hidden": CampoOculta,
+		// **Escrito como lo escribe Dashlane, sin la «y»**, y también bien por si
+		// algún día lo arreglan. Lo que traiga no se cree: `tipoDe` lo normaliza.
+		"encription_type": CampoSeguridad, "encryption_type": CampoSeguridad,
 	},
 	FormaPersonal: {
 		// El título: Dashlane deja `title` vacío en todas las filas y pone el
@@ -283,6 +313,13 @@ var alias = map[string]string{
 	// Notas
 	"note": CampoNotas, "notes": CampoNotas, "notas": CampoNotas,
 	"comentarios": CampoNotas, "extra": CampoNotas, "comment": CampoNotas,
+	// La red wifi. **`ssid` y `passphrase` van en la tabla común** porque no significan
+	// otra cosa en ningún fichero de ningún gestor, y porque la exportación de Esfinge
+	// las trae y tiene que poder volver a entrar: sin esto, una red exportada vuelve
+	// como credencial —la columna no la reclama nadie, el SSID se pierde y `tipoDe` ya
+	// no tiene por dónde reconocerla—. Lo cazó la prueba de la vuelta entera.
+	"ssid": CampoSSID, "passphrase": CampoSecreto,
+	"seguridad": CampoSeguridad, "oculta": CampoOculta,
 	// Segundo factor
 	"otpsecret": CampoTOTP, "totp": CampoTOTP, "otp": CampoTOTP,
 	"otpauth": CampoTOTP, "login_totp": CampoTOTP, "authenticator": CampoTOTP,
@@ -336,7 +373,7 @@ func Leer(datos []byte, mapa Correspondencia) ([]Entrada, Lectura, error) {
 		e := deFila(cabecera, fila, mapa, forma)
 		// Una fila sin nada que guardar no es una entrada, es una línea en blanco.
 		if e.Titulo == "" && e.Usuario == "" && e.Secreto == "" && e.Notas == "" &&
-			e.Numero == "" && e.NumeroDocumento == "" &&
+			e.Numero == "" && e.NumeroDocumento == "" && e.SSID == "" &&
 			e.Correo == "" && e.Telefono == "" && e.Nacimiento == "" && !e.TieneDireccion() {
 			continue
 		}
@@ -411,7 +448,10 @@ func (m Correspondencia) sirve() bool {
 	return m.tiene(CampoSecreto) || m.tiene(CampoNotas) ||
 		m.tiene(CampoNumero) || m.tiene(CampoNumeroDocumento) ||
 		m.tiene(CampoCorreo) || m.tiene(CampoTelefono) ||
-		m.tiene(CampoCalle) || m.tiene(CampoNacimiento)
+		m.tiene(CampoCalle) || m.tiene(CampoNacimiento) ||
+		// Y el nombre de una red: un fichero que solo traiga redes tiene que servir,
+		// y su clave llega por `secreto` pero puede venir vacía en una red abierta.
+		m.tiene(CampoSSID)
 }
 
 func deFila(cabecera, fila []string, mapa Correspondencia, forma Forma) Entrada {
@@ -494,6 +534,15 @@ func deFila(cabecera, fila []string, mapa Correspondencia, forma Forma) Entrada 
 			e.Piso = valor
 		case CampoPuerta:
 			e.Puerta = valor
+		case CampoSSID:
+			e.SSID = valor
+		case CampoSeguridad:
+			e.Seguridad = valor
+		case CampoOculta:
+			// Lo que un CSV escribe como sí: `true` de Dashlane, y lo que pueda venir
+			// de otro gestor o de nuestra propia exportación.
+			v := strings.ToLower(strings.TrimSpace(valor))
+			e.Oculta = v == "true" || v == "sí" || v == "si" || v == "1" || v == "yes"
 		case CampoTipo:
 			tipoDicho = valor
 		}
@@ -511,6 +560,14 @@ func deFila(cabecera, fila []string, mapa Correspondencia, forma Forma) Entrada 
 	e.Notas = strings.Join(notas, "\n")
 
 	e.Tipo = tipoDe(e, forma, tipoDicho)
+	// **La seguridad de una red se normaliza, no se copia** (ADR 0049). El `wifi.csv`
+	// de Dashlane dice `unsecured` en redes que tienen contraseña, y guardándolo tal
+	// cual el código QR saldría marcado como red abierta y el móvil no se conectaría:
+	// el fallo parecería del código y estaría en el dato. Es la misma regla que ya
+	// manda en el tipo de entrada — lo que el fichero diga de sí mismo no decide.
+	if e.Tipo == TipoWifi {
+		e.Seguridad = wifi.Normalizar(e.Seguridad, e.Secreto != "")
+	}
 	if e.Titulo == "" {
 		e.Titulo = tituloDeReserva(e)
 	}
@@ -548,6 +605,10 @@ func etiquetar(col, valor string, mapa Correspondencia) string {
 // lo que decía el fichero: un CSV puede mentir sobre sí mismo, y los campos no.
 func tipoDe(e Entrada, forma Forma, dicho string) Tipo {
 	switch {
+	// La red, por el nombre que emite: ningún otro fichero de ningún gestor trae esa
+	// columna, así que no se puede confundir con nada.
+	case e.SSID != "":
+		return TipoWifi
 	case e.Numero != "" || e.Verificacion != "":
 		return TipoTarjeta
 	case e.NumeroDocumento != "" || e.Documento != "":
@@ -578,7 +639,20 @@ func tituloDeReserva(e Entrada) string {
 	// parece a un título está en `item_name`, y solo en algunas clases—. Sin
 	// esto, la fila del nombre entraba sin título, y una entrada sin título es
 	// una entrada que no se encuentra.
-	return primerNoVacio(e.NombreCompleto, e.Usuario, e.Correo, e.Telefono, e.Titular, e.Documento, e.Calle)
+	// Y el nombre de la red va el **primero** de todos: el `wifi.csv` del cliente trae
+	// `name` vacío en todas sus filas, así que sin esto sus redes entrarían con el
+	// título de otra cosa o sin ninguno.
+	return primerNoVacio(e.SSID, e.NombreCompleto, e.Usuario, e.Correo, e.Telefono, e.Titular, e.Documento, e.Calle)
+}
+
+// siNo escribe un booleano como lo escribe un CSV: `true` o nada. Nada y no `false`
+// porque una columna vacía es lo que cualquier gestor lee como un no, y porque el
+// fichero se lee con los ojos.
+func siNo(v bool) string {
+	if v {
+		return "true"
+	}
+	return ""
 }
 
 func primerNoVacio(ss ...string) string {
@@ -728,6 +802,7 @@ func huellaDeContenido(e Entrada) string {
 		e.Destinatario, e.Calle, e.Edificio, e.Piso, e.Puerta,
 		e.CodigoPostal, e.Ciudad, e.Provincia, e.Pais,
 		e.RPID, e.IDCredencial, e.IDUsuario, e.NombreVisible, e.ClavePrivada,
+		e.SSID, e.Seguridad, fmt.Sprint(e.Oculta),
 	}, "\x00")
 }
 
@@ -754,6 +829,11 @@ func huellaDeCuenta(e Entrada) string {
 	// emitió el sitio. Va **antes que el correo** porque una llave puede llevar un
 	// nombre visible que sea un correo, y entonces dos llaves distintas del mismo
 	// sitio compartirían huella.
+	// La red, por el nombre que emite y **nunca por su clave**: el cliente tiene dos
+	// redes distintas con la misma contraseña, así que una huella que mirara el secreto
+	// daría la segunda por repetida y no entraría.
+	case e.SSID != "":
+		return "wifi\x00" + strings.ToLower(strings.TrimSpace(e.SSID))
 	case e.IDCredencial != "":
 		return "llave\x00" + strings.ToLower(strings.TrimSpace(e.RPID)) + "\x00" + e.IDCredencial
 	case e.Correo != "":
@@ -883,6 +963,7 @@ func (b *Boveda) Exportar(w io.Writer) error {
 		"correo", "telefono", "nacimiento",
 		"destinatario", "direccion", "edificio", "piso", "puerta",
 		"codigo_postal", "ciudad", "provincia", "pais",
+		"ssid", "seguridad", "oculta",
 	}); err != nil {
 		return err
 	}
@@ -909,6 +990,11 @@ func (b *Boveda) Exportar(w io.Writer) error {
 			e.Correo, e.Telefono, e.Nacimiento,
 			e.Destinatario, e.Calle, e.Edificio, e.Piso, e.Puerta,
 			e.CodigoPostal, e.Ciudad, e.Provincia, e.Pais,
+			// **La red sí sale en claro**, al contrario que la llave de acceso: su clave
+			// es una contraseña como las demás, y poder llevársela a otro gestor es la
+			// mitad de lo que significa poder salir. Lo que no sale es `oculta` cuando es
+			// falso, que es lo que escribe un CSV vacío para un no.
+			e.SSID, e.Seguridad, siNo(e.Oculta),
 		}); err != nil {
 			return err
 		}
