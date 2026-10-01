@@ -25,7 +25,7 @@ import {
   datosDelCliente,
   loQueSeFirma,
 } from "./afirmacion";
-import { canonEntrada, entradaDesde, sinSecretos } from "./entrada";
+import { canonEntrada, entradaDesde, sinSecretos, CAMPOS } from "./entrada";
 import { fundir, fundirPiezas } from "./fundir";
 
 const hex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
@@ -62,6 +62,21 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
     // **viaja al panel** sin que nada se ponga rojo. Comprobado quitando dos campos.
     case "sinSecretos":
       return (p.entradas as unknown[]).map((e) => canonEntrada(sinSecretos(entradaDesde(e))));
+
+    // **Los nombres de los campos que este lado conoce.**
+    //
+    // Es la que faltaba, y hace falta porque ni `canon` ni `sinSecretos` cazan un campo
+    // que se caiga de `CAMPOS`: la forma canónica ordena las claves y el campo vuelve por
+    // `extra` con los mismos bytes, y `sinSecretos` solo se entera **si ese campo era un
+    // secreto**. Con un campo que no lo sea —el nombre de una red, si es oculta— no se
+    // rompía nada visible y el espejo se quedaba corto en silencio, hasta que alguien
+    // añadiera uno sensible y entonces el secreto cruzaría al panel con todo en verde.
+    //
+    // Go saca su lista por reflexión de las etiquetas JSON, así que esta comparación se
+    // mantiene sola: un campo nuevo en la estructura y no en `CAMPOS` pone esto rojo sin
+    // que nadie tenga que acordarse.
+    case "campos":
+      return CAMPOS.map(([k]) => k as string);
 
     case "fundir": {
       const out = [];

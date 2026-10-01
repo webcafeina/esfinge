@@ -2,6 +2,7 @@ package boveda
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -56,6 +57,10 @@ func claveDeCuenta(e Entrada) string {
 		t(e.Correo), t(e.Telefono), t(e.Nacimiento),
 		t(e.Destinatario), t(e.Calle), t(e.Edificio), t(e.Piso), t(e.Puerta),
 		t(e.CodigoPostal), t(e.Ciudad), t(e.Provincia), t(e.Pais),
+		// La red wifi (ADR 0049), y aquí hay un caso real que lo exige: **el cliente
+		// tiene dos redes con la misma contraseña** y nombres distintos. Sin el SSID en
+		// esta lista son la misma cuenta, y juntar dos bóvedas borraría una de las dos.
+		t(e.SSID), t(e.Seguridad), fmt.Sprint(e.Oculta),
 	}
 	if e.Tipo == TipoNota {
 		// En una nota, el texto es el secreto: tiene que ser el mismo.

@@ -406,6 +406,10 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	b.Poner(Entrada{Titulo: "Casa", Tipo: TipoPersonal, NombreCompleto: "Yo Mismo",
 		Correo: "yo@ejemplo.com", Telefono: "600111222", Nacimiento: "1980-01-01",
 		Calle: "Calle Mayor 1", CodigoPostal: "28001", Ciudad: "Madrid", Pais: "España"})
+	// La red wifi (ADR 0049): su secreto es la clave, y el nombre de la red se queda
+	// —como el sitio de una llave— porque es lo único por lo que se reconoce en la lista.
+	b.Poner(Entrada{Titulo: "La oficina", Tipo: TipoWifi, SSID: "WEBCAFEINA",
+		Secreto: "la-clave-de-la-oficina", Seguridad: "wpa", Oculta: true})
 
 	for _, e := range b.Buscar("") {
 		if err := b.Borrar(e.ID); err != nil {
@@ -415,8 +419,8 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 	if b.Cuantas() != 0 {
 		t.Error("siguen contando como vivas")
 	}
-	if b.EnLaPapelera() != 6 {
-		t.Errorf("en la papelera hay %d de 6", b.EnLaPapelera())
+	if b.EnLaPapelera() != 7 {
+		t.Errorf("en la papelera hay %d de 7", b.EnLaPapelera())
 	}
 	// La lista de la papelera es una lista más: **sin secretos**.
 	for _, e := range b.Papelera() {
@@ -435,6 +439,11 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 		if e.Tipo == TipoPersonal && e.NombreCompleto == "" {
 			t.Error("el nombre se ha ido, y el título lo dice igual")
 		}
+		// Y de una red, el nombre que emite: con el título cambiado a gusto de cada
+		// cual, es lo que dice **cuál** de las redes es.
+		if e.Tipo == TipoWifi && e.SSID == "" {
+			t.Error("la red ha llegado sin el nombre por el que se reconoce")
+		}
 	}
 
 	// **Se restaura después de cerrar y volver a abrir**, que es el caso de
@@ -450,7 +459,7 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if b.Cuantas() != 6 || b.EnLaPapelera() != 0 {
+	if b.Cuantas() != 7 || b.EnLaPapelera() != 0 {
 		t.Fatalf("después de restaurar hay %d vivas y %d en la papelera",
 			b.Cuantas(), b.EnLaPapelera())
 	}
@@ -460,6 +469,8 @@ func TestLoBorradoVuelveEnteroDeLaPapelera(t *testing.T) {
 		"Tarjeta": "4111111111111111", "Documento": "12345678Z",
 		"Casa":   "yo@ejemplo.com6001112221980-01-01Calle Mayor 1\n28001 Madrid\nEspaña",
 		"GitHub": "cHJpdmFkYQY3JlZC0x",
+		// De la red, la clave: es su secreto y vuelve entera.
+		"La oficina": "la-clave-de-la-oficina",
 	}
 	for _, l := range b.Buscar("") {
 		e, _ := b.Ver(l.ID)

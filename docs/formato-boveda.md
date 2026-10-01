@@ -133,7 +133,7 @@ que había.
 | Campo | Qué es |
 |---|---|
 | `id` | 32 cifras hexadecimales al azar. No cambia nunca |
-| `tipo` | `credencial` · `nota` · `tarjeta` · `identidad` · `personal` · `llave` |
+| `tipo` | `credencial` · `nota` · `tarjeta` · `identidad` · `personal` · `llave` · `wifi` |
 | `titulo`, `notas`, `etiquetas`, `carpeta` | Comunes |
 | `creada`, `cambiada` | RFC3339, resolución de un segundo. **`cambiada` la tocan también mandar a la papelera y restaurar**: sin base, «vive si se cambió después de borrarse» es la única regla que queda, y una entrada rescatada aquí perdía contra la purga de allí |
 | `revision` | Cuántas veces ha cambiado. **La pone la bóveda al guardar**, nunca quien edita: 1 al crear, +1 al editar, al mandar a la papelera y al sacar |
@@ -142,6 +142,7 @@ que había.
 | `titular`, `numero`, `caduca`, `verificacion` | Tarjeta |
 | `nombreCompleto`, `documento`, `numeroDocumento` | Identidad |
 | `rpId`, `idCredencial`, `idUsuario`, `nombreVisible`, `algoritmo`, `clavePrivada`, `confirmada` | Llave de acceso ([ADR 0048](adr/0048-las-llaves-de-acceso.md)). **No hay contador de firmas**: se firma siempre con cero, y por eso esta clase no necesita regla de fusión propia. `clavePrivada` es **PKCS#8** en base64url: el escalar a secas no se puede importar en WebCrypto, que exige también la parte pública y no sabe multiplicar por el generador. **Dos fechas, y dicen cosas distintas**: `confirmada` la pone el navegador **la primera vez que el sitio nombra esa llave** —lo único que prueba que la tiene registrada— y `usada`, **la última vez que se firmó con ella**, que solo prueba que alguien la eligió. Van separadas porque la fuerte casi nunca llega: donde el sitio no nombra ninguna llave, `usada` es todo lo que se sabe. `usada` se reescribe en cada firma, y no se reescribe con la misma fecha |
+| `ssid`, `seguridad`, `oculta` | Red wifi ([ADR 0049](adr/0049-las-redes-wifi.md)). La clave va en `secreto`, como cualquier otra contraseña, con su ojo y su historial. `ssid` es el nombre que emite la red y va aparte del título: el título es cómo se llama la entrada —«La oficina»— y el SSID es lo que el móvil tiene que encontrar. `seguridad` es `wpa`, `wep` o `abierta`, y **no se copia de lo que diga el fichero importado**: Dashlane marca `unsecured` redes que tienen contraseña. `oculta` es el **segundo campo de sí o no** del formato, el primero después de `papelera` |
 | `correo`, `telefono`, `nacimiento` | Dato personal ([ADR 0047](adr/0047-los-datos-personales.md)). `nombreCompleto` se comparte con la identidad: es el mismo dato |
 | `destinatario`, `calle`, `edificio`, `piso`, `puerta`, `codigoPostal`, `ciudad`, `provincia`, `pais` | La dirección de un dato personal, **por trozos**: es como la da un gestor y como la pide un formulario. Componerla para leerla es de una línea; partirla sería adivinar. **La 2.30.0 escribía `direccion`, un solo texto**: al leerlo se trae entero a `calle` y se deja de escribir, y eso lo hacen los dos lados igual |
 

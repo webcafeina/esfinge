@@ -34,6 +34,14 @@ const (
 	// cuyo secreto **no se enseña nunca** —no hay nada que copiar ni que leer en
 	// voz alta—, así que lo que sale de aquí es una firma y jamás la clave.
 	TipoLlave Tipo = "llave"
+	// TipoWifi es una red wifi: su nombre, su clave y cómo está protegida (ADR 0049).
+	//
+	// **Lo que la hace útil no es guardarla, es el código**: la ficha dibuja un QR y
+	// un invitado se conecta apuntando el móvil, sin que nadie dicte una contraseña
+	// larga en voz alta. Es también la primera clase cuyo secreto **se enseña sin que
+	// nadie lo pida** —el código está a la vista en cuanto se abre la ficha—, y eso lo
+	// decidió el cliente sabiéndolo: quien fotografíe ese dibujo entra en la red.
+	TipoWifi Tipo = "wifi"
 )
 
 // Antigua es una contraseña que se sustituyó.
@@ -196,6 +204,28 @@ type Entrada struct {
 	// de un segundo.
 	Usada string `json:"usada,omitempty"`
 
+	// SSID es el nombre de la red, tal cual lo emite el router (ADR 0049).
+	//
+	// Va aparte del título porque no son lo mismo: el título es cómo se llama la
+	// entrada para quien la busca —«Casa», «La oficina»— y el SSID es lo que el móvil
+	// tiene que encontrar, con sus mayúsculas y sus espacios exactos. Cuando el fichero
+	// importado no trae nombre propio, el título sale de aquí.
+	SSID string `json:"ssid,omitempty"`
+	// Seguridad es cómo está protegida la red: `wpa`, `wep` o `abierta`.
+	//
+	// **No se copia de lo que diga el fichero del que salga**, y eso no es desconfianza
+	// gratuita: el `wifi.csv` de Dashlane dice `unsecured` en redes que tienen
+	// contraseña, y con eso el código saldría marcado como red abierta y el móvil no se
+	// conectaría. Lo normaliza `internal/wifi`.
+	Seguridad string `json:"seguridad,omitempty"`
+	// Oculta dice si la red no anuncia su nombre.
+	//
+	// Hace falta **para el código**: una red oculta no aparece en la lista del móvil, así
+	// que el QR tiene que decirle que la busque. Es el segundo campo de sí o no del
+	// formato —el primero fue la papelera— y por eso hubo que arreglar antes el espejo
+	// de TypeScript, que escribía todos los booleanos encima de `papelera`.
+	Oculta bool `json:"oculta,omitempty"`
+
 	// Extra guarda **los campos que esta versión de Esfinge no entiende**.
 	//
 	// Es lo más subestimado de todo el formato. En cuanto haya dos Esfinges de
@@ -239,8 +269,10 @@ func (e Entrada) Coincide(q string) bool {
 	// De una llave de acceso se busca **el sitio y el nombre que enseña**, que es
 	// lo único que una persona sabe de ella. Nunca el identificador de credencial:
 	// es opaco, nadie lo recuerda, y es lo que la identifica.
+	// Y de una red, **el nombre que emite**: es lo que se lee en el móvil y lo que
+	// alguien teclea para buscarla, aunque la entrada se llame «La oficina».
 	campos := append([]string{e.Titulo, e.Usuario, e.Carpeta, e.NombreCompleto, e.Titular, e.Correo, e.Telefono,
-		e.RPID, e.NombreVisible},
+		e.RPID, e.NombreVisible, e.SSID},
 		append(e.Sitios, e.Etiquetas...)...)
 	for _, c := range campos {
 		if strings.Contains(strings.ToLower(c), q) {

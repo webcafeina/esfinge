@@ -13,7 +13,7 @@
 
 import { canonico, type ValorJSON } from "./canon";
 
-export type Tipo = "credencial" | "nota" | "tarjeta" | "identidad" | "personal" | "llave";
+export type Tipo = "credencial" | "nota" | "tarjeta" | "identidad" | "personal" | "llave" | "wifi";
 
 export type Antigua = { secreto: string; hasta: string };
 
@@ -83,12 +83,32 @@ export type Entrada = {
    * fechas tienen resolución de un segundo.
    */
   usada?: string;
+  /**
+   * El nombre que emite la red, aparte del título (ADR 0049): el título es cómo se llama
+   * la entrada —«Casa»— y esto es lo que el móvil tiene que encontrar.
+   */
+  ssid?: string;
+  /**
+   * Cómo está protegida: `wpa`, `wep` o `abierta`.
+   *
+   * **No se copia de lo que diga el fichero importado**: Dashlane marca `unsecured` redes
+   * que tienen contraseña, y con eso el código saldría como red abierta.
+   */
+  seguridad?: string;
+  /**
+   * Si la red no anuncia su nombre. Hace falta para el código: una red oculta no sale en
+   * la lista del móvil y el QR tiene que decirle que la busque.
+   *
+   * **Es el segundo campo de sí o no del formato**, y el primero que obligó a que el
+   * lector escriba por el nombre del campo: antes escribía todos encima de `papelera`.
+   */
+  oculta?: boolean;
   /** Los campos que esta versión no conoce. */
   extra?: Record<string, ValorJSON>;
 };
 
 /** El orden y la clase de cada campo conocido, que es el orden de la estructura de Go. */
-const CAMPOS: [keyof Entrada, "siempre" | "texto" | "lista" | "numero" | "si" | "historial"][] = [
+export const CAMPOS: [keyof Entrada, "siempre" | "texto" | "lista" | "numero" | "si" | "historial"][] = [
   ["id", "siempre"],
   ["tipo", "siempre"],
   ["titulo", "siempre"],
@@ -132,6 +152,9 @@ const CAMPOS: [keyof Entrada, "siempre" | "texto" | "lista" | "numero" | "si" | 
   ["clavePrivada", "texto"],
   ["confirmada", "texto"],
   ["usada", "texto"],
+  ["ssid", "texto"],
+  ["seguridad", "texto"],
+  ["oculta", "si"],
 ];
 const CONOCIDOS = new Set<string>(CAMPOS.map(([k]) => k as string));
 

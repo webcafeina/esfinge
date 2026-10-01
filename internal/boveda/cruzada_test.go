@@ -106,6 +106,16 @@ func TestCruzadaFormaCanonica(t *testing.T) {
 			Confirmada: "2026-09-30T18:20:00Z", Usada: "2026-10-01T11:05:00Z",
 		})
 	}
+	// Y la red wifi (ADR 0049), con el **booleano** dentro: `oculta` es el segundo campo
+	// de sí o no del formato, y el primero escrito después de que el espejo dejara de
+	// guardarlos todos encima de `papelera`.
+	for i, s := range textosRaros {
+		entradas = append(entradas, Entrada{
+			ID: fmt.Sprintf("%032x", 300+i), Tipo: TipoWifi, Titulo: s,
+			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
+			SSID: s, Secreto: "clave" + s, Seguridad: "wpa", Oculta: i%2 == 0,
+		})
+	}
 	var suyas []string
 	cruzada.Pedir(t, map[string]any{"orden": "canon", "entradas": entradas}, &suyas)
 	for i, e := range entradas {
@@ -195,6 +205,12 @@ func TestCruzadaLoQueSeVacia(t *testing.T) {
 			Nacimiento: "1980-01-01", Destinatario: "Álvaro Cabezas", Calle: "Calle Mayor 1",
 			Edificio: "Portal B", Piso: "3", Puerta: "B", CodigoPostal: "28001",
 			Ciudad: "Madrid", Provincia: "Madrid", Pais: "España"},
+		// La red: lo que se vacía es **el secreto y nada más**. El nombre de la red se
+		// queda, igual que se queda el sitio de una llave: es con lo que se busca, y
+		// quien ve la lista ya está dentro de la bóveda.
+		{ID: fmt.Sprintf("%032x", 6), Tipo: TipoWifi, Titulo: "La oficina",
+			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
+			SSID: "WEBCAFEINA", Secreto: "la-clave-de-la-oficina", Seguridad: "wpa", Oculta: true},
 	}
 	var suyas []string
 	cruzada.Pedir(t, map[string]any{"orden": "sinSecretos", "entradas": entradas}, &suyas)
@@ -238,7 +254,7 @@ func (g generador) fecha() string {
 
 func (g generador) entrada(id string) Entrada {
 	e := Entrada{
-		ID: id, Tipo: Tipo(g.de("credencial", "credencial", "nota", "tarjeta", "personal", "llave")),
+		ID: id, Tipo: Tipo(g.de("credencial", "credencial", "nota", "tarjeta", "personal", "llave", "wifi")),
 		Titulo: g.de(textosRaros...), Creada: g.fecha(), Cambiada: g.fecha(), Revision: int64(g.r.IntN(4)),
 	}
 	if g.r.IntN(2) == 0 {
@@ -290,6 +306,15 @@ func (g generador) entrada(id string) Entrada {
 		// sitio la nombre es el caso corriente, y nombrada sin usar es una recién
 		// registrada.
 		e.Usada = g.de("", "2026-10-01T11:05:00Z", "2026-10-01T11:06:00Z")
+	}
+	if g.r.IntN(4) == 0 {
+		// Los de la red wifi (ADR 0049). **El booleano va en los dos valores**, que es lo
+		// que importa aquí: `oculta` es el segundo campo de sí o no del formato y el
+		// espejo los escribía todos encima de `papelera`, así que una red oculta salía
+		// borrada en un lado y entera en el otro, y las dos bóvedas se la pasaban sin fin.
+		e.SSID = g.de("WEBCAFEINA", "Casa", "a<b>&c", "")
+		e.Seguridad = g.de("wpa", "wep", "abierta", "")
+		e.Oculta = g.r.IntN(2) == 0
 	}
 	if g.r.IntN(5) == 0 {
 		e.Extra = map[string]json.RawMessage{"nuevo": json.RawMessage(g.de(`1`, `"x"`, `{"b":[1,2]}`))}
@@ -837,5 +862,42 @@ func TestCruzadaIdentidadGuardadaEnLaBoveda(t *testing.T) {
 	cruzada.Pedir(t, map[string]any{"orden": "identidadDeBoveda", "texto": string(texto), "llave": maestra}, &suyo)
 	if suyo.Huella != mia.Huella {
 		t.Fatalf("la extensión saca la huella %s y Go la %s", suyo.Huella, mia.Huella)
+	}
+}
+
+// **Que el espejo conozca todos los campos del formato, uno por uno.**
+//
+// Es la prueba que faltaba, y se escribió al añadir la red wifi (ADR 0049) después de
+// comprobar que **quitar `oculta` de `CAMPOS` no ponía roja ninguna cruzada**. No es
+// casualidad: la forma canónica ordena las claves, así que un campo que se caiga del
+// espejo vuelve por `extra` y los bytes salen idénticos, y `TestCruzadaLoQueSeVacia` solo
+// se entera **si ese campo era un secreto**. Con uno que no lo sea, el espejo se quedaba
+// corto en silencio — y el día que alguien añadiera uno sensible, el secreto cruzaría al
+// panel con todo en verde.
+//
+// Esto lo cierra para cualquier campo que venga después: Go saca su lista por reflexión
+// de las etiquetas JSON, así que un campo nuevo en la estructura y no en `CAMPOS` pone
+// esto rojo sin que nadie tenga que acordarse de nada.
+func TestCruzadaLosCamposSonLosMismos(t *testing.T) {
+	var suyos []string
+	cruzada.Pedir(t, map[string]any{"orden": "campos"}, &suyos)
+
+	tiene := map[string]bool{}
+	for _, c := range suyos {
+		tiene[c] = true
+	}
+	for nuestro := range clavesConocidas {
+		// `extra` es de cada lado y no es un campo del formato.
+		if nuestro == "extra" {
+			continue
+		}
+		if !tiene[nuestro] {
+			t.Errorf("el campo %q está en Entrada y no en CAMPOS del espejo", nuestro)
+		}
+	}
+	for _, suyo := range suyos {
+		if !clavesConocidas[suyo] {
+			t.Errorf("el campo %q está en CAMPOS del espejo y no en Entrada", suyo)
+		}
 	}
 }
