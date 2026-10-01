@@ -156,6 +156,14 @@ No se cambian sin preguntar.
   `fmt: "none"` es lo que dice la especificación, y el coste es que el sitio dirá «una llave de acceso» y no
   «Esfinge». Y **no se crea nada** sin `-7`, ni si el sitio dice que ya tiene una llave nuestra, ni con un
   `rpId` que no case con el origen.
+- **Y guarda redes wifi** (ADR 0049), que es la séptima clase. Lo que hay que saber sin abrir la ficha:
+  **lo que la hace útil es el código QR** —un invitado apunta el móvil y se conecta sin que nadie dicte la
+  clave—, el generador **está escrito aquí** (`internal/qr`) y no es una dependencia, por lo de siempre y
+  porque además **recibe la contraseña en claro**; **el código se enseña a la vista**, que es la primera vez
+  que Esfinge enseña un secreto sin que nadie lo pida y por eso la ficha lo dice con todas las letras; y
+  **la contraseña en texto sigue oculta con su ojo** —el código lo lee una cámara apuntada a propósito y el
+  texto lo lee quien pase por detrás—. Los colores del código **no salen de la paleta**: negro sobre blanco
+  a mano, o en tema oscuro no lo lee ninguna cámara.
 - **El historial guarda solo qué y cuándo**: nunca el contenido, la clave ni el texto cifrado. Vive
   en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar. **La bóveda no
   escribe en él**, y es una regla absoluta: `credenciales-dashlane.csv` ahí sería una señal de
@@ -328,6 +336,23 @@ no le parece un error, así que devuelve los bytes anteriores como si nada y la 
 Los restos posibles de un grupo de ocho son 0, 2, 4, 5 y 7. Con el `0`, el `1`, el `8` y el `9` —que
 no están en ese alfabeto— pasa lo mismo pero al revés: ésos sí los caza el descifrador.
 
+**Un código QR que se dibuja bien puede no leerlo ningún móvil, y el que lo prueba no puede ser el mismo
+que lo escribe.** El generador de `internal/qr` salía perfecto —tres buscadores, alineación, temporización—,
+el descodificador de sus pruebas lo leía sin problema y **ninguna cámara lo reconocía**: los quince bits de
+la información de formato se colocaban al revés, el más significativo primero, y un lector busca ahí antes
+de mirar los datos. El descodificador no lo cazaba porque leía con la misma idea equivocada. Dos cosas que
+deja: **lo que acota un fallo así es sacar los datos probando las ocho máscaras sin mirar el formato** —si
+el texto sale entero, el problema está encerrado en esos quince bits— y **lo que lo cierra es un móvil**,
+porque aquí no hay `qrencode`, ni `zbarimg`, ni `BarcodeDetector` en el Chromium de las pruebas. Por eso el
+vector del código que sí se escaneó está congelado como los del formato `ESF1`: si se pone rojo **no se
+regenera**.
+
+**Y una tabla escrita a mano se comprueba contra su propia definición, no contra sí misma.** En `internal/qr`
+las secuencias de formato y de versión se recalculan con su BCH y se comparan con las constantes, las dos
+tablas de tamaños se comprueban una contra otra, y la corrección de errores se verifica porque datos y
+corrección juntos son divisibles por el polinomio generador. Eso caza una cifra mal copiada, que era el
+fallo más probable del fichero y el que ninguna prueba de ida y vuelta vería.
+
 **Un acento grave dentro de un literal de plantilla lo cierra**, y los comentarios también cuentan. Los
 guiones que las pruebas inyectan en la página van en plantillas, así que un comentario en español bien
 escrito —con `código` entre acentos— **rompe el fichero entero** con un error de sintaxis que señala a otra
@@ -476,6 +501,19 @@ abría el diálogo del sistema y descubría **al ir a escribir** que no había n
 la bóveda de fábrica—, así que pedía una clave y un sitio para un fichero que no iba a existir. Lo vio el
 cliente en la 2.32.0 recién instalada. La regla: **lo que hace falta para decidir se mira antes de pedirle a
 alguien que decida**, y la ventana lo dice de entrada en vez de dejar que se descubra al final.
+
+**Y los booleanos los escribía todos encima de `papelera`**, que es el mismo fallo con el otro tipo: el
+`case "si"` tenía el nombre del campo a fuego, de cuando la papelera era el único booleano del formato.
+`oculta`, de la red wifi, iba a ser el segundo — y una red oculta habría aparecido **borrada**. Se arregló
+**antes** de añadir el campo, que es la única diferencia con la vez anterior.
+
+**Y lo que de verdad cierra esa familia de fallos: las dos listas de campos se comparan entre sí**
+(`TestCruzadaLosCamposSonLosMismos`). Hasta la red wifi no existía, y por eso quitar un campo del espejo
+**no ponía roja ninguna cruzada**: la forma canónica ordena las claves, el campo vuelve por `extra` con los
+mismos bytes, y `TestCruzadaLoQueSeVacia` solo se entera **si ese campo era un secreto**. Con uno que no lo
+sea, el espejo se quedaba corto en silencio hasta el día en que alguien añadiera uno sensible. Go saca su
+lista por reflexión de las etiquetas JSON, así que ahora un campo nuevo que falte en `CAMPOS` salta sin que
+nadie tenga que acordarse.
 
 **El espejo de TypeScript leía todos los números como si fueran `revision`.** El caso `"numero"` de
 `entradaDesde` tenía el nombre del campo escrito a fuego, de cuando la revisión era el único número del
@@ -665,7 +703,7 @@ Con ello va una regla: **cada clase de entrada se identifica por lo suyo** (`hue
 huella de una credencial es «sitio + usuario», y una tarjeta no tiene ninguno de los dos: con esa
 huella todas las tarjetas del mundo son la misma y importar cinco marcaba cuatro como duplicadas.
 
-**Y son cinco ficheros, no cuatro: el quinto es `personalinfo.csv`** (ADR 0047), y trae tres cosas que
+**Y son seis ficheros, no cuatro: el quinto es `personalinfo.csv`** (ADR 0047), y trae tres cosas que
 ningún otro. **Se declara fila a fila** —una columna `type` que dice si esa línea es un nombre, un correo
 o una dirección—, así que es el único donde la clase de cada entrada no se puede sacar solo de sus
 campos: **un nombre a secas no tiene ninguno que lo distinga**, y por eso `tipoDe` recibe la forma del
@@ -673,6 +711,13 @@ fichero. **`title` viene vacío en todas las filas** y el rótulo está en `item
 mandar `title` a las notas para que llegue: `Adivinar` se queda con la primera columna que reclama un
 campo, y `title` va antes. Y **la dirección viene en nueve columnas en el orden de Dashlane**, que no es
 el del sobre: por orden de columna sale «Calle Mayor 1, España, Madrid, Madrid, 28001».
+
+**Y el sexto es `wifi.csv`** (ADR 0049), que es el más pequeño y **el que más miente**: su columna de
+seguridad dice `unsecured` en redes que tienen contraseña, así que lo que traiga ahí **no se copia**, se
+deduce de si hay clave —`internal/wifi.Normalizar`—. Creyéndole, el código QR sale marcado como red abierta
+y **el móvil no se conecta**: el fallo parece del código y está en el dato. Dos cosas más de ese fichero:
+la columna va mal escrita en origen —`encription_type`, sin la «y»— y `name` viene vacío en todas las filas,
+así que el título sale del SSID.
 
 **Y una huella que choca no impide que la entrada entre: la marca.** `Importar` cuenta `Metidas`,
 `Repetidas` y `Conflictos`, y una huella común a todo cae en la tercera. Una prueba que compruebe

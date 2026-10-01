@@ -80,7 +80,28 @@ Plantilla al final.
   fuerte. Escrito con sus pruebas mutadas en los dos núcleos, y de paso salió que `confirmada` se escribía
   **con milisegundos** mientras Go escribe a segundos: las cruzadas no lo cazan y ahora lo caza una aserción
   del formato.
-- **Queda abierto, y es esperar**: la revisión de Chrome, y publicar la 2.36.0 con los dos datos. El cliente decidió **esperar a Firefox —más
+- **Y con Chrome revisando, se planificó y se escribió la séptima clase: las redes wifi** (ADR 0049), que el
+  cliente pidió «como hace Dashlane». Lo que decidió el coste no fue la clase —ese recorrido ya estaba medido
+  dos veces— sino **el código QR**: no había nada en el proyecto que dibujara uno y ninguna dependencia que
+  pudiera hacerlo.
+- **El generador se escribió aquí y lo validó su móvil.** El plan puso eso antes que todo lo demás por una
+  razón: en esta máquina no hay con qué comprobar que un QR es correcto. **La primera vez no se leyó**, y lo
+  acotó un diagnóstico que saca los datos **probando las ocho máscaras sin mirar el formato** —el texto salía
+  entero, así que el fallo estaba encerrado en quince bits—. Eran los de la información de formato, colocados
+  al revés; el descodificador de las pruebas no lo cazaba porque leía con la misma idea equivocada que el
+  escritor.
+- **Su `wifi.csv` cambió tres cosas del diseño**, y las tres se vieron porque lo pegó entero y no solo la
+  cabecera: la columna de seguridad dice `unsecured` en redes que tienen clave, `name` viene vacío en todas
+  las filas, y **sus dos redes comparten contraseña** — con la huella de duplicados mirando el secreto, la
+  segunda no habría entrado.
+- **Y salió una prueba cruzada del formato entero**, que no es de esta clase: quitar un campo del espejo de
+  TypeScript **no ponía roja ninguna cruzada** si ese campo no era un secreto. Ahora las dos listas de campos
+  se comparan entre sí, con la de Go sacada por reflexión.
+- De mirar las capturas salieron dos cosas que ninguna aserción decía: la ficha enseñaba la contraseña antes
+  que el nombre de la red, y la seguridad no se guardaba si nadie tocaba el desplegable —cambiar de clase en
+  el editor no recrea la entrada, solo le cambia el tipo—.
+- **Queda abierto**: la revisión de Chrome, y publicar la 2.36.0 con las dos cosas. Sin ver en un Mac: la
+  clase entera, y sin probar con su red de verdad ni con su `wifi.csv` real. El cliente decidió **esperar a Firefox —más
   rápida— y probar ahí** la bandera sin recargar. Desde esta máquina no se puede consultar el estado de
   ninguna de las dos: las claves viven en los secretos de GitHub.
 

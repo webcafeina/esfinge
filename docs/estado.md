@@ -49,8 +49,28 @@ igualadas** en cuanto Google apruebe: lo que había en la tienda era la 2.33.0.
   final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md)— frente a mezclarlos en uno, que era lo barato y
   habría hecho pasar la señal débil por la fuerte.
 
-**Lo escrito y sin publicar, para la 2.36.0:** el campo `usada` en los dos núcleos, los dos datos en la ficha y
-el arreglo de una fecha que se escribía con milisegundos. `make comprobar` y `make e2e` en verde.
+**Lo escrito y sin publicar, para la 2.36.0**, y `make comprobar` y `make e2e` en verde:
+
+1. **El campo `usada`** en los dos núcleos, los dos datos en la ficha de una llave y el arreglo de una fecha
+   que se escribía con milisegundos.
+2. **Las redes wifi, la séptima clase** ([ADR 0049](adr/0049-las-redes-wifi.md)), con su código QR. Lo pidió
+   el cliente el 2026-10-01 — «como hace Dashlane»— y se planificó entero antes de escribir nada.
+
+**De las redes, lo que hay que saber sin abrir la ADR:**
+
+- **El generador de códigos está escrito aquí** (`internal/qr`), sin dependencia nueva, y **lo validó un móvil
+  de verdad**: en esta máquina no hay `qrencode`, ni `zbarimg`, ni `BarcodeDetector` en el Chromium de las
+  pruebas, así que el primer entregable no fue la clase sino un QR en pantalla para escanear. **La primera vez
+  no se leyó**: los quince bits de la información de formato iban al revés, y el descodificador de las pruebas
+  no lo cazaba porque leía con la misma idea equivocada.
+- **El fichero del cliente evitó tres fallos** que con solo la cabecera no se habrían visto: su columna de
+  seguridad dice `unsecured` en redes **con contraseña** —y creyéndola el móvil no se conectaría—, `name` viene
+  vacío en todas las filas y **sus dos redes comparten clave**, así que una huella de duplicados que mirara el
+  secreto habría dejado fuera la segunda.
+- **El código se enseña a la vista**, que es la primera vez que Esfinge enseña un secreto sin que nadie lo
+  pida. Lo eligió el cliente y está dicho en la ficha y en [`seguridad.md`](seguridad.md).
+- **Y salió una prueba cruzada nueva del formato entero**: las dos listas de campos se comparan entre sí, que
+  es lo único que caza un campo caído del espejo cuando ese campo no es un secreto.
 
 **Y Chrome sigue en revisión** con la 2.35.0. Desde esta máquina **no se puede consultar el estado de ninguna de
 las dos tiendas**: las claves de AMO y de la Chrome Web Store viven en los secretos de GitHub.

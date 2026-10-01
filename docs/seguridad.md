@@ -387,6 +387,27 @@ descarga rota, no de una publicación manipulada**: el resumen sale del mismo si
 que sostiene la confianza es el TLS contra GitHub, y que la aplicación no se instala sola —el
 instalador lo abre quien esté delante—.
 
+## Una contraseña a la vista: el código de una red wifi
+
+Desde la 2.36.0, la ficha de una red wifi **enseña su código QR en cuanto se abre**, sin pulsar nada
+([ADR 0049](adr/0049-las-redes-wifi.md)). Es lo que la hace útil —un invitado apunta el móvil y se conecta
+sin que nadie dicte la clave— y conviene saber exactamente lo que significa:
+
+**Ese dibujo es la contraseña.** No la representa ni la codifica: la lleva dentro en texto. Quien lo
+fotografíe, lo vea en una videollamada o pase por detrás con un móvil entra en esa red igual que tú, y no
+hay forma de saber que lo ha hecho.
+
+Es **la primera vez que Esfinge enseña un secreto sin que nadie lo pida**: en todo lo demás hay que pulsar
+un ojo. Lo decidió el cliente con el coste delante y se dice **en la propia ficha**, no solo aquí. Por eso
+la contraseña en texto **sigue oculta con su ojo** en esa misma pantalla: el código lo lee una cámara
+apuntada a propósito; el texto lo lee de un vistazo cualquiera que pase.
+
+Dos cosas que **no** cambian: el código solo existe con la bóveda abierta, y **la clave de la red no sale
+de la máquina** más que en ese dibujo y en lo que se copie al portapapeles, con su borrado de siempre.
+
+Y la red sí sale en la exportación en claro, al contrario que una llave de acceso: su clave es una
+contraseña como las demás, y poder llevársela a otro gestor es la mitad de lo que significa poder salir.
+
 ## Decisiones que afectan a la seguridad
 
 - [ADR 0002](adr/0002-formato-esf1.md) — El cifrado y por qué esos algoritmos.
@@ -394,3 +415,4 @@ instalador lo abre quien esté delante—.
 - [ADR 0004](adr/0004-contrasenas-en-hexadecimal.md) — Por qué las contraseñas salen en hexadecimal.
 - [ADR 0010](adr/0010-que-guarda-el-historial.md) — Qué se guarda y qué no.
 - [ADR 0012](adr/0012-sin-firmar.md) — Por qué el sistema avisa al instalarla.
+- [ADR 0049](adr/0049-las-redes-wifi.md) — Por qué el código de una red está a la vista.
