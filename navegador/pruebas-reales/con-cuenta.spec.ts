@@ -262,6 +262,105 @@ async function contrasenaRellenada(sitio: string, esperar = true): Promise<strin
   return valor;
 }
 
+/**
+ * **Por qué no salió el banner**, para que un fallo aquí no sea «contó 0» y nada más.
+ *
+ * Tres tramos, y los tres se pueden ver desde fuera: si el `shim` está instalado —si no,
+ * es el puente—, qué dominios hay apuntados, y **qué contestó el trabajador a cada
+ * pregunta por las llaves**, que es lo que faltaba las dos veces que esto se cayó. Lo
+ * último sale de la bitácora que la compilación de pruebas escribe en `storage.session`.
+ */
+async function porQueNoSalio(pagina: Page): Promise<string> {
+  const nativa = await pagina
+    .evaluate(() => /\[native code\]/.test(Function.prototype.toString.call(navigator.credentials.get)))
+    .catch(() => null);
+  const w = contexto.serviceWorkers()[0];
+  const dominios = await w
+    .evaluate(async () => (await chrome.storage.session.get("dominios-con-llave"))["dominios-con-llave"])
+    .catch(() => "no se pudo leer");
+  const bitacora = await w
+    .evaluate(async () => (await chrome.storage.session.get("pruebas-llaves"))["pruebas-llaves"])
+    .catch(() => "no se pudo leer");
+  return (
+    `el banner no salió · shim instalado: ${nativa === null ? "no se pudo mirar" : !nativa}` +
+    ` · dominios apuntados: ${JSON.stringify(dominios)}` +
+    `\n  lo que contestó el trabajador: ${JSON.stringify(bitacora, null, 1)}`
+  );
+}
+
+/**
+ * Pide una llave de acceso como lo haría el sitio. **Una llamada es una pregunta** al
+ * trabajador cuando la bandera está apagada, así que se cuentan.
+ */
+async function pedirLlave(pagina: Page, rpId = "sitio.prueba") {
+  await pagina.evaluate((quien) => {
+    navigator.credentials
+      .get({
+        publicKey: {
+          challenge: new Uint8Array(32).fill(7),
+          rpId: quien,
+          userVerification: "discouraged",
+          allowCredentials: [],
+        },
+      })
+      .catch(() => {});
+  }, rpId);
+}
+
+/**
+ * **Espera a que la bandera pueda estar puesta, en vez de llamar en bucle.**
+ *
+ * Y esto no es una comodidad: **llamar en bucle agotaba el freno de sesenta preguntas por
+ * minuto y la prueba se envenenaba sola**. Cada `credentials.get` con la bandera apagada
+ * es una pregunta al trabajador; veinte llamadas en treinta segundos, más el refresco del
+ * icono y lo que pidan las pruebas vecinas del mismo minuto, y la respuesta pasaba a ser
+ * `motivo: "demasiado"` — que es concluyente, así que la bandera se queda apagada y el
+ * banner **no sale nunca**. Dos tandas completas se cayeron por esto y el síntoma, «el
+ * banner no salió», no se parecía en nada a la causa.
+ *
+ * Lo que se espera es que el trabajador haya contestado algo que enciende la bandera para
+ * ese origen: una llave usable o un `quizas` con la bóveda cerrada. Sale de la bitácora
+ * que escribe la compilación de pruebas, y **no cuesta ninguna pregunta**.
+ */
+/**
+ * **Y se limpia antes de cada escenario**, o la espera se cumple con una línea de la
+ * prueba anterior: la bitácora guarda las últimas veinte de toda la tanda y el origen se
+ * repite entre pruebas. Sin esto, `esperarLaBandera` pasaría sin que hubiera pasado nada.
+ */
+async function limpiarLaBitacora() {
+  await contexto.serviceWorkers()[0].evaluate(() => chrome.storage.session.remove("pruebas-llaves"));
+}
+
+async function esperarLaBandera(origen: string) {
+  try {
+    await esperarLaBanderaSinMas(origen);
+  } catch (e) {
+    const bitacora = await contexto
+      .serviceWorkers()[0]
+      .evaluate(async () => (await chrome.storage.session.get("pruebas-llaves"))["pruebas-llaves"])
+      .catch(() => "no se pudo leer");
+    throw new Error(`la bandera no se encendió\n  bitácora: ${JSON.stringify(bitacora, null, 1)}\n${String(e)}`);
+  }
+}
+
+async function esperarLaBanderaSinMas(origen: string) {
+  await expect
+    .poll(
+      () =>
+        contexto.serviceWorkers()[0].evaluate(async (donde) => {
+          const b = ((await chrome.storage.session.get("pruebas-llaves"))["pruebas-llaves"] ?? []) as {
+            origen: string;
+            rpId: string | null;
+            quizas: boolean | null;
+            llaves: number | null;
+          }[];
+          return b.some((l) => l.origen === donde && l.rpId === null && (l.quizas === true || (l.llaves ?? 0) > 0));
+        }, origen),
+      { timeout: 30_000, intervals: [300, 500, 1000], message: "el trabajador no ha dicho que aquí haya llave" },
+    )
+    .toBe(true);
+}
+
 test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
   test("entra con su código y rellena sola en un sitio guardado", async () => {
     const p = await panel();
@@ -502,56 +601,26 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
     await expect(cerrar.locator("#cuenta-titulo")).toHaveText("Tu bóveda está cerrada");
     await cerrar.close();
 
+    await limpiarLaBitacora();
     const sitio = await contexto.newPage();
     await sitio.goto("https://sitio.prueba/entrar");
-    // **Se pide varias veces, y eso no es paciencia: es el diseño.** La bandera «aquí
-    // hay algo» la **empuja** el mundo aislado después de cargar la página —tiene que
-    // preguntárselo al trabajador, que puede estar dormido—, y mientras no llega vale
-    // `false` y el shim cede sin esperar a nadie. Es a propósito: esperar es lo que
-    // puede agotar la activación de usuario y romper el inicio de sesión de quien no
-    // usa Esfinge. Una persona tarda segundos en pulsar «Entrar»; una prueba, cero.
+    // **Primero se espera a que la bandera esté, y después se llama una vez.** La
+    // bandera «aquí hay algo» la **empuja** el mundo aislado después de cargar la página
+    // —tiene que preguntárselo al trabajador, que puede estar dormido—, y mientras no
+    // llega vale `false` y el shim cede sin esperar a nadie. Es a propósito: esperar
+    // dentro de `get` es lo que agota la activación de usuario y rompe el inicio de
+    // sesión de quien no usa Esfinge. Una persona tarda segundos en pulsar «Entrar»;
+    // una prueba, cero.
     //
-    // Así que se llama hasta que el banner sale, que además comprueba lo que importa:
-    // **en cuanto la bandera llega, sale**. Cada llamada que cede acaba en el diálogo
-    // del navegador, que aquí no tiene autenticador y rechaza — de ahí el `catch`.
-    //
-    // **Y si no sale, la prueba dice en qué tramo se quedó**, que es lo que faltó el
-    // 2026-10-01: falló una vez en la tanda entera y lo único que quedó fue «contó 0»,
-    // o sea nada. Son dos causas distintas y se distinguen desde fuera: si
-    // `credentials.get` **sigue siendo nativa** el `shim` no se instaló —puente o
-    // consentimiento—, y si la lista de dominios está vacía lo que no llegó es la
-    // bandera. Está en `deuda.md`.
+    // Antes esto se resolvía **llamando en bucle hasta que saliera**, y eso agotaba el
+    // freno de sesenta preguntas por minuto: la respuesta pasaba a «demasiado» y el
+    // banner no salía nunca. Ver `esperarLaBandera`.
+    await esperarLaBandera("https://sitio.prueba/entrar");
     try {
-      await expect
-        .poll(
-          async () => {
-            await sitio.evaluate(() => {
-              navigator.credentials
-                .get({
-                  publicKey: {
-                    challenge: new Uint8Array(32).fill(7),
-                    rpId: "sitio.prueba",
-                    userVerification: "discouraged",
-                    allowCredentials: [],
-                  },
-                })
-                .catch(() => {});
-            });
-            return sitio.locator("esfinge-llave").count();
-          },
-          { timeout: 30_000, intervals: [500, 1000, 2000] },
-        )
-        .toBe(1);
+      await pedirLlave(sitio);
+      await expect(sitio.locator("esfinge-llave")).toHaveCount(1, { timeout: 10_000 });
     } catch (e) {
-      const nativa = await sitio.evaluate(() =>
-        /\[native code\]/.test(Function.prototype.toString.call(navigator.credentials.get)),
-      );
-      const dominios = await contexto
-        .serviceWorkers()[0]
-        .evaluate(async () => (await chrome.storage.session.get("dominios-con-llave"))["dominios-con-llave"]);
-      throw new Error(
-        `el banner no salió · shim instalado: ${!nativa} · dominios apuntados: ${JSON.stringify(dominios)}\n${String(e)}`,
-      );
+      throw new Error(`${await porQueNoSalio(sitio)}\n${String(e)}`);
     }
     await sitio.close();
 
@@ -560,6 +629,73 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
     await abrir.click("#cuenta-enviar");
     await expect(abrir.locator("#bloquear")).toBeVisible({ timeout: 20_000 });
     await abrir.close();
+  });
+
+  /**
+   * **Y abriendo la bóveda con la pestaña ya abierta, sin recargar** (ADR 0048).
+   *
+   * El caso que faltaba: **navegador recién abierto, bóveda sin abrir ni una vez y vas
+   * derecho a entrar**. Ahí la lista de dominios está vacía, así que el `shim` cede y el
+   * banner no sale; y como la bandera se calcula al cargar la página, abrir la bóveda
+   * después no cambiaba nada — había que recargar, y eso nadie lo adivina.
+   *
+   * La prueba empieza **comprobando el caso malo**, que es lo que la hace valer: si el
+   * banner saliera ya ahí, lo de después no estaría comprobando nada.
+   */
+  test("abriendo la bóveda después, el banner sale sin recargar la página", async () => {
+    const trabajador = contexto.serviceWorkers()[0];
+    // La bóveda cerrada y la lista vacía: el navegador recién abierto, sin haber pasado
+    // por ninguna página con la bóveda abierta.
+    const cerrar = await panel();
+    await cerrar.click("#bloquear");
+    await expect(cerrar.locator("#cuenta-titulo")).toHaveText("Tu bóveda está cerrada");
+    await cerrar.close();
+    await trabajador.evaluate(() => chrome.storage.session.remove("dominios-con-llave"));
+    await limpiarLaBitacora();
+
+    const sitio = await contexto.newPage();
+    await sitio.goto("https://sitio.prueba/entrar");
+    // **El caso malo, y se espera a que el shim esté instalado antes de darlo por bueno**:
+    // sin esa espera, «no sale el banner» podría ser solo que el puente no ha llegado.
+    await expect
+      .poll(
+        () =>
+          sitio.evaluate(
+            () => !/\[native code\]/.test(Function.prototype.toString.call(CredentialsContainer.prototype.get)),
+          ),
+        { timeout: 20_000, message: "el shim no se ha instalado" },
+      )
+      .toBe(true);
+    await pedirLlave(sitio);
+    await expect(sitio.locator("esfinge-llave")).toHaveCount(0);
+
+    // Se abre la bóveda, **sin tocar la pestaña**.
+    const abrir = await panel();
+    await abrir.fill("#cuenta-maestra", MAESTRA);
+    await abrir.click("#cuenta-enviar");
+    await expect(abrir.locator("#bloquear")).toBeVisible({ timeout: 20_000 });
+    await abrir.close();
+
+    // Y se vuelve a la pestaña, que es lo que hace cualquiera después de abrir la bóveda
+    // en el panel — y lo que el refresco del icono necesita, porque trabaja sobre **la
+    // pestaña activa**. Con el panel recién cerrado, la activa no era ésta.
+    await sitio.bringToFront();
+    // Y suena el reloj del icono, que es quien mantiene la lista y avisa a la pestaña. En
+    // uso normal llega solo, dentro del minuto; aquí se hace sonar para no esperarlo.
+    await trabajador.evaluate(() =>
+      chrome.alarms.create("refrescar-el-icono", { when: Date.now() + 50, periodInMinutes: 1 }),
+    );
+
+    // Y se espera a que el trabajador lo diga —sin gastar preguntas— antes de volver a
+    // pedir la llave: lo que se comprueba es que **la misma pestaña** acaba ofreciéndola.
+    await esperarLaBandera("https://sitio.prueba/entrar");
+    try {
+      await pedirLlave(sitio);
+      await expect(sitio.locator("esfinge-llave")).toHaveCount(1, { timeout: 10_000 });
+    } catch (e) {
+      throw new Error(`${await porQueNoSalio(sitio)}\n${String(e)}`);
+    }
+    await sitio.close();
   });
 
   /**

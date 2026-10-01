@@ -536,13 +536,37 @@ la primera pregunta de una página puede llegarle dormido. Ahora vive en `bander
 no se ha podido preguntar**: una respuesta que dice que ahí no hay llaves no se repite, porque insistir sobre
 eso gastaría una pregunta del freno en cada carga de cada sitio, que es casi siempre el caso.
 
-**Dos: el puente se rendía antes de que el otro lado pudiera hablar.** El plazo del saludo era de **dos
-segundos**, y lo que hay al otro lado es un `await` a `storage` —el consentimiento— que en una máquina cargada
-pasa de eso. El anuncio del aislado llegaba cuando el mundo principal ya había quitado su oyente: el `shim` no
-se instalaba. Es **la misma carrera que el saludo bidireccional vino a arreglar**, con el plazo como límite
-nuevo, y la prueba que la vigilaba retrasaba al que atiende **150 ms**, o sea dentro del plazo: el caso bueno
-otra vez. Ahora son quince segundos y la prueba espera **más que el plazo viejo**, usando el de serie, así que
-volver a bajarlo la pone en rojo.
+**Dos: la prueba mientras tanto comprobaba el `shim` sin esperarlo.** El otro síntoma —«el shim no se ha
+instalado»— **no era el puente**, y eso hay que escribirlo así porque el primer arreglo fue una suposición: se
+subió el plazo del saludo y el fallo **volvió igual** en la pasada siguiente. Lo que había era una carrera de
+la prueba: miraba si `CredentialsContainer.prototype.get` estaba parcheada **justo después del `goto`**, y el
+`shim` se instala cuando el puente tiene acuse, que no puede llegar antes de que el otro lado lea el
+consentimiento. Ahora espera. Esperar ahí no tapa nada: lo que esa línea existe para impedir es seguir
+adelante **si no se instala nunca**, y eso sigue poniéndola en rojo. Que durante el primer tramo de la página
+el `shim` no esté es el diseño —es lo que protege la activación de usuario—.
+
+**Y tres: lo que de verdad tumbaba el banner era el freno, agotado por las pruebas de antes.** Esto se supo
+al tercer intento y con la bitácora delante, que es lo único que lo dijo. La secuencia era: la pregunta que
+enciende la bandera pasa y contesta `quizas: true`; **ochenta milisegundos después**, la pregunta de firmar
+vuelve con `motivo: "demasiado"` —el tope de sesenta preguntas por minuto—, se cede, y el banner no sale. No
+lo gastaba esta prueba: lo habían gastado **las anteriores de la tanda**, que rellenan, guardan y mandan
+copias; las de las llaves van al final. Y la prueba se envenenaba un poco más, porque pedía la llave en bucle
+veinte veces en treinta segundos.
+
+Se arregla por los dos lados. En la compilación de pruebas **los frenos van holgados**, por la misma razón y
+con el mismo precedente que los del servidor de cuentas en local: una tanda hace en un minuto lo que una
+persona no hace en una hora. **Lo que no se deja de comprobar** es el freno mismo: lo mide
+`pruebas/nucleo-fuente.spec.ts`, que importa el núcleo sin pasar por Vite y ve los topes de producción. Y la
+prueba deja de llamar en bucle: **espera a que el trabajador diga que ahí hay llave** —por la bitácora, que no
+cuesta ninguna pregunta— y después pide la llave una vez.
+
+**Y el plazo se subió igualmente, por lo que se razonó y no por lo que se midió.** Eran **dos segundos**, y lo
+que hay al otro lado es un `await` a `storage` que en una máquina cargada pasa de eso: entonces el anuncio del
+aislado llega cuando el mundo principal ya ha quitado su oyente y el `shim` no se instala en toda la carga. Es
+la misma carrera que el saludo bidireccional vino a arreglar, con el plazo como límite nuevo, y la prueba que
+la vigilaba retrasaba al que atiende **150 ms**, o sea dentro del plazo: el caso bueno otra vez. Ahora son
+quince segundos, y la prueba nueva espera **más que el plazo viejo** usando el de serie, así que volver a
+bajarlo la pone en rojo. **Lo que no hay es una medida de que eso ocurriera aquí**, y así queda dicho.
 
 Esperar ahí no cuesta lo que cuesta esperar en otros sitios: pasa en `document_start`, antes de que nadie
 pueda pulsar nada, así que no hay activación de usuario que agotar. **Lo que relaja, y va dicho en el fichero
@@ -564,3 +588,56 @@ salir el banner.
 **La lección de método, que no es de WebAuthn:** un intermitente conocido es la mejor tapadera que tiene un
 fallo de verdad. Lo que separó una cosa de la otra no fue volver a correrlo —pasó, y seguía roto— sino
 **hacer que la prueba dijera en qué tramo se había quedado**.
+
+Y la segunda mitad, que es la que costó tres pasadas: **tres síntomas no son tres causas, ni una sola.** Se
+atribuyeron a dos arreglos y los dos eran suposiciones que sonaban bien —el plazo del saludo y la bandera sin
+reintento— mientras la causa de verdad era el freno, y otra la carrera de la prueba. Lo dijo **volver a correr
+la tanda después de arreglar**, que es lo que no hay que ahorrarse: con un intermitente, la pasada que importa
+es la de después.
+
+Y la tercera, que es la que de verdad cerró el asunto: **cuando lo que falla está dentro de una pieza que no
+se puede mirar, se le pone bitácora a esa pieza.** El diagnóstico desde la página llegaba a «el shim está
+instalado y los dominios están apuntados», y ahí se acababa; lo que faltaba era **qué contestó el trabajador a
+cada pregunta**, y eso solo lo sabe el trabajador. Veinte líneas en `storage.session`, solo en la compilación
+de pruebas, y el «demasiado» apareció a la primera. Con ella se cazó después un fallo mío en el aviso nuevo
+—la página lo ignoraba porque contaba `sePuedeCrear` como «ya estoy ofreciendo algo», y con la bóveda cerrada
+eso vale `true`—, que leyendo el código no salía.
+
+## Y la bandera se refresca sin recargar la página (2026-10-01)
+
+Lo que quedaba abierto del apartado anterior: **la bandera se calculaba una vez, al cargar la página**, así que
+quien abriera la bóveda con la pestaña ya abierta se quedaba sin banner hasta recargar. El cliente lo leyó en
+`deuda.md` y dijo que le preocupaba, con razón, porque el caso que lo dispara es **el primer inicio de sesión
+tras abrir el navegador**: ahí la lista de dominios está vacía —nace vacía y se llena cuando una página
+pregunta con la bóveda abierta—, así que el `shim` cede y luego nada vuelve a mirar.
+
+**Lo que se descartó, y por qué.** La primera idea fue que la página volviera a preguntar **al hacerse visible
+la pestaña**. Habría funcionado y cuesta una pregunta del freno en cada vuelta a la pestaña, en todos los
+sitios y casi siempre para oír que ahí no hay llaves. Se descartó por eso.
+
+**Lo que se hizo.** El refresco del icono **ya pregunta cada minuto si la bóveda está abierta** para poner el
+candado, así que el trabajo se cuelga de ahí:
+
+- con la bóveda abierta, **si no hay lista apuntada** se pide una vez y se apunta — la respuesta trae todos los
+  dominios de golpe, así que es una pregunta y no una por sitio;
+- después, abierta o cerrada, **si en ese sitio hay llave se le dice a la pestaña que vuelva a mirar**. Leer la
+  lista no pasa por ningún freno, así que el aviso es gratis;
+- y la página **solo vuelve a preguntar si no tenía nada que ofrecer**, con lo que ocurre una vez por pestaña y
+  no en cada aviso.
+
+Tres detalles que no son de adorno. **La condición es que falte la lista, no una bandera en memoria**: con una
+bandera —«ya la he pedido»— hay un estado que puede no cuadrar con lo guardado, y entonces no se pide lo que
+falta; lo cazó la prueba, que borra la lista a mano. **El aviso va al marco principal y a ninguno más**
+(`frameId: 0`), que es la trampa de `tabs.connect` otra vez: en un marco de otro origen no se instala nada, así
+que no hay a quién avisar. Y **es un mensaje suelto y no un puerto**, al contrario que todo lo demás en esta
+extensión, porque aquí no hay respuesta que prometer — que es lo que no se promete igual en los dos
+navegadores.
+
+**Lo que no cubre:** si el aviso llega y la bóveda se cierra antes de que la persona pulse, se cede como
+siempre. Y el caso de la pestaña abierta **antes** de aceptar el aviso de datos sigue necesitando recargar, que
+es lo correcto: aceptar el aviso no debe instalar un `shim` en una página que ya está corriendo.
+
+Lo comprueba una prueba con la extensión de verdad que **empieza por el caso malo** —con la bóveda cerrada y la
+lista borrada, el banner no sale—, abre la bóveda, vuelve a la pestaña, hace sonar el reloj del icono y
+comprueba que el banner sale **sin recargar**. Mutada por los dos lados: sin el aviso del trabajador y con la
+página ignorándolo, se pone roja.

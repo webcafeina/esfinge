@@ -125,10 +125,25 @@ test.describe.serial("las llaves de acceso con la extensión puesta", () => {
     const p = await conAutenticador();
 
     // Que el shim está de verdad ahí, o esta prueba no diría nada.
-    const parcheado = await p.evaluate(
-      () => !/\[native code\]/.test(Function.prototype.toString.call(CredentialsContainer.prototype.get)),
-    );
-    expect(parcheado, "el shim no se ha instalado: esta prueba no está comprobando nada").toBe(true);
+    //
+    // **Y se espera, que es lo que faltaba.** El `shim` se instala cuando el puente
+    // tiene acuse, y el otro lado no puede contestar hasta haber leído el
+    // consentimiento: un `await` a `storage`. Mirándolo justo después del `goto` había
+    // una carrera, y en la tanda completa de `make comprobar` la perdía — decía «el shim
+    // no se ha instalado» sin que nada estuviera roto. Esperar aquí no tapa nada: lo que
+    // esta línea tiene que impedir es seguir adelante **si no se instala nunca**, y eso
+    // sigue poniéndola en rojo. Que durante el primer tramo de la página el shim no esté
+    // es el diseño, está dicho en la ADR 0048 y es lo que protege la activación de
+    // usuario.
+    await expect
+      .poll(
+        () =>
+          p.evaluate(
+            () => !/\[native code\]/.test(Function.prototype.toString.call(CredentialsContainer.prototype.get)),
+          ),
+        { timeout: 20_000, message: "el shim no se ha instalado: esta prueba no está comprobando nada" },
+      )
+      .toBe(true);
 
     const creada = await p.evaluate(() => (window as any).crear());
     expect(creada.tipo).toBe("public-key");

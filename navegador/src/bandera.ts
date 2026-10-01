@@ -13,6 +13,14 @@ import type { Respuesta } from "./protocolo";
 import type { Aviso } from "./puente";
 
 /**
+ * Lo que el trabajador de fondo le manda a una pestaña para que **vuelva a mirar**.
+ *
+ * Vive aquí, de este lado, para que no haya dos literales que tengan que coincidir: lo
+ * manda `fondo.ts` y lo escucha `pagina.ts`.
+ */
+export const MIRA_OTRA_VEZ = "esfinge:mira-otra-vez";
+
+/**
  * Cuántas veces se vuelve a preguntar cuando **no se ha podido** preguntar.
  *
  * Tres, y solo en ese caso: una respuesta que dice «aquí no hay llaves» es una

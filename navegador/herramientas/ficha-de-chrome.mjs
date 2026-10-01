@@ -42,7 +42,20 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const FICHA = resolve(RAIZ, "docs/tiendas/ficha.md");
 const ESTADO = resolve(RAIZ, "docs/tiendas/pegado-en-chrome.txt");
 
-const EMPIEZA = "<!-- consola de Chrome: empieza -->";
+/**
+ * La marca de apertura, que **puede llevar el tope del campo**:
+ * `<!-- consola de Chrome: empieza (máximo 1000) -->`.
+ *
+ * Los campos de la consola tienen topes de caracteres y desde aquí **no se ven**, así
+ * que el tope lo trae quien los mira. El de la justificación de los permisos de host son
+ * mil, y se supo el 2026-10-01 **al ir a pegar** un texto de 1197: escribirlo y que no
+ * entre es la clase de fallo que se descubre en el peor sitio. Declarado aquí, para ese
+ * campo pasarse **para** la comprobación.
+ *
+ * Un bloque sin tope no se mide: no sabemos cuál es, y adivinarlo sería peor que no
+ * comprobar nada.
+ */
+const EMPIEZA = /<!-- consola de Chrome: empieza(?: \(máximo (\d+)\))? -->/g;
 const ACABA = "<!-- consola de Chrome: acaba -->";
 
 /**
@@ -54,17 +67,30 @@ const ACABA = "<!-- consola de Chrome: acaba -->";
  */
 function loQueSePega(texto) {
   const trozos = [];
+  const largos = [];
   let desde = 0;
-  for (;;) {
-    const a = texto.indexOf(EMPIEZA, desde);
-    if (a === -1) break;
+  EMPIEZA.lastIndex = 0;
+  for (let m = EMPIEZA.exec(texto); m; m = EMPIEZA.exec(texto)) {
+    const a = m.index;
     const b = texto.indexOf(ACABA, a);
     if (b === -1) throw new Error(`una marca de «empieza» sin su «acaba» (carácter ${a})`);
-    trozos.push(texto.slice(a + EMPIEZA.length, b).trim());
+    const trozo = texto.slice(a + m[0].length, b).trim();
+    trozos.push(trozo);
+    if (m[1]) largos.push({ tope: Number(m[1]), tiene: trozo.length, trozo });
     desde = b + ACABA.length;
+    EMPIEZA.lastIndex = desde;
   }
   if (texto.indexOf(ACABA, desde) !== -1) throw new Error("un «acaba» sin su «empieza»");
   if (trozos.length === 0) throw new Error("ficha.md no tiene ningún bloque marcado para la consola de Chrome");
+  for (const { tope, tiene, trozo } of largos) {
+    if (tiene > tope) {
+      throw new Error(
+        `un bloque se pasa del tope del campo: ${tiene} caracteres y caben ${tope}\n` +
+          `  empieza por «${trozo.slice(0, 60)}…»\n` +
+          "  El tope lo pone la consola de Chrome y está escrito en la marca de ese bloque.",
+      );
+    }
+  }
   return trozos;
 }
 

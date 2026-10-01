@@ -19,17 +19,28 @@ vez de una versión vacía para igualar los números de las tiendas. Lleva dos c
 1. **El campo `confirmada`** (ADR 0048), que cierra la deuda de las llaves huérfanas: la ficha dice
    **«Reconocida por el sitio»** con su fecha, y lo que confirma una llave es que **el sitio la nombre**, no
    haber firmado con ella. Una sin confirmar dice que el sitio todavía no la ha pedido; no se da por mala.
-2. **Dos fallos de producto que estaban escondidos detrás de un intermitente** (ADR 0048, «Lo que el
-   intermitente tenía dentro»): la bandera de las llaves tomaba «no he podido preguntar» por «aquí no hay
-   nada» y **no lo corregía en toda la vida de la pestaña**, y el puente se rendía a los dos segundos, menos de
-   lo que tarda leer el consentimiento en una máquina cargada. Los dos los destapó **hacer que la prueba dijera
-   en qué tramo se quedó**, no la lectura.
+2. **Que la bandera de las llaves se refresca sin recargar la página** (ADR 0048, «Y la bandera se refresca
+   sin recargar»), que el cliente pidió al leer su fila en [`deuda.md`](deuda.md): hasta ahora, abrir la bóveda
+   con una pestaña ya abierta no servía en esa pestaña, y el caso que lo dispara es **el primer inicio de
+   sesión tras abrir el navegador**. Lo hace el refresco del icono, que ya preguntaba cada minuto si la bóveda
+   está abierta, y **en régimen normal no cuesta ninguna pregunta de más**.
+3. **Lo que había detrás de un intermitente de la prueba del shim** (ADR 0048, «Lo que el intermitente tenía
+   dentro»), que tenía tres capas y **las dos primeras causas que les atribuí eran suposiciones**: lo que
+   tumbaba el banner era **el freno de sesenta preguntas por minuto**, gastado por las pruebas anteriores de la
+   tanda. Lo dijo **ponerle bitácora al trabajador de fondo**, solo en la compilación de pruebas. Con ello van
+   tres cosas que se quedan porque valen por sí mismas: la bandera insiste cuando **no se ha podido** preguntar
+   —antes tomaba ese silencio por un «aquí no hay nada» y no lo corregía nunca—, el plazo del saludo del puente
+   sube de dos a quince segundos —razonado, no medido— y la prueba espera a que el `shim` se instale en vez de
+   mirarlo justo después del `goto`.
 
 **Y al publicarla hay que mirar una cosa concreta**: que el paso de Chrome **suba** el paquete en vez de avisar
 de que hay otra versión en revisión. El de la 2.34.0 no está en la tienda y **no llega solo** porque aprobaran
-la 2.33.0: hace falta esta publicación. Antes de publicar, el cliente pega los tres campos de
-`referencias/chrome-2.34.0.md` y se cierra con `node navegador/herramientas/ficha-de-chrome.mjs --pegado`
-—**el aplazamiento caduca el 2026-10-07** y entonces vuelve a parar la comprobación—.
+la 2.33.0: hace falta esta publicación.
+
+**La ficha de Chrome está pegada y apuntada** (2026-10-01), guardada como borrador para que la revisen con esta
+publicación. De pegarla salió una regla nueva: **los campos de esa consola tienen topes que desde aquí no se
+ven** —la justificación de los permisos de host admite mil caracteres y el texto llegaba a 1197—, así que el
+tope va ahora **en la marca del bloque** y `ficha-de-chrome.mjs` lo mide.
 
 <details>
 <summary>Lo anterior, del 2026-09-30</summary>

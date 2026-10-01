@@ -44,9 +44,28 @@ import {
   loQueSeFirma,
 } from "./afirmacion";
 
-const PREGUNTAS_POR_MINUTO = 60;
-const RELLENOS_POR_MINUTO = 12;
-const ESCRITURAS_POR_MINUTO = 6;
+/**
+ * **Y en la compilación de pruebas los frenos van holgados**, por la misma razón que los
+ * del servidor de cuentas en local: una tanda entera hace en un minuto lo que una persona
+ * no hace en una hora, y entonces el freno deja de proteger de nada y se convierte en el
+ * fallo. Costó dos tandas enteras y un diagnóstico: la prueba del banner con la bóveda
+ * cerrada se caía porque **las pruebas anteriores ya se habían gastado las sesenta
+ * preguntas del minuto**, así que la segunda pregunta —la de firmar— volvía con
+ * `motivo: "demasiado"`, se cedía y el banner no salía. El síntoma, «el banner no salió»,
+ * no se parecía en nada a la causa.
+ *
+ * **Lo que esto no deja de comprobarse**: el freno de verdad lo mide
+ * `pruebas/nucleo-fuente.spec.ts`, que importa este módulo sin pasar por Vite y ve los
+ * topes de producción. Lo que se relaja es solo lo que corre dentro de un Chromium con la
+ * extensión cargada, y la bandera la pone la misma variable que ya manda la compilación de
+ * pruebas a `dist/pruebas`.
+ */
+declare const __FRENOS_HOLGADOS__: boolean;
+const holgados = typeof __FRENOS_HOLGADOS__ !== "undefined" && __FRENOS_HOLGADOS__;
+
+const PREGUNTAS_POR_MINUTO = holgados ? 600 : 60;
+const RELLENOS_POR_MINUTO = holgados ? 120 : 12;
+const ESCRITURAS_POR_MINUTO = holgados ? 60 : 6;
 
 /** Un freno de ventana fija de un minuto, como `contador` en Go. */
 class Freno {

@@ -38,15 +38,38 @@ Plantilla al final.
     cuando el trabajador no contesta, y eso se empujaba como «aquí no hay nada» **sin corregirlo nunca**: el
     `shim` cedía el resto de la vida de la pestaña. Ahora `bandera.ts` insiste **solo cuando no se ha podido
     preguntar**, que es lo que evita gastar una pregunta del freno en cada carga de cada sitio.
-  - **El puente se rendía a los dos segundos**, menos de lo que tarda leer el consentimiento en una máquina
-    cargada. La prueba que lo vigilaba retrasaba al que atiende 150 ms: el caso bueno otra vez. Quince
-    segundos, con lo que eso relaja escrito en el fichero y en la ADR.
+  - **Y la prueba del `shim` lo comprobaba justo después del `goto`**, sin esperar a que el puente tuviera
+    acuse. Esto costó una pasada entera: el primer arreglo fue **subir el plazo del saludo** de dos a quince
+    segundos —razonable, porque dos no cubren un `await` a `storage` en una máquina cargada— y el fallo
+    **volvió igual** en la pasada siguiente. El plazo se queda subido por lo que se razona y no por lo que se
+    midió, dicho así en la ADR, y lo que estaba roto era la prueba. **Con un intermitente, la pasada que
+    importa es la de después de arreglar.**
   - **Y `mundo.ts` documentaba que la bandera llega «cada vez que cambie» y nadie reavisaba.** Comentario
     corregido; la laguna —abrir la bóveda con la pestaña ya abierta— a `deuda.md`, porque arreglarla es una
     decisión sobre el freno y no un olvido.
-- **Queda abierto**: pegar los tres campos de la ficha de Chrome (`referencias/chrome-2.34.0.md`, el
-  aplazamiento caduca el 2026-10-07) y publicar la 2.35.0, que **tiene que llevar el paquete de la 2.34.0 a
-  Chrome**: no llega solo porque la tienda aprobara la 2.33.0.
+- **Y el intermitente tenía una tercera capa, que es la que de verdad lo explicaba: el freno.** Los dos
+  arreglos anteriores eran suposiciones razonables y el fallo volvió. Lo cerró **ponerle bitácora al
+  trabajador de fondo** —veinte líneas en `storage.session`, solo en la compilación de pruebas—: la pregunta
+  que enciende la bandera pasaba y, **ochenta milisegundos después**, la de firmar volvía con
+  `motivo: "demasiado"`. Era el tope de sesenta preguntas por minuto, gastado por **las pruebas anteriores de
+  la tanda**, y la prueba lo empeoraba pidiendo la llave en bucle. Ahora los frenos van holgados en la
+  compilación de pruebas —el de verdad lo sigue midiendo la prueba unitaria— y la prueba **espera a que el
+  trabajador diga que ahí hay llave** en vez de insistir.
+- **Y se cerró la deuda de la recarga, porque el cliente la leyó y dijo que le preocupaba.** Tenía razón: el
+  caso que la dispara es el primer inicio de sesión tras abrir el navegador. Se descartó reavisar al volver a
+  la pestaña —gasta una pregunta del freno cada vez, casi siempre para oír que ahí no hay llaves— y se colgó
+  del **refresco del icono**, que ya pregunta cada minuto si la bóveda está abierta: pide la lista si falta y
+  avisa a la pestaña si en ese sitio hay llave. En régimen normal **no cuesta ninguna pregunta de más**. Con su
+  prueba, que empieza comprobando el caso malo, y mutada por los dos lados. Y de escribirla salió un fallo mío
+  que la bitácora cazó y la lectura no: la página ignoraba el aviso porque contaba `sePuedeCrear` como «ya
+  ofrezco algo», y con la bóveda cerrada eso vale `true`.
+- **Y la ficha de Chrome tiene topes de caracteres que desde aquí no se ven**: la justificación de los permisos
+  de host admite mil y el texto llegaba a 1197. Lo dijo el cliente **al ir a pegarlo**. Recortado a 995, con lo
+  que se cayó dicho en `ficha.md`, y **el tope va ahora en la marca** del bloque, así que `ficha-de-chrome.mjs`
+  lo mide y pasarse para la comprobación.
+- **Queda abierto**: publicar la 2.35.0, que **tiene que llevar el paquete de la 2.34.0 a Chrome** —no llega
+  solo porque la tienda aprobara la 2.33.0—. La ficha está **pegada y apuntada** (2026-10-01), guardada como
+  borrador para que se revise con esta publicación.
 
 ---
 

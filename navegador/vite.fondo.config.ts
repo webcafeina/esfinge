@@ -23,7 +23,9 @@ const navegador = process.env.NAVEGADOR === "firefox" ? "firefox" : "chrome";
 const pruebas = process.env.ESFINGE_CUENTAS_PRUEBAS ?? "";
 
 export default defineConfig({
-  define: { __RAIZ_CUENTAS__: JSON.stringify(pruebas) },
+  // `__FRENOS_HOLGADOS__`: ver `nucleo/fuente.ts`. Solo con la variable de pruebas puesta,
+  // que es la misma que manda la salida a `dist/pruebas`.
+  define: { __RAIZ_CUENTAS__: JSON.stringify(pruebas), __FRENOS_HOLGADOS__: JSON.stringify(Boolean(pruebas)) },
   build: {
     outDir: pruebas ? resolve(__dirname, "dist", "pruebas") : resolve(__dirname, "dist", navegador),
     emptyOutDir: false,

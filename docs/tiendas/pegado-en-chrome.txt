@@ -10,8 +10,5 @@
 # motivo:  node navegador/herramientas/ficha-de-chrome.mjs --aplazado "por qué"
 # El aplazamiento caduca a los 7 días y entonces vuelve a parar.
 
-huella: b0f1b16ab9774ee3
-fecha: 2026-09-30
-pendiente: d97ba499aa3f2023
-aplazado: 2026-09-30
-porque: Chrome está revisando la 2.33.0 y no deja editar la ficha hasta que termine
+huella: 904988c160aa4ace
+fecha: 2026-10-01

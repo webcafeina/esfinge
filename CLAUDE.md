@@ -434,9 +434,33 @@ pregunta del freno en cada carga de cada sitio del mundo.
 
 **Y un plazo es una decisión sobre el caso malo, así que la prueba tiene que pasarse de ese plazo.** El puente
 se rendía a los dos segundos y lo que hay al otro lado es un `await` a `storage`: en una máquina cargada pasa
-de eso, y el anuncio del aislado llegaba cuando el otro lado ya había quitado el oyente. La prueba que lo
+de eso, y entonces el anuncio del aislado llega cuando el otro lado ya ha quitado el oyente. La prueba que lo
 vigilaba retrasaba al que atiende **150 ms** —dentro del plazo, o sea el caso bueno otra vez—. Ahora son quince
 segundos, la prueba espera **más que el plazo viejo** y usa el de serie, así que bajarlo la pone en rojo.
+
+Pero **ese plazo no era la causa del fallo que se estaba arreglando, y averiguarlo costó una pasada**: con los
+quince segundos puestos, «el shim no se ha instalado» volvió igual. Lo que había era una carrera **en la
+prueba**, que lo comprobaba justo después del `goto` cuando el `shim` no puede estar hasta que el puente tenga
+acuse. De ahí las dos reglas: **con un intermitente, la pasada que importa es la de después de arreglar** —y
+tres síntomas no son tres causas ni una sola—, y **esperar a que algo aparezca no es tapar nada** mientras
+siga en rojo el caso de que no aparezca nunca.
+
+**Y una prueba que llama en bucle a algo con freno se envenena sola, con un síntoma que no se parece a la
+causa.** El otro síntoma de aquel intermitente —«el banner no salió»— era el **freno de sesenta preguntas por
+minuto**: la pregunta que enciende la bandera pasaba y, ochenta milisegundos después, la de firmar volvía con
+`motivo: "demasiado"`, se cedía y no salía nada. No lo gastaba esa prueba: lo habían gastado **las anteriores
+de la tanda**, y las de las llaves van al final. Dos reglas: **en la compilación de pruebas los frenos van
+holgados** —igual que los del servidor de cuentas en local, y el freno de verdad lo sigue midiendo la prueba
+unitaria, que no pasa por Vite—, y **una prueba espera a que la otra pieza diga que está lista en vez de
+insistir**, que además es lo que de verdad se quiere comprobar.
+
+**Y cuando lo que falla está dentro de una pieza que no se puede mirar, se le pone bitácora a esa pieza.** El
+diagnóstico desde la página llegaba a «el shim está instalado y los dominios están apuntados» y ahí se
+acababa; lo que faltaba era **qué contestó el trabajador de fondo a cada pregunta**, y eso solo lo sabe él.
+Veinte líneas en `storage.session`, **solo en la compilación de pruebas** (`__RAIZ_CUENTAS__` vacío en la que
+se publica), sin nada de la bóveda dentro: el verbo, el sitio y lo que se contestó. El «demasiado» apareció a
+la primera, y con la misma bitácora se cazó después un fallo que leyendo el código no salía. Esto **no** es la
+consola de la extensión, que el cliente no quiere: es para que una prueba que falla pueda decir por qué.
 
 **Un doble que apunta el argumento no dice si le han llamado.** `sistemaFalso.ElegirDondeGuardar`
 guardaba el `desde` que recibía, y ese `desde` **viene vacío** hasta que alguien recuerda una carpeta: una
@@ -1196,6 +1220,13 @@ paquete y no edita la ficha**, así que cambiar `docs/tiendas/ficha.md` no cambi
 el cliente buscando una línea que se daba por puesta. Ahora los bloques que se pegan van marcados en esa
 ficha y `ficha-de-chrome.mjs` guarda su huella, así que olvidarse **para** `pnpm run comprobar`. Se hashea
 solo lo marcado: un aviso que salta al arreglar una coma de una nota interna se deja de leer.
+
+Y una tercera, del 2026-10-01: **los campos de esa consola tienen topes de caracteres, y desde aquí no se
+ven**. La justificación de los permisos de host admite **mil** y el texto de la 2.34.0 llegó a 1197: se supo
+**al ir a pegarlo**, que es el peor sitio donde enterarse. Ahora el tope va **en la marca**
+—`<!-- consola de Chrome: empieza (máximo 1000) -->`— y `ficha-de-chrome.mjs` lo mide, así que pasarse
+**para** la comprobación. Un bloque sin tope no se mide: no sabemos cuál es, y adivinarlo sería peor que no
+comprobar nada.
 
 Y dos reglas de esa ficha que costaron el mismo día, las dos por escribir para una pantalla que desde aquí
 no se puede abrir: **dentro de las marcas no va markdown** —la consola no lo interpreta, y si aquí hay

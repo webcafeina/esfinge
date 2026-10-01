@@ -43,7 +43,8 @@ import {
   type PeticionDeCuenta,
 } from "./concuenta";
 import { hostDe, queMostrar, TEXTO_DE_INSIGNIA, type QueMostrar } from "./insignia";
-import { rpIdPermitido } from "./nucleo/llaves";
+import { MIRA_OTRA_VEZ } from "./bandera";
+import { hayLlavePara } from "./nucleo/llaves";
 import {
   sirvePara,
   vigente,
@@ -93,15 +94,140 @@ async function llavesAlDia(p: Peticion, r: Respuesta): Promise<Respuesta> {
       return r;
     }
     if (!r.ok && r.motivo === "cerrada" && p.rpId === undefined && p.origen) {
-      const guardado = await api.storage.session.get(CLAVE_DOMINIOS);
-      const dominios = (guardado[CLAVE_DOMINIOS] as string[] | undefined) ?? [];
+      const dominios = (await dominiosApuntados()) ?? [];
       const origen = p.origen;
-      return { ...r, quizas: dominios.some((d) => rpIdPermitido(d, origen) === d) };
+      return { ...r, quizas: hayLlavePara(dominios, origen) };
     }
   } catch {
     // Sin `storage.session` no se ofrece nada, que es ceder: lo correcto ante la duda.
   }
   return r;
+}
+
+/**
+ * **Y la lista hay que mantenerla aunque nadie pregunte** (ADR 0048).
+ *
+ * La escribe `llavesAlDia` cuando una página pregunta con la bóveda abierta, y eso deja
+ * un caso descubierto: **navegador recién abierto, bóveda sin abrir ni una vez y vas
+ * derecho a entrar**. Ahí la lista está vacía, el `shim` cede y el banner no sale; y
+ * abrir la bóveda después no cambia nada, porque la bandera de esa pestaña ya se empujó.
+ * Había que recargar la página, y eso nadie lo adivina.
+ *
+ * Se arregla desde el refresco del icono, que **ya pregunta cada minuto si la bóveda
+ * está abierta** para poner el candado. Con ella abierta se pide la lista **cuando no hay
+ * ninguna apuntada** —la respuesta trae todos los dominios de golpe, así que es una
+ * pregunta y no una por sitio— y después basta con mirar `storage.session`, que no pasa
+ * por ningún freno.
+ *
+ * **La condición es que falte la clave, no una bandera en memoria.** Con una bandera
+ * —«ya la he pedido en esta vida del trabajador»— hay un estado que puede no cuadrar con
+ * lo que hay guardado, y entonces no se pide lo que falta: lo cazó una prueba que borra la
+ * lista a mano. Mirar si está es además más barato que recordar si se pidió. Y una lista
+ * **vacía** sí cuenta como apuntada: quien no tiene ninguna llave no tiene que volver a
+ * preguntarlo cada minuto.
+ */
+/**
+ * **La bitácora de las preguntas por las llaves, solo en la compilación de pruebas.**
+ *
+ * No es para diagnosticar en casa de nadie —la extensión no escribe nada en la consola
+ * por decisión del cliente— sino para que **una prueba que falla pueda decir por qué**. El
+ * banner con la bóveda cerrada se cayó dos veces en la tanda completa y el diagnóstico
+ * desde la página solo llegaba a «el shim está instalado y los dominios están
+ * apuntados»: lo que faltaba era saber **qué contestó el trabajador** a cada pregunta, y
+ * eso solo lo sabe el trabajador.
+ *
+ * `__RAIZ_CUENTAS__` está vacío en la compilación que se publica, así que esto no existe
+ * ahí; y ni siquiera en pruebas guarda nada de la bóveda: el verbo, el sitio y lo que se
+ * contestó.
+ */
+declare const __RAIZ_CUENTAS__: string;
+const EN_PRUEBAS = typeof __RAIZ_CUENTAS__ === "string" && __RAIZ_CUENTAS__ !== "";
+const CLAVE_BITACORA = "pruebas-llaves";
+
+/** Una línea suelta en la misma bitácora, para los pasos que no son preguntas. */
+async function apuntarPaso(paso: string): Promise<void> {
+  if (!EN_PRUEBAS) return;
+  try {
+    const guardado = await api.storage.session.get(CLAVE_BITACORA);
+    const antes = (guardado[CLAVE_BITACORA] as unknown[] | undefined) ?? [];
+    await api.storage.session.set({
+      [CLAVE_BITACORA]: [...antes, { cuando: new Date().toISOString().slice(11, 23), paso }].slice(-20),
+    });
+  } catch {
+    /* igual que arriba */
+  }
+}
+
+async function apuntarEnLaBitacora(p: Peticion, r: Respuesta): Promise<void> {
+  if (!EN_PRUEBAS || p.que !== "llaves") return;
+  try {
+    const guardado = await api.storage.session.get(CLAVE_BITACORA);
+    const antes = (guardado[CLAVE_BITACORA] as unknown[] | undefined) ?? [];
+    const linea = {
+      cuando: new Date().toISOString().slice(11, 23),
+      origen: p.origen ?? "",
+      rpId: p.rpId ?? null,
+      ok: r.ok,
+      motivo: r.motivo ?? null,
+      quizas: r.quizas ?? null,
+      llaves: r.ok ? (r.llaves ?? []).length : null,
+      dominios: r.dominios ?? null,
+    };
+    await api.storage.session.set({ [CLAVE_BITACORA]: [...antes, linea].slice(-20) });
+  } catch {
+    /* si no se puede apuntar, la prueba dirá menos y nada más */
+  }
+}
+
+/** Lo apuntado, o `null` si no hay nada apuntado todavía —que no es lo mismo que vacío—. */
+async function dominiosApuntados(): Promise<string[] | null> {
+  try {
+    const guardado = await api.storage.session.get(CLAVE_DOMINIOS);
+    return (guardado[CLAVE_DOMINIOS] as string[] | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Pide la lista entera, con la bóveda abierta, si no hay ninguna apuntada. */
+async function mantenerLaLista(url: string): Promise<void> {
+  try {
+    const antes = await dominiosApuntados();
+    await apuntarPaso(`mantenerLaLista ${url} antes=${JSON.stringify(antes)}`);
+    if (antes !== null) return;
+    const p = { que: "llaves", origen: url } as Peticion;
+    await llavesAlDia(p, await consultar({ que: "llaves", origen: url }));
+    await apuntarPaso(`lista ahora=${JSON.stringify(await dominiosApuntados())}`);
+  } catch {
+    // Que no se pueda es lo de siempre: no se ofrece nada, que es ceder.
+  }
+}
+
+/**
+ * Le dice a la pestaña que vuelva a mirar, si en su sitio hay llave.
+ *
+ * **Idempotente y gratis**: esto no pregunta nada a la bóveda —solo lee la lista— y la
+ * página solo vuelve a preguntar **si su bandera estaba apagada**, así que de verdad
+ * ocurre una vez por pestaña. Avisar siempre y dejar que decida el otro lado es lo que
+ * evita tener que saber aquí lo que esa pestaña ya sabe.
+ *
+ * **Al marco principal y a ninguno más** (`frameId: 0`): en un marco de otro origen no
+ * se instala nada, así que no hay a quién avisar, y un mensaje sin `frameId` se lo
+ * llevan todos los marcos de la pestaña — la trampa que ya costó una versión con
+ * `tabs.connect`.
+ */
+async function avisarSiHayLlave(tabId: number, url: string): Promise<void> {
+  const hay = hayLlavePara((await dominiosApuntados()) ?? [], url);
+  await apuntarPaso(`avisarSiHayLlave ${url} hayLlave=${hay}`);
+  if (!hay) return;
+  try {
+    await api.tabs.sendMessage(tabId, { esfinge: MIRA_OTRA_VEZ }, { frameId: 0 });
+    await apuntarPaso(`aviso mandado a ${tabId}`);
+  } catch (e) {
+    await apuntarPaso(`aviso falló: ${e}`);
+    // No hay nadie escuchando en esa pestaña: no tiene el guion, o es de antes del
+    // aviso de datos. No es un error.
+  }
 }
 
 /**
@@ -330,9 +456,15 @@ async function refrescar(tabId: number, obligar: boolean) {
   const q = { url, rellenado: rellenadas.get(tabId) === url } as Parameters<typeof queMostrar>[0];
   if (url.startsWith("https:")) {
     q.estado = await consultar({ que: "estado" });
+    await apuntarPaso(`refresca ${url} abierta=${q.estado.ok && q.estado.estado?.abierta === true}`);
     if (q.estado.ok && q.estado.estado?.abierta) {
       q.cuentas = await consultar({ que: "cuentas", origen: url });
+      await mantenerLaLista(url);
     }
+    // **Y después, abierta o cerrada**: con la bóveda cerrada la lista es justo lo que
+    // permite que el banner salga a ofrecer abrirla, así que la pestaña que se cargó
+    // antes de que la lista existiera también tiene que enterarse.
+    await avisarSiHayLlave(tabId, url);
   }
   pintar(tabId, queMostrar(q));
 }
@@ -716,6 +848,10 @@ api.runtime.onConnect.addListener((puerto) => {
 
         pedir(p as Peticion, esPanel)
           .then((r) => llavesAlDia(p as Peticion, r))
+          .then(async (r) => {
+            await apuntarEnLaBitacora(p as Peticion, r);
+            return r;
+          })
           .then((r) => {
             contestar(r);
             // **Al abrir el panel, el icono se pone al día con lo que el panel acaba de

@@ -58,7 +58,7 @@ import { aceptado, alAceptar } from "./consentimiento";
 import { vigilarEnvios, vigilarIdentificador } from "./envios";
 import { cuentaParaRellenarSola } from "./identidad";
 import { avisar, ponerFilete } from "./marcas";
-import { empujarLaBandera } from "./bandera";
+import { empujarLaBandera, MIRA_OTRA_VEZ } from "./bandera";
 import { atenderElPuente, type Aviso, type PeticionDelMundo, type RespuestaAlMundo } from "./puente";
 import { mostrarBanner, type EstadoDelBanner } from "./banner";
 import {
@@ -632,10 +632,37 @@ function atenderLasLlaves(puerto: MessagePort) {
   // trabajador de MV3 se muere cada pocos minutos, así que la primera pregunta de una
   // página puede llegarle dormido, y tomar ese silencio por un «aquí no hay nada»
   // dejaba la bandera en falso **para el resto de la vida de la pestaña**.
-  void empujarLaBandera(
-    () => pedir({ que: "llaves" }),
-    (a) => puerto.postMessage(a satisfies Aviso),
-  );
+  let ofrecido = false;
+  const empujar = () =>
+    empujarLaBandera(
+      () => pedir({ que: "llaves" }),
+      (a) => {
+        // **Solo `hay`, nunca `sePuedeCrear`.** Con la bóveda cerrada, `sePuedeCrear` vale
+        // `true` —el banner ofrece abrirla—, así que contándolo aquí el aviso del
+        // trabajador no servía para nada justo en el caso que vino a arreglar. Lo cazó la
+        // bitácora de las pruebas: el trabajador mandaba el aviso y aquí no pasaba nada.
+        ofrecido = a.hay;
+        puerto.postMessage(a satisfies Aviso);
+      },
+    );
+  void empujar();
+
+  /**
+   * **Y el trabajador puede decir que volvamos a mirar** (ADR 0048).
+   *
+   * La bandera se calcula al cargar la página, así que una bóveda que se abre después
+   * —o una lista de dominios que se llena después— no llegaba a esta pestaña y había que
+   * recargar. Ahora el refresco del icono avisa, y aquí **solo se vuelve a preguntar si
+   * no había nada que ofrecer**: con eso ocurre una vez por pestaña y no en cada aviso.
+   *
+   * Un mensaje suelto y no un puerto, al contrario que todo lo demás: aquí **no hay
+   * respuesta que prometer**, que es lo que no se promete igual en los dos navegadores.
+   */
+  api.runtime.onMessage.addListener((m: unknown) => {
+    if ((m as { esfinge?: string } | null)?.esfinge !== MIRA_OTRA_VEZ) return;
+    if (ofrecido) return;
+    void empujar();
+  });
 
   puerto.onmessage = async (e: MessageEvent) => {
     const p = e.data as PeticionDelMundo | null;

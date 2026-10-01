@@ -150,19 +150,24 @@ de internet.
 Acceso a los sitios `https` (*host permissions*) — **el que más se mira**, y el que Chrome ya señaló en
 la 2.22.1:
 
-<!-- consola de Chrome: empieza -->
-Para rellenar hay que encontrar el formulario de entrar en cualquier sitio donde la persona tenga
-una cuenta guardada, y para ofrecer guardar hay que leer lo que envía. Y para las llaves de acceso,
-un guion en el mundo principal (world: "MAIN"), que es la única forma de enterarse de que un sitio
-ha pedido una, para entrar o para crearla: sustituye navigator.credentials.get y .create, y cede al
-método original siempre que no tenga nada que ofrecer — cuando no hay ninguna llave guardada para ese
-sitio, cuando las llaves están apagadas, en un marco de otro origen, con mediation: "conditional",
-ante cualquier forma de petición que no reconozca, o si algo falla. La clave privada de una llave
-nunca cruza a la página: se genera y se firma donde está la bóveda, y al sitio le llega la firma al
-entrar y la parte pública al crear. También se responde que este navegador puede guardar llaves de
-acceso, para que los sitios las ofrezcan en equipos sin lector de huella; con las llaves apagadas se
-deja de responder eso. La persona puede apagarlo en los Ajustes de la aplicación.
-Solo en https: nunca en http. Con cuenta, cubre también el servidor de cuentas,
+**Ese campo tiene un tope de 1000 caracteres**, que lo dijo el cliente al ir a pegarlo el 2026-10-01 — con
+la 2.34.0 el texto llegó a 1197 y no entraba—. El tope va **en la marca**, y `ficha-de-chrome.mjs` lo mide:
+escribir de más para ese campo **para** la comprobación en vez de descubrirse en la consola. Lo que se cayó
+al recortar fue la enumeración completa de los casos en que el shim cede —quedan cuatro de seis, y los dos
+que faltan, `mediation: "conditional"` y «si algo falla», no son los que Google mira— y el detalle de que
+con las llaves apagadas se deja de responder lo del autenticador, que ya se deduce de que se apaga entero.
+
+<!-- consola de Chrome: empieza (máximo 1000) -->
+Para rellenar hay que encontrar el formulario de entrar en cualquier sitio donde la persona tenga cuenta
+guardada, y para ofrecer guardar hay que leer lo que envía.
+Y para las llaves de acceso, un guion en el mundo principal (world: "MAIN"), la única forma de saber que
+un sitio pide una, para entrar o para crearla: sustituye navigator.credentials.get y .create, y cede al
+método original siempre que no tenga nada que ofrecer: sin llave guardada para ese sitio, con las llaves
+apagadas, en un marco de otro origen o ante una petición que no reconozca. La clave privada nunca cruza
+a la página: se genera y se firma donde está la bóveda, y al sitio le llega la firma al entrar y la parte
+pública al crear. También se responde que este navegador puede guardar llaves, para que los sitios las
+ofrezcan en equipos sin lector de huella. Se apaga en los Ajustes de la aplicación.
+Solo en https, nunca en http. Con cuenta, cubre también el servidor de cuentas,
 https://esfinge-cuentas.webcafeina.com.
 <!-- consola de Chrome: acaba -->
 

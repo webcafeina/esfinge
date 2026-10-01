@@ -72,6 +72,17 @@ export function rpIdPermitido(rpId: string | undefined, origen: string): string 
  * `clientDataJSON` y la firma se rechaza sin decir por qué. Go tiene su pareja,
  * `OrigenDe`, y una prueba cruzada de tabla.
  */
+/**
+ * Si alguno de los dominios apuntados sirve para este origen.
+ *
+ * **Con `rpIdPermitido`, nunca comparando dominios**: una llave de
+ * `accounts.google.com` no sirve en `mail.google.com`, y ofrecer abrir la bóveda para
+ * algo que luego no se puede dar es un banner que estorba y no ayuda.
+ */
+export function hayLlavePara(dominios: string[], origen: string): boolean {
+  return dominios.some((d) => rpIdPermitido(d, origen) === d);
+}
+
 export function origenDe(origen: string): string {
   try {
     const u = new URL(origen.trim());
