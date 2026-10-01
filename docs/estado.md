@@ -88,7 +88,12 @@ banner y sea darle a Aceptar»— está hecho de punta a punta.
 
 **Y una cosa que no se arregla sola: el paquete de la 2.34.0 no está en Chrome.** No se subió porque la
 tienda estaba revisando la 2.33.0 —aviso, no fallo—, y **no llega solo cuando aprueben**: hace falta *otra*
-publicación. Lo natural es que la traiga la de la P4, sin inventarse una versión vacía para eso.
+publicación.
+
+**Decidido con el cliente el 2026-10-01: la trae la P4.** Se descartó un flujo para subir a tiendas lo ya
+publicado y se descartó una 2.34.1 vacía. Chrome aprobó la 2.33.0 ese mismo día, así que al publicar la P4 la
+tienda **no estará revisando** y el paquete subirá con todo. Lo que hay que comprobar al publicar la P4 es
+precisamente eso: que el paso de Chrome **sube** en vez de avisar de que hay otra en revisión.
 
 **Ya lo intentó una vez y aparecieron dos fallos, los dos arreglados y comprometidos.** Los dos los cazó
 **la consola de la página** en cinco minutos, con mis pruebas en verde, y los dos tienen la misma forma:
