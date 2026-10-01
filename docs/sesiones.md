@@ -100,8 +100,19 @@ Plantilla al final.
 - De mirar las capturas salieron dos cosas que ninguna aserción decía: la ficha enseñaba la contraseña antes
   que el nombre de la red, y la seguridad no se guardaba si nadie tocaba el desplegable —cambiar de clase en
   el editor no recrea la entrada, solo le cambia el tipo—.
-- **Queda abierto**: la revisión de Chrome, y publicar la 2.36.0 con las dos cosas. Sin ver en un Mac: la
-  clase entera, y sin probar con su red de verdad ni con su `wifi.csv` real. El cliente decidió **esperar a Firefox —más
+- **Y se repasó la documentación entera**, que era lo que el cliente pidió antes de cerrar. Había desfase de
+  cuatro clases: números viejos —`estado.md` iba por la 2.26.0 y contaba 84 pruebas de interfaz cuando son
+  106—, cosas dadas por pendientes que llevaban semanas publicadas —`siguiente.md` tenía en «Alta» Firefox,
+  el desbloqueo con el sistema, las passkeys y la pimienta—, un documento que ya no manda —`passkeys.md` es
+  el estudio previo y se leía como el diseño vigente— y dos ficheros que faltaban del índice. Lo cerrado se
+  tacha y se queda con su fecha, que es como se hace aquí.
+- **Y la portada no contaba las llaves de acceso**, con tres versiones publicadas. El cliente aprobó dos
+  tarjetas nuevas: entrar sin contraseña y compartir el wifi. La política de privacidad **no se toca**: no
+  enumera clases, y las redes no cambian lo que la extensión hace con los datos.
+- **Queda abierto**: la revisión de Chrome, y publicar la 2.36.0 con las dos cosas. Se espera a propósito,
+  decidido el 2026-10-01 con los dos caminos delante: publicar durante la revisión deja ese paquete fuera de
+  la tienda hasta la publicación siguiente, que es lo que le pasó a la 2.34.0. Sin ver en un Mac: la clase
+  entera de las redes, y sin probar con su red de verdad ni con su `wifi.csv` real. El cliente decidió **esperar a Firefox —más
   rápida— y probar ahí** la bandera sin recargar. Desde esta máquina no se puede consultar el estado de
   ninguna de las dos: las claves viven en los secretos de GitHub.
 
