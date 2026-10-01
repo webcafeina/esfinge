@@ -191,6 +191,13 @@ export type EntradaBoveda = {
   idUsuario?: string;
   nombreVisible?: string;
   algoritmo?: number;
+  /**
+   * Cuándo el sitio dijo por primera vez que tiene esta llave, o vacío.
+   *
+   * Es lo que distingue una llave **huérfana** —creada aquí y que el sitio nunca
+   * registró— de una que sirve, y por eso se enseña en la ficha.
+   */
+  confirmada?: string;
 };
 
 /**

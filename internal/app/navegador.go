@@ -555,6 +555,21 @@ func (f fuenteDelNavegador) Llaves(origen, rpID string, permitidas []string) ([]
 		if len(quiere) > 0 && !quiere[entera.IDCredencial] {
 			continue
 		}
+		// **Si el sitio la ha nombrado, queda confirmada** (ADR 0048): solo puede pedir
+		// por su identificador una credencial que tenga registrada, así que esto es la
+		// única señal fiable de que la llave no es huérfana.
+		//
+		// Es una escritura dentro de lo que parece una lectura, y se hace a sabiendas:
+		// ocurre **una vez por llave** —si ya está confirmada no se vuelve a tocar— y
+		// sin ella no habría forma de distinguir una llave que el sitio rechazó. Si la
+		// bóveda no se puede escribir, se sigue como si nada: lo que se pierde es la
+		// marca, no la firma.
+		if len(quiere) > 0 && entera.Confirmada == "" {
+			entera.Confirmada = time.Now().UTC().Format(time.RFC3339)
+			if err := b.Poner(entera); err == nil {
+				f.a.sistema.Avisar(EventoBovedaCambiada, nil)
+			}
+		}
 		nombre := entera.NombreVisible
 		if nombre == "" {
 			nombre = entera.Titulo

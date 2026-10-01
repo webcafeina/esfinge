@@ -60,6 +60,16 @@ export type Entrada = {
   nombreVisible?: string;
   algoritmo?: number;
   clavePrivada?: string;
+  /**
+   * Cuándo el sitio dijo por primera vez que tiene esta llave, o vacío.
+   *
+   * Distingue las **huérfanas**: crear guarda antes de entregar la credencial, así que
+   * un registro que falla después deja una llave que no sirve y que no se diferencia de
+   * las buenas. **Lo que la confirma es que el sitio la nombre** en `allowCredentials`,
+   * no que se haya firmado con ella: con la lista vacía el sitio no dice qué tiene y
+   * Esfinge ofrece las suyas, así que una huérfana se firmaría igual.
+   */
+  confirmada?: string;
   /** Los campos que esta versión no conoce. */
   extra?: Record<string, ValorJSON>;
 };
@@ -107,6 +117,7 @@ const CAMPOS: [keyof Entrada, "siempre" | "texto" | "lista" | "numero" | "si" | 
   ["nombreVisible", "texto"],
   ["algoritmo", "numero"],
   ["clavePrivada", "texto"],
+  ["confirmada", "texto"],
 ];
 const CONOCIDOS = new Set<string>(CAMPOS.map(([k]) => k as string));
 

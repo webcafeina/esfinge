@@ -155,6 +155,21 @@ type Entrada struct {
 	// ClavePrivada es el escalar de 32 bytes en base64url, no el JWK entero: la
 	// parte pública se recalcula y guardarla sería guardar lo mismo dos veces.
 	ClavePrivada string `json:"clavePrivada,omitempty"`
+	// Confirmada es **cuándo el sitio dijo por primera vez que tiene esta llave**,
+	// en RFC3339, o vacío si todavía no lo ha dicho.
+	//
+	// Existe para distinguir las llaves **huérfanas**: crear guarda en la bóveda
+	// antes de entregarle la credencial al sitio —lo contrario dejaría al sitio con
+	// una llave que aquí no existe—, así que un registro que falla después deja una
+	// llave que no sirve para nada y que **no se distingue de las buenas**. Pasó de
+	// verdad el 2026-09-30: cuatro llaves de GitHub y solo una válida.
+	//
+	// **Lo que la confirma es que el sitio la nombre**, no que se haya firmado con
+	// ella: el sitio solo puede pedir por su identificador una credencial que tenga
+	// registrada. Firmar no basta —con `allowCredentials` vacío el sitio no dice qué
+	// tiene y Esfinge ofrece las suyas, así que una huérfana se firmaría igual y el
+	// sitio la rechazaría después—, y esa diferencia es toda la utilidad del campo.
+	Confirmada string `json:"confirmada,omitempty"`
 
 	// Extra guarda **los campos que esta versión de Esfinge no entiende**.
 	//

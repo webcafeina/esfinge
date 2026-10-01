@@ -1654,6 +1654,19 @@ function Detalle({
                 abrir el editor para verlo sería esconder el único dato que
                 distingue. */}
             <Dato etiqueta="Creada" valor={fechaYHora(entrada.creada)} />
+            {/* **Si el sitio la reconoce o no**, que es lo que distingue una llave que
+                sirve de una huérfana (ADR 0048). Se dice como un hecho y no como un
+                juicio: una llave recién creada está sin reconocer y eso es lo normal
+                hasta la primera vez que se entra con ella. */}
+            {entrada.confirmada ? (
+              <Dato etiqueta="Reconocida por el sitio" valor={fechaYHora(entrada.confirmada)} />
+            ) : (
+              <p className="nota">
+                <strong>El sitio todavía no ha pedido esta llave.</strong> Es lo normal hasta la primera vez
+                que entras con ella. Si ya has entrado y sigue así, puede que el sitio no llegara a
+                registrarla y entonces no sirve para nada.
+              </p>
+            )}
             <p className="nota">
               Una llave de acceso no se puede ver ni copiar: se usa firmando, y la firma la hace Esfinge.
             </p>

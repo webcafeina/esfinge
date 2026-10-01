@@ -676,3 +676,85 @@ func TestCrearUnaLlaveYFirmarConElla(t *testing.T) {
 		t.Error("el sitio no podría verificar la firma de esa llave")
 	}
 }
+
+// **Una llave queda confirmada cuando el sitio la nombra, y solo entonces** (ADR 0048).
+//
+// Es lo que distingue una llave huérfana —creada aquí y que el sitio nunca registró—
+// de una que sirve. Y la mitad que importa es la segunda: **firmar no confirma**.
+//
+// Con `allowCredentials` vacío el sitio no dice qué tiene y Esfinge ofrece las suyas,
+// así que una huérfana se firmaría igual y el sitio la rechazaría después. Si bastara
+// con haber firmado, la marca diría «buena» de la que no lo es, que es peor que no
+// tenerla: daría permiso para borrar la equivocada.
+func TestUnaLlaveSeConfirmaCuandoElSitioLaNombra(t *testing.T) {
+	a, _, _, f, _ := conBoveda(t)
+	privada, _, err := navegador.CrearLlave()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Titulo: "GitHub", Tipo: boveda.TipoLlave, RPID: "github.com",
+		IDCredencial: "Y3JlZC0x", NombreVisible: "yo@ejemplo.com",
+		Algoritmo: -7, ClavePrivada: navegador.B64URL.EncodeToString(privada),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	laLlave := func() boveda.Entrada {
+		for _, e := range a.boveda().Buscar("") {
+			if e.Tipo == boveda.TipoLlave {
+				entera, _ := a.boveda().Ver(e.ID)
+				return entera
+			}
+		}
+		t.Fatal("la llave no está")
+		return boveda.Entrada{}
+	}
+
+	// Recién creada, sin confirmar.
+	if laLlave().Confirmada != "" {
+		t.Error("una llave recién guardada no puede estar confirmada: el sitio no la ha pedido")
+	}
+
+	// **El aviso de la página no confirma**: ahí no hay `rpId` ni lista, solo se
+	// pregunta si hay algo que ofrecer.
+	if _, err := f.Llaves("https://github.com/login", "", nil); err != nil {
+		t.Fatal(err)
+	}
+	if laLlave().Confirmada != "" {
+		t.Error("preguntar qué hay ha confirmado la llave sin que el sitio diga nada")
+	}
+
+	// **Y firmar tampoco**, que es la mitad que de verdad se puede equivocar: el sitio
+	// pide sin lista, Esfinge ofrece la suya y se firma, y eso no dice que la tenga.
+	if _, err := f.Llaves("https://github.com/login", "github.com", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.FirmarLlave("https://github.com/login", "github.com", laLlave().ID,
+		navegador.B64URL.EncodeToString([]byte("un reto"))); err != nil {
+		t.Fatal(err)
+	}
+	if laLlave().Confirmada != "" {
+		t.Error("firmar ha confirmado la llave, y firmar no prueba que el sitio la tenga registrada")
+	}
+
+	// **Lo que sí la confirma**: que el sitio la nombre en `allowCredentials`.
+	if _, err := f.Llaves("https://github.com/login", "github.com", []string{"Y3JlZC0x"}); err != nil {
+		t.Fatal(err)
+	}
+	primera := laLlave().Confirmada
+	if primera == "" {
+		t.Fatal("el sitio la ha nombrado y no se ha confirmado")
+	}
+
+	// Y no se vuelve a escribir: la marca es de la primera vez, no de la última.
+	antes := laLlave().Revision
+	if _, err := f.Llaves("https://github.com/login", "github.com", []string{"Y3JlZC0x"}); err != nil {
+		t.Fatal(err)
+	}
+	if laLlave().Confirmada != primera {
+		t.Error("la fecha se ha vuelto a escribir: dice cuándo se usó la última vez y no la primera")
+	}
+	if laLlave().Revision != antes {
+		t.Error("se ha escrito en la bóveda otra vez con la llave ya confirmada")
+	}
+}

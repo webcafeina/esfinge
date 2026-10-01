@@ -1850,3 +1850,77 @@ test("dos llaves del mismo sitio y la misma cuenta se distinguen por cuándo se 
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * **La ficha de una llave dice si el sitio la reconoce** (ADR 0048), que es lo que
+ * distingue una huérfana de una que sirve.
+ *
+ * Se comprueban los dos estados, y el de «todavía no» es el que importa: una llave
+ * recién creada está sin reconocer y eso es **lo normal**, así que el texto tiene que
+ * decirlo como un hecho y no como una alarma. Enseñar solo la fecha cuando la hay, y
+ * nada cuando no, dejaría la pregunta sin contestar justo en el caso que preocupa.
+ */
+test("la ficha de una llave dice si el sitio la reconoce", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  /**
+   * **Se comprueba que el guardado ha funcionado**, y no es celo: la primera versión
+   * de esta prueba tiraba el `fetch` sin mirar la respuesta, pasaba sola y **fallaba en
+   * la tanda** — otra prueba baja el reloj de bloqueo de la bóveda, así que para cuando
+   * llegaba la segunda escritura la bóveda podía estar cerrada y `GuardarEnBoveda`
+   * fallaba en silencio. El síntoma era «no encuentro este texto en la ficha», que no
+   * se parece en nada a «no se guardó la entrada».
+   */
+  const guardar = async (entrada: Record<string, unknown>) => {
+    // **Se recarga antes**, y eso tampoco es celo: `conLaBovedaAbierta` espera el
+    // buscador o el botón de abrir, y **con una ficha abierta no hay ninguno de los
+    // dos** — la ficha sustituye la lista—. El segundo guardado llegaba justo así y se
+    // quedaba esperando veinte segundos a un buscador que no podía estar.
+    await page.reload();
+    await conLaBovedaAbierta(page);
+    const r = await page.evaluate(
+      (e) =>
+        fetch("/api/GuardarEnBoveda", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify([e]),
+        }).then((x) => x.status),
+      entrada,
+    );
+    expect(r, "no se ha podido guardar la entrada de la prueba").toBe(200);
+  };
+  const abrirLaFicha = async (titulo: string) => {
+    await page.reload();
+    await conLaBovedaAbierta(page);
+    await page.locator("#boveda-buscar").fill(titulo);
+    const filas = page.locator(".panel:visible .lista-boveda li");
+    await expect(filas, `la entrada «${titulo}» no está en la lista`).toHaveCount(1);
+    await filas.first().locator("button").click();
+    // Y que la ficha abierta es la suya, no la que hubiera antes.
+    await expect(page.locator(".panel:visible").getByText(titulo, { exact: false }).first()).toBeVisible();
+  };
+
+  const sitio = `reconocida-${Date.now()}.prueba`;
+  const base = {
+    tipo: "llave", rpId: sitio, nombreVisible: "yo@ejemplo.com", algoritmo: -7, clavePrivada: "privada",
+  };
+  await guardar({ ...base, titulo: sitio, idCredencial: "cred-sin" });
+  await abrirLaFicha(sitio);
+
+  const ficha = page.locator(".panel:visible");
+  await expect(ficha.getByText("El sitio todavía no ha pedido esta llave", { exact: false })).toBeVisible();
+  await expect(ficha.getByText("Reconocida por el sitio", { exact: true })).toHaveCount(0);
+
+  // Y con la marca puesta, la fecha en vez del aviso.
+  const conFecha = `${sitio}-ok`;
+  await guardar({
+    ...base, titulo: conFecha, rpId: conFecha, idCredencial: "cred-con",
+    confirmada: "2026-10-01T09:30:00Z",
+  });
+  await abrirLaFicha(conFecha);
+  await expect(ficha.getByText("Reconocida por el sitio", { exact: true })).toBeVisible();
+  await expect(ficha.getByText("El sitio todavía no ha pedido esta llave", { exact: false })).toHaveCount(0);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});

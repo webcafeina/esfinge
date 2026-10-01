@@ -293,3 +293,64 @@ test("llaves: una llave sin clave privada no sale ni en la lista de dominios", a
   expect(r.llaves).toEqual([]);
   expect(r.dominios).toEqual([]);
 });
+
+/**
+ * **Una llave queda confirmada cuando el sitio la nombra, y firmar no la confirma**
+ * (ADR 0048), espejo de `TestUnaLlaveSeConfirmaCuandoElSitioLaNombra` de Go.
+ *
+ * Es una prueba de **comportamiento y no de formato**, y eso es a propósito: quitar
+ * `confirmada` de `CAMPOS` **no rompe ninguna cruzada** —vuelve por `extra` y los bytes
+ * salen idénticos, que es la trampa ya escrita— y tampoco `TestCruzadaLoQueSeVacia`,
+ * porque no es un secreto. Lo único que se rompe es esto: el núcleo no sabría leerlo ni
+ * escribirlo, así que la llave **no quedaría confirmada nunca** y se reescribiría en
+ * cada visita. Comprobado quitándolo.
+ */
+test("llaves: el sitio la nombra y queda confirmada; firmar no la confirma", async () => {
+  const { boveda } = await Boveda.crear(MAESTRA);
+  const { crearLlave } = await import("../src/nucleo/llaves");
+  const { aBase64Url } = await import("../src/nucleo/afirmacion");
+  const par = await crearLlave();
+  await boveda.poner({
+    id: "", tipo: "llave", titulo: "GitHub", rpId: "github.com",
+    idCredencial: "Y3JlZC0x", nombreVisible: "yo@ejemplo.com",
+    algoritmo: -7, clavePrivada: aBase64Url(par.privada), creada: "", cambiada: "",
+  } as Entrada);
+  const laLlave = () => {
+    const x = boveda.buscar("").find((e) => e.tipo === "llave");
+    return boveda.ver(x!.id)!;
+  };
+  const estado = { existe: true, boveda };
+
+  expect(laLlave().confirmada ?? "", "recién creada no puede estar confirmada").toBe("");
+
+  // El aviso de la página no confirma: ahí no hay lista ni `rpId`.
+  await atender(p({ que: "llaves", origen: "https://github.com/login" }), estado);
+  expect(laLlave().confirmada ?? "", "preguntar qué hay ha confirmado la llave").toBe("");
+
+  // **Y firmar tampoco**, que es la mitad que se puede equivocar: sin lista, el sitio
+  // no dice qué tiene y Esfinge ofrece la suya, así que una huérfana se firmaría igual.
+  await atender(p({ que: "llaves", origen: "https://github.com/login", rpId: "github.com" }), estado);
+  const firmada = await atender(
+    p({ que: "firmar-llave", origen: "https://github.com/login", rpId: "github.com", id: laLlave().id, reto: "cmV0bw" }),
+    estado,
+  );
+  expect(firmada.ok, firmada.error).toBe(true);
+  expect(laLlave().confirmada ?? "", "firmar ha confirmado la llave").toBe("");
+
+  // Lo que sí la confirma.
+  await atender(
+    p({ que: "llaves", origen: "https://github.com/login", rpId: "github.com", permitidas: ["Y3JlZC0x"] }),
+    estado,
+  );
+  const primera = laLlave().confirmada ?? "";
+  expect(primera, "el sitio la ha nombrado y no se ha confirmado").not.toBe("");
+
+  // Y no se vuelve a escribir: la marca es de la primera vez.
+  const antes = laLlave().revision;
+  await atender(
+    p({ que: "llaves", origen: "https://github.com/login", rpId: "github.com", permitidas: ["Y3JlZC0x"] }),
+    estado,
+  );
+  expect(laLlave().confirmada).toBe(primera);
+  expect(laLlave().revision, "se ha vuelto a escribir con la llave ya confirmada").toBe(antes);
+});

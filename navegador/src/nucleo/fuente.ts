@@ -178,9 +178,23 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
           .filter((x) => x.tipo === "llave" && x.rpId === rp)
           .map((x) => b.ver(x.id))
           .filter((x): x is Entrada => Boolean(x));
+        const usables = llavesDe(enteras, rp, p.permitidas);
+        // **Si el sitio las ha nombrado, quedan confirmadas** (ADR 0048): solo puede
+        // pedir por su identificador una credencial que tenga registrada, así que esto
+        // es la única señal fiable de que una llave no es huérfana.
+        //
+        // Es una escritura dentro de lo que parece una lectura, y se hace a sabiendas:
+        // ocurre **una vez por llave** y sin ella no hay forma de distinguir una que el
+        // sitio rechazó. Con la bóveda en solo lectura se sigue como si nada: lo que se
+        // pierde es la marca, no la firma.
+        if ((p.permitidas ?? []).length > 0 && !b.soloLectura) {
+          for (const x of usables) {
+            if (!x.confirmada) await b.poner({ ...x, confirmada: new Date().toISOString() });
+          }
+        }
         return {
           ok: true,
-          llaves: llavesDe(enteras, rp, p.permitidas).map((x) => ({
+          llaves: usables.map((x) => ({
             id: x.id,
             // Lo que se lee en el banner, y nada más. Ni el identificador de
             // credencial ni el de usuario: no hacen falta para elegir.
