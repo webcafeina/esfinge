@@ -130,7 +130,7 @@ export type Preferencias = {
 /** Lo que se manda para apagar uno de los dos relojes de la bóveda. */
 export const NUNCA = -1;
 
-/** Las cuatro clases de cosa que caben en la bóveda. Los nombres los fija Go. */
+/** Las siete clases de cosa que caben en la bóveda. Los nombres los fija Go. */
 export type TipoEntrada = "credencial" | "nota" | "tarjeta" | "identidad" | "personal" | "llave" | "wifi";
 
 /** Una contraseña que se sustituyó, con la fecha en que dejó de valer. */

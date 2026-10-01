@@ -1495,7 +1495,7 @@ test("un dato personal guarda la dirección por trozos y la enseña compuesta", 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
-// **Las seis clases caben en su barra**, que es lo que ninguna aserción miraba.
+// **Las siete clases caben en su barra**, que es lo que ninguna aserción miraba.
 //
 // Se añadió la de datos personales, todo siguió en verde y en la captura el
 // rótulo de la última salía cortado por el borde del panel. Comparar lo que la

@@ -1,5 +1,12 @@
 # Passkeys: que Esfinge sea la llave
 
+> **Esto es el estudio previo, de antes de hacerlas, y ya no manda.** Se escribió el 2026-09-23 para saber
+> si la fase era viable y qué había que decidir. Lo que vale hoy es la
+> [ADR 0048](adr/0048-las-llaves-de-acceso.md): las cuatro entregas están hechas y publicadas, y por el
+> camino se descubrió que varias cosas de aquí eran falsas — entre ellas que «la parte pública se recalcula»
+> de la clave privada, que WebCrypto no deja hacer. Se queda porque dice **qué se pensaba antes de empezar**,
+> que es justo lo que no se puede reconstruir después.
+
 **Qué pidió el cliente (2026-09-23)**, con sus palabras: «la opción que tiene Dashlane del passkey, como
 por ejemplo al acceder a GitHub, que simplemente sale un banner de passkey que reconoce Dashlane y es
 darle a Aceptar».

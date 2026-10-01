@@ -390,7 +390,7 @@ la huella de identidad de compartir, así que le estaba poniendo 72×72 a todas 
 ## Dónde estamos
 
 Esfinge es una **aplicación de escritorio** con ventana propia, más una línea de comandos que comparte
-núcleo y formato. Va por la **2.26.0**, con **las cuentas abiertas**, la extensión publicada en las dos
+núcleo y formato. Va por la **2.35.0**, con **las cuentas abiertas**, la extensión publicada en las dos
 tiendas —y subiéndose sola a las dos— y **compartir copias** entre cuentas. Funciona de punta a punta:
 cifra y descifra textos y ficheros, genera contraseñas, **guarda contraseñas en una bóveda cifrada**,
 lleva un historial de qué y cuándo, y se compila sola para macOS, Windows y Linux en GitHub Actions.
@@ -440,7 +440,9 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
   y no vueltos a generar, más los de la 1.5.0 sellados con el código de entonces. Antes lo único que
   decía congelarlo era un test que se miraba al espejo, y un cambio coherente en los dos sentidos
   habría pasado en verde dejando de abrir lo ya emitido.
-- **La bóveda** (ADR 0023): local, cifrada, con clave de recuperación, cuatro clases de entrada,
+- **La bóveda** (ADR 0023): local, cifrada, con clave de recuperación, **siete clases de entrada**
+  —las cuatro de entonces, más los datos personales (ADR 0047), las llaves de acceso (ADR 0048) y las
+  redes wifi (ADR 0049)—,
   historial de contraseñas anteriores, importación desde Dashlane, Bitwarden, 1Password, LastPass y
   Chrome —cada gestor exporta **varios ficheros** y cada uno se reconoce por su forma—, exportación
   en claro para poder salir, bloqueo por inactividad, borrado del portapapeles y borrado de la bóveda
@@ -473,7 +475,7 @@ tiene ahora una ventana. La línea de comandos se quedó, que es la que se mete 
 - **La fase 2, entrega 3** (ADR 0032): **ofrece guardar y actualizar** lo que se envía en un
   formulario, con una tarjeta en la página. Publicada en la 2.21.0 y corregida hasta la **2.21.2** con lo que salió de usarla —Google con dos pasos y varias cuentas, y el cambio de contraseña de Brevo—; **comprobada en el Mac**.
 - **Pruebas de la interfaz** con Playwright contra el Go de verdad, en tema claro y oscuro, en una
-  máquina sin entorno gráfico. Son **84**.
+  máquina sin entorno gráfico. Son **106**.
 
 ## En curso
 

@@ -1,28 +1,39 @@
 # Lo siguiente
 
-Última actualización: **2026-09-30**
+Última actualización: **2026-10-01**
 
 Por prioridad. Lo cerrado se tacha y se queda, con la fecha: saber qué se descartó vale tanto como
 saber qué se hizo.
 
 ## Alta
 
-- **Probar la extensión en Firefox**, lo último del plan de cuentas (E3) y la última tarea del plan,
-  dicho así por el cliente tres veces: va cuando no quede ninguna otra. La lista de lo que hay que mirar
-  está en [`estado.md`](estado.md).
-- **Desbloquear con el sistema** ([`desbloqueo-del-sistema.md`](desbloqueo-del-sistema.md)), la fase **C**
-  del plan de cuentas. **Estudiada y sin empezar**, y con cuatro cosas que decidir antes: la primera, si se
-  acepta que sin firmar esto es un cerrojo y no una llave.
-- **Passkeys** ([`passkeys.md`](passkeys.md)), pedidas por el cliente el 2026-09-23: «como Dashlane, que
-  sale un banner y es darle a Aceptar». Va **fuera y después** del plan de cuentas. Estudiada la
-  viabilidad y escritas las cuatro entregas y las cinco decisiones previas; **sin empezar**.
-- **Poder rotar la pimienta del servidor**, que está en la deuda y **vencida**: su condición era «antes de
-  abrir el registro», y el registro se abrió el 2026-09-23. Si se filtrara hoy, cambiarla dejaría fuera a
-  todas las cuentas.
-- **Vivir con la bóveda unos días.** Los datos ya están dentro —la exportación de Dashlane entra
-  entera— y la clave de recuperación ya se ha usado de verdad, así que lo que queda no es una
-  comprobación sino uso. Era la puerta de decisión del plan para las fases 2 a 4 —autorrelleno,
-  cuentas, compartir— y **todavía no ha pasado un día completo con ella** (ADR 0023).
+- **Publicar la 2.36.0 cuando Chrome apruebe la 2.35.0.** Lleva dos cosas escritas y en verde: el campo
+  `usada` de las llaves de acceso y **las redes wifi con su código QR** ([ADR 0049](adr/0049-las-redes-wifi.md)).
+  Se espera a la aprobación por una razón medida, no por costumbre: publicar mientras Chrome revisa deja ese
+  paquete **fuera de la tienda** hasta la publicación siguiente, que es lo que le pasó a la 2.34.0. Lo decidió
+  el cliente el 2026-10-01 con las dos opciones delante.
+- **Abrir la aplicación en máquinas Windows y GNOME de verdad**, y mirar ahí dos cosas: la estructura
+  de cada sistema y el icono de los `.esf` en el explorador de ficheros. En Windows el icono lo pone
+  el instalador, en Linux el `.deb`; los dos están comprobados por dentro pero no puestos.
+  La estructura de macOS está juzgada en un Mac; las otras dos se escribieron a partir de las
+  convenciones de cada sistema y no las ha visto nadie corriendo (ADR 0020).
+
+~~**Probar la extensión en Firefox**~~ → **hecha el 2026-09-28**: «pruebas de Firefox perfectas», con la
+aplicación cerrada y la cuenta desde el panel. Con eso se cerró la E3 y el plan de cuentas entero.
+
+~~**Desbloquear con el sistema**~~ → **hecho de la 2.27.0 a la 2.27.6** ([ADR 0044](adr/0044-desbloquear-con-el-sistema.md)),
+Touch ID en macOS y Windows Hello escrito a ciegas, con lo que se decidió: es un cerrojo y no una llave, y se
+dice en la pantalla donde se activa.
+
+~~**Passkeys**~~ → **hechas enteras**, las cuatro entregas, de la 2.32.0 a la 2.34.0
+([ADR 0048](adr/0048-las-llaves-de-acceso.md)). El cliente crea y usa llaves de GitHub en Chrome y en
+Firefox, y la llave sirve desde su otro Mac.
+
+~~**Poder rotar la pimienta del servidor**~~ → **hecha y rotada de verdad en pruebas el 2026-09-29**
+([ADR 0046](adr/0046-rotar-la-pimienta.md)). Ya no hay nada vencido en la deuda.
+
+~~**Vivir con la bóveda unos días**~~ → **superada por los hechos**: era la puerta de decisión para las fases
+2 a 4, y esas fases están hechas y publicadas. El uso diario que pedía ha ocurrido por el camino.
 - **Abrir la aplicación en máquinas Windows y GNOME de verdad**, y mirar ahí dos cosas: la estructura
   de cada sistema y el icono de los `.esf` en el explorador de ficheros. En Windows el icono lo pone
   el instalador, en Linux el `.deb`; los dos están comprobados por dentro pero no puestos.

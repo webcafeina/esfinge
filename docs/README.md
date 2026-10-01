@@ -15,7 +15,9 @@ dónde está y por qué está así. Todo en español, fechas en formato `AAAA-MM
 | [revision-2026-09.md](revision-2026-09.md) | La revisión de seguridad hecha aquí: hallazgos, lo arreglado y lo pendiente | Al arreglar algo de la lista o al hacer otra revisión |
 | [revision-textos-2026-09.md](revision-textos-2026-09.md) | La política y las condiciones contrastadas con el código, y lo que falta | Al tocar lo que se guarda o lo que dicen los textos |
 | [cuentas.md](cuentas.md) | El plan de las cuentas, por entregas, con lo hecho marcado | Al cerrar una entrega o cambiar el plan |
-| [passkeys.md](passkeys.md) | Lo que haría falta para que Esfinge guarde y use passkeys, y qué hay que decidir antes | Al decidir algo de esa fase o al empezarla |
+| [formato-boveda.md](formato-boveda.md) | Qué hay dentro del fichero de la bóveda, campo a campo, y cómo se funden dos | Al tocar el formato o la fusión |
+| [desbloqueo-del-sistema.md](desbloqueo-del-sistema.md) | El estudio de Touch ID y Windows Hello: qué da cada sistema y qué no | Al tocar el desbloqueo con el sistema |
+| [passkeys.md](passkeys.md) | El **estudio previo** de las llaves de acceso, de antes de hacerlas. Lo que manda hoy es la [ADR 0048](adr/0048-las-llaves-de-acceso.md) | No se actualiza: es lo que se pensó antes de empezar |
 | [../CLAUDE.md](../CLAUDE.md) | Cómo se trabaja aquí: protocolo, convenciones, trampas | Al cambiar una convención o encontrar una trampa nueva |
 | [../README.md](../README.md) | La portada, para quien llega de fuera | Al cambiar lo que se ve o cómo se descarga |
 

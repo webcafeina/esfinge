@@ -53,9 +53,9 @@ se toca.
 **Genera contraseñas** en hexadecimal por defecto, que es el único alfabeto que se puede meter en
 una cadena de conexión sin que se rompa por un `/` ([por qué](docs/adr/0004-contrasenas-en-hexadecimal.md)).
 
-**Guarda contraseñas en una bóveda** cifrada, en este ordenador: credenciales, notas, tarjetas y
-documentos, con buscador, y trayéndose lo que ya tengas en Dashlane, Bitwarden, 1Password, LastPass
-o Chrome. **Calcula también los códigos de un solo uso**, así que el segundo factor deja de estar en
+**Guarda contraseñas en una bóveda** cifrada, en este ordenador: credenciales, notas, tarjetas,
+documentos, datos personales, llaves de acceso y redes wifi, con buscador, y trayéndose lo que ya
+tengas en Dashlane, Bitwarden, 1Password, LastPass o Chrome. **Calcula también los códigos de un solo uso**, así que el segundo factor deja de estar en
 otro programa —con lo que eso tiene de bueno y de malo, dicho
 [aquí](docs/seguridad.md#lo-que-cambia-con-la-bóveda)—. Se cierra sola cuando llevas un rato sin
 tocarla, borra del portapapeles lo que copies, y lo que borres se queda **treinta días en la
