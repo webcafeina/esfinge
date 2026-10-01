@@ -183,9 +183,15 @@ export function entradaDesde(crudo: unknown): Entrada {
         break;
       }
       case "si": {
+        // **Y aquí lo mismo, por su nombre**: esto decía `e.papelera = true` a fuego,
+        // escrito cuando la papelera era el único booleano del formato. El segundo
+        // —`oculta`, de la red wifi— se habría guardado **encima de la papelera**, o sea
+        // que una red oculta aparecería borrada. Es el fallo de `algoritmo` sobre
+        // `revision` otra vez, y se arregló antes de que el campo existiera en vez de
+        // después, que es la única diferencia.
         if (v === null || v === undefined) break;
-        if (typeof v !== "boolean") throw new ErrorDeForma("La papelera no es sí o no");
-        if (v) e.papelera = true;
+        if (typeof v !== "boolean") throw new ErrorDeForma(`El campo «${String(k)}» no es sí o no`);
+        if (v) (e as Record<string, unknown>)[k] = true;
         break;
       }
       case "historial": {
