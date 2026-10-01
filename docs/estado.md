@@ -82,12 +82,11 @@ banner y sea darle a Aceptar»— está hecho de punta a punta.
    `referencias/chrome-2.34.0.md`, y al pegarlos se cierra con
    `node navegador/herramientas/ficha-de-chrome.mjs --pegado`. **El aplazamiento caduca el 2026-10-07** y
    entonces vuelve a parar la comprobación.
-3. **Entrar en GitHub desde el otro Mac** con la llave creada aquí. Es lo único de las llaves de acceso que
-   no ha tocado nadie: que se sincronice y sirva donde no se creó.
-4. ~~**La P4**~~ **Resuelta sin escribir código** (ver el final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md)).
-   Lo único que queda sin comprobar de Firefox es **crear** una llave desde allí: lo probado es usarla, y el
-   camino de crear tiene más piezas. Hace falta un sitio donde no haya ya una llave de Esfinge, porque en
-   GitHub el propio sitio la excluye y Esfinge cede a propósito.
+3. ~~**Entrar en GitHub desde el otro Mac**~~ **Hecho el 2026-10-01**: la llave se sincroniza y sirve donde no
+   se creó, que era lo último de las llaves que nadie había tocado.
+4. ~~**La P4**~~ **Resuelta sin escribir código** (ver el final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md)),
+   y **crear desde Firefox también está confirmado** (2026-10-01): el cliente borró la llave de GitHub y la
+   volvió a crear desde allí. Los dos caminos del `shim` funcionan en los dos navegadores.
 
 **Y una cosa que no se arregla sola: el paquete de la 2.34.0 no está en Chrome.** No se subió porque la
 tienda estaba revisando la 2.33.0 —aviso, no fallo—, y **no llega solo cuando aprueben**: hace falta *otra*
