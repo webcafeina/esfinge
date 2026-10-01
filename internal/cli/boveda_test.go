@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/webcafeina/esfinge/internal/boveda"
+	"github.com/webcafeina/esfinge/internal/qr"
+	"github.com/webcafeina/esfinge/internal/wifi"
 )
 
 // **Cuando la búsqueda encaja con varias, no se adivina.** Es la regla que
@@ -49,5 +51,61 @@ func TestLaBusquedaDeLaLineaDeComandosNoAdivina(t *testing.T) {
 	}
 	if e.Secreto != "tercera" || e.TOTP == "" {
 		t.Errorf("la entrada llega sin sus secretos: %+v", e)
+	}
+}
+
+// **El código de una red se dibuja desde la línea de comandos** (ADR 0049), y lo que se
+// comprueba aquí es lo que puede fallar sin que se note: que la cadena que va dentro del
+// código sea la de esa red, y que una entrada que no es una red lo diga en vez de
+// dibujar cualquier cosa.
+//
+// Que el dibujo se pueda escanear no lo dice esta prueba ni ninguna de aquí: eso lo
+// cerró un móvil contra `internal/qr`.
+func TestElCodigoDeUnaRedSaleDeSusCampos(t *testing.T) {
+	ruta := filepath.Join(t.TempDir(), "boveda.esfinge")
+	b, _, err := boveda.Crear(ruta, "una contraseña maestra larga")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range []boveda.Entrada{
+		{Titulo: "La oficina", Tipo: boveda.TipoWifi, SSID: "WEBCAFEINA",
+			Secreto: "la-clave", Seguridad: "wpa", Oculta: true},
+		{Titulo: "Un banco", Secreto: "nada que ver"},
+	} {
+		if err := b.Poner(e); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	red, err := unaSola(b, "oficina")
+	if err != nil {
+		t.Fatal(err)
+	}
+	enlace, err := wifi.Enlace(red.SSID, red.Secreto, red.Seguridad, red.Oculta)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Lo que va dentro del código, con la red oculta dicha: sin esto el móvil no la
+	// busca, porque una red oculta no sale en su lista.
+	if enlace != "WIFI:T:WPA;S:WEBCAFEINA;P:la-clave;H:true;;" {
+		t.Errorf("el código llevaría %q", enlace)
+	}
+	c, err := qr.Nuevo(enlace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Lado() < 21 || len(c.Filas()) != c.Lado() {
+		t.Errorf("el código mide %d y trae %d filas", c.Lado(), len(c.Filas()))
+	}
+
+	// Y una entrada que no es una red no tiene código: el comando lo dice en vez de
+	// dibujar el de una contraseña suelta, que sería un QR con un secreto dentro y sin
+	// nada que lo explique.
+	otra, err := unaSola(b, "banco")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if otra.Tipo == boveda.TipoWifi {
+		t.Error("una credencial no puede ser una red")
 	}
 }

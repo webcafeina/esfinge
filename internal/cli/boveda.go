@@ -13,6 +13,8 @@ import (
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/codigos"
 	"github.com/webcafeina/esfinge/internal/cripto"
+	"github.com/webcafeina/esfinge/internal/qr"
+	"github.com/webcafeina/esfinge/internal/wifi"
 )
 
 // La bóveda desde la línea de comandos: **solo leer**.
@@ -60,6 +62,7 @@ func comandoBoveda(o *opciones) *cobra.Command {
 		comandoBovedaListar(o, &ob),
 		comandoBovedaVer(o, &ob),
 		comandoBovedaCodigo(o, &ob),
+		comandoBovedaWifi(o, &ob),
 		comandoBovedaExportar(o, &ob),
 	)
 	return cmd
@@ -195,6 +198,85 @@ func comandoBovedaCodigo(o *opciones, ob *opcionesBoveda) *cobra.Command {
 				if err == nil && !o.silencio {
 					fmt.Fprintln(os.Stderr, e.Info(fmt.Sprintf("Vale %d segundos más.",
 						int(s.Quedan(ahora).Seconds()))))
+				}
+			}
+			return nil
+		},
+	}
+}
+
+// comandoBovedaWifi dibuja el código QR de una red en la terminal (ADR 0049).
+//
+// **Es el primer comando de la bóveda que enseña un secreto en la pantalla.** `ver`
+// saca la contraseña por la salida estándar para que se la lleve una tubería, y eso es
+// distinto: ahí el secreto va a donde se le mande. Un código QR está para mirarlo, así
+// que se dice en la ayuda y se dice al dibujarlo.
+//
+// Se dibuja con el color puesto a mano y no con el del tema: una terminal clara con el
+// código invertido no la lee ninguna cámara, y aquí no hay forma de saber de qué color
+// es el fondo de quien mira.
+func comandoBovedaWifi(o *opciones, ob *opcionesBoveda) *cobra.Command {
+	return &cobra.Command{
+		Use:   "wifi <búsqueda>",
+		Short: "Dibuja el código QR de una red para conectar un móvil",
+		Long: "Dibuja en la terminal el código de una red wifi guardada. Apuntando con\n" +
+			"la cámara de un móvil, se conecta sin que nadie teclee la contraseña.\n\n" +
+			"El dibujo es la contraseña: quien lo fotografíe entra en la red. Con\n" +
+			"--json salen las filas en ceros y unos, para dibujarlo en otro sitio.",
+		Example:       "  esfinge boveda wifi oficina",
+		Args:          cobra.ExactArgs(1),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(_ *cobra.Command, args []string) error {
+			b, err := abrirBoveda(o, ob)
+			if err != nil {
+				return err
+			}
+			entera, err := unaSola(b, args[0])
+			if err != nil {
+				return err
+			}
+			if entera.Tipo != boveda.TipoWifi {
+				return fmt.Errorf("«%s» no es una red wifi", entera.Titulo)
+			}
+			enlace, err := wifi.Enlace(entera.SSID, entera.Secreto, entera.Seguridad, entera.Oculta)
+			if err != nil {
+				return err
+			}
+			c, err := qr.Nuevo(enlace)
+			if err != nil {
+				return err
+			}
+
+			if ob.json {
+				return escribirJSON(map[string]any{
+					"red":   entera.SSID,
+					"lado":  c.Lado(),
+					"filas": c.Filas(),
+				})
+			}
+
+			// La zona tranquila, que no es parte del código y sin ella muchos lectores
+			// no lo encuentran. Y dos caracteres por módulo, o sale un rectángulo:
+			// una celda de terminal es el doble de alta que de ancha.
+			const margen = 4
+			var b2 strings.Builder
+			for y := -margen; y < c.Lado()+margen; y++ {
+				for x := -margen; x < c.Lado()+margen; x++ {
+					if c.Oscuro(x, y) {
+						b2.WriteString("\033[40m  ")
+					} else {
+						b2.WriteString("\033[107m  ")
+					}
+				}
+				b2.WriteString("\033[0m\n")
+			}
+			fmt.Print(b2.String())
+			if aTerminal(os.Stdout) && !o.silencio {
+				e, err := estilos(o.tema)
+				if err == nil {
+					fmt.Fprintln(os.Stderr, e.Info(fmt.Sprintf(
+						"Red «%s». Este dibujo es la contraseña: quien lo fotografíe entra.", entera.SSID)))
 				}
 			}
 			return nil
