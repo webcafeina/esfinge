@@ -1654,17 +1654,26 @@ function Detalle({
                 abrir el editor para verlo sería esconder el único dato que
                 distingue. */}
             <Dato etiqueta="Creada" valor={fechaYHora(entrada.creada)} />
-            {/* **Si el sitio la reconoce o no**, que es lo que distingue una llave que
-                sirve de una huérfana (ADR 0048). Se dice como un hecho y no como un
-                juicio: una llave recién creada está sin reconocer y eso es lo normal
-                hasta la primera vez que se entra con ella. */}
-            {entrada.confirmada ? (
+            {/* **Las dos señales, y cada una dice lo suyo** (ADR 0048). «Usada» es que
+                se ha firmado con ella: prueba que alguien la eligió. «Reconocida» es que
+                el sitio la ha nombrado al pedirla, que es lo único que prueba que la
+                tiene registrada. Van separadas porque mezclarlas haría pasar la débil por
+                la fuerte, y **la fuerte casi nunca llega**: en el «entrar con llave de
+                acceso» de GitHub el sitio no nombra ninguna, así que una llave que
+                funciona puede estar sin reconocer. Eso lo vio el cliente con la 2.35.0 y
+                es la razón de que haya dos. */}
+            {entrada.usada && <Dato etiqueta="Usada" valor={fechaYHora(entrada.usada)} />}
+            {entrada.confirmada && (
               <Dato etiqueta="Reconocida por el sitio" valor={fechaYHora(entrada.confirmada)} />
-            ) : (
+            )}
+            {/* Y el aviso, solo cuando **ninguna de las dos** ha pasado: ahí sí es una
+                llave de la que no se sabe nada. Dicho como un hecho y no como un juicio,
+                porque una recién creada está así y es lo normal. */}
+            {!entrada.usada && !entrada.confirmada && (
               <p className="nota">
-                <strong>El sitio todavía no ha pedido esta llave.</strong> Es lo normal hasta la primera vez
-                que entras con ella. Si ya has entrado y sigue así, puede que el sitio no llegara a
-                registrarla y entonces no sirve para nada.
+                <strong>Todavía no has entrado con esta llave.</strong> Es lo normal hasta la primera vez. Si
+                ya lo has intentado y sigue así, puede que el sitio no llegara a registrarla y entonces no
+                sirve para nada.
               </p>
             )}
             <p className="nota">

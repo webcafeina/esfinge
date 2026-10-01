@@ -737,6 +737,42 @@ func TestUnaLlaveSeConfirmaCuandoElSitioLaNombra(t *testing.T) {
 		t.Error("firmar ha confirmado la llave, y firmar no prueba que el sitio la tenga registrada")
 	}
 
+	// **Pero firmar sí apunta que se ha usado**, que es la otra señal y la que de verdad
+	// se rellena: en el «entrar con llave de acceso» de un sitio que no nombra ninguna,
+	// ésta es la única que llega. Lo vio el cliente con la 2.35.0, cuya ficha seguía
+	// diciendo que el sitio no había pedido la llave con la llave funcionando.
+	usada := laLlave().Usada
+	if usada == "" {
+		t.Fatal("se ha firmado con la llave y no se ha apuntado cuándo")
+	}
+
+	// **Y se actualiza, que es lo que la separa de `Confirmada`**: lo útil de una fecha
+	// de uso es la última. Se comprueba envejeciéndola a mano en vez de esperar un
+	// segundo de reloj, que sería una prueba lenta y además intermitente.
+	vieja := laLlave()
+	vieja.Usada = "2020-01-01T00:00:00Z"
+	if err := a.boveda().Poner(vieja); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.FirmarLlave("https://github.com/login", "github.com", laLlave().ID,
+		navegador.B64URL.EncodeToString([]byte("otro reto"))); err != nil {
+		t.Fatal(err)
+	}
+	if laLlave().Usada == "2020-01-01T00:00:00Z" {
+		t.Error("la fecha de uso no se ha actualizado: dice la primera vez y tiene que decir la última")
+	}
+
+	// Y con la misma fecha **no se escribe en la bóveda**: las fechas tienen resolución
+	// de un segundo y dos firmas seguidas no pueden costar dos escrituras y dos subidas.
+	antesDeFirmar := laLlave()
+	if _, err := f.FirmarLlave("https://github.com/login", "github.com", laLlave().ID,
+		navegador.B64URL.EncodeToString([]byte("y otro"))); err != nil {
+		t.Fatal(err)
+	}
+	if ahora := laLlave(); ahora.Usada == antesDeFirmar.Usada && ahora.Revision != antesDeFirmar.Revision {
+		t.Error("se ha escrito en la bóveda sin que la fecha de uso cambiara")
+	}
+
 	// **Lo que sí la confirma**: que el sitio la nombre en `allowCredentials`.
 	if _, err := f.Llaves("https://github.com/login", "github.com", []string{"Y3JlZC0x"}); err != nil {
 		t.Fatal(err)

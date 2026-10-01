@@ -38,10 +38,22 @@ tiendas dice `POST …:publish → 200` con `"state": "PENDING_REVIEW"` y «Envi
 hubiera otra versión en curso — que es lo que dejó la 2.34.0 fuera de la tienda. **Con eso las versiones quedan
 igualadas** en cuanto Google apruebe: lo que había en la tienda era la 2.33.0.
 
-**Lo siguiente, y es esperar:** las dos revisiones. El cliente decidió el 2026-10-01 **esperar a que Firefox
-apruebe —que suele ser más rápida— y probar ahí**, que es donde se verá si la bandera se refresca de verdad sin
-recargar. Desde esta máquina **no se puede consultar el estado de ninguna de las dos**: las claves de AMO y de
-la Chrome Web Store viven en los secretos de GitHub.
+**Y la 2.35.0 se probó en su Firefox el mismo día, en cuanto Mozilla la aprobó. Dos resultados:**
+
+- **La bandera sin recargar funciona.** Con el navegador recién abierto y la bóveda cerrada, GitHub saca el
+  diálogo del sistema —lo correcto ahí—; abriendo la bóveda y **volviendo a la pestaña sin recargar**, sale el
+  banner de Esfinge. Confirmado por el cliente.
+- **Y el campo «Reconocida por el sitio» no servía**, que es lo que hay escrito y sin publicar ahora mismo: su
+  ficha seguía diciendo que el sitio no había pedido la llave **con la llave funcionando**, porque en el
+  «entrar con llave de acceso» el sitio no nombra ninguna. El cliente eligió **dos datos separados** —ver el
+  final de la [ADR 0048](adr/0048-las-llaves-de-acceso.md)— frente a mezclarlos en uno, que era lo barato y
+  habría hecho pasar la señal débil por la fuerte.
+
+**Lo escrito y sin publicar, para la 2.36.0:** el campo `usada` en los dos núcleos, los dos datos en la ficha y
+el arreglo de una fecha que se escribía con milisegundos. `make comprobar` y `make e2e` en verde.
+
+**Y Chrome sigue en revisión** con la 2.35.0. Desde esta máquina **no se puede consultar el estado de ninguna de
+las dos tiendas**: las claves de AMO y de la Chrome Web Store viven en los secretos de GitHub.
 
 **La ficha de Chrome está pegada y apuntada** (2026-10-01), guardada como borrador para que la revisen con esta
 publicación. De pegarla salió una regla nueva: **los campos de esa consola tienen topes que desde aquí no se

@@ -198,6 +198,14 @@ export type EntradaBoveda = {
    * registró— de una que sirve, y por eso se enseña en la ficha.
    */
   confirmada?: string;
+  /**
+   * La última vez que se firmó con esta llave, o vacío si nunca.
+   *
+   * **La otra señal, y dice menos que `confirmada`**: que alguien la eligiera no prueba
+   * que el sitio la tenga registrada. Hace falta porque la fuerte casi nunca llega — en
+   * el «entrar con llave de acceso» de GitHub el sitio no nombra ninguna.
+   */
+  usada?: string;
 };
 
 /**

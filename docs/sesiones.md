@@ -71,7 +71,16 @@ Plantilla al final.
   «Enviada a revisión», sin el aviso de que hubiera otra en curso, que es lo que dejó a la 2.34.0 fuera de la
   tienda. Con eso las versiones quedan igualadas en cuanto Google apruebe. La ficha se pegó y se apuntó antes
   de publicar, así que entra en esta misma revisión.
-- **Queda abierto, y es esperar**: las dos revisiones de tienda. El cliente decidió **esperar a Firefox —más
+- **Probada en su Firefox en cuanto Mozilla aprobó, y de ahí salió la última decisión del día.** La bandera sin
+  recargar **funciona** —diálogo del sistema con la bóveda cerrada, banner de Esfinge al abrirla y volver a la
+  pestaña—. Y el campo «Reconocida por el sitio» **no servía**: su ficha seguía diciendo que el sitio no había
+  pedido la llave con la llave funcionando, porque en el «entrar con llave de acceso» el sitio no nombra
+  ninguna. La fila de `deuda.md` se había cerrado antes de tiempo y hubo que reabrirla. El cliente eligió **dos
+  datos separados** —`confirmada` y `usada`— frente a mezclarlos, que habría hecho pasar la señal débil por la
+  fuerte. Escrito con sus pruebas mutadas en los dos núcleos, y de paso salió que `confirmada` se escribía
+  **con milisegundos** mientras Go escribe a segundos: las cruzadas no lo cazan y ahora lo caza una aserción
+  del formato.
+- **Queda abierto, y es esperar**: la revisión de Chrome, y publicar la 2.36.0 con los dos datos. El cliente decidió **esperar a Firefox —más
   rápida— y probar ahí** la bandera sin recargar. Desde esta máquina no se puede consultar el estado de
   ninguna de las dos: las claves viven en los secretos de GitHub.
 

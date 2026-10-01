@@ -18,10 +18,12 @@
  *   dicho en `docs/seguridad.md`.
  */
 
-import type { Boveda } from "./boveda";
+// `ahora` del núcleo —el reloj que las pruebas pueden parar— con alias, porque aquí
+// dentro `ahora` ya es el instante en milisegundos que usan los frenos.
+import { ahora as ahoraDelNucleo, type Boveda } from "./boveda";
 import { codigoEn, leerSemilla, quedan } from "./codigos";
 import { dominioDeOrigen, encaja, hostDe } from "./dominios";
-import { cambiarSecreto, type Entrada } from "./entrada";
+import { cambiarSecreto, rfc3339, type Entrada } from "./entrada";
 import type { Afirmacion, Cuenta, Oferta, Peticion, Respuesta } from "../protocolo";
 import {
   crearLlave,
@@ -208,7 +210,7 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
         // pierde es la marca, no la firma.
         if ((p.permitidas ?? []).length > 0 && !b.soloLectura) {
           for (const x of usables) {
-            if (!x.confirmada) await b.poner({ ...x, confirmada: new Date().toISOString() });
+            if (!x.confirmada) await b.poner({ ...x, confirmada: rfc3339(ahoraDelNucleo()) });
           }
         }
         return {
@@ -228,7 +230,24 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
         if (!x || x.tipo !== "llave" || x.papelera || x.rpId !== rp || !x.clavePrivada) {
           return mal("no-encaja", "Esa llave no es de este sitio");
         }
-        return { ok: true, afirmacion: await afirmar(x, rp, p.origen ?? "", p.reto ?? "") };
+        const afirmacion = await afirmar(x, rp, p.origen ?? "", p.reto ?? "");
+        // **Y se apunta cuándo se ha usado** (ADR 0048), espejo de `FirmarLlave` de Go.
+        // Dice algo distinto de `confirmada`: esto solo prueba que alguien la eligió. Va
+        // después de firmar, y si guardar falla **la firma sale igual**: lo que se pierde
+        // es el dato. No se reescribe con la misma fecha —resolución de un segundo— ni con
+        // la bóveda en solo lectura.
+        // **`rfc3339(ahora())`, no `toISOString()`**: el formato tiene resolución de un
+        // segundo y el reloj se para en las pruebas. Con los milisegundos dentro, lo que
+        // escribe este lado no es lo que escribiría Go para el mismo instante.
+        const cuando = rfc3339(ahoraDelNucleo());
+        if (x.usada !== cuando && !b.soloLectura) {
+          try {
+            await b.poner({ ...x, usada: cuando });
+          } catch {
+            /* el dato se pierde; la firma no */
+          }
+        }
+        return { ok: true, afirmacion };
       }
       // **Crear una llave de acceso** (ADR 0048, P3), espejo de `CrearLlave` de Go.
       //

@@ -70,6 +70,19 @@ export type Entrada = {
    * Esfinge ofrece las suyas, así que una huérfana se firmaría igual.
    */
   confirmada?: string;
+  /**
+   * La última vez que se firmó con esta llave, o vacío si nunca.
+   *
+   * **Separada de `confirmada` a propósito**: que el sitio la nombre prueba que la tiene
+   * registrada, y haber firmado solo prueba que alguien la eligió — en el flujo donde el
+   * sitio no nombra ninguna se puede firmar con una huérfana y será él quien la rechace
+   * después. Hace falta porque la señal fuerte casi nunca llega: la ficha del cliente
+   * seguía diciendo que el sitio no había pedido la llave, con la llave funcionando.
+   *
+   * Se actualiza **en cada firma**, y no se reescribe si la fecha no ha cambiado: las
+   * fechas tienen resolución de un segundo.
+   */
+  usada?: string;
   /** Los campos que esta versión no conoce. */
   extra?: Record<string, ValorJSON>;
 };
@@ -118,6 +131,7 @@ const CAMPOS: [keyof Entrada, "siempre" | "texto" | "lista" | "numero" | "si" | 
   ["algoritmo", "numero"],
   ["clavePrivada", "texto"],
   ["confirmada", "texto"],
+  ["usada", "texto"],
 ];
 const CONOCIDOS = new Set<string>(CAMPOS.map(([k]) => k as string));
 

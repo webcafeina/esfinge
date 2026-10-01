@@ -103,7 +103,7 @@ func TestCruzadaFormaCanonica(t *testing.T) {
 			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
 			RPID: "github.com", IDCredencial: "Y3JlZC0x" + s, IDUsuario: "dXN1LTE",
 			NombreVisible: s, Algoritmo: -7, ClavePrivada: "cHJpdmFkYQ" + s,
-			Confirmada: "2026-09-30T18:20:00Z",
+			Confirmada: "2026-09-30T18:20:00Z", Usada: "2026-10-01T11:05:00Z",
 		})
 	}
 	var suyas []string
@@ -188,7 +188,7 @@ func TestCruzadaLoQueSeVacia(t *testing.T) {
 			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
 			RPID: "github.com", IDCredencial: "Y3JlZC0x", IDUsuario: "dXN1LTE",
 			NombreVisible: "yo@ejemplo.com", Algoritmo: -7, ClavePrivada: "cHJpdmFkYQ",
-			Confirmada: "2026-09-30T18:20:00Z"},
+			Confirmada: "2026-09-30T18:20:00Z", Usada: "2026-10-01T11:05:00Z"},
 		{ID: fmt.Sprintf("%032x", 4), Tipo: TipoPersonal, Titulo: "Casa",
 			Creada: "2026-09-22T10:00:00Z", Cambiada: "2026-09-22T10:00:00Z",
 			NombreCompleto: "Álvaro Cabezas", Correo: "a@b.com", Telefono: "600111222",
@@ -285,6 +285,11 @@ func (g generador) entrada(id string) Entrada {
 		// **Y vacío entre las opciones**: una llave sin confirmar es el caso normal recién
 		// creada, y es justo el que la fusión tiene que respetar sin inventarse una fecha.
 		e.Confirmada = g.de("", "2026-09-30T18:20:00Z", "2026-10-01T09:00:00Z")
+		// Y la fecha de uso aparte, **con sus propios valores**: son dos señales distintas
+		// y una entrada puede tener una sin la otra en los dos sentidos — usada sin que el
+		// sitio la nombre es el caso corriente, y nombrada sin usar es una recién
+		// registrada.
+		e.Usada = g.de("", "2026-10-01T11:05:00Z", "2026-10-01T11:06:00Z")
 	}
 	if g.r.IntN(5) == 0 {
 		e.Extra = map[string]json.RawMessage{"nuevo": json.RawMessage(g.de(`1`, `"x"`, `{"b":[1,2]}`))}

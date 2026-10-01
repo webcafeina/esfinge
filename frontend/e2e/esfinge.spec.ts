@@ -1860,7 +1860,7 @@ test("dos llaves del mismo sitio y la misma cuenta se distinguen por cuándo se 
  * decirlo como un hecho y no como una alarma. Enseñar solo la fecha cuando la hay, y
  * nada cuando no, dejaría la pregunta sin contestar justo en el caso que preocupa.
  */
-test("la ficha de una llave dice si el sitio la reconoce", async ({ page }) => {
+test("la ficha de una llave dice si se ha usado y si el sitio la reconoce", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
 
@@ -1909,18 +1909,34 @@ test("la ficha de una llave dice si el sitio la reconoce", async ({ page }) => {
   await abrirLaFicha(sitio);
 
   const ficha = page.locator(".panel:visible");
-  await expect(ficha.getByText("El sitio todavía no ha pedido esta llave", { exact: false })).toBeVisible();
+  // Sin ninguna de las dos señales: el aviso, y ninguno de los dos datos.
+  await expect(ficha.getByText("Todavía no has entrado con esta llave", { exact: false })).toBeVisible();
   await expect(ficha.getByText("Reconocida por el sitio", { exact: true })).toHaveCount(0);
+  await expect(ficha.getByText("Usada", { exact: true })).toHaveCount(0);
 
-  // Y con la marca puesta, la fecha en vez del aviso.
+  // **Usada pero sin reconocer**, que es el caso corriente y la razón de que haya dos
+  // datos: en el «entrar con llave de acceso» de un sitio que no nombra ninguna, esto es
+  // lo único que se sabe. El aviso tiene que irse, porque ya se ha entrado con ella.
+  const soloUsada = `${sitio}-usada`;
+  await guardar({
+    ...base, titulo: soloUsada, rpId: soloUsada, idCredencial: "cred-usada",
+    usada: "2026-10-01T11:05:00Z",
+  });
+  await abrirLaFicha(soloUsada);
+  await expect(ficha.getByText("Usada", { exact: true })).toBeVisible();
+  await expect(ficha.getByText("Reconocida por el sitio", { exact: true })).toHaveCount(0);
+  await expect(ficha.getByText("Todavía no has entrado con esta llave", { exact: false })).toHaveCount(0);
+
+  // Y con las dos, las dos: no se sustituyen, dicen cosas distintas.
   const conFecha = `${sitio}-ok`;
   await guardar({
     ...base, titulo: conFecha, rpId: conFecha, idCredencial: "cred-con",
-    confirmada: "2026-10-01T09:30:00Z",
+    confirmada: "2026-10-01T09:30:00Z", usada: "2026-10-01T11:06:00Z",
   });
   await abrirLaFicha(conFecha);
   await expect(ficha.getByText("Reconocida por el sitio", { exact: true })).toBeVisible();
-  await expect(ficha.getByText("El sitio todavía no ha pedido esta llave", { exact: false })).toHaveCount(0);
+  await expect(ficha.getByText("Usada", { exact: true })).toBeVisible();
+  await expect(ficha.getByText("Todavía no has entrado con esta llave", { exact: false })).toHaveCount(0);
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });

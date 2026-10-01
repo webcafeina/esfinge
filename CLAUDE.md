@@ -124,11 +124,14 @@ No se cambian sin preguntar.
   propia—; **no se crean a mano**, porque una llave la emite el sitio; **la clave privada no se enseña, no
   se copia y no cruza el puente**, y cuando llegue la P2 lo que saldrá será la firma ya hecha; y **no salen
   en el CSV en claro**, sino aparte, en un contenedor ESF1 con una clave que no es la maestra.
-  **Y una llave la confirma el sitio al nombrarla, no la firma** (2026-10-01): la ficha dice «Reconocida por
-  el sitio» con su fecha, y eso es lo único que distingue una huérfana —creada aquí y nunca registrada allí—
-  de una que sirve. Nombrarla llega antes que firmar y marca **todas** las que el sitio conoce, no solo la
-  elegida, que es el falso negativo que haría borrar la buena. Una sin confirmar **no se da por mala**: puede
-  ser que no se haya entrado aún.
+  **Y una llave lleva dos fechas, y dicen cosas distintas** (2026-10-01): `confirmada` es que **el sitio la
+  nombró** —lo único que prueba que la tiene registrada— y `usada`, que **se firmó con ella**, que solo prueba
+  que alguien la eligió. **No se mezclan**, y eso costó una versión: con solo la primera, la ficha del cliente
+  seguía diciendo que el sitio no había pedido la llave **con la llave funcionando**, porque en el «entrar con
+  llave de acceso» el sitio no nombra ninguna. Mezclarlas era lo barato y habría hecho pasar la señal débil por
+  la fuerte. Una llave sin ninguna de las dos **no se da por mala**: puede ser que no se haya entrado aún.
+  `usada` guarda **la última** vez, y por eso cada inicio de sesión escribe en la bóveda — no se reescribe si
+  la fecha no ha cambiado, que las fechas van a segundos.
 - **Y desde la P2 de las llaves de acceso hay código de Esfinge dentro de cada página `https`** (ADR 0048).
   Es lo más caro de todo el proyecto y conviene saber por qué antes de tocar `navegador/src/mundo.ts`:
   `navigator.credentials` solo existe en el mundo de la página, así que un fallo ahí **no deja el relleno a
@@ -976,6 +979,14 @@ Y con ello, la trampa de las preferencias otra vez, que vuelve en cuanto algo se
 lectura pedida antes de un cambio puede llegar después**. Con un interruptor se ve peor que con un
 desplegable, porque el siguiente clic parte del estado viejo y deshace lo que se acababa de hacer. El
 remedio es el mismo, `cambiosHechos`, y hay que ponerlo desde el principio.
+
+**Una fecha del formato se escribe con `rfc3339(ahora())`, nunca con `toISOString()`.** El formato tiene
+resolución de un segundo y el núcleo de TypeScript tiene su `rfc3339()` y su reloj parable desde el principio;
+aun así `confirmada` se escribió con `new Date().toISOString()` y entró **con milisegundos**, o sea algo que Go
+no escribiría nunca para el mismo instante. **Las cruzadas no lo cazan**, porque comparan entradas generadas
+con el mismo valor en los dos lados: lo caza una aserción del formato en la prueba de comportamiento. Y ojo con
+el nombre: en `fuente.ts`, `ahora` ya es el instante en milisegundos de los frenos, así que el reloj del núcleo
+entra con alias.
 
 **Y lo que no se nota tiene que no notarse por los dos lados: ni en la respuesta ni en lo que tarda.** El
 servidor contesta lo mismo tenga cuenta o no la dirección a la que mandas —es media protección contra la

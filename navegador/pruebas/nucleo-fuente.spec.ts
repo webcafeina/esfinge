@@ -337,6 +337,40 @@ test("llaves: el sitio la nombra y queda confirmada; firmar no la confirma", asy
   expect(firmada.ok, firmada.error).toBe(true);
   expect(laLlave().confirmada ?? "", "firmar ha confirmado la llave").toBe("");
 
+  // **Pero firmar sí apunta que se ha usado**, que es la otra señal y la única que llega
+  // en el flujo donde el sitio no nombra ninguna llave. Separadas a propósito: mezclarlas
+  // haría pasar la débil por la fuerte.
+  const usada = laLlave().usada ?? "";
+  expect(usada, "se ha firmado y no se ha apuntado cuándo").not.toBe("");
+  // **Y en segundos, como las escribe Go**: con `toISOString()` a secas entran los
+  // milisegundos y lo que escribe este lado deja de ser lo que escribiría el otro.
+  expect(usada, "la fecha de uso lleva milisegundos").toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+
+  // **Y se actualiza**, que es lo que la separa de `confirmada`: lo útil de una fecha de
+  // uso es la última. Se envejece a mano, que es más rápido y menos frágil que mover el
+  // reloj.
+  await boveda.poner({ ...laLlave(), usada: "2020-01-01T00:00:00Z" });
+  const otra = await atender(
+    p({ que: "firmar-llave", origen: "https://github.com/login", rpId: "github.com", id: laLlave().id, reto: "b3Ry" }),
+    estado,
+  );
+  expect(otra.ok, otra.error).toBe(true);
+  expect(laLlave().usada, "la fecha de uso no se ha actualizado").not.toBe("2020-01-01T00:00:00Z");
+
+  // Y con la misma fecha no se escribe: dos firmas en el mismo segundo no pueden costar
+  // dos escrituras y dos subidas.
+  const antesDeFirmar = laLlave();
+  const tercera = await atender(
+    p({ que: "firmar-llave", origen: "https://github.com/login", rpId: "github.com", id: laLlave().id, reto: "eW90" }),
+    estado,
+  );
+  expect(tercera.ok, tercera.error).toBe(true);
+  if (laLlave().usada === antesDeFirmar.usada) {
+    expect(laLlave().revision, "se ha escrito en la bóveda sin que la fecha de uso cambiara").toBe(
+      antesDeFirmar.revision,
+    );
+  }
+
   // Lo que sí la confirma.
   await atender(
     p({ que: "llaves", origen: "https://github.com/login", rpId: "github.com", permitidas: ["Y3JlZC0x"] }),

@@ -641,3 +641,39 @@ Lo comprueba una prueba con la extensión de verdad que **empieza por el caso ma
 lista borrada, el banner no sale—, abre la bóveda, vuelve a la pestaña, hace sonar el reloj del icono y
 comprueba que el banner sale **sin recargar**. Mutada por los dos lados: sin el aviso del trabajador y con la
 página ignorándolo, se pone roja.
+
+## Dos señales y no una, porque la fuerte casi nunca llega (2026-10-01)
+
+Lo que decidió el apartado «Una llave la confirma el sitio, no la firma» se probó esa misma tarde en el Firefox
+del cliente, con la 2.35.0 ya aprobada, y **falló por donde no se había mirado**: entró con su llave de GitHub,
+abrió la ficha y seguía diciendo que el sitio no había pedido esa llave. El razonamiento era correcto y la
+consecuencia no se había pensado: **en el «entrar con llave de acceso» el sitio no nombra ninguna**, pide
+«cualquiera que tengas» —credencial descubrible—, así que la señal fuerte no llega nunca en el flujo que el
+cliente usa todos los días. El campo funcionaba como se diseñó y **no servía para lo que existía**.
+
+Con los tres caminos delante, el cliente eligió **dos datos separados**:
+
+| | Qué prueba | Cuándo llega |
+|---|---|---|
+| `confirmada` | Que el sitio **la tiene registrada**: solo puede pedir por su identificador una credencial que conozca | Cuando nombra la llave en `allowCredentials` — en la práctica, cuando ya sabe quién eres |
+| `usada` | Que **alguien la eligió** para firmar. No prueba que el sitio la acepte: con la lista vacía se puede firmar con una huérfana y será él quien la rechace después | En cada firma |
+
+**Lo que se descartó, y por qué importa que esté escrito:** mezclar las dos en un solo campo —marcar «confirmada»
+también al firmar— era lo más barato y **habría hecho pasar la señal débil por la fuerte**, que es justo lo que
+este campo existía para no hacer. La ficha enseña las dos, cada una con su rótulo, y el aviso de «todavía no has
+entrado con esta llave» sale solo cuando **no hay ninguna de las dos**.
+
+`usada` guarda **la última** vez y no la primera, al contrario que `confirmada`: lo útil de una fecha de uso es
+la última. El coste es una escritura en la bóveda por inicio de sesión —y su subida—, y por eso no se reescribe
+si la fecha no ha cambiado: las fechas del formato tienen resolución de un segundo.
+
+**Y de escribirlo salió un fallo que llevaba medio día dentro de `confirmada`**: se escribía con
+`new Date().toISOString()`, o sea **con milisegundos**, mientras Go escribe RFC3339 a segundos. El formato tiene
+resolución de un segundo y el núcleo de TypeScript ya tenía su `rfc3339()` y su reloj parable; no se usaron. Las
+cruzadas no lo cazaban porque comparan entradas generadas con el mismo valor en los dos lados. Lo caza ahora una
+aserción del formato en la prueba de comportamiento, comprobada mutándola.
+
+La lección, que no es de WebAuthn: **una señal fiable que casi nunca llega no es mejor que una señal débil que
+llega siempre; lo que no se puede hacer es confundirlas.** Y la de procedimiento, otra vez la misma de esta
+fase: el diseño se probó contra el flujo que el cliente usa **después** de publicarlo, y con eso se vio en diez
+minutos lo que un día de razonamiento no había visto.

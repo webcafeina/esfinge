@@ -791,6 +791,20 @@ func (f fuenteDelNavegador) FirmarLlave(origen, rpID, id, reto string) (navegado
 	if err != nil {
 		return navegador.Afirmacion{}, err
 	}
+	// **Y se apunta cuándo se ha usado** (ADR 0048), que es la otra mitad de
+	// `Confirmada` y dice algo distinto: esto solo prueba que alguien la eligió, no que
+	// el sitio la tenga registrada. Va **después de firmar** porque antes no hay nada que
+	// apuntar, y un fallo al guardar **no estropea la firma**: lo que se pierde es el
+	// dato, no la entrada en el sitio.
+	//
+	// No se reescribe si la fecha no ha cambiado: las fechas tienen resolución de un
+	// segundo y dos firmas seguidas no tienen por qué costar dos escrituras.
+	if ahora := time.Now().UTC().Format(time.RFC3339); e.Usada != ahora {
+		e.Usada = ahora
+		if err := b.Poner(e); err == nil {
+			f.a.sistema.Avisar(EventoBovedaCambiada, nil)
+		}
+	}
 	return navegador.Afirmacion{
 		IDCredencial:         e.IDCredencial,
 		IDUsuario:            e.IDUsuario,

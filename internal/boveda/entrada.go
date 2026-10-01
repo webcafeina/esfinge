@@ -152,8 +152,14 @@ type Entrada struct {
 	// que se emite. Se guarda de todos modos porque una llave importada de otro
 	// sitio podría traer otro y hay que saber que no se sabe firmarla.
 	Algoritmo int `json:"algoritmo,omitempty"`
-	// ClavePrivada es el escalar de 32 bytes en base64url, no el JWK entero: la
-	// parte pública se recalcula y guardarla sería guardar lo mismo dos veces.
+	// ClavePrivada es la privada en **PKCS#8**, en base64url.
+	//
+	// La ADR 0048 dijo que sería el escalar de 32 bytes, «porque la parte pública se
+	// recalcula», y eso **no se puede hacer**: WebCrypto exige `x` e `y` para importar
+	// una P-256 y no expone ninguna forma de multiplicar por el generador, así que
+	// `importKey("jwk", {kty:"EC", crv:"P-256", d})` contesta `DataError`. Se vio al
+	// implementarlo. PKCS#8 lleva las dos partes dentro y lo entienden los dos lados sin
+	// escribir una línea.
 	ClavePrivada string `json:"clavePrivada,omitempty"`
 	// Confirmada es **cuándo el sitio dijo por primera vez que tiene esta llave**,
 	// en RFC3339, o vacío si todavía no lo ha dicho.
@@ -170,6 +176,25 @@ type Entrada struct {
 	// tiene y Esfinge ofrece las suyas, así que una huérfana se firmaría igual y el
 	// sitio la rechazaría después—, y esa diferencia es toda la utilidad del campo.
 	Confirmada string `json:"confirmada,omitempty"`
+	// Usada es **la última vez que se firmó con esta llave**, en RFC3339, o vacío si
+	// nunca.
+	//
+	// Es la otra mitad de `Confirmada`, y van **separadas a propósito** porque no dicen
+	// lo mismo: que el sitio la nombre prueba que la tiene registrada; haber firmado con
+	// ella solo prueba que alguien la eligió, y en el flujo donde el sitio no nombra
+	// ninguna —el «entrar con llave de acceso» de GitHub— se puede firmar con una
+	// huérfana y el sitio la rechazará después. Mezclar las dos señales en un campo
+	// habría hecho pasar la débil por la fuerte.
+	//
+	// Hace falta porque **la fuerte casi nunca llega**: el cliente probó la 2.35.0 en su
+	// Firefox y su ficha seguía diciendo que el sitio no había pedido la llave, con la
+	// llave funcionando. Lo eligió él con las dos señales delante (ADR 0048).
+	//
+	// **Se actualiza en cada firma**, no solo la primera: lo útil de una fecha de uso es
+	// que sea la última. El coste es una escritura en la bóveda por inicio de sesión, y
+	// por eso no se reescribe si la fecha no ha cambiado — las fechas tienen resolución
+	// de un segundo.
+	Usada string `json:"usada,omitempty"`
 
 	// Extra guarda **los campos que esta versión de Esfinge no entiende**.
 	//
