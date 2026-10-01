@@ -67,9 +67,13 @@ Plantilla al final.
   de host admite mil y el texto llegaba a 1197. Lo dijo el cliente **al ir a pegarlo**. Recortado a 995, con lo
   que se cayó dicho en `ficha.md`, y **el tope va ahora en la marca** del bloque, así que `ficha-de-chrome.mjs`
   lo mide y pasarse para la comprobación.
-- **Queda abierto**: publicar la 2.35.0, que **tiene que llevar el paquete de la 2.34.0 a Chrome** —no llega
-  solo porque la tienda aprobara la 2.33.0—. La ficha está **pegada y apuntada** (2026-10-01), guardada como
-  borrador para que se revise con esta publicación.
+- **Publicada la 2.35.0** con los siete trabajos en verde, y **Chrome subió el paquete**: `PENDING_REVIEW` y
+  «Enviada a revisión», sin el aviso de que hubiera otra en curso, que es lo que dejó a la 2.34.0 fuera de la
+  tienda. Con eso las versiones quedan igualadas en cuanto Google apruebe. La ficha se pegó y se apuntó antes
+  de publicar, así que entra en esta misma revisión.
+- **Queda abierto, y es esperar**: las dos revisiones de tienda. El cliente decidió **esperar a Firefox —más
+  rápida— y probar ahí** la bandera sin recargar. Desde esta máquina no se puede consultar el estado de
+  ninguna de las dos: las claves viven en los secretos de GitHub.
 
 ---
 

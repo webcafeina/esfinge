@@ -13,8 +13,8 @@ el otro Mac**: se sincroniza y sirve donde no se creó. Lo único de la fase sin
 [`deuda.md`](deuda.md): la exportación cifrada con llaves de verdad dentro, y si algún antibot marca el
 navegador —no se ha visto ninguno, pero tampoco se ha buscado—.
 
-**Lo que hay escrito y sin publicar es la 2.35.0**, que el cliente eligió así: «una 2.35.0 que lleve algo» en
-vez de una versión vacía para igualar los números de las tiendas. Lleva dos cosas:
+**La 2.35.0 está publicada** (2026-10-01, los siete trabajos en verde), y el cliente la eligió así: «una
+2.35.0 que lleve algo» en vez de una versión vacía para igualar los números de las tiendas. Lleva tres cosas:
 
 1. **El campo `confirmada`** (ADR 0048), que cierra la deuda de las llaves huérfanas: la ficha dice
    **«Reconocida por el sitio»** con su fecha, y lo que confirma una llave es que **el sitio la nombre**, no
@@ -33,9 +33,15 @@ vez de una versión vacía para igualar los números de las tiendas. Lleva dos c
    sube de dos a quince segundos —razonado, no medido— y la prueba espera a que el `shim` se instale en vez de
    mirarlo justo después del `goto`.
 
-**Y al publicarla hay que mirar una cosa concreta**: que el paso de Chrome **suba** el paquete en vez de avisar
-de que hay otra versión en revisión. El de la 2.34.0 no está en la tienda y **no llega solo** porque aprobaran
-la 2.33.0: hace falta esta publicación.
+**Y lo que había que mirar al publicarla salió bien: Chrome subió el paquete.** El registro del trabajo de
+tiendas dice `POST …:publish → 200` con `"state": "PENDING_REVIEW"` y «Enviada a revisión», sin el aviso de que
+hubiera otra versión en curso — que es lo que dejó la 2.34.0 fuera de la tienda. **Con eso las versiones quedan
+igualadas** en cuanto Google apruebe: lo que había en la tienda era la 2.33.0.
+
+**Lo siguiente, y es esperar:** las dos revisiones. El cliente decidió el 2026-10-01 **esperar a que Firefox
+apruebe —que suele ser más rápida— y probar ahí**, que es donde se verá si la bandera se refresca de verdad sin
+recargar. Desde esta máquina **no se puede consultar el estado de ninguna de las dos**: las claves de AMO y de
+la Chrome Web Store viven en los secretos de GitHub.
 
 **La ficha de Chrome está pegada y apuntada** (2026-10-01), guardada como borrador para que la revisen con esta
 publicación. De pegarla salió una regla nueva: **los campos de esa consola tienen topes que desde aquí no se
