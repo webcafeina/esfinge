@@ -740,6 +740,38 @@ button:focus-visible {
 }
 
 /* De quién es la cuenta y sus gestos, entre la lista y el pie. */
+/* El selector de bóveda (ADR 0050). Los colores son los mismos de siempre: el
+ * rótulo con `--apagado` sobre el lienzo y el control con el borde de los campos
+ * —parejas ya medidas en `contraste_test.go`, que es la condición de la ADR 0029
+ * para cualquier color del panel—. */
+.bovedas {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  margin: var(--espacio-3) var(--espacio-1) 0;
+}
+
+.bovedas label {
+  font-size: var(--texto-chico);
+  color: var(--apagado);
+}
+
+.bovedas select {
+  flex: 1;
+  min-width: 0;
+  /* **Aquí sí se deja el control nativo**, al revés que en los botones del panel:
+   * sin su flecha, un `select` se lee como una caja de texto y nadie sabe que se
+   * despliega — se vio en la captura. La letra se fija igual, que es de lo que
+   * avisaba la lección de Chrome en macOS. */
+  font-family: inherit;
+  font-size: var(--texto-chico);
+  padding: 3px 4px;
+  border: 1px solid var(--filete);
+  border-radius: var(--radio-chico);
+  background: var(--campo);
+  color: var(--cuerpo);
+}
+
 .gestos {
   display: flex;
   flex-wrap: wrap;

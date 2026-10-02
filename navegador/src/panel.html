@@ -188,6 +188,13 @@
 
     <!-- Con cuenta: de quién es y los gestos de la bóveda. Sin cuenta: la puerta
          para entrar en una. -->
+    <!-- En qué bóveda se está trabajando (ADR 0050). Sale **solo si hay más de una**:
+         con la bóveda de siempre y nada más, un selector de una sola cosa es ruido. -->
+    <div id="bovedas" class="bovedas" hidden>
+      <label for="boveda-activa">Bóveda</label>
+      <select id="boveda-activa"></select>
+    </div>
+
     <nav id="gestos" class="gestos" aria-label="Cuenta" hidden>
       <span id="gestos-correo" class="correo"></span>
       <!-- Las flechas que giran mientras sincroniza, como en la aplicación (2.25.2). -->

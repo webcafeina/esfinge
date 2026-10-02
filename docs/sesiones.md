@@ -67,6 +67,15 @@ Plantilla al final.
 - **Y un fallo de orden que ese arreglo destapó**: `cambiarBoveda` **avisa a la ventana**, y la ventana
   contesta preguntando el estado — así que apuntar cuál es la bóveda activa **después** de avisar dejaba la
   barra de herramientas sin el nombre hasta el siguiente aviso, que puede no llegar nunca.
+- **Y la E5: la extensión.** El panel gana su selector de bóveda, el almacenamiento pasa a ser por bóveda
+  —documento, base y recuerdo de la sincronización, que con uno solo conmutar subiría encima de lo que no
+  tocaba— y el núcleo de TypeScript aprende a abrir un proyecto por su ranura. La prueba es con la extensión
+  de verdad: **cambiar de bóveda cambia lo que se rellena en las páginas**, que es lo único que importa de
+  esta entrega.
+- **Y dos fallos de los que no se ven leyendo**: al sincronizar, el panel solo repintaba sus gestos **cuando
+  fallaba**, así que una bóveda que llegaba en la pasada no traía su selector hasta volver a abrirlo; y el
+  `select` con `appearance: none` se leía como una caja de texto —nadie sabría que se despliega—, que se vio
+  sacando la captura y mirándola.
 - **Queda abierto, y en [`deuda.md`](deuda.md)**: **desplegar el servidor** —con la exportación de la cuenta
   real guardada antes—, **bajar un proyecto dormido no tiene botón**
   —severidad alta: con dos Macs no sale del equipo—, la extensión no sabe de proyectos, y **cuántos diálogos

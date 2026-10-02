@@ -38,6 +38,11 @@ referencia en la clave primaria de `versiones` y `trozos`, y hay una prueba de *
 crea un proyecto en uno, se baja en el otro, **se abre con su bóveda personal sin preguntar nada** —la ranura
 viaja dentro del fichero— y lo que se guarda allí vuelve.
 
+**Y hecha la E5: la extensión.** El panel tiene su selector de bóveda —sale **solo si hay más de una**— y
+cambiar ahí cambia de verdad lo que se rellena en las páginas, comprobado con la extensión cargada en un
+Chromium. **Cambiar la bóveda del navegador no cambia la de la aplicación**: son dos sitios que miran la misma
+cuenta, y cada uno recuerda la suya.
+
 **La siguiente acción concreta, y es de las que no se pueden hacer desde aquí: desplegar el servidor.** La
 migración del Durable Object **se ejecuta una vez y sobre la bóveda del cliente** —copia `versiones` y
 `trozos`, porque SQLite no deja añadir una columna a una clave primaria—, así que **antes hay que guardar un

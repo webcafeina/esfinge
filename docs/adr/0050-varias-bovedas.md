@@ -1,6 +1,6 @@
 # 0050 · Varias bóvedas: una por proyecto, y una abierta a la vez
 
-**Fecha:** 2026-10-02 · **Estado:** aceptada · E1 a E4 hechas · **sin desplegar** y sin ver en un Mac
+**Fecha:** 2026-10-02 · **Estado:** aceptada · E1 a E5 hechas · **sin desplegar** y sin ver en un Mac
 
 ## Contexto
 
@@ -170,6 +170,10 @@ cuando el vigilante cierra, con su prueba.
   mismo ETag —quien estaba al día no se baja nada— y las dos versiones intactas. *Mutada para que copie de
   menos: salta con «Migración incompleta: 2/2 → 2/0» y la transacción se deshace entera.* Y correrla dos
   veces no duplica nada.
+- **La extensión cambia de bóveda y rellena lo de esa bóveda**, con la extensión cargada de verdad en un
+  Chromium: desde la personal no sale la contraseña del proyecto, desde el proyecto no sale la de la personal,
+  y al volver está la de siempre. *Un selector que cambia de rótulo y sigue rellenando lo mismo sería peor que
+  no tenerlo.* Y bloquear se lleva también la clave de la personal, como en la aplicación.
 - **Un proyecto llega al otro equipo de verdad**, contra el servidor levantado en local: se crea aquí, se
   baja allí, **se abre con la bóveda personal de allí sin preguntar nada** —la ranura viaja dentro del
   fichero— y lo que se guarda allí vuelve. *Mutada la ruta para que el proyecto suba a la de la personal: la

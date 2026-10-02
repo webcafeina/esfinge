@@ -41,6 +41,8 @@ export async function pasada(
   m: Memoria,
   /** Acepta una fusión que se lleve más de la mitad de las entradas: lo pide una persona. */
   aunqueBorreMucho = false,
+  /** Qué bóveda de la cuenta se sincroniza: vacío, la personal (ADR 0050). */
+  ref = "",
 ): Promise<Resultado> {
   const r: Resultado = { version: 0, bajo: false, subio: false };
   let { recuerdo, base } = await m.cargar();
@@ -50,7 +52,7 @@ export async function pasada(
     let sobre: number;
     let vacia = false;
     try {
-      bajada = await cliente.bajar(token, siNoCoincide);
+      bajada = await cliente.bajar(token, siNoCoincide, ref);
     } catch (e) {
       if (!sinBoveda(e)) throw e;
       vacia = true;
@@ -82,7 +84,7 @@ export async function pasada(
     const { texto: subida, serie } = await b.prepararSubida(sobre + 1);
     let nueva: number;
     try {
-      nueva = await cliente.subir(token, sobre, subida);
+      nueva = await cliente.subir(token, sobre, subida, ref);
     } catch (e) {
       if (conflicto(e)) continue; // otro equipo ha subido en medio: a bajar otra vez
       throw e;

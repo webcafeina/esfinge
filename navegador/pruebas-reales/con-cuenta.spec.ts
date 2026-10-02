@@ -796,6 +796,91 @@ test.describe.serial("la extensión con cuenta, sin la aplicación", () => {
     await sitio.close();
   });
 
+  /**
+   * **Las bóvedas de proyecto en el navegador** (ADR 0050, E5).
+   *
+   * Lo que se comprueba es lo único que de verdad importa de esta entrega: que al
+   * cambiar de bóveda en el panel, **lo que se rellena en las páginas es lo de esa
+   * bóveda y no lo de la otra**. Un selector que cambia de rótulo y sigue
+   * rellenando lo mismo sería peor que no tenerlo.
+   *
+   * La bóveda de proyecto se crea desde «el otro equipo» —la aplicación, en la
+   * vida real— porque el navegador no las crea: la extensión las usa, no las
+   * gestiona.
+   */
+  test("se cambia de bóveda en el panel y se rellena lo de esa bóveda", async () => {
+    // El otro equipo crea un proyecto: su fichero en el servidor y su nota en la
+    // bóveda personal, que es de donde el panel saca la lista y el nombre.
+    const ref = "aaaa0000bbbb1111";
+    const c = new Cliente(SERVIDOR);
+    const personal = (await c.bajar(otro.token, 0))!;
+    const bp = await Boveda.abrir(personal.datos, MAESTRA);
+    const { boveda: proyecto } = await Boveda.crearProyecto(bp._llaveParaLaSesion());
+    await proyecto.poner(credencial("El de Acme", "yo@acme.prueba", "clave-de-acme", "https://acme.prueba"));
+    await c.subir(otro.token, 0, (await proyecto.prepararSubida(1)).texto, ref);
+    await bp.ponerProyecto({ ref, nombre: "Acme", creado: "2026-10-02T10:00:00Z" });
+    await c.subir(otro.token, personal.version, (await bp.prepararSubida(personal.version + 1)).texto);
+
+    // El navegador se entera en la siguiente pasada.
+    let p = await panel();
+    await p.click("#sincronizar");
+    await expect(p.locator("#resultado")).toContainText("Sincronizada con tu cuenta.", { timeout: 20_000 });
+
+    // **Primero se le pregunta al trabajador qué ve**, y después se mira la pantalla.
+    // Sin esto, «el selector no sale» puede ser que la bóveda no haya llegado, que la
+    // sección no se funda o que el panel no la pinte, y las tres se parecen.
+    const ec = (await alTrabajador(p, { cuenta: "estado" })).estado;
+    expect(
+      ec?.proyectos,
+      `el trabajador ve: activa=${ec?.activa} abierta=${ec?.abierta} proyectos=${JSON.stringify(ec?.proyectos)}`,
+    ).toHaveLength(1);
+
+    // **Y aparece el selector**, que antes no estaba: con una sola bóveda no sale.
+    const sel = p.locator("#boveda-activa");
+    await expect(sel).toBeVisible({ timeout: 20_000 });
+    await expect(sel.locator("option")).toHaveCount(2);
+    await retratar(p, "con-proyectos");
+
+    // De la personal no se rellena lo de Acme: son dos bóvedas.
+    expect(await contrasenaRellenada("acme.prueba", false)).toBe("");
+
+    // Se cambia, y **se rellena lo del proyecto**.
+    await sel.selectOption(ref);
+    await expect(sel).toBeEnabled({ timeout: 20_000 });
+    await p.close();
+    expect(await contrasenaRellenada("acme.prueba")).toBe("clave-de-acme");
+
+    // Y lo de la bóveda personal ya no, que es la otra mitad de estar separadas.
+    expect(await contrasenaRellenada("sitio.prueba", false)).toBe("");
+
+    // Se vuelve, y lo de siempre vuelve a estar.
+    p = await panel();
+    await expect(p.locator("#boveda-activa")).toHaveValue(ref, { timeout: 20_000 });
+    await p.locator("#boveda-activa").selectOption("");
+    await expect(p.locator("#boveda-activa")).toBeEnabled({ timeout: 20_000 });
+    await p.close();
+    expect(await contrasenaRellenada("sitio.prueba")).toBe("clave-del-sitio");
+  });
+
+  /**
+   * **Y bloquear se lleva la clave de la bóveda personal**, no solo la abierta.
+   *
+   * Es la misma regla que en la aplicación: esa clave vive en `storage.session`
+   * para que cambiar de proyecto no pida la maestra, así que si el bloqueo no la
+   * borrara, el plazo dejaría de significar lo que dice **en todas las demás
+   * bóvedas**, que es peor que en la que se está mirando.
+   */
+  test("al bloquear se olvida también la clave de la bóveda personal", async () => {
+    const p = await panel();
+    // Se entra en el proyecto, se bloquea, y desde ahí no se puede abrir ninguno.
+    const abierto = await alTrabajador(p, { cuenta: "abrirProyecto", ref: "aaaa0000bbbb1111" });
+    expect(abierto.ok, abierto.error).toBe(true);
+    await alTrabajador(p, { cuenta: "bloquear" });
+    const r = await alTrabajador(p, { cuenta: "abrirProyecto", ref: "aaaa0000bbbb1111" });
+    expect(r.ok).toBe(false);
+    await p.close();
+  });
+
   test("sin tocarla quince minutos, se cierra sola", async () => {
     // El reloj de la bóveda es la alarma de cada minuto. Se hace sonar ya, con la
     // última actividad de hace dieciséis minutos, desde el propio trabajador.

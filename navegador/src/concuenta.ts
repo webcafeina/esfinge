@@ -55,7 +55,40 @@ const S = {
   actividad: "cuenta-actividad",
   sincro: "cuenta-sincro",
   entrando: "cuenta-entrando",
+  /**
+   * La bóveda de proyecto abierta, o vacío si es la personal (ADR 0050). **Una a la
+   * vez**, igual que en la aplicación: esto es una cadena y no un conjunto.
+   */
+  activa: "cuenta-activa",
+  /**
+   * La clave de la bóveda **personal**, mientras hay un proyecto abierto: sin ella,
+   * cambiar de proyecto pediría la contraseña maestra cada vez.
+   *
+   * En `storage.session` como la otra, así que **se va al cerrar el navegador** y
+   * los guiones de las páginas no la leen. Y se borra al bloquear, o el plazo de
+   * los quince minutos dejaría de significar lo que dice en las demás bóvedas.
+   */
+  llavePrincipal: "cuenta-llave-principal",
 } as const;
+
+/**
+ * Dónde se guarda el documento de una bóveda: la personal en la clave de siempre,
+ * y cada proyecto en la suya (ADR 0050).
+ *
+ * Sin prefijo para la personal **a propósito**: es lo que ya está escrito en los
+ * navegadores que hay, así que no hace falta migrar nada.
+ */
+function claveDeBoveda(ref: string): string {
+  return ref === "" ? L.boveda : `${L.boveda}:${ref}`;
+}
+
+/** Y lo mismo para lo que la sincronización recuerda de cada una. */
+function claveDeBase(ref: string): string {
+  return ref === "" ? L.base : `${L.base}:${ref}`;
+}
+function claveDeRecuerdo(ref: string): string {
+  return ref === "" ? L.recuerdo : `${L.recuerdo}:${ref}`;
+}
 
 /** Los datos de la cuenta en este navegador. Nada de esto sirve sin la maestra, salvo el testigo. */
 type Datos = {
@@ -86,6 +119,16 @@ export type EstadoDeCuenta = {
   sincro: EstadoSincro;
   /** Minutos sin tocar nada antes de cerrarse sola. */
   bloqueo: number;
+  /**
+   * En qué bóveda se está trabajando (ADR 0050): la referencia, vacío la personal,
+   * y su nombre para poder enseñarlo. Y la lista, para poder cambiar.
+   *
+   * Va dentro del estado y no en una petición aparte **porque el panel lo necesita
+   * cada vez que se abre**, y pedirlo con la bóveda cerrada sería un error seguro.
+   */
+  activa: string;
+  nombreActiva: string;
+  proyectos: { ref: string; nombre: string; enEsteNavegador: boolean }[];
 };
 
 /** Lo que el panel —y solo el panel— le puede pedir a la cuenta. */
@@ -107,7 +150,12 @@ export type PeticionDeCuenta =
   | { cuenta: "compartir"; id: string; correo: string }
   | { cuenta: "buzon" }
   | { cuenta: "aceptar"; envio: string }
-  | { cuenta: "tirar"; envio: string };
+  | { cuenta: "tirar"; envio: string }
+  // Las bóvedas de proyecto (ADR 0050). **Una abierta a la vez**: abrir una cierra
+  // la anterior, así que todo lo demás —rellenar, los códigos, guardar— sigue
+  // hablando de «la bóveda» y contesta de la que esté activa.
+  | { cuenta: "abrirProyecto"; ref: string }
+  | { cuenta: "volverALaPersonal" };
 
 /** Lo que el panel enseña de un envío: de quién viene y qué es, sin secretos. */
 export type EnvioParaElPanel = {
@@ -185,11 +233,11 @@ async function olvidarEntrada(): Promise<void> {
 async function laBoveda(): Promise<Boveda | null> {
   if (abierta?.abierta) return abierta;
   const llave = await sesion<string>(S.llave);
-  const texto = await local<string>(L.boveda);
+  const texto = await local<string>(claveDeBoveda(await refActiva()));
   if (!llave || !texto) return null;
   try {
     abierta = await Boveda.abrirConClave(texto, llave);
-    conectar(abierta);
+    conectar(abierta, await refActiva());
     return abierta;
   } catch {
     await api.storage.session.remove(S.llave);
@@ -197,25 +245,61 @@ async function laBoveda(): Promise<Boveda | null> {
   }
 }
 
+/** Qué bóveda está abierta: vacío, la personal. */
+export async function refActiva(): Promise<string> {
+  return (await sesion<string>(S.activa)) ?? "";
+}
+
+/**
+ * Hace algo con la **bóveda personal**, esté abierta o detrás de un proyecto.
+ *
+ * Es el espejo de `conLaPersonal` de Go, y hace falta por lo mismo: la lista de
+ * proyectos, la sesión de la cuenta y la identidad para compartir viven en la
+ * personal, y con un proyecto delante la personal no es la que está abierta. Con la
+ * clave que se guardó al conmutar se abre su documento el instante que dure la
+ * operación. **Secuencial, nunca dos abiertas de cara a quien mira.**
+ */
+async function conLaPersonal<T>(hacer: (b: Boveda) => Promise<T>): Promise<T> {
+  const ref = await refActiva();
+  if (ref === "") {
+    const b = await laBoveda();
+    if (!b) throw new ErrorBoveda("cerrada");
+    return hacer(b);
+  }
+  const llave = await sesion<string>(S.llavePrincipal);
+  const texto = await local<string>(claveDeBoveda(""));
+  if (!llave || !texto) throw new ErrorBoveda("cerrada");
+  const p = await Boveda.abrirConClave(texto, llave);
+  try {
+    return await hacer(p);
+  } finally {
+    p.cerrar();
+  }
+}
+
 /** Cada guardado va a `storage.local` y pide subir, con una espera para juntar los seguidos. */
-function conectar(b: Boveda) {
+function conectar(b: Boveda, ref: string) {
   b.alGuardar = (texto) => {
-    api.storage.local.set({ [L.boveda]: texto }).catch(() => {});
+    api.storage.local.set({ [claveDeBoveda(ref)]: texto }).catch(() => {});
     pedirSincro(ESPERA_TRAS_GUARDAR);
   };
 }
 
-async function ponerLaAbierta(b: Boveda) {
+async function ponerLaAbierta(b: Boveda, ref = "") {
   abierta = b;
-  conectar(b);
-  await api.storage.local.set({ [L.boveda]: b.documento() });
-  await api.storage.session.set({ [S.llave]: b._llaveParaLaSesion(), [S.actividad]: Date.now() });
+  conectar(b, ref);
+  await api.storage.local.set({ [claveDeBoveda(ref)]: b.documento() });
+  await api.storage.session.set({ [S.llave]: b._llaveParaLaSesion(), [S.actividad]: Date.now(), [S.activa]: ref });
 }
 
 export async function bloquear(): Promise<void> {
   abierta?.cerrar();
   abierta = null;
-  await api.storage.session.remove([S.llave, S.actividad]);
+  // **Y la clave de la bóveda personal, si había un proyecto abierto.** Sin esta
+  // línea, bloquear cerraría el proyecto y dejaría en memoria con qué abrir todos
+  // los demás: el plazo dejaría de significar lo que dice justo en las bóvedas que
+  // no se están mirando.
+  await api.storage.session.remove([S.llave, S.actividad, S.activa, S.llavePrincipal]);
 }
 
 /** Lo que hace una persona. **Nada que se repita solo llama aquí.** */
@@ -240,6 +324,26 @@ export async function estado(): Promise<EstadoDeCuenta> {
   let sincro = (await sesion<EstadoSincro>(S.sincro)) ?? { estado: "apagada" };
   if (d && !d.sesion) sincro = { estado: "hay-que-entrar", mensaje: sincro.mensaje ?? "Vuelve a entrar en la cuenta para sincronizar" };
   else if (!b) sincro = { ...sincro, estado: sincro.estado === "hay-que-entrar" ? sincro.estado : "apagada" };
+  const activa = await refActiva();
+  // La lista solo se puede leer con la bóveda abierta —vive en el cuerpo cifrado de
+  // la personal—, así que cerrada se contesta vacía y el panel no enseña nada: es lo
+  // mismo que pasa con las cuentas.
+  let proyectos: { ref: string; nombre: string; enEsteNavegador: boolean }[] = [];
+  if (b) {
+    try {
+      proyectos = await conLaPersonal(async (p) => {
+        const lista = p.proyectos().filter((x) => !x.archivado);
+        const hay = await api.storage.local.get(lista.map((x) => claveDeBoveda(x.ref)));
+        return lista.map((x) => ({
+          ref: x.ref,
+          nombre: x.nombre,
+          enEsteNavegador: hay[claveDeBoveda(x.ref)] !== undefined,
+        }));
+      });
+    } catch {
+      /* la bóveda se ha cerrado entre medias: el panel lo verá por `abierta` */
+    }
+  }
   return {
     modo: d ? "cuenta" : "local",
     correo: d?.correo,
@@ -248,7 +352,68 @@ export async function estado(): Promise<EstadoDeCuenta> {
     apartada: (await local<string>(L.apartada)) !== undefined,
     sincro,
     bloqueo: MINUTOS_DE_BLOQUEO,
+    activa,
+    nombreActiva: proyectos.find((x) => x.ref === activa)?.nombre ?? "",
+    proyectos,
   };
+}
+
+// ------------------------------------------------------------------ los proyectos
+
+/**
+ * Abre una bóveda de proyecto: cierra la que haya y deja ésa (ADR 0050).
+ *
+ * Si no está en este navegador se baja del servidor, que es lo que hace que un
+ * navegador nuevo pueda usarlas sin pasar por la aplicación.
+ */
+export async function abrirProyecto(ref: string): Promise<void> {
+  if (ref === "") return volverALaPersonal();
+  // La clave de la personal: la de la abierta si es ella, o la guardada al conmutar.
+  const llavePrincipal =
+    (await refActiva()) === ""
+      ? (await laBoveda())?._llaveParaLaSesion()
+      : await sesion<string>(S.llavePrincipal);
+  if (!llavePrincipal) throw new ErrorBoveda("cerrada");
+
+  let texto = await local<string>(claveDeBoveda(ref));
+  if (texto === undefined) {
+    // Dormida en este navegador: se baja. **Y se guarda solo si abre**, que es lo
+    // que impide dejar puesto un documento que luego no sirve.
+    const d = await datos();
+    if (!d?.sesion) throw new Error("Vuelve a entrar en la cuenta para traerte esa bóveda");
+    const token = await conLaPersonal((p) => p.abrirSecreto(d.sesion));
+    const bajada = await new Cliente(d.servidor).bajar(token, 0, ref);
+    if (!bajada) throw new Error("Esa bóveda no está en la cuenta");
+    texto = bajada.datos;
+  }
+
+  const p = await Boveda.abrirProyecto(texto, llavePrincipal);
+  await api.storage.local.set({ [claveDeBoveda(ref)]: texto });
+  // **Se guarda la clave de la personal antes de conmutar**, porque desde aquí ya no
+  // se puede volver a pedir: la que queda abierta es la del proyecto.
+  await api.storage.session.set({ [S.llavePrincipal]: llavePrincipal });
+  abierta?.cerrar();
+  await ponerLaAbierta(p, ref);
+  avisarDeCambios();
+  pedirSincro(0);
+}
+
+/**
+ * Vuelve a la bóveda personal. **Sin pedir la contraseña**, al contrario que en la
+ * aplicación: aquí la clave de la personal está en `storage.session` y lo que la
+ * borra es bloquear o cerrar el navegador, que es lo mismo que la protege.
+ */
+export async function volverALaPersonal(): Promise<void> {
+  if ((await refActiva()) === "") return;
+  const llave = await sesion<string>(S.llavePrincipal);
+  const texto = await local<string>(claveDeBoveda(""));
+  if (!llave || !texto) throw new ErrorBoveda("cerrada");
+  const p = await Boveda.abrirConClave(texto, llave);
+  abierta?.cerrar();
+  await ponerLaAbierta(p, "");
+  await api.storage.session.remove(S.llavePrincipal);
+  avisarDeCambios();
+  pedirSincro(0);
 }
 
 // ------------------------------------------------------------------ entrar
@@ -395,18 +560,28 @@ async function salir(): Promise<void> {
 
 // ------------------------------------------------------------------ sincronizar
 
-const memoria: Memoria = {
-  async cargar() {
-    const recuerdo = await local<Recuerdo>(L.recuerdo);
-    const base = (await local<string>(L.base)) ?? null;
-    if (!recuerdo) return { recuerdo: { version: 0, serie: -1 }, base: null };
-    // Sin base no se sabe qué hay subido: se fuerza la pasada, como en Go.
-    return { recuerdo: base ? recuerdo : { version: recuerdo.version, serie: -1 }, base };
-  },
-  async guardar(r, base) {
-    await api.storage.local.set({ [L.recuerdo]: r, [L.base]: base });
-  },
-};
+/**
+ * Lo que la sincronización recuerda, **de la bóveda que esté abierta** (ADR 0050):
+ * por qué versión del servidor va y con qué bytes se fundió la última vez.
+ *
+ * Va por bóveda y no puede ser de otra forma: con una sola memoria, conmutar
+ * dejaría la versión de una bóveda apuntada como si fuera la de la otra, y la
+ * siguiente pasada subiría encima de lo que no tocaba.
+ */
+function memoriaDe(ref: string): Memoria {
+  return {
+    async cargar() {
+      const recuerdo = await local<Recuerdo>(claveDeRecuerdo(ref));
+      const base = (await local<string>(claveDeBase(ref))) ?? null;
+      if (!recuerdo) return { recuerdo: { version: 0, serie: -1 }, base: null };
+      // Sin base no se sabe qué hay subido: se fuerza la pasada, como en Go.
+      return { recuerdo: base ? recuerdo : { version: recuerdo.version, serie: -1 }, base };
+    },
+    async guardar(r, base) {
+      await api.storage.local.set({ [claveDeRecuerdo(ref)]: r, [claveDeBase(ref)]: base });
+    },
+  };
+}
 
 let temporizador: ReturnType<typeof setTimeout> | undefined;
 let enMarcha: Promise<void> | null = null;
@@ -587,24 +762,31 @@ async function unaPasada(aunqueBorreMucho = false): Promise<void> {
     await ponerSincro({ estado: "hay-que-entrar", mensaje: "Vuelve a entrar en la cuenta para sincronizar" });
     return;
   }
-  const token = await b.abrirSecreto(d.sesion);
+  // **La sesión está sellada con la clave de la bóveda personal**, así que no la
+  // abre la que esté activa: con un proyecto delante hay que ir a la personal a por
+  // ella (ADR 0050). Con la personal abierta, `conLaPersonal` devuelve la misma.
+  const token = await conLaPersonal((p) => p.abrirSecreto(d.sesion));
   const cliente = new Cliente(d.servidor);
   // **Antes de la pasada**, para que la identidad recién creada suba en ella. Que
   // falle no puede parar la sincronización: se reintenta a la siguiente.
+  //
+  // **Y con la bóveda personal, siempre**: la identidad para compartir y la
+  // posesión son de la cuenta y viven en ella. Publicando las de un proyecto, el
+  // servidor le daría a quien te manda una copia unas llaves que no son las tuyas y
+  // el sobre llegaría cifrado hacia una bóveda que puedes tener cerrada.
   try {
-    await publicarLasLlaves(b, cliente, token);
+    await conLaPersonal(async (p) => {
+      await publicarLasLlaves(p, cliente, token);
+      // Y de paso la posesión, por si en el servidor han rotado la pimienta (ADR
+      // 0046). Misma forma y misma razón: quien lo necesita es el servidor.
+      await cliente.refrescarPosesion(token, await p.posesion());
+    });
   } catch {
     /* a la siguiente */
   }
-  // Y de paso la posesión, por si en el servidor han rotado la pimienta (ADR 0046).
-  // Misma forma y misma razón que las llaves: quien lo necesita es el servidor.
   try {
-    await cliente.refrescarPosesion(token, await b.posesion());
-  } catch {
-    /* a la siguiente */
-  }
-  try {
-    const r = await pasada(b, cliente, token, memoria, aunqueBorreMucho);
+    const ref = await refActiva();
+    const r = await pasada(b, cliente, token, memoriaDe(ref), aunqueBorreMucho, ref);
     // **Y de paso, las copias que esperaban** (B3). Que falle no ensucia la
     // sincronización, que sí ha ido bien: se repasa en la siguiente.
     await repasarPendientes(b, cliente, token).catch(() => {});
@@ -662,7 +844,7 @@ export async function tic(ahora = Date.now()): Promise<void> {
   if ((await sesion<string>(S.llave)) && ultima !== undefined && ahora - ultima >= MINUTOS_DE_BLOQUEO * 60_000) {
     // Antes de cerrar, lo pendiente se sube: cerrada ya no se puede.
     const b = await laBoveda();
-    if (b && (await pendiente(b, memoria))) await sincronizar().catch(() => {});
+    if (b && (await pendiente(b, memoriaDe(await refActiva())))) await sincronizar().catch(() => {});
     await bloquear();
     return;
   }
@@ -727,6 +909,14 @@ export async function atenderAlPanel(p: PeticionDeCuenta): Promise<RespuestaDeCu
       case "aceptar":
         await actividad();
         await aceptarDelBuzon(p.envio);
+        break;
+      case "abrirProyecto":
+        await actividad();
+        await abrirProyecto(p.ref);
+        break;
+      case "volverALaPersonal":
+        await actividad();
+        await volverALaPersonal();
         break;
       case "tirar":
         await actividad();

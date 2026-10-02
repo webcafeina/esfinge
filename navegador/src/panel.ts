@@ -410,6 +410,42 @@ function pintarGestos(ec: EstadoDeCuenta) {
   // qué abrir los sobres.
   if (conCuenta && ec.abierta) void pintarBuzon();
   else (document.getElementById("buzon") as HTMLElement).hidden = true;
+  pintarBovedas(ec);
+}
+
+/**
+ * El selector de bóveda (ADR 0050): en cuál se está trabajando y cómo cambiar.
+ *
+ * **Sale solo si hay más de una**, porque con la bóveda de siempre y nada más un
+ * selector de una sola cosa es ruido en un panel que mide 360 píxeles.
+ *
+ * Y una que no se ve y hay que decir: cambiar de bóveda aquí **no cambia la de la
+ * aplicación**. Son dos sitios distintos que miran la misma cuenta, y el navegador
+ * recuerda la suya.
+ */
+function pintarBovedas(ec: EstadoDeCuenta) {
+  const caja = document.getElementById("bovedas") as HTMLElement;
+  const sel = document.getElementById("boveda-activa") as HTMLSelectElement;
+  const hay = ec.modo === "cuenta" && ec.abierta && ec.proyectos.length > 0;
+  caja.hidden = !hay;
+  if (!hay) return;
+  const quiero = [{ ref: "", nombre: "Tu bóveda", enEsteNavegador: true }, ...ec.proyectos];
+  // Se vuelve a pintar solo si ha cambiado: tocar el `select` en cada refresco —y
+  // hay uno cada vez que se abre el panel— cerraría la lista desplegada.
+  const firma = quiero.map((p) => `${p.ref}:${p.nombre}`).join("|") + `=${ec.activa}`;
+  if (sel.dataset.firma !== firma) {
+    sel.textContent = "";
+    for (const p of quiero) {
+      const o = document.createElement("option");
+      o.value = p.ref;
+      // Lo que no está aquí se dice, en vez de dejar que el fallo salga al elegirlo:
+      // se puede traer, pero tarda lo que tarde la red.
+      o.textContent = p.enEsteNavegador ? p.nombre : `${p.nombre} (se traerá)`;
+      o.selected = p.ref === ec.activa;
+      sel.append(o);
+    }
+    sel.dataset.firma = firma;
+  }
 }
 
 /**
@@ -603,6 +639,11 @@ function atenderGestos() {
       return;
     }
     contar("Sincronizada con tu cuenta.", true);
+    // **Y los gestos también cuando ha ido bien**, no solo al fallar: una pasada
+    // puede traer **una bóveda de proyecto nueva**, y con ella el selector que no
+    // estaba (ADR 0050). Pintando solo en el error, la bóveda llegaba y no había
+    // forma de cambiarse a ella hasta volver a abrir el panel.
+    if (r.estado) pintarGestos(r.estado);
     await pintarCuentas();
   });
   // **Juntarlo igual**: la salida de «la fusión borraría media bóveda». Vale para
@@ -637,6 +678,27 @@ function atenderGestos() {
     await pasoDeCuenta("entrar");
     location.reload();
   });
+  // El selector de bóveda (ADR 0050): cambiar aquí **no cambia la de la aplicación**.
+  const bovedaActiva = document.getElementById("boveda-activa") as HTMLSelectElement;
+  bovedaActiva.addEventListener("change", async () => {
+    const ref = bovedaActiva.value;
+    bovedaActiva.disabled = true;
+    try {
+      const r = await pedirCuenta(ref === "" ? { cuenta: "volverALaPersonal" } : { cuenta: "abrirProyecto", ref });
+      if (r.estado) pintarGestos(r.estado);
+      if (!r.ok) {
+        contar(r.error ?? "No se ha podido abrir esa bóveda.", false);
+        return;
+      }
+      // **Y la lista se vuelve a pedir**: lo que se ve dentro es de otra bóveda, y
+      // dejar la de antes sería enseñar las cuentas de un cliente bajo el nombre de
+      // otro.
+      await pintarCuentas();
+    } finally {
+      bovedaActiva.disabled = false;
+    }
+  });
+
   // **Salir pide dos pulsaciones**: borra de este navegador la copia de la bóveda
   // —la de la cuenta sigue en el servidor y en los demás equipos—, y un clic
   // despistado en un panel pequeño no puede costar volver a entrar con el código.

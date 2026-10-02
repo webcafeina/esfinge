@@ -27,6 +27,7 @@ import {
 import { entradaAJSON, entradaDesde, rfc3339, sinSecretos, coincide, copiar, type Entrada } from "./entrada";
 import { SUITE } from "./identidad";
 import { pendientesDe, ponerPendientes, purgarPendientes, type Pendiente } from "./pendiente";
+import { ponerProyectos, proyectosDe, type Proyecto } from "./proyecto";
 import { ERR_CHECKSUM, normalizar, nuevaRecuperacion, pareceRecuperacion } from "./recuperacion";
 
 export const FORMATO = 1;
@@ -34,6 +35,14 @@ export const RANURA_MAESTRA = "maestra";
 export const RANURA_RECUPERACION = "recuperacion";
 /** Las que abren la bóveda solo en un equipo y no se suben nunca. */
 export const RANURAS_LOCALES = new Set(["llavero-del-sistema", "pin"]);
+
+/**
+ * La ranura que abre una bóveda de proyecto con la bóveda personal (ADR 0050).
+ *
+ * **No está en `RANURAS_LOCALES`**, al contrario que las dos de arriba: es lo único
+ * que permite que otro equipo abra el proyecto, así que viaja con él.
+ */
+export const RANURA_PRINCIPAL = "boveda-principal";
 
 export const PLAZO_PAPELERA_MS = 30 * 24 * 3600 * 1000;
 export const PLAZO_LAPIDAS_MS = 180 * 24 * 3600 * 1000;
@@ -251,7 +260,12 @@ async function envolver(tipo: string, clave: string, llave: string, cuando: stri
     if (!n) throw new ErrorBoveda("checksum");
     k = n;
   }
-  const s: Sobre = { tipo, creado: cuando, contenedor: await sellarTexto(utf8.encode(llave), k, PERFIL_INTERACTIVO) };
+  // **El perfil barato para la ranura principal** (ADR 0050), igual que Go: el
+  // secreto son los 43 caracteres al azar de la clave de la bóveda personal, no algo
+  // que se teclee, y el coste alto de Argon2id solo serviría para que conmutar de
+  // proyecto tardara un segundo.
+  const perfil = tipo === RANURA_PRINCIPAL ? PERFIL_LLAVE : PERFIL_INTERACTIVO;
+  const s: Sobre = { tipo, creado: cuando, contenedor: await sellarTexto(utf8.encode(llave), k, perfil) };
   if (tipo === RANURA_RECUPERACION) s.codificacion = "crockford32-v1";
   return s;
 }
@@ -310,6 +324,33 @@ export class Boveda {
   }
 
   /**
+   * Una bóveda de proyecto (ADR 0050): **su única ranura es la que abre la bóveda
+   * personal**, así que no tiene contraseña propia ni clave de recuperación.
+   *
+   * El espejo de `CrearProyecto` de Go. La extensión no las crea —eso lo hace la
+   * aplicación—, pero el formato vive en los dos sitios y esto es formato.
+   */
+  static async crearProyecto(llavePrincipal: string): Promise<{ boveda: Boveda }> {
+    if (!llavePrincipal) throw new ErrorBoveda("cerrada");
+    const llave = base64url(azarDe(32));
+    const cuando = rfc3339(ahora());
+    const doc: Documento = {
+      esfinge: MARCA,
+      aviso: AVISO,
+      formato: FORMATO,
+      id: azarHex(),
+      serie: 0,
+      cambiada: cuando,
+      sobres: [await envolver(RANURA_PRINCIPAL, llavePrincipal, llave, cuando)],
+      sello: "",
+      cuerpo: "",
+    };
+    const b = new Boveda(doc, { id: doc.id, serie: 0, huellas: {}, cuerpo: "" }, { entradas: [] }, llave, false);
+    b.cuerpoSucio = true;
+    return { boveda: b };
+  }
+
+  /**
    * Abre con la maestra o con la clave de recuperación. Con `purgar`, lo que lleva
    * más de treinta días en la papelera y las lápidas caducadas se van, y si se va
    * algo se guarda: es lo que hace Go al abrir el fichero de un equipo. Lo que baja
@@ -337,6 +378,30 @@ export class Boveda {
       throw new ErrorBoveda("sin-ranura");
     }
     return Boveda.conLlave(doc, llave, opciones);
+  }
+
+  /**
+   * Abre **una bóveda de proyecto** con la clave de bóveda de la personal
+   * (ADR 0050): la ranura `boveda-principal`, y solo ésa.
+   *
+   * Es el espejo de `AbrirProyecto` de Go, y como allí **se prueba una sola
+   * ranura**: probarlas todas pagaría antes una derivación interactiva contra la
+   * maestra, que es justo el segundo que esta ranura viene a quitar.
+   */
+  static async abrirProyecto(texto: string, llavePrincipal: string): Promise<Boveda> {
+    if (!llavePrincipal) throw new ErrorBoveda("cerrada");
+    const doc = leerDocumento(texto);
+    const sobre = doc.sobres.find((s) => s.tipo === RANURA_PRINCIPAL);
+    if (!sobre) throw new ErrorBoveda("sin-ranura");
+    let llave: string;
+    try {
+      llave = deUtf8.decode(await abrirTexto(sobre.contenedor, llavePrincipal));
+    } catch {
+      // La ranura está pero esta bóveda personal no la abre: el proyecto es de
+      // otra. No es un fichero roto y no se dice que lo sea.
+      throw new ErrorBoveda("sin-ranura");
+    }
+    return Boveda.conLlave(doc, llave, {});
   }
 
   /** Abre con la clave de bóveda de otra abierta: la misma bóveda, con otra contraseña en sus sobres. */
@@ -738,6 +803,33 @@ export class Boveda {
 
   excluidos(): string[] {
     return [...(this.cont.sitiosExcluidos ?? [])];
+  }
+
+  // ------------------------------------------------------- las bóvedas de proyecto
+
+  /**
+   * Los proyectos que abre esta bóveda (ADR 0050): qué hay y cómo se llama, **nunca
+   * su clave**. Solo la bóveda personal los tiene.
+   *
+   * Vienen por `extra` porque `Contenido` no declara la sección: la extensión no
+   * los gestiona, solo los lee para poder cambiar de bóveda —y los funde, que eso sí
+   * tiene que hacerlo igual que Go—.
+   */
+  proyectos(): Proyecto[] {
+    return proyectosDe(this.cont.extra).slice().sort((a, b) => ((a.usado ?? "") < (b.usado ?? "") ? 1 : -1));
+  }
+
+  /** Añade o actualiza uno por su referencia, y guarda. */
+  async ponerProyecto(p: Proyecto): Promise<void> {
+    return this._exclusivo(async () => {
+      const lista = proyectosDe(this.cont.extra).filter((x) => x.ref !== p.ref);
+      lista.push(p);
+      this.cont.extra = ponerProyectos(this.cont.extra, lista);
+      this.cuerpoSucio = true;
+      // **`_guardarSinCola` y no `guardar`**: ya estamos dentro de la cola, y
+      // `guardar` vuelve a pedirla — eso es esperarse a uno mismo.
+      await this._guardarSinCola();
+    });
   }
 
   // ---------------------------------------------------------------- para fundir

@@ -173,11 +173,17 @@ export class Cliente {
     await this.json("DELETE", `/v1/buzon/${encodeURIComponent(id)}`, undefined, token);
   }
 
-  /** La bóveda del servidor; `null` si no ha cambiado desde `siNoCoincide`. Lanza con 404 si no hay. */
-  async bajar(token: string, siNoCoincide: number): Promise<{ datos: string; version: number } | null> {
+  /**
+   * La bóveda del servidor; `null` si no ha cambiado desde `siNoCoincide`. Lanza
+   * con 404 si no hay.
+   *
+   * Con `ref`, **una bóveda de proyecto** (ADR 0050); vacío es la personal, que
+   * sigue en la ruta de siempre.
+   */
+  async bajar(token: string, siNoCoincide: number, ref = ""): Promise<{ datos: string; version: number } | null> {
     const cabeceras: Record<string, string> = {};
     if (siNoCoincide > 0) cabeceras["If-None-Match"] = `"${siNoCoincide}"`;
-    const r = await this.pedir("GET", "/v1/boveda", { token, cabeceras });
+    const r = await this.pedir("GET", rutaDeBoveda(ref), { token, cabeceras });
     if (r.status === 304) return null;
     if (r.status !== 200) throw await this.error(r);
     const version = leerEtiqueta(r.headers.get("ETag"));
@@ -188,10 +194,30 @@ export class Cliente {
   }
 
   /** Sube sobre `siCoincide` y devuelve la versión nueva. Un 412 es que otro subió en medio. */
-  async subir(token: string, siCoincide: number, datos: string): Promise<number> {
-    const r = await this.pedir("PUT", "/v1/boveda", { token, cuerpo: datos, cabeceras: { "If-Match": `"${siCoincide}"` } });
+  async subir(token: string, siCoincide: number, datos: string, ref = ""): Promise<number> {
+    const r = await this.pedir("PUT", rutaDeBoveda(ref), {
+      token,
+      cuerpo: datos,
+      cabeceras: { "If-Match": `"${siCoincide}"` },
+    });
     if (r.status !== 200) throw await this.error(r);
     const j = (await r.json()) as { version?: number };
     return j.version ?? 0;
   }
+
+  /**
+   * Las bóvedas de proyecto que hay en la cuenta: su referencia y por qué versión
+   * van. **Nunca su nombre**, que vive cifrado dentro de la bóveda personal.
+   */
+  async bovedas(token: string): Promise<{ ref: string; version: number }[]> {
+    const j = (await this.json("GET", "/v1/bovedas", undefined, token)) as {
+      bovedas?: { ref: string; version: number }[];
+    };
+    return j.bovedas ?? [];
+  }
+}
+
+/** La de siempre para la personal, y la suya para un proyecto. */
+function rutaDeBoveda(ref: string): string {
+  return ref === "" ? "/v1/boveda" : `/v1/bovedas/${ref}`;
 }
