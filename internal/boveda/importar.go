@@ -313,6 +313,12 @@ var alias = map[string]string{
 	// Notas
 	"note": CampoNotas, "notes": CampoNotas, "notas": CampoNotas,
 	"comentarios": CampoNotas, "extra": CampoNotas, "comment": CampoNotas,
+	// **`fields` son los campos propios de Bitwarden, y hasta hoy se tiraban.** Una
+	// columna sin alias se descarta entera, y ahí es donde Bitwarden guarda lo que su
+	// dueño añadió a mano: el nombre de una red, un PIN, un número de contrato. Se
+	// perdían en silencio desde el primer importador. Van a las notas, que es donde van
+	// todas las columnas que valen algo y no tienen sitio propio.
+	"fields": CampoNotas,
 	// La red wifi. **`ssid` y `passphrase` van en la tabla común** porque no significan
 	// otra cosa en ningún fichero de ningún gestor, y porque la exportación de Esfinge
 	// las trae y tiene que poder volver a entrar: sin esto, una red exportada vuelve
@@ -559,6 +565,12 @@ func deFila(cabecera, fila []string, mapa Correspondencia, forma Forma) Entrada 
 	}
 	e.Notas = strings.Join(notas, "\n")
 
+	// **Y una red puede venir escondida dentro del texto** (ADR 0049), que es como la
+	// guardan los gestores que no tienen una columna para ella.
+	if e.SSID == "" {
+		e.SSID, e.Secreto, e.Seguridad, e.Notas = redEnElTexto(e.Notas, e.Secreto, e.Seguridad)
+	}
+
 	e.Tipo = tipoDe(e, forma, tipoDicho)
 	// **La seguridad de una red se normaliza, no se copia** (ADR 0049). El `wifi.csv`
 	// de Dashlane dice `unsecured` en redes que tienen contraseña, y guardándolo tal
@@ -627,6 +639,104 @@ func tipoDe(e Entrada, forma Forma, dicho string) Tipo {
 	default:
 		return TipoCredencial
 	}
+}
+
+// redEnElTexto saca una red wifi escrita **dentro** del texto de una nota.
+//
+// **Dashlane tiene una columna para la red; los demás no.** LastPass guarda sus notas
+// seguras —y las de tipo «Wi-Fi Password» son una de ellas— metiendo todos sus campos
+// dentro de la columna de texto, una línea por campo; Bitwarden hace lo mismo con sus
+// campos propios, en su columna `fields`. En los dos casos la red llega como texto
+// corrido donde una línea dice `SSID:` y otra la contraseña.
+//
+// **Por eso la señal es la línea `SSID:` y no el gestor del que venga.** Reconocer «el
+// formato de LastPass» sería escribir de memoria el formato interno de otro programa
+// —sus nombres de campo, su idioma, su versión—; reconocer una línea que declara el
+// nombre de una red es lo que esos formatos tienen en común y es lo único que aquí se
+// puede sostener. Si mañana otro gestor escribe igual, entra solo.
+//
+// **Y no se pierde nada de lo que no entienda**: las líneas que reconoce las saca del
+// texto y **todo lo demás se queda en las notas**, con su contenido intacto. Una nota
+// que no sea una red no se toca, porque sin `SSID:` esto no hace nada.
+//
+// **Lo que no está comprobado, y hay que decirlo**: no se ha visto ni un fichero de
+// verdad de LastPass ni de Bitwarden. Los ejemplos de las pruebas están escritos a
+// mano con la forma que esos gestores documentan, así que lo que esto demuestra es que
+// **la regla funciona sobre esa forma**, no que esa sea exactamente la forma que sale
+// de sus exportaciones. El día que haya un fichero de verdad, se comprueba contra él.
+func redEnElTexto(texto, secreto, seguridad string) (string, string, string, string) {
+	if texto == "" || !strings.Contains(strings.ToLower(texto), "ssid") {
+		return "", secreto, seguridad, texto
+	}
+
+	var ssid, clave, cifrado string
+	var resto []string
+	for _, linea := range strings.Split(texto, "\n") {
+		nombre, valor, hay := strings.Cut(linea, ":")
+		if !hay {
+			resto = append(resto, linea)
+			continue
+		}
+		// **Y la primera línea puede venir con el nombre de su columna delante.** Las
+		// columnas que van a las notas se etiquetan con el suyo, así que lo que
+		// Bitwarden manda en `fields` llega como «fields: SSID: MiCasa» y el nombre
+		// que importa es el segundo. Se recorta **una sola vez**: con más, una frase
+		// cualquiera con dos puntos de más acabaría pareciendo la declaración de una
+		// red.
+		if !campoDeRed(nombre) {
+			if n2, v2, hay2 := strings.Cut(valor, ":"); hay2 && campoDeRed(n2) {
+				nombre, valor = n2, v2
+			}
+		}
+		valor = strings.TrimSpace(valor)
+		// El nombre del campo, sin espacios ni mayúsculas: los gestores escriben
+		// «SSID», «Wireless Network Password» o «Network Password» según el sitio.
+		switch quitarEspacios(nombre) {
+		case "ssid", "networkname", "nombredered":
+			if ssid == "" {
+				ssid = valor
+			}
+		case "password", "networkpassword", "wirelessnetworkpassword", "contraseña":
+			if clave == "" {
+				clave = valor
+			}
+		case "encryption", "security", "cifrado", "seguridad":
+			if cifrado == "" {
+				cifrado = valor
+			}
+		default:
+			resto = append(resto, linea)
+		}
+	}
+	if ssid == "" {
+		// Había la palabra «ssid» por ahí pero ninguna línea que la declare: no es una
+		// red, es una nota que habla de una. Se devuelve el texto **tal cual estaba**.
+		return "", secreto, seguridad, texto
+	}
+	if secreto == "" {
+		secreto = clave
+	}
+	if seguridad == "" {
+		seguridad = cifrado
+	}
+	return ssid, secreto, seguridad, strings.TrimSpace(strings.Join(resto, "\n"))
+}
+
+// campoDeRed dice si el nombre de una línea declara algo de una red. Está aparte
+// porque se pregunta dos veces: por la línea y por lo que queda tras recortar el
+// nombre de la columna.
+func campoDeRed(nombre string) bool {
+	switch quitarEspacios(nombre) {
+	case "ssid", "networkname", "nombredered",
+		"password", "networkpassword", "wirelessnetworkpassword", "contraseña",
+		"encryption", "security", "cifrado", "seguridad":
+		return true
+	}
+	return false
+}
+
+func quitarEspacios(s string) string {
+	return strings.ToLower(strings.Join(strings.Fields(s), ""))
 }
 
 // tituloDeReserva: una entrada sin título es una entrada que no se encuentra.

@@ -1043,3 +1043,124 @@ func TestUnaRedSinClaveEsAbierta(t *testing.T) {
 		t.Errorf("las notas son %q", e.Notas)
 	}
 }
+
+// **Una red escondida dentro de una nota** (ADR 0049), que es como la guardan los
+// gestores sin columna propia.
+//
+// **Los dos ficheros de esta prueba están escritos a mano.** No se ha visto una
+// exportación de verdad de LastPass ni de Bitwarden, así que lo que esto demuestra es
+// que la regla funciona sobre la forma que esos gestores documentan — no que sea
+// exactamente la que sale de sus exportaciones. Está dicho igual en `redEnElTexto` y en
+// `deuda.md`.
+func TestUnaRedEscritaDentroDeUnaNota(t *testing.T) {
+	// LastPass: sus notas seguras viajan en la columna `extra`, un campo por línea.
+	const lastpass = "url,username,password,totp,extra,name,grouping,fav\n" +
+		"http://sn,,,,\"NoteType:Wi-Fi Password\nSSID:WEBCAFEINA\nPassword:la-clave\n" +
+		"Encryption:WPA2\nNotes:la del despacho\",Wifi oficina,Redes,0\n"
+
+	entradas, _, err := Leer([]byte(lastpass), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entradas) != 1 {
+		t.Fatalf("%d entradas de una fila", len(entradas))
+	}
+	e := entradas[0]
+	if e.Tipo != TipoWifi {
+		t.Errorf("ha entrado como %q", e.Tipo)
+	}
+	if e.SSID != "WEBCAFEINA" || e.Secreto != "la-clave" {
+		t.Errorf("red %q con clave %q", e.SSID, e.Secreto)
+	}
+	if e.Seguridad != "wpa" {
+		t.Errorf("la seguridad es %q", e.Seguridad)
+	}
+	// **El título no se inventa**: la fila traía el suyo y se respeta.
+	if e.Titulo != "Wifi oficina" {
+		t.Errorf("el título es %q", e.Titulo)
+	}
+	// **Y lo que no se entiende se queda en las notas**, con su contenido intacto: las
+	// líneas reconocidas salen y las demás siguen ahí.
+	if !strings.Contains(e.Notas, "la del despacho") || !strings.Contains(e.Notas, "NoteType") {
+		t.Errorf("las notas han perdido algo: %q", e.Notas)
+	}
+	if strings.Contains(e.Notas, "la-clave") {
+		t.Error("la contraseña se ha quedado escrita en las notas")
+	}
+}
+
+// Bitwarden escribe sus campos propios en una columna `fields`, con la misma forma.
+func TestUnaRedEnLosCamposDeBitwarden(t *testing.T) {
+	const bitwarden = "folder,favorite,type,name,notes,fields,login_uri,login_username,login_password\n" +
+		"Redes,0,note,Wifi de casa,,\"SSID: MiCasa\nNetwork Password: otra-clave\",,,\n"
+
+	entradas, _, err := Leer([]byte(bitwarden), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entradas) != 1 {
+		t.Fatalf("%d entradas de una fila", len(entradas))
+	}
+	e := entradas[0]
+	if e.Tipo != TipoWifi || e.SSID != "MiCasa" || e.Secreto != "otra-clave" {
+		t.Errorf("ha entrado como %q, red %q, clave %q", e.Tipo, e.SSID, e.Secreto)
+	}
+	// Sin cifrado declarado y **con clave**, la seguridad se deduce: WPA.
+	if e.Seguridad != "wpa" {
+		t.Errorf("la seguridad es %q", e.Seguridad)
+	}
+}
+
+// **Y una nota que solo habla de una red sigue siendo una nota.** Es el falso positivo
+// que esta regla podría provocar, y el que más daño haría: convertir una nota en una
+// red parte su texto y la saca de donde su dueño la busca.
+func TestUnaNotaQueHablaDeWifiNoEsUnaRed(t *testing.T) {
+	const fichero = "name,notes\n" +
+		"\"Router de casa\",\"El SSID lo cambié en marzo y el usuario del router es admin\"\n" +
+		"\"Instrucciones\",\"Para configurar el ssid hay que entrar en 192.168.1.1\"\n"
+
+	entradas, _, err := Leer([]byte(fichero), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entradas) != 2 {
+		t.Fatalf("%d entradas de dos filas", len(entradas))
+	}
+	for _, e := range entradas {
+		if e.Tipo == TipoWifi {
+			t.Errorf("«%s» ha entrado como red: %+v", e.Titulo, e)
+		}
+		if e.SSID != "" {
+			t.Errorf("«%s» ha sacado un nombre de red de la nada: %q", e.Titulo, e.SSID)
+		}
+	}
+	// Y el texto llega entero, que es lo que de verdad importa de este caso.
+	if !strings.Contains(entradas[0].Notas, "lo cambié en marzo") {
+		t.Errorf("la nota ha perdido texto: %q", entradas[0].Notas)
+	}
+
+	// **El caso que de verdad protege la guarda**, y que la primera versión de esta
+	// prueba no cubría: una nota que menciona el wifi **y además declara una
+	// contraseña**. Sin la guarda, esa línea se le saca del texto y se guarda como
+	// secreto de la entrada: la nota pierde una línea y gana un secreto que su dueño no
+	// puso ahí. Lo encontró una mutación, no la lectura.
+	const conClave = "name,notes\n" +
+		"\"Router de casa\",\"El SSID lo cambié en marzo\nPassword: la del router\"\n"
+	otras, _, err := Leer([]byte(conClave), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(otras) != 1 {
+		t.Fatalf("%d entradas de una fila", len(otras))
+	}
+	n := otras[0]
+	if n.SSID != "" || n.Tipo == TipoWifi {
+		t.Errorf("sin una línea que declare la red, esto no es una red: %+v", n)
+	}
+	if !strings.Contains(n.Notas, "Password: la del router") {
+		t.Errorf("la línea de la contraseña ha salido de las notas: %q", n.Notas)
+	}
+	if n.Secreto != "" {
+		t.Errorf("se ha sacado un secreto de una nota: %q", n.Secreto)
+	}
+}
