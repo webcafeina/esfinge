@@ -146,9 +146,30 @@ iconos. Cada equipo baja los suyos.
   Durable Object, en trozos de 1 MB**, para que comprobar la versión y escribir sean una sola
   transacción. Se conservan las diez últimas versiones y la última de cada uno de los treinta días
   anteriores.
+- **Y desde la ADR 0050, varias bóvedas por cuenta**: la personal sigue donde estaba y las de proyecto
+  llevan **su referencia en la clave primaria** de `versiones` y `trozos`. **SQLite no deja añadir una
+  columna a una clave primaria**, así que la migración copia las dos tablas: va en `migrar()`, dentro del
+  `blockConcurrencyWhile` del constructor, guardada por `ajustes["esquema"]`, **en una transacción y
+  comprobando el número de filas antes de tirar las viejas**. La marca se escribe al final, así que una
+  interrupción deja el trabajo por hacer y no a medio hacer.
+  - Los ajustes por bóveda llevan la referencia detrás —`version:a1b2…`, `idBoveda:a1b2…`— y **la personal
+    usa las claves de siempre, sin prefijo**: así una versión anterior del servidor seguiría sirviéndola si
+    hubiera que volver atrás.
+  - **No se multiplican** `acceso`, `sal`, `argon2`, `posesion`, `recuperacion` ni `llaves`: la contraseña
+    es una, la posesión sale de la clave de la bóveda **personal** y la identidad para compartir es de la
+    cuenta. Un proyecto **no tiene sobre de recuperación propio** y por eso no se guarda: sería prometer
+    una puerta que no existe.
+  - De un proyecto se guardan **tres versiones** y no diez: el almacenamiento del Durable Object crece con
+    el número de bóvedas.
+  - **Cincuenta bóvedas de proyecto por cuenta**, con su mensaje. Es una decisión, no el límite de SQLite.
+  - **El freno de subidas lo comparten todas**, a propósito: lo que protege es el almacenamiento, que es
+    uno, y solo se sube la bóveda que está abierta.
 - **Extremos `/v1`:**
   - `salud`, `prelogin`, `registro/{inicio,fin}`, `sesion`, `sesion/codigo`;
-  - `boveda` (`GET`/`PUT`), `boveda/versiones`;
+  - `boveda` (`GET`/`PUT`), `boveda/versiones` — **la bóveda personal, y se quedan como estaban** para que
+    un cliente anterior siga sincronizando mientras la versión nueva se reparte;
+  - `bovedas` (`GET`, la lista) y `bovedas/:ref` (`GET`/`PUT`/`DELETE`), con `:ref` validada contra
+    dieciséis hexadecimales **antes de tocar nada**: esa cadena va a una consulta y a una clave de ajuste;
   - `cuenta/clave`, `recuperacion/{inicio,codigo,fin}`, `dispositivos`;
   - `cuenta/exportacion` (RGPD) y `DELETE /cuenta`.
   

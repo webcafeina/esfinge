@@ -1177,3 +1177,115 @@ func TestUnaCopiaEsperaAQuienTodaviaNoTieneCuenta(t *testing.T) {
 		t.Fatalf("un repaso de más ha dejado %d envíos", len(otra))
 	}
 }
+
+// **Una bóveda de proyecto llega al otro equipo** (ADR 0050, E4).
+//
+// Es lo que cierra la entrega del servidor, y lo que no puede comprobar ninguna
+// prueba del Worker por su cuenta: que el camino entero —crear aquí, subir, bajar
+// allí y abrirla con la bóveda personal de allí— funciona de punta a punta.
+//
+// Lo que se mira además de que llegue, y no es adorno:
+//
+//   - que **el proyecto no se mezcla con la bóveda personal** en ninguno de los dos
+//     equipos, que es lo único que separa de verdad una bóveda de otra;
+//   - que **el otro equipo lo abre sin más**, porque la ranura viaja dentro del
+//     fichero y su bóveda personal es la misma.
+func TestUnProyectoLlegaAlOtroEquipo(t *testing.T) {
+	raiz := servidorDeCuentas(t)
+	correo := correoDePrueba()
+
+	a := nuevoEquipo(t, raiz)
+	if err := a.a.EmpezarRegistro(correo); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.a.TerminarRegistro(correo, codigoDelBuzon(t, raiz, correo), maestraFuerte, ""); err != nil {
+		t.Fatal(err)
+	}
+	desde := time.Now()
+	alDia(t, a.a, desde)
+
+	// En la bóveda personal, una cuenta. En el proyecto, otra.
+	if err := a.a.GuardarEnBoveda(boveda.Entrada{Titulo: "Mi banco", Secreto: "uno"}); err != nil {
+		t.Fatal(err)
+	}
+	ref, err := a.a.CrearProyecto("Acme")
+	if err != nil {
+		t.Fatal(err)
+	}
+	alDia(t, a.a, desde)
+
+	if err := a.a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.a.GuardarEnBoveda(boveda.Entrada{Titulo: "Hosting de Acme", Secreto: "dos"}); err != nil {
+		t.Fatal(err)
+	}
+	alDia(t, a.a, desde)
+	a.a.CerrarBoveda()
+
+	// Otro equipo: entra en la cuenta y se trae su bóveda personal.
+	b := nuevoEquipo(t, raiz)
+	r, err := b.a.EntrarEnCuenta(correo, maestraFuerte)
+	if err != nil || !r.NecesitaCodigo {
+		t.Fatalf("%+v %v", r, err)
+	}
+	if r, err = b.a.ConfirmarEntrada(codigoDelBuzon(t, raiz, correo)); err != nil || !r.Listo {
+		t.Fatalf("%+v %v", r, err)
+	}
+	if got := titulosDe(t, b.a); got != "Mi banco" {
+		t.Fatalf("en el equipo nuevo, la bóveda personal tiene %q", got)
+	}
+
+	// **Y el proyecto está en su lista**, porque la lista viaja dentro de la bóveda
+	// personal, con su nombre.
+	lista, err := b.a.Proyectos()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lista) != 1 || lista[0].Nombre != "Acme" || lista[0].Ref != ref {
+		t.Fatalf("en el equipo nuevo, los proyectos son %+v", lista)
+	}
+
+	// Se baja y se abre: **la ranura viaja dentro del fichero**, así que la bóveda
+	// personal de este equipo —que es la misma— lo abre sin preguntar nada.
+	if err := b.a.BajarProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.a.AbrirProyecto(ref); err != nil {
+		t.Fatalf("el proyecto no se abre en el otro equipo: %v", err)
+	}
+	if got := titulosDe(t, b.a); got != "Hosting de Acme" {
+		t.Fatalf("en el proyecto del equipo nuevo hay %q", got)
+	}
+
+	// Y lo que se guarde aquí vuelve al primero.
+	desde = time.Now()
+	if err := b.a.GuardarEnBoveda(boveda.Entrada{Titulo: "Desde B"}); err != nil {
+		t.Fatal(err)
+	}
+	alDia(t, b.a, desde)
+	b.a.CerrarBoveda()
+
+	a.usar(t)
+	if err := a.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	desde = time.Now()
+	alDia(t, a.a, desde)
+	if got := titulosDe(t, a.a); got != "Desde B, Hosting de Acme" && got != "Hosting de Acme, Desde B" {
+		t.Fatalf("en el proyecto del primer equipo hay %q", got)
+	}
+	// Y la bóveda personal sigue siendo la suya, sin nada del proyecto dentro.
+	if err := a.a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.a.AbrirBoveda(maestraFuerte); err != nil {
+		t.Fatal(err)
+	}
+	if got := titulosDe(t, a.a); got != "Mi banco" {
+		t.Fatalf("la bóveda personal del primer equipo tiene %q", got)
+	}
+}

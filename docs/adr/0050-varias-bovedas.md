@@ -1,6 +1,6 @@
 # 0050 · Varias bóvedas: una por proyecto, y una abierta a la vez
 
-**Fecha:** 2026-10-02 · **Estado:** aceptada · E1, E2 y E3 hechas · sin servidor y sin ver en un Mac
+**Fecha:** 2026-10-02 · **Estado:** aceptada · E1 a E4 hechas · **sin desplegar** y sin ver en un Mac
 
 ## Contexto
 
@@ -166,14 +166,23 @@ cuando el vigilante cierra, con su prueba.
   la prueba dice «la entrada se ha perdido: quedan 0».* Es la razón de que el orden sea el que es.
 - Y en la ventana, el camino entero en los dos temas: crear un proyecto, entrar, que lo de la bóveda personal
   **no se vea desde dentro**, y llevar una entrada de una a otra **con su contraseña**.
+- **La migración del Durable Object, sobre una cuenta que ya tenía su bóveda dentro**: los mismos bytes, el
+  mismo ETag —quien estaba al día no se baja nada— y las dos versiones intactas. *Mutada para que copie de
+  menos: salta con «Migración incompleta: 2/2 → 2/0» y la transacción se deshace entera.* Y correrla dos
+  veces no duplica nada.
+- **Un proyecto llega al otro equipo de verdad**, contra el servidor levantado en local: se crea aquí, se
+  baja allí, **se abre con la bóveda personal de allí sin preguntar nada** —la ranura viaja dentro del
+  fichero— y lo que se guarda allí vuelve. *Mutada la ruta para que el proyecto suba a la de la personal: la
+  prueba cae.*
 
 **Lo que no se ha comprobado**, y es casi todo lo que se ve:
 
 - **Nada de esto se ha visto en un Mac.** Aquí se ha mirado en capturas del navegador, en los dos temas, que
   es lo que hay. La ventana de verdad —tipografía del sistema, controles nativos, el material translúcido
   detrás— solo se ve ahí.
-- **El servidor no está tocado.** Un proyecto no se sincroniza hasta la E4, y ahí hay una migración de
-  tablas del Durable Object que se ejecuta una vez y sobre la bóveda del cliente.
+- **El servidor no está desplegado.** La migración está escrita y probada contra `workerd`, pero **se ejecuta
+  una vez y sobre la bóveda del cliente**: antes de desplegarla hay que guardar un
+  `GET /v1/cuenta/exportacion` de la cuenta real. Eso no lo puede hacer esta máquina.
 - **Cuántos diálogos de Touch ID salen tras una actualización con varios proyectos.** El diseño existe para
   que sea uno; que sea uno lo dice el Mac.
 - **Entregar, archivar y borrar**: son las entregas siguientes (E6).

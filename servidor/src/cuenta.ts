@@ -32,6 +32,40 @@ import {
 
 const TROZO = 1024 * 1024; // una fila de SQLite en un Durable Object admite hasta 2 MB
 
+/**
+ * La clave de un ajuste que es **por bóveda** (ADR 0050).
+ *
+ * La bóveda personal usa la clave de siempre, sin prefijo —`version`, `idBoveda`,
+ * `recuperacion`—, y los proyectos llevan la suya detrás: `version:a1b2…`. Así una
+ * cuenta que ya existe no necesita migrar ningún ajuste, y **una versión anterior
+ * del servidor seguiría leyendo la bóveda personal** si hubiera que volver atrás:
+ * las claves que no entiende las ignora.
+ */
+function claveDe(que: string, ref: string): string {
+	return ref === "" ? que : `${que}:${ref}`;
+}
+
+/** Una referencia de bóveda de proyecto: hex de 8 bytes. Vacío es la personal. */
+export function refValida(ref: string): boolean {
+	return /^[0-9a-f]{16}$/.test(ref);
+}
+
+/**
+ * Cuántas bóvedas de proyecto admite una cuenta.
+ *
+ * Es una decisión y no un límite técnico: mejor un número escrito con su mensaje
+ * que descubrir el de SQLite el día que alguien pase de él. Cabe subirlo.
+ */
+const BOVEDAS_POR_CUENTA = 50;
+
+/**
+ * Y **de un proyecto se guardan menos versiones que de la personal**: el
+ * almacenamiento del Durable Object crece con el número de bóvedas, y lo que las
+ * versiones compran —deshacer una fusión mala— pesa menos en una bóveda que se
+ * abre de vez en cuando.
+ */
+const VERSIONES_DE_PROYECTO = 3;
+
 const SESION_DESLIZANTE = 30 * DIA;
 const SESION_MAXIMA = 90 * DIA;
 const SESION_RESTRINGIDA = 15 * MINUTO;
@@ -111,8 +145,8 @@ export class Cuenta extends DurableObject<Env> {
 	private migrar() {
 		this.sql.exec(`
 			CREATE TABLE IF NOT EXISTS ajustes (clave TEXT PRIMARY KEY, valor TEXT NOT NULL);
-			CREATE TABLE IF NOT EXISTS versiones (version INTEGER PRIMARY KEY, fecha INTEGER NOT NULL, tamano INTEGER NOT NULL, huella TEXT NOT NULL);
-			CREATE TABLE IF NOT EXISTS trozos (version INTEGER NOT NULL, n INTEGER NOT NULL, datos BLOB NOT NULL, PRIMARY KEY (version, n));
+			CREATE TABLE IF NOT EXISTS versiones (ref TEXT NOT NULL DEFAULT '', version INTEGER NOT NULL, fecha INTEGER NOT NULL, tamano INTEGER NOT NULL, huella TEXT NOT NULL, PRIMARY KEY (ref, version));
+			CREATE TABLE IF NOT EXISTS trozos (ref TEXT NOT NULL DEFAULT '', version INTEGER NOT NULL, n INTEGER NOT NULL, datos BLOB NOT NULL, PRIMARY KEY (ref, version, n));
 			CREATE TABLE IF NOT EXISTS sesiones (huella TEXT PRIMARY KEY, dispositivo TEXT NOT NULL, creada INTEGER NOT NULL, vista INTEGER NOT NULL, restringida INTEGER NOT NULL DEFAULT 0);
 			CREATE TABLE IF NOT EXISTS dispositivos (id TEXT PRIMARY KEY, nombre TEXT NOT NULL, creado INTEGER NOT NULL, visto INTEGER NOT NULL, confianza TEXT, confianza_caduca INTEGER);
 			CREATE TABLE IF NOT EXISTS retos (id TEXT PRIMARY KEY, proposito TEXT NOT NULL, codigo TEXT NOT NULL, caduca INTEGER NOT NULL, intentos INTEGER NOT NULL DEFAULT 0, datos TEXT);
@@ -135,6 +169,72 @@ export class Cuenta extends DurableObject<Env> {
 		if (!columnas.includes("proposito")) {
 			this.sql.exec("ALTER TABLE retos_creados ADD COLUMN proposito TEXT NOT NULL DEFAULT 'entrar'");
 		}
+
+		this.aVariasBovedas();
+	}
+
+	/**
+	 * Esquema 2: las bóvedas de proyecto (ADR 0050).
+	 *
+	 * `versiones` y `trozos` pasan a llevar **la referencia de la bóveda en su clave
+	 * primaria**, o dos bóvedas de la misma cuenta chocarían en el número de versión.
+	 * Y **SQLite no deja añadir una columna a una clave primaria**, así que no vale
+	 * `ALTER TABLE ADD COLUMN` como con `retos_creados`: hay que copiar las tablas.
+	 *
+	 * Tres cosas que esto no puede dejar de ser, porque corre **una vez y sobre la
+	 * bóveda de alguien**:
+	 *
+	 *   - **Idempotente**: la marca `esquema` se escribe al final, así que una
+	 *     interrupción a medias deja el trabajo por hacer y no a medio hacer.
+	 *   - **Dentro de una transacción**, y dentro del `blockConcurrencyWhile` del
+	 *     constructor: nadie lee la cuenta mientras tanto.
+	 *   - **Se comprueba la copia antes de tirar lo viejo**, contando las filas. Un
+	 *     `DROP` detrás de un `INSERT … SELECT` que copió de menos no tiene vuelta.
+	 *
+	 * La bóveda personal se queda con `ref = ''`, que es lo que hace que todo lo de
+	 * antes siga funcionando sin tocar una línea del cliente.
+	 */
+	private aVariasBovedas() {
+		if (this.leerAjuste("esquema") === "2") return;
+		// Una cuenta recién creada ya nace con el esquema nuevo: las tablas de arriba
+		// lo traen. Lo que hay que mirar es si las que existen son las viejas.
+		const columnas = this.sql
+			.exec<{ name: string }>("SELECT name FROM pragma_table_info('versiones')")
+			.toArray()
+			.map((c) => c.name);
+		if (columnas.includes("ref")) {
+			this.ponerAjuste("esquema", "2");
+			return;
+		}
+
+		this.ctx.storage.transactionSync(() => {
+			const antesV = this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM versiones").one().n;
+			const antesT = this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM trozos").one().n;
+
+			this.sql.exec(`
+				CREATE TABLE versiones_2 (ref TEXT NOT NULL DEFAULT '', version INTEGER NOT NULL, fecha INTEGER NOT NULL, tamano INTEGER NOT NULL, huella TEXT NOT NULL, PRIMARY KEY (ref, version));
+				CREATE TABLE trozos_2 (ref TEXT NOT NULL DEFAULT '', version INTEGER NOT NULL, n INTEGER NOT NULL, datos BLOB NOT NULL, PRIMARY KEY (ref, version, n));
+				INSERT INTO versiones_2 (ref, version, fecha, tamano, huella) SELECT '', version, fecha, tamano, huella FROM versiones;
+				INSERT INTO trozos_2 (ref, version, n, datos) SELECT '', version, n, datos FROM trozos;
+			`);
+
+			const despuesV = this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM versiones_2").one().n;
+			const despuesT = this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM trozos_2").one().n;
+			if (despuesV !== antesV || despuesT !== antesT) {
+				// La transacción se deshace entera y la cuenta se queda como estaba. Es
+				// preferible a una cuenta migrada a medias, que no se nota hasta que
+				// alguien baja su bóveda y le falta un trozo.
+				throw new Error(`Migración incompleta: ${antesV}/${antesT} → ${despuesV}/${despuesT}`);
+			}
+
+			this.sql.exec(`
+				DROP TABLE versiones;
+				DROP TABLE trozos;
+				ALTER TABLE versiones_2 RENAME TO versiones;
+				ALTER TABLE trozos_2 RENAME TO trozos;
+			`);
+			this.ponerAjuste("esquema", "2");
+		});
 	}
 
 	// ---------------------------------------------------------------- ajustes
@@ -152,8 +252,14 @@ export class Cuenta extends DurableObject<Env> {
 		return this.leerAjuste("correo") !== null;
 	}
 
-	private version(): number {
-		return Number(this.leerAjuste("version") ?? "0");
+	/**
+	 * La versión de una bóveda. **Vacío es la personal**, y entonces la clave es
+	 * `version` a secas: la de siempre, sin prefijo, porque es lo que ya está escrito
+	 * en todas las cuentas que existen y lo que leería una versión anterior del
+	 * servidor si hubiera que volver atrás.
+	 */
+	private version(ref = ""): number {
+		return Number(this.leerAjuste(claveDe("version", ref)) ?? "0");
 	}
 
 	private apuntar(tipo: string, detalle = "") {
@@ -351,16 +457,18 @@ export class Cuenta extends DurableObject<Env> {
 
 	// ---------------------------------------------------------------- la bóveda
 
-	async leer(token: string, siNoCoincide: number | null): Promise<Resultado<{ version: number; datos: ArrayBuffer | null }>> {
+	async leer(token: string, siNoCoincide: number | null, ref = ""): Promise<Resultado<{ version: number; datos: ArrayBuffer | null }>> {
 		const s = await this.sesion(token, true);
 		if (!s.ok) return s;
-		const version = this.version();
-		if (version === 0) return mal(404, "Esta cuenta todavía no tiene bóveda.");
+		const version = this.version(ref);
+		if (version === 0) {
+			return mal(404, ref === "" ? "Esta cuenta todavía no tiene bóveda." : "Esa bóveda no está en esta cuenta.");
+		}
 		if (siNoCoincide === version) return bien({ version, datos: null });
-		return bien({ version, datos: this.bytesDe(version) });
+		return bien({ version, datos: this.bytesDe(version, ref) });
 	}
 
-	async escribir(token: string, siCoincide: number, datos: ArrayBuffer): Promise<Resultado<{ version: number }> & { version?: number }> {
+	async escribir(token: string, siCoincide: number, datos: ArrayBuffer, ref = ""): Promise<Resultado<{ version: number }> & { version?: number }> {
 		const s = await this.sesion(token, false);
 		if (!s.ok) return s;
 		const comprobado = this.comprobarDocumento(datos);
@@ -369,19 +477,32 @@ export class Cuenta extends DurableObject<Env> {
 		const ahora = Date.now();
 
 		return this.ctx.storage.transactionSync(() => {
-			const actual = this.version();
+			const actual = this.version(ref);
 			if (siCoincide !== actual) return { ...mal(412, "La bóveda ha cambiado en el servidor."), version: actual };
+			// **El freno de subidas es de la cuenta y lo comparten todas sus bóvedas, a
+			// propósito**: lo que protege es el almacenamiento del Durable Object, que es
+			// uno. Y en la práctica no aprieta más que antes, porque **solo se sube la
+			// bóveda que está abierta** y solo hay una.
 			const subidas = this.sql
 				.exec<{ n: number }>("SELECT COUNT(*) AS n FROM subidas WHERE momento > ?", ahora - HORA)
 				.one().n;
 			if (subidas >= SUBIDAS_POR_HORA) return mal(429, "Demasiadas subidas en una hora. Espera un poco.");
-			const idGuardado = this.leerAjuste("idBoveda");
+			// Y un tope de bóvedas, que se mira solo al estrenar una.
+			if (ref !== "" && actual === 0 && this.cuantasBovedas() >= BOVEDAS_POR_CUENTA) {
+				return mal(409, `Esta cuenta ya tiene ${BOVEDAS_POR_CUENTA} bóvedas de proyecto.`);
+			}
+			// **Cada bóveda recuerda cuál es, y rechaza otra**: es lo que impide que un
+			// cliente despistado suba su bóveda personal encima de la de un proyecto.
+			const idGuardado = this.leerAjuste(claveDe("idBoveda", ref));
 			if (idGuardado && idGuardado !== comprobado.datos.id) {
 				return mal(409, "Esa bóveda no es la de esta cuenta.");
 			}
-			const nueva = this.escribirVersion(actual + 1, datos, huella, ahora);
-			this.ponerAjuste("idBoveda", comprobado.datos.id);
-			this.ponerAjuste("recuperacion", JSON.stringify(comprobado.datos.recuperacion));
+			const nueva = this.escribirVersion(actual + 1, datos, huella, ahora, ref);
+			this.ponerAjuste(claveDe("idBoveda", ref), comprobado.datos.id);
+			// **La recuperación solo se guarda de la personal.** Un proyecto no tiene
+			// clave de recuperación propia (ADR 0050): la de la personal lo recupera, y
+			// guardar aquí un sobre que no abre nada sería prometer una puerta que no hay.
+			if (ref === "") this.ponerAjuste("recuperacion", JSON.stringify(comprobado.datos.recuperacion));
 			this.sql.exec("INSERT INTO subidas (momento) VALUES (?)", ahora);
 			this.sql.exec("DELETE FROM subidas WHERE momento <= ?", ahora - HORA);
 			this.tocar(s.datos.dispositivo, ahora);
@@ -389,24 +510,74 @@ export class Cuenta extends DurableObject<Env> {
 		});
 	}
 
-	async versiones(token: string): Promise<Resultado<{ version: number; fecha: number; tamano: number }[]>> {
+	async versiones(token: string, ref = ""): Promise<Resultado<{ version: number; fecha: number; tamano: number }[]>> {
 		const s = await this.sesion(token, false);
 		if (!s.ok) return s;
 		return bien(
 			this.sql
 				.exec<{ version: number; fecha: number; tamano: number }>(
-					"SELECT version, fecha, tamano FROM versiones ORDER BY version DESC",
+					"SELECT version, fecha, tamano FROM versiones WHERE ref = ? ORDER BY version DESC",
+					ref,
 				)
 				.toArray(),
 		);
 	}
 
-	async unaVersion(token: string, version: number): Promise<Resultado<ArrayBuffer>> {
+	async unaVersion(token: string, version: number, ref = ""): Promise<Resultado<ArrayBuffer>> {
 		const s = await this.sesion(token, false);
 		if (!s.ok) return s;
-		const hay = this.sql.exec("SELECT 1 FROM versiones WHERE version = ?", version).toArray().length > 0;
+		const hay = this.sql.exec("SELECT 1 FROM versiones WHERE ref = ? AND version = ?", ref, version).toArray().length > 0;
 		if (!hay) return mal(404, "Esa versión ya no se guarda.");
-		return bien(this.bytesDe(version));
+		return bien(this.bytesDe(version, ref));
+	}
+
+	/**
+	 * Las bóvedas de proyecto que hay en esta cuenta: qué referencias y por qué
+	 * versión van. **Sin nombres**, que viven cifrados dentro de la bóveda personal.
+	 *
+	 * Es lo que necesita un equipo nuevo para saber qué bajarse, y lo único que el
+	 * servidor sabe de ellas.
+	 */
+	async bovedas(token: string): Promise<Resultado<{ ref: string; version: number; tamano: number; fecha: number }[]>> {
+		const s = await this.sesion(token, false);
+		if (!s.ok) return s;
+		const filas = this.sql
+			.exec<{ ref: string; version: number; tamano: number; fecha: number }>(
+				`SELECT v.ref AS ref, v.version AS version, v.tamano AS tamano, v.fecha AS fecha
+				 FROM versiones v
+				 WHERE v.ref <> '' AND v.version = (SELECT MAX(version) FROM versiones WHERE ref = v.ref)
+				 ORDER BY v.ref`,
+			)
+			.toArray();
+		return bien(filas);
+	}
+
+	/**
+	 * Borra una bóveda de proyecto del servidor, con todas sus versiones.
+	 *
+	 * **La bóveda personal no se borra por aquí**: para eso está borrar la cuenta,
+	 * que pide la contraseña y un código por correo. Dejar que una ruta de bóveda se
+	 * llevara la principal sería una puerta de atrás a eso.
+	 */
+	async olvidarBoveda(token: string, ref: string): Promise<Resultado<{ borradas: number }>> {
+		const s = await this.sesion(token, false);
+		if (!s.ok) return s;
+		if (ref === "") return mal(400, "Para borrar tu bóveda hay que borrar la cuenta.");
+		return this.ctx.storage.transactionSync(() => {
+			const cuantas = this.sql
+				.exec<{ n: number }>("SELECT COUNT(*) AS n FROM versiones WHERE ref = ?", ref)
+				.one().n;
+			this.sql.exec("DELETE FROM trozos WHERE ref = ?", ref);
+			this.sql.exec("DELETE FROM versiones WHERE ref = ?", ref);
+			this.sql.exec("DELETE FROM ajustes WHERE clave IN (?, ?)", claveDe("version", ref), claveDe("idBoveda", ref));
+			return bien({ borradas: cuantas });
+		});
+	}
+
+	private cuantasBovedas(): number {
+		return this.sql
+			.exec<{ n: number }>("SELECT COUNT(DISTINCT ref) AS n FROM versiones WHERE ref <> ''")
+			.one().n;
 	}
 
 	/**
@@ -614,11 +785,34 @@ export class Cuenta extends DurableObject<Env> {
 				.toArray()
 				.map((e) => ({ ...e, momento: new Date(e.momento).toISOString() })),
 			versiones: this.sql
-				.exec<{ version: number; fecha: number; tamano: number }>("SELECT version, fecha, tamano FROM versiones ORDER BY version")
+				.exec<{ version: number; fecha: number; tamano: number }>(
+					"SELECT version, fecha, tamano FROM versiones WHERE ref = '' ORDER BY version",
+				)
 				.toArray()
 				.map((v) => ({ ...v, fecha: new Date(v.fecha).toISOString() })),
 			// La bóveda, tal como está en el servidor: cifrada. Webcafeína no tiene con qué abrirla.
 			boveda: version ? new TextDecoder().decode(this.bytesDe(version)) : null,
+			// **Y las bóvedas de proyecto, enteras** (ADR 0050). Sin esto, la
+			// exportación dejaría de ser lo que las condiciones prometen —todo lo que la
+			// cuenta guarda— **el día que alguien creara su primer proyecto**, y nadie se
+			// enteraría hasta necesitarla. Van cifradas, como la personal.
+			proyectos: this.sql
+				.exec<{ ref: string }>("SELECT DISTINCT ref FROM versiones WHERE ref <> '' ORDER BY ref")
+				.toArray()
+				.map(({ ref }) => {
+					const v = this.version(ref);
+					return {
+						ref,
+						versiones: this.sql
+							.exec<{ version: number; fecha: number; tamano: number }>(
+								"SELECT version, fecha, tamano FROM versiones WHERE ref = ? ORDER BY version",
+								ref,
+							)
+							.toArray()
+							.map((x) => ({ ...x, fecha: new Date(x.fecha).toISOString() })),
+						boveda: v ? new TextDecoder().decode(this.bytesDe(v, ref)) : null,
+					};
+				}),
 		});
 	}
 
@@ -656,19 +850,19 @@ export class Cuenta extends DurableObject<Env> {
 		return bien({ id: d.id, recuperacion });
 	}
 
-	private escribirVersion(version: number, datos: ArrayBuffer, huella: string, ahora: number): number {
+	private escribirVersion(version: number, datos: ArrayBuffer, huella: string, ahora: number, ref = ""): number {
 		for (let i = 0, n = 0; i < datos.byteLength || n === 0; i += TROZO, n++) {
 			this.sql.exec(
-				"INSERT INTO trozos (version, n, datos) VALUES (?, ?, ?)",
-				version, n, datos.slice(i, i + TROZO),
+				"INSERT INTO trozos (ref, version, n, datos) VALUES (?, ?, ?, ?)",
+				ref, version, n, datos.slice(i, i + TROZO),
 			);
 		}
 		this.sql.exec(
-			"INSERT INTO versiones (version, fecha, tamano, huella) VALUES (?, ?, ?, ?)",
-			version, ahora, datos.byteLength, huella,
+			"INSERT INTO versiones (ref, version, fecha, tamano, huella) VALUES (?, ?, ?, ?, ?)",
+			ref, version, ahora, datos.byteLength, huella,
 		);
-		this.ponerAjuste("version", String(version));
-		this.podar(ahora);
+		this.ponerAjuste(claveDe("version", ref), String(version));
+		this.podar(ahora, ref);
 		return version;
 	}
 
@@ -677,11 +871,15 @@ export class Cuenta extends DurableObject<Env> {
 	 * treinta días anteriores. Con diez a secas, una tarde editando se come todo el
 	 * margen para deshacer una fusión mala; con todas, la base crece sin tope.
 	 */
-	private podar(ahora: number) {
+	private podar(ahora: number, ref = "") {
 		const todas = this.sql
-			.exec<{ version: number; fecha: number }>("SELECT version, fecha FROM versiones ORDER BY version DESC")
+			.exec<{ version: number; fecha: number }>(
+				"SELECT version, fecha FROM versiones WHERE ref = ? ORDER BY version DESC",
+				ref,
+			)
 			.toArray();
-		const quedan = new Set<number>(todas.slice(0, VERSIONES_RECIENTES).map((v) => v.version));
+		const cuantas = ref === "" ? VERSIONES_RECIENTES : VERSIONES_DE_PROYECTO;
+		const quedan = new Set<number>(todas.slice(0, cuantas).map((v) => v.version));
 		const dias = new Set<string>();
 		for (const v of todas) {
 			if (v.fecha < ahora - DIAS_CON_VERSION * DIA) continue;
@@ -693,14 +891,17 @@ export class Cuenta extends DurableObject<Env> {
 		}
 		for (const v of todas) {
 			if (quedan.has(v.version)) continue;
-			this.sql.exec("DELETE FROM trozos WHERE version = ?", v.version);
-			this.sql.exec("DELETE FROM versiones WHERE version = ?", v.version);
+			this.sql.exec("DELETE FROM trozos WHERE ref = ? AND version = ?", ref, v.version);
+			this.sql.exec("DELETE FROM versiones WHERE ref = ? AND version = ?", ref, v.version);
 		}
 	}
 
-	private bytesDe(version: number): ArrayBuffer {
+	private bytesDe(version: number, ref = ""): ArrayBuffer {
 		const trozos = this.sql
-			.exec<{ datos: ArrayBuffer }>("SELECT datos FROM trozos WHERE version = ? ORDER BY n", version)
+			.exec<{ datos: ArrayBuffer }>(
+				"SELECT datos FROM trozos WHERE ref = ? AND version = ? ORDER BY n",
+				ref, version,
+			)
 			.toArray();
 		const total = trozos.reduce((t, x) => t + x.datos.byteLength, 0);
 		const salida = new Uint8Array(total);

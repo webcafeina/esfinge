@@ -33,15 +33,19 @@ repartir en proyectos lo que ya tiene—. Desde la ficha de la entrada, moviendo
 las llaves de acceso: **primero existe en el destino, después desaparece del origen**, y a la papelera, no
 borrada. Mutando ese orden, la prueba dice «la entrada se ha perdido».
 
-**La siguiente acción concreta: la E4, el servidor** — que un proyecto se sincronice. Es la pieza más cara y
-la única con un paso que se ejecuta una vez sobre datos de verdad: las tablas del Durable Object pasan a
-llevar la referencia de la bóveda en su clave primaria, y **SQLite no deja añadir una columna a una clave
-primaria**, así que hay que copiarlas. Antes de desplegarla: `GET /v1/cuenta/exportacion` de la cuenta real,
-guardada.
+**Y hecha la E4: los proyectos se sincronizan.** El servidor guarda varias bóvedas por cuenta, con la
+referencia en la clave primaria de `versiones` y `trozos`, y hay una prueba de **dos equipos de verdad**: se
+crea un proyecto en uno, se baja en el otro, **se abre con su bóveda personal sin preguntar nada** —la ranura
+viaja dentro del fichero— y lo que se guarda allí vuelve.
 
-**Y lo que convendría hacer antes que nada: que el cliente vea esto en su Mac.** Están las tres entregas
-locales, que es algo que se puede probar entero —crear un proyecto, meter cosas, moverlas— y que no depende
-del servidor.
+**La siguiente acción concreta, y es de las que no se pueden hacer desde aquí: desplegar el servidor.** La
+migración del Durable Object **se ejecuta una vez y sobre la bóveda del cliente** —copia `versiones` y
+`trozos`, porque SQLite no deja añadir una columna a una clave primaria—, así que **antes hay que guardar un
+`GET /v1/cuenta/exportacion` de la cuenta real**. Está probada contra `workerd`, mutada para que copie de
+menos y con los bytes y el ETag comprobados, pero no contra datos de verdad.
+
+**Y lo que convendría antes que nada: que el cliente vea esto en su Mac.** Lo local se puede probar entero
+—crear un proyecto, meter cosas, moverlas— sin tocar el servidor.
 
 Y lo que **no** se puede dejar sin decir en cuanto haya pantalla, porque está en
 [`deuda.md`](deuda.md) y es de severidad alta: **un proyecto no se sincroniza todavía**. Con dos Macs, lo que

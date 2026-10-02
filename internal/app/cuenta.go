@@ -788,11 +788,18 @@ func (a *App) alAbrirLaBoveda(b *boveda.Boveda) {
 		d.Confianza = confianzaDe(d, b)
 		_ = guardarDatosCuenta(d)
 	}
+	// **La sesión está sellada con la clave de la bóveda personal**, así que no la
+	// abre la bóveda que esté activa: con un proyecto delante hay que ir a la
+	// personal a por ella (ADR 0050). Con la personal abierta esto es la misma
+	// llamada de siempre.
 	token := ""
 	if d.Sesion != "" {
-		if claro, err := b.AbrirSecreto(d.Sesion); err == nil {
-			token = string(claro)
-		}
+		_ = a.conLaPersonal(func(p *boveda.Boveda) error {
+			if claro, err := p.AbrirSecreto(d.Sesion); err == nil {
+				token = string(claro)
+			}
+			return nil
+		})
 	}
 	a.cu.mu.Lock()
 	a.cu.sesion = token
@@ -804,9 +811,28 @@ func (a *App) alAbrirLaBoveda(b *boveda.Boveda) {
 	a.arrancarSincro(b)
 }
 
+// bovedaRemota es `sincro.Servidor` apuntando a **una bóveda concreta** de la
+// cuenta (ADR 0050). Con la referencia vacía es la personal, que es la ruta de
+// siempre.
+//
+// Existe para no tocar `internal/sincro`, que no sabe ni tiene por qué saber que
+// hay más de una bóveda: lo suyo es fundir y subir, y eso no cambia.
+type bovedaRemota struct {
+	c   *cuenta.Cliente
+	ref string
+}
+
+func (r bovedaRemota) Bajar(ctx context.Context, token string, siNoCoincide int64) ([]byte, int64, bool, error) {
+	return r.c.BajarDe(ctx, token, r.ref, siNoCoincide)
+}
+
+func (r bovedaRemota) Subir(ctx context.Context, token string, siCoincide int64, datos []byte) (int64, error) {
+	return r.c.SubirA(ctx, token, r.ref, siCoincide, datos)
+}
+
 func (a *App) nuevoSincronizador(b *boveda.Boveda) *sincro.Sincronizador {
 	return &sincro.Sincronizador{
-		Servidor: a.cliente(),
+		Servidor: bovedaRemota{c: a.cliente(), ref: a.bovedaActiva()},
 		Boveda:   b,
 		Memoria:  sincro.JuntoALaBoveda{Ruta: b.Ruta()},
 		Token: func() string {
@@ -837,11 +863,22 @@ func (a *App) arrancarSincro(b *boveda.Boveda) {
 	// igual. Sin publicarlas, el servidor le da a quien manda una llave inventada
 	// —así es como no dice quién tiene cuenta— y el sobre llega ilegible. Va en
 	// otra gorrutina porque es de cortesía y no puede retrasar nada.
-	go a.publicarLlaves(b)
-	// Y de paso, la posesión a la pimienta de ahora del servidor (ADR 0046). Misma
-	// forma y por la misma razón: el momento de mandarlo no lo marca lo que hace su
-	// dueño, porque quien lo necesita es el servidor para poder terminar una rotación.
-	go a.refrescarPosesion(b)
+	//
+	// **Y solo con la bóveda personal abierta** (ADR 0050): la identidad para
+	// compartir es de la cuenta y vive en ella. Publicando la de un proyecto, el
+	// servidor le daría a quien te manda una copia unas llaves que no son las tuyas
+	// y el sobre llegaría cifrado hacia una bóveda que puedes tener cerrada — los dos
+	// lados harían lo suyo bien y el buzón diría «No se puede abrir» sin que ninguno
+	// pudiera entender por qué. Es el mismo fallo que arregló «para poder recibir hay
+	// que haber publicado», con la cara contraria.
+	if a.bovedaActiva() == "" {
+		go a.publicarLlaves(b)
+		// Y de paso, la posesión a la pimienta de ahora del servidor (ADR 0046). Misma
+		// forma y por la misma razón: el momento de mandarlo no lo marca lo que hace su
+		// dueño, porque quien lo necesita es el servidor para poder terminar una rotación.
+		// Sale de la clave de la bóveda **personal**, que es la que la cuenta conoce.
+		go a.refrescarPosesion(b)
+	}
 }
 
 // publicarLlaves deja en el servidor la parte pública de la identidad de esta
@@ -935,6 +972,15 @@ func (a *App) alSincronizar(r sincro.Resultado, err error) {
 		go a.cerrarPorSesionPerdida()
 	case errors.Is(err, boveda.ErrMuchosBorrados):
 		e = EstadoSincro{Estado: "muchos-borrados", Mensaje: err.Error()}
+	case errors.Is(err, boveda.ErrOtraBoveda):
+		// **Lo que baja no es esta bóveda**, y eso no es un problema de red.
+		//
+		// Caía en el `default` y salía como «Sin conexión con el servidor», que manda
+		// a mirar el wifi cuando lo que pasa es que este fichero y el del servidor no
+		// son la misma bóveda. Es la lección del mensaje impreciso: no es impreciso,
+		// **señala a otro sitio**. Lo destapó mutar la ruta de un proyecto para que
+		// subiera a la de la bóveda personal (ADR 0050).
+		e = EstadoSincro{Estado: "error", Mensaje: err.Error()}
 	default:
 		var delServidor *cuenta.ErrorDelServidor
 		if errors.As(err, &delServidor) || errors.Is(err, sincro.ErrRetroceso) || errors.Is(err, boveda.ErrRetroceso) {

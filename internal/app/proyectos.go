@@ -359,6 +359,63 @@ func (a *App) CrearProyecto(nombre string) (string, error) {
 	return ref, nil
 }
 
+// BajarProyecto trae del servidor una bóveda de proyecto que todavía no está en
+// este equipo: lo que la lista llama «dormido».
+//
+// **Se baja entera y se escribe tal cual.** No hay nada que fundir —aquí no hay
+// fichero con el que fundir— y la primera pasada de la sincronización se encontrará
+// lo mismo arriba y abajo. Y se abre con la bóveda personal sin preguntar nada,
+// porque la ranura viaja **dentro del fichero** (ADR 0050).
+func (a *App) BajarProyecto(ref string) error {
+	if ref == "" {
+		return errors.New("Esa no es una bóveda de proyecto")
+	}
+	ruta := rutaDeProyecto(ref)
+	if ruta == "" {
+		return errors.New("No encuentro dónde guardar la bóveda en este sistema")
+	}
+	if _, err := os.Stat(ruta); err == nil {
+		return nil // ya está aquí: bajarla otra vez pisaría lo que hubiera sin fundir
+	}
+	token, err := a.sesionDeCuenta()
+	if err != nil {
+		return err
+	}
+	datos, _, _, err := a.cliente().BajarDe(a.ctxCuenta(), token, ref, 0)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(ruta), 0o700); err != nil {
+		return err
+	}
+	// **Y se comprueba que abre antes de dejarla puesta.** Un fichero en esa carpeta
+	// es un proyecto para todo lo demás; si lo que bajó no lo abre esta bóveda
+	// personal, es mejor no tenerlo que tenerlo y que falle al abrirlo.
+	llave := a.llaveDeLaPrincipal()
+	if len(llave) == 0 {
+		return boveda.ErrCerrada
+	}
+	defer cripto.Borrar(llave)
+	p, err := boveda.AbrirProyectoBytes("", datos, llave)
+	if err != nil {
+		return err
+	}
+	p.Cerrar()
+
+	if err := escritura.Atomica(ruta, escritura.Opciones{Permisos: 0o600, CrearCarpeta: true},
+		func(w io.Writer) error {
+			_, err := w.Write(datos)
+			return err
+		}); err != nil {
+		return err
+	}
+	if err := apuntarLaBoveda(ref); err != nil {
+		log.Printf("esfinge: no se ha podido apuntar el proyecto bajado en el registro: %v", err)
+	}
+	a.Actividad()
+	return nil
+}
+
 // AbrirProyecto conmuta: cierra lo que haya abierto y abre ese proyecto.
 func (a *App) AbrirProyecto(ref string) error {
 	if ref == "" {
@@ -526,8 +583,11 @@ func (a *App) conmutarA(p *boveda.Boveda, ref string, llavePrincipal []byte) {
 	a.marcarProyectoUsado(ref)
 	a.Actividad()
 	a.buscarIconosSiProcede(a.ctx)
-	// **Y no se llama a `alAbrirLaBoveda`**: lo de la cuenta es de la personal, y
-	// un proyecto no se sincroniza todavía (E4). Ver la cabecera de este fichero.
+	// Y la sincronización apunta a **esta** bóveda: `nuevoSincronizador` le pregunta
+	// a `bovedaActiva()`, que ya es la de ahora. Lo que no se publica desde aquí es
+	// la identidad ni la posesión, que son de la personal — lo decide
+	// `alAbrirLaBoveda`, no esta función.
+	a.alAbrirLaBoveda(p)
 }
 
 // marcarProyectoUsado apunta en la personal cuándo se abrió, que es por lo que se

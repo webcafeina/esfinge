@@ -12,7 +12,7 @@
 //   en D1 o en el Durable Object de la cuenta.
 
 import { cartas, carteroPara, DIAS_DE_INVITACION, modoDeCorreo, type Carta, type Envio } from "./correo";
-import { Cuenta, SESION_CADUCADA, cuentaDeReto, cuentaDeSesion } from "./cuenta";
+import { Cuenta, SESION_CADUCADA, cuentaDeReto, cuentaDeSesion, refValida } from "./cuenta";
 import { aBase64url, aHex, azar, codigoDeSeisCifras, deBase64url, hmac } from "./cripto";
 import { algunaPimientaDa, conLaPimienta, pimientaDe, versionActual } from "./pimienta";
 import {
@@ -127,6 +127,20 @@ async function atender(p: Request, env: Env, ctx: ExecutionContext): Promise<Res
 	if (r("GET", "/v1/boveda/versiones")) return listarVersiones(p, env);
 	if (metodo === "GET" && /^\/v1\/boveda\/versiones\/\d+$/.test(ruta)) {
 		return leerVersion(p, env, Number(ruta.split("/").pop()));
+	}
+	// Las bóvedas de proyecto (ADR 0050). **Las rutas de arriba se quedan como
+	// están**, sirviendo la bóveda personal: un cliente de antes tiene que seguir
+	// sincronizando mientras la versión nueva se reparte.
+	if (r("GET", "/v1/bovedas")) return listarBovedas(p, env);
+	if (metodo !== "OPTIONS" && ruta.startsWith("/v1/bovedas/")) {
+		const ref = ruta.slice("/v1/bovedas/".length);
+		// **Se valida antes de tocar nada**: esa cadena va a una consulta y a una
+		// clave de ajuste, y lo que no case con dieciséis hexadecimales no es una
+		// referencia nuestra.
+		if (!refValida(ref)) throw new Fallo(400, "Esa no es una bóveda de esta cuenta.");
+		if (metodo === "GET") return leerBoveda(p, env, ref);
+		if (metodo === "PUT") return escribirBoveda(p, env, ref);
+		if (metodo === "DELETE") return borrarBovedaDeProyecto(p, env, ref);
 	}
 	if (r("PUT", "/v1/cuenta/clave")) return cambiarClave(p, env, ctx);
 	if (r("POST", "/v1/recuperacion/inicio")) return empezarRecuperacion(p, env);
@@ -470,9 +484,9 @@ async function cerrarSesion(p: Request, env: Env): Promise<Response> {
 
 // ================================================================ la bóveda
 
-async function leerBoveda(p: Request, env: Env): Promise<Response> {
+async function leerBoveda(p: Request, env: Env, ref = ""): Promise<Response> {
 	const { token, cuenta } = sesionDe(p);
-	const hecho = abrir(await objeto(env, cuenta).leer(token, etiqueta(p.headers.get("If-None-Match"))));
+	const hecho = abrir(await objeto(env, cuenta).leer(token, etiqueta(p.headers.get("If-None-Match")), ref));
 	const cabeceras = { ETag: `"${hecho.version}"`, "Cache-Control": "no-store" };
 	if (!hecho.datos) return new Response(null, { status: 304, headers: cabeceras });
 	return new Response(hecho.datos, {
@@ -481,16 +495,28 @@ async function leerBoveda(p: Request, env: Env): Promise<Response> {
 	});
 }
 
-async function escribirBoveda(p: Request, env: Env): Promise<Response> {
+async function escribirBoveda(p: Request, env: Env, ref = ""): Promise<Response> {
 	const { token, cuenta } = sesionDe(p);
 	// **Suspendida se puede leer y exportar, pero no subir.** Las condiciones
 	// prometen un plazo para llevarse los datos, y eso exige que bajar siga yendo.
+	// Vale igual para una bóveda de proyecto: lo que se suspende es la cuenta.
 	await noSuspendida(env, cuenta);
 	const siCoincide = etiqueta(p.headers.get("If-Match"));
 	if (siCoincide === null) throw new Fallo(428, "Falta decir sobre qué versión se escribe (If-Match).");
 	const datos = await leerBytes(p, TAMANO_MAXIMO);
-	const hecho = abrir(await objeto(env, cuenta).escribir(token, siCoincide, datos));
+	const hecho = abrir(await objeto(env, cuenta).escribir(token, siCoincide, datos, ref));
 	return json(200, hecho, { ETag: `"${hecho.version}"` });
+}
+
+async function listarBovedas(p: Request, env: Env): Promise<Response> {
+	const { token, cuenta } = sesionDe(p);
+	return json(200, { bovedas: abrir(await objeto(env, cuenta).bovedas(token)) });
+}
+
+async function borrarBovedaDeProyecto(p: Request, env: Env, ref: string): Promise<Response> {
+	const { token, cuenta } = sesionDe(p);
+	await noSuspendida(env, cuenta);
+	return json(200, abrir(await objeto(env, cuenta).olvidarBoveda(token, ref)));
 }
 
 async function listarVersiones(p: Request, env: Env): Promise<Response> {

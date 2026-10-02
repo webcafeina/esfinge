@@ -49,7 +49,16 @@ Plantilla al final.
   llaves de acceso —primero existe en el destino, después desaparece del origen, y a la papelera— y **mutarlo
   deja la prueba diciendo «la entrada se ha perdido: quedan 0»**, que es exactamente el fallo que ese orden
   evita.
-- **Queda abierto, y en [`deuda.md`](deuda.md)**: **un proyecto no se sincroniza**
+- **Y la E4: el servidor guarda varias bóvedas por cuenta.** `versiones` y `trozos` llevan la referencia en
+  la clave primaria, y como **SQLite no deja añadir una columna a una clave primaria**, la migración copia las
+  dos tablas: en una transacción, comprobando el número de filas antes de tirar las viejas y escribiendo la
+  marca al final. *Mutada para que copie de menos: salta con «Migración incompleta: 2/2 → 2/0».* Y la prueba
+  que la cierra es de **dos equipos de verdad** contra el servidor local.
+- **Y una mutación destapó un fallo que no se buscaba**: `ErrOtraBoveda` —lo que baja no es esta bóveda—
+  salía como **«Sin conexión con el servidor»**, que manda a mirar el wifi cuando lo que pasa es otra cosa.
+  Es la lección del mensaje impreciso: no es impreciso, señala a otro sitio.
+- **Queda abierto, y en [`deuda.md`](deuda.md)**: **desplegar el servidor** —con la exportación de la cuenta
+  real guardada antes—, **bajar un proyecto dormido no tiene botón**
   —severidad alta: con dos Macs no sale del equipo—, la extensión no sabe de proyectos, y **cuántos diálogos
   del sistema salen de verdad tras actualizar solo se ve en el Mac**.
 

@@ -252,11 +252,18 @@ func (c *Cliente) CerrarSesion(ctx context.Context, token string) error {
 // Bajar trae la bóveda. Con `siNoCoincide` distinto de cero, si el servidor sigue
 // en esa versión no trae nada y `cambio` es falso.
 func (c *Cliente) Bajar(ctx context.Context, token string, siNoCoincide int64) (datos []byte, version int64, cambio bool, err error) {
+	return c.BajarDe(ctx, token, "", siNoCoincide)
+}
+
+// BajarDe es lo mismo para **una bóveda de proyecto** (ADR 0050). Con la referencia
+// vacía, la bóveda personal: la misma ruta de siempre, que es lo que hace que un
+// cliente anterior siga sincronizando mientras la versión nueva se reparte.
+func (c *Cliente) BajarDe(ctx context.Context, token, ref string, siNoCoincide int64) (datos []byte, version int64, cambio bool, err error) {
 	cab := map[string]string{}
 	if siNoCoincide > 0 {
 		cab["If-None-Match"] = fmt.Sprintf("%q", strconv.FormatInt(siNoCoincide, 10))
 	}
-	resp, err := c.pedir(ctx, "GET", "/v1/boveda", token, "", nil, cab)
+	resp, err := c.pedir(ctx, "GET", rutaDeBoveda(ref), token, "", nil, cab)
 	if err != nil {
 		return nil, 0, false, err
 	}
@@ -284,8 +291,13 @@ func (c *Cliente) Bajar(ctx context.Context, token string, siNoCoincide int64) (
 // Subir escribe la bóveda **sobre la versión `siCoincide`**. Si ya no es la
 // última, el error lo dice Conflicto.
 func (c *Cliente) Subir(ctx context.Context, token string, siCoincide int64, datos []byte) (int64, error) {
+	return c.SubirA(ctx, token, "", siCoincide, datos)
+}
+
+// SubirA es lo mismo para una bóveda de proyecto. Con la referencia vacía, la personal.
+func (c *Cliente) SubirA(ctx context.Context, token, ref string, siCoincide int64, datos []byte) (int64, error) {
 	cab := map[string]string{"If-Match": fmt.Sprintf("%q", strconv.FormatInt(siCoincide, 10))}
-	resp, err := c.pedir(ctx, "PUT", "/v1/boveda", token, "application/json", datos, cab)
+	resp, err := c.pedir(ctx, "PUT", rutaDeBoveda(ref), token, "application/json", datos, cab)
 	if err != nil {
 		return 0, err
 	}
@@ -300,6 +312,40 @@ func (c *Cliente) Subir(ctx context.Context, token string, siCoincide int64, dat
 		return 0, err
 	}
 	return r.Version, nil
+}
+
+// rutaDeBoveda: la de siempre para la personal, y la suya para un proyecto.
+func rutaDeBoveda(ref string) string {
+	if ref == "" {
+		return "/v1/boveda"
+	}
+	return "/v1/bovedas/" + ref
+}
+
+// BovedaEnElServidor es lo que el servidor sabe de una bóveda de proyecto: su
+// referencia y por qué versión va. **Nunca su nombre**, que vive cifrado dentro de
+// la bóveda personal.
+type BovedaEnElServidor struct {
+	Ref     string `json:"ref"`
+	Version int64  `json:"version"`
+	Tamano  int64  `json:"tamano"`
+	Fecha   int64  `json:"fecha"`
+}
+
+// Bovedas lista las bóvedas de proyecto que hay en la cuenta, que es lo que
+// necesita un equipo nuevo para saber qué bajarse.
+func (c *Cliente) Bovedas(ctx context.Context, token string) ([]BovedaEnElServidor, error) {
+	var r struct {
+		Bovedas []BovedaEnElServidor `json:"bovedas"`
+	}
+	_, err := c.json(ctx, "GET", "/v1/bovedas", token, nil, &r)
+	return r.Bovedas, err
+}
+
+// OlvidarBoveda borra una bóveda de proyecto del servidor, con sus versiones.
+func (c *Cliente) OlvidarBoveda(ctx context.Context, token, ref string) error {
+	_, err := c.json(ctx, "DELETE", "/v1/bovedas/"+ref, token, nil, nil)
+	return err
 }
 
 // Versiones lista las versiones que conserva el servidor.

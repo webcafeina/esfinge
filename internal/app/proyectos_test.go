@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/llavero"
+	"github.com/webcafeina/esfinge/internal/sincro"
 )
 
 // conUnProyecto deja la bóveda personal abierta y un proyecto creado.
@@ -503,5 +505,35 @@ func TestNoSeLlevaUnaEntradaALaBovedaEnLaQueYaEsta(t *testing.T) {
 	}
 	if l, _ := a.BuscarEnBoveda("Acme"); len(l) != 1 {
 		t.Errorf("y encima se ha perdido: quedan %d", len(l))
+	}
+}
+
+// **Un error que no es de red no se cuenta como falta de red.**
+//
+// `ErrOtraBoveda` —lo que baja del servidor no es esta bóveda— caía en el cajón de
+// «Sin conexión con el servidor de cuentas», que manda a mirar el wifi cuando lo
+// que pasa es otra cosa. Es la lección del mensaje impreciso: no es impreciso,
+// **señala a otro sitio**. Lo destapó mutar la ruta de un proyecto para que subiera
+// a la de la bóveda personal.
+func TestLosErroresDeLaSincronizacionSeDistinguen(t *testing.T) {
+	a, _, _ := conReloj(t)
+	for _, c := range []struct {
+		err    error
+		estado string
+	}{
+		{boveda.ErrOtraBoveda, "error"},
+		{boveda.ErrMuchosBorrados, "muchos-borrados"},
+		{errors.New("algo que nadie ha visto"), "sin-conexion"},
+	} {
+		a.alSincronizar(sincro.Resultado{}, c.err)
+		// Se mira el estado que se guarda, no el que enseña `EstadoDeCuenta`: ése
+		// dice «apagada» mientras no haya cuenta, y aquí lo que se comprueba es la
+		// clasificación del error.
+		a.cu.mu.Lock()
+		guardado := a.cu.estado.Estado
+		a.cu.mu.Unlock()
+		if e := guardado; e != c.estado {
+			t.Errorf("con %v el estado es %q y tenía que ser %q", c.err, e, c.estado)
+		}
 	}
 }

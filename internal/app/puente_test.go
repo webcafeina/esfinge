@@ -131,7 +131,7 @@ var loQuePuedeCruzarElPuente = []string{
 	// ventana la clave de un proyecto, ni de crear uno con una contraseña elegida, ni
 	// de poner la ranura del sistema en uno.
 	"Proyectos", "CrearProyecto", "AbrirProyecto", "VolverALaBovedaPersonal", "RenombrarProyecto",
-	"LlevarAOtraBoveda",
+	"LlevarAOtraBoveda", "BajarProyecto",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {
