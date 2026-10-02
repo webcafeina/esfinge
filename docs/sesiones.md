@@ -35,7 +35,17 @@ Plantilla al final.
 - Se espejó la fusión en TypeScript y **los 400 casos al azar de la cruzada llevan ahora proyectos**: como
   sección opaca en `extra` ganaría la del servidor entera, que son dos bóvedas pasándose la una a la otra sin
   fin (ADR 0038). Mutando la regla de `usado` en el espejo, la cruzada canta la diferencia.
-- **Queda abierto, y en [`deuda.md`](deuda.md)**: no hay interfaz (E2), **un proyecto no se sincroniza**
+- **Y la E2: el apartado «Proyectos»** — la fila en la barra lateral (siete botones ya), la lista, crear,
+  entrar, renombrar y los archivados. La pantalla dice las dos cosas que no se ven mirándola: que no hay clave
+  de recuperación propia y que esto todavía no se sincroniza.
+- **Y ahí la captura encontró lo que 110 pruebas en verde no**: el icono de la fila salía midiendo
+  **doscientos píxeles** y el nombre del proyecto se encogía a cero al lado. `Icono` devuelve un `<svg>` sin
+  dimensiones y cada sitio las fijaba con su propio selector; en una pantalla nueva, nadie. Ahora `.icono`
+  mide 16 px mientras nadie diga otra cosa. **Y la primera captura del arreglo era el fichero viejo**, que
+  mandó a buscar la causa donde no estaba: la carpeta se borra antes de volver a mirar.
+- **Y un comentario que afirmaba algo falso**, corregido mirando: el icono se escribió como «dos carpetas» y
+  a 18 px se lee una. Ampliado a cuatro aumentos se ve; el dibujo se queda y lo que se cambia es lo escrito.
+- **Queda abierto, y en [`deuda.md`](deuda.md)**: **un proyecto no se sincroniza**
   —severidad alta: con dos Macs no sale del equipo—, la extensión no sabe de proyectos, y **cuántos diálogos
   del sistema salen de verdad tras actualizar solo se ve en el Mac**.
 

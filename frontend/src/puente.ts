@@ -368,6 +368,31 @@ export type EstadoBoveda = {
   enLaPapelera: number;
   /** Las llaves de acceso vivas (ADR 0048). */
   llaves: number;
+  /**
+   * La bóveda de proyecto abierta, o vacío si es la personal (ADR 0050).
+   *
+   * Es lo que la barra de herramientas necesita para decir **en qué bóveda se está
+   * trabajando**: con varias, «Bóveda» a secas deja de identificar nada.
+   */
+  proyecto: string;
+};
+
+/** Una bóveda de proyecto, como la ve la ventana (ADR 0050). */
+export type Proyecto = {
+  /** Hex de 8 bytes. Es también el nombre de su fichero, que no lleva el nombre. */
+  ref: string;
+  nombre: string;
+  creado: string;
+  /** La última vez que se abrió. Por aquí se ordena la lista. */
+  usado: string;
+  archivado: boolean;
+  /**
+   * Si su fichero está en este equipo. Falso es **dormido**, no roto: el proyecto
+   * existe y está en el servidor, y este equipo todavía no lo ha bajado.
+   */
+  enEsteEquipo: boolean;
+  /** El que está abierto ahora mismo. */
+  activo: boolean;
 };
 
 /** Lo que se cuenta después de traer un CSV de otro gestor. */
@@ -622,6 +647,40 @@ export const esfinge = {
   abrirBoveda: (llave: string) => llamar<void>("AbrirBoveda", llave),
 
   cerrarBoveda: () => llamar<void>("CerrarBoveda"),
+
+  // ---------------------------------------------------------------- los proyectos
+  //
+  // Las bóvedas de proyecto (ADR 0050). **Una abierta a la vez**: abrir un proyecto
+  // cierra el anterior, así que todo lo de arriba —buscar, ver, guardar— sigue
+  // hablando de «la bóveda» y contesta de la que esté activa.
+
+  /** Los proyectos de la bóveda personal, el último usado primero. */
+  proyectos: () => llamar<Proyecto[] | null>("Proyectos").then((l) => l ?? []),
+
+  /**
+   * Crea uno y devuelve su referencia.
+   *
+   * **No pide contraseña y no devuelve clave de recuperación**, y eso hay que
+   * decirlo en la pantalla: se abre con la bóveda personal, y la clave de
+   * recuperación de la personal lo recupera. Quien ha creado una bóveda antes
+   * espera la ceremonia, y su ausencia sin explicar parece un olvido.
+   */
+  crearProyecto: (nombre: string) => llamar<string>("CrearProyecto", nombre),
+
+  /** Conmuta: cierra lo que haya abierto y abre ese proyecto. */
+  abrirProyecto: (ref: string) => llamar<void>("AbrirProyecto", ref),
+
+  /**
+   * Cierra el proyecto abierto.
+   *
+   * **Deja la bóveda personal cerrada**, así que hay que volver a teclear la
+   * maestra: la personal no se queda abierta por detrás, porque dos bóvedas
+   * abiertas a la vez es justo lo que se descartó.
+   */
+  volverALaBovedaPersonal: () => llamar<void>("VolverALaBovedaPersonal"),
+
+  /** Le cambia el nombre. No toca su fichero, que se llama por la referencia. */
+  renombrarProyecto: (ref: string, nombre: string) => llamar<void>("RenombrarProyecto", ref, nombre),
 
   /** La lista, **sin contraseñas**. */
   buscarEnBoveda: (q: string) =>

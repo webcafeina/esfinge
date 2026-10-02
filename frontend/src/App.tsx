@@ -40,9 +40,10 @@ import {
   ZonaFicheros,
 } from "./componentes";
 import { avisoDelSistemaAlGuardar, Boveda } from "./boveda";
+import { Proyectos } from "./proyectos";
 import { Asistente, Bienvenida, GrupoCuenta, usaCuenta, usaSincroAlVolver, type TipoAsistente } from "./cuenta";
 
-type Tarea = "cifrar" | "descifrar" | "generar" | "boveda" | "historial" | "ajustes";
+type Tarea = "cifrar" | "descifrar" | "generar" | "boveda" | "proyectos" | "historial" | "ajustes";
 type Modo = "texto" | "ficheros";
 
 export default function App() {
@@ -83,18 +84,35 @@ export default function App() {
   // El candado de la barra lateral: se pregunta una vez y luego lo avisa Go en
   // cada cambio. Crear la bóveda la deja abierta y también avisa.
   const [bovedaAbierta, setBovedaAbierta] = useState<boolean | null>(null);
+  // Y **cuál** es la que está abierta (ADR 0050): con varias bóvedas, «Bóveda» a
+  // secas en la barra de herramientas deja de identificar nada. Vacío es la personal.
+  const [proyectoActivo, setProyectoActivo] = useState("");
   useEffect(() => {
-    esfinge
-      .estadoBoveda()
-      .then((e) => setBovedaAbierta(e.existe ? e.abierta : null))
-      .catch(() => {});
-    return alCambiarElEstadoDeLaBoveda((abierta) =>
+    const mirar = (abierta?: boolean) =>
       esfinge
         .estadoBoveda()
-        .then((e) => setBovedaAbierta(e.existe ? e.abierta : null))
-        .catch(() => setBovedaAbierta(abierta)),
-    );
+        .then((e) => {
+          setBovedaAbierta(e.existe ? e.abierta : null);
+          setProyectoActivo(e.abierta ? e.proyecto : "");
+        })
+        .catch(() => abierta !== undefined && setBovedaAbierta(abierta));
+    void mirar();
+    return alCambiarElEstadoDeLaBoveda((abierta) => void mirar(abierta));
   }, []);
+
+  // El nombre del proyecto abierto, para el título. Se pide a la lista, que es
+  // quien lo tiene: el estado de la bóveda solo lleva la referencia.
+  const [nombreDelProyecto, setNombreDelProyecto] = useState("");
+  useEffect(() => {
+    if (!proyectoActivo) {
+      setNombreDelProyecto("");
+      return;
+    }
+    esfinge
+      .proyectos()
+      .then((l) => setNombreDelProyecto(l.find((p) => p.ref === proyectoActivo)?.nombre ?? ""))
+      .catch(() => setNombreDelProyecto(""));
+  }, [proyectoActivo]);
 
   const [novedad, setNovedad] = useState<Novedad | null>(null);
   const [avance, setAvance] = useState<Avance | undefined>();
@@ -230,6 +248,11 @@ export default function App() {
       <div className="zona">
         <header className="herramientas">
           <h1>{TITULOS[tarea]}</h1>
+          {/* **En qué bóveda se está trabajando.** Con varias, saber que la bóveda
+              está abierta no basta: hay que saber cuál, y aquí es donde se mira. */}
+          {nombreDelProyecto !== "" && (tarea === "boveda" || tarea === "proyectos") && (
+            <span className="aparte">{nombreDelProyecto}</span>
+          )}
           {!enWails() && <span className="aparte">Modo desarrollo</span>}
         </header>
 
@@ -300,6 +323,18 @@ export default function App() {
             />
           </Panel>
 
+          <Panel activo={tarea === "proyectos"} visitado={visitadas.has("proyectos")}>
+            <Proyectos
+              activo={tarea === "proyectos"}
+              alEntrar={() => {
+                // Conmutar rehace la pantalla de la bóveda: lo que había montado era
+                // la lista de la otra, con su búsqueda y su ficha abierta.
+                setSelloBoveda((n) => n + 1);
+                setTarea("boveda");
+              }}
+            />
+          </Panel>
+
           <Panel activo={tarea === "historial"} visitado={visitadas.has("historial")}>
             <Historial recargar={tarea === "historial"} />
           </Panel>
@@ -346,6 +381,7 @@ const TITULOS: Record<Tarea, string> = {
   descifrar: "Descifrar",
   generar: "Generar una contraseña",
   boveda: "Bóveda",
+  proyectos: "Proyectos",
   historial: "Historial",
   ajustes: "Ajustes",
 };

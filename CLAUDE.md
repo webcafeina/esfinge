@@ -777,6 +777,19 @@ elemento flexible más, y `flex-shrink` vale 1 de fábrica— **salía midiendo 
 veía como un botón con su rótulo y sin dibujo, y **no lo dijo ninguna prueba**: se vio sacando la captura y
 mirándola, y la causa la dijo preguntarle a la página por la caja del elemento, no razonar sobre el CSS.
 
+**Y un `<svg>` sin dimensiones se estira hasta llenar la fila.** `Icono` devuelve un `svg` con `viewBox` y
+sin ancho ni alto, así que lo pone el CSS — y cada sitio que lo usaba lo fijaba **con su propio selector**:
+`.lateral .icono`, `.segmentado .icono`, `.lista-boveda .icono`… El día que se usó en una pantalla nueva sin
+acordarse, el icono salió midiendo **doscientos píxeles** y el nombre que tenía al lado se encogió a cero, o
+sea una fila con una carpeta gigante y sin texto. **No lo vio ninguna de las 110 pruebas de la interfaz**:
+se vio sacando la captura, y la causa la dijo preguntarle a la página por la caja del elemento. Ahora
+`.icono` mide 16 px mientras nadie diga otra cosa, así que lo peor que puede pasar es que salga pequeño.
+
+Y el corolario de método, que costó una vuelta entera: **la captura que se mira tiene que ser la que se
+acaba de sacar**. El fichero viejo seguía ahí y el recorrido que se lanzó no llegaba a esa pantalla —las
+capturas estaban en otro `test` del mismo fichero—, así que el arreglo parecía no funcionar. Se borra la
+carpeta antes, o se mira la hora del fichero.
+
 Y con ello, el que costó buscar la causa en el sitio equivocado: **antes de estrenar una clase de CSS hay
 que mirar si ya existe**. `.huella` ya era la huella de identidad que se enseña al compartir —un `<code>`
 en monoespaciada— y la clase nueva del dibujo le estaba poniendo 72×72 **en todas las pantallas de

@@ -52,8 +52,8 @@ export function Marca({ lado, clase }: { lado: number; clase?: string }) {
  *   problema.
  * - Las pruebas localizan las secciones con «.lateral + getByRole("button")».
  *   Un botón o un enlace de más aquí rompería ese localizador en todo el fichero
- *   de pruebas, y hay una prueba que cuenta cuántos hay. Son seis desde que está
- *   la bóveda.
+ *   de pruebas, y hay una prueba que cuenta cuántos hay. **Son siete desde que
+ *   están las bóvedas de proyecto** (ADR 0050); seis desde la bóveda.
  *
  * **La fila de la bóveda dice si está abierta o cerrada** con un candado pequeño
  * a la derecha, apagado como los iconos, que lo pidió el cliente con la 2.24.3.
@@ -108,6 +108,7 @@ export function BarraLateral<T extends string>({
         {fila("descifrar", "Descifrar")}
         {fila("generar", "Generar")}
         {fila("boveda", "Bóveda")}
+        {fila("proyectos", "Proyectos")}
         {fila("historial", "Historial")}
       </nav>
 
@@ -199,6 +200,19 @@ export function Icono({ nombre }: { nombre: string }) {
         <rect x="2.8" y="3.6" width="12.4" height="10.8" rx="2" />
         <circle cx="8.2" cy="9" r="2.4" />
         <path d="M12.8 7.7v2.6" />
+      </>
+    ),
+    // Una carpeta, con el canto de otra asomando por detrás.
+    //
+    // **Se dibujaron dos enteras primero y a 18 px no se leían**: dos solapas y dos
+    // cuerpos a este tamaño son un borrón, y hubo que ampliarlo a cuatro aumentos
+    // para ver que lo que se entendía era «una carpeta» a secas. Así que queda una,
+    // que es lo que se lee, y el canto de detrás basta para que no sea la carpeta
+    // genérica de guardar cosas. Lo demás lo dice el rótulo de al lado.
+    proyectos: (
+      <>
+        <path d="M2.6 6.2h4l1.2 1.4h5.6v6.2a1.4 1.4 0 0 1-1.4 1.4H4a1.4 1.4 0 0 1-1.4-1.4V6.2Z" />
+        <path d="M5 4.4h3.4l1 1.2h5" />
       </>
     ),
     // Reloj.

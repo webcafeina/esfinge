@@ -22,10 +22,15 @@ ficha:
 - **La lista de proyectos va dentro del cuerpo cifrado de la personal, sin sus claves**, y los ficheros se
   llaman **por una referencia al azar**: un listado de la carpeta no puede ser la lista de clientes.
 
-**La siguiente acción concreta: la E2, el apartado «Proyectos» en la ventana** — una fila más en la barra
-lateral, la lista con buscador, crear, entrar y renombrar. Lo que esa pantalla tiene que decir y es fácil
-olvidar: **que un proyecto no tiene clave de recuperación propia** (quien ha creado una bóveda antes espera la
-ceremonia) y **en qué bóveda se está trabajando**, en la barra de herramientas.
+**Y hecha la E2: el apartado «Proyectos» en la ventana.** Una fila más en la barra lateral —siete botones, y
+la prueba que los cuenta lo dice—, la lista con buscador, crear, entrar, renombrar y los archivados. Dice las
+dos cosas que no se ven mirándola: **que un proyecto no tiene clave de recuperación propia** y **que esto
+todavía no se sincroniza**, donde alguien decide guardar algo. Y la barra de herramientas dice **en qué bóveda
+se trabaja**.
+
+**La siguiente acción concreta: la E3, mover entradas entre bóvedas** — que es lo que el cliente hará el
+primer día, repartir en proyectos lo que ya tiene. El orden importa y es el de las llaves de acceso: primero
+existe en el destino, después desaparece del origen, y a la papelera.
 
 Y lo que **no** se puede dejar sin decir en cuanto haya pantalla, porque está en
 [`deuda.md`](deuda.md) y es de severidad alta: **un proyecto no se sincroniza todavía**. Con dos Macs, lo que

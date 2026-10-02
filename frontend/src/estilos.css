@@ -207,6 +207,25 @@ body {
   font-weight: 500;
 }
 
+/* **Un icono mide 16px mientras nadie diga otra cosa.**
+ *
+ * `Icono` devuelve un `<svg>` con `viewBox` y sin dimensiones, así que su tamaño
+ * lo pone el CSS. Cada sitio que lo usaba lo fijaba con su propio selector —la
+ * barra lateral, el segmentado, la lista de la bóveda…— y el día que se usó en un
+ * sitio nuevo sin acordarse, **el SVG se estiró hasta llenar la fila**: doscientos
+ * píxeles de carpeta, con el nombre del proyecto encogido a cero a su lado. Pasó
+ * con el apartado de proyectos y **no lo vio ninguna de las 110 pruebas de la
+ * interfaz**: se vio sacando la captura y mirándola.
+ *
+ * Con este tamaño por defecto, un icono en un sitio nuevo sale pequeño y discreto
+ * en vez de romper la pantalla. Los selectores de contexto de abajo son más
+ * específicos y siguen mandando donde ya decían algo. */
+.icono {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 /* El icono va en su hueco fijo para que los nombres queden alineados aunque los
  * glifos midan distinto. */
 .lateral .icono {
@@ -1324,6 +1343,107 @@ p {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 45%;
+}
+
+/* Los proyectos (ADR 0050). Mismo marco que la lista de la bóveda, y **tampoco
+ * reutiliza sus reglas** por lo mismo que la papelera: aquí cada fila lleva dos
+ * botones —entrar y cambiar el nombre— y heredar aquello los apilaría.
+ *
+ * El color sale de tokens ya medidos y en las mismas parejas que la lista de la
+ * bóveda: `--lienzo` de fondo, `--barra-encima` al pasar por encima, `--apagado`
+ * para la segunda línea. Ninguna combinación nueva, así que `make contraste` no
+ * tiene nada que medir que no esté ya en `contraste_test.go`. */
+.proyectos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 0.5px solid var(--filete);
+  border-radius: var(--radio);
+  overflow: hidden;
+  background: var(--lienzo);
+}
+
+.proyectos li {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  padding-right: var(--espacio-3);
+}
+
+.proyectos li + li {
+  border-top: 0.5px solid var(--filete);
+}
+
+/* La fila activa **no se resalta al pasar por encima**, por lo mismo que la fila
+ * activa de la barra lateral: ya está donde está, y el realce dice «esto se
+ * pulsa» de algo que no lleva a ninguna parte. */
+.proyectos li[data-activo="si"] {
+  background: var(--suave);
+}
+
+.abrir-proyecto {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  flex: 1;
+  min-width: 0;
+  /* Como en la lista de la bóveda: el alto lo pone el contenido, porque la regla
+   * general de `button` fija 28px y aquí dentro hay dos líneas. */
+  height: auto;
+  min-height: var(--alto-fila);
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  text-align: left;
+}
+
+.abrir-proyecto:hover:not(:disabled) {
+  background: var(--barra-encima);
+}
+
+.abrir-proyecto .icono {
+  color: var(--apagado);
+}
+
+.abrir-proyecto .nombre {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* Deshabilitada es la bóveda que ya está abierta, o una que no está en este
+ * equipo. **No se apaga el nombre**: un proyecto dormido se sigue leyendo, que es
+ * para lo que está en la lista. */
+.abrir-proyecto:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.renombrar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--espacio-2);
+  flex: 1;
+  padding: var(--espacio-2) var(--espacio-3);
+}
+
+.renombrar input {
+  flex: 1;
+}
+
+.archivados {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  align-items: flex-start;
+}
+
+.archivados .proyectos {
+  align-self: stretch;
 }
 
 /* La papelera. Tiene el mismo marco que la lista de la bóveda y **no reutiliza

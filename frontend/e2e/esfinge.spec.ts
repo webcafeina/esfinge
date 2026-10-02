@@ -697,12 +697,12 @@ test("la marca está en la barra lateral y no estorba a la navegación", async (
   await expect(firma).toContainText("Webcafeína");
   await expect(firma).toContainText(/\d+\.\d+\.\d+/);
 
-  // **Y siguen siendo seis botones** —cinco hasta que llegó la bóveda—. Todo el
-  // fichero de pruebas localiza las secciones con «.lateral +
-  // getByRole("button")»: si el lockup o la firma fueran interactivos, entrarían
-  // en ese localizador y romperían de golpe media suite. Por eso son texto, y
-  // por eso esto se cuenta.
-  await expect(page.locator(".lateral").getByRole("button")).toHaveCount(6);
+  // **Y siguen siendo siete botones** —cinco hasta la bóveda, seis hasta las
+  // bóvedas de proyecto (ADR 0050)—. Todo el fichero de pruebas localiza las
+  // secciones con «.lateral + getByRole("button")»: si el lockup o la firma fueran
+  // interactivos, entrarían en ese localizador y romperían de golpe media suite.
+  // Por eso son texto, y por eso esto se cuenta.
+  await expect(page.locator(".lateral").getByRole("button")).toHaveCount(7);
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
@@ -1983,6 +1983,113 @@ test("una red wifi guarda su nombre y la ficha dibuja su código", async ({ page
   // a una matriz concreta.
   expect(cuantos, "el código ha salido sin módulos").toBeGreaterThan(100);
   await expect(ficha.getByText("Este dibujo es la contraseña", { exact: false })).toBeVisible();
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * **El apartado «Proyectos»: crear una bóveda de cliente, entrar y volver** (ADR 0050).
+ *
+ * Lo que de verdad se comprueba aquí, y no es que los botones existan:
+ *
+ *   - que al entrar en un proyecto **lo que se ve dentro es lo suyo** y no lo de la
+ *     bóveda personal, que es lo único que separa de verdad una bóveda de otra;
+ *   - que la barra de herramientas dice **en qué bóveda se trabaja**, porque con varias
+ *     «Bóveda» a secas ya no identifica nada;
+ *   - y que la pantalla dice las dos cosas que no se ven mirándola: que **no hay clave de
+ *     recuperación propia** y que **esto todavía no se sincroniza**.
+ */
+test("una bóveda de proyecto: se crea, se entra y lo de dentro es lo suyo", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  // Una entrada en la bóveda personal, para poder comprobar después que no se ve
+  // desde el proyecto.
+  const mia = `Mi banco ${Date.now()}`;
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(mia);
+  await page.locator("#boveda-secreto").fill("la mia");
+  await accion(page, "Guardar").click();
+  await expect(page.locator(".lista-boveda").getByRole("button", { name: mia })).toBeVisible({
+    timeout: 20_000,
+  });
+
+  await seccion(page, "Proyectos").click();
+  const panel = page.locator(".panel:visible");
+
+  // **Lo que todavía no hace, dicho donde se decide guardar algo.**
+  await expect(panel.getByText("todavía no se sincronizan", { exact: false })).toBeVisible({
+    timeout: 20_000,
+  });
+
+  const nombre = `Acme ${Date.now()}`;
+  await accion(page, "Nueva bóveda de proyecto").click();
+
+  // **La ausencia de la ceremonia, explicada antes de crear.** Quien ha creado una
+  // bóveda antes espera la clave de recuperación a pantalla entera.
+  await expect(panel.getByText("no tiene clave de recuperación propia", { exact: false })).toBeVisible();
+
+  await page.locator("#proyecto-nombre").fill(nombre);
+  await accion(page, "Crear").click();
+
+  const fila = panel.locator(".proyectos").getByRole("button", { name: new RegExp(nombre) });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
+  // Recién creada no se ha abierto nunca, y la lista lo dice en vez de dejar el hueco.
+  await expect(fila).toContainText("Sin abrir todavía");
+
+  // Se entra: conmuta y lleva a la bóveda.
+  await fila.click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
+  // **Y la barra de herramientas dice cuál es.**
+  await expect(page.locator(".herramientas")).toContainText(nombre, { timeout: 20_000 });
+
+  // **Lo de la bóveda personal no está aquí.** Es la comprobación que importa: sin
+  // ella, «se ha abierto otra bóveda» podría ser la misma con otro rótulo.
+  await page.locator("#boveda-buscar").fill(mia);
+  await expect(page.locator(".panel:visible").getByRole("button", { name: mia })).toHaveCount(0);
+
+  // Se guarda algo que es de este proyecto.
+  await page.locator("#boveda-buscar").fill("");
+  const deAcme = `Hosting de Acme ${Date.now()}`;
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(deAcme);
+  await page.locator("#boveda-secreto").fill("la de acme");
+  await accion(page, "Guardar").click();
+  await expect(page.locator(".lista-boveda").getByRole("button", { name: deAcme })).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // Se vuelve a la bóveda personal. **Pide la maestra otra vez**, a propósito: la
+  // personal no se queda abierta por detrás.
+  await seccion(page, "Proyectos").click();
+  await expect(panel.locator(".proyectos").getByRole("button", { name: new RegExp(nombre) })).toContainText(
+    "La estás usando",
+  );
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * Y lo que la lista tiene que decir cuando **no se puede hacer nada**: con la bóveda
+ * cerrada no hay nombres que enseñar, porque viven dentro de ella.
+ */
+test("con la bóveda cerrada, Proyectos dice qué hacer y no enseña ningún nombre", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  // Se cierra a mano, que es lo que hace el botón de la bóveda.
+  await accion(page, "Cerrar la bóveda").click();
+
+  await seccion(page, "Proyectos").click();
+  const panel = page.locator(".panel:visible");
+  await expect(panel.getByText("Abre tu bóveda para ver tus proyectos", { exact: false })).toBeVisible({
+    timeout: 20_000,
+  });
+  // Y no hay lista: no es que esté vacía, es que no se puede leer.
+  await expect(panel.locator(".proyectos")).toHaveCount(0);
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });

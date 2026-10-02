@@ -288,5 +288,16 @@ test.describe("Capturas", () => {
     await aLaLista();
     await page.getByRole("tab", { name: "Wi-Fi", exact: true }).click();
     await page.locator(".boveda-barra").nth(1).screenshot({ path: `${donde}/8g-clases-wifi-${tema}.png`, scale: "css" });
+
+    // El apartado de proyectos (ADR 0050): vacío, creando y con uno dentro.
+    await page.locator(".lateral").getByRole("button", { name: "Proyectos", exact: true }).click();
+    await page.waitForTimeout(300);
+    await foto("9a-proyectos-vacio");
+    await boton("Nueva bóveda de proyecto").click();
+    await page.locator("#proyecto-nombre").fill("Acme");
+    await foto("9b-proyectos-creando");
+    await boton("Crear").click();
+    await page.waitForTimeout(400);
+    await foto("9c-proyectos-con-uno");
   });
 });
