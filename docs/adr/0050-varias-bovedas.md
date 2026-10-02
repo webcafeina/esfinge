@@ -184,7 +184,7 @@ cuando el vigilante cierra, con su prueba.
 - **Nada de esto se ha visto en un Mac.** Aquí se ha mirado en capturas del navegador, en los dos temas, que
   es lo que hay. La ventana de verdad —tipografía del sistema, controles nativos, el material translúcido
   detrás— solo se ve ahí.
-- **Producción no está desplegada.** **Pruebas sí, el 2026-10-02, y la migración se comprobó ahí contra un
+- **Los dos Workers están desplegados el 2026-10-02, y la migración se comprobó en pruebas contra un
   Durable Object de verdad** y no contra `workerd`: se dio de alta una cuenta **con el Worker anterior**
   —comprobando antes que `GET /v1/bovedas` daba 404, que es lo que dice que ese código es el viejo—, se le
   subieron **dos versiones de 1,5 MiB** para que hubiera historia y **más de un trozo** que copiar, y después
@@ -193,6 +193,11 @@ cuando el vigilante cierra, con su prueba.
   Un detalle logístico que costó dos intentos: el buzón de pruebas (`/_pruebas/buzon`) está **detrás de
   Cloudflare Access**, así que el código del alta no se lee por HTTP desde aquí — sale de la tabla
   `buzon_pruebas` de su D1.
+  **Producción se desplegó después**, y ahí lo comprobable sin cuenta: `/v1/salud`, las tres rutas de bóveda
+  pidiendo sesión y una referencia mal escrita dando 400 — el guardián de `refValida` rechazando antes de
+  tocar nada. **Lo que no se ha visto, y no se puede ver desde aquí: su Durable Object no ha migrado todavía.**
+  La migración corre al construirse el objeto, o sea en la primera petición que le llegue, así que ocurre la
+  próxima vez que su Esfinge o su extensión sincronicen.
 - **Cuántos diálogos de Touch ID salen tras una actualización con varios proyectos.** El diseño existe para
   que sea uno; que sea uno lo dice el Mac.
 - **Entregar, archivar y borrar están hechas** ([ADR 0051](0051-entregar-una-boveda.md)) y probadas aquí, pero

@@ -18,17 +18,23 @@ selector del panel de la extensión y —la E6— entregar un proyecto, archivar
 
 **El plan está terminado.** Lo que queda no es código:
 
-1. **Desplegar el servidor y que lo vea en su Mac**, las dos del cliente:
-   - **Desplegar producción.** La migración del Durable Object se ejecuta **una vez y sobre su bóveda**.
-     **Pruebas ya está desplegado** (2026-10-02) y la migración se comprobó allí **sobre un Durable Object de
-     verdad**: una cuenta dada de alta con el Worker anterior, dos versiones de 1,5 MiB —historia y más de un
-     trozo— y, tras el despliegue, los mismos bytes, el mismo ETag, la v1 entera y la sesión de antes
-     valiendo. Antes solo estaba probada contra `workerd`. **Se ofreció guardar antes un
-     `GET /v1/cuenta/exportacion` y el cliente dijo que no** (2026-10-02), así que se despliega sin esa red.
-     La que queda, y es buena, son **las copias locales de sus dos Macs**: el servidor es una copia para
-     sincronizar, no el original.
-   - **Que lo vea en su Mac.** Lo local —crear un proyecto, meter cosas, moverlas, entregarlo, el selector
-     del panel— se puede probar entero sin desplegar nada.
+1. **El servidor ya está desplegado, los dos** (2026-10-02): ~~desplegarlo~~.
+   - **Pruebas primero, y la migración comprobada allí sobre un Durable Object de verdad**: una cuenta dada
+     de alta con el Worker anterior —comprobando antes que `GET /v1/bovedas` daba 404, que es lo que dice que
+     ese código era el viejo—, dos versiones de 1,5 MiB —historia y más de un trozo— y, tras el despliegue,
+     los mismos bytes, el mismo ETag, la v1 entera, la sesión de antes valiendo, la exportación con su
+     `proyectos` y un proyecto empezando en su propia v1 sin mover la personal. Antes solo estaba probada
+     contra `workerd`.
+   - **Producción después**, con `/v1/salud` contestando, las tres rutas de bóveda pidiendo sesión y
+     `/v1/bovedas/noesunaref` dando 400 — o sea el guardián de la referencia rechazando antes de tocar nada.
+     **Se ofreció guardar antes un `GET /v1/cuenta/exportacion` y el cliente dijo que no**, así que se
+     desplegó sin esa red; la que queda, y es buena, son **las copias locales de sus dos Macs**.
+   - **Lo que falta de ahí, y no se puede hacer desde aquí: su Durable Object no ha migrado todavía.** La
+     migración corre **al construirse el objeto**, o sea en la primera petición que le llegue, así que ocurre
+     **la próxima vez que su Esfinge o su extensión sincronicen**. Lo que diría que ha ido mal es una
+     sincronización que falla o una bóveda que vuelve vacía; lo que dice que ha ido bien es que no pase nada.
+   - **Y que lo vea en su Mac.** Lo local —crear un proyecto, meter cosas, moverlas, entregarlo, el selector
+     del panel— se puede probar entero sin el servidor.
 2. **Y lo que ninguna prueba de aquí puede cerrar: abrir una bóveda entregada en otro ordenador.** Aquí se
    abre con `boveda.Abrir` en la misma máquina, que no es lo mismo que dársela a alguien.
 
