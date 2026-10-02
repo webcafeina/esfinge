@@ -91,3 +91,27 @@ that is in review»). Desde la 2.23.2 el trabajo `tiendas` lo da como **aviso y 
 versión de la extensión no se sube a Chrome, y la siguiente publicación lo hará. Firefox no tiene esa
 restricción. Pasó el 2026-09-21 publicando la 2.23.1 y la 2.23.2 con horas de diferencia; el código de la
 extensión era el mismo en las dos.
+
+**Y desde el 2026-10-02 no se espera a que apruebe: se publica igual.** El coste de no esperar es que el
+paquete de esa versión no entra en la tienda hasta la publicación siguiente, y **eso solo importa si esa
+versión cambia `navegador/`** — si cambia la ventana, Go, la línea de comandos o el servidor, lo que hay en
+revisión ya es la misma extensión. Al publicar hay que decirle al cliente si la versión tocaba la extensión y
+no subió, porque entonces la decisión es suya.
+
+### Cómo se para una revisión, con los rótulos de verdad
+
+Los dijo el cliente mirando la consola el 2026-10-02, que es la única forma de saberlos: **en el menú de los
+tres puntos**, al lado del botón de revisión cuando está inactivo, hay seis opciones.
+
+| Lo que pone | Qué hace |
+|---|---|
+| Vista previa | Ver la ficha como la verá la gente |
+| **Cancelar reseña** | **Ésta es.** Retira el envío de la cola y lo devuelve a borrador, y entonces admite un paquete nuevo |
+| Retrasar publicación | Aprobar sin publicar: queda esperando a que alguien le dé el visto bueno a mano |
+| Dejar de publicar | **Cuidado: ésta retira la extensión de la tienda**, no el envío. Está dos líneas debajo de la que se quiere |
+| Transferir a otro editor | Cambiar de cuenta de desarrollador |
+| Restaurar versión | Volver a una versión anterior ya publicada |
+
+**Lo que cuesta cancelar**: el envío vuelve al final de la cola, así que no sirve para adelantar una revisión
+que ya está en marcha — sirve para **cambiar lo que se revisa**. Tiene sentido cuando la versión en cola ya no
+es la que interesa y la nueva sí trae algo de la extensión que corre prisa.
