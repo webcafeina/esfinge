@@ -1910,7 +1910,7 @@ test("la ficha de una llave dice si se ha usado y si el sitio la reconoce", asyn
 
   const ficha = page.locator(".panel:visible");
   // Sin ninguna de las dos señales: el aviso, y ninguno de los dos datos.
-  await expect(ficha.getByText("Todavía no has entrado con esta llave", { exact: false })).toBeVisible();
+  await expect(ficha.getByText("Esfinge no ha apuntado ningún uso de esta llave", { exact: false })).toBeVisible();
   await expect(ficha.getByText("Reconocida por el sitio", { exact: true })).toHaveCount(0);
   await expect(ficha.getByText("Usada", { exact: true })).toHaveCount(0);
 
@@ -1925,7 +1925,7 @@ test("la ficha de una llave dice si se ha usado y si el sitio la reconoce", asyn
   await abrirLaFicha(soloUsada);
   await expect(ficha.getByText("Usada", { exact: true })).toBeVisible();
   await expect(ficha.getByText("Reconocida por el sitio", { exact: true })).toHaveCount(0);
-  await expect(ficha.getByText("Todavía no has entrado con esta llave", { exact: false })).toHaveCount(0);
+  await expect(ficha.getByText("Esfinge no ha apuntado ningún uso de esta llave", { exact: false })).toHaveCount(0);
 
   // Y con las dos, las dos: no se sustituyen, dicen cosas distintas.
   const conFecha = `${sitio}-ok`;
@@ -1936,7 +1936,7 @@ test("la ficha de una llave dice si se ha usado y si el sitio la reconoce", asyn
   await abrirLaFicha(conFecha);
   await expect(ficha.getByText("Reconocida por el sitio", { exact: true })).toBeVisible();
   await expect(ficha.getByText("Usada", { exact: true })).toBeVisible();
-  await expect(ficha.getByText("Todavía no has entrado con esta llave", { exact: false })).toHaveCount(0);
+  await expect(ficha.getByText("Esfinge no ha apuntado ningún uso de esta llave", { exact: false })).toHaveCount(0);
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });

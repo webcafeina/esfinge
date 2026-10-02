@@ -1708,9 +1708,15 @@ function Detalle({
             lo que identifica una red es su nombre, y mirando la ficha se leía «Contraseña»
             antes de saber de qué red. Se vio en una captura. */}
         {entrada.tipo === "wifi" && <Dato etiqueta="Nombre de la red" valor={entrada.ssid} />}
-        <Dato etiqueta="Usuario" valor={entrada.usuario} />
+        {/* **En una llave, el usuario y los sitios no se repiten.** Al crearla se guardan
+            también en los campos de siempre —para que la búsqueda y la lista funcionen
+            como con una credencial— y enseñarlos aquí dejaba la ficha diciendo cuatro
+            veces dos cosas: «Usuario» y «Cuenta» con el mismo nombre, «Sitios» y «Sitio»
+            con la misma dirección. Se quedan los de la llave, que son los que el sitio
+            emitió. */}
+        {entrada.tipo !== "llave" && <Dato etiqueta="Usuario" valor={entrada.usuario} />}
         <Secreto etiqueta="Contraseña" valor={entrada.secreto} />
-        <Dato etiqueta="Sitios" valor={entrada.sitios?.join("\n")} />
+        {entrada.tipo !== "llave" && <Dato etiqueta="Sitios" valor={entrada.sitios?.join("\n")} />}
         {entrada.totp && <CodigoDeUnSoloUso id={entrada.id} />}
 
         <Dato etiqueta="Titular" valor={entrada.titular} />
@@ -1760,9 +1766,14 @@ function Detalle({
                 porque una recién creada está así y es lo normal. */}
             {!entrada.usada && !entrada.confirmada && (
               <p className="nota">
-                <strong>Todavía no has entrado con esta llave.</strong> Es lo normal hasta la primera vez. Si
-                ya lo has intentado y sigue así, puede que el sitio no llegara a registrarla y entonces no
-                sirve para nada.
+                {/* **Dice lo que Esfinge sabe, no lo que supone.** La primera versión afirmaba
+                    «todavía no has entrado con esta llave», y eso es falso para cualquier llave
+                    usada antes de que esto se apuntara: el cliente la vio en una llave con la que
+                    había entrado el día anterior, rematada con que quizá no servía para nada.
+                    Asustar con una suposición es peor que no decir nada. */}
+                <strong>Esfinge no ha apuntado ningún uso de esta llave.</strong> Puede que no hayas entrado
+                aún con ella, o que lo hicieras antes de que Esfinge empezara a apuntarlo. Si entras ahora y
+                esto sigue igual, puede que el sitio no llegara a registrarla.
               </p>
             )}
             <p className="nota">
