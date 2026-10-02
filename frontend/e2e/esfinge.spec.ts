@@ -68,6 +68,21 @@ function vigilarConsola(page: Page): string[] {
   const errores: string[] = [];
   page.on("console", (m) => m.type() === "error" && errores.push(m.text()));
   page.on("pageerror", (e) => errores.push(String(e)));
+  // **Y qué petición falló, que el navegador no lo dice.** «Failed to load
+  // resource: 400» es todo lo que sale por consola, y con eso no se puede ir a
+  // ninguna parte: ni qué se pidió ni qué contestó Go. Apuntarlo aquí convierte
+  // una prueba que falla sin explicación en una que dice dónde mirar.
+  page.on("response", (r) => {
+    const camino = new URL(r.url()).pathname;
+    // **Menos los que son una respuesta y no un fallo.** Pedir el desbloqueo con el
+    // sistema es una pregunta que puede decir que no —aquí el llavero de mentira no
+    // tiene nada guardado—, y la pantalla lo trata como lo que es: se vuelve a la
+    // contraseña maestra. Contarlo como error haría que la prueba fallara por que
+    // algo funciona.
+    if (r.status() >= 400 && !camino.endsWith("/AbrirBovedaConElSistema")) {
+      errores.push(`HTTP ${r.status()} en ${r.request().method()} ${camino}`);
+    }
+  });
   return errores;
 }
 
@@ -2067,9 +2082,29 @@ test("una bóveda de proyecto: se crea, se entra y lo de dentro es lo suyo", asy
   await expect(panel.locator(".proyectos").getByRole("button", { name: new RegExp(nombre) })).toContainText(
     "La estás usando",
   );
+  await volverALaPersonal(page);
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * **Una prueba que conmuta de bóveda tiene que dejar abierta la de siempre.**
+ *
+ * El Go es uno y la bóveda sigue abierta entre pruebas y **entre temas**: una que
+ * acabe dentro de un proyecto deja a las siguientes mirando otra bóveda, y lo que
+ * se ve entonces son cuatrocientos en la consola y dos pruebas de la lista cayendo
+ * sin relación aparente. Es la misma trampa que ya costó una publicación con el
+ * `test.skip` de las capturas.
+ */
+async function volverALaPersonal(page: Page) {
+  await seccion(page, "Proyectos").click();
+  const panel = page.locator(".panel:visible");
+  // Si no hay ninguna activa, ya estamos en la personal.
+  if ((await panel.locator('.proyectos li[data-activo="si"]').count()) === 0) return;
+  await seccion(page, "Bóveda").click();
+  await accion(page, "Cerrar la bóveda").click();
+  await conLaBovedaAbierta(page);
+}
 
 /**
  * Y lo que la lista tiene que decir cuando **no se puede hacer nada**: con la bóveda
@@ -2152,5 +2187,6 @@ test("una entrada se lleva a la bóveda de un proyecto, con su contraseña", asy
   await accion(page, "Ver").first().click();
   await expect(page.locator(".panel:visible")).toContainText("la-del-servidor", { timeout: 20_000 });
 
+  await volverALaPersonal(page);
   expect(errores, errores.join(" | ")).toEqual([]);
 });

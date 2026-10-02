@@ -41,6 +41,7 @@ export function Proyectos({
   const [renombrando, setRenombrando] = useState("");
   const [otroNombre, setOtroNombre] = useState("");
   const [verArchivados, setVerArchivados] = useState(false);
+  const [bajando, setBajando] = useState("");
 
   const recargar = useCallback(async () => {
     // **Se mira si hay bóveda abierta antes de pedir la lista.** No es una
@@ -108,6 +109,19 @@ export function Proyectos({
       alEntrar();
     } catch (e) {
       setError(mensaje(e));
+    }
+  }
+
+  async function bajar(ref: string) {
+    setBajando(ref);
+    setError("");
+    try {
+      await esfinge.bajarProyecto(ref);
+      await recargar();
+    } catch (e) {
+      setError(mensaje(e));
+    } finally {
+      setBajando("");
     }
   }
 
@@ -246,15 +260,24 @@ export function Proyectos({
                     <span className="nombre">{p.nombre}</span>
                     <span className="aparte">{segundaLinea(p)}</span>
                   </button>
-                  <button
-                    className="discreto"
-                    onClick={() => {
-                      setRenombrando(p.ref);
-                      setOtroNombre(p.nombre);
-                    }}
-                  >
-                    Cambiar el nombre
-                  </button>
+                  {/* **Un proyecto dormido se baja desde aquí.** Sin este botón, un
+                      equipo nuevo ve sus proyectos en la lista y no puede abrir
+                      ninguno, que es peor que no verlos. */}
+                  {!p.enEsteEquipo ? (
+                    <button className="discreto" onClick={() => bajar(p.ref)} disabled={bajando === p.ref}>
+                      {bajando === p.ref ? "Bajando…" : "Bajar a este equipo"}
+                    </button>
+                  ) : (
+                    <button
+                      className="discreto"
+                      onClick={() => {
+                        setRenombrando(p.ref);
+                        setOtroNombre(p.nombre);
+                      }}
+                    >
+                      Cambiar el nombre
+                    </button>
+                  )}
                 </>
               )}
             </li>

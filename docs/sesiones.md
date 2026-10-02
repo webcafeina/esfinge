@@ -57,6 +57,16 @@ Plantilla al final.
 - **Y una mutación destapó un fallo que no se buscaba**: `ErrOtraBoveda` —lo que baja no es esta bóveda—
   salía como **«Sin conexión con el servidor»**, que manda a mirar el wifi cuando lo que pasa es otra cosa.
   Es la lección del mensaje impreciso: no es impreciso, señala a otro sitio.
+- **Y dos pruebas de la interfaz caían con cuatrocientos en la consola, sin relación aparente y solo con los
+  dos temas seguidos.** Se persiguió una hipótesis equivocada —que las pruebas nuevas dejaban un proyecto
+  abierto— y lo que lo resolvió fue **hacer que el vigilante de consola diga qué petición falló**: «Failed to
+  load resource: 400» no deja ir a ninguna parte. Con eso cantó `POST /api/Proyectos`, que es la ventana
+  pidiendo la lista solo para traducir una referencia en un nombre, a veces con la bóveda ya cerrada. Ahora
+  el nombre viaja **dentro del estado de la bóveda** y esa petición no existe. De paso, el vigilante no
+  cuenta el 400 de `AbrirBovedaConElSistema`, que es una pregunta que puede decir que no.
+- **Y un fallo de orden que ese arreglo destapó**: `cambiarBoveda` **avisa a la ventana**, y la ventana
+  contesta preguntando el estado — así que apuntar cuál es la bóveda activa **después** de avisar dejaba la
+  barra de herramientas sin el nombre hasta el siguiente aviso, que puede no llegar nunca.
 - **Queda abierto, y en [`deuda.md`](deuda.md)**: **desplegar el servidor** —con la exportación de la cuenta
   real guardada antes—, **bajar un proyecto dormido no tiene botón**
   —severidad alta: con dos Macs no sale del equipo—, la extensión no sabe de proyectos, y **cuántos diálogos

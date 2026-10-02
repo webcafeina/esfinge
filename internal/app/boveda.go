@@ -47,9 +47,13 @@ type EstadoBoveda struct {
 	// MinutosParaBloquear es lo que dice Ajustes, para poder enseñarlo.
 	MinutosParaBloquear int `json:"minutosParaBloquear"`
 	// Proyecto es la referencia de la bóveda de proyecto abierta, o vacío si lo que
-	// está abierto es la bóveda personal (ADR 0050). Es lo que la barra de
-	// herramientas necesita para decir **en qué bóveda se está trabajando**.
+	// está abierto es la bóveda personal (ADR 0050).
 	Proyecto string `json:"proyecto"`
+	// Y cómo se llama, que es lo que la barra de herramientas enseña para decir **en
+	// qué bóveda se está trabajando**. Viaja aquí y no se pide aparte: con la
+	// referencia sola, la ventana tendría que pedir la lista para traducirla, y
+	// pedirla con la bóveda cerrada es un error seguro.
+	NombreDelProyecto string `json:"nombreDelProyecto"`
 }
 
 // ResumenImportacion es lo que se cuenta después de traer un CSV de otro gestor.
@@ -95,8 +99,9 @@ func rutaBovedaPrincipal() string {
 // evidente.
 func (a *App) EstadoBoveda() EstadoBoveda {
 	e := EstadoBoveda{
-		Ruta:     a.rutaActiva(),
-		Proyecto: a.bovedaActiva(),
+		Ruta:              a.rutaActiva(),
+		Proyecto:          a.bovedaActiva(),
+		NombreDelProyecto: a.nombreDeLaActiva(),
 		// De los ajustes y no del vigilante: el vigilante lo lleva un cerrojo que
 		// no es de aquí, y el número que hay que enseñar es el que está guardado.
 		MinutosParaBloquear: a.ajustes.Ver().MinutosParaBloquear,

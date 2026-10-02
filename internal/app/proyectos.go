@@ -177,10 +177,10 @@ func (a *App) llaveDeLaPrincipal() []byte {
 
 // ponerActiva apunta cuál es la bóveda abierta y, si es un proyecto, se queda la
 // clave de la personal para poder conmutar.
-func (a *App) ponerActiva(ref string, llavePrincipal []byte) {
+func (a *App) ponerActiva(ref, nombre string, llavePrincipal []byte) {
 	a.mu.Lock()
 	vieja := a.llavePrincipal
-	a.activa = ref
+	a.activa, a.nombreActivo = ref, nombre
 	if ref == "" {
 		a.llavePrincipal = nil
 	} else {
@@ -198,11 +198,18 @@ func (a *App) ponerActiva(ref string, llavePrincipal []byte) {
 func (a *App) olvidarLaPrincipal() {
 	a.mu.Lock()
 	vieja := a.llavePrincipal
-	a.llavePrincipal, a.activa = nil, ""
+	a.llavePrincipal, a.activa, a.nombreActivo = nil, "", ""
 	a.mu.Unlock()
 	if vieja != nil {
 		cripto.Borrar(vieja)
 	}
+}
+
+// nombreDeLaActiva es cómo se llama la bóveda de proyecto abierta, o vacío.
+func (a *App) nombreDeLaActiva() string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.nombreActivo
 }
 
 // bovedaActiva es la referencia de lo que está abierto: vacío, la personal.
@@ -439,7 +446,14 @@ func (a *App) AbrirProyecto(ref string) error {
 	if err != nil {
 		return err
 	}
-	a.conmutarA(p, ref, llave)
+	nombre := ""
+	_ = a.conLaPersonal(func(b *boveda.Boveda) error {
+		if x, hay := b.Proyecto(ref); hay {
+			nombre = x.Nombre
+		}
+		return nil
+	})
+	a.conmutarA(p, ref, nombre, llave)
 	return nil
 }
 
@@ -576,10 +590,15 @@ func (a *App) conOtraBoveda(ref string, llavePrincipal []byte, hacer func(*boved
 // **Pasa por `alCerrarLaBoveda()` y no solo por `cambiarBoveda`**: lo primero
 // vacía lo que quede por subir de la bóveda que se abandona, y sin eso se perdería
 // su último guardado.
-func (a *App) conmutarA(p *boveda.Boveda, ref string, llavePrincipal []byte) {
+func (a *App) conmutarA(p *boveda.Boveda, ref, nombre string, llavePrincipal []byte) {
 	a.alCerrarLaBoveda()
+	// **Primero se apunta cuál es la activa y después se cambia**, porque
+	// `cambiarBoveda` **avisa a la ventana** y la ventana contesta preguntando el
+	// estado. Al revés, ese estado llega con la bóveda nueva y el nombre de nadie: la
+	// barra de herramientas se queda sin decir en qué bóveda se trabaja hasta el
+	// siguiente aviso, que puede no llegar nunca.
+	a.ponerActiva(ref, nombre, llavePrincipal)
 	a.cambiarBoveda(p)
-	a.ponerActiva(ref, llavePrincipal)
 	a.marcarProyectoUsado(ref)
 	a.Actividad()
 	a.buscarIconosSiProcede(a.ctx)

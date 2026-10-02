@@ -833,6 +833,27 @@ equivocada que era la correcta. Ahora pasan por `noAbre`: **la ventana sigue vie
 registra**, que es donde puede mirarlo quien arregla. Las contraseñas fallidas de verdad **no** se
 registran: un gestor de contraseñas con el registro lleno de intentos es justo lo que no hay que guardar.
 
+**«Failed to load resource: 400» no deja ir a ninguna parte, y es todo lo que dice el navegador.** Dos
+pruebas de la interfaz caían por eso —sin relación aparente entre ellas y solo corriendo los dos temas
+seguidos—, y se persiguió una hipótesis equivocada antes de hacer lo que había que hacer: **que el vigilante
+de consola apunte el método y el camino de cada respuesta de error**. Con eso cantó a la primera
+`POST /api/Proyectos`, que era la ventana pidiendo una lista solo para traducir una referencia en un nombre,
+a veces con la bóveda ya cerrada. Dos cosas que deja: **lo que la ventana necesita para dibujar va en el
+estado que ya pide**, no en una llamada aparte que puede fallar; y el vigilante **no cuenta el 400 de
+`AbrirBovedaConElSistema`**, que es una pregunta que puede decir que no y no un fallo.
+
+**Y avisar a la ventana es que la ventana va a preguntar.** `cambiarBoveda` manda el evento del estado de la
+bóveda, y la interfaz contesta pidiendo `EstadoBoveda`. Así que apuntar **después** lo que ese estado tiene
+que decir —cuál es la bóveda activa y cómo se llama— deja a la ventana con lo de antes hasta el siguiente
+aviso, que puede no llegar nunca. El estado se deja completo **y luego** se avisa.
+
+**Y una prueba que conmuta de bóveda tiene que dejar abierta la de siempre** (ADR 0050). El Go es uno y la
+bóveda sigue abierta entre pruebas **y entre temas**: una prueba que acabe dentro de una bóveda de proyecto
+deja a las siguientes mirando otra, y lo que se ve entonces son **cuatrocientos en la consola y dos pruebas
+de la lista cayendo sin relación aparente** —y solo en el segundo tema, porque el primero las deja así—.
+Pasa aislada, pasa el fichero entero en un solo tema, y solo cae con los dos. Es la misma familia que lo de
+abajo.
+
 **Y un `test.skip` de un `describe` no cubre lo que se escriba debajo del cierre.** Una prueba de capturas
 escrita fuera del bloque corría siempre, y además **la primera de toda la tanda** —`capturas.spec.ts` va
 antes que `esfinge.spec.ts` por orden alfabético—: creaba la bóveda del 5173 con *su* contraseña maestra.

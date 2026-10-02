@@ -72,6 +72,11 @@ type App struct {
 	// está abierto es la bóveda personal (ADR 0050). **Una a la vez**, así que esto
 	// es una cadena y no un conjunto, y `bov` sigue siendo un puntero.
 	activa string
+	// nombreActivo es cómo se llama la bóveda de proyecto abierta, para poder
+	// enseñarlo sin ir a buscarlo. Se apunta al conmutar, que es cuando se sabe:
+	// pedirlo cada vez obligaría a abrir el fichero de la personal en cada
+	// `EstadoBoveda`, y eso lo pide la ventana constantemente.
+	nombreActivo string
 	// llavePrincipal son los 43 bytes de la clave de la bóveda personal, mientras
 	// hay un proyecto abierto. Sin esto, conmutar de proyecto a proyecto pediría la
 	// contraseña maestra cada vez. **Se borra al bloquear**, o el reloj del bloqueo

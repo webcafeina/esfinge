@@ -86,33 +86,24 @@ export default function App() {
   const [bovedaAbierta, setBovedaAbierta] = useState<boolean | null>(null);
   // Y **cuál** es la que está abierta (ADR 0050): con varias bóvedas, «Bóveda» a
   // secas en la barra de herramientas deja de identificar nada. Vacío es la personal.
-  const [proyectoActivo, setProyectoActivo] = useState("");
+  // El nombre viene **dentro del estado de la bóveda**: con la referencia sola
+  // habría que pedir la lista para traducirla, y pedirla con la bóveda cerrada es
+  // un error seguro que acaba como un 400 en la consola del navegador.
+  const [nombreDelProyecto, setNombreDelProyecto] = useState("");
   useEffect(() => {
     const mirar = (abierta?: boolean) =>
       esfinge
         .estadoBoveda()
         .then((e) => {
           setBovedaAbierta(e.existe ? e.abierta : null);
-          setProyectoActivo(e.abierta ? e.proyecto : "");
+          setNombreDelProyecto(e.abierta ? e.nombreDelProyecto : "");
         })
         .catch(() => abierta !== undefined && setBovedaAbierta(abierta));
     void mirar();
     return alCambiarElEstadoDeLaBoveda((abierta) => void mirar(abierta));
   }, []);
 
-  // El nombre del proyecto abierto, para el título. Se pide a la lista, que es
-  // quien lo tiene: el estado de la bóveda solo lleva la referencia.
-  const [nombreDelProyecto, setNombreDelProyecto] = useState("");
-  useEffect(() => {
-    if (!proyectoActivo) {
-      setNombreDelProyecto("");
-      return;
-    }
-    esfinge
-      .proyectos()
-      .then((l) => setNombreDelProyecto(l.find((p) => p.ref === proyectoActivo)?.nombre ?? ""))
-      .catch(() => setNombreDelProyecto(""));
-  }, [proyectoActivo]);
+
 
   const [novedad, setNovedad] = useState<Novedad | null>(null);
   const [avance, setAvance] = useState<Avance | undefined>();

@@ -375,6 +375,12 @@ export type EstadoBoveda = {
    * trabajando**: con varias, «Bóveda» a secas deja de identificar nada.
    */
   proyecto: string;
+  /**
+   * Y cómo se llama, para la barra de herramientas. Viaja aquí y no se pide
+   * aparte: con la referencia sola habría que pedir la lista para traducirla, y
+   * pedirla con la bóveda cerrada es un error seguro.
+   */
+  nombreDelProyecto: string;
 };
 
 /** Una bóveda de proyecto, como la ve la ventana (ADR 0050). */
@@ -678,6 +684,15 @@ export const esfinge = {
    * abiertas a la vez es justo lo que se descartó.
    */
   volverALaBovedaPersonal: () => llamar<void>("VolverALaBovedaPersonal"),
+
+  /**
+   * Trae del servidor una bóveda de proyecto que todavía no está en este equipo:
+   * lo que la lista llama «dormido».
+   *
+   * Se abre con la bóveda personal sin preguntar nada, porque **la ranura viaja
+   * dentro del fichero**. Y se comprueba que abre antes de dejarla puesta.
+   */
+  bajarProyecto: (ref: string) => llamar<void>("BajarProyecto", ref),
 
   /** Le cambia el nombre. No toca su fichero, que se llama por la referencia. */
   renombrarProyecto: (ref: string, nombre: string) => llamar<void>("RenombrarProyecto", ref, nombre),

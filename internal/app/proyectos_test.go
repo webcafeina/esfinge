@@ -537,3 +537,23 @@ func TestLosErroresDeLaSincronizacionSeDistinguen(t *testing.T) {
 		}
 	}
 }
+
+// El estado de la bóveda dice **en cuál se está trabajando**, con su nombre: es lo
+// que la barra de herramientas enseña, y con la referencia sola la ventana tendría
+// que pedir la lista para traducirla —y pedirla con la bóveda cerrada es un 400—.
+func TestElEstadoDiceEnQueBovedaSeTrabaja(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	if e := a.EstadoBoveda(); e.Proyecto != "" || e.NombreDelProyecto != "" {
+		t.Fatalf("en la bóveda personal el estado dice %+v", e)
+	}
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	e := a.EstadoBoveda()
+	if e.Proyecto != ref {
+		t.Errorf("la referencia activa es %q y tenía que ser %q", e.Proyecto, ref)
+	}
+	if e.NombreDelProyecto != "Acme" {
+		t.Errorf("el nombre que se enseña es %q y tenía que ser «Acme»", e.NombreDelProyecto)
+	}
+}
