@@ -168,7 +168,7 @@ func TestBorrarLaBoveda(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	if _, err := os.Stat(ruta); err != nil {
 		t.Fatalf("la bóveda no está donde debería: %v", err)
 	}
@@ -236,7 +236,7 @@ func TestUnFalloQueNoEsLaContrasenaSeRegistra(t *testing.T) {
 	if _, err := a.CrearBoveda("la contraseña de verdad"); err != nil {
 		t.Fatal(err)
 	}
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 
 	dicho := func(f func() error) (string, string) {
 		t.Helper()

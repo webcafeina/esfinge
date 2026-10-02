@@ -68,6 +68,19 @@ type App struct {
 	// era el de **este puntero**, que es otra cosa: uno protege el contenido y el
 	// otro protege saber cuál es.
 	bov *boveda.Boveda
+	// activa es la referencia de la bóveda de proyecto abierta, o vacío si lo que
+	// está abierto es la bóveda personal (ADR 0050). **Una a la vez**, así que esto
+	// es una cadena y no un conjunto, y `bov` sigue siendo un puntero.
+	activa string
+	// llavePrincipal son los 43 bytes de la clave de la bóveda personal, mientras
+	// hay un proyecto abierto. Sin esto, conmutar de proyecto a proyecto pediría la
+	// contraseña maestra cada vez. **Se borra al bloquear**, o el reloj del bloqueo
+	// dejaría de significar lo que dice. Ver `proyectos.go`.
+	llavePrincipal []byte
+	// muPersonal pone en fila de uno lo que abre la bóveda personal para tocar su
+	// lista de proyectos. **No es el mismo cerrojo que `mu`**: éste se tiene mientras
+	// se lee y se escribe un fichero, y `mu` solo protege punteros. Ver `conLaPersonal`.
+	muPersonal sync.Mutex
 	// vig lleva los dos relojes: el del bloqueo por inactividad y el del borrado
 	// del portapapeles.
 	vig *vigilante

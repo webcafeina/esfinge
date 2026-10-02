@@ -153,7 +153,7 @@ func TestCuentaDeUnEquipoAOtro(t *testing.T) {
 	if _, err := a.a.TerminarRegistro(correo, codigo, "corta", ""); err == nil {
 		t.Fatal("crea la cuenta con una contraseña débil")
 	}
-	if _, err := os.Stat(rutaBoveda()); err == nil {
+	if _, err := os.Stat(rutaBovedaPrincipal()); err == nil {
 		t.Fatal("un alta que no ha salido deja una bóveda en el disco")
 	}
 	desde := time.Now()
@@ -332,7 +332,7 @@ func TestBorrarLaBovedaSeLlevaLaBaseYLaCuenta(t *testing.T) {
 	e := nuevoEquipo(t, raiz)
 	crearCuenta(t, raiz, e, correoDePrueba(), maestraFuerte)
 	alDia(t, e.a, time.Now().Add(-time.Minute))
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	for _, f := range []string{ruta + ".base", ruta + ".sincro", rutaCuenta()} {
 		if _, err := os.Stat(f); err != nil {
 			t.Fatalf("antes de borrar falta %s", filepath.Base(f))
@@ -404,7 +404,7 @@ func TestSalirDeLaCuentaEnEsteEquipo(t *testing.T) {
 	if got := titulosDe(t, e.a); got != "Se queda aquí" {
 		t.Fatalf("la bóveda de aquí ha cambiado: %q", got)
 	}
-	if _, err := os.Stat(rutaBoveda() + ".base"); err == nil {
+	if _, err := os.Stat(rutaBovedaPrincipal() + ".base"); err == nil {
 		t.Fatal("se queda la base de la sincronización")
 	}
 	if err := e.a.SincronizarAhora(); err == nil {

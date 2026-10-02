@@ -46,6 +46,10 @@ type EstadoBoveda struct {
 	Llaves int `json:"llaves"`
 	// MinutosParaBloquear es lo que dice Ajustes, para poder enseñarlo.
 	MinutosParaBloquear int `json:"minutosParaBloquear"`
+	// Proyecto es la referencia de la bóveda de proyecto abierta, o vacío si lo que
+	// está abierto es la bóveda personal (ADR 0050). Es lo que la barra de
+	// herramientas necesita para decir **en qué bóveda se está trabajando**.
+	Proyecto string `json:"proyecto"`
 }
 
 // ResumenImportacion es lo que se cuenta después de traer un CSV de otro gestor.
@@ -70,24 +74,34 @@ type ResumenImportacion struct {
 	Fichero string `json:"fichero"`
 }
 
-func rutaBoveda() string {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return ""
+// rutaBovedaPrincipal es el fichero de **la bóveda personal**, la de siempre.
+//
+// Desde la ADR 0050 hay más de una bóveda, y casi todo sigue hablando de ésta: la
+// cuenta, la sesión, la identidad para compartir, la ranura del llavero del sistema
+// y la ceremonia de recuperación son de la personal y no de la que esté abierta. Lo
+// que necesita la activa usa `a.rutaActiva()`, y son dos sitios contados.
+func rutaBovedaPrincipal() string {
+	if c := carpetaDeEsfinge(); c != "" {
+		return filepath.Join(c, "boveda.esfinge")
 	}
-	return filepath.Join(dir, "Esfinge", "boveda.esfinge")
+	return ""
 }
 
 // EstadoBoveda dice si hay bóveda, si está abierta y cuánto lleva dentro.
+//
+// **Habla de la bóveda activa** (ADR 0050), que es la que la ventana está
+// enseñando. `Existe` sigue siendo de la personal, porque lo que contesta es «hay
+// Esfinge configurado en este equipo»: con un proyecto abierto, que exista es
+// evidente.
 func (a *App) EstadoBoveda() EstadoBoveda {
-	ruta := rutaBoveda()
 	e := EstadoBoveda{
-		Ruta: ruta,
+		Ruta:     a.rutaActiva(),
+		Proyecto: a.bovedaActiva(),
 		// De los ajustes y no del vigilante: el vigilante lo lleva un cerrojo que
 		// no es de aquí, y el número que hay que enseñar es el que está guardado.
 		MinutosParaBloquear: a.ajustes.Ver().MinutosParaBloquear,
 	}
-	if _, err := os.Stat(ruta); err == nil {
+	if _, err := os.Stat(rutaBovedaPrincipal()); err == nil {
 		e.Existe = true
 	}
 	if b := a.boveda(); b != nil {
@@ -109,7 +123,7 @@ func (a *App) CrearBoveda(maestra string) (string, error) {
 	if a.boveda() != nil {
 		return "", errors.New("Ya hay una bóveda abierta")
 	}
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	if ruta == "" {
 		return "", errors.New("No encuentro dónde guardar la bóveda en este sistema")
 	}
@@ -133,7 +147,7 @@ func (a *App) CrearBoveda(maestra string) (string, error) {
 // AbrirBoveda desbloquea con la contraseña maestra o con la de recuperación. No
 // hace falta decir cuál es: se prueban las dos ranuras.
 func (a *App) AbrirBoveda(llave string) error {
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	// De paso se limpian los temporales que dejó una interrupción anterior. Solo
 	// los del prefijo propio y con más de un día: uno reciente puede ser de otro
 	// Esfinge escribiendo ahora mismo.
@@ -170,6 +184,9 @@ func (a *App) CerrarBoveda() {
 	if b != nil {
 		b.Cerrar()
 	}
+	// Y la clave de la personal, por lo mismo que al bloquear: cerrar a mano cierra
+	// todo, no solo lo que se está mirando.
+	a.olvidarLaPrincipal()
 	a.avisarDeLaBoveda()
 }
 
@@ -328,7 +345,7 @@ func (a *App) CambiarMaestraDeBoveda(vieja, nueva string) error {
 		return boveda.ErrCerrada
 	}
 
-	if _, err := boveda.Abrir(rutaBoveda(), vieja); err != nil {
+	if _, err := boveda.Abrir(rutaBovedaPrincipal(), vieja); err != nil {
 		return noAbre(err, "cambiar la contraseña maestra", "La contraseña de ahora no es ésa")
 	}
 	a.Actividad()
@@ -386,7 +403,7 @@ func comprobarLaMaestra(ruta, maestra, donde string) error {
 }
 
 func (a *App) BorrarBoveda(maestra string) error {
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	if _, err := os.Stat(ruta); err != nil {
 		return errors.New("Aquí no hay ninguna bóveda que borrar")
 	}

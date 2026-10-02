@@ -227,6 +227,11 @@ func (a *App) repasar() {
 	if b := a.boveda(); b != nil && a.vig.tocaBloquear() {
 		a.alCerrarLaBoveda()
 		b.Cerrar()
+		// **Y la clave de la bóveda personal, si había un proyecto abierto** (ADR
+		// 0050). Sin esta línea, bloquear cerraría el proyecto y dejaría en memoria
+		// con qué abrir todos los demás: el reloj del bloqueo dejaría de significar
+		// lo que dice justo en la bóveda que no se está mirando.
+		a.olvidarLaPrincipal()
 		a.sistema.Avisar(EventoBloqueada, nil)
 		a.avisarDeLaBoveda()
 	}

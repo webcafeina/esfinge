@@ -4,7 +4,35 @@
 
 ## Dónde se paró, y por dónde se sigue
 
-**Sesión del 2026-10-02.** Trabajo limpio: todo comprometido.
+**Sesión del 2026-10-02.** Empezadas **las bóvedas por proyecto** (ADR 0050), que es la última gran
+funcionalidad y la pidió el cliente así: *«cada proyecto/cliente tendrá su bóveda y yo podré apuntar ahí los
+mismos elementos que tengo en mi propia bóveda»*. El plan entero está en la ADR, decidido con él en tres
+rondas de preguntas.
+
+**Hecha la E1: el núcleo, sin interfaz y sin servidor.** Se puede crear un proyecto, conmutar, renombrar y
+listar — desde las pruebas, porque **no hay ninguna pantalla todavía**. Lo que hay que saber sin abrir la
+ficha:
+
+- **Un proyecto se abre con la clave de bóveda de la personal, no con la contraseña maestra**, y ésa es la
+  decisión entera: envolviéndolo con la maestra, **recuperarla perdería todos los proyectos**. De ahí salen
+  gratis **una sola entrada en el llavero** —un diálogo de Touch ID por actualización, no N, que es lo que el
+  cliente ya había aceptado pagar— y **una sola ceremonia de clave de recuperación**.
+- **Una bóveda abierta a la vez**, que es lo que hace que esto quepa: `App.boveda()` no cambia de firma y los
+  40 métodos que la piden siguen sin saber cuál es.
+- **La lista de proyectos va dentro del cuerpo cifrado de la personal, sin sus claves**, y los ficheros se
+  llaman **por una referencia al azar**: un listado de la carpeta no puede ser la lista de clientes.
+
+**La siguiente acción concreta: la E2, el apartado «Proyectos» en la ventana** — una fila más en la barra
+lateral, la lista con buscador, crear, entrar y renombrar. Lo que esa pantalla tiene que decir y es fácil
+olvidar: **que un proyecto no tiene clave de recuperación propia** (quien ha creado una bóveda antes espera la
+ceremonia) y **en qué bóveda se está trabajando**, en la barra de herramientas.
+
+Y lo que **no** se puede dejar sin decir en cuanto haya pantalla, porque está en
+[`deuda.md`](deuda.md) y es de severidad alta: **un proyecto no se sincroniza todavía**. Con dos Macs, lo que
+se guarde ahí no sale del equipo hasta la E4.
+
+<details>
+<summary>Lo del wifi y la 2.37.0, del 2026-10-02</summary>
 
 **Las redes wifi funcionan de verdad** (ADR 0049), y eso ya no es una promesa: el cliente importó su
 `wifi.csv` con la 2.36.0 y **se conectó con el móvil escaneando el código de la ficha**. Era lo único de la
@@ -13,6 +41,8 @@ clase que no se podía comprobar aquí.
 **Y la 2.37.0 está publicada** con los dos arreglos que salieron de mirar la ficha de una llave —un aviso que
 afirmaba algo falso y los mismos datos repetidos cuatro veces— y con **importar redes de LastPass y
 Bitwarden**, que no está probado contra un fichero de verdad y así está dicho.
+
+</details>
 
 <details>
 <summary>Lo anterior, del 2026-10-01</summary>

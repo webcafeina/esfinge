@@ -498,13 +498,32 @@ func (c *Cliente) json(ctx context.Context, metodo, ruta, token string, cuerpo, 
 }
 
 func errorDe(resp *http.Response) error {
+	// El cuerpo se lee **una vez y entero** (con su tope), porque luego hay que
+	// mirarlo dos veces: como JSON nuestro y, si no lo es, como texto.
+	crudo, _ := leerHasta(resp.Body, 64*1024)
 	var r struct {
 		Error   string `json:"error"`
 		Version int64  `json:"version"`
 	}
-	_ = json.NewDecoder(io.LimitReader(resp.Body, 64*1024)).Decode(&r)
+	_ = json.Unmarshal(crudo, &r)
 	if r.Error == "" {
+		// **Y si el servidor no ha contestado en nuestro formato, se dice lo que sí
+		// ha contestado.** Un 500 del Worker —una excepción, un secreto que falta—
+		// no trae `{"error": …}`, y sin esto el único rastro era «ha contestado 500»:
+		// un fallo mudo que no se puede depurar, y encima de una pieza que solo se
+		// puede mirar desde fuera. Pasó en la puerta del 2026-10-02 y costó tres
+		// pasadas completas averiguar que no se reproducía.
+		//
+		// Lo que se añade es **lo que dijo el servidor**, no lo que se le mandó: aquí
+		// no puede acabar un token ni una contraseña, porque el servidor no refleja la
+		// petición.
 		r.Error = fmt.Sprintf("El servidor de cuentas ha contestado %d", resp.StatusCode)
+		if t := strings.TrimSpace(string(crudo)); t != "" {
+			if len(t) > 200 {
+				t = t[:200] + "…"
+			}
+			r.Error += ": " + t
+		}
 	}
 	return &ErrorDelServidor{Estado: resp.StatusCode, Mensaje: r.Error, Version: r.Version}
 }

@@ -260,7 +260,7 @@ func TestLaOfertaDelDesbloqueoEsUnaPorBoveda(t *testing.T) {
 	// en una cuenta. Se simula como lo hace la aplicación: la de antes se aparta y
 	// en su sitio queda una nueva.
 	a.CerrarBoveda()
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	if err := os.Rename(ruta, ruta+".apartada"); err != nil {
 		t.Fatal(err)
 	}

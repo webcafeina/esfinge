@@ -46,6 +46,11 @@ JSON en claro, `formato: 1`. Los campos criptográficos son líneas `ESF1.…` c
   normaliza antes (`Normalizar`).
 - Los tipos de sobre son una lista abierta. **`llavero-del-sistema` y `pin` son de un solo equipo** y no
   se suben nunca.
+- **`boveda-principal` es la ranura de una bóveda de proyecto** ([ADR 0050](adr/0050-varias-bovedas.md)): la
+  clave de ese proyecto sellada con **la clave de bóveda de la bóveda personal**, con `PerfilLlave` y no con
+  el coste de una contraseña humana, porque el secreto son esos 43 caracteres al azar. **Ésta sí se sube**,
+  al contrario que las dos de arriba: es lo único que permite que otro equipo abra el proyecto. Una bóveda
+  de proyecto **no tiene ranura maestra ni de recuperación**: la contraseña maestra no la abre.
 
 ## El sello
 
@@ -87,12 +92,41 @@ JSON en claro, `formato: 1`. Los campos criptográficos son líneas `ESF1.…` c
   "sitiosExcluidos": ["dominio.com"],
   "lapidas": { "id de entrada": "RFC3339" },
   "identidad": { "semilla": "…", "creada": "RFC3339", "suite": "…" },
-  "envios": [ { "id": "…", "entrada": "…", "correo": "…", "huella": "…", "creado": "RFC3339" } ]
+  "envios": [ { "id": "…", "entrada": "…", "correo": "…", "huella": "…", "creado": "RFC3339" } ],
+  "proyectos": [ { "ref": "16 hex", "nombre": "Acme", "creado": "RFC3339", "usado": "RFC3339", "archivado": false } ]
 }
 ```
 
 **Las claves que no se conocen se conservan tal cual**, en el contenido y en cada entrada. Una versión que
 no entiende algo no puede borrarlo al guardar.
+
+### Los proyectos
+
+`proyectos` son las bóvedas de proyecto que abre **esta** bóveda ([ADR 0050](adr/0050-varias-bovedas.md)), y
+solo lo tiene la personal. Cada una lleva su referencia —hex de 8 bytes, **y el nombre de su fichero**—, su
+nombre, cuándo se creó, cuándo se abrió por última vez y si está archivada.
+
+**No lleva la clave de ningún proyecto.** Lo que abre un proyecto es su ranura `boveda-principal`, que viaja
+dentro de su propio fichero, así que un equipo que se baje el fichero lo abre sin consultar esta lista.
+Guardarla aquí sería amontonar las llaves de todos los proyectos en un sitio más sin ganar nada.
+
+Está aquí dentro, y no en un fichero al lado, porque **la lista de proyectos es la lista de clientes**: es el
+mismo razonamiento que los sitios excluidos y los iconos ([ADR 0024](adr/0024-iconos-de-los-sitios.md)). El
+registro local (`bovedas.json`) solo apunta qué referencias hay, sin nombres.
+
+**Se funde a tres bandas por `ref`**, como los envíos: lo que estaba en la base y falta en un lado, lo quitó
+ese lado. Y dos reglas finas, porque un proyecto **sí se edita en los dos equipos a la vez**:
+
+- **`usado` es el mayor de los dos**, porque las dos aperturas ocurrieron. Es la misma regla que la fecha
+  `usada` de una llave de acceso.
+- **El nombre lo decide la base**: gana el lado que lo cambió, y si lo cambiaron los dos, el mayor por bytes
+  — arbitrario, pero **igual en los dos equipos**, que es lo que hace falta ([ADR 0038](adr/0038-sincronizar-la-boveda.md)).
+- Y si un equipo archiva y el otro desarchiva, **gana desarchivado**: es el estado que lo enseña en vez de
+  esconderlo.
+
+En el espejo de TypeScript esta sección vive en `extra` —el `Contenido` de allí no la declara— pero **se
+funde con estas mismas reglas** (`navegador/src/nucleo/proyecto.ts`). Como sección opaca ganaría la del
+servidor entera y se perdería un proyecto creado en la ventana.
 
 ### La identidad
 
@@ -235,6 +269,10 @@ equipos crearon la suya antes de verse.
 estaba en B y falta en un lado, lo quitó ese lado—, y con lo de R cuando está en los dos. **Ordenado por
 `id`**, que es el único orden que los dos equipos calculan igual. No hay desempates finos a propósito:
 perder una nota entregada o conservarla de más cuesta lo mismo, que esa copia llegue dos veces.
+
+**Los proyectos**, por `ref`: igual que `envios` para decidir quién queda, y con las tres reglas de arriba
+—`usado` el mayor, el nombre lo decide la base, y desarchivado gana— para lo que queda en los dos. Ordenados
+por `ref`.
 
 **Sobres**, por tipo: los de un solo equipo, los de aquí. Si el tipo solo está en un lado, ése. Iguales →
 ése. Con B: L igual a B → R; R igual a B → L. Si no, el de `creado` mayor, y si empatan, el de

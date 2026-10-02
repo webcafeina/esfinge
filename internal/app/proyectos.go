@@ -1,0 +1,473 @@
+package app
+
+// Las bóvedas de proyecto en la ventana (ADR 0050): el registro, la lista y
+// conmutar.
+//
+// Lo que hace que esto quepa en tan poco es la decisión de **una sola bóveda
+// abierta a la vez**: `App.bov` sigue siendo un puntero y no un mapa, así que
+// `boveda()` no cambia de firma y los cuarenta métodos que la piden siguen
+// hablando de «la bóveda» sin saber cuál es. Conmutar es cambiar qué devuelve ese
+// accesor.
+//
+// Y dos cosas que se cumplen en todo el fichero:
+//
+//   - **Lo de la cuenta es de la bóveda personal, siempre.** La sesión, el
+//     verificador de acceso, la identidad para compartir y la posesión son de ella
+//     y no de la activa, así que `rutaBovedaPrincipal()` y no `rutaActiva()`. Lo
+//     contrario publicaría la identidad de un proyecto como la de la cuenta, y las
+//     copias que te mandaran llegarían cifradas hacia una bóveda que puedes tener
+//     cerrada: los dos lados harían lo suyo bien y el buzón diría «No se puede
+//     abrir» sin que nadie pudiera entender por qué.
+//   - **Con un proyecto abierto no se sincroniza** (hasta la E4). El servidor tiene
+//     una bóveda por cuenta y la rechaza con 409 si no es la que espera, así que
+//     subir un proyecto por la ruta de la personal no es que no funcione: es que
+//     pediría el 409 en cada pasada.
+
+import (
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"io"
+	"log"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/webcafeina/esfinge/internal/boveda"
+	"github.com/webcafeina/esfinge/internal/cripto"
+	"github.com/webcafeina/esfinge/internal/escritura"
+)
+
+// nombreDelRegistro vive al lado de las preferencias y de los navegadores.
+const nombreDelRegistro = "bovedas.json"
+
+// carpetaDeProyectos es donde van los ficheros, **nombrados por su referencia**.
+const carpetaDeProyectos = "proyectos"
+
+// registro es el índice de ficheros, y **no es la verdad**: la verdad son los
+// ficheros, y los nombres viven cifrados dentro de la bóveda personal.
+//
+// Es una caché para poder encontrar un proyecto **sin abrir nada**, y por eso no
+// lleva nombres: un `bovedas.json` con «Acme» dentro sería la lista de clientes de
+// Webcafeína en claro en el disco, que es justo lo que la [ADR 0024] decidió no
+// dejar pasar con los iconos.
+type registroDeBovedas struct {
+	Version   int               `json:"version"`
+	Proyectos []proyectoEnDisco `json:"proyectos"`
+}
+
+type proyectoEnDisco struct {
+	Ref string `json:"ref"`
+	// Fichero es relativo a la carpeta de Esfinge, para que mover la carpeta de
+	// configuración entera siga funcionando.
+	Fichero string `json:"fichero"`
+}
+
+func carpetaDeEsfinge() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(dir, "Esfinge")
+}
+
+func rutaDelRegistro() string {
+	if c := carpetaDeEsfinge(); c != "" {
+		return filepath.Join(c, nombreDelRegistro)
+	}
+	return ""
+}
+
+// rutaDeProyecto es dónde vive el fichero de una referencia.
+func rutaDeProyecto(ref string) string {
+	if c := carpetaDeEsfinge(); c != "" {
+		return filepath.Join(c, carpetaDeProyectos, ref+".esfinge")
+	}
+	return ""
+}
+
+func leerRegistro() registroDeBovedas {
+	r := registroDeBovedas{Version: 1}
+	datos, err := os.ReadFile(rutaDelRegistro())
+	if err != nil {
+		return r
+	}
+	_ = json.Unmarshal(datos, &r)
+	if r.Version == 0 {
+		r.Version = 1
+	}
+	return r
+}
+
+// guardarRegistro escribe con `escritura.Atomica` y **no con `os.WriteFile`** como
+// los navegadores: un registro a medias deja proyectos invisibles, y un proyecto
+// invisible parece un proyecto perdido.
+func guardarRegistro(r registroDeBovedas) error {
+	ruta := rutaDelRegistro()
+	if ruta == "" {
+		return errors.New("No encuentro dónde guardar la lista de bóvedas en este sistema")
+	}
+	if err := os.MkdirAll(filepath.Dir(ruta), 0o700); err != nil {
+		return err
+	}
+	datos, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return err
+	}
+	return escritura.Atomica(ruta, escritura.Opciones{Permisos: 0o600, CrearCarpeta: true},
+		func(w io.Writer) error {
+			_, err := w.Write(datos)
+			return err
+		})
+}
+
+func apuntarLaBoveda(ref string) error {
+	r := leerRegistro()
+	for _, p := range r.Proyectos {
+		if p.Ref == ref {
+			return nil
+		}
+	}
+	r.Proyectos = append(r.Proyectos, proyectoEnDisco{
+		Ref:     ref,
+		Fichero: filepath.Join(carpetaDeProyectos, ref+".esfinge"),
+	})
+	return guardarRegistro(r)
+}
+
+func olvidarLaBovedaDelRegistro(ref string) error {
+	r := leerRegistro()
+	var quedan []proyectoEnDisco
+	for _, p := range r.Proyectos {
+		if p.Ref != ref {
+			quedan = append(quedan, p)
+		}
+	}
+	r.Proyectos = quedan
+	return guardarRegistro(r)
+}
+
+// ------------------------------------------------------------------ la activa
+
+// llaveDeLaPrincipal es con lo que se abre cualquier proyecto, venga de la bóveda
+// personal abierta o de lo que se guardó al conmutar.
+//
+// **Y aquí está la relajación que hay que conocer** (ADR 0050): mientras hay un
+// proyecto abierto, los 43 bytes de la clave de la personal se quedan en memoria.
+// Sin eso, conmutar de un proyecto a otro pediría la contraseña maestra cada vez,
+// que con muchos proyectos no es aceptable. Se borra con `cripto.Borrar` cuando el
+// vigilante cierra por inactividad y al cerrar a mano, así que el reloj del bloqueo
+// sigue significando lo que dice.
+func (a *App) llaveDeLaPrincipal() []byte {
+	a.mu.Lock()
+	activa, guardada := a.activa, a.llavePrincipal
+	a.mu.Unlock()
+	if activa == "" {
+		// La personal está abierta: se le pide a ella, que es la fuente.
+		if b := a.boveda(); b != nil {
+			return b.LlaveParaProyectos()
+		}
+		return nil
+	}
+	if len(guardada) == 0 {
+		return nil
+	}
+	return append([]byte(nil), guardada...)
+}
+
+// ponerActiva apunta cuál es la bóveda abierta y, si es un proyecto, se queda la
+// clave de la personal para poder conmutar.
+func (a *App) ponerActiva(ref string, llavePrincipal []byte) {
+	a.mu.Lock()
+	vieja := a.llavePrincipal
+	a.activa = ref
+	if ref == "" {
+		a.llavePrincipal = nil
+	} else {
+		a.llavePrincipal = append([]byte(nil), llavePrincipal...)
+	}
+	a.mu.Unlock()
+	if vieja != nil {
+		cripto.Borrar(vieja)
+	}
+}
+
+// olvidarLaPrincipal borra la clave en memoria. La llaman el vigilante al bloquear
+// y cerrar a mano: **si esto no se llamara, el reloj del bloqueo dejaría de ser
+// verdad** para los proyectos.
+func (a *App) olvidarLaPrincipal() {
+	a.mu.Lock()
+	vieja := a.llavePrincipal
+	a.llavePrincipal, a.activa = nil, ""
+	a.mu.Unlock()
+	if vieja != nil {
+		cripto.Borrar(vieja)
+	}
+}
+
+// bovedaActiva es la referencia de lo que está abierto: vacío, la personal.
+func (a *App) bovedaActiva() string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.activa
+}
+
+// rutaActiva es el fichero de la bóveda abierta, o el de la personal si no hay
+// ninguna.
+func (a *App) rutaActiva() string {
+	if ref := a.bovedaActiva(); ref != "" {
+		return rutaDeProyecto(ref)
+	}
+	return rutaBovedaPrincipal()
+}
+
+// ------------------------------------------------------------------ lo que cruza el puente
+
+// Proyecto es lo que la ventana necesita de cada bóveda de proyecto.
+type Proyecto struct {
+	Ref    string `json:"ref"`
+	Nombre string `json:"nombre"`
+	Creado string `json:"creado"`
+	Usado  string `json:"usado"`
+	// Archivado lo saca de la lista del día a día.
+	Archivado bool `json:"archivado"`
+	// EnEsteEquipo dice si su fichero está aquí. Falso es «dormido»: el proyecto
+	// existe y está en el servidor, pero este equipo no lo ha bajado. **No es un
+	// error y no se dice como tal.**
+	EnEsteEquipo bool `json:"enEsteEquipo"`
+	// Activo es el que está abierto ahora mismo.
+	Activo bool `json:"activo"`
+}
+
+// conLaPersonal hace algo con la bóveda personal, esté abierta o no.
+//
+// Es lo que permite que el selector de proyectos funcione con un proyecto abierto:
+// los nombres viven en el cuerpo cifrado de la personal, y con un proyecto delante
+// la personal está cerrada. Con la clave que se guardó al conmutar se abre su
+// fichero el instante que dure la operación y se cierra. **Secuencial y nunca dos
+// abiertas de cara a quien mira**, que es lo que la ADR 0050 descartó.
+// **Y va en fila de uno** (`muPersonal`). Dos de éstas a la vez abrirían dos
+// instancias del mismo fichero, cada una con su copia del cuerpo, y el segundo
+// guardado se llevaría por delante lo que escribió el primero: crear un proyecto
+// mientras se apunta cuándo se abrió otro perdería uno de los dos. Es la misma
+// lección que la cola de la bóveda de TypeScript (ADR 0040), y aquí cuesta una línea.
+func (a *App) conLaPersonal(hacer func(*boveda.Boveda) error) error {
+	a.muPersonal.Lock()
+	defer a.muPersonal.Unlock()
+	if a.bovedaActiva() == "" {
+		b := a.boveda()
+		if b == nil {
+			return boveda.ErrCerrada
+		}
+		return hacer(b)
+	}
+	llave := a.llaveDeLaPrincipal()
+	if len(llave) == 0 {
+		return boveda.ErrCerrada
+	}
+	defer cripto.Borrar(llave)
+	p, err := boveda.AbrirConLaClave(rutaBovedaPrincipal(), llave)
+	if err != nil {
+		return err
+	}
+	defer p.Cerrar()
+	return hacer(p)
+}
+
+// Proyectos son las bóvedas de proyecto de la personal.
+func (a *App) Proyectos() ([]Proyecto, error) {
+	var lista []boveda.Proyecto
+	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		lista = b.Proyectos()
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	activa := a.bovedaActiva()
+	out := make([]Proyecto, 0, len(lista))
+	for _, p := range lista {
+		ruta := rutaDeProyecto(p.Ref)
+		_, errF := os.Stat(ruta)
+		out = append(out, Proyecto{
+			Ref: p.Ref, Nombre: p.Nombre, Creado: p.Creado, Usado: p.Usado,
+			Archivado: p.Archivado, EnEsteEquipo: errF == nil, Activo: p.Ref == activa,
+		})
+	}
+	return out, nil
+}
+
+// CrearProyecto hace una bóveda de proyecto y devuelve su referencia.
+//
+// **No pide contraseña y no devuelve clave de recuperación**: se abre con la
+// personal, y la de recuperación de la personal lo recupera. La pantalla que llama
+// a esto tiene que decirlo, porque quien ha creado una bóveda antes espera la
+// ceremonia y su ausencia sin explicar parece un olvido.
+func (a *App) CrearProyecto(nombre string) (string, error) {
+	if nombre == "" {
+		return "", errors.New("Ponle un nombre al proyecto")
+	}
+	// **Se puede crear desde cualquier bóveda**, también desde dentro de otro
+	// proyecto: la lista vive en la personal y `conLaPersonal` llega a ella con la
+	// clave que se guardó al conmutar. Prohibirlo obligaría a volver a la bóveda
+	// personal —y a teclear la maestra— para una cosa que no lo necesita.
+	llave := a.llaveDeLaPrincipal()
+	if len(llave) == 0 {
+		return "", boveda.ErrCerrada
+	}
+	defer cripto.Borrar(llave)
+
+	bruta, err := cripto.Azar(8)
+	if err != nil {
+		return "", err
+	}
+	ref := hex.EncodeToString(bruta)
+	ruta := rutaDeProyecto(ref)
+	if ruta == "" {
+		return "", errors.New("No encuentro dónde guardar la bóveda en este sistema")
+	}
+	if err := os.MkdirAll(filepath.Dir(ruta), 0o700); err != nil {
+		return "", err
+	}
+	if _, err := os.Stat(ruta); err == nil {
+		return "", errors.New("Ya hay una bóveda con esa referencia")
+	}
+
+	p, err := boveda.CrearProyecto(ruta, llave)
+	if err != nil {
+		return "", err
+	}
+	p.Cerrar()
+
+	// El orden importa: **primero el fichero, después apuntarlo**. Al revés, un
+	// fallo al crear dejaría en la lista un proyecto que no existe — y un proyecto
+	// de la lista que no existe es el que se enseña como «dormido en este equipo»,
+	// o sea que parecería que está en el servidor y no está en ningún sitio.
+	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		return b.PonerProyecto(boveda.Proyecto{
+			Ref: ref, Nombre: nombre,
+			Creado: time.Now().UTC().Format(time.RFC3339),
+		})
+	}); err != nil {
+		return "", err
+	}
+	if err := apuntarLaBoveda(ref); err != nil {
+		// El registro es una caché: si no se puede escribir, el proyecto existe
+		// igual y se reconstruye al arrancar. No se deshace nada por esto.
+		log.Printf("esfinge: no se ha podido apuntar el proyecto en el registro: %v", err)
+	}
+	a.Actividad()
+	return ref, nil
+}
+
+// AbrirProyecto conmuta: cierra lo que haya abierto y abre ese proyecto.
+func (a *App) AbrirProyecto(ref string) error {
+	if ref == "" {
+		return a.VolverALaBovedaPersonal()
+	}
+	llave := a.llaveDeLaPrincipal()
+	if len(llave) == 0 {
+		return boveda.ErrCerrada
+	}
+	defer cripto.Borrar(llave)
+
+	ruta := rutaDeProyecto(ref)
+	if ruta == "" {
+		return errors.New("No encuentro dónde está esa bóveda en este sistema")
+	}
+	if _, err := os.Stat(ruta); err != nil {
+		// Dormido en este equipo. Es un estado y no un fallo, y se dice así.
+		return errors.New("Esa bóveda no está en este equipo todavía")
+	}
+	p, err := boveda.AbrirProyecto(ruta, llave)
+	if err != nil {
+		return err
+	}
+	a.conmutarA(p, ref, llave)
+	return nil
+}
+
+// VolverALaBovedaPersonal cierra el proyecto abierto. **Y pide la maestra otra
+// vez**, porque la personal no se queda abierta por detrás: lo que se guarda es su
+// clave, y con ella no se puede volver a abrir el fichero sin pasar por su ranura.
+//
+// Se hace así a propósito y no guardando la bóveda personal abierta: dos bóvedas
+// abiertas a la vez es justo lo que la ADR 0050 descartó, y tener una «escondida»
+// sería tenerlas sin decirlo.
+func (a *App) VolverALaBovedaPersonal() error {
+	if a.bovedaActiva() == "" {
+		return nil
+	}
+	a.alCerrarLaBoveda()
+	a.mu.Lock()
+	b := a.bov
+	a.bov = nil
+	a.mu.Unlock()
+	if b != nil {
+		b.Cerrar()
+	}
+	a.olvidarLaPrincipal()
+	a.avisarDeLaBoveda()
+	return nil
+}
+
+// RenombrarProyecto le cambia el nombre. **No toca su fichero**, que se llama por
+// la referencia justo para esto.
+func (a *App) RenombrarProyecto(ref, nombre string) error {
+	if nombre == "" {
+		return errors.New("Ponle un nombre al proyecto")
+	}
+	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		p, hay := b.Proyecto(ref)
+		if !hay {
+			return errors.New("Ese proyecto no está en tu bóveda")
+		}
+		p.Nombre = nombre
+		return b.PonerProyecto(p)
+	}); err != nil {
+		return err
+	}
+	a.Actividad()
+	return nil
+}
+
+// conmutarA deja ese proyecto como la bóveda abierta.
+//
+// **Pasa por `alCerrarLaBoveda()` y no solo por `cambiarBoveda`**: lo primero
+// vacía lo que quede por subir de la bóveda que se abandona, y sin eso se perdería
+// su último guardado.
+func (a *App) conmutarA(p *boveda.Boveda, ref string, llavePrincipal []byte) {
+	a.alCerrarLaBoveda()
+	a.cambiarBoveda(p)
+	a.ponerActiva(ref, llavePrincipal)
+	a.marcarProyectoUsado(ref)
+	a.Actividad()
+	a.buscarIconosSiProcede(a.ctx)
+	// **Y no se llama a `alAbrirLaBoveda`**: lo de la cuenta es de la personal, y
+	// un proyecto no se sincroniza todavía (E4). Ver la cabecera de este fichero.
+}
+
+// marcarProyectoUsado apunta en la personal cuándo se abrió, que es por lo que se
+// ordena la lista.
+//
+// Se escribe **después** de haber conmutado, con la clave ya guardada, porque así
+// vale igual viniendo de la personal que de otro proyecto. Y si falla no se dice:
+// que la lista salga en otro orden no es motivo para que abrir un proyecto parezca
+// haber fallado.
+//
+// Va a segundos, como todas las fechas del formato, y **no se reescribe si no ha
+// cambiado**, que es la misma regla que la fecha `usada` de una llave de acceso: un
+// guardado de más es una subida de más en cada apertura.
+func (a *App) marcarProyectoUsado(ref string) {
+	cuando := time.Now().UTC().Format(time.RFC3339)
+	err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		p, hay := b.Proyecto(ref)
+		if !hay || p.Usado == cuando {
+			return nil
+		}
+		p.Usado = cuando
+		return b.PonerProyecto(p)
+	})
+	if err != nil {
+		log.Printf("esfinge: no se ha podido apuntar cuándo se abrió el proyecto: %v", err)
+	}
+}

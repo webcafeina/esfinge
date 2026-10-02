@@ -168,6 +168,22 @@ No se cambian sin preguntar.
   **la contraseña en texto sigue oculta con su ojo** —el código lo lee una cámara apuntada a propósito y el
   texto lo lee quien pase por detrás—. Los colores del código **no salen de la paleta**: negro sobre blanco
   a mano, o en tema oscuro no lo lee ninguna cámara.
+- **Y va a haber una bóveda por proyecto** (ADR 0050, empezada el 2026-10-02): la última gran funcionalidad.
+  Lo que hay que saber sin abrir la ficha, porque es lo que no se puede volver a discutir: **un proyecto se
+  abre con la clave de bóveda de la personal, no con la contraseña maestra**. Suena a lo mismo —el cliente
+  pidió «su misma maestra»— y no lo es: envolviéndolo con la maestra, **el día que se recupere los proyectos
+  siguen envueltos con la vieja, que ya nadie sabe, y se pierden todos**, y además cambiar la maestra pasaría
+  a ser una transacción sobre N ficheros. La clave de bóveda no cambia nunca. De ahí salen gratis dos cosas
+  que el cliente ya había aceptado pagar: **una sola entrada en el llavero del sistema** —un diálogo tras cada
+  actualización y no uno por bóveda, porque la ranura de Touch ID va solo en la personal— y **una sola
+  ceremonia de clave de recuperación**. Lo demás que no se cambia sin preguntar: **una bóveda abierta a la
+  vez** —es lo que hace que `App.boveda()` no cambie de firma y que el reloj, el candado, el goteo de iconos y
+  el canal del navegador sigan siendo uno—; **la lista de proyectos va dentro del cuerpo cifrado de la
+  personal y sin sus claves** —la ranura de cada fichero es lo que abre, así que guardarlas sería amontonar
+  las llaves de todos los proyectos por nada—; y **los ficheros se llaman por una referencia al azar**, que un
+  listado de la carpeta no puede ser la lista de clientes. **Y esa ranura SÍ se sube**, al contrario que la
+  del sistema: es lo único que permite que el otro Mac abra el proyecto, y meterla en `ranurasLocales` es
+  media línea que parece lo prudente y no se nota hasta llegar al segundo equipo.
 - **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
   mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda
   hasta la publicación siguiente — no es un fallo, es un aviso del flujo. Se hace igual: **el cliente para la
@@ -540,6 +556,17 @@ guarda callado lo que esta versión sí entendería. Pasó al partir la direcci�
 nueve trozos (ADR 0047): lo que escribió la 2.30.0 se trae a `calle` al leerlo y se deja de escribir. **Y
 eso hay que hacerlo en los dos lados**, porque si uno lo trae y el otro lo deja en `extra`, la misma
 entrada da bytes distintos y las dos bóvedas se la pasan sin fin.
+
+**Y una sección nueva del cuerpo no se funde sola: `fundirContenido` arma el contenido campo a campo.**
+Añadir un campo a `contenido` y nada más deja una sección que se guarda bien y **desaparece en la primera
+sincronización**, sin error en ninguna parte. No es la trampa de `Extra` —que conserva lo que no se
+entiende—: aquí se entiende y se tira, porque el `out` de la fusión se construye desde cero y lo que nadie
+copie no existe. Pasó con `proyectos` (ADR 0050) y lo cazó una prueba de dos equipos, no las cruzadas. **Y
+hay que hacerlo en los dos lados**: en el espejo, una sección que `Contenido` no declara cae en `extra` y
+**se funde como un bloque**, o sea que gana la del servidor entera —así se perdería un proyecto creado en la
+ventana, y así es como dos bóvedas se pasan la una a la otra sin fin—. Lo que hay que escribir, entonces, son
+tres cosas: la fusión en Go, la fusión en TypeScript, y **datos de esa sección en el generador de
+`TestCruzadaFusionAlAzar`**, que sin ellos los 400 casos no la tocan y la cruzada pasa sin comprobar nada.
 
 **Y lo que está en la papelera no cuenta para el índice de duplicados del importador.** Desde que la
 papelera guarda la entrada entera (ADR 0026), sin esa línea el importador reconoce lo borrado y

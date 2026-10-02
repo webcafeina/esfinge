@@ -153,7 +153,7 @@ func ApuntarCuentasA(a *App, raiz string) {
 }
 
 func rutaCuenta() string {
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	if ruta == "" {
 		return ""
 	}
@@ -208,7 +208,7 @@ func (a *App) EstadoDeCuenta() EstadoCuenta {
 	if modo == "" {
 		// Quien ya tenía bóveda antes de que hubiera cuentas trabaja en local: la
 		// bienvenida es para quien no tiene nada.
-		if _, err := os.Stat(rutaBoveda()); err == nil {
+		if _, err := os.Stat(rutaBovedaPrincipal()); err == nil {
 			modo = "local"
 		}
 	}
@@ -247,7 +247,7 @@ func (a *App) SalirDeCuenta(maestra string) error {
 	if d.Modo != "cuenta" {
 		return errors.New("Este equipo no está en ninguna cuenta")
 	}
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	if err := comprobarLaMaestra(ruta, maestra, "salir de la cuenta"); err != nil {
 		return err
 	}
@@ -277,7 +277,7 @@ func (a *App) olvidarLaCuentaAqui() error {
 	if b := a.boveda(); b != nil {
 		b.AlGuardar(nil)
 	}
-	if err := (sincro.JuntoALaBoveda{Ruta: rutaBoveda()}).Olvidar(); err != nil {
+	if err := (sincro.JuntoALaBoveda{Ruta: rutaBovedaPrincipal()}).Olvidar(); err != nil {
 		return err
 	}
 	return guardarDatosCuenta(datosCuenta{Modo: "local"})
@@ -354,7 +354,7 @@ func (a *App) TerminarRegistro(correo, codigo, maestra, nueva string) (string, e
 	if err != nil {
 		return "", err
 	}
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	var b *boveda.Boveda
 	recuperacion := ""
 	creada := false
@@ -524,7 +524,7 @@ func (a *App) terminarEntrada(p *entradaPendiente, s cuenta.Sesion) (ResultadoEn
 		}
 	}
 
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	local, errLocal := os.ReadFile(ruta)
 	if errLocal != nil {
 		// Nada en este equipo: la bóveda de la cuenta es la de aquí.
@@ -606,7 +606,7 @@ func (a *App) ResolverOtraBoveda(juntar bool, maestraLocal string) (ResultadoEnt
 	if p == nil || p.remota == nil || p.sesion == nil {
 		return ResultadoEntrada{}, errors.New("Empieza otra vez: no hay ninguna entrada a medias")
 	}
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	if juntar {
 		llave := maestraLocal
 		if llave == "" {

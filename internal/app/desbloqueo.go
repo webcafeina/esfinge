@@ -31,9 +31,13 @@ import (
 )
 
 // idEnElLlavero es con lo que se guarda el secreto en el sistema. **Uno por
-// máquina y no uno por bóveda**: en un equipo hay una bóveda, y si se borra y se
-// crea otra, la de antes ya no abre con ese secreto porque su sobre se fue con
-// ella.
+// máquina y no uno por bóveda**: y sigue siéndolo desde que hay bóvedas de proyecto
+// (ADR 0050), porque la ranura del sistema va **solo en la personal** y un proyecto
+// se abre a través de ella. Si fuera una por bóveda, cada actualización pediría
+// permiso del llavero una vez por proyecto.
+//
+// Si la personal se borra y se crea otra, la de antes ya no abre con ese secreto
+// porque su sobre se fue con ella.
 const idEnElLlavero = "com.webcafeina.esfinge.boveda"
 
 // motivoDelDialogo es lo que el sistema enseña al pedir la huella. Lo lee alguien
@@ -84,13 +88,19 @@ func (a *App) llaveroDelSistema() llavero.Llavero {
 // de desbloquear, cuando todavía no hay nada abierto.
 func (a *App) EstadoDelDesbloqueo() EstadoDesbloqueo {
 	l := a.llaveroDelSistema()
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	puesto := boveda.RanuraDelSistemaEn(ruta)
-	// **Cuál es la bóveda de este equipo, esté abierta o cerrada.** Con la bóveda
-	// abierta se pregunta a ella; con la pantalla de desbloquear delante hay que
-	// mirar el fichero, donde el identificador va en claro.
+	// **Cuál es la bóveda personal de este equipo, esté abierta o cerrada.** Con la
+	// bóveda abierta se pregunta a ella; con la pantalla de desbloquear delante hay
+	// que mirar el fichero, donde el identificador va en claro.
+	//
+	// Y desde la ADR 0050: **solo se le pregunta a la bóveda abierta si la abierta es
+	// la personal**. Con un proyecto delante contestaría su identificador, al que
+	// nunca se le ha ofrecido nada, y la pantalla ofrecería Touch ID **para el
+	// proyecto** — que es la forma exacta del fallo que arregló la ADR 0044, con otra
+	// cara.
 	id := ""
-	if b := a.boveda(); b != nil {
+	if b := a.boveda(); b != nil && a.bovedaActiva() == "" {
 		id = b.ID()
 	} else {
 		id = boveda.IDEn(ruta)
@@ -106,13 +116,23 @@ func (a *App) EstadoDelDesbloqueo() EstadoDesbloqueo {
 	}
 }
 
-// ActivarDesbloqueo pone la ranura del sistema en esta bóveda. Exige tenerla
-// abierta: es lo que impide que alguien la active sin saber la maestra.
+// ActivarDesbloqueo pone la ranura del sistema en **la bóveda personal**. Exige
+// tenerla abierta: es lo que impide que alguien la active sin saber la maestra.
 //
 // El orden importa y no es el evidente: **primero se le da a guardar al sistema
 // y después se pone la ranura**. Al revés, un fallo del sistema dejaría una
 // ranura que no abre nadie y un botón que promete algo que no funciona.
+//
+// **Y con un proyecto abierto no se activa** (ADR 0050). La ranura del sistema va
+// solo en la personal, y eso no es una limitación: es lo que hace que haya **una**
+// entrada en el llavero y **un** diálogo del sistema tras cada actualización en vez
+// de uno por bóveda. Un proyecto se abre a través de la personal, así que la huella
+// ya lo abre. Puesta en un proyecto además no serviría de mucho: esa ranura **no se
+// sube**, así que sería de este equipo y de nadie más.
 func (a *App) ActivarDesbloqueo() error {
+	if a.bovedaActiva() != "" {
+		return errors.New("Vuelve a tu bóveda para activar el desbloqueo con el sistema")
+	}
 	b := a.boveda()
 	if b == nil {
 		return boveda.ErrCerrada
@@ -162,7 +182,7 @@ func (a *App) QuitarDesbloqueo() error {
 // Lo que devuelve cuando no puede está escrito para que la ventana no tenga que
 // decidir nada: cancelar no es un fallo y se vuelve a la contraseña maestra.
 func (a *App) AbrirBovedaConElSistema() error {
-	ruta := rutaBoveda()
+	ruta := rutaBovedaPrincipal()
 	if !boveda.RanuraDelSistemaEn(ruta) {
 		return boveda.ErrSinRanuraDelSistema
 	}

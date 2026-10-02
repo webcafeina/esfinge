@@ -6,16 +6,68 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 )
 
 // ------------------------------------------------------------------ sin servidor
+
+// **Un error que no viene en nuestro formato tiene que decir lo que sí vino.**
+//
+// Sale de una caída de la puerta del 2026-10-02: la prueba de la cuenta falló con
+// «El servidor de cuentas ha contestado 500» y de ahí no se podía sacar nada —tres
+// pasadas completas para averiguar que no se reproducía—. Un 500 del Worker, por una
+// excepción o por un secreto que falta, no trae `{"error": …}`, y sin esto el cuerpo
+// se tiraba entero.
+func TestUnErrorQueNoEsNuestroDiceLoQueDijoElServidor(t *testing.T) {
+	respuesta := func(codigo int, cuerpo string) *http.Response {
+		return &http.Response{StatusCode: codigo, Body: io.NopCloser(strings.NewReader(cuerpo))}
+	}
+
+	// Lo nuestro se sigue leyendo igual, y **sin añadirle nada**: ese texto se le
+	// enseña a una persona.
+	err := errorDe(respuesta(409, `{"error":"Esa bóveda no es la de esta cuenta","version":17}`))
+	var e *ErrorDelServidor
+	if !errors.As(err, &e) {
+		t.Fatalf("no es un ErrorDelServidor: %v", err)
+	}
+	if e.Mensaje != "Esa bóveda no es la de esta cuenta" || e.Version != 17 {
+		t.Errorf("el error nuestro ha cambiado: %+v", e)
+	}
+
+	// Y lo que no es nuestro: el código **y lo que dijo**.
+	err = errorDe(respuesta(500, "Error: Cannot read properties of undefined (reading 'pimienta')"))
+	if !errors.As(err, &e) {
+		t.Fatalf("no es un ErrorDelServidor: %v", err)
+	}
+	if !strings.Contains(e.Mensaje, "500") {
+		t.Errorf("no dice el código: %q", e.Mensaje)
+	}
+	if !strings.Contains(e.Mensaje, "pimienta") {
+		t.Errorf("no dice lo que contestó el servidor, que es lo único que había: %q", e.Mensaje)
+	}
+
+	// Un cuerpo vacío no deja dos puntos colgando.
+	err = errorDe(respuesta(502, ""))
+	errors.As(err, &e)
+	if strings.HasSuffix(e.Mensaje, ":") || strings.Contains(e.Mensaje, ": ") {
+		t.Errorf("con el cuerpo vacío el mensaje queda a medias: %q", e.Mensaje)
+	}
+
+	// Y un cuerpo largo se recorta, que un error no es un volcado.
+	err = errorDe(respuesta(500, strings.Repeat("x", 5000)))
+	errors.As(err, &e)
+	if len(e.Mensaje) > 400 {
+		t.Errorf("el mensaje mide %d caracteres", len(e.Mensaje))
+	}
+}
 
 func TestLaClaveDeAccesoNoSeDerivaConPocoCoste(t *testing.T) {
 	sal := bytes.Repeat([]byte{1}, 16)

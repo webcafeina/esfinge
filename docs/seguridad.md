@@ -408,6 +408,35 @@ de la máquina** más que en ese dibujo y en lo que se copie al portapapeles, co
 Y la red sí sale en la exportación en claro, al contrario que una llave de acceso: su clave es una
 contraseña como las demás, y poder llevársela a otro gestor es la mitad de lo que significa poder salir.
 
+## Varias bóvedas: lo que la personal sostiene
+
+Desde las bóvedas de proyecto ([ADR 0050](adr/0050-varias-bovedas.md)) hay más de una bóveda en el equipo, y
+hay que decir con claridad qué separan y qué no.
+
+**Lo que separan es el contenido, no el riesgo de la contraseña.** Todas se abren con la misma maestra, así
+que quien la consiga abre todas. Lo eligió el cliente con el coste delante. Lo que sí se gana: una bóveda de
+proyecto **se entrega entera** a quien corresponda, y **lo que está cerrado no está en memoria** — con el
+proyecto de un cliente abierto, las contraseñas de los demás no están descifradas en ningún sitio.
+
+**Y lo que hay que saber antes de usarlo: perder la bóveda personal y su clave de recuperación es perder
+todos los proyectos**, aunque sus ficheros sigan en el disco. Un proyecto no se abre con una contraseña
+propia: se abre con la clave de la bóveda personal, que es lo que permite que cambiar la maestra no toque
+ningún proyecto y que una sola ceremonia de recuperación valga para todos. El precio es ése, y es real.
+
+Su salida es entregar una bóveda, que le pone maestra y clave de recuperación propias y la deja sin depender
+de nada.
+
+**Mientras hay un proyecto abierto, la clave de la bóveda personal está en memoria.** Es lo que permite
+cambiar de proyecto sin volver a teclear la maestra. Se borra al bloquear por inactividad y al cerrar a
+mano, así que el reloj del bloqueo sigue significando lo que dice; y esa clave llegó ahí porque alguien
+abrió la personal con su contraseña en esta sesión.
+
+**Y lo que queda en el disco:** un fichero por proyecto en `proyectos/`, con permisos 600, **nombrados por
+una referencia al azar y no por el proyecto** — un listado de esa carpeta no puede ser la lista de clientes
+de Webcafeína —, y un `bovedas.json` que apunta qué referencias hay **y ningún nombre**. Los nombres viven
+cifrados dentro de la bóveda personal, por lo mismo que los sitios excluidos y los iconos
+([ADR 0024](adr/0024-iconos-de-los-sitios.md)).
+
 ## Decisiones que afectan a la seguridad
 
 - [ADR 0002](adr/0002-formato-esf1.md) — El cifrado y por qué esos algoritmos.
@@ -416,3 +445,5 @@ contraseña como las demás, y poder llevársela a otro gestor es la mitad de lo
 - [ADR 0010](adr/0010-que-guarda-el-historial.md) — Qué se guarda y qué no.
 - [ADR 0012](adr/0012-sin-firmar.md) — Por qué el sistema avisa al instalarla.
 - [ADR 0049](adr/0049-las-redes-wifi.md) — Por qué el código de una red está a la vista.
+- [ADR 0050](adr/0050-varias-bovedas.md) — Por qué un proyecto se abre con la bóveda personal, y qué se
+  pierde con ella.

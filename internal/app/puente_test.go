@@ -118,6 +118,19 @@ var loQuePuedeCruzarElPuente = []string{
 	// devuelve el secreto: entra y sale de `internal/llavero` sin cruzar nada.
 	"EstadoDelDesbloqueo", "ActivarDesbloqueo", "QuitarDesbloqueo", "AbrirBovedaConElSistema",
 	"NoOfrecerElDesbloqueo",
+
+	// Las bóvedas de proyecto (ADR 0050). El que hay que mirar dos veces es
+	// **`AbrirProyecto`: abre una bóveda sin la contraseña maestra**, con la clave
+	// de la personal. Está aquí a conciencia, y lo que lo sostiene es que esa clave
+	// solo existe en memoria **porque la personal ya se abrió con su maestra en esta
+	// sesión**, y que el reloj del bloqueo la borra. No hay camino desde la ventana
+	// para conseguirla: ninguno de los cinco recibe ni devuelve ninguna clave, y
+	// `LlaveParaProyectos` no es método de `App`.
+	//
+	// Lo que **no** está aquí, y no por olvido: no hay forma de pedir desde la
+	// ventana la clave de un proyecto, ni de crear uno con una contraseña elegida, ni
+	// de poner la ranura del sistema en uno.
+	"Proyectos", "CrearProyecto", "AbrirProyecto", "VolverALaBovedaPersonal", "RenombrarProyecto",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

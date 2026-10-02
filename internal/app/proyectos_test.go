@@ -1,0 +1,345 @@
+package app
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/webcafeina/esfinge/internal/boveda"
+	"github.com/webcafeina/esfinge/internal/llavero"
+)
+
+// conUnProyecto deja la bóveda personal abierta y un proyecto creado.
+func conUnProyecto(t *testing.T) (*App, *sistemaFalso, string) {
+	t.Helper()
+	a, s, _ := conReloj(t)
+	if _, err := a.CrearBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	ref, err := a.CrearProyecto("Acme")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return a, s, ref
+}
+
+// El camino entero: crear un proyecto, conmutar, y que lo que se ve dentro sea lo
+// de ese proyecto y no lo de la bóveda personal.
+func TestConmutarEntreLaPersonalYUnProyecto(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+
+	// En la personal hay una cuenta; en el proyecto, otra.
+	if err := a.GuardarEnBoveda(boveda.Entrada{Tipo: boveda.TipoCredencial, Titulo: "Mi banco", Secreto: "x"}); err != nil {
+		t.Fatal(err)
+	}
+
+	lista, err := a.Proyectos()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lista) != 1 || lista[0].Nombre != "Acme" || lista[0].Ref != ref {
+		t.Fatalf("la lista de proyectos es %+v", lista)
+	}
+	if !lista[0].EnEsteEquipo {
+		t.Error("el proyecto que se acaba de crear tiene que estar en este equipo")
+	}
+	if lista[0].Activo {
+		t.Error("crear un proyecto no lo abre")
+	}
+
+	// Se conmuta.
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if e := a.EstadoBoveda(); !e.Abierta || e.Proyecto != ref {
+		t.Fatalf("tras conmutar, el estado es %+v", e)
+	}
+	// **Y lo de la personal no está aquí**, que es lo que de verdad separa una
+	// bóveda de otra.
+	if hay, _ := a.BuscarEnBoveda("banco"); len(hay) != 0 {
+		t.Fatalf("en el proyecto se ven %d entradas de la bóveda personal", len(hay))
+	}
+	if err := a.GuardarEnBoveda(boveda.Entrada{Tipo: boveda.TipoCredencial, Titulo: "Hosting de Acme", Secreto: "y"}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Y la lista sigue saliendo con un proyecto abierto, que es lo que permite
+	// conmutar sin volver a la personal.
+	lista, err = a.Proyectos()
+	if err != nil {
+		t.Fatalf("con un proyecto abierto no se puede listar: %v", err)
+	}
+	if len(lista) != 1 || !lista[0].Activo {
+		t.Fatalf("la lista con el proyecto abierto es %+v", lista)
+	}
+	if lista[0].Usado == "" {
+		t.Error("abrir un proyecto tiene que apuntar cuándo, que es por lo que se ordena la lista")
+	}
+
+	// Se vuelve a la personal: hay que teclear la maestra otra vez, a propósito.
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	if e := a.EstadoBoveda(); e.Abierta || e.Proyecto != "" {
+		t.Fatalf("al volver, el estado es %+v", e)
+	}
+	if err := a.AbrirBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if hay, _ := a.BuscarEnBoveda("banco"); len(hay) != 1 {
+		t.Fatalf("de vuelta en la personal se ven %d entradas y había una", len(hay))
+	}
+	// Y lo del proyecto tampoco está aquí: son dos ficheros.
+	if hay, _ := a.BuscarEnBoveda("Hosting"); len(hay) != 0 {
+		t.Fatalf("en la personal se ven %d entradas del proyecto", len(hay))
+	}
+}
+
+// **Bloquear se lleva la clave de la bóveda personal**, no solo la bóveda abierta.
+//
+// Es la prueba de la relajación que la ADR 0050 acepta: esa clave vive en memoria
+// para que conmutar no pida la maestra cada vez, así que si el bloqueo no la
+// borrara, el reloj dejaría de significar lo que dice **en todas las demás
+// bóvedas**, que es peor que en la que se está mirando.
+func TestAlBloquearSeOlvidaLaClaveDeLaPersonal(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+
+	// Pasa el plazo sin tocar nada: el de serie son quince minutos.
+	a.vig.ultimaActividad = a.vig.ahora().Add(-20 * time.Minute)
+	a.repasar()
+
+	if a.boveda() != nil {
+		t.Fatal("el proyecto sigue abierto después de bloquear")
+	}
+	if a.bovedaActiva() != "" {
+		t.Error("tras bloquear sigue habiendo una bóveda de proyecto activa")
+	}
+	// **Y lo que importa:** ya no se puede abrir ningún proyecto sin la maestra.
+	if err := a.AbrirProyecto(ref); err == nil {
+		t.Fatal("tras bloquear todavía se puede abrir un proyecto: la clave de la personal se ha quedado en memoria")
+	}
+	if len(a.llavePrincipal) != 0 {
+		t.Error("la clave de la bóveda personal sigue en memoria después de bloquear")
+	}
+}
+
+// Cerrar a mano hace lo mismo que bloquear: cierra todo, no solo lo que se mira.
+func TestCerrarAManoSeLlevaLaClaveDeLaPersonal(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	a.CerrarBoveda()
+	if err := a.AbrirProyecto(ref); err == nil {
+		t.Fatal("tras cerrar a mano todavía se puede abrir un proyecto")
+	}
+}
+
+// **El desbloqueo con el sistema es de la bóveda personal, y solo de ella**
+// (ADR 0050).
+//
+// Dos fallos que esto vigila, y los dos salen de que `EstadoDelDesbloqueo` y
+// `ActivarDesbloqueo` preguntaban por «la bóveda abierta»:
+//
+//   - con un proyecto abierto, la pantalla ofrecería Touch ID **para el proyecto**,
+//     que es la forma exacta del fallo que arregló la ADR 0044;
+//   - y activarlo pondría la ranura del sistema en el proyecto, lo que convertiría
+//     «una entrada en el llavero» en una por bóveda y, con ella, un diálogo del
+//     sistema por proyecto tras cada actualización.
+// Y el escenario está elegido para que distinga: **la personal sin desbloqueo
+// puesto y con «ahora no» contestado**.
+//
+// La primera versión de esta prueba activaba el desbloqueo antes y comprobaba que
+// no se sugería — y pasaba igual con el fallo dentro, porque `Sugerir` ya era falso
+// por estar puesto. Lo dijo mutar la línea, no leerla: una prueba que no distingue
+// los dos casos no está comprobando nada.
+func TestConUnProyectoAbiertoNoSeOfreceTouchIDParaEl(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	a.llavero = &llavero.DeMentira{ComoSeLlama: "Touch ID"}
+
+	// A la personal se le ofreció y contestó «ahora no»: no se le vuelve a ofrecer.
+	if e := a.EstadoDelDesbloqueo(); !e.Sugerir {
+		t.Fatalf("de partida tenía que ofrecerlo: %+v", e)
+	}
+	if err := a.NoOfrecerElDesbloqueo(); err != nil {
+		t.Fatal(err)
+	}
+	if e := a.EstadoDelDesbloqueo(); e.Sugerir {
+		t.Fatalf("se contestó y sigue ofreciéndolo: %+v", e)
+	}
+
+	// Y ahora se abre un proyecto. Preguntándole a la bóveda abierta, el
+	// identificador sería el del proyecto —al que nunca se le ha ofrecido nada— y la
+	// tarjeta volvería a salir, ofreciendo Touch ID **para el proyecto**: la forma
+	// exacta del fallo que arregló la ADR 0044, con otra cara.
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if e := a.EstadoDelDesbloqueo(); e.Sugerir {
+		t.Errorf("con un proyecto abierto se ofrece Touch ID, y esa ranura es de la bóveda personal: %+v", e)
+	}
+}
+
+// Y activarlo sobre un proyecto pondría una ranura del sistema por bóveda, lo que
+// convierte **un** diálogo del sistema tras cada actualización en uno por proyecto.
+// Además esa ranura no se sube, así que no serviría en el otro equipo.
+func TestNoSeActivaElDesbloqueoSobreUnProyecto(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	a.llavero = &llavero.DeMentira{ComoSeLlama: "Touch ID"}
+
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.ActivarDesbloqueo(); err == nil {
+		t.Fatal("se ha activado el desbloqueo del sistema sobre una bóveda de proyecto")
+	}
+	// Se mira **el fichero** y no la memoria, que es donde se vería el daño.
+	if boveda.RanuraDelSistemaEn(rutaDeProyecto(ref)) {
+		t.Error("el proyecto tiene ranura del sistema: una entrada más en el llavero y un diálogo más por actualización")
+	}
+
+	// Y en la personal sí se puede, que es la otra mitad: la guarda no puede dejar
+	// el desbloqueo inservible.
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.AbrirBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.ActivarDesbloqueo(); err != nil {
+		t.Fatalf("en la bóveda personal tiene que poder activarse: %v", err)
+	}
+	if !boveda.RanuraDelSistemaEn(rutaBovedaPrincipal()) {
+		t.Error("la ranura no ha quedado en la bóveda personal")
+	}
+}
+
+// El registro es una caché para encontrar ficheros, **y no lleva nombres**: un
+// `bovedas.json` con «Acme» dentro sería la lista de clientes de Webcafeína en
+// claro en el disco.
+func TestElRegistroNoLlevaNombresYLosFicherosVanPorReferencia(t *testing.T) {
+	_, _, ref := conUnProyecto(t)
+
+	datos, err := os.ReadFile(rutaDelRegistro())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(datos), "Acme") {
+		t.Error("el nombre del proyecto está en claro en el registro")
+	}
+	if !strings.Contains(string(datos), ref) {
+		t.Error("el registro no apunta la referencia del proyecto")
+	}
+
+	// Y el fichero se llama por la referencia, no por el proyecto.
+	entradas, err := os.ReadDir(filepath.Join(carpetaDeEsfinge(), carpetaDeProyectos))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entradas) != 1 {
+		t.Fatalf("en la carpeta de proyectos hay %d ficheros", len(entradas))
+	}
+	if entradas[0].Name() != ref+".esfinge" {
+		t.Errorf("el fichero se llama %q y tenía que llamarse por la referencia", entradas[0].Name())
+	}
+}
+
+// Lo de la cuenta es de la bóveda personal, **esté abierta o no**, y por eso su
+// fichero no puede colgar de la bóveda activa: con un proyecto abierto se buscaría
+// la sesión al lado del proyecto y se perdería.
+func TestLaCuentaNoCuelgaDeLaBovedaActiva(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	antes := rutaCuenta()
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if ahora := rutaCuenta(); ahora != antes {
+		t.Errorf("con un proyecto abierto, lo de la cuenta se busca en %q y antes era %q", ahora, antes)
+	}
+	if strings.Contains(antes, ref) {
+		t.Error("el fichero de la cuenta cuelga de una bóveda de proyecto")
+	}
+}
+
+// **Crear y renombrar funcionan también desde dentro de otro proyecto**, y eso no
+// es una concesión: la lista vive en la bóveda personal, y lo que llega a ella es la
+// clave que se guardó al conmutar. Obligar a volver a la personal sería obligar a
+// teclear la contraseña maestra para ponerle nombre a algo.
+func TestCrearYRenombrarFuncionanDesdeCualquierBoveda(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	if err := a.RenombrarProyecto(ref, "Acme S. A."); err != nil {
+		t.Fatal(err)
+	}
+	lista, _ := a.Proyectos()
+	if len(lista) != 1 || lista[0].Nombre != "Acme S. A." {
+		t.Fatalf("tras renombrar: %+v", lista)
+	}
+
+	// Y ahora lo mismo con un proyecto abierto y la personal cerrada.
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	otra, err := a.CrearProyecto("Beta")
+	if err != nil {
+		t.Fatalf("no se puede crear un proyecto desde dentro de otro: %v", err)
+	}
+	if err := a.RenombrarProyecto(ref, "Acme, S. A."); err != nil {
+		t.Fatalf("no se puede renombrar desde dentro de otro: %v", err)
+	}
+
+	// Y los dos cambios han llegado a la bóveda personal de verdad, no a una copia
+	// en memoria: se comprueba volviendo a abrirla con su contraseña.
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.AbrirBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	lista, _ = a.Proyectos()
+	if len(lista) != 2 {
+		t.Fatalf("en la personal hay %d proyectos y tenían que ser 2: %+v", len(lista), lista)
+	}
+	nombres := map[string]bool{}
+	for _, p := range lista {
+		nombres[p.Nombre] = true
+	}
+	if !nombres["Acme, S. A."] || !nombres["Beta"] {
+		t.Errorf("los nombres que han llegado son %+v", nombres)
+	}
+	if _, hay := nombres[""]; hay {
+		t.Error("hay un proyecto sin nombre")
+	}
+	_ = otra
+}
+
+// Un proyecto que no está en este equipo es un estado, no un fallo, y se dice sin
+// crear nada: **nunca se fabrica una bóveda vacía** para tapar el hueco.
+func TestUnProyectoQueNoEstaAquiNoSeCrea(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	ruta := rutaDeProyecto(ref)
+	if err := os.Remove(ruta); err != nil {
+		t.Fatal(err)
+	}
+
+	lista, err := a.Proyectos()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lista) != 1 {
+		t.Fatalf("el proyecto ha desaparecido de la lista: %+v", lista)
+	}
+	if lista[0].EnEsteEquipo {
+		t.Error("dice que está en este equipo y su fichero no está")
+	}
+	if err := a.AbrirProyecto(ref); err == nil {
+		t.Fatal("ha abierto un proyecto que no está en este equipo")
+	}
+	if _, err := os.Stat(ruta); err == nil {
+		t.Fatal("abrir un proyecto que no está lo ha creado vacío")
+	}
+}

@@ -252,6 +252,35 @@ func (b *Boveda) LlaveParaProyectos() []byte {
 	return append([]byte(nil), b.llave...)
 }
 
+// AbrirConLaClave abre una bóveda con **su propia clave de bóveda**, sin pasar por
+// ninguna ranura y sin derivar nada.
+//
+// Existe para una cosa concreta: con un proyecto abierto, la bóveda personal está
+// cerrada y aun así hay que poder leer y escribir su lista de proyectos —el nombre
+// de uno nuevo, cuándo se abrió el último— sin pedir la contraseña maestra otra vez.
+// Lo que se guarda en memoria al conmutar es esa clave, así que esto es lo que la
+// convierte en poder volver a abrir el fichero.
+//
+// **No es una puerta nueva**: quien tiene la clave de bóveda ya tiene el contenido,
+// porque es con lo que se descifra el cuerpo. Lo que añade es poder hacerlo sobre el
+// fichero, que es lo que hace falta para escribir.
+func AbrirConLaClave(ruta string, llave []byte) (*Boveda, error) {
+	if len(llave) == 0 {
+		return nil, ErrCerrada
+	}
+	datos, err := os.ReadFile(ruta)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := leerDocumento(datos)
+	if err != nil {
+		return nil, err
+	}
+	// Sin purgar: esto se abre para una cosa pequeña y concreta, y vaciar la
+	// papelera es trabajo de abrir de verdad.
+	return conLlave(ruta, doc, append([]byte(nil), llave...), false)
+}
+
 // CrearProyecto hace una bóveda de proyecto, cuya única ranura es la que abre la
 // personal. No devuelve clave de recuperación porque no tiene: la de la personal
 // lo recupera.

@@ -184,7 +184,7 @@ type fuenteDelNavegador struct{ a *App }
 
 func (f fuenteDelNavegador) Estado() navegador.Estado {
 	e := navegador.Estado{}
-	if ruta := rutaBoveda(); ruta != "" {
+	if ruta := rutaBovedaPrincipal(); ruta != "" {
 		if _, err := os.Stat(ruta); err == nil {
 			e.Existe = true
 		}

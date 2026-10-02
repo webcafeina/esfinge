@@ -5,6 +5,42 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-02 · Las bóvedas por proyecto, E1: el núcleo
+
+- **Se planificó entera la última gran funcionalidad** (ADR 0050), con el cliente y en tres rondas de
+  preguntas: una bóveda por proyecto, **una abierta a la vez**, con su apartado en la barra lateral,
+  sincronizadas, mover entradas entre bóvedas, y entregar / archivar / borrar al acabar.
+- **Y se descartó la opción evidente, que pierde datos.** Envolver la clave del proyecto con la
+  contraseña maestra es lo que la decisión del cliente parece pedir literalmente, y el día que la maestra
+  **se recupera** los proyectos siguen envueltos con la vieja, que ya nadie sabe: se perderían todos. Se
+  envuelve con **la clave de bóveda de la personal**, que no cambia nunca. Dos cosas que eso da gratis:
+  **una sola entrada en el llavero del sistema** —un diálogo tras cada actualización, no uno por bóveda, que
+  es lo que el cliente ya había aceptado pagar— y **una sola ceremonia de clave de recuperación**.
+- Se escribió la **E1**: la ranura `boveda-principal` (`internal/boveda/proyecto.go`, espejo de
+  `sistema.go`), la sección `proyectos` del cuerpo cifrado **sin las claves** —el plan las guardaba «por
+  redundancia» y no sirven para nada—, el registro local sin nombres, los ficheros nombrados por referencia,
+  y conmutar en `internal/app/proyectos.go`.
+- **Se verificó mutando cada prueba nueva, y dos mutaciones cambiaron el código:**
+  - Metiendo la ranura en `ranurasLocales` —media línea, y parece lo prudente— un proyecto sube sin lo único
+    que lo abre y **no se nota hasta el segundo Mac**. La prueba se pone roja.
+  - `fundirContenido` arma el contenido campo a campo, así que la sección nueva **no se fundía**: la lista de
+    clientes desaparecía en la primera sincronización. Quitando la línea, la prueba la deja en cero.
+  - Y una prueba **pasaba sin comprobar nada**: la de que con un proyecto abierto no se ofrece Touch ID para
+    él. `Sugerir` ya era falso por otro motivo, así que la mutación no la tumbaba. Rehecha con el escenario
+    que distingue —la personal sin desbloqueo y con «ahora no» contestado—, ahora sí cae.
+- **Tres fallos encontrados escribiéndolo**, los tres mudos: `EstadoDelDesbloqueo` leía el identificador de
+  la bóveda abierta y con un proyecto delante ofrecería Touch ID **para el proyecto** (la forma exacta del
+  fallo de la ADR 0044); `ActivarDesbloqueo` habría puesto la ranura del sistema en el proyecto; y conmutar
+  sin pasar por `alCerrarLaBoveda()` perdería lo que quedara por subir de la bóveda que se abandona.
+- Se espejó la fusión en TypeScript y **los 400 casos al azar de la cruzada llevan ahora proyectos**: como
+  sección opaca en `extra` ganaría la del servidor entera, que son dos bóvedas pasándose la una a la otra sin
+  fin (ADR 0038). Mutando la regla de `usado` en el espejo, la cruzada canta la diferencia.
+- **Queda abierto, y en [`deuda.md`](deuda.md)**: no hay interfaz (E2), **un proyecto no se sincroniza**
+  —severidad alta: con dos Macs no sale del equipo—, la extensión no sabe de proyectos, y **cuántos diálogos
+  del sistema salen de verdad tras actualizar solo se ve en el Mac**.
+
+---
+
 ## 2026-10-02 · El wifi funciona de verdad, y se deja de esperar a las tiendas
 
 - **Publicada la 2.36.0** en cuanto Chrome aprobó la 2.35.0, con las redes wifi y el campo `usada`. Chrome
