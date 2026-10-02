@@ -72,6 +72,12 @@ igualadas** en cuanto Google apruebe: lo que había en la tienda era la 2.33.0.
 - **Y salió una prueba cruzada nueva del formato entero**: las dos listas de campos se comparan entre sí, que
   es lo único que caza un campo caído del espejo cuando ese campo no es un secreto.
 
+**Dónde va cada tienda, que es lo que se pierde de vista:** la aplicación y GitHub van por la **2.37.0**; en
+Chrome está publicada la **2.35.0** y **en revisión la 2.36.0**; el paquete de la 2.37.0 **no subió** —Chrome
+no admite otro mientras revisa—, y da igual porque esa versión no cambia `navegador/`. **La primera versión
+que toque la extensión tiene que comprobar que su paquete sube**, y si no sube, decirlo: ahí es donde se
+decide si parar la revisión en curso. Firefox va al día, que no tiene esa restricción.
+
 **Y desde el 2026-10-02 se publica sin esperar a ninguna tienda.** Chrome no admite un paquete nuevo
 mientras revisa el anterior, así que publicar durante una revisión deja ese paquete fuera hasta la siguiente
 —es un aviso del flujo, no un fallo—. El cliente lo decidió con la alternativa delante: esperar la aprobación
