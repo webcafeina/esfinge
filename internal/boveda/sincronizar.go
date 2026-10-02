@@ -647,6 +647,11 @@ func fundirContenido(l, r contenido, b *contenido, ahora time.Time, f *Fusion) c
 		enviosB = b.Envios
 	}
 	out.Envios = fundirPendientes(l.Envios, r.Envios, enviosB, b != nil)
+	var proyectosB []Proyecto
+	if b != nil {
+		proyectosB = b.Proyectos
+	}
+	out.Proyectos = fundirProyectos(l.Proyectos, r.Proyectos, proyectosB, b != nil)
 	var extraB map[string]json.RawMessage
 	if b != nil {
 		extraB = b.Extra

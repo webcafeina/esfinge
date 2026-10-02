@@ -218,6 +218,14 @@ type contenido struct {
 	// (ADR 0043, entrega B3). Ver `pendiente.go`: son notas, no secretos.
 	Envios []Pendiente `json:"envios,omitempty"`
 
+	// Proyectos son las bóvedas de proyecto que abre esta bóveda (ADR 0050): qué
+	// hay y cómo se llama, **nunca su clave**. Ver `proyecto.go`.
+	//
+	// Viven aquí, dentro del cuerpo cifrado, por lo mismo que `SitiosExcluidos`: la
+	// lista de proyectos de Webcafeína es la lista de sus clientes, y en un fichero
+	// sin cifrar o en las preferencias estaría en claro.
+	Proyectos []Proyecto `json:"proyectos,omitempty"`
+
 	// Extra son las secciones que esta versión no conoce. Ver Entrada.Extra.
 	Extra map[string]json.RawMessage `json:"-"`
 }
@@ -328,51 +336,21 @@ func crear(ruta, maestra string) (*Boveda, string, error) {
 		return nil, "", errors.New("La contraseña maestra no puede estar vacía")
 	}
 
-	// La clave de bóveda: 32 bytes de azar, manejados **siempre como texto**.
-	//
-	// Va en base64url y no en crudo por una razón muy concreta: la línea de
-	// comandos lee claves de fichero con `--clave-fichero`, y ahí se recortan los
-	// saltos de línea del final. Una clave binaria que acabara en 0x0A o 0x0D
-	// —una de cada cien— se truncaría en silencio y la vía de escape dejaría de
-	// funcionar de forma aparentemente aleatoria.
-	bruta, err := cripto.Azar(32)
+	b, err := sinRanuras(ruta)
 	if err != nil {
 		return nil, "", err
 	}
-	defer cripto.Borrar(bruta)
-	llave := []byte(base64.RawURLEncoding.EncodeToString(bruta))
 
 	recuperacion, err := NuevaRecuperacion()
 	if err != nil {
 		return nil, "", err
 	}
 
-	id, err := cripto.Azar(16)
-	if err != nil {
-		return nil, "", err
-	}
-
-	ahora := time.Now().UTC().Format(time.RFC3339)
-	b := &Boveda{
-		ruta:  ruta,
-		llave: llave,
-		doc: documento{
-			Esfinge:  marca,
-			Aviso:    avisoDelFichero,
-			Formato:  Formato,
-			ID:       hex.EncodeToString(id),
-			Serie:    0,
-			Cambiada: ahora,
-		},
-	}
-	b.sel.ID = b.doc.ID
-	b.cuerpoSucio = true
-
 	for _, r := range []struct{ tipo, clave string }{
 		{RanuraMaestra, maestra},
 		{RanuraRecuperacion, recuperacion},
 	} {
-		s, err := envolver(r.tipo, r.clave, llave, ahora)
+		s, err := envolver(r.tipo, r.clave, b.llave, b.doc.Cambiada)
 		if err != nil {
 			return nil, "", err
 		}
@@ -386,6 +364,50 @@ func crear(ruta, maestra string) (*Boveda, string, error) {
 		return nil, "", err
 	}
 	return b, recuperacion, nil
+}
+
+// sinRanuras hace una bóveda nueva y vacía, **sin ningún sobre y sin escribirla**.
+// Quien la llame tiene que ponerle al menos una ranura: una bóveda sin sobres es
+// un fichero que no abre nadie.
+//
+// Está aparte porque las bóvedas de proyecto (ADR 0050) nacen con otra ranura
+// —`boveda-principal`— y no con la maestra, y lo demás es idéntico: la clave, el
+// identificador y la cabecera no dependen de con qué se vaya a abrir.
+func sinRanuras(ruta string) (*Boveda, error) {
+	// La clave de bóveda: 32 bytes de azar, manejados **siempre como texto**.
+	//
+	// Va en base64url y no en crudo por una razón muy concreta: la línea de
+	// comandos lee claves de fichero con `--clave-fichero`, y ahí se recortan los
+	// saltos de línea del final. Una clave binaria que acabara en 0x0A o 0x0D
+	// —una de cada cien— se truncaría en silencio y la vía de escape dejaría de
+	// funcionar de forma aparentemente aleatoria.
+	bruta, err := cripto.Azar(32)
+	if err != nil {
+		return nil, err
+	}
+	defer cripto.Borrar(bruta)
+	llave := []byte(base64.RawURLEncoding.EncodeToString(bruta))
+
+	id, err := cripto.Azar(16)
+	if err != nil {
+		return nil, err
+	}
+
+	b := &Boveda{
+		ruta:  ruta,
+		llave: llave,
+		doc: documento{
+			Esfinge:  marca,
+			Aviso:    avisoDelFichero,
+			Formato:  Formato,
+			ID:       hex.EncodeToString(id),
+			Serie:    0,
+			Cambiada: time.Now().UTC().Format(time.RFC3339),
+		},
+	}
+	b.sel.ID = b.doc.ID
+	b.cuerpoSucio = true
+	return b, nil
 }
 
 // envolver sella la clave de bóveda con una llave. Cada sobre es un contenedor

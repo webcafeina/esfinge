@@ -398,11 +398,28 @@ func (g generador) lado(base []Entrada, ids []string) contenido {
 			})
 		}
 	}
+	// Las bóvedas de proyecto (ADR 0050). Mismas refs en los dos lados a propósito,
+	// y pocos nombres y fechas, para que choquen de verdad: un proyecto **sí se
+	// edita** en los dos equipos a la vez, al contrario que una copia pendiente, y
+	// lo que se comprueba es que las dos reglas finas —que `usado` es el mayor y que
+	// el nombre lo decide la base— den lo mismo en los dos lenguajes.
+	for _, ref := range refsDePrueba {
+		if g.r.IntN(3) == 0 {
+			continue // olvidado aquí, o nunca estuvo
+		}
+		c.Proyectos = append(c.Proyectos, Proyecto{
+			Ref: ref, Nombre: g.de("Acme", "Acme S. A.", "Beta", textosRaros[0]),
+			Creado: g.fecha(), Usado: g.de("", g.fecha()), Archivado: g.r.IntN(3) == 0,
+		})
+	}
 	if g.r.IntN(5) == 0 {
 		c.Extra = map[string]json.RawMessage{"seccionNueva": json.RawMessage(g.de(`[1]`, `{"x":"<&>"}`))}
 	}
 	return c
 }
+
+// refsDePrueba son pocas y fijas para que los dos lados se pisen.
+var refsDePrueba = []string{"aaaa000000000001", "bbbb000000000002", "cccc000000000003"}
 
 func (g generador) sobres() []sobre {
 	var out []sobre
@@ -440,6 +457,16 @@ func (g generador) caso() casoDeFusion {
 		}
 		if g.r.IntN(2) == 0 {
 			b.Envios = []Pendiente{{ID: "e1", Entrada: "0a", Correo: "ana@x.com", Huella: "AAAA-BBBB", Creado: g.fecha()}}
+		}
+		// Con base, los proyectos se pueden haber olvidado en un lado y editado en el
+		// otro, que es donde la regla de las tres bandas hace su trabajo.
+		for _, ref := range refsDePrueba {
+			if g.r.IntN(3) > 0 {
+				b.Proyectos = append(b.Proyectos, Proyecto{
+					Ref: ref, Nombre: g.de("Acme", "Beta"), Creado: g.fecha(),
+					Usado: g.de("", g.fecha()), Archivado: g.r.IntN(4) == 0,
+				})
+			}
 		}
 		c.B = &b
 		c.SobresB = g.sobres()

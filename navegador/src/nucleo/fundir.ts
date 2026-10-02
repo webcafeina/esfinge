@@ -14,6 +14,7 @@
 import { canonico, compararComoGo, huella, type ValorJSON } from "./canon";
 import { fundirIdentidad, type IdentidadGuardada } from "./identidad";
 import { fundirPendientes, pendientesDe, ponerPendientes } from "./pendiente";
+import { fundirProyectos, ponerProyectos, proyectosDe } from "./proyecto";
 import {
   ahora,
   Boveda,
@@ -220,6 +221,19 @@ async function fundirContenido(
       pendientesDe(l.extra),
       pendientesDe(r.extra),
       pendientesDe(b?.extra),
+      b !== null,
+    ),
+  );
+  // **Y las bóvedas de proyecto, por lo mismo** (ADR 0050). La extensión no las
+  // gestiona, pero si la sección se fundiera como un bloque ganaría la del
+  // servidor entera y se perdería un proyecto creado en la ventana. Ver
+  // `proyecto.ts`.
+  out.extra = ponerProyectos(
+    out.extra,
+    fundirProyectos(
+      proyectosDe(l.extra),
+      proyectosDe(r.extra),
+      proyectosDe(b?.extra),
       b !== null,
     ),
   );
