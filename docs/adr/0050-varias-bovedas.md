@@ -1,6 +1,6 @@
 # 0050 · Varias bóvedas: una por proyecto, y una abierta a la vez
 
-**Fecha:** 2026-10-02 · **Estado:** aceptada, en construcción (E1)
+**Fecha:** 2026-10-02 · **Estado:** aceptada · E1, E2 y E3 hechas · sin servidor y sin ver en un Mac
 
 ## Contexto
 
@@ -157,12 +157,23 @@ cuando el vigilante cierra, con su prueba.
   referencias en los dos lados. *Mutada la regla de `usado` en el espejo: la cruzada canta la diferencia.*
 - El sobre del proyecto va con el perfil barato, mirando **los parámetros que lleva dentro** y no lo que
   tarda.
+- **Bloquear se lleva la clave de la bóveda personal**, no solo la bóveda abierta. *Mutada quitando la
+  línea: tras bloquear se sigue pudiendo abrir cualquier proyecto.*
+- **Con un proyecto abierto no se ofrece ni se activa Touch ID para él.** *La primera versión de esa prueba
+  pasaba con el fallo dentro —`Sugerir` ya era falso por otro motivo— y lo dijo mutar, no leer: se rehízo con
+  el escenario que distingue, la personal sin desbloqueo y con «ahora no» contestado.*
+- **Mover una entrada no la pierde.** *Mutado el orden —borrar del origen antes de guardar en el destino— y
+  la prueba dice «la entrada se ha perdido: quedan 0».* Es la razón de que el orden sea el que es.
+- Y en la ventana, el camino entero en los dos temas: crear un proyecto, entrar, que lo de la bóveda personal
+  **no se vea desde dentro**, y llevar una entrada de una a otra **con su contraseña**.
 
 **Lo que no se ha comprobado**, y es casi todo lo que se ve:
 
-- **Nada de esto se ha visto en un Mac.** No hay interfaz todavía: la E1 es el núcleo.
+- **Nada de esto se ha visto en un Mac.** Aquí se ha mirado en capturas del navegador, en los dos temas, que
+  es lo que hay. La ventana de verdad —tipografía del sistema, controles nativos, el material translúcido
+  detrás— solo se ve ahí.
 - **El servidor no está tocado.** Un proyecto no se sincroniza hasta la E4, y ahí hay una migración de
   tablas del Durable Object que se ejecuta una vez y sobre la bóveda del cliente.
 - **Cuántos diálogos de Touch ID salen tras una actualización con varios proyectos.** El diseño existe para
   que sea uno; que sea uno lo dice el Mac.
-- Mover entradas, entregar, archivar y borrar: son las entregas siguientes.
+- **Entregar, archivar y borrar**: son las entregas siguientes (E6).

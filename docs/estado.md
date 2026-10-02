@@ -28,9 +28,20 @@ dos cosas que no se ven mirándola: **que un proyecto no tiene clave de recupera
 todavía no se sincroniza**, donde alguien decide guardar algo. Y la barra de herramientas dice **en qué bóveda
 se trabaja**.
 
-**La siguiente acción concreta: la E3, mover entradas entre bóvedas** — que es lo que el cliente hará el
-primer día, repartir en proyectos lo que ya tiene. El orden importa y es el de las llaves de acceso: primero
-existe en el destino, después desaparece del origen, y a la papelera.
+**Y hecha la E3: llevar una entrada de una bóveda a otra**, que es lo que el cliente hará el primer día —
+repartir en proyectos lo que ya tiene—. Desde la ficha de la entrada, moviendo o copiando. El orden es el de
+las llaves de acceso: **primero existe en el destino, después desaparece del origen**, y a la papelera, no
+borrada. Mutando ese orden, la prueba dice «la entrada se ha perdido».
+
+**La siguiente acción concreta: la E4, el servidor** — que un proyecto se sincronice. Es la pieza más cara y
+la única con un paso que se ejecuta una vez sobre datos de verdad: las tablas del Durable Object pasan a
+llevar la referencia de la bóveda en su clave primaria, y **SQLite no deja añadir una columna a una clave
+primaria**, así que hay que copiarlas. Antes de desplegarla: `GET /v1/cuenta/exportacion` de la cuenta real,
+guardada.
+
+**Y lo que convendría hacer antes que nada: que el cliente vea esto en su Mac.** Están las tres entregas
+locales, que es algo que se puede probar entero —crear un proyecto, meter cosas, moverlas— y que no depende
+del servidor.
 
 Y lo que **no** se puede dejar sin decir en cuanto haya pantalla, porque está en
 [`deuda.md`](deuda.md) y es de severidad alta: **un proyecto no se sincroniza todavía**. Con dos Macs, lo que

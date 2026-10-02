@@ -17,6 +17,7 @@ import {
 import { CampoClave, dominioDe, Icono, Monograma, Segmentado } from "./componentes";
 import { Buzon, Compartir } from "./compartir";
 import { LineaSincro, usaCuenta } from "./cuenta";
+import { LlevarEntrada } from "./proyectos";
 
 /**
  * La bóveda, asomada a la ventana.
@@ -890,6 +891,7 @@ function Dentro({
   // y después de cada cambio: **solo con cuenta**, porque sin ella no hay adónde
   // preguntar y el botón no llevaría a ninguna parte.
   const [compartiendo, setCompartiendo] = useState<EntradaBoveda | null>(null);
+  const [llevando, setLlevando] = useState<EntradaBoveda | null>(null);
   const [enElBuzon, setEnElBuzon] = useState(false);
   const [buzon, setBuzon] = useState<EnvioRecibido[]>([]);
   // Lo que se dice después de borrar. **Hace falta decirlo**: lo borrado va a la
@@ -1037,6 +1039,23 @@ function Dentro({
     alCambiar();
   }
 
+  if (llevando) {
+    return (
+      <LlevarEntrada
+        id={llevando.id}
+        titulo={llevando.titulo || "Sin título"}
+        alVolver={() => setLlevando(null)}
+        alHecho={async (d) => {
+          setLlevando(null);
+          setMirando(null);
+          setDicho(d);
+          await buscar(q);
+          alCambiar();
+        }}
+      />
+    );
+  }
+
   if (compartiendo) {
     return (
       <Compartir
@@ -1090,6 +1109,7 @@ function Dentro({
         entrada={mirando}
         alVolver={() => setMirando(null)}
         alEditar={() => setEditando(mirando)}
+        alLlevar={() => setLlevando(mirando)}
         alCompartir={
           cuenta?.modo === "cuenta"
             ? () => {
@@ -1666,6 +1686,7 @@ function Detalle({
   alEditar,
   alBorrar,
   alCompartir,
+  alLlevar,
 }: {
   entrada: EntradaBoveda;
   alVolver: () => void;
@@ -1673,6 +1694,8 @@ function Detalle({
   alBorrar: () => void;
   /** Solo con cuenta: sin ella no hay a quién mandar nada. */
   alCompartir?: () => void;
+  /** Llevarla a otra bóveda (ADR 0050). Sin proyectos no hay adónde. */
+  alLlevar?: () => void;
 }) {
   // Borrar pide una segunda pulsación en vez de un diálogo. El diálogo del
   // sistema pararía la ventana entera para una pregunta que se contesta aquí.
@@ -1684,6 +1707,9 @@ function Detalle({
       <div className="boveda-barra">
         <button onClick={alVolver}>← Volver</button>
         <span className="crece" />
+        {/* **«Llevar» va antes que «Compartir» y las dos antes que «Editar»**, de
+            menos a más destructivo de izquierda a derecha, y «Borrar» al final. */}
+        {alLlevar && <button onClick={alLlevar}>Llevar a otra bóveda</button>}
         {alCompartir && <button onClick={alCompartir}>Compartir</button>}
         <button onClick={alEditar}>Editar</button>
         {/* La segunda pulsación dice **adónde va**, y no es un adorno: es el

@@ -151,6 +151,7 @@ func TestCerrarAManoSeLlevaLaClaveDeLaPersonal(t *testing.T) {
 //   - y activarlo pondría la ranura del sistema en el proyecto, lo que convertiría
 //     «una entrada en el llavero» en una por bóveda y, con ella, un diálogo del
 //     sistema por proyecto tras cada actualización.
+//
 // Y el escenario está elegido para que distinga: **la personal sin desbloqueo
 // puesto y con «ahora no» contestado**.
 //
@@ -341,5 +342,166 @@ func TestUnProyectoQueNoEstaAquiNoSeCrea(t *testing.T) {
 	}
 	if _, err := os.Stat(ruta); err == nil {
 		t.Fatal("abrir un proyecto que no está lo ha creado vacío")
+	}
+}
+
+// **Mover una entrada de una bóveda a otra no la pierde**, que es lo único que de
+// verdad importa de esta operación: lo que se mueve es una contraseña que a lo
+// mejor no está en ningún otro sitio.
+//
+// Se comprueban las dos direcciones —de la personal a un proyecto y al revés— y
+// que el secreto llega entero, porque mover algo sin su contraseña es perderla con
+// más pasos.
+func TestLlevarUnaEntradaAOtraBoveda(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Hosting de Acme",
+		Usuario: "yo@acme.com", Secreto: "la de acme", Notas: "la nota",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	lista, _ := a.BuscarEnBoveda("Acme")
+	if len(lista) != 1 {
+		t.Fatalf("en la personal hay %d entradas", len(lista))
+	}
+	id := lista[0].ID
+
+	if err := a.LlevarAOtraBoveda(id, ref, false); err != nil {
+		t.Fatal(err)
+	}
+
+	// En el origen ya no está viva, **y está en la papelera**: borrar no es para
+	// siempre (ADR 0026), y menos cuando acaba de salir de aquí.
+	if l, _ := a.BuscarEnBoveda("Acme"); len(l) != 0 {
+		t.Errorf("sigue en la bóveda de origen: %d", len(l))
+	}
+	if n := a.EstadoBoveda().EnLaPapelera; n != 1 {
+		t.Errorf("en la papelera del origen hay %d y tenía que haber 1", n)
+	}
+
+	// Y en el destino está entera, con su secreto.
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	l, _ := a.BuscarEnBoveda("Acme")
+	if len(l) != 1 {
+		t.Fatalf("en el proyecto hay %d entradas", len(l))
+	}
+	if l[0].ID == id {
+		t.Error("ha llegado con el mismo identificador: es una copia, no la misma entrada en dos sitios")
+	}
+	entera, err := a.VerDeBoveda(l[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if entera.Secreto != "la de acme" {
+		t.Errorf("el secreto ha llegado como %q", entera.Secreto)
+	}
+	if entera.Usuario != "yo@acme.com" || entera.Notas != "la nota" {
+		t.Errorf("no ha llegado entera: %+v", entera)
+	}
+
+	// Y de vuelta, que es el camino que necesita abrir la personal con la clave
+	// guardada en vez de con la contraseña maestra.
+	if err := a.LlevarAOtraBoveda(l[0].ID, "", false); err != nil {
+		t.Fatal(err)
+	}
+	if l, _ := a.BuscarEnBoveda("Acme"); len(l) != 0 {
+		t.Errorf("sigue en el proyecto: %d", len(l))
+	}
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.AbrirBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if l, _ := a.BuscarEnBoveda("Acme"); len(l) != 1 {
+		t.Fatalf("de vuelta en la personal hay %d entradas", len(l))
+	}
+}
+
+// **Si el destino falla, la entrada sigue en el origen.** Es la rama que justifica
+// el orden —primero existe allí, después desaparece de aquí— y la que no se ve
+// nunca, porque solo ocurre cuando algo va mal.
+func TestSiElDestinoFallaLaEntradaNoSePierde(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Hosting de Acme", Secreto: "la de acme",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	lista, _ := a.BuscarEnBoveda("Acme")
+	id := lista[0].ID
+
+	// El destino deja de poder abrirse: es lo que pasa con un fichero borrado, un
+	// disco lleno o una bóveda que todavía no se ha bajado a este equipo.
+	if err := os.Remove(rutaDeProyecto(ref)); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := a.LlevarAOtraBoveda(id, ref, false); err == nil {
+		t.Fatal("ha dicho que sí con el destino inservible")
+	}
+	// **Y lo que importa: sigue aquí, viva y entera.**
+	l, _ := a.BuscarEnBoveda("Acme")
+	if len(l) != 1 {
+		t.Fatalf("la entrada se ha perdido: quedan %d", len(l))
+	}
+	entera, err := a.VerDeBoveda(l[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if entera.Secreto != "la de acme" {
+		t.Errorf("sigue aquí pero sin su secreto: %q", entera.Secreto)
+	}
+	if n := a.EstadoBoveda().EnLaPapelera; n != 0 {
+		t.Errorf("la ha mandado a la papelera aunque el destino falló: %d", n)
+	}
+}
+
+// Copiar deja las dos, que es lo que se pide cuando una cuenta la usan el cliente y
+// la casa.
+func TestCopiarAOtraBovedaDejaLasDos(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Hosting de Acme", Secreto: "la de acme",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	lista, _ := a.BuscarEnBoveda("Acme")
+
+	if err := a.LlevarAOtraBoveda(lista[0].ID, ref, true); err != nil {
+		t.Fatal(err)
+	}
+	if l, _ := a.BuscarEnBoveda("Acme"); len(l) != 1 {
+		t.Errorf("copiar se ha llevado la original: quedan %d", len(l))
+	}
+	if n := a.EstadoBoveda().EnLaPapelera; n != 0 {
+		t.Errorf("copiar ha mandado algo a la papelera: %d", n)
+	}
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if l, _ := a.BuscarEnBoveda("Acme"); len(l) != 1 {
+		t.Errorf("la copia no ha llegado: %d", len(l))
+	}
+}
+
+// Y no se lleva nada a la bóveda en la que ya está: sin esto, «mover a la misma»
+// borraría la original después de guardar un duplicado al lado.
+func TestNoSeLlevaUnaEntradaALaBovedaEnLaQueYaEsta(t *testing.T) {
+	a, _, _ := conUnProyecto(t)
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Hosting de Acme", Secreto: "x",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	lista, _ := a.BuscarEnBoveda("Acme")
+	if err := a.LlevarAOtraBoveda(lista[0].ID, "", false); err == nil {
+		t.Fatal("ha movido una entrada a la bóveda en la que ya estaba")
+	}
+	if l, _ := a.BuscarEnBoveda("Acme"); len(l) != 1 {
+		t.Errorf("y encima se ha perdido: quedan %d", len(l))
 	}
 }

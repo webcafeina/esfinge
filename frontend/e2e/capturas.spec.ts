@@ -299,5 +299,12 @@ test.describe("Capturas", () => {
     await boton("Crear").click();
     await page.waitForTimeout(400);
     await foto("9c-proyectos-con-uno");
+
+    // Y llevar una entrada a esa bóveda, desde la ficha de la entrada.
+    await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
+    await page.locator(".panel:visible .lista-boveda li").first().locator("button").click();
+    await boton("Llevar a otra bóveda").click();
+    await page.waitForTimeout(300);
+    await foto("9d-llevar-a-otra-boveda");
   });
 });

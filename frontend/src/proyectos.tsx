@@ -317,3 +317,109 @@ function cuando(iso: string): string {
 function mensaje(e: unknown): string {
   return (e instanceof Error ? e.message : String(e)).replace(/^Error:\s*/, "");
 }
+
+/**
+ * Llevar una entrada a otra bóveda (ADR 0050, E3).
+ *
+ * Se elige el destino de una lista y se decide **mover o copiar**, y las dos cosas
+ * se dicen con esas palabras porque no significan lo mismo: copiar deja dos
+ * contraseñas que a partir de ahí se cambian por separado.
+ *
+ * Lo que no se ve y hay que decir: **el secreto no cruza el puente**. La ventana
+ * manda dos identificadores y Go hace el viaje por dentro.
+ */
+export function LlevarEntrada({
+  id,
+  titulo,
+  alVolver,
+  alHecho,
+}: {
+  id: string;
+  titulo: string;
+  alVolver: () => void;
+  /** Se llama cuando la entrada ya no está aquí, para rehacer la lista. */
+  alHecho: (dicho: string) => void;
+}) {
+  const [lista, setLista] = useState<Proyecto[] | null>(null);
+  const [activa, setActiva] = useState("");
+  const [error, setError] = useState("");
+  const [trabajando, setTrabajando] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [e, l] = await Promise.all([esfinge.estadoBoveda(), esfinge.proyectos()]);
+        setActiva(e.proyecto);
+        setLista(l);
+      } catch (e) {
+        setError(mensaje(e));
+      }
+    })();
+  }, []);
+
+  // Los destinos posibles: las bóvedas que están en este equipo y no son ésta.
+  // La personal entra en la lista **solo si no es la activa**.
+  const destinos: { ref: string; nombre: string }[] = [
+    ...(activa !== "" ? [{ ref: "", nombre: "Tu bóveda" }] : []),
+    ...(lista ?? [])
+      .filter((p) => p.ref !== activa && p.enEsteEquipo && !p.archivado)
+      .map((p) => ({ ref: p.ref, nombre: p.nombre })),
+  ];
+
+  async function llevar(ref: string, nombre: string, copiar: boolean) {
+    setTrabajando(true);
+    setError("");
+    try {
+      await esfinge.llevarAOtraBoveda(id, ref, copiar);
+      alHecho(
+        copiar
+          ? `«${titulo}» también está ahora en ${nombre}.`
+          : `«${titulo}» se ha ido a ${nombre}. Aquí queda en la papelera 30 días.`,
+      );
+    } catch (e) {
+      setError(mensaje(e));
+      setTrabajando(false);
+    }
+  }
+
+  return (
+    <div className="panel">
+      <div className="boveda-barra">
+        <button onClick={alVolver}>← Volver</button>
+      </div>
+
+      <h2>Llevar «{titulo}» a otra bóveda</h2>
+      <p className="nota">
+        Al moverla, aquí queda en la papelera durante 30 días. La contraseña no sale de Esfinge en ningún
+        momento.
+      </p>
+
+      {error && <p className="error">{error}</p>}
+
+      {lista != null && destinos.length === 0 && (
+        <p className="nota">
+          No hay ninguna otra bóveda en este ordenador. Crea una en «Proyectos», o baja una que esté dormida.
+        </p>
+      )}
+
+      {destinos.length > 0 && (
+        <ul className="proyectos">
+          {destinos.map((d) => (
+            <li key={d.ref || "personal"}>
+              <span className="abrir-proyecto">
+                <Icono nombre={d.ref === "" ? "boveda" : "proyectos"} />
+                <span className="nombre">{d.nombre}</span>
+              </span>
+              <button className="discreto" onClick={() => llevar(d.ref, d.nombre, true)} disabled={trabajando}>
+                Copiar
+              </button>
+              <button className="principal" onClick={() => llevar(d.ref, d.nombre, false)} disabled={trabajando}>
+                Mover
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}

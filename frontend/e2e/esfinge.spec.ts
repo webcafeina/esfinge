@@ -2093,3 +2093,64 @@ test("con la bóveda cerrada, Proyectos dice qué hacer y no enseña ningún nom
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * **Llevar una entrada a otra bóveda** (ADR 0050, E3).
+ *
+ * Lo que se comprueba es el camino entero y por los dos lados: que sale de donde
+ * estaba, que **aparece en la otra con su contraseña**, y que aquí queda en la
+ * papelera en vez de borrarse. Sin lo del medio, «se movió» podría ser «se perdió».
+ */
+test("una entrada se lleva a la bóveda de un proyecto, con su contraseña", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const proyecto = `Beta ${Date.now()}`;
+  await seccion(page, "Proyectos").click();
+  await accion(page, "Nueva bóveda de proyecto").click();
+  await page.locator("#proyecto-nombre").fill(proyecto);
+  await accion(page, "Crear").click();
+  await expect(
+    page.locator(".panel:visible .proyectos").getByRole("button", { name: new RegExp(proyecto) }),
+  ).toBeVisible({ timeout: 20_000 });
+
+  // Una entrada en la bóveda personal.
+  await seccion(page, "Bóveda").click();
+  const titulo = `Servidor de Beta ${Date.now()}`;
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(titulo);
+  await page.locator("#boveda-usuario").fill("root");
+  await page.locator("#boveda-secreto").fill("la-del-servidor");
+  await accion(page, "Guardar").click();
+
+  const fila = page.locator(".lista-boveda").getByRole("button", { name: titulo });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
+  await fila.click();
+
+  await accion(page, "Llevar a otra bóveda").click();
+  const destino = page.locator(".panel:visible .proyectos li").filter({ hasText: proyecto });
+  await expect(destino).toBeVisible({ timeout: 20_000 });
+  await destino.getByRole("button", { name: "Mover", exact: true }).click();
+
+  // Ya no está aquí viva, **y lo que se dice es adónde ha ido y qué queda**.
+  await expect(page.locator(".panel:visible")).toContainText("papelera", { timeout: 20_000 });
+  await page.locator("#boveda-buscar").fill(titulo);
+  await expect(page.locator(".lista-boveda").getByRole("button", { name: titulo })).toHaveCount(0);
+
+  // Y en el proyecto está, **con su contraseña**: eso es lo que separa moverla de
+  // perderla.
+  await seccion(page, "Proyectos").click();
+  await page
+    .locator(".panel:visible .proyectos")
+    .getByRole("button", { name: new RegExp(proyecto) })
+    .click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+  const llegada = page.locator(".lista-boveda").getByRole("button", { name: titulo });
+  await expect(llegada).toBeVisible({ timeout: 20_000 });
+  await llegada.click();
+  await accion(page, "Ver").first().click();
+  await expect(page.locator(".panel:visible")).toContainText("la-del-servidor", { timeout: 20_000 });
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});

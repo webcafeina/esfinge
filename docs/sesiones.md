@@ -45,6 +45,10 @@ Plantilla al final.
   mandó a buscar la causa donde no estaba: la carpeta se borra antes de volver a mirar.
 - **Y un comentario que afirmaba algo falso**, corregido mirando: el icono se escribió como «dos carpetas» y
   a 18 px se lee una. Ampliado a cuatro aumentos se ve; el dibujo se queda y lo que se cambia es lo escrito.
+- **Y la E3: llevar una entrada a otra bóveda**, desde su ficha, moviendo o copiando. El orden es el de las
+  llaves de acceso —primero existe en el destino, después desaparece del origen, y a la papelera— y **mutarlo
+  deja la prueba diciendo «la entrada se ha perdido: quedan 0»**, que es exactamente el fallo que ese orden
+  evita.
 - **Queda abierto, y en [`deuda.md`](deuda.md)**: **un proyecto no se sincroniza**
   —severidad alta: con dos Macs no sale del equipo—, la extensión no sabe de proyectos, y **cuántos diálogos
   del sistema salen de verdad tras actualizar solo se ve en el Mac**.

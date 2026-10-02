@@ -682,6 +682,17 @@ export const esfinge = {
   /** Le cambia el nombre. No toca su fichero, que se llama por la referencia. */
   renombrarProyecto: (ref: string, nombre: string) => llamar<void>("RenombrarProyecto", ref, nombre),
 
+  /**
+   * Lleva una entrada a otra bóveda, o la copia. Con `aProyecto` vacío, a la
+   * bóveda personal.
+   *
+   * **El secreto no cruza el puente**: van dos identificadores y Go hace el viaje
+   * entero por dentro. Y el orden lo pone Go: primero existe en el destino, después
+   * desaparece de aquí —a la papelera, treinta días—.
+   */
+  llevarAOtraBoveda: (id: string, aProyecto: string, copiar: boolean) =>
+    llamar<void>("LlevarAOtraBoveda", id, aProyecto, copiar),
+
   /** La lista, **sin contraseñas**. */
   buscarEnBoveda: (q: string) =>
     llamar<EntradaBoveda[] | null>("BuscarEnBoveda", q).then((l) => l ?? []),

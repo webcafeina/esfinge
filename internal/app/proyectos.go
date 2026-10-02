@@ -430,6 +430,90 @@ func (a *App) RenombrarProyecto(ref, nombre string) error {
 	return nil
 }
 
+// LlevarAOtraBoveda mueve una entrada de la bóveda abierta a otra, o la copia.
+// Con `aProyecto` vacío, el destino es la bóveda personal.
+//
+// **El orden importa y es el de las llaves de acceso** (ADR 0048): primero existe
+// en el destino, se comprueba que está, y **solo entonces** desaparece del origen.
+// Al revés, un fallo en medio pierde la entrada — y aquí lo que se pierde es una
+// contraseña que a lo mejor no está en ningún otro sitio.
+//
+// Y lo que de verdad hace falta decir: **el secreto no cruza el puente en ningún
+// momento**. La ventana manda dos identificadores y Go hace el viaje entero por
+// dentro, que es mejor de lo que daría tener las dos bóvedas abiertas.
+func (a *App) LlevarAOtraBoveda(id, aProyecto string, copiar bool) error {
+	origen := a.boveda()
+	if origen == nil {
+		return boveda.ErrCerrada
+	}
+	if aProyecto == a.bovedaActiva() {
+		return errors.New("Esa entrada ya está en esta bóveda")
+	}
+	e, hay := origen.Ver(id)
+	if !hay {
+		return errors.New("Esa entrada ya no está en la bóveda")
+	}
+	// **Con identificador nuevo**, que es lo que la convierte en una copia y no en
+	// la misma entrada en dos sitios: con el mismo, la sincronización las trataría
+	// como una sola y la fusión decidiría cuál gana (el argumento está escrito en
+	// `envio.go` para una entrada que se manda a otra cuenta).
+	e.ID = ""
+	// Y sin lo que era de su bóveda de antes: la revisión y las fechas de
+	// sincronización las pone la bóveda que la recibe.
+	e.Revision = 0
+
+	llave := a.llaveDeLaPrincipal()
+	if len(llave) == 0 {
+		return boveda.ErrCerrada
+	}
+	defer cripto.Borrar(llave)
+
+	if err := a.conOtraBoveda(aProyecto, llave, func(d *boveda.Boveda) error {
+		antes := d.Cuantas()
+		if err := d.Poner(e); err != nil {
+			return err
+		}
+		// **Se comprueba que está, y se comprueba contando la bóveda de destino**,
+		// no dando por hecho que un `Poner` sin error significa que se guardó. El
+		// guardado es un fichero, y un fichero puede fallar después de que el mapa
+		// de memoria ya diga que sí.
+		if d.Cuantas() != antes+1 {
+			return errors.New("No se ha podido guardar la entrada en la otra bóveda")
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	a.Actividad()
+	if copiar {
+		return nil
+	}
+	// A la papelera y no borrada del todo: si algo ha salido raro, está a un clic
+	// durante treinta días (ADR 0026).
+	return origen.Borrar(id)
+}
+
+// conOtraBoveda abre la bóveda de destino —la personal o un proyecto—, hace algo y
+// la cierra. **Secuencial**: nunca hay dos abiertas de cara a quien mira.
+func (a *App) conOtraBoveda(ref string, llavePrincipal []byte, hacer func(*boveda.Boveda) error) error {
+	if ref == "" {
+		return a.conLaPersonal(hacer)
+	}
+	a.muPersonal.Lock()
+	defer a.muPersonal.Unlock()
+	ruta := rutaDeProyecto(ref)
+	if _, err := os.Stat(ruta); err != nil {
+		return errors.New("Esa bóveda no está en este equipo todavía")
+	}
+	d, err := boveda.AbrirProyecto(ruta, llavePrincipal)
+	if err != nil {
+		return err
+	}
+	defer d.Cerrar()
+	return hacer(d)
+}
+
 // conmutarA deja ese proyecto como la bóveda abierta.
 //
 // **Pasa por `alCerrarLaBoveda()` y no solo por `cambiarBoveda`**: lo primero
