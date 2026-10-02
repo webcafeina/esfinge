@@ -1,10 +1,21 @@
 # Estado
 
-Última actualización: **2026-10-01**
+Última actualización: **2026-10-02**
 
 ## Dónde se paró, y por dónde se sigue
 
-**Sesión del 2026-10-01.** Trabajo limpio: todo comprometido.
+**Sesión del 2026-10-02.** Trabajo limpio: todo comprometido.
+
+**Las redes wifi funcionan de verdad** (ADR 0049), y eso ya no es una promesa: el cliente importó su
+`wifi.csv` con la 2.36.0 y **se conectó con el móvil escaneando el código de la ficha**. Era lo único de la
+clase que no se podía comprobar aquí.
+
+**Y la 2.37.0 está publicada** con los dos arreglos que salieron de mirar la ficha de una llave —un aviso que
+afirmaba algo falso y los mismos datos repetidos cuatro veces— y con **importar redes de LastPass y
+Bitwarden**, que no está probado contra un fichero de verdad y así está dicho.
+
+<details>
+<summary>Lo anterior, del 2026-10-01</summary>
 
 **Las llaves de acceso están cerradas por completo, y comprobadas en máquinas de verdad.** Las cuatro
 entregas: la llave en la bóveda (2.32.0), usarla (2.33.0), crearla (2.34.0) y Firefox —que **resultó estar
@@ -393,6 +404,8 @@ Y salieron dos cosas que ninguna prueba en verde dijo y sí dijo mirar la captur
 alto** —todos los botones miden 28 px y lo de dentro se encogía— y **la clase `.huella` ya existía**, la de
 la huella de identidad de compartir, así que le estaba poniendo 72×72 a todas esas pantallas. Las dos en
 `CLAUDE.md`.
+
+</details>
 
 </details>
 

@@ -5,6 +5,43 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-02 · El wifi funciona de verdad, y se deja de esperar a las tiendas
+
+- **Publicada la 2.36.0** en cuanto Chrome aprobó la 2.35.0, con las redes wifi y el campo `usada`. Chrome
+  aceptó el paquete —`PENDING_REVIEW`—, así que **las versiones quedaron alineadas** tras el desfase que
+  venía de la 2.34.0.
+- **Y el wifi está comprobado de punta a punta en su Mac**: importó su `wifi.csv` de verdad y **se conectó
+  con el móvil escaneando el código de la ficha**. Eso cierra lo único que no se podía comprobar aquí — lo
+  escaneado el día anterior era una red inventada, que el móvil reconocía pero a la que nadie llegaba a
+  entrar.
+- **Se añadió importar redes de LastPass y Bitwarden**, que no tienen columna para ellas: las guardan dentro
+  de una columna de texto, un campo por línea. Lo que Esfinge reconoce **no es el formato de cada gestor**
+  —eso sería escribirlo de memoria— sino lo que los dos tienen en común: una línea que declara el nombre de
+  la red. Lo que no entiende se queda en las notas con su texto intacto.
+- **Y de ahí salieron dos cosas que no eran del wifi.** Los **campos propios de Bitwarden se perdían al
+  importar** —desde el primer importador: una columna sin equivalencia se descarta entera, y ahí es donde
+  Bitwarden guarda lo que su dueño añadió a mano—. Y **una mutación encontró un hueco en mi propia prueba**:
+  la guarda que impide convertir una nota en red no la cazaba nada; una nota que mencionara el wifi y
+  declarara una contraseña habría perdido esa línea, convertida en el secreto de la entrada.
+- **La ficha de una llave decía algo falso, y lo vio él.** Afirmaba «todavía no has entrado con esta llave»
+  en una con la que había entrado el día antes, rematando con que quizá no servía para nada. Lo que Esfinge
+  sabe es que **no ha apuntado ningún uso**, no que no haya ocurrido. Y de paso la ficha repetía los mismos
+  dos datos cuatro veces: al crear una llave se guardan el usuario y el sitio también en los campos de
+  siempre, y se enseñaban todos.
+- **Y cambió el criterio de publicación** (decisión del cliente): **ya no se espera a ninguna tienda**. El
+  coste de no esperar es que el paquete de esa versión no entra en Chrome hasta la siguiente, y **eso solo
+  importa si la versión cambia `navegador/`**. Si le corre prisa, **para la revisión a mano** — y los seis
+  rótulos de ese menú están ahora en `docs/tiendas/pasos.md`, dichos por él mirando la consola, con el aviso
+  de que «Dejar de publicar» está dos líneas más abajo y retira la extensión de la tienda.
+- **Publicada la 2.37.0** con los dos arreglos de la ficha y los otros gestores, sin esperar. Chrome no
+  admitió el paquete —sigue revisando la 2.36.0— y **da igual: esa versión no toca la extensión**. Las dos
+  pruebas de la ficha, correctas en su Mac.
+- **Queda abierto**: que Chrome apruebe la 2.36.0 —y entonces la extensión empezará a apuntar «Usada»—, y
+  **la primera versión que toque `navegador/` tiene que comprobar que su paquete sube**. Lo demás, en
+  [`deuda.md`](deuda.md): los otros gestores sin fichero real, y Windows y GNOME.
+
+---
+
 ## 2026-10-01 · Firefox, el campo que distingue una llave huérfana, y un intermitente con dos fallos dentro
 
 - **La P4 resultó estar hecha**, y se supo de rebote. Lo mecánico ya se había hecho en la P2 sin pensarlo
