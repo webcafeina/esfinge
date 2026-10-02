@@ -126,10 +126,14 @@ No se cambian sin preguntar.
   en el CSV en claro**, sino aparte, en un contenedor ESF1 con una clave que no es la maestra.
   **Y una llave lleva dos fechas, y dicen cosas distintas** (2026-10-01): `confirmada` es que **el sitio la
   nombró** —lo único que prueba que la tiene registrada— y `usada`, que **se firmó con ella**, que solo prueba
-  que alguien la eligió. **No se mezclan**, y eso costó una versión: con solo la primera, la ficha del cliente
-  seguía diciendo que el sitio no había pedido la llave **con la llave funcionando**, porque en el «entrar con
-  llave de acceso» el sitio no nombra ninguna. Mezclarlas era lo barato y habría hecho pasar la señal débil por
-  la fuerte. Una llave sin ninguna de las dos **no se da por mala**: puede ser que no se haya entrado aún.
+  que alguien la eligió. **No se mezclan**, porque **ninguna cubre a la otra**: cada camino de
+  entrada rellena una. El sitio nombra la llave **cuando ya sabe quién eres** —usuario y contraseña primero y
+  la llave después, o sea de segundo factor—, y en el «entrar solo con la llave» no nombra ninguna y la única
+  señal es `usada`. Mezclarlas era lo barato y habría hecho pasar la señal débil por la fuerte.
+  **Y ojo con cómo se llegó aquí** (corregido el 2026-10-02): esto se escribió diciendo que la señal fuerte
+  «casi nunca llega», a partir de una ficha que seguía en blanco tras entrar — y la causa era que **la
+  extensión de entonces no escribía ninguno de los dos campos**. Una ficha vacía no prueba que el sitio no
+  nombre la llave: prueba que nadie lo apuntó. Una llave sin ninguna de las dos **no se da por mala**: puede ser que no se haya entrado aún.
   `usada` guarda **la última** vez, y por eso cada inicio de sesión escribe en la bóveda — no se reescribe si
   la fecha no ha cambiado, que las fechas van a segundos.
 - **Y desde la P2 de las llaves de acceso hay código de Esfinge dentro de cada página `https`** (ADR 0048).

@@ -36,7 +36,12 @@ Plantilla al final.
 - **Publicada la 2.37.0** con los dos arreglos de la ficha y los otros gestores, sin esperar. Chrome no
   admitió el paquete —sigue revisando la 2.36.0— y **da igual: esa versión no toca la extensión**. Las dos
   pruebas de la ficha, correctas en su Mac.
-- **Queda abierto**: que Chrome apruebe la 2.36.0 —y entonces la extensión empezará a apuntar «Usada»—, y
+- **Y probado «Usada» en Firefox el mismo día**, que tuvo la 2.37.0 publicada en minutos: aparecieron **los
+  dos campos**. Con lo que se corrigió el motivo que se había escrito para tener dos: no es que la señal
+  fuerte «casi nunca llegue» —eso salió de una ficha en blanco cuya causa era **que la extensión de entonces
+  no escribía ninguno de los dos**—, sino que **cada camino de entrada rellena una**. Él entra con usuario y
+  contraseña y GitHub le pide la llave después, o sea **de segundo factor**, y ahí el sitio sí la nombra.
+- **Queda abierto**: que Chrome apruebe la 2.36.0, y
   **la primera versión que toque `navegador/` tiene que comprobar que su paquete sube**. Lo demás, en
   [`deuda.md`](deuda.md): los otros gestores sin fichero real, y Windows y GNOME.
 

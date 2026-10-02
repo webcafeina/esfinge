@@ -642,7 +642,23 @@ lista borrada, el banner no sale—, abre la bóveda, vuelve a la pestaña, hace
 comprueba que el banner sale **sin recargar**. Mutada por los dos lados: sin el aviso del trabajador y con la
 página ignorándolo, se pone roja.
 
-## Dos señales y no una, porque la fuerte casi nunca llega (2026-10-01)
+## Dos señales y no una (2026-10-01, corregida el 2026-10-02)
+
+> **Corrección, y es del motivo y no de la decisión.** Esta sección se escribió diciendo que la señal fuerte
+> «casi nunca llega», a partir de una ficha del cliente que seguía en blanco después de haber entrado con la
+> llave. **Esa observación tenía otra explicación que no se consideró**: la extensión que tenía entonces era
+> la 2.34.0, que **no escribía ninguno de los dos campos**. Con la 2.37.0 en su Firefox, al entrar le
+> aparecieron **los dos**.
+>
+> Lo que sí se sostiene es el mecanismo: el sitio nombra la llave **cuando ya sabe quién eres**. Lo que
+> falla es el «casi nunca» — en su uso real llega casi siempre, porque entra con usuario y contraseña y
+> GitHub le pide la llave después, o sea **como segundo factor**. En el camino de entrar solo con la llave,
+> el sitio sigue sin nombrar ninguna y ahí la única señal es `usada`.
+>
+> **Los dos campos se quedan**, pero por su razón de verdad y no por ésta: dicen cosas distintas y **ninguno
+> cubre al otro**, porque cada flujo rellena uno. Y la lección de método, que es la que vale: una ficha
+> vacía no prueba que el sitio no nombre la llave; prueba que **nadie lo apuntó**, que es otra cosa — y la
+> diferencia entre las dos era una versión de la extensión.
 
 Lo que decidió el apartado «Una llave la confirma el sitio, no la firma» se probó esa misma tarde en el Firefox
 del cliente, con la 2.35.0 ya aprobada, y **falló por donde no se había mirado**: entró con su llave de GitHub,
