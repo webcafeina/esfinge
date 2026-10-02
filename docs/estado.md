@@ -4,14 +4,31 @@
 
 ## Dónde se paró, y por dónde se sigue
 
-**Sesión del 2026-10-02.** Empezadas **las bóvedas por proyecto** (ADR 0050), que es la última gran
+**Sesión del 2026-10-02.** En marcha **las bóvedas por proyecto** (ADR 0050), que es la última gran
 funcionalidad y la pidió el cliente así: *«cada proyecto/cliente tendrá su bóveda y yo podré apuntar ahí los
 mismos elementos que tengo en mi propia bóveda»*. El plan entero está en la ADR, decidido con él en tres
-rondas de preguntas.
+rondas de preguntas, y va **por entregas que se publican solas**.
 
-**Hecha la E1: el núcleo, sin interfaz y sin servidor.** Se puede crear un proyecto, conmutar, renombrar y
-listar — desde las pruebas, porque **no hay ninguna pantalla todavía**. Lo que hay que saber sin abrir la
-ficha:
+**Hechas la E1 a la E5**, todas con `make comprobar` entero en verde y cada prueba nueva mutada: el núcleo, el
+apartado «Proyectos» en la ventana, llevar entradas de una bóveda a otra, la sincronización y el selector del
+panel de la extensión. El detalle, abajo.
+
+### La siguiente acción, al retomar
+
+1. **La E6: entregar un proyecto, archivarlo y borrarlo.** Es lo que queda del plan. Entregar está diseñado en
+   la ADR con sus siete pasos y el que más fácil se olvida dicho en voz alta —**quitar la identidad**, que es
+   la semilla con la que se firman los envíos—; archivar **borra el fichero local** y deja el del servidor; y
+   borrar copia la lista de satélites que `BorrarBoveda` ya tiene escrita, sin reinventarla.
+2. **Y dos cosas que no se pueden hacer desde esta máquina**, las dos del cliente:
+   - **Desplegar el servidor.** La migración del Durable Object se ejecuta **una vez y sobre su bóveda**, así
+     que antes hay que guardar un `GET /v1/cuenta/exportacion` de la cuenta real. Está probada contra
+     `workerd` y mutada para que copie de menos, no contra datos de verdad.
+   - **Que lo vea en su Mac.** Lo local —crear un proyecto, meter cosas, moverlas, el selector del panel— se
+     puede probar entero sin desplegar nada.
+
+### Lo hecho, entrega por entrega
+
+**La E1, el núcleo.** Lo que hay que saber sin abrir la ficha:
 
 - **Un proyecto se abre con la clave de bóveda de la personal, no con la contraseña maestra**, y ésa es la
   decisión entera: envolviéndolo con la maestra, **recuperarla perdería todos los proyectos**. De ahí salen
@@ -22,39 +39,26 @@ ficha:
 - **La lista de proyectos va dentro del cuerpo cifrado de la personal, sin sus claves**, y los ficheros se
   llaman **por una referencia al azar**: un listado de la carpeta no puede ser la lista de clientes.
 
-**Y hecha la E2: el apartado «Proyectos» en la ventana.** Una fila más en la barra lateral —siete botones, y
+**La E2, el apartado «Proyectos» en la ventana.** Una fila más en la barra lateral —siete botones, y
 la prueba que los cuenta lo dice—, la lista con buscador, crear, entrar, renombrar y los archivados. Dice las
 dos cosas que no se ven mirándola: **que un proyecto no tiene clave de recuperación propia** y **que esto
 todavía no se sincroniza**, donde alguien decide guardar algo. Y la barra de herramientas dice **en qué bóveda
 se trabaja**.
 
-**Y hecha la E3: llevar una entrada de una bóveda a otra**, que es lo que el cliente hará el primer día —
+**La E3, llevar una entrada de una bóveda a otra**, que es lo que el cliente hará el primer día —
 repartir en proyectos lo que ya tiene—. Desde la ficha de la entrada, moviendo o copiando. El orden es el de
 las llaves de acceso: **primero existe en el destino, después desaparece del origen**, y a la papelera, no
 borrada. Mutando ese orden, la prueba dice «la entrada se ha perdido».
 
-**Y hecha la E4: los proyectos se sincronizan.** El servidor guarda varias bóvedas por cuenta, con la
+**La E4, la sincronización.** El servidor guarda varias bóvedas por cuenta, con la
 referencia en la clave primaria de `versiones` y `trozos`, y hay una prueba de **dos equipos de verdad**: se
 crea un proyecto en uno, se baja en el otro, **se abre con su bóveda personal sin preguntar nada** —la ranura
 viaja dentro del fichero— y lo que se guarda allí vuelve.
 
-**Y hecha la E5: la extensión.** El panel tiene su selector de bóveda —sale **solo si hay más de una**— y
+**La E5, la extensión.** El panel tiene su selector de bóveda —sale **solo si hay más de una**— y
 cambiar ahí cambia de verdad lo que se rellena en las páginas, comprobado con la extensión cargada en un
 Chromium. **Cambiar la bóveda del navegador no cambia la de la aplicación**: son dos sitios que miran la misma
 cuenta, y cada uno recuerda la suya.
-
-**La siguiente acción concreta, y es de las que no se pueden hacer desde aquí: desplegar el servidor.** La
-migración del Durable Object **se ejecuta una vez y sobre la bóveda del cliente** —copia `versiones` y
-`trozos`, porque SQLite no deja añadir una columna a una clave primaria—, así que **antes hay que guardar un
-`GET /v1/cuenta/exportacion` de la cuenta real**. Está probada contra `workerd`, mutada para que copie de
-menos y con los bytes y el ETag comprobados, pero no contra datos de verdad.
-
-**Y lo que convendría antes que nada: que el cliente vea esto en su Mac.** Lo local se puede probar entero
-—crear un proyecto, meter cosas, moverlas— sin tocar el servidor.
-
-Y lo que **no** se puede dejar sin decir en cuanto haya pantalla, porque está en
-[`deuda.md`](deuda.md) y es de severidad alta: **un proyecto no se sincroniza todavía**. Con dos Macs, lo que
-se guarde ahí no sale del equipo hasta la E4.
 
 <details>
 <summary>Lo del wifi y la 2.37.0, del 2026-10-02</summary>

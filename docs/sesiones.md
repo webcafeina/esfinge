@@ -5,7 +5,7 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
-## 2026-10-02 · Las bóvedas por proyecto, E1: el núcleo
+## 2026-10-02 · Las bóvedas por proyecto: de la E1 a la E5
 
 - **Se planificó entera la última gran funcionalidad** (ADR 0050), con el cliente y en tres rondas de
   preguntas: una bóveda por proyecto, **una abierta a la vez**, con su apartado en la barra lateral,
