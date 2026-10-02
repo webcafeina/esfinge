@@ -184,6 +184,15 @@ No se cambian sin preguntar.
   listado de la carpeta no puede ser la lista de clientes. **Y esa ranura SÍ se sube**, al contrario que la
   del sistema: es lo único que permite que el otro Mac abra el proyecto, y meterla en `ranurasLocales` es
   media línea que parece lo prudente y no se nota hasta llegar al segundo equipo.
+- **Y una bóveda de proyecto se entrega, que es mandar una copia** (ADR 0051): con su contraseña y su clave de
+  recuperación, **sin la identidad dentro** —es la semilla con la que se firman los envíos, así que regalarla
+  es regalar la firma— y **la contraseña se dice por otro camino**, que lo pone la pantalla. Se puede entregar
+  cuando se quiera y tantas veces como haga falta. **Lo que no hay es acceso continuo**, tipo carpeta
+  compartida: el cliente lo preguntó el 2026-10-02 y lo dejó así con el coste delante —lo entregado es una
+  foto fija y si cambia algo hay que volver a entregarla—, con estas palabras: «que se envíe una copia, como
+  las credenciales». Es la misma decisión que la ADR 0043 para una entrada suelta, una escala más arriba, y
+  **no se cambia sin preguntar**. Con ello, archivar **borra el fichero de este equipo** y deja el del
+  servidor, y borrar **pide la maestra** y no va a ninguna papelera.
 - **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
   mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda
   hasta la publicación siguiente — no es un fallo, es un aviso del flujo. Se hace igual: **el cliente para la

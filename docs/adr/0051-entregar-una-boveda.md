@@ -51,6 +51,13 @@ el abuso — cualquiera que sepa tu correo te llena el buzón. Lo que **sí** ca
 entregado, y eso queda escrito como lo que se haría si algún día se quiere: una entrada con la maestra nueva
 dentro, sin una línea de cripto nueva.
 
+**Darle al cliente acceso continuo a esa bóveda**, tipo carpeta compartida, en vez de una copia. **Se planteó
+y lo descartó el cliente el 2026-10-02**, con el coste delante: lo que se entrega es una foto fija, y si algo
+cambia después hay que volver a entregarla. Sus palabras: *«que se envíe una copia, como las credenciales»* —
+o sea, la misma decisión que ya tomó para compartir una entrada suelta ([ADR 0043](0043-la-identidad-para-compartir.md)),
+una escala más arriba. **No se cambia sin preguntar**, y si algún día hace falta es una funcionalidad nueva
+—permisos, revocación, quién ve qué— y no un ajuste de ésta.
+
 **Entregar sin contraseña propia, con la ranura de la personal dentro.** Sería más cómodo —el cliente no
 tiene que teclear nada— y deja a quien entrega abriendo la bóveda del cliente **para siempre**. Es justo lo
 que esta ADR viene a cortar.
@@ -69,6 +76,8 @@ lo correcto para algo que va a la papelera y se puede sacar; esto no vuelve.
 
 **Lo entregado no se sincroniza con nada.** Es una bóveda suelta: si aquí se cambia algo después, hay que
 volver a entregarla. Es la misma regla que compartir una entrada (ADR 0043), y por eso la pantalla lo dice.
+**Lo confirmó el cliente el 2026-10-02** preguntando justo esto, así que no es una limitación que esté
+esperando a que alguien la arregle: es lo que se quiere.
 
 **Y quien entrega se queda con su copia.** Entregar no es desprenderse: el proyecto sigue en la lista y en el
 servidor hasta que se archive o se borre, que son las otras dos acciones.
