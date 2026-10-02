@@ -72,12 +72,12 @@ igualadas** en cuanto Google apruebe: lo que había en la tienda era la 2.33.0.
 - **Y salió una prueba cruzada nueva del formato entero**: las dos listas de campos se comparan entre sí, que
   es lo único que caza un campo caído del espejo cuando ese campo no es un secreto.
 
-**Y Chrome sigue en revisión** con la 2.35.0. **Se espera a que apruebe antes de publicar la 2.36.0**, y es
-una decisión del 2026-10-01 con los dos caminos delante: publicar durante la revisión no rompe nada —la
-extensión vieja conserva los campos que no entiende y las dos bóvedas siguen sincronizando— pero **deja ese
-paquete fuera de la tienda** hasta la publicación siguiente, que es lo que le pasó a la 2.34.0. Lo que no se
-puede hacer desde aquí es consultar si ya ha aprobado: las claves de la tienda viven en los secretos de
-GitHub. Desde esta máquina **no se puede consultar el estado de ninguna de
+**Y desde el 2026-10-02 se publica sin esperar a ninguna tienda.** Chrome no admite un paquete nuevo
+mientras revisa el anterior, así que publicar durante una revisión deja ese paquete fuera hasta la siguiente
+—es un aviso del flujo, no un fallo—. El cliente lo decidió con la alternativa delante: esperar la aprobación
+es medio día o más por versión, y **si le corre prisa algo de la extensión, para la revisión a mano en la
+consola**. Lo que hay que decirle al publicar es si esa versión **cambiaba `navegador/`**, porque entonces la
+decisión de cancelar es suya. Desde esta máquina **no se puede consultar el estado de ninguna de
 las dos tiendas**: las claves de AMO y de la Chrome Web Store viven en los secretos de GitHub.
 
 **La ficha de Chrome está pegada y apuntada** (2026-10-01), guardada como borrador para que la revisen con esta

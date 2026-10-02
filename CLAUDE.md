@@ -164,6 +164,13 @@ No se cambian sin preguntar.
   **la contraseña en texto sigue oculta con su ojo** —el código lo lee una cámara apuntada a propósito y el
   texto lo lee quien pase por detrás—. Los colores del código **no salen de la paleta**: negro sobre blanco
   a mano, o en tema oscuro no lo lee ninguna cámara.
+- **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
+  mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda
+  hasta la publicación siguiente — no es un fallo, es un aviso del flujo. Se hace igual: **el cliente para la
+  revisión a mano en la consola** si esa versión traía algo de la extensión que le corre prisa. Lo decidió él
+  con la alternativa delante —esperar a la aprobación, que son medio día o más por versión— y no se cambia
+  sin preguntar. Lo que **sí** conviene decirle al publicar: si esa versión cambiaba `navegador/` y el paquete
+  no subió, porque entonces la decisión de cancelar es suya y necesita saberlo.
 - **El historial guarda solo qué y cuándo**: nunca el contenido, la clave ni el texto cifrado. Vive
   en la carpeta de configuración del usuario, con permisos 600 y un botón de vaciar. **La bóveda no
   escribe en él**, y es una regla absoluta: `credenciales-dashlane.csv` ahí sería una señal de

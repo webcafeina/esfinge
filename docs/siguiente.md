@@ -7,11 +7,10 @@ saber qué se hizo.
 
 ## Alta
 
-- **Publicar la 2.36.0 cuando Chrome apruebe la 2.35.0.** Lleva dos cosas escritas y en verde: el campo
-  `usada` de las llaves de acceso y **las redes wifi con su código QR** ([ADR 0049](adr/0049-las-redes-wifi.md)).
-  Se espera a la aprobación por una razón medida, no por costumbre: publicar mientras Chrome revisa deja ese
-  paquete **fuera de la tienda** hasta la publicación siguiente, que es lo que le pasó a la 2.34.0. Lo decidió
-  el cliente el 2026-10-01 con las dos opciones delante.
+~~**Publicar la 2.36.0 cuando Chrome apruebe la 2.35.0**~~ → **publicada el 2026-10-02**, con las redes wifi
+y el campo `usada`. Chrome aceptó el paquete. Y con ella cambió el criterio: **ya no se espera a ninguna
+tienda para publicar** — si a una versión le corre prisa llegar a Chrome, el cliente para la revisión en
+curso a mano.
 - **Abrir la aplicación en máquinas Windows y GNOME de verdad**, y mirar ahí dos cosas: la estructura
   de cada sistema y el icono de los `.esf` en el explorador de ficheros. En Windows el icono lo pone
   el instalador, en Linux el `.deb`; los dos están comprobados por dentro pero no puestos.
