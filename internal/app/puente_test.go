@@ -132,6 +132,7 @@ var loQuePuedeCruzarElPuente = []string{
 	// de poner la ranura del sistema en uno.
 	"Proyectos", "CrearProyecto", "AbrirProyecto", "VolverALaBovedaPersonal", "RenombrarProyecto",
 	"LlevarAOtraBoveda", "BajarProyecto",
+	"EntregarProyecto", "ArchivarProyecto", "BorrarProyecto",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

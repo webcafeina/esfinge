@@ -1,6 +1,6 @@
 # 0050 · Varias bóvedas: una por proyecto, y una abierta a la vez
 
-**Fecha:** 2026-10-02 · **Estado:** aceptada · E1 a E5 hechas · **sin desplegar** y sin ver en un Mac
+**Fecha:** 2026-10-02 · **Estado:** aceptada · **las seis entregas hechas** · **sin desplegar** y sin ver en un Mac
 
 ## Contexto
 
@@ -107,7 +107,7 @@ explicación parece un olvido.
 
 **Perder la bóveda personal y su clave de recuperación es perder todos los proyectos**, aunque sus ficheros
 sobrevivan. Va en `docs/seguridad.md` con esas palabras. Su mitigación real es entregar
-(la 0051, cuando se escriba), que le pone a la copia maestra y recuperación propias y la deja
+[la 0051](0051-entregar-una-boveda.md), que le pone a la copia maestra y recuperación propias y la deja
 sin depender de nada.
 
 **Cambiar la maestra no toca ningún proyecto**, que es lo que compra la decisión de arriba y conviene no
@@ -189,4 +189,5 @@ cuando el vigilante cierra, con su prueba.
   `GET /v1/cuenta/exportacion` de la cuenta real. Eso no lo puede hacer esta máquina.
 - **Cuántos diálogos de Touch ID salen tras una actualización con varios proyectos.** El diseño existe para
   que sea uno; que sea uno lo dice el Mac.
-- **Entregar, archivar y borrar**: son las entregas siguientes (E6).
+- **Entregar, archivar y borrar están hechas** ([ADR 0051](0051-entregar-una-boveda.md)) y probadas aquí, pero
+  **nadie ha abierto una bóveda entregada en otro ordenador**, que es lo que de verdad lo cierra.

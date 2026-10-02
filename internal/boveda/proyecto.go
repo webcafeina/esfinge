@@ -44,9 +44,11 @@ package boveda
 // maestra y recuperación propias.
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/webcafeina/esfinge/internal/cripto"
@@ -425,4 +427,96 @@ func RanuraPrincipalEn(ruta string) bool {
 		}
 	}
 	return false
+}
+
+// ------------------------------------------------------------------ entregar
+
+// Desprender hace **una copia independiente** de esta bóveda, con su propia
+// contraseña maestra y su propia clave de recuperación, y la devuelve lista para
+// escribir donde se quiera (ADR 0051).
+//
+// Es lo que convierte «una bóveda de proyecto» en «la bóveda de ese cliente»: al
+// acabar un trabajo se le entrega entera, y a partir de ahí **no depende de nada
+// de aquí**. Esto es también la mitigación del coste que la ADR 0050 acepta —
+// perder la bóveda personal es perder todos los proyectos—: lo entregado sobrevive
+// a eso.
+//
+// **El orden importa y cada paso quita algo que no debe salir de aquí.** Se hace
+// sobre una copia en memoria, así que la bóveda de origen no se toca:
+//
+//  1. **Identificador nuevo.** Es una copia, no la misma bóveda en dos sitios: con
+//     el mismo, la sincronización de quien la reciba la confundiría con la nuestra.
+//     El argumento ya estaba escrito en `envio.go` para una entrada suelta.
+//  2. **Fuera la ranura `boveda-principal`**, o la bóveda personal de quien entrega
+//     seguiría abriendo la del cliente.
+//  3. **Maestra nueva y recuperación nueva.** Las únicas dos ranuras que quedan.
+//  4. **Fuera la identidad.** Es la semilla con la que se firman los envíos
+//     compartidos: **regalarla es regalar la firma**, y es el paso que más fácil se
+//     olvida y más daño hace.
+//  5. **Fuera lo que era de nuestra cuenta**: las copias que esperaban, las lápidas
+//     y lo que la sincronización recordaba.
+//
+// Lo que **sí** se lleva es lo único que importa: las entradas, con sus secretos.
+func (b *Boveda) Desprender(maestraNueva string) (*Boveda, string, error) {
+	if strings.TrimSpace(maestraNueva) == "" {
+		return nil, "", errors.New("La contraseña maestra no puede estar vacía")
+	}
+	b.mu.Lock()
+	if b.llave == nil {
+		b.mu.Unlock()
+		return nil, "", ErrCerrada
+	}
+	// **Una copia honda**, no la de Go: una copia plana comparte las listas y los
+	// mapas, y lo que se vaciara aquí se vaciaría también en la bóveda de origen.
+	// Es la misma trampa que ya costó algo al juntar dos bóvedas (ADR 0039).
+	cont, err := copiaHondaDe(b.cont)
+	b.mu.Unlock()
+	if err != nil {
+		return nil, "", err
+	}
+
+	// 4 y 5: lo que no sale de aquí.
+	cont.Identidad = nil
+	cont.Envios = nil
+	cont.Lapidas = nil
+	// Y la lista de proyectos, si por lo que fuera la hubiera: lo que se entrega es
+	// una bóveda, no el mapa de los clientes de quien la entrega.
+	cont.Proyectos = nil
+
+	// 1, 2 y 3: la bóveda nueva, con su identificador y sus dos ranuras.
+	nueva, err := sinRanuras("")
+	if err != nil {
+		return nil, "", err
+	}
+	recuperacion, err := NuevaRecuperacion()
+	if err != nil {
+		return nil, "", err
+	}
+	for _, r := range []struct{ tipo, clave string }{
+		{RanuraMaestra, maestraNueva},
+		{RanuraRecuperacion, recuperacion},
+	} {
+		s, err := envolver(r.tipo, r.clave, nueva.llave, nueva.doc.Cambiada)
+		if err != nil {
+			return nil, "", err
+		}
+		nueva.doc.Sobres = append(nueva.doc.Sobres, s)
+	}
+	nueva.cont = cont
+	nueva.cuerpoSucio = true
+	return nueva, recuperacion, nil
+}
+
+// copiaHondaDe copia el contenido pasándolo por JSON, que es lo que hace que las
+// listas y los mapas no se compartan con el original.
+func copiaHondaDe(c contenido) (contenido, error) {
+	crudo, err := json.Marshal(c)
+	if err != nil {
+		return contenido{}, err
+	}
+	var out contenido
+	if err := json.Unmarshal(crudo, &out); err != nil {
+		return contenido{}, err
+	}
+	return out, nil
 }

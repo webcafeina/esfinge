@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { esfinge, type Proyecto } from "./puente";
 import { Icono } from "./componentes";
+import { Ceremonia } from "./boveda";
 
 export function Proyectos({
   activo,
@@ -42,6 +43,12 @@ export function Proyectos({
   const [otroNombre, setOtroNombre] = useState("");
   const [verArchivados, setVerArchivados] = useState(false);
   const [bajando, setBajando] = useState("");
+  // Qué proyecto tiene desplegado «Al acabar…». Lo de terminar un proyecto se usa
+  // una vez en su vida, así que no ocupa sitio en la fila del día a día.
+  const [alAcabar, setAlAcabar] = useState("");
+  // La clave de recuperación de una bóveda recién entregada: se enseña **una vez**
+  // con la ceremonia de siempre y no se puede volver a pedir.
+  const [entregada, setEntregada] = useState("");
 
   const recargar = useCallback(async () => {
     // **Se mira si hay bóveda abierta antes de pedir la lista.** No es una
@@ -69,6 +76,14 @@ export function Proyectos({
   useEffect(() => {
     if (activo) void recargar();
   }, [activo, recargar]);
+
+  // **La clave de recuperación de lo entregado, a pantalla completa y una sola
+  // vez.** Es la misma ceremonia que al crear una bóveda, sin tocarla: quien reciba
+  // el fichero la necesita tanto como su contraseña, y aquí no hay «vuélvemela a
+  // enseñar».
+  if (entregada) {
+    return <Ceremonia clave={entregada} nueva={true} alSeguir={() => setEntregada("")} />;
+  }
 
   if (cerrada) {
     return (
@@ -122,6 +137,17 @@ export function Proyectos({
       setError(mensaje(e));
     } finally {
       setBajando("");
+    }
+  }
+
+  async function archivar(ref: string, si: boolean) {
+    setError("");
+    try {
+      await esfinge.archivarProyecto(ref, si);
+      setAlAcabar("");
+      await recargar();
+    } catch (e) {
+      setError(mensaje(e));
     }
   }
 
@@ -268,17 +294,41 @@ export function Proyectos({
                       {bajando === p.ref ? "Bajando…" : "Bajar a este equipo"}
                     </button>
                   ) : (
-                    <button
-                      className="discreto"
-                      onClick={() => {
-                        setRenombrando(p.ref);
-                        setOtroNombre(p.nombre);
-                      }}
-                    >
-                      Cambiar el nombre
-                    </button>
+                    <>
+                      <button
+                        className="discreto"
+                        onClick={() => {
+                          setRenombrando(p.ref);
+                          setOtroNombre(p.nombre);
+                        }}
+                      >
+                        Cambiar el nombre
+                      </button>
+                      <button
+                        className="discreto"
+                        onClick={() => setAlAcabar(alAcabar === p.ref ? "" : p.ref)}
+                        aria-expanded={alAcabar === p.ref}
+                      >
+                        Al acabar…
+                      </button>
+                    </>
                   )}
                 </>
+              )}
+              {alAcabar === p.ref && (
+                <AlAcabarElProyecto
+                  proyecto={p}
+                  alEntregar={(clave) => {
+                    setAlAcabar("");
+                    setEntregada(clave);
+                  }}
+                  alArchivar={() => archivar(p.ref, true)}
+                  alBorrar={async () => {
+                    setAlAcabar("");
+                    await recargar();
+                  }}
+                  alFallar={setError}
+                />
               )}
             </li>
           ))}
@@ -446,3 +496,141 @@ export function LlevarEntrada({
     </div>
   );
 }
+
+/**
+ * Lo que se hace con un proyecto **cuando se acaba** (ADR 0051): entregárselo al
+ * cliente, archivarlo o borrarlo.
+ *
+ * Va detrás de un botón y no en la fila porque esto se usa una vez en la vida de
+ * un proyecto, y porque las tres son decisiones: una entrega una copia de todas
+ * sus contraseñas, otra se lleva el fichero de este equipo y la tercera no tiene
+ * vuelta atrás.
+ */
+function AlAcabarElProyecto({
+  proyecto,
+  alEntregar,
+  alArchivar,
+  alBorrar,
+  alFallar,
+}: {
+  proyecto: Proyecto;
+  /** Recibe la clave de recuperación de lo entregado, para la ceremonia. */
+  alEntregar: (clave: string) => void;
+  alArchivar: () => void;
+  alBorrar: () => void;
+  alFallar: (mensaje: string) => void;
+}) {
+  const [que, setQue] = useState<"" | "entregar" | "borrar">("");
+  const [clave, setClave] = useState("");
+  const [trabajando, setTrabajando] = useState(false);
+
+  async function entregar() {
+    setTrabajando(true);
+    try {
+      alEntregar(await esfinge.entregarProyecto(proyecto.ref, clave));
+      setClave("");
+    } catch (e) {
+      alFallar(mensaje(e));
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  async function borrar() {
+    setTrabajando(true);
+    try {
+      await esfinge.borrarProyecto(proyecto.ref, clave);
+      setClave("");
+      alBorrar();
+    } catch (e) {
+      alFallar(mensaje(e));
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  if (que === "entregar") {
+    return (
+      <div className="al-acabar">
+        <h3>Entregar «{proyecto.nombre}»</h3>
+        <p className="nota">
+          Se guarda una copia con la contraseña que le pongas aquí. A partir de ahí es suya: no se
+          sincroniza con la tuya ni la puedes abrir.
+        </p>
+        <label htmlFor={`entregar-${proyecto.ref}`}>Contraseña para quien la reciba</label>
+        <input
+          id={`entregar-${proyecto.ref}`}
+          type="password"
+          autoComplete="off"
+          autoFocus
+          value={clave}
+          onChange={(e) => setClave(e.target.value)}
+        />
+        {clave !== "" && clave.length < MINIMO && <p className="nota">Al menos {MINIMO} caracteres</p>}
+        <p className="aviso">
+          <strong>Dísela por otro camino</strong>, no en el mismo correo que el fichero. Y verás una vez su
+          clave de recuperación: va para quien la reciba.
+        </p>
+        <div className="botones">
+          <button className="principal" onClick={entregar} disabled={clave.length < MINIMO || trabajando}>
+            {trabajando ? "Entregando…" : "Elegir dónde guardarla"}
+          </button>
+          <button className="discreto" onClick={() => setQue("")}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (que === "borrar") {
+    return (
+      <div className="al-acabar">
+        <h3>Borrar «{proyecto.nombre}»</h3>
+        {/* **Lo único irreversible que hay aquí**, y se dice con todas las letras
+            antes de pedir nada: no va a la papelera, no está en otro equipo y no se
+            puede recuperar con la clave de recuperación. */}
+        <p className="aviso">
+          <strong>Esto no se puede deshacer.</strong> Se borra de este ordenador, de tus otros equipos y del
+          servidor, con todo lo que tenga dentro. Si quieres conservarla, entrégala antes.
+        </p>
+        <label htmlFor={`borrar-${proyecto.ref}`}>Tu contraseña maestra</label>
+        <input
+          id={`borrar-${proyecto.ref}`}
+          type="password"
+          autoComplete="off"
+          autoFocus
+          value={clave}
+          onChange={(e) => setClave(e.target.value)}
+        />
+        <div className="botones">
+          <button className="principal" onClick={borrar} disabled={clave === "" || trabajando}>
+            {trabajando ? "Borrando…" : "Borrarla para siempre"}
+          </button>
+          <button className="discreto" onClick={() => setQue("")}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="al-acabar">
+      <div className="botones">
+        <button onClick={() => setQue("entregar")}>Entregársela al cliente</button>
+        <button onClick={alArchivar}>Archivarla</button>
+        <button className="discreto" onClick={() => setQue("borrar")}>
+          Borrarla
+        </button>
+      </div>
+      <p className="nota">
+        Archivarla la saca de la lista y <strong>borra su copia de este ordenador</strong>; sigue en tu
+        cuenta y se puede traer cuando haga falta.
+      </p>
+    </div>
+  );
+}
+
+/** El mismo mínimo que al crear una bóveda. */
+const MINIMO = 10;

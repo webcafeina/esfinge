@@ -694,6 +694,29 @@ export const esfinge = {
    */
   bajarProyecto: (ref: string) => llamar<void>("BajarProyecto", ref),
 
+  /**
+   * Entrega una copia independiente de esa bóveda, con la contraseña que se le
+   * ponga, y devuelve **su clave de recuperación** — que se enseña una vez y no
+   * se puede volver a pedir, como la de cualquier bóveda.
+   *
+   * Lo entregado no depende de nada de aquí: tiene su propio identificador, su
+   * contraseña, su recuperación, y **no lleva la identidad** de quien lo entrega
+   * —que es la firma de sus envíos compartidos—.
+   */
+  entregarProyecto: (ref: string, maestraNueva: string) =>
+    llamar<string>("EntregarProyecto", ref, maestraNueva),
+
+  /**
+   * Lo saca de la lista del día a día **y borra su fichero de este equipo**,
+   * dejando el del servidor. Desarchivar lo devuelve a la lista; el fichero se
+   * baja aparte.
+   */
+  archivarProyecto: (ref: string, archivar: boolean) =>
+    llamar<void>("ArchivarProyecto", ref, archivar),
+
+  /** Lo borra de este equipo, del servidor y de la lista. **Pide la maestra.** */
+  borrarProyecto: (ref: string, maestra: string) => llamar<void>("BorrarProyecto", ref, maestra),
+
   /** Le cambia el nombre. No toca su fichero, que se llama por la referencia. */
   renombrarProyecto: (ref: string, nombre: string) => llamar<void>("RenombrarProyecto", ref, nombre),
 

@@ -86,6 +86,22 @@ function vigilarConsola(page: Page): string[] {
   return errores;
 }
 
+/**
+ * Quita de la lista los errores que **la prueba ha provocado a propósito**, como
+ * pedir algo con una contraseña que no es.
+ *
+ * El vigilante se queda estricto para todo lo demás, que es su trabajo: lo que no
+ * se descuenta aquí tiene que no ocurrir. Y se exige que el error **esté**, porque
+ * una prueba que descuenta algo que no ha pasado deja de comprobar lo que dice.
+ */
+function olvidarEsperado(errores: string[], patron: RegExp) {
+  const antes = errores.length;
+  for (let i = errores.length - 1; i >= 0; i--) {
+    if (patron.test(errores[i])) errores.splice(i, 1);
+  }
+  expect(antes, `no ha ocurrido el error que la prueba esperaba (${patron})`).toBeGreaterThan(errores.length);
+}
+
 test("cifra un texto y lo vuelve a abrir", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
@@ -2188,5 +2204,99 @@ test("una entrada se lleva a la bóveda de un proyecto, con su contraseña", asy
   await expect(page.locator(".panel:visible")).toContainText("la-del-servidor", { timeout: 20_000 });
 
   await volverALaPersonal(page);
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * **Entregar un proyecto, archivarlo y borrarlo** (ADR 0050 E6, ADR 0051).
+ *
+ * Las tres van detrás de «Al acabar…» porque se usan una vez en la vida de un
+ * proyecto. Lo que se comprueba de cada una es lo que la distingue: entregar
+ * **enseña la clave de recuperación una vez**, archivar **se lleva el fichero de
+ * este equipo** y borrar **pide la contraseña maestra**.
+ */
+test("al acabar un proyecto: entregarlo, archivarlo y borrarlo", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const nombre = `Gamma ${Date.now()}`;
+  await seccion(page, "Proyectos").click();
+  await accion(page, "Nueva bóveda de proyecto").click();
+  await page.locator("#proyecto-nombre").fill(nombre);
+  await accion(page, "Crear").click();
+
+  const panel = page.locator(".panel:visible");
+  const fila = panel.locator(".proyectos li").filter({ hasText: nombre });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
+
+  // --- Entregar: la ceremonia de la clave de recuperación, una vez ---
+  await fila.getByRole("button", { name: "Al acabar…" }).click();
+  await panel.getByRole("button", { name: "Entregársela al cliente" }).click();
+  // **Se dice que la contraseña va por otro camino**, que es lo que convierte
+  // entregar un fichero en entregarlo bien.
+  await expect(panel.getByText("Dísela por otro camino", { exact: false })).toBeVisible();
+  await panel.locator(`input[type="password"]`).first().fill("la contraseña del cliente");
+  await accion(page, "Elegir dónde guardarla").click();
+
+  const clave = page.locator(".clave-recuperacion");
+  await expect(clave).toBeVisible({ timeout: 20_000 });
+  await expect(clave).toHaveText(/^ESF(-[0-9A-HJKMNP-TV-Z]{4})+$/);
+  const seguir = accion(page, "Continuar");
+  await expect(seguir).toBeDisabled();
+  await page.getByText("La he apuntado en un sitio seguro").click();
+  await seguir.click();
+
+  // Y el proyecto sigue aquí: entregar es dar una copia.
+  await expect(panel.locator(".proyectos li").filter({ hasText: nombre })).toBeVisible({ timeout: 20_000 });
+
+  // --- Archivar: se lleva el fichero y se va de la lista del día a día ---
+  await panel.locator(".proyectos li").filter({ hasText: nombre }).getByRole("button", { name: "Al acabar…" }).click();
+  await panel.getByRole("button", { name: "Archivarla" }).click();
+  await expect(panel.locator(".proyectos li").filter({ hasText: nombre })).toHaveCount(0, { timeout: 20_000 });
+  await panel.getByRole("button", { name: /^Archivados/ }).click();
+  const archivada = panel.locator(".proyectos li").filter({ hasText: nombre });
+  await expect(archivada).toBeVisible();
+  // Y dice que ya no está aquí, sin llamarlo error.
+  await expect(archivada).toContainText("Dormido en este equipo");
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/** Y borrar **pide la contraseña maestra**: es lo único irreversible que hay aquí. */
+test("borrar una bóveda de proyecto pide la contraseña maestra", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const nombre = `Delta ${Date.now()}`;
+  await seccion(page, "Proyectos").click();
+  await accion(page, "Nueva bóveda de proyecto").click();
+  await page.locator("#proyecto-nombre").fill(nombre);
+  await accion(page, "Crear").click();
+
+  const panel = page.locator(".panel:visible");
+  const fila = panel.locator(".proyectos li").filter({ hasText: nombre });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
+  await fila.getByRole("button", { name: "Al acabar…" }).click();
+  await panel.getByRole("button", { name: "Borrarla" }).click();
+
+  // **Se dice que no se puede deshacer antes de pedir nada.**
+  await expect(panel.getByText("Esto no se puede deshacer", { exact: false })).toBeVisible();
+
+  // Con una contraseña que no es, no se borra y se dice.
+  await panel.locator(`input[type="password"]`).first().fill("esa no es la maestra");
+  await accion(page, "Borrarla para siempre").click();
+  await expect(panel.locator(".error")).toBeVisible({ timeout: 20_000 });
+  await expect(panel.locator(".proyectos li").filter({ hasText: nombre })).toBeVisible();
+  // Ese rechazo es lo que la prueba venía a provocar: el 400 que deja en la consola
+  // es la respuesta correcta, no un fallo.
+  olvidarEsperado(errores, /BorrarProyecto|Failed to load resource/);
+
+  // Con la buena, se va de la lista.
+  await panel.locator(`input[type="password"]`).first().fill(MAESTRA);
+  await accion(page, "Borrarla para siempre").click();
+  await expect(panel.locator(".proyectos li").filter({ hasText: nombre })).toHaveCount(0, { timeout: 20_000 });
+
   expect(errores, errores.join(" | ")).toEqual([]);
 });

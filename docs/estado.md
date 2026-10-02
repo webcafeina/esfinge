@@ -9,22 +9,23 @@ funcionalidad y la pidió el cliente así: *«cada proyecto/cliente tendrá su b
 mismos elementos que tengo en mi propia bóveda»*. El plan entero está en la ADR, decidido con él en tres
 rondas de preguntas, y va **por entregas que se publican solas**.
 
-**Hechas la E1 a la E5**, todas con `make comprobar` entero en verde y cada prueba nueva mutada: el núcleo, el
-apartado «Proyectos» en la ventana, llevar entradas de una bóveda a otra, la sincronización y el selector del
-panel de la extensión. El detalle, abajo.
+**Hechas las seis entregas**, todas con `make comprobar` entero en verde y cada prueba nueva mutada: el
+núcleo, el apartado «Proyectos» en la ventana, llevar entradas de una bóveda a otra, la sincronización, el
+selector del panel de la extensión y —la E6— entregar un proyecto, archivarlo y borrarlo
+([ADR 0051](adr/0051-entregar-una-boveda.md)). El detalle, abajo.
 
 ### La siguiente acción, al retomar
 
-1. **La E6: entregar un proyecto, archivarlo y borrarlo.** Es lo que queda del plan. Entregar está diseñado en
-   la ADR con sus siete pasos y el que más fácil se olvida dicho en voz alta —**quitar la identidad**, que es
-   la semilla con la que se firman los envíos—; archivar **borra el fichero local** y deja el del servidor; y
-   borrar copia la lista de satélites que `BorrarBoveda` ya tiene escrita, sin reinventarla.
-2. **Y dos cosas que no se pueden hacer desde esta máquina**, las dos del cliente:
+**El plan está terminado.** Lo que queda no es código:
+
+1. **Desplegar el servidor y que lo vea en su Mac**, las dos del cliente:
    - **Desplegar el servidor.** La migración del Durable Object se ejecuta **una vez y sobre su bóveda**, así
      que antes hay que guardar un `GET /v1/cuenta/exportacion` de la cuenta real. Está probada contra
      `workerd` y mutada para que copie de menos, no contra datos de verdad.
-   - **Que lo vea en su Mac.** Lo local —crear un proyecto, meter cosas, moverlas, el selector del panel— se
-     puede probar entero sin desplegar nada.
+   - **Que lo vea en su Mac.** Lo local —crear un proyecto, meter cosas, moverlas, entregarlo, el selector
+     del panel— se puede probar entero sin desplegar nada.
+2. **Y lo que ninguna prueba de aquí puede cerrar: abrir una bóveda entregada en otro ordenador.** Aquí se
+   abre con `boveda.Abrir` en la misma máquina, que no es lo mismo que dársela a alguien.
 
 ### Lo hecho, entrega por entrega
 
@@ -54,6 +55,12 @@ borrada. Mutando ese orden, la prueba dice «la entrada se ha perdido».
 referencia en la clave primaria de `versiones` y `trozos`, y hay una prueba de **dos equipos de verdad**: se
 crea un proyecto en uno, se baja en el otro, **se abre con su bóveda personal sin preguntar nada** —la ranura
 viaja dentro del fichero— y lo que se guarda allí vuelve.
+
+**La E6, al acabar un proyecto** ([ADR 0051](adr/0051-entregar-una-boveda.md)): entregárselo al cliente —una
+copia con su contraseña y su clave de recuperación, que **deja de depender de la bóveda personal**, y sin la
+identidad dentro, que es la firma de quien entrega—, archivarlo —**borra el fichero de este equipo** y deja el
+del servidor— y borrarlo, que **pide la maestra** y no vuelve. Las tres detrás de «Al acabar…», porque se usan
+una vez en la vida de un proyecto.
 
 **La E5, la extensión.** El panel tiene su selector de bóveda —sale **solo si hay más de una**— y
 cambiar ahí cambia de verdad lo que se rellena en las páginas, comprobado con la extensión cargada en un

@@ -557,3 +557,179 @@ func TestElEstadoDiceEnQueBovedaSeTrabaja(t *testing.T) {
 		t.Errorf("el nombre que se enseña es %q y tenía que ser «Acme»", e.NombreDelProyecto)
 	}
 }
+
+// **Entregar un proyecto deja una bóveda que ya no depende de nada de aquí**
+// (ADR 0051).
+//
+// Es la mitigación del coste que la ADR 0050 acepta —perder la bóveda personal es
+// perder todos los proyectos—: lo entregado sobrevive a eso porque tiene su propia
+// contraseña y su propia clave de recuperación.
+func TestEntregarUnProyecto(t *testing.T) {
+	a, s, ref := conUnProyecto(t)
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Hosting de Acme", Secreto: "la de acme",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.AbrirBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+
+	destino := filepath.Join(t.TempDir(), "Acme.esfinge")
+	s.mu.Lock()
+	s.guardaEn = destino
+	s.mu.Unlock()
+
+	const suya = "la contraseña del cliente, larga"
+	recuperacion, err := a.EntregarProyecto(ref, suya)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if recuperacion == "" {
+		t.Fatal("entregar sin clave de recuperación: quien la recibe se queda sin segunda puerta")
+	}
+
+	// Abre con lo suyo, con lo de dentro dentro.
+	entregada, err := boveda.Abrir(destino, suya)
+	if err != nil {
+		t.Fatalf("la bóveda entregada no abre con su contraseña: %v", err)
+	}
+	if l := entregada.Buscar("Acme"); len(l) != 1 {
+		t.Fatalf("la entregada tiene %d entradas", len(l))
+	}
+	// Y **no abre con la de quien la entregó**, ni con su bóveda personal.
+	if _, err := boveda.Abrir(destino, maestraDePrueba); err == nil {
+		t.Error("la bóveda entregada abre con la contraseña de quien la entregó")
+	}
+	if boveda.RanuraPrincipalEn(destino) {
+		t.Error("la bóveda entregada sigue abriéndose con la bóveda personal de quien la entregó")
+	}
+
+	// **Y el proyecto sigue aquí**: entregar es dar una copia, no desprenderse.
+	lista, _ := a.Proyectos()
+	if len(lista) != 1 {
+		t.Fatalf("entregar se ha llevado el proyecto: quedan %+v", lista)
+	}
+	if _, err := os.Stat(rutaDeProyecto(ref)); err != nil {
+		t.Error("entregar ha borrado el fichero del proyecto")
+	}
+}
+
+// **Y no se abre el diálogo del sistema para un fichero que no se va a escribir.**
+//
+// Es la regla que costó `ExportarLlaves`: lo que hace falta para decidir se mira
+// antes de pedirle a alguien que decida. El doble **cuenta las veces**, porque
+// mirar el argumento no distingue «no me han llamado» de «me han llamado sin
+// carpeta».
+func TestEntregarMiraAntesDeAbrirElDialogo(t *testing.T) {
+	a, s, ref := conUnProyecto(t)
+
+	// Con la bóveda cerrada no hay con qué abrir el proyecto.
+	a.CerrarBoveda()
+	if _, err := a.EntregarProyecto(ref, "una contraseña larga de prueba"); err == nil {
+		t.Fatal("ha entregado con la bóveda cerrada")
+	}
+	if n := s.vecesQueHaPreguntadoDondeGuardar(); n != 0 {
+		t.Errorf("ha abierto el diálogo del sistema %d veces con la bóveda cerrada", n)
+	}
+
+	// Y sin contraseña para quien la recibe tampoco.
+	if err := a.AbrirBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.EntregarProyecto(ref, "   "); err == nil {
+		t.Fatal("ha entregado sin contraseña")
+	}
+	if n := s.vecesQueHaPreguntadoDondeGuardar(); n != 0 {
+		t.Errorf("ha abierto el diálogo del sistema %d veces sin contraseña", n)
+	}
+}
+
+// Archivar **borra el fichero de este equipo** y lo deja en el servidor, que es lo
+// que hace que un proyecto terminado deje de ocupar sitio y de estar en el disco.
+func TestArchivarUnProyectoSeLlevaElFicheroDeAqui(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	ruta := rutaDeProyecto(ref)
+
+	if err := a.ArchivarProyecto(ref, true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(ruta); err == nil {
+		t.Error("archivar ha dejado el fichero en este equipo")
+	}
+	// Sigue en la lista, marcado: archivar no es borrar.
+	lista, _ := a.Proyectos()
+	if len(lista) != 1 || !lista[0].Archivado {
+		t.Fatalf("tras archivar: %+v", lista)
+	}
+	// Y la lista dice lo mismo que el disco. **El mensaje no da por hecho cuál de
+	// los dos está mal**: saltó al mutar archivar para que no borrara el fichero, y
+	// decía «su fichero no está» cuando lo que pasaba era justo lo contrario.
+	if lista[0].EnEsteEquipo {
+		t.Error("la lista dice que el proyecto archivado sigue en este equipo")
+	}
+
+	// Y desarchivar lo devuelve a la lista del día a día —el fichero se baja
+	// aparte, con `BajarProyecto`—.
+	if err := a.ArchivarProyecto(ref, false); err != nil {
+		t.Fatal(err)
+	}
+	lista, _ = a.Proyectos()
+	if lista[0].Archivado {
+		t.Error("desarchivar no lo ha devuelto a la lista")
+	}
+}
+
+// Y no se archiva la que se está usando: dejaría la bóveda abierta sin fichero, y
+// el siguiente guardado la escribiría otra vez.
+func TestNoSeArchivaLaBovedaQueSeEstaUsando(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.ArchivarProyecto(ref, true); err == nil {
+		t.Fatal("ha archivado la bóveda que estaba abierta")
+	}
+	if _, err := os.Stat(rutaDeProyecto(ref)); err != nil {
+		t.Error("y encima se ha llevado su fichero")
+	}
+}
+
+// **Borrar pide la contraseña maestra**, como borrar la bóveda personal: es lo
+// único irreversible que hay aquí y lo que se lleva son las contraseñas de un
+// cliente entero.
+func TestBorrarUnProyectoPideLaMaestra(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	ruta := rutaDeProyecto(ref)
+
+	if err := a.BorrarProyecto(ref, "esa no es"); err == nil {
+		t.Fatal("ha borrado con una contraseña que no es")
+	}
+	if _, err := os.Stat(ruta); err != nil {
+		t.Fatal("y aun así se ha llevado el fichero")
+	}
+	if l, _ := a.Proyectos(); len(l) != 1 {
+		t.Fatal("y lo ha quitado de la lista")
+	}
+
+	if err := a.BorrarProyecto(ref, maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(ruta); err == nil {
+		t.Error("el fichero sigue ahí después de borrar")
+	}
+	if l, _ := a.Proyectos(); len(l) != 0 {
+		t.Errorf("sigue en la lista: %+v", l)
+	}
+	// Y el registro tampoco lo nombra: lo que queda ahí sale como «huérfano».
+	datos, _ := os.ReadFile(rutaDelRegistro())
+	if strings.Contains(string(datos), ref) {
+		t.Error("el registro sigue apuntando una bóveda que ya no existe")
+	}
+}

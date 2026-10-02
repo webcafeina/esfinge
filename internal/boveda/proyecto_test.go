@@ -344,3 +344,96 @@ func TestSinLaPersonalNoHayProyecto(t *testing.T) {
 		t.Fatalf("abrir sin la personal da %v", err)
 	}
 }
+
+// **Entregar una bóveda: lo que se lleva y, sobre todo, lo que no** (ADR 0051).
+//
+// Cada aserción de aquí es un paso que, si se olvida, entrega algo que no debía
+// salir. La que más duele es la identidad: es la semilla con la que se firman los
+// envíos compartidos, así que regalarla es regalar la firma de quien entrega.
+func TestDesprenderUnaBovedaSeLlevaLoDeDentroYNadaMas(t *testing.T) {
+	personal, ruta, llave := personalYProyecto(t)
+	p, err := AbrirProyecto(ruta, llave)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Se le pone de todo lo que no debe salir: identidad, una copia esperando y
+	// una lápida de algo borrado.
+	if _, err := p.Identidad(); err != nil {
+		t.Fatal(err)
+	}
+	e := p.Buscar("Acme")[0]
+	if err := p.Borrar(e.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.VaciarPapelera(); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Correo de Acme", Secreto: "la del correo"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.AnotarPendiente("x", "a@b.c", "AAAA-BBBB"); err != nil {
+		t.Fatal(err)
+	}
+
+	const nueva = "la maestra del cliente, bien larga"
+	copia, recuperacion, err := p.Desprender(nueva)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// **Lo que se lleva**: las entradas con su secreto. Es para lo que se entrega.
+	if l := copia.Buscar("Correo"); len(l) != 1 {
+		t.Fatalf("la copia tiene %d entradas", len(l))
+	}
+	entera, _ := copia.Ver(copia.Buscar("Correo")[0].ID)
+	if entera.Secreto != "la del correo" {
+		t.Errorf("el secreto ha llegado como %q", entera.Secreto)
+	}
+
+	// **Y lo que no:**
+	if _, err := copia.Identidad(); err == nil {
+		t.Error("la copia se lleva la identidad: eso es regalar la firma de quien la entrega")
+	}
+	if n := len(copia.Pendientes()); n != 0 {
+		t.Errorf("la copia se lleva %d copias que esperaban", n)
+	}
+	if copia.ID() == p.ID() {
+		t.Error("la copia tiene el identificador de la original: la sincronización las confundiría")
+	}
+	if copia.TieneRanuraPrincipal() {
+		t.Error("la copia sigue abriéndose con la bóveda personal de quien la entrega")
+	}
+	if _, err := AbrirProyecto(rutaDeLaCopia(t, copia), llave); err != ErrSinRanuraPrincipal {
+		t.Error("y el fichero entregado se abre con la bóveda personal de quien lo entregó")
+	}
+
+	// **Se abre con su maestra nueva y con su recuperación**, y con nada más.
+	fichero := rutaDeLaCopia(t, copia)
+	if _, err := Abrir(fichero, nueva); err != nil {
+		t.Fatalf("la copia no abre con su contraseña nueva: %v", err)
+	}
+	if _, err := Abrir(fichero, recuperacion); err != nil {
+		t.Fatalf("la copia no abre con su clave de recuperación: %v", err)
+	}
+	if _, err := Abrir(fichero, maestraDePrueba); err == nil {
+		t.Error("la copia abre con la contraseña de quien la entregó")
+	}
+
+	// Y **la original no se ha tocado**: sigue con lo suyo y con su identidad.
+	if _, err := p.Identidad(); err != nil {
+		t.Errorf("desprender se ha llevado la identidad de la original: %v", err)
+	}
+	if n := len(p.Pendientes()); n != 1 {
+		t.Errorf("la original tiene %d copias esperando y tenía una", n)
+	}
+	_ = personal
+}
+
+func rutaDeLaCopia(t *testing.T, b *Boveda) string {
+	t.Helper()
+	ruta := filepath.Join(t.TempDir(), "entregada.esfinge")
+	if err := b.GuardarEn(ruta); err != nil {
+		t.Fatal(err)
+	}
+	return ruta
+}

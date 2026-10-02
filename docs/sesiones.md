@@ -5,7 +5,7 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
-## 2026-10-02 · Las bóvedas por proyecto: de la E1 a la E5
+## 2026-10-02 · Las bóvedas por proyecto, el plan entero (E1 a E6)
 
 - **Se planificó entera la última gran funcionalidad** (ADR 0050), con el cliente y en tres rondas de
   preguntas: una bóveda por proyecto, **una abierta a la vez**, con su apartado en la barra lateral,
@@ -76,6 +76,18 @@ Plantilla al final.
   fallaba**, así que una bóveda que llegaba en la pasada no traía su selector hasta volver a abrirlo; y el
   `select` con `appearance: none` se leía como una caja de texto —nadie sabría que se despliega—, que se vio
   sacando la captura y mirándola.
+- **Y la E6: lo que se hace con un proyecto al acabarlo** ([ADR 0051](adr/0051-entregar-una-boveda.md)):
+  entregárselo al cliente, archivarlo o borrarlo, las tres detrás de «Al acabar…». Entregar deja una bóveda
+  que **ya no depende de la personal de quien la entrega** —y eso es la mitigación del coste que la 0050
+  acepta—, y cada paso quita algo que no puede salir; *mutando el que quita la identidad, la prueba dice que
+  la copia se lleva la firma de quien la entrega*.
+- **Y otra vez la captura encontró lo que dos pruebas en verde no**: el bloque de «Al acabar…» entraba en la
+  fila **como una columna más** y aplastaba el nombre del proyecto contra los botones. Le faltaba
+  `flex-wrap` al `li`; su `flex-basis: 100%` no manda nada sin eso.
+- **Y un intermitente del fichero de capturas, arreglado donde estaba**: preguntaba por la visibilidad de la
+  bienvenida justo después de esperarla, y entre las dos cosas cabe el final de la transición — entonces no
+  la pulsaba y el recorrido fallaba **tres pantallas más adelante**. Se pregunta por el número, que es lo que
+  no depende de una animación.
 - **Queda abierto, y en [`deuda.md`](deuda.md)**: **desplegar el servidor** —con la exportación de la cuenta
   real guardada antes—, **bajar un proyecto dormido no tiene botón**
   —severidad alta: con dos Macs no sale del equipo—, la extensión no sabe de proyectos, y **cuántos diálogos

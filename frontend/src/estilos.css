@@ -1365,6 +1365,11 @@ p {
 
 .proyectos li {
   display: flex;
+  /* **Con salto**, que es lo que deja al bloque de «Al acabar…» irse a una segunda
+   * línea. Sin esto, su `flex-basis: 100%` no manda nada: entra como una columna
+   * más y aplasta el nombre del proyecto contra los botones —se vio en la captura,
+   * con dos pruebas en verde—. */
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--espacio-2);
   padding-right: var(--espacio-3);
@@ -1433,6 +1438,30 @@ p {
 
 .renombrar input {
   flex: 1;
+}
+
+/* Lo que se hace con un proyecto al acabarlo (ADR 0051). Va **dentro de su fila**,
+ * en una segunda línea, para que se vea de qué proyecto se está hablando: una
+ * tarjeta flotante con tres botones destructivos y sin nombre delante es justo lo
+ * que no hay que hacer. Colores de siempre: la superficie suave y el aviso con su
+ * par ya medido. */
+.al-acabar {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  padding: var(--espacio-3);
+  border-top: 0.5px solid var(--filete);
+  background: var(--suave);
+}
+
+.al-acabar h3 {
+  margin: 0;
+  font-size: var(--texto);
+}
+
+.al-acabar .botones {
+  margin: 0;
 }
 
 .archivados {

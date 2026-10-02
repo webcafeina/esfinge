@@ -83,6 +83,16 @@ func (s *sistemaFalso) ElegirDondeGuardar(_, _, desde string) (string, error) {
 	return s.guardaEn, nil
 }
 
+// vecesQueHaPreguntadoDondeGuardar: **se cuentan las llamadas y no se mira el
+// argumento**, porque el `desde` viene vacío hasta que alguien recuerda una
+// carpeta y entonces "" no distingue «no me han llamado» de «me han llamado sin
+// carpeta». Lo aprendió la exportación de llaves de acceso.
+func (s *sistemaFalso) vecesQueHaPreguntadoDondeGuardar() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.vecesGuardar
+}
+
 // Avisar apunta los eventos. El candado hace falta porque la comprobación de
 // actualizaciones avisa desde su propia gorrutina.
 func (s *sistemaFalso) Avisar(evento string, datos any) {

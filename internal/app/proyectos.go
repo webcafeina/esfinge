@@ -31,11 +31,13 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/cripto"
 	"github.com/webcafeina/esfinge/internal/escritura"
+	"github.com/webcafeina/esfinge/internal/sincro"
 )
 
 // nombreDelRegistro vive al lado de las preferencias y de los navegadores.
@@ -633,4 +635,179 @@ func (a *App) marcarProyectoUsado(ref string) {
 	if err != nil {
 		log.Printf("esfinge: no se ha podido apuntar cuándo se abrió el proyecto: %v", err)
 	}
+}
+
+// ------------------------------------------------------------------ al acabar
+
+// EntregarProyecto escribe una copia independiente de esa bóveda, con la
+// contraseña maestra que se le ponga, y devuelve **su clave de recuperación**
+// (ADR 0051).
+//
+// Se enseña con la ceremonia de siempre y **no se puede volver a pedir**: quien
+// recibe la bóveda la necesita tanto como su contraseña.
+//
+// **Se mira antes de preguntar dónde**, que es la regla que costó `ExportarLlaves`:
+// con la bóveda cerrada o con un proyecto que no está en este equipo, lo que hay
+// que decir es eso, no abrir un diálogo del sistema para un fichero que no se va a
+// escribir.
+func (a *App) EntregarProyecto(ref, maestraNueva string) (string, error) {
+	if ref == "" {
+		return "", errors.New("Esa no es una bóveda de proyecto")
+	}
+	// **El largo mínimo lo pone la pantalla**, como al crear la bóveda: vive en
+	// `MINIMO_MAESTRA` de la interfaz y aquí no se repite, que un número en dos
+	// sitios acaba siendo dos números. Go comprueba lo que de verdad no puede pasar.
+	if strings.TrimSpace(maestraNueva) == "" {
+		return "", errors.New("Ponle una contraseña a la bóveda que vas a entregar")
+	}
+	llave := a.llaveDeLaPrincipal()
+	if len(llave) == 0 {
+		return "", boveda.ErrCerrada
+	}
+	defer cripto.Borrar(llave)
+
+	ruta := rutaDeProyecto(ref)
+	if _, err := os.Stat(ruta); err != nil {
+		return "", errors.New("Esa bóveda no está en este equipo todavía")
+	}
+	nombre := "proyecto"
+	_ = a.conLaPersonal(func(b *boveda.Boveda) error {
+		if p, hay := b.Proyecto(ref); hay && p.Nombre != "" {
+			nombre = p.Nombre
+		}
+		return nil
+	})
+
+	p, err := boveda.AbrirProyecto(ruta, llave)
+	if err != nil {
+		return "", err
+	}
+	defer p.Cerrar()
+	copia, recuperacion, err := p.Desprender(maestraNueva)
+	if err != nil {
+		return "", err
+	}
+
+	destino, err := a.sistema.ElegirDondeGuardar("Entregar la bóveda del proyecto",
+		nombreDeFichero(nombre)+".esfinge", a.ajustes.CarpetaDeGuardar())
+	if err != nil || destino == "" {
+		return "", err
+	}
+	a.ajustes.RecordarCarpetaDeGuardar(filepath.Dir(destino))
+	if err := copia.GuardarEn(destino); err != nil {
+		return "", err
+	}
+	a.Actividad()
+	return recuperacion, nil
+}
+
+// nombreDeFichero deja un nombre de proyecto en algo que se pueda escribir en
+// cualquier sistema: sin barras, sin dos puntos y sin acentos raros de por medio.
+func nombreDeFichero(nombre string) string {
+	limpio := strings.Map(func(r rune) rune {
+		if strings.ContainsRune(`/\:*?"<>|`, r) || r < 32 {
+			return '-'
+		}
+		return r
+	}, strings.TrimSpace(nombre))
+	if limpio == "" {
+		return "proyecto"
+	}
+	return limpio
+}
+
+// ArchivarProyecto lo saca de la lista del día a día **y borra su fichero de este
+// equipo**, dejando el del servidor.
+//
+// Esa es la mitad que lo hace útil: lo archivado deja de estar en el disco, así
+// que «lo cerrado no está en memoria» pasa a ser también «no está aquí». Volver a
+// traerlo es desarchivarlo, que lo baja.
+func (a *App) ArchivarProyecto(ref string, archivar bool) error {
+	if ref == "" {
+		return errors.New("Esa no es una bóveda de proyecto")
+	}
+	if a.bovedaActiva() == ref {
+		return errors.New("Cierra esa bóveda antes de archivarla")
+	}
+	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		p, hay := b.Proyecto(ref)
+		if !hay {
+			return errors.New("Ese proyecto no está en tu bóveda")
+		}
+		p.Archivado = archivar
+		return b.PonerProyecto(p)
+	}); err != nil {
+		return err
+	}
+	if archivar {
+		// **El fichero y sus satélites**, que son copias de lo mismo: la base de la
+		// sincronización es una bóveda entera y la caché de iconos es la lista de
+		// sitios. Lo que no se borra es lo del servidor: desarchivar lo baja.
+		if err := borrarElFicheroYSusSatelites(rutaDeProyecto(ref)); err != nil {
+			return err
+		}
+	}
+	a.Actividad()
+	return nil
+}
+
+// BorrarProyecto se lleva la bóveda de este equipo, **del servidor** y de la lista.
+//
+// Pide la contraseña maestra, como borrar la bóveda personal y por la misma razón:
+// es lo único irreversible que hay aquí, y lo que se lleva son las contraseñas de
+// un cliente entero.
+func (a *App) BorrarProyecto(ref, maestra string) error {
+	if ref == "" {
+		return errors.New("Esa no es una bóveda de proyecto")
+	}
+	if err := comprobarLaMaestra(rutaBovedaPrincipal(), maestra, "borrar una bóveda de proyecto"); err != nil {
+		return err
+	}
+	// Si es la que está abierta, se cierra antes: dejarla en memoria después de
+	// borrar el fichero es tener una bóveda sin fichero, y el siguiente guardado la
+	// escribiría otra vez. Es lo mismo que hace `BorrarBoveda`.
+	if a.bovedaActiva() == ref {
+		if err := a.VolverALaBovedaPersonal(); err != nil {
+			return err
+		}
+	}
+	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		return b.OlvidarProyecto(ref)
+	}); err != nil {
+		return err
+	}
+	if err := borrarElFicheroYSusSatelites(rutaDeProyecto(ref)); err != nil {
+		return err
+	}
+	_ = olvidarLaBovedaDelRegistro(ref)
+	// Y del servidor. **Que falle no deshace lo de aquí**, que ya está hecho: se
+	// vuelve a intentar en la siguiente pasada de la sincronización, y mientras
+	// tanto la bóveda no está en ningún equipo porque no está en la lista.
+	if token, err := a.sesionDeCuenta(); err == nil {
+		if err := a.cliente().OlvidarBoveda(a.ctxCuenta(), token, ref); err != nil {
+			log.Printf("esfinge: la bóveda del proyecto sigue en el servidor: %v", err)
+		}
+	}
+	a.Actividad()
+	return nil
+}
+
+// borrarElFicheroYSusSatelites: el fichero y **todo lo que es una copia de lo que
+// había dentro**. La lista sale de `BorrarBoveda`, que ya la tenía escrita, y no se
+// reinventa aquí.
+func borrarElFicheroYSusSatelites(ruta string) error {
+	if ruta == "" {
+		return errors.New("No encuentro esa bóveda en este sistema")
+	}
+	if err := os.Remove(ruta); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	// Lo de abajo es limpieza: que falte alguno no invalida el borrado, que ya está
+	// hecho, y devolver un error aquí haría creer que no se ha borrado nada.
+	_ = os.Remove(ruta + ".anterior")
+	_ = os.Remove(boveda.RutaDeIconos(ruta))
+	_ = (sincro.JuntoALaBoveda{Ruta: ruta}).Olvidar()
+	_ = os.Remove(ruta + ".antes-de-fundir")
+	escritura.LimpiarHuerfanos(filepath.Dir(ruta), 0)
+	return nil
 }

@@ -29,7 +29,11 @@ test.describe("Capturas", () => {
     // Se espera a que haya algo: preguntar en el acto si se ve, con la página aún
     // pintándose, decía que no y el recorrido se quedaba en la bienvenida.
     await bienvenida.or(page.getByLabel("Qué quieres cifrar")).first().waitFor();
-    if (await bienvenida.isVisible().catch(() => false)) {
+    // **Se pregunta por el número y no por la visibilidad**: entre el `waitFor` y
+    // el `isVisible` cabe el final de la transición, y entonces se contestaba que no
+    // está, no se pulsaba, y el recorrido se quedaba en la bienvenida —con el fallo
+    // apareciendo tres pantallas más adelante—. `click` ya espera a que se pueda.
+    if (await bienvenida.count()) {
       await foto("00-bienvenida");
       await bienvenida.click();
     }
@@ -86,7 +90,7 @@ test.describe("Capturas", () => {
 
     const bienvenida = page.getByRole("button", { name: "Usar en este ordenador" });
     await bienvenida.or(page.getByLabel("Qué quieres cifrar")).first().waitFor();
-    if (await bienvenida.isVisible().catch(() => false)) await bienvenida.click();
+    if (await bienvenida.count()) await bienvenida.click();
 
     await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
     // **Se espera a que haya algo antes de preguntar cuál hay.** `isVisible` no
@@ -206,7 +210,7 @@ test.describe("Capturas", () => {
     await page.goto("/");
     const bienvenida = page.getByRole("button", { name: "Usar en este ordenador" });
     await bienvenida.or(page.getByLabel("Qué quieres cifrar")).first().waitFor();
-    if (await bienvenida.isVisible().catch(() => false)) await bienvenida.click();
+    if (await bienvenida.count()) await bienvenida.click();
     await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
     await boton("Crear la bóveda")
       .or(boton("Abrir la bóveda"))
@@ -299,6 +303,15 @@ test.describe("Capturas", () => {
     await boton("Crear").click();
     await page.waitForTimeout(400);
     await foto("9c-proyectos-con-uno");
+
+    // Lo que se hace con un proyecto al acabarlo (ADR 0051).
+    await page.locator(".panel:visible .proyectos li").first().getByRole("button", { name: "Al acabar…" }).click();
+    await page.waitForTimeout(250);
+    await foto("9e-al-acabar");
+    await boton("Entregársela al cliente").click();
+    await page.locator('.panel:visible input[type="password"]').first().fill("la del cliente");
+    await page.waitForTimeout(250);
+    await foto("9f-entregar");
 
     // Y llevar una entrada a esa bóveda, desde la ficha de la entrada.
     await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
