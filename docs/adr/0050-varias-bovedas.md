@@ -184,9 +184,15 @@ cuando el vigilante cierra, con su prueba.
 - **Nada de esto se ha visto en un Mac.** Aquí se ha mirado en capturas del navegador, en los dos temas, que
   es lo que hay. La ventana de verdad —tipografía del sistema, controles nativos, el material translúcido
   detrás— solo se ve ahí.
-- **El servidor no está desplegado.** La migración está escrita y probada contra `workerd`, pero **se ejecuta
-  una vez y sobre la bóveda del cliente**: antes de desplegarla hay que guardar un
-  `GET /v1/cuenta/exportacion` de la cuenta real. Eso no lo puede hacer esta máquina.
+- **Producción no está desplegada.** **Pruebas sí, el 2026-10-02, y la migración se comprobó ahí contra un
+  Durable Object de verdad** y no contra `workerd`: se dio de alta una cuenta **con el Worker anterior**
+  —comprobando antes que `GET /v1/bovedas` daba 404, que es lo que dice que ese código es el viejo—, se le
+  subieron **dos versiones de 1,5 MiB** para que hubiera historia y **más de un trozo** que copiar, y después
+  del despliegue volvieron los mismos bytes, el mismo ETag, la v1 entera, la sesión de antes valiendo, la
+  exportación con su `proyectos` y una bóveda de proyecto empezando en **su propia v1** sin mover la personal.
+  Un detalle logístico que costó dos intentos: el buzón de pruebas (`/_pruebas/buzon`) está **detrás de
+  Cloudflare Access**, así que el código del alta no se lee por HTTP desde aquí — sale de la tabla
+  `buzon_pruebas` de su D1.
 - **Cuántos diálogos de Touch ID salen tras una actualización con varios proyectos.** El diseño existe para
   que sea uno; que sea uno lo dice el Mac.
 - **Entregar, archivar y borrar están hechas** ([ADR 0051](0051-entregar-una-boveda.md)) y probadas aquí, pero

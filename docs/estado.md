@@ -19,11 +19,14 @@ selector del panel de la extensión y —la E6— entregar un proyecto, archivar
 **El plan está terminado.** Lo que queda no es código:
 
 1. **Desplegar el servidor y que lo vea en su Mac**, las dos del cliente:
-   - **Desplegar el servidor.** La migración del Durable Object se ejecuta **una vez y sobre su bóveda**, y
-     está probada contra `workerd` y mutada para que copie de menos, no contra datos de verdad. **Se ofreció
-     guardar antes un `GET /v1/cuenta/exportacion` y el cliente dijo que no** (2026-10-02), así que se
-     despliega sin esa red. La que queda, y es buena, son **las copias locales de sus dos Macs**: el servidor
-     es una copia para sincronizar, no el original.
+   - **Desplegar producción.** La migración del Durable Object se ejecuta **una vez y sobre su bóveda**.
+     **Pruebas ya está desplegado** (2026-10-02) y la migración se comprobó allí **sobre un Durable Object de
+     verdad**: una cuenta dada de alta con el Worker anterior, dos versiones de 1,5 MiB —historia y más de un
+     trozo— y, tras el despliegue, los mismos bytes, el mismo ETag, la v1 entera y la sesión de antes
+     valiendo. Antes solo estaba probada contra `workerd`. **Se ofreció guardar antes un
+     `GET /v1/cuenta/exportacion` y el cliente dijo que no** (2026-10-02), así que se despliega sin esa red.
+     La que queda, y es buena, son **las copias locales de sus dos Macs**: el servidor es una copia para
+     sincronizar, no el original.
    - **Que lo vea en su Mac.** Lo local —crear un proyecto, meter cosas, moverlas, entregarlo, el selector
      del panel— se puede probar entero sin desplegar nada.
 2. **Y lo que ninguna prueba de aquí puede cerrar: abrir una bóveda entregada en otro ordenador.** Aquí se

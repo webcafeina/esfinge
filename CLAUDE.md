@@ -1470,6 +1470,11 @@ cosas que ya costaron algo al escribirlo:
 - **pnpm frena las versiones recién publicadas** y, si se le deja, las mete solo en
   `minimumReleaseAgeExclude`. No se acepta: se fijan versiones con una semana, que es lo que ese freno
   pide.
+- **Y el Worker de pruebas desplegado tiene el buzón detrás de Cloudflare Access.** `/v1/*` contesta, pero
+  `/_pruebas/buzon` devuelve un 302 a la pantalla de Access y el cuerpo es HTML: el síntoma es un
+  «invalid character '<'» al descodificar el JSON. El código de un alta contra ese Worker se saca de la
+  tabla `buzon_pruebas` de su D1 (`esfinge-cuentas-pruebas`), no por HTTP. Solo pasa con el desplegado: el
+  que levanta `con-servidor.sh` en local no tiene Access delante.
 
 **La fusión de la bóveda la vigila una prueba de tres equipos al azar, y es la que manda** (ADR 0038).
 Al escribirla cazó dos fallos que ninguna prueba caso a caso veía: **cada equipo conservaba su orden de
