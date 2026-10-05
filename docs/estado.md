@@ -4,19 +4,19 @@
 
 ## Dónde se paró, y por dónde se sigue
 
-> **Publicada la 2.39.0 el 2026-10-05**, y el cliente la abrió el mismo día. De ahí salieron **dos cosas
-> arregladas y sin publicar**: falta aire arriba con el antetítulo —la barra crece 12 px con un proyecto
-> abierto— y **la tarjeta de Touch ID se ofrecía encima de un proyecto**, donde activar está prohibido.
-> **Publicadas las dos**: la 2.39.0 a las 07:24 y la **2.39.1** a las 08:22 del 2026-10-05, los siete
-> trabajos en verde las dos veces. En Chrome la 2.39.1 **no subió** —la 2.39.0 sigue en revisión— y en
-> Firefox sí; el código de la extensión es el mismo en las dos, así que no se pierde nada. Queda apuntado en
-> [`deuda.md`](deuda.md) **igualar los números**, que lo pidió el cliente.
+> **Cerrado el 2026-10-05.** Tres publicaciones ese día —2.39.0, 2.39.1 y 2.39.2— y el cliente las fue
+> probando en su Mac según salían. **Dio el visto bueno con la 2.39.2**: «actualizado, probado y conforme».
 >
-> **Y lo que esa versión cerró, que llevaba todo el proyecto abierto**: con un proyecto creado, tras
-> actualizar sale **un** diálogo de Touch ID —la huella abre la personal y el proyecto no pide nada—, y **un
-> proyecto creado en su otro Mac llegó a éste**: salió como «Dormido en este equipo», se bajó y se abrió sin
-> pedir nada. Con eso quedan comprobadas de golpe la migración de su Durable Object, que la ranura
-> `boveda-principal` viaja dentro del fichero y que la lista de proyectos viaja cifrada en la personal.
+> **Lo que esas versiones cerraron**, y era casi todo lo que quedaba del proyecto: **un solo diálogo de
+> Touch ID** tras actualizar con un proyecto creado —la huella abre la personal y el proyecto no pide nada—;
+> **un proyecto creado en su otro Mac abierto en éste**, que de una vez comprueba la migración de su Durable
+> Object, que la ranura `boveda-principal` viaja dentro del fichero y que la lista de proyectos viaja cifrada
+> en la personal; y la pantalla del proyecto **vista y aprobada** con la tipografía del sistema.
+>
+> **Lo único que queda de todo el proyecto: abrir en otro ordenador una bóveda entregada** (ADR 0051). Ojo
+> con no confundirlo con lo de arriba: lo comprobado es un proyecto **sincronizado**, que viaja por su
+> cuenta; lo entregado va **suelto**, con su propia maestra y su propia clave de recuperación, y eso no lo
+> ha abierto nadie fuera de esta máquina.
 
 **Sesión del 2026-10-02.** En marcha **las bóvedas por proyecto** (ADR 0050), que es la última gran
 funcionalidad y la pidió el cliente así: *«cada proyecto/cliente tendrá su bóveda y yo podré apuntar ahí los

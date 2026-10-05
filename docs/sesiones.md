@@ -5,6 +5,42 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-05 · Tres publicaciones, y lo que el cliente vio en cada una
+
+- **Publicadas la 2.39.0, la 2.39.1 y la 2.39.2**, las tres con los siete trabajos en verde, probando él cada
+  una en su Mac según salía. Lo de la 2.39.0 estaba escrito y sin publicar desde el sábado.
+- **Y con eso se cerraron las dos comprobaciones que llevaban todo el proyecto abiertas**, las dos sin
+  buscarlas: **un solo diálogo de Touch ID** tras actualizar con un proyecto creado —el «uno» del viernes
+  fue sin ninguno y no probaba nada—, y **un proyecto creado en su otro Mac abierto en éste**: salió como
+  «Dormido en este equipo», se bajó y abrió sin pedir nada. Eso comprueba de una vez que **su Durable Object
+  migró**, que **la ranura `boveda-principal` viaja dentro del fichero** y que la lista de proyectos viaja
+  cifrada dentro de la personal.
+- **Pidió aire arriba** con el antetítulo puesto. Se **midieron las cajas en la página** en vez de calcularlo:
+  con una línea el título tiene 15 px por encima y el antetítulo los dejaba en 8. La barra crece 12 px
+  mientras hay un proyecto abierto —no solo donde está el antetítulo, o ir y volver a «Proyectos» daría un
+  salto en cada clic—.
+- **Y mirando esa captura apareció otra cosa que nadie buscaba**: la tarjeta de Touch ID se ofrecía **encima
+  de la pantalla de un proyecto**, donde activar está prohibido. No era un fallo de seguridad —el
+  identificador que miraba era el de la personal— sino un ofrecimiento imposible de aceptar. La prueba que lo
+  cubría partía de una personal **ya contestada**, así que pasaba en verde con el hueco dentro.
+- **Preguntó lo mejor del día**: «¿qué diferencia hay entre "Cerrar la bóveda" y "Salir del proyecto"? ¿No
+  vuelven los dos a mi bóveda?». **Hacían lo mismo.** Y la razón escrita para pedir la maestra al volver no
+  se sostenía: decía que la personal no puede quedarse abierta porque dos bóvedas a la vez es lo que se
+  descartó, y eso vale para tenerlas abiertas **a la vez**, no para abrir una después de cerrar la otra.
+  Ahora **salir devuelve la personal abierta y lleva a la lista** —lo pidió él, «¿no sería más intuitivo por
+  lenguaje?»— y **cerrar** cierra todo y olvida la clave, llamándose «Cerrar todo» dentro de un proyecto.
+  La prueba que faltaba **compara las dos acciones**: cada una tenía la suya y ninguna las ponía juntas.
+- **Las tiendas**: la 2.39.1 rebotó en Chrome con la 2.39.0 en revisión —previsto, sale como aviso—, él
+  **aprobó la 2.39.0 a mediodía** y la 2.39.2 entró sola. Queda Chrome con la 2.39.0 publicada y la 2.39.2 en
+  cola. De ahí sale una regla escrita en `docs/tiendas/pasos.md`: al publicar **no se mira si los números
+  cuadran, sino si alguna de las versiones que no subieron tocaba `navegador/`**.
+- **Visto bueno final**: «actualizado, probado y conforme».
+- **Queda abierto, y es lo único de todo el proyecto**: abrir en otro ordenador una bóveda **entregada**. No
+  es lo mismo que lo comprobado hoy —un proyecto sincronizado viaja por la cuenta; lo entregado va suelto,
+  con su propia maestra y su propia clave de recuperación—.
+
+---
+
 ## 2026-10-02 (tarde) · Los dos servidores desplegados, y lo que el cliente vio al abrirlo
 
 - **Se desplegó el servidor de cuentas, primero pruebas y después producción** (ADR 0050). La migración

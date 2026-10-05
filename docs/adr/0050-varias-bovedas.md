@@ -190,7 +190,11 @@ cuando el vigilante cierra, con su prueba.
   `VolverALaBovedaPersonal` estaba en Go y en el puente y no la llamaba nadie. Lo que **no** quedó
   comprobado: **cuántos diálogos de Touch ID salen tras actualizar con varios proyectos** —ese día salió
   uno, pero sin ningún proyecto creado, así que no prueba nada— y cómo quedan el antetítulo y la fila de dos
-  líneas con la tipografía del sistema.
+  líneas con la tipografía del sistema. **Las dos cosas quedaron vistas el 2026-10-05**, abajo.
+- **Y el visto bueno, el 2026-10-05 con la 2.39.2**: «actualizado, probado y conforme». Con eso quedan
+  aprobados en la máquina del cliente **el antetítulo y su aire** —que pidió él y se midió en la página, no
+  a ojo—, **la fila de dos líneas** de la barra lateral y **salir de un proyecto como algo distinto de
+  cerrarlo todo**. La pantalla de «Proyectos» está vista y dada por buena.
 - **Y una decisión corregida el 2026-10-05, que la preguntó él**: «¿qué diferencia hay entre "Cerrar la
   bóveda" y "Salir del proyecto"? ¿No vuelven los dos a mi bóveda?». Hacían **lo mismo**: cerrar todo,
   olvidar la clave de la personal y pedir la maestra. Esta ADR justificaba ese tecleo diciendo que la
