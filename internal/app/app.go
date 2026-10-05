@@ -72,6 +72,10 @@ type App struct {
 	// está abierto es la bóveda personal (ADR 0050). **Una a la vez**, así que esto
 	// es una cadena y no un conjunto, y `bov` sigue siendo un puntero.
 	activa string
+	// duenoActivo es **de quién** es la bóveda abierta (ADR 0052): vacío si es mía
+	// —la personal o un proyecto— y la cuenta de la otra persona si me dieron acceso.
+	// Con `activa` forman la dirección en el servidor.
+	duenoActivo string
 	// nombreActivo es cómo se llama la bóveda de proyecto abierta, para poder
 	// enseñarlo sin ir a buscarlo. Se apunta al conmutar, que es cuando se sabe:
 	// pedirlo cada vez obligaría a abrir el fichero de la personal en cada

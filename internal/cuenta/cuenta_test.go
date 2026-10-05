@@ -358,3 +358,146 @@ func TestConLaRedApagadaNoSaleNada(t *testing.T) {
 		t.Fatalf("%v\n%s", err, salida)
 	}
 }
+
+// bovedaDePrueba es el documento mínimo que el servidor acepta: lo que comprueba es
+// la cabecera y los sobres, no el contenido, que no puede leer.
+func bovedaDePrueba(id, relleno string) []byte {
+	return []byte(`{"esfinge":"bóveda","formato":1,"id":"` + id + `","sobres":[],"cuerpo":"ESF1.` + relleno + `x"}`)
+}
+
+// **Dar acceso a una bóveda de proyecto, con dos cuentas de verdad** (ADR 0052).
+//
+// Es la prueba que de verdad cierra el servidor: todo lo demás está probado por
+// piezas, y esto es un protocolo entre dos partes. Lo que recorre es el camino
+// entero —dar el acceso, bajar, subir, y que al quitarlo se cierre la puerta—
+// contra el Worker levantado en local, no contra un doble.
+func TestServidorDarAccesoAUnProyecto(t *testing.T) {
+	c := servidor(t)
+	const ref = "a1b2c3d4e5f60718"
+	const titular = "1111222233334444"
+	doc := bovedaDePrueba("0123456789abcdef0123456789abcdef", "")
+
+	duena := alta(t, c, correoNuevo(t), "la maestra de la dueña", bytes.Repeat([]byte{9}, 32))
+	correoDeAna := correoNuevo(t)
+	ana := alta(t, c, correoDeAna, "la maestra de Ana", bytes.Repeat([]byte{8}, 32))
+
+	if _, err := c.SubirA(ctx, duena.Token, ref, 0, doc); err != nil {
+		t.Fatal(err)
+	}
+
+	// **Antes de darle acceso, Ana no entra.** Saber la dirección de una bóveda no
+	// es tenerla.
+	if _, _, _, err := c.BajarCompartida(ctx, ana.Token, duena.Cuenta, ref, 0); err == nil {
+		t.Fatal("Ana baja una bóveda a la que no tiene acceso")
+	}
+
+	if err := c.DarAcceso(ctx, duena.Token, ref, correoDeAna, "editar", titular); err != nil {
+		t.Fatal(err)
+	}
+
+	datos, version, _, err := c.BajarCompartida(ctx, ana.Token, duena.Cuenta, ref, 0)
+	if err != nil {
+		t.Fatalf("Ana no baja la bóveda que le han compartido: %v", err)
+	}
+	if !bytes.Equal(datos, doc) {
+		t.Fatal("lo que baja Ana no es lo que subió la dueña")
+	}
+
+	// Y escribe, que es lo que la hace viva: lo que sube lo ve la dueña.
+	otro := bovedaDePrueba("0123456789abcdef0123456789abcdef", "lo de Ana")
+	if _, err := c.SubirACompartida(ctx, ana.Token, duena.Cuenta, ref, version, otro); err != nil {
+		t.Fatalf("Ana no puede escribir con permiso de editar: %v", err)
+	}
+	vuelta, _, _, err := c.BajarDe(ctx, duena.Token, ref, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(vuelta, otro) {
+		t.Fatal("lo que escribió Ana no le ha llegado a la dueña")
+	}
+
+	// La lista de quién tiene acceso, **por titular y sin cuentas**.
+	miembros, err := c.Miembros(ctx, duena.Token, ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(miembros) != 1 || miembros[0].Titular != titular || miembros[0].Permiso != "editar" {
+		t.Fatalf("la lista de miembros es %+v", miembros)
+	}
+
+	// Y quitarle el acceso cierra la puerta **en la siguiente petición**, sin esperar
+	// a que nadie sincronice nada.
+	if err := c.QuitarAcceso(ctx, duena.Token, ref, titular); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := c.BajarCompartida(ctx, ana.Token, duena.Cuenta, ref, 0); err == nil {
+		t.Fatal("se le ha quitado el acceso a Ana y sigue bajando la bóveda")
+	}
+}
+
+// Y el permiso de solo ver, que **lo impone el servidor y no el cifrado**: Ana tiene
+// con qué descifrarla, así que puede fabricar un documento válido. Lo que no puede es
+// dejarlo aquí.
+func TestServidorSoloVerNoSube(t *testing.T) {
+	c := servidor(t)
+	const ref = "b1b2c3d4e5f60718"
+	doc := bovedaDePrueba("1123456789abcdef0123456789abcdef", "")
+
+	duena := alta(t, c, correoNuevo(t), "la maestra de la dueña", bytes.Repeat([]byte{9}, 32))
+	correoDeAna := correoNuevo(t)
+	ana := alta(t, c, correoDeAna, "la maestra de Ana", bytes.Repeat([]byte{8}, 32))
+
+	if _, err := c.SubirA(ctx, duena.Token, ref, 0, doc); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.DarAcceso(ctx, duena.Token, ref, correoDeAna, "ver", "2222333344445555"); err != nil {
+		t.Fatal(err)
+	}
+
+	_, version, _, err := c.BajarCompartida(ctx, ana.Token, duena.Cuenta, ref, 0)
+	if err != nil {
+		t.Fatalf("quien solo puede ver tiene que poder bajarla: %v", err)
+	}
+	if _, err := c.SubirACompartida(ctx, ana.Token, duena.Cuenta, ref, version, doc); err == nil {
+		t.Fatal("quien solo puede ver ha subido")
+	}
+}
+
+// **Quitarle el acceso a alguien es un 403, no un 401**, y la diferencia no es de
+// estilo: el 401 cierra la bóveda de quien lo recibe porque su sesión se perdió, y
+// aquí su sesión está perfectamente. Confundirlos cerraría la bóveda personal de Ana
+// porque otra persona le quitó el acceso a la suya.
+func TestServidorQuitarElAccesoNoEsUnaSesionCaducada(t *testing.T) {
+	c := servidor(t)
+	const ref = "c1b2c3d4e5f60718"
+	doc := bovedaDePrueba("2123456789abcdef0123456789abcdef", "")
+
+	duena := alta(t, c, correoNuevo(t), "la maestra de la dueña", bytes.Repeat([]byte{9}, 32))
+	correoDeAna := correoNuevo(t)
+	ana := alta(t, c, correoDeAna, "la maestra de Ana", bytes.Repeat([]byte{8}, 32))
+	if _, err := c.SubirA(ctx, duena.Token, ref, 0, doc); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.DarAcceso(ctx, duena.Token, ref, correoDeAna, "editar", "3333444455556666"); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.QuitarAcceso(ctx, duena.Token, ref, "3333444455556666"); err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, _, err := c.BajarCompartida(ctx, ana.Token, duena.Cuenta, ref, 0)
+	if err == nil {
+		t.Fatal("sigue bajando una bóveda a la que le han quitado el acceso")
+	}
+	if !SinAcceso(err) {
+		t.Errorf("no se reconoce como «te han quitado el acceso»: %v", err)
+	}
+	if SesionCaducada(err) {
+		t.Error("se lee como una sesión caducada, y eso cerraría la bóveda personal de quien lo recibe")
+	}
+
+	// Y lo que de verdad lo demuestra: **su propia bóveda sigue funcionando**.
+	if _, err := c.SubirA(ctx, ana.Token, "", 0, bovedaDePrueba("3123456789abcdef0123456789abcdef", "")); err != nil {
+		t.Fatalf("a Ana le han quitado el acceso a una bóveda ajena y la suya ha dejado de ir: %v", err)
+	}
+}

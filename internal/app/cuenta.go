@@ -817,22 +817,32 @@ func (a *App) alAbrirLaBoveda(b *boveda.Boveda) {
 //
 // Existe para no tocar `internal/sincro`, que no sabe ni tiene por qué saber que
 // hay más de una bóveda: lo suyo es fundir y subir, y eso no cambia.
+// Y desde la ADR 0052, **con dueño**: una bóveda a la que me han dado acceso vive en
+// el Durable Object de otra cuenta, así que la dirección lleva quién es. Vacío soy
+// yo, que es todo lo de antes.
 type bovedaRemota struct {
-	c   *cuenta.Cliente
-	ref string
+	c     *cuenta.Cliente
+	dueno string
+	ref   string
 }
 
 func (r bovedaRemota) Bajar(ctx context.Context, token string, siNoCoincide int64) ([]byte, int64, bool, error) {
+	if r.dueno != "" {
+		return r.c.BajarCompartida(ctx, token, r.dueno, r.ref, siNoCoincide)
+	}
 	return r.c.BajarDe(ctx, token, r.ref, siNoCoincide)
 }
 
 func (r bovedaRemota) Subir(ctx context.Context, token string, siCoincide int64, datos []byte) (int64, error) {
+	if r.dueno != "" {
+		return r.c.SubirACompartida(ctx, token, r.dueno, r.ref, siCoincide, datos)
+	}
 	return r.c.SubirA(ctx, token, r.ref, siCoincide, datos)
 }
 
 func (a *App) nuevoSincronizador(b *boveda.Boveda) *sincro.Sincronizador {
 	return &sincro.Sincronizador{
-		Servidor: bovedaRemota{c: a.cliente(), ref: a.bovedaActiva()},
+		Servidor: bovedaRemota{c: a.cliente(), dueno: a.duenoDeLaActiva(), ref: a.bovedaActiva()},
 		Boveda:   b,
 		Memoria:  sincro.JuntoALaBoveda{Ruta: b.Ruta()},
 		Token: func() string {
@@ -970,6 +980,17 @@ func (a *App) alSincronizar(r sincro.Resultado, err error) {
 		// Y la bóveda se cierra: lo pidió el cliente al olvidar un equipo desde el
 		// otro. Fuera de esta gorrutina, que es la del vigilante al que cerrar para.
 		go a.cerrarPorSesionPerdida()
+	case cuenta.SinAcceso(err):
+		// **Te han quitado el acceso, o solo puedes ver** (ADR 0052).
+		//
+		// Es un 403 y **no se puede tratar como el 401**: aquél cierra la bóveda
+		// porque la sesión se perdió, y aquí la sesión está bien — lo que ha cambiado
+		// es quién entra en la bóveda de otra persona. Cerrar la tuya porque alguien
+		// te quitó el acceso a la suya sería castigarte por lo que hizo otro.
+		//
+		// Y lo que se queda en este equipo se queda: eso lo dice la pantalla, sin
+		// disimularlo, porque desde aquí no hay forma de borrarlo.
+		e = EstadoSincro{Estado: "sin-acceso", Mensaje: err.Error()}
 	case errors.Is(err, boveda.ErrMuchosBorrados):
 		e = EstadoSincro{Estado: "muchos-borrados", Mensaje: err.Error()}
 	case errors.Is(err, boveda.ErrOtraBoveda):

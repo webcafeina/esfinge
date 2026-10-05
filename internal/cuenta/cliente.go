@@ -57,6 +57,18 @@ func SesionCaducada(err error) bool {
 	return errors.As(err, &e) && e.Estado == http.StatusUnauthorized
 }
 
+// SinAcceso dice si el servidor ha contestado que **ya no tienes acceso a esa
+// bóveda**, o que solo puedes verla (ADR 0052).
+//
+// Es un **403 y no un 401**, y la diferencia importa: un 401 cierra la bóveda porque
+// la sesión se perdió, y aquí la sesión está perfectamente — lo que ha cambiado es
+// quién puede entrar en la bóveda de otra persona. Confundirlos cerraría tu propia
+// bóveda porque alguien te quitó el acceso a la suya.
+func SinAcceso(err error) bool {
+	var e *ErrorDelServidor
+	return errors.As(err, &e) && e.Estado == http.StatusForbidden
+}
+
 // Cliente habla con un servidor de cuentas.
 type Cliente struct {
 	raiz string
@@ -259,11 +271,17 @@ func (c *Cliente) Bajar(ctx context.Context, token string, siNoCoincide int64) (
 // vacía, la bóveda personal: la misma ruta de siempre, que es lo que hace que un
 // cliente anterior siga sincronizando mientras la versión nueva se reparte.
 func (c *Cliente) BajarDe(ctx context.Context, token, ref string, siNoCoincide int64) (datos []byte, version int64, cambio bool, err error) {
+	return c.bajarDeRuta(ctx, rutaDeBoveda(ref), token, siNoCoincide)
+}
+
+// bajarDeRuta es lo común a bajar cualquier bóveda: la propia, la de un proyecto o
+// la de otra cuenta a la que tengo acceso. Lo único que cambia es la dirección.
+func (c *Cliente) bajarDeRuta(ctx context.Context, ruta, token string, siNoCoincide int64) (datos []byte, version int64, cambio bool, err error) {
 	cab := map[string]string{}
 	if siNoCoincide > 0 {
 		cab["If-None-Match"] = fmt.Sprintf("%q", strconv.FormatInt(siNoCoincide, 10))
 	}
-	resp, err := c.pedir(ctx, "GET", rutaDeBoveda(ref), token, "", nil, cab)
+	resp, err := c.pedir(ctx, "GET", ruta, token, "", nil, cab)
 	if err != nil {
 		return nil, 0, false, err
 	}
@@ -296,8 +314,13 @@ func (c *Cliente) Subir(ctx context.Context, token string, siCoincide int64, dat
 
 // SubirA es lo mismo para una bóveda de proyecto. Con la referencia vacía, la personal.
 func (c *Cliente) SubirA(ctx context.Context, token, ref string, siCoincide int64, datos []byte) (int64, error) {
+	return c.subirARuta(ctx, rutaDeBoveda(ref), token, siCoincide, datos)
+}
+
+// subirARuta es lo común a subir cualquier bóveda.
+func (c *Cliente) subirARuta(ctx context.Context, ruta, token string, siCoincide int64, datos []byte) (int64, error) {
 	cab := map[string]string{"If-Match": fmt.Sprintf("%q", strconv.FormatInt(siCoincide, 10))}
-	resp, err := c.pedir(ctx, "PUT", rutaDeBoveda(ref), token, "application/json", datos, cab)
+	resp, err := c.pedir(ctx, "PUT", ruta, token, "application/json", datos, cab)
 	if err != nil {
 		return 0, err
 	}
@@ -320,6 +343,69 @@ func rutaDeBoveda(ref string) string {
 		return "/v1/boveda"
 	}
 	return "/v1/bovedas/" + ref
+}
+
+// ------------------------------------------------------- las que me han compartido
+
+// rutaDeCompartida es la bóveda **de otra cuenta** a la que tengo acceso (ADR 0052).
+//
+// La dirección lleva el dueño dentro porque el servidor no tiene ningún índice de
+// «lo que me han compartido»: eso vive cifrado en mi bóveda, como la lista de
+// proyectos. Lo que el servidor sabe es quién puede entrar en qué, que es lo mínimo
+// para poder decir que no.
+func rutaDeCompartida(dueno, ref string) string {
+	return "/v1/compartidas/" + dueno + "/" + ref
+}
+
+// BajarCompartida es `BajarDe` contra la bóveda de otra cuenta. Mismo ETag, mismo
+// 304, mismo todo: para la sincronización es una bóveda más.
+func (c *Cliente) BajarCompartida(ctx context.Context, token, dueno, ref string, siNoCoincide int64) ([]byte, int64, bool, error) {
+	return c.bajarDeRuta(ctx, rutaDeCompartida(dueno, ref), token, siNoCoincide)
+}
+
+// SubirACompartida es `SubirA` contra la bóveda de otra cuenta.
+//
+// **Puede contestar 403**, y eso es nuevo: o te han quitado el acceso, o solo puedes
+// ver. Las dos cosas las distingue el mensaje, y ninguna es un fallo de red.
+func (c *Cliente) SubirACompartida(ctx context.Context, token, dueno, ref string, siCoincide int64, datos []byte) (int64, error) {
+	return c.subirARuta(ctx, rutaDeCompartida(dueno, ref), token, siCoincide, datos)
+}
+
+// DarAcceso le da acceso a esa dirección de correo, o se lo cambia.
+//
+// **Contesta lo mismo tenga cuenta o no esa dirección**, igual que mandar una copia:
+// si no la tiene, el servidor le manda una invitación y lo que hace que el acceso
+// salga de verdad es la nota pendiente que se queda en la bóveda de quien lo da.
+func (c *Cliente) DarAcceso(ctx context.Context, token, ref, correo, permiso, titular string) error {
+	_, err := c.json(ctx, "POST", "/v1/bovedas/"+ref+"/miembros", token,
+		map[string]string{"para": correo, "permiso": permiso, "titular": titular}, nil)
+	return err
+}
+
+// QuitarAcceso se lo quita a ese titular. **Por titular y no por correo**: el
+// servidor nunca dice de quién es una cuenta, y el titular lo eligió quien dio el
+// acceso.
+func (c *Cliente) QuitarAcceso(ctx context.Context, token, ref, titular string) error {
+	_, err := c.json(ctx, "DELETE", "/v1/bovedas/"+ref+"/miembros/"+titular, token, nil, nil)
+	return err
+}
+
+// MiembroEnElServidor es lo que el servidor sabe de quien tiene acceso: su titular y
+// su permiso. **Nunca su cuenta ni su correo**, que viven dentro de la bóveda.
+type MiembroEnElServidor struct {
+	Titular string `json:"titular"`
+	Permiso string `json:"permiso"`
+	Desde   int64  `json:"desde"`
+}
+
+// Miembros es lo que el dueño compara con su propia lista: si alguien aparece en una
+// y no en la otra, hay algo que arreglar y la pantalla lo dice en vez de disimularlo.
+func (c *Cliente) Miembros(ctx context.Context, token, ref string) ([]MiembroEnElServidor, error) {
+	var r struct {
+		Miembros []MiembroEnElServidor `json:"miembros"`
+	}
+	_, err := c.json(ctx, "GET", "/v1/bovedas/"+ref+"/miembros", token, nil, &r)
+	return r.Miembros, err
 }
 
 // BovedaEnElServidor es lo que el servidor sabe de una bóveda de proyecto: su

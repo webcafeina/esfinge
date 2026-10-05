@@ -180,8 +180,14 @@ func (a *App) llaveDeLaPrincipal() []byte {
 // ponerActiva apunta cuál es la bóveda abierta y, si es un proyecto, se queda la
 // clave de la personal para poder conmutar.
 func (a *App) ponerActiva(ref, nombre string, llavePrincipal []byte) {
+	a.ponerActivaDe("", ref, nombre, llavePrincipal)
+}
+
+// ponerActivaDe es lo mismo diciendo **de quién** es (ADR 0052).
+func (a *App) ponerActivaDe(dueno, ref, nombre string, llavePrincipal []byte) {
 	a.mu.Lock()
 	vieja := a.llavePrincipal
+	a.duenoActivo = dueno
 	a.activa, a.nombreActivo = ref, nombre
 	if ref == "" {
 		a.llavePrincipal = nil
@@ -200,7 +206,7 @@ func (a *App) ponerActiva(ref, nombre string, llavePrincipal []byte) {
 func (a *App) olvidarLaPrincipal() {
 	a.mu.Lock()
 	vieja := a.llavePrincipal
-	a.llavePrincipal, a.activa, a.nombreActivo = nil, "", ""
+	a.llavePrincipal, a.activa, a.nombreActivo, a.duenoActivo = nil, "", "", ""
 	a.mu.Unlock()
 	if vieja != nil {
 		cripto.Borrar(vieja)
@@ -219,6 +225,19 @@ func (a *App) bovedaActiva() string {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.activa
+}
+
+// duenoDeLaActiva es de quién es la bóveda abierta: vacío si es mía —la personal o un
+// proyecto— y la cuenta de la otra persona si me han dado acceso a ella (ADR 0052).
+//
+// Va aparte de `activa` y no pegado a ella en una cadena **a propósito**: lo que
+// distingue un proyecto mío de una bóveda ajena no es un formato de texto que haya
+// que recordar partir, y las dos cosas que lo preguntan —la ruta del servidor y si se
+// puede escribir— quieren el dato, no la cadena.
+func (a *App) duenoDeLaActiva() string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.duenoActivo
 }
 
 // rutaActiva es el fichero de la bóveda abierta, o el de la personal si no hay
@@ -457,6 +476,139 @@ func (a *App) AbrirProyecto(ref string) error {
 	})
 	a.conmutarA(p, ref, nombre, llave)
 	return nil
+}
+
+// ------------------------------------------------- las que me han compartido
+
+// carpetaDeCompartidas separa lo ajeno de lo mío **en el disco**, que es lo que hace
+// que una no se pueda confundir con la otra al mirar la carpeta o al borrar.
+const carpetaDeCompartidas = "compartidas"
+
+// rutaDeCompartida: el fichero local de una bóveda ajena.
+//
+// Lleva el dueño en el nombre porque **la referencia es de su cuenta, no de la mía**:
+// dos personas distintas pueden compartirme bóvedas con la misma referencia sin saber
+// nada la una de la otra, y si el fichero se llamara solo por la referencia la segunda
+// pisaría a la primera. Es la misma razón por la que el nombre de un proyecto no
+// nombra su fichero, una vuelta más arriba.
+func rutaDeCompartida(dueno, ref string) string {
+	if c := carpetaDeEsfinge(); c != "" {
+		return filepath.Join(c, carpetaDeCompartidas, dueno+"-"+ref+".esfinge")
+	}
+	return ""
+}
+
+// BajarCompartida se trae a este equipo una bóveda a la que me han dado acceso.
+//
+// Es el espejo de `BajarProyecto` con dos diferencias: se pide a la cuenta de la otra
+// persona, y **se comprueba que abre con mi ranura antes de dejarla puesta**. Lo
+// segundo no es celo: un fichero en esa carpeta es una bóveda compartida para todo lo
+// demás, y si lo que bajó no lo abre mi identidad es mejor no tenerlo que tenerlo y
+// que falle al abrirlo, cuando ya nadie sabe de dónde salió.
+func (a *App) BajarCompartida(dueno, ref string) error {
+	c, hay := a.laCompartida(dueno, ref)
+	if !hay {
+		return errors.New("Esa bóveda compartida ya no está en tu lista")
+	}
+	ruta := rutaDeCompartida(dueno, ref)
+	if ruta == "" {
+		return errors.New("No encuentro dónde guardar la bóveda en este sistema")
+	}
+	if _, err := os.Stat(ruta); err == nil {
+		return nil // ya está aquí: bajarla otra vez pisaría lo que hubiera sin fundir
+	}
+	token, err := a.sesionDeCuenta()
+	if err != nil {
+		return err
+	}
+	datos, _, _, err := a.cliente().BajarCompartida(a.ctxCuenta(), token, dueno, ref, 0)
+	if err != nil {
+		return err
+	}
+
+	if err := a.conLaPersonal(func(mia *boveda.Boveda) error {
+		p, err := boveda.AbrirCompartidaBytes("", datos, c.Titular, mia)
+		if err != nil {
+			return err
+		}
+		p.Cerrar()
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := escritura.Atomica(ruta, escritura.Opciones{Permisos: 0o600, CrearCarpeta: true},
+		func(w io.Writer) error {
+			_, err := w.Write(datos)
+			return err
+		}); err != nil {
+		return err
+	}
+	a.Actividad()
+	return nil
+}
+
+// AbrirCompartida conmuta a una bóveda de otra persona.
+//
+// Lo que la diferencia de abrir un proyecto propio son dos cosas y las dos importan:
+// se abre por **la ranura sellada hacia mi identidad** —que sale de mi bóveda
+// personal, no de su clave— y la sincronización apunta a **la cuenta de la otra
+// persona**, que es lo que `duenoActivo` lleva.
+func (a *App) AbrirCompartida(dueno, ref string) error {
+	c, hay := a.laCompartida(dueno, ref)
+	if !hay {
+		return errors.New("Esa bóveda compartida ya no está en tu lista")
+	}
+	ruta := rutaDeCompartida(dueno, ref)
+	if ruta == "" {
+		return errors.New("No encuentro dónde está esa bóveda en este sistema")
+	}
+	if _, err := os.Stat(ruta); err != nil {
+		return errors.New("Esa bóveda no está en este equipo todavía")
+	}
+
+	// **Se abre con la personal**, que es de donde sale la identidad que abre mi
+	// ranura. Y la personal tiene que estar abierta: aquí no vale la clave guardada,
+	// porque lo que hace falta no es la clave sino poder descifrar con la identidad.
+	var p *boveda.Boveda
+	if err := a.conLaPersonal(func(mia *boveda.Boveda) error {
+		var err error
+		p, err = boveda.AbrirCompartida(ruta, c.Titular, mia)
+		return err
+	}); err != nil {
+		return err
+	}
+
+	llave := a.llaveDeLaPrincipal()
+	if len(llave) == 0 {
+		return boveda.ErrCerrada
+	}
+	defer cripto.Borrar(llave)
+	a.conmutarACompartida(p, dueno, ref, c.Nombre, llave)
+	return nil
+}
+
+// laCompartida la busca en la bóveda personal, que es donde vive la lista.
+func (a *App) laCompartida(dueno, ref string) (boveda.Compartida, bool) {
+	var out boveda.Compartida
+	hay := false
+	_ = a.conLaPersonal(func(b *boveda.Boveda) error {
+		out, hay = b.LaCompartida(dueno, ref)
+		return nil
+	})
+	return out, hay
+}
+
+// conmutarACompartida es `conmutarA` diciendo de quién es, con el mismo orden: **el
+// estado completo antes del aviso**, porque `cambiarBoveda` avisa a la ventana y la
+// ventana contesta preguntando el estado.
+func (a *App) conmutarACompartida(p *boveda.Boveda, dueno, ref, nombre string, llavePrincipal []byte) {
+	a.alCerrarLaBoveda()
+	a.ponerActivaDe(dueno, ref, nombre, llavePrincipal)
+	a.cambiarBoveda(p)
+	a.Actividad()
+	a.buscarIconosSiProcede(a.ctx)
+	a.alAbrirLaBoveda(p)
 }
 
 // VolverALaBovedaPersonal cierra el proyecto abierto y **deja la personal abierta**,

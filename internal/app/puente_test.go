@@ -133,6 +133,13 @@ var loQuePuedeCruzarElPuente = []string{
 	"Proyectos", "CrearProyecto", "AbrirProyecto", "VolverALaBovedaPersonal", "RenombrarProyecto",
 	"LlevarAOtraBoveda", "BajarProyecto",
 	"EntregarProyecto", "ArchivarProyecto", "BorrarProyecto",
+
+	// Las bóvedas a las que me han dado acceso (ADR 0052). Abrirla sí se pide desde
+	// la ventana, como cualquier otra. Lo que **no** está, y tampoco por olvido: nada
+	// que selle una ranura hacia una identidad ni que lea la clave de una bóveda
+	// ajena. Dar y quitar el acceso llegarán con su propia entrega, y entonces habrá
+	// que volver a pensar esta línea, no ampliarla de paso.
+	"AbrirCompartida", "BajarCompartida",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {
