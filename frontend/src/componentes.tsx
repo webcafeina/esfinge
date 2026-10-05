@@ -67,24 +67,52 @@ export function BarraLateral<T extends string>({
   alCambiar,
   version,
   bovedaAbierta,
+  nombreDelProyecto = "",
 }: {
   valor: T;
   alCambiar: (v: T) => void;
   version: string;
   /** null: no hay bóveda. */
   bovedaAbierta?: boolean | null;
+  /** El proyecto abierto (ADR 0050); vacío es la bóveda personal. */
+  nombreDelProyecto?: string;
 }) {
   const fila = (v: string, etiqueta: string) => {
     const candado = v === "boveda" && bovedaAbierta != null;
+    // **Cuál** es la bóveda abierta, también desde la izquierda: con el proyecto
+    // dicho solo en la barra de herramientas, la fila seguía poniendo «Bóveda» y
+    // la pantalla se leía como la personal. Lo vio el cliente con la 2.38.0.
+    const proyecto = v === "boveda" && nombreDelProyecto !== "";
     return (
       <button
         key={v}
         onClick={() => alCambiar(v as T)}
         aria-current={v === valor ? "page" : undefined}
-        title={candado ? (bovedaAbierta ? "La bóveda está abierta" : "La bóveda está cerrada") : undefined}
+        className={proyecto ? "con-proyecto" : undefined}
+        title={
+          candado
+            ? bovedaAbierta
+              ? proyecto
+                ? `La bóveda de «${nombreDelProyecto}» está abierta`
+                : "La bóveda está abierta"
+              : "La bóveda está cerrada"
+            : undefined
+        }
       >
         <Icono nombre={v} />
-        {etiqueta}
+        {/* El rótulo y, debajo, el proyecto. **El nombre accesible del botón sigue
+            siendo «Bóveda»** —de ahí el `aria-hidden`—: hay pruebas que localizan
+            la sección por él, y el nombre del proyecto ya lo dice el `title`. */}
+        {proyecto ? (
+          <span className="rotulo">
+            {etiqueta}
+            <span className="proyecto-activo" aria-hidden="true">
+              {nombreDelProyecto}
+            </span>
+          </span>
+        ) : (
+          etiqueta
+        )}
         {candado && (
           <span className="estado-boveda" data-abierta={bovedaAbierta ? "si" : "no"} aria-hidden="true">
             <Icono nombre={bovedaAbierta ? "candado-abierto" : "candado-cerrado"} />

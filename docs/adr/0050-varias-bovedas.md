@@ -181,7 +181,17 @@ cuando el vigilante cierra, con su prueba.
 
 **Lo que no se ha comprobado**, y es casi todo lo que se ve:
 
-- **Nada de esto se ha visto en un Mac.** Aquí se ha mirado en capturas del navegador, en los dos temas, que
+- **Lo visto en su Mac el 2026-10-02, con la 2.38.0**, que es lo que más valió de todo el día: crear un
+  proyecto y entrar. Salieron **tres cosas que ninguna prueba de aquí podía ver**, las tres arregladas el
+  mismo día: un aviso que decía que los proyectos no se sincronizaban **el día en que ya sincronizaban**;
+  que **la pantalla del proyecto se leía como la bóveda personal** —el nombre estaba dicho en un rótulo
+  pequeño y el título seguía diciendo «Bóveda», así que ahora **el nombre del proyecto es el título**—; y que
+  **salir de un proyecto no existía en la ventana**, no por estar escondido sino porque
+  `VolverALaBovedaPersonal` estaba en Go y en el puente y no la llamaba nadie. Lo que **no** quedó
+  comprobado: **cuántos diálogos de Touch ID salen tras actualizar con varios proyectos** —ese día salió
+  uno, pero sin ningún proyecto creado, así que no prueba nada— y cómo quedan el antetítulo y la fila de dos
+  líneas con la tipografía del sistema.
+- **Lo demás no se ha visto en un Mac.** Aquí se ha mirado en capturas del navegador, en los dos temas, que
   es lo que hay. La ventana de verdad —tipografía del sistema, controles nativos, el material translúcido
   detrás— solo se ve ahí.
 - **Los dos Workers están desplegados el 2026-10-02, y la migración se comprobó en pruebas contra un

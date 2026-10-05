@@ -103,6 +103,8 @@ export default function App() {
     return alCambiarElEstadoDeLaBoveda((abierta) => void mirar(abierta));
   }, []);
 
+  const enUnProyecto = nombreDelProyecto !== "";
+
 
 
   const [novedad, setNovedad] = useState<Novedad | null>(null);
@@ -234,15 +236,36 @@ export default function App() {
 
   return (
     <div className="ventana">
-      <BarraLateral valor={tarea} alCambiar={setTarea} version={version} bovedaAbierta={bovedaAbierta} />
+      <BarraLateral
+        valor={tarea}
+        alCambiar={setTarea}
+        version={version}
+        bovedaAbierta={bovedaAbierta}
+        nombreDelProyecto={nombreDelProyecto}
+      />
 
       <div className="zona">
         <header className="herramientas">
-          <h1>{TITULOS[tarea]}</h1>
           {/* **En qué bóveda se está trabajando.** Con varias, saber que la bóveda
-              está abierta no basta: hay que saber cuál, y aquí es donde se mira. */}
-          {nombreDelProyecto !== "" && (tarea === "boveda" || tarea === "proyectos") && (
-            <span className="aparte">{nombreDelProyecto}</span>
+              está abierta no basta: hay que saber cuál. Y el nombre **es el título**,
+              no un rótulo al lado: puesto al lado, lo que más se leía seguía diciendo
+              «Bóveda» y la pantalla parecía la personal. Lo vio el cliente con la
+              2.38.0 —«parecería que estoy en mi bóveda personal»—. */}
+          <div className="titulo">
+            {enUnProyecto && tarea === "boveda" && <span className="antetitulo">Proyecto</span>}
+            <h1>{enUnProyecto && tarea === "boveda" ? nombreDelProyecto : TITULOS[tarea]}</h1>
+          </div>
+          {/* Y la salida, **siempre a la vista** mientras haya un proyecto abierto.
+              Antes no estaba en ninguna parte: `VolverALaBovedaPersonal` existía en Go
+              y no la llamaba nadie, así que la única forma de salir era bloquear la
+              bóveda y desbloquear. */}
+          {enUnProyecto && (tarea === "boveda" || tarea === "proyectos") && (
+            <SalirDelProyecto
+              alSalir={() => {
+                setSelloBoveda((n) => n + 1);
+                setTarea("boveda");
+              }}
+            />
           )}
           {!enWails() && <span className="aparte">Modo desarrollo</span>}
         </header>
@@ -364,6 +387,54 @@ function Panel({
 }) {
   if (!visitado) return null;
   return <div hidden={!activo}>{children}</div>;
+}
+
+/**
+ * Salir del proyecto y volver a la bóveda personal (ADR 0050).
+ *
+ * **Pide la maestra otra vez**, y eso no se adivina del rótulo: la personal no se
+ * queda abierta por detrás mientras hay un proyecto abierto —dos bóvedas abiertas a
+ * la vez es justo lo que se descartó—, así que volver es abrirla. Por eso hay un
+ * segundo clic que lo dice, el mismo idioma que «Borrar» → «Sí, a la papelera»: la
+ * acción no destruye nada, pero sin avisar se vive como que Esfinge se ha bloqueado
+ * solo.
+ */
+function SalirDelProyecto({ alSalir }: { alSalir: () => void }) {
+  const [seguro, setSeguro] = useState(false);
+  const [trabajando, setTrabajando] = useState(false);
+
+  // El segundo clic no se queda esperando para siempre: con el botón armado en una
+  // pantalla a la que nadie vuelve, el clic siguiente —días después— saldría del
+  // proyecto sin que esa persona haya pedido nada.
+  useEffect(() => {
+    if (!seguro) return;
+    const t = setTimeout(() => setSeguro(false), 8000);
+    return () => clearTimeout(t);
+  }, [seguro]);
+
+  return (
+    <button
+      className="discreto salir-proyecto"
+      disabled={trabajando}
+      title="Vuelve a tu bóveda. Habrá que teclear la contraseña maestra otra vez."
+      onClick={async () => {
+        if (!seguro) {
+          setSeguro(true);
+          return;
+        }
+        setTrabajando(true);
+        try {
+          await esfinge.volverALaBovedaPersonal();
+          alSalir();
+        } finally {
+          setTrabajando(false);
+          setSeguro(false);
+        }
+      }}
+    >
+      {trabajando ? "Saliendo…" : seguro ? "Sí, salir y cerrar" : "Salir del proyecto"}
+    </button>
+  );
 }
 
 /** El nombre de cada sección, que es lo que pone la barra de herramientas. */

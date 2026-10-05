@@ -1,8 +1,14 @@
 # Estado
 
-Última actualización: **2026-10-02**
+Última actualización: **2026-10-02** · papeles cerrados el **2026-10-05**
 
 ## Dónde se paró, y por dónde se sigue
+
+> **Lo primero al retomar: publicar la 2.39.0.** Está todo escrito, comprobado y comprometido, y lo que
+> arregla **lo vio el cliente en su Mac el 2026-10-02 y sigue sin arreglar en lo que él tiene instalado**:
+> la pantalla de un proyecto parecía su bóveda personal y **salir de un proyecto no existía en la ventana**.
+> Es `git tag v2.39.0 && git push origin v2.39.0`. Antes, mirar si hay que decirle algo del paquete de
+> Chrome: esta versión **no toca `navegador/`**, así que no hay nada que se quede fuera de la tienda.
 
 **Sesión del 2026-10-02.** En marcha **las bóvedas por proyecto** (ADR 0050), que es la última gran
 funcionalidad y la pidió el cliente así: *«cada proyecto/cliente tendrá su bóveda y yo podré apuntar ahí los
@@ -35,7 +41,24 @@ selector del panel de la extensión y —la E6— entregar un proyecto, archivar
      sincronización que falla o una bóveda que vuelve vacía; lo que dice que ha ido bien es que no pase nada.
    - **Y que lo vea en su Mac.** Lo local —crear un proyecto, meter cosas, moverlas, entregarlo, el selector
      del panel— se puede probar entero sin el servidor.
-2. **Y lo que ninguna prueba de aquí puede cerrar: abrir una bóveda entregada en otro ordenador.** Aquí se
+2. **Lo vio el mismo día, con la 2.38.0, y de ahí salieron tres cosas** —las tres arregladas y **sin
+   publicar**, que es por lo que hay que empezar—:
+   - **Un aviso que mentía.** «Los proyectos todavía no se sincronizan» seguía en la pantalla el día en que
+     ya sincronizaban. Quitado.
+   - **La pantalla del proyecto parecía la personal.** Sus palabras: *«se abre pero aparezco situado en
+     "Bóveda", eso da a error»*. El nombre del proyecto estaba dicho —en un rótulo pequeño al lado— y **no
+     bastaba**, porque lo que más se lee seguía diciendo «Bóveda». Ahora el **nombre del proyecto es el
+     título**, con «Proyecto» de antetítulo, y la fila de la barra lateral lo lleva debajo.
+   - **Salir de un proyecto no existía.** *«También es lioso a la hora de cerrarla, volver a ver mi
+     personal»* — y la causa no era que estuviera escondido: `VolverALaBovedaPersonal` estaba en Go y en el
+     puente y **no la llamaba nadie**, así que la única forma era bloquear la bóveda y desbloquear. Ahora hay
+     un botón **siempre a la vista**, con segundo clic para confirmar porque volver **pide la maestra**.
+   - **Lo que de eso falta por ver en su Mac**: cómo quedan el antetítulo —once píxeles— y la fila de dos
+     líneas con la tipografía del sistema. Aquí se ha mirado en capturas de los dos temas.
+   - Y lo que **no** se pudo comprobar aún: **cuántos diálogos de Touch ID** salen tras actualizar con
+     varios proyectos. Ese día le salió **uno**, pero **no tenía ningún proyecto creado**, así que no prueba
+     lo que tiene que probar. Se mira en la actualización siguiente, ya con «Zeri's Coffee» dentro.
+3. **Y lo que ninguna prueba de aquí puede cerrar: abrir una bóveda entregada en otro ordenador.** Aquí se
    abre con `boveda.Abrir` en la misma máquina, que no es lo mismo que dársela a alguien.
 
 ### Lo hecho, entrega por entrega

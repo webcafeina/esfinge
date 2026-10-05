@@ -7,9 +7,11 @@
 //     bóveda antes espera la ceremonia de la clave —pantalla entera, insistiendo en
 //     que se apunte—, así que su ausencia sin explicar parece un olvido o un fallo.
 //     Lo dice el formulario de crear, **antes** de crear.
-//   - **Lo que se guarde aquí todavía no sale de este equipo.** La sincronización de
-//     los proyectos es la E4, y mientras no esté hay que decirlo donde alguien decide
-//     guardar algo, no en la documentación.
+//   - ~~**Lo que se guarde aquí todavía no sale de este equipo.**~~ Lo decía un aviso
+//     en esta pantalla mientras la sincronización no estuvo desplegada. **Desde el
+//     2026-10-02 sincronizan**, y el aviso se quitó: un texto que miente en la
+//     pantalla donde alguien decide guardar algo es peor que no decir nada. Lo vio el
+//     cliente leyéndolo en su Mac el mismo día del despliegue.
 //   - **Volver a la bóveda personal pide la contraseña maestra**, porque la personal
 //     no se queda abierta por detrás: dos bóvedas abiertas a la vez es justo lo que
 //     se descartó. Sin decirlo, parecería que Esfinge se ha bloqueado solo.
@@ -169,13 +171,6 @@ export function Proyectos({
       <p className="entradilla">
         Una bóveda por proyecto o por cliente, con lo mismo que la tuya dentro. Se abren con tu misma
         contraseña maestra y <strong>solo una está abierta a la vez</strong>.
-      </p>
-
-      {/* **Lo que todavía no hace, dicho donde alguien decide guardar algo** y no en
-          la documentación: con dos ordenadores, esto importa antes de meter nada. */}
-      <p className="aviso">
-        <strong>Los proyectos todavía no se sincronizan.</strong> Lo que guardes aquí se queda en este
-        ordenador: no llega a tus otros equipos ni al servidor.
       </p>
 
       {error && <p className="error">{error}</p>}

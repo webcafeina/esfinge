@@ -1664,6 +1664,12 @@ test("la barra lateral dice si la bóveda está abierta o cerrada", async ({ pag
   await conLaBovedaAbierta(page);
   const candado = page.locator(".lateral .estado-boveda");
   await expect(candado).toHaveAttribute("data-abierta", "si");
+  // **Y esta línea es además el detector de fugas entre pruebas**: desde que el
+  // `title` dice *cuál* es la bóveda (ADR 0050), una prueba que se deje un proyecto
+  // abierto cae **aquí**, con un «La bóveda de «Beta …» está abierta» que señala a la
+  // prueba culpable por su nombre. Antes la fuga no la veía nadie hasta que algo
+  // caía en el segundo tema sin relación aparente. Si vuelve a salir, lo que hay que
+  // arreglar no es esta aserción.
   await expect(seccion(page, "Bóveda")).toHaveAttribute("title", "La bóveda está abierta");
   await seccion(page, "Cifrar").click();
   await page.locator(".lateral").screenshot({ path: `test-results/candado-abierta-${test.info().project.name}.png` });
@@ -2025,10 +2031,14 @@ test("una red wifi guarda su nombre y la ficha dibuja su código", async ({ page
  *
  *   - que al entrar en un proyecto **lo que se ve dentro es lo suyo** y no lo de la
  *     bóveda personal, que es lo único que separa de verdad una bóveda de otra;
- *   - que la barra de herramientas dice **en qué bóveda se trabaja**, porque con varias
- *     «Bóveda» a secas ya no identifica nada;
- *   - y que la pantalla dice las dos cosas que no se ven mirándola: que **no hay clave de
- *     recuperación propia** y que **esto todavía no se sincroniza**.
+ *   - que **el título es el nombre del proyecto** y la barra lateral lo repite, porque con
+ *     varias bóvedas «Bóveda» a secas ya no identifica nada — y porque dicho solo en un
+ *     rótulo pequeño al lado **no bastó**: el cliente lo leyó como su bóveda personal;
+ *   - que **se puede salir desde donde se trabaja**, que es lo que antes no existía en
+ *     ninguna parte: `VolverALaBovedaPersonal` estaba en Go y no la llamaba nadie, así que
+ *     la única forma era bloquear la bóveda y desbloquear;
+ *   - y que la pantalla dice lo que no se ve mirándola: que **no hay clave de recuperación
+ *     propia**.
  */
 test("una bóveda de proyecto: se crea, se entra y lo de dentro es lo suyo", async ({ page }) => {
   const errores = vigilarConsola(page);
@@ -2049,10 +2059,10 @@ test("una bóveda de proyecto: se crea, se entra y lo de dentro es lo suyo", asy
   await seccion(page, "Proyectos").click();
   const panel = page.locator(".panel:visible");
 
-  // **Lo que todavía no hace, dicho donde se decide guardar algo.**
-  await expect(panel.getByText("todavía no se sincronizan", { exact: false })).toBeVisible({
-    timeout: 20_000,
-  });
+  // **Y lo que ya no se dice**, porque dejó de ser verdad el 2026-10-02: aquí había un
+  // aviso de que los proyectos no se sincronizaban. Un texto que miente en la pantalla
+  // donde se decide guardar algo es peor que no decir nada, y lo leyó el cliente.
+  await expect(panel.getByText("no se sincronizan", { exact: false })).toHaveCount(0);
 
   const nombre = `Acme ${Date.now()}`;
   await accion(page, "Nueva bóveda de proyecto").click();
@@ -2073,8 +2083,16 @@ test("una bóveda de proyecto: se crea, se entra y lo de dentro es lo suyo", asy
   await fila.click();
   await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
 
-  // **Y la barra de herramientas dice cuál es.**
-  await expect(page.locator(".herramientas")).toContainText(nombre, { timeout: 20_000 });
+  // **Y el título es el proyecto, con «Proyecto» encima.** No vale que el nombre esté
+  // en la barra: estaba, en un rótulo pequeño al lado de un título que seguía diciendo
+  // «Bóveda», y así es como se lee la pantalla como si fuera la personal.
+  await expect(page.locator(".herramientas h1")).toHaveText(nombre, { timeout: 20_000 });
+  await expect(page.locator(".herramientas .antetitulo")).toHaveText("Proyecto");
+
+  // Y la barra lateral lo dice también, **sin dejar de llamarse «Bóveda»**: el nombre
+  // accesible es por lo que localizan las pruebas, y el proyecto va en un rótulo oculto
+  // para quien lee la pantalla y en el `title` para quien la escucha.
+  await expect(seccion(page, "Bóveda")).toContainText(nombre);
 
   // **Lo de la bóveda personal no está aquí.** Es la comprobación que importa: sin
   // ella, «se ha abierto otra bóveda» podría ser la misma con otro rótulo.
@@ -2092,13 +2110,30 @@ test("una bóveda de proyecto: se crea, se entra y lo de dentro es lo suyo", asy
     timeout: 20_000,
   });
 
-  // Se vuelve a la bóveda personal. **Pide la maestra otra vez**, a propósito: la
-  // personal no se queda abierta por detrás.
   await seccion(page, "Proyectos").click();
   await expect(panel.locator(".proyectos").getByRole("button", { name: new RegExp(nombre) })).toContainText(
     "La estás usando",
   );
-  await volverALaPersonal(page);
+
+  // **Se sale desde donde se trabaja, y el segundo clic dice lo que va a pasar.** Lo
+  // que la etiqueta no cuenta es que volver **pide la maestra otra vez** —la personal
+  // no se queda abierta por detrás, que son dos bóvedas abiertas a la vez—, y eso sin
+  // avisar se vive como que Esfinge se ha bloqueado solo.
+  await seccion(page, "Bóveda").click();
+  const salir = page.locator(".herramientas .salir-proyecto");
+  await expect(salir).toHaveText("Salir del proyecto");
+  await salir.click();
+  await expect(salir).toHaveText("Sí, salir y cerrar");
+  await salir.click();
+
+  // Y lo que de verdad comprueba que se ha salido: el título vuelve a ser «Bóveda» y,
+  // tecleando la maestra, **lo que hay dentro es lo de la personal**.
+  await expect(page.locator(".herramientas h1")).toHaveText("Bóveda", { timeout: 20_000 });
+  await expect(page.locator(".herramientas .salir-proyecto")).toHaveCount(0);
+  await conLaBovedaAbierta(page);
+  await expect(page.locator(".lista-boveda").getByRole("button", { name: mia })).toBeVisible({
+    timeout: 20_000,
+  });
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
@@ -2114,11 +2149,32 @@ test("una bóveda de proyecto: se crea, se entra y lo de dentro es lo suyo", asy
  */
 async function volverALaPersonal(page: Page) {
   await seccion(page, "Proyectos").click();
-  const panel = page.locator(".panel:visible");
-  // Si no hay ninguna activa, ya estamos en la personal.
-  if ((await panel.locator('.proyectos li[data-activo="si"]').count()) === 0) return;
-  await seccion(page, "Bóveda").click();
-  await accion(page, "Cerrar la bóveda").click();
+  const salir = page.locator(".herramientas .salir-proyecto");
+  // **Si hay un proyecto abierto se le pregunta al botón, no a la lista.** Aquí se
+  // miraba `.proyectos li[data-activo="si"]`, y esa lista **se vuelve a pedir al
+  // entrar en la sección**: preguntando en el acto todavía no ha llegado, sale cero,
+  // el ayudante da por hecho que ya estamos en la personal y **se va dejando el
+  // proyecto abierto**. El botón no tiene esa carrera: sale del estado que la ventana
+  // ya tenía desde que se entró. La fuga es **anterior** a este botón —el retorno
+  // temprano estaba igual cuando esto bloqueaba y desbloqueaba— y lo que la destapó
+  // fue que el `title` de la barra lateral diga ahora **cuál** es la bóveda abierta.
+  if ((await salir.count()) === 0) return;
+  // Por el botón de la barra, que es el camino de verdad desde el 2026-10-02. Antes
+  // esto bloqueaba la bóveda y la volvía a abrir, porque salir no estaba en ninguna
+  // parte: ésa era la queja del cliente, y un ayudante que hiciera el rodeo dejaría la
+  // prueba pasando sin que el camino bueno exista.
+  await expect(salir).toHaveText("Salir del proyecto");
+  await salir.click();
+  // **Se espera a que cambie el rótulo entre los dos clics.** Sin esto los dos caen
+  // en el mismo render: el segundo sigue viendo el botón sin armar, lo arma otra vez
+  // y **no se sale**. Y la comprobación que había aquí —que el título volviera a
+  // «Bóveda» o «Proyectos»— pasaba igual, porque estábamos en «Proyectos» y ése es su
+  // título pase lo que pase. El proyecto se quedaba abierto para el tema siguiente.
+  await expect(salir).toHaveText("Sí, salir y cerrar");
+  await salir.click();
+  // Lo que de verdad dice que se ha salido: el botón solo existe con un proyecto
+  // abierto, así que su ausencia es la prueba.
+  await expect(salir).toHaveCount(0, { timeout: 20_000 });
   await conLaBovedaAbierta(page);
 }
 

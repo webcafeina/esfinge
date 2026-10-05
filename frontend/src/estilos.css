@@ -239,6 +239,44 @@ body {
   color: currentColor;
 }
 
+/* La fila de la bóveda, con el proyecto abierto debajo del rótulo.
+ *
+ * Dos cosas que este bloque tiene que decir porque son trampas de la casa: la fila
+ * mide «--alto-fila» clavados y dos líneas no caben, así que aquí la altura es
+ * automática; y la columna y su texto llevan «min-width: 0» y recorte, porque en un
+ * contenedor flexible lo que no lo lleva empuja al candado fuera de la barra. */
+.lateral button.con-proyecto {
+  height: auto;
+  padding: 5px 10px;
+}
+
+.lateral .rotulo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.25;
+}
+
+/* **No hay color nuevo aquí.** En apagado sobre la barra —la pareja que ya mide
+ * `contraste_test.go`— y, en la fila activa, en el color de la propia fila: el
+ * fondo de ésa es el oro, donde el apagado no está medido y no se leería. Lo que
+ * separa esta línea del rótulo es el tamaño, no el color. */
+.lateral .proyecto-activo {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--apagado);
+  font-size: var(--texto-chico);
+  font-weight: 400;
+}
+
+.lateral button[aria-current="page"] .proyecto-activo {
+  color: currentColor;
+}
+
 /* El candado de la bóveda, a la derecha de su fila: más pequeño que el icono de
  * la sección y del mismo color apagado, para que se lea como un estado y no como
  * otra cosa que pulsar. Mismo trazo que «Cifrar» y «Descifrar», que son el mismo
@@ -277,11 +315,45 @@ body {
   --wails-draggable: drag;
 }
 
+/* El título y, encima, de qué es. La columna lleva «min-width: 0» porque sin eso
+ * un nombre de proyecto largo empuja al botón de salir fuera de la barra: en un
+ * contenedor flexible el mínimo de un hijo es su contenido. */
+.herramientas .titulo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
 .herramientas h1 {
   margin: 0;
   font-size: var(--titulo);
   font-weight: 600;
   letter-spacing: -0.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* «Proyecto» encima del nombre: es lo que convierte un título cualquiera en una
+ * respuesta a «¿dónde estoy?». Va en apagado, que es la pareja que ya mide
+ * `contraste_test.go` para esta barra —la misma de «.aparte»—, y en versalitas
+ * para que no compita con el nombre. */
+.herramientas .antetitulo {
+  color: var(--apagado);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+/* La barra de herramientas entera arrastra la ventana, así que un botón dentro
+ * necesita decir que no: sin esto se puede ver y no se puede pulsar. */
+.herramientas .salir-proyecto {
+  --wails-draggable: no-drag;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .herramientas .aparte {

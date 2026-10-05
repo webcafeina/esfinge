@@ -184,6 +184,16 @@ No se cambian sin preguntar.
   listado de la carpeta no puede ser la lista de clientes. **Y esa ranura SÍ se sube**, al contrario que la
   del sistema: es lo único que permite que el otro Mac abra el proyecto, y meterla en `ranurasLocales` es
   media línea que parece lo prudente y no se nota hasta llegar al segundo equipo.
+- **Y con un proyecto abierto, el nombre del proyecto es el título** (2026-10-02, tras verlo él):
+  antetítulo «Proyecto», el nombre en el `<h1>`, la fila de la barra lateral con el nombre debajo de
+  «Bóveda» y **un botón de salir siempre a la vista**. Estaba dicho —el nombre iba en un rótulo
+  pequeño al lado— y **no bastó**: lo que más se lee seguía diciendo «Bóveda» y el cliente leyó la
+  pantalla como su bóveda personal. Y salir **no estaba en ninguna parte**:
+  `VolverALaBovedaPersonal` existía en Go y en el puente y no la llamaba nadie, así que la única
+  forma era bloquear la bóveda y desbloquear. El botón **pide confirmación con un segundo clic**
+  porque volver **pide la maestra otra vez** —la personal no se queda abierta por detrás— y eso sin
+  avisar se vive como que Esfinge se ha bloqueado solo. En la barra lateral, el nombre va en un
+  rótulo `aria-hidden` y en el `title`: **el nombre accesible del botón sigue siendo «Bóveda»**.
 - **Y una bóveda de proyecto se entrega, que es mandar una copia** (ADR 0051): con su contraseña y su clave de
   recuperación, **sin la identidad dentro** —es la semilla con la que se firman los envíos, así que regalarla
   es regalar la firma— y **la contraseña se dice por otro camino**, que lo pone la pantalla. Se puede entregar
@@ -855,6 +865,27 @@ estado que ya pide**, no en una llamada aparte que puede fallar; y el vigilante 
 bóveda, y la interfaz contesta pidiendo `EstadoBoveda`. Así que apuntar **después** lo que ese estado tiene
 que decir —cuál es la bóveda activa y cómo se llama— deja a la ventana con lo de antes hasta el siguiente
 aviso, que puede no llegar nunca. El estado se deja completo **y luego** se avisa.
+
+**Dos clics seguidos sobre un botón de dos pasos caen en el mismo render, y el segundo no
+confirma: vuelve a armar.** El idioma de la casa —«Borrar» → «Sí, a la papelera»— guarda el armado en
+un estado de React, así que el manejador del segundo clic sigue siendo el de antes si no ha habido
+pintado en medio. Una prueba que haga `click()` dos veces seguidas **no sale del proyecto** y sigue
+como si nada. Entre los dos clics se espera **al rótulo nuevo**, que es la única señal de que el
+botón ya está armado.
+
+**Y un ayudante de pruebas que pregunta «¿hay algo?» justo al entrar en una sección pregunta
+demasiado pronto.** `volverALaPersonal` miraba `.proyectos li[data-activo="si"]` nada más pulsar
+«Proyectos» —y esa lista **se vuelve a pedir al entrar**—: salía cero, daba por hecho que ya estaba
+en la personal y **se iba dejando el proyecto abierto**, que es justo lo que ese ayudante existe para
+impedir. Lo que no tiene esa carrera es lo que ya está en la ventana: el botón de salir de la barra,
+que sale del estado que la interfaz tenía desde que se entró.
+
+Con ello, lo que de verdad cerró esa familia: **desde que el `title` de la barra lateral dice *cuál*
+es la bóveda abierta, una fuga entre pruebas se cae sola** en «la barra lateral dice si la bóveda
+está abierta o cerrada», y además **señala a la culpable por su nombre** —«La bóveda de «Beta …» está
+abierta»—. La fuga llevaba ahí desde antes y no la veía nadie: lo único que pasaba era que las
+pruebas del segundo tema corrían dentro de otra bóveda sin que ninguna aserción lo mirara. Si esa
+línea se pone roja, **lo que hay que arreglar no es la aserción**.
 
 **Y una prueba que conmuta de bóveda tiene que dejar abierta la de siempre** (ADR 0050). El Go es uno y la
 bóveda sigue abierta entre pruebas **y entre temas**: una prueba que acabe dentro de una bóveda de proyecto

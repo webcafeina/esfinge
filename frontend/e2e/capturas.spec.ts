@@ -319,5 +319,37 @@ test.describe("Capturas", () => {
     await boton("Llevar a otra bóveda").click();
     await page.waitForTimeout(300);
     await foto("9d-llevar-a-otra-boveda");
+
+    // **Y dentro del proyecto**, que es lo que el cliente leyó como su bóveda personal
+    // (2026-10-02): hay que mirar si el título dice dónde estás, si la fila de la barra
+    // lateral cabe en dos líneas y si el botón de salir se lee como una salida y no como
+    // otra acción del formulario. Nada de eso lo dice una aserción.
+    await aLaLista();
+    await page.locator(".lateral").getByRole("button", { name: "Proyectos", exact: true }).click();
+    await page.locator(".panel:visible .proyectos").getByRole("button", { name: /Acme/ }).click();
+    await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
+    await page.waitForTimeout(400);
+    await foto("9g-dentro-del-proyecto");
+    // La barra de cerca, con la escala del CSS: el antetítulo son once píxeles y a
+    // tamaño de pantalla no se ve si se lee o si pelea con el nombre.
+    await page.locator(".herramientas").screenshot({ path: `${donde}/9h-barra-proyecto-${tema}.png`, scale: "css" });
+    // La barra lateral tiene **dos** `nav` —las secciones y Ajustes abajo—, así que
+    // sin nombrar cuál Playwright falla por modo estricto.
+    await page
+      .locator('.lateral nav[aria-label="Secciones"]')
+      .screenshot({ path: `${donde}/9i-lateral-proyecto-${tema}.png`, scale: "css" });
+    // Y el segundo clic, que es el que dice lo que va a pasar.
+    await page.locator(".herramientas .salir-proyecto").click();
+    await page.waitForTimeout(200);
+    await page.locator(".herramientas").screenshot({ path: `${donde}/9j-barra-salir-${tema}.png`, scale: "css" });
+
+    // **Se sale antes de acabar.** Una captura que deje la ventana dentro de un proyecto
+    // deja a las pruebas siguientes mirando otra bóveda, y eso ya tiró una publicación.
+    await page.locator(".herramientas .salir-proyecto").click();
+    await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
+    await boton("Abrir la bóveda").waitFor({ timeout: 20_000 });
+    await page.locator("#boveda-llave").fill(maestra);
+    await boton("Abrir la bóveda").click();
+    await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
   });
 });

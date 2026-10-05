@@ -5,6 +5,47 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-02 (tarde) · Los dos servidores desplegados, y lo que el cliente vio al abrirlo
+
+- **Se desplegó el servidor de cuentas, primero pruebas y después producción** (ADR 0050). La migración
+  del Durable Object estaba probada **solo contra `workerd`**, así que antes de producción se ejercitó en
+  pruebas **sobre un objeto de verdad**: cuenta dada de alta con el Worker anterior —comprobando que
+  `GET /v1/bovedas` daba 404, que es lo que dice que ese código es el viejo y no una suposición—, dos
+  versiones de 1,5 MiB para que hubiera historia y **más de un trozo**, y después del despliegue los mismos
+  bytes, el mismo ETag, la v1 entera, la sesión de antes valiendo y un proyecto empezando en su propia v1
+  sin mover la personal. El programa que lo hizo **se borró**: no era una prueba, era la comprobación de un
+  despliegue.
+- **Trampa del día, del tipo que no se adivina**: en el Worker de **pruebas desplegado**, `/_pruebas/buzon`
+  está detrás de **Cloudflare Access** y contesta HTML —el síntoma es un «invalid character '<'»—, así que
+  el código de un alta se saca de la tabla `buzon_pruebas` de su D1.
+- **Su Durable Object no migró con el despliegue**, y eso quedó dicho en vez de darlo por hecho: la
+  migración corre al construirse el objeto, o sea en la primera petición que le llegue.
+- **El cliente actualizó y abrió Esfinge**, y de ahí salieron **tres cosas que ninguna prueba de aquí
+  veía**: un aviso que decía que los proyectos **no se sincronizan** el día en que ya sincronizaban; que la
+  pantalla de un proyecto **se lee como la bóveda personal** —*«aparezco situado en "Bóveda", eso da a
+  error»*—; y que **salir de un proyecto no existe**, no por estar escondido sino porque
+  `VolverALaBovedaPersonal` estaba en Go y en el puente y **no la llamaba nadie**: la única forma era
+  bloquear la bóveda y desbloquear.
+- **Se arregló lo tres**, con el diseño elegido por él entre tres opciones dibujadas: el **nombre del
+  proyecto es el título** con «Proyecto» de antetítulo, la fila de la barra lateral lo lleva debajo —en un
+  rótulo `aria-hidden`, que el nombre accesible del botón sigue siendo «Bóveda»— y hay un **botón de salir
+  siempre a la vista**, con segundo clic porque volver pide la maestra.
+- **Verificado**: `make comprobar` entero, `make contraste`, las **110 pruebas de la ventana en los dos
+  temas**, y **dos mutaciones** —el título que no cambia y la salida que no sale— que ponen roja la prueba.
+  Y **capturas miradas** en los dos temas, que es lo que dijo que el antetítulo y la fila de dos líneas se
+  leen.
+- **Y lo que destapó el cambio sin buscarlo**: una **fuga entre pruebas** que llevaba ahí desde antes —un
+  ayudante preguntaba por la lista de proyectos nada más entrar en la sección, antes de que llegara, y se
+  iba dejando el proyecto abierto—. Ahora el `title` de la barra lateral dice **cuál** es la bóveda, así que
+  una fuga **se cae sola y señala a la prueba culpable por su nombre**.
+- **Queda abierto**: **publicar la 2.39.0**, que es lo primero —lo que él tiene instalado sigue sin el
+  arreglo—; ver en su Mac el antetítulo y la fila de dos líneas con la tipografía del sistema; y **contar
+  los diálogos de Touch ID en la actualización siguiente**, ya con un proyecto creado, porque el «uno» de
+  este día fue sin ninguno y no prueba lo que tiene que probar. En [`deuda.md`](deuda.md), dos de las
+  capturas: una que falla también en limpio y un intermitente apuntado con lo que se vio.
+
+---
+
 ## 2026-10-02 · Las bóvedas por proyecto, el plan entero (E1 a E6)
 
 - **Se planificó entera la última gran funcionalidad** (ADR 0050), con el cliente y en tres rondas de
