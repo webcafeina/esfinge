@@ -412,6 +412,19 @@ func (g generador) lado(base []Entrada, ids []string) contenido {
 			Creado: g.fecha(), Usado: g.de("", g.fecha()), Archivado: g.r.IntN(3) == 0,
 		})
 	}
+	// Y lo que me han compartido (ADR 0052). **Las mismas direcciones en los dos
+	// lados**, por lo mismo que los proyectos: sin datos que choquen, los 400 casos
+	// pasan por encima de la sección y la cruzada no comprueba nada de ella.
+	for _, ref := range refsDePrueba {
+		if g.r.IntN(3) == 0 {
+			continue // dejada de ver aquí, o nunca llegó
+		}
+		c.Compartidas = append(c.Compartidas, Compartida{
+			Dueno: g.de("0123456789abcdef", "fedcba9876543210"), Ref: ref,
+			Nombre: g.de("Zeri's Coffee", "Zeri", textosRaros[0]), Titular: g.de("1111222233334444", "aaaabbbbccccdddd"),
+			Permiso: g.de("ver", "editar"), Huella: "AAAA-BBBB", Desde: g.fecha(), Usado: g.de("", g.fecha()),
+		})
+	}
 	if g.r.IntN(5) == 0 {
 		c.Extra = map[string]json.RawMessage{"seccionNueva": json.RawMessage(g.de(`[1]`, `{"x":"<&>"}`))}
 	}
@@ -465,6 +478,15 @@ func (g generador) caso() casoDeFusion {
 				b.Proyectos = append(b.Proyectos, Proyecto{
 					Ref: ref, Nombre: g.de("Acme", "Beta"), Creado: g.fecha(),
 					Usado: g.de("", g.fecha()), Archivado: g.r.IntN(4) == 0,
+				})
+			}
+		}
+		for _, ref := range refsDePrueba {
+			if g.r.IntN(3) > 0 {
+				b.Compartidas = append(b.Compartidas, Compartida{
+					Dueno: g.de("0123456789abcdef", "fedcba9876543210"), Ref: ref,
+					Nombre: g.de("Zeri's Coffee", "Zeri"), Titular: "1111222233334444",
+					Permiso: g.de("ver", "editar"), Huella: "AAAA-BBBB", Desde: g.fecha(), Usado: g.de("", g.fecha()),
 				})
 			}
 		}

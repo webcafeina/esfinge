@@ -671,6 +671,15 @@ func fundirContenido(l, r contenido, b *contenido, ahora time.Time, f *Fusion) c
 		proyectosB = b.Proyectos
 	}
 	out.Proyectos = fundirProyectos(l.Proyectos, r.Proyectos, proyectosB, b != nil)
+	// **Y lo que me han compartido** (ADR 0052). Esta línea es el fallo que ya costó
+	// una vez con `proyectos`: `fundirContenido` arma el contenido **campo a campo**,
+	// así que una sección que nadie copie no existe — se guarda bien y desaparece en
+	// la primera sincronización, sin error en ninguna parte.
+	var compartidasB []Compartida
+	if b != nil {
+		compartidasB = b.Compartidas
+	}
+	out.Compartidas = fundirCompartidas(l.Compartidas, r.Compartidas, compartidasB, b != nil)
 	var extraB map[string]json.RawMessage
 	if b != nil {
 		extraB = b.Extra

@@ -342,3 +342,97 @@ func TestElSobreDeAccesoNoLlevaSecretos(t *testing.T) {
 		t.Errorf("el sobre de acceso ha perdido el campo %q", k)
 	}
 }
+
+func unaCompartidaDePrueba(nombre string) Compartida {
+	return Compartida{
+		Dueno: "0123456789abcdef", Ref: "a1b2c3d4e5f60718",
+		Nombre: nombre, Titular: "1111222233334444", Permiso: "editar",
+		Huella: "ADR0-32A0-RAF7-E4SJ-HK8H-J0ZC-N214", Desde: "2026-10-05T10:00:00Z",
+	}
+}
+
+// **La sección se funde, o desaparece en la primera sincronización.**
+//
+// Es el fallo que ya costó una vez con `proyectos`: `fundirContenido` arma el
+// contenido **campo a campo**, así que una sección que nadie copie no existe. Se
+// guarda bien, se sube bien, y vuelve vacía sin un error en ninguna parte.
+func TestLoCompartidoSobreviveALaFusion(t *testing.T) {
+	dir := t.TempDir()
+	a, _, err := Crear(filepath.Join(dir, "a.esfinge"), maestraDePrueba)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.PonerCompartida(unaCompartidaDePrueba("Zeri's Coffee")); err != nil {
+		t.Fatal(err)
+	}
+
+	subida, _, err := a.PrepararSubida(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.Fundir(subida, 1, nil, OpcionesDeFusion{}); err != nil {
+		t.Fatal(err)
+	}
+	if hay := a.Compartidas(); len(hay) != 1 {
+		t.Fatalf("tras fundir quedan %d compartidas y había una", len(hay))
+	}
+}
+
+// Dejar de ver una aquí no la devuelve el otro equipo, y aceptar una allí llega
+// aquí: es un conjunto a tres bandas, como los proyectos.
+func TestDejarDeVerUnaCompartidaNoLaDevuelveElOtroEquipo(t *testing.T) {
+	dir := t.TempDir()
+	a, _, err := Crear(filepath.Join(dir, "a.esfinge"), maestraDePrueba)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.PonerCompartida(unaCompartidaDePrueba("Zeri's Coffee")); err != nil {
+		t.Fatal(err)
+	}
+	// La base: lo que los dos equipos vieron.
+	base, _, err := a.PrepararSubida(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// El otro equipo sigue teniéndola; aquí se deja de ver.
+	delOtro := base
+	if err := a.OlvidarCompartida("0123456789abcdef", "a1b2c3d4e5f60718"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.Fundir(delOtro, 1, base, OpcionesDeFusion{}); err != nil {
+		t.Fatal(err)
+	}
+	if hay := a.Compartidas(); len(hay) != 0 {
+		t.Fatalf("la compartida que se dejó de ver ha vuelto: %+v", hay)
+	}
+}
+
+// **Entregar una bóveda no entrega con quién más trabajas** (ADR 0051 y 0052).
+//
+// Es la misma familia que quitar la identidad, y el paso que más fácil se olvida al
+// añadir una sección nueva: todo lo que `Desprender` no quita, viaja.
+func TestEntregarNoSeLlevaLoQueMeHanCompartido(t *testing.T) {
+	_, ruta, llave := personalYProyecto(t)
+	p, err := AbrirProyecto(ruta, llave)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Un proyecto no suele tener esta sección, pero puede acabar teniéndola —se
+	// llevó una entrada de la personal, se adoptó una bóveda— y lo que se comprueba
+	// es que **no salga pase lo que pase**.
+	if err := p.PonerCompartida(unaCompartidaDePrueba("Otro cliente")); err != nil {
+		t.Fatal(err)
+	}
+
+	entregada, _, err := p.Desprender("la contraseña del cliente")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hay := entregada.Compartidas(); len(hay) != 0 {
+		t.Fatalf("lo entregado lleva dentro con quién más trabaja quien lo entrega: %+v", hay)
+	}
+	// Y la original no se toca, que es lo que comprueba que la copia es honda.
+	if hay := p.Compartidas(); len(hay) != 1 {
+		t.Fatalf("entregar se ha llevado la lista del original: %+v", hay)
+	}
+}

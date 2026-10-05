@@ -39,6 +39,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 )
@@ -377,4 +378,185 @@ func refValidaEnBoveda(ref string) bool {
 		}
 	}
 	return true
+}
+
+// ------------------------------------------------------ lo que me han compartido
+
+// Compartida es **una bóveda de otra persona a la que tengo acceso** (ADR 0052).
+//
+// Vive en el cuerpo cifrado de mi bóveda personal, hermana de `Proyectos`, y por lo
+// mismo: con quién trabajo y cómo se llama cada cosa es tan revelador como la lista
+// de proyectos propios, y aquí dentro se sincroniza gratis a mis otros equipos **sin
+// una ruta nueva en el servidor y sin que el servidor sepa un solo nombre**.
+//
+// **No es un `Proyecto` con un campo más**, y tienta serlo porque se parecen. No:
+// `Ref` ahí es el nombre del fichero y aquí es la referencia **en la cuenta de otro**;
+// `Archivado` significa algo distinto; y una compartida no se entrega, ni se borra
+// del servidor, ni se renombra para los demás. Mezclarlas obligaría a un `if` de
+// dueño en cada una de esas acciones.
+//
+// Lo que **no** guarda es la clave de la bóveda: ésa está en la ranura de su propio
+// fichero, sellada hacia mi identidad. Guardarla aquí además sería tener la llave en
+// dos sitios sin ganar un solo caso de uso — el mismo razonamiento que la ADR 0050
+// hizo con los proyectos.
+type Compartida struct {
+	// Dueno es la cuenta de quien la comparte, hex de 16 bytes, y Ref la referencia
+	// **en esa cuenta**. Las dos juntas son la dirección en el servidor.
+	Dueno string `json:"dueno"`
+	Ref   string `json:"ref"`
+	// Nombre es lo que leo yo. Llega el que puso quien la comparte y **lo puedo
+	// cambiar**: lo que veo es mío, no lo que la otra persona me dice que vea.
+	Nombre string `json:"nombre"`
+	// Titular es quién soy yo en esa bóveda: el identificador de mi ranura.
+	Titular string `json:"titular"`
+	// Permiso es lo que me dijeron que tengo. **Es informativo**: el que manda es el
+	// del servidor, y éste solo sirve para no pedirme que teclee algo que va a acabar
+	// en un 403.
+	Permiso string `json:"permiso"`
+	// Huella es la de quien me la compartió, **la que comparé al aceptar**. Se
+	// guarda para poder decir después de quién es esto sin preguntarle al servidor.
+	Huella string `json:"huella,omitempty"`
+	Desde  string `json:"desde"`
+	Usado  string `json:"usado,omitempty"`
+}
+
+// Compartidas son las que tengo, la última usada arriba.
+func (b *Boveda) Compartidas() []Compartida {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	out := append([]Compartida(nil), b.cont.Compartidas...)
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Usado > out[j].Usado })
+	return out
+}
+
+// LaCompartida devuelve una por su dirección.
+func (b *Boveda) LaCompartida(dueno, ref string) (Compartida, bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for _, c := range b.cont.Compartidas {
+		if c.Dueno == dueno && c.Ref == ref {
+			return c, true
+		}
+	}
+	return Compartida{}, false
+}
+
+// PonerCompartida la añade o la actualiza por su dirección.
+func (b *Boveda) PonerCompartida(c Compartida) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return ErrCerrada
+	}
+	if c.Dueno == "" || c.Ref == "" {
+		return errors.New("Una bóveda compartida sin dirección no se puede guardar")
+	}
+	if c.Desde == "" {
+		c.Desde = ahora().UTC().Format(time.RFC3339)
+	}
+	for i, v := range b.cont.Compartidas {
+		if v.Dueno == c.Dueno && v.Ref == c.Ref {
+			b.cont.Compartidas[i] = c
+			b.cuerpoSucio = true
+			return b.guardar()
+		}
+	}
+	b.cont.Compartidas = append(b.cont.Compartidas, c)
+	b.cuerpoSucio = true
+	return b.guardar()
+}
+
+// OlvidarCompartida la saca de mi lista: es como se deja de ver algo que me
+// compartieron. **No toca nada de la otra persona**, que no es mía.
+func (b *Boveda) OlvidarCompartida(dueno, ref string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return ErrCerrada
+	}
+	for i, v := range b.cont.Compartidas {
+		if v.Dueno == dueno && v.Ref == ref {
+			b.cont.Compartidas = append(b.cont.Compartidas[:i], b.cont.Compartidas[i+1:]...)
+			b.cuerpoSucio = true
+			return b.guardar()
+		}
+	}
+	return nil
+}
+
+// fundirCompartidas es `fundirProyectos` con otra clave: conjunto por dueño+ref, a
+// tres bandas contra la base, para que dejar de ver una aquí no la devuelva el otro
+// equipo y aceptar una allí llegue aquí.
+func fundirCompartidas(l, r, b []Compartida, hayBase bool) []Compartida {
+	clave := func(c Compartida) string { return c.Dueno + "/" + c.Ref }
+	en := func(lista []Compartida) map[string]Compartida {
+		m := map[string]Compartida{}
+		for _, c := range lista {
+			m[clave(c)] = c
+		}
+		return m
+	}
+	ml, mr, mb := en(l), en(r), en(b)
+	out := make([]Compartida, 0, len(ml)+len(mr))
+	visto := map[string]bool{}
+	for _, m := range []map[string]Compartida{ml, mr} {
+		for k := range m {
+			if visto[k] {
+				continue
+			}
+			visto[k] = true
+			cl, enL := ml[k]
+			cr, enR := mr[k]
+			cb, enB := mb[k]
+			if !((enL && enR) || !hayBase || (enL && !enB) || (enR && !enB)) {
+				continue
+			}
+			switch {
+			case !enL:
+				out = append(out, cr)
+			case !enR:
+				out = append(out, cl)
+			default:
+				out = append(out, unaCompartida(cl, cr, cb, enB))
+			}
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return clave(out[i]) < clave(out[j]) })
+	return out
+}
+
+func unaCompartida(l, r, b Compartida, hayBase bool) Compartida {
+	out := r
+	// Cuándo se abrió por última vez: las dos son verdad, gana la mayor.
+	if l.Usado > out.Usado {
+		out.Usado = l.Usado
+	}
+	// El nombre lo decide la base: gana el lado que lo cambió, y si lo cambiaron los
+	// dos, el mayor por cadena — arbitrario pero **igual en los dos equipos**.
+	switch {
+	case !hayBase:
+		if l.Nombre > r.Nombre {
+			out.Nombre = l.Nombre
+		}
+	case l.Nombre != b.Nombre && r.Nombre == b.Nombre:
+		out.Nombre = l.Nombre
+	case l.Nombre != b.Nombre && r.Nombre != b.Nombre && l.Nombre > r.Nombre:
+		out.Nombre = l.Nombre
+	}
+	// **Y el permiso no lo deciden mis equipos: lo decide el servidor.** Aquí se
+	// queda el más nuevo que haya llegado, que es el del lado que lo cambió; si
+	// cambió en los dos, el más estrecho, porque equivocarse hacia «ver» cuesta un
+	// 403 que se explica y equivocarse hacia «editar» cuesta pedirle a alguien que
+	// teclee algo que va a acabar rechazado.
+	switch {
+	case !hayBase:
+		if l.Permiso == "ver" || r.Permiso == "ver" {
+			out.Permiso = "ver"
+		}
+	case l.Permiso != b.Permiso && r.Permiso == b.Permiso:
+		out.Permiso = l.Permiso
+	case l.Permiso != b.Permiso && r.Permiso != b.Permiso:
+		out.Permiso = "ver"
+	}
+	return out
 }

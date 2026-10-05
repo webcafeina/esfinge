@@ -226,6 +226,12 @@ type contenido struct {
 	// sin cifrar o en las preferencias estaría en claro.
 	Proyectos []Proyecto `json:"proyectos,omitempty"`
 
+	// Compartidas son las bóvedas **de otras personas** a las que tengo acceso
+	// (ADR 0052). Hermana de `Proyectos` y por lo mismo: con quién trabajo dice
+	// tanto como para quién trabajo, y aquí dentro viaja a mis otros equipos sin
+	// que el servidor sepa un solo nombre.
+	Compartidas []Compartida `json:"compartidas,omitempty"`
+
 	// Extra son las secciones que esta versión no conoce. Ver Entrada.Extra.
 	Extra map[string]json.RawMessage `json:"-"`
 }

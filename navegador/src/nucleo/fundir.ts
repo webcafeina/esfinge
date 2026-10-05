@@ -14,6 +14,7 @@
 import { canonico, compararComoGo, huella, type ValorJSON } from "./canon";
 import { fundirIdentidad, type IdentidadGuardada } from "./identidad";
 import { fundirPendientes, pendientesDe, ponerPendientes } from "./pendiente";
+import { compartidasDe, fundirCompartidas, ponerCompartidas } from "./compartida";
 import { fundirProyectos, ponerProyectos, proyectosDe } from "./proyecto";
 import {
   ahora,
@@ -234,6 +235,19 @@ async function fundirContenido(
       proyectosDe(l.extra),
       proyectosDe(r.extra),
       proyectosDe(b?.extra),
+      b !== null,
+    ),
+  );
+  // **Y las bóvedas de otra gente a las que tengo acceso** (ADR 0052), exactamente
+  // por lo mismo: sin esta línea, la sección se fundiría como un bloque, ganaría la
+  // del servidor entera, y un acceso aceptado en la ventana mientras la extensión
+  // sincronizaba se perdería. Ver `compartida.ts`.
+  out.extra = ponerCompartidas(
+    out.extra,
+    fundirCompartidas(
+      compartidasDe(l.extra),
+      compartidasDe(r.extra),
+      compartidasDe(b?.extra),
       b !== null,
     ),
   );

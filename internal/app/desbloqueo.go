@@ -106,9 +106,9 @@ func (a *App) EstadoDelDesbloqueo() EstadoDesbloqueo {
 		id = boveda.IDEn(ruta)
 	}
 	return EstadoDesbloqueo{
-		Hay:     l.Hay(),
-		Nombre:  l.Nombre(),
-		Puesto:  puesto,
+		Hay:    l.Hay(),
+		Nombre: l.Nombre(),
+		Puesto: puesto,
 		// **Y no se ofrece con un proyecto abierto**, aunque lo que se ofrezca sea la
 		// personal y el identificador salga bien. Son dos cosas: la tarjeta dice «esta
 		// bóveda» mirando a la pantalla de un proyecto, que es otra; y sobre todo

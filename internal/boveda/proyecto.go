@@ -504,6 +504,11 @@ func (b *Boveda) Desprender(maestraNueva string) (*Boveda, string, error) {
 	// Y la lista de proyectos, si por lo que fuera la hubiera: lo que se entrega es
 	// una bóveda, no el mapa de los clientes de quien la entrega.
 	cont.Proyectos = nil
+	// Lo mismo con lo que a esa persona le hayan compartido (ADR 0052): entregar una
+	// bóveda no puede entregar con quién más trabaja quien la entrega. Es la misma
+	// familia que el paso de la identidad, y el que más fácil se olvida al añadir una
+	// sección nueva: **todo lo que `Desprender` no quita, viaja**.
+	cont.Compartidas = nil
 
 	// 1, 2 y 3: la bóveda nueva, con su identificador y sus dos ranuras.
 	nueva, err := sinRanuras("")
