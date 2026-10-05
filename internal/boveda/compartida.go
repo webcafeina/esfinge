@@ -560,3 +560,130 @@ func unaCompartida(l, r, b Compartida, hayBase bool) Compartida {
 	}
 	return out
 }
+
+// ------------------------------------------------------------- quién tiene acceso
+
+// Titular es una persona con acceso a **esta** bóveda, con el nombre que se puede
+// leer (ADR 0052).
+//
+// Vive dentro del cuerpo cifrado de la bóveda compartida, no en la personal de nadie,
+// porque **la ven todos los que tienen acceso**: lo eligió el cliente, y es lo
+// coherente con que quien puede editar pueda dar acceso a más gente — si la lista
+// fuera solo del dueño, entraría gente y nadie se enteraría.
+//
+// Y de ahí una consecuencia que la pantalla de dar acceso tiene que decir: **quien
+// recibe acceso ve el correo de los demás**. No hay forma de que no lo vea si la
+// lista tiene que poder leerse, así que se dice en vez de disimularlo.
+type Titular struct {
+	// ID es el identificador de su ranura. Lo elige quien da el acceso, que es lo
+	// que después le permite quitarlo: el servidor nunca dice de quién es una cuenta.
+	ID      string `json:"id"`
+	Correo  string `json:"correo"`
+	Permiso string `json:"permiso"`
+	// Huella es la que se comparó al darle el acceso (TOFU, ADR 0043).
+	Huella string `json:"huella,omitempty"`
+	Desde  string `json:"desde"`
+}
+
+// Titulares son los que tienen acceso, en el orden en que se les dio.
+func (b *Boveda) Titulares() []Titular {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return append([]Titular(nil), b.cont.Titulares...)
+}
+
+// PonerTitular lo añade o le cambia el permiso.
+func (b *Boveda) PonerTitular(t Titular) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return ErrCerrada
+	}
+	if t.ID == "" {
+		return errors.New("Un titular sin identificador no se puede guardar")
+	}
+	if t.Desde == "" {
+		t.Desde = ahora().UTC().Format(time.RFC3339)
+	}
+	for i, v := range b.cont.Titulares {
+		if v.ID == t.ID {
+			b.cont.Titulares[i] = t
+			b.cuerpoSucio = true
+			return b.guardar()
+		}
+	}
+	b.cont.Titulares = append(b.cont.Titulares, t)
+	b.cuerpoSucio = true
+	return b.guardar()
+}
+
+// OlvidarTitular lo saca de la lista. **La ranura se retira aparte**: son dos cosas
+// y la que de verdad cierra la puerta es la otra.
+func (b *Boveda) OlvidarTitular(id string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return ErrCerrada
+	}
+	for i, v := range b.cont.Titulares {
+		if v.ID == id {
+			b.cont.Titulares = append(b.cont.Titulares[:i], b.cont.Titulares[i+1:]...)
+			b.cuerpoSucio = true
+			return b.guardar()
+		}
+	}
+	return nil
+}
+
+// fundirTitulares es conjunto por identificador a tres bandas, como todo lo demás:
+// quitar a alguien aquí no lo devuelve el otro equipo, y darle acceso allí llega.
+//
+// El permiso, si cambió en los dos lados, se queda **en el más estrecho**, por lo
+// mismo que en `unaCompartida`: equivocarse hacia «ver» cuesta un 403 que se explica.
+func fundirTitulares(l, r, b []Titular, hayBase bool) []Titular {
+	en := func(lista []Titular) map[string]Titular {
+		m := map[string]Titular{}
+		for _, t := range lista {
+			m[t.ID] = t
+		}
+		return m
+	}
+	ml, mr, mb := en(l), en(r), en(b)
+	out := make([]Titular, 0, len(ml)+len(mr))
+	visto := map[string]bool{}
+	for _, m := range []map[string]Titular{ml, mr} {
+		for id := range m {
+			if visto[id] {
+				continue
+			}
+			visto[id] = true
+			tl, enL := ml[id]
+			tr, enR := mr[id]
+			tb, enB := mb[id]
+			if !((enL && enR) || !hayBase || (enL && !enB) || (enR && !enB)) {
+				continue
+			}
+			switch {
+			case !enL:
+				out = append(out, tr)
+			case !enR:
+				out = append(out, tl)
+			default:
+				t := tr
+				switch {
+				case !enB:
+					if tl.Permiso == "ver" || tr.Permiso == "ver" {
+						t.Permiso = "ver"
+					}
+				case tl.Permiso != tb.Permiso && tr.Permiso == tb.Permiso:
+					t.Permiso = tl.Permiso
+				case tl.Permiso != tb.Permiso && tr.Permiso != tb.Permiso:
+					t.Permiso = "ver"
+				}
+				out = append(out, t)
+			}
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
+}

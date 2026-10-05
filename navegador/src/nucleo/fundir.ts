@@ -16,6 +16,7 @@ import { fundirIdentidad, type IdentidadGuardada } from "./identidad";
 import { fundirPendientes, pendientesDe, ponerPendientes } from "./pendiente";
 import { compartidasDe, fundirCompartidas, ponerCompartidas } from "./compartida";
 import { fundirProyectos, ponerProyectos, proyectosDe } from "./proyecto";
+import { fundirTitulares, ponerTitulares, titularesDe } from "./titular";
 import {
   ahora,
   Boveda,
@@ -248,6 +249,16 @@ async function fundirContenido(
       compartidasDe(l.extra),
       compartidasDe(r.extra),
       compartidasDe(b?.extra),
+      b !== null,
+    ),
+  );
+  // Y quién tiene acceso a **esta** bóveda, por lo mismo. Ver `titular.ts`.
+  out.extra = ponerTitulares(
+    out.extra,
+    fundirTitulares(
+      titularesDe(l.extra),
+      titularesDe(r.extra),
+      titularesDe(b?.extra),
       b !== null,
     ),
   );

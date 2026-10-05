@@ -232,6 +232,11 @@ type contenido struct {
 	// que el servidor sepa un solo nombre.
 	Compartidas []Compartida `json:"compartidas,omitempty"`
 
+	// Titulares son las personas con acceso a **esta** bóveda (ADR 0052). Van aquí
+	// dentro y no en la bóveda de quien la comparte porque **la lista la ven todos
+	// los que tienen acceso**, que es lo que el cliente eligió.
+	Titulares []Titular `json:"titulares,omitempty"`
+
 	// Extra son las secciones que esta versión no conoce. Ver Entrada.Extra.
 	Extra map[string]json.RawMessage `json:"-"`
 }

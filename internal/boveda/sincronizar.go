@@ -680,6 +680,11 @@ func fundirContenido(l, r contenido, b *contenido, ahora time.Time, f *Fusion) c
 		compartidasB = b.Compartidas
 	}
 	out.Compartidas = fundirCompartidas(l.Compartidas, r.Compartidas, compartidasB, b != nil)
+	var titularesB []Titular
+	if b != nil {
+		titularesB = b.Titulares
+	}
+	out.Titulares = fundirTitulares(l.Titulares, r.Titulares, titularesB, b != nil)
 	var extraB map[string]json.RawMessage
 	if b != nil {
 		extraB = b.Extra

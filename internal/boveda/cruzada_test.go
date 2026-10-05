@@ -425,6 +425,17 @@ func (g generador) lado(base []Entrada, ids []string) contenido {
 			Permiso: g.de("ver", "editar"), Huella: "AAAA-BBBB", Desde: g.fecha(), Usado: g.de("", g.fecha()),
 		})
 	}
+	// Y quién tiene acceso a esta bóveda (ADR 0052). Pocos identificadores y fijos,
+	// para que los dos lados se pisen y la regla del permiso se ejercite de verdad.
+	for _, id := range []string{"1111222233334444", "aaaabbbbccccdddd"} {
+		if g.r.IntN(3) == 0 {
+			continue
+		}
+		c.Titulares = append(c.Titulares, Titular{
+			ID: id, Correo: g.de("ana@x.com", "luis@x.com"), Permiso: g.de("ver", "editar"),
+			Huella: "AAAA-BBBB", Desde: g.fecha(),
+		})
+	}
 	if g.r.IntN(5) == 0 {
 		c.Extra = map[string]json.RawMessage{"seccionNueva": json.RawMessage(g.de(`[1]`, `{"x":"<&>"}`))}
 	}
@@ -487,6 +498,14 @@ func (g generador) caso() casoDeFusion {
 					Dueno: g.de("0123456789abcdef", "fedcba9876543210"), Ref: ref,
 					Nombre: g.de("Zeri's Coffee", "Zeri"), Titular: "1111222233334444",
 					Permiso: g.de("ver", "editar"), Huella: "AAAA-BBBB", Desde: g.fecha(), Usado: g.de("", g.fecha()),
+				})
+			}
+		}
+		for _, id := range []string{"1111222233334444", "aaaabbbbccccdddd"} {
+			if g.r.IntN(3) > 0 {
+				b.Titulares = append(b.Titulares, Titular{
+					ID: id, Correo: "ana@x.com", Permiso: g.de("ver", "editar"),
+					Huella: "AAAA-BBBB", Desde: g.fecha(),
 				})
 			}
 		}

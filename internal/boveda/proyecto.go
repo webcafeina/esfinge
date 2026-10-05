@@ -509,6 +509,9 @@ func (b *Boveda) Desprender(maestraNueva string) (*Boveda, string, error) {
 	// familia que el paso de la identidad, y el que más fácil se olvida al añadir una
 	// sección nueva: **todo lo que `Desprender` no quita, viaja**.
 	cont.Compartidas = nil
+	// Y quién tenía acceso a esto: lo entregado es una bóveda, no la lista de con
+	// quién la compartía quien la entrega.
+	cont.Titulares = nil
 
 	// 1, 2 y 3: la bóveda nueva, con su identificador y sus dos ranuras.
 	nueva, err := sinRanuras("")
