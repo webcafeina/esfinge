@@ -45,8 +45,15 @@ export const CLAVE_DEL_CONSENTIMIENTO = "consentimiento";
  * hecha. La regla de la ADR 0033 no dice «si cambian los datos», dice **si cambia lo
  * que dice el aviso**, y es mejor preguntar una vez de más que dejar aceptado un texto
  * que ya no describe lo que pasa.
+ *
+ * **6 desde la C6 de las bóvedas compartidas** (ADR 0052), y lo que la sube no es que
+ * haya otra bóveda en el navegador: es **a dónde van los cambios**. Hasta aquí, todo lo
+ * que la extensión guardaba iba a la cuenta de quien la usa y a ninguna otra; desde
+ * ahora, lo que se guarde dentro de una bóveda que alguien te ha compartido **sube a la
+ * cuenta de esa persona**. Un destino nuevo para datos que pone quien usa la extensión
+ * es exactamente el caso que esta cuenta existe para no dar por sabido.
  */
-export const VERSION_DEL_AVISO = 5;
+export const VERSION_DEL_AVISO = 6;
 
 /** vale dice si lo guardado es la aceptación del aviso de ahora. */
 export function vale(guardado: unknown): boolean {

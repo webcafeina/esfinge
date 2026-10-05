@@ -209,6 +209,30 @@ No se cambian sin preguntar.
   las credenciales». Es la misma decisión que la ADR 0043 para una entrada suelta, una escala más arriba, y
   **no se cambia sin preguntar**. Con ello, archivar **borra el fichero de este equipo** y deja el del
   servidor, y borrar **pide la maestra** y no va a ninguna papelera.
+- **Y tres días después hizo falta lo contrario, así que también se da acceso** (ADR 0052, 2026-10-05): una
+  bóveda de proyecto puede quedarse **viva** en el equipo de otra persona, con sus cambios yendo y viniendo.
+  **La 0051 no se deroga**: entregar una copia sigue al lado, para cuando el proyecto de verdad se acaba, y
+  son **dos gestos con dos nombres** —«Dar acceso» y «Entregar una copia»—. Lo pidió así: *«necesito que estas
+  bóvedas de proyecto sí que se actualicen en tiempo real a las personas que la tengan compartida. Solo las
+  bóvedas de proyectos, lo que comparta de mi bóveda no.»* Lo que no se cambia sin preguntar: **«en vivo» es
+  al abrir y cada minuto**, con el sondeo que ya existe y **sin push**; **el permiso es por persona**, ver o
+  editar, y **lo impone el servidor, no el cifrado** —quien puede ver tiene la clave, lo que no puede es
+  subir, y eso se dice con esas palabras igual que lo de Touch ID—; **hace falta cuenta**; **quien puede
+  editar puede dar acceso a otros**; **la lista de quién tiene acceso la ven todos**; y **al quitar el acceso
+  se rota la clave**. Lo que **no** se hace: borrar en remoto lo que ya se bajó —no se puede prometer— ni
+  dejar que quien recibe borre la bóveda para todos.
+  **Y tres cosas técnicas que cuestan caro si se tocan a ciegas.** La ranura de cada titular va **sellada
+  hacia su identidad pública**, no envuelta con su clave de bóveda: envolviéndola solo esa persona podría
+  rehacerla, y entonces rotar al revocar exigiría tenerla delante. **El tipo lleva dentro a quién es**
+  (`acceso:<titular>`) y eso no es estilo: el sello indexa los sobres por tipo, así que dos ranuras del mismo
+  tipo no hacen que sobre una, hacen que **la bóveda no abra**. Y **quitar una ranura no es representable en
+  la fusión**, que une por tipo y conserva la que está en un solo lado: hace falta una **lápida**, o el primer
+  equipo con una copia de antes resucita el acceso del revocado.
+  **Y desde la C6 la extensión también abre bóvedas compartidas**, con una asimetría escrita a propósito:
+  **en el navegador, con permiso de solo ver no se ofrece guardar; en la ventana sí se puede editar**. La
+  razón es la pantalla —en la ventana hay dónde explicar que lo escrito no sube, y en la página de otro la
+  tarjeta la saca Esfinge por su cuenta—, está en `porQueNoSeEscribe` en los dos lados y **no se iguala «por
+  consistencia» sin preguntar**. Del sellado, el espejo lleva **solo abrir**: sellar es de quien da el acceso.
 - **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
   mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda
   hasta la publicación siguiente — no es un fallo, es un aviso del flujo. Se hace igual: **el cliente para la

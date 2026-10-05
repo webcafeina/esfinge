@@ -437,6 +437,39 @@ de Webcafeína —, y un `bovedas.json` que apunta qué referencias hay **y ning
 cifrados dentro de la bóveda personal, por lo mismo que los sitios excluidos y los iconos
 ([ADR 0024](adr/0024-iconos-de-los-sitios.md)).
 
+## Dar acceso a una bóveda de proyecto
+
+Desde la [ADR 0052](adr/0052-dar-acceso-a-un-proyecto.md) una bóveda de proyecto puede estar **viva en el
+equipo de otra persona**: se actualiza sola en los dos sentidos, como entre dos equipos del mismo dueño. Eso
+añade tres cosas que hay que decir sin rodeos.
+
+**El servidor sabe quién puede entrar en qué.** Hasta ahora sabía con quién compartes una entrada suelta
+—una dirección de correo, y nada del contenido—; ahora guarda además, por cada bóveda de proyecto, **la
+lista de cuentas con acceso y su permiso**. No puede leer la bóveda, que sigue cifrada de punta a punta,
+pero la lista en sí es información: dice que esas cuentas trabajan juntas en algo. Es la misma clase de
+coste que la lista de sitios de la [ADR 0024](adr/0024-iconos-de-los-sitios.md), y se cuenta por lo mismo.
+Lo que **no** sube es de quién es cada cosa a ojos de una persona: ni los nombres de los proyectos, ni los
+correos de los miembros. En la lista del servidor cada persona es un identificador al azar.
+
+**«Solo puede ver» lo impone el servidor, no el cifrado.** Quien recibe acceso de solo ver tiene la clave
+para descifrar esa bóveda, porque es la única forma de que pueda leerla: lo que le impide cambiarla para los
+demás es que el servidor rechaza su subida. Puede escribir en su copia, y esa copia no llega a nadie. Está
+dicho así en la pantalla donde se da el acceso, y **no se debe escribir de otra forma** — es el mismo trato
+que el desbloqueo con Touch ID ([ADR 0044](adr/0044-desbloqueo-del-sistema.md)): un cerrojo que se nombra
+por lo que es.
+
+**Quitar el acceso no borra lo que la otra persona ya tiene.** Deja de recibir cambios desde ese momento, y
+lo que estuviera en su equipo se queda ahí; desde aquí no hay forma de borrarlo y prometerlo sería mentir.
+Lo que sí hace es que **no sirva para seguir**: al quitarlo se rota la clave de la bóveda y se vuelve a
+sellar para los que quedan, así que ni una copia vieja del fichero ni la clave que esa persona vio abren lo
+que venga después. La ranura retirada se queda marcada en el fichero —una lápida— porque borrarla a secas la
+resucitaría en cuanto sincronizara un equipo con una copia de antes.
+
+**Y en el navegador, desde la C6:** la extensión también puede tener una bóveda ajena, cifrada, en
+`storage.local`, y subir a la cuenta de esa persona lo que se guarde en ella. Con permiso de solo ver **no
+ofrece guardar nada** —ahí es más estrecha que la ventana, a propósito: en una página de otro no hay dónde
+explicar después que lo guardado no ha salido de este navegador—.
+
 ## Decisiones que afectan a la seguridad
 
 - [ADR 0002](adr/0002-formato-esf1.md) — El cifrado y por qué esos algoritmos.
@@ -447,3 +480,5 @@ cifrados dentro de la bóveda personal, por lo mismo que los sitios excluidos y 
 - [ADR 0049](adr/0049-las-redes-wifi.md) — Por qué el código de una red está a la vista.
 - [ADR 0050](adr/0050-varias-bovedas.md) — Por qué un proyecto se abre con la bóveda personal, y qué se
   pierde con ella.
+- [ADR 0052](adr/0052-dar-acceso-a-un-proyecto.md) — Qué sabe el servidor de quién tiene acceso, y por qué
+  «solo ver» lo impone él y no el cifrado.

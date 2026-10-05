@@ -12,3 +12,6 @@
 
 huella: 904988c160aa4ace
 fecha: 2026-10-01
+pendiente: 480dbfe40a2bf9a4
+aplazado: 2026-10-05
+porque: El texto es de la C6 de la ADR 0052, que todavía no se publica: se pega cuando salga la versión que la lleve

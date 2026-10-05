@@ -107,8 +107,9 @@ Soporte: https://webcafeina.github.io/esfinge/soporte.html
 Rellenar y guardar en el navegador las contraseñas de la bóveda de Esfinge: la de la aplicación
 instalada en el mismo ordenador o, con cuenta, la que la extensión sincroniza con el servidor de cuentas.
 Con cuenta, desde el panel se puede además mandar una copia de una contraseña de la bóveda a otra
-persona, cifrada para ella. Y cuando un sitio pide una llave de acceso, ofrecer la que está guardada en
-esa misma bóveda y firmar con ella, o crear una nueva y guardarla ahí.
+persona, cifrada para ella, y trabajar en una bóveda a la que otra persona haya dado acceso. Y cuando un
+sitio pide una llave de acceso, ofrecer la que está guardada en esa misma bóveda y firmar con ella, o
+crear una nueva y guardarla ahí.
 
 <!-- consola de Chrome: acaba -->
 
@@ -128,9 +129,10 @@ donde están las contraseñas.
 
 <!-- consola de Chrome: empieza -->
 Guarda que la persona ha aceptado el aviso de datos y el permiso de la aplicación para hablar con ella.
-Con cuenta, además, la bóveda cifrada, su última versión común con el servidor —cifrada— y la sesión,
-cifrada con la clave de la bóveda. La clave de la bóveda abierta va solo en storage.session, en memoria,
-y se va al cerrar el navegador.
+Con cuenta, además, su bóveda cifrada, la última versión común con el servidor —cifrada— y la sesión,
+cifrada con la clave de la bóveda. Si otra persona le ha dado acceso a una bóveda suya, esa bóveda se
+guarda igual, cifrada. La clave de la bóveda abierta va solo en storage.session, en memoria, y se va al
+cerrar el navegador.
 <!-- consola de Chrome: acaba -->
 
 `alarms`:

@@ -5,6 +5,49 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-05 (noche) · La C6: la extensión abre una bóveda compartida
+
+- **Se hizo la C6 entera**, en tres tramos: el espejo del núcleo, el trabajador de fondo con el panel, y
+  los papeles. Con ella, **el código de la ADR 0052 está completo**.
+- **El espejo lleva media ranura a propósito: abrir, no sellar.** Sellar lo hace quien da el acceso y eso
+  vive en la ventana; escribirlo también aquí sería una segunda implementación que se puede desviar de Go
+  sin que nada se entere, y además dejaría en la extensión la pieza que reparte la clave de una bóveda. Por
+  lo mismo se quedaron fuera `IDDeAcceso` y la codificación `sobre-x25519-v1`, que aquí no las lee nadie.
+- **Se verificó con dos cruzadas, separadas para poder acotar**: una con el sellado a pelo —Go sella, la
+  extensión abre— y otra con el camino entero —Go da el acceso y la extensión abre la bóveda y ve las
+  mismas entradas—. Mutando la etiqueta del `info` caen las dos; mutando el prefijo del tipo de ranura cae
+  solo la segunda, que es para lo que están separadas.
+- **Y lo que una de esas pruebas no prueba, dicho en ella**: quitar la comprobación explícita de la lápida
+  deja la cruzada en verde, porque `RetirarAcceso` vacía el contenedor y un contenedor vacío no abre de
+  todos modos. Se queda por ser explícita, no porque nada la vigile — y no hay documento alcanzable donde
+  las dos cosas se distingan.
+- **Decisión que se tomó aquí y conviene no volver a discutir: en el navegador, con permiso de solo ver no
+  se ofrece guardar; en la ventana sí se puede editar.** Es una asimetría a propósito y la razón es la
+  pantalla: en la ventana hay dónde explicar que lo escrito no sube, y en la página de otro la tarjeta la
+  saca Esfinge por su cuenta. Está escrita en `porQueNoSeEscribe`, en los dos lados, para que nadie la
+  iguale «por consistencia».
+- **Se cerró de paso un agujero que la 0052 dejó abierto**: ni `docs/seguridad.md` ni la política decían
+  nada de lo que el servidor sabe ahora —**quién tiene acceso a qué**—, y la ADR lo prometía en sus
+  Consecuencias. Ya lo dicen las dos, con las tres cosas que hay que decir sin rodeos: la lista de miembros
+  es información aunque el contenido no se lea, «solo ver» lo impone el servidor y no el cifrado, y quitar
+  el acceso **no borra lo que la otra persona ya tiene**.
+- **El aviso de datos sube a la 6**, y lo que lo obliga no es que haya otra bóveda en el navegador: es que
+  **lo que se guarde dentro sube a la cuenta de otra persona**. Con ello van la política de la web, el texto
+  de Firefox —que se genera y se comprobó— y la ficha de Chrome.
+- **La ficha de Chrome quedó aplazada siete días, no pegada.** Pegarla es del cliente y la versión no se ha
+  publicado todavía; el aplazamiento caduca y entonces `make comprobar` vuelve a parar, que es para lo que
+  existe.
+- **Una del método, la de siempre con otra cara**: la prueba nueva de los verbos **iba en verde sola y caía
+  en la tanda entera**, diciendo que una bóveda compartida no deja leer. No era eso: el freno de doce
+  rellenos por minuto lo habían gastado las pruebas anteriores del fichero. Ahora tiene su propia ventana de
+  tiempo, y la pasada que cuenta es la de después de arreglarlo.
+- **Verde**: `make comprobar` entero y `pnpm run comprobar` de la extensión, 200 pruebas.
+- **Queda abierto, y es todo lo que queda de la 0052**: desplegar a pruebas y recorrer el camino con dos
+  cuentas de usar y tirar; luego producción y publicar. **Nada de esto está desplegado ni publicado**, y
+  sigue **sin verse funcionar entre dos personas de verdad**.
+
+---
+
 ## 2026-10-05 (tarde) · Dar acceso a una bóveda de proyecto: C1 a C5
 
 - **Se planificó entera la ADR 0052** con el cliente, en dos rondas de preguntas. Lo que decidió: «en vivo»

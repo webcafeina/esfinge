@@ -10,15 +10,26 @@
 > Solo las bóvedas de proyectos, lo que comparta de mi bóveda no.»* Es la funcionalidad que la ADR 0051 dejó
 > nombrada —permisos, revocación, quién ve qué— y **no la sustituye**: entregar una copia sigue al lado.
 >
-> **Hechas C1 a C5, todas en verde y con cada prueba mutada**: el núcleo, el servidor, el sobre y las dos
-> secciones, la sincronización y la pantalla. **La siguiente acción es C6, la extensión.**
+> **Hechas C1 a C6, todas en verde y con cada prueba mutada**: el núcleo, el servidor, el sobre y las dos
+> secciones, la sincronización, la pantalla y la extensión. **El código de la 0052 está entero.**
 >
-> Después, y en este orden, que es la hoja de ruta que el cliente dio por buena:
+> **La siguiente acción es desplegar a pruebas**, que es lo que queda de la hoja de ruta que el cliente dio
+> por buena:
 >
-> 1. **C6**, para que la extensión no se quede atrás.
+> 1. ~~**C6**, para que la extensión no se quede atrás.~~ Hecha el 2026-10-05 (tarde).
 > 2. **Desplegar a pruebas** y recorrer el camino entero con **dos cuentas de usar y tirar** contra ese
 >    Worker —dar acceso, aceptar, escribir desde el otro lado, quitarlo—, sin tocar producción.
 > 3. Con eso en verde, **desplegar producción y publicar**, y que lo pruebe él con una segunda dirección suya.
+>
+> **Y dos cosas que el cliente tiene que hacer él cuando se publique**, apuntadas aquí para que no se
+> pierdan:
+>
+> - **Pegar la ficha de Chrome.** El texto cambió con la C6 —el propósito único y la justificación de
+>   `storage`— y está **aplazado siete días** desde el 2026-10-05: pasados, `make comprobar` vuelve a parar.
+>   Se pega en la consola y luego `node navegador/herramientas/ficha-de-chrome.mjs --pegado`.
+> - **El aviso de datos vuelve a preguntar** (`VERSION_DEL_AVISO` 5 → 6), así que todo el mundo lo verá otra
+>   vez. Es lo que pide la ADR 0033 cuando cambia lo que el aviso dice, y aquí cambia de verdad: lo que se
+>   guarde en una bóveda compartida sube a la cuenta de otra persona.
 >
 > **Nada de esto está desplegado ni publicado**: producción sigue con el Worker del 2026-10-05 por la mañana,
 > y la última versión publicada es la **2.39.3**, que lleva el núcleo y el servidor **inertes** —no los llama

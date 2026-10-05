@@ -53,6 +53,8 @@ Si entras con tu cuenta de Esfinge en la extensión, ya no necesita la aplicaci�
 
 Y desde el panel se puede mandar una copia de una contraseña a otra persona, como desde la aplicación. Entonces al servidor le llega también la dirección de quien la recibe, y el sobre, cerrado. Está contado en Si compartes una copia.
 
+Y si alguien te da acceso a una bóveda de proyecto suya, la extensión puede abrirla aquí: la guarda cifrada en el navegador, igual que la tuya, y lo que guardes dentro sube a la cuenta de esa persona y no a la tuya. Si solo te dejó verla, la extensión no te ofrece guardar nada en ella. Está contado en Si alguien te da acceso a una bóveda suya.
+
 En ningún caso descarga código, ni lleva analítica ni servicios de terceros.
 
 Qué guarda
@@ -62,6 +64,8 @@ Qué guarda
 - Con cuenta, además: tu bóveda cifrada y la última versión que coincidía con el servidor, también cifrada; tu correo; la sesión con el servidor, cifrada con la clave de tu bóveda; y el testigo de «este navegador es de confianza» —en claro, como en la aplicación—, que evita pedirte un código cada vez. Mientras la bóveda está abierta, su clave vive solo en la memoria del navegador, y se va al bloquearla, a los quince minutos sin usarla o al cerrar el navegador.
 
 - En memoria, un momento: cuando envías un formulario, la contraseña espera como mucho dos minutos a que decidas si guardarla, y el usuario que escribes en una página de dos pasos, cinco minutos. Nunca se escriben en disco.
+
+- Y una bóveda que no es tuya, si alguien te ha dado acceso a ella y la abres aquí: cifrada, como la tuya, y con su última versión del servidor.
 
 - Los sitios en los que pides que no te ofrezca guardar se apuntan dentro de tu bóveda, cifrados, no en el navegador.
 
@@ -154,6 +158,22 @@ Si esa dirección todavía no tiene cuenta de Esfinge, le mandamos una invitaci�
 - Como todos nuestros correos, lleva el icono de Esfinge, con lo que eso cuenta a quien sirve la imagen: está explicado abajo, en «Quién más interviene».
 
 La base para tratar la dirección de quien recibe es ejecutar el contrato contigo, que eres quien nos pide que le llegue (art. 6.1.b), y nuestro interés legítimo en que ese aviso se pueda entregar (art. 6.1.f). Quien reciba una invitación puede ignorarla —sin cuenta no le llega nada— o escribirnos a info@webcafeina.com para que borremos su dirección antes de los treinta días.
+
+Si alguien te da acceso a una bóveda suya
+
+Esto llega con la próxima versión de Esfinge. Se cuenta ya para que se pueda leer antes de usarlo.
+
+Una copia es una foto fija. Esfinge deja también dar acceso a una bóveda de proyecto entera, y entonces esa bóveda sigue viva: lo que cambie una persona le llega a las demás, como entre dos ordenadores tuyos. Sigue cifrada de punta a punta y nosotros no podemos leerla.
+
+Lo que sí guardamos es quién puede entrar en qué. Por cada bóveda compartida tenemos la lista de cuentas con acceso y lo que puede hacer cada una —ver o editar—, porque es lo que nos permite decir que no a quien no debe entrar. Eso es información aunque el contenido no se pueda leer: dice que esas cuentas trabajan juntas en algo. Hay que decirlo, como decimos a quién mandas una copia.
+
+Dos cosas más que conviene saber antes de usarlo:
+
+- «Solo ver» lo hacemos cumplir nosotros, no el cifrado. Quien puede verla tiene con qué descifrarla —es la única forma de que pueda leerla—, así que puede cambiar su propia copia; lo que no puede es que ese cambio llegue a nadie, porque el servidor rechaza su envío.
+
+- Quitar el acceso no borra lo que ya se bajó. Desde ese momento deja de recibir cambios, y lo que estuviera en su ordenador se queda ahí: no podemos entrar en el ordenador de nadie, y prometer lo contrario sería mentir. Lo que sí hacemos es cambiar la clave de la bóveda, para que lo que venga después no se pueda abrir con la de antes.
+
+La base es la misma que para compartir una copia: ejecutar el contrato contigo (art. 6.1.b). La lista de accesos se borra con la bóveda, o cuando quitas el acceso.
 
 Quién más interviene
 

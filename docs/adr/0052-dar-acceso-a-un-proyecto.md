@@ -1,7 +1,7 @@
 # 0052 · Dar acceso a una bóveda de proyecto
 
-**Fecha:** 2026-10-05 · **Estado:** aceptada · **C1 a C5 escritas y en verde** · sin desplegar, sin publicar
-y **sin haberlo visto funcionar entre dos cuentas de verdad**
+**Fecha:** 2026-10-05 · **Estado:** aceptada · **C1 a C6 escritas y en verde** · sin desplegar, sin publicar
+y **sin haberlo visto funcionar entre dos personas de verdad**
 
 ## Contexto
 
@@ -158,6 +158,28 @@ identidad es regalar la firma (ADR 0051), y con varias personas sería peor: tod
 - **La pantalla**, en los dos temas, con una prueba que **mide la caja** del nombre
   del proyecto: con tres botones en la fila desapareció, y eso no lo ve ninguna
   aserción de texto.
+- **La extensión** (C6): el espejo abre una ranura sellada —con **Go sellando y la
+  extensión abriendo** en dos cruzadas, separadas para poder acotar—, el canal no
+  ofrece guardar con permiso de solo ver —en sus dos caras, con cuenta y con la
+  aplicación detrás— y el selector del panel manda el dueño y la referencia cada uno
+  en su sitio. Cada prueba, mutada.
+
+**Y tres cosas de la C6 que conviene saber sin leer el código:**
+
+- **De la ranura sellada, el espejo solo lleva abrir.** Sellar lo hace quien da el
+  acceso, y eso vive en la ventana. Escribirlo también en TypeScript sería una segunda
+  implementación que puede desviarse de Go sin que nada se entere, y además dejaría en
+  la extensión la pieza que reparte la clave de una bóveda.
+- **En el navegador, con permiso de solo ver no se ofrece guardar; en la ventana sí se
+  puede editar.** No es un descuido: en la ventana hay pantalla donde decir que lo
+  escrito no sube, y en la página de otro la tarjeta la saca Esfinge por su cuenta y no
+  hay dónde explicar nada después. Está escrito en `porQueNoSeEscribe`, en los dos
+  lados, para que no se iguale «por consistencia».
+- **El aviso de datos sube a la 6.** Lo que lo obliga no es que haya otra bóveda en el
+  navegador: es que **lo que se guarde dentro sube a la cuenta de otra persona**, que es
+  un destino nuevo para datos que pone quien usa la extensión. Con ello van la política
+  de la web, el texto de Firefox —que se genera— y la ficha de Chrome, que **se pega a
+  mano y está aplazada** hasta que salga la versión que la lleve.
 
 **Lo que se va a comprobar, y cada prueba mutada:**
 
