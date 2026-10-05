@@ -98,9 +98,23 @@ func TestUnEnvioManipuladoNoSeAbre(t *testing.T) {
 	})
 	t.Run("una versión de mañana", func(t *testing.T) {
 		malo := sobre
-		malo.Version = VersionDeEnvio + 1
+		// **La de mañana es la siguiente a la última que se entiende**, no la
+		// siguiente a ésta: desde la ADR 0052 hay dos clases de sobre y la 2 ya
+		// existe. Decirlo con `VersionDeEnvio + 1` dejó de significar lo que quería
+		// el día que nació el sobre de acceso.
+		malo.Version = VersionMaximaDeEnvio + 1
 		if _, _, err := b.AbrirEnvio(malo); !errors.Is(err, ErrEnvioNuevo) {
 			t.Fatalf("no avisa de que viene de una versión más nueva: %v", err)
+		}
+	})
+	t.Run("un sobre de otra clase", func(t *testing.T) {
+		// Una versión que **sí** se entiende, pero que no es ésta. Sin esto, un
+		// sobre de acceso leído como copia daría una entrada vacía con cara de
+		// normal, y nadie sabría por qué.
+		malo := sobre
+		malo.Version = VersionDeAcceso
+		if _, _, err := b.AbrirEnvio(malo); !errors.Is(err, ErrSobreDeOtro) {
+			t.Fatalf("un sobre de acceso se ha abierto como una copia de entrada: %v", err)
 		}
 	})
 }

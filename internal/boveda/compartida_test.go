@@ -1,8 +1,10 @@
 package boveda
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -265,5 +267,78 @@ func TestSellarHaciaUnaIdentidadYAbrirlo(t *testing.T) {
 	}
 	if _, err := beto.AbrirSellado(sellado); err == nil {
 		t.Fatal("un sellado para Ana lo ha abierto Beto")
+	}
+}
+
+// El sobre que reparte el acceso: va y vuelve entero, lo abre solo quien debe, y
+// **no se puede confundir con una copia de entrada**.
+func TestElSobreDeAccesoVaYVuelve(t *testing.T) {
+	ana, idAna := unaPersonal(t, "ana")
+	beto, idBeto := unaPersonal(t, "beto")
+
+	acceso := Acceso{
+		Dueno:   "0123456789abcdef0123456789abcdef",
+		Ref:     "a1b2c3d4e5f60718",
+		Nombre:  "Zeri's Coffee",
+		Titular: "1111222233334444",
+		Permiso: "editar",
+	}
+	sobre, err := beto.MandarAcceso(acceso, idAna)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vuelta, de, err := ana.AbrirAcceso(sobre)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if vuelta != acceso {
+		t.Fatalf("el acceso vuelve cambiado: %+v", vuelta)
+	}
+	// Y con la identidad de quien lo manda comprobada, que es lo que permite
+	// comparar la huella antes de aceptar nada.
+	if de.Huella != idBeto.Huella {
+		t.Errorf("la huella es %s y la de quien lo manda es %s", de.Huella, idBeto.Huella)
+	}
+
+	// No lo abre otra bóveda…
+	if _, _, err := beto.AbrirAcceso(sobre); err == nil {
+		t.Error("un acceso para Ana lo ha abierto quien lo mandó")
+	}
+	// …ni se abre como si fuera una copia de entrada, que es lo que separa las dos
+	// clases de sobre: la versión va dentro de lo firmado.
+	if _, _, err := ana.AbrirEnvio(sobre); !errors.Is(err, ErrSobreDeOtro) {
+		t.Errorf("un sobre de acceso se ha abierto como una copia de entrada: %v", err)
+	}
+}
+
+// **El sobre de acceso no lleva secretos, y lo que lo protege es su forma.**
+//
+// La clave de la bóveda vive dentro del propio fichero, sellada hacia quien recibe;
+// aquí solo viaja dónde está y quién eres tú en ella. Así que lo que hay que vigilar
+// es que **no aparezca un campo nuevo** sin que alguien decida si puede viajar.
+//
+// La primera versión de esta prueba buscaba la clave del proyecto dentro de los
+// bytes del sobre, y **no cazaba nada**: quien manda el sobre es la bóveda personal
+// de quien da el acceso, no el proyecto, así que esa clave no iba a estar aunque el
+// código la metiera. Lo dijo mutarlo —añadiendo un campo `clave` y rellenándolo—, y
+// la prueba siguió en verde. Es la misma lección que `huellaDeCuenta`: una prueba que
+// no distingue los dos casos no está comprobando nada.
+func TestElSobreDeAccesoNoLlevaSecretos(t *testing.T) {
+	// **Por reflexión sobre el tipo y no sobre un ejemplo**, que es como este repo
+	// saca la lista de campos de una entrada. Mirando un `json.Marshal` de un
+	// ejemplo, un campo nuevo con `omitempty` y sin rellenar **no sale**, así que la
+	// prueba pasaba con el campo puesto. Lo dijo mutarlo, dos veces.
+	esperados := map[string]bool{"dueno": true, "ref": true, "nombre": true, "titular": true, "permiso": true}
+	tipo := reflect.TypeOf(Acceso{})
+	for i := 0; i < tipo.NumField(); i++ {
+		etiqueta, _, _ := strings.Cut(tipo.Field(i).Tag.Get("json"), ",")
+		if !esperados[etiqueta] {
+			t.Errorf("el sobre de acceso lleva un campo nuevo, %q: decide si puede viajar antes de añadirlo", etiqueta)
+		}
+		delete(esperados, etiqueta)
+	}
+	for k := range esperados {
+		t.Errorf("el sobre de acceso ha perdido el campo %q", k)
 	}
 }

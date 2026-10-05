@@ -35,6 +35,7 @@ package boveda
 import (
 	"crypto/ecdh"
 	"crypto/hpke"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -302,4 +303,78 @@ func indiceDeRanura(doc documento, tipo string) int {
 		}
 	}
 	return -1
+}
+
+// ------------------------------------------------------------------ el sobre
+
+// Acceso es lo que viaja en un sobre de acceso: **dónde está la bóveda y quién eres
+// tú en ella**.
+//
+// Lo que **no** lleva es la clave, y eso es la mitad de por qué esto es barato: la
+// clave ya está dentro del propio fichero de la bóveda, sellada hacia la identidad
+// de quien recibe (ver la cabecera de este fichero). Así que este sobre no es un
+// secreto que haya que proteger más de lo que ya se protege cualquier otro: quien lo
+// interceptara —y va cifrado— no se llevaría nada con lo que abrir nada.
+type Acceso struct {
+	// Dueno es la cuenta de quien da el acceso, hex de 16 bytes. Con esto y Ref se
+	// arma la ruta del servidor, y por eso va aquí: el servidor no tiene ningún
+	// índice de «lo que me han compartido», igual que no tiene los nombres.
+	Dueno string `json:"dueno"`
+	Ref   string `json:"ref"`
+	// Nombre es cómo lo llama quien lo comparte. Quien lo recibe puede cambiarlo en
+	// su bóveda: es suyo lo que ve, no lo que la otra persona le dice que vea.
+	Nombre string `json:"nombre"`
+	// Titular es quién eres tú en esa bóveda: el identificador de tu ranura. Lo
+	// elige quien da el acceso, y por eso es también lo que le sirve para quitarlo.
+	Titular string `json:"titular"`
+	// Permiso es "ver" o "editar". **Es informativo**: el que manda es el del
+	// servidor. Aquí sirve para no pedirle a nadie que teclee algo que va a acabar
+	// en un 403, que es la regla que costó `ExportarLlaves`.
+	Permiso string `json:"permiso"`
+}
+
+// MandarAcceso prepara el sobre que le dice a alguien que tiene acceso a una bóveda.
+//
+// Es el mismo sobre de compartir una entrada con otra carga y otra versión, así que
+// **no hay ni una línea de criptografía nueva**: la misma cabecera autenticada, la
+// misma firma, la misma huella que se enseña antes. Y como `version` va dentro de lo
+// autenticado y de lo firmado, un sobre de acceso no se puede hacer pasar por una
+// copia de entrada ni al revés.
+func (b *Boveda) MandarAcceso(a Acceso, para Identidad) (Envio, error) {
+	claro, err := json.Marshal(a)
+	if err != nil {
+		return Envio{}, err
+	}
+	return b.sellarSobre(claro, VersionDeAcceso, para)
+}
+
+// AbrirAcceso saca el acceso de un sobre dirigido a esta bóveda, con la identidad de
+// quien lo manda **ya comprobada**.
+func (b *Boveda) AbrirAcceso(s Envio) (Acceso, Identidad, error) {
+	claro, de, err := b.abrirSobre(s, VersionDeAcceso)
+	if err != nil {
+		return Acceso{}, Identidad{}, err
+	}
+	var a Acceso
+	if err := json.Unmarshal(claro, &a); err != nil {
+		return Acceso{}, Identidad{}, err
+	}
+	if a.Dueno == "" || !refValidaEnBoveda(a.Ref) || a.Titular == "" {
+		return Acceso{}, Identidad{}, errors.New("Ese acceso no se entiende")
+	}
+	return a, de, nil
+}
+
+// refValidaEnBoveda es la misma regla que el servidor aplica a una referencia, aquí
+// para no aceptar un sobre que no podría llevar a ninguna parte.
+func refValidaEnBoveda(ref string) bool {
+	if len(ref) != 16 {
+		return false
+	}
+	for _, c := range ref {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
 }

@@ -29,8 +29,22 @@ import (
 	"fmt"
 )
 
-// Version del formato del sobre. Lo primero que se mira al abrir.
-const VersionDeEnvio = 1
+// Las versiones del sobre. **Lo primero que se mira al abrir**, y lo que separa un
+// sobre de otro: `version` va dentro de lo autenticado y de lo firmado, así que un
+// sobre de una clase no se puede reinterpretar como el de la otra ni cambiándole el
+// número.
+const (
+	// VersionDeEnvio lleva **una copia de una entrada** (ADR 0043).
+	VersionDeEnvio = 1
+	// VersionDeAcceso lleva **el sitio de una bóveda compartida** (ADR 0052). Y
+	// **no lleva su clave**: la clave está dentro del propio fichero de la bóveda,
+	// sellada hacia quien recibe. Lo que viaja aquí es dónde está y quién eres tú
+	// en ella.
+	VersionDeAcceso = 2
+)
+
+// VersionMaximaDeEnvio es hasta dónde entiende esta versión de Esfinge.
+const VersionMaximaDeEnvio = VersionDeAcceso
 
 const infoDeEnvio = "esfinge/envio/v1"
 
@@ -132,7 +146,34 @@ func (b *Boveda) MandarEntrada(e Entrada, para Identidad) (Envio, error) {
 	copia.Historial = nil
 	copia.Papelera, copia.BorradaEn = false, ""
 	copia.Revision = 0
-	claro := []byte(canon(copia))
+	return b.sellarSobre([]byte(canon(copia)), VersionDeEnvio, para)
+}
+
+// sellarSobre es lo común a todos los sobres: cifrar hacia quien recibe y firmar con
+// esta bóveda. Lo que cambia entre uno y otro es **la carga y la versión**, y la
+// versión va dentro de lo autenticado y de lo firmado, así que es lo que los separa.
+//
+// Se sacó de `MandarEntrada` al añadir el sobre de acceso (ADR 0052), **sin tocar
+// `loQueVaAutenticado` ni `loQueSeFirma`**: ahí está la distinción que ya costó una
+// vuelta y no hacía falta moverla.
+func (b *Boveda) sellarSobre(claro []byte, version int, para Identidad) (Envio, error) {
+	b.mu.Lock()
+	if b.llave == nil {
+		b.mu.Unlock()
+		return Envio{}, ErrCerrada
+	}
+	guardada := b.cont.Identidad
+	b.mu.Unlock()
+	if guardada == nil {
+		return Envio{}, errSinIdentidad
+	}
+	mia, err := publicaDe(guardada)
+	if err != nil {
+		return Envio{}, err
+	}
+	if para.Suite != mia.Suite {
+		return Envio{}, fmt.Errorf("esa identidad usa otro cifrado (%s)", para.Suite)
+	}
 
 	pub, err := ecdh.X25519().NewPublicKey(para.Cifrado)
 	if err != nil {
@@ -149,7 +190,7 @@ func (b *Boveda) MandarEntrada(e Entrada, para Identidad) (Envio, error) {
 
 	s := Envio{
 		Esfinge: "envío",
-		Version: VersionDeEnvio,
+		Version: version,
 		Suite:   mia.Suite,
 		De:      EnvioDe{Cifrado: mia.Cifrado, Firma: mia.Firma},
 		Para:    para.Cifrado,
@@ -177,65 +218,85 @@ func (b *Boveda) MandarEntrada(e Entrada, para Identidad) (Envio, error) {
 // AbrirEnvio saca la entrada de un sobre dirigido a esta bóveda. Devuelve también
 // la identidad de quien lo manda, **ya comprobada**: la firma cuadra.
 func (b *Boveda) AbrirEnvio(s Envio) (Entrada, Identidad, error) {
+	claro, de, err := b.abrirSobre(s, VersionDeEnvio)
+	if err != nil {
+		return Entrada{}, Identidad{}, err
+	}
+	var e Entrada
+	if err := json.Unmarshal(claro, &e); err != nil {
+		return Entrada{}, Identidad{}, err
+	}
+	return e, de, nil
+}
+
+// abrirSobre es lo común a abrir cualquier sobre: comprobar que es para esta bóveda,
+// **comprobar la firma antes de descifrar** y devolver la carga en claro.
+//
+// `espera` es la versión que el que llama sabe leer. Un sobre de otra clase no se
+// abre aquí aunque sea para esta bóveda: lo que saldría sería una carga con cara de
+// lo que no es.
+func (b *Boveda) abrirSobre(s Envio, espera int) ([]byte, Identidad, error) {
 	b.mu.Lock()
 	if b.llave == nil {
 		b.mu.Unlock()
-		return Entrada{}, Identidad{}, ErrCerrada
+		return nil, Identidad{}, ErrCerrada
 	}
 	guardada := b.cont.Identidad
 	b.mu.Unlock()
 	if guardada == nil {
-		return Entrada{}, Identidad{}, errSinIdentidad
+		return nil, Identidad{}, errSinIdentidad
 	}
-	if s.Version > VersionDeEnvio {
-		return Entrada{}, Identidad{}, ErrEnvioNuevo
+	if s.Version > VersionMaximaDeEnvio {
+		return nil, Identidad{}, ErrEnvioNuevo
+	}
+	// **Un sobre de una clase no se abre como el de la otra.** Si se dejara, lo que
+	// saldría de un acceso leído como entrada sería una entrada vacía con cara de
+	// normal.
+	if s.Version != espera {
+		return nil, Identidad{}, ErrSobreDeOtro
 	}
 	mia, err := publicaDe(guardada)
 	if err != nil {
-		return Entrada{}, Identidad{}, err
+		return nil, Identidad{}, err
 	}
 	if s.Suite != mia.Suite || !igualBytes(s.Para, mia.Cifrado) {
-		return Entrada{}, Identidad{}, ErrSobreDeOtro
+		return nil, Identidad{}, ErrSobreDeOtro
 	}
 
 	// **La firma primero.** Abrir algo que no se sabe de quién es, y decidir
 	// después, deja un hueco para que un sobre ajeno gaste el descifrado.
 	if len(s.De.Firma) != ed25519.PublicKeySize || !ed25519.Verify(s.De.Firma, loQueSeFirma(s), s.Firma) {
-		return Entrada{}, Identidad{}, ErrFirmaDelEnvio
+		return nil, Identidad{}, ErrFirmaDelEnvio
 	}
 
 	semilla, err := b64.DecodeString(guardada.Semilla)
 	if err != nil {
-		return Entrada{}, Identidad{}, err
+		return nil, Identidad{}, err
 	}
 	priv, _, err := derivarIdentidad(semilla)
 	if err != nil {
-		return Entrada{}, Identidad{}, err
+		return nil, Identidad{}, err
 	}
 	mio, err := hpke.NewDHKEMPrivateKey(priv)
 	if err != nil {
-		return Entrada{}, Identidad{}, err
+		return nil, Identidad{}, err
 	}
 	receptor, err := hpke.NewRecipient(s.Enc, mio, hpke.HKDFSHA256(), hpke.ChaCha20Poly1305(), []byte(infoDeEnvio))
 	if err != nil {
-		return Entrada{}, Identidad{}, ErrSobreDeOtro
+		return nil, Identidad{}, ErrSobreDeOtro
 	}
 	claro, err := receptor.Open(loQueVaAutenticado(s), s.Cuerpo)
 	if err != nil {
-		return Entrada{}, Identidad{}, ErrSobreDeOtro
+		return nil, Identidad{}, ErrSobreDeOtro
 	}
 
-	var e Entrada
-	if err := json.Unmarshal(claro, &e); err != nil {
-		return Entrada{}, Identidad{}, err
-	}
 	de := Identidad{
 		Suite:   s.Suite,
 		Cifrado: s.De.Cifrado,
 		Firma:   s.De.Firma,
 		Huella:  s.HuellaDe(),
 	}
-	return e, de, nil
+	return claro, de, nil
 }
 
 func igualBytes(a, b []byte) bool {
