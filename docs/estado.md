@@ -1,14 +1,20 @@
 # Estado
 
-Última actualización: **2026-10-02** · papeles cerrados el **2026-10-05**
+Última actualización: **2026-10-05**
 
 ## Dónde se paró, y por dónde se sigue
 
-> **Lo primero al retomar: publicar la 2.39.0.** Está todo escrito, comprobado y comprometido, y lo que
-> arregla **lo vio el cliente en su Mac el 2026-10-02 y sigue sin arreglar en lo que él tiene instalado**:
-> la pantalla de un proyecto parecía su bóveda personal y **salir de un proyecto no existía en la ventana**.
-> Es `git tag v2.39.0 && git push origin v2.39.0`. Antes, mirar si hay que decirle algo del paquete de
-> Chrome: esta versión **no toca `navegador/`**, así que no hay nada que se quede fuera de la tienda.
+> **Publicada la 2.39.0 el 2026-10-05**, y el cliente la abrió el mismo día. De ahí salieron **dos cosas
+> arregladas y sin publicar**: falta aire arriba con el antetítulo —la barra crece 12 px con un proyecto
+> abierto— y **la tarjeta de Touch ID se ofrecía encima de un proyecto**, donde activar está prohibido.
+> Lo siguiente es **publicar la 2.39.1** con las dos: `git tag v2.39.1 && git push origin v2.39.1`. No toca
+> `navegador/`.
+>
+> **Y lo que esa versión cerró, que llevaba todo el proyecto abierto**: con un proyecto creado, tras
+> actualizar sale **un** diálogo de Touch ID —la huella abre la personal y el proyecto no pide nada—, y **un
+> proyecto creado en su otro Mac llegó a éste**: salió como «Dormido en este equipo», se bajó y se abrió sin
+> pedir nada. Con eso quedan comprobadas de golpe la migración de su Durable Object, que la ranura
+> `boveda-principal` viaja dentro del fichero y que la lista de proyectos viaja cifrada en la personal.
 
 **Sesión del 2026-10-02.** En marcha **las bóvedas por proyecto** (ADR 0050), que es la última gran
 funcionalidad y la pidió el cliente así: *«cada proyecto/cliente tendrá su bóveda y yo podré apuntar ahí los

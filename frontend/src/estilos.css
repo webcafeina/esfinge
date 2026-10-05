@@ -315,6 +315,20 @@ body {
   --wails-draggable: drag;
 }
 
+/* **Con un proyecto abierto la barra es más alta**, y eso es una medida, no un gusto:
+ * con una sola línea el título tiene unos 15 px de aire por encima, y al añadirle el
+ * antetítulo «Proyecto» el bloque crece a 35 y ese aire baja a 8. Se vio en el Mac
+ * —«debería haber un poco más de aire en la parte superior»— y se confirmó midiendo
+ * las cajas en la página, no leyendo el CSS.
+ *
+ * Crece **siempre que hay un proyecto abierto**, también donde no hay antetítulo: si
+ * creciera solo en la pantalla de la bóveda, ir y volver a «Proyectos» —que es el
+ * camino que más se anda dentro de un proyecto— daría un salto de doce píxeles en
+ * cada clic. */
+.herramientas.en-proyecto {
+  height: calc(var(--hueco-semaforos) + 12px);
+}
+
 /* El título y, encima, de qué es. La columna lleva «min-width: 0» porque sin eso
  * un nombre de proyecto largo empuja al botón de salir fuera de la barra: en un
  * contenedor flexible el mínimo de un hijo es su contenido. */

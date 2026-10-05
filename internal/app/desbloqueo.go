@@ -109,7 +109,17 @@ func (a *App) EstadoDelDesbloqueo() EstadoDesbloqueo {
 		Hay:     l.Hay(),
 		Nombre:  l.Nombre(),
 		Puesto:  puesto,
-		Sugerir: l.Hay() && !puesto && id != "" && a.ajustes.Ver().DesbloqueoSugeridoPara != id,
+		// **Y no se ofrece con un proyecto abierto**, aunque lo que se ofrezca sea la
+		// personal y el identificador salga bien. Son dos cosas: la tarjeta dice «esta
+		// bóveda» mirando a la pantalla de un proyecto, que es otra; y sobre todo
+		// **activar con un proyecto abierto está prohibido**, así que sería ofrecer algo
+		// que al pulsarlo da un error. Es la regla de `ExportarLlaves`: lo que hace
+		// falta para decidir se mira antes de pedirle a alguien que decida. No se pierde
+		// la oferta —contestar es lo único que la apunta—, se mueve a la pantalla donde
+		// se puede aceptar. Se vio en una captura, con la personal todavía sin contestar:
+		// el caso que la prueba de la ADR 0050 no cubría, porque partía de contestada.
+		Sugerir: l.Hay() && !puesto && id != "" && a.bovedaActiva() == "" &&
+			a.ajustes.Ver().DesbloqueoSugeridoPara != id,
 		// **Solo cuando hay algo que avisar**: si no está puesto, no va a salir
 		// ninguna huella y no hay diálogo del que hablar.
 		TrasActualizar: puesto && a.ajustes.Ver().VersionConPermisoDelLlavero != a.version,

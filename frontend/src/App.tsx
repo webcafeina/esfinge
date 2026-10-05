@@ -245,7 +245,7 @@ export default function App() {
       />
 
       <div className="zona">
-        <header className="herramientas">
+        <header className={enUnProyecto ? "herramientas en-proyecto" : "herramientas"}>
           {/* **En qué bóveda se está trabajando.** Con varias, saber que la bóveda
               está abierta no basta: hay que saber cuál. Y el nombre **es el título**,
               no un rótulo al lado: puesto al lado, lo que más se leía seguía diciendo

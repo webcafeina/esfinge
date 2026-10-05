@@ -191,6 +191,13 @@ cuando el vigilante cierra, con su prueba.
   comprobado: **cuántos diálogos de Touch ID salen tras actualizar con varios proyectos** —ese día salió
   uno, pero sin ningún proyecto creado, así que no prueba nada— y cómo quedan el antetítulo y la fila de dos
   líneas con la tipografía del sistema.
+- **Y lo visto con la 2.39.0 el 2026-10-05**, que trajo dos cosas más: **falta aire arriba** con el
+  antetítulo puesto —medido en la página: el título pasaba de 15 px de margen a 8, y la barra crece 12 px
+  mientras hay un proyecto abierto—; y, mirando esa misma captura, que **la tarjeta de Touch ID se ofrecía
+  encima de la pantalla de un proyecto** cuando la personal todavía no había contestado. No era un fallo de
+  seguridad —el identificador que miraba era el de la personal— sino un ofrecimiento imposible de aceptar,
+  porque **activar con un proyecto abierto está prohibido**. La prueba que cubría esto partía de una
+  personal **ya contestada**, así que pasaba en verde con el hueco dentro.
 - **Lo demás no se ha visto en un Mac.** Aquí se ha mirado en capturas del navegador, en los dos temas, que
   es lo que hay. La ventana de verdad —tipografía del sistema, controles nativos, el material translúcido
   detrás— solo se ve ahí.
@@ -208,7 +215,17 @@ cuando el vigilante cierra, con su prueba.
   tocar nada. **Lo que no se ha visto, y no se puede ver desde aquí: su Durable Object no ha migrado todavía.**
   La migración corre al construirse el objeto, o sea en la primera petición que le llegue, así que ocurre la
   próxima vez que su Esfinge o su extensión sincronicen.
-- **Cuántos diálogos de Touch ID salen tras una actualización con varios proyectos.** El diseño existe para
-  que sea uno; que sea uno lo dice el Mac.
+- ~~**Cuántos diálogos de Touch ID salen tras una actualización con varios proyectos.**~~ **Comprobado en su
+  Mac el 2026-10-05, con la 2.39.0 y un proyecto dentro: uno.** Pidió la huella **para abrir la personal** y
+  al entrar en el proyecto **no pidió nada**, que es exactamente lo que esta ADR compró al abrir los
+  proyectos con la clave de bóveda en vez de con la maestra. El 2026-10-02 ya había salido uno, pero **sin
+  ningún proyecto creado**, y eso no probaba nada: la comprobación es ésta.
+- ~~**Que un proyecto llegue al otro equipo.**~~ **Comprobado el mismo día, y sin buscarlo**: un proyecto
+  creado en **su otro Mac** apareció aquí como «Dormido en este equipo», se bajó con su botón y **se abrió
+  sin pedir nada**. Eso cierra de una vez tres cosas que aquí solo estaban probadas por separado: que su
+  Durable Object **migró bien** —si no, no habría sincronizado nada—, que **la ranura `boveda-principal`
+  viaja dentro del fichero** —la media línea que parecía prudente meter en `ranurasLocales` y que no se nota
+  hasta el segundo equipo— y que **la lista de proyectos viaja en el cuerpo cifrado de la personal**, porque
+  el nombre estaba aquí antes que el fichero.
 - **Entregar, archivar y borrar están hechas** ([ADR 0051](0051-entregar-una-boveda.md)) y probadas aquí, pero
   **nadie ha abierto una bóveda entregada en otro ordenador**, que es lo que de verdad lo cierra.

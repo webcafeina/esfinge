@@ -188,6 +188,47 @@ func TestConUnProyectoAbiertoNoSeOfreceTouchIDParaEl(t *testing.T) {
 	}
 }
 
+// Y el caso que la de arriba **no** cubría, porque parte de una personal que ya
+// contestó: una personal **a la que no se le ha ofrecido nunca**.
+//
+// Ahí el identificador que mira `Sugerir` es el bueno —el de la personal— y aun así
+// la tarjeta salía, **encima de la pantalla de un proyecto**: «Puedes abrir esta
+// bóveda con Touch ID» diciendo «esta» sobre otra. Y lo peor no es el texto, es que
+// **activar con un proyecto abierto está prohibido**, así que el botón de la tarjeta
+// solo podía dar un error. Es la regla que costó `ExportarLlaves`.
+//
+// Se vio **mirando una captura**, no leyendo el código ni con una prueba: la de
+// arriba pasaba en verde con esto dentro.
+func TestConUnProyectoAbiertoNoSeOfreceNadaAunqueLaPersonalNoHayaContestado(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	a.llavero = &llavero.DeMentira{ComoSeLlama: "Touch ID"}
+
+	// Nadie ha contestado nada: en la personal se ofrece, que es lo que hace que esta
+	// prueba distinga de la de arriba.
+	if e := a.EstadoDelDesbloqueo(); !e.Sugerir {
+		t.Fatalf("en la personal, sin contestar, tenía que ofrecerlo: %+v", e)
+	}
+
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if e := a.EstadoDelDesbloqueo(); e.Sugerir {
+		t.Errorf("con un proyecto abierto ofrece algo que al pulsarlo falla: %+v", e)
+	}
+
+	// Y al volver a la personal vuelve a ofrecerse: no se pierde, se mueve a donde se
+	// puede aceptar. Sin esto, «no ofrecer» podría estar apagándolo para siempre.
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.AbrirBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if e := a.EstadoDelDesbloqueo(); !e.Sugerir {
+		t.Errorf("de vuelta en la personal ya no se ofrece, o sea que se perdió: %+v", e)
+	}
+}
+
 // Y activarlo sobre un proyecto pondría una ranura del sistema por bóveda, lo que
 // convierte **un** diálogo del sistema tras cada actualización en uno por proyecto.
 // Además esa ranura no se sube, así que no serviría en el otro equipo.
