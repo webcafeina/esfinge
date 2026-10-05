@@ -98,6 +98,21 @@ versión cambia `navegador/`** — si cambia la ventana, Go, la línea de comand
 revisión ya es la misma extensión. Al publicar hay que decirle al cliente si la versión tocaba la extensión y
 no subió, porque entonces la decisión es suya.
 
+**Y con ello, llevar la cuenta de por dónde va cada una** —lo pidió el cliente el 2026-10-05, «hay que tener
+en cuenta igualar posteriormente las versiones»—. Con tres publicaciones en un día y una revisión atascada,
+los números se separan y dejan de decir nada:
+
+| | Dónde va | Cómo se iguala |
+|---|---|---|
+| **La aplicación** | Lo que diga la última etiqueta `v*` | Manda ella; las demás la siguen |
+| **Firefox** | Sube en **cada** publicación | Se iguala sola |
+| **Chrome** | **Se queda en la última que entró** mientras haya otra en revisión | Con la primera publicación que consiga subir, o cancelando la revisión en la consola |
+
+Lo que de verdad hay que mirar al publicar **no es si los números cuadran**, sino **si alguna de las versiones
+que no subieron tocaba `navegador/`**: si ninguna lo tocó, la tienda tiene el mismo código con otro número y
+no se ha perdido nada. Si alguna lo tocó, eso sí se le dice al cliente, porque cancelar la revisión es
+decisión suya.
+
 ### Cómo se para una revisión, con los rótulos de verdad
 
 Los dijo el cliente mirando la consola el 2026-10-02, que es la única forma de saberlos: **en el menú de los
