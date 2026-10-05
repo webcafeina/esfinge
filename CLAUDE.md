@@ -190,9 +190,15 @@ No se cambian sin preguntar.
   pequeño al lado— y **no bastó**: lo que más se lee seguía diciendo «Bóveda» y el cliente leyó la
   pantalla como su bóveda personal. Y salir **no estaba en ninguna parte**:
   `VolverALaBovedaPersonal` existía en Go y en el puente y no la llamaba nadie, así que la única
-  forma era bloquear la bóveda y desbloquear. El botón **pide confirmación con un segundo clic**
-  porque volver **pide la maestra otra vez** —la personal no se queda abierta por detrás— y eso sin
-  avisar se vive como que Esfinge se ha bloqueado solo. En la barra lateral, el nombre va en un
+  forma era bloquear la bóveda y desbloquear. **Y salir devuelve tu bóveda abierta y lleva a la lista de
+  proyectos** (2026-10-05): antes pedía la maestra y entonces **«Salir del proyecto» y «Cerrar la bóveda»
+  hacían exactamente lo mismo** —lo preguntó el cliente—. La razón que había escrita para pedirla no se
+  sostenía: decía que la personal no puede quedarse abierta porque dos bóvedas a la vez es lo que se
+  descartó, y eso vale para tenerlas abiertas **a la vez**, no para abrir una después de cerrar la otra. No
+  abre ninguna puerta: la clave de la personal está en memoria mientras hay un proyecto abierto y
+  `conLaPersonal` ya abre ese fichero con ella cada vez que toca la lista de proyectos. Ahora **cerrar
+  cierra todo y olvida la clave**, y dentro de un proyecto ese botón se llama **«Cerrar todo»**. El de salir
+  mantiene el segundo clic, porque salir de la bóveda de un cliente no es un clic cualquiera. En la barra lateral, el nombre va en un
   rótulo `aria-hidden` y en el `title`: **el nombre accesible del botón sigue siendo «Bóveda»**.
 - **Y una bóveda de proyecto se entrega, que es mandar una copia** (ADR 0051): con su contraseña y su clave de
   recuperación, **sin la identidad dentro** —es la semilla con la que se firman los envíos, así que regalarla

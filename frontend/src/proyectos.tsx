@@ -12,9 +12,13 @@
 //     2026-10-02 sincronizan**, y el aviso se quitó: un texto que miente en la
 //     pantalla donde alguien decide guardar algo es peor que no decir nada. Lo vio el
 //     cliente leyéndolo en su Mac el mismo día del despliegue.
-//   - **Volver a la bóveda personal pide la contraseña maestra**, porque la personal
-//     no se queda abierta por detrás: dos bóvedas abiertas a la vez es justo lo que
-//     se descartó. Sin decirlo, parecería que Esfinge se ha bloqueado solo.
+//   - ~~**Volver a la bóveda personal pide la contraseña maestra.**~~ **Ya no, desde el
+//     2026-10-05**: vuelve abierta. Lo de antes se justificaba diciendo que la personal
+//     no puede quedarse abierta por detrás —dos bóvedas a la vez es lo que se descartó—
+//     y eso valía para tenerlas abiertas *a la vez*, no para abrir una **después** de
+//     cerrar la otra. Lo preguntó el cliente viendo que «Cerrar la bóveda» y «Salir del
+//     proyecto» hacían exactamente lo mismo. Ahora **salir** devuelve la tuya abierta y
+//     lleva a esta lista; **cerrar** cierra todo y olvida la clave.
 //
 // Y una cosa que esta pantalla **no** hace: enseñar nombres con la bóveda cerrada.
 // No es una decisión de aquí — es que no los tiene, porque viven dentro del cuerpo

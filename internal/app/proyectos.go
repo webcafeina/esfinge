@@ -459,27 +459,49 @@ func (a *App) AbrirProyecto(ref string) error {
 	return nil
 }
 
-// VolverALaBovedaPersonal cierra el proyecto abierto. **Y pide la maestra otra
-// vez**, porque la personal no se queda abierta por detrás: lo que se guarda es su
-// clave, y con ella no se puede volver a abrir el fichero sin pasar por su ranura.
+// VolverALaBovedaPersonal cierra el proyecto abierto y **deja la personal abierta**,
+// sin volver a pedir la contraseña maestra.
 //
-// Se hace así a propósito y no guardando la bóveda personal abierta: dos bóvedas
-// abiertas a la vez es justo lo que la ADR 0050 descartó, y tener una «escondida»
-// sería tenerlas sin decirlo.
+// **Esto cambió el 2026-10-05, y el porqué importa**, porque antes hacía lo
+// contrario. Lo preguntó el cliente: «¿qué diferencia hay entre "Cerrar la bóveda" y
+// "Salir del proyecto"? ¿No vuelven los dos a mi bóveda?». Hacían **lo mismo** —las
+// dos cerraban todo y pedían la maestra—, o sea dos botones con dos nombres para una
+// sola cosa.
+//
+// Y la razón que había escrita aquí para pedir la maestra no se sostenía: decía que
+// la personal no puede quedarse abierta porque **dos bóvedas abiertas a la vez** es
+// lo que descartó la ADR 0050 — pero eso vale para tenerlas abiertas *a la vez*, no
+// para abrir una **después** de cerrar la otra. Sigue habiendo una sola abierta.
+//
+// No abre ninguna puerta nueva: la clave de la personal está en memoria mientras hay
+// un proyecto abierto —decisión escrita de la ADR 0050— y `conLaPersonal` ya abre
+// este mismo fichero con ella cada vez que se lee o se escribe la lista de proyectos.
+// Lo único que cambia es que salir de un proyecto deja de parecer que Esfinge se ha
+// bloqueado solo. El reloj de inactividad sigue cerrándolo todo igual.
+//
+// **Si no se puede reabrir, se cierra todo**: dejar el proyecto abierto porque la
+// personal falló sería quedarse en la bóveda de un cliente sin haberlo pedido.
 func (a *App) VolverALaBovedaPersonal() error {
 	if a.bovedaActiva() == "" {
 		return nil
 	}
-	a.alCerrarLaBoveda()
-	a.mu.Lock()
-	b := a.bov
-	a.bov = nil
-	a.mu.Unlock()
-	if b != nil {
-		b.Cerrar()
+	llave := a.llaveDeLaPrincipal()
+	defer cripto.Borrar(llave)
+
+	p, err := boveda.ReabrirConLaClave(rutaBovedaPrincipal(), llave)
+	if err != nil {
+		a.CerrarBoveda()
+		return err
 	}
-	a.olvidarLaPrincipal()
-	a.avisarDeLaBoveda()
+
+	a.alCerrarLaBoveda()
+	// **El estado completo antes del aviso**, que es la trampa de siempre:
+	// `cambiarBoveda` avisa a la ventana y la ventana contesta preguntando el estado.
+	a.ponerActiva("", "", nil)
+	a.cambiarBoveda(p)
+	a.Actividad()
+	a.buscarIconosSiProcede(a.ctx)
+	a.alAbrirLaBoveda(p)
 	return nil
 }
 

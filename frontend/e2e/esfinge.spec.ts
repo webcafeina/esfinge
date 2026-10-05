@@ -2126,11 +2126,15 @@ test("una bóveda de proyecto: se crea, se entra y lo de dentro es lo suyo", asy
   await expect(salir).toHaveText("Sí, salir y cerrar");
   await salir.click();
 
-  // Y lo que de verdad comprueba que se ha salido: el título vuelve a ser «Bóveda» y,
-  // tecleando la maestra, **lo que hay dentro es lo de la personal**.
-  await expect(page.locator(".herramientas h1")).toHaveText("Bóveda", { timeout: 20_000 });
+  // **Salir deja en la lista de proyectos**, que es lo que dice el botón, y el botón
+  // desaparece porque ya no hay ninguno abierto.
+  await expect(page.locator(".herramientas h1")).toHaveText("Proyectos", { timeout: 20_000 });
   await expect(page.locator(".herramientas .salir-proyecto")).toHaveCount(0);
-  await conLaBovedaAbierta(page);
+
+  // Y lo que de verdad lo separa de «Cerrar todo», que es lo que preguntó el cliente:
+  // **la bóveda personal vuelve abierta**. Se va a ella sin teclear nada y lo suyo
+  // está ahí. Si esto pidiera la maestra, los dos botones volverían a ser lo mismo.
+  await seccion(page, "Bóveda").click();
   await expect(page.locator(".lista-boveda").getByRole("button", { name: mia })).toBeVisible({
     timeout: 20_000,
   });

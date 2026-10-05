@@ -80,15 +80,15 @@ func TestConmutarEntreLaPersonalYUnProyecto(t *testing.T) {
 		t.Error("abrir un proyecto tiene que apuntar cuándo, que es por lo que se ordena la lista")
 	}
 
-	// Se vuelve a la personal: hay que teclear la maestra otra vez, a propósito.
+	// Se vuelve a la personal, y **vuelve abierta y sin pedir la maestra** (2026-10-05):
+	// la clave está en memoria y es la misma con la que `conLaPersonal` abre este
+	// fichero mientras hay un proyecto delante. Sigue habiendo **una sola bóveda
+	// abierta**: ésta se abre después de cerrar la otra, no a la vez.
 	if err := a.VolverALaBovedaPersonal(); err != nil {
 		t.Fatal(err)
 	}
-	if e := a.EstadoBoveda(); e.Abierta || e.Proyecto != "" {
+	if e := a.EstadoBoveda(); !e.Abierta || e.Proyecto != "" {
 		t.Fatalf("al volver, el estado es %+v", e)
-	}
-	if err := a.AbrirBoveda(maestraDePrueba); err != nil {
-		t.Fatal(err)
 	}
 	if hay, _ := a.BuscarEnBoveda("banco"); len(hay) != 1 {
 		t.Fatalf("de vuelta en la personal se ven %d entradas y había una", len(hay))
@@ -185,6 +185,55 @@ func TestConUnProyectoAbiertoNoSeOfreceTouchIDParaEl(t *testing.T) {
 	}
 	if e := a.EstadoDelDesbloqueo(); e.Sugerir {
 		t.Errorf("con un proyecto abierto se ofrece Touch ID, y esa ranura es de la bóveda personal: %+v", e)
+	}
+}
+
+// **«Salir del proyecto» y «Cerrar la bóveda» no son lo mismo**, y esta prueba existe
+// porque durante un tiempo sí lo fueron: las dos cerraban todo, olvidaban la clave de
+// la personal y dejaban la pantalla de desbloquear. Dos botones con dos nombres para
+// una sola cosa. Lo vio el cliente preguntando lo evidente —«¿no vuelven los dos a mi
+// bóveda?»— y no lo había dicho ninguna prueba, porque cada una comprobaba lo suyo y
+// ninguna las comparaba.
+//
+// Lo que las separa, y es lo que se comprueba aquí: salir **devuelve la personal
+// abierta**; cerrar **cierra todo y olvida la clave**.
+func TestSalirDeUnProyectoNoEsCerrarLaBoveda(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+
+	// Cerrar: no queda nada abierto, y **tampoco la clave de la personal en memoria**,
+	// que es lo que hace que el reloj del bloqueo siga siendo verdad.
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	a.CerrarBoveda()
+	if e := a.EstadoBoveda(); e.Abierta {
+		t.Fatalf("cerrar la bóveda ha dejado algo abierto: %+v", e)
+	}
+	if len(a.llaveDeLaPrincipal()) != 0 {
+		t.Error("cerrar la bóveda ha dejado la clave de la personal en memoria")
+	}
+
+	// Salir: la personal vuelve **abierta**, y además se puede leer lo suyo sin
+	// teclear nada, que es lo que de verdad lo distingue de cerrar.
+	if err := a.AbrirBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.GuardarEnBoveda(boveda.Entrada{Tipo: boveda.TipoCredencial, Titulo: "Mi banco", Secreto: "x"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	e := a.EstadoBoveda()
+	if !e.Abierta || e.Proyecto != "" || e.NombreDelProyecto != "" {
+		t.Fatalf("salir del proyecto tenía que dejar la personal abierta: %+v", e)
+	}
+	hay, err := a.BuscarEnBoveda("banco")
+	if err != nil || len(hay) != 1 {
+		t.Fatalf("de vuelta en la personal se ven %d entradas y había una (%v)", len(hay), err)
 	}
 }
 

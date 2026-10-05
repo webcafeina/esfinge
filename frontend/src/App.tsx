@@ -262,8 +262,13 @@ export default function App() {
           {enUnProyecto && (tarea === "boveda" || tarea === "proyectos") && (
             <SalirDelProyecto
               alSalir={() => {
+                // **A la lista de proyectos, que es lo que dice el botón.** Lo pidió
+                // el cliente con esas palabras —«¿no sería más intuitivo por lenguaje
+                // que me llevara al listado de proyectos?»— y encaja con que ahora la
+                // personal vuelva abierta: salir es salir de ahí, no entrar en otro
+                // sitio. Tu bóveda queda a un clic, y abierta.
                 setSelloBoveda((n) => n + 1);
-                setTarea("boveda");
+                setTarea("proyectos");
               }}
             />
           )}

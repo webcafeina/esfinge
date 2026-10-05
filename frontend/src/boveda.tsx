@@ -1184,7 +1184,18 @@ function Dentro({
             Te han mandado ({buzon.length})
           </button>
         )}
-        <button onClick={cerrar}>Cerrar la bóveda</button>
+        {/* **Dentro de un proyecto este botón no es «salir»**, y el rótulo tiene que
+            decirlo: cierra el proyecto **y** tu bóveda personal, y entonces hay que
+            teclear la maestra otra vez. Para volver a la tuya está «Salir del
+            proyecto», que la deja abierta. Las dos hacían lo mismo hasta el
+            2026-10-05 y lo preguntó el cliente: con dos nombres distintos y un solo
+            efecto, el que sobraba era éste. */}
+        <button
+          onClick={cerrar}
+          title={estado.proyecto !== "" ? "Cierra el proyecto y tu bóveda: habrá que teclear la maestra" : undefined}
+        >
+          {estado.proyecto !== "" ? "Cerrar todo" : "Cerrar la bóveda"}
+        </button>
       </div>
 
       {/* Cómo va la sincronización, si este equipo está en una cuenta. */}

@@ -191,6 +191,17 @@ cuando el vigilante cierra, con su prueba.
   comprobado: **cuántos diálogos de Touch ID salen tras actualizar con varios proyectos** —ese día salió
   uno, pero sin ningún proyecto creado, así que no prueba nada— y cómo quedan el antetítulo y la fila de dos
   líneas con la tipografía del sistema.
+- **Y una decisión corregida el 2026-10-05, que la preguntó él**: «¿qué diferencia hay entre "Cerrar la
+  bóveda" y "Salir del proyecto"? ¿No vuelven los dos a mi bóveda?». Hacían **lo mismo**: cerrar todo,
+  olvidar la clave de la personal y pedir la maestra. Esta ADR justificaba ese tecleo diciendo que la
+  personal no puede quedarse abierta por detrás —**dos bóvedas abiertas a la vez** es lo que descartó—, y
+  **esa razón no cubría el caso**: abrir la personal *después* de cerrar el proyecto sigue siendo una sola
+  bóveda abierta. Ahora **salir devuelve la personal abierta** —con la clave que ya está en memoria y que
+  `conLaPersonal` usa constantemente para leer la lista de proyectos, así que no es una puerta nueva— y
+  **lleva a la lista de proyectos**, que es lo que dice el botón; **cerrar** cierra todo y olvida la clave, y
+  dentro de un proyecto se llama «Cerrar todo». Lo que lo vigila es una prueba que **compara las dos
+  acciones**, que es justo lo que no existía: cada una tenía la suya y ninguna las ponía una al lado de otra.
+
 - **Y lo visto con la 2.39.0 el 2026-10-05**, que trajo dos cosas más: **falta aire arriba** con el
   antetítulo puesto —medido en la página: el título pasaba de 15 px de margen a 8, y la barra crece 12 px
   mientras hay un proyecto abierto—; y, mirando esa misma captura, que **la tarjeta de Touch ID se ofrecía

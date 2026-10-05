@@ -283,6 +283,28 @@ func AbrirConLaClave(ruta string, llave []byte) (*Boveda, error) {
 	return conLlave(ruta, doc, append([]byte(nil), llave...), false)
 }
 
+// ReabrirConLaClave es lo mismo **para quedarse**: purga la papelera, que es trabajo
+// de abrir de verdad y no de asomarse.
+//
+// Es lo que usa «Salir del proyecto» para devolver la bóveda personal **abierta** sin
+// volver a pedir la contraseña maestra. Y no es una puerta nueva por la misma razón
+// que la de arriba, dicha al revés: mientras hay un proyecto abierto, Esfinge ya abre
+// este fichero con esta clave cada vez que lee o escribe la lista de proyectos.
+func ReabrirConLaClave(ruta string, llave []byte) (*Boveda, error) {
+	if len(llave) == 0 {
+		return nil, ErrCerrada
+	}
+	datos, err := os.ReadFile(ruta)
+	if err != nil {
+		return nil, err
+	}
+	doc, err := leerDocumento(datos)
+	if err != nil {
+		return nil, err
+	}
+	return conLlave(ruta, doc, append([]byte(nil), llave...), true)
+}
+
 // CrearProyecto hace una bóveda de proyecto, cuya única ranura es la que abre la
 // personal. No devuelve clave de recuperación porque no tiene: la de la personal
 // lo recupera.
