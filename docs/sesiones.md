@@ -5,6 +5,41 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-05 (noche, 2) · El paseo, y el acceso que no se podía aceptar
+
+- **Se desplegó el Worker de pruebas** (15:38 UTC) con el servidor de la 0052 dentro, y se comprobó desde
+  fuera que sus rutas están vivas: una compartida sin sesión da **401** y una ruta inventada **404**, que es
+  la diferencia entre «existe y pide sesión» y «no existe». Producción, sin tocar.
+- **Se recorrió el camino entero con dos cuentas** —dar acceso, aceptar, abrir, escribir, que le llegue al
+  otro, quitarlo y quedarse fuera— y **encontró un fallo de los que no ve ninguna prueba de una pieza**: un
+  acceso llegaba al buzón, se intentaba abrir como la copia de una entrada, fallaba, y la ventana lo enseñaba
+  como «No se puede abrir · Este envío no es para esta bóveda» con un único botón para descartarlo.
+  `AceptarAcceso` estaba en Go y en el puente **y no la llamaba nadie**. La ADR lo tenía escrito en la C3.
+- **Y el mensaje era peor que inútil: era mentira.** El sobre era exactamente para esa bóveda. Es la lección
+  del mensaje impreciso otra vez — no es impreciso, **señala a otro sitio**.
+- **Es la segunda vez que pasa lo mismo** (antes, `VolverALaBovedaPersonal`), así que se puso el vigilante
+  que faltaba: `TestLoQueEstaEnElPuenteLoLlamaLaVentana` lee `puente.ts` y falla si algún método no lo llama
+  nadie en la ventana. **Al estrenarlo cazó un tercero**: `ordenar`, un envoltorio muerto cuyo comentario
+  decía que servía para probar sin menú — y los e2e no lo usan, van directos a `/api/Ordenar`. Fuera, con su
+  comentario falso.
+- **Y el primer detector era demasiado estricto**: pedía `.nombre(`, y así daba por muerto
+  `vaciarPapeleraDeBoveda`, que se pasa **como referencia**. Un vigilante que señala lo que está bien se deja
+  de leer, que es lo que a este proyecto le costó seis versiones.
+- **El paseo se queda como prueba fija** (`internal/app/acceso_entre_cuentas_test.go`) y corre en
+  `make comprobar` contra el Worker local: es la prueba de la tubería que a esta funcionalidad le faltaba.
+  Apuntando a `ESFINGE_SERVIDOR_PRUEBAS` recorre lo mismo contra el desplegado, con los códigos a mano.
+- **Una del método, por partida doble.** El paseo falló primero en «a Ana no le llega lo que escribió Beto»,
+  y **no era el producto**: `alDia` se conforma con una pasada anterior, y la de Ana había terminado antes de
+  que Beto subiera. Se espera **al contenido**, no al estado. Y falló dos veces contra el desplegado por los
+  códigos: las direcciones llevaban una fecha —ocho cifras, varias tiradas de seis que parecen un código— y
+  además se pidió el alta dos veces, que invalida la anterior.
+- **Verde**: `make comprobar` entero y los 118 de la interfaz.
+- **Queda abierto**: recorrer el paseo contra el **desplegado**, que necesita que el cliente saque dos
+  códigos del buzón —está detrás de Cloudflare Access—. El cómo está en [`estado.md`](estado.md), con el
+  mandato entero. Después, producción y publicar.
+
+---
+
 ## 2026-10-05 (noche) · La C6: la extensión abre una bóveda compartida
 
 - **Se hizo la C6 entera**, en tres tramos: el espejo del núcleo, el trabajador de fondo con el panel, y

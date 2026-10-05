@@ -13,13 +13,39 @@
 > **Hechas C1 a C6, todas en verde y con cada prueba mutada**: el núcleo, el servidor, el sobre y las dos
 > secciones, la sincronización, la pantalla y la extensión. **El código de la 0052 está entero.**
 >
-> **La siguiente acción es desplegar a pruebas**, que es lo que queda de la hoja de ruta que el cliente dio
-> por buena:
+> **La siguiente acción es terminar el paseo contra el Worker desplegado de pruebas**, que es lo único que
+> queda del paso 2:
 >
 > 1. ~~**C6**, para que la extensión no se quede atrás.~~ Hecha el 2026-10-05 (tarde).
-> 2. **Desplegar a pruebas** y recorrer el camino entero con **dos cuentas de usar y tirar** contra ese
->    Worker —dar acceso, aceptar, escribir desde el otro lado, quitarlo—, sin tocar producción.
+> 2. **Desplegar a pruebas** ~~y recorrer el camino entero con dos cuentas de usar y tirar~~. **Desplegado el
+>    2026-10-05 a las 15:38 UTC** y comprobado que las rutas de la 0052 están vivas ahí —una compartida sin
+>    sesión da 401 y una ruta inventada 404—. **El camino ya se recorre entero contra el Worker local**, que
+>    es el mismo código, y es ahora una prueba fija que corre en `make comprobar`
+>    (`internal/app/acceso_entre_cuentas_test.go`). **Falta recorrerlo contra el desplegado**, que es lo que
+>    añade D1 de verdad, los Durable Objects con su jurisdicción y el `ETag` que Cloudflare debilita.
 > 3. Con eso en verde, **desplegar producción y publicar**, y que lo pruebe él con una segunda dirección suya.
+>
+> **Cómo se retoma el paseo contra el desplegado**, que tiene un paso que no se puede automatizar: cada
+> cuenta necesita un código del buzón de pruebas, y **ese buzón está detrás de Cloudflare Access** —política
+> «Emails ending in `@webcafeina.com`»—, así que lo abre el cliente y pega los códigos.
+>
+> ```sh
+> R=https://esfinge-cuentas-pruebas.webcafe-na.workers.dev
+> for c in paseo-ana@ejemplo.com paseo-beto@ejemplo.com; do
+>   curl -s -o /dev/null -w "%{http_code}\n" -X POST "$R/v1/registro/inicio" \
+>     -H 'Content-Type: application/json' -d "{\"correo\":\"$c\"}"
+> done
+> # El cliente abre $R/_pruebas/buzon?correo=<cada una> y pega los dos códigos. Caducan a los 10 minutos.
+> ESFINGE_SERVIDOR_PRUEBAS=$R PASEO_CORREO_A=paseo-ana@ejemplo.com PASEO_CODIGO_A=… \
+>   PASEO_CORREO_B=paseo-beto@ejemplo.com PASEO_CODIGO_B=… \
+>   go test ./internal/app -run TestPaseoDeUnAccesoEntreDosCuentas -v -count=1
+> ```
+>
+> **Dos cosas que costaron dos rondas de códigos y no hay que repetir:** las direcciones **no pueden llevar
+> cifras** —con una fecha dentro, el JSON del buzón tiene varias tiradas de seis dígitos que parecen el
+> código—, y **pedir el alta dos veces invalida el código anterior**, así que se pide **una sola vez** por
+> dirección y se usa el mensaje que haya. Quedan **tres altas por IP y día** en ese servidor, y el paseo
+> gasta dos.
 >
 > **Y dos cosas que el cliente tiene que hacer él cuando se publique**, apuntadas aquí para que no se
 > pierdan:

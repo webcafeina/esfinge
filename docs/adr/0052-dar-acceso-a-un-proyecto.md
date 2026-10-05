@@ -193,6 +193,19 @@ identidad es regalar la firma (ADR 0051), y con varias personas sería peor: tod
 - Las cruzadas Go↔TypeScript **con datos de las secciones nuevas** en el generador al azar: sin eso, los 400
   casos no las tocan y la cruzada pasa sin comprobar nada.
 
-**Lo que no se podrá comprobar aquí**, y se dice desde el principio: **todo lo que es con dos cuentas de
-verdad**. Que lo que guarda uno aparezca en el otro al abrirlo, que quitar el acceso se note, y que la
-extensión del otro rellene con lo compartido.
+**Y el camino entero, con dos cuentas, que es lo que encontró lo que ninguna pieza veía**
+(`internal/app/acceso_entre_cuentas_test.go`, 2026-10-05): dar el acceso, aceptarlo, abrir la bóveda, escribir
+dentro, que le llegue al dueño, quitarlo y quedarse fuera **sin que se cierre la bóveda propia**.
+
+Lo que encontró a la primera, y es la razón de que esa prueba se quede: **un acceso que llegaba al buzón no se
+podía aceptar**. Se intentaba abrir como la copia de una entrada, fallaba, y la ventana lo enseñaba como «No
+se puede abrir · Este envío no es para esta bóveda» —mentira, era exactamente para esa bóveda— con un único
+botón para descartarlo. `AceptarAcceso` estaba escrita en Go y en el puente **y no la llamaba nadie**, aunque
+esta misma ficha lo pedía en la C3. Es la segunda vez que pasa eso en el proyecto, así que con el arreglo va
+el vigilante: `TestLoQueEstaEnElPuenteLoLlamaLaVentana`.
+
+**Lo que no se comprueba aquí**, y se dice desde el principio: **todo lo que es con dos personas de verdad**,
+en dos ordenadores. Lo probado son dos cuentas contra un servidor, que es mucho y no es lo mismo. Y queda
+recorrer esto contra el Worker **desplegado**, que es lo que añade D1 de verdad, los objetos con su
+jurisdicción y el `ETag` que Cloudflare debilita — un paso que **no se puede automatizar entero**, porque cada
+alta necesita un código de un buzón que está detrás de Cloudflare Access.

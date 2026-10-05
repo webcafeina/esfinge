@@ -354,6 +354,19 @@ No se cambian sin preguntar.
 
 ## Trampas que ya costaron encontrarse
 
+**Y la otra mitad, que ya ha costado tres veces: un método del puente que no llama nadie.** Escribir el
+método en Go y su envoltorio en `puente.ts` **parece terminar el trabajo**, y no lo es: falta la pantalla.
+`VolverALaBovedaPersonal` existía y la única forma de salir de un proyecto era bloquear la bóveda y
+desbloquear; `AceptarAcceso` existía y un acceso que llegaba al buzón se enseñaba como un sobre roto que solo
+se podía descartar —y el mensaje, «Este envío no es para esta bóveda», **era mentira**—; `ordenar` era un
+envoltorio muerto cuyo comentario decía que servía para las pruebas, y las pruebas van directas a
+`/api/Ordenar`. Las tres las encontró **alguien recorriendo el camino a mano**, nunca una prueba. Ahora lo
+vigila `TestLoQueEstaEnElPuenteLoLlamaLaVentana`, que lee `puente.ts` y exige que cada método se nombre en
+algún sitio de `frontend/src/`. Dos cosas de ese vigilante: **busca el nombre, no la llamada**, porque un
+método se puede pasar como referencia —`hacer(esfinge.vaciarPapeleraDeBoveda)`— y señalar lo que está bien
+es como se consigue que un aviso deje de leerse; y **no dice que la pantalla haga algo útil**, solo que
+exista quien lo llame.
+
 **Todo método exportado de `*App` queda expuesto a la interfaz.** Wails los enlaza por `Bind` y el
 servidor de desarrollo los publica por reflexión, sin listas que mantener — que es cómodo hasta que
 se exporta algo que no debería poder pedirse desde la ventana. Por eso `comprobarAlArrancar` va en
@@ -513,6 +526,12 @@ que ya existe»— se planificó, se escribió y **se publicó** sin que nadie s
 esa llave: a mano no se pueden crear, el navegador no podía todavía y ningún gestor las exporta en su CSV.
 Recorrer «probar la P2 en el Mac» paso a paso se para en el primero. Lo mismo que costó `ExportarLlaves`
 —preguntar antes de preguntar—, una escala más arriba.
+
+**Esperar a que la sincronización diga «al día» no es esperar a que llegue lo del otro equipo.** `alDia`
+se conforma con una pasada anterior, y en una prueba entre dos equipos la del que recibe suele haber
+terminado **antes** de que el otro subiera: entonces dice que no le ha llegado nada cuando lo que pasa es que
+todavía no ha vuelto a mirar. Se espera **al contenido** —pidiendo pasadas hasta que el título aparece—, no
+al estado. Costó creer que la bóveda compartida no se sincronizaba cuando se sincronizaba perfectamente.
 
 **Y «pasó tres veces» no es «funciona».** Vale para el puente y volvió el mismo día con una prueba de frenos
 del servidor: lo que hay que hacer con un intermitente es **apuntarlo con lo que se vio**, no volver a
