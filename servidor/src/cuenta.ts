@@ -83,6 +83,23 @@ const RETOS_POR_DIA = 20;
 const FALLOS_PARA_FRENAR = 10;
 const VENTANA_DE_FALLOS = 15 * MINUTO;
 const SUBIDAS_POR_HORA = 60;
+/**
+ * Y **los invitados tienen su propia bolsa, separada de la del dueño** (ADR 0052).
+ *
+ * El freno de arriba razonaba que «solo se sube la bóveda que está abierta y solo
+ * hay una». Con gente con acceso eso deja de ser verdad, y lo malo no es el tope:
+ * es que el contador era **de la cuenta y lo compartían todas sus bóvedas**, así
+ * que un invitado subiendo podía dejar al dueño sin poder subir **su bóveda
+ * personal**. Un invitado no puede dejar sin servicio a quien le dio acceso.
+ *
+ * Por eso son tres bolsas: la del dueño, intacta; la común de todos los invitados;
+ * y la de cada invitado, para que uno no se coma la común.
+ */
+const SUBIDAS_DE_INVITADOS_POR_HORA = 120;
+const SUBIDAS_DE_UN_INVITADO_POR_HORA = 60;
+
+/** Cuánta gente puede tener acceso a una misma bóveda. Un número con su mensaje. */
+const MIEMBROS_POR_BOVEDA = 25;
 const VERSIONES_RECIENTES = 10;
 const DIAS_CON_VERSION = 30;
 const EVENTOS_GUARDADOS = 200;
@@ -152,7 +169,8 @@ export class Cuenta extends DurableObject<Env> {
 			CREATE TABLE IF NOT EXISTS retos (id TEXT PRIMARY KEY, proposito TEXT NOT NULL, codigo TEXT NOT NULL, caduca INTEGER NOT NULL, intentos INTEGER NOT NULL DEFAULT 0, datos TEXT);
 			CREATE TABLE IF NOT EXISTS retos_creados (momento INTEGER NOT NULL, proposito TEXT NOT NULL DEFAULT 'entrar');
 			CREATE TABLE IF NOT EXISTS fallos (momento INTEGER NOT NULL);
-			CREATE TABLE IF NOT EXISTS subidas (momento INTEGER NOT NULL);
+			CREATE TABLE IF NOT EXISTS subidas (momento INTEGER NOT NULL, cuenta TEXT NOT NULL DEFAULT '');
+			CREATE TABLE IF NOT EXISTS miembros (ref TEXT NOT NULL, cuenta TEXT NOT NULL, permiso TEXT NOT NULL, titular TEXT NOT NULL, desde INTEGER NOT NULL, PRIMARY KEY (ref, cuenta));
 			CREATE TABLE IF NOT EXISTS eventos (momento INTEGER NOT NULL, tipo TEXT NOT NULL, detalle TEXT NOT NULL DEFAULT '');
 			CREATE TABLE IF NOT EXISTS buzon (id TEXT PRIMARY KEY, sobre TEXT NOT NULL, momento INTEGER NOT NULL);
 		`);
@@ -168,6 +186,15 @@ export class Cuenta extends DurableObject<Env> {
 			.map((c) => c.name);
 		if (!columnas.includes("proposito")) {
 			this.sql.exec("ALTER TABLE retos_creados ADD COLUMN proposito TEXT NOT NULL DEFAULT 'entrar'");
+		}
+		// Lo mismo para saber **quién** subió (ADR 0052). Vacío es el dueño, que es lo
+		// que ya había, así que las filas de antes significan lo correcto sin tocarlas.
+		const deSubidas = this.sql
+			.exec<{ name: string }>("SELECT name FROM pragma_table_info('subidas')")
+			.toArray()
+			.map((c) => c.name);
+		if (!deSubidas.includes("cuenta")) {
+			this.sql.exec("ALTER TABLE subidas ADD COLUMN cuenta TEXT NOT NULL DEFAULT ''");
 		}
 
 		this.aVariasBovedas();
@@ -460,6 +487,35 @@ export class Cuenta extends DurableObject<Env> {
 	async leer(token: string, siNoCoincide: number | null, ref = ""): Promise<Resultado<{ version: number; datos: ArrayBuffer | null }>> {
 		const s = await this.sesion(token, true);
 		if (!s.ok) return s;
+		return this.leerLaBoveda(ref, siNoCoincide);
+	}
+
+	/**
+	 * Y lo mismo **para quien tiene acceso a esta bóveda** y no es de esta cuenta
+	 * (ADR 0052).
+	 *
+	 * **No recibe testigo, y eso es a propósito**: el testigo de quien llama es de
+	 * otra cuenta y aquí no se puede comprobar —su huella está en el otro objeto—.
+	 * Lo comprueba el Worker contra el objeto de quien llama **antes** de llamar a
+	 * esto, y lo único que afirma al llegar aquí es «esta petición trae una sesión
+	 * válida de esta cuenta». Es la misma confianza que ya tiene `recibir`, que
+	 * tampoco pide sesión porque la llama el Worker tras resolver el correo.
+	 *
+	 * Si alguien pudiera llamar a esto sin pasar por el Worker, se haría pasar por
+	 * cualquiera. Lo que lo impide es que a un Durable Object **solo le habla su
+	 * Worker**.
+	 */
+	async leerComoMiembro(
+		quien: string,
+		ref: string,
+		siNoCoincide: number | null,
+	): Promise<Resultado<{ version: number; datos: ArrayBuffer | null }>> {
+		const m = this.miembro(ref, quien);
+		if (!m) return mal(403, "Ya no tienes acceso a esa bóveda.");
+		return this.leerLaBoveda(ref, siNoCoincide);
+	}
+
+	private leerLaBoveda(ref: string, siNoCoincide: number | null): Resultado<{ version: number; datos: ArrayBuffer | null }> {
 		const version = this.version(ref);
 		if (version === 0) {
 			return mal(404, ref === "" ? "Esta cuenta todavía no tiene bóveda." : "Esa bóveda no está en esta cuenta.");
@@ -471,6 +527,37 @@ export class Cuenta extends DurableObject<Env> {
 	async escribir(token: string, siCoincide: number, datos: ArrayBuffer, ref = ""): Promise<Resultado<{ version: number }> & { version?: number }> {
 		const s = await this.sesion(token, false);
 		if (!s.ok) return s;
+		return this.escribirLaBoveda(ref, siCoincide, datos, "", s.datos.dispositivo);
+	}
+
+	/**
+	 * Y lo mismo **para quien tiene acceso con permiso de editar** (ADR 0052). Lo de
+	 * no recibir testigo está dicho en `leerComoMiembro`.
+	 *
+	 * **El permiso se hace cumplir aquí y en ningún otro sitio.** Quien solo puede
+	 * ver tiene la clave de la bóveda, así que puede fabricar un documento válido: lo
+	 * que impide que lo suba es este 403, no el cifrado. Es un cerrojo puesto en el
+	 * servidor, no una llave que no abra, y así se dice en la pantalla.
+	 */
+	async escribirComoMiembro(
+		quien: string,
+		ref: string,
+		siCoincide: number,
+		datos: ArrayBuffer,
+	): Promise<Resultado<{ version: number }> & { version?: number }> {
+		const m = this.miembro(ref, quien);
+		if (!m) return mal(403, "Ya no tienes acceso a esa bóveda.");
+		if (m.permiso !== "editar") return mal(403, "En esta bóveda solo puedes ver.");
+		return this.escribirLaBoveda(ref, siCoincide, datos, quien, "");
+	}
+
+	private async escribirLaBoveda(
+		ref: string,
+		siCoincide: number,
+		datos: ArrayBuffer,
+		quien: string,
+		dispositivo: string,
+	): Promise<Resultado<{ version: number }> & { version?: number }> {
 		const comprobado = this.comprobarDocumento(datos);
 		if (!comprobado.ok) return comprobado;
 		const huella = aHex(await sha256(new Uint8Array(datos)));
@@ -479,14 +566,20 @@ export class Cuenta extends DurableObject<Env> {
 		return this.ctx.storage.transactionSync(() => {
 			const actual = this.version(ref);
 			if (siCoincide !== actual) return { ...mal(412, "La bóveda ha cambiado en el servidor."), version: actual };
-			// **El freno de subidas es de la cuenta y lo comparten todas sus bóvedas, a
-			// propósito**: lo que protege es el almacenamiento del Durable Object, que es
-			// uno. Y en la práctica no aprieta más que antes, porque **solo se sube la
-			// bóveda que está abierta** y solo hay una.
-			const subidas = this.sql
-				.exec<{ n: number }>("SELECT COUNT(*) AS n FROM subidas WHERE momento > ?", ahora - HORA)
-				.one().n;
-			if (subidas >= SUBIDAS_POR_HORA) return mal(429, "Demasiadas subidas en una hora. Espera un poco.");
+			// **El freno de subidas protege el almacenamiento del objeto, que es uno.**
+			// Pero desde la ADR 0052 no todo el que sube es el dueño, así que son tres
+			// bolsas y no una: la del dueño **no la puede gastar nadie más**, porque si no
+			// un invitado dejaría a quien le dio acceso sin poder subir su bóveda personal.
+			const cuantas = (desde: string | null) =>
+				desde === null
+					? this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM subidas WHERE momento > ? AND cuenta <> ''", ahora - HORA).one().n
+					: this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM subidas WHERE momento > ? AND cuenta = ?", ahora - HORA, desde).one().n;
+			if (quien === "") {
+				if (cuantas("") >= SUBIDAS_POR_HORA) return mal(429, "Demasiadas subidas en una hora. Espera un poco.");
+			} else {
+				if (cuantas(quien) >= SUBIDAS_DE_UN_INVITADO_POR_HORA) return mal(429, "Demasiadas subidas en una hora. Espera un poco.");
+				if (cuantas(null) >= SUBIDAS_DE_INVITADOS_POR_HORA) return mal(429, "Demasiadas subidas en esta bóveda. Espera un poco.");
+			}
 			// Y un tope de bóvedas, que se mira solo al estrenar una.
 			if (ref !== "" && actual === 0 && this.cuantasBovedas() >= BOVEDAS_POR_CUENTA) {
 				return mal(409, `Esta cuenta ya tiene ${BOVEDAS_POR_CUENTA} bóvedas de proyecto.`);
@@ -503,11 +596,134 @@ export class Cuenta extends DurableObject<Env> {
 			// clave de recuperación propia (ADR 0050): la de la personal lo recupera, y
 			// guardar aquí un sobre que no abre nada sería prometer una puerta que no hay.
 			if (ref === "") this.ponerAjuste("recuperacion", JSON.stringify(comprobado.datos.recuperacion));
-			this.sql.exec("INSERT INTO subidas (momento) VALUES (?)", ahora);
+			this.sql.exec("INSERT INTO subidas (momento, cuenta) VALUES (?, ?)", ahora, quien);
 			this.sql.exec("DELETE FROM subidas WHERE momento <= ?", ahora - HORA);
-			this.tocar(s.datos.dispositivo, ahora);
+			// Un miembro no tiene dispositivo **en esta cuenta**: el suyo está en la suya.
+			if (dispositivo !== "") this.tocar(dispositivo, ahora);
 			return bien({ version: nueva });
 		});
+	}
+
+	// ------------------------------------------------------------ quién tiene acceso
+
+	/**
+	 * comprobarSesion existe **para que otra cuenta no se pueda hacer pasar por
+	 * ésta** (ADR 0052).
+	 *
+	 * El testigo lleva dentro de qué cuenta dice ser (`s1.<cuenta>.<secreto>`) y
+	 * **eso no lo comprueba nadie al leerlo**: lo comprueba el objeto al que se
+	 * habla, buscando la huella del secreto en su propia tabla. Mientras cada
+	 * petición acaba en el objeto que dice el testigo, eso basta.
+	 *
+	 * En una petición sobre la bóveda de otra cuenta deja de bastar: el Worker tiene
+	 * que hablar con el objeto **del dueño** diciendo quién llama, y si sacara ese
+	 * «quién» del testigo sin comprobarlo, cualquiera fabricaría
+	 * `s1.<la cuenta de otro>.<cuarenta y tres caracteres>` y entraría como esa
+	 * persona. Así que el Worker pregunta **aquí** primero, a la cuenta del testigo.
+	 */
+	async comprobarSesion(token: string): Promise<Resultado<{ cuenta: string }>> {
+		const s = await this.sesion(token, false);
+		if (!s.ok) return s;
+		return bien({ cuenta: this.leerAjuste("cuenta") ?? "" });
+	}
+
+	/** La fila de esa persona en esa bóveda, o nada. */
+	private miembro(ref: string, cuenta: string): { permiso: string; titular: string } | null {
+		if (!refValida(ref) || cuenta === "") return null;
+		return (
+			this.sql
+				.exec<{ permiso: string; titular: string }>(
+					"SELECT permiso, titular FROM miembros WHERE ref = ? AND cuenta = ?",
+					ref,
+					cuenta,
+				)
+				.toArray()[0] ?? null
+		);
+	}
+
+	/**
+	 * ponerMiembro da acceso, o le cambia el permiso a quien ya lo tenía.
+	 *
+	 * **Quien llama es el dueño**, con su testigo de siempre: esto se escribe en su
+	 * propio objeto. Y el Worker ya ha resuelto el correo a una cuenta, o no ha
+	 * resuelto nada — que es lo mismo que pasa al mandar un sobre, y por la misma
+	 * razón: desde fuera no se puede distinguir si esa dirección tiene cuenta.
+	 */
+	async ponerMiembro(
+		token: string,
+		ref: string,
+		cuenta: string,
+		permiso: string,
+		titular: string,
+	): Promise<Resultado<null>> {
+		const s = await this.sesion(token, false);
+		if (!s.ok) return s;
+		if (!refValida(ref)) return mal(400, "Esa no es una bóveda de esta cuenta.");
+		if (permiso !== "ver" && permiso !== "editar") return mal(400, "Ese permiso no existe.");
+		if (!/^[0-9a-f]{16}$/.test(titular)) return mal(400, "Ese titular no vale.");
+		if (this.version(ref) === 0) return mal(404, "Esa bóveda no está en esta cuenta.");
+		// **No se le da acceso a uno mismo.** No haría daño y sí confunde: saldría en
+		// su propia lista de gente con acceso.
+		if (cuenta === this.leerAjuste("cuenta")) return mal(400, "Esa bóveda ya es tuya.");
+		return this.ctx.storage.transactionSync(() => {
+			const ya = this.miembro(ref, cuenta);
+			if (!ya) {
+				const cuantos = this.sql
+					.exec<{ n: number }>("SELECT COUNT(*) AS n FROM miembros WHERE ref = ?", ref)
+					.one().n;
+				if (cuantos >= MIEMBROS_POR_BOVEDA) {
+					return mal(409, `Esa bóveda ya la comparten ${MIEMBROS_POR_BOVEDA} personas.`);
+				}
+			}
+			this.sql.exec(
+				"INSERT INTO miembros (ref, cuenta, permiso, titular, desde) VALUES (?, ?, ?, ?, ?) " +
+					"ON CONFLICT (ref, cuenta) DO UPDATE SET permiso = excluded.permiso, titular = excluded.titular",
+				ref,
+				cuenta,
+				permiso,
+				titular,
+				Date.now(),
+			);
+			return bien(null);
+		});
+	}
+
+	/**
+	 * quitarMiembro **por titular y no por cuenta**: el dueño no conoce la cuenta de
+	 * nadie —el servidor nunca se la dice— y sí conoce el titular, que lo eligió él
+	 * al dar el acceso y es lo que lleva su propia lista.
+	 *
+	 * Lo que esto hace es cerrar la puerta **ya**: desde la siguiente petición de esa
+	 * persona, 403. Lo que no hace es borrar lo que ya se bajó, y eso se dice en la
+	 * pantalla sin disimularlo.
+	 */
+	async quitarMiembro(token: string, ref: string, titular: string): Promise<Resultado<null>> {
+		const s = await this.sesion(token, false);
+		if (!s.ok) return s;
+		if (!refValida(ref)) return mal(400, "Esa no es una bóveda de esta cuenta.");
+		this.sql.exec("DELETE FROM miembros WHERE ref = ? AND titular = ?", ref, titular);
+		return bien(null);
+	}
+
+	/**
+	 * miembrosDe es lo que el dueño compara con su propia lista.
+	 *
+	 * **Devuelve el titular y el permiso, nunca la cuenta de nadie**: a quién
+	 * corresponde cada titular lo sabe la bóveda, que es donde están los correos, y
+	 * el servidor no tiene por qué repartir identificadores de cuenta.
+	 */
+	async miembrosDe(token: string, ref: string): Promise<Resultado<{ titular: string; permiso: string; desde: number }[]>> {
+		const s = await this.sesion(token, false);
+		if (!s.ok) return s;
+		if (!refValida(ref)) return mal(400, "Esa no es una bóveda de esta cuenta.");
+		return bien(
+			this.sql
+				.exec<{ titular: string; permiso: string; desde: number }>(
+					"SELECT titular, permiso, desde FROM miembros WHERE ref = ? ORDER BY desde",
+					ref,
+				)
+				.toArray(),
+		);
 	}
 
 	async versiones(token: string, ref = ""): Promise<Resultado<{ version: number; fecha: number; tamano: number }[]>> {
@@ -570,6 +786,11 @@ export class Cuenta extends DurableObject<Env> {
 			this.sql.exec("DELETE FROM trozos WHERE ref = ?", ref);
 			this.sql.exec("DELETE FROM versiones WHERE ref = ?", ref);
 			this.sql.exec("DELETE FROM ajustes WHERE clave IN (?, ?)", claveDe("version", ref), claveDe("idBoveda", ref));
+			// **Y la gente que tenía acceso** (ADR 0052). Dejar las filas no daría acceso
+			// a nada —no queda bóveda que leer— pero el día que esa referencia se
+			// reutilizara volverían a valer, y una lista de miembros de una bóveda que ya
+			// no existe es basura que alguien acabaría leyendo como si dijera algo.
+			this.sql.exec("DELETE FROM miembros WHERE ref = ?", ref);
 			return bien({ borradas: cuantas });
 		});
 	}

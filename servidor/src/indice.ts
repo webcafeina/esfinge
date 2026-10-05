@@ -132,6 +132,29 @@ async function atender(p: Request, env: Env, ctx: ExecutionContext): Promise<Res
 	// están**, sirviendo la bóveda personal: un cliente de antes tiene que seguir
 	// sincronizando mientras la versión nueva se reparte.
 	if (r("GET", "/v1/bovedas")) return listarBovedas(p, env);
+	// **Dar acceso a una bóveda de proyecto** (ADR 0052). Va antes que la ruta de la
+	// bóveda porque `/v1/bovedas/<ref>/miembros` empieza igual, y lo que hay detrás
+	// de la barra ya no es una referencia.
+	if (metodo !== "OPTIONS" && /^\/v1\/bovedas\/[^/]+\/miembros/.test(ruta)) {
+		const trozos = ruta.split("/"); // "", v1, bovedas, <ref>, miembros, <titular>?
+		const ref = trozos[3];
+		if (!refValida(ref)) throw new Fallo(400, "Esa no es una bóveda de esta cuenta.");
+		if (metodo === "GET" && trozos.length === 5) return listarMiembros(p, env, ref);
+		if (metodo === "POST" && trozos.length === 5) return darAcceso(p, env, ctx, ref);
+		if (metodo === "DELETE" && trozos.length === 6) return quitarAcceso(p, env, ref, trozos[5]);
+	}
+	// Y la bóveda de otra cuenta, para quien tiene acceso.
+	if (metodo !== "OPTIONS" && ruta.startsWith("/v1/compartidas/")) {
+		const trozos = ruta.split("/"); // "", v1, compartidas, <dueno>, <ref>
+		if (trozos.length !== 5) throw new Fallo(404, "No hay nada aquí.");
+		const [dueno, ref] = [trozos[3], trozos[4]];
+		// **Las dos se validan antes de tocar nada**, igual que la referencia de
+		// siempre: las dos van a una consulta y a un nombre de Durable Object.
+		if (!/^[0-9a-f]{32}$/.test(dueno)) throw new Fallo(400, "Esa no es una bóveda compartida.");
+		if (!refValida(ref)) throw new Fallo(400, "Esa no es una bóveda compartida.");
+		if (metodo === "GET") return leerCompartida(p, env, dueno, ref);
+		if (metodo === "PUT") return escribirCompartida(p, env, dueno, ref);
+	}
 	if (metodo !== "OPTIONS" && ruta.startsWith("/v1/bovedas/")) {
 		const ref = ruta.slice("/v1/bovedas/".length);
 		// **Se valida antes de tocar nada**: esa cadena va a una consulta y a una
@@ -506,6 +529,89 @@ async function escribirBoveda(p: Request, env: Env, ref = ""): Promise<Response>
 	const datos = await leerBytes(p, TAMANO_MAXIMO);
 	const hecho = abrir(await objeto(env, cuenta).escribir(token, siCoincide, datos, ref));
 	return json(200, hecho, { ETag: `"${hecho.version}"` });
+}
+
+/**
+ * quienLlama comprueba la sesión **contra el objeto de quien dice ser**, y devuelve
+ * su cuenta ya comprobada (ADR 0052).
+ *
+ * Es la pieza delicada de todo esto. El testigo lleva la cuenta dentro y `sesionDe`
+ * **solo la lee**: quien la comprueba es el objeto al que se habla después, porque
+ * busca la huella del secreto en su propia tabla. Mientras cada petición acaba en el
+ * objeto que dice el testigo, eso basta y no hace falta nada más.
+ *
+ * Aquí no basta: la petición va a acabar en el objeto **del dueño**, al que hay que
+ * decirle quién llama. Si ese «quién» saliera del testigo sin comprobarlo,
+ * cualquiera escribiría `s1.<la cuenta de otro>.<cuarenta y tres caracteres>` y
+ * entraría como esa persona. Así que primero se le pregunta a su cuenta.
+ */
+async function quienLlama(p: Request, env: Env): Promise<string> {
+	const { token, cuenta } = sesionDe(p);
+	const r = await objeto(env, cuenta).comprobarSesion(token);
+	return abrir(r).cuenta;
+}
+
+async function leerCompartida(p: Request, env: Env, dueno: string, ref: string): Promise<Response> {
+	const quien = await quienLlama(p, env);
+	const r = await objeto(env, dueno).leerComoMiembro(quien, ref, etiqueta(p.headers.get("If-None-Match")));
+	const d = abrir(r);
+	if (!d.datos) return new Response(null, { status: 304, headers: { ETag: `"${d.version}"` } });
+	return new Response(d.datos, {
+		status: 200,
+		headers: { "Content-Type": "application/json", ETag: `"${d.version}"`, "Cache-Control": "no-store" },
+	});
+}
+
+async function escribirCompartida(p: Request, env: Env, dueno: string, ref: string): Promise<Response> {
+	const quien = await quienLlama(p, env);
+	const siCoincide = etiqueta(p.headers.get("If-Match"));
+	if (siCoincide === null) throw new Fallo(428, "Falta decir sobre qué versión se escribe.");
+	const datos = await leerBytes(p, TAMANO_MAXIMO);
+	const r = await objeto(env, dueno).escribirComoMiembro(quien, ref, siCoincide, datos);
+	if (!r.ok && r.estado === 412) {
+		return json(412, { error: r.error, version: r.version }, { ETag: `"${r.version}"` });
+	}
+	return json(200, abrir(r));
+}
+
+async function listarMiembros(p: Request, env: Env, ref: string): Promise<Response> {
+	const { token, cuenta } = sesionDe(p);
+	return json(200, { miembros: abrir(await objeto(env, cuenta).miembrosDe(token, ref)) });
+}
+
+/**
+ * darAcceso resuelve el correo a una cuenta y escribe la fila **en el objeto de
+ * quien da el acceso**, que es donde vive la bóveda.
+ *
+ * **Y no puede delatar si esa dirección tiene cuenta**, que es la regla que ya rige
+ * mandar un sobre: si no la tiene se invita y se contesta lo mismo. Lo que hace que
+ * el acceso salga de verdad el día que la cree es la nota pendiente en la bóveda de
+ * quien lo dio, igual que con una copia.
+ */
+async function darAcceso(p: Request, env: Env, ctx: ExecutionContext, ref: string): Promise<Response> {
+	const { token, cuenta: mia } = sesionDe(p);
+	await frenar(env.FRENO_ENTRAR, p, env);
+	const d = await leerJSON(p);
+	const c = correoValido(d.para);
+	const permiso = typeof d.permiso === "string" ? d.permiso : "";
+	const titular = typeof d.titular === "string" ? d.titular : "";
+
+	const destino = await cuentaDeCorreo(env, c);
+	if (destino) {
+		const hecho = await objeto(env, mia).ponerMiembro(token, ref, destino, permiso, titular);
+		if (!hecho.ok) throw new Fallo(hecho.estado, hecho.error);
+	} else {
+		// Lo mismo que al mandar un sobre: se invita, se traga todo y no se alarga la
+		// respuesta, porque desde fuera eso se mide igual de bien que un código.
+		await invitar(env, ctx, c, mia);
+	}
+	return json(202, {});
+}
+
+async function quitarAcceso(p: Request, env: Env, ref: string, titular: string): Promise<Response> {
+	const { token, cuenta } = sesionDe(p);
+	abrir(await objeto(env, cuenta).quitarMiembro(token, ref, titular));
+	return json(200, {});
 }
 
 async function listarBovedas(p: Request, env: Env): Promise<Response> {
