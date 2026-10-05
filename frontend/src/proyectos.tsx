@@ -25,7 +25,7 @@
 // cifrado de la bóveda personal.
 
 import { useCallback, useEffect, useState } from "react";
-import { esfinge, type Proyecto } from "./puente";
+import { esfinge, type CompartidaEnLaLista, type Proyecto, type QuienTieneAcceso } from "./puente";
 import { Icono } from "./componentes";
 import { Ceremonia } from "./boveda";
 
@@ -49,12 +49,16 @@ export function Proyectos({
   const [otroNombre, setOtroNombre] = useState("");
   const [verArchivados, setVerArchivados] = useState(false);
   const [bajando, setBajando] = useState("");
+  // Y cuál tiene desplegado «Quién tiene acceso…».
+  const [elAcceso, setElAcceso] = useState("");
   // Qué proyecto tiene desplegado «Al acabar…». Lo de terminar un proyecto se usa
   // una vez en su vida, así que no ocupa sitio en la fila del día a día.
   const [alAcabar, setAlAcabar] = useState("");
   // La clave de recuperación de una bóveda recién entregada: se enseña **una vez**
   // con la ceremonia de siempre y no se puede volver a pedir.
   const [entregada, setEntregada] = useState("");
+  // Lo que me han compartido (ADR 0052). Lo trae la misma recarga que los proyectos.
+  const [compartidas, setCompartidas] = useState<CompartidaEnLaLista[]>([]);
 
   const recargar = useCallback(async () => {
     // **Se mira si hay bóveda abierta antes de pedir la lista.** No es una
@@ -71,6 +75,11 @@ export function Proyectos({
         return;
       }
       setLista(await esfinge.proyectos());
+      // **Y lo compartido, en la misma pasada.** Pedirlo aparte desde su componente
+      // significaba pedirlo también con la bóveda cerrada, y eso es un 400 seguro en
+      // la consola: el mismo fallo que ya costó una vuelta con `POST /api/Proyectos`
+      // el 2026-10-02. Lo que la pantalla necesita para dibujar va en lo que ya pide.
+      setCompartidas(await esfinge.compartidas());
       setCerrada(false);
       setError("");
     } catch (e) {
@@ -303,6 +312,21 @@ export function Proyectos({
                       >
                         Cambiar el nombre
                       </button>
+                      {/* **Quién tiene acceso solo sale en el proyecto abierto**, y
+                          no es una limitación de la pantalla: dar acceso escribe una
+                          ranura en el fichero de ese proyecto, y lo que sube ese
+                          fichero es la sincronización de la bóveda abierta. Desde
+                          aquí, la ranura se quedaría en este equipo y quien recibiera
+                          el acceso se bajaría una bóveda que no puede abrir. */}
+                      {p.activo && (
+                        <button
+                          className="discreto"
+                          onClick={() => setElAcceso(elAcceso === p.ref ? "" : p.ref)}
+                          aria-expanded={elAcceso === p.ref}
+                        >
+                          Quién tiene acceso…
+                        </button>
+                      )}
                       <button
                         className="discreto"
                         onClick={() => setAlAcabar(alAcabar === p.ref ? "" : p.ref)}
@@ -314,6 +338,7 @@ export function Proyectos({
                   )}
                 </>
               )}
+              {elAcceso === p.ref && <ElAcceso alFallar={setError} />}
               {alAcabar === p.ref && (
                 <AlAcabarElProyecto
                   proyecto={p}
@@ -333,6 +358,12 @@ export function Proyectos({
           ))}
         </ul>
       )}
+
+      {/* **Lo que me han compartido va en su propio grupo**, no mezclado con lo mío
+          (ADR 0052): no son proyectos míos, no se entregan, no se borran del
+          servidor y a algunos solo puedo mirarlos. Mezclarlos obligaría a explicar
+          en cada fila de qué clase es. */}
+      <CompartidasConmigo lista={compartidas} alEntrar={alEntrar} alFallar={setError} alCambiar={recargar} />
 
       {archivados.length > 0 && (
         <div className="archivados">
@@ -633,3 +664,273 @@ function AlAcabarElProyecto({
 
 /** El mismo mínimo que al crear una bóveda. */
 const MINIMO = 10;
+
+
+/**
+ * Las bóvedas de otras personas a las que tengo acceso (ADR 0052).
+ *
+ * Tres cosas que esta lista tiene que decir y que no se ven mirándola:
+ *
+ *   - **De quién es cada una.** Una bóveda compartida se parece a un proyecto propio
+ *     y no lo es: no se entrega, no se borra del servidor y a veces solo se mira.
+ *   - **Si solo puedo verla**, antes de entrar. Enterarse al ir a guardar es la regla
+ *     que costó `ExportarLlaves`: lo que hace falta para decidir se mira antes.
+ *   - **Que dejar de verla no se la quita a nadie más.** Es mi lista, no la suya.
+ */
+function CompartidasConmigo({
+  lista,
+  alEntrar,
+  alFallar,
+  alCambiar,
+}: {
+  /** **La trae el padre**, en la misma pasada que los proyectos. Pidiéndola aquí se
+   * pedía también con la bóveda cerrada, y eso es un 400 en la consola: el fallo que
+   * ya costó una vuelta con `POST /api/Proyectos`. */
+  lista: CompartidaEnLaLista[];
+  alEntrar: () => void;
+  alFallar: (m: string) => void;
+  alCambiar: () => void | Promise<void>;
+}) {
+  const [trabajando, setTrabajando] = useState("");
+
+  if (lista.length === 0) return null;
+
+  async function entrar(c: CompartidaEnLaLista) {
+    setTrabajando(c.dueno + c.ref);
+    try {
+      if (!c.enEsteEquipo) await esfinge.bajarCompartida(c.dueno, c.ref);
+      await esfinge.abrirCompartida(c.dueno, c.ref);
+      alEntrar();
+    } catch (e) {
+      alFallar(mensaje(e));
+    } finally {
+      setTrabajando("");
+    }
+  }
+
+  return (
+    <div className="compartidas">
+      <h3>Compartido conmigo</h3>
+      <ul className="proyectos">
+        {lista.map((c) => (
+          <li key={c.dueno + c.ref}>
+            <button className="abrir-proyecto" onClick={() => entrar(c)} disabled={trabajando !== ""}>
+              {/* El mismo glifo que un proyecto propio, **a propósito**: es un
+                  proyecto, de otra persona. Lo que lo distingue va en el texto —de
+                  quién es y si solo se puede mirar—, que es lo que de verdad hay que
+                  leer antes de entrar. Un glifo nuevo aquí sería una cosa más que
+                  aprender para decir lo mismo peor. */}
+              <Icono nombre="proyectos" />
+              <span className="nombre">{c.nombre}</span>
+              <span className="aparte">
+                {trabajando === c.dueno + c.ref
+                  ? "Abriendo…"
+                  : !c.enEsteEquipo
+                    ? "Se traerá a este equipo"
+                    : c.permiso === "ver"
+                      ? "Solo puedes ver"
+                      : "Puedes editar"}
+              </span>
+            </button>
+            <button
+              className="discreto"
+              onClick={async () => {
+                try {
+                  await esfinge.dejarDeVerCompartida(c.dueno, c.ref);
+                  await alCambiar();
+                } catch (e) {
+                  alFallar(mensaje(e));
+                }
+              }}
+            >
+              Dejar de verla
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="nota">
+        Estas bóvedas son de otras personas. <strong>Dejar de verlas no se las quita a nadie</strong>: solo
+        las saca de tu lista y borra la copia de este equipo.
+      </p>
+    </div>
+  );
+}
+
+
+/**
+ * Quién tiene acceso a la bóveda abierta, y cómo se da o se quita (ADR 0052).
+ *
+ * Lo que esta pantalla tiene que decir y no se ve mirándola:
+ *
+ *   - **La huella se enseña antes de dar el acceso**, y se explica para qué sirve.
+ *     Es lo único que protege del servidor en el primer envío, y una huella que nadie
+ *     mira no protege nada (ADR 0043).
+ *   - **«Ver» lo impone el servidor, no el cifrado.** Quien puede ver tiene con qué
+ *     descifrar, así que puede escribir en su copia; lo que no puede es subirla. Se
+ *     dice con las mismas palabras con que Esfinge dice que Touch ID es un cerrojo.
+ *   - **Quitar el acceso no borra lo que ya se bajó.** Desde aquí no hay forma, y
+ *     media promesa en un gestor de contraseñas es peor que ninguna.
+ *   - **Quien recibe acceso ve el correo de los demás que lo tienen.** No hay forma
+ *     de que no lo vea si la lista se puede leer, así que se dice.
+ */
+function ElAcceso({ alFallar }: { alFallar: (m: string) => void }) {
+  const [gente, setGente] = useState<QuienTieneAcceso[] | null>(null);
+  const [correo, setCorreo] = useState("");
+  const [permiso, setPermiso] = useState<"ver" | "editar">("editar");
+  const [huella, setHuella] = useState("");
+  const [trabajando, setTrabajando] = useState(false);
+  const [quitando, setQuitando] = useState("");
+
+  const recargar = useCallback(async () => {
+    try {
+      setGente(await esfinge.quienTiene());
+    } catch (e) {
+      alFallar(mensaje(e));
+      setGente([]);
+    }
+  }, [alFallar]);
+  useEffect(() => {
+    void recargar();
+  }, [recargar]);
+
+  async function mirar() {
+    setTrabajando(true);
+    try {
+      setHuella((await esfinge.huellaDe(correo.trim())).huella);
+    } catch (e) {
+      alFallar(mensaje(e));
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  async function dar() {
+    setTrabajando(true);
+    try {
+      await esfinge.darAcceso(correo.trim(), permiso);
+      setCorreo("");
+      setHuella("");
+      await recargar();
+    } catch (e) {
+      alFallar(mensaje(e));
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
+  return (
+    <div className="el-acceso">
+      {gente !== null && gente.length > 0 && (
+        <ul className="titulares">
+          {gente.map((t) => (
+            <li key={t.titular}>
+              <span className="nombre">{t.correo}</span>
+              <span className="aparte">{t.permiso === "ver" ? "Solo puede ver" : "Puede editar"}</span>
+              {!t.enElServidor && (
+                /* Las dos listas no cuadran, y eso se enseña en vez de disimularlo:
+                   es lo que permite arreglarlo en vez de descubrirlo el día que esa
+                   persona no entra. */
+                <span className="aparte">
+                  <strong>El servidor no le deja entrar</strong>
+                </span>
+              )}
+              <button
+                className={quitando === t.titular ? "principal" : "discreto"}
+                disabled={trabajando}
+                onClick={async () => {
+                  if (quitando !== t.titular) {
+                    setQuitando(t.titular);
+                    return;
+                  }
+                  setTrabajando(true);
+                  try {
+                    await esfinge.quitarAcceso(t.titular);
+                    setQuitando("");
+                    await recargar();
+                  } catch (e) {
+                    alFallar(mensaje(e));
+                  } finally {
+                    setTrabajando(false);
+                  }
+                }}
+              >
+                {quitando === t.titular ? "Sí, quitarle el acceso" : "Quitar"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {quitando !== "" && (
+        <p className="aviso">
+          Dejará de recibir cambios en cuanto esto llegue al servidor.{" "}
+          <strong>Lo que ya tenía en su ordenador se queda ahí</strong>, y desde aquí no hay forma de
+          borrarlo. Si lo de dentro no puede estar en sus manos, lo que hay que cambiar son las contraseñas,
+          no esta bóveda.
+        </p>
+      )}
+
+      <div>
+        <label htmlFor="acceso-correo">Dar acceso a</label>
+        <input
+          id="acceso-correo"
+          type="email"
+          autoComplete="off"
+          placeholder="correo@ejemplo.com"
+          value={correo}
+          onChange={(e) => {
+            setCorreo(e.target.value);
+            setHuella("");
+          }}
+        />
+      </div>
+
+      <div className="botones">
+        <button className="discreto" onClick={mirar} disabled={correo.trim() === "" || trabajando}>
+          {trabajando ? "Mirando…" : "Ver su huella"}
+        </button>
+      </div>
+
+      {huella !== "" && (
+        <>
+          <p className="nota">
+            Su huella es <code className="huella">{huella}</code>. Compárala con esa persona por otro
+            camino —una llamada— antes de darle acceso: es lo único que prueba que las contraseñas van a
+            quien crees.
+          </p>
+          <div>
+            <label htmlFor="acceso-permiso">Qué puede hacer</label>
+            <select
+              id="acceso-permiso"
+              value={permiso}
+              onChange={(e) => setPermiso(e.target.value === "ver" ? "ver" : "editar")}
+            >
+              <option value="editar">Ver y editar</option>
+              <option value="ver">Solo ver</option>
+            </select>
+          </div>
+          <p className="nota">
+            {permiso === "ver" ? (
+              <>
+                <strong>«Solo ver» lo decide el servidor, no el cifrado.</strong> Quien pueda ver esta
+                bóveda tiene con qué descifrarla, así que puede escribir en la copia de su equipo. Lo que
+                no puede es subirla: el servidor la rechaza, y por eso nadie más verá lo que escriba.
+              </>
+            ) : (
+              <>
+                Quien pueda editar puede <strong>cambiar y borrar</strong> lo de aquí, y{" "}
+                <strong>dar acceso a más gente</strong>.
+              </>
+            )}{" "}
+            Verá también el correo de las demás personas con acceso.
+          </p>
+          <div className="botones">
+            <button className="principal" onClick={dar} disabled={trabajando}>
+              {trabajando ? "Dando acceso…" : "Dar acceso"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

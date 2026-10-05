@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/cripto"
@@ -46,6 +47,66 @@ type QuienTieneAcceso struct {
 	// decir nombres. Cuando no coinciden se enseña en vez de disimularlo, que es lo
 	// que permite arreglarlo en vez de descubrirlo el día que alguien no entra.
 	EnElServidor bool `json:"enElServidor"`
+}
+
+// Compartidas son las bóvedas de otras personas a las que tengo acceso, con lo que
+// la lista necesita saber de cada una **sin abrirla**.
+type CompartidaEnLaLista struct {
+	Dueno  string `json:"dueno"`
+	Ref    string `json:"ref"`
+	Nombre string `json:"nombre"`
+	// Permiso es lo que me dijeron. **Informativo**: el que manda es el del servidor.
+	Permiso string `json:"permiso"`
+	Huella  string `json:"huella"`
+	Usado   string `json:"usado"`
+	// EnEsteEquipo dice si el fichero ya está aquí. Si no, la lista ofrece traerlo
+	// en vez de fallar al abrirlo, que es lo mismo que hacen los proyectos dormidos.
+	EnEsteEquipo bool `json:"enEsteEquipo"`
+}
+
+// Compartidas lista lo que me han compartido, lo último usado primero.
+func (a *App) Compartidas() ([]CompartidaEnLaLista, error) {
+	out := []CompartidaEnLaLista{}
+	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		for _, c := range b.Compartidas() {
+			x := CompartidaEnLaLista{
+				Dueno: c.Dueno, Ref: c.Ref, Nombre: c.Nombre,
+				Permiso: c.Permiso, Huella: c.Huella, Usado: c.Usado,
+			}
+			if r := rutaDeCompartida(c.Dueno, c.Ref); r != "" {
+				if _, err := os.Stat(r); err == nil {
+					x.EnEsteEquipo = true
+				}
+			}
+			out = append(out, x)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DejarDeVerCompartida la saca de mi lista y **borra el fichero de este equipo**.
+//
+// No toca nada de la otra persona: la bóveda es suya y sigue donde estaba. Lo que
+// esto hace es lo que puede hacer quien recibe —irse— y por eso no pide nada a nadie.
+func (a *App) DejarDeVerCompartida(dueno, ref string) error {
+	if a.bovedaActiva() == ref && a.duenoDeLaActiva() == dueno {
+		if err := a.VolverALaBovedaPersonal(); err != nil {
+			return err
+		}
+	}
+	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		return b.OlvidarCompartida(dueno, ref)
+	}); err != nil {
+		return err
+	}
+	if r := rutaDeCompartida(dueno, ref); r != "" {
+		borrarElFicheroYSusSatelites(r)
+	}
+	a.Actividad()
+	return nil
 }
 
 // DarAcceso le da acceso a esa dirección **sobre la bóveda de proyecto abierta**.

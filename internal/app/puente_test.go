@@ -141,6 +141,7 @@ var loQuePuedeCruzarElPuente = []string{
 	// que volver a pensar esta línea, no ampliarla de paso.
 	"AbrirCompartida", "BajarCompartida",
 	"DarAcceso", "QuitarAcceso", "QuienTiene", "AceptarAcceso",
+	"Compartidas", "DejarDeVerCompartida",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

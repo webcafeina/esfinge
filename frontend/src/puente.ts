@@ -357,6 +357,32 @@ export type ResultadoEntrada = {
   apartada?: string;
 };
 
+/** Una bóveda de otra persona a la que tengo acceso (ADR 0052). */
+export type CompartidaEnLaLista = {
+  dueno: string;
+  ref: string;
+  nombre: string;
+  /** "ver" o "editar". **Informativo**: el que manda es el del servidor. */
+  permiso: string;
+  huella: string;
+  usado: string;
+  /** Si el fichero ya está aquí. Si no, la lista ofrece traerlo. */
+  enEsteEquipo: boolean;
+};
+
+/** Una persona con acceso a la bóveda abierta. */
+export type QuienTieneAcceso = {
+  titular: string;
+  correo: string;
+  permiso: string;
+  desde: string;
+  /**
+   * Si el servidor también le deja entrar. **Son dos listas y no pueden ser una**:
+   * el servidor no sabe correos y la pantalla no puede depender de él para nombres.
+   */
+  enElServidor: boolean;
+};
+
 export type EstadoBoveda = {
   existe: boolean;
   abierta: boolean;
@@ -677,11 +703,12 @@ export const esfinge = {
   abrirProyecto: (ref: string) => llamar<void>("AbrirProyecto", ref),
 
   /**
-   * Cierra el proyecto abierto.
+   * Cierra el proyecto abierto y **deja tu bóveda abierta**, en la lista de
+   * proyectos.
    *
-   * **Deja la bóveda personal cerrada**, así que hay que volver a teclear la
-   * maestra: la personal no se queda abierta por detrás, porque dos bóvedas
-   * abiertas a la vez es justo lo que se descartó.
+   * Hasta el 2026-10-05 pedía la maestra otra vez, y entonces esto y «Cerrar la
+   * bóveda» hacían exactamente lo mismo. Sigue habiendo **una sola bóveda abierta**:
+   * ésta se abre después de cerrar la otra, no a la vez.
    */
   volverALaBovedaPersonal: () => llamar<void>("VolverALaBovedaPersonal"),
 
@@ -693,6 +720,49 @@ export const esfinge = {
    * dentro del fichero**. Y se comprueba que abre antes de dejarla puesta.
    */
   bajarProyecto: (ref: string) => llamar<void>("BajarProyecto", ref),
+
+  // ------------------------------------------------- las que me han compartido
+  //
+  // Dar acceso a una bóveda de proyecto (ADR 0052). **No sustituye a entregar una
+  // copia**: entregar sigue al lado, para cuando el proyecto se acaba de verdad.
+
+  /** Lo que me han compartido, lo último usado primero. */
+  compartidas: () => llamar<CompartidaEnLaLista[] | null>("Compartidas").then((l) => l ?? []),
+
+  /**
+   * Da acceso a esa dirección **sobre el proyecto que esté abierto**.
+   *
+   * Se hace desde dentro a propósito: poner su ranura cambia el fichero de ese
+   * proyecto, y lo que lo sube es la sincronización de la bóveda abierta.
+   */
+  darAcceso: (correo: string, permiso: "ver" | "editar") => llamar<void>("DarAcceso", correo, permiso),
+
+  /**
+   * Se lo quita a ese titular.
+   *
+   * **Deja de recibir desde ya**, pero lo que ya tenía en su equipo se queda ahí y
+   * desde aquí no hay forma de borrarlo. La pantalla lo dice con esas palabras.
+   */
+  quitarAcceso: (titular: string) => llamar<void>("QuitarAcceso", titular),
+
+  /** Quién tiene acceso a la bóveda abierta. La ven todos los que la tienen. */
+  quienTiene: () => llamar<QuienTieneAcceso[] | null>("QuienTiene").then((l) => l ?? []),
+
+  /** Acepta un acceso que ha llegado al buzón y se baja la bóveda. */
+  aceptarAcceso: (id: string) => llamar<void>("AceptarAcceso", id),
+
+  /** Abre una bóveda que me han compartido. */
+  abrirCompartida: (dueno: string, ref: string) => llamar<void>("AbrirCompartida", dueno, ref),
+
+  /** Se trae a este equipo una compartida que todavía no está aquí. */
+  bajarCompartida: (dueno: string, ref: string) => llamar<void>("BajarCompartida", dueno, ref),
+
+  /**
+   * La saca de mi lista y borra el fichero de este equipo.
+   *
+   * **No toca nada de la otra persona**: la bóveda es suya y sigue donde estaba.
+   */
+  dejarDeVerCompartida: (dueno: string, ref: string) => llamar<void>("DejarDeVerCompartida", dueno, ref),
 
   /**
    * Entrega una copia independiente de esa bóveda, con la contraseña que se le

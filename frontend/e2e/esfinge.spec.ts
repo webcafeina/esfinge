@@ -2183,6 +2183,55 @@ async function volverALaPersonal(page: Page) {
 }
 
 /**
+ * **Quién tiene acceso a un proyecto** (ADR 0052).
+ *
+ * Lo que de verdad protege esta prueba son dos cosas que no son «los botones están»:
+ *
+ *   - que **el nombre del proyecto sobreviva** a los tres botones de la fila. Con
+ *     `flex: 1` el nombre tiene base cero, así que es lo primero que se encoge, y al
+ *     añadir «Quién tiene acceso…» **desapareció del todo**: se veía un icono, «La
+ *     estás usando» y los botones, sin saber de qué proyecto. Se vio en una captura y
+ *     no lo miraba ninguna aserción;
+ *   - y que **la huella se enseñe antes** de poder dar el acceso, que es lo único que
+ *     protege del servidor en el primer envío (ADR 0043).
+ */
+test("quién tiene acceso: la fila no pierde el nombre y la huella va antes", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const nombre = `Delta ${Date.now()}`;
+  await seccion(page, "Proyectos").click();
+  await accion(page, "Nueva bóveda de proyecto").click();
+  await page.locator("#proyecto-nombre").fill(nombre);
+  await accion(page, "Crear").click();
+  const fila = page.locator(".panel:visible .proyectos").getByRole("button", { name: new RegExp(nombre) });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
+  await fila.click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
+  // De vuelta a la lista, con el proyecto abierto: ahí sale el botón.
+  await seccion(page, "Proyectos").click();
+  const activa = page.locator('.panel:visible .proyectos li[data-activo="si"]');
+  await expect(activa).toBeVisible({ timeout: 20_000 });
+  await activa.getByRole("button", { name: "Quién tiene acceso…" }).click();
+
+  // **El nombre sigue ahí.** No se mira que el texto exista: se mira que **mida**,
+  // porque encogido a cero el texto está en el DOM y no se ve.
+  const elNombre = activa.locator(".abrir-proyecto .nombre");
+  await expect(elNombre).toHaveText(nombre);
+  const caja = await elNombre.boundingBox();
+  expect(caja?.width ?? 0, "el nombre del proyecto se ha encogido a cero").toBeGreaterThan(40);
+
+  // **Y no se puede dar acceso sin haber mirado la huella.**
+  await expect(page.locator(".panel:visible .el-acceso")).toBeVisible();
+  await expect(page.locator(".panel:visible").getByRole("button", { name: "Dar acceso" })).toHaveCount(0);
+
+  await volverALaPersonal(page);
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
  * Y lo que la lista tiene que decir cuando **no se puede hacer nada**: con la bóveda
  * cerrada no hay nombres que enseñar, porque viven dentro de ella.
  */

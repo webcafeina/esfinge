@@ -1477,7 +1477,13 @@ p {
   align-items: center;
   gap: var(--espacio-3);
   flex: 1;
-  min-width: 0;
+  /* **Un suelo, no cero.** El nombre lleva `flex: 1` —o sea base cero—, así que
+   * cuando la fila se queda sin sitio es lo primero que se encoge, y con tres
+   * botones al lado **desaparecía del todo**: se veía un icono, «La estás usando» y
+   * los botones, sin saber de qué proyecto. Con un suelo, lo que salta de línea son
+   * los botones, que es lo que `flex-wrap` del `li` está esperando. Se vio en una
+   * captura al añadir «Quién tiene acceso…»; ninguna aserción lo miraba. */
+  min-width: 11rem;
   /* Como en la lista de la bóveda: el alto lo pone el contenido, porque la regla
    * general de `button` fija 28px y aquí dentro hay dos líneas. */
   height: auto;
@@ -1499,7 +1505,8 @@ p {
 }
 
 .abrir-proyecto .nombre {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1548,6 +1555,62 @@ p {
 
 .al-acabar .botones {
   margin: 0;
+}
+
+/* **El bloque de quién tiene acceso, igual que el de «Al acabar…»** (ADR 0052): los
+ * dos se despliegan dentro de una fila y los dos tienen que irse a una segunda línea,
+ * que es lo que hace el `flex-basis: 100%` con el `flex-wrap` del `li`. Sin eso
+ * entrarían como una columna más y aplastarían el nombre, que ya pasó una vez y se
+ * vio en una captura. */
+.el-acceso {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  padding: var(--espacio-3);
+  border-top: 0.5px solid var(--filete);
+  background: var(--suave);
+}
+
+.el-acceso .botones {
+  margin: 0;
+}
+
+.titulares {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.titulares li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.titulares .nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Lo que me han compartido, en su propio grupo y no mezclado con lo mío. */
+.compartidas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  align-items: stretch;
+}
+
+.compartidas h3 {
+  margin: 0;
+  font-size: var(--texto);
 }
 
 .archivados {
