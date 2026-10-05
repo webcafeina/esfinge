@@ -7,8 +7,10 @@
 > **Publicada la 2.39.0 el 2026-10-05**, y el cliente la abrió el mismo día. De ahí salieron **dos cosas
 > arregladas y sin publicar**: falta aire arriba con el antetítulo —la barra crece 12 px con un proyecto
 > abierto— y **la tarjeta de Touch ID se ofrecía encima de un proyecto**, donde activar está prohibido.
-> Lo siguiente es **publicar la 2.39.1** con las dos: `git tag v2.39.1 && git push origin v2.39.1`. No toca
-> `navegador/`.
+> **Publicadas las dos**: la 2.39.0 a las 07:24 y la **2.39.1** a las 08:22 del 2026-10-05, los siete
+> trabajos en verde las dos veces. En Chrome la 2.39.1 **no subió** —la 2.39.0 sigue en revisión— y en
+> Firefox sí; el código de la extensión es el mismo en las dos, así que no se pierde nada. Queda apuntado en
+> [`deuda.md`](deuda.md) **igualar los números**, que lo pidió el cliente.
 >
 > **Y lo que esa versión cerró, que llevaba todo el proyecto abierto**: con un proyecto creado, tras
 > actualizar sale **un** diálogo de Touch ID —la huella abre la personal y el proyecto no pide nada—, y **un
