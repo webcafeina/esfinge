@@ -583,6 +583,9 @@ func canon(e Entrada) string {
 // con la clave de bóveda— lleva la huella de cada ranura: el servidor no puede
 // meter una suya. Las ranuras de este equipo se quedan como están y las de otros
 // equipos no entran nunca.
+// esRetirada dice si ese sobre es la lápida de una ranura que se quitó (ADR 0052).
+func esRetirada(s sobre) bool { return s.Codificacion == CodificacionRetirada }
+
 func fundirSobres(l, r, b []sobre, hayBase bool) []sobre {
 	porTipo := func(ss []sobre) map[string]sobre {
 		m := map[string]sobre{}
@@ -617,6 +620,22 @@ func fundirSobres(l, r, b []sobre, hayBase bool) []sobre {
 			out = append(out, sr)
 		case hayBase && enB && sr == sb:
 			out = append(out, sl)
+		// **Del mismo segundo, gana la retirada** (ADR 0052). Quitarle el acceso a
+		// alguien deja una lápida en su ranura, y la regla de abajo —a igualdad de
+		// fecha, el contenedor mayor— se la llevaría por delante, porque una lápida
+		// tiene el contenedor vacío y eso ordena el último. Las fechas van a
+		// segundos: dar acceso y quitarlo en el mismo no es raro al probarlo, y
+		// decidirlo por la cadena sería decidirlo a cara o cruz.
+		//
+		// Volver a dar el acceso después **sí** gana, porque entonces la viva es de
+		// un segundo posterior y manda la regla de abajo. Por eso esto es un empate
+		// y no «la retirada gana siempre».
+		case sr.Creado == sl.Creado && esRetirada(sr) != esRetirada(sl):
+			if esRetirada(sr) {
+				out = append(out, sr)
+			} else {
+				out = append(out, sl)
+			}
 		case sr.Creado > sl.Creado || (sr.Creado == sl.Creado && sr.Contenedor > sl.Contenedor):
 			out = append(out, sr)
 		default:
