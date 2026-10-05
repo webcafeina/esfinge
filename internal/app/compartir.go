@@ -55,6 +55,12 @@ type EnvioRecibido struct {
 	Usuario string `json:"usuario"`
 	Tipo    string `json:"tipo"`
 	Momento int64  `json:"momento"`
+	// Acceso dice que esto **no es una copia de una entrada sino el acceso a una
+	// bóveda de proyecto** (ADR 0052), y cambia lo que la pantalla ofrece hacer: no
+	// se guarda una entrada, se mete una bóveda en tu lista y se baja. `Titulo` lleva
+	// entonces el nombre del proyecto y `Permiso`, lo que te dejan hacer en ella.
+	Acceso  bool   `json:"acceso,omitempty"`
+	Permiso string `json:"permiso,omitempty"`
 	// Error dice por qué un envío no se puede abrir, si es el caso: viene de otra
 	// identidad, está manipulado o lo hizo una versión más nueva. Se enseña en vez
 	// de esconderlo, porque un buzón con algo ilegible y sin explicación es peor.
@@ -233,6 +239,27 @@ func (a *App) Buzon() ([]EnvioRecibido, error) {
 	out := make([]EnvioRecibido, 0, len(brutos))
 	for _, x := range brutos {
 		r := EnvioRecibido{ID: x.ID, Momento: x.Momento}
+		// **Por el buzón llegan dos cosas distintas** (ADR 0052): la copia de una
+		// entrada y el acceso a una bóveda. Se mira la versión del sobre **antes** de
+		// abrirlo como copia, porque abrir un acceso como copia falla — y fallaba
+		// diciendo «Este envío no es para esta bóveda», que además de inútil **es
+		// mentira**: el sobre es exactamente para esta bóveda.
+		//
+		// Con eso, la ventana enseñaba un acceso como un sobre roto y lo único que se
+		// podía hacer con él era descartarlo. Lo encontró recorrer el camino entero
+		// con dos cuentas, no una prueba: `AceptarAcceso` estaba en Go y en el puente
+		// y **no la llamaba nadie**, igual que `VolverALaBovedaPersonal` antes.
+		if esAcceso(x.Sobre) {
+			acceso, de, err := a.abrirAccesoDelBuzon(x.Sobre)
+			if err != nil {
+				r.Error = err.Error()
+			} else {
+				r.Acceso, r.Huella, r.Titulo = true, de.Huella, acceso.Nombre
+				r.Permiso = acceso.Permiso
+			}
+			out = append(out, r)
+			continue
+		}
 		e, de, err := a.abrirDelBuzonConLaPersonal(x.Sobre)
 		if err != nil {
 			r.Error = err.Error()
@@ -242,6 +269,18 @@ func (a *App) Buzon() ([]EnvioRecibido, error) {
 		out = append(out, r)
 	}
 	return out, nil
+}
+
+// esAcceso mira **solo la versión** del sobre, que va en claro y fuera de lo cifrado.
+//
+// Se puede mirar sin abrir nada porque la versión es parte de lo autenticado y de lo
+// firmado: un sobre no se puede hacer pasar por el otro cambiándole el número, y lo peor
+// que puede conseguir quien lo intente es que se abra con el verbo que no toca y falle.
+func esAcceso(crudo json.RawMessage) bool {
+	var s struct {
+		Version int `json:"version"`
+	}
+	return json.Unmarshal(crudo, &s) == nil && s.Version == boveda.VersionDeAcceso
 }
 
 // AceptarDelBuzon mete la entrada en la bóveda y quita el envío del servidor.

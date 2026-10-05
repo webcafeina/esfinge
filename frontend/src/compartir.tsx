@@ -215,10 +215,16 @@ export function Buzon({
   // acaba de pulsar sigue mirando esta pantalla.
   const [dicho, setDicho] = useState("");
 
-  const hacer = async (id: string, que: "aceptar" | "tirar") => {
+  const hacer = async (id: string, que: "aceptar" | "aceptar-acceso" | "tirar") => {
     setTrabajando(id);
     try {
-      if (que === "aceptar") {
+      if (que === "aceptar-acceso") {
+        // **Aceptar un acceso no guarda una entrada**: mete la bóveda en tu lista y
+        // se la trae, así que se dice lo que ha pasado y dónde está ahora.
+        await esfinge.aceptarAcceso(id);
+        setDicho("La bóveda está en tus proyectos, en «Compartido conmigo».");
+        alCambiar("La bóveda está en tus proyectos, en «Compartido conmigo».");
+      } else if (que === "aceptar") {
         await esfinge.aceptarDelBuzon(id);
         setDicho("Copia guardada en tu bóveda.");
         alCambiar("Copia guardada en tu bóveda.");
@@ -249,19 +255,33 @@ export function Buzon({
           {envios.map((e) => (
             <li key={e.id}>
               <span className="nombre">
-                {e.error ? "No se puede abrir" : e.titulo || "Sin título"}
+                {e.error
+                  ? "No se puede abrir"
+                  : e.acceso
+                    ? `Acceso a «${e.titulo || "un proyecto"}»`
+                    : e.titulo || "Sin título"}
               </span>
               <span className="nota">
-                {e.error ? e.error : <>De <Huella valor={e.huella} /></>}
+                {e.error ? (
+                  e.error
+                ) : (
+                  <>
+                    De <Huella valor={e.huella} />
+                    {/* **Lo que se podrá hacer dentro, antes de aceptar.** Entrar en una
+                        bóveda que solo se puede mirar no es lo mismo que entrar en una
+                        donde se escribe, y enterarse después es tarde. */}
+                    {e.acceso && (e.permiso === "ver" ? " · Solo podrás verla" : " · Podrás editarla")}
+                  </>
+                )}
               </span>
               <span className="acciones">
                 {!e.error && (
                   <button
                     className="principal"
                     disabled={trabajando === e.id}
-                    onClick={() => hacer(e.id, "aceptar")}
+                    onClick={() => hacer(e.id, e.acceso ? "aceptar-acceso" : "aceptar")}
                   >
-                    Guardar
+                    {e.acceso ? "Aceptar el acceso" : "Guardar"}
                   </button>
                 )}
                 <button disabled={trabajando === e.id} onClick={() => hacer(e.id, "tirar")}>
@@ -277,8 +297,9 @@ export function Buzon({
 
       {envios.length > 0 && (
         <p className="nota">
-          Comprueba la huella con quien te lo manda antes de guardarlo. Lo que guardes entra en tu
-          bóveda como una entrada tuya.
+          Comprueba la huella con quien te lo manda antes de aceptar nada. Una copia entra en tu
+          bóveda como una entrada tuya; <strong>un acceso es una bóveda de otra persona</strong>, que
+          se queda viva y se actualiza en los dos sentidos.
         </p>
       )}
     </div>

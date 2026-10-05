@@ -1,8 +1,12 @@
 package app
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -176,5 +180,102 @@ func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {
 	}
 	if len(faltan) > 0 {
 		t.Errorf("la lista nombra métodos que ya no existen: %v", faltan)
+	}
+}
+
+// **Y lo que de verdad cierra la otra mitad: un método del puente que no llama nadie.**
+//
+// La lista de arriba vigila que no cruce el puente lo que no debe. Esto vigila lo
+// contrario, que ha costado dos veces lo mismo:
+//
+//   - `VolverALaBovedaPersonal` (2026-10-02) existía en Go y en el puente, y la única
+//     forma de salir de un proyecto era bloquear la bóveda y volver a desbloquear.
+//   - `AceptarAcceso` (2026-10-05) existía en Go y en el puente, y un acceso que llegaba
+//     al buzón se enseñaba como un sobre roto que solo se podía descartar.
+//
+// Las dos veces el código estaba escrito, probado y **muerto**, y las dos veces lo
+// encontró alguien recorriendo el camino a mano. No es un olvido que se arregle
+// acordándose: es que **escribir el puente parece terminar el trabajo**.
+//
+// Lo que esto **no** puede decir, y por eso no basta solo: que lo que se llama se llame
+// en el sitio bueno, ni que la pantalla haga algo útil con ello. Para eso están las
+// pruebas de la interfaz y la de la tubería entre dos cuentas.
+func TestLoQueEstaEnElPuenteLoLlamaLaVentana(t *testing.T) {
+	raiz := raizDelRepo(t)
+	puente := filepath.Join(raiz, "frontend", "src", "puente.ts")
+	fuente, err := os.ReadFile(puente)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Los métodos del objeto `esfinge`: dos espacios de sangría y abriendo paréntesis,
+	// que es como está escrito el fichero entero.
+	dentro := string(fuente)
+	if i := strings.Index(dentro, "export const esfinge = {"); i >= 0 {
+		dentro = dentro[i:]
+	} else {
+		t.Fatal("no se encuentra el objeto `esfinge` en puente.ts")
+	}
+	metodos := regexp.MustCompile(`(?m)^  (\w+): *\(`).FindAllStringSubmatch(dentro, -1)
+	if len(metodos) < 50 {
+		t.Fatalf("solo se han encontrado %d métodos en el puente: ¿ha cambiado cómo está escrito?", len(metodos))
+	}
+
+	// Y todo lo demás de la interfaz, que es donde tienen que usarse.
+	otros, err := filepath.Glob(filepath.Join(raiz, "frontend", "src", "*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var todo strings.Builder
+	for _, f := range otros {
+		if filepath.Base(f) == "puente.ts" {
+			continue
+		}
+		datos, err := os.ReadFile(f)
+		if err != nil {
+			continue // carpetas y demás
+		}
+		todo.Write(datos)
+	}
+	usado := todo.String()
+
+	// **Se busca el nombre, no la llamada.** Pidiendo `.nombre(` se escapan los que se
+	// pasan como referencia —`hacer(esfinge.vaciarPapeleraDeBoveda)`—, que es uso
+	// legítimo y daba un falso positivo. Un vigilante que señala lo que está bien se
+	// deja de leer, que es lo que a este proyecto le costó seis versiones.
+	suelto := regexp.MustCompile(`\.(\w+)`)
+	usados := map[string]bool{}
+	for _, m := range suelto.FindAllStringSubmatch(usado, -1) {
+		usados[m[1]] = true
+	}
+	var muertos []string
+	for _, m := range metodos {
+		if !usados[m[1]] {
+			muertos = append(muertos, m[1])
+		}
+	}
+	if len(muertos) > 0 {
+		t.Errorf("estos métodos del puente no los llama nadie en la ventana: %v\n"+
+			"O les falta la pantalla que los use —que es lo que ha pasado dos veces— o sobran y hay que "+
+			"quitarlos de aquí y de la lista de arriba.", muertos)
+	}
+}
+
+// raizDelRepo es la carpeta con el `go.mod`.
+func raizDelRepo(t *testing.T) string {
+	t.Helper()
+	d, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(d, "go.mod")); err == nil {
+			return d
+		}
+		arriba := filepath.Dir(d)
+		if arriba == d {
+			t.Fatal("no se encuentra la raíz del repositorio")
+		}
+		d = arriba
 	}
 }

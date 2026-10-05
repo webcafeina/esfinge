@@ -336,6 +336,14 @@ export type EnvioRecibido = {
   usuario: string;
   tipo: string;
   momento: number;
+  /**
+   * Esto **no es la copia de una entrada sino el acceso a una bóveda de proyecto**
+   * (ADR 0052). Cambia lo que se puede hacer con ello: no se guarda una entrada, se
+   * mete una bóveda en tu lista y se baja. `titulo` es entonces el nombre del
+   * proyecto, y `permiso`, lo que te dejan hacer dentro.
+   */
+  acceso?: boolean;
+  permiso?: string;
   /** Por qué no se puede abrir, si es el caso. Se enseña en vez de esconderlo. */
   error?: string;
 };
@@ -541,9 +549,6 @@ export const esfinge = {
   instalarActualizacion: () => llamar<void>("InstalarActualizacion"),
 
   verPreferencias: () => llamar<Preferencias>("VerPreferencias"),
-
-  /** Lo dispara el menú del sistema; aquí está para poder probarlo sin menú. */
-  ordenar: (que: string) => llamar<void>("Ordenar", que),
 
   guardarPreferencias: (p: Preferencias) => llamar<void>("GuardarPreferencias", p),
 
