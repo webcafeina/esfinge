@@ -195,6 +195,19 @@
       <select id="boveda-activa"></select>
     </div>
 
+    <!-- Una bóveda de otra persona (ADR 0052). Se dice **antes** de que alguien lo
+         intente, porque después del 403 ya se ha escrito algo que no va a salir de
+         aquí. Y se dice como lo dice la ventana: lo impone el servidor, no el
+         cifrado. -->
+    <p id="solo-ver" class="resultado" role="status" hidden>
+      Esta bóveda es de otra persona y solo puedes verla. Esfinge no ofrecerá guardar contraseñas en ella.
+    </p>
+
+    <!-- Y cuando el servidor dice que no: o te han quitado el acceso, o nunca pudiste
+         escribir. Lo que ya está en este navegador se queda, y hay que decirlo: desde
+         aquí no hay forma de borrarlo. -->
+    <p id="sin-acceso" class="resultado" role="status" hidden></p>
+
     <nav id="gestos" class="gestos" aria-label="Cuenta" hidden>
       <span id="gestos-correo" class="correo"></span>
       <!-- Las flechas que giran mientras sincroniza, como en la aplicación (2.25.2). -->

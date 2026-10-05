@@ -180,14 +180,15 @@ func (a *App) llaveDeLaPrincipal() []byte {
 // ponerActiva apunta cuál es la bóveda abierta y, si es un proyecto, se queda la
 // clave de la personal para poder conmutar.
 func (a *App) ponerActiva(ref, nombre string, llavePrincipal []byte) {
-	a.ponerActivaDe("", ref, nombre, llavePrincipal)
+	a.ponerActivaDe("", ref, nombre, "", llavePrincipal)
 }
 
-// ponerActivaDe es lo mismo diciendo **de quién** es (ADR 0052).
-func (a *App) ponerActivaDe(dueno, ref, nombre string, llavePrincipal []byte) {
+// ponerActivaDe es lo mismo diciendo **de quién** es y **qué puedo hacer en ella**
+// (ADR 0052). Con lo mío los dos van vacíos: en mi bóveda no hay permiso que mirar.
+func (a *App) ponerActivaDe(dueno, ref, nombre, permiso string, llavePrincipal []byte) {
 	a.mu.Lock()
 	vieja := a.llavePrincipal
-	a.duenoActivo = dueno
+	a.duenoActivo, a.permisoActivo = dueno, permiso
 	a.activa, a.nombreActivo = ref, nombre
 	if ref == "" {
 		a.llavePrincipal = nil
@@ -206,7 +207,8 @@ func (a *App) ponerActivaDe(dueno, ref, nombre string, llavePrincipal []byte) {
 func (a *App) olvidarLaPrincipal() {
 	a.mu.Lock()
 	vieja := a.llavePrincipal
-	a.llavePrincipal, a.activa, a.nombreActivo, a.duenoActivo = nil, "", "", ""
+	a.llavePrincipal, a.activa, a.nombreActivo = nil, "", ""
+	a.duenoActivo, a.permisoActivo = "", ""
 	a.mu.Unlock()
 	if vieja != nil {
 		cripto.Borrar(vieja)
@@ -238,6 +240,23 @@ func (a *App) duenoDeLaActiva() string {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.duenoActivo
+}
+
+// soloPuedoVerLaActiva es que lo abierto es **de otra persona y solo me dejó mirar**
+// (ADR 0052).
+//
+// Lo que esto frena no es el cifrado —la clave la tengo, y por eso la pantalla de
+// quién tiene acceso lo dice con todas las letras— sino **ofrecerse a escribir donde
+// el servidor va a decir que no**. Lo pregunta el canal del navegador; la ventana no,
+// a propósito: ahí hay dónde explicar lo que pasa y aquí no.
+//
+// Y con la lista sin poder leerse se contesta que sí, que solo puedo ver: equivocarse
+// hacia ahí cuesta una tarjeta que no sale, y al otro lado cuesta escribir algo que no
+// va a llegar a nadie.
+func (a *App) soloPuedoVerLaActiva() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.duenoActivo != "" && a.permisoActivo != "editar"
 }
 
 // rutaActiva es el fichero de la bóveda abierta, o el de la personal si no hay
@@ -584,7 +603,7 @@ func (a *App) AbrirCompartida(dueno, ref string) error {
 		return boveda.ErrCerrada
 	}
 	defer cripto.Borrar(llave)
-	a.conmutarACompartida(p, dueno, ref, c.Nombre, llave)
+	a.conmutarACompartida(p, dueno, ref, c.Nombre, c.Permiso, llave)
 	return nil
 }
 
@@ -602,9 +621,9 @@ func (a *App) laCompartida(dueno, ref string) (boveda.Compartida, bool) {
 // conmutarACompartida es `conmutarA` diciendo de quién es, con el mismo orden: **el
 // estado completo antes del aviso**, porque `cambiarBoveda` avisa a la ventana y la
 // ventana contesta preguntando el estado.
-func (a *App) conmutarACompartida(p *boveda.Boveda, dueno, ref, nombre string, llavePrincipal []byte) {
+func (a *App) conmutarACompartida(p *boveda.Boveda, dueno, ref, nombre, permiso string, llavePrincipal []byte) {
 	a.alCerrarLaBoveda()
-	a.ponerActivaDe(dueno, ref, nombre, llavePrincipal)
+	a.ponerActivaDe(dueno, ref, nombre, permiso, llavePrincipal)
 	a.cambiarBoveda(p)
 	a.Actividad()
 	a.buscarIconosSiProcede(a.ctx)

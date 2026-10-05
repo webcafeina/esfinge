@@ -28,7 +28,14 @@ import { entradaAJSON, entradaDesde, rfc3339, sinSecretos, coincide, copiar, typ
 import { SUITE } from "./identidad";
 import { pendientesDe, ponerPendientes, purgarPendientes, type Pendiente } from "./pendiente";
 import { ponerProyectos, proyectosDe, type Proyecto } from "./proyecto";
-import { abrirSellado, CODIFICACION_RETIRADA, ERR_SIN_ACCESO, tipoDeAcceso } from "./compartida";
+import {
+  abrirSellado,
+  compartidasDe,
+  CODIFICACION_RETIRADA,
+  ERR_SIN_ACCESO,
+  tipoDeAcceso,
+  type Compartida,
+} from "./compartida";
 import { ERR_CHECKSUM, normalizar, nuevaRecuperacion, pareceRecuperacion } from "./recuperacion";
 
 export const FORMATO = 1;
@@ -884,6 +891,31 @@ export class Boveda {
       // `guardar` vuelve a pedirla — eso es esperarse a uno mismo.
       await this._guardarSinCola();
     });
+  }
+
+  // ------------------------------------------------- las bóvedas de otras personas
+
+  /**
+   * Las bóvedas ajenas a las que tengo acceso (ADR 0052), la última usada arriba.
+   *
+   * Como los proyectos, **sin su clave**: lo que abre una compartida es la ranura
+   * sellada que va dentro de su propio fichero. Y como los proyectos, vienen por
+   * `extra` y la extensión no las gestiona — pero sí las abre, así que necesita saber
+   * cuáles hay, cómo se llaman y **qué permiso tengo**.
+   *
+   * Y lo que esta lista marca y no se ve: **`anotarUso` no está**. En la aplicación,
+   * abrir una apunta la fecha para ordenar la lista; aquí no, porque el orden lo decide
+   * la ventana y escribirlo desde el navegador sería una subida por haber mirado.
+   */
+  compartidas(): Compartida[] {
+    return compartidasDe(this.cont.extra)
+      .slice()
+      .sort((a, b) => ((a.usado ?? "") < (b.usado ?? "") ? 1 : -1));
+  }
+
+  /** Una por su dirección: el dueño y la referencia **en la cuenta de él**. */
+  laCompartida(dueno: string, ref: string): Compartida | undefined {
+    return compartidasDe(this.cont.extra).find((c) => c.dueno === dueno && c.ref === ref);
   }
 
   // ---------------------------------------------------------------- para fundir

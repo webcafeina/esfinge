@@ -368,7 +368,9 @@ func (f fuenteDelNavegador) Ofrecer(origen, dominio string, e navegador.Envio) (
 	}
 	host := hostDe(origen)
 	nada := navegador.Oferta{Accion: navegador.OfertaNada, Sitio: host}
-	if e.Secreto == "" || b.SoloLectura() || b.Excluido(dominio) {
+	// **Si no se puede escribir, no se ofrece**, y eso incluye una compartida de solo
+	// ver: la tarjeta es iniciativa de Esfinge en la página de otro.
+	if e.Secreto == "" || f.porQueNoSeEscribe(b) != "" || b.Excluido(dominio) {
 		return nada, nil
 	}
 
@@ -564,7 +566,7 @@ func (f fuenteDelNavegador) Llaves(origen, rpID string, permitidas []string) ([]
 		// sin ella no habría forma de distinguir una llave que el sitio rechazó. Si la
 		// bóveda no se puede escribir, se sigue como si nada: lo que se pierde es la
 		// marca, no la firma.
-		if len(quiere) > 0 && entera.Confirmada == "" {
+		if len(quiere) > 0 && entera.Confirmada == "" && f.porQueNoSeEscribe(b) == "" {
 			entera.Confirmada = time.Now().UTC().Format(time.RFC3339)
 			if err := b.Poner(entera); err == nil {
 				f.a.sistema.Avisar(EventoBovedaCambiada, nil)
@@ -632,7 +634,15 @@ func (f fuenteDelNavegador) DominiosConLlave() []string {
 // porque el banner ofrece abrirla igual que al firmar. Lo que no se hace es decir que
 // sí y luego ceder, que es lo que pasaría sin esta pregunta.
 func (f fuenteDelNavegador) PuedeCrearLlaves() bool {
-	return f.a.ajustes.Ver().LlavesDeAccesoEnElNavegador
+	if !f.a.ajustes.Ver().LlavesDeAccesoEnElNavegador {
+		return false
+	}
+	// **Y no en una bóveda ajena de solo ver** (ADR 0052). Aquí no vale el «la bóveda
+	// puede estar cerrada y aun así se puede crear»: eso se arregla abriéndola, y esto
+	// no se arregla con nada que pueda hacer quien está delante. Decir que sí y ceder al
+	// final es justo lo que esta pregunta existe para no hacer — y en una llave de
+	// acceso ceder al final es peor, porque el sitio ya ha sacado su diálogo.
+	return !f.a.soloPuedoVerLaActiva()
 }
 
 // CrearLlave genera una llave de acceso, la guarda en la bóveda y devuelve lo que
@@ -799,7 +809,7 @@ func (f fuenteDelNavegador) FirmarLlave(origen, rpID, id, reto string) (navegado
 	//
 	// No se reescribe si la fecha no ha cambiado: las fechas tienen resolución de un
 	// segundo y dos firmas seguidas no tienen por qué costar dos escrituras.
-	if ahora := time.Now().UTC().Format(time.RFC3339); e.Usada != ahora {
+	if ahora := time.Now().UTC().Format(time.RFC3339); e.Usada != ahora && f.porQueNoSeEscribe(b) == "" {
 		e.Usada = ahora
 		if err := b.Poner(e); err == nil {
 			f.a.sistema.Avisar(EventoBovedaCambiada, nil)
@@ -814,18 +824,47 @@ func (f fuenteDelNavegador) FirmarLlave(origen, rpID, id, reto string) (navegado
 	}, nil
 }
 
-// bovedaParaEscribir es la bóveda abierta **y en la que se puede escribir**. Una
-// bóveda de una versión más nueva de Esfinge se abre en solo lectura, y ahí el
-// navegador no escribe.
+// bovedaParaEscribir es la bóveda abierta **y en la que se puede escribir**.
 func (f fuenteDelNavegador) bovedaParaEscribir() (*boveda.Boveda, error) {
 	b := f.a.boveda()
 	if b == nil {
 		return nil, boveda.ErrCerrada
 	}
-	if b.SoloLectura() {
-		return nil, errors.New("Esta bóveda es de una versión más nueva de Esfinge y aquí no se puede escribir en ella")
+	if motivo := f.porQueNoSeEscribe(b); motivo != "" {
+		return nil, errors.New(motivo)
 	}
 	return b, nil
+}
+
+// porQueNoSeEscribe dice por qué el navegador no puede escribir en la bóveda abierta, o
+// vacío si sí puede. **Son dos razones y no la misma**, y por eso son dos frases:
+//
+//   - La bóveda la escribió **una versión más nueva** de Esfinge y se abrió en solo
+//     lectura. Lo que hay que hacer es actualizar.
+//   - La bóveda es **de otra persona y solo me dejó verla** (ADR 0052). No hay nada que
+//     actualizar: la clave para descifrarla la tengo y escribir funcionaría, y se
+//     quedaría en este equipo para siempre porque el servidor rechaza la subida con un
+//     403. Es lo mismo que dice la pantalla de quién tiene acceso, con las mismas
+//     palabras: lo impone el servidor, no el cifrado.
+//
+// Decirlo con la frase del otro no sería impreciso: **mandaría a mirar donde no hay
+// nada**, que es lo que este proyecto ya aprendió con «esa no es la contraseña».
+//
+// **Y aquí el navegador es más estrecho que la ventana, a propósito.** En la ventana, con
+// una compartida de solo ver se puede editar: lo eligió el cliente, la pantalla lo
+// explica y lo que se pierde es visible. En una página de otro no hay pantalla donde
+// explicar nada y la tarjeta la saca Esfinge por su cuenta, así que ofrecerse a guardar
+// algo que no va a salir de este navegador sería media promesa — y en un gestor de
+// contraseñas eso es peor que ninguna. **No se iguale esto "por consistencia" sin
+// preguntar**: la diferencia es la pantalla, no un descuido.
+func (f fuenteDelNavegador) porQueNoSeEscribe(b *boveda.Boveda) string {
+	if b.SoloLectura() {
+		return "Esta bóveda es de una versión más nueva de Esfinge y aquí no se puede escribir en ella"
+	}
+	if f.a.soloPuedoVerLaActiva() {
+		return "Solo puedes ver esta bóveda compartida: lo que escribieras aquí no llegaría a nadie más"
+	}
+	return ""
 }
 
 func cuentaDe(x boveda.Entrada) navegador.Cuenta {

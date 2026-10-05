@@ -81,6 +81,14 @@ type App struct {
 	// pedirlo cada vez obligaría a abrir el fichero de la personal en cada
 	// `EstadoBoveda`, y eso lo pide la ventana constantemente.
 	nombreActivo string
+	// permisoActivo es qué puedo hacer en la bóveda ajena abierta (ADR 0052): «ver» o
+	// «editar», y vacío cuando lo abierto es mío.
+	//
+	// Se apunta al conmutar por lo mismo que `nombreActivo`, y aquí pesa más: quien lo
+	// pregunta es el canal del navegador en **cada envío de formulario**, para decidir
+	// si ofrece guardar. Yendo a buscarlo, eso sería abrir y descifrar el fichero de la
+	// personal cada vez que alguien pulsa «Entrar» en una web.
+	permisoActivo string
 	// llavePrincipal son los 43 bytes de la clave de la bóveda personal, mientras
 	// hay un proyecto abierto. Sin esto, conmutar de proyecto a proyecto pediría la
 	// contraseña maestra cada vez. **Se borra al bloquear**, o el reloj del bloqueo

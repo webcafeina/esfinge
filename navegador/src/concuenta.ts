@@ -28,7 +28,7 @@
 
 import { api } from "./api";
 import { Boveda, ErrorBoveda } from "./nucleo/boveda";
-import { Cliente, ErrorDeRed, RAIZ_POR_DEFECTO, sesionCaducada, sinBoveda, type Sesion } from "./nucleo/cliente";
+import { Cliente, ErrorDeRed, RAIZ_POR_DEFECTO, sesionCaducada, sinAcceso, sinBoveda, type Sesion } from "./nucleo/cliente";
 import { derivarAcceso, normalizarCorreo } from "./nucleo/cuenta";
 import { base64url, desdeBase64 } from "./nucleo/esf1";
 import { abrirEnvio, mandarEntrada, type Envio } from "./nucleo/envio";
@@ -61,6 +61,15 @@ const S = {
    */
   activa: "cuenta-activa",
   /**
+   * **De quién** es la bóveda abierta (ADR 0052): vacío es mía —la personal o un
+   * proyecto mío—, y con algo dentro es la cuenta de otra persona.
+   *
+   * Va aparte de `activa` y no pegado a ella porque la referencia es la de **esa**
+   * cuenta: dos personas pueden tener proyectos con la misma referencia sin saberlo, y
+   * lo que distingue una bóveda no es la referencia sino la pareja.
+   */
+  dueno: "cuenta-dueno",
+  /**
    * La clave de la bóveda **personal**, mientras hay un proyecto abierto: sin ella,
    * cambiar de proyecto pediría la contraseña maestra cada vez.
    *
@@ -72,22 +81,32 @@ const S = {
 } as const;
 
 /**
- * Dónde se guarda el documento de una bóveda: la personal en la clave de siempre,
- * y cada proyecto en la suya (ADR 0050).
+ * Qué se le añade a la clave de `storage.local` para hablar de una bóveda y no de
+ * otra: nada para la personal, la referencia para un proyecto mío (ADR 0050) y
+ * **`de:<dueño>:<ref>` para una de otra persona** (ADR 0052).
  *
- * Sin prefijo para la personal **a propósito**: es lo que ya está escrito en los
+ * Sin sufijo para la personal **a propósito**: es lo que ya está escrito en los
  * navegadores que hay, así que no hace falta migrar nada.
+ *
+ * Y lo ajeno va con su marca delante, como en la aplicación va en su propia carpeta:
+ * una referencia a secas podría ser un proyecto mío o el de otro, y confundirlos sería
+ * subir una bóveda a la dirección equivocada.
  */
-function claveDeBoveda(ref: string): string {
-  return ref === "" ? L.boveda : `${L.boveda}:${ref}`;
+function sufijoDeBoveda(ref: string, dueno: string): string {
+  if (dueno !== "") return `:de:${dueno}:${ref}`;
+  return ref === "" ? "" : `:${ref}`;
+}
+
+function claveDeBoveda(ref: string, dueno = ""): string {
+  return L.boveda + sufijoDeBoveda(ref, dueno);
 }
 
 /** Y lo mismo para lo que la sincronización recuerda de cada una. */
-function claveDeBase(ref: string): string {
-  return ref === "" ? L.base : `${L.base}:${ref}`;
+function claveDeBase(ref: string, dueno = ""): string {
+  return L.base + sufijoDeBoveda(ref, dueno);
 }
-function claveDeRecuerdo(ref: string): string {
-  return ref === "" ? L.recuerdo : `${L.recuerdo}:${ref}`;
+function claveDeRecuerdo(ref: string, dueno = ""): string {
+  return L.recuerdo + sufijoDeBoveda(ref, dueno);
 }
 
 /** Los datos de la cuenta en este navegador. Nada de esto sirve sin la maestra, salvo el testigo. */
@@ -103,7 +122,19 @@ type Datos = {
 };
 
 export type EstadoSincro = {
-  estado: "apagada" | "sincronizando" | "al-dia" | "sin-conexion" | "hay-que-entrar" | "muchos-borrados" | "error";
+  estado:
+    | "apagada"
+    | "sincronizando"
+    | "al-dia"
+    | "sin-conexion"
+    | "hay-que-entrar"
+    | "muchos-borrados"
+    /**
+     * Te han quitado el acceso a esta bóveda ajena, o solo puedes verla (ADR 0052).
+     * **No es «hay-que-entrar»**: la sesión está bien y la bóveda propia no se toca.
+     */
+    | "sin-acceso"
+    | "error";
   ultima?: string;
   mensaje?: string;
 };
@@ -129,6 +160,18 @@ export type EstadoDeCuenta = {
   activa: string;
   nombreActiva: string;
   proyectos: { ref: string; nombre: string; enEsteNavegador: boolean }[];
+  /**
+   * De quién es la bóveda abierta (ADR 0052): vacío, mía. Y las bóvedas ajenas a las
+   * que tengo acceso, para poder cambiar a ellas.
+   *
+   * El permiso viaja **informativo**: el que manda es el del servidor, que contesta
+   * 403. Sirve para dos cosas que no se pueden hacer después del 403 — decir «solo
+   * puedes ver» antes de que alguien lo intente, y no ofrecer guardar en una página.
+   */
+  duenoActiva: string;
+  compartidas: { dueno: string; ref: string; nombre: string; permiso: string; enEsteNavegador: boolean }[];
+  /** La abierta es ajena y solo se puede mirar. Lo mira el panel y lo mira la fuente. */
+  soloPuedoVer: boolean;
 };
 
 /** Lo que el panel —y solo el panel— le puede pedir a la cuenta. */
@@ -155,6 +198,9 @@ export type PeticionDeCuenta =
   // la anterior, así que todo lo demás —rellenar, los códigos, guardar— sigue
   // hablando de «la bóveda» y contesta de la que esté activa.
   | { cuenta: "abrirProyecto"; ref: string }
+  // Y las bóvedas de otras personas (ADR 0052). **Solo abrirlas**: dar acceso, quitarlo
+  // y aceptarlo pasa entero en la ventana, y el panel ni lo nombra.
+  | { cuenta: "abrirCompartida"; dueno: string; ref: string }
   | { cuenta: "volverALaPersonal" };
 
 /** Lo que el panel enseña de un envío: de quién viene y qué es, sin secretos. */
@@ -233,11 +279,13 @@ async function olvidarEntrada(): Promise<void> {
 async function laBoveda(): Promise<Boveda | null> {
   if (abierta?.abierta) return abierta;
   const llave = await sesion<string>(S.llave);
-  const texto = await local<string>(claveDeBoveda(await refActiva()));
+  const ref = await refActiva();
+  const dueno = await duenoActivo();
+  const texto = await local<string>(claveDeBoveda(ref, dueno));
   if (!llave || !texto) return null;
   try {
     abierta = await Boveda.abrirConClave(texto, llave);
-    conectar(abierta, await refActiva());
+    conectar(abierta, ref, dueno);
     return abierta;
   } catch {
     await api.storage.session.remove(S.llave);
@@ -250,6 +298,11 @@ export async function refActiva(): Promise<string> {
   return (await sesion<string>(S.activa)) ?? "";
 }
 
+/** Y de quién es (ADR 0052): vacío, mía. */
+export async function duenoActivo(): Promise<string> {
+  return (await sesion<string>(S.dueno)) ?? "";
+}
+
 /**
  * Hace algo con la **bóveda personal**, esté abierta o detrás de un proyecto.
  *
@@ -260,8 +313,10 @@ export async function refActiva(): Promise<string> {
  * operación. **Secuencial, nunca dos abiertas de cara a quien mira.**
  */
 async function conLaPersonal<T>(hacer: (b: Boveda) => Promise<T>): Promise<T> {
-  const ref = await refActiva();
-  if (ref === "") {
+  // **Las dos cosas, no solo la referencia**: una bóveda ajena tiene referencia, así
+  // que preguntar solo por ella bastaría hoy —las referencias no son vacías— y dejaría
+  // de bastar el día que algo pudiera abrirse sin ella.
+  if ((await refActiva()) === "" && (await duenoActivo()) === "") {
     const b = await laBoveda();
     if (!b) throw new ErrorBoveda("cerrada");
     return hacer(b);
@@ -278,18 +333,23 @@ async function conLaPersonal<T>(hacer: (b: Boveda) => Promise<T>): Promise<T> {
 }
 
 /** Cada guardado va a `storage.local` y pide subir, con una espera para juntar los seguidos. */
-function conectar(b: Boveda, ref: string) {
+function conectar(b: Boveda, ref: string, dueno = "") {
   b.alGuardar = (texto) => {
-    api.storage.local.set({ [claveDeBoveda(ref)]: texto }).catch(() => {});
+    api.storage.local.set({ [claveDeBoveda(ref, dueno)]: texto }).catch(() => {});
     pedirSincro(ESPERA_TRAS_GUARDAR);
   };
 }
 
-async function ponerLaAbierta(b: Boveda, ref = "") {
+async function ponerLaAbierta(b: Boveda, ref = "", dueno = "") {
   abierta = b;
-  conectar(b, ref);
-  await api.storage.local.set({ [claveDeBoveda(ref)]: b.documento() });
-  await api.storage.session.set({ [S.llave]: b._llaveParaLaSesion(), [S.actividad]: Date.now(), [S.activa]: ref });
+  conectar(b, ref, dueno);
+  await api.storage.local.set({ [claveDeBoveda(ref, dueno)]: b.documento() });
+  await api.storage.session.set({
+    [S.llave]: b._llaveParaLaSesion(),
+    [S.actividad]: Date.now(),
+    [S.activa]: ref,
+    [S.dueno]: dueno,
+  });
 }
 
 export async function bloquear(): Promise<void> {
@@ -299,7 +359,7 @@ export async function bloquear(): Promise<void> {
   // línea, bloquear cerraría el proyecto y dejaría en memoria con qué abrir todos
   // los demás: el plazo dejaría de significar lo que dice justo en las bóvedas que
   // no se están mirando.
-  await api.storage.session.remove([S.llave, S.actividad, S.activa, S.llavePrincipal]);
+  await api.storage.session.remove([S.llave, S.actividad, S.activa, S.dueno, S.llavePrincipal]);
 }
 
 /** Lo que hace una persona. **Nada que se repita solo llama aquí.** */
@@ -325,25 +385,43 @@ export async function estado(): Promise<EstadoDeCuenta> {
   if (d && !d.sesion) sincro = { estado: "hay-que-entrar", mensaje: sincro.mensaje ?? "Vuelve a entrar en la cuenta para sincronizar" };
   else if (!b) sincro = { ...sincro, estado: sincro.estado === "hay-que-entrar" ? sincro.estado : "apagada" };
   const activa = await refActiva();
-  // La lista solo se puede leer con la bóveda abierta —vive en el cuerpo cifrado de
-  // la personal—, así que cerrada se contesta vacía y el panel no enseña nada: es lo
-  // mismo que pasa con las cuentas.
+  const dueno = await duenoActivo();
+  // Las dos listas solo se pueden leer con la bóveda abierta —viven en el cuerpo
+  // cifrado de la personal—, así que cerrada se contestan vacías y el panel no enseña
+  // nada: es lo mismo que pasa con las cuentas.
   let proyectos: { ref: string; nombre: string; enEsteNavegador: boolean }[] = [];
+  let compartidas: EstadoDeCuenta["compartidas"] = [];
   if (b) {
     try {
-      proyectos = await conLaPersonal(async (p) => {
-        const lista = p.proyectos().filter((x) => !x.archivado);
-        const hay = await api.storage.local.get(lista.map((x) => claveDeBoveda(x.ref)));
-        return lista.map((x) => ({
-          ref: x.ref,
-          nombre: x.nombre,
-          enEsteNavegador: hay[claveDeBoveda(x.ref)] !== undefined,
-        }));
+      const leido = await conLaPersonal(async (p) => {
+        const mios = p.proyectos().filter((x) => !x.archivado);
+        const ajenas = p.compartidas();
+        // **Una sola lectura de `storage` para las dos listas**: pedirla por bóveda
+        // haría una llamada por fila cada vez que se abre el panel.
+        const claves = [...mios.map((x) => claveDeBoveda(x.ref)), ...ajenas.map((x) => claveDeBoveda(x.ref, x.dueno))];
+        const hay = await api.storage.local.get(claves);
+        return {
+          proyectos: mios.map((x) => ({
+            ref: x.ref,
+            nombre: x.nombre,
+            enEsteNavegador: hay[claveDeBoveda(x.ref)] !== undefined,
+          })),
+          compartidas: ajenas.map((x) => ({
+            dueno: x.dueno,
+            ref: x.ref,
+            nombre: x.nombre,
+            permiso: x.permiso,
+            enEsteNavegador: hay[claveDeBoveda(x.ref, x.dueno)] !== undefined,
+          })),
+        };
       });
+      proyectos = leido.proyectos;
+      compartidas = leido.compartidas;
     } catch {
       /* la bóveda se ha cerrado entre medias: el panel lo verá por `abierta` */
     }
   }
+  const laAjenaAbierta = dueno === "" ? undefined : compartidas.find((x) => x.dueno === dueno && x.ref === activa);
   return {
     modo: d ? "cuenta" : "local",
     correo: d?.correo,
@@ -353,8 +431,15 @@ export async function estado(): Promise<EstadoDeCuenta> {
     sincro,
     bloqueo: MINUTOS_DE_BLOQUEO,
     activa,
-    nombreActiva: proyectos.find((x) => x.ref === activa)?.nombre ?? "",
+    nombreActiva: (dueno === "" ? proyectos.find((x) => x.ref === activa)?.nombre : laAjenaAbierta?.nombre) ?? "",
     proyectos,
+    duenoActiva: dueno,
+    compartidas,
+    // **Sin saber el permiso no se da por bueno escribir.** Con la bóveda ajena abierta
+    // y la lista todavía sin leer, `laAjenaAbierta` es `undefined`: ahí lo prudente es
+    // «solo puedo ver», porque equivocarse hacia ahí cuesta una tarjeta que no sale y
+    // equivocarse al otro lado cuesta escribir algo que no va a subir nunca.
+    soloPuedoVer: dueno !== "" && laAjenaAbierta?.permiso !== "editar",
   };
 }
 
@@ -399,12 +484,60 @@ export async function abrirProyecto(ref: string): Promise<void> {
 }
 
 /**
+ * Abre una bóveda **de otra persona** a la que me han dado acceso (ADR 0052).
+ *
+ * Es `abrirProyecto` con tres diferencias, y las tres importan:
+ *
+ *   - **La ranura es otra**: no está envuelta con la clave de mi personal sino sellada
+ *     hacia mi identidad, así que la abre `abrirCompartida` y no `abrirProyecto`.
+ *   - **El fichero vive en otra cuenta**, así que se baja por la ruta de las
+ *     compartidas y el dueño se guarda al conmutar.
+ *   - **Puede fallar con un 403** aunque esté en mi lista: el acceso lo quita el dueño
+ *     cuando quiere y mi lista no se entera hasta la siguiente pasada. Entonces no se
+ *     deja nada a medias: ni documento guardado, ni bóveda conmutada.
+ */
+export async function abrirCompartida(dueno: string, ref: string): Promise<void> {
+  if (dueno === "") return abrirProyecto(ref);
+  const llavePrincipal =
+    (await refActiva()) === "" && (await duenoActivo()) === ""
+      ? (await laBoveda())?._llaveParaLaSesion()
+      : await sesion<string>(S.llavePrincipal);
+  if (!llavePrincipal) throw new ErrorBoveda("cerrada");
+
+  // Quién soy yo en esa bóveda sale de **mi** lista, que es donde lo dejó la ventana al
+  // aceptar el acceso. Sin esa fila no hay titular, y sin titular no hay ranura que
+  // probar: el fichero podría estar aquí y seguiría sin poderse abrir.
+  const mia = await conLaPersonal(async (p) => p.laCompartida(dueno, ref));
+  if (!mia) throw new Error("Esa bóveda compartida no está en tu lista: acéptala en la aplicación de Esfinge");
+
+  let texto = await local<string>(claveDeBoveda(ref, dueno));
+  if (texto === undefined) {
+    const d = await datos();
+    if (!d?.sesion) throw new Error("Vuelve a entrar en la cuenta para traerte esa bóveda");
+    const token = await conLaPersonal((p) => p.abrirSecreto(d.sesion));
+    const bajada = await new Cliente(d.servidor).bajarCompartida(token, dueno, ref, 0);
+    if (!bajada) throw new Error("Esa bóveda compartida ya no está en el servidor");
+    texto = bajada.datos;
+  }
+
+  // **Se abre antes de guardar nada**, igual que un proyecto: así un acceso retirado no
+  // deja puesto un documento que ya no sirve.
+  const p = await conLaPersonal((mi) => Boveda.abrirCompartida(texto!, mia.titular, mi));
+  await api.storage.local.set({ [claveDeBoveda(ref, dueno)]: texto });
+  await api.storage.session.set({ [S.llavePrincipal]: llavePrincipal });
+  abierta?.cerrar();
+  await ponerLaAbierta(p, ref, dueno);
+  avisarDeCambios();
+  pedirSincro(0);
+}
+
+/**
  * Vuelve a la bóveda personal. **Sin pedir la contraseña**, al contrario que en la
  * aplicación: aquí la clave de la personal está en `storage.session` y lo que la
  * borra es bloquear o cerrar el navegador, que es lo mismo que la protege.
  */
 export async function volverALaPersonal(): Promise<void> {
-  if ((await refActiva()) === "") return;
+  if ((await refActiva()) === "" && (await duenoActivo()) === "") return;
   const llave = await sesion<string>(S.llavePrincipal);
   const texto = await local<string>(claveDeBoveda(""));
   if (!llave || !texto) throw new ErrorBoveda("cerrada");
@@ -568,17 +701,17 @@ async function salir(): Promise<void> {
  * dejaría la versión de una bóveda apuntada como si fuera la de la otra, y la
  * siguiente pasada subiría encima de lo que no tocaba.
  */
-function memoriaDe(ref: string): Memoria {
+function memoriaDe(ref: string, dueno = ""): Memoria {
   return {
     async cargar() {
-      const recuerdo = await local<Recuerdo>(claveDeRecuerdo(ref));
-      const base = (await local<string>(claveDeBase(ref))) ?? null;
+      const recuerdo = await local<Recuerdo>(claveDeRecuerdo(ref, dueno));
+      const base = (await local<string>(claveDeBase(ref, dueno))) ?? null;
       if (!recuerdo) return { recuerdo: { version: 0, serie: -1 }, base: null };
       // Sin base no se sabe qué hay subido: se fuerza la pasada, como en Go.
       return { recuerdo: base ? recuerdo : { version: recuerdo.version, serie: -1 }, base };
     },
     async guardar(r, base) {
-      await api.storage.local.set({ [claveDeRecuerdo(ref)]: r, [claveDeBase(ref)]: base });
+      await api.storage.local.set({ [claveDeRecuerdo(ref, dueno)]: r, [claveDeBase(ref, dueno)]: base });
     },
   };
 }
@@ -786,7 +919,8 @@ async function unaPasada(aunqueBorreMucho = false): Promise<void> {
   }
   try {
     const ref = await refActiva();
-    const r = await pasada(b, cliente, token, memoriaDe(ref), aunqueBorreMucho, ref);
+    const dueno = await duenoActivo();
+    const r = await pasada(b, cliente, token, memoriaDe(ref, dueno), aunqueBorreMucho, ref, dueno);
     // **Y de paso, las copias que esperaban** (B3). Que falle no ensucia la
     // sincronización, que sí ha ido bien: se repasa en la siguiente.
     await repasarPendientes(b, cliente, token).catch(() => {});
@@ -802,6 +936,19 @@ async function unaPasada(aunqueBorreMucho = false): Promise<void> {
         mensaje:
           "Se ha cerrado porque tu cuenta ya no reconoce este navegador: se olvidó desde otro equipo, se cambió la contraseña o la sesión caducó.",
       });
+      return;
+    }
+    if (sinAcceso(e)) {
+      // **Te han quitado el acceso a esta bóveda, o solo puedes verla** (ADR 0052).
+      //
+      // No se puede tratar como el 401: aquél olvida la sesión y cierra, porque la
+      // sesión se perdió. Aquí la sesión está bien y la bóveda **propia** no tiene nada
+      // que ver — cerrarla porque alguien te quitó el acceso a la suya sería castigarte
+      // por lo que hizo otro.
+      //
+      // Y lo que ya está en este navegador se queda: desde aquí no hay forma de
+      // borrarlo, así que el panel lo dice en vez de disimularlo.
+      await ponerSincro({ estado: "sin-acceso", mensaje: (e as Error).message });
       return;
     }
     if (e instanceof ErrorDeRed) {
@@ -844,7 +991,7 @@ export async function tic(ahora = Date.now()): Promise<void> {
   if ((await sesion<string>(S.llave)) && ultima !== undefined && ahora - ultima >= MINUTOS_DE_BLOQUEO * 60_000) {
     // Antes de cerrar, lo pendiente se sube: cerrada ya no se puede.
     const b = await laBoveda();
-    if (b && (await pendiente(b, memoriaDe(await refActiva())))) await sincronizar().catch(() => {});
+    if (b && (await pendiente(b, memoriaDe(await refActiva(), await duenoActivo())))) await sincronizar().catch(() => {});
     await bloquear();
     return;
   }
@@ -914,6 +1061,10 @@ export async function atenderAlPanel(p: PeticionDeCuenta): Promise<RespuestaDeCu
         await actividad();
         await abrirProyecto(p.ref);
         break;
+      case "abrirCompartida":
+        await actividad();
+        await abrirCompartida(p.dueno, p.ref);
+        break;
       case "volverALaPersonal":
         await actividad();
         await volverALaPersonal();
@@ -940,5 +1091,27 @@ export async function atenderAlPanel(p: PeticionDeCuenta): Promise<RespuestaDeCu
 export async function atenderConCuenta(p: Peticion, dePersona: boolean): Promise<Respuesta> {
   if (dePersona) await actividad();
   const existe = (await local<string>(L.boveda)) !== undefined;
-  return atender(p, { existe, boveda: await laBoveda() });
+  return atender(p, { existe, boveda: await laBoveda(), soloVer: await soloPuedoVer() });
+}
+
+/**
+ * Si lo que está abierto es una bóveda ajena de solo ver (ADR 0052).
+ *
+ * Se mira **aquí y no en la fuente** porque el permiso no está en la bóveda: está en mi
+ * lista de compartidas, que vive en la personal, y la fuente no sabe de personales ni de
+ * cuentas.
+ *
+ * Y se mira con cuidado al revés: si no se puede leer la lista —la bóveda se cerró entre
+ * medias— se contesta que **sí** solo se puede ver. Equivocarse hacia ahí cuesta una
+ * tarjeta que no sale; al otro lado cuesta escribir algo que no va a subir nunca.
+ */
+async function soloPuedoVer(): Promise<boolean> {
+  const dueno = await duenoActivo();
+  if (dueno === "") return false;
+  const ref = await refActiva();
+  try {
+    return (await conLaPersonal(async (p) => p.laCompartida(dueno, ref)))?.permiso !== "editar";
+  } catch {
+    return true;
+  }
 }

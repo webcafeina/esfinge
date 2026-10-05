@@ -99,7 +99,18 @@ const frenos = {
 
 const mal = (motivo: Respuesta["motivo"], error: string): Respuesta => ({ ok: false, motivo, error });
 
-export type EstadoDeLaFuente = { existe: boolean; boveda: Boveda | null };
+export type EstadoDeLaFuente = {
+  existe: boolean;
+  boveda: Boveda | null;
+  /**
+   * La bóveda abierta es **de otra persona y solo se puede mirar** (ADR 0052).
+   *
+   * Viene de fuera y no de la bóveda porque el permiso no está en ella: está en la
+   * lista de compartidas de mi bóveda personal, y esta fuente no sabe de personales ni
+   * de cuentas. Con el canal de la aplicación lo contesta Go; con cuenta, `concuenta.ts`.
+   */
+  soloVer?: boolean;
+};
 
 /**
  * Contesta una petición. Lo que se escribe en la bóveda lo guarda ella, y su
@@ -152,11 +163,11 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
       case "rellenar-codigo":
         return { ok: true, codigo: await codigoDe(entradaDe(b, p.id ?? "", dominio)) };
       case "ofrecer":
-        return { ok: true, oferta: ofrecer(b, p.origen ?? "", dominio, p) };
+        return { ok: true, oferta: ofrecer(b, p.origen ?? "", dominio, p, porQueNoSeEscribe(b, e)) };
       case "guardar-cuenta":
-        return { ok: true, guardada: await guardarCuenta(b, p.origen ?? "", dominio, p) };
+        return { ok: true, guardada: await guardarCuenta(b, p.origen ?? "", dominio, p, porQueNoSeEscribe(b, e)) };
       case "actualizar-cuenta":
-        return { ok: true, guardada: await actualizarCuenta(b, p.id ?? "", dominio, p) };
+        return { ok: true, guardada: await actualizarCuenta(b, p.id ?? "", dominio, p, porQueNoSeEscribe(b, e)) };
       // **Las llaves de acceso** (ADR 0048). Las dos empiezan por lo mismo: el
       // `rpId` que pide el sitio se comprueba contra el origen que pone el
       // navegador. `encaja` no sirve aquí y el porqué está en `llaves.ts`.
@@ -184,7 +195,7 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
             // **Con cuenta siempre se puede crear**: el interruptor vive en los
             // Ajustes de la aplicación y aquí no hay aplicación que preguntar. Está
             // apuntado en `docs/deuda.md` como la laguna que es.
-            puedeCrear: !b.soloLectura,
+            puedeCrear: porQueNoSeEscribe(b, e) === "",
           };
         }
         const rp = rpIdPermitido(p.rpId, p.origen ?? "");
@@ -208,7 +219,7 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
         // ocurre **una vez por llave** y sin ella no hay forma de distinguir una que el
         // sitio rechazó. Con la bóveda en solo lectura se sigue como si nada: lo que se
         // pierde es la marca, no la firma.
-        if ((p.permitidas ?? []).length > 0 && !b.soloLectura) {
+        if ((p.permitidas ?? []).length > 0 && porQueNoSeEscribe(b, e) === "") {
           for (const x of usables) {
             if (!x.confirmada) await b.poner({ ...x, confirmada: rfc3339(ahoraDelNucleo()) });
           }
@@ -240,7 +251,7 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
         // segundo y el reloj se para en las pruebas. Con los milisegundos dentro, lo que
         // escribe este lado no es lo que escribiría Go para el mismo instante.
         const cuando = rfc3339(ahoraDelNucleo());
-        if (x.usada !== cuando && !b.soloLectura) {
+        if (x.usada !== cuando && porQueNoSeEscribe(b, e) === "") {
           try {
             await b.poner({ ...x, usada: cuando });
           } catch {
@@ -255,7 +266,7 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
       // de la bóveda, y solo al final se genera y se escribe. Lo que se va a rechazar
       // se rechaza sin tocar nada.
       case "crear-llave": {
-        if (b.soloLectura) throw new Error(SOLO_LECTURA);
+        if (porQueNoSeEscribe(b, e)) throw new Error(porQueNoSeEscribe(b, e));
         const rp = rpIdPermitido(p.rpId, p.origen ?? "");
         if (!rp) return mal("no-encaja", "Ese sitio no puede crear una llave de acceso para ese dominio");
         const suyo = origenDe(p.origen ?? "");
@@ -319,7 +330,7 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
         };
       }
       case "nunca-aqui":
-        if (b.soloLectura) throw new Error(SOLO_LECTURA);
+        if (porQueNoSeEscribe(b, e)) throw new Error(porQueNoSeEscribe(b, e));
         await b.excluir(dominio);
         return { ok: true };
     }
@@ -330,6 +341,27 @@ export async function atender(p: Peticion, e: EstadoDeLaFuente, ahora = Date.now
 }
 
 const SOLO_LECTURA = "Esta bóveda es de una versión más nueva de Esfinge y aquí no se puede escribir en ella";
+
+/**
+ * **Y la otra razón para no escribir, que no es la misma** (ADR 0052): la bóveda se
+ * entiende perfectamente, lo que pasa es que es de otra persona y solo me dejó mirar.
+ *
+ * Son dos frases y no una porque un mensaje impreciso no es impreciso: señala a otro
+ * sitio. «Actualiza Esfinge» ante un permiso de solo ver manda a mirar donde no hay nada.
+ *
+ * Y dice **lo que de verdad pasaría**: la clave para descifrar la tengo, así que escribir
+ * aquí funcionaría — y se quedaría en este navegador para siempre, porque el servidor
+ * rechaza la subida con un 403. Es lo mismo que la ventana dice en la pantalla de quién
+ * tiene acceso, con las mismas palabras: lo impone el servidor, no el cifrado.
+ */
+const SOLO_VER = "Solo puedes ver esta bóveda compartida: lo que escribieras aquí no llegaría a nadie más";
+
+/** Por qué no se puede escribir en la bóveda abierta, o vacío si sí se puede. */
+function porQueNoSeEscribe(b: Boveda, e: EstadoDeLaFuente): string {
+  if (b.soloLectura) return SOLO_LECTURA;
+  if (e.soloVer === true) return SOLO_VER;
+  return "";
+}
 
 function esEscritura(que: Peticion["que"]): boolean {
   // **Crear una llave de acceso es la escritura más cara de todas**, y por eso está
@@ -405,12 +437,16 @@ export function tituloDeSitio(dominio: string): string {
 }
 
 /** Qué proponer tras un envío, sin escribir nada. Las reglas de `Ofrecer` en Go, en el mismo orden. */
-export function ofrecer(b: Boveda, origen: string, dominio: string, e: Peticion): Oferta {
+export function ofrecer(b: Boveda, origen: string, dominio: string, e: Peticion, noSeEscribe = ""): Oferta {
   const host = hostDe(origen);
   const nada: Oferta = { accion: "nada", sitio: host };
   const secreto = e.secreto ?? "";
   const usuarioEnvio = e.usuario ?? "";
-  if (!secreto || b.soloLectura || b.excluido(dominio)) return nada;
+  // **Si no se puede escribir, no se ofrece.** Con una bóveda de solo ver eso es lo
+  // único que hay que decidir aquí: la tarjeta es iniciativa de Esfinge en la página de
+  // otro, y proponer guardar algo que nunca va a salir de este navegador es media
+  // promesa — que en un gestor de contraseñas es peor que ninguna.
+  if (!secreto || noSeEscribe || b.excluido(dominio)) return nada;
   const delSitio = b
     .buscar("")
     .filter((x) => x.tipo === "credencial" && leEncaja(x, dominio))
@@ -429,8 +465,8 @@ export function ofrecer(b: Boveda, origen: string, dominio: string, e: Peticion)
   return { accion: "guardar", sitio: host, titulo: tituloDeSitio(dominio) };
 }
 
-async function guardarCuenta(b: Boveda, origen: string, dominio: string, e: Peticion): Promise<Cuenta> {
-  if (b.soloLectura) throw new Error(SOLO_LECTURA);
+async function guardarCuenta(b: Boveda, origen: string, dominio: string, e: Peticion, noSeEscribe = ""): Promise<Cuenta> {
+  if (noSeEscribe) throw new Error(noSeEscribe);
   if (!e.secreto) throw new Error("No hay ninguna contraseña que guardar");
   const host = hostDe(origen);
   if (!host) throw new Error("De esa dirección no se puede sacar un dominio");
@@ -450,8 +486,8 @@ async function guardarCuenta(b: Boveda, origen: string, dominio: string, e: Peti
   return { id: "", titulo: puesta.titulo, usuario: puesta.usuario ?? "" };
 }
 
-async function actualizarCuenta(b: Boveda, id: string, dominio: string, e: Peticion): Promise<Cuenta> {
-  if (b.soloLectura) throw new Error(SOLO_LECTURA);
+async function actualizarCuenta(b: Boveda, id: string, dominio: string, e: Peticion, noSeEscribe = ""): Promise<Cuenta> {
+  if (noSeEscribe) throw new Error(noSeEscribe);
   if (!e.secreto) throw new Error("No hay ninguna contraseña nueva");
   const x = entradaDe(b, id, dominio);
   if (x.tipo !== "credencial") throw new Error("Esa entrada no es una cuenta");

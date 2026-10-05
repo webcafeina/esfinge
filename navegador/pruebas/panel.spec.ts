@@ -56,6 +56,13 @@ type Guion = {
    * con el número escrito dentro se cae sola en cuanto alguien la sube.
    */
   aviso?: number;
+  /**
+   * Lo que el trabajador contesta a lo de la cuenta —`{cuenta: …}`— en su campo
+   * `estado`. Sin esto, el panel no pinta nada de la cuenta y el selector de bóveda no
+   * existe: los mensajes de la cuenta caían en el `else` del doble, que contesta lo del
+   * portapapeles (ADR 0052).
+   */
+  estado?: unknown;
 };
 
 /** Lo que la `chrome` de mentira deja a la vista de las pruebas. */
@@ -123,7 +130,16 @@ async function abrir(page: Page, guion: Guion) {
         connect: () =>
           puerto((m, oyentes) => {
             rastro.__mensajes.push(m as { que: string });
-            const r = (m as { que: string }).que === "cuentas" ? g.cuentas : { ok: true, copiado: { portapapeles: 30 } };
+            const p = m as { que?: string; cuenta?: string };
+            // **Lo de la cuenta se distingue por el campo y no por el valor**: el
+            // protocolo del canal usa `que` y el de la cuenta `cuenta`, y así un verbo
+            // nuevo de la cuenta no se cuela como una respuesta del portapapeles.
+            const r =
+              p.cuenta !== undefined
+                ? { ok: true, estado: g.estado }
+                : p.que === "cuentas"
+                  ? g.cuentas
+                  : { ok: true, copiado: { portapapeles: 30 } };
             setTimeout(() => oyentes.forEach((f) => f(r)), 10);
           }),
       },
@@ -486,4 +502,117 @@ test("aviso de datos: ya aceptado, no se enseña", async ({ page }) => {
   await abrir(page, { cuentas: TRES });
   await expect(page.locator("#lista li")).toHaveCount(3);
   await expect(page.locator("#aviso")).toBeHidden();
+});
+
+/**
+ * El selector de bóveda con una compartida dentro (ADR 0052).
+ *
+ * # Por qué esto se prueba y no solo el núcleo
+ *
+ * Una bóveda ajena se identifica por **dos cosas** —el dueño y la referencia— y un
+ * `<option>` solo tiene `value`, que es texto. Así que el panel las pega para pintar y
+ * las vuelve a partir al elegir, y **eso no lo mira nada más**: si el formato se desviara
+ * entre las dos mitades, el síntoma sería «elegir una bóveda compartida no hace nada» o,
+ * peor, abrir la referencia como si fuera un proyecto propio.
+ *
+ * Lo que aquí **no** se prueba, y hay que decirlo: que la bóveda se abra de verdad. Para
+ * eso hace falta una compartida real, y darla es cosa de la ventana.
+ */
+const CON_COMPARTIDA = {
+  modo: "cuenta",
+  correo: "yo@ejemplo.es",
+  abierta: true,
+  codigoPendiente: false,
+  apartada: false,
+  sincro: { estado: "al-dia" },
+  bloqueo: 15,
+  activa: "",
+  nombreActiva: "",
+  proyectos: [{ ref: "a1b2c3d4e5f60718", nombre: "Acme", enEsteNavegador: true }],
+  duenoActiva: "",
+  compartidas: [
+    { dueno: "aaaaaaaabbbbbbbbccccccccdddddddd", ref: "1122334455667788", nombre: "Zeri", permiso: "ver", enEsteNavegador: true },
+    { dueno: "eeeeeeeeffffffff00000000111111111", ref: "99aabbccddeeff00", nombre: "Mora", permiso: "editar", enEsteNavegador: false },
+  ],
+  soloPuedoVer: false,
+};
+
+test("el selector enseña las bóvedas compartidas, y dice cuál es de solo ver", async ({ page }) => {
+  const errores = await abrir(page, { cuentas: TRES, estado: CON_COMPARTIDA });
+
+  const sel = page.locator("#boveda-activa");
+  await expect(sel).toBeVisible();
+  // **Los rótulos dicen lo que cambia al entrar**, no solo el nombre: una ajena de solo
+  // ver se comporta distinto, y enterarse después de entrar es tarde.
+  await expect(sel.locator("option")).toHaveText(["Tu bóveda", "Acme", "Zeri (solo ver)", "Mora (se traerá)"]);
+  // Estando en la propia no se dice nada de permisos: sería ruido en un panel de 360 px.
+  await expect(page.locator("#solo-ver")).toBeHidden();
+  await expect(page.locator("#sin-acceso")).toBeHidden();
+
+  expect(errores).toEqual([]);
+});
+
+test("elegir una compartida manda el dueño y la referencia, cada uno en su sitio", async ({ page }) => {
+  await abrir(page, { cuentas: TRES, estado: CON_COMPARTIDA });
+
+  await page.locator("#boveda-activa").selectOption({ label: "Zeri (solo ver)" });
+  await expect
+    .poll(async () =>
+      page.evaluate(() => (globalThis as unknown as Rastro).__mensajes.find((m) => (m as { cuenta?: string }).cuenta === "abrirCompartida")),
+    )
+    .toEqual({ cuenta: "abrirCompartida", dueno: "aaaaaaaabbbbbbbbccccccccdddddddd", ref: "1122334455667788" });
+
+  // Y un proyecto propio sigue yendo por su verbo: la marca del valor es lo que los
+  // separa, y sin ella una referencia de 48 cifras sería indistinguible de la pareja.
+  await page.locator("#boveda-activa").selectOption({ label: "Acme" });
+  await expect
+    .poll(async () =>
+      page.evaluate(() => (globalThis as unknown as Rastro).__mensajes.find((m) => (m as { cuenta?: string }).cuenta === "abrirProyecto")),
+    )
+    .toEqual({ cuenta: "abrirProyecto", ref: "a1b2c3d4e5f60718" });
+});
+
+/**
+ * **Dentro de una compartida de solo ver se dice, y antes de que nadie lo intente.**
+ *
+ * Después del 403 ya se ha escrito algo que no va a salir de este navegador, así que el
+ * aviso tiene que estar en la pantalla desde que se entra.
+ */
+test("dentro de una compartida de solo ver, el panel lo dice", async ({ page }) => {
+  const errores = await abrir(page, {
+    cuentas: TRES,
+    estado: {
+      ...CON_COMPARTIDA,
+      activa: "1122334455667788",
+      duenoActiva: "aaaaaaaabbbbbbbbccccccccdddddddd",
+      nombreActiva: "Zeri",
+      soloPuedoVer: true,
+    },
+  });
+  await expect(page.locator("#solo-ver")).toBeVisible();
+  await expect(page.locator("#solo-ver")).toContainText("solo puedes verla");
+  await expect(page.locator("#boveda-activa")).toHaveValue("de:aaaaaaaabbbbbbbbccccccccdddddddd:1122334455667788");
+  expect(errores).toEqual([]);
+});
+
+/**
+ * Y cuando el servidor dice que no, el panel lo cuenta **con lo que no se puede
+ * deshacer**: lo que ya está en este navegador se queda, porque desde aquí no hay forma
+ * de borrarlo. Disimularlo sería prometer un borrado remoto que no existe.
+ */
+test("quitado el acceso, el panel lo dice y dice lo que se queda", async ({ page }) => {
+  await abrir(page, {
+    cuentas: TRES,
+    estado: {
+      ...CON_COMPARTIDA,
+      activa: "1122334455667788",
+      duenoActiva: "aaaaaaaabbbbbbbbccccccccdddddddd",
+      soloPuedoVer: true,
+      sincro: { estado: "sin-acceso", mensaje: "Ya no tienes acceso a esa bóveda" },
+    },
+  });
+  const aviso = page.locator("#sin-acceso");
+  await expect(aviso).toBeVisible();
+  await expect(aviso).toContainText("Ya no tienes acceso a esa bóveda");
+  await expect(aviso).toContainText("se queda");
 });

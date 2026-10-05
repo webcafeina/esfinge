@@ -426,27 +426,62 @@ function pintarGestos(ec: EstadoDeCuenta) {
 function pintarBovedas(ec: EstadoDeCuenta) {
   const caja = document.getElementById("bovedas") as HTMLElement;
   const sel = document.getElementById("boveda-activa") as HTMLSelectElement;
-  const hay = ec.modo === "cuenta" && ec.abierta && ec.proyectos.length > 0;
+  // Las compartidas cuentan igual para que el selector salga: con la bóveda de siempre
+  // y una de otra persona ya hay dos cosas entre las que elegir (ADR 0052).
+  const hay = ec.modo === "cuenta" && ec.abierta && ec.proyectos.length + ec.compartidas.length > 0;
   caja.hidden = !hay;
+  (document.getElementById("solo-ver") as HTMLElement).hidden = !(hay && ec.soloPuedoVer);
+  const aviso = document.getElementById("sin-acceso") as HTMLElement;
+  aviso.hidden = ec.sincro.estado !== "sin-acceso";
+  if (!aviso.hidden) {
+    aviso.textContent =
+      (ec.sincro.mensaje ?? "El servidor no te deja escribir en esa bóveda.") +
+      " Lo que ya está en este navegador se queda: para quitarlo, sal de la cuenta.";
+  }
   if (!hay) return;
-  const quiero = [{ ref: "", nombre: "Tu bóveda", enEsteNavegador: true }, ...ec.proyectos];
+  const quiero: { valor: string; nombre: string; enEsteNavegador: boolean; soloVer: boolean }[] = [
+    { valor: "", nombre: "Tu bóveda", enEsteNavegador: true, soloVer: false },
+    ...ec.proyectos.map((p) => ({ valor: p.ref, nombre: p.nombre, enEsteNavegador: p.enEsteNavegador, soloVer: false })),
+    // **El valor lleva el dueño dentro**, porque la referencia sola no identifica una
+    // bóveda ajena: dos personas pueden tener la misma sin saberlo.
+    ...ec.compartidas.map((c) => ({
+      valor: valorDeCompartida(c.dueno, c.ref),
+      nombre: c.nombre,
+      enEsteNavegador: c.enEsteNavegador,
+      soloVer: c.permiso !== "editar",
+    })),
+  ];
+  const activo = ec.duenoActiva === "" ? ec.activa : valorDeCompartida(ec.duenoActiva, ec.activa);
   // Se vuelve a pintar solo si ha cambiado: tocar el `select` en cada refresco —y
   // hay uno cada vez que se abre el panel— cerraría la lista desplegada.
-  const firma = quiero.map((p) => `${p.ref}:${p.nombre}`).join("|") + `=${ec.activa}`;
+  const firma = quiero.map((p) => `${p.valor}:${p.nombre}:${p.soloVer}`).join("|") + `=${activo}`;
   if (sel.dataset.firma !== firma) {
     sel.textContent = "";
     for (const p of quiero) {
       const o = document.createElement("option");
-      o.value = p.ref;
+      o.value = p.valor;
       // Lo que no está aquí se dice, en vez de dejar que el fallo salga al elegirlo:
-      // se puede traer, pero tarda lo que tarde la red.
-      o.textContent = p.enEsteNavegador ? p.nombre : `${p.nombre} (se traerá)`;
-      o.selected = p.ref === ec.activa;
+      // se puede traer, pero tarda lo que tarde la red. Y de una ajena se dice **antes
+      // de entrar** si solo se puede mirar, que es lo que cambia qué se puede hacer
+      // dentro.
+      const cola = !p.enEsteNavegador ? " (se traerá)" : p.soloVer ? " (solo ver)" : "";
+      o.textContent = p.nombre + cola;
+      o.selected = p.valor === activo;
       sel.append(o);
     }
     sel.dataset.firma = firma;
   }
 }
+
+/**
+ * Cómo viaja una bóveda ajena en el `value` de un `<option>`, que solo admite texto.
+ *
+ * Con la marca delante y no solo pegados: una referencia es hexadecimal y un dueño
+ * también, así que sin marca `<dueño><ref>` y `<ref>` de 48 cifras serían
+ * indistinguibles el día que algo cambie de largo.
+ */
+const MARCA_DE_COMPARTIDA = "de:";
+const valorDeCompartida = (dueno: string, ref: string) => `${MARCA_DE_COMPARTIDA}${dueno}:${ref}`;
 
 /**
  * Lo que te han mandado (ADR 0043).
@@ -681,10 +716,21 @@ function atenderGestos() {
   // El selector de bóveda (ADR 0050): cambiar aquí **no cambia la de la aplicación**.
   const bovedaActiva = document.getElementById("boveda-activa") as HTMLSelectElement;
   bovedaActiva.addEventListener("change", async () => {
-    const ref = bovedaActiva.value;
+    const valor = bovedaActiva.value;
     bovedaActiva.disabled = true;
     try {
-      const r = await pedirCuenta(ref === "" ? { cuenta: "volverALaPersonal" } : { cuenta: "abrirProyecto", ref });
+      // Tres destinos y uno de ellos es de otra persona (ADR 0052): la marca del valor
+      // dice cuál, porque el dueño no cabe en el `value` de otra forma.
+      let peticion: Parameters<typeof pedirCuenta>[0];
+      if (valor === "") {
+        peticion = { cuenta: "volverALaPersonal" };
+      } else if (valor.startsWith(MARCA_DE_COMPARTIDA)) {
+        const [dueno, ref] = valor.slice(MARCA_DE_COMPARTIDA.length).split(":");
+        peticion = { cuenta: "abrirCompartida", dueno, ref };
+      } else {
+        peticion = { cuenta: "abrirProyecto", ref: valor };
+      }
+      const r = await pedirCuenta(peticion);
       if (r.estado) pintarGestos(r.estado);
       if (!r.ok) {
         contar(r.error ?? "No se ha podido abrir esa bóveda.", false);

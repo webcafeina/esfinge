@@ -5,6 +5,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -792,5 +794,167 @@ func TestUnaLlaveSeConfirmaCuandoElSitioLaNombra(t *testing.T) {
 	}
 	if laLlave().Revision != antes {
 		t.Error("se ha escrito en la bóveda otra vez con la llave ya confirmada")
+	}
+}
+
+// ---------------------------------------- una bóveda compartida de solo ver (ADR 0052)
+
+// conUnaCompartida deja abierta una bóveda **ajena** a la que me han dado acceso con el
+// permiso que se diga, y devuelve la fuente que ve el navegador.
+//
+// Se monta dándome acceso a mí mismo, que es artificial y **recorre el camino de
+// verdad**: la ranura se sella hacia la identidad de esta bóveda personal, la fila
+// entra en la lista de compartidas como la deja la ventana al aceptar, el fichero va
+// donde van las ajenas, y abrirla es `AbrirCompartida`. Así, si `conmutarACompartida`
+// dejara de pasar el permiso, esto se pondría rojo — que es justo el agujero que una
+// prueba con el estado puesto a mano no vería.
+func conUnaCompartida(t *testing.T, permiso string) (*App, navegador.Fuente) {
+	t.Helper()
+	a, _, _, fuente, _ := conBoveda(t)
+
+	const dueno = "aaaaaaaabbbbbbbbccccccccdddddddd"
+	const titular = "1111222233334444"
+	mia, err := a.boveda().Identidad()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// La bóveda de la otra persona: un proyecto cualquiera con **mi** ranura dentro.
+	ruta := rutaDeCompartida(dueno, refDePrueba)
+	if err := os.MkdirAll(filepath.Dir(ruta), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	suya, err := boveda.CrearProyecto(ruta, []byte("una clave de bóveda que no es mía aaaa"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := suya.Poner(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Banco", Usuario: "yo@ejemplo.es",
+		Secreto: "la del cliente", Sitios: []string{"https://banco.es"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := suya.PonerAcceso(titular, mia); err != nil {
+		t.Fatal(err)
+	}
+	suya.Cerrar()
+
+	// Y la fila de mi lista, como la deja la ventana al aceptar el acceso.
+	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		return b.PonerCompartida(boveda.Compartida{
+			Dueno: dueno, Ref: refDePrueba, Nombre: "Zeri", Titular: titular, Permiso: permiso,
+		})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.AbrirCompartida(dueno, refDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	return a, fuente
+}
+
+const refDePrueba = "a1b2c3d4e5f60718"
+
+// **Con una compartida de solo ver, el navegador no ofrece guardar y no escribe.**
+//
+// No es por celo criptográfico: la clave la tengo y escribir funcionaría. Lo que pasa es
+// que el servidor rechaza la subida con un 403, así que lo escrito se quedaría en este
+// equipo para siempre — y la tarjeta de guardar la saca Esfinge por su cuenta, en la
+// página de otro, donde no hay dónde explicar nada después.
+//
+// Lo que esta prueba **no** dice: que la ventana haga lo mismo. No lo hace, a propósito,
+// y está escrito en `porQueNoSeEscribe`.
+func TestConUnaCompartidaDeSoloVerElNavegadorNoEscribe(t *testing.T) {
+	a, fuente := conUnaCompartida(t, "ver")
+
+	if !a.soloPuedoVerLaActiva() {
+		t.Fatal("con permiso de ver, la app tiene que decir que solo se puede ver")
+	}
+
+	// Nada que ofrecer, aunque el envío traiga una contraseña nueva de un sitio que no
+	// está en la bóveda: eso en una bóveda propia sería «Guardar».
+	o, err := fuente.Ofrecer("https://otrositio.com/entrar", "otrositio.com",
+		navegador.Envio{Usuario: "yo@ejemplo.es", Secreto: "una nueva"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o.Accion != navegador.OfertaNada {
+		t.Errorf("en una compartida de solo ver se ofrece %q", o.Accion)
+	}
+
+	// Y si alguien lo pide igual —una tarjeta vieja, un mensaje a mano—, se dice por qué
+	// no, **con la frase que toca**: «actualiza Esfinge» mandaría a mirar donde no hay nada.
+	_, err = fuente.GuardarCuenta("https://otrositio.com/entrar", "otrositio.com",
+		navegador.Envio{Usuario: "yo@ejemplo.es", Secreto: "una nueva"})
+	if err == nil {
+		t.Fatal("ha guardado en una bóveda compartida de solo ver")
+	}
+	if !strings.Contains(err.Error(), "Solo puedes ver") {
+		t.Errorf("el motivo que se da es %q", err)
+	}
+	if err := fuente.NuncaAqui("otrositio.com"); err == nil {
+		t.Error("ha excluido un sitio en una bóveda compartida de solo ver")
+	}
+	if fuente.PuedeCrearLlaves() {
+		t.Error("dice que puede crear una llave de acceso en una bóveda de solo ver")
+	}
+
+	// Leer sí, que es para lo que existe el acceso: la cuenta del cliente se rellena.
+	cuentas, err := fuente.CuentasDe("banco.es")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cuentas) != 1 || cuentas[0].Usuario != "yo@ejemplo.es" {
+		t.Fatalf("en la compartida se ven %d cuentas de banco.es: %+v", len(cuentas), cuentas)
+	}
+}
+
+// **Y con permiso de editar, todo lo de siempre.** Es la mitad que dice que la puerta
+// mira el permiso y no «es ajena»: sin esta prueba, negarlo todo en cualquier bóveda
+// compartida pasaría en verde.
+func TestConUnaCompartidaDeEditarElNavegadorEscribe(t *testing.T) {
+	a, fuente := conUnaCompartida(t, "editar")
+
+	if a.soloPuedoVerLaActiva() {
+		t.Fatal("con permiso de editar no se puede decir que solo se ve")
+	}
+	o, err := fuente.Ofrecer("https://otrositio.com/entrar", "otrositio.com",
+		navegador.Envio{Usuario: "yo@ejemplo.es", Secreto: "una nueva"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o.Accion != navegador.OfertaGuardar {
+		t.Errorf("en una compartida de editar se ofrece %q y tenía que ofrecer guardar", o.Accion)
+	}
+	if _, err := fuente.GuardarCuenta("https://otrositio.com/entrar", "otrositio.com",
+		navegador.Envio{Usuario: "yo@ejemplo.es", Secreto: "una nueva"}); err != nil {
+		t.Fatalf("no ha guardado con permiso de editar: %v", err)
+	}
+	// Y lo guardado está **en la compartida**, no en la personal: es la comprobación que
+	// distingue «ha escrito» de «ha escrito donde tocaba».
+	if len(a.boveda().Buscar("otrositio")) != 1 {
+		t.Error("lo guardado no está en la bóveda compartida")
+	}
+}
+
+// **Y al salir de la compartida se olvida el permiso.** Si se quedara puesto, volver a
+// la bóveda personal dejaría el navegador sin ofrecer guardar en ella **y sin que nada
+// lo dijera**: el fallo sería «Esfinge ha dejado de ofrecerse» y la causa estaría tres
+// pantallas atrás.
+func TestVolverDeUnaCompartidaDevuelveElPermiso(t *testing.T) {
+	a, fuente := conUnaCompartida(t, "ver")
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	if a.soloPuedoVerLaActiva() {
+		t.Fatal("de vuelta en la personal sigue diciendo que solo se puede ver")
+	}
+	o, err := fuente.Ofrecer("https://otrositio.com/entrar", "otrositio.com",
+		navegador.Envio{Usuario: "yo@ejemplo.es", Secreto: "una nueva"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if o.Accion != navegador.OfertaGuardar {
+		t.Errorf("de vuelta en la personal se ofrece %q", o.Accion)
 	}
 }

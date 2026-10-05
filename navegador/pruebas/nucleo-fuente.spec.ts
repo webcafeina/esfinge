@@ -388,3 +388,68 @@ test("llaves: el sitio la nombra y queda confirmada; firmar no la confirma", asy
   expect(laLlave().confirmada).toBe(primera);
   expect(laLlave().revision, "se ha vuelto a escribir con la llave ya confirmada").toBe(antes);
 });
+
+/**
+ * **Con una bóveda compartida de solo ver, los verbos leen y no escriben** (ADR 0052).
+ *
+ * El permiso entra por `soloVer` y no sale de la bóveda, porque en la bóveda no está:
+ * vive en la lista de compartidas de la personal. Aquí se comprueba lo que la fuente
+ * hace con él.
+ *
+ * Y lo que importa de verdad es la primera línea: **no se ofrece**. La tarjeta de
+ * guardar es iniciativa de Esfinge en la página de otro, y proponer guardar algo que el
+ * servidor va a rechazar con un 403 es media promesa.
+ */
+test("compartida: con solo ver se lee, no se ofrece y no se escribe", async () => {
+  const { b, banco } = await bovedaDePrueba();
+  const ajena = { existe: true, boveda: b, soloVer: true };
+  // **Su propia ventana de tiempo, como la prueba del freno.** Los frenos de `atender`
+  // son del módulo, así que se comparten con todas las pruebas del fichero: pidiendo un
+  // relleno con el reloj de verdad, el cupo de doce por minuto puede venir **ya gastado
+  // por las anteriores de la tanda**. Pasó: esta prueba iba en verde sola y caía en la
+  // tanda entera, diciendo que una bóveda compartida no deja leer — que no es la causa.
+  const t = Date.now() + 40 * 60_000;
+
+  // Leer, igual que siempre: para eso existe el acceso.
+  expect((await atender(p({ que: "cuentas", origen: "https://banco.es/x" }), ajena, t)).cuentas?.length).toBe(1);
+  expect((await atender(p({ que: "rellenar", id: banco.id, origen: "https://banco.es/" }), ajena, t)).relleno?.secreto).toBe(
+    "clave-banco",
+  );
+
+  // Y nada que ofrecer, ni para guardar ni para actualizar.
+  for (const [usuario, secreto] of [
+    ["otra persona", "otra"],
+    ["yo", "otra"],
+  ]) {
+    const o = (await atender(p({ que: "ofrecer", origen: "https://banco.es/entrar", usuario, secreto }), ajena, t)).oferta;
+    expect(o?.accion, `${usuario} / ${secreto}`).toBe("nada");
+  }
+
+  // Si se pide igual, se dice por qué no — y **con la frase que toca**: la de la versión
+  // más nueva mandaría a actualizar Esfinge, que aquí no arregla nada.
+  for (const que of ["guardar-cuenta", "actualizar-cuenta", "nunca-aqui"] as const) {
+    const r = await atender(p({ que, origen: "https://banco.es/entrar", id: banco.id, usuario: "yo", secreto: "otra" }), ajena, t);
+    expect(r.ok, que).toBe(false);
+    expect(r.error, que).toMatch(/Solo puedes ver/);
+  }
+  // Y no ha entrado nada: ni cuenta nueva, ni contraseña cambiada, ni sitio excluido.
+  expect(b.buscar("").length).toBe(3);
+  expect(b.ver(banco.id)!.secreto).toBe("clave-banco");
+  expect(b.excluidos()).toEqual([]);
+});
+
+/**
+ * Y con permiso de editar, todo lo de siempre. Es la mitad que dice que la puerta mira
+ * el permiso y no «es una compartida»: negándolo en cualquiera, la prueba de arriba
+ * pasaría igual.
+ */
+test("compartida: con editar se ofrece y se escribe como en la propia", async () => {
+  const { b } = await bovedaDePrueba();
+  const ajena = { existe: true, boveda: b, soloVer: false };
+  const t = Date.now() + 50 * 60_000; // la suya, por lo de arriba
+  const o = (await atender(p({ que: "ofrecer", origen: "https://nuevo.es/entrar", usuario: "yo", secreto: "s" }), ajena, t)).oferta;
+  expect(o?.accion).toBe("guardar");
+  const g = await atender(p({ que: "guardar-cuenta", origen: "https://nuevo.es/entrar", usuario: "yo", secreto: "s" }), ajena, t);
+  expect(g.ok).toBe(true);
+  expect(b.buscar("Nuevo").length).toBe(1);
+});
