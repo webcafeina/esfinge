@@ -969,3 +969,112 @@ func TestCruzadaLosCamposSonLosMismos(t *testing.T) {
 		}
 	}
 }
+
+// ---------------------------------------------- las bóvedas compartidas (ADR 0052)
+
+// **La ranura sellada, a pelo**: Go sella y la extensión abre.
+//
+// De la pareja solo existe este sentido, y no es una laguna: sellar lo hace quien
+// **da** el acceso, y eso vive en la ventana. El espejo no lo lleva a propósito —ver
+// la cabecera de `navegador/src/nucleo/compartida.ts`—, así que «sellar allí y abrir
+// aquí» no se puede probar porque allí no se sella.
+//
+// Va aparte de la de abajo para poder acotar: si las dos caen, el problema está en
+// estos bytes —la etiqueta del `info`, la marca que va autenticada, el base64—; si
+// solo cae la otra, está en el tipo de la ranura o en la codificación.
+func TestCruzadaUnSelladoDeGoLoAbreLaExtension(t *testing.T) {
+	cruzada.Activa(t)
+	for _, caso := range []string{"", "la clave de un proyecto", strings.Repeat("x", 500), "con ñ y 😀 y  "} {
+		semilla := make([]byte, 32)
+		for i := range semilla {
+			semilla[i] = byte(i * 7)
+		}
+		id, err := publicaDe(&identidad{Semilla: b64.EncodeToString(semilla), Suite: Suite})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sellado, err := SellarHaciaIdentidad([]byte(caso), id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var suyo string
+		cruzada.Pedir(t, map[string]any{
+			"orden": "accesoAbrir", "sellado": sellado, "semilla": hex.EncodeToString(semilla),
+		}, &suyo)
+		if suyo != hex.EncodeToString([]byte(caso)) {
+			t.Errorf("la extensión saca %s de un sellado de %q", suyo, caso)
+		}
+	}
+}
+
+// **Go da el acceso y la extensión abre la bóveda**, que es el camino entero y el que
+// de verdad se recorre en el navegador.
+//
+// Cubre de una vez las cuatro cosas que tienen que coincidir —el prefijo del tipo, la
+// codificación, la etiqueta del `info` y lo autenticado—, y si cualquiera se desvía el
+// síntoma es que **las bóvedas compartidas no se abren en el navegador** sin que nada
+// más se ponga rojo: el fichero está bien, el sobre está bien y la ranura está ahí.
+//
+// Y de paso comprueba lo que no es criptografía: que la extensión ve **las mismas
+// entradas** que el dueño, que es para lo que existe todo esto.
+func TestCruzadaUnaCompartidaSeAbreEnLaExtension(t *testing.T) {
+	cruzada.Activa(t)
+	const titular = "1111222233334444"
+	_, ruta, llave := personalYProyecto(t)
+	ana, idAna := unaPersonal(t, "ana")
+
+	p, err := AbrirProyecto(ruta, llave)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entradasRaras() {
+		if err := p.Poner(e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := p.PonerAcceso(titular, idAna); err != nil {
+		t.Fatal(err)
+	}
+
+	// La bóveda compartida tal como está en el disco, y la personal de Ana tal como la
+	// tendría en su navegador: con su identidad ya creada, que es lo único que abre su
+	// ranura.
+	texto, err := os.ReadFile(ruta)
+	if err != nil {
+		t.Fatal(err)
+	}
+	personal, err := os.ReadFile(ana.Ruta())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var suya resumenDeBoveda
+	cruzada.Pedir(t, map[string]any{
+		"orden": "compartidaAbrir", "texto": string(texto), "titular": titular,
+		"personal": string(personal), "maestra": maestraDePrueba,
+	}, &suya)
+	mismoResumen(t, "la extensión abre una bóveda compartida", resumenDe(t, p), suya)
+
+	// **Y quitado el acceso, la extensión tampoco abre.** Va aquí y no en una prueba de
+	// TypeScript suelta porque la lápida la escribe Go: comprobarlo con una lápida
+	// escrita a mano en el espejo sería comprobar la lápida del espejo.
+	//
+	// Lo que esto **no** prueba, y conviene saberlo antes de confiar en ello: la
+	// comprobación explícita de la lápida en `abrirCompartida`. Quitándola, esto sigue
+	// en verde —comprobado mutándolo—, porque `RetirarAcceso` deja el contenedor vacío y
+	// un contenedor vacío no se abre de todas formas. La comprobación se queda porque
+	// hace la negativa explícita en vez de accidental y porque Go la tiene, no porque
+	// esta prueba la vigile; y no hay documento alcanzable donde las dos cosas se
+	// distingan, así que fabricar uno sería probar una bóveda que nunca existe.
+	if err := p.RetirarAcceso(titular); err != nil {
+		t.Fatal(err)
+	}
+	revocada, err := os.ReadFile(ruta)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cruzada.PedirEsperandoError(t, map[string]any{
+		"orden": "compartidaAbrir", "texto": string(revocada), "titular": titular,
+		"personal": string(personal), "maestra": maestraDePrueba,
+	}, ErrSinAcceso.Error())
+}

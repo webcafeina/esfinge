@@ -43,7 +43,22 @@ export async function pasada(
   aunqueBorreMucho = false,
   /** Qué bóveda de la cuenta se sincroniza: vacío, la personal (ADR 0050). */
   ref = "",
+  /**
+   * De quién es esa bóveda (ADR 0052): vacío soy yo, que es todo lo de antes. Con
+   * dueño, la bóveda vive en el objeto de **otra cuenta** y la dirección es otra.
+   *
+   * Aquí y no en un adaptador como en Go, donde `internal/sincro` no sabe que hay más
+   * de una bóveda: este lado ya sabía de `ref` desde la ADR 0050, así que esconder el
+   * dueño detrás de una indirección sería ordenar media casa.
+   */
+  dueno = "",
 ): Promise<Resultado> {
+  const bajar = (siNoCoincide: number) =>
+    dueno === "" ? cliente.bajar(token, siNoCoincide, ref) : cliente.bajarCompartida(token, dueno, ref, siNoCoincide);
+  const subir = (siCoincide: number, datos: string) =>
+    dueno === ""
+      ? cliente.subir(token, siCoincide, datos, ref)
+      : cliente.subirACompartida(token, dueno, ref, siCoincide, datos);
   const r: Resultado = { version: 0, bajo: false, subio: false };
   let { recuerdo, base } = await m.cargar();
   for (let intento = 1; intento <= INTENTOS; intento++) {
@@ -52,7 +67,7 @@ export async function pasada(
     let sobre: number;
     let vacia = false;
     try {
-      bajada = await cliente.bajar(token, siNoCoincide, ref);
+      bajada = await bajar(siNoCoincide);
     } catch (e) {
       if (!sinBoveda(e)) throw e;
       vacia = true;
@@ -84,7 +99,7 @@ export async function pasada(
     const { texto: subida, serie } = await b.prepararSubida(sobre + 1);
     let nueva: number;
     try {
-      nueva = await cliente.subir(token, sobre, subida, ref);
+      nueva = await subir(sobre, subida);
     } catch (e) {
       if (conflicto(e)) continue; // otro equipo ha subido en medio: a bajar otra vez
       throw e;

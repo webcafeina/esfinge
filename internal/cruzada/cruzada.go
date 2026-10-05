@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -34,6 +35,37 @@ func Activa(t testing.TB) {
 // Pedir manda una petición al núcleo de la extensión y lee su respuesta.
 func Pedir(t testing.TB, peticion any, respuesta any) {
 	t.Helper()
+	salida, errores, err := correr(t, peticion)
+	if err != nil {
+		t.Fatalf("la extensión no ha podido contestar: %v\n%s", err, errores)
+	}
+	if err := json.Unmarshal([]byte(salida), respuesta); err != nil {
+		t.Fatalf("la extensión contesta algo que no se entiende: %v\n%s", err, salida)
+	}
+}
+
+// PedirEsperandoError es lo mismo cuando lo que se comprueba es que **el núcleo de la
+// extensión se niega**, y por el motivo que toca.
+//
+// Hace falta porque `Pedir` trata cualquier error como un fallo de la prueba, y hay
+// comportamientos que solo se pueden comprobar desde Go: una lápida de ranura, por
+// ejemplo, la escribe Go — hacerla a mano en el espejo sería comprobar la del espejo.
+//
+// **Se mira el motivo y no solo que falle**: un `TypeError` por haber cambiado una
+// firma también sale por ahí, y daría esta prueba por buena sin haber ejercitado nada.
+func PedirEsperandoError(t testing.TB, peticion any, contiene string) {
+	t.Helper()
+	salida, errores, err := correr(t, peticion)
+	if err == nil {
+		t.Fatalf("la extensión tenía que negarse y ha contestado: %s", salida)
+	}
+	if !strings.Contains(errores, contiene) {
+		t.Fatalf("la extensión se niega por otra cosa: se esperaba %q y dice\n%s", contiene, errores)
+	}
+}
+
+func correr(t testing.TB, peticion any) (salida, errores string, err error) {
+	t.Helper()
 	Activa(t)
 	guion := filepath.Join(raiz(t), "navegador", "herramientas", "cruzada.mjs")
 	entrada, err := json.Marshal(peticion)
@@ -42,14 +74,10 @@ func Pedir(t testing.TB, peticion any, respuesta any) {
 	}
 	cmd := exec.Command("node", guion)
 	cmd.Stdin = bytes.NewReader(entrada)
-	var salida, errores bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &salida, &errores
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("la extensión no ha podido contestar: %v\n%s", err, errores.String())
-	}
-	if err := json.Unmarshal(salida.Bytes(), respuesta); err != nil {
-		t.Fatalf("la extensión contesta algo que no se entiende: %v\n%s", err, salida.String())
-	}
+	var fuera, mal bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &fuera, &mal
+	err = cmd.Run()
+	return fuera.String(), mal.String(), err
 }
 
 // raiz es la carpeta del repositorio: la que tiene go.mod.

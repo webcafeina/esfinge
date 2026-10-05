@@ -36,6 +36,15 @@ export type Sesion = { cuenta?: string; sesion: string; dispositivo: string; con
 export const sesionCaducada = (e: unknown) => e instanceof ErrorDelServidor && e.estado === 401;
 export const conflicto = (e: unknown) => e instanceof ErrorDelServidor && e.estado === 412;
 export const sinBoveda = (e: unknown) => e instanceof ErrorDelServidor && e.estado === 404;
+/**
+ * Te han quitado el acceso a una bóveda ajena, o solo puedes verla (ADR 0052).
+ *
+ * **No se puede tratar como el 401**: aquél cierra la bóveda porque la sesión se
+ * perdió, y aquí la sesión está bien — lo que ha cambiado es quién entra en la bóveda
+ * de otra persona. Cerrar la tuya porque alguien te quitó el acceso a la suya sería
+ * castigarte por lo que hizo otro.
+ */
+export const sinAcceso = (e: unknown) => e instanceof ErrorDelServidor && e.estado === 403;
 
 /** La versión del `ETag`, fuerte o débil: Cloudflare lo debilita al comprimir. */
 export function leerEtiqueta(v: string | null): number | null {
@@ -181,9 +190,13 @@ export class Cliente {
    * sigue en la ruta de siempre.
    */
   async bajar(token: string, siNoCoincide: number, ref = ""): Promise<{ datos: string; version: number } | null> {
+    return this.bajarDeRuta(rutaDeBoveda(ref), token, siNoCoincide);
+  }
+
+  private async bajarDeRuta(ruta: string, token: string, siNoCoincide: number): Promise<{ datos: string; version: number } | null> {
     const cabeceras: Record<string, string> = {};
     if (siNoCoincide > 0) cabeceras["If-None-Match"] = `"${siNoCoincide}"`;
-    const r = await this.pedir("GET", rutaDeBoveda(ref), { token, cabeceras });
+    const r = await this.pedir("GET", ruta, { token, cabeceras });
     if (r.status === 304) return null;
     if (r.status !== 200) throw await this.error(r);
     const version = leerEtiqueta(r.headers.get("ETag"));
@@ -195,7 +208,11 @@ export class Cliente {
 
   /** Sube sobre `siCoincide` y devuelve la versión nueva. Un 412 es que otro subió en medio. */
   async subir(token: string, siCoincide: number, datos: string, ref = ""): Promise<number> {
-    const r = await this.pedir("PUT", rutaDeBoveda(ref), {
+    return this.subirARuta(rutaDeBoveda(ref), token, siCoincide, datos);
+  }
+
+  private async subirARuta(ruta: string, token: string, siCoincide: number, datos: string): Promise<number> {
+    const r = await this.pedir("PUT", ruta, {
       token,
       cuerpo: datos,
       cabeceras: { "If-Match": `"${siCoincide}"` },
@@ -203,6 +220,31 @@ export class Cliente {
     if (r.status !== 200) throw await this.error(r);
     const j = (await r.json()) as { version?: number };
     return j.version ?? 0;
+  }
+
+  // -------------------------------------------------------- las que me han compartido
+
+  /**
+   * Baja una bóveda **de otra cuenta** a la que tengo acceso (ADR 0052). Mismo
+   * `ETag`, mismo 304, mismo todo: para la sincronización es una bóveda más.
+   */
+  async bajarCompartida(
+    token: string,
+    dueno: string,
+    ref: string,
+    siNoCoincide: number,
+  ): Promise<{ datos: string; version: number } | null> {
+    return this.bajarDeRuta(rutaDeCompartida(dueno, ref), token, siNoCoincide);
+  }
+
+  /**
+   * Sube a una bóveda de otra cuenta.
+   *
+   * **Puede contestar 403**, y eso es nuevo: o te han quitado el acceso, o solo puedes
+   * ver. Ninguna de las dos es un fallo de red, y ninguna se puede tratar como el 401.
+   */
+  async subirACompartida(token: string, dueno: string, ref: string, siCoincide: number, datos: string): Promise<number> {
+    return this.subirARuta(rutaDeCompartida(dueno, ref), token, siCoincide, datos);
   }
 
   /**
@@ -220,4 +262,16 @@ export class Cliente {
 /** La de siempre para la personal, y la suya para un proyecto. */
 function rutaDeBoveda(ref: string): string {
   return ref === "" ? "/v1/boveda" : `/v1/bovedas/${ref}`;
+}
+
+/**
+ * La bóveda **de otra cuenta** a la que tengo acceso (ADR 0052).
+ *
+ * La dirección lleva el dueño dentro porque el servidor no tiene ningún índice de «lo
+ * que me han compartido»: eso vive cifrado en mi bóveda, como la lista de proyectos.
+ * Lo que el servidor sabe es quién puede entrar en qué, que es lo mínimo para poder
+ * decir que no.
+ */
+function rutaDeCompartida(dueno: string, ref: string): string {
+  return `/v1/compartidas/${dueno}/${ref}`;
 }

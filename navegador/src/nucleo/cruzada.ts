@@ -27,6 +27,7 @@ import {
 } from "./afirmacion";
 import { canonEntrada, entradaDesde, sinSecretos, CAMPOS } from "./entrada";
 import { fundir, fundirPiezas } from "./fundir";
+import { abrirSellado } from "./compartida";
 
 const hex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
 const deHex = (s: string) => Uint8Array.from(s.match(/../g) ?? [], (h) => parseInt(h, 16));
@@ -175,6 +176,30 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
     case "identidadDeBoveda": {
       const b = await Boveda.abrir(p.texto as string, p.llave as string);
       return { huella: (await identidadDeSemilla(await b.semillaDeIdentidad())).huella };
+    }
+
+    // ---------------------------------------------- las bóvedas compartidas (ADR 0052)
+
+    // **La ranura sellada, a pelo**: Go sella un secreto hacia una identidad y esto lo
+    // abre. De la pareja solo existe este sentido, porque sellar lo hace quien **da**
+    // el acceso y eso vive en la ventana (ver la cabecera de `compartida.ts`).
+    //
+    // Va aparte de `compartidaAbrir` para poder acotar: si las dos se ponen rojas a la
+    // vez, el problema está en estos bytes —la etiqueta del `info`, la marca que va
+    // autenticada, el base64—; si solo cae la otra, está en la ranura o en el tipo.
+    case "accesoAbrir":
+      return hex(await abrirSellado(p.sellado as string, deHex(p.semilla as string)));
+
+    // **Go da el acceso y la extensión abre la bóveda**, que es el camino entero y el
+    // que de verdad se recorre en el navegador: la ventana sella la ranura
+    // `acceso:<titular>` con `PonerAcceso` y aquí se abre con la bóveda personal de
+    // quien recibe. Cubre de una vez el prefijo del tipo, la codificación, la etiqueta
+    // y lo autenticado; si se desvía cualquiera de las cuatro, **las bóvedas
+    // compartidas no se abren en el navegador y nada más se pone rojo**.
+    case "compartidaAbrir": {
+      const mia = await Boveda.abrir(p.personal as string, p.maestra as string);
+      const c = await Boveda.abrirCompartida(p.texto as string, p.titular as string, mia);
+      return resumen(c);
     }
 
     case "acceso":

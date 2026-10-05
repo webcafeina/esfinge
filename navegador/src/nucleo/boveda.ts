@@ -28,6 +28,7 @@ import { entradaAJSON, entradaDesde, rfc3339, sinSecretos, coincide, copiar, typ
 import { SUITE } from "./identidad";
 import { pendientesDe, ponerPendientes, purgarPendientes, type Pendiente } from "./pendiente";
 import { ponerProyectos, proyectosDe, type Proyecto } from "./proyecto";
+import { abrirSellado, CODIFICACION_RETIRADA, ERR_SIN_ACCESO, tipoDeAcceso } from "./compartida";
 import { ERR_CHECKSUM, normalizar, nuevaRecuperacion, pareceRecuperacion } from "./recuperacion";
 
 export const FORMATO = 1;
@@ -61,7 +62,8 @@ export type CodigoDeError =
   | "otra-boveda"
   | "retroceso"
   | "muchos-borrados"
-  | "papelera";
+  | "papelera"
+  | "sin-acceso";
 
 /** Las mismas frases que Go: el mismo fallo tiene que decir lo mismo en la ventana y en el panel. */
 const MENSAJES: Record<CodigoDeError, string> = {
@@ -75,6 +77,7 @@ const MENSAJES: Record<CodigoDeError, string> = {
   retroceso: "El servidor ha devuelto una versión de la bóveda que no cuadra",
   "muchos-borrados": "Juntar los cambios de otro equipo borraría más de la mitad de la bóveda",
   papelera: "Esa entrada no está en la papelera",
+  "sin-acceso": ERR_SIN_ACCESO,
 };
 
 export class ErrorBoveda extends Error {
@@ -402,6 +405,57 @@ export class Boveda {
       throw new ErrorBoveda("sin-ranura");
     }
     return Boveda.conLlave(doc, llave, {});
+  }
+
+  /**
+   * Abre **una bóveda de otra persona** a la que me han dado acceso (ADR 0052): su
+   * ranura `acceso:<titular>`, sellada hacia mi identidad.
+   *
+   * Es el espejo de `AbrirCompartidaBytes` de Go, y como allí **prueba una sola
+   * ranura**: la mía. Las demás son de otras personas y ninguna la abriría esta
+   * identidad, así que probarlas solo gastaría tiempo para acabar en el mismo error.
+   *
+   * La identidad sale de `personal`, que es **mi** bóveda personal. Y sale **sin
+   * crearla**: una bóveda personal que no tiene identidad todavía es una que nunca ha
+   * compartido ni recibido nada, así que tampoco puede tener acceso a nada — crear una
+   * aquí no abriría nada y escribiría en la bóveda al pasar.
+   */
+  static async abrirCompartida(texto: string, titular: string, personal: Boveda): Promise<Boveda> {
+    if (!titular) throw new ErrorBoveda("sin-acceso");
+    const doc = leerDocumento(texto);
+    const sobre = doc.sobres.find((s) => s.tipo === tipoDeAcceso(titular));
+    // La lápida cuenta como no tener acceso, que es justo lo que es: la ranura está en
+    // el fichero para que la fusión no la resucite, no para que abra nada.
+    if (!sobre || sobre.codificacion === CODIFICACION_RETIRADA) throw new ErrorBoveda("sin-acceso");
+    const semilla = personal.semillaGuardada();
+    if (semilla === null) throw new ErrorBoveda("sin-acceso");
+    let llave: Uint8Array;
+    try {
+      llave = await abrirSellado(sobre.contenedor, semilla);
+    } catch {
+      throw new ErrorBoveda("sin-acceso");
+    }
+    return Boveda.conLlave(doc, deUtf8.decode(llave), {});
+  }
+
+  /**
+   * La semilla de la identidad **si ya la hay**, al contrario que
+   * `semillaDeIdentidad`, que la crea y guarda.
+   *
+   * Existe para abrir una bóveda compartida, donde crearla no serviría de nada: la
+   * ranura está sellada hacia la identidad que ya tenía esta bóveda cuando le dieron
+   * el acceso. Espejo de lo que hace `AbrirSellado` en Go, que lee `cont.Identidad` y
+   * se rinde si no hay.
+   */
+  private semillaGuardada(): Uint8Array | null {
+    this.clave();
+    const guardada = this.cont.extra?.identidad as { semilla?: string } | undefined;
+    if (!guardada?.semilla) return null;
+    try {
+      return desdeBase64(guardada.semilla);
+    } catch {
+      return null;
+    }
   }
 
   /** Abre con la clave de bóveda de otra abierta: la misma bóveda, con otra contraseña en sus sobres. */
