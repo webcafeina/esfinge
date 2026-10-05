@@ -1,6 +1,7 @@
 # 0052 · Dar acceso a una bóveda de proyecto
 
-**Fecha:** 2026-10-05 · **Estado:** aceptada, en construcción · **sin escribir todavía**
+**Fecha:** 2026-10-05 · **Estado:** aceptada · **C1 a C5 escritas y en verde** · sin desplegar, sin publicar
+y **sin haberlo visto funcionar entre dos cuentas de verdad**
 
 ## Contexto
 
@@ -135,6 +136,28 @@ de miembros es exactamente eso. Va a `docs/seguridad.md` y a la política, como 
 identidad es regalar la firma (ADR 0051), y con varias personas sería peor: todas firmarían igual.
 
 ## Verificación
+
+**Hecho y en verde el 2026-10-05** (C1 a C5), con cada prueba nueva mutada:
+
+- **El núcleo**: la ranura sellada por titular —tres a la vez abren, y mutar el tipo a
+  uno fijo deja la bóveda sin abrir— y **la lápida**, sin la cual quitar el acceso se
+  deshace solo en cuanto sincroniza un equipo con una copia de antes. *Esa mutación
+  dice exactamente eso: «la ranura del revocado ha vuelto al fundir con una copia de
+  antes».*
+- **El servidor**: miembros, el **403** del que solo puede ver y la **comprobación
+  cruzada de sesión** —sin ella, cualquiera escribe el identificador de otra cuenta y
+  cuarenta y tres caracteres inventados y entra como esa persona—. Tres bolsas de
+  subidas, para que un invitado no deje al dueño sin poder subir **su** bóveda.
+- **El sobre y las dos secciones nuevas**, con su espejo en TypeScript y datos en el
+  generador al azar de la cruzada — **comprobando que sin la fusión del espejo la
+  cruzada se pone roja**, que es lo que distingue meter datos de ejercitar algo.
+- **La sincronización** contra el Worker de verdad en local, con dos cuentas: dar
+  acceso, bajar, escribir, que le llegue al dueño, y que quitarlo cierre la puerta en
+  la siguiente petición. Y que **el 403 no se confunda con el 401**, o quitarte el
+  acceso a una bóveda ajena te cerraría la tuya.
+- **La pantalla**, en los dos temas, con una prueba que **mide la caja** del nombre
+  del proyecto: con tres botones en la fila desapareció, y eso no lo ve ninguna
+  aserción de texto.
 
 **Lo que se va a comprobar, y cada prueba mutada:**
 

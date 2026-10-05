@@ -5,6 +5,47 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-05 (tarde) · Dar acceso a una bóveda de proyecto: C1 a C5
+
+- **Se planificó entera la ADR 0052** con el cliente, en dos rondas de preguntas. Lo que decidió: «en vivo»
+  es **al abrir y cada minuto** —sin push—, **permiso por persona** (ver o editar), **con cuenta**, quien
+  edita **puede dar acceso a otros**, **todos ven la lista**, la última mano como «Nombre (correo)» y **al
+  revocar se rota la clave**. Los términos los eligió él: **«Dar acceso» / «Entregar una copia»**.
+- **Y antes de escribir una línea, un fallo ya publicado**, encontrado leyendo `compartir.go` al planificar:
+  con un proyecto abierto, «Compartir» **creaba una identidad dentro del proyecto y la publicaba como las
+  llaves de la cuenta**. La huella que se enseñaba no era la tuya, lo que te mandaran llegaba cifrado hacia
+  una bóveda que puedes tener cerrada, y el buzón contestaba «este envío no es para esta bóveda» a todo.
+  Arreglado, mutado y publicado aparte en la **2.39.3**. El cliente confirmó que **nunca compartió desde
+  dentro de un proyecto**, así que sus llaves publicadas son las buenas.
+- **C1 · El núcleo.** La ranura de cada titular va **sellada hacia su identidad pública**, no envuelta con su
+  clave de bóveda: así el dueño puede rehacerla sin tenerlo delante, que es lo que permite **rotar al
+  revocar**. Un tipo de ranura por persona, porque el sello indexa por tipo y dos iguales **no dejan abrir la
+  bóveda**. Y **la lápida de ranura**, que no estaba en el plan y la encontró leer `fundirSobres`: las
+  ranuras se unen, así que **quitar una no es representable** y el primer equipo con una copia de antes la
+  resucita. Eso convierte rotar en lo que hace que revocar aguante.
+- **C2 · El servidor.** La bóveda **no se muda**: se queda en el objeto de su dueño con una tabla de
+  miembros. La pieza delicada es que **el testigo dice de qué cuenta es y nadie lo comprueba al leerlo**, así
+  que en una llamada cruzada hay que validar la sesión contra el objeto de quien llama **antes** de pedirle
+  nada al del dueño. Tres bolsas de subidas, para que un invitado no deje al dueño sin subir la suya.
+- **C3 · El sobre y las secciones.** El sobre de acceso es el de compartir una entrada con otra versión —y
+  `version` ya va firmada, así que no se pueden confundir— y **no lleva la clave**. Dos secciones nuevas con
+  su espejo y datos en la cruzada al azar, **comprobando que sin la fusión del espejo la cruzada se pone
+  roja**.
+- **C4 · Sincronizar.** Y el **403 no es el 401**: tratarlo igual **te cerraría tu propia bóveda porque
+  alguien te quitó el acceso a la suya**.
+- **C5 · La pantalla.** Lo compartido en su grupo, y dentro del proyecto quién tiene acceso con la huella
+  delante. Dos fallos míos: **el nombre del proyecto se encogió a cero** con el tercer botón —lo vio una
+  captura, no una aserción— y **repetí** lo de pedir una lista aparte que con la bóveda cerrada deja un 400
+  en la consola, que ya costó una vuelta el 2026-10-02.
+- **Queda abierto**: **C6, la extensión**; después desplegar a pruebas y recorrerlo con dos cuentas de usar y
+  tirar; y con eso en verde, producción y publicar. **Nada de esto está desplegado ni publicado**, y lo que
+  de verdad falta por saber es que **no se ha visto funcionar entre dos personas**.
+- Y una de método, dicha sin adorno: **dos de los fallos de hoy ya estaban escritos en `CLAUDE.md`** —la
+  llamada aparte con la bóveda cerrada, y leer el final del registro en vez del código de salida— y los
+  repetí igual. Están ahí porque costaron caro la primera vez.
+
+---
+
 ## 2026-10-05 · Tres publicaciones, y lo que el cliente vio en cada una
 
 - **Publicadas la 2.39.0, la 2.39.1 y la 2.39.2**, las tres con los siete trabajos en verde, probando él cada

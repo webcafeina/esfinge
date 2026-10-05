@@ -4,7 +4,32 @@
 
 ## Dónde se paró, y por dónde se sigue
 
-> **Cerrado el 2026-10-05.** Tres publicaciones ese día —2.39.0, 2.39.1 y 2.39.2— y el cliente las fue
+> **En marcha desde la tarde del 2026-10-05: dar acceso a una bóveda de proyecto**
+> ([ADR 0052](adr/0052-dar-acceso-a-un-proyecto.md)). Lo pidió el cliente nada más cerrar la 0050: *«necesito
+> que estas bóvedas de proyecto sí que se actualicen en tiempo real a las personas que la tengan compartida.
+> Solo las bóvedas de proyectos, lo que comparta de mi bóveda no.»* Es la funcionalidad que la ADR 0051 dejó
+> nombrada —permisos, revocación, quién ve qué— y **no la sustituye**: entregar una copia sigue al lado.
+>
+> **Hechas C1 a C5, todas en verde y con cada prueba mutada**: el núcleo, el servidor, el sobre y las dos
+> secciones, la sincronización y la pantalla. **La siguiente acción es C6, la extensión.**
+>
+> Después, y en este orden, que es la hoja de ruta que el cliente dio por buena:
+>
+> 1. **C6**, para que la extensión no se quede atrás.
+> 2. **Desplegar a pruebas** y recorrer el camino entero con **dos cuentas de usar y tirar** contra ese
+>    Worker —dar acceso, aceptar, escribir desde el otro lado, quitarlo—, sin tocar producción.
+> 3. Con eso en verde, **desplegar producción y publicar**, y que lo pruebe él con una segunda dirección suya.
+>
+> **Nada de esto está desplegado ni publicado**: producción sigue con el Worker del 2026-10-05 por la mañana,
+> y la última versión publicada es la **2.39.3**, que lleva el núcleo y el servidor **inertes** —no los llama
+> nadie y una etiqueta no despliega el Worker—.
+>
+> **Y lo que de verdad falta por saber**: esto **no se ha visto funcionar entre dos personas**. Todo lo
+> probado aquí es con dos cuentas contra el Worker en local, que es mucho y no es lo mismo.
+
+---
+
+> **Cerrado el 2026-10-05 (mañana): las bóvedas por proyecto.** Tres publicaciones ese día —2.39.0, 2.39.1 y 2.39.2— y el cliente las fue
 > probando en su Mac según salían. **Dio el visto bueno con la 2.39.2**: «actualizado, probado y conforme».
 >
 > **Lo que esas versiones cerraron**, y era casi todo lo que quedaba del proyecto: **un solo diálogo de
