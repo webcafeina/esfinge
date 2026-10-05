@@ -13,6 +13,20 @@ package app
 //   - **Lo que llega no entra solo en la bóveda.** Espera en el buzón hasta que
 //     alguien lo acepta, que es lo que el cliente eligió: si no, cualquiera que
 //     sepa tu correo te escribe dentro.
+//   - **Y la identidad es de la bóveda personal, no de la que esté abierta.** Lo
+//     que se firma, lo que se publica y lo que abre el buzón salen de ella por
+//     `conLaPersonal`; de la activa sale solo **la entrada**, que es la que se está
+//     mirando, y ahí se queda su pendiente.
+//
+// Esto último **estuvo mal desde la ADR 0050 hasta la 2.39.2**, y es el fallo que la
+// propia 0050 avisó por escrito en `arrancarSincro` y en la cabecera de
+// `proyectos.go` —«lo de la cuenta es de la bóveda personal, siempre»— en el único
+// sitio que no lo cumplía. Con un proyecto abierto, `MiIdentidad` **creaba una
+// identidad dentro del proyecto y la publicaba como las llaves de la cuenta**: a
+// partir de ahí, lo que te mandaran llegaba cifrado hacia una bóveda que puedes
+// tener cerrada, la huella que enseñabas no era la tuya, y el buzón contestaba «este
+// envío no es para esta bóveda» a todo. Lo encontró leer el código al planificar la
+// ADR 0052, no una prueba.
 
 import (
 	"encoding/json"
@@ -51,17 +65,20 @@ type EnvioRecibido struct {
 // publica en el servidor** si hay cuenta. Es lo que hay que enseñar a la otra
 // persona para que compruebe que lo que le llega es tuyo.
 func (a *App) MiIdentidad() (IdentidadParaCompartir, error) {
-	b := a.boveda()
-	if b == nil {
-		return IdentidadParaCompartir{}, boveda.ErrCerrada
-	}
-	i, err := b.Identidad()
-	if err != nil {
+	var i boveda.Identidad
+	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		var err error
+		i, err = b.Identidad()
+		if err != nil {
+			return err
+		}
+		// Ya se publicaron al abrir; aquí se repite por si aquello falló, y sin poder
+		// impedir que se vea la propia huella.
+		a.publicarLlaves(b)
+		return nil
+	}); err != nil {
 		return IdentidadParaCompartir{}, err
 	}
-	// Ya se publicaron al abrir; aquí se repite por si aquello falló, y sin poder
-	// impedir que se vea la propia huella.
-	a.publicarLlaves(b)
 	return IdentidadParaCompartir{Huella: i.Huella, Suite: i.Suite}, nil
 }
 
@@ -121,8 +138,12 @@ func (a *App) MandarCopia(id, correo string) error {
 	if err != nil {
 		return err
 	}
-	sobre, err := b.MandarEntrada(e, boveda.Identidad{Suite: l.Suite, Cifrado: l.Cifrado, Firma: l.Firma})
-	if err != nil {
+	var sobre boveda.Envio
+	if err := a.conLaPersonal(func(p *boveda.Boveda) error {
+		var err error
+		sobre, err = p.MandarEntrada(e, boveda.Identidad{Suite: l.Suite, Cifrado: l.Cifrado, Firma: l.Firma})
+		return err
+	}); err != nil {
 		return err
 	}
 	if err := a.cliente().Mandar(a.ctxCuenta(), token, c, sobre); err != nil {
@@ -183,8 +204,12 @@ func (a *App) repasarPendientes(b *boveda.Boveda) {
 		if boveda.HuellaDeIdentidad(l.Suite, l.Cifrado, l.Firma) == p.Huella {
 			continue
 		}
-		sobre, err := b.MandarEntrada(e, boveda.Identidad{Suite: l.Suite, Cifrado: l.Cifrado, Firma: l.Firma})
-		if err != nil {
+		var sobre boveda.Envio
+		if err := a.conLaPersonal(func(p *boveda.Boveda) error {
+			var err error
+			sobre, err = p.MandarEntrada(e, boveda.Identidad{Suite: l.Suite, Cifrado: l.Cifrado, Firma: l.Firma})
+			return err
+		}); err != nil {
 			continue
 		}
 		if err := a.cliente().Mandar(a.ctxCuenta(), token, p.Correo, sobre); err != nil {
@@ -197,10 +222,6 @@ func (a *App) repasarPendientes(b *boveda.Boveda) {
 // Buzon lista lo que ha llegado, **ya abierto y con la firma comprobada**, pero
 // sin los secretos: lo que se enseña es de quién viene y qué es.
 func (a *App) Buzon() ([]EnvioRecibido, error) {
-	b := a.boveda()
-	if b == nil {
-		return nil, boveda.ErrCerrada
-	}
 	token, err := a.sesionDeCuenta()
 	if err != nil {
 		return nil, err
@@ -212,7 +233,7 @@ func (a *App) Buzon() ([]EnvioRecibido, error) {
 	out := make([]EnvioRecibido, 0, len(brutos))
 	for _, x := range brutos {
 		r := EnvioRecibido{ID: x.ID, Momento: x.Momento}
-		e, de, err := abrirDelBuzon(b, x.Sobre)
+		e, de, err := a.abrirDelBuzonConLaPersonal(x.Sobre)
 		if err != nil {
 			r.Error = err.Error()
 		} else {
@@ -244,7 +265,7 @@ func (a *App) AceptarDelBuzon(id string) error {
 		if x.ID != id {
 			continue
 		}
-		e, de, err := abrirDelBuzon(b, x.Sobre)
+		e, de, err := a.abrirDelBuzonConLaPersonal(x.Sobre)
 		if err != nil {
 			return err
 		}
@@ -273,12 +294,21 @@ func (a *App) TirarDelBuzon(id string) error {
 	return a.cliente().TirarDelBuzon(a.ctxCuenta(), token, id)
 }
 
-func abrirDelBuzon(b *boveda.Boveda, crudo json.RawMessage) (boveda.Entrada, boveda.Identidad, error) {
+// abrirDelBuzonConLaPersonal abre un sobre **con la identidad de la bóveda
+// personal**, que es la de la cuenta, esté abierta la que esté.
+func (a *App) abrirDelBuzonConLaPersonal(crudo json.RawMessage) (boveda.Entrada, boveda.Identidad, error) {
 	var s boveda.Envio
 	if err := json.Unmarshal(crudo, &s); err != nil {
 		return boveda.Entrada{}, boveda.Identidad{}, errors.New("Este envío no se entiende")
 	}
-	return b.AbrirEnvio(s)
+	var e boveda.Entrada
+	var de boveda.Identidad
+	err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		var err error
+		e, de, err = b.AbrirEnvio(s)
+		return err
+	})
+	return e, de, err
 }
 
 func juntarNotas(notas, linea string) string {

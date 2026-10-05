@@ -823,3 +823,52 @@ func TestBorrarUnProyectoPideLaMaestra(t *testing.T) {
 		t.Error("el registro sigue apuntando una bóveda que ya no existe")
 	}
 }
+
+// **La identidad para compartir es la de la bóveda personal, también con un
+// proyecto abierto** (ADR 0052, al planificarla).
+//
+// Hasta la 2.39.2 no lo era: `MiIdentidad` preguntaba a la bóveda **activa**, que
+// con un proyecto delante es el proyecto. Y `Identidad()` crea la identidad si no
+// hay, así que no era leer de más: **fabricaba una identidad dentro del proyecto y
+// la publicaba como las llaves de la cuenta**. A partir de ahí, lo que te mandaran
+// llegaba cifrado hacia una bóveda que puedes tener cerrada.
+//
+// Es la forma exacta del fallo que la ADR 0050 dejó avisado en `arrancarSincro` —y
+// que allí sí se respeta— en el único sitio que no lo miraba. Lo encontró leer el
+// código, no una prueba, y por eso esta prueba existe.
+func TestLaIdentidadParaCompartirEsSiempreLaDeLaPersonal(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+
+	mia, err := a.MiIdentidad()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mia.Huella == "" {
+		t.Fatal("la bóveda personal tiene que dar una huella")
+	}
+
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	conElProyecto, err := a.MiIdentidad()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conElProyecto.Huella != mia.Huella {
+		t.Fatalf("con un proyecto abierto la huella es %s y la de la cuenta es %s: se está enseñando la identidad del proyecto",
+			conElProyecto.Huella, mia.Huella)
+	}
+
+	// Y al volver sigue siendo la misma: lo de arriba no puede haber pasado por
+	// haberle puesto a la personal la identidad del proyecto.
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	deVuelta, err := a.MiIdentidad()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if deVuelta.Huella != mia.Huella {
+		t.Fatalf("al volver, la huella de la cuenta ha cambiado a %s", deVuelta.Huella)
+	}
+}
