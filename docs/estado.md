@@ -13,57 +13,53 @@
 > **Hechas C1 a C6, todas en verde y con cada prueba mutada**: el núcleo, el servidor, el sobre y las dos
 > secciones, la sincronización, la pantalla y la extensión. **El código de la 0052 está entero.**
 >
-> **La siguiente acción es terminar el paseo contra el Worker desplegado de pruebas**, que es lo único que
-> queda del paso 2:
+> **La siguiente acción es desplegar producción y publicar**, que es el paso 3 y lo único que queda:
 >
 > 1. ~~**C6**, para que la extensión no se quede atrás.~~ Hecha el 2026-10-05 (tarde).
-> 2. **Desplegar a pruebas** ~~y recorrer el camino entero con dos cuentas de usar y tirar~~. **Desplegado el
->    2026-10-05 a las 15:38 UTC** y comprobado que las rutas de la 0052 están vivas ahí —una compartida sin
->    sesión da 401 y una ruta inventada 404—. **El camino ya se recorre entero contra el Worker local**, que
->    es el mismo código, y es ahora una prueba fija que corre en `make comprobar`
->    (`internal/app/acceso_entre_cuentas_test.go`). **Falta recorrerlo contra el desplegado**, que es lo que
->    añade D1 de verdad, los Durable Objects con su jurisdicción y el `ETag` que Cloudflare debilita.
-> 3. Con eso en verde, **desplegar producción y publicar**, y que lo pruebe él con una segunda dirección suya.
+> 2. ~~**Desplegar a pruebas** y recorrer el camino entero con dos cuentas de usar y tirar.~~ **Hecho**: el
+>    Worker de pruebas se desplegó el 2026-10-05 a las 15:38 UTC y **el paseo pasó entero contra él el
+>    2026-10-06 a las 08:12 UTC** — las diez etapas, con D1 de verdad, los objetos con su jurisdicción y el
+>    `ETag` que Cloudflare debilita. El camino además se recorre solo en `make comprobar` contra el Worker
+>    local (`internal/app/acceso_entre_cuentas_test.go`).
+> 3. **Desplegar producción y publicar**, y que lo pruebe él con una segunda dirección suya. **Nada de la
+>    0052 está en producción ni publicado**: la última versión publicada es la 2.39.3, que lleva el núcleo y
+>    el servidor inertes.
 >
-> **Cómo se retoma el paseo contra el desplegado**, que tiene un paso que no se puede automatizar: cada
-> cuenta necesita un código del buzón de pruebas, y **ese buzón está detrás de Cloudflare Access** —política
-> «Emails ending in `@webcafeina.com`»—, así que lo abre el cliente y pega los códigos.
->
-> ```sh
-> R=https://esfinge-cuentas-pruebas.webcafe-na.workers.dev
-> for c in paseo-ana@ejemplo.com paseo-beto@ejemplo.com; do
->   curl -s -o /dev/null -w "%{http_code}\n" -X POST "$R/v1/registro/inicio" \
->     -H 'Content-Type: application/json' -d "{\"correo\":\"$c\"}"
-> done
-> # El cliente abre $R/_pruebas/buzon?correo=<cada una> y pega los dos códigos. Caducan a los 10 minutos.
-> ESFINGE_SERVIDOR_PRUEBAS=$R PASEO_CORREO_A=paseo-ana@ejemplo.com PASEO_CODIGO_A=… \
->   PASEO_CORREO_B=paseo-beto@ejemplo.com PASEO_CODIGO_B=… \
->   go test ./internal/app -run TestPaseoDeUnAccesoEntreDosCuentas -v -count=1
-> ```
->
-> **Dos cosas que costaron dos rondas de códigos y no hay que repetir:** las direcciones **no pueden llevar
-> cifras** —con una fecha dentro, el JSON del buzón tiene varias tiradas de seis dígitos que parecen el
-> código—, y **pedir el alta dos veces invalida el código anterior**, así que se pide **una sola vez** por
-> dirección y se usa el mensaje que haya. Quedan **tres altas por IP y día** en ese servidor, y el paseo
-> gasta dos.
->
-> **Y dos cosas que el cliente tiene que hacer él cuando se publique**, apuntadas aquí para que no se
-> pierdan:
+> **Al publicar, dos cosas que tiene que hacer el cliente** o se quedan sin hacer:
 >
 > - **Pegar la ficha de Chrome.** El texto cambió con la C6 —el propósito único y la justificación de
 >   `storage`— y está **aplazado siete días** desde el 2026-10-05: pasados, `make comprobar` vuelve a parar.
 >   Se pega en la consola y luego `node navegador/herramientas/ficha-de-chrome.mjs --pegado`.
-> - **El aviso de datos vuelve a preguntar** (`VERSION_DEL_AVISO` 5 → 6), así que todo el mundo lo verá otra
->   vez. Es lo que pide la ADR 0033 cuando cambia lo que el aviso dice, y aquí cambia de verdad: lo que se
+> - **El aviso de datos vuelve a preguntar** (`VERSION_DEL_AVISO` 5 → 6) a todo el mundo, porque lo que se
 >   guarde en una bóveda compartida sube a la cuenta de otra persona.
 >
-> **Nada de esto está desplegado ni publicado**: producción sigue con el Worker del 2026-10-05 por la mañana,
-> y la última versión publicada es la **2.39.3**, que lleva el núcleo y el servidor **inertes** —no los llama
-> nadie y una etiqueta no despliega el Worker—.
+> **Y lo que sigue sin verse, que es lo único que queda por saber de verdad**: esto **no se ha visto
+> funcionar entre dos personas en dos ordenadores**. Lo recorrido son dos cuentas contra un servidor, que
+> es mucho y no es lo mismo.
 >
-> **Y lo que de verdad falta por saber**: esto **no se ha visto funcionar entre dos personas**. Todo lo
-> probado aquí es con dos cuentas contra el Worker en local, que es mucho y no es lo mismo.
-
+> **Si hay que volver a recorrer el paseo contra el desplegado**, el mandato está abajo — y antes de nada,
+> léase la trampa de los **dos códigos de seis cifras**, que costó tres rondas:
+>
+> ```sh
+> R=https://esfinge-cuentas-pruebas.webcafe-na.workers.dev
+> for c in paseo-primera@ejemplo.com paseo-segunda@ejemplo.com; do
+>   curl -s -o /dev/null -w "%{http_code}\n" -X POST "$R/v1/registro/inicio" \
+>     -H 'Content-Type: application/json' -d "{\"correo\":\"$c\"}"
+> done
+> # El cliente abre $R/_pruebas/buzon?correo=<cada una> y pega los dos códigos. Caducan a los 10 minutos.
+> ESFINGE_SERVIDOR_PRUEBAS=$R PASEO_CORREO_A=… PASEO_CODIGO_A=… \
+>   PASEO_CORREO_B=… PASEO_CODIGO_B=… \
+>   go test ./internal/app -run TestPaseoDeUnAccesoEntreDosCuentas -v -count=1
+> ```
+>
+> **Hay dos códigos de seis cifras y no son el mismo.** El que le **llega al correo** al cliente es el de
+> **Cloudflare Access**, el portero del buzón, y ese se teclea **en la página del navegador**. El de Esfinge
+> **no se manda a ningún sitio**: el Worker de pruebas lo escribe en un buzón de mentira que solo se ve en
+> esa página, ya pasada la puerta. Dárselo al servidor cambiados es lo que contesta «El código no es correcto
+> o ha caducado», y eso **no dice nada de que sean dos**.
+>
+> Y dos más, menores: **el buzón acumula mensajes** y solo vale el más reciente —lo más sencillo es estrenar
+> dirección cada vez—, y hay **tres altas por IP y día**, de las que el paseo gasta dos.
 ---
 
 > **Cerrado el 2026-10-05 (mañana): las bóvedas por proyecto.** Tres publicaciones ese día —2.39.0, 2.39.1 y 2.39.2— y el cliente las fue

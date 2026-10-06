@@ -204,8 +204,10 @@ botón para descartarlo. `AceptarAcceso` estaba escrita en Go y en el puente **y
 esta misma ficha lo pedía en la C3. Es la segunda vez que pasa eso en el proyecto, así que con el arreglo va
 el vigilante: `TestLoQueEstaEnElPuenteLoLlamaLaVentana`.
 
+**Y el mismo paseo contra el Worker desplegado de pruebas** (2026-10-06): las diez etapas en verde con **D1
+de verdad**, los Durable Objects con su jurisdicción y el `ETag` que Cloudflare debilita al comprimir, que es
+lo que el Worker local no puede dar. Ese paso **no se puede automatizar entero** —cada alta necesita un código
+de un buzón que está detrás de Cloudflare Access—, y el mandato está en `docs/estado.md`.
+
 **Lo que no se comprueba aquí**, y se dice desde el principio: **todo lo que es con dos personas de verdad**,
-en dos ordenadores. Lo probado son dos cuentas contra un servidor, que es mucho y no es lo mismo. Y queda
-recorrer esto contra el Worker **desplegado**, que es lo que añade D1 de verdad, los objetos con su
-jurisdicción y el `ETag` que Cloudflare debilita — un paso que **no se puede automatizar entero**, porque cada
-alta necesita un código de un buzón que está detrás de Cloudflare Access.
+en dos ordenadores. Lo probado son dos cuentas contra un servidor, que es mucho y no es lo mismo.

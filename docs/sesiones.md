@@ -5,6 +5,29 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-06 · El paseo contra el servidor desplegado, y los dos códigos de seis cifras
+
+- **El paseo pasó entero contra el Worker desplegado de pruebas** (08:12 UTC): las diez etapas, con D1 de
+  verdad, los Durable Objects con su jurisdicción y el `ETag` que Cloudflare debilita al comprimir — que es
+  justo lo que el Worker local no puede dar. Con eso, **el paso 2 de la hoja de ruta está cerrado**.
+- **Lo que costó tres rondas de códigos, y era de bulto: hay dos códigos de seis cifras y no son el mismo.**
+  El que le llega al correo al cliente es el de **Cloudflare Access**, el portero del buzón, y se teclea **en
+  la página**; el de Esfinge **no se manda a ningún sitio** —el Worker de pruebas lo escribe en un buzón de
+  mentira— y solo se ve ahí dentro, pasada la puerta. Él estaba pasando el de Access, que es exactamente lo
+  que haría cualquiera.
+- **Y el fallo de método es mío, no suyo.** Ante «El código no es correcto», me inventé dos causas seguidas
+  —las cifras dentro de la dirección, los mensajes acumulados en el buzón— y las dos eran plausibles, estaban
+  bien razonadas y **eran falsas**. Lo que lo resolvió a la primera fue dejar de razonar y **preguntar qué
+  estaba viendo**. Lo tenía delante desde el principio: un mensaje de error que no distingue dos cosas no
+  dice que sean dos.
+- **Lo único que hice bien por el camino**: antes de pedirle nada más, comprobé que **el camino del código
+  por el entorno funcionaba en local** — hasta entonces solo se había ejercitado el que lee el buzón solo—.
+  Eso descartó mi mitad en una pasada y sin gastarle tiempo a nadie.
+- **Queda**: desplegar producción y publicar. Y lo de siempre, que no cambia: **esto no se ha visto
+  funcionar entre dos personas en dos ordenadores**.
+
+---
+
 ## 2026-10-05 (noche, 2) · El paseo, y el acceso que no se podía aceptar
 
 - **Se desplegó el Worker de pruebas** (15:38 UTC) con el servidor de la 0052 dentro, y se comprobó desde

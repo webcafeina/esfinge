@@ -1553,8 +1553,21 @@ cosas que ya costaron algo al escribirlo:
 - **Y el Worker de pruebas desplegado tiene el buzón detrás de Cloudflare Access.** `/v1/*` contesta, pero
   `/_pruebas/buzon` devuelve un 302 a la pantalla de Access y el cuerpo es HTML: el síntoma es un
   «invalid character '<'» al descodificar el JSON. El código de un alta contra ese Worker se saca de la
-  tabla `buzon_pruebas` de su D1 (`esfinge-cuentas-pruebas`), no por HTTP. Solo pasa con el desplegado: el
-  que levanta `con-servidor.sh` en local no tiene Access delante.
+  tabla `buzon_pruebas` de su D1 (`esfinge-cuentas-pruebas`), o lo abre el cliente en el navegador, que es
+  quien pasa la puerta. Solo pasa con el desplegado: el que levanta `con-servidor.sh` en local no tiene
+  Access delante.
+- **Y ahí hay dos códigos de seis cifras que no son el mismo, y confundirlos costó tres rondas.** El que le
+  **llega al correo** al cliente es el de **Cloudflare Access** —el portero— y se teclea **en la página del
+  navegador**; el de Esfinge **no se manda a ninguna parte**, porque el Worker de pruebas escribe en un
+  buzón de mentira que solo se ve ya pasada esa puerta. El servidor contesta a los dos lo mismo —«El código
+  no es correcto o ha caducado»—, así que **el error no dice que sean dos**: hay que decirlo al pedirlos.
+  Dos detalles más de ese buzón: **acumula mensajes y solo vale el más reciente** —lo más limpio es estrenar
+  dirección cada vez— y hay **tres altas por IP y día**.
+- **Y la del método, que es la que de verdad costó**: ante ese error me inventé dos causas seguidas —cifras
+  dentro de la dirección de correo, mensajes acumulados—, las dos plausibles, las dos bien razonadas y las
+  dos falsas. Lo resolvió **preguntarle a quien lo estaba haciendo qué veía**. Cuando algo falla en un
+  tramo que no se puede mirar desde aquí, la primera pregunta no es «qué puede estar mal» sino **«qué estás
+  viendo»**.
 
 **La fusión de la bóveda la vigila una prueba de tres equipos al azar, y es la que manda** (ADR 0038).
 Al escribirla cazó dos fallos que ninguna prueba caso a caso veía: **cada equipo conservaba su orden de
