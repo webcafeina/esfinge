@@ -5,6 +5,28 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-06 (5) · La 2.41.0 publicada, y la prueba a un paso del final
+
+- **Se miró la prueba antes de relanzar nada**, que es lo que el cliente pidió. No se pudo demostrar la
+  causa y **no se fingió que sí**: lo que se hizo fue **ponerle voz**. Las tres esperas de «Sincronizada»
+  pasan por `sincronizada()`, que al caerse dice **lo que ve la ventana y lo que cree Go** —comprobado
+  forzando el fallo—. Si Go dice «al-dia» y la ventana no, lo que falla es el aviso a la ventana y no la
+  sincronización: dos arreglos distintos que el registro no distinguía. **El plazo no se tocó**: esto no es
+  para que deje de caerse, es para que diga por qué.
+- **Y un candidato que salió leyendo, sin confirmar**, a `deuda.md`: `alSincronizar` hace `return` con
+  `context.Canceled` **sin dejar ningún estado**, así que una pasada cancelada sin otra detrás deja el
+  rótulo en «Sincronizando…» para siempre. Encaja con el síntoma, y encajar no es ser la causa.
+- **Se movió la etiqueta `v2.41.0`** al commit con el diagnóstico —decisión del cliente entre eso y subir a
+  2.41.1— y **la publicación pasó la puerta a la primera**: lo de la víspera era inestable, no roto. Fuera
+  la aplicación, la línea de comandos y los tres instaladores; Chrome en revisión y Firefox con su fuente.
+- **Y la prueba entre dos personas llegó hasta la extensión**: en Firefox del Mac 2, con la cuenta del otro
+  lado, el panel enseña la bóveda compartida en el selector y **rellena desde ella**. Con eso están
+  comprobados todos los tramos menos el último.
+- **Queda quitar el acceso**, que el cliente hará mañana —no tiene el Mac 1 hasta entonces—. Los pasos y lo
+  que hay que mirar están en [`estado.md`](estado.md), con el `mv` que devuelve el Mac 2 como estaba.
+
+---
+
 ## 2026-10-06 (4) · Lo que pidió el cliente al ver el buzón
 
 - **El sobre de acceso dice ahora de quién viene.** Lo que llegaba era «De DRD8-…» y nada más, así que

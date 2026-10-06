@@ -227,5 +227,10 @@ de verdad**, los Durable Objects con su jurisdicción y el `ETag` que Cloudflare
 lo que el Worker local no puede dar. Ese paso **no se puede automatizar entero** —cada alta necesita un código
 de un buzón que está detrás de Cloudflare Access—, y el mandato está en `docs/estado.md`.
 
-**Lo que no se comprueba aquí**, y se dice desde el principio: **todo lo que es con dos personas de verdad**,
-en dos ordenadores. Lo probado son dos cuentas contra un servidor, que es mucho y no es lo mismo.
+**Y en dos ordenadores de verdad** (2026-10-06, en los dos Macs del cliente): dar el acceso **comparando la
+huella**, aceptarlo —se ve como **«Acceso a …»** y no como un sobre roto—, abrir la bóveda, **escribir en un
+equipo y que llegue al otro**, y **la extensión de Firefox rellenando desde la bóveda compartida** con la
+cuenta de quien la recibió.
+
+**Lo que falta, y es lo último:** **quitar el acceso** y ver las dos cosas que eso tiene que cumplir — que
+quien lo pierde se entere, y que **no se le cierre su propia bóveda**. Los pasos están en `docs/estado.md`.

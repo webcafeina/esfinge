@@ -2,61 +2,38 @@
 
 Última actualización: **2026-10-06**
 
-> **Lo primero al retomar: la 2.41.0 no está publicada.** La etiqueta `v2.41.0` **existe y está empujada**,
-> pero su publicación **se paró en la puerta** y no salió nada: la última versión publicada sigue siendo la
-> **2.40.1**. El fallo fue una prueba de la interfaz esperando que la línea de sincronización dijera
-> «Sincronizada» —se quedó en «Sincronizando…»—, con la entrada ya llegada; está en [deuda.md](deuda.md) con
-> lo que se vio. **No se ha vuelto a lanzar**, a petición del cliente.
+> **La 2.41.0 está publicada** (2026-10-06, 15:58 UTC) y pasó la puerta a la primera, así que lo de la
+> víspera era inestable y no roto. La etiqueta se movió al commit que lleva el diagnóstico; Chrome quedó
+> en revisión y Firefox enviada con su fuente.
 >
-> Para publicarla hay que decidir una de dos: **mover la etiqueta** `v2.41.0` —borrarla en el remoto y
-> volver a empujarla, que el flujo contempla— o **subir a `v2.41.1`**. Y antes, mirar esa prueba: volver a
-> lanzar sin tocar nada es apostar a que la máquina de GitHub vaya más rápida.
+> **Y la prueba entre dos personas está hecha salvo el último paso.** Comprobado en los dos Macs del
+> cliente: dar acceso con la huella comparada, aceptarlo —**«Acceso a …»**, no un sobre roto—, abrirlo, que
+> **lo escrito en un equipo llegue al otro**, y **la extensión de Firefox rellenando desde la bóveda
+> compartida** con la cuenta del otro lado.
 >
-> **Y la prueba entre dos equipos está a medias, en buen sitio**: hechos los tramos 1 a 5 —cuenta B creada
-> en el Mac 2, proyecto, acceso dado con la huella comparada, aceptado, abierto, y lo escrito en el Mac 2
-> llegó al Mac 1—. Queda Firefox, quitar el acceso y devolver el Mac 2 como estaba. El detalle, en
-> [sesiones.md](sesiones.md).
+> **La siguiente acción, y es lo único que queda de todo el proyecto: quitar el acceso.** Él no tiene el
+> Mac 1 hasta mañana. Los pasos:
 >
-> Lo que lleva esa versión, ya comprometido y en `main`: que el buzón diga **«Dice ser …»** de quién viene
-> un acceso, **«Quién tiene acceso…» dentro del proyecto**, el botón del buzón que no se corta y el bloque
-> que ya no se queda abierto al salir.
-
-## Dónde se paró, y por dónde se sigue
-
-> **En marcha desde la tarde del 2026-10-05: dar acceso a una bóveda de proyecto**
-> ([ADR 0052](adr/0052-dar-acceso-a-un-proyecto.md)). Lo pidió el cliente nada más cerrar la 0050: *«necesito
-> que estas bóvedas de proyecto sí que se actualicen en tiempo real a las personas que la tengan compartida.
-> Solo las bóvedas de proyectos, lo que comparta de mi bóveda no.»* Es la funcionalidad que la ADR 0051 dejó
-> nombrada —permisos, revocación, quién ve qué— y **no la sustituye**: entregar una copia sigue al lado.
+> 1. **Mac 1**: abrir «Prueba de acceso» → Proyectos → «Quién tiene acceso…» → **Quitar** (segundo clic).
+> 2. **Mac 2**: esperar la sincronización —hasta un minuto— y mirar **las dos cosas que importan**: que
+>    diga «Ya no tienes acceso a esa bóveda» y que **su bóveda personal siga abierta**. Lo segundo es el
+>    fallo que más preocupaba: que quitarle el acceso a una bóveda ajena le cierre la suya. Y que **lo que
+>    ya se bajó siga ahí**, que es lo que la pantalla del Mac 1 promete.
+> 3. **Devolver el Mac 2 como estaba**, que es lo que queda apartado desde ayer:
 >
-> **Hechas C1 a C6, todas en verde y con cada prueba mutada**: el núcleo, el servidor, el sobre y las dos
-> secciones, la sincronización, la pantalla y la extensión. **El código de la 0052 está entero.**
+>    ```sh
+>    rm -rf ~/Library/Application\ Support/Esfinge
+>    mv ~/Library/Application\ Support/Esfinge-mio ~/Library/Application\ Support/Esfinge
+>    ```
 >
-> **La 0052 está publicada: la 2.40.0 salió el 2026-10-06.** La siguiente acción ya no es de código —**es
-> verlo funcionar entre dos personas en dos ordenadores**, que es lo único que no se ha visto.
+>    Lo primero borra la cuenta de prueba de ese equipo; lo segundo devuelve lo suyo, **sin volver a entrar
+>    en su cuenta y sin que se aparte ninguna bóveda**.
 >
-> Hecho, por orden: C1 a C6; el paseo entero contra el Worker **local** (corre en `make comprobar`,
-> `internal/app/acceso_entre_cuentas_test.go`) y contra el **desplegado de pruebas** (2026-10-06, 08:12 UTC);
-> **producción desplegada** (08:31 UTC) y **la 2.40.0 publicada** (09:02 UTC), con la aplicación, la línea de
-> comandos y los tres instaladores en GitHub, el paquete de Chrome **en revisión** —esta vez sí subió— y la
-> versión de Firefox enviada con su fuente.
+> La huella de la cuenta de prueba es `RB9J-JDRB-P6NP-R51B-7EVN-CPWB-DMBN`.
 >
-> **La migración del servidor es aditiva** —la tabla `miembros` y la columna `subidas.cuenta`, cuyo vacío
-> significa «el dueño»— y **corre cuando cada cuenta despierta su objeto**, no en el despliegue.
->
-> **Lo que el cliente tiene que recorrer en sus equipos**, y es lo que cierra la ADR:
->
-> 1. Crear un proyecto y dar acceso a **una segunda dirección suya**, comprobando la huella antes.
-> 2. Aceptarlo desde ahí: en el buzón tiene que verse **«Acceso a "…"»** con «Podrás editarla», **no un sobre
->    roto**. Ése fue el fallo que encontró el paseo y que arregló la 2.40.0.
-> 3. Escribir desde el segundo lado y ver que llega al primero. **«En vivo» es hasta un minuto.**
-> 4. Quitar el acceso y comprobar que el otro se queda fuera **sin que se le cierre su propia bóveda**.
->
-> Y dos cosas que ya están y no hay que volver a hacer: **la ficha de Chrome está pegada** —sale con esta
-> revisión— y **el aviso de datos sube a la 6**, así que vuelve a preguntar a todo el mundo.
->
-> **Si hay que volver a recorrer el paseo contra el desplegado de pruebas**, el mandato está abajo — y antes
-> de nada, la trampa de los **dos códigos de seis cifras**, que costó tres rondas.
+> **Y lo que sigue abierto, apuntado en [deuda.md](deuda.md)**: la espera de «Sincronizada» que tiró una
+> publicación —ahora **con voz**: al caerse dice lo que ve la ventana y lo que cree Go—, con un candidato
+> sin confirmar al lado (`alSincronizar` vuelve sin dejar estado cuando la pasada se cancela).
 ---
 
 > **Cerrado el 2026-10-05 (mañana): las bóvedas por proyecto.** Tres publicaciones ese día —2.39.0, 2.39.1 y 2.39.2— y el cliente las fue
