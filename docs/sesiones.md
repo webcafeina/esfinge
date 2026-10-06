@@ -22,6 +22,28 @@ Plantilla al final.
   reordenó para que lo que compruebe sea **que el camino nuevo abre**, no que ya estaba abierto.
 - **Y la prueba entre dos equipos llegó al tramo 5**: el cliente escribió desde el Mac 2 y le llegó al
   Mac 1. Queda Firefox y quitar el acceso.
+- **La 2.41.0 se etiquetó y no salió**: la puerta de comprobaciones falló en GitHub —una prueba esperando
+  que la línea de sincronización dijera «Sincronizada», con la entrada ya llegada— y saltó todo lo demás,
+  que es lo que esa puerta existe para hacer. **No se volvió a lanzar**, a petición del cliente: volver a
+  correrlo sin tocar nada es apostar a que la máquina vaya más rápida, y si sale verde no se aprende nada.
+  La etiqueta queda empujada **sin publicación detrás**, así que al retomar hay que elegir entre moverla o
+  subir a 2.41.1. Está en [`estado.md`](estado.md), en la primera línea.
+
+### Dónde está la prueba entre dos equipos
+
+Hechos los tramos 1 a 5: cuenta B en el Mac 2 con su carpeta apartada, proyecto creado, acceso dado con la
+huella comparada, aceptado —**«Acceso a …» y no un sobre roto**—, abierto, y **lo escrito en el Mac 2 llegó
+al Mac 1**. Queda:
+
+- **Firefox en el Mac 2**: panel de la extensión con la cuenta B, elegir la bóveda compartida en el selector
+  e ir a `https://github.com/login` a ver si rellena.
+- **Quitar el acceso** desde el Mac 1 y comprobar que el Mac 2 se queda fuera **sin que se le cierre su
+  bóveda**.
+- **Devolver el Mac 2 como estaba**: `rm -rf ~/Library/Application\ Support/Esfinge` y luego
+  `mv ~/Library/Application\ Support/Esfinge-mio ~/Library/Application\ Support/Esfinge`. Sin volver a
+  entrar en su cuenta y sin que se aparte ninguna bóveda.
+
+La huella de la cuenta B es `RB9J-JDRB-P6NP-R51B-7EVN-CPWB-DMBN`.
 
 ---
 

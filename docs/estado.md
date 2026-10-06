@@ -12,6 +12,11 @@
 > volver a empujarla, que el flujo contempla— o **subir a `v2.41.1`**. Y antes, mirar esa prueba: volver a
 > lanzar sin tocar nada es apostar a que la máquina de GitHub vaya más rápida.
 >
+> **Y la prueba entre dos equipos está a medias, en buen sitio**: hechos los tramos 1 a 5 —cuenta B creada
+> en el Mac 2, proyecto, acceso dado con la huella comparada, aceptado, abierto, y lo escrito en el Mac 2
+> llegó al Mac 1—. Queda Firefox, quitar el acceso y devolver el Mac 2 como estaba. El detalle, en
+> [sesiones.md](sesiones.md).
+>
 > Lo que lleva esa versión, ya comprometido y en `main`: que el buzón diga **«Dice ser …»** de quién viene
 > un acceso, **«Quién tiene acceso…» dentro del proyecto**, el botón del buzón que no se corta y el bloque
 > que ya no se queda abierto al salir.
