@@ -21,9 +21,14 @@
 >    2026-10-06 a las 08:12 UTC** — las diez etapas, con D1 de verdad, los objetos con su jurisdicción y el
 >    `ETag` que Cloudflare debilita. El camino además se recorre solo en `make comprobar` contra el Worker
 >    local (`internal/app/acceso_entre_cuentas_test.go`).
-> 3. **Desplegar producción y publicar**, y que lo pruebe él con una segunda dirección suya. **Nada de la
->    0052 está en producción ni publicado**: la última versión publicada es la 2.39.3, que lleva el núcleo y
->    el servidor inertes.
+> 3. ~~**Desplegar producción**~~ **y publicar**, y que lo pruebe él con una segunda dirección suya.
+>    **Producción desplegada el 2026-10-06 a las 08:31 UTC**, con el visto bueno del cliente: salud en verde,
+>    las rutas nuevas vivas (401 sin sesión) y el buzón de pruebas apagado, como debe. La migración del
+>    esquema es **aditiva** —la tabla `miembros` y la columna `subidas.cuenta`, cuyo vacío significa «el
+>    dueño»— y corre **cuando cada cuenta despierta su objeto**, no en el despliegue: la del cliente migrará
+>    en su siguiente sincronización.
+>    **Falta publicar**: la última versión publicada sigue siendo la 2.39.3, que lleva el núcleo y el
+>    servidor inertes, así que **nada de la 0052 está en manos de nadie todavía**.
 >
 > **Al publicar, dos cosas que tiene que hacer el cliente** o se quedan sin hacer:
 >
