@@ -1688,6 +1688,17 @@ p {
   white-space: nowrap;
 }
 
+/* **En el buzón la nota no es un plazo corto, es una huella.** «De
+ * DRD8-…-… · Podrás editarla» son treinta y pico caracteres que con `nowrap` no se
+ * pueden partir, así que empujaban las acciones fuera de la fila y **el botón salía
+ * cortado por el margen derecho** —lo vio el cliente al aceptar un acceso
+ * (2026-10-06)—. Aquí la nota se parte y cede sitio; en la papelera sigue en una línea,
+ * que es lo que se compara de un vistazo al bajar por la lista. */
+.lista-papelera.buzon .nota {
+  white-space: normal;
+  min-width: 0;
+}
+
 .lista-papelera .acciones {
   flex-shrink: 0;
   display: flex;

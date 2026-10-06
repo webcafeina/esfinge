@@ -251,7 +251,7 @@ export function Buzon({
       {envios.length === 0 ? (
         <p className="nota">Aquí no hay nada esperando.</p>
       ) : (
-        <ul className="lista-papelera">
+        <ul className="lista-papelera buzon">
           {envios.map((e) => (
             <li key={e.id}>
               <span className="nombre">

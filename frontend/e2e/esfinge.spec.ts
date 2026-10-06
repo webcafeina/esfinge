@@ -2245,7 +2245,20 @@ test("quién tiene acceso: la fila no pierde el nombre y la huella va antes", as
   await expect(page.locator(".panel:visible .el-acceso")).toBeVisible();
   await expect(page.locator(".panel:visible").getByRole("button", { name: "Dar acceso" })).toHaveCount(0);
 
+  // **Y al salir del proyecto, el bloque se cierra solo.**
+  //
+  // `elAcceso` guarda una referencia, no «lo que está abierto», así que al salir se
+  // quedaba desplegado con su campo de correo **y sin forma de cerrarlo**: el botón que
+  // lo cierra es «Quién tiene acceso…» y ése solo sale con el proyecto abierto. Lo vio
+  // el cliente al salir (2026-10-06).
   await volverALaPersonal(page);
+  await seccion(page, "Proyectos").click();
+  await expect(page.locator(".panel:visible .proyectos li").first()).toBeVisible({ timeout: 20_000 });
+  await expect(
+    page.locator(".panel:visible .el-acceso"),
+    "«Quién tiene acceso» se ha quedado abierto tras salir del proyecto",
+  ).toHaveCount(0);
+
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 

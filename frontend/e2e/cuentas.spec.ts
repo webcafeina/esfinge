@@ -358,15 +358,16 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
  * solo, y que al guardarlo aparezca. Que dos cuentas distintas se entiendan de
  * verdad lo prueba Go de punta a punta (`TestCompartirUnaCopiaEntreDosCuentas`).
  */
-test("compartir una copia y recogerla del buzón", async ({ page, request }) => {
-  test.skip(test.info().project.name !== "claro", "Usa la cuenta que deja la prueba anterior");
-  test.setTimeout(180_000);
-
-  // **Se usa el equipo B y no el A**, y con la contraseña que la prueba de arriba
-  // le deja: allí se cambia la maestra a propósito y se sale de la cuenta para
-  // crear otra. Esto es una dependencia entre pruebas, así que va escrita: el
-  // fichero comparte dos ventanas para toda la tanda porque levantar otra pareja
-  // de servidores por prueba costaría más de lo que arregla.
+/**
+ * Deja la ventana B con su cuenta y la bóveda abierta, la haya creado ya otra prueba o
+ * no. Es el arranque que compartían las pruebas de compartir, sacado aquí para que la
+ * del acceso no lo duplique.
+ *
+ * **Vale sola y vale detrás de la otra**, que es lo que de verdad cuesta: en una tanda
+ * entera la prueba de más arriba ya dejó este equipo en una cuenta —con la maestra
+ * cambiada a propósito—, y ejecutando una sola, el equipo se estrena.
+ */
+async function bovedaDeB(page: Page, request: APIRequestContext): Promise<string> {
   const CLAVE_DE_B = MAESTRA + " nueva";
   await page.goto(B);
 
@@ -406,9 +407,22 @@ test("compartir una copia y recogerla del buzón", async ({ page, request }) => 
     }
   }
   await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 30_000 });
-
   const estado = (await (await request.post(`${B}/api/EstadoDeCuenta`, { data: [] })).json()) as { correo: string };
   expect(estado.correo, "esta prueba necesita la ventana en una cuenta").toBeTruthy();
+  return estado.correo;
+}
+
+test("compartir una copia y recogerla del buzón", async ({ page, request }) => {
+  test.skip(test.info().project.name !== "claro", "Usa la cuenta que deja la prueba anterior");
+  test.setTimeout(180_000);
+
+  // **Se usa el equipo B y no el A**, y con la contraseña que la prueba de arriba
+  // le deja: allí se cambia la maestra a propósito y se sale de la cuenta para
+  // crear otra. Esto es una dependencia entre pruebas, así que va escrita: el
+  // fichero comparte dos ventanas para toda la tanda porque levantar otra pareja
+  // de servidores por prueba costaría más de lo que arregla.
+  const correoDeB = await bovedaDeB(page, request);
+  const estado = { correo: correoDeB };
 
   const titulo = `Wifi compartido ${Date.now()}`;
   await accion(page, "Nueva").click();
@@ -453,6 +467,24 @@ test("compartir una copia y recogerla del buzón", async ({ page, request }) => 
   await accion(page, "Te han mandado (1)").click();
   await expect(page.getByRole("heading", { name: "Te han mandado" })).toBeVisible();
   await expect(page.locator(".lista-papelera")).toContainText(titulo);
+  // **Y el botón cabe en la fila.**
+  //
+  // La nota del buzón es «De <huella>», treinta y pico caracteres que la papelera no
+  // tiene —ahí pone «hace 3 días»—, y con `nowrap` empujan las acciones fuera. Se mide,
+  // porque un botón que se sale sigue estando en el DOM y ninguna aserción de texto lo
+  // nota.
+  //
+  // **Lo que esto NO cubre, y hay que decirlo**: el caso que vio el cliente, que es un
+  // **acceso** —nota más larga («· Podrás editarla») y botón más largo («Aceptar el
+  // acceso»)—. Con una copia no se sale ni con `nowrap`: comprobado mutándolo, esta
+  // prueba sigue verde. Para cubrirlo hacen falta **dos cuentas en las dos ventanas**,
+  // porque el servidor rechaza darse acceso a uno mismo. Está en `deuda.md`.
+  const laLista = await page.locator(".lista-papelera.buzon").boundingBox();
+  const elBoton = await accion(page, "Guardar").boundingBox();
+  expect(
+    (elBoton?.x ?? 0) + (elBoton?.width ?? 0),
+    "el botón del buzón se sale de la lista por la derecha",
+  ).toBeLessThanOrEqual((laLista?.x ?? 0) + (laLista?.width ?? 0));
   await retratar(page, "buzon");
 
   await accion(page, "Guardar").click();

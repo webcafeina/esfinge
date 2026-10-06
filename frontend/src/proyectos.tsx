@@ -345,7 +345,15 @@ export function Proyectos({
                   )}
                 </>
               )}
-              {elAcceso === p.ref && <ElAcceso alFallar={setError} />}
+              {/* **Y se cierra solo al salir del proyecto.** `elAcceso` guarda una
+                  referencia, no «lo que está abierto», así que al salir el bloque se
+                  quedaba desplegado con su campo de correo **y sin forma de cerrarlo**:
+                  el botón que lo cierra es «Quién tiene acceso…», y ése solo sale con el
+                  proyecto abierto. Lo vio el cliente al salir (2026-10-06). Se mira
+                  `p.activo` aquí y no se limpia al salir porque esto no se entera de que
+                  alguien salió: lo que cambia es la lista, y la lista llega con `activo`
+                  ya puesto. */}
+              {p.activo && elAcceso === p.ref && <ElAcceso alFallar={setError} />}
               {alAcabar === p.ref && (
                 <AlAcabarElProyecto
                   proyecto={p}
