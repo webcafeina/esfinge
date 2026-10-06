@@ -10,8 +10,5 @@
 # motivo:  node navegador/herramientas/ficha-de-chrome.mjs --aplazado "por qué"
 # El aplazamiento caduca a los 7 días y entonces vuelve a parar.
 
-huella: 904988c160aa4ace
-fecha: 2026-10-01
-pendiente: 480dbfe40a2bf9a4
-aplazado: 2026-10-05
-porque: El texto es de la C6 de la ADR 0052, que todavía no se publica: se pega cuando salga la versión que la lleve
+huella: 480dbfe40a2bf9a4
+fecha: 2026-10-06
