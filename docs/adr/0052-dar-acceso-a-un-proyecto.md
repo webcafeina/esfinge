@@ -1,7 +1,8 @@
 # 0052 · Dar acceso a una bóveda de proyecto
 
-**Fecha:** 2026-10-05 · **Estado:** aceptada · **C1 a C6 escritas y en verde** · sin desplegar, sin publicar
-y **sin haberlo visto funcionar entre dos personas de verdad**
+**Fecha:** 2026-10-05 · **Estado:** aceptada · **C1 a C6 hechas, desplegadas y publicadas en la 2.40.0**
+(2026-10-06) · y **sin haberlo visto funcionar entre dos personas en dos ordenadores**, que es lo único que
+queda
 
 ## Contexto
 

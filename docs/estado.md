@@ -13,58 +13,31 @@
 > **Hechas C1 a C6, todas en verde y con cada prueba mutada**: el núcleo, el servidor, el sobre y las dos
 > secciones, la sincronización, la pantalla y la extensión. **El código de la 0052 está entero.**
 >
-> **La siguiente acción es desplegar producción y publicar**, que es el paso 3 y lo único que queda:
+> **La 0052 está publicada: la 2.40.0 salió el 2026-10-06.** La siguiente acción ya no es de código —**es
+> verlo funcionar entre dos personas en dos ordenadores**, que es lo único que no se ha visto.
 >
-> 1. ~~**C6**, para que la extensión no se quede atrás.~~ Hecha el 2026-10-05 (tarde).
-> 2. ~~**Desplegar a pruebas** y recorrer el camino entero con dos cuentas de usar y tirar.~~ **Hecho**: el
->    Worker de pruebas se desplegó el 2026-10-05 a las 15:38 UTC y **el paseo pasó entero contra él el
->    2026-10-06 a las 08:12 UTC** — las diez etapas, con D1 de verdad, los objetos con su jurisdicción y el
->    `ETag` que Cloudflare debilita. El camino además se recorre solo en `make comprobar` contra el Worker
->    local (`internal/app/acceso_entre_cuentas_test.go`).
-> 3. ~~**Desplegar producción**~~ **y publicar**, y que lo pruebe él con una segunda dirección suya.
->    **Producción desplegada el 2026-10-06 a las 08:31 UTC**, con el visto bueno del cliente: salud en verde,
->    las rutas nuevas vivas (401 sin sesión) y el buzón de pruebas apagado, como debe. La migración del
->    esquema es **aditiva** —la tabla `miembros` y la columna `subidas.cuenta`, cuyo vacío significa «el
->    dueño»— y corre **cuando cada cuenta despierta su objeto**, no en el despliegue: la del cliente migrará
->    en su siguiente sincronización.
->    **Falta publicar**: la última versión publicada sigue siendo la 2.39.3, que lleva el núcleo y el
->    servidor inertes, así que **nada de la 0052 está en manos de nadie todavía**.
+> Hecho, por orden: C1 a C6; el paseo entero contra el Worker **local** (corre en `make comprobar`,
+> `internal/app/acceso_entre_cuentas_test.go`) y contra el **desplegado de pruebas** (2026-10-06, 08:12 UTC);
+> **producción desplegada** (08:31 UTC) y **la 2.40.0 publicada** (09:02 UTC), con la aplicación, la línea de
+> comandos y los tres instaladores en GitHub, el paquete de Chrome **en revisión** —esta vez sí subió— y la
+> versión de Firefox enviada con su fuente.
 >
-> **Al publicar, dos cosas que tiene que hacer el cliente** o se quedan sin hacer:
+> **La migración del servidor es aditiva** —la tabla `miembros` y la columna `subidas.cuenta`, cuyo vacío
+> significa «el dueño»— y **corre cuando cada cuenta despierta su objeto**, no en el despliegue.
 >
-> - **Pegar la ficha de Chrome.** El texto cambió con la C6 —el propósito único y la justificación de
->   `storage`— y está **aplazado siete días** desde el 2026-10-05: pasados, `make comprobar` vuelve a parar.
->   Se pega en la consola y luego `node navegador/herramientas/ficha-de-chrome.mjs --pegado`.
-> - **El aviso de datos vuelve a preguntar** (`VERSION_DEL_AVISO` 5 → 6) a todo el mundo, porque lo que se
->   guarde en una bóveda compartida sube a la cuenta de otra persona.
+> **Lo que el cliente tiene que recorrer en sus equipos**, y es lo que cierra la ADR:
 >
-> **Y lo que sigue sin verse, que es lo único que queda por saber de verdad**: esto **no se ha visto
-> funcionar entre dos personas en dos ordenadores**. Lo recorrido son dos cuentas contra un servidor, que
-> es mucho y no es lo mismo.
+> 1. Crear un proyecto y dar acceso a **una segunda dirección suya**, comprobando la huella antes.
+> 2. Aceptarlo desde ahí: en el buzón tiene que verse **«Acceso a "…"»** con «Podrás editarla», **no un sobre
+>    roto**. Ése fue el fallo que encontró el paseo y que arregló la 2.40.0.
+> 3. Escribir desde el segundo lado y ver que llega al primero. **«En vivo» es hasta un minuto.**
+> 4. Quitar el acceso y comprobar que el otro se queda fuera **sin que se le cierre su propia bóveda**.
 >
-> **Si hay que volver a recorrer el paseo contra el desplegado**, el mandato está abajo — y antes de nada,
-> léase la trampa de los **dos códigos de seis cifras**, que costó tres rondas:
+> Y dos cosas que ya están y no hay que volver a hacer: **la ficha de Chrome está pegada** —sale con esta
+> revisión— y **el aviso de datos sube a la 6**, así que vuelve a preguntar a todo el mundo.
 >
-> ```sh
-> R=https://esfinge-cuentas-pruebas.webcafe-na.workers.dev
-> for c in paseo-primera@ejemplo.com paseo-segunda@ejemplo.com; do
->   curl -s -o /dev/null -w "%{http_code}\n" -X POST "$R/v1/registro/inicio" \
->     -H 'Content-Type: application/json' -d "{\"correo\":\"$c\"}"
-> done
-> # El cliente abre $R/_pruebas/buzon?correo=<cada una> y pega los dos códigos. Caducan a los 10 minutos.
-> ESFINGE_SERVIDOR_PRUEBAS=$R PASEO_CORREO_A=… PASEO_CODIGO_A=… \
->   PASEO_CORREO_B=… PASEO_CODIGO_B=… \
->   go test ./internal/app -run TestPaseoDeUnAccesoEntreDosCuentas -v -count=1
-> ```
->
-> **Hay dos códigos de seis cifras y no son el mismo.** El que le **llega al correo** al cliente es el de
-> **Cloudflare Access**, el portero del buzón, y ese se teclea **en la página del navegador**. El de Esfinge
-> **no se manda a ningún sitio**: el Worker de pruebas lo escribe en un buzón de mentira que solo se ve en
-> esa página, ya pasada la puerta. Dárselo al servidor cambiados es lo que contesta «El código no es correcto
-> o ha caducado», y eso **no dice nada de que sean dos**.
->
-> Y dos más, menores: **el buzón acumula mensajes** y solo vale el más reciente —lo más sencillo es estrenar
-> dirección cada vez—, y hay **tres altas por IP y día**, de las que el paseo gasta dos.
+> **Si hay que volver a recorrer el paseo contra el desplegado de pruebas**, el mandato está abajo — y antes
+> de nada, la trampa de los **dos códigos de seis cifras**, que costó tres rondas.
 ---
 
 > **Cerrado el 2026-10-05 (mañana): las bóvedas por proyecto.** Tres publicaciones ese día —2.39.0, 2.39.1 y 2.39.2— y el cliente las fue

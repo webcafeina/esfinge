@@ -5,6 +5,26 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-06 (2) · Producción, y la 2.40.0 publicada
+
+- **Producción desplegada** (08:31 UTC) con el visto bueno del cliente, tras comprobar que la migración es
+  **aditiva** —tabla `miembros` y columna `subidas.cuenta`, cuyo vacío significa «el dueño»— y que **corre
+  cuando cada cuenta despierta su objeto**, no en el despliegue. Salud en verde, rutas nuevas vivas y el
+  buzón de pruebas apagado ahí, como debe.
+- **Y de paso saltó una línea de `CLAUDE.md` que llevaba dos semanas mintiendo**: decía que producción era
+  «por invitación», y el registro está **abierto desde el 2026-09-23**, decisión del cliente con la política
+  ya publicada. No lo cambió el despliegue. Corregido en el fichero que se lee cada sesión.
+- **El cliente pegó los dos bloques de la ficha de Chrome** —el propósito único y la justificación de
+  `storage`— y se cerró el aplazamiento. Se le dijo lo que no es evidente: **un borrador de la consola no es
+  lo que la tienda enseña**; sale cuando el paquete se envía a revisión, o sea con esta publicación.
+- **Publicada la 2.40.0** (09:02 UTC): la puerta de comprobaciones pasó, salieron la aplicación, la línea de
+  comandos y los tres instaladores, **Chrome aceptó el paquete** —`SUCCEEDED` y `PENDING_REVIEW`, al
+  contrario que la 2.39.1, que rebotó por tener otra en cola— y Firefox quedó subida con su fuente.
+- **Queda lo único que no se puede comprobar desde aquí**: verlo funcionar **entre dos personas en dos
+  ordenadores**. El recorrido que lo cierra está en [`estado.md`](estado.md), paso a paso.
+
+---
+
 ## 2026-10-06 · El paseo contra el servidor desplegado, y los dos códigos de seis cifras
 
 - **El paseo pasó entero contra el Worker desplegado de pruebas** (08:12 UTC): las diez etapas, con D1 de
