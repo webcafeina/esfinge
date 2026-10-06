@@ -1,6 +1,20 @@
 # Estado
 
-Última actualización: **2026-10-05**
+Última actualización: **2026-10-06**
+
+> **Lo primero al retomar: la 2.41.0 no está publicada.** La etiqueta `v2.41.0` **existe y está empujada**,
+> pero su publicación **se paró en la puerta** y no salió nada: la última versión publicada sigue siendo la
+> **2.40.1**. El fallo fue una prueba de la interfaz esperando que la línea de sincronización dijera
+> «Sincronizada» —se quedó en «Sincronizando…»—, con la entrada ya llegada; está en [deuda.md](deuda.md) con
+> lo que se vio. **No se ha vuelto a lanzar**, a petición del cliente.
+>
+> Para publicarla hay que decidir una de dos: **mover la etiqueta** `v2.41.0` —borrarla en el remoto y
+> volver a empujarla, que el flujo contempla— o **subir a `v2.41.1`**. Y antes, mirar esa prueba: volver a
+> lanzar sin tocar nada es apostar a que la máquina de GitHub vaya más rápida.
+>
+> Lo que lleva esa versión, ya comprometido y en `main`: que el buzón diga **«Dice ser …»** de quién viene
+> un acceso, **«Quién tiene acceso…» dentro del proyecto**, el botón del buzón que no se corta y el bloque
+> que ya no se queda abierto al salir.
 
 ## Dónde se paró, y por dónde se sigue
 
