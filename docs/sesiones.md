@@ -5,6 +5,26 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-06 (4) · Lo que pidió el cliente al ver el buzón
+
+- **El sobre de acceso dice ahora de quién viene.** Lo que llegaba era «De DRD8-…» y nada más, así que
+  quien lo recibe no sabía qué aceptaba. Se le dieron tres salidas y eligió la primera: **enseñar el correo
+  como lo que es**. Va dentro del sobre, cifrado, y no le dice al servidor nada que no supiera —ya apuntó
+  las dos cuentas al dar el acceso—; la pantalla lo enseña como **«Dice ser …»** y **la huella sigue siendo
+  lo que se compara**. Se descartó que lo pusiera el servidor: sería su afirmación, y el servidor es justo
+  de quien la huella protege.
+- **Y el vigilante del sobre hizo su trabajo**: `TestElSobreDeAccesoNoLlevaSecretos` se puso rojo con «el
+  sobre de acceso lleva un campo nuevo, "de": decide si puede viajar antes de añadirlo». La decisión quedó
+  escrita **en la propia prueba**, que es donde la va a leer quien añada el siguiente.
+- **«Quién tiene acceso…» también desde dentro del proyecto**, que es donde lo buscó él al empezar. No
+  duplica pantalla: lleva a la lista y despliega el bloque del proyecto abierto. Lo que costó acertar fue
+  la prueba —el botón de la fila es un interruptor, así que abrirlo por los dos caminos lo cerraba—, y se
+  reordenó para que lo que compruebe sea **que el camino nuevo abre**, no que ya estaba abierto.
+- **Y la prueba entre dos equipos llegó al tramo 5**: el cliente escribió desde el Mac 2 y le llegó al
+  Mac 1. Queda Firefox y quitar el acceso.
+
+---
+
 ## 2026-10-06 (3) · La prueba entre dos equipos, y el fallo que paró en el primer acceso
 
 - **El cliente empezó la prueba de verdad** —cuenta B en su segundo Mac, permiso de editar— y se topó con

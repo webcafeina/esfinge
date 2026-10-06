@@ -72,6 +72,10 @@ export default function App() {
   const [cuenta, refrescarCuenta] = usaCuenta();
   const [asistente, setAsistente] = useState<{ tipo: TipoAsistente; hayBoveda: boolean } | null>(null);
   const [selloBoveda, setSelloBoveda] = useState(0);
+  // Cada vez que alguien pide ver quién tiene acceso **desde dentro del proyecto**.
+  // Contador y no booleano: lo que viaja es un gesto, y con un booleano el segundo
+  // clic no haría nada hasta apagarlo.
+  const [verAcceso, setVerAcceso] = useState(0);
   usaSincroAlVolver(cuenta?.modo === "cuenta");
 
   const abrirAsistente = (tipo: TipoAsistente) => {
@@ -259,6 +263,22 @@ export default function App() {
               Antes no estaba en ninguna parte: `VolverALaBovedaPersonal` existía en Go
               y no la llamaba nadie, así que la única forma de salir era bloquear la
               bóveda y desbloquear. */}
+          {/* **Y quién tiene acceso, desde dentro.** La pantalla donde se da y se quita
+              vive en la fila de «Proyectos», que es donde tiene que estar —dar acceso
+              escribe en el fichero de ese proyecto—, pero **ahí no es donde se busca**:
+              el cliente lo buscó dentro del proyecto, que es donde se está trabajando
+              (2026-10-06). Esto no duplica la pantalla: lleva a ella y la abre. */}
+          {enUnProyecto && tarea === "boveda" && (
+            <button
+              className="discreto"
+              onClick={() => {
+                setVerAcceso((n) => n + 1);
+                setTarea("proyectos");
+              }}
+            >
+              Quién tiene acceso…
+            </button>
+          )}
           {enUnProyecto && (tarea === "boveda" || tarea === "proyectos") && (
             <SalirDelProyecto
               alSalir={() => {
@@ -345,6 +365,7 @@ export default function App() {
           <Panel activo={tarea === "proyectos"} visitado={visitadas.has("proyectos")}>
             <Proyectos
               activo={tarea === "proyectos"}
+              verAcceso={verAcceso}
               alEntrar={() => {
                 // Conmutar rehace la pantalla de la bóveda: lo que había montado era
                 // la lista de la otra, con su búsqueda y su ficha abierta.

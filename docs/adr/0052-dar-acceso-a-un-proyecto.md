@@ -116,6 +116,23 @@ un equipo perdido, dicho igual de claro.
 **Guardar la última mano como la identidad de la bóveda.** No sirve: la identidad es **una por bóveda** y la
 fusión elige una de las dos cuando chocan. Quién cambió qué tiene que ser un miembro, no una identidad.
 
+### Y el sobre dice de quién viene, sin que eso pruebe nada
+
+Lo que llegaba al buzón era «De DRD8-…» y nada más: quien recibe un acceso **no sabe qué
+está aceptando**. Lo dijo el cliente al recibir el primero (2026-10-06), y tiene razón —
+una huella identifica, pero no le dice nada a quien no la ha comparado todavía.
+
+Así que el sobre lleva también **la dirección de quien lo manda, tal como él la escribe**.
+Va dentro, cifrada de punta a punta, y no le cuenta al servidor nada que no supiera: él
+apuntó esas dos cuentas en la tabla de miembros al dar el acceso.
+
+**Lo que no se puede hacer con ella es creérsela**, y de ahí la única regla que esto deja:
+la pantalla la enseña como **«Dice ser …»** y la huella sigue siendo lo que se compara.
+Enseñar un correo sin comprobar como si estuviera comprobado es entrenar a la gente para
+el phishing, y esto es un gestor de contraseñas. Se descartó por eso que lo pusiera el
+servidor —que sí sabe quién dio el acceso—: sería una afirmación suya, y el servidor es
+justo de quien la huella protege.
+
 ## Consecuencias
 
 **«En vivo» es hasta un minuto, y un proyecto cerrado no se entera de nada.** Es lo que ya pasa entre los

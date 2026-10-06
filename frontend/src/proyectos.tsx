@@ -32,11 +32,21 @@ import { Ceremonia } from "./boveda";
 export function Proyectos({
   activo,
   alEntrar,
+  verAcceso = 0,
 }: {
   /** Si la sección está a la vista: se recarga al entrar, como el historial. */
   activo: boolean;
   /** Se llama al conmutar, para llevar a la bóveda. */
   alEntrar: () => void;
+  /**
+   * Sube cada vez que alguien pide ver quién tiene acceso **desde dentro del
+   * proyecto**, y entonces esta pantalla despliega ese bloque en la fila del proyecto
+   * abierto.
+   *
+   * Es un contador y no un booleano porque lo que llega es **un gesto**, no un estado:
+   * con un booleano habría que apagarlo después y el segundo clic no haría nada.
+   */
+  verAcceso?: number;
 }) {
   const [lista, setLista] = useState<Proyecto[] | null>(null);
   const [cerrada, setCerrada] = useState(false);
@@ -91,6 +101,18 @@ export function Proyectos({
   useEffect(() => {
     if (activo) void recargar();
   }, [activo, recargar]);
+
+  // **Y si se ha pedido desde dentro del proyecto, se despliega al llegar aquí.**
+  //
+  // Se espera a tener la lista, no se hace en el clic: la lista **se vuelve a pedir al
+  // entrar en la sección**, así que apuntar la referencia antes de que llegue es la
+  // misma carrera que ya costó un ayudante de pruebas. Con la lista en la mano, el
+  // proyecto abierto es el que viene marcado como activo.
+  useEffect(() => {
+    if (verAcceso === 0 || lista === null) return;
+    const abierto = lista.find((p) => p.activo);
+    if (abierto) setElAcceso(abierto.ref);
+  }, [verAcceso, lista]);
 
   // **La clave de recuperación de lo entregado, a pantalla completa y una sola
   // vez.** Es la misma ceremonia que al crear una bóveda, sin tocarla: quien reciba

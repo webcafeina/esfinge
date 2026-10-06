@@ -344,6 +344,11 @@ export type EnvioRecibido = {
    */
   acceso?: boolean;
   permiso?: string;
+  /**
+   * La dirección que escribe quien manda el acceso, **sin comprobar**. Va aparte de
+   * `huella` porque la huella prueba y esto no: la pantalla lo dice con esas palabras.
+   */
+  diceSer?: string;
   /** Por qué no se puede abrir, si es el caso. Se enseña en vez de esconderlo. */
   error?: string;
 };

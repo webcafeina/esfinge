@@ -177,8 +177,12 @@ func (a *App) DarAcceso(correo, permiso string) error {
 	var sobre boveda.Envio
 	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
 		var err error
+		// **Y la dirección propia, tal cual, para que al otro lado se sepa de quién
+		// viene.** No prueba nada —la escribe quien manda— y por eso la pantalla la da
+		// como lo que es. Lo que prueba sigue siendo la huella.
 		sobre, err = b.MandarAcceso(boveda.Acceso{
 			Dueno: mia, Ref: ref, Nombre: nombre, Titular: titular, Permiso: permiso,
+			De: leerDatosCuenta().Correo,
 		}, suya)
 		return err
 	}); err != nil {

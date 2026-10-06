@@ -2245,6 +2245,19 @@ test("quién tiene acceso: la fila no pierde el nombre y la huella va antes", as
   await expect(page.locator(".panel:visible .el-acceso")).toBeVisible();
   await expect(page.locator(".panel:visible").getByRole("button", { name: "Dar acceso" })).toHaveCount(0);
 
+  // **Y desde dentro del proyecto hay un camino hasta aquí**, que es donde el cliente
+  // lo buscó (2026-10-06). No es otra pantalla: lleva a la lista y despliega el bloque
+  // del proyecto abierto.
+  //
+  // Se cierra primero —el botón de la fila es un interruptor— para que lo que se
+  // compruebe sea que **el camino nuevo lo abre**, y no que ya estaba abierto.
+  await activa.getByRole("button", { name: "Quién tiene acceso…" }).click();
+  await expect(page.locator(".panel:visible .el-acceso")).toHaveCount(0);
+  await seccion(page, "Bóveda").click();
+  await page.locator(".herramientas").getByRole("button", { name: "Quién tiene acceso…" }).click();
+  await expect(page.locator(".panel:visible .el-acceso")).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator("#acceso-correo")).toBeVisible();
+
   // **Y al salir del proyecto, el bloque se cierra solo.**
   //
   // `elAcceso` guarda una referencia, no «lo que está abierto», así que al salir se

@@ -61,6 +61,10 @@ type EnvioRecibido struct {
 	// entonces el nombre del proyecto y `Permiso`, lo que te dejan hacer en ella.
 	Acceso  bool   `json:"acceso,omitempty"`
 	Permiso string `json:"permiso,omitempty"`
+	// DiceSer es la dirección que escribe quien manda el acceso, **sin comprobar**.
+	// Va aparte de `Huella` a propósito: la huella prueba y esto no, y la pantalla
+	// tiene que poder decirlo con esas palabras.
+	DiceSer string `json:"diceSer,omitempty"`
 	// Error dice por qué un envío no se puede abrir, si es el caso: viene de otra
 	// identidad, está manipulado o lo hizo una versión más nueva. Se enseña en vez
 	// de esconderlo, porque un buzón con algo ilegible y sin explicación es peor.
@@ -255,7 +259,7 @@ func (a *App) Buzon() ([]EnvioRecibido, error) {
 				r.Error = err.Error()
 			} else {
 				r.Acceso, r.Huella, r.Titulo = true, de.Huella, acceso.Nombre
-				r.Permiso = acceso.Permiso
+				r.Permiso, r.DiceSer = acceso.Permiso, acceso.De
 			}
 			out = append(out, r)
 			continue

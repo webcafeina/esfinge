@@ -332,6 +332,20 @@ type Acceso struct {
 	// servidor. Aquí sirve para no pedirle a nadie que teclee algo que va a acabar
 	// en un 403, que es la regla que costó `ExportarLlaves`.
 	Permiso string `json:"permiso"`
+	// De es la dirección de quien da el acceso, **tal como él la escribe**, y es lo
+	// único de este sobre que no prueba nada.
+	//
+	// Está porque sin ella lo que llega al buzón es «De DRD8-…» y nadie sabe qué está
+	// aceptando — lo dijo el cliente al recibir el primero (2026-10-06). Y va **dentro
+	// del sobre**, cifrado de punta a punta, así que no le dice al servidor nada que no
+	// supiera ya: él apuntó a esas dos cuentas en la tabla de miembros.
+	//
+	// **Lo que no se puede hacer con esto es creérselo.** Quien manda escribe aquí lo
+	// que quiera, así que la pantalla lo enseña como lo que es —«dice ser»— y la huella
+	// sigue siendo lo único que se compara. Enseñar un correo sin comprobar como si
+	// estuviera comprobado es la puerta que usa el phishing, y esto es un gestor de
+	// contraseñas.
+	De string `json:"de,omitempty"`
 }
 
 // MandarAcceso prepara el sobre que le dice a alguien que tiene acceso a una bóveda.

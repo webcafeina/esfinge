@@ -266,7 +266,21 @@ export function Buzon({
                   e.error
                 ) : (
                   <>
-                    De <Huella valor={e.huella} />
+                    {/* **El correo primero, y dicho como lo que es.** Con solo la huella,
+                        quien recibe un acceso no sabe qué está aceptando —lo dijo el
+                        cliente al recibir el primero—. Pero el correo lo escribe quien
+                        manda y no lo comprueba nadie, así que **«dice ser»** no es una
+                        floritura: enseñarlo como un hecho sería enseñar a fiarse de un
+                        remitente, que es justo lo que un gestor de contraseñas tiene que
+                        desenseñar. Lo que prueba sigue siendo la huella, y va detrás. */}
+                    {e.diceSer ? (
+                      <>
+                        Dice ser <strong>{e.diceSer}</strong> ·{" "}
+                      </>
+                    ) : (
+                      "De "
+                    )}
+                    <Huella valor={e.huella} />
                     {/* **Lo que se podrá hacer dentro, antes de aceptar.** Entrar en una
                         bóveda que solo se puede mirar no es lo mismo que entrar en una
                         donde se escribe, y enterarse después es tarde. */}
@@ -297,9 +311,10 @@ export function Buzon({
 
       {envios.length > 0 && (
         <p className="nota">
-          Comprueba la huella con quien te lo manda antes de aceptar nada. Una copia entra en tu
-          bóveda como una entrada tuya; <strong>un acceso es una bóveda de otra persona</strong>, que
-          se queda viva y se actualiza en los dos sentidos.
+          <strong>La dirección es la que dice quien te lo manda; la huella es lo que lo prueba.</strong>{" "}
+          Compárala con esa persona por otro camino —una llamada— antes de aceptar nada. Una copia entra
+          en tu bóveda como una entrada tuya; <strong>un acceso es una bóveda de otra persona</strong>,
+          que se queda viva y se actualiza en los dos sentidos.
         </p>
       )}
     </div>

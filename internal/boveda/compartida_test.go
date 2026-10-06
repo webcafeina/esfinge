@@ -329,7 +329,16 @@ func TestElSobreDeAccesoNoLlevaSecretos(t *testing.T) {
 	// saca la lista de campos de una entrada. Mirando un `json.Marshal` de un
 	// ejemplo, un campo nuevo con `omitempty` y sin rellenar **no sale**, así que la
 	// prueba pasaba con el campo puesto. Lo dijo mutarlo, dos veces.
-	esperados := map[string]bool{"dueno": true, "ref": true, "nombre": true, "titular": true, "permiso": true}
+	// **`de` se añadió a conciencia el 2026-10-06**, y ésta es la decisión que esta
+	// prueba existe para obligar: es la dirección de quien da el acceso, **tal como él
+	// la escribe**, y no es un secreto de nadie — el servidor ya sabe qué dos cuentas
+	// están en esto, porque lo apuntó en la tabla de miembros. Lo que aporta es que
+	// quien lo recibe sepa qué está aceptando: sin ella, el buzón decía «De DRD8-…» y
+	// nada más. Lo que **no** se puede hacer con ella es creérsela, y por eso la
+	// pantalla la enseña como «dice ser» y la huella sigue siendo lo que se compara.
+	esperados := map[string]bool{
+		"dueno": true, "ref": true, "nombre": true, "titular": true, "permiso": true, "de": true,
+	}
 	tipo := reflect.TypeOf(Acceso{})
 	for i := 0; i < tipo.NumField(); i++ {
 		etiqueta, _, _ := strings.Cut(tipo.Field(i).Tag.Get("json"), ",")
