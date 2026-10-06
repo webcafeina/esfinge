@@ -330,6 +330,16 @@ test.describe("Capturas", () => {
     await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
     await page.waitForTimeout(400);
     await foto("9g-dentro-del-proyecto");
+    // **Y la lista con el proyecto abierto**, que es donde la fila lleva más cosas:
+    // el nombre y tres botones, uno de ellos «Quién tiene acceso…». El cliente dice
+    // que ahí se rompe el salto de línea (2026-10-06), y eso no lo dice ninguna
+    // aserción: se mira.
+    await page.locator(".lateral").getByRole("button", { name: "Proyectos", exact: true }).click();
+    await page.locator(".panel:visible .proyectos li").first().waitFor({ timeout: 20_000 });
+    await page.waitForTimeout(300);
+    await page
+      .locator(".panel:visible .proyectos")
+      .screenshot({ path: `${donde}/9j-lista-con-abierto-${tema}.png`, scale: "css" });
     // La barra de cerca, con la escala del CSS: el antetítulo son once píxeles y a
     // tamaño de pantalla no se ve si se lee o si pelea con el nombre.
     await page.locator(".herramientas").screenshot({ path: `${donde}/9h-barra-proyecto-${tema}.png`, scale: "css" });

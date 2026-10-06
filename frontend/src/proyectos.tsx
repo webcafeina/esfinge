@@ -302,7 +302,14 @@ export function Proyectos({
                       {bajando === p.ref ? "Bajando…" : "Bajar a este equipo"}
                     </button>
                   ) : (
-                    <>
+                    /* **Los botones van juntos en un grupo, y no sueltos en la fila.**
+                       Sueltos, cada uno es una columna más del `flex` del `li` y la fila
+                       se parte por donde toque: con el proyecto abierto son tres, y «Al
+                       acabar…» se caía solo a una segunda línea pegado a la izquierda,
+                       debajo del nombre, como si fuera de otra cosa. Agrupados, o caben
+                       los tres o bajan los tres, y bajan alineados con los de arriba.
+                       Lo vio el cliente; aquí se vio en la captura (2026-10-06). */
+                    <div className="acciones-proyecto">
                       <button
                         className="discreto"
                         onClick={() => {
@@ -334,7 +341,7 @@ export function Proyectos({
                       >
                         Al acabar…
                       </button>
-                    </>
+                    </div>
                   )}
                 </>
               )}

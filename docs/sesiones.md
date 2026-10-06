@@ -5,6 +5,32 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-06 (3) · La prueba entre dos equipos, y el fallo que paró en el primer acceso
+
+- **El cliente empezó la prueba de verdad** —cuenta B en su segundo Mac, permiso de editar— y se topó con
+  dos cosas en los primeros pasos. Las dos **invisibles para todas las pruebas**, y las dos suyas.
+- **«Para dar acceso hace falta una cuenta», en un equipo que llevaba semanas con cuenta.** La causa:
+  `Cuenta` —el identificador de la cuenta en el servidor— **solo se escribía al entrar**, así que a quien ya
+  tenía cuenta le faltaba y nada lo rellenaba después. Es la misma forma que la pimienta (ADR 0046): **un
+  dato que solo se escribe al entrar deja fuera a todo el que ya estaba**. Y ninguna prueba podía verlo,
+  porque todas crean la cuenta en el momento. Se arregla **sin pedirle nada al servidor**: el testigo lleva
+  la cuenta dentro (`s1.<cuenta>.<secreto>`). La prueba de la tubería ahora **borra ese campo a propósito**
+  para que Ana sea una cuenta de las de antes; mutando el lector del testigo, sale el error del cliente
+  palabra por palabra.
+- **Y la fila de un proyecto abierto se partía**: con tres botones, «Al acabar…» se caía solo a una segunda
+  línea pegado a la izquierda, debajo del nombre. Lo vio él; **aquí se vio sacando la captura**, que es lo
+  de siempre. Ahora los tres van en un grupo —o caben los tres o bajan los tres— y lo vigila una prueba que
+  **mide**: compara la `y` de los tres botones entre sí. Mutándola salen `208, 208, 256`, que es exactamente
+  lo que él tenía en pantalla.
+- **Y una laguna que destapó una pregunta suya**: «¿para ver Compartir tengo que crear algo?». Sí — la única
+  pantalla que enseña **tu propia huella** cuelga de una entrada, y a quien le hace falta enseñarla es a
+  **quien recibe** un acceso, que acaba de crear la cuenta y tiene la bóveda vacía. O sea que el caso más
+  probable es justo el que no funciona. A `deuda.md`, sin arreglar para no cortar la prueba por la mitad.
+- **Un intermitente apuntado y no perseguido**: «la bóveda se abre con el sistema» cayó una vez en el tema
+  oscuro y pasa sola. Se comprobó que **no lo trae el cambio del día** y se apuntó con lo que se vio.
+
+---
+
 ## 2026-10-06 (2) · Producción, y la 2.40.0 publicada
 
 - **Producción desplegada** (08:31 UTC) con el visto bueno del cliente, tras comprobar que la migración es

@@ -390,6 +390,24 @@ func (c *Cliente) QuitarAcceso(ctx context.Context, token, ref, titular string) 
 	return err
 }
 
+// CuentaDelTestigo saca de un testigo de sesión **de qué cuenta dice ser**.
+//
+// El formato es `s1.<cuenta>.<secreto>`, y la cuenta va ahí a propósito: el servidor la
+// lee para saber a qué objeto hablar, y **la comprueba ese objeto**, que busca la huella
+// del secreto en su propia tabla. Leerla aquí es legítimo por lo mismo: es nuestro
+// testigo, nos lo dio el servidor al entrar, y lo que afirme lo comprueba él en cada
+// petición.
+//
+// Devuelve vacío si el testigo no tiene esa forma. Eso es «no se sabe», no un error:
+// quien lo llame decide qué hacer con ello.
+func CuentaDelTestigo(token string) string {
+	partes := strings.Split(token, ".")
+	if len(partes) != 3 || partes[0] != "s1" || partes[1] == "" {
+		return ""
+	}
+	return partes[1]
+}
+
 // MiembroEnElServidor es lo que el servidor sabe de quien tiene acceso: su titular y
 // su permiso. **Nunca su cuenta ni su correo**, que viven dentro de la bóveda.
 type MiembroEnElServidor struct {

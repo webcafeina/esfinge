@@ -127,6 +127,23 @@ func TestPaseoDeUnAccesoEntreDosCuentas(t *testing.T) {
 	}
 	t.Logf("   Ana es %s", mia.Huella)
 
+	// **Y se le borra el identificador de la cuenta, a propósito**, para que Ana sea una
+	// cuenta **de las de antes de la 2.40.0**.
+	//
+	// Es el caso que ninguna prueba veía y que el cliente se encontró al dar el primer
+	// acceso de verdad: `Cuenta` solo se escribía **al entrar**, así que quien ya tenía
+	// cuenta lo tenía vacío y `DarAcceso` contestaba «Para dar acceso hace falta una
+	// cuenta» en un equipo que llevaba semanas con una. Aquí todas las cuentas se crean
+	// en el momento, así que el campo siempre estaba y el fallo era invisible.
+	//
+	// Quitarlo aquí es lo que hace que esta prueba ejercite a quien ya estaba, que es
+	// **todo el mundo** salvo quien estrene Esfinge hoy.
+	deAna := leerDatosCuenta()
+	deAna.Cuenta = ""
+	if err := guardarDatosCuenta(deAna); err != nil {
+		t.Fatal(err)
+	}
+
 	paso(t, 2, "Beto crea la suya y publica sus llaves")
 	beto.usar(t)
 	cuentaDelPaseo(t, raiz, beto, correoBeto, codigoBeto, maestra)

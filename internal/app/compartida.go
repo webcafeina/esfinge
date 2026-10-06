@@ -136,9 +136,9 @@ func (a *App) DarAcceso(correo, permiso string) error {
 	if err != nil {
 		return err
 	}
-	mia := leerDatosCuenta().Cuenta
-	if mia == "" {
-		return errors.New("Para dar acceso hace falta una cuenta")
+	mia, err := a.miCuenta()
+	if err != nil {
+		return err
 	}
 
 	// A quién: sus llaves públicas, que son las que sellan su ranura.
@@ -313,4 +313,42 @@ func (a *App) abrirAccesoDelBuzon(crudo json.RawMessage) (boveda.Acceso, boveda.
 		return err
 	})
 	return acc, de, err
+}
+
+// miCuenta es el identificador de esta cuenta en el servidor, **rellenándolo si falta**.
+//
+// # Por qué hace falta rellenarlo
+//
+// Se apunta al entrar (`quedarseCon`), y por eso **a quien ya tenía cuenta antes de la
+// 2.40.0 le falta**: su equipo guarda la sesión y no el identificador, y nada lo escribía
+// después. El síntoma es «Para dar acceso hace falta una cuenta» en un equipo que lleva
+// semanas con cuenta, que no se parece a la causa. Lo vio el cliente al dar el primer
+// acceso de verdad, y **ninguna prueba podía verlo**: todas crean la cuenta en el momento,
+// así que el campo siempre estaba.
+//
+// Es la misma forma que la pimienta (ADR 0046): **un dato que solo se escribe al entrar
+// deja fuera a todo el que ya estaba**, y la salida es la misma, rellenarlo por cortesía
+// cuando se necesita.
+//
+// Y se arregla sin pedirle nada al servidor, porque **el testigo lleva la cuenta dentro**:
+// es el nuestro, nos lo dio él al entrar, y lo que afirme lo comprueba él en cada
+// petición. Se guarda al leerlo para no volver a mirarlo.
+func (a *App) miCuenta() (string, error) {
+	d := leerDatosCuenta()
+	if d.Cuenta != "" {
+		return d.Cuenta, nil
+	}
+	token, err := a.sesionDeCuenta()
+	if err != nil {
+		return "", err
+	}
+	mia := cuenta.CuentaDelTestigo(token)
+	if mia == "" {
+		return "", errors.New("Para dar acceso hace falta una cuenta")
+	}
+	d.Cuenta = mia
+	if err := guardarDatosCuenta(d); err != nil {
+		return "", err
+	}
+	return mia, nil
 }

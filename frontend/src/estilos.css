@@ -1472,6 +1472,19 @@ p {
   background: var(--suave);
 }
 
+/* Los botones de un proyecto, **como un bloque**: o caben todos en la fila o bajan
+ * todos juntos. Sueltos eran columnas del `flex` del `li` y la fila se partía por donde
+ * cayera —con el proyecto abierto son tres y el último se iba solo a la segunda línea,
+ * debajo del nombre—. Con `margin-left: auto` se van a la derecha, que es donde están
+ * las acciones en el resto de las listas. */
+.acciones-proyecto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+  margin-left: auto;
+}
+
 .abrir-proyecto {
   display: flex;
   align-items: center;

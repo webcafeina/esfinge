@@ -2223,6 +2223,24 @@ test("quién tiene acceso: la fila no pierde el nombre y la huella va antes", as
   const caja = await elNombre.boundingBox();
   expect(caja?.width ?? 0, "el nombre del proyecto se ha encogido a cero").toBeGreaterThan(40);
 
+  // **Y los tres botones van en la misma línea entre ellos.**
+  //
+  // Sueltos en la fila, cada uno era una columna del `flex` del `li` y «Al acabar…» se
+  // caía solo a una segunda línea, pegado a la izquierda y debajo del nombre, como si
+  // fuera de otra cosa. Lo vio el cliente (2026-10-06) y aquí se vio en la captura.
+  //
+  // Lo que se mira es que **compartan fila**, no que quepan: si la ventana se estrecha es
+  // correcto que bajen, y lo que no puede pasar es que bajen **a trozos**. Por eso se
+  // comparan entre sí y no contra el nombre.
+  const botones = activa.locator(".acciones-proyecto > button");
+  await expect(botones).toHaveCount(3);
+  const altos: number[] = [];
+  for (let i = 0; i < 3; i++) {
+    const c = await botones.nth(i).boundingBox();
+    altos.push(Math.round(c?.y ?? -1));
+  }
+  expect(new Set(altos).size, `los botones del proyecto están en ${new Set(altos).size} líneas: ${altos}`).toBe(1);
+
   // **Y no se puede dar acceso sin haber mirado la huella.**
   await expect(page.locator(".panel:visible .el-acceso")).toBeVisible();
   await expect(page.locator(".panel:visible").getByRole("button", { name: "Dar acceso" })).toHaveCount(0);
