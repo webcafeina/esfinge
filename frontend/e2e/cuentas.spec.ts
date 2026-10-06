@@ -60,6 +60,42 @@ async function retratar(page: Page, nombre: string) {
 const accion = (page: Page, nombre: string) =>
   page.getByRole("button", { name: nombre, exact: true }).and(page.locator("button:visible"));
 
+/**
+ * Espera a que la línea de sincronización diga «Sincronizada», y **si no llega, dice en
+ * qué tramo se quedó**: lo que ve la ventana y lo que cree Go.
+ *
+ * Hace falta porque sin eso el fallo no deja ir a ninguna parte. Pasó el 2026-10-06: la
+ * puerta de la 2.41.0 cayó aquí en GitHub con «Sincronizando…» y los 20 s agotados, y
+ * desde el registro **no hay forma de saber si la pasada no terminó o si terminó y la
+ * ventana no se enteró**, que son dos fallos distintos y se arreglan en sitios
+ * distintos. Aquí pasa siempre, así que la diferencia solo la puede contar la propia
+ * prueba cuando falla.
+ *
+ * **No alarga el plazo a propósito.** Esto no es para que deje de caerse: es para que,
+ * cuando se caiga, diga por qué.
+ */
+async function sincronizada(page: Page, request: APIRequestContext, raiz: string) {
+  try {
+    await expect(page.locator(".linea-sincro")).toContainText("Sincronizada", { timeout: 20_000 });
+  } catch (e) {
+    let deGo = "no se ha podido preguntar";
+    try {
+      const r = await request.post(`${raiz}/api/EstadoDeCuenta`, { data: [] });
+      deGo = JSON.stringify(((await r.json()) as { sincro?: unknown }).sincro);
+    } catch (otro) {
+      deGo = `${deGo}: ${String(otro)}`;
+    }
+    const enLaVentana = await page.locator(".linea-sincro").textContent().catch(() => "(no está)");
+    throw new Error(
+      `la sincronización no llegó a «Sincronizada».\n` +
+        `  la ventana dice: ${enLaVentana}\n` +
+        `  Go dice:         ${deGo}\n` +
+        `Si Go dice «al-dia» y la ventana no, lo que falla es el aviso a la ventana, no la ` +
+        `sincronización.\n${String(e)}`,
+    );
+  }
+}
+
 test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, request }) => {
   test.skip(test.info().project.name !== "claro", "Los dos equipos se estrenan una vez por tanda");
   test.setTimeout(180_000);
@@ -123,7 +159,7 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
       { timeout: 70_000 },
     )
     .toMatchObject({ estado: "al-dia" });
-  await expect(a.locator(".linea-sincro")).toContainText("Sincronizada", { timeout: 20_000 });
+  await sincronizada(a, request, A);
 
   await accion(a, "Nueva").click();
   await a.locator("#boveda-titulo").fill("Banco de la cuenta");
@@ -155,7 +191,7 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await expect(b.locator(".lista-boveda").getByRole("button", { name: "Banco de la cuenta" })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(b.locator(".linea-sincro")).toContainText("Sincronizada", { timeout: 20_000 });
+  await sincronizada(b, request, B);
   await retratar(b, "boveda-sincronizada");
 
   // **Con las dos bóvedas abiertas**, lo que guarda un equipo aparece en el otro
@@ -239,7 +275,7 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await expect(a.locator(".lista-boveda").getByRole("button", { name: "Llega sin reabrir" })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(a.locator(".linea-sincro")).toContainText("Sincronizada", { timeout: 20_000 });
+  await sincronizada(a, request, A);
 
   // Y si A ya no es de confianza —aquí porque B lo olvida; en la vida, porque
   // caducó a los 90 días—, la nueva no se toma por mala: pide el código del correo
@@ -336,7 +372,7 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await retratar(b, "cuenta-maestra-floja");
   await accion(b, "Crear la cuenta").click();
   // Al terminar, a la bóveda, sincronizada; y abre con la nueva.
-  await expect(b.locator(".linea-sincro")).toContainText("Sincronizada", { timeout: 20_000 });
+  await sincronizada(b, request, B);
   // Se cierra con el botón, como lo haría una persona: cerrarla por detrás justo
   // al montarse la lista dejaba su primera búsqueda en el aire (lo vio la máquina
   // de GitHub con la 2.24.4).
