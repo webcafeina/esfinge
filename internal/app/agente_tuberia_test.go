@@ -54,29 +54,69 @@ func TestLaTuberiaEnteraDeUnAgente(t *testing.T) {
 		t.Errorf("sin Esfinge, buscar no se marca como error: %+v", r)
 	}
 
-	// --- 2. Con Esfinge, pero sin emparejar: no sale nada.
+	// --- 2. Con Esfinge, pero sin que nadie haya dicho que sí: no sale nada, **y se
+	// dice qué hacer**. El testigo lo pide el propio traductor, así que esto recorre el
+	// emparejamiento de verdad.
+	//
+	// **Esto es lo que faltaba y costó encontrar recorriendo el camino a mano**: antes
+	// esta prueba hablaba con `Atender` poniendo el testigo ella misma, así que el
+	// binario podía no pedirlo nunca —y no lo pedía— sin que nada se pusiera rojo.
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir()) // que el testigo no se mezcle con el de verdad
 	rs := hablarMCP(t, socket,
 		`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"esfinge_buscar","arguments":{"texto":"Banco"}}}`,
 	)
-	if texto := primerTexto(t, rs[0]); !strings.Contains(texto, "Permite este agente") {
-		t.Fatalf("sin emparejar contesta %q", texto)
+	if texto := primerTexto(t, rs[0]); !strings.Contains(texto, "permite este agente") &&
+		!strings.Contains(texto, "Permite este agente") {
+		t.Fatalf("sin permiso contesta %q", texto)
 	}
 
-	// --- 3. Se empareja, que es un clic de una persona en la ventana.
+	// --- 3. La persona dice que sí en la ventana.
 	if err := a.PermitirAgente(); err != nil {
 		t.Fatal(err)
 	}
+
+	// --- 4. Y ahora la búsqueda trae el inventario, **por la tubería entera**: el
+	// traductor recoge el testigo él solo y reintenta.
+	rs = hablarMCP(t, socket,
+		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"Claude Code"}}}`,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"esfinge_buscar","arguments":{"texto":"Banco"}}}`,
+	)
+	elTexto := primerTexto(t, rs[1])
+	if strings.Contains(elTexto, "permite este agente") || strings.Contains(elTexto, "Permite este agente") {
+		t.Fatalf("tras decir que sí sigue sin emparejarse: %q", elTexto)
+	}
+	if !strings.Contains(elTexto, "Banco") {
+		t.Fatalf("la búsqueda no ha traído el Banco: %q", elTexto)
+	}
+
+	// --- 5. **Y el nombre del saludo llega hasta la ventana**, para que diga «Claude
+	// Code quiere…» y no «un agente». Se pide algo que haya que aprobar y se mira quién
+	// lo pide.
+	enLaBoveda, err := a.BuscarEnBoveda("Banco")
+	if err != nil || len(enLaBoveda) == 0 {
+		t.Fatal(err)
+	}
+	hablarMCP(t, socket,
+		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"Claude Code"}}}`,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"esfinge_copiar_contrasena","arguments":{"id":"`+enLaBoveda[0].ID+`"}}}`,
+	)
+	if q := a.EstadoDelAgente().Quiere; q == nil || q.Quien != "Claude Code" {
+		t.Errorf("la ventana no sabe quién lo pide: %+v", q)
+	}
+
+	// --- 6. Y lo de siempre por el canal, para mirar los bytes de cerca.
 	f := fuenteDelAgente{a}
 	testigo, err := f.Emparejar("Claude Code")
 	if err != nil {
-		t.Fatal(err)
+		// Ya lo recogió el traductor: se pide otro permiso.
+		if err := a.PermitirAgente(); err != nil {
+			t.Fatal(err)
+		}
+		testigo, err = f.Emparejar("Claude Code")
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
-	if !f.Emparejado(testigo) {
-		t.Fatal("el testigo recién dado no vale")
-	}
-
-	// --- 4. Y ahora la búsqueda trae el inventario. **Por el canal directamente**,
-	// porque el testigo lo pone el binario y aquí se prueba lo de debajo.
 	r := srv.Atender(agente.Peticion{
 		Version: agente.VersionDelProtocolo, Que: agente.QueBuscar, Testigo: testigo, Texto: "Banco",
 	})

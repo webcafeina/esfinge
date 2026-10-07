@@ -13,7 +13,7 @@ import (
 func hablar(t *testing.T, llamar Llamar, lineas ...string) []map[string]any {
 	t.Helper()
 	var sale bytes.Buffer
-	if err := Hablar(strings.NewReader(strings.Join(lineas, "\n")+"\n"), &sale, "2.44.0", llamar); err != nil {
+	if err := Hablar(strings.NewReader(strings.Join(lineas, "\n")+"\n"), &sale, "2.44.0", llamar, nil); err != nil {
 		t.Fatal(err)
 	}
 	var out []map[string]any

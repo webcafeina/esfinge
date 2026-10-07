@@ -261,9 +261,9 @@ func (f fuenteDelAgente) Higiene() (agente.Higiene, error) {
 	// el montón de este proceso. Lo que vuelve son identificadores.
 	h := b.Higiene(time.Now())
 	return agente.Higiene{
-		Repetidas: h.Reutilizadas,
-		SinCodigo: h.SinCodigo,
-		Caducadas: h.Caducadas,
+		Reutilizadas: h.Reutilizadas,
+		SinCodigo:    h.SinCodigo,
+		Caducadas:    h.Caducadas,
 	}, nil
 }
 

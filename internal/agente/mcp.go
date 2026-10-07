@@ -93,7 +93,7 @@ type Llamar func(h Herramienta, args map[string]any) Resultado
 // restricción y no una comodidad: Claude Code pide la lista al abrir la sesión y se la
 // queda, así que contestar una lista vacía porque Esfinge no esté abierta deja al
 // agente sin herramientas **toda la sesión**.
-func Hablar(entra io.Reader, sale io.Writer, version string, llamar Llamar) error {
+func Hablar(entra io.Reader, sale io.Writer, version string, llamar Llamar, alSaludar func(quien string)) error {
 	lector := bufio.NewScanner(entra)
 	// Un mensaje puede ser largo —un `tools/call` con argumentos— pero no enorme.
 	lector.Buffer(make([]byte, 0, 64*1024), 1<<20)
@@ -116,6 +116,11 @@ func Hablar(entra io.Reader, sale io.Writer, version string, llamar Llamar) erro
 		r := respuestaRPC{JSONRPC: "2.0", ID: m.ID}
 		switch m.Metodo {
 		case "initialize":
+			// **Quién dice ser**, para que la ventana pueda escribir «Claude Code
+			// quiere…» en vez de «un agente». No se cree: es un rótulo.
+			if alSaludar != nil {
+				alSaludar(quienDiceSer(m.Params))
+			}
 			r.Result = map[string]any{
 				"protocolVersion": RevisionDeMCP,
 				"capabilities":    map[string]any{"tools": map[string]any{}},
@@ -152,4 +157,15 @@ func atenderLlamada(params json.RawMessage, llamar Llamar) Resultado {
 		return fallo(fmt.Sprintf("Esfinge no tiene ninguna herramienta llamada %q", p.Nombre))
 	}
 	return llamar(h, p.Args)
+}
+
+// quienDiceSer saca el nombre del cliente del saludo. Vacío si no lo dice.
+func quienDiceSer(params json.RawMessage) string {
+	var p struct {
+		ClientInfo struct {
+			Nombre string `json:"name"`
+		} `json:"clientInfo"`
+	}
+	_ = json.Unmarshal(params, &p)
+	return p.ClientInfo.Nombre
 }

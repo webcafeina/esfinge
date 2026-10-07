@@ -53,7 +53,7 @@ func (b *bovedaFalsa) Ver(id string) (Entrada, error) {
 
 func (b *bovedaFalsa) Higiene() (Higiene, error) {
 	b.pedidos++
-	return Higiene{Repetidas: [][]string{{"a1", "b2"}}, SinCodigo: []string{"b2"}}, nil
+	return Higiene{Reutilizadas: [][]string{{"a1", "b2"}}, SinCodigo: []string{"b2"}}, nil
 }
 
 func (b *bovedaFalsa) Generar(bytes int, alfabeto string) (string, error) {

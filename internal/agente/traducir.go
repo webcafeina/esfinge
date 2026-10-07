@@ -15,8 +15,12 @@ package agente
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -28,24 +32,125 @@ import (
 const plazoDeLaConexion = 90 * time.Second
 
 // Traducir atiende a un cliente MCP y lleva lo que haga falta al socket de Esfinge.
+//
+// **Y se empareja solo**, que es la mitad que faltaba: todo lo que toca la bóveda exige
+// un testigo, y el testigo lo da Esfinge cuando una persona dice que sí en su ventana.
+// Sin esto, un agente solo podía preguntar el estado — y **no lo vio ninguna prueba**,
+// porque todas ponían el testigo a mano, incluida la de la tubería. Lo encontró recorrer
+// el camino.
 func Traducir(entra io.Reader, sale io.Writer, version, socket string) error {
-	return Hablar(entra, sale, version, func(h Herramienta, args map[string]any) Resultado {
-		p := Peticion{Version: VersionDelProtocolo, Que: h.Verbo, Quien: "un agente"}
-		ponerArgumentos(&p, args)
+	t := &traductor{socket: socket, testigo: testigoGuardado()}
+	return Hablar(entra, sale, version, t.llamar, t.anotarQuien)
+}
 
-		r, err := preguntar(socket, p)
-		if err != nil {
-			// **Esto se escribe a mano y no se serializa**, por lo mismo que
-			// `respuestaSinEsfinge` en el canal del navegador: este camino es el de
-			// cuando ya ha fallado algo, y lo último que hace falta es que dependa de
-			// que otra cosa funcione.
-			return fallo("Esfinge no está abierta en este equipo, o el canal de agentes está apagado en sus Ajustes.")
+type traductor struct {
+	socket  string
+	testigo string
+	// quien es lo que el cliente dijo de sí mismo en el saludo. **No se cree**: sirve
+	// para que la ventana pueda escribir «Claude Code quiere…» en vez de «un agente».
+	quien string
+}
+
+func (t *traductor) anotarQuien(quien string) {
+	if quien != "" {
+		t.quien = quien
+	}
+}
+
+func (t *traductor) comoMeLlamo() string {
+	if t.quien == "" {
+		return "Un agente"
+	}
+	return t.quien
+}
+
+func (t *traductor) llamar(h Herramienta, args map[string]any) Resultado {
+	p := Peticion{Version: VersionDelProtocolo, Que: h.Verbo, Quien: t.comoMeLlamo(), Testigo: t.testigo}
+	ponerArgumentos(&p, args)
+
+	r, err := preguntar(t.socket, p)
+	if err != nil {
+		// **Esto se escribe a mano y no se serializa**, por lo mismo que
+		// `respuestaSinEsfinge` en el canal del navegador: este camino es el de cuando
+		// ya ha fallado algo, y lo último que hace falta es que dependa de que otra
+		// cosa funcione.
+		return fallo("Esfinge no está abierta en este equipo, o el canal de agentes está apagado en sus Ajustes.")
+	}
+
+	// **Sin testigo, se pide uno y se vuelve a intentar.** Una sola vez: si Esfinge
+	// sigue diciendo que no, es que nadie ha dicho que sí todavía, y lo que hay que
+	// hacer es contárselo a quien habla con el agente, no insistir en un bucle.
+	if !r.OK && r.Motivo == MotivoSinEmparejar {
+		if nuevo, err := t.emparejarse(); err == nil {
+			t.testigo = nuevo
+			p.Testigo = nuevo
+			if otra, err := preguntar(t.socket, p); err == nil {
+				r = otra
+			}
+		} else {
+			return fallo("Esfinge tiene que darte permiso: ábrela, ve a Ajustes y permite este agente. " +
+				"Después vuelve a pedir lo que querías.")
 		}
-		if !r.OK {
-			return fallo(r.Error)
-		}
-		return comoTexto(h, r)
+	}
+	if !r.OK {
+		return fallo(r.Error)
+	}
+	return comoTexto(h, r)
+}
+
+// emparejarse pide el testigo. **No espera a nadie**: si no hay permiso, Esfinge avisa a
+// su ventana y contesta que no, y el agente lo vuelve a pedir cuando alguien conteste.
+func (t *traductor) emparejarse() (string, error) {
+	r, err := preguntar(t.socket, Peticion{
+		Version: VersionDelProtocolo, Que: QueEmparejar, Quien: t.comoMeLlamo(),
 	})
+	if err != nil {
+		return "", err
+	}
+	if !r.OK || r.Testigo == "" {
+		return "", errors.New(r.Error)
+	}
+	guardarTestigo(r.Testigo)
+	return r.Testigo, nil
+}
+
+// rutaDelTestigo es donde este proceso se guarda el suyo.
+//
+// **En disco y no solo en memoria**, porque el cliente MCP arranca un proceso nuevo en
+// cada sesión y pedir permiso en cada una sería insoportable. Es lo mismo que hace la
+// extensión del navegador, que lo guarda en `storage.local`, y lo que eso significa está
+// dicho desde la ADR 0027: **cualquier programa que corra como tú puede leerlo**. Lo que
+// el permiso compra no es que nadie más pueda, es que tenga que pasar por un aviso.
+func rutaDelTestigo() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(dir, "Esfinge", "agente-testigo")
+}
+
+func testigoGuardado() string {
+	ruta := rutaDelTestigo()
+	if ruta == "" {
+		return ""
+	}
+	datos, err := os.ReadFile(ruta)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(datos))
+}
+
+func guardarTestigo(t string) {
+	ruta := rutaDelTestigo()
+	if ruta == "" {
+		return
+	}
+	if err := os.MkdirAll(filepath.Dir(ruta), 0o700); err != nil {
+		return
+	}
+	// Que no se pueda guardar no rompe nada: se vuelve a pedir en la sesión siguiente.
+	_ = os.WriteFile(ruta, []byte(t), 0o600)
 }
 
 func ponerArgumentos(p *Peticion, args map[string]any) {

@@ -204,9 +204,13 @@ type Entrada struct {
 // Higiene es lo que está mal en la bóveda, por identificador. **Sin secretos**: lo
 // que dice es «estas tres comparten contraseña», no cuál es.
 type Higiene struct {
-	// Repetidas son los grupos de entradas que comparten contraseña. Cada grupo es
-	// una lista de identificadores.
-	Repetidas [][]string `json:"repetidas,omitempty"`
+	// Reutilizadas son los grupos de entradas que **comparten contraseña**.
+	//
+	// **Se llama así y no «repetidas» a propósito.** En este repo `Repetidas` es otra
+	// cosa —«la misma cuenta dos veces», un ayudante para importar— y publicar esa
+	// palabra aquí sería contestar la pregunta equivocada con toda confianza, a un
+	// modelo que no tiene cómo saberlo.
+	Reutilizadas [][]string `json:"reutilizadas,omitempty"`
 	// SinCodigo son las credenciales sin segundo factor.
 	SinCodigo []string `json:"sinCodigo,omitempty"`
 	// Caducadas son las tarjetas y documentos que ya han caducado.
