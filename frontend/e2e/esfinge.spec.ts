@@ -2216,6 +2216,30 @@ test("quién tiene acceso: la fila no pierde el nombre y la huella va antes", as
   await expect(activa).toBeVisible({ timeout: 20_000 });
   await activa.getByRole("button", { name: "Quién tiene acceso…" }).click();
 
+  // **Y el punto que dice cuál está abierta** (deuda del 2026-10-07), que el cliente
+  // pidió porque entre varias filas el fondo y el rótulo se leían poco. Se **mide**, por
+  // lo mismo que el nombre de aquí al lado: es un elemento flex más dentro del botón, y
+  // sin `flex: none` lo primero que se encoge cuando la fila se queda sin sitio es él.
+  const punto = activa.locator(".punto-activa");
+  await expect(punto).toBeVisible();
+  const cajaDelPunto = await punto.boundingBox();
+  expect(cajaDelPunto?.width ?? 0, "el punto de la bóveda abierta se ha encogido").toBeGreaterThan(4);
+  expect(cajaDelPunto?.height ?? 0, "el punto de la bóveda abierta se ha encogido de alto").toBeGreaterThan(4);
+  // **Y el rótulo se queda**: quien no distinga el verde, o tenga el movimiento apagado,
+  // tiene que poder saber cuál está abierta igual. El punto es un refuerzo, no la señal.
+  await expect(activa.locator(".aparte")).toHaveText("La estás usando");
+  await activa.screenshot({ path: `test-results/proyecto-activo-${test.info().project.name}.png` });
+
+  // **Y se mide otra vez con la ventana estrecha**, que es donde `flex: none` significa
+  // algo: con sitio de sobra el punto no se encoge aunque se le quite, así que medirlo
+  // solo aquí ancho dejaba esa mitad sin vigilar — comprobado quitándolo y viendo que la
+  // prueba seguía verde. Estrecha, la fila se queda sin hueco y lo primero que cede es él.
+  const anchoDeAntes = page.viewportSize();
+  await page.setViewportSize({ width: 420, height: anchoDeAntes?.height ?? 680 });
+  const estrecho = await activa.locator(".punto-activa").boundingBox();
+  expect(estrecho?.width ?? 0, "con la ventana estrecha, el punto se encoge").toBeGreaterThan(4);
+  if (anchoDeAntes) await page.setViewportSize(anchoDeAntes);
+
   // **El nombre sigue ahí.** No se mira que el texto exista: se mira que **mida**,
   // porque encogido a cero el texto está en el DOM y no se ve.
   const elNombre = activa.locator(".abrir-proyecto .nombre");

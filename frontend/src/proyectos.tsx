@@ -314,6 +314,13 @@ export function Proyectos({
                   >
                     <Icono nombre="proyectos" />
                     <span className="nombre">{p.nombre}</span>
+                    {/* **El punto dice de un vistazo cuál está abierta.** Lo pidió el
+                        cliente (2026-10-07): el fondo y el rótulo se leían poco entre
+                        varias filas. Va `aria-hidden` porque **el rótulo de al lado ya
+                        lo dice** —«La estás usando»—, y repetirlo sería ruido; y por eso
+                        mismo el rótulo se queda: quien no distinga el verde o tenga el
+                        movimiento apagado tiene que poder saberlo igual. */}
+                    {p.activo && <span className="punto-activa" aria-hidden="true" />}
                     <span className="aparte">{segundaLinea(p)}</span>
                   </button>
                   {/* **Un proyecto dormido se baja desde aquí.** Sin este botón, un

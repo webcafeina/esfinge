@@ -1472,14 +1472,58 @@ p {
   background: var(--suave);
 }
 
+/* **El punto de la bóveda de proyecto abierta** (deuda del 2026-10-07).
+ *
+ * El verde **no se inventa aquí**: es `--exito`, que ya lo genera `internal/tema`, y su
+ * pareja contra el fondo de la fila activa está medida en `contraste_test.go` —5,82:1 en
+ * claro y 6,89:1 en oscuro, contra el 3:1 que pide un elemento gráfico—. Un color propio
+ * en una pantalla de trabajo solo entra así (ADR 0021).
+ *
+ * `flex: none` no es cosmética: es un elemento flex más dentro del botón, y sin eso lo
+ * primero que se encoge cuando la fila se queda sin sitio es él — que es cómo un dibujo
+ * acabó midiendo 72 de ancho y 0 de alto en el botón de la huella.
+ *
+ * Y el latido lo apaga sola la regla global de `prefers-reduced-motion`, que quita
+ * `animation` en todo: entonces se queda un punto quieto, que sigue diciendo lo mismo. */
+.punto-activa {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--exito);
+  animation: latido-activa 2.4s ease-in-out infinite;
+}
+
+@keyframes latido-activa {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
 /* **La fila de una compartida retirada** (ADR 0053): donde iba el botón de abrir va
  * el aviso de que ya no está, así que tiene que ocupar su sitio —`flex: 1` con el
  * mismo suelo— o el botón de quitarla se le pega y la frase se parte por donde caiga.
  * Y `min-width` de verdad y no cero, que es la lección del nombre que se encogía
  * hasta desaparecer: aquí lo que desaparecería es la única explicación que hay. */
 .proyectos li.retirada .aviso {
-  flex: 1;
-  min-width: 11rem;
+  /* **Línea propia, no media fila.** Compartiéndola con el botón de quitarla, el
+   * aviso se lee apretado: son dos frases y una lleva el nombre de la bóveda, así que
+   * en cuanto la tipografía del sistema es un poco más ancha que la de aquí se
+   * amontona. Lo vio el cliente en su Mac con la 2.42.0; en la captura de Chromium en
+   * Linux salía holgado, que es por lo que no se vio antes.
+   *
+   * Con `flex-basis: 100%` el botón baja debajo, que es lo que ya hace el bloque de
+   * acciones de un proyecto cuando no cabe. */
+  flex: 1 0 100%;
+}
+
+/* Y el botón se va a la derecha, como las acciones del resto de las listas. */
+.proyectos li.retirada .discreto {
+  margin-left: auto;
 }
 
 /* Los botones de un proyecto, **como un bloque**: o caben todos en la fila o bajan

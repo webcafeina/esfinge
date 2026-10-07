@@ -174,6 +174,9 @@ func (a *App) AbrirBoveda(llave string) error {
 	a.Actividad()
 	a.buscarIconosSiProcede(a.ctx)
 	a.alAbrirLaBoveda(b)
+	// Y si antes se intentó con el sistema y la llave ya no estaba, **éste es el
+	// único momento en que se puede limpiar** la ranura que se quedó sin ella.
+	a.limpiarRanuraHuerfana(b)
 	return nil
 }
 

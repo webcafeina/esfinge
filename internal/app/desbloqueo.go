@@ -22,6 +22,7 @@ package app
 
 import (
 	"errors"
+	"log"
 	"path/filepath"
 	"time"
 
@@ -39,6 +40,12 @@ import (
 // Si la personal se borra y se crea otra, la de antes ya no abre con ese secreto
 // porque su sobre se fue con ella.
 const idEnElLlavero = "com.webcafeina.esfinge.boveda"
+
+// ErrLlaveQueYaNoEsta es lo que se dice cuando la ranura está y el sistema ya no
+// guarda su llave. **Dice qué hacer**, que es lo único útil ahí: lo de antes —«El
+// sistema ya no guarda esa llave»— es cierto y deja a quien lo lee sin salida.
+var ErrLlaveQueYaNoEsta = errors.New(
+	"El sistema ya no guarda la llave de esta bóveda. Ábrela con la contraseña maestra y vuelve a activarlo")
 
 // motivoDelDialogo es lo que el sistema enseña al pedir la huella. Lo lee alguien
 // que en ese momento quiere entrar en sus contraseñas, así que dice eso.
@@ -197,6 +204,23 @@ func (a *App) AbrirBovedaConElSistema() error {
 		return boveda.ErrSinRanuraDelSistema
 	}
 	secreto, err := a.llaveroDelSistema().Leer(idEnElLlavero, motivoDelDialogo)
+	if errors.Is(err, llavero.ErrNoEsta) {
+		// **La ranura está y la llave no.** Pasa de verdad, y no hace falta que nadie
+		// toque el llavero por fuera: el secreto es **uno por máquina** y las bóvedas
+		// son varias, así que basta con haber entrado en una cuenta en este equipo
+		// —la bóveda que hubiera se aparta (ADR 0039), la nueva no abre con ese
+		// secreto y el caso de abajo lo borra— y volver luego a la primera. Lo
+		// encontró el cliente al devolver su segundo Mac (2026-10-07).
+		//
+		// Aquí no se puede arreglar: la bóveda está cerrada y quitar la ranura exige
+		// tenerla abierta. Se apunta, lo limpia quien abra con la maestra, y lo que se
+		// devuelve **dice qué hacer**, porque constatar que la llave no está deja a
+		// quien lo lee sin ninguna salida.
+		a.mu.Lock()
+		a.huerfana = true
+		a.mu.Unlock()
+		return ErrLlaveQueYaNoEsta
+	}
 	if err != nil {
 		return err
 	}
@@ -241,6 +265,36 @@ func (a *App) NoOfrecerElDesbloqueo() error {
 	}
 	a.noVolverAOfrecerA(b.ID())
 	return nil
+}
+
+// limpiarRanuraHuerfana quita la ranura que quedó sin su llave, **y vuelve a ofrecer
+// el desbloqueo** a esta bóveda (ADR 0044).
+//
+// Lo segundo es la mitad que importa: sin ello, la ranura se va en silencio y quien
+// tenía Touch ID se queda sin él **y sin que nadie se lo mencione**, que es exactamente
+// lo que ya costó una vez con la marca de «ofrecer una sola vez». La tarjeta de dentro
+// vuelve a salir y se reactiva con un clic.
+//
+// La llama quien abre con la maestra, que es el único momento en que se puede.
+func (a *App) limpiarRanuraHuerfana(b *boveda.Boveda) {
+	a.mu.Lock()
+	hay := a.huerfana
+	a.huerfana = false
+	a.mu.Unlock()
+	if !hay || b == nil {
+		return
+	}
+	if err := b.QuitarRanuraDelSistema(); err != nil {
+		log.Printf("esfinge: no se ha podido quitar la ranura del sistema que se quedó sin llave: %v", err)
+		return
+	}
+	// Y que se vuelva a ofrecer: la marca de «ya se le preguntó» es por bóveda, así
+	// que se quita la de ésta y nada más.
+	p := a.ajustes.Ver()
+	if p.DesbloqueoSugeridoPara == b.ID() {
+		p.DesbloqueoSugeridoPara = ""
+		_ = a.ajustes.Guardar(p)
+	}
 }
 
 func (a *App) noVolverAOfrecerA(id string) {

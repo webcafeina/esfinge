@@ -56,6 +56,16 @@ type App struct {
 	// que se pregunta; las pruebas y el servidor de desarrollo ponen la suya.
 	llavero llavero.Llavero
 
+	// huerfana dice que la última vez que se intentó abrir con el sistema, **la
+	// ranura estaba y la llave no**. Va detrás de `mu`.
+	//
+	// Existe porque ahí no se puede arreglar nada: la bóveda está cerrada, y quitar
+	// la ranura exige tenerla abierta. Así que se apunta, y se limpia en cuanto
+	// alguien la abre con la maestra. En memoria y no en las preferencias a
+	// propósito: si se cierra la aplicación sin abrirla, al volver se intentará otra
+	// vez y se volverá a apuntar, que es lo mismo pero sin un fichero que mantener.
+	huerfana bool
+
 	// bov es la bóveda, si está abierta. Nil mientras nadie la haya desbloqueado.
 	//
 	// **Va detrás de `mu`, y hay que pedirla con `boveda()`.** No lo estaba, y era

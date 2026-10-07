@@ -279,3 +279,66 @@ func TestLaOfertaDelDesbloqueoEsUnaPorBoveda(t *testing.T) {
 		t.Fatalf("está puesto y sigue ofreciéndolo: %+v", e)
 	}
 }
+
+// **La ranura se queda sin su llave, y eso se arregla solo en cuanto se abre.**
+//
+// Pasa de verdad y no hace falta que nadie toque el llavero por fuera: el secreto es
+// **uno por máquina** y las bóvedas son varias, así que basta con entrar en una cuenta
+// en este equipo —la bóveda que hubiera se aparta (ADR 0039), la nueva no abre con ese
+// secreto, y el caso de arriba lo borra para no ofrecer algo que no funciona— y volver
+// luego a la primera. **Lo encontró el cliente** al devolver su segundo Mac tras las
+// pruebas de la ADR 0052 (2026-10-07): su bóveda volvió entera y la huella decía «El
+// sistema ya no guarda esa llave», con la ranura dentro y sin forma de salir de ahí más
+// que yendo a Ajustes a apagarlo y encenderlo.
+//
+// Lo que se comprueba es lo que le faltaba: que **lo que se dice sirva para algo**, que
+// la ranura inservible **se vaya** en vez de volver a fallar en cada intento, y que **se
+// vuelva a ofrecer**, porque quitarla en silencio deja a quien tenía Touch ID sin él y
+// sin que nadie se lo mencione.
+func TestLaRanuraQueSeQuedaSinLlaveSeLimpiaAlAbrir(t *testing.T) {
+	a, l := conLlaveroDeMentira(t)
+	if _, err := a.CrearBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.ActivarDesbloqueo(); err != nil {
+		t.Fatal(err)
+	}
+	b := a.boveda()
+	if b == nil {
+		t.Fatal("la bóveda tenía que estar abierta")
+	}
+	id := b.ID()
+	// Se le quita la llave por la espalda, que es lo que hace otra bóveda del mismo
+	// equipo al pasar por ahí.
+	if err := l.Borrar(idEnElLlavero); err != nil {
+		t.Fatal(err)
+	}
+	a.CerrarBoveda()
+
+	// **Lo que se dice tiene que decir qué hacer.**
+	err := a.AbrirBovedaConElSistema()
+	if !errors.Is(err, ErrLlaveQueYaNoEsta) {
+		t.Fatalf("con la ranura sin su llave dice %v", err)
+	}
+	if !strings.Contains(err.Error(), "contraseña maestra") {
+		t.Errorf("el mensaje no dice qué hacer: %q", err)
+	}
+
+	// Y la ranura sigue ahí, porque con la bóveda cerrada no se puede tocar.
+	if !boveda.RanuraDelSistemaEn(rutaBovedaPrincipal()) {
+		t.Fatal("la ranura se ha quitado con la bóveda cerrada, que es lo que no se puede hacer")
+	}
+
+	// **Al abrir con la maestra se limpia.**
+	if err := a.AbrirBoveda(maestraDePrueba); err != nil {
+		t.Fatal(err)
+	}
+	if boveda.RanuraDelSistemaEn(rutaBovedaPrincipal()) {
+		t.Fatal("la ranura sin llave sigue puesta tras abrir: volvería a fallar en cada intento")
+	}
+	// **Y se vuelve a ofrecer**, que es la mitad que importa: quitarla en silencio deja
+	// sin Touch ID a quien lo tenía sin que nadie se lo mencione.
+	if p := a.VerPreferencias(); p.DesbloqueoSugeridoPara == id {
+		t.Error("la bóveda se ha quedado marcada como «ya se le ofreció», así que no se vuelve a ofrecer")
+	}
+}

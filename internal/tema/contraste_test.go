@@ -99,6 +99,11 @@ func parejasDe(t Tema) []pareja {
 		{t.Acento, t.Elevada, AAGrande, "el relleno de la barra de progreso"},
 		{t.Acento, t.Elevada, AAGrande, "la barra de acento de la fila activa en Windows"},
 		{t.Acento, t.Suave, AAGrande, "el borde de la zona de soltar al arrastrar encima"},
+		// **El punto de la bóveda de proyecto abierta** (deuda del 2026-10-07). Es un
+		// componente gráfico y no texto, así que el umbral es el de 3:1; y va contra
+		// `Suave`, que es el fondo de la fila activa y no el del lienzo. El verde no se
+		// inventó: es el `Exito` que ya estaba generado.
+		{t.Exito, t.Suave, AAGrande, "el punto de la bóveda de proyecto que está abierta"},
 		{t.Filete, t.Lienzo, 1.2, "la esfinge tenue del historial vacío"},
 	}
 

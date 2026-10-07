@@ -74,6 +74,27 @@ diferencia de tipografía y densidad del sistema. **Antes de tocarlo hace falta 
 mañana una prueba del intermitente pasaba **con el arreglo mutado**, o sea sin vigilar nada. Las dos cosas se
 arreglaron igual: **esperar al hecho, y mutar para ver si la prueba lo nota.**
 
+### Y al final del día, tres de la tabla de deuda
+
+- **La ranura de Touch ID que se quedó sin llave**, que es la de corrección. El mensaje **dice qué hacer**, la
+  ranura **se limpia al abrir con la maestra** —el único momento en que se puede— y con ella **se vuelve a
+  ofrecer** el desbloqueo: quitarla en silencio dejaba sin Touch ID a quien lo tenía **sin que nadie se lo
+  mencionara**, que es el error que ya se cometió una vez con la marca de «ofrecer una sola vez». Las tres
+  mitades, mutadas. Lo de fondo sigue abierto y escrito: con un secreto **por máquina**, la segunda bóveda de
+  un equipo se lleva el Touch ID de la primera.
+- **El aviso de la fila retirada**, cerrado **sin la captura que se había pedido**, y se dice por qué: el
+  arreglo —línea propia y el botón debajo— **no depende de cómo se vea allí**, porque quita la causa a
+  cualquier ancho. La captura habría servido para elegir entre dos arreglos; aquí solo había uno.
+- **El punto verde de la bóveda abierta**, que pidió el cliente. **Sin inventar color**: `--exito` ya lo
+  generaba `internal/tema`, así que lo único nuevo es **la pareja medida** contra el fondo de la fila activa
+  —5,82:1 y 6,89:1, contra el 3:1 de un elemento gráfico—. El latido lo apaga sola la regla de reducir
+  movimiento, y **el rótulo se queda**, con una aserción que lo exige: el punto es un refuerzo, no la señal.
+
+**Y una del método, otra vez la misma:** la primera versión de esa prueba **pasaba quitando el `flex: none`**,
+porque a esa anchura sobraba sitio. Una aserción que solo se cumple en el caso fácil no vigila la regla: ahora
+mide **también con la ventana estrecha**, que es donde esa propiedad significa algo, y entonces la mutación sí
+la pone roja.
+
 ## 2026-10-06 (5) · La 2.41.0 publicada, y la prueba a un paso del final
 
 - **Se miró la prueba antes de relanzar nada**, que es lo que el cliente pidió. No se pudo demostrar la
