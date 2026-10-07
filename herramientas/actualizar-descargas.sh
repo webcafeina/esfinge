@@ -30,6 +30,17 @@ nueva=$(cat <<TABLA
 | **Linux · cualquiera** | [esfinge-${version}-linux-amd64.tar.gz](${base}/esfinge-${version}-linux-amd64.tar.gz) | Los binarios sueltos |
 | **Línea de comandos** | [todos los sistemas](https://github.com/webcafeina/esfinge/releases/latest) | Seis objetivos, con sus SHA256 |
 
+**Y para usar la bóveda desde un agente de IA** (Claude Desktop y compañía), el paquete de su sistema. Se
+instala arrastrándolo a la ventana del agente, y necesita Esfinge abierta:
+
+| | |
+|---|---|
+| **macOS** | [Esfinge-${version}-macos.mcpb](${base}/Esfinge-${version}-macos.mcpb) |
+| **Windows** | [Esfinge-${version}-windows.mcpb](${base}/Esfinge-${version}-windows.mcpb) |
+| **Linux** | [Esfinge-${version}-linux.mcpb](${base}/Esfinge-${version}-linux.mcpb) |
+
+En **Claude Code** no hace falta: Ajustes da la orden escrita, con la ruta de tu equipo.
+
 Versión **${version}**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
 
 <!-- descargas:fin -->
