@@ -47,6 +47,27 @@
 > **En la tabla de deuda queda una sola cosa**: el intermitente de «Sincronizada», y ahí lo correcto es no
 > tocar nada — tiene voz y dos candidatos descartados midiendo. Lo que diga por qué será la próxima caída.
 
+
+> **Y lo nuevo, empezado el 2026-10-07: los agentes de IA por MCP** (ADR 0054), que lo pidió el cliente.
+> **Cambia el modelo de amenaza** como lo hizo la extensión, y añade uno que no existía: lo que un agente
+> recibe entra en la conversación de un modelo, y **quien controle su contexto puede pedir cosas en tu
+> nombre**.
+>
+> **La E1 está hecha y comprobada, sin publicar**: el canal con su propia llave —socket, emparejamiento,
+> frenos y verbos propios—, `cmd/esfinge-mcp`, cinco herramientas que **no tocan ningún secreto** y el
+> interruptor de Ajustes **apagado de fábrica**. Toda la fontanería del empaquetado incluida, con la
+> comprobación de que el binario va dentro del instalador de Windows.
+>
+> **Lo que viene, por orden y cada una publicable sola**: el inventario (E2), **el registro antes que ningún
+> secreto** (E3) —una sección de fusión es cara de añadir con equipos ya en marcha—, la aprobación con su
+> ventana (E4), la válvula de cinco minutos (E5), el código de un solo uso (E6) y escribir (E7 y E8).
+>
+> **Lo que no se cambia sin preguntar está en la ficha**, y lo más incómodo conviene tenerlo a mano: **el
+> portapapeles no es una frontera contra un agente con terminal** —puede leerlo—, así que lo que protege es
+> que cada uso se apruebe y quede apuntado, y eso **se dice en la pantalla donde se enciende**. El remoto
+> —ChatGPT— se deja para después porque lleva dentro elegir entre que el Worker vea los secretos o montar un
+> túnel.
+
 ---
 
 > **Cerrado el 2026-10-05 (mañana): las bóvedas por proyecto.** Tres publicaciones ese día —2.39.0, 2.39.1 y 2.39.2— y el cliente las fue
