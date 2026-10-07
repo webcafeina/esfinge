@@ -1,39 +1,40 @@
 # Estado
 
-Última actualización: **2026-10-06**
+Última actualización: **2026-10-07**
 
-> **La 2.41.0 está publicada** (2026-10-06, 15:58 UTC) y pasó la puerta a la primera, así que lo de la
-> víspera era inestable y no roto. La etiqueta se movió al commit que lleva el diagnóstico; Chrome quedó
-> en revisión y Firefox enviada con su fuente.
+> **La ADR 0052 está comprobada entera en dos ordenadores de verdad, y con eso no queda nada del proyecto
+> sin ver en una máquina salvo Windows y GNOME.** El 2026-10-07 el cliente quitó el acceso desde el Mac 1 y
+> en el Mac 2 pasó lo que tenía que pasar: **el servidor cerró la puerta**, **su bóveda personal no se
+> cerró** —el 403 no se confundió con el 401, que es el fallo que más preocupaba— y **lo que ya estaba
+> bajado se quedó**, que es justo lo que la pantalla del Mac 1 promete.
 >
-> **Y la prueba entre dos personas está hecha salvo el último paso.** Comprobado en los dos Macs del
-> cliente: dar acceso con la huella comparada, aceptarlo —**«Acceso a …»**, no un sobre roto—, abrirlo, que
-> **lo escrito en un equipo llegue al otro**, y **la extensión de Firefox rellenando desde la bóveda
-> compartida** con la cuenta del otro lado.
+> **Pero la ventana no lo contaba, y ahí había dos fallos**, los dos arreglados y **pendientes de
+> publicar**:
 >
-> **La siguiente acción, y es lo único que queda de todo el proyecto: quitar el acceso.** Él no tiene el
-> Mac 1 hasta mañana. Los pasos:
+> 1. **`sin-acceso` no lo conocía la ventana.** Ni en el tipo del puente ni en `frase()`, así que caía en el
+>    cajón de sastre y decía **«Sin sincronizar»** con el mensaje bueno del servidor llegando y sin
+>    enseñarse. Es la trampa del puente con otra cara: **lo que faltaba no era un método, era un valor.** Lo
+>    vigila `TestLosEstadosDeLaSincroLosEnsenaLaVentana`, mutado por los dos lados.
+> 2. **Las flechas de sincronizar giraban veinte segundos** por clic —«en bucle», lo vio él—, porque la
+>    lista de estados que cuentan como pasada terminada se había quedado corta. **Y no era de la 0052**:
+>    `muchos-borrados` estaba igual desde la 2.25.2. Ahora se escribe al revés.
 >
-> 1. **Mac 1**: abrir «Prueba de acceso» → Proyectos → «Quién tiene acceso…» → **Quitar** (segundo clic).
-> 2. **Mac 2**: esperar la sincronización —hasta un minuto— y mirar **las dos cosas que importan**: que
->    diga «Ya no tienes acceso a esa bóveda» y que **su bóveda personal siga abierta**. Lo segundo es el
->    fallo que más preocupaba: que quitarle el acceso a una bóveda ajena le cierre la suya. Y que **lo que
->    ya se bajó siga ahí**, que es lo que la pantalla del Mac 1 promete.
-> 3. **Devolver el Mac 2 como estaba**, que es lo que queda apartado desde ayer:
+> **La siguiente acción: publicar la 2.41.1** con esos dos arreglos y que él lo vea en el Mac 2 — tiene que
+> leer «Ya no tienes acceso a esa bóveda.» como aviso, y el botón tiene que pararse.
 >
->    ```sh
->    rm -rf ~/Library/Application\ Support/Esfinge
->    mv ~/Library/Application\ Support/Esfinge-mio ~/Library/Application\ Support/Esfinge
->    ```
+> **Y devolver el Mac 2 como estaba**, que sigue pendiente porque su carpeta está **apartada, no borrada**:
 >
->    Lo primero borra la cuenta de prueba de ese equipo; lo segundo devuelve lo suyo, **sin volver a entrar
->    en su cuenta y sin que se aparte ninguna bóveda**.
+> ```sh
+> rm -rf ~/Library/Application\ Support/Esfinge
+> mv ~/Library/Application\ Support/Esfinge-mio ~/Library/Application\ Support/Esfinge
+> ```
 >
-> La huella de la cuenta de prueba es `RB9J-JDRB-P6NP-R51B-7EVN-CPWB-DMBN`.
->
-> **Y lo que sigue abierto, apuntado en [deuda.md](deuda.md)**: la espera de «Sincronizada» que tiró una
-> publicación —ahora **con voz**: al caerse dice lo que ve la ventana y lo que cree Go—, con un candidato
-> sin confirmar al lado (`alSincronizar` vuelve sin dejar estado cuando la pasada se cancela).
+> **Y lo que se midió hoy y no se sostuvo, para que nadie lo vuelva a razonar**: se buscó el intermitente de
+> «Sincronizada» por otro lado y salió un segundo candidato —`usaCuenta` tiraba el aviso que llegaba con su
+> estado nulo y dejaba que una lectura vieja lo pisara—. **Las dos cosas están arregladas** porque son
+> fallos de esa función, pero **al forzar el orden malo en una prueba el rótulo se recuperaba igual**, así
+> que **ese camino por sí solo no deja el rótulo pegado** y la prueba se quitó en vez de dejarla verde sin
+> vigilar nada. Está en [deuda.md](deuda.md) con lo que queda por descartar.
 ---
 
 > **Cerrado el 2026-10-05 (mañana): las bóvedas por proyecto.** Tres publicaciones ese día —2.39.0, 2.39.1 y 2.39.2— y el cliente las fue

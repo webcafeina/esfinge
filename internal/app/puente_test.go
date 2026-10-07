@@ -279,3 +279,83 @@ func raizDelRepo(t *testing.T) string {
 		d = arriba
 	}
 }
+
+// **Un estado que la ventana no conoce no da error: da el cajón de sastre.**
+//
+// `EstadoSincro.Estado` es una cadena, así que Go puede emitir uno nuevo y la ventana
+// lo deja caer en el `default` de `frase()` sin que nada se queje. Pasó con
+// `sin-acceso` (ADR 0052): a quien le acababan de quitar el acceso a una bóveda
+// compartida, la ventana le decía **«Sin sincronizar»** —con el mensaje bueno llegando
+// de Go y sin enseñarlo— y el botón de sincronizar giraba los veinte segundos del
+// plazo de seguridad, porque tampoco contaba como pasada terminada. **Lo vio el cliente
+// en su segundo Mac, recorriendo el último tramo de la ADR 0052**, y no lo dijo ninguna
+// de las 118 pruebas de interfaz: todas sincronizan bien.
+//
+// Es la trampa del puente —escribir el lado de Go parece terminar el trabajo— con otra
+// cara: aquí lo que falta no es un método, es **un valor**.
+//
+// Se compara contra las dos listas que tiene la ventana, porque fallan por separado: el
+// tipo de `puente.ts` —que es lo que haría que TypeScript avisara en el `switch`— y los
+// `case` de `frase()`. Con el estado en el tipo y sin su `case`, el fallo es
+// exactamente el que se vio.
+func TestLosEstadosDeLaSincroLosEnsenaLaVentana(t *testing.T) {
+	raiz := raizDelRepo(t)
+	leer := func(partes ...string) string {
+		datos, err := os.ReadFile(filepath.Join(append([]string{raiz}, partes...)...))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(datos)
+	}
+
+	// Los que Go emite, sacados de donde se construyen.
+	deGo := map[string]bool{}
+	for _, m := range regexp.MustCompile(`EstadoSincro\{Estado: "([a-z-]+)"`).
+		FindAllStringSubmatch(leer("internal", "app", "cuenta.go"), -1) {
+		deGo[m[1]] = true
+	}
+	if len(deGo) < 8 {
+		t.Fatalf("solo se han encontrado %d estados en cuenta.go (%v): ¿ha cambiado cómo se escriben?", len(deGo), deGo)
+	}
+
+	// El tipo del puente, y los `case` de la frase que los traduce.
+	tipo := leer("frontend", "src", "puente.ts")
+	i := strings.Index(tipo, "export type EstadoSincro = {")
+	if i < 0 {
+		t.Fatal("no se encuentra el tipo EstadoSincro en puente.ts")
+	}
+	tipo = tipo[i:]
+	if j := strings.Index(tipo, "};"); j > 0 {
+		tipo = tipo[:j]
+	}
+	frases := leer("frontend", "src", "cuenta.tsx")
+	if k := strings.Index(frases, "export function frase("); k >= 0 {
+		frases = frases[k:]
+		if j := strings.Index(frases, "\n}\n"); j > 0 {
+			frases = frases[:j]
+		}
+	} else {
+		t.Fatal("no se encuentra frase() en cuenta.tsx")
+	}
+
+	var sinTipo, sinFrase []string
+	for estado := range deGo {
+		if !strings.Contains(tipo, `"`+estado+`"`) {
+			sinTipo = append(sinTipo, estado)
+		}
+		if !strings.Contains(frases, `case "`+estado+`":`) {
+			sinFrase = append(sinFrase, estado)
+		}
+	}
+	sort.Strings(sinTipo)
+	sort.Strings(sinFrase)
+	if len(sinTipo) > 0 {
+		t.Errorf("estos estados los emite Go y no están en el tipo EstadoSincro de puente.ts: %v\n"+
+			"Sin estar en el tipo, TypeScript no puede avisar de que falta su rama.", sinTipo)
+	}
+	if len(sinFrase) > 0 {
+		t.Errorf("estos estados los emite Go y frase() no los traduce: %v\n"+
+			"Caen en el `default` y la ventana dice «Sin sincronizar», que es lo que le pasó a `sin-acceso`: "+
+			"el mensaje de Go llega y no se enseña. Cada estado va con su `case`, aunque la frase se repita.", sinFrase)
+	}
+}

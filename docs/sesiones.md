@@ -5,6 +5,40 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-07 · Quitar el acceso: funcionó, y la ventana no lo contaba
+
+- **La ADR 0052 queda comprobada entera en dos ordenadores**, que era lo último del proyecto. El cliente
+  quitó el acceso desde el Mac 1 y en el Mac 2 pasó lo que tenía que pasar: el servidor cerró la puerta,
+  **su bóveda personal no se cerró** —el 403 no se confundió con el 401— y **lo que ya estaba bajado se
+  quedó**, que es lo que la pantalla promete.
+- **Y ahí había dos fallos que ninguna de las 118 pruebas de interfaz podía ver**, porque todas sincronizan
+  bien:
+  1. **`sin-acceso` no lo conocía la ventana** —ni el tipo del puente ni `frase()`—, así que caía en el
+     `default` y decía **«Sin sincronizar»** con el mensaje bueno del servidor llegando y sin enseñarse. Es
+     la trampa del puente con otra cara: **lo que faltaba no era un método, era un valor.** Lo vigila
+     `TestLosEstadosDeLaSincroLosEnsenaLaVentana`, que compara los estados que Go emite con las dos listas
+     de la ventana; mutado por los dos lados.
+  2. **Las flechas de sincronizar giraban veinte segundos** por clic, porque la lista de estados que cuentan
+     como pasada terminada se había quedado corta. **No era de la 0052**: `muchos-borrados` llevaba igual
+     desde la 2.25.2 y nadie había pulsado ahí. Ahora se escribe al revés —terminada es «ya no está
+     sincronizando»—, que es lo único que no se queda corto con el estado siguiente.
+- **Se fue a por el intermitente de «Sincronizada» y se volvió sin él, pero con algo medido.** Salió un
+  segundo candidato —`usaCuenta` tiraba el aviso que llegaba con su estado nulo y dejaba que una lectura
+  vieja lo pisara—, encajaba con el síntoma y con que dependa de la máquina, y **las dos cosas están
+  arregladas porque son fallos de esa función**. Pero al escribir la prueba que forzaba el orden malo, **el
+  rótulo se recuperaba igual con el arbitraje quitado**: ese camino por sí solo no deja el rótulo pegado.
+  **La prueba se quitó** en vez de dejarla verde sin vigilar nada, y en `deuda.md` queda lo descartado y lo
+  que falta por descartar. Es la tercera vez en el proyecto que una causa bien razonada no sobrevive a
+  medirla.
+- **Y una decisión nueva del cliente, con los demás gestores delante** (ADR 0053, pendiente): preguntó si
+  en Dashlane y compañía se puede quitar de la otra cuenta lo compartido. **Sí se puede** —Dashlane: «no
+  verán el elemento la próxima vez que inicien sesión»; Bitwarden lo borra de la colección y avisa de que un
+  cliente desconectado puede retener su copia un rato— y **ninguno lo promete**: el enlace de 1Password crea
+  una copia y su documentación dice que cambies la contraseña. O sea que el borrado de todos ellos es
+  **cooperativo, no criptográfico**. Esfinge hacía la primera mitad —el 403 y rotar la clave, que ellos no
+  hacen— y no la segunda. **Eligió hacerla, y avisando**: que la bóveda desaparezca del equipo del otro y
+  que su pantalla diga que se ha borrado y por qué, en vez de desaparecer en silencio como hace Dashlane.
+
 ## 2026-10-06 (5) · La 2.41.0 publicada, y la prueba a un paso del final
 
 - **Se miró la prueba antes de relanzar nada**, que es lo que el cliente pidió. No se pudo demostrar la

@@ -232,5 +232,21 @@ huella**, aceptarlo —se ve como **«Acceso a …»** y no como un sobre roto�
 equipo y que llegue al otro**, y **la extensión de Firefox rellenando desde la bóveda compartida** con la
 cuenta de quien la recibió.
 
-**Lo que falta, y es lo último:** **quitar el acceso** y ver las dos cosas que eso tiene que cumplir — que
-quien lo pierde se entere, y que **no se le cierre su propia bóveda**. Los pasos están en `docs/estado.md`.
+**Y quitar el acceso, que era lo último** (2026-10-07, en los dos Macs). Lo que importaba **se cumplió**: el
+servidor cerró la puerta y **la bóveda propia del Mac 2 no se cerró**, que es el fallo que esta ficha nombra
+dos veces. Y lo que la pantalla del Mac 1 promete también: **lo que ya estaba bajado se quedó**, abierto y
+legible, porque borrar en remoto no se puede prometer.
+
+**Pero la ventana no lo contaba, y de ahí salieron dos fallos** que ninguna de las 118 pruebas de interfaz
+podía ver, porque todas sincronizan bien:
+
+- **`sin-acceso` no estaba ni en el tipo del puente ni en `frase()`**, así que caía en el `default` y la
+  ventana decía **«Sin sincronizar»** a quien acababan de quitarle el acceso — con el mensaje bueno del
+  servidor, «Ya no tienes acceso a esa bóveda.», llegando y sin enseñarse. Es la trampa del puente con otra
+  cara: **lo que faltaba no era un método, era un valor**. Lo vigila ahora
+  `TestLosEstadosDeLaSincroLosEnsenaLaVentana`, que exige que **cada estado que Go emite** esté en las dos
+  listas de la ventana; mutado por los dos lados.
+- **Las flechas de sincronizar giraban veinte segundos** por clic, porque decidían si una pasada había
+  terminado con **una lista de los estados que cuentan como final** y el nuevo no estaba en ella. **No era de
+  esta ficha**: `muchos-borrados` llevaba igual desde la 2.25.2 y nadie había pulsado ahí. Ahora se escribe al
+  revés —terminada es «ya no está sincronizando»—, y lo que queda sin prueba está en `deuda.md` con el porqué.

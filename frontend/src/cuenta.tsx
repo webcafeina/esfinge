@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Ceremonia } from "./boveda";
 import { CampoClave, Firma, Marca, Segmentado } from "./componentes";
 import {
@@ -758,7 +758,16 @@ function usaNivel(clave: string): number | null {
 
 // ------------------------------------------------------------------ la sincronización a la vista
 
-/** Lo que dice cada estado, en una frase. */
+/**
+ * Lo que dice cada estado, en una frase.
+ *
+ * **Todos los estados que Go puede emitir tienen que estar aquí con su `case`**, y lo
+ * vigila `TestLosEstadosDeLaSincroLosEnseñaLaVentana`. El `default` es la red de abajo,
+ * no el sitio donde caen los que falten: cuando `sin-acceso` cayó ahí, la ventana decía
+ * **«Sin sincronizar»** a alguien a quien acababan de quitarle el acceso a una bóveda
+ * compartida —con el mensaje bueno ya llegando de Go, sin enseñarlo—, y lo vio el
+ * cliente en su segundo Mac recorriendo la ADR 0052 (2026-10-07).
+ */
 export function frase(e: EstadoSincro): string {
   switch (e.estado) {
     case "al-dia":
@@ -773,8 +782,15 @@ export function frase(e: EstadoSincro): string {
       return "Hay que volver a entrar en la cuenta";
     case "muchos-borrados":
       return "Parada: los cambios de otro equipo borrarían media bóveda";
+    case "sin-acceso":
+      // El mensaje lo pone el servidor —«Ya no tienes acceso a esa bóveda.»— y es el
+      // que hay que leer: **esa frase es todo lo que explica por qué** se dejó de
+      // sincronizar una bóveda que sigue abierta aquí.
+      return e.mensaje ?? "Ya no tienes acceso a esta bóveda";
     case "error":
       return e.mensaje ?? "La sincronización ha fallado";
+    case "apagada":
+      return "Sin sincronizar";
     default:
       return "Sin sincronizar";
   }
@@ -789,19 +805,55 @@ function haceCuanto(iso: string): string {
   return horas === 1 ? "hace una hora" : `hace ${horas} horas`;
 }
 
-/** usaCuenta trae el estado de la cuenta y lo tiene al día con los avisos de Go. */
+/**
+ * usaCuenta trae el estado de la cuenta y lo tiene al día con los avisos de Go.
+ *
+ * **Y la lectura y el aviso corren una carrera que hay que arbitrar**, que es la
+ * trampa de las preferencias (CLAUDE.md) con el estado de la sincronización
+ * dentro. Son las dos caras:
+ *
+ *   - **Un aviso que llega antes de la primera lectura no se puede tirar.** Con
+ *     `c` todavía nulo no hay a qué aplicarlo, y `(c ? … : c)` lo soltaba al
+ *     suelo. Se guarda y lo recoge la lectura.
+ *   - **Una lectura pedida antes de un aviso no puede pisarlo.** Trae el estado
+ *     de cuando se pidió, que es el de antes.
+ *
+ * **Lo que esto NO está demostrado que arregle es el intermitente de
+ * «Sincronizada»** que tiró la puerta de la 2.41.0 (`deuda.md`). Encaja con el
+ * síntoma y con que dependa de lo rápida que sea la máquina, y se escribió por
+ * eso; pero al ir a fijarlo con una prueba que forzara el orden malo, **el rótulo
+ * se recuperaba en menos de cuatro segundos con este arbitraje quitado** —por
+ * otra vía, seguramente el refresco que dispara `EventoBovedaCambiada`—, o sea
+ * que este camino por sí solo no deja el rótulo pegado. La prueba se quitó en vez
+ * de dejarla en verde sin vigilar nada. Esto se queda porque **son dos fallos de
+ * esta función de todas formas**, no porque cierre aquello.
+ */
 export function usaCuenta(activo = true): [EstadoCuenta | null, () => void] {
   const [cuenta, setCuenta] = useState<EstadoCuenta | null>(null);
+  const avisos = useRef(0);
+  const ultimoAviso = useRef<EstadoSincro | null>(null);
   const refrescar = () => {
+    const alPedir = avisos.current;
     esfinge
       .estadoDeCuenta()
-      .then(setCuenta)
+      .then((c) => {
+        const hayAvisoMasNuevo = avisos.current !== alPedir && ultimoAviso.current !== null;
+        setCuenta(hayAvisoMasNuevo ? { ...c, sincro: ultimoAviso.current! } : c);
+      })
       .catch(() => {});
   };
   useEffect(() => {
     if (activo) refrescar();
   }, [activo]);
-  useEffect(() => alCambiarLaSincro((sincro) => setCuenta((c) => (c ? { ...c, sincro } : c))), []);
+  useEffect(
+    () =>
+      alCambiarLaSincro((sincro) => {
+        avisos.current++;
+        ultimoAviso.current = sincro;
+        setCuenta((c) => (c ? { ...c, sincro } : c));
+      }),
+    [],
+  );
   // La frase «hace N minutos» envejece sola.
   const [, setLatido] = useState(0);
   useEffect(() => {
@@ -843,7 +895,14 @@ export function LineaSincro({ alVolverAEntrar }: { alVolverAEntrar: (correo: str
   const [cuenta] = usaCuenta();
   if (!cuenta || cuenta.modo !== "cuenta") return null;
   const e = cuenta.sincro;
-  const mal = e.estado === "hay-que-entrar" || e.estado === "error" || e.estado === "muchos-borrados";
+  // **`sin-acceso` va como aviso y no como nota** (ADR 0052): es lo único que explica
+  // que una bóveda abierta haya dejado de sincronizar, y leído como una nota al pie
+  // pasa por un detalle.
+  const mal =
+    e.estado === "hay-que-entrar" ||
+    e.estado === "error" ||
+    e.estado === "muchos-borrados" ||
+    e.estado === "sin-acceso";
   return (
     <p className={mal ? "linea-sincro aviso" : "linea-sincro nota"} role="status">
       {frase(e)}
@@ -892,11 +951,15 @@ function BotonSincronizar({ sincro }: { sincro: EstadoSincro }) {
   useEffect(() => {
     if (desde === null) return;
     const ultima = sincro.ultima ? Date.parse(sincro.ultima) : 0;
+    // **Se escribe al revés: acabada es «ya no está sincronizando»**, en vez de una
+    // lista de los estados que cuentan como final. La lista se quedó corta en cuanto
+    // llegó `sin-acceso` (ADR 0052): no estaba en ella, así que el botón giraba los
+    // veinte segundos del plazo de seguridad y, pulsándolo otra vez, otros veinte — el
+    // cliente lo vio como unas flechas girando en bucle. Enumerar los finales obliga a
+    // acordarse cada vez que se añade un estado; enumerar el único que sigue, no.
     const acabada =
-      ultima >= Math.floor(desde / 1000) * 1000 ||
-      sincro.estado === "error" ||
-      sincro.estado === "sin-conexion" ||
-      sincro.estado === "sin-red";
+      sincro.estado !== "sincronizando" &&
+      (sincro.estado !== "al-dia" || ultima >= Math.floor(desde / 1000) * 1000);
     const resto = Math.max(0, 500 - (Date.now() - desde));
     // Si no llega nada, se para igual: un botón que gira para siempre miente.
     const t = setTimeout(() => setDesde(null), acabada ? resto : 20_000);

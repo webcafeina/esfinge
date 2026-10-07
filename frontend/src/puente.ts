@@ -268,6 +268,8 @@ export type EstadoSincro = {
     | "sin-red"
     | "hay-que-entrar"
     | "muchos-borrados"
+    /** Te han quitado el acceso a esa bóveda ajena, o solo puedes verla (ADR 0052). */
+    | "sin-acceso"
     | "error";
   /** Cuándo salió bien la última pasada, en RFC3339. */
   ultima?: string;
