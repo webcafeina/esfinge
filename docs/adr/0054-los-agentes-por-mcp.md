@@ -1,6 +1,6 @@
 # 0054 · Que un agente use la bóveda, por MCP
 
-**Fecha:** 2026-10-07 · **Estado:** aceptada, empezando por la A1
+**Fecha:** 2026-10-07 · **Estado:** aceptada y **escrita entera**, en verde y sin publicar
 
 ## Contexto
 
@@ -143,6 +143,26 @@ Lo que **sí** se reutiliza, y literalmente: escuchar y limpiar el socket —el 
 - **Y una que no se puede tapar**: esto no protege de un agente al que alguien le haya dicho qué pedir. Lo
   único que hay entre eso y tu bóveda es la aprobación de la ventana, y por eso la válvula de cinco minutos
   **no cubre lo que sí se le enseña**.
+
+## Lo que cambió al escribirlo
+
+**La petición no bloquea.** El plan decía esperar el clic con treinta segundos de plazo, y no se sostiene: si
+la ventana está detrás nadie llega, y alargarlo choca con el tope que impone el propio cliente MCP. La forma
+buena ya estaba en la casa —es la de `Emparejar`, que **no espera a nadie** porque al otro lado hay un proceso
+que pueden cortar en cualquier momento—. El agente pide, Esfinge dice «apruébalo y vuelve a pedirlo», y la
+persona aprueba cuando llega.
+
+Con eso se resuelve de paso la tensión que el diseño veía con la ADR 0027: **no hace falta traer la ventana al
+frente**, así que esa prohibición se queda intacta.
+
+**El sí va atado a la entrada y vale una vez.** Aprobar «la de GitHub» no sirve para que el intento siguiente
+se lleve la del banco, y pedirla dos veces pregunta dos veces — como el testigo de emparejamiento, que se
+entrega una sola vez.
+
+**Y la válvula no cubre tres cosas, no una**: el código de un solo uso, cambiar una contraseña y cambiar la
+semilla. Todas son lo mismo visto de cerca: **lo que no se deshace**. Copiar se deshace —el portapapeles se
+borra solo—, borrar se deshace —treinta días—, y dejar una cuenta sin forma de entrar o soltar seis cifras al
+contexto de un modelo, no.
 
 ## Verificación
 
