@@ -685,6 +685,11 @@ func fundirContenido(l, r contenido, b *contenido, ahora time.Time, f *Fusion) c
 		titularesB = b.Titulares
 	}
 	out.Titulares = fundirTitulares(l.Titulares, r.Titulares, titularesB, b != nil)
+	// **Y el registro de lo que se le ha dado a un agente** (ADR 0054). Esta línea es
+	// la que ya costó una vez con `proyectos`: `fundirContenido` arma el contenido
+	// **campo a campo**, así que una sección que nadie copie se guarda bien y
+	// **desaparece en la primera sincronización, sin error en ninguna parte**.
+	out.Registro = fundirRegistro(l.Registro, r.Registro)
 	var extraB map[string]json.RawMessage
 	if b != nil {
 		extraB = b.Extra

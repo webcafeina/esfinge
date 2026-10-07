@@ -232,6 +232,15 @@ type contenido struct {
 	// que el servidor sepa un solo nombre.
 	Compartidas []Compartida `json:"compartidas,omitempty"`
 
+	// Registro es lo que se le ha dado a un agente de IA (ADR 0054): qué entrada,
+	// quién la pidió y cuándo. Ver `registro.go`.
+	//
+	// Vive aquí dentro por lo mismo que `SitiosExcluidos` y la lista de proyectos: una
+	// lista de qué cuentas pidió un agente dice **al menos tanto como la lista de
+	// sitios**, que es lo que la ADR 0024 decidió cifrar en el disco. Y nunca en el
+	// historial de ficheros, que es texto en claro.
+	Registro []Apunte `json:"registro,omitempty"`
+
 	// Titulares son las personas con acceso a **esta** bóveda (ADR 0052). Van aquí
 	// dentro y no en la bóveda de quien la comparte porque **la lista la ven todos
 	// los que tienen acceso**, que es lo que el cliente eligió.
@@ -535,6 +544,7 @@ func conLlave(ruta string, doc documento, llave []byte, purgar bool) (*Boveda, e
 	// cuánto la usa cada uno. Al abrir se sabe qué día es y se puede decidir de
 	// una vez. Y lo mismo las lápidas que ya han cumplido su plazo.
 	purgados := b.purgarPendientes(ahora().Add(-PlazoPendientes))
+	purgados = b.purgarRegistro(ahora().Add(-PlazoDelRegistro)) > 0 || purgados
 	if b.purgarPapelera(ahora().Add(-PlazoPapelera))+b.purgarLapidas(ahora().Add(-PlazoLapidas)) > 0 || purgados {
 		b.cuerpoSucio = true
 		if err := b.guardar(); err != nil {

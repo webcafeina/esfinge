@@ -16,6 +16,7 @@ import { fundirIdentidad, type IdentidadGuardada } from "./identidad";
 import { fundirPendientes, pendientesDe, ponerPendientes } from "./pendiente";
 import { compartidasDe, fundirCompartidas, ponerCompartidas } from "./compartida";
 import { fundirProyectos, ponerProyectos, proyectosDe } from "./proyecto";
+import { fundirRegistro, ponerRegistro, registroDe } from "./registro";
 import { fundirTitulares, ponerTitulares, titularesDe } from "./titular";
 import {
   ahora,
@@ -262,6 +263,10 @@ async function fundirContenido(
       b !== null,
     ),
   );
+  // Y lo que se le ha dado a un agente (ADR 0054), por lo mismo. Ver `registro.ts`:
+  // aquí no se apunta nada, solo se arrastra — pero una sección que este lado no
+  // copie se funde como un bloque y gana la del servidor entera.
+  out.extra = ponerRegistro(out.extra, fundirRegistro(registroDe(l.extra), registroDe(r.extra)));
   return out;
 }
 

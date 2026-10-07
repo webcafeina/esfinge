@@ -439,6 +439,25 @@ func (g generador) lado(base []Entrada, ids []string) contenido {
 			Huella: "AAAA-BBBB", Desde: g.fecha(),
 		})
 	}
+	// Y lo que se le ha dado a un agente (ADR 0054). **Los mismos identificadores en
+	// los dos lados**, por lo mismo que los proyectos y las compartidas: sin datos que
+	// choquen, los 400 casos pasan por encima de la sección y la cruzada no comprueba
+	// nada de ella. Y con fechas repetidas a propósito, que es lo que ejercita el
+	// desempate por identificador — sin él, dos apuntes del mismo segundo salen en
+	// cualquier orden y los dos lados dan bytes distintos.
+	for _, id := range []string{"1111aaaa2222bbbb", "3333cccc4444dddd", "5555eeee6666ffff"} {
+		if g.r.IntN(3) == 0 {
+			continue
+		}
+		c.Registro = append(c.Registro, Apunte{
+			ID: id, Cuando: g.de("2026-10-07T10:00:00Z", g.fecha()),
+			Quien: g.de("Claude Code", "Claude Desktop", textosRaros[0]),
+			Que:   g.de("copiar-secreto", "borrar"),
+			Sobre: g.de("", "aaaabbbbccccdddd"), Titulo: g.de("", "GitHub"),
+			Resultado: g.de(ApunteHecho, ApunteNegado, ApunteSinRespuesta),
+			Como:      g.de("", ApuntePreguntado, ApunteValvula),
+		})
+	}
 	if g.r.IntN(5) == 0 {
 		c.Extra = map[string]json.RawMessage{"seccionNueva": json.RawMessage(g.de(`[1]`, `{"x":"<&>"}`))}
 	}
