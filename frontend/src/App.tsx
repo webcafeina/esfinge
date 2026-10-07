@@ -1462,13 +1462,28 @@ function Ajustes({
         {elAgente?.quiere && (
           <div className="grupo peligro">
             <label>
-              {elAgente.quiere.quien} quiere la contraseña de «{elAgente.quiere.titulo}»
+              {elAgente.quiere.quien} quiere{" "}
+              {elAgente.quiere.que === "codigo"
+                ? `el código de un solo uso de «${elAgente.quiere.titulo}»`
+                : `la contraseña de «${elAgente.quiere.titulo}»`}
             </label>
-            <p className="aviso">
-              Se copiará al portapapeles de este ordenador: <strong>el agente no la ve</strong>. Si
-              no le has pedido nada que la necesite, <strong>di que no</strong>: lo que un agente
-              lee por ahí puede decirle qué pedir.
-            </p>
+            {/* **Las dos peticiones no son lo mismo y no se dicen igual.** Una se copia
+                y el agente no la ve; la otra **se la enseñas**, y eso se queda en la
+                conversación de su modelo. Decirlas con el mismo texto sería esconder
+                justo la diferencia que hace falta para contestar. */}
+            {elAgente.quiere.que === "codigo" ? (
+              <p className="aviso">
+                Esas seis cifras <strong>sí las verá</strong>, y se quedarán en la conversación de
+                su modelo. Caducan en medio minuto y no sirven sin la contraseña, pero si no le has
+                pedido nada que lo necesite, <strong>di que no</strong>.
+              </p>
+            ) : (
+              <p className="aviso">
+                Se copiará al portapapeles de este ordenador: <strong>el agente no la ve</strong>.
+                Si no le has pedido nada que la necesite, <strong>di que no</strong>: lo que un
+                agente lee por ahí puede decirle qué pedir.
+              </p>
+            )}
             <div className="botones">
               <button
                 className="principal"
@@ -1477,19 +1492,25 @@ function Ajustes({
                   leerAgente();
                 }}
               >
-                Solo ésta
+                {elAgente.quiere.que === "codigo" ? "Darle el código" : "Solo ésta"}
               </button>
               {/* **El «un rato» no es el botón principal**, y eso es a propósito: es
                   lo único de esta pantalla que quita una pregunta, así que no puede
-                  ser lo que se pulsa sin mirar. */}
-              <button
-                onClick={async () => {
-                  await esfinge.aprobarLoQuePideElAgente(true);
-                  leerAgente();
-                }}
-              >
-                Todo lo suyo, 5 minutos
-              </button>
+                  ser lo que se pulsa sin mirar.
+
+                  **Y no sale para el código**, porque la válvula no lo cubre: ofrecer
+                  aquí un botón que no va a hacer lo que dice sería peor que no
+                  ofrecerlo. */}
+              {elAgente.quiere.que !== "codigo" && (
+                <button
+                  onClick={async () => {
+                    await esfinge.aprobarLoQuePideElAgente(true);
+                    leerAgente();
+                  }}
+                >
+                  Todo lo suyo, 5 minutos
+                </button>
+              )}
               <button
                 onClick={async () => {
                   await esfinge.denegarLoQuePideElAgente();

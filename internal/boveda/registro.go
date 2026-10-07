@@ -82,6 +82,10 @@ const (
 const (
 	ApuntePreguntado = "preguntado"
 	ApunteValvula    = "valvula"
+	// ApunteDirecto: no se preguntó porque ese verbo no lo necesita —crear, o editar
+	// algo que no es un secreto—. Se apunta igual, que es lo que deja leer después qué
+	// hizo un agente en la bóveda sin que nadie se enterara en el momento.
+	ApunteDirecto = "directo"
 )
 
 // Apuntar deja constancia. **No falla si no se puede**: lo que se estuviera haciendo ya

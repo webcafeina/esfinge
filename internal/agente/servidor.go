@@ -54,6 +54,17 @@ type Fuente interface {
 	// Copia Esfinge y no quien pregunta: así el secreto no cruza el canal y se
 	// aprovecha el borrado del portapapeles que ya existe.
 	CopiarSecreto(quien, id string) (Copiado, error)
+	// Codigo devuelve el de un solo uso **ya calculado**, si hay un sí para él.
+	//
+	// Es lo único de esta interfaz que entrega algo que el agente ve, y por eso **la
+	// válvula no lo cubre**: ver no es reversible.
+	Codigo(quien, id string) (Codigo, error)
+	// Crear guarda una entrada nueva. **Va directo**, sin preguntar.
+	Crear(quien string, p Peticion) (Escrito, error)
+	// Editar cambia campos. **Si toca un secreto, pide un sí**; el resto va directo.
+	Editar(quien string, p Peticion) (Escrito, error)
+	// Borrar la manda a la papelera, **con un sí**.
+	Borrar(quien, id string) (Escrito, error)
 
 	// Emparejar le pregunta a la persona, en la ventana, si permite que ese agente
 	// hable con la bóveda. Devuelve el testigo si dice que sí.
@@ -67,6 +78,11 @@ var ErrNoEsta = errors.New("Esa entrada no está en la bóveda")
 
 // ErrPideAprobacion es que hace falta un sí en la ventana. **No es un fallo**: es el
 // camino normal la primera vez que se pide algo.
+// ErrNoSeEscribe es que aquí no se puede escribir: una bóveda de solo lectura, una
+// compartida de solo ver, o algo que **no se crea a mano** —una llave de acceso la
+// emite el sitio (ADR 0048), no se inventa—.
+var ErrNoSeEscribe = errors.New("Aquí no se puede escribir")
+
 var ErrPideAprobacion = errors.New(
 	"Hace falta que lo apruebes en la ventana de Esfinge. Cuando lo hagas, vuelve a pedirlo")
 
@@ -84,7 +100,11 @@ var ErrPideAprobacion = errors.New(
 const (
 	preguntasPorMinuto = 60
 	busquedasPorMinuto = 20
-	ventanaDeCuenta    = time.Minute
+	// Y las escrituras, que son lo que deja rastro: más estrecho que las preguntas
+	// porque un agente que escribe en bucle ensancha la bóveda y la sube entera cada
+	// vez. Es el mismo número que el del navegador.
+	escriturasPorMinuto = 6
+	ventanaDeCuenta     = time.Minute
 )
 
 // Servidor atiende a los agentes.
@@ -224,14 +244,16 @@ func (c *contador) cabe(ahora time.Time) bool {
 }
 
 type frenos struct {
-	preguntas contador
-	busquedas contador
+	preguntas  contador
+	busquedas  contador
+	escrituras contador
 }
 
 func nuevosFrenos() *frenos {
 	return &frenos{
-		preguntas: contador{tope: preguntasPorMinuto},
-		busquedas: contador{tope: busquedasPorMinuto},
+		preguntas:  contador{tope: preguntasPorMinuto},
+		busquedas:  contador{tope: busquedasPorMinuto},
+		escrituras: contador{tope: escriturasPorMinuto},
 	}
 }
 
@@ -253,6 +275,9 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 		}
 		if esBusqueda(p.Que) && !s.frenos.busquedas.cabe(ahora) {
 			return mal(MotivoDemasiado, "Demasiadas búsquedas seguidas: espera un minuto")
+		}
+		if esEscritura(p.Que) && !s.frenos.escrituras.cabe(ahora) {
+			return mal(MotivoDemasiado, "Demasiados cambios seguidos en la bóveda: espera un minuto")
 		}
 	}
 
@@ -333,6 +358,27 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 			return mal(MotivoNoEntiendo, err.Error())
 		}
 		return Respuesta{OK: true, Copiado: &c}
+	case QueCodigo:
+		c, err := s.fuente.Codigo(p.Quien, p.ID)
+		if errors.Is(err, ErrPideAprobacion) {
+			return mal(MotivoPideAprobacion, err.Error())
+		}
+		if errors.Is(err, ErrNoEsta) {
+			return mal(MotivoNoEsta, err.Error())
+		}
+		if err != nil {
+			return mal(MotivoNoEntiendo, err.Error())
+		}
+		return Respuesta{OK: true, Codigo: &c}
+	case QueCrear:
+		e, err := s.fuente.Crear(p.Quien, p)
+		return loEscrito(e, err)
+	case QueEditar:
+		e, err := s.fuente.Editar(p.Quien, p)
+		return loEscrito(e, err)
+	case QueBorrar:
+		e, err := s.fuente.Borrar(p.Quien, p.ID)
+		return loEscrito(e, err)
 	}
 	return mal(MotivoNoEntiendo, "Eso no se puede pedir por aquí")
 }
@@ -342,4 +388,28 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 // que la ADR 0024 decidió proteger al cifrar la lista de sitios en el disco.
 func esBusqueda(que string) bool {
 	return que == QueBuscar || que == QueHigiene
+}
+
+// esEscritura son los verbos que cambian la bóveda, **y por eso cuentan aparte**: lo que
+// deja rastro no se mide con la misma vara que lo que solo mira.
+func esEscritura(que string) bool {
+	return que == QueCrear || que == QueEditar || que == QueBorrar
+}
+
+// loEscrito contesta lo mismo para los tres verbos que escriben, **con cada error en su
+// motivo**: quien llama tiene que poder distinguir «apruébalo» de «aquí no se escribe»
+// de «eso no está» sin leer una frase en español.
+func loEscrito(e Escrito, err error) Respuesta {
+	switch {
+	case err == nil:
+		return Respuesta{OK: true, Escrito: &e}
+	case errors.Is(err, ErrPideAprobacion):
+		return mal(MotivoPideAprobacion, err.Error())
+	case errors.Is(err, ErrNoEsta):
+		return mal(MotivoNoEsta, err.Error())
+	case errors.Is(err, ErrNoSeEscribe):
+		return mal(MotivoNoSeEscribe, err.Error())
+	default:
+		return mal(MotivoNoEntiendo, err.Error())
+	}
 }

@@ -25,10 +25,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -743,4 +746,247 @@ func (a *App) CortarAlAgente() error {
 	a.permisos.cerrarLaValvula()
 	a.Actividad()
 	return nil
+}
+
+// Codigo devuelve el de un solo uso, **y es lo único que el agente llega a ver**.
+//
+// Pide un sí **cada vez, sin excepción**: la válvula no lo cubre, y eso no es una
+// omisión sino la línea entera. El trato de la válvula es «actúa por mí durante cinco
+// minutos», y actuar es reversible —el portapapeles se borra solo, una copia es un
+// pegado—. **Enseñar no lo es**: en cuanto esas seis cifras entran en el contexto del
+// modelo están en su transcripción, en su disco y camino de un servidor. Lo que puede
+// salir en ráfaga es lo que de todos modos no sale de este equipo.
+func (f fuenteDelAgente) Codigo(quien, id string) (agente.Codigo, error) {
+	b := f.a.boveda()
+	if b == nil {
+		return agente.Codigo{}, boveda.ErrCerrada
+	}
+	e, hay := b.Ver(id)
+	if !hay || e.Papelera {
+		return agente.Codigo{}, agente.ErrNoEsta
+	}
+	if e.TOTP == "" {
+		return agente.Codigo{}, errors.New("Esa entrada no tiene código de un solo uso")
+	}
+	if quien == "" {
+		quien = "Un agente"
+	}
+
+	ahora := time.Now()
+	q := loQuePideUnAgente{
+		Quien: quien, Que: agente.QueCodigo, ID: id, Titulo: e.Titulo,
+		Cuando: ahora.UTC().Format(time.RFC3339),
+	}
+	// **`false`**: por la válvula no pasa. Es el único sitio donde se dice, y es lo que
+	// hace que la regla sea una regla y no una excepción.
+	vale, _ := f.a.permisos.pedir(q, false, ahora)
+	if !vale {
+		f.a.sistema.Avisar(EventoAgenteQuiere, q)
+		return agente.Codigo{}, agente.ErrPideAprobacion
+	}
+
+	// Se calcula con lo que ya existe, que además es lo que la ventana enseña: así el
+	// agente y la pantalla no pueden dar códigos distintos.
+	c, err := f.a.CodigoDeBoveda(id)
+	if err != nil {
+		f.a.apuntarComo(b, q, boveda.ApunteNegado, boveda.ApuntePreguntado)
+		return agente.Codigo{}, err
+	}
+	f.a.apuntarComo(b, q, boveda.ApunteHecho, boveda.ApuntePreguntado)
+	return agente.Codigo{Codigo: c.Codigo, Quedan: c.Quedan}, nil
+}
+
+// ------------------------------------------------------------- escribir
+
+// Crear guarda una entrada nueva. **Va directo**, como las escrituras del navegador
+// (ADR 0032): lo escrito se puede deshacer —la papelera guarda treinta días— y pedir un
+// sí por cada una convertiría «ordéname la bóveda» en cuarenta diálogos, que es como se
+// aprende a aprobar sin leer.
+func (f fuenteDelAgente) Crear(quien string, p agente.Peticion) (agente.Escrito, error) {
+	b, err := f.a.bovedaParaEscribirAgente()
+	if err != nil {
+		return agente.Escrito{}, err
+	}
+	titulo := p.Campos["titulo"]
+	if strings.TrimSpace(titulo) == "" {
+		return agente.Escrito{}, errors.New("Hace falta un título")
+	}
+	tipo := boveda.Tipo(p.Campos["tipo"])
+	if tipo == "" {
+		tipo = boveda.TipoCredencial
+	}
+	// **Una llave de acceso no se crea a mano** (ADR 0048): la emite el sitio, y lo que
+	// se guardaría aquí no abriría ninguna cuenta.
+	if tipo == boveda.TipoLlave {
+		return agente.Escrito{}, fmt.Errorf("%w: una llave de acceso la emite el sitio, no se escribe a mano", agente.ErrNoSeEscribe)
+	}
+
+	e := boveda.Entrada{
+		Tipo: tipo, Titulo: titulo,
+		Usuario: p.Campos["usuario"], Notas: p.Campos["notas"],
+		Carpeta: p.Campos["carpeta"], Sitios: p.Sitios, Etiquetas: p.Etiquetas,
+	}
+	e.Secreto = p.Campos["secreto"]
+	if p.Generar {
+		// **La hace Esfinge y no vuelve.** El agente crea una cuenta con una
+		// contraseña que no ha visto, que es estrictamente mejor que una que se
+		// invente él — y eso lo dice la descripción de la herramienta, para que la
+		// prefiera.
+		clave, err := f.a.GenerarContrasena(24, "hex")
+		if err != nil {
+			return agente.Escrito{}, err
+		}
+		e.Secreto = clave
+	}
+	if err := f.a.GuardarEnBoveda(e); err != nil {
+		return agente.Escrito{}, err
+	}
+	// El identificador lo pone la bóveda al guardar, así que se busca por el título.
+	id := ""
+	for _, x := range b.Buscar(titulo) {
+		if x.Titulo == titulo {
+			id = x.ID
+		}
+	}
+	f.a.apuntarComo(b, loQuePideUnAgente{Quien: siNoDice(quien), Que: agente.QueCrear, ID: id, Titulo: titulo},
+		boveda.ApunteHecho, boveda.ApunteDirecto)
+	return agente.Escrito{ID: id, Titulo: titulo}, nil
+}
+
+// losSecretos son los campos cuyo cambio **tiene que aprobar una persona**.
+//
+// Las escrituras del navegador están acotadas por el sitio de la pestaña: solo puede
+// guardar una credencial para el sitio donde está quien navega. **Un agente no tiene
+// sitio**, así que sin esta puerta podría reescribir la contraseña del banco sin que
+// nadie preguntara — y aunque la anterior quede en el historial, nadie se habría
+// enterado.
+var losSecretos = map[string]bool{"secreto": true, "totp": true}
+
+// Editar cambia campos **sobre la entrada que ya está**, nunca construyendo una nueva.
+//
+// Eso no es estilo: construirla se lleva por delante `Extra` —los campos que escribió
+// una versión más nueva de Esfinge— y todo lo que no se nombre. Es la trampa que
+// `ActualizarCuenta` esquiva desde la fase 2.
+func (f fuenteDelAgente) Editar(quien string, p agente.Peticion) (agente.Escrito, error) {
+	b, err := f.a.bovedaParaEscribirAgente()
+	if err != nil {
+		return agente.Escrito{}, err
+	}
+	e, hay := b.Ver(p.ID)
+	if !hay || e.Papelera {
+		return agente.Escrito{}, agente.ErrNoEsta
+	}
+
+	tocaUnSecreto := false
+	var cambiados []string
+	for campo := range p.Campos {
+		if losSecretos[campo] {
+			tocaUnSecreto = true
+		}
+		cambiados = append(cambiados, campo)
+	}
+	sort.Strings(cambiados)
+
+	if tocaUnSecreto {
+		ahora := time.Now()
+		q := loQuePideUnAgente{
+			Quien: siNoDice(quien), Que: agente.QueEditar, ID: p.ID, Titulo: e.Titulo,
+			Cuando: ahora.UTC().Format(time.RFC3339),
+		}
+		// **Y la válvula no lo cubre**, por lo mismo que el código: dejar una cuenta
+		// sin forma de entrar no es reversible de la forma en que lo es una copia.
+		vale, _ := f.a.permisos.pedir(q, false, ahora)
+		if !vale {
+			f.a.sistema.Avisar(EventoAgenteQuiere, q)
+			return agente.Escrito{}, agente.ErrPideAprobacion
+		}
+	}
+
+	// **El parche, campo a campo sobre lo que ya hay.**
+	for campo, valor := range p.Campos {
+		switch campo {
+		case "titulo":
+			e.Titulo = valor
+		case "usuario":
+			e.Usuario = valor
+		case "notas":
+			e.Notas = valor
+		case "carpeta":
+			e.Carpeta = valor
+		case "secreto":
+			// Por el camino de siempre, para que la anterior caiga al historial.
+			e.CambiarSecreto(valor, time.Now())
+		case "totp":
+			e.TOTP = valor
+		}
+	}
+	if p.Sitios != nil {
+		e.Sitios = p.Sitios
+	}
+	if p.Etiquetas != nil {
+		e.Etiquetas = p.Etiquetas
+	}
+	if err := f.a.GuardarEnBoveda(e); err != nil {
+		return agente.Escrito{}, err
+	}
+	como := boveda.ApunteDirecto
+	if tocaUnSecreto {
+		como = boveda.ApuntePreguntado
+	}
+	f.a.apuntarComo(b, loQuePideUnAgente{Quien: siNoDice(quien), Que: agente.QueEditar, ID: p.ID, Titulo: e.Titulo},
+		boveda.ApunteHecho, como)
+	return agente.Escrito{ID: p.ID, Titulo: e.Titulo, Cambiados: cambiados}, nil
+}
+
+// Borrar la manda a la papelera, **con un sí**. Es lo único que quita algo de la vista,
+// y la pregunta **dice que son treinta días**: sin eso se estaría contestando algo más
+// grave de lo que pasa.
+func (f fuenteDelAgente) Borrar(quien, id string) (agente.Escrito, error) {
+	b, err := f.a.bovedaParaEscribirAgente()
+	if err != nil {
+		return agente.Escrito{}, err
+	}
+	e, hay := b.Ver(id)
+	if !hay || e.Papelera {
+		return agente.Escrito{}, agente.ErrNoEsta
+	}
+
+	ahora := time.Now()
+	q := loQuePideUnAgente{
+		Quien: siNoDice(quien), Que: agente.QueBorrar, ID: id, Titulo: e.Titulo,
+		Cuando: ahora.UTC().Format(time.RFC3339),
+	}
+	vale, como := f.a.permisos.pedir(q, true, ahora)
+	if !vale {
+		f.a.sistema.Avisar(EventoAgenteQuiere, q)
+		return agente.Escrito{}, agente.ErrPideAprobacion
+	}
+	if err := f.a.BorrarDeBoveda(id); err != nil {
+		f.a.apuntarComo(b, q, boveda.ApunteNegado, como)
+		return agente.Escrito{}, err
+	}
+	f.a.apuntarComo(b, q, boveda.ApunteHecho, como)
+	return agente.Escrito{ID: id, Titulo: e.Titulo, ALaPapelera: true, Dias: 30}, nil
+}
+
+// bovedaParaEscribir dice si aquí se puede escribir, **con el porqué**: una bóveda de
+// una versión más nueva o una compartida de solo ver (ADR 0052).
+func (a *App) bovedaParaEscribirAgente() (*boveda.Boveda, error) {
+	b := a.boveda()
+	if b == nil {
+		return nil, boveda.ErrCerrada
+	}
+	// **La misma razón que para el navegador**, y por eso se pide la suya en vez de
+	// escribir otra: si un día se añade un caso, se añade para los dos.
+	if porque := (fuenteDelNavegador{a}).porQueNoSeEscribe(b); porque != "" {
+		return nil, fmt.Errorf("%w: %s", agente.ErrNoSeEscribe, porque)
+	}
+	return b, nil
+}
+
+func siNoDice(quien string) string {
+	if quien == "" {
+		return "Un agente"
+	}
+	return quien
 }

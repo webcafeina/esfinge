@@ -131,6 +131,72 @@ var LasHerramientas = []Herramienta{
 		Escribe:         false,
 	},
 	{
+		Nombre: "esfinge_codigo",
+		Descripcion: "Da el código de un solo uso —seis cifras— de una entrada que tenga segundo factor, con " +
+			"los segundos que le quedan de vida. **Éste sí te lo devuelve a ti**, porque caduca en medio " +
+			"minuto y no sirve sin la contraseña. Hace falta que la persona lo apruebe en la ventana de " +
+			"Esfinge **cada vez**, aunque te haya dado permiso para otras cosas.",
+		Esquema: objeto(map[string]Campo{
+			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+		}, "id"),
+		Verbo:          QueCodigo,
+		PideAprobacion: true,
+		// **Sí**, y es la única con esta bandera que entrega algo de la bóveda. Lo que
+		// esa bandera decide es que **la válvula no la cubre**.
+		DevuelveSecreto: true,
+		Escribe:         false,
+	},
+	{
+		Nombre: "esfinge_crear",
+		Descripcion: "Guarda una entrada nueva en la bóveda abierta. Si pones generar:true, **Esfinge hace la " +
+			"contraseña y no te la devuelve** — eso es mejor que inventarla tú, y luego se puede copiar con " +
+			"esfinge_copiar_contrasena. Tipos: credencial, nota, tarjeta, identidad, personal, wifi. **Las " +
+			"llaves de acceso no se crean aquí**: las emite el sitio.",
+		Esquema: objeto(map[string]Campo{
+			"tipo":    {Tipo: "string", Descripcion: "credencial si no se dice nada.", Enum: []string{"credencial", "nota", "tarjeta", "identidad", "personal", "wifi"}},
+			"titulo":  {Tipo: "string", Descripcion: "Cómo se llama. Obligatorio."},
+			"usuario": {Tipo: "string"},
+			"secreto": {Tipo: "string", Descripcion: "La contraseña. Mejor no ponerla y usar generar."},
+			"notas":   {Tipo: "string"},
+			"generar": {Tipo: "boolean", Descripcion: "Que la contraseña la haga Esfinge y no salga de ahí."},
+		}, "titulo"),
+		Verbo:           QueCrear,
+		PideAprobacion:  false,
+		DevuelveSecreto: false,
+		Escribe:         true,
+	},
+	{
+		Nombre: "esfinge_editar",
+		Descripcion: "Cambia campos de una entrada. Lo que no mandes **no se toca**. Cambiar el título, las " +
+			"notas o la carpeta va directo; **cambiar la contraseña o el código tiene que aprobarlo la " +
+			"persona**, porque eso puede dejar una cuenta sin forma de entrar. La contraseña anterior se " +
+			"guarda en el historial de la entrada.",
+		Esquema: objeto(map[string]Campo{
+			"id":      {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+			"titulo":  {Tipo: "string"},
+			"usuario": {Tipo: "string"},
+			"secreto": {Tipo: "string", Descripcion: "La contraseña nueva. Esto pide aprobación."},
+			"notas":   {Tipo: "string"},
+			"carpeta": {Tipo: "string"},
+		}, "id"),
+		Verbo:           QueEditar,
+		PideAprobacion:  false,
+		DevuelveSecreto: false,
+		Escribe:         true,
+	},
+	{
+		Nombre: "esfinge_borrar",
+		Descripcion: "Manda una entrada a la papelera, donde se puede recuperar durante treinta días. **Tiene " +
+			"que aprobarlo la persona**: es lo único que quita algo de su vista.",
+		Esquema: objeto(map[string]Campo{
+			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+		}, "id"),
+		Verbo:           QueBorrar,
+		PideAprobacion:  true,
+		DevuelveSecreto: false,
+		Escribe:         true,
+	},
+	{
 		Nombre: "esfinge_generar",
 		Descripcion: "Genera una contraseña nueva al azar. **No toca la bóveda**: no la lee ni guarda nada. " +
 			"Para crear una cuenta con una contraseña nueva es mejor pedírselo a esfinge_crear, que la " +

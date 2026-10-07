@@ -484,3 +484,207 @@ func TestElRegistroDistingueLaValvula(t *testing.T) {
 		t.Errorf("el registro dice %d preguntados y %d por la válvula: %+v", preguntados, porValvula, r)
 	}
 }
+
+// **La válvula no cubre el código de un solo uso**, y ésta es la prueba que lo dice.
+//
+// Es la línea entera de la ADR 0054: la válvula vale para **actuar** —el secreto se
+// queda en este equipo y el portapapeles se borra solo— y no para **enseñar**, porque
+// enseñar no es reversible: en cuanto las seis cifras entran en el contexto del modelo
+// están en su transcripción.
+//
+// Sin esta prueba, bastaría con que alguien pusiera `true` donde hay un `false` para
+// que la válvula empezara a soltar códigos en ráfaga, y nada se pondría rojo.
+func TestLaValvulaNoCubreElCodigo(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	lista, err := a.BuscarEnBoveda("Banco")
+	if err != nil || len(lista) == 0 {
+		t.Fatal(err)
+	}
+	id := lista[0].ID // el Banco tiene TOTP
+
+	// Se abre la válvula del todo, con una copia.
+	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal(err)
+	}
+	if err := a.AprobarLoQuePideElAgente(true); err != nil {
+		t.Fatal(err)
+	}
+	// Copiar ya no pregunta...
+	if _, err := f.CopiarSecreto("Claude Code", id); err != nil {
+		t.Fatalf("con la válvula abierta, copiar pide aprobación: %v", err)
+	}
+	// ...**y el código sí**.
+	if _, err := f.Codigo("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal("la válvula ha soltado un código: lo que se le enseña tiene que preguntar siempre")
+	}
+
+	// Y aprobándolo, llega — con sus segundos.
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
+	c, err := f.Codigo("Claude Code", id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Codigo) != 6 {
+		t.Errorf("el código es %q", c.Codigo)
+	}
+	if c.Quedan <= 0 {
+		t.Errorf("no dice cuánto le queda: %d", c.Quedan)
+	}
+
+	// **Y el siguiente vuelve a preguntar**, aunque la válvula siga abierta.
+	if _, err := f.Codigo("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("el segundo código ha salido sin preguntar")
+	}
+}
+
+// Y una entrada sin segundo factor lo dice, en vez de dar un código inventado.
+func TestSinSegundoFactorNoHayCodigo(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	lista, err := a.BuscarEnBoveda("Correo") // ésta no tiene TOTP
+	if err != nil || len(lista) == 0 {
+		t.Fatal(err)
+	}
+	if _, err := (fuenteDelAgente{a}).Codigo("Claude Code", lista[0].ID); err == nil {
+		t.Fatal("ha dado un código de una entrada que no tiene")
+	} else if !strings.Contains(err.Error(), "no tiene código") {
+		t.Errorf("lo que dice no ayuda: %v", err)
+	}
+}
+
+// **Editar parchea sobre lo que hay, y no se lleva por delante lo que no entiende.**
+//
+// Es la trampa que `ActualizarCuenta` esquiva desde la fase 2: construir una `Entrada`
+// nueva con lo que mandan borra `Extra` —los campos que escribió una versión más nueva
+// de Esfinge— y todo lo que no se nombre. Una Esfinge vieja editando el título de una
+// entrada dejaría la bóveda sin lo que la nueva guardó, **sin un error en ninguna
+// parte**.
+func TestEditarParcheaYNoPierdeLoQueNoEntiende(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	lista, err := a.BuscarEnBoveda("Correo")
+	if err != nil || len(lista) == 0 {
+		t.Fatal(err)
+	}
+	id := lista[0].ID
+
+	// Se le mete a mano un campo que esta versión no conoce, como haría una más nueva.
+	b := a.boveda()
+	e, _ := b.Ver(id)
+	e.Extra = map[string]json.RawMessage{"loQueVieneDespues": json.RawMessage(`"no se toca"`)}
+	if err := b.Poner(e); err != nil {
+		t.Fatal(err)
+	}
+
+	// Y se edita **solo el título**.
+	esc, err := f.Editar("Claude Code", agente.Peticion{ID: id, Campos: map[string]string{"titulo": "Correo nuevo"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if esc.Titulo != "Correo nuevo" {
+		t.Errorf("no ha cambiado el título: %+v", esc)
+	}
+
+	despues, hay := b.Ver(id)
+	if !hay {
+		t.Fatal("la entrada ha desaparecido")
+	}
+	// **Lo que no se nombró sigue ahí**: el usuario, el secreto y lo que no entendemos.
+	if despues.Usuario != "otro@ejemplo.es" {
+		t.Errorf("se ha perdido el usuario: %q", despues.Usuario)
+	}
+	if despues.Secreto != "otra clave" {
+		t.Errorf("se ha perdido la contraseña: %q", despues.Secreto)
+	}
+	if string(despues.Extra["loQueVieneDespues"]) != `"no se toca"` {
+		t.Errorf("se ha perdido lo que esta versión no entiende: %+v", despues.Extra)
+	}
+}
+
+// **Cambiar un secreto pregunta; cambiar el título, no.**
+//
+// Las escrituras del navegador están acotadas por el sitio de la pestaña, y un agente no
+// tiene sitio: sin esta puerta podría reescribir la contraseña del banco sin que nadie
+// preguntara.
+func TestCambiarUnSecretoPreguntaYElTituloNo(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	lista, err := a.BuscarEnBoveda("Banco")
+	if err != nil || len(lista) == 0 {
+		t.Fatal(err)
+	}
+	id := lista[0].ID
+
+	// El título va directo.
+	if _, err := f.Editar("Claude Code", agente.Peticion{ID: id, Campos: map[string]string{"titulo": "Mi banco"}}); err != nil {
+		t.Fatalf("cambiar el título ha pedido aprobación: %v", err)
+	}
+	// La contraseña, no.
+	_, err = f.Editar("Claude Code", agente.Peticion{ID: id, Campos: map[string]string{"secreto": "otra"}})
+	if !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatalf("cambiar la contraseña no ha pedido aprobación: %v", err)
+	}
+	// **Y la válvula tampoco lo cubre**, por lo mismo que el código: dejar una cuenta
+	// sin forma de entrar no se deshace como una copia.
+	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal(err)
+	}
+	if err := a.AprobarLoQuePideElAgente(true); err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.Editar("Claude Code", agente.Peticion{ID: id, Campos: map[string]string{"secreto": "otra"}})
+	if !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("la válvula ha dejado cambiar una contraseña sin preguntar")
+	}
+
+	// Aprobándolo sí, **y la anterior queda en el historial**.
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Editar("Claude Code", agente.Peticion{ID: id, Campos: map[string]string{"secreto": "otra"}}); err != nil {
+		t.Fatal(err)
+	}
+	e, _ := a.boveda().Ver(id)
+	if e.Secreto != "otra" {
+		t.Errorf("no la ha cambiado: %q", e.Secreto)
+	}
+	if len(e.Historial) == 0 {
+		t.Error("la contraseña anterior no ha caído al historial")
+	}
+}
+
+// Crear con `generar`: **la contraseña la hace Esfinge y no vuelve**.
+func TestCrearConGenerarNoDevuelveLaContrasena(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	esc, err := fuenteDelAgente{a}.Crear("Claude Code", agente.Peticion{
+		Campos: map[string]string{"titulo": "Cuenta nueva", "usuario": "yo"}, Generar: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	crudo, err := json.Marshal(esc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, hay := a.boveda().Ver(esc.ID)
+	if !hay || e.Secreto == "" {
+		t.Fatal("no ha guardado ninguna contraseña")
+	}
+	if strings.Contains(string(crudo), e.Secreto) {
+		t.Errorf("la contraseña generada ha vuelto hacia el agente: %s", crudo)
+	}
+}
+
+// **Una llave de acceso no se crea a mano** (ADR 0048): la emite el sitio, y lo que se
+// guardara aquí no abriría ninguna cuenta.
+func TestUnAgenteNoCreaLlavesDeAcceso(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	_, err := fuenteDelAgente{a}.Crear("Claude Code", agente.Peticion{
+		Campos: map[string]string{"titulo": "Inventada", "tipo": "llave"},
+	})
+	if !errors.Is(err, agente.ErrNoSeEscribe) {
+		t.Fatalf("ha dejado crear una llave: %v", err)
+	}
+}

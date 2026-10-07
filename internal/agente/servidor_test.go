@@ -16,10 +16,13 @@ type bovedaFalsa struct {
 	pedidos int
 	// aprobado simula que la persona ya dijo que sí en la ventana.
 	aprobado        bool
+	codigoAprobado  bool
 	pidioAprobacion bool
 	// copiado es lo que se puso en el portapapeles: **la prueba mira esto** para
 	// distinguir «ha copiado» de «ha devuelto el secreto», que es toda la diferencia.
 	copiado string
+	// escritas cuenta los cambios, que es lo que mira la prueba del freno.
+	escritas int
 }
 
 // elSecreto es un centinela: **no tiene que salir por el canal por ningún sitio**, y
@@ -69,6 +72,44 @@ func (b *bovedaFalsa) CopiarSecreto(quien, id string) (Copiado, error) {
 	}
 	b.copiado = elSecreto
 	return Copiado{Portapapeles: 30, Titulo: "GitHub"}, nil
+}
+
+// Codigo: como la de verdad, pide un sí y **la válvula no lo cubre** — aquí eso se
+// representa con su propio permiso, que el doble no comparte con el de copiar.
+func (b *bovedaFalsa) Codigo(quien, id string) (Codigo, error) {
+	if id != "a1" {
+		return Codigo{}, ErrNoEsta
+	}
+	if !b.codigoAprobado {
+		return Codigo{}, ErrPideAprobacion
+	}
+	return Codigo{Codigo: "123456", Quedan: 22}, nil
+}
+
+// Crear, Editar y Borrar: lo justo para que el servidor se pueda probar. Lo que de
+// verdad hacen se prueba en `internal/app`, contra una bóveda de verdad.
+func (b *bovedaFalsa) Crear(quien string, p Peticion) (Escrito, error) {
+	b.escritas++
+	return Escrito{ID: "nueva", Titulo: p.Campos["titulo"]}, nil
+}
+
+func (b *bovedaFalsa) Editar(quien string, p Peticion) (Escrito, error) {
+	if p.ID != "a1" {
+		return Escrito{}, ErrNoEsta
+	}
+	b.escritas++
+	return Escrito{ID: p.ID, Titulo: "GitHub"}, nil
+}
+
+func (b *bovedaFalsa) Borrar(quien, id string) (Escrito, error) {
+	if id != "a1" {
+		return Escrito{}, ErrNoEsta
+	}
+	if !b.aprobado {
+		return Escrito{}, ErrPideAprobacion
+	}
+	b.escritas++
+	return Escrito{ID: id, Titulo: "GitHub", ALaPapelera: true, Dias: 30}, nil
 }
 
 func (b *bovedaFalsa) Emparejar(quien string) (string, error) {
@@ -283,5 +324,67 @@ func TestNoSeCopiaLoQueNoEsta(t *testing.T) {
 	r := pedir(s, Peticion{Que: QueCopiarSecreto, ID: "no-existe", Testigo: b.testigo})
 	if r.OK || r.Motivo != MotivoNoEsta {
 		t.Fatalf("contesta %+v", r)
+	}
+}
+
+// El código **sale por su propio verbo y lleva sus segundos**, y lo que no sale es la
+// semilla: lo que se da son las seis cifras de ahora.
+func TestElCodigoSaleConSusSegundos(t *testing.T) {
+	s, b := servidorDePrueba(t)
+	b.testigo = "testigo-de-prueba"
+
+	if r := pedir(s, Peticion{Que: QueCodigo, ID: "a1", Testigo: b.testigo}); r.Motivo != MotivoPideAprobacion {
+		t.Fatalf("sin aprobar contesta %+v", r)
+	}
+	b.codigoAprobado = true
+	r := pedir(s, Peticion{Que: QueCodigo, ID: "a1", Testigo: b.testigo})
+	if !r.OK || r.Codigo == nil {
+		t.Fatalf("contesta %+v", r)
+	}
+	if len(r.Codigo.Codigo) != 6 || r.Codigo.Quedan <= 0 {
+		t.Errorf("el código es %+v", r.Codigo)
+	}
+}
+
+// **Las escrituras tienen su propio freno**, más estrecho que las preguntas: lo que
+// deja rastro no se mide con la misma vara que lo que solo mira.
+func TestEscribirTieneSuPropioFreno(t *testing.T) {
+	b := &bovedaFalsa{existe: true, abierta: true, testigo: "testigo-de-prueba", aprobado: true}
+	s := &Servidor{fuente: b, frenos: nuevosFrenos()}
+
+	cortadas := 0
+	for i := 0; i < escriturasPorMinuto+5; i++ {
+		r := pedir(s, Peticion{Que: QueCrear, Testigo: b.testigo, Campos: map[string]string{"titulo": "X"}})
+		if !r.OK && r.Motivo == MotivoDemasiado {
+			cortadas++
+		}
+	}
+	if cortadas != 5 {
+		t.Fatalf("se han cortado %d escrituras y tenían que ser 5", cortadas)
+	}
+	// **Y preguntar sigue pudiéndose**: el freno de escribir no puede dejar al agente
+	// sin poder mirar, que es lo que haría si compartieran contador.
+	if r := pedir(s, Peticion{Que: QueVer, ID: "a1", Testigo: b.testigo}); !r.OK {
+		t.Errorf("el freno de escribir ha cortado una lectura: %+v", r)
+	}
+}
+
+// Y borrar **pide un sí**, y cuando se da dice que son treinta días.
+func TestBorrarPideUnSiYDiceLosDias(t *testing.T) {
+	s, b := servidorDePrueba(t)
+	b.testigo = "testigo-de-prueba"
+
+	if r := pedir(s, Peticion{Que: QueBorrar, ID: "a1", Testigo: b.testigo}); r.Motivo != MotivoPideAprobacion {
+		t.Fatalf("borra sin preguntar: %+v", r)
+	}
+	b.aprobado = true
+	r := pedir(s, Peticion{Que: QueBorrar, ID: "a1", Testigo: b.testigo})
+	if !r.OK || r.Escrito == nil {
+		t.Fatalf("contesta %+v", r)
+	}
+	// **Decirlo es parte de la pregunta**: sin esto se estaría contestando algo más
+	// grave de lo que pasa.
+	if !r.Escrito.ALaPapelera || r.Escrito.Dias != 30 {
+		t.Errorf("no dice que va a la papelera treinta días: %+v", r.Escrito)
 	}
 }

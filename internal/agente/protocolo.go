@@ -55,6 +55,34 @@ const (
 	// **Y hace falta un sí en la ventana, cada vez.** Es lo único que hay entre un
 	// agente al que alguien le ha dicho qué pedir y tu bóveda.
 	QueCopiarSecreto = "copiar-secreto"
+	// QueCodigo devuelve el código de un solo uso de una entrada.
+	//
+	// **Es lo único que el agente llega a ver**, y es la excepción que el cliente
+	// eligió a sabiendas: seis cifras que caducan en treinta segundos y que no sirven
+	// sin la contraseña. Dárselas es lo que le deja teclearlas donde hagan falta —un
+	// formulario, un script, un `ssh`— sin pasar por el portapapeles.
+	//
+	// **Y por eso la válvula no lo cubre.** El trato de la válvula es «actúa por mí
+	// durante cinco minutos», y actuar es reversible: el portapapeles se borra solo.
+	// Enseñar no lo es — en cuanto esas cifras entran en el contexto del modelo están
+	// en su transcripción. Lo que puede salir en ráfaga es lo que no sale de este
+	// equipo; esto pregunta **siempre**.
+	QueCodigo = "codigo"
+	// QueCrear guarda una entrada nueva. **Va directo**, como las escrituras del
+	// navegador (ADR 0032) y por la misma razón: lo escrito se puede deshacer —la
+	// papelera guarda treinta días y la contraseña anterior queda en el historial de
+	// la entrada—.
+	QueCrear = "crear"
+	// QueEditar cambia campos de una entrada.
+	//
+	// **Cambiar un secreto pregunta; lo demás no.** Las escrituras del navegador están
+	// acotadas por el sitio de la pestaña —solo puede guardar una credencial para el
+	// sitio donde está la persona— y **un agente no tiene sitio**, así que sin esa
+	// puerta podría reescribir la contraseña del banco sin que nadie preguntara.
+	QueEditar = "editar"
+	// QueBorrar la manda a la papelera, y **pide un sí**: es lo único que quita algo de
+	// la vista.
+	QueBorrar = "borrar"
 	// QueGenerar devuelve una contraseña nueva. **No toca la bóveda**: ni la lee ni
 	// escribe en ella, así que no pide nada ni deja rastro.
 	//
@@ -81,6 +109,10 @@ var LoQueSePuedePedir = []string{
 	QueHigiene,
 	QueGenerar,
 	QueCopiarSecreto,
+	QueCodigo,
+	QueCrear,
+	QueEditar,
+	QueBorrar,
 }
 
 // TopeDeResultados es cuántas entradas vuelven como mucho de una búsqueda.
@@ -115,6 +147,22 @@ type Peticion struct {
 	// Bytes y Alfabeto son para generar.
 	Bytes    int    `json:"bytes,omitempty"`
 	Alfabeto string `json:"alfabeto,omitempty"`
+
+	// Campos es lo que se escribe, al crear y al editar.
+	//
+	// **Un mapa y no una estructura**, a propósito: al editar, lo que decide qué se
+	// toca es **qué claves vienen**, no qué valores. Con una estructura no habría forma
+	// de distinguir «no lo toques» de «déjalo vacío», y con el mapa una clave con
+	// cadena vacía vacía el campo porque alguien lo ha pedido.
+	Campos map[string]string `json:"campos,omitempty"`
+	// Sitios y Etiquetas van aparte porque son listas. Nulas quiere decir «no las
+	// toques»; una lista vacía, «déjalas vacías».
+	Sitios    []string `json:"sitios,omitempty"`
+	Etiquetas []string `json:"etiquetas,omitempty"`
+	// Generar pide que la contraseña la haga Esfinge. **Entonces no vuelve**: el
+	// agente crea una cuenta con una contraseña que nunca ha visto, que es
+	// estrictamente mejor que una que se invente él.
+	Generar bool `json:"generar,omitempty"`
 }
 
 // Estado es lo poco que se dice sin haber pedido nada.
@@ -177,6 +225,29 @@ type Copiado struct {
 	Titulo string `json:"titulo,omitempty"`
 }
 
+// Codigo es el de un solo uso, ya calculado. **La semilla no sale nunca**: lo que se
+// da son las seis cifras de ahora, igual que al navegador.
+type Codigo struct {
+	Codigo string `json:"codigo"`
+	// Quedan son los segundos que le sobran de vida, para que el agente sepa si le da
+	// tiempo a usarlo o tiene que pedir otro.
+	Quedan int `json:"quedan"`
+}
+
+// Escrito es lo que se contesta tras crear o cambiar algo. **Nunca lleva el secreto**,
+// ni siquiera cuando lo acaba de generar Esfinge.
+type Escrito struct {
+	ID     string `json:"id"`
+	Titulo string `json:"titulo"`
+	// Cambiados son los campos que se han tocado, para que el agente pueda decir qué
+	// ha hecho sin tener que volver a leerlos.
+	Cambiados []string `json:"cambiados,omitempty"`
+	// ALaPapelera y Dias, al borrar: **decir que son treinta días es parte de la
+	// pregunta**, porque si no se está contestando algo más grave de lo que pasa.
+	ALaPapelera bool `json:"alaPapelera,omitempty"`
+	Dias        int  `json:"dias,omitempty"`
+}
+
 // Respuesta es lo que se contesta. Siempre lleva `ok`.
 type Respuesta struct {
 	OK bool `json:"ok"`
@@ -195,6 +266,8 @@ type Respuesta struct {
 	Entrada *Entrada `json:"entrada,omitempty"`
 	Higiene *Higiene `json:"higiene,omitempty"`
 	Copiado *Copiado `json:"copiado,omitempty"`
+	Codigo  *Codigo  `json:"codigo,omitempty"`
+	Escrito *Escrito `json:"escrito,omitempty"`
 	Clave   string   `json:"clave,omitempty"`
 }
 
@@ -210,6 +283,9 @@ const (
 	// camino normal la primera vez que se pide algo, y lo que hay que hacer es
 	// aprobarlo y **volver a pedirlo**.
 	MotivoPideAprobacion = "pide-aprobacion"
+	// MotivoNoSeEscribe: aquí no se puede escribir —una bóveda de solo lectura, o una
+	// compartida de solo ver—, o lo que se pide no se puede crear a mano.
+	MotivoNoSeEscribe = "no-se-escribe"
 	// MotivoSinEsfinge lo pone el binario cuando no hay nadie escuchando: Esfinge
 	// no está abierta, o el canal está apagado en Ajustes.
 	MotivoSinEsfinge = "sin-esfinge"

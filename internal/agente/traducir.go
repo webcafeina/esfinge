@@ -65,6 +65,19 @@ func ponerArgumentos(p *Peticion, args map[string]any) {
 	if v, ok := args["bytes"].(float64); ok {
 		p.Bytes = int(v)
 	}
+	if v, ok := args["generar"].(bool); ok {
+		p.Generar = v
+	}
+	// **Lo que decide qué se toca es qué claves vienen**, no qué valores: por eso se
+	// copian una a una y no se rellena un objeto con ceros.
+	for _, campo := range []string{"tipo", "titulo", "usuario", "secreto", "notas", "carpeta", "totp"} {
+		if v, ok := args[campo].(string); ok {
+			if p.Campos == nil {
+				p.Campos = map[string]string{}
+			}
+			p.Campos[campo] = v
+		}
+	}
 }
 
 func preguntar(socket string, p Peticion) (Respuesta, error) {
@@ -120,6 +133,12 @@ func soloLoQueSale(h Herramienta, r Respuesta) any {
 		// mete la contraseña en `Copiado`, esto la dejaría pasar: por eso hay una
 		// prueba que busca el secreto en los bytes de todas las respuestas.
 		return r.Copiado
+	case QueCodigo:
+		// **Aquí sí sale algo que el modelo ve.** Es la única, y lo que la hace
+		// aceptable es que caduque en treinta segundos y no sirva sin la contraseña.
+		return r.Codigo
+	case QueCrear, QueEditar, QueBorrar:
+		return r.Escrito
 	}
 	return map[string]any{"hecho": true}
 }

@@ -2706,3 +2706,48 @@ test("mientras la válvula está abierta, la ventana dice cuánto y deja cortar"
   await aviso.screenshot({ path: `test-results/valvula-${test.info().project.name}.png` });
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * **Pedir el código no se dice igual que pedir la contraseña**, y no es un matiz de
+ * estilo: una se copia y el agente no la ve, y la otra **se le enseña** y se queda en la
+ * conversación de su modelo. Con el mismo texto, lo que se esconde es justo la
+ * diferencia que hace falta para poder contestar.
+ *
+ * Y el botón de «todo lo suyo durante cinco minutos» **no sale aquí**, porque la válvula
+ * no cubre lo que se enseña: ofrecer un botón que no va a hacer lo que dice es peor que
+ * no ofrecerlo.
+ */
+test("pedir el código se dice distinto, y ahí no se ofrece la válvula", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.route("**/api/EstadoDelAgente", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        encendido: true,
+        escuchando: true,
+        donde: "/tmp/agentes.sock",
+        permitidos: [],
+        configuracion: "{}",
+        quiere: { quien: "Claude Code", que: "codigo", id: "a1", titulo: "Hacienda", cuando: "2026-10-07T12:00:00Z" },
+        valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
+      }),
+    });
+  });
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Ajustes").click();
+
+  const tarjeta = page.locator(".panel:visible .grupo.peligro").filter({ hasText: "Claude Code" });
+  await expect(tarjeta).toBeVisible({ timeout: 20_000 });
+  await expect(tarjeta).toContainText("código de un solo uso");
+  // **Lo que la distingue**: aquí sí lo ve, y se queda donde se queda.
+  await expect(tarjeta).toContainText("sí las verá");
+  await expect(tarjeta).toContainText("conversación de su modelo");
+  // Y **la válvula no se ofrece**.
+  await expect(tarjeta.getByRole("button", { name: "Todo lo suyo, 5 minutos" })).toHaveCount(0);
+  await expect(tarjeta.getByRole("button", { name: "Darle el código" })).toBeVisible();
+
+  await tarjeta.screenshot({ path: `test-results/agente-pide-codigo-${test.info().project.name}.png` });
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
