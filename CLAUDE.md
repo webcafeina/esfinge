@@ -233,6 +233,36 @@ No se cambian sin preguntar.
   razón es la pantalla —en la ventana hay dónde explicar que lo escrito no sube, y en la página de otro la
   tarjeta la saca Esfinge por su cuenta—, está en `porQueNoSeEscribe` en los dos lados y **no se iguala «por
   consistencia» sin preguntar**. Del sellado, el espejo lleva **solo abrir**: sellar es de quien da el acceso.
+- **Y desde la 2.44.0 un agente de IA puede usar la bóveda, por MCP** (ADR 0054). Lo pidió el cliente, y
+  **cambia el modelo de amenaza** como lo hizo la extensión, con uno que no existía: lo que un agente recibe
+  **entra en la conversación de un modelo** y queda donde ésa se guarde, y **quien controle su contexto puede
+  pedir cosas en tu nombre** —no hace falta atacar a Esfinge, basta con hablarle al que tiene la llave—. De
+  ahí sale casi todo lo que no se cambia sin preguntar: **el agente actúa sin ver** —la contraseña va al
+  portapapeles y él recibe «copiado»—, con **una sola excepción elegida a sabiendas**, el código de un solo
+  uso, que caduca en treinta segundos; **cada secreto se aprueba en la ventana**, con válvula de cinco minutos
+  y veinte usos que **no cubre lo que sí se le enseña** ni **lo que no se deshace** —cambiar una contraseña o
+  una semilla—; **borrar pregunta** y crear y editar van directos, como el navegador; y hay **registro dentro
+  del cuerpo cifrado** de lo que se le ha dado, porque *qué le has dado a quién* dice tanto como lo que
+  guardas. **Administrar no**: ni exportar, ni importar, ni la maestra, ni recuperación, ni borrar la bóveda,
+  ni cuentas, ni proyectos, ni compartir, ni abrir la bóveda.
+  **Y el portapapeles no es una frontera contra un agente con terminal**, que puede leerlo: se acepta, **y se
+  dice en la pantalla** con las palabras de Touch ID —lo que protege es que cada uso se apruebe y quede
+  apuntado—, no solo en la documentación.
+  **Puerta propia** (`internal/agente`) y no el canal del navegador, por tres razones que no son de estilo:
+  allí **todo exige un origen `https` con dominio registrable** y un agente **no tiene pestaña**; el testigo
+  de emparejamiento **no tiene ámbito** y daría los catorce verbos, incluido firmar llaves de acceso; y los
+  frenos **cuelgan del `Servidor`**, así que se comerían los de la extensión y los del refresco del icono.
+  **Y MCP está escrito a mano**, sin SDK: son cinco métodos de JSON-RPC, y un SDK sería la primera dependencia
+  **dentro de la frontera de seguridad**.
+  **Y se instala arrastrando un paquete `.mcpb`** a Claude Desktop, o con `claude mcp add` en Claude Code. Lo
+  preguntó el cliente comparando con **Cronos**, que se instala desde Extensiones pegando una URL: allí se
+  puede porque es un servidor **remoto**, y **Esfinge no puede serlo** porque la bóveda está en el equipo. El
+  paquete vive en `empaquetado/mcpb/`, lo arma `herramientas/armar-mcpb.sh` —**sin la herramienta de
+  Anthropic**, que es un zip y una dependencia más en el camino de publicar ya costó cuatro publicaciones— y
+  cuelga de la *release*, uno por sistema. El binario va **dentro**, con `${__dirname}`, y Claude Desktop le
+  añade el `.exe` en Windows por su cuenta. Ajustes enseña **tres caminos en orden de coste** y el JSON queda
+  plegado.
+
 - **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
   mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda
   hasta la publicación siguiente — no es un fallo, es un aviso del flujo. Se hace igual: **el cliente para la
@@ -353,6 +383,32 @@ No se cambian sin preguntar.
   hace la tarjeta de dentro, que es la única de las dos pantallas que sigue ahí para decir que ha fallado.
 
 ## Trampas que ya costaron encontrarse
+
+**Lo que el binario tiene que hacer solo, la prueba no se lo puede dar hecho.** El servidor MCP se empareja
+al arrancar, y **no lo hacía nunca**: solo `estado` contestaba y todo lo demás decía `sin-emparejar`. Lo
+tapaban todas las pruebas a la vez, porque **le ponían el testigo a mano** antes de empezar —incluida la que
+se llama «la tubería entera», que hablaba con `Atender` directamente—. Lo encontró **el paseo a mano**:
+arrancar el binario y hablarle por su entrada estándar como lo haría un cliente de verdad. Con él salieron
+otros dos: **el nombre del cliente no llegaba a la ventana** —«Un agente» en vez de «Claude Code»— y un campo
+se llamaba `repetidas` llevando dentro las reutilizadas. No es la trampa del ayudante que reimplementa
+producción: el ayudante **hacía el paso que faltaba**. La regla general: si una prueba prepara un estado
+—un testigo, una sesión, un permiso— que en producción consigue el propio programa, **ese paso no lo prueba
+nadie**.
+
+**`tools/list` se contesta con Esfinge cerrada, y por eso el catálogo no vive en `internal/app`.** Claude
+Code pide la lista **al abrir la sesión** y se la queda: contestar vacío porque la aplicación no está deja al
+agente sin herramientas **toda la sesión**, y volver a abrir Esfinge no lo arregla. El catálogo son datos de
+`internal/agente`, que es lo que importa el binario pequeño, y hay una prueba que se pone roja si alguien lo
+mueve.
+
+**Y un tampón para no escribir tanto puede ser un agujero de auditoría.** Se apuntó como deuda que cada
+apunte del registro guarda la bóveda entera, y **se descartó midiendo, no escribiéndolo**: veinte apuntes con
+dos mil entradas son 838 ms **en total** —42 ms cada uno— y `EsperaTrasGuardar` ya agrupa las subidas tres
+segundos. Pero lo que de verdad lo cierra es otra cosa: **`Boveda.Cerrar()` descarta el cuerpo sin guardar**,
+así que con tampón **matar el proceso borraría el rastro** — que es justo lo que podría hacer un agente con
+terminal después de pedir cosas. Agrupar en memoria lo que sirve para dejar constancia le quita lo que lo
+hace constancia.
+
 
 **Y la otra mitad, que ya ha costado tres veces: un método del puente que no llama nadie.** Escribir el
 método en Go y su envoltorio en `puente.ts` **parece terminar el trabajo**, y no lo es: falta la pantalla.
