@@ -35,6 +35,18 @@
 > rm -rf ~/Library/Application\ Support/Esfinge
 > mv ~/Library/Application\ Support/Esfinge-mio ~/Library/Application\ Support/Esfinge
 > ```
+
+> **Y lo último del 2026-10-07: la 2.43.0**, con tres filas de la deuda —la ranura de Touch ID que se queda
+> sin llave, el aviso de la fila retirada en línea propia y el punto verde de la bóveda abierta—. Las tres en
+> verde, cada una mutada, `make e2e` entero (120) y el paquete de Chrome subido.
+>
+> **Lo que de eso no se ha visto en un Mac**: la fila tachada. Cuando salió la versión, el cliente ya había
+> quitado esa bóveda de su equipo y no tenía ninguna que mirar; lo dio por bueno sin verlo. El punto verde sí
+> se le puede ver en cualquier proyecto abierto.
+>
+> **En la tabla de deuda queda una sola cosa**: el intermitente de «Sincronizada», y ahí lo correcto es no
+> tocar nada — tiene voz y dos candidatos descartados midiendo. Lo que diga por qué será la próxima caída.
+
 ---
 
 > **Cerrado el 2026-10-05 (mañana): las bóvedas por proyecto.** Tres publicaciones ese día —2.39.0, 2.39.1 y 2.39.2— y el cliente las fue
