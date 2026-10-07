@@ -106,13 +106,20 @@ func soloLoQueSale(h Herramienta, r Respuesta) any {
 	case QueEstado:
 		return r.Estado
 	case QueBuscar:
-		return map[string]any{"entradas": r.Entradas, "cuantas": len(r.Entradas)}
+		// **El total va aparte de lo que vuelve**, que está topado: si no, un agente
+		// que recibe 25 de 1.843 creería que la bóveda tiene 25.
+		return map[string]any{"entradas": r.Entradas, "devueltas": len(r.Entradas), "enTotal": r.Cuantas}
 	case QueVer:
 		return r.Entrada
 	case QueHigiene:
 		return r.Higiene
 	case QueGenerar:
 		return map[string]any{"contrasena": r.Clave}
+	case QueCopiarSecreto:
+		// **Lo que sale es que se ha copiado, nunca lo copiado.** Si algún día alguien
+		// mete la contraseña en `Copiado`, esto la dejaría pasar: por eso hay una
+		// prueba que busca el secreto en los bytes de todas las respuestas.
+		return r.Copiado
 	}
 	return map[string]any{"hecho": true}
 }

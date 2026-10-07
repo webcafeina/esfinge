@@ -259,6 +259,18 @@ export type EstadoDelNavegador = {
   permitidos: NavegadorPermitido[];
 };
 
+/** Una cosa que se le dio a un agente, o que se le negó (ADR 0054). **Sin secretos.** */
+export type ApunteDelAgente = {
+  id: string;
+  cuando: string;
+  quien: string;
+  que: string;
+  sobre?: string;
+  titulo?: string;
+  resultado: string;
+  como?: string;
+};
+
 /** Cómo está el canal con los agentes de IA (ADR 0054). */
 export type EstadoDelAgente = {
   encendido: boolean;
@@ -271,6 +283,13 @@ export type EstadoDelAgente = {
   permitidos: { quien: string; desde: string }[];
   /** El bloque que hay que pegarle al cliente MCP. */
   configuracion: string;
+  /**
+   * Lo que un agente está pidiendo y hay que contestar, ausente si no hay nada.
+   *
+   * **Lleva el título de la entrada**, y tiene que llevarlo: «un agente quiere una
+   * contraseña» no es una pregunta que se pueda contestar.
+   */
+  quiere?: { quien: string; que: string; id: string; titulo: string; cuando: string };
 };
 
 
@@ -935,6 +954,13 @@ export const esfinge = {
   /** Retira un permiso dado, **por la fecha**: el testigo no cruza el puente. */
   olvidarAgente: (desde: string) => llamar<void>("OlvidarAgente", desde),
 
+  /** El «sí» a lo que un agente está pidiendo. Vale **una vez y para esa entrada**. */
+  aprobarLoQuePideElAgente: () => llamar<void>("AprobarLoQuePideElAgente"),
+  /** Y el «no», que **queda apuntado**: es la señal por la que el registro existe. */
+  denegarLoQuePideElAgente: () => llamar<void>("DenegarLoQuePideElAgente"),
+  /** Lo que se le ha dado a los agentes, para enseñarlo. Con la lista a la fuerza. */
+  registroDelAgente: () => llamar<ApunteDelAgente[] | null>("RegistroDelAgente").then((r) => r ?? []),
+
   /** Escribe las entradas **en claro**, por el diálogo del sistema. */
   exportarBoveda: () => llamar<string>("ExportarBoveda"),
 
@@ -1015,6 +1041,11 @@ export function alCambiarLaSincro(cb: (e: EstadoSincro) => void): () => void {
 /** Avisa cuando un agente de IA pide permiso (ADR 0054). */
 export function alPedirloUnAgente(cb: (quien: string) => void) {
   return escuchar("agente-pide", cb);
+}
+
+/** Avisa cuando un agente pide algo que hay que aprobar (ADR 0054). */
+export function alQuererAlgoUnAgente(cb: () => void) {
+  return escuchar("agente-quiere", cb);
 }
 
 export function alPedirloUnNavegador(cb: (quien: string) => void) {

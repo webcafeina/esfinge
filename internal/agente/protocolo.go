@@ -45,6 +45,16 @@ const (
 	// aburrido, y **no toca un solo secreto**. Devuelve identificadores y cuentas,
 	// nunca contraseñas.
 	QueHigiene = "higiene"
+	// QueCopiarSecreto pone la contraseña de una entrada en el portapapeles.
+	//
+	// **El agente no la ve**: copia Esfinge y lo que vuelve es «copiado, se borra en N
+	// segundos». Es lo mismo que hace el canal del navegador desde la entrega 1, y aquí
+	// vale por una razón de más: lo que el agente recibiera entraría en la conversación
+	// de un modelo y se quedaría ahí.
+	//
+	// **Y hace falta un sí en la ventana, cada vez.** Es lo único que hay entre un
+	// agente al que alguien le ha dicho qué pedir y tu bóveda.
+	QueCopiarSecreto = "copiar-secreto"
 	// QueGenerar devuelve una contraseña nueva. **No toca la bóveda**: ni la lee ni
 	// escribe en ella, así que no pide nada ni deja rastro.
 	//
@@ -70,6 +80,7 @@ var LoQueSePuedePedir = []string{
 	QueVer,
 	QueHigiene,
 	QueGenerar,
+	QueCopiarSecreto,
 }
 
 // TopeDeResultados es cuántas entradas vuelven como mucho de una búsqueda.
@@ -154,6 +165,18 @@ type Higiene struct {
 	Caducadas []string `json:"caducadas,omitempty"`
 }
 
+// Copiado es lo que se contesta tras poner algo en el portapapeles.
+//
+// **No lleva lo copiado**, y el tipo se llama así para que buscar quién toca una
+// contraseña en este paquete sea buscar un nombre. Es el mismo de `internal/navegador`,
+// duplicado a propósito como todo lo demás del protocolo.
+type Copiado struct {
+	// Portapapeles son los segundos que tardará en borrarse solo, 0 si no se borra.
+	Portapapeles int `json:"portapapeles"`
+	// Titulo es de qué entrada se ha copiado, para que el agente pueda decirlo.
+	Titulo string `json:"titulo,omitempty"`
+}
+
 // Respuesta es lo que se contesta. Siempre lleva `ok`.
 type Respuesta struct {
 	OK bool `json:"ok"`
@@ -171,6 +194,7 @@ type Respuesta struct {
 	Cuantas int      `json:"cuantas,omitempty"`
 	Entrada *Entrada `json:"entrada,omitempty"`
 	Higiene *Higiene `json:"higiene,omitempty"`
+	Copiado *Copiado `json:"copiado,omitempty"`
 	Clave   string   `json:"clave,omitempty"`
 }
 
@@ -182,6 +206,10 @@ const (
 	MotivoDemasiado    = "demasiado"
 	MotivoNoEntiendo   = "no-entiendo"
 	MotivoNoEsta       = "no-esta"
+	// MotivoPideAprobacion: hace falta un sí en la ventana. **No es un error**: es el
+	// camino normal la primera vez que se pide algo, y lo que hay que hacer es
+	// aprobarlo y **volver a pedirlo**.
+	MotivoPideAprobacion = "pide-aprobacion"
 	// MotivoSinEsfinge lo pone el binario cuando no hay nadie escuchando: Esfinge
 	// no está abierta, o el canal está apagado en Ajustes.
 	MotivoSinEsfinge = "sin-esfinge"

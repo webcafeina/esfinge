@@ -148,3 +148,46 @@ func TestSinEsfingeSeContestaIgual(t *testing.T) {
 		t.Errorf("no viene marcado como error: %s", sale.String())
 	}
 }
+
+// **Lo que sale hacia el modelo es lo que hay que mirar, no lo que devuelve la fuente.**
+//
+// Esta prueba existe por un fallo que se coló: el tope de resultados estaba puesto y el
+// total viajaba por el canal, pero **la aduana hacia el modelo seguía diciendo
+// `cuantas = las que vuelven`**, o sea 25 siempre. La prueba que había miraba la fuente,
+// que sí daba el total bueno. Un cambio a medias, una aserción en el sitio cómodo, y un
+// agente que creería que la bóveda tiene veinticinco cuentas.
+func TestLoQueSaleHaciaElModeloDiceCuantasHayDeVerdad(t *testing.T) {
+	salida := soloLoQueSale(
+		Herramienta{Verbo: QueBuscar},
+		Respuesta{OK: true, Entradas: []Entrada{{ID: "a1"}, {ID: "b2"}}, Cuantas: 1843},
+	)
+	m, ok := salida.(map[string]any)
+	if !ok {
+		t.Fatalf("lo que sale no es un objeto: %T", salida)
+	}
+	if m["devueltas"] != 2 {
+		t.Errorf("dice que vuelven %v y vuelven dos", m["devueltas"])
+	}
+	if m["enTotal"] != 1843 {
+		t.Errorf("dice que hay %v en total y hay 1843: un agente creería que la bóveda "+
+			"tiene las que le han cabido", m["enTotal"])
+	}
+}
+
+// Y lo de copiar: **lo que sale dice que se ha copiado, nunca lo copiado**.
+func TestLoQueSaleAlCopiarNoLlevaLaContrasena(t *testing.T) {
+	salida := soloLoQueSale(
+		Herramienta{Verbo: QueCopiarSecreto},
+		Respuesta{OK: true, Copiado: &Copiado{Portapapeles: 30, Titulo: "GitHub"}},
+	)
+	crudo, err := json.Marshal(salida)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(crudo), "GitHub") {
+		t.Errorf("no dice de qué entrada es: %s", crudo)
+	}
+	if strings.Contains(string(crudo), elSecreto) {
+		t.Errorf("lleva la contraseña dentro: %s", crudo)
+	}
+}

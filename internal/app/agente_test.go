@@ -223,3 +223,138 @@ func TestElAgenteNoVeLoQueEstaEnLaPapelera(t *testing.T) {
 		t.Errorf("la búsqueda trae lo que está en la papelera: %+v", es)
 	}
 }
+
+// **El camino de usar una contraseña: se pide, se aprueba, se copia.** Y lo que de
+// verdad vigila esta prueba son las tres cosas que podrían salir mal y no se verían:
+//
+//  1. Que se copie **en vez de devolverse**.
+//  2. Que el sí valga **solo para la entrada que se aprobó**.
+//  3. Que valga **una sola vez**.
+func TestCopiarUnaContrasenaSePideSeApruebaYSeCopia(t *testing.T) {
+	a, s, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	lista, err := a.BuscarEnBoveda("Banco")
+	if err != nil || len(lista) == 0 {
+		t.Fatal(err)
+	}
+	elBanco := lista[0].ID
+	otra, err := a.BuscarEnBoveda("Correo")
+	if err != nil || len(otra) == 0 {
+		t.Fatal(err)
+	}
+	elCorreo := otra[0].ID
+
+	// --- Se pide y **no se copia nada**.
+	if _, err := f.CopiarSecreto("Claude Code", elBanco); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatalf("la primera vez contesta %v", err)
+	}
+	if enElPortapapeles(s) != "" {
+		t.Fatal("ha copiado antes de que nadie dijera que sí")
+	}
+	// Y la ventana se entera de qué se pide, **con el título**: sin él, la pregunta no
+	// se puede contestar.
+	e := a.EstadoDelAgente()
+	if e.Quiere == nil || e.Quiere.Titulo != "Banco" {
+		t.Fatalf("la ventana no sabe qué se pide: %+v", e.Quiere)
+	}
+
+	// --- Se aprueba, y entonces sí.
+	if err := a.AprobarLoQuePideElAgente(); err != nil {
+		t.Fatal(err)
+	}
+	c, err := f.CopiarSecreto("Claude Code", elBanco)
+	if err != nil {
+		t.Fatalf("tras aprobarlo: %v", err)
+	}
+	// **Se ha copiado, no devuelto.**
+	if enElPortapapeles(s) != "s3cr3t0" {
+		t.Errorf("en el portapapeles hay %q", enElPortapapeles(s))
+	}
+	crudo, err := json.Marshal(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(crudo), "s3cr3t0") {
+		t.Errorf("lo que vuelve lleva la contraseña: %s", crudo)
+	}
+
+	// --- **El sí se ha gastado.** Pedirla otra vez vuelve a preguntar.
+	if _, err := f.CopiarSecreto("Claude Code", elBanco); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("el mismo sí ha servido dos veces")
+	}
+
+	// --- **Y un sí para una entrada no vale para otra**, que es lo que impide que
+	// aprobar «la de GitHub» se lleve la del banco.
+	if err := a.AprobarLoQuePideElAgente(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.CopiarSecreto("Claude Code", elCorreo); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("un sí dado para una entrada ha servido para otra")
+	}
+}
+
+// **Lo que se le da y lo que se le niega quedan apuntados**, dentro de la bóveda.
+func TestLoQueSeLeDaAUnAgenteQuedaApuntado(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	lista, err := a.BuscarEnBoveda("Banco")
+	if err != nil || len(lista) == 0 {
+		t.Fatal(err)
+	}
+	id := lista[0].ID
+
+	// Un no.
+	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal(err)
+	}
+	if err := a.DenegarLoQuePideElAgente(); err != nil {
+		t.Fatal(err)
+	}
+	// Y un sí.
+	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal(err)
+	}
+	if err := a.AprobarLoQuePideElAgente(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.CopiarSecreto("Claude Code", id); err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := a.RegistroDelAgente()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r) != 2 {
+		t.Fatalf("hay %d apuntes y tenían que ser dos —el no y el sí—: %+v", len(r), r)
+	}
+	var hechos, negados int
+	for _, ap := range r {
+		if ap.Titulo != "Banco" || ap.Quien != "Claude Code" {
+			t.Errorf("un apunte no dice de qué ni de quién: %+v", ap)
+		}
+		switch ap.Resultado {
+		case boveda.ApunteHecho:
+			hechos++
+		case boveda.ApunteNegado:
+			negados++
+		}
+	}
+	if hechos != 1 || negados != 1 {
+		t.Errorf("hay %d hechos y %d negados", hechos, negados)
+	}
+	// **Y en el registro no hay secretos**, que es lo que lo hace guardable.
+	crudo, err := json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(crudo), "s3cr3t0") {
+		t.Errorf("el registro lleva la contraseña: %s", crudo)
+	}
+}
+
+// enElPortapapeles lee lo que el doble tiene puesto, con su cerrojo.
+func enElPortapapeles(s *sistemaFalso) string {
+	t, _ := s.LeerPortapapeles()
+	return t
+}

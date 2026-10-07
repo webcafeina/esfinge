@@ -14,6 +14,12 @@ type bovedaFalsa struct {
 	abierta bool
 	testigo string
 	pedidos int
+	// aprobado simula que la persona ya dijo que sí en la ventana.
+	aprobado        bool
+	pidioAprobacion bool
+	// copiado es lo que se puso en el portapapeles: **la prueba mira esto** para
+	// distinguir «ha copiado» de «ha devuelto el secreto», que es toda la diferencia.
+	copiado string
 }
 
 // elSecreto es un centinela: **no tiene que salir por el canal por ningún sitio**, y
@@ -49,6 +55,20 @@ func (b *bovedaFalsa) Higiene() (Higiene, error) {
 
 func (b *bovedaFalsa) Generar(bytes int, alfabeto string) (string, error) {
 	return "una-contrasena-nueva", nil
+}
+
+// CopiarSecreto: la primera vez pide aprobación, y después de decir que sí copia. Es
+// lo que hace la de verdad, y lo que deja probar los dos caminos.
+func (b *bovedaFalsa) CopiarSecreto(quien, id string) (Copiado, error) {
+	if id != "a1" {
+		return Copiado{}, ErrNoEsta
+	}
+	if !b.aprobado {
+		b.pidioAprobacion = true
+		return Copiado{}, ErrPideAprobacion
+	}
+	b.copiado = elSecreto
+	return Copiado{Portapapeles: 30, Titulo: "GitHub"}, nil
 }
 
 func (b *bovedaFalsa) Emparejar(quien string) (string, error) {
@@ -208,5 +228,60 @@ func TestElEstadoSeContestaSinEmparejar(t *testing.T) {
 	r := pedir(s, Peticion{Que: QueEstado})
 	if !r.OK || r.Estado == nil {
 		t.Fatalf("no ha contestado el estado: %+v", r)
+	}
+}
+
+// **Copiar pide un sí la primera vez, y después copia.**
+//
+// Lo que esta prueba vigila de verdad es la diferencia entre las dos cosas que podrían
+// llamarse igual: que **se copie** y que **se devuelva**. Por eso mira el portapapeles
+// del doble, no solo que la respuesta diga que fue bien.
+func TestCopiarPideUnSiYLuegoCopia(t *testing.T) {
+	s, b := servidorDePrueba(t)
+	b.testigo = "testigo-de-prueba"
+
+	// La primera vez: su propio motivo, **y no un error cualquiera**, para que quien
+	// llame pueda distinguir «todavía no» de «no».
+	r := pedir(s, Peticion{Que: QueCopiarSecreto, ID: "a1", Testigo: b.testigo})
+	if r.OK || r.Motivo != MotivoPideAprobacion {
+		t.Fatalf("la primera vez contesta %+v", r)
+	}
+	if !b.pidioAprobacion {
+		t.Error("no ha dejado pedido el permiso, así que nadie se entera en la ventana")
+	}
+	// Y **no ha copiado nada** mientras tanto.
+	if b.copiado != "" {
+		t.Fatal("ha copiado antes de que nadie dijera que sí")
+	}
+
+	// La persona dice que sí, y el agente lo vuelve a pedir.
+	b.aprobado = true
+	r = pedir(s, Peticion{Que: QueCopiarSecreto, ID: "a1", Testigo: b.testigo})
+	if !r.OK || r.Copiado == nil {
+		t.Fatalf("tras aprobarlo contesta %+v", r)
+	}
+	if b.copiado != elSecreto {
+		t.Error("ha dicho que sí pero no ha copiado nada")
+	}
+	// **Y lo que vuelve no lleva la contraseña**, sobre los bytes.
+	crudo, err := json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(crudo), elSecreto) {
+		t.Errorf("la respuesta lleva la contraseña: %s", crudo)
+	}
+	if r.Copiado.Portapapeles == 0 {
+		t.Error("no dice en cuánto se borra del portapapeles")
+	}
+}
+
+// Y una entrada que no está no se copia, aunque esté aprobado todo.
+func TestNoSeCopiaLoQueNoEsta(t *testing.T) {
+	s, b := servidorDePrueba(t)
+	b.testigo, b.aprobado = "testigo-de-prueba", true
+	r := pedir(s, Peticion{Que: QueCopiarSecreto, ID: "no-existe", Testigo: b.testigo})
+	if r.OK || r.Motivo != MotivoNoEsta {
+		t.Fatalf("contesta %+v", r)
 	}
 }

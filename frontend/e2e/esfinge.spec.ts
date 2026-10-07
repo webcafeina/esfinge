@@ -2607,3 +2607,56 @@ test("el canal con los agentes viene apagado, se enciende y dice lo que es", asy
   await expect(panel).not.toContainText("agentes.sock");
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * **La tarjeta de lo que un agente pide** (ADR 0054).
+ *
+ * Es la única pantalla de Esfinge donde se aprueba que **otro programa** use una
+ * contraseña concreta, así que tiene que decir tres cosas: **quién** la pide, **cuál**
+ * es, y que **el agente no la ve**. Lo tercero no es un adorno: es lo que hace que decir
+ * que sí sea razonable, y es lo primero que desaparece en un refactor de textos.
+ *
+ * El estado se inyecta por el puente: montarlo de verdad pide un agente hablando por el
+ * socket, y lo que esta prueba cubre es **la pantalla**. Que el permiso valga una vez y
+ * solo para esa entrada se prueba en Go, con sus tres mutaciones.
+ */
+test("la tarjeta de lo que pide un agente dice quién, cuál y que no la ve", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.route("**/api/EstadoDelAgente", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        encendido: true,
+        escuchando: true,
+        donde: "/tmp/agentes.sock",
+        permitidos: [{ quien: "Claude Code", desde: "2026-10-07T10:00:00Z" }],
+        configuracion: '{\n  "mcpServers": {}\n}',
+        quiere: {
+          quien: "Claude Code",
+          que: "copiar-secreto",
+          id: "a1",
+          titulo: "Hacienda",
+          cuando: "2026-10-07T12:00:00Z",
+        },
+      }),
+    });
+  });
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Ajustes").click();
+
+  const tarjeta = page.locator(".panel:visible .grupo.peligro").filter({ hasText: "Claude Code" });
+  await expect(tarjeta).toBeVisible({ timeout: 20_000 });
+  // **Quién y cuál**, los dos: sin el nombre de la entrada no se puede contestar.
+  await expect(tarjeta).toContainText("Claude Code");
+  await expect(tarjeta).toContainText("Hacienda");
+  // **Y que el agente no la ve**, que es lo que hace razonable decir que sí.
+  await expect(tarjeta).toContainText("el agente no la ve");
+  // Los dos botones, y el de decir que no **no es el principal**.
+  await expect(tarjeta.getByRole("button", { name: "Copiar esa contraseña" })).toBeVisible();
+  await expect(tarjeta.getByRole("button", { name: "No", exact: true })).toBeVisible();
+
+  await tarjeta.screenshot({ path: `test-results/agente-pide-${test.info().project.name}.png` });
+  expect(errores, errores.join(" | ")).toEqual([]);
+});

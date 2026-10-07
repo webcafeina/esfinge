@@ -25,6 +25,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -342,6 +343,12 @@ type EstadoDelAgente struct {
 	Permitidos []AgentePermitido `json:"permitidos"`
 	// Configuracion es el bloque que hay que pegarle al cliente MCP.
 	Configuracion string `json:"configuracion"`
+	// Quiere es lo que un agente está pidiendo y hay que contestar, nulo si nada.
+	//
+	// **Lleva el título de la entrada**, y tiene que llevarlo: «un agente quiere una
+	// contraseña» no es una pregunta que se pueda contestar. Lo que no lleva es la
+	// contraseña, claro.
+	Quiere *loQuePideUnAgente `json:"quiere,omitempty"`
 }
 
 // EstadoDelAgente dice cómo está la puerta de los agentes.
@@ -358,6 +365,7 @@ func (a *App) EstadoDelAgente() EstadoDelAgente {
 		Pide:          a.agentes.quienPide(),
 		Permitidos:    a.agentes.ver(),
 		Configuracion: ConfiguracionParaElCliente(),
+		Quiere:        a.permisos.loPendiente(),
 	}
 	if srv != nil {
 		e.Donde = srv.Donde()
@@ -433,4 +441,187 @@ func rutaDelServidorMCP() (string, error) {
 		nombre += ".exe"
 	}
 	return filepath.Join(filepath.Dir(yo), nombre), nil
+}
+
+// ---------------------------------------------- usar un secreto, con permiso
+
+// PlazoDelPermiso es lo que dura un sí sin recoger.
+//
+// Corto a propósito: un permiso que se queda flotando es un permiso que alguien usa
+// media hora después de que la persona lo diera pensando en otra cosa.
+const PlazoDelPermiso = 2 * time.Minute
+
+// EventoAgenteQuiere avisa a la ventana de que un agente pide algo que hay que aprobar.
+const EventoAgenteQuiere = "agente-quiere"
+
+// loQuePideUnAgente es una petición esperando un sí.
+//
+// **El sí va atado a la entrada**, no al agente: aprobar «la contraseña de GitHub» no
+// puede servir para que el siguiente intento se lleve la del banco. Es la misma idea que
+// el testigo de emparejamiento, que se entrega una sola vez y para lo que se pidió.
+type loQuePideUnAgente struct {
+	Quien  string `json:"quien"`
+	Que    string `json:"que"`
+	ID     string `json:"id"`
+	Titulo string `json:"titulo"`
+	Cuando string `json:"cuando"`
+}
+
+type permisosDelAgente struct {
+	mu sync.Mutex
+	// pendiente es lo último que se ha pedido y nadie ha contestado.
+	pendiente *loQuePideUnAgente
+	// concedidoPara es la entrada para la que hay un sí, y hasta cuándo vale.
+	concedidoPara string
+	hasta         time.Time
+}
+
+// pedir deja apuntado lo que se quiere y dice si ya había permiso **para eso mismo**.
+//
+// Si lo había, **se gasta**: un sí vale para una vez. Si el agente quiere dos, pregunta
+// dos veces, que es exactamente lo que el cliente eligió.
+func (p *permisosDelAgente) pedir(q loQuePideUnAgente, ahora time.Time) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.concedidoPara != "" && p.concedidoPara == q.ID && ahora.Before(p.hasta) {
+		p.concedidoPara = ""
+		return true
+	}
+	p.pendiente = &q
+	return false
+}
+
+// conceder dice que sí a lo que estuviera pendiente, y devuelve para qué era.
+func (p *permisosDelAgente) conceder(ahora time.Time) (loQuePideUnAgente, bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.pendiente == nil {
+		return loQuePideUnAgente{}, false
+	}
+	q := *p.pendiente
+	p.pendiente = nil
+	p.concedidoPara = q.ID
+	p.hasta = ahora.Add(PlazoDelPermiso)
+	return q, true
+}
+
+// denegar lo quita sin conceder nada.
+func (p *permisosDelAgente) denegar() (loQuePideUnAgente, bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.pendiente == nil {
+		return loQuePideUnAgente{}, false
+	}
+	q := *p.pendiente
+	p.pendiente = nil
+	return q, true
+}
+
+func (p *permisosDelAgente) loPendiente() *loQuePideUnAgente {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.pendiente == nil {
+		return nil
+	}
+	q := *p.pendiente
+	return &q
+}
+
+// CopiarSecreto pone la contraseña en el portapapeles **si hay un sí para esa entrada**.
+//
+// **No espera a nadie**, y eso es lo que decide cómo se siente esto: al otro lado hay un
+// proceso al que su cliente puede cortar en cualquier momento, y una ventana que puede
+// estar detrás de todo. Bloquearse treinta segundos esperando un clic sería agotar el
+// plazo del cliente MCP las más de las veces. Es la misma forma que `Emparejar`, con su
+// porqué escrito desde la ADR 0027.
+//
+// Así que: se pide, se avisa a la ventana, y **quien llama vuelve a intentarlo**. Lo
+// dice la descripción de la herramienta, para que el modelo sepa que tiene que hacerlo.
+func (f fuenteDelAgente) CopiarSecreto(quien, id string) (agente.Copiado, error) {
+	b := f.a.boveda()
+	if b == nil {
+		return agente.Copiado{}, boveda.ErrCerrada
+	}
+	e, hay := b.Ver(id)
+	if !hay || e.Papelera {
+		return agente.Copiado{}, agente.ErrNoEsta
+	}
+	if e.Secreto == "" {
+		return agente.Copiado{}, errors.New("Esa entrada no tiene contraseña")
+	}
+	if quien == "" {
+		quien = "Un agente"
+	}
+
+	ahora := time.Now()
+	q := loQuePideUnAgente{
+		Quien: quien, Que: agente.QueCopiarSecreto, ID: id, Titulo: e.Titulo,
+		Cuando: ahora.UTC().Format(time.RFC3339),
+	}
+	if !f.a.permisos.pedir(q, ahora) {
+		// **La ventana no se trae al frente** (ADR 0027): hacerlo dejaría que
+		// cualquier programa de esta máquina hiciera aparecer la ventana de un gestor
+		// de contraseñas cuando quisiera.
+		f.a.sistema.Avisar(EventoAgenteQuiere, q)
+		return agente.Copiado{}, agente.ErrPideAprobacion
+	}
+
+	// **Copia Esfinge, y no cuenta como actividad**: lo pide un programa, no una
+	// persona. Lo que sí contó fue el clic de aprobarlo.
+	segundos, err := f.a.copiar(e.Secreto, false)
+	if err != nil {
+		f.a.apuntar(b, q, boveda.ApunteNegado)
+		return agente.Copiado{}, err
+	}
+	f.a.apuntar(b, q, boveda.ApunteHecho)
+	return agente.Copiado{Portapapeles: segundos, Titulo: e.Titulo}, nil
+}
+
+// apuntar deja constancia en el registro de la bóveda (ADR 0054).
+//
+// **Que falle no deshace lo hecho**, así que no se devuelve el error: se registra. Y en
+// una bóveda que no se puede escribir —de solo lectura, o compartida de solo ver— no hay
+// dónde apuntar, y eso **la ventana lo dice**: una medida que no se aplica en silencio es
+// peor que no tenerla.
+func (a *App) apuntar(b *boveda.Boveda, q loQuePideUnAgente, resultado string) {
+	err := b.Apuntar(boveda.Apunte{
+		Quien: q.Quien, Que: q.Que, Sobre: q.ID, Titulo: q.Titulo,
+		Resultado: resultado, Como: boveda.ApuntePreguntado,
+	})
+	if err != nil {
+		log.Printf("esfinge: no se ha podido apuntar lo que se le dio a un agente: %v", err)
+	}
+}
+
+// AprobarLoQuePideElAgente es el «sí» de la persona.
+func (a *App) AprobarLoQuePideElAgente() error {
+	if _, hay := a.permisos.conceder(time.Now()); !hay {
+		return errors.New("Ya no hay nada que aprobar")
+	}
+	// **Esto sí cuenta como actividad**: es un clic de una persona.
+	a.Actividad()
+	return nil
+}
+
+// DenegarLoQuePideElAgente es el «no», y **queda apuntado**: «pidió la contraseña del
+// banco y se le dijo que no» es la señal por la que el registro existe.
+func (a *App) DenegarLoQuePideElAgente() error {
+	q, hay := a.permisos.denegar()
+	if !hay {
+		return errors.New("Ya no hay nada que denegar")
+	}
+	if b := a.boveda(); b != nil {
+		a.apuntar(b, q, boveda.ApunteNegado)
+	}
+	a.Actividad()
+	return nil
+}
+
+// RegistroDelAgente es lo que se le ha dado, para enseñarlo en la ventana.
+func (a *App) RegistroDelAgente() ([]boveda.Apunte, error) {
+	b := a.boveda()
+	if b == nil {
+		return nil, boveda.ErrCerrada
+	}
+	return b.Registro(), nil
 }

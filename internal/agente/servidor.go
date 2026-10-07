@@ -47,6 +47,13 @@ type Fuente interface {
 	Higiene() (Higiene, error)
 	// Generar devuelve una contraseña nueva. **No toca la bóveda.**
 	Generar(bytes int, alfabeto string) (string, error)
+	// CopiarSecreto pone la contraseña de una entrada en el portapapeles **de este
+	// equipo**, si hay un sí para ella. Devuelve [ErrPideAprobacion] si no lo hay, y
+	// entonces **deja pedido el permiso**: quien llama tiene que volver a intentarlo.
+	//
+	// Copia Esfinge y no quien pregunta: así el secreto no cruza el canal y se
+	// aprovecha el borrado del portapapeles que ya existe.
+	CopiarSecreto(quien, id string) (Copiado, error)
 
 	// Emparejar le pregunta a la persona, en la ventana, si permite que ese agente
 	// hable con la bóveda. Devuelve el testigo si dice que sí.
@@ -57,6 +64,11 @@ type Fuente interface {
 
 // ErrNoEsta es que esa entrada no existe, o está en la papelera.
 var ErrNoEsta = errors.New("Esa entrada no está en la bóveda")
+
+// ErrPideAprobacion es que hace falta un sí en la ventana. **No es un fallo**: es el
+// camino normal la primera vez que se pide algo.
+var ErrPideAprobacion = errors.New(
+	"Hace falta que lo apruebes en la ventana de Esfinge. Cuando lo hagas, vuelve a pedirlo")
 
 // Los topes, **del canal y no de una conexión**.
 //
@@ -307,6 +319,20 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 			return mal(MotivoNoEntiendo, err.Error())
 		}
 		return Respuesta{OK: true, Higiene: &h}
+	case QueCopiarSecreto:
+		c, err := s.fuente.CopiarSecreto(p.Quien, p.ID)
+		if errors.Is(err, ErrPideAprobacion) {
+			// **Su propio motivo, y no un error cualquiera**: quien llama tiene que
+			// poder distinguir «todavía no» de «no» sin leer una frase en español.
+			return mal(MotivoPideAprobacion, err.Error())
+		}
+		if errors.Is(err, ErrNoEsta) {
+			return mal(MotivoNoEsta, err.Error())
+		}
+		if err != nil {
+			return mal(MotivoNoEntiendo, err.Error())
+		}
+		return Respuesta{OK: true, Copiado: &c}
 	}
 	return mal(MotivoNoEntiendo, "Eso no se puede pedir por aquí")
 }

@@ -96,6 +96,11 @@ var loQuePuedeCruzarElPuente = []string{
 	// su propia lista, `agente.LoQueSePuedePedir`. Los testigos tampoco salen:
 	// `EstadoDelAgente` los vacía, y por eso retirar uno se hace **por su fecha**.
 	"EstadoDelAgente", "PermitirAgente", "OlvidarAgente",
+	// Y lo que un agente pide y hay que contestar (ADR 0054). **El sí y el no son de
+	// la ventana y de ningún otro sitio**: es lo único que hay entre un agente al que
+	// alguien le ha dicho qué pedir y la bóveda. `RegistroDelAgente` es de lectura y
+	// **no se le da al agente**: existe para que lo lea la persona.
+	"AprobarLoQuePideElAgente", "DenegarLoQuePideElAgente", "RegistroDelAgente",
 
 	// La cuenta (ADR 0035). Por aquí viaja **la contraseña maestra hacia Go**, igual
 	// que al abrir la bóveda, y nunca de vuelta: lo que sale es el estado, sin

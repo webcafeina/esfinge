@@ -6,6 +6,7 @@ import {
   alHaberNovedad,
   alOrdenar,
   alPedirloUnAgente,
+  alQuererAlgoUnAgente,
   alPedirloUnNavegador,
   alProgresar,
   alSoltarFicheros,
@@ -15,6 +16,7 @@ import {
   type Apertura,
   type Avance,
   type Entrada,
+  type ApunteDelAgente,
   type EstadoDelAgente,
   type EstadoDelNavegador,
   type EstadoDesbloqueo,
@@ -1060,8 +1062,13 @@ function Ajustes({
   }, []);
 
   const [elAgente, setElAgente] = useState<EstadoDelAgente | null>(null);
+  // Lo que se le ha dado a los agentes. **Vive dentro de la bóveda**, así que con la
+  // bóveda cerrada no hay nada que leer y la lista se queda vacía — que es lo correcto:
+  // no es un error, es que eso no se puede ver sin abrir.
+  const [loDado, setLoDado] = useState<ApunteDelAgente[]>([]);
   const leerAgente = useCallback(() => {
     esfinge.estadoDelAgente().then(setElAgente).catch(() => {});
+    esfinge.registroDelAgente().then(setLoDado).catch(() => setLoDado([]));
   }, []);
 
   // Los sitios en los que la extensión no ofrece guardar, que viven dentro de la
@@ -1085,10 +1092,14 @@ function Ajustes({
     // Y lo mismo con los agentes: quien lo está pidiendo está mirando su terminal,
     // no esta ventana, así que esto tiene que aparecer **sin que nadie recargue nada**.
     const dejarDeOirAgente = alPedirloUnAgente(leerAgente);
+    // Y cuando pide algo que hay que aprobar, por lo mismo: quien lo pide está mirando
+    // su terminal, no esta ventana.
+    const dejarDeOirQuiere = alQuererAlgoUnAgente(leerAgente);
     leerAgente();
     return () => {
       dejarDeOir();
       dejarDeOirAgente();
+      dejarDeOirQuiere();
     };
   }, [leerPreferencias, leerNavegador, leerAgente]);
 
@@ -1442,6 +1453,44 @@ function Ajustes({
           </div>
         )}
 
+        {/* **Lo que un agente quiere ahora mismo.** En «peligro» como la de emparejar,
+            y por una razón de más: aquí lo que se aprueba es **una contraseña
+            concreta**, y el sí vale una vez y solo para ella.
+
+            Dice **qué** se pide, no solo que se pide algo: «un agente quiere una
+            contraseña» no es una pregunta que se pueda contestar. */}
+        {elAgente?.quiere && (
+          <div className="grupo peligro">
+            <label>
+              {elAgente.quiere.quien} quiere la contraseña de «{elAgente.quiere.titulo}»
+            </label>
+            <p className="aviso">
+              Se copiará al portapapeles de este ordenador: <strong>el agente no la ve</strong>. Si
+              no le has pedido nada que la necesite, <strong>di que no</strong>: lo que un agente
+              lee por ahí puede decirle qué pedir.
+            </p>
+            <div className="botones">
+              <button
+                className="principal"
+                onClick={async () => {
+                  await esfinge.aprobarLoQuePideElAgente();
+                  leerAgente();
+                }}
+              >
+                Copiar esa contraseña
+              </button>
+              <button
+                onClick={async () => {
+                  await esfinge.denegarLoQuePideElAgente();
+                  leerAgente();
+                }}
+              >
+                No
+              </button>
+            </div>
+          </div>
+        )}
+
         {elAgente && elAgente.permitidos?.length > 0 && (
           <div>
             <label>Agentes permitidos</label>
@@ -1464,6 +1513,34 @@ function Ajustes({
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* **Lo que se le ha dado a un agente**, que es la otra mitad de dejarle
+            entrar: hasta la ADR 0054, Esfinge no registraba qué entradas se abrían, y
+            con una persona delante eso se sostiene —lo que has mirado lo has mirado
+            tú—. Con un programa pidiendo cosas, «¿qué le di la semana pasada?» es una
+            pregunta que se hace sola.
+
+            Vive **dentro de la bóveda cifrada**, así que esto solo se ve con ella
+            abierta. Se guardan noventa días. */}
+        {loDado.length > 0 && (
+          <div>
+            <label>Lo que les has dado</label>
+            <ul className="lista-papelera">
+              {loDado.slice(0, 20).map((d) => (
+                <li key={d.id}>
+                  <span className="nombre">{d.titulo || "Una entrada"}</span>
+                  <span className="nota">
+                    {d.quien} · {fecha(d.cuando)} ·{" "}
+                    {d.resultado === "hecho" ? "copiada" : d.resultado === "negado" ? "dijiste que no" : d.resultado}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {loDado.length > 20 && (
+              <p className="nota">Y {loDado.length - 20} más. Se guardan noventa días.</p>
+            )}
           </div>
         )}
 

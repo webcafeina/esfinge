@@ -133,6 +133,10 @@ type App struct {
 	// agentes son los que tienen permiso. En su propio fichero, por lo mismo que los
 	// navegadores.
 	agentes *agentesPermitidos
+	// permisos es lo que un agente tiene aprobado ahora mismo. **Solo en memoria**:
+	// un permiso que sobrevive a cerrar Esfinge es un permiso que nadie recuerda haber
+	// dado.
+	permisos permisosDelAgente
 
 	// descargador de iconos y el ritmo al que gotea. Se pueden sustituir con
 	// ApuntarIconosA, que es la costura que permite probar el camino entero sin

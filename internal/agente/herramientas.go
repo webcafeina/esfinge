@@ -115,6 +115,22 @@ var LasHerramientas = []Herramienta{
 		Escribe:         false,
 	},
 	{
+		Nombre: "esfinge_copiar_contrasena",
+		Descripcion: "Pone la contraseña de una entrada en el portapapeles de este ordenador, para que la " +
+			"persona la pegue. **No te la devuelve a ti**: tú recibes solo la confirmación. La primera vez " +
+			"que la pidas, Esfinge preguntará en su ventana; si contesta que hace falta aprobarlo, dilo y " +
+			"vuelve a pedirlo cuando la persona diga que sí. Se borra sola del portapapeles pasado un rato.",
+		Esquema: objeto(map[string]Campo{
+			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+		}, "id"),
+		Verbo:          QueCopiarSecreto,
+		PideAprobacion: true,
+		// **No devuelve el secreto**, que es justo lo que la hace aceptable: lo que
+		// vuelve es «copiado», y la contraseña se queda en este equipo.
+		DevuelveSecreto: false,
+		Escribe:         false,
+	},
+	{
 		Nombre: "esfinge_generar",
 		Descripcion: "Genera una contraseña nueva al azar. **No toca la bóveda**: no la lee ni guarda nada. " +
 			"Para crear una cuenta con una contraseña nueva es mejor pedírselo a esfinge_crear, que la " +
