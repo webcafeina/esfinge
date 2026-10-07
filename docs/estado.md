@@ -75,9 +75,27 @@
 > y cuelga de la *release* al lado del DMG— y la **orden de una línea** para Claude Code. El bloque de JSON se
 > queda plegado para lo demás.
 >
-> **La siguiente acción: publicar la 2.44.0.** La etiqueta existe y **su tanda falló** —la del 400—, así que
-> hay que moverla. Después, lo único que no se puede hacer desde aquí: **que el cliente lo instale en su Mac**
-> con Claude Desktop y con Claude Code, y use la bóveda desde un agente.
+> **La 2.44.0 está publicada**, los siete trabajos en verde, con los tres `.mcpb` colgados de la *release*
+> al lado del DMG, el instalador de Windows y el `.deb`.
+>
+> **Hicieron falta tres tandas, y las dos que cayeron no eran del `.mcpb`:**
+>
+> - **Las pruebas no apartaban la carpeta de configuración en Windows.** `conReloj` ponía
+>   `XDG_CONFIG_HOME`, `HOME` y `USERPROFILE`, y allí `os.UserConfigDir` lee `AppData`. No se vio en años
+>   porque el trabajo de Windows corre **un subconjunto** donde solo una prueba creaba bóveda; al entrar
+>   `TestElRegistroDistingueLaValvula` en ese filtro por la palabra «Registro», la de proyectos se encontró
+>   una bóveda que no había creado. Eran **siete listas copiadas y a seis les faltaba Windows**: ahora hay
+>   una, y lo vigila una prueba que lee los propios ficheros de prueba.
+> - **`zip` no existe en la máquina Windows de GitHub.** El `.mcpb` lo arma ahora un programa de Go, que es
+>   lo único garantizado en los tres trabajos. De paso salió un segundo fallo que esperaba: **el permiso de
+>   ejecución** dentro del zip, que `zip` ponía por costumbre y nadie comprobaba — sin él, lo que se instala
+>   en macOS y en Linux se instala y no arranca.
+>
+> **La siguiente acción es suya, y es lo único que queda: probarlo en su Mac.** Mañana. Instalar el
+> `.mcpb` en Claude Desktop arrastrándolo, y en Claude Code con la orden que Ajustes da escrita; las dos
+> cosas necesitan **Esfinge abierta y la bóveda desbloqueada**. Lo que verá y conviene no sorprenderle: la
+> primera petición de un secreto **no se contesta** —sale una tarjeta en la ventana y el agente recibe
+> «apruébalo y vuelve a pedirlo»—, y **el agente no ve la contraseña**, que va al portapapeles.
 >
 > **Lo que no se cambia sin preguntar, en una línea cada cosa:** el agente **actúa sin ver** —la contraseña
 > al portapapeles—, con **una excepción**, el código de un solo uso; **cada secreto se aprueba en la

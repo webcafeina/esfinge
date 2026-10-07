@@ -5,7 +5,7 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
-## 2026-10-07 (2) · Los agentes por MCP, el paseo a mano y el paquete que se arrastra
+## 2026-10-07 (2) · Los agentes por MCP: la 0054 entera, el paseo a mano y la 2.44.0
 
 - **Se escribió la ADR 0054 entera, las ocho entregas**, después de seis rondas de preguntas al cliente. Un
   agente —Claude Code, Claude Desktop— puede inventariar la bóveda, auditarla, **usar** una contraseña **sin
@@ -40,9 +40,26 @@ Plantilla al final.
   verdad y abierto para mirar dentro, y las tres formas de instalarlo comparadas entre sí —porque cambiar el
   nombre del binario en uno de los tres sitios **no da ningún error**: el paquete se instala igual y no
   arranca.
-- **Queda abierto, y es lo único**: publicar la 2.44.0 —la etiqueta existe y su tanda falló, hay que moverla—
-  y que el cliente lo instale en su Mac con Claude Desktop y con Claude Code. Eso no se puede hacer desde
-  aquí.
+- **Publicada la 2.44.0**, con los siete trabajos en verde y los tres `.mcpb` colgados de la *release*.
+  **Hicieron falta tres tandas, y las dos que cayeron no eran del `.mcpb`:**
+  - **Las pruebas no apartaban la carpeta de configuración en Windows.** `conReloj` ponía
+    `XDG_CONFIG_HOME`, `HOME` y `USERPROFILE`, y `os.UserConfigDir` lee allí `AppData`. Llevaba así desde
+    siempre y no se veía porque el trabajo de Windows corre **un subconjunto** donde solo una prueba creaba
+    bóveda; al entrar `TestElRegistroDistingueLaValvula` en ese filtro por la palabra «Registro» y correr
+    antes, la de proyectos se encontró una bóveda que no había creado. El arreglo no fue añadir la variable
+    que faltaba sino **que haya un solo sitio**: eran **siete listas copiadas y a seis les faltaba
+    Windows**. Y como aquí no se puede ejecutar Windows, lo vigila una prueba que **lee los propios
+    ficheros de prueba**, mutada.
+  - **`zip` no existe en la máquina Windows de GitHub.** El guion murió con `zip: command not found` y se
+    llevó el trabajo entero con lo demás en verde. Lo arma ahora `herramientas/armar-mcpb`, un programa de
+    Go —lo único garantizado en los tres trabajos, porque los tres compilan Esfinge—; `Compress-Archive`
+    sería un camino aparte solo para Windows, o sea el que nadie prueba desde aquí. Y destapó un segundo
+    fallo que esperaba: **el permiso de ejecución** dentro del zip, que `zip` ponía por costumbre y no
+    comprobaba nadie. Sin él, lo que se instala en macOS y en Linux **se instala y no arranca**. Mutado a
+    `0644`, la prueba lo dice.
+- **Queda abierto, y es lo único del proyecto entero**: que el cliente lo pruebe en su Mac —Claude Desktop
+  arrastrando el `.mcpb`, Claude Code con la orden que Ajustes da escrita— y que use la bóveda desde un
+  agente. Quedó para el día siguiente.
 
 ---
 

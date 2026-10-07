@@ -401,6 +401,28 @@ agente sin herramientas **toda la sesión**, y volver a abrir Esfinge no lo arre
 `internal/agente`, que es lo que importa el binario pequeño, y hay una prueba que se pone roja si alguien lo
 mueve.
 
+**Las pruebas no apartaban la carpeta de configuración en Windows, y eran siete listas.** `conReloj` ponía
+`XDG_CONFIG_HOME`, `HOME` y `USERPROFILE`, y allí `os.UserConfigDir` lee **`AppData`**, que nadie tocaba: en
+esta máquina aislaba y **en Windows no**, así que todas esas pruebas compartían la carpeta de verdad del
+runner. No se vio porque el trabajo de Windows corre **un subconjunto** —`-run
+'Manifiest|Chromium|Perfil|Windows|Registro'`— en el que solo una prueba creaba bóveda; el día que
+`TestElRegistroDistingueLaValvula` entró en ese filtro por la palabra «Registro» y corrió antes, la de
+proyectos se encontró una bóveda que no había creado. **Tiró una publicación.** El arreglo no fue añadir la
+variable que faltaba sino que **haya un solo sitio** —`enConfiguracionDePruebas`—, porque eran siete listas
+copiadas y a seis les faltaba Windows; es el mismo patrón que lo de `vaciarLoSensible`. Y como aquí no se
+puede ejecutar Windows, lo vigila una prueba que **lee los propios ficheros de prueba** y se pone roja si
+alguien vuelve a escribir la lista a mano.
+
+**Y `zip` no existe en la máquina Windows de GitHub.** El guion que armaba el `.mcpb` murió ahí con `zip:
+command not found` y se llevó el trabajo entero con todo lo demás en verde. Lo arma ahora un programa de Go
+(`herramientas/armar-mcpb`), que es lo único garantizado en los tres trabajos porque los tres compilan
+Esfinge. Las dos alternativas eran peores: `Compress-Archive` de PowerShell sería **un camino aparte solo
+para Windows** —o sea el que nadie prueba desde aquí— y además **no guarda el permiso de ejecución**. Ése,
+de paso, era un segundo fallo esperando: lo que se instala en macOS y en Linux sale de ese zip y un servidor
+sin el bit puesto **se instala y no arranca**; lo ponía `zip` por costumbre y no lo comprobaba nadie. Ahora
+se pone a mano y hay aserción. **La regla general, que ya es la tercera vez: una herramienta de línea de
+órdenes que está en los tres sistemas de desarrollo puede no estar en los tres de la publicación.**
+
 **Y un tampón para no escribir tanto puede ser un agujero de auditoría.** Se apuntó como deuda que cada
 apunte del registro guarda la bóveda entera, y **se descartó midiendo, no escribiéndolo**: veinte apuntes con
 dos mil entradas son 838 ms **en total** —42 ms cada uno— y `EsperaTrasGuardar` ya agrupa las subidas tres
