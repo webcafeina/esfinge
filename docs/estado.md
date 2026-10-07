@@ -22,8 +22,12 @@
 >    dibujarlo: el **verde es color propio en una pantalla de trabajo** (ADR 0021), así que sale de
 >    `internal/tema` **con sus parejas medidas**, y animado quiere decir que **se apaga con
 >    `prefers-reduced-motion`** y que el rótulo se queda.
-> 3. **Quien solo use la extensión no ve tachada la fila** —su copia sí se borra—, hasta que abra la ventana.
-> 4. **El intermitente de «Sincronizada»**, con voz desde ayer y **dos candidatos descartados midiendo**.
+> 3. **Una bóveda puede dejar sin Touch ID a otra**, y la ranura se queda huérfana. Le pasó al devolver su
+>    Mac 2: el secreto del llavero es **uno por máquina** y la bóveda de la cuenta de prueba se llevó por
+>    delante el suyo. **Se sale desmarcando y volviendo a marcar** «Abrir la bóveda con Touch ID», comprobado
+>    por él. Falta que ese caso limpie la ranura y que el mensaje diga qué hacer.
+> 4. **Quien solo use la extensión no ve tachada la fila** —su copia sí se borra—, hasta que abra la ventana.
+> 5. **El intermitente de «Sincronizada»**, con voz desde ayer y **dos candidatos descartados midiendo**.
 >
 > **Y el Mac 2 sigue con su carpeta apartada**, que es lo único pendiente de hacer en una máquina:
 >
