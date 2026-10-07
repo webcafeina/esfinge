@@ -95,6 +95,38 @@ porque a esa anchura sobraba sitio. Una aserción que solo se cumple en el caso 
 mide **también con la ventana estrecha**, que es donde esa propiedad significa algo, y entonces la mutación sí
 la pone roja.
 
+### Y lo nuevo: los agentes de IA por MCP (ADR 0054)
+
+Lo pidió el cliente al final del día —*«quiero que agentes de Claude, ChatGPT, etc. puedan conectarse a
+través de MCP»*— y se planificó entero antes de escribir una línea, con seis rondas de preguntas.
+
+**Lo que decidió él, y no se cambia sin preguntar:** leer, usar secretos, crear, editar y borrar, **pero no
+administrar**; **local primero** y el remoto después; **el agente actúa sin ver** —la contraseña al
+portapapeles— con **una excepción**, el código de un solo uso; **puerta propia**; **cada secreto se aprueba en
+la ventana**, con válvula de cinco minutos que **no cubre lo que sí se le enseña**; **crear y editar
+directos**, salvo cambiar un secreto; **borrar pregunta**; y **registro dentro de la bóveda**, solo de lo que
+entrega un secreto.
+
+**Dos cosas que aparecieron investigando y cambiaron premisas que yo le había dado:**
+
+1. **El portapapeles no es una frontera contra un agente con terminal.** Claude Code puede leerlo. Le dije
+   que «actuar sin ver» impedía que el secreto llegara al modelo y **eso es más flojo de lo que le dije**.
+   Eligió aceptarlo **y decirlo en la pantalla**, con las palabras de Touch ID: lo que protege es que cada
+   uso se apruebe y quede apuntado.
+2. **`tools/list` tiene que contestarse con Esfinge cerrada.** Claude Code pide la lista al abrir la sesión y
+   **se la queda**: contestar vacío deja al agente sin herramientas toda la sesión. Es una restricción
+   arquitectónica —el catálogo vive en el paquete que importa el binario pequeño— y hay una prueba que se
+   pone roja si alguien lo mueve «para ordenar».
+
+Y dos más que habrían salido mal sin mirar: **`Repetidas()` no calcula contraseñas reutilizadas** sino
+duplicados de importación, así que publicar esa palabra habría contestado la pregunta equivocada con toda
+confianza; y **los nombres de herramienta no admiten acentos ni `ñ`**.
+
+**La E1 está hecha, comprobada y sin publicar.** Y lo que de verdad hay que recordar del camino: **dos de mis
+pruebas pasaban con la regla rota** —el freno y la de que el agente no mantiene la bóveda abierta— y lo dijo
+mutarlas, no escribirlas. Es la tercera vez en el día: una aserción que solo se cumple en el caso fácil no
+vigila nada.
+
 ## 2026-10-06 (5) · La 2.41.0 publicada, y la prueba a un paso del final
 
 - **Se miró la prueba antes de relanzar nada**, que es lo que el cliente pidió. No se pudo demostrar la
