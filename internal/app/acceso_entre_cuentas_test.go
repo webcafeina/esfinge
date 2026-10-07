@@ -294,8 +294,18 @@ func TestPaseoDeUnAccesoEntreDosCuentas(t *testing.T) {
 	var fila CompartidaEnLaLista
 	vistos := map[string]bool{}
 	for time.Now().Before(limite) {
+		// **Que esto falle aquí no es un fallo: es lo que se está comprobando.**
+		//
+		// Al enterarse del 403, Beto sale de la bóveda retirada y vuelve a la personal,
+		// y entre que se para una sincronización y arranca la otra hay un instante en
+		// que no hay ninguna — y entonces esto contesta «aquí no se está
+		// sincronizando». Con `t.Fatal`, la prueba moría **justo por haber funcionado**,
+		// y además de forma intermitente: depende de en qué milisegundo caiga la vuelta.
+		//
+		// Se sigue intentando, que es lo que haría una persona pulsando el botón, y lo
+		// que decide sigue siendo el hecho de abajo.
 		if err := beto.a.SincronizarAhora(); err != nil {
-			t.Fatal(err)
+			vistos["no-sincroniza: "+err.Error()] = true
 		}
 		time.Sleep(500 * time.Millisecond)
 		// Se apuntan los estados que se han llegado a ver: si esto falla, lo primero que
