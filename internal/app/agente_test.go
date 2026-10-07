@@ -321,10 +321,9 @@ func TestLoQueSeLeDaAUnAgenteQuedaApuntado(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r, err := a.RegistroDelAgente()
-	if err != nil {
-		t.Fatal(err)
-	}
+	// **El registro se lee del estado**, que es por donde lo lee la ventana: pedirlo
+	// aparte fallaría con la bóveda cerrada y dejaría un 400 en la consola.
+	r := a.EstadoDelAgente().Dado
 	if len(r) != 2 {
 		t.Fatalf("hay %d apuntes y tenían que ser dos —el no y el sí—: %+v", len(r), r)
 	}
@@ -465,10 +464,9 @@ func TestElRegistroDistingueLaValvula(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r, err := a.RegistroDelAgente()
-	if err != nil {
-		t.Fatal(err)
-	}
+	// **El registro se lee del estado**, que es por donde lo lee la ventana: pedirlo
+	// aparte fallaría con la bóveda cerrada y dejaría un 400 en la consola.
+	r := a.EstadoDelAgente().Dado
 	var preguntados, porValvula int
 	for _, ap := range r {
 		switch ap.Como {

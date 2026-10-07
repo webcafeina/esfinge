@@ -119,7 +119,7 @@ func TestPaseoMCPAMano(t *testing.T) {
 		peticion(6, "esfinge_crear", map[string]any{"titulo": "Cliente nuevo", "usuario": "yo@ahí.com", "generar": true}))
 
 	t.Logf("\n━━━ 10 · y lo que queda apuntado en la bóveda ━━━")
-	r, _ := a.RegistroDelAgente()
+	r := a.EstadoDelAgente().Dado
 	for _, ap := range r {
 		t.Logf("  %s · %s · %q · %s (%s)", ap.Cuando, ap.Quien, ap.Titulo, ap.Resultado, ap.Como)
 	}

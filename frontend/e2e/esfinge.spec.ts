@@ -2588,13 +2588,25 @@ test("el canal con los agentes viene apagado, se enciende y dice lo que es", asy
   await casilla.click();
   await expect(casilla).toBeChecked({ timeout: 20_000 });
 
-  // Y entonces dice por dónde escucha y qué hay que pegarle al agente.
+  // Y entonces dice por dónde escucha y **cómo se instala en cada sitio**, que son tres
+  // caminos de distinto coste y van en ese orden: el paquete que se arrastra, la orden de
+  // una línea, y el bloque de JSON **plegado** para quien no tenga ninguna de las dos.
   await expect(panel).toContainText("agentes.sock");
+  await expect(panel).toContainText(".mcpb");
+
+  const orden = page.locator("#config-mcp-orden");
+  await expect(orden).toBeVisible();
+  // **La ruta tiene que ser absoluta** en los dos sitios: lo que arranca el servidor
+  // —Claude Desktop o Claude Code— puede hacerlo desde cualquier carpeta.
+  await expect(orden).toHaveValue(/^claude mcp add esfinge \//);
+
+  // Y el JSON empieza escondido, que es la diferencia entre enseñar lo fácil y enseñarlo
+  // todo a la vez.
   const config = page.locator("#config-mcp");
+  await expect(config).toBeHidden();
+  await panel.getByText("En otro agente, o a mano").click();
   await expect(config).toBeVisible();
   await expect(config).toHaveValue(/"mcpServers"/);
-  // **La ruta tiene que ser absoluta**: Claude Desktop arranca los servidores desde un
-  // directorio indefinido, así que una relativa no encuentra nada.
   await expect(config).toHaveValue(/"command": "\//);
 
   await page.locator(".panel:visible .grupo").filter({ hasText: "agente de IA" }).first().screenshot({

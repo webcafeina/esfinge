@@ -5,6 +5,47 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-07 (2) · Los agentes por MCP, el paseo a mano y el paquete que se arrastra
+
+- **Se escribió la ADR 0054 entera, las ocho entregas**, después de seis rondas de preguntas al cliente. Un
+  agente —Claude Code, Claude Desktop— puede inventariar la bóveda, auditarla, **usar** una contraseña **sin
+  verla** (va al portapapeles y él recibe «copiado»), pedir un código de un solo uso —la única excepción,
+  elegida a sabiendas porque caduca en treinta segundos—, y crear, editar y borrar. **Administrar no**: ni
+  exportar, ni la maestra, ni recuperación, ni cuentas, ni proyectos, ni compartir, ni abrir la bóveda.
+- **Puerta propia** (`internal/agente`), no el canal del navegador, por tres razones que no son de estilo: un
+  agente **no tiene pestaña** y allí todo exige un origen, el testigo de allí **no tiene ámbito** y daría los
+  catorce verbos, y los frenos son del servidor y se compartirían con la extensión y con el icono.
+- **Cada secreto se aprueba en la ventana**, con válvula de cinco minutos y veinte usos, contador a la vista y
+  botón de cortar. **La válvula no cubre lo que sí se le enseña** —el código— ni lo que no se deshace —cambiar
+  una contraseña o una semilla—. Y hay **registro dentro del cuerpo cifrado**, con sus tres sitios de fusión.
+- **Lo que de verdad encontró fallos fue el paseo a mano**: arrancar el binario y hablarle por su entrada
+  estándar como lo haría un cliente de verdad. **Tres fallos de producto con prueba verde encima** —el binario
+  no se emparejaba nunca, el nombre del cliente no llegaba a la ventana, y un campo se llamaba `repetidas`
+  llevando dentro las reutilizadas—, todos tapados porque **las pruebas ponían el testigo a mano**, incluida
+  la que se llama «la tubería entera». La regla que deja: **lo que el binario tiene que hacer solo, la prueba
+  no se lo puede dar hecho.**
+- **La puerta de publicación cazó la cuarta** y tiró la tanda de la 2.44.0: `RegistroDelAgente` era **una
+  llamada aparte para dibujar** y daba 400 con la bóveda cerrada. El registro vive ahora dentro de
+  `EstadoDelAgente`, y el método, su envoltorio del puente y su línea de la lista blanca se borraron.
+- **El tampón del registro se descartó midiendo, no escribiéndolo**: 42 ms por apunte con dos mil entradas,
+  `EsperaTrasGuardar` ya agrupa las subidas tres segundos, y con tampón **matar el proceso borraría el
+  rastro**, porque `Cerrar()` descarta el cuerpo sin guardar. La fila de la deuda estaba mal escrita y se
+  corrigió.
+- **Y se cambió cómo se instala**, a raíz de que el cliente comparara con Cronos: allí se instala desde
+  Extensiones porque es un servidor **remoto** y basta pegar una URL, y Esfinge no puede serlo. Ahora hay un
+  **paquete `.mcpb`** que se arrastra a Claude Desktop —armado en la publicación por `armar-mcpb.sh`, sin la
+  herramienta de Anthropic, uno por sistema y colgado de la *release*— y la **orden de una línea** para Claude
+  Code. El JSON se queda plegado en Ajustes para lo demás.
+- **Se verificó**: `make comprobar` entero en verde, `make e2e`, cada guarda mutada, el paquete armado de
+  verdad y abierto para mirar dentro, y las tres formas de instalarlo comparadas entre sí —porque cambiar el
+  nombre del binario en uno de los tres sitios **no da ningún error**: el paquete se instala igual y no
+  arranca.
+- **Queda abierto, y es lo único**: publicar la 2.44.0 —la etiqueta existe y su tanda falló, hay que moverla—
+  y que el cliente lo instale en su Mac con Claude Desktop y con Claude Code. Eso no se puede hacer desde
+  aquí.
+
+---
+
 ## 2026-10-07 · Quitar el acceso: funcionó, y la ventana no lo contaba
 
 - **La ADR 0052 queda comprobada entera en dos ordenadores**, que era lo último del proyecto. El cliente

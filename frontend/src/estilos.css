@@ -709,6 +709,32 @@ button.discreto:hover:not(:disabled) {
   background: var(--elevada);
 }
 
+/* **Un `summary` no dice que se pulsa, y es el único de la interfaz.**
+ *
+ * Sale con el aspecto del navegador: la letra del cuerpo, sin cursor y sin nada que lo
+ * distinga del párrafo de al lado. Se viste como el botón discreto —subrayado, porque
+ * aquí no hay color que gastar (ADR 0021)— y con el filete de foco del acento, que es
+ * la pareja medida. El triángulo lo pone el navegador y se queda: es lo que dice si
+ * está abierto o cerrado. */
+summary {
+  cursor: pointer;
+  color: var(--acento);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--filete-fuerte);
+}
+
+summary:hover {
+  text-decoration-color: currentColor;
+}
+
+summary:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: var(--radio-1);
+}
+
 .botones {
   display: flex;
   gap: var(--espacio-2);

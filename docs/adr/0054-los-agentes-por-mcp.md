@@ -164,6 +164,60 @@ semilla. Todas son lo mismo visto de cerca: **lo que no se deshace**. Copiar se 
 borra solo—, borrar se deshace —treinta días—, y dejar una cuenta sin forma de entrar o soltar seis cifras al
 contexto de un modelo, no.
 
+## Y cómo se instala, que no era una línea de JSON
+
+El plan decía: **la configuración se enseña, no se escribe**, con el bloque de `mcpServers` y un botón de
+copiar. Es correcto y sigue en pie — pero el cliente miró otro proyecto de la casa, **Cronos**, y dijo que
+allí instalarlo «era natural desde Extensiones». Lo es, y por una razón que no se puede copiar: Cronos es un
+servidor **remoto**, `{"type":"http","url":"https://cronos.webcafeina.com/mcp"}`, así que se instala pegando
+una URL. **Esfinge no puede serlo**: la bóveda está en este equipo y lo que sale de ella no sale de él.
+
+Lo que sí se puede es lo otro que Claude Desktop acepta: un **paquete `.mcpb`** —antes `.dxt`—, que es un zip
+con un manifiesto, el binario dentro y un icono, y que se instala **arrastrándolo a su ventana**. Vive en
+`empaquetado/mcpb/`, lo arma `herramientas/armar-mcpb.sh` en la publicación y cuelga de la *release* al lado
+del DMG, uno por sistema. Tres cosas de ese formato que no avisan si se hacen mal:
+
+- **El binario va dentro del paquete**, no apuntado desde fuera: `${__dirname}` se expande a donde se haya
+  instalado, y es obligatorio —una ruta relativa no encuentra nada, por lo mismo de siempre—.
+- **Claude Desktop le añade `.exe` en Windows** por su cuenta, así que el manifiesto nombra `esfinge-mcp` a
+  secas en los tres.
+- **No va firmado**, como el resto de lo que sale de aquí (y por lo mismo: los 99 $/año no compensan).
+
+Y el guion **no usa la herramienta de Anthropic** para armarlo: es un zip, y meter una dependencia más en el
+camino de publicar es exactamente lo que ya costó cuatro publicaciones caídas.
+
+Con ello, Ajustes enseña **tres caminos en orden de coste** y no uno: el paquete que se arrastra, la orden de
+una línea para Claude Code —`claude mcp add esfinge <ruta>`, que ahí no hay fichero que tocar—, y el bloque de
+JSON **plegado**, para lo demás. Lo vigila `TestLasTresFormasDeInstalarloNombranLoMismo`, porque **cambiar el
+nombre del binario en uno de los tres sitios no da ningún error**: el paquete se instala igual y no arranca.
+
+## Lo que encontró el paseo a mano, y ninguna prueba
+
+Antes de publicar se recorrió el camino entero como lo haría un cliente MCP de verdad —arrancar el binario,
+saludar, listar y llamar— y **salieron tres fallos que tenían prueba verde encima**:
+
+1. **El binario no se emparejaba nunca.** Solo `estado` contestaba; todo lo demás decía `sin-emparejar`.
+2. **El nombre del cliente no llegaba a la ventana**, que enseñaba «Un agente» en vez de «Claude Code».
+3. **Un campo se llamaba `repetidas` y llevaba dentro las reutilizadas.**
+
+Lo que las tapaba es lo mismo en los tres: **las pruebas ponían el testigo a mano**, incluida la que se llama
+«la tubería entera», que hablaba con `Atender` directamente. Es la trampa de siempre —cada pieza en verde no
+prueba que estén conectadas— con una vuelta de tuerca: el ayudante de la prueba **hacía el trabajo que faltaba
+en producción**. De ahí la regla, que ya vale para cualquier cosa con emparejamiento: **lo que el binario tiene
+que hacer solo, la prueba no se lo puede dar hecho.**
+
+Y una cuarta la cazó la puerta de publicación y no el paseo: `RegistroDelAgente` era **una llamada aparte para
+dibujar**, y con la bóveda cerrada contestaba 400 en cuatro pruebas de Ajustes. Lo que la ventana necesita para
+dibujar va en el estado que ya pide — está escrito en el LÉEME del proyecto desde la vez anterior.
+
+## El tampón del registro: descartado midiendo
+
+Quedó escrito como deuda que apuntar en el registro guarda la bóveda entera en cada uso, y que hacía falta un
+tampón. **Se midió y no**: veinte apuntes con dos mil entradas son 838 ms **en total**, 42 ms cada uno, y
+`EsperaTrasGuardar` ya agrupa las subidas tres segundos. Y hay una razón mejor para no hacerlo: `Cerrar()`
+descarta el cuerpo sin guardar, así que un tampón convertiría **matar el proceso en borrar el rastro**. La fila
+de la deuda se cerró con la medición, no con código, y lo que había escrito en ella era incorrecto.
+
 ## Verificación
 
 Lo que hay que poder decir al acabar, y cada prueba mutada:
@@ -179,5 +233,9 @@ Lo que hay que poder decir al acabar, y cada prueba mutada:
 | La tubería entera | Los bytes de MCP por donde entran de verdad → socket → bóveda real → respuesta |
 | Que el registro sobrevive a una sincronización | Dos equipos, y **mutando el espejo la cruzada se pone roja** |
 
+| Que el paquete de Claude Desktop tiene la forma | Se arma de verdad, se abre el zip y se mira dentro: **un paquete mal formado no da ningún error**, simplemente no instala |
+| Que las tres formas de instalarlo nombran lo mismo | El manifiesto, la orden y el JSON comparados entre sí |
+
 **Y lo que no se puede probar aquí, dicho como tal:** que un cliente MCP de verdad lo cargue y lo use. Eso se
-ve en el Mac del cliente, como todo lo demás.
+ve en el Mac del cliente, como todo lo demás. Lo más cerca que se llegó es **el paseo a mano**, que arranca el
+binario y habla con él por su entrada estándar — y encontró tres fallos de producto que ninguna prueba veía.

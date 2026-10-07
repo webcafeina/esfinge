@@ -344,8 +344,12 @@ type EstadoDelAgente struct {
 	Pide string `json:"pide,omitempty"`
 	// Permitidos son los agentes a los que se les dijo que sí. **Sin el testigo**.
 	Permitidos []AgentePermitido `json:"permitidos"`
-	// Configuracion es el bloque que hay que pegarle al cliente MCP.
+	// Configuracion es el bloque que hay que pegarle a un cliente que se configure con
+	// un fichero. **Es lo tosco**, y por eso en la pantalla va plegado.
 	Configuracion string `json:"configuracion"`
+	// Orden es lo mismo para Claude Code, que se configura con una orden y no con un
+	// fichero: una línea que se copia y se pega en una terminal.
+	Orden string `json:"orden"`
 	// Quiere es lo que un agente está pidiendo y hay que contestar, nulo si nada.
 	//
 	// **Lleva el título de la entrada**, y tiene que llevarlo: «un agente quiere una
@@ -354,7 +358,19 @@ type EstadoDelAgente struct {
 	Quiere *loQuePideUnAgente `json:"quiere,omitempty"`
 	// Valvula es cómo va el «todo lo de este agente durante un rato», si está abierta.
 	Valvula comoVaLaValvula `json:"valvula"`
+	// Dado es lo último que se le ha dado a un agente, para enseñarlo aquí mismo.
+	//
+	// **Va dentro del estado y no en una llamada aparte**, y eso es una regla de este
+	// proyecto que ya costó dos veces: el registro vive en la bóveda, así que pedirlo
+	// por su cuenta **falla con la bóveda cerrada** y deja un 400 en la consola de una
+	// pantalla que por lo demás funciona. Lo que la pantalla necesita para dibujar va
+	// en lo que ya pide.
+	Dado []boveda.Apunte `json:"dado,omitempty"`
 }
+
+// LoUltimoQueSeEnsena son los apuntes que caben en la pantalla. El resto está en la
+// bóveda y se purga solo a los noventa días.
+const LoUltimoQueSeEnsena = 20
 
 // EstadoDelAgente dice cómo está la puerta de los agentes.
 func (a *App) EstadoDelAgente() EstadoDelAgente {
@@ -370,8 +386,18 @@ func (a *App) EstadoDelAgente() EstadoDelAgente {
 		Pide:          a.agentes.quienPide(),
 		Permitidos:    a.agentes.ver(),
 		Configuracion: ConfiguracionParaElCliente(),
+		Orden:         OrdenParaClaudeCode(),
 		Quiere:        a.permisos.loPendiente(),
 		Valvula:       a.permisos.comoVa(time.Now()),
+	}
+	// **Con la bóveda cerrada no hay nada que enseñar, y eso no es un error**: el
+	// registro vive dentro de ella.
+	if b := a.boveda(); b != nil {
+		todo := b.Registro()
+		if len(todo) > LoUltimoQueSeEnsena {
+			todo = todo[:LoUltimoQueSeEnsena]
+		}
+		e.Dado = todo
 	}
 	if srv != nil {
 		e.Donde = srv.Donde()
@@ -729,15 +755,6 @@ func (a *App) DenegarLoQuePideElAgente() error {
 	return nil
 }
 
-// RegistroDelAgente es lo que se le ha dado, para enseñarlo en la ventana.
-func (a *App) RegistroDelAgente() ([]boveda.Apunte, error) {
-	b := a.boveda()
-	if b == nil {
-		return nil, boveda.ErrCerrada
-	}
-	return b.Registro(), nil
-}
-
 // CortarAlAgente cierra la válvula en el acto.
 //
 // Es el botón que hace que «durante cinco minutos» sea soportable: lo que se concede se
@@ -989,4 +1006,16 @@ func siNoDice(quien string) string {
 		return "Un agente"
 	}
 	return quien
+}
+
+// OrdenParaClaudeCode es cómo se añade Esfinge ahí: una orden, no un fichero.
+//
+// **La ruta va entera**, por lo mismo que en el bloque de configuración: lo que lo
+// arranca puede hacerlo desde cualquier carpeta.
+func OrdenParaClaudeCode() string {
+	ruta, err := rutaDelServidorMCP()
+	if err != nil || ruta == "" {
+		ruta = "esfinge-mcp"
+	}
+	return "claude mcp add esfinge " + ruta
 }

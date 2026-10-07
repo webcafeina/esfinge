@@ -98,9 +98,13 @@ var loQuePuedeCruzarElPuente = []string{
 	"EstadoDelAgente", "PermitirAgente", "OlvidarAgente",
 	// Y lo que un agente pide y hay que contestar (ADR 0054). **El sí y el no son de
 	// la ventana y de ningún otro sitio**: es lo único que hay entre un agente al que
-	// alguien le ha dicho qué pedir y la bóveda. `RegistroDelAgente` es de lectura y
-	// **no se le da al agente**: existe para que lo lea la persona.
-	"AprobarLoQuePideElAgente", "DenegarLoQuePideElAgente", "RegistroDelAgente",
+	// alguien le ha dicho qué pedir y la bóveda.
+	//
+	// **Lo que se le ha dado no tiene método propio**: viaja dentro de
+	// `EstadoDelAgente`. El registro vive en la bóveda, así que pedirlo aparte falla
+	// con la bóveda cerrada y deja un 400 en una pantalla que por lo demás funciona —
+	// que es la trampa que ya costó una vuelta con `POST /api/Proyectos`.
+	"AprobarLoQuePideElAgente", "DenegarLoQuePideElAgente",
 	// Y cortar lo concedido, que es lo que hace soportable el «durante cinco minutos»:
 	// lo que se da se puede retirar sin esperar a que caduque.
 	"CortarAlAgente",

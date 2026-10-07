@@ -1,0 +1,23 @@
+{
+  "manifest_version": "0.3",
+  "name": "esfinge",
+  "display_name": "Esfinge",
+  "version": "0.0.0",
+  "description": "Busca en tu bóveda de Esfinge, úsala sin ver las contraseñas y ayuda a ordenarla.",
+  "long_description": "Deja que un agente consulte la bóveda de Esfinge que tengas abierta en este ordenador: qué cuentas hay, cuáles comparten contraseña, cuáles no tienen segundo factor. Para usar una contraseña la copia al portapapeles —el agente no llega a verla— y cada uso lo apruebas tú en la ventana de Esfinge, que además deja constancia de lo que se le ha dado. Necesita Esfinge abierta y el canal de agentes encendido en sus Ajustes, donde viene apagado.",
+  "author": { "name": "Webcafeína", "url": "https://webcafeina.com" },
+  "homepage": "https://github.com/webcafeina/esfinge",
+  "icon": "icon.png",
+  "server": {
+    "type": "binary",
+    "entry_point": "server/esfinge-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/server/esfinge-mcp",
+      "args": [],
+      "env": {}
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"]
+  }
+}

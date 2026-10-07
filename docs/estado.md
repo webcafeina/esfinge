@@ -56,8 +56,28 @@
 > **usar** una contraseña sin verla, pedir un código, crear, editar y borrar. Lo que no puede: administrar
 > nada —exportar, la maestra, la recuperación, cuentas, proyectos, compartir— ni abrir la bóveda.
 >
-> **La siguiente acción: decidir si se publica.** Y luego, probarlo con un cliente MCP de verdad, que es lo
-> único que no se puede hacer desde aquí.
+> **Y tres cosas que pasaron después de darlo por hecho, todas del mismo tipo:**
+>
+> - **El paseo a mano** —arrancar el binario y hablarle por su entrada estándar, como haría un cliente de
+>   verdad— encontró **tres fallos de producto con prueba verde encima**: el binario no se emparejaba nunca,
+>   el nombre del cliente no llegaba a la ventana, y un campo se llamaba `repetidas` llevando dentro las
+>   reutilizadas. Las tapaba que **las pruebas ponían el testigo a mano**, incluida la que se llama «la
+>   tubería entera».
+> - **La puerta de la publicación cazó la cuarta**: `RegistroDelAgente` era una llamada aparte para dibujar y
+>   contestaba 400 con la bóveda cerrada. El registro vive ahora dentro de `EstadoDelAgente`.
+> - **El tampón del registro se descartó midiendo**, no escribiéndolo: 42 ms por apunte, `EsperaTrasGuardar`
+>   ya agrupa, y con tampón **matar el proceso borraría el rastro**. Lo que había escrito en la deuda era
+>   incorrecto y se corrigió.
+>
+> **Y cómo se instala, que no era una línea de JSON.** El cliente preguntó por qué en Cronos se instala desde
+> Extensiones y aquí no: porque Cronos es **remoto** y se pega una URL, y Esfinge no puede serlo. Lo que sí
+> cabe es un **paquete `.mcpb`** que se arrastra a Claude Desktop —se arma en la publicación, uno por sistema,
+> y cuelga de la *release* al lado del DMG— y la **orden de una línea** para Claude Code. El bloque de JSON se
+> queda plegado para lo demás.
+>
+> **La siguiente acción: publicar la 2.44.0.** La etiqueta existe y **su tanda falló** —la del 400—, así que
+> hay que moverla. Después, lo único que no se puede hacer desde aquí: **que el cliente lo instale en su Mac**
+> con Claude Desktop y con Claude Code, y use la bóveda desde un agente.
 >
 > **Lo que no se cambia sin preguntar, en una línea cada cosa:** el agente **actúa sin ver** —la contraseña
 > al portapapeles—, con **una excepción**, el código de un solo uso; **cada secreto se aprueba en la

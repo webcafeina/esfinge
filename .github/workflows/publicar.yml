@@ -223,10 +223,21 @@ jobs:
       - name: Armar la imagen de disco
         run: empaquetado/macos/armar-dmg.sh "${{ steps.v.outputs.n }}"
 
+      # **Y el paquete instalable de Claude Desktop** (ADR 0054). Con el binario
+      # universal, el mismo que va dentro de la aplicación: así la extensión no depende
+      # de dónde esté instalada Esfinge ni se rompe al actualizarla.
+      - name: Armar el paquete de Claude Desktop
+        run: |
+          lipo -create -output esfinge-mcp-universal esfinge-mcp-amd64 esfinge-mcp-arm64
+          herramientas/armar-mcpb.sh "${{ steps.v.outputs.n }}" esfinge-mcp-universal \
+            "$PWD/Esfinge-${{ steps.v.outputs.n }}-macos.mcpb"
+
       - uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: "*.dmg"
+          path: |
+            *.dmg
+            *.mcpb
 
   windows:
     name: Windows · instalador
@@ -388,10 +399,19 @@ jobs:
             exit 1
           fi
 
+      # Y el paquete de Claude Desktop, con el binario de Windows que ya está compilado.
+      - name: Armar el paquete de Claude Desktop
+        shell: bash
+        run: |
+          herramientas/armar-mcpb.sh "${{ steps.v.outputs.n }}" \
+            build/windows/installer/esfinge-mcp.exe "$PWD/Esfinge-${{ steps.v.outputs.n }}-windows.mcpb"
+
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: "*-windows-instalador.exe"
+          path: |
+            *-windows-instalador.exe
+            *.mcpb
 
   linux:
     name: Linux · paquete
@@ -480,11 +500,17 @@ jobs:
             -C "$GITHUB_WORKSPACE" esfinge esfinge-puente esfinge-mcp LICENSE
           ls -lh *.deb *.tar.gz
 
+      - name: Armar el paquete de Claude Desktop
+        run: |
+          herramientas/armar-mcpb.sh "${{ steps.v.outputs.n }}" esfinge-mcp \
+            "$PWD/Esfinge-${{ steps.v.outputs.n }}-linux.mcpb"
+
       - uses: actions/upload-artifact@v4
         with:
           name: linux
           path: |
             *.deb
+            *.mcpb
             *.tar.gz
 
   linea-de-comandos:

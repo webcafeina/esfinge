@@ -16,7 +16,6 @@ import {
   type Apertura,
   type Avance,
   type Entrada,
-  type ApunteDelAgente,
   type EstadoDelAgente,
   type EstadoDelNavegador,
   type EstadoDesbloqueo,
@@ -1062,13 +1061,8 @@ function Ajustes({
   }, []);
 
   const [elAgente, setElAgente] = useState<EstadoDelAgente | null>(null);
-  // Lo que se le ha dado a los agentes. **Vive dentro de la bóveda**, así que con la
-  // bóveda cerrada no hay nada que leer y la lista se queda vacía — que es lo correcto:
-  // no es un error, es que eso no se puede ver sin abrir.
-  const [loDado, setLoDado] = useState<ApunteDelAgente[]>([]);
   const leerAgente = useCallback(() => {
     esfinge.estadoDelAgente().then(setElAgente).catch(() => {});
-    esfinge.registroDelAgente().then(setLoDado).catch(() => setLoDado([]));
   }, []);
 
   // Los sitios en los que la extensión no ofrece guardar, que viven dentro de la
@@ -1408,23 +1402,40 @@ function Ajustes({
         {elAgente?.escuchando && (
           <>
             <p className="nota seleccionable">Escucha en {elAgente.donde}</p>
-            {/* **La configuración se enseña, no se escribe.** Escribir en el fichero
-                de configuración de otro programa es algo que solo se hace cuando no
-                queda más remedio, como con los manifiestos del navegador; aquí sí
-                queda, y los clientes son muchos y cambian. */}
-            <label htmlFor="config-mcp">Pega esto en tu agente</label>
-            <textarea
-              id="config-mcp"
+            {/* **Lo fácil primero, y lo tosco después para quien lo necesite.**
+
+                Pegar un bloque de JSON en el fichero de configuración de otro programa
+                sale bien una vez de cada dos: hay que encontrar el fichero, no romper
+                su sintaxis y acertar con la ruta entera. Para Claude Desktop hay un
+                paquete que se instala arrastrándolo, y para Claude Code basta una
+                orden. El JSON se queda para lo demás, plegado. */}
+            <p className="nota">
+              <strong>En Claude Desktop</strong>: descarga el paquete{" "}
+              <code>Esfinge-…-macos.mcpb</code> de la página de descargas y arrástralo a su ventana,
+              o ábrelo con doble clic.
+            </p>
+            <label htmlFor="config-mcp-orden">En Claude Code</label>
+            <input
+              id="config-mcp-orden"
               className="seleccionable"
               readOnly
-              rows={7}
-              value={elAgente.configuracion}
+              value={elAgente.orden}
+              onFocus={(e) => e.currentTarget.select()}
             />
-            <p className="nota">
-              En Claude Desktop va en <code>claude_desktop_config.json</code>; en Claude Code, con{" "}
-              <code>claude mcp add</code>. La ruta tiene que ser la de arriba, entera: algunos
-              arrancan desde una carpeta cualquiera y una ruta corta no encuentra nada.
-            </p>
+            <details>
+              <summary>En otro agente, o a mano</summary>
+              <p className="nota">
+                Esto es lo que esperan los que se configuran con un fichero. La ruta tiene que ir
+                entera: algunos arrancan desde una carpeta cualquiera y una corta no encuentra nada.
+              </p>
+              <textarea
+                id="config-mcp"
+                className="seleccionable"
+                readOnly
+                rows={7}
+                value={elAgente.configuracion}
+              />
+            </details>
           </>
         )}
 
@@ -1585,11 +1596,11 @@ function Ajustes({
 
             Vive **dentro de la bóveda cifrada**, así que esto solo se ve con ella
             abierta. Se guardan noventa días. */}
-        {loDado.length > 0 && (
+        {(elAgente?.dado?.length ?? 0) > 0 && (
           <div>
             <label>Lo que les has dado</label>
             <ul className="lista-papelera">
-              {loDado.slice(0, 20).map((d) => (
+              {(elAgente?.dado ?? []).map((d) => (
                 <li key={d.id}>
                   <span className="nombre">{d.titulo || "Una entrada"}</span>
                   <span className="nota">
@@ -1599,9 +1610,7 @@ function Ajustes({
                 </li>
               ))}
             </ul>
-            {loDado.length > 20 && (
-              <p className="nota">Y {loDado.length - 20} más. Se guardan noventa días.</p>
-            )}
+            <p className="nota">Se guardan noventa días.</p>
           </div>
         )}
 

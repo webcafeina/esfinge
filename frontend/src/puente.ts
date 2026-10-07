@@ -281,8 +281,10 @@ export type EstadoDelAgente = {
   pide?: string;
   /** Los que tienen permiso. **Sin el testigo**: no cruza el puente. */
   permitidos: { quien: string; desde: string }[];
-  /** El bloque que hay que pegarle al cliente MCP. */
+  /** El bloque para los clientes que se configuran con un fichero. **Lo tosco.** */
   configuracion: string;
+  /** Y la orden de una línea para Claude Code, que no usa fichero. */
+  orden: string;
   /**
    * Lo que un agente está pidiendo y hay que contestar, ausente si no hay nada.
    *
@@ -292,6 +294,14 @@ export type EstadoDelAgente = {
   quiere?: { quien: string; que: string; id: string; titulo: string; cuando: string };
   /** Cómo va el «todo lo de este agente durante un rato», si está abierta. */
   valvula: { abierta: boolean; quedan: number; usadas: number; tope: number; ultimos?: string[] };
+  /**
+   * Lo último que se le ha dado a un agente.
+   *
+   * **Viene aquí dentro y no por su propia llamada**: el registro vive en la bóveda, así
+   * que pedirlo aparte falla con la bóveda cerrada y deja un 400 en la consola de una
+   * pantalla que por lo demás funciona.
+   */
+  dado?: ApunteDelAgente[];
 };
 
 
@@ -967,8 +977,6 @@ export const esfinge = {
   cortarAlAgente: () => llamar<void>("CortarAlAgente"),
   /** Y el «no», que **queda apuntado**: es la señal por la que el registro existe. */
   denegarLoQuePideElAgente: () => llamar<void>("DenegarLoQuePideElAgente"),
-  /** Lo que se le ha dado a los agentes, para enseñarlo. Con la lista a la fuerza. */
-  registroDelAgente: () => llamar<ApunteDelAgente[] | null>("RegistroDelAgente").then((r) => r ?? []),
 
   /** Escribe las entradas **en claro**, por el diálogo del sistema. */
   exportarBoveda: () => llamar<string>("ExportarBoveda"),
