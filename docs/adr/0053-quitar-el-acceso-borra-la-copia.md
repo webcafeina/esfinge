@@ -1,6 +1,6 @@
 # 0053 · Quitar el acceso borra la copia del otro equipo
 
-**Fecha:** 2026-10-07 · **Estado:** aceptada, sin escribir
+**Fecha:** 2026-10-07 · **Estado:** aceptada, hecha, desplegada y **publicada en la 2.42.0** · **comprobada en los dos Macs del cliente** el mismo día
 
 ## Contexto
 
@@ -150,5 +150,6 @@ fichero fuera— y apunta por el camino los estados que llegó a ver, que es lo 
 enteró y no borró»: con el borrado puesto dice `[al-dia]` y quitándolo dice `[sin-acceso]`. **Un estado que
 deja de ser estable rompe a quien lo esperaba**, y lo que no deja de ser estable es lo que pasó.
 
-**Y lo que no se puede probar aquí, y se dice:** que el borrado ocurra en el equipo de otra persona de
-verdad. Eso se ve en los dos Macs del cliente, como la 0052.
+**Y comprobado en el equipo de otra persona de verdad** (2026-10-07, Mac 2 del cliente, con la 2.42.0 y los dos Workers desplegados): actualizó, entró, y **al sincronizar la bóveda desapareció** y la fila quedó tachada con su aviso. No esperó ni al minuto: le llegó en la pasada que dispara abrirla.
+
+Lo único que salió de verlo, y es de aspecto: **el aviso queda embutido en la fila**, apretado contra el botón de quitarla. Aquí no se vio porque la captura de Chromium en Linux sale holgada. Está en `deuda.md`, y el cliente lo dejó para más adelante con esas palabras.

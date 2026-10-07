@@ -2,50 +2,30 @@
 
 Última actualización: **2026-10-07**
 
-> **La ADR 0052 está comprobada entera en dos ordenadores de verdad, y con eso no queda nada del proyecto
-> sin ver en una máquina salvo Windows y GNOME.** El 2026-10-07 el cliente quitó el acceso desde el Mac 1 y
-> en el Mac 2 pasó lo que tenía que pasar: **el servidor cerró la puerta**, **su bóveda personal no se
-> cerró** —el 403 no se confundió con el 401, que es el fallo que más preocupaba— y **lo que ya estaba
-> bajado se quedó**, que es justo lo que la pantalla del Mac 1 promete.
+> **No queda nada del proyecto sin comprobar en una máquina de verdad, salvo Windows y GNOME.** Las dos
+> fichas que quedaban vivas se cerraron hoy en los dos Macs del cliente:
 >
-> **Pero la ventana no lo contaba, y ahí había dos fallos**, los dos arreglados y **pendientes de
-> publicar**:
+> - **La ADR 0052** —dar acceso a una bóveda de proyecto— con el último tramo: **quitar el acceso**. El
+>   servidor cerró la puerta, **su bóveda personal no se cerró** —el 403 no se confundió con el 401— y lo
+>   bajado se quedó.
+> - **Y la ADR 0053**, que salió de ahí: preguntó si los demás gestores sí borran de la otra cuenta. **Sí, y
+>   ninguno lo promete.** Publicada en la **2.42.0** con los dos Workers desplegados, y **comprobada el mismo
+>   día**: actualizó el Mac 2, entró, y al sincronizar la bóveda desapareció y quedó la fila tachada. No
+>   esperó ni al minuto.
 >
-> 1. **`sin-acceso` no lo conocía la ventana.** Ni en el tipo del puente ni en `frase()`, así que caía en el
->    cajón de sastre y decía **«Sin sincronizar»** con el mensaje bueno del servidor llegando y sin
->    enseñarse. Es la trampa del puente con otra cara: **lo que faltaba no era un método, era un valor.** Lo
->    vigila `TestLosEstadosDeLaSincroLosEnsenaLaVentana`, mutado por los dos lados.
-> 2. **Las flechas de sincronizar giraban veinte segundos** por clic —«en bucle», lo vio él—, porque la
->    lista de estados que cuentan como pasada terminada se había quedado corta. **Y no era de la 0052**:
->    `muchos-borrados` estaba igual desde la 2.25.2. Ahora se escribe al revés.
+> **Lo abierto de hoy, todo en [deuda.md](deuda.md) y nada urgente:**
 >
-> **La 2.41.1 está publicada** (2026-10-07, los siete trabajos en verde y **el paquete de Chrome subido**,
-> «Enviada a revisión»). El cliente la instaló y confirmó el mensaje: dice «Ya no tienes acceso a esta
-> bóveda». Y dijo lo que faltaba, que es lo que abrió la ADR 0053: **sigue pudiendo entrar y ver las dos
-> credenciales**.
+> 1. **El aviso de la fila retirada queda embutido**, apretado contra el botón de quitarla. Lo vio él y lo
+>    dejó para la mejora siguiente. **Hace falta su captura antes de tocarlo**: aquí sale holgado.
+> 2. **Quien solo use la extensión no ve tachada la fila** —su copia sí se borra—, hasta que abra la ventana.
+> 3. **El intermitente de «Sincronizada»**, con voz desde ayer y **dos candidatos descartados midiendo**.
 >
-> **La siguiente acción: desplegar el Worker y publicar la 2.42.0** con la ADR 0053 —quitar el acceso borra
-> la bóveda en el equipo del otro—. **Hacen falta las dos partes**: quien dice «revocado» es el servidor, así
-> que sin desplegarlo la aplicación no tiene de qué enterarse. El orden es el de siempre: pruebas, producción
-> y luego la etiqueta. El despliegue es compatible hacia atrás —añade un campo al cuerpo de un 403 que las
-> versiones viejas ignoran—.
->
-> **Y lo que él tiene que ver después, en el Mac 2**: que la bóveda **desaparezca** al abrir Esfinge y que en
-> Proyectos quede la fila tachada —«Prueba de acceso ya no está…»— con «Quitarla de la lista».
->
-> **Y devolver el Mac 2 como estaba**, que sigue pendiente porque su carpeta está **apartada, no borrada**:
+> **Y el Mac 2 sigue con su carpeta apartada**, que es lo único pendiente de hacer en una máquina:
 >
 > ```sh
 > rm -rf ~/Library/Application\ Support/Esfinge
 > mv ~/Library/Application\ Support/Esfinge-mio ~/Library/Application\ Support/Esfinge
 > ```
->
-> **Y lo que se midió hoy y no se sostuvo, para que nadie lo vuelva a razonar**: se buscó el intermitente de
-> «Sincronizada» por otro lado y salió un segundo candidato —`usaCuenta` tiraba el aviso que llegaba con su
-> estado nulo y dejaba que una lectura vieja lo pisara—. **Las dos cosas están arregladas** porque son
-> fallos de esa función, pero **al forzar el orden malo en una prueba el rótulo se recuperaba igual**, así
-> que **ese camino por sí solo no deja el rótulo pegado** y la prueba se quitó en vez de dejarla verde sin
-> vigilar nada. Está en [deuda.md](deuda.md) con lo que queda por descartar.
 ---
 
 > **Cerrado el 2026-10-05 (mañana): las bóvedas por proyecto.** Tres publicaciones ese día —2.39.0, 2.39.1 y 2.39.2— y el cliente las fue

@@ -61,6 +61,19 @@ Tres cosas de cómo se hizo que conviene no volver a razonar:
   copias distintas. Lo que la extensión no hace es tachar la fila, y está en `deuda.md` con el porqué: sería
   una segunda implementación del mismo cambio sobre el mismo cuerpo.
 
+**Y comprobada el mismo día en su Mac 2**, con la 2.42.0 y los dos Workers desplegados: actualizó, entró, y
+**al sincronizar la bóveda desapareció** con su fila tachada. Con eso **no queda nada del proyecto sin ver en
+una máquina de verdad salvo Windows y GNOME**.
+
+Lo único que salió de verlo es de aspecto —**el aviso queda embutido en la fila**, apretado contra el botón de
+quitarla— y lo dejó para más adelante. Aquí no se vio: la captura de Chromium en Linux sale holgada, que es la
+diferencia de tipografía y densidad del sistema. **Antes de tocarlo hace falta su captura.**
+
+**Y una de orden que se repitió dos veces hoy, en los dos sentidos:** el paseo entre dos cuentas se puso rojo
+**con el borrado funcionando**, porque esperaba leer `sin-acceso` y ese estado pasó a ser transitorio; y por la
+mañana una prueba del intermitente pasaba **con el arreglo mutado**, o sea sin vigilar nada. Las dos cosas se
+arreglaron igual: **esperar al hecho, y mutar para ver si la prueba lo nota.**
+
 ## 2026-10-06 (5) · La 2.41.0 publicada, y la prueba a un paso del final
 
 - **Se miró la prueba antes de relanzar nada**, que es lo que el cliente pidió. No se pudo demostrar la
