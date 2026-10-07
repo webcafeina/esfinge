@@ -383,6 +383,12 @@ export type CompartidaEnLaLista = {
   usado: string;
   /** Si el fichero ya está aquí. Si no, la lista ofrece traerlo. */
   enEsteEquipo: boolean;
+  /**
+   * Cuándo el dueño quitó el acceso (ADR 0053). Con fecha, esta fila ya **no es una
+   * bóveda**: es el aviso de una que se fue, el fichero ya no está en este equipo y lo
+   * único que se puede hacer con ella es quitarla de la lista.
+   */
+  retirada: string;
 };
 
 /** Una persona con acceso a la bóveda abierta. */

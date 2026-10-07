@@ -37,6 +37,10 @@ type ErrorDelServidor struct {
 	Mensaje string
 	// Version es la de ahora, cuando se ha intentado escribir sobre otra (412).
 	Version int64
+	// Codigo es lo que el servidor dice que ha pasado, **cuando lo dice** (ADR 0053).
+	// Vacío es lo normal: solo lo mandan los errores que el cliente tiene que
+	// distinguir sin leer el mensaje. Hoy, los dos del 403 de una bóveda compartida.
+	Codigo string
 }
 
 func (e *ErrorDelServidor) Error() string { return e.Mensaje }
@@ -68,6 +72,32 @@ func SinAcceso(err error) bool {
 	var e *ErrorDelServidor
 	return errors.As(err, &e) && e.Estado == http.StatusForbidden
 }
+
+// Revocado dice si el servidor ha dicho **con esas palabras** que ya no eres titular de
+// esa bóveda, y es lo único que autoriza a **borrarla del disco** (ADR 0053).
+//
+// **No es `SinAcceso`**, y la diferencia es todo lo que hay entre dejar de sincronizar y
+// destruir la bóveda de un cliente:
+//
+//   - **El 403 tiene dos causas.** La otra es ser titular de solo ver y haber intentado
+//     subir. Borrar por ésa sería borrar porque alguien con permiso de ver intentó
+//     guardar.
+//   - **Y un 403 puede no venir del Worker.** Cualquier portero delante —Cloudflare
+//     Access contesta con HTML, que ya costó un «invalid character '<'»— puede
+//     devolverlo, y con «403 y borro» uno mal configurado borraría las bóvedas de todos
+//     los equipos a la vez, sin vuelta.
+//
+// Así que hacen falta las tres cosas: el 403, un cuerpo que se haya podido leer como el
+// nuestro, y que **ese cuerpo lo diga**. Lo manda solo el camino de bajar, que es lo
+// único que puede hacer cualquier titular con cualquiera de los dos permisos.
+func Revocado(err error) bool {
+	var e *ErrorDelServidor
+	return errors.As(err, &e) && e.Estado == http.StatusForbidden && e.Codigo == CodigoRevocado
+}
+
+// CodigoRevocado es el valor que manda el servidor, y vive aquí para que las dos partes
+// se lean juntas. En el Worker es `CodigoDeError` de `protocolo.ts`.
+const CodigoRevocado = "revocado"
 
 // Cliente habla con un servidor de cuentas.
 type Cliente struct {
@@ -654,6 +684,7 @@ func errorDe(resp *http.Response) error {
 	var r struct {
 		Error   string `json:"error"`
 		Version int64  `json:"version"`
+		Codigo  string `json:"codigo"`
 	}
 	_ = json.Unmarshal(crudo, &r)
 	if r.Error == "" {
@@ -675,7 +706,7 @@ func errorDe(resp *http.Response) error {
 			r.Error += ": " + t
 		}
 	}
-	return &ErrorDelServidor{Estado: resp.StatusCode, Mensaje: r.Error, Version: r.Version}
+	return &ErrorDelServidor{Estado: resp.StatusCode, Mensaje: r.Error, Version: r.Version, Codigo: r.Codigo}
 }
 
 func leerHasta(r io.Reader, n int64) ([]byte, error) {

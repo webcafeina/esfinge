@@ -750,25 +750,37 @@ function CompartidasConmigo({
       <h3>Compartido conmigo</h3>
       <ul className="proyectos">
         {lista.map((c) => (
-          <li key={c.dueno + c.ref}>
-            <button className="abrir-proyecto" onClick={() => entrar(c)} disabled={trabajando !== ""}>
-              {/* El mismo glifo que un proyecto propio, **a propósito**: es un
-                  proyecto, de otra persona. Lo que lo distingue va en el texto —de
-                  quién es y si solo se puede mirar—, que es lo que de verdad hay que
-                  leer antes de entrar. Un glifo nuevo aquí sería una cosa más que
-                  aprender para decir lo mismo peor. */}
-              <Icono nombre="proyectos" />
-              <span className="nombre">{c.nombre}</span>
-              <span className="aparte">
-                {trabajando === c.dueno + c.ref
-                  ? "Abriendo…"
-                  : !c.enEsteEquipo
-                    ? "Se traerá a este equipo"
-                    : c.permiso === "ver"
-                      ? "Solo puedes ver"
-                      : "Puedes editar"}
-              </span>
-            </button>
+          <li key={c.dueno + c.ref} className={c.retirada ? "retirada" : undefined}>
+            {/* **Una retirada ya no es una bóveda: es el aviso de una que se fue**
+                (ADR 0053). Así que no se puede pulsar — el fichero no está—, y lo que
+                dice es qué pasó y cuándo. La fila se queda, tachada, porque sin ella
+                no hay forma de contar cuál era: es lo que hace el resto del proyecto
+                al cerrar algo. */}
+            {c.retirada ? (
+              <p className="aviso">
+                <strong>{c.nombre}</strong> ya no está: quien te la compartió te quitó el acceso{" "}
+                {cuando(c.retirada)}. Se ha borrado de este equipo.
+              </p>
+            ) : (
+              <button className="abrir-proyecto" onClick={() => entrar(c)} disabled={trabajando !== ""}>
+                {/* El mismo glifo que un proyecto propio, **a propósito**: es un
+                    proyecto, de otra persona. Lo que lo distingue va en el texto —de
+                    quién es y si solo se puede mirar—, que es lo que de verdad hay que
+                    leer antes de entrar. Un glifo nuevo aquí sería una cosa más que
+                    aprender para decir lo mismo peor. */}
+                <Icono nombre="proyectos" />
+                <span className="nombre">{c.nombre}</span>
+                <span className="aparte">
+                  {trabajando === c.dueno + c.ref
+                    ? "Abriendo…"
+                    : !c.enEsteEquipo
+                      ? "Se traerá a este equipo"
+                      : c.permiso === "ver"
+                        ? "Solo puedes ver"
+                        : "Puedes editar"}
+                </span>
+              </button>
+            )}
             <button
               className="discreto"
               onClick={async () => {
@@ -780,7 +792,7 @@ function CompartidasConmigo({
                 }
               }}
             >
-              Dejar de verla
+              {c.retirada ? "Quitarla de la lista" : "Dejar de verla"}
             </button>
           </li>
         ))}
@@ -805,8 +817,11 @@ function CompartidasConmigo({
  *   - **«Ver» lo impone el servidor, no el cifrado.** Quien puede ver tiene con qué
  *     descifrar, así que puede escribir en su copia; lo que no puede es subirla. Se
  *     dice con las mismas palabras con que Esfinge dice que Touch ID es un cerrojo.
- *   - **Quitar el acceso no borra lo que ya se bajó.** Desde aquí no hay forma, y
- *     media promesa en un gestor de contraseñas es peor que ninguna.
+ *   - **Quitar el acceso borra la bóveda en el equipo del otro** (ADR 0053), y la
+ *     pantalla dice **lo que eso no es**: pasa cuando esa persona abre Esfinge, así que
+ *     si no lo abre no pasa, y no protege de quien haya querido guardarse una copia.
+ *     Hasta la 2.41.1 no se borraba nada y aquí ponía que no había forma; sí la había,
+ *     la misma que usan Dashlane y Bitwarden, y lo que no se puede es **prometerlo**.
  *   - **Quien recibe acceso ve el correo de los demás que lo tienen.** No hay forma
  *     de que no lo vea si la lista se puede leer, así que se dice.
  */
@@ -900,10 +915,10 @@ function ElAcceso({ alFallar }: { alFallar: (m: string) => void }) {
 
       {quitando !== "" && (
         <p className="aviso">
-          Dejará de recibir cambios en cuanto esto llegue al servidor.{" "}
-          <strong>Lo que ya tenía en su ordenador se queda ahí</strong>, y desde aquí no hay forma de
-          borrarlo. Si lo de dentro no puede estar en sus manos, lo que hay que cambiar son las contraseñas,
-          no esta bóveda.
+          Dejará de recibir cambios, y la bóveda <strong>se borrará de su ordenador</strong> la próxima vez
+          que abra Esfinge. <strong>Si no lo abre, no se borra</strong>, y esto tampoco protege de quien
+          haya querido guardarse una copia a mano: si lo de dentro no puede estar en sus manos, lo que hay
+          que cambiar son las contraseñas, no esta bóveda.
         </p>
       )}
 

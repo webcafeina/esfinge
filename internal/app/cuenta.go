@@ -988,9 +988,23 @@ func (a *App) alSincronizar(r sincro.Resultado, err error) {
 		// es quién entra en la bóveda de otra persona. Cerrar la tuya porque alguien
 		// te quitó el acceso a la suya sería castigarte por lo que hizo otro.
 		//
-		// Y lo que se queda en este equipo se queda: eso lo dice la pantalla, sin
-		// disimularlo, porque desde aquí no hay forma de borrarlo.
 		e = EstadoSincro{Estado: "sin-acceso", Mensaje: err.Error()}
+		// **Y si el servidor dice que ya no soy titular, la bóveda se va de este
+		// equipo** (ADR 0053). Hasta la 2.41.1 se quedaba para siempre, que dejaba la
+		// bóveda de un cliente abierta y legible en el equipo de quien ya no trabaja con
+		// él; lo hacen así Dashlane y Bitwarden, y lo eligió el cliente **con el aviso**,
+		// que es lo que ellos no hacen.
+		//
+		// `Revocado` y no `SinAcceso`, y ahí está toda la diferencia entre dejar de
+		// sincronizar y destruir una bóveda: el 403 también es «solo puedes ver» y además
+		// puede venir de un portero que nadie puso ahí para esto.
+		//
+		// Va en otra gorrutina **porque esto cierra el vigilante** —ésta es la suya—, y
+		// con el dueño y la referencia **leídos ahora**: dentro de la gorrutina la bóveda
+		// activa ya puede ser otra, y entonces se borraría la que no es.
+		if cuenta.Revocado(err) {
+			go a.retirarLaCompartida(a.duenoDeLaActiva(), a.bovedaActiva())
+		}
 	case errors.Is(err, boveda.ErrMuchosBorrados):
 		e = EstadoSincro{Estado: "muchos-borrados", Mensaje: err.Error()}
 	case errors.Is(err, boveda.ErrOtraBoveda):

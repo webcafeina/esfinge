@@ -423,6 +423,9 @@ func (g generador) lado(base []Entrada, ids []string) contenido {
 			Dueno: g.de("0123456789abcdef", "fedcba9876543210"), Ref: ref,
 			Nombre: g.de("Zeri's Coffee", "Zeri", textosRaros[0]), Titular: g.de("1111222233334444", "aaaabbbbccccdddd"),
 			Permiso: g.de("ver", "editar"), Huella: "AAAA-BBBB", Desde: g.fecha(), Usado: g.de("", g.fecha()),
+			// **Y tachada o no** (ADR 0053), que es lo que ejercita «una retirada gana»:
+			// sin este campo aquí, los 400 casos pasan por encima de la regla.
+			Retirada: g.de("", g.fecha()),
 		})
 	}
 	// Y quién tiene acceso a esta bóveda (ADR 0052). Pocos identificadores y fijos,

@@ -904,7 +904,13 @@ function etiqueta(v: string | null): number | null {
 
 function abrir<T>(r: Resultado<T> & { version?: number }): T {
 	if (r.ok) return r.datos;
-	throw new Fallo(r.estado, r.error, r.version !== undefined ? { version: r.version } : {});
+	// **El `codigo` tiene que llegar al cuerpo** (ADR 0053): es lo único con lo que el
+	// cliente se atreve a borrar del disco, así que perderlo aquí no rompe nada visible
+	// —el mensaje sigue saliendo— y deja la función sin hacer.
+	throw new Fallo(r.estado, r.error, {
+		...(r.version !== undefined ? { version: r.version } : {}),
+		...(r.codigo !== undefined ? { codigo: r.codigo } : {}),
+	});
 }
 
 async function leerBytes(p: Request, limite: number): Promise<ArrayBuffer> {

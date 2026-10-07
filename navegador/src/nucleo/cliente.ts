@@ -24,6 +24,8 @@ export class ErrorDelServidor extends Error {
     readonly estado: number,
     mensaje: string,
     readonly version = 0,
+    /** Lo que el servidor dice que ha pasado, **cuando lo dice** (ADR 0053). */
+    readonly codigo = "",
   ) {
     super(mensaje);
   }
@@ -45,6 +47,21 @@ export const sinBoveda = (e: unknown) => e instanceof ErrorDelServidor && e.esta
  * castigarte por lo que hizo otro.
  */
 export const sinAcceso = (e: unknown) => e instanceof ErrorDelServidor && e.estado === 403;
+
+/** Lo que manda el servidor cuando el dueño ha quitado el acceso. Espejo de Go. */
+export const CODIGO_REVOCADO = "revocado";
+
+/**
+ * Y **lo único que autoriza a borrar la bóveda de este navegador** (ADR 0053).
+ *
+ * No es `sinAcceso`, y ahí está toda la diferencia entre dejar de sincronizar y
+ * destruir una bóveda: el 403 también es «solo puedes ver», y además puede venir de
+ * cualquier portero que alguien ponga delante del servidor. Hacen falta las tres cosas
+ * —el 403, un cuerpo que se haya podido leer, y que ese cuerpo lo diga—, y solo lo manda
+ * el camino de bajar, que es lo único que puede hacer cualquier titular.
+ */
+export const revocado = (e: unknown) =>
+  e instanceof ErrorDelServidor && e.estado === 403 && e.codigo === CODIGO_REVOCADO;
 
 /** La versión del `ETag`, fuerte o débil: Cloudflare lo debilita al comprimir. */
 export function leerEtiqueta(v: string | null): number | null {
@@ -84,13 +101,18 @@ export class Cliente {
   }
 
   private async error(r: Response): Promise<ErrorDelServidor> {
-    let cuerpo: { error?: string; version?: number } = {};
+    let cuerpo: { error?: string; version?: number; codigo?: string } = {};
     try {
       cuerpo = (await r.json()) as typeof cuerpo;
     } catch {
       /* sin cuerpo que leer */
     }
-    return new ErrorDelServidor(r.status, cuerpo.error || `El servidor de cuentas ha contestado ${r.status}`, cuerpo.version ?? 0);
+    return new ErrorDelServidor(
+      r.status,
+      cuerpo.error || `El servidor de cuentas ha contestado ${r.status}`,
+      cuerpo.version ?? 0,
+      cuerpo.codigo ?? "",
+    );
   }
 
   private async json<T>(metodo: string, ruta: string, cuerpo?: unknown, token?: string): Promise<{ estado: number; datos: T }> {

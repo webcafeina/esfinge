@@ -39,6 +39,28 @@ Plantilla al final.
   hacen— y no la segunda. **Eligió hacerla, y avisando**: que la bóveda desaparezca del equipo del otro y
   que su pantalla diga que se ha borrado y por qué, en vez de desaparecer en silencio como hace Dashlane.
 
+### Y la segunda mitad del día: la ADR 0053, que salió de una pregunta suya
+
+Preguntó si en Dashlane y compañía se puede quitar de la otra cuenta lo compartido. **Sí se puede, y ninguno
+lo promete** —el borrado de todos ellos es cooperativo, no criptográfico—, así que la frase de la 0052 juntaba
+dos cosas distintas: «no se puede prometer» era verdad, «no se puede hacer» no. Eligió **hacerlo y avisar**, y
+que lo que estuviera sin subir se vaya con la bóveda.
+
+Tres cosas de cómo se hizo que conviene no volver a razonar:
+
+- **No se borra por un código de estado, se borra porque el servidor lo dice** —`{"codigo":"revocado"}`— y
+  **solo al bajar**. El 403 tiene dos causas, y la otra es «solo puedes ver»: borrar por ésa destruiría la
+  bóveda de un cliente porque alguien con permiso de ver intentó guardar. Y un 403 puede no venir del Worker:
+  el de pruebas tiene Cloudflare Access delante, que contesta HTML. La tabla que lo protege lleva esos tres
+  casos, y mutando `Revocado` al atajo evidente se ponen rojos los tres.
+- **La fila no se quita: se tacha.** El aviso tiene que decir el nombre, y el nombre no puede acabar fuera de
+  la bóveda —es la regla del historial—, así que apuntarlo al lado de las preferencias estaba descartado antes
+  de escribirlo. Tachándola sale gratis que el aviso **viaje a los dos equipos** y que «Quitarla de la lista»
+  sea la función que ya existía.
+- **Y hay que borrar en los dos sitios**: el fichero de la ventana y `storage.local` de la extensión son dos
+  copias distintas. Lo que la extensión no hace es tachar la fila, y está en `deuda.md` con el porqué: sería
+  una segunda implementación del mismo cambio sobre el mismo cuerpo.
+
 ## 2026-10-06 (5) · La 2.41.0 publicada, y la prueba a un paso del final
 
 - **Se miró la prueba antes de relanzar nada**, que es lo que el cliente pidió. No se pudo demostrar la

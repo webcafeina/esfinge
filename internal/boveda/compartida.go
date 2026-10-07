@@ -432,6 +432,16 @@ type Compartida struct {
 	Huella string `json:"huella,omitempty"`
 	Desde  string `json:"desde"`
 	Usado  string `json:"usado,omitempty"`
+	// Retirada es cuándo el dueño me quitó el acceso (ADR 0053). Con fecha, **el
+	// fichero de esta bóveda ya no está en este equipo**: se borró al enterarse, y lo
+	// que queda es esta fila para poder decir cuál se fue y de quién era.
+	//
+	// **Por eso la fila se tacha en vez de quitarse.** El aviso tiene que decir el
+	// nombre, y el nombre no puede acabar fuera de la bóveda: un fichero sin cifrar
+	// que diga «Beta Industrial» es la señal de tráfico que la regla del historial
+	// prohíbe. Aquí dentro sigue cifrado, y además **viaja a mis dos equipos**, que
+	// es lo correcto porque los dos van a borrar su copia.
+	Retirada string `json:"retirada,omitempty"`
 }
 
 // Compartidas son las que tengo, la última usada arriba.
@@ -498,6 +508,33 @@ func (b *Boveda) OlvidarCompartida(dueno, ref string) error {
 	return nil
 }
 
+// RetirarCompartida tacha la fila con la fecha, para cuando **el dueño ha quitado el
+// acceso** (ADR 0053). El fichero lo borra quien llama, que es quien sabe si además
+// había que salir de ella.
+//
+// **No la quita de la lista**, y ésa es la decisión: sin la fila no hay forma de decir
+// cuál se fue ni de quién era, y el nombre no puede guardarse fuera de la bóveda. Si
+// ya estaba tachada, no se vuelve a escribir: así una pasada que repita el 403 no
+// ensucia la bóveda ni dispara una subida por nada.
+func (b *Boveda) RetirarCompartida(dueno, ref, cuando string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.llave == nil {
+		return ErrCerrada
+	}
+	for i, v := range b.cont.Compartidas {
+		if v.Dueno == dueno && v.Ref == ref {
+			if v.Retirada != "" {
+				return nil
+			}
+			b.cont.Compartidas[i].Retirada = cuando
+			b.cuerpoSucio = true
+			return b.guardar()
+		}
+	}
+	return nil
+}
+
 // fundirCompartidas es `fundirProyectos` con otra clave: conjunto por dueño+ref, a
 // tres bandas contra la base, para que dejar de ver una aquí no la devuelva el otro
 // equipo y aceptar una allí llegue aquí.
@@ -544,6 +581,12 @@ func unaCompartida(l, r, b Compartida, hayBase bool) Compartida {
 	// Cuándo se abrió por última vez: las dos son verdad, gana la mayor.
 	if l.Usado > out.Usado {
 		out.Usado = l.Usado
+	}
+	// **Y una retirada gana siempre** (ADR 0053): el acceso lo quita el dueño, no mis
+	// equipos, así que un lado que no se ha enterado todavía no puede deshacerlo. Entre
+	// dos fechas, la mayor, como `Usado` — arbitrario pero **igual en los dos equipos**.
+	if l.Retirada > out.Retirada {
+		out.Retirada = l.Retirada
 	}
 	// El nombre lo decide la base: gana el lado que lo cambió, y si lo cambiaron los
 	// dos, el mayor por cadena — arbitrario pero **igual en los dos equipos**.

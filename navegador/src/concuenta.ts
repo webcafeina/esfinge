@@ -28,7 +28,7 @@
 
 import { api } from "./api";
 import { Boveda, ErrorBoveda } from "./nucleo/boveda";
-import { Cliente, ErrorDeRed, RAIZ_POR_DEFECTO, sesionCaducada, sinAcceso, sinBoveda, type Sesion } from "./nucleo/cliente";
+import { Cliente, ErrorDeRed, RAIZ_POR_DEFECTO, revocado, sesionCaducada, sinAcceso, sinBoveda, type Sesion } from "./nucleo/cliente";
 import { derivarAcceso, normalizarCorreo } from "./nucleo/cuenta";
 import { base64url, desdeBase64 } from "./nucleo/esf1";
 import { abrirEnvio, mandarEntrada, type Envio } from "./nucleo/envio";
@@ -887,6 +887,38 @@ async function aceptarDelBuzon(envio: string): Promise<void> {
   });
 }
 
+/**
+ * Olvida una bóveda compartida a la que el dueño ha quitado el acceso (ADR 0053): su
+ * copia cifrada, lo que la sincronización recordaba de ella, y salir si era la abierta.
+ *
+ * **Es la otra mitad del borrado de la ventana.** Esta copia vive en `storage.local` del
+ * navegador y es otra: borrando solo el fichero de la aplicación, la bóveda de un
+ * cliente se queda entera aquí.
+ *
+ * **Lo que esto no hace es tachar la fila** en la lista de la bóveda personal, que es
+ * cosa de la ventana: tacharla desde aquí sería una segunda implementación del mismo
+ * cambio sobre el mismo cuerpo, que es justo lo que las cruzadas existen para no tener.
+ * Mientras no se abra la ventana, el panel enseña lo que ya enseña —que no hay acceso— y
+ * la bóveda no está. Está dicho en `deuda.md`.
+ *
+ * **Nunca lanza.** Lo llama el `catch` de la pasada, y un fallo aquí no puede tapar el
+ * estado que esa pasada acaba de dejar puesto.
+ */
+async function olvidarLaRevocada(dueno: string, ref: string): Promise<void> {
+  try {
+    if (dueno === "" || ref === "") return;
+    // Primero salir, y después borrar: al revés queda la bóveda abierta encima de algo
+    // que ya no está, que es el mismo orden que en la aplicación.
+    if ((await duenoActivo()) === dueno && (await refActiva()) === ref) {
+      await volverALaPersonal();
+    }
+    await api.storage.local.remove([claveDeBoveda(ref, dueno), claveDeBase(ref, dueno), claveDeRecuerdo(ref, dueno)]);
+    avisarDeCambios();
+  } catch {
+    /* a la siguiente pasada, que llegará con el mismo 403 */
+  }
+}
+
 async function unaPasada(aunqueBorreMucho = false): Promise<void> {
   const d = await datos();
   const b = await laBoveda();
@@ -917,9 +949,11 @@ async function unaPasada(aunqueBorreMucho = false): Promise<void> {
   } catch {
     /* a la siguiente */
   }
+  // **Cuál es la bóveda de esta pasada, antes del `try`**: el `catch` tiene que saber
+  // cuál se ha ido para poder borrarla (ADR 0053), y dentro del `try` no se ve.
+  const ref = await refActiva();
+  const dueno = await duenoActivo();
   try {
-    const ref = await refActiva();
-    const dueno = await duenoActivo();
     const r = await pasada(b, cliente, token, memoriaDe(ref, dueno), aunqueBorreMucho, ref, dueno);
     // **Y de paso, las copias que esperaban** (B3). Que falle no ensucia la
     // sincronización, que sí ha ido bien: se repasa en la siguiente.
@@ -945,10 +979,15 @@ async function unaPasada(aunqueBorreMucho = false): Promise<void> {
       // sesión se perdió. Aquí la sesión está bien y la bóveda **propia** no tiene nada
       // que ver — cerrarla porque alguien te quitó el acceso a la suya sería castigarte
       // por lo que hizo otro.
-      //
-      // Y lo que ya está en este navegador se queda: desde aquí no hay forma de
-      // borrarlo, así que el panel lo dice en vez de disimularlo.
       await ponerSincro({ estado: "sin-acceso", mensaje: (e as Error).message });
+      // **Y si el servidor dice que ya no soy titular, la copia de este navegador se
+      // va** (ADR 0053). Es la otra mitad del borrado: haciéndolo solo en la ventana, la
+      // bóveda de un cliente se queda entera en el navegador de quien ya no trabaja con
+      // él, que es exactamente lo que esto venía a evitar.
+      //
+      // `revocado` y no `sinAcceso`: el 403 también es «solo puedes ver» —y entonces no
+      // hay nada que borrar— y además puede venir de un portero puesto delante.
+      if (revocado(e)) await olvidarLaRevocada(dueno, ref);
       return;
     }
     if (e instanceof ErrorDeRed) {

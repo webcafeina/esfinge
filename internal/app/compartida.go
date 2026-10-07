@@ -27,7 +27,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"time"
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/cripto"
@@ -62,6 +64,10 @@ type CompartidaEnLaLista struct {
 	// EnEsteEquipo dice si el fichero ya está aquí. Si no, la lista ofrece traerlo
 	// en vez de fallar al abrirlo, que es lo mismo que hacen los proyectos dormidos.
 	EnEsteEquipo bool `json:"enEsteEquipo"`
+	// Retirada es cuándo el dueño quitó el acceso (ADR 0053). Con fecha, esta fila ya
+	// **no es una bóveda**: es el aviso de una que se fue, y lo único que se puede
+	// hacer con ella es quitarla de la lista.
+	Retirada string `json:"retirada"`
 }
 
 // Compartidas lista lo que me han compartido, lo último usado primero.
@@ -72,6 +78,7 @@ func (a *App) Compartidas() ([]CompartidaEnLaLista, error) {
 			x := CompartidaEnLaLista{
 				Dueno: c.Dueno, Ref: c.Ref, Nombre: c.Nombre,
 				Permiso: c.Permiso, Huella: c.Huella, Usado: c.Usado,
+				Retirada: c.Retirada,
 			}
 			if r := rutaDeCompartida(c.Dueno, c.Ref); r != "" {
 				if _, err := os.Stat(r); err == nil {
@@ -107,6 +114,49 @@ func (a *App) DejarDeVerCompartida(dueno, ref string) error {
 	}
 	a.Actividad()
 	return nil
+}
+
+// retirarLaCompartida tacha la fila y **borra el fichero de este equipo**, cuando el
+// servidor ha dicho que el dueño quitó el acceso (ADR 0053).
+//
+// Es `DejarDeVerCompartida` con dos diferencias, y las dos son el porqué de que no sea
+// la misma función:
+//
+//   - **La fila se tacha en vez de quitarse.** Irse es mío y no hace falta recordarlo;
+//     que me echen hay que poder contarlo, y el nombre no puede guardarse fuera de la
+//     bóveda. De eso vive el aviso.
+//   - **Nadie lo ha pedido aquí**, así que si algo falla no hay a quién decírselo: se
+//     registra y se vuelve a intentar en la pasada siguiente, que llegará con el mismo
+//     403. Lo que no se hace es quedarse a medias en silencio.
+//
+// Y el orden es el de siempre en este proyecto: **primero salir, luego la fila, y el
+// fichero al final**. Al revés, un fallo en medio deja la bóveda abierta encima de un
+// fichero que ya no está.
+func (a *App) retirarLaCompartida(dueno, ref string) {
+	if dueno == "" || ref == "" {
+		return
+	}
+	if a.bovedaActiva() == ref && a.duenoDeLaActiva() == dueno {
+		if err := a.VolverALaBovedaPersonal(); err != nil {
+			log.Printf("esfinge: no se ha podido salir de la bóveda retirada: %v", err)
+			return
+		}
+	}
+	cuando := time.Now().UTC().Format(time.RFC3339)
+	if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+		return b.RetirarCompartida(dueno, ref, cuando)
+	}); err != nil {
+		log.Printf("esfinge: no se ha podido tachar la bóveda retirada: %v", err)
+		return
+	}
+	if r := rutaDeCompartida(dueno, ref); r != "" {
+		if err := borrarElFicheroYSusSatelites(r); err != nil {
+			log.Printf("esfinge: no se ha podido borrar el fichero de la bóveda retirada: %v", err)
+		}
+	}
+	// **El estado completo antes del aviso**, que es la trampa de siempre: la ventana
+	// contesta a esto pidiendo la lista, y pedirla antes de tachar la traería entera.
+	a.sistema.Avisar(EventoBovedaCambiada, nil)
 }
 
 // DarAcceso le da acceso a esa dirección **sobre la bóveda de proyecto abierta**.

@@ -511,7 +511,11 @@ export class Cuenta extends DurableObject<Env> {
 		siNoCoincide: number | null,
 	): Promise<Resultado<{ version: number; datos: ArrayBuffer | null }>> {
 		const m = this.miembro(ref, quien);
-		if (!m) return mal(403, "Ya no tienes acceso a esa bóveda.");
+		// **El `revocado` de aquí es el que borra del disco del otro equipo** (ADR 0053),
+		// y por eso va en bajar y no en subir: un `GET` es lo único que puede hacer
+		// cualquier titular con cualquiera de los dos permisos, así que si bajar dice
+		// esto, no hay otra interpretación posible. El 403 de subir sí la tiene.
+		if (!m) return mal(403, "Ya no tienes acceso a esa bóveda.", "revocado");
 		return this.leerLaBoveda(ref, siNoCoincide);
 	}
 
@@ -546,8 +550,12 @@ export class Cuenta extends DurableObject<Env> {
 		datos: ArrayBuffer,
 	): Promise<Resultado<{ version: number }> & { version?: number }> {
 		const m = this.miembro(ref, quien);
+		// **Aquí no va `revocado`**, aunque la causa sea la misma (ADR 0053): quien borra
+		// es el cliente al bajar, y un camino de borrado de más es un camino de borrado
+		// que hay que volver a razonar. Lo que sí hace falta es que el de abajo **no se
+		// pueda confundir** con éste.
 		if (!m) return mal(403, "Ya no tienes acceso a esa bóveda.");
-		if (m.permiso !== "editar") return mal(403, "En esta bóveda solo puedes ver.");
+		if (m.permiso !== "editar") return mal(403, "En esta bóveda solo puedes ver.", "solo-ver");
 		return this.escribirLaBoveda(ref, siCoincide, datos, quien, "");
 	}
 

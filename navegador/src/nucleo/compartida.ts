@@ -46,6 +46,13 @@ export type Compartida = {
   huella?: string;
   desde: string;
   usado?: string;
+  /**
+   * Cuándo el dueño quitó el acceso (ADR 0053). Con fecha, **el fichero ya no está**:
+   * lo que queda es esta fila para poder decir cuál se fue y de quién era. En el
+   * navegador solo se lee —para no ofrecer una bóveda que no está—; tacharla es de la
+   * ventana, que es la que se enteró por el servidor.
+   */
+  retirada?: string;
 };
 
 function esCompartida(x: unknown): x is Compartida {
@@ -122,6 +129,9 @@ function unaCompartida(
 ): Compartida {
   const out: Compartida = { ...r };
   if ((l.usado ?? "") > (out.usado ?? "")) out.usado = l.usado;
+  // **Una retirada gana siempre** (ADR 0053): el acceso lo quita el dueño, no mis
+  // equipos, así que un lado que no se ha enterado todavía no puede deshacerlo.
+  if ((l.retirada ?? "") > (out.retirada ?? "")) out.retirada = l.retirada;
 
   if (!hayBase) {
     if (compararComoGo(l.nombre, r.nombre) > 0) out.nombre = l.nombre;

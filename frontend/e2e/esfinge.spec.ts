@@ -2453,3 +2453,82 @@ test("borrar una bóveda de proyecto pide la contraseña maestra", async ({ page
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * **La fila de una bóveda compartida a la que te han quitado el acceso** (ADR 0053).
+ *
+ * Con fecha de retirada, esa fila ya **no es una bóveda**: el fichero se borró de este
+ * equipo al enterarse, así que no se puede abrir y lo que tiene que hacer es contar qué
+ * pasó. La fila se queda tachada porque sin ella no hay forma de decir cuál era — y el
+ * nombre no puede guardarse fuera de la bóveda, que es lo que descartó apuntarlo al
+ * lado de las preferencias.
+ *
+ * **La lista se inyecta por el puente**, y es a propósito: montar el estado de verdad
+ * pide dos cuentas y revocar entre ellas, que es lo que ya bloquea otras dos filas de
+ * `deuda.md`. Lo que esta prueba tiene que cubrir es **la pantalla** —que no se pueda
+ * pulsar, que diga por qué y que el botón cambie de nombre—; que Go tache la fila y
+ * borre el fichero se prueba en Go, y que el servidor lo diga, en el servidor.
+ */
+test("una bóveda compartida retirada se enseña como aviso y no se puede abrir", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.route("**/api/Compartidas", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([
+        {
+          dueno: "0123456789abcdef",
+          ref: "aaaabbbbccccdddd",
+          nombre: "Beta Industrial",
+          permiso: "editar",
+          huella: "RB9J-JDRB-P6NP-R51B",
+          usado: "2026-10-05T10:00:00Z",
+          enEsteEquipo: false,
+          retirada: "2026-10-07T09:00:00Z",
+        },
+        {
+          dueno: "0123456789abcdef",
+          ref: "1111222233334444",
+          nombre: "Gamma Viva",
+          permiso: "ver",
+          huella: "RB9J-JDRB-P6NP-R51B",
+          usado: "2026-10-06T10:00:00Z",
+          enEsteEquipo: true,
+          retirada: "",
+        },
+      ]),
+    });
+  });
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Proyectos").click();
+
+  const retirada = page.locator(".panel:visible .compartidas li.retirada");
+  await expect(retirada).toBeVisible({ timeout: 20_000 });
+
+  // **Lo que dice**, con el nombre dentro: sin él, el aviso no sirve de nada.
+  await expect(retirada).toContainText("Beta Industrial");
+  await expect(retirada).toContainText("te quitó el acceso");
+  await expect(retirada).toContainText("Se ha borrado de este equipo");
+
+  // **Y no se puede abrir.** No hay botón de abrir, que es lo que evita que alguien
+  // pulse y se encuentre un error de un fichero que ya no está.
+  await expect(retirada.locator(".abrir-proyecto")).toHaveCount(0);
+  await expect(retirada.getByRole("button", { name: "Quitarla de la lista" })).toBeVisible();
+
+  // **Y el aviso ocupa el sitio del botón que no está**, medido y no supuesto: encogido
+  // contra el botón de quitarla, la única explicación que hay se parte por donde caiga.
+  // Es la lección del nombre del proyecto que desaparecía con tres botones al lado.
+  const caja = await retirada.locator(".aviso").boundingBox();
+  expect(caja?.width ?? 0, "el aviso de la bóveda retirada se ha encogido").toBeGreaterThan(200);
+
+  // Y la que sigue viva se abre como siempre: la retirada no contagia a las demás.
+  const viva = page.locator(".panel:visible .compartidas li").filter({ hasText: "Gamma Viva" });
+  await expect(viva.locator(".abrir-proyecto")).toBeVisible();
+  await expect(viva.getByRole("button", { name: "Dejar de verla" })).toBeVisible();
+
+  await page.locator(".panel:visible .compartidas").screenshot({
+    path: `test-results/compartida-retirada-${test.info().project.name}.png`,
+  });
+  expect(errores, errores.join(" | ")).toEqual([]);
+});

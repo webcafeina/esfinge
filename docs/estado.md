@@ -19,8 +19,19 @@
 >    lista de estados que cuentan como pasada terminada se había quedado corta. **Y no era de la 0052**:
 >    `muchos-borrados` estaba igual desde la 2.25.2. Ahora se escribe al revés.
 >
-> **La siguiente acción: publicar la 2.41.1** con esos dos arreglos y que él lo vea en el Mac 2 — tiene que
-> leer «Ya no tienes acceso a esa bóveda.» como aviso, y el botón tiene que pararse.
+> **La 2.41.1 está publicada** (2026-10-07, los siete trabajos en verde y **el paquete de Chrome subido**,
+> «Enviada a revisión»). El cliente la instaló y confirmó el mensaje: dice «Ya no tienes acceso a esta
+> bóveda». Y dijo lo que faltaba, que es lo que abrió la ADR 0053: **sigue pudiendo entrar y ver las dos
+> credenciales**.
+>
+> **La siguiente acción: desplegar el Worker y publicar la 2.42.0** con la ADR 0053 —quitar el acceso borra
+> la bóveda en el equipo del otro—. **Hacen falta las dos partes**: quien dice «revocado» es el servidor, así
+> que sin desplegarlo la aplicación no tiene de qué enterarse. El orden es el de siempre: pruebas, producción
+> y luego la etiqueta. El despliegue es compatible hacia atrás —añade un campo al cuerpo de un 403 que las
+> versiones viejas ignoran—.
+>
+> **Y lo que él tiene que ver después, en el Mac 2**: que la bóveda **desaparezca** al abrir Esfinge y que en
+> Proyectos quede la fila tachada —«Prueba de acceso ya no está…»— con «Quitarla de la lista».
 >
 > **Y devolver el Mac 2 como estaba**, que sigue pendiente porque su carpeta está **apartada, no borrada**:
 >

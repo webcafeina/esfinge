@@ -43,15 +43,35 @@ export interface Env {
 	TOPE_INVITACIONES_DIA?: string;
 }
 
+/**
+ * Un código estable para los errores que el cliente tiene que **distinguir sin leer el
+ * mensaje** (ADR 0053).
+ *
+ * Existe por un caso concreto: `revocado` es lo único con lo que el cliente **borra del
+ * disco** la bóveda compartida que ya tenía bajada, y eso no puede depender ni del
+ * código de estado ni de una cadena en español.
+ *
+ *   - **El 403 tiene dos causas**: no eres titular, y eres titular de solo ver que ha
+ *     intentado subir. Borrar por la segunda destruiría la bóveda de un cliente porque
+ *     alguien con permiso de ver intentó guardar.
+ *   - **Y un 403 puede no venir de aquí.** Cualquier portero que alguien ponga delante
+ *     —Cloudflare Access contesta a `/_pruebas/*` con HTML— puede devolverlo por su
+ *     cuenta, y con la regla «403 y borro» un portero mal configurado borraría bóvedas
+ *     en todos los equipos a la vez.
+ */
+export type CodigoDeError = "revocado" | "solo-ver";
+
 /** Lo que devuelve cada operación de una cuenta: o datos, o un error con su estado. */
-export type Resultado<T> = { ok: true; datos: T } | { ok: false; estado: number; error: string };
+export type Resultado<T> =
+	| { ok: true; datos: T }
+	| { ok: false; estado: number; error: string; codigo?: CodigoDeError };
 
 export function bien<T>(datos: T): Resultado<T> {
 	return { ok: true, datos };
 }
 
-export function mal<T = never>(estado: number, error: string): Resultado<T> {
-	return { ok: false, estado, error };
+export function mal<T = never>(estado: number, error: string, codigo?: CodigoDeError): Resultado<T> {
+	return { ok: false, estado, error, ...(codigo ? { codigo } : {}) };
 }
 
 export interface Argon2 {

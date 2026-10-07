@@ -1472,6 +1472,16 @@ p {
   background: var(--suave);
 }
 
+/* **La fila de una compartida retirada** (ADR 0053): donde iba el botón de abrir va
+ * el aviso de que ya no está, así que tiene que ocupar su sitio —`flex: 1` con el
+ * mismo suelo— o el botón de quitarla se le pega y la frase se parte por donde caiga.
+ * Y `min-width` de verdad y no cero, que es la lección del nombre que se encogía
+ * hasta desaparecer: aquí lo que desaparecería es la única explicación que hay. */
+.proyectos li.retirada .aviso {
+  flex: 1;
+  min-width: 11rem;
+}
+
 /* Los botones de un proyecto, **como un bloque**: o caben todos en la fila o bajan
  * todos juntos. Sueltos eran columnas del `flex` del `li` y la fila se partía por donde
  * cayera —con el proyecto abierto son tres y el último se iba solo a la segunda línea,

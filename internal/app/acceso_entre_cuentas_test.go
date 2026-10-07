@@ -28,6 +28,7 @@ package app
 
 import (
 	"os"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -277,30 +278,74 @@ func TestPaseoDeUnAccesoEntreDosCuentas(t *testing.T) {
 	}
 	alDia(t, ana.a, time.Now())
 
-	paso(t, 10, "y Beto se queda fuera, sin que se cierre su bóveda")
+	paso(t, 10, "y Beto se queda fuera: se entera, sale y la bóveda se va de su equipo")
 	beto.usar(t)
-	// **El 403 no es el 401**: la sincronización tiene que decir «sin acceso» y la
-	// bóveda de Beto tiene que seguir abierta. Lo contrario sería cerrarle la suya
-	// porque otra persona le quitó el acceso a la de ella.
+	// **Se espera al hecho, no al estado** — y aquí eso no es una preferencia de estilo:
+	// desde la ADR 0053, `sin-acceso` es **transitorio**. Beto se entera, sale a su
+	// bóveda personal y arranca la sincronización de ésa, que va perfectamente, así que
+	// medio segundo después el estado vuelve a ser «al-dia». Esperar a leer «sin-acceso»
+	// era esperar a ganar una carrera: esta prueba se puso roja al escribir el borrado,
+	// con el borrado funcionando.
+	//
+	// Lo que sí es estable, y es lo que de verdad hay que comprobar, son las tres cosas
+	// de abajo: que la fila quede tachada, que el fichero no esté, y que **la bóveda
+	// propia de Beto siga abierta**.
 	limite := time.Now().Add(30 * time.Second)
-	var ultimo string
+	var fila CompartidaEnLaLista
+	vistos := map[string]bool{}
 	for time.Now().Before(limite) {
 		if err := beto.a.SincronizarAhora(); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(500 * time.Millisecond)
-		e := beto.a.EstadoDeCuenta().Sincro
-		ultimo = e.Estado + ": " + e.Mensaje
-		if e.Estado == "sin-acceso" {
+		// Se apuntan los estados que se han llegado a ver: si esto falla, lo primero que
+		// hay que saber es si el 403 llegó siquiera.
+		vistos[beto.a.EstadoDeCuenta().Sincro.Estado] = true
+		lista, err := beto.a.Compartidas()
+		if err != nil {
+			t.Fatalf("Beto no puede leer su lista de compartidas: %v", err)
+		}
+		if len(lista) != 1 {
+			t.Fatalf("Beto tiene %d compartidas y tenía que tener una tachada: %+v", len(lista), lista)
+		}
+		fila = lista[0]
+		if fila.Retirada != "" && !fila.EnEsteEquipo {
 			break
 		}
 	}
-	if !strings.HasPrefix(ultimo, "sin-acceso") {
-		t.Fatalf("tras quitarle el acceso, la sincronización de Beto dice %q", ultimo)
+	if fila.Retirada == "" {
+		t.Fatalf("la compartida de Beto no se ha tachado: la lista sigue diciendo que es una bóveda suya "+
+			"(estados vistos: %v)", claves(vistos))
 	}
-	t.Logf("   %s", ultimo)
+	if fila.EnEsteEquipo {
+		t.Fatalf("la bóveda retirada sigue en el disco de Beto (estados vistos: %v)", claves(vistos))
+	}
+	// **Y la fila se queda**, que es lo que permite decir cuál se fue: sin ella, la
+	// bóveda de un cliente desaparece de la pantalla sin que nadie sepa cuál era.
+	if fila.Nombre == "" {
+		t.Fatal("la fila tachada no dice de qué bóveda era")
+	}
+	t.Logf("   tachada %q el %s · estados vistos: %v", fila.Nombre, fila.Retirada, claves(vistos))
+
+	// **El 403 no es el 401.** Lo contrario sería cerrarle a Beto su propia bóveda
+	// porque otra persona le quitó el acceso a la de ella.
 	if e := beto.a.EstadoBoveda(); !e.Abierta {
 		t.Fatal("quitarle el acceso a una bóveda ajena le ha cerrado la bóveda a Beto")
 	}
+	// Y ha vuelto a la suya, que es lo que hace que lo de arriba se pueda decir: quedarse
+	// «dentro» de una bóveda cuyo fichero ya no está no es un sitio donde se pueda estar.
+	if ref, dueno := beto.a.bovedaActiva(), beto.a.duenoDeLaActiva(); ref != "" || dueno != "" {
+		t.Fatalf("Beto se ha quedado dentro de la bóveda retirada: ref=%q dueno=%q", ref, dueno)
+	}
 	t.Log("── el paseo ha llegado hasta el final")
+}
+
+// claves saca las de un conjunto, ordenadas, para poder decir qué se ha visto.
+func claves(m map[string]bool) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
