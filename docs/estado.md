@@ -48,25 +48,27 @@
 > tocar nada — tiene voz y dos candidatos descartados midiendo. Lo que diga por qué será la próxima caída.
 
 
-> **Y lo nuevo, empezado el 2026-10-07: los agentes de IA por MCP** (ADR 0054), que lo pidió el cliente.
-> **Cambia el modelo de amenaza** como lo hizo la extensión, y añade uno que no existía: lo que un agente
-> recibe entra en la conversación de un modelo, y **quien controle su contexto puede pedir cosas en tu
-> nombre**.
+> **Y lo nuevo del 2026-10-07: los agentes de IA por MCP** (ADR 0054), que lo pidió el cliente. **Cambia el
+> modelo de amenaza** como lo hizo la extensión, y añade uno que no existía: lo que un agente recibe entra en
+> la conversación de un modelo, y **quien controle su contexto puede pedir cosas en tu nombre**.
 >
-> **La E1 está hecha y comprobada, sin publicar**: el canal con su propia llave —socket, emparejamiento,
-> frenos y verbos propios—, `cmd/esfinge-mcp`, cinco herramientas que **no tocan ningún secreto** y el
-> interruptor de Ajustes **apagado de fábrica**. Toda la fontanería del empaquetado incluida, con la
-> comprobación de que el binario va dentro del instalador de Windows.
+> **Está escrito entero —las ocho entregas—, en verde y sin publicar.** Un agente puede inventariar, auditar,
+> **usar** una contraseña sin verla, pedir un código, crear, editar y borrar. Lo que no puede: administrar
+> nada —exportar, la maestra, la recuperación, cuentas, proyectos, compartir— ni abrir la bóveda.
 >
-> **Lo que viene, por orden y cada una publicable sola**: el inventario (E2), **el registro antes que ningún
-> secreto** (E3) —una sección de fusión es cara de añadir con equipos ya en marcha—, la aprobación con su
-> ventana (E4), la válvula de cinco minutos (E5), el código de un solo uso (E6) y escribir (E7 y E8).
+> **La siguiente acción: decidir si se publica.** Y luego, probarlo con un cliente MCP de verdad, que es lo
+> único que no se puede hacer desde aquí.
 >
-> **Lo que no se cambia sin preguntar está en la ficha**, y lo más incómodo conviene tenerlo a mano: **el
-> portapapeles no es una frontera contra un agente con terminal** —puede leerlo—, así que lo que protege es
-> que cada uso se apruebe y quede apuntado, y eso **se dice en la pantalla donde se enciende**. El remoto
-> —ChatGPT— se deja para después porque lleva dentro elegir entre que el Worker vea los secretos o montar un
-> túnel.
+> **Lo que no se cambia sin preguntar, en una línea cada cosa:** el agente **actúa sin ver** —la contraseña
+> al portapapeles—, con **una excepción**, el código de un solo uso; **cada secreto se aprueba en la
+> ventana**; hay **válvula de cinco minutos** con cuatro formas de cerrarse, y **no cubre lo que no se
+> deshace** —el código, cambiar una contraseña, cambiar la semilla—; **crear y editar van directos**, borrar
+> pregunta; y **todo lo que entrega un secreto queda apuntado** dentro de la bóveda.
+>
+> **Y lo más incómodo, que está dicho en la pantalla y en `seguridad.md`**: contra un agente que puede
+> ejecutar órdenes en tu equipo, **el portapapeles no es una frontera** —puede leerlo—; lo que protege es que
+> cada uso se apruebe y quede apuntado. El remoto —ChatGPT— sigue fuera, porque lleva dentro elegir entre que
+> el Worker vea los secretos o montar un túnel.
 
 ---
 
