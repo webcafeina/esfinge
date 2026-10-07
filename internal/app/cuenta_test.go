@@ -44,10 +44,13 @@ type equipoDePrueba struct {
 
 func (e *equipoDePrueba) usar(t *testing.T) {
 	t.Helper()
+	// La carpeta la elige el equipo, pero **los nombres son los mismos**: ver
+	// `enConfiguracionDePruebas`, que es donde está escrito por qué hacen falta cuatro.
 	t.Setenv("XDG_CONFIG_HOME", e.carpeta)
 	t.Setenv("HOME", e.carpeta)
 	t.Setenv("USERPROFILE", e.carpeta)
-	t.Setenv("APPDATA", e.carpeta)
+	t.Setenv("AppData", e.carpeta)
+	t.Setenv("LOCALAPPDATA", e.carpeta)
 }
 
 func nuevoEquipo(t *testing.T, raiz string) *equipoDePrueba {

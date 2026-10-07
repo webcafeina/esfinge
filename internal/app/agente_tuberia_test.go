@@ -61,7 +61,7 @@ func TestLaTuberiaEnteraDeUnAgente(t *testing.T) {
 	// **Esto es lo que faltaba y costó encontrar recorriendo el camino a mano**: antes
 	// esta prueba hablaba con `Atender` poniendo el testigo ella misma, así que el
 	// binario podía no pedirlo nunca —y no lo pedía— sin que nada se pusiera rojo.
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir()) // que el testigo no se mezcle con el de verdad
+	enConfiguracionDePruebas(t) // que el testigo no se mezcle con el de verdad
 	rs := hablarMCP(t, socket,
 		`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"esfinge_buscar","arguments":{"texto":"Banco"}}}`,
 	)

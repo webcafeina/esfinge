@@ -159,10 +159,7 @@ func (s *sistemaFalso) verOrdenes() []Orden {
 // para no escribir en el historial de verdad de quien ejecuta los tests.
 func nuevaDePrueba(t *testing.T) (*App, *sistemaFalso) {
 	t.Helper()
-	casa := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", casa)
-	t.Setenv("HOME", casa)
-	t.Setenv("USERPROFILE", casa)
+	enConfiguracionDePruebas(t)
 
 	s := &sistemaFalso{}
 	return Nueva("prueba", s), s
@@ -400,10 +397,7 @@ func TestVaciarHistorial(t *testing.T) {
 
 // El historial sobrevive a cerrar y abrir la aplicación.
 func TestElHistorialPersiste(t *testing.T) {
-	casa := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", casa)
-	t.Setenv("HOME", casa)
-	t.Setenv("USERPROFILE", casa)
+	enConfiguracionDePruebas(t)
 
 	uno := Nueva("prueba", &sistemaFalso{})
 	uno.CifrarTexto("algo", "clave")
@@ -416,10 +410,7 @@ func TestElHistorialPersiste(t *testing.T) {
 
 // Un historial corrupto no puede impedir que la aplicación abra.
 func TestUnHistorialCorruptoNoRompeNada(t *testing.T) {
-	casa := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", casa)
-	t.Setenv("HOME", casa)
-	t.Setenv("USERPROFILE", casa)
+	casa := enConfiguracionDePruebas(t)
 
 	ruta := filepath.Join(casa, "Esfinge", "historial.json")
 	os.MkdirAll(filepath.Dir(ruta), 0o700)

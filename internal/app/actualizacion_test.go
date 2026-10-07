@@ -37,10 +37,7 @@ func apiFalsa(t *testing.T, etiqueta string, peticiones *atomic.Int32) *httptest
 // apuntando a una API de mentira.
 func paraActualizar(t *testing.T, etiqueta string, peticiones *atomic.Int32) (*App, *sistemaFalso) {
 	t.Helper()
-	casa := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", casa)
-	t.Setenv("HOME", casa)
-	t.Setenv("USERPROFILE", casa)
+	enConfiguracionDePruebas(t)
 
 	s := &sistemaFalso{}
 	a := Nueva("2.0.3", s)

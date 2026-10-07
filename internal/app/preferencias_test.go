@@ -2,19 +2,28 @@ package app
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
 
 // enConfiguracionDePruebas aparta la carpeta de configuración real, como hace
 // nuevaDePrueba con el historial.
-func enConfiguracionDePruebas(t *testing.T) {
+//
+// **Los cuatro nombres hacen falta y ninguno sobra**, porque `os.UserConfigDir` mira uno
+// distinto en cada sistema. Dejarse el de Windows aísla en esta máquina y **no aísla
+// allí**, que es donde nadie lo mira: las pruebas se pisan entre ellas y el síntoma es
+// una que se queja de encontrarse una bóveda que no ha creado.
+func enConfiguracionDePruebas(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir) // Linux
 	t.Setenv("HOME", dir)            // macOS
 	t.Setenv("AppData", dir)         // Windows
 	t.Setenv("USERPROFILE", dir)
+	t.Setenv("LOCALAPPDATA", dir) // y la caché de Windows, por lo mismo
+	return dir
 }
 
 func TestLasPreferenciasVienenEncendidasYSeGuardan(t *testing.T) {
@@ -116,5 +125,40 @@ func TestUnFicheroIlegibleNoImpideArrancar(t *testing.T) {
 
 	if otro := AbrirAjustes(); !otro.Ver().BuscarActualizaciones {
 		t.Error("con el fichero roto tiene que volver a los valores de fábrica")
+	}
+}
+
+// **Apartar la carpeta de configuración se hace en un solo sitio, y esto lo vigila.**
+//
+// Cada prueba que escribe en la carpeta del usuario tiene que apartarla, y hacerlo son
+// cuatro variables de entorno porque `os.UserConfigDir` mira una distinta en cada
+// sistema. Escribirlas a mano **sale bien en esta máquina y mal en Windows**: ahí nadie
+// mira, y lo que se ve es una prueba quejándose de encontrarse una bóveda que no ha
+// creado — porque la creó otra que corrió antes en la misma carpeta de verdad.
+//
+// Pasó: `conReloj` tenía su propia lista sin la de Windows, y seis sitios más la
+// copiaban. **Tiró una publicación**, y no se vio hasta que el filtro del trabajo de
+// Windows juntó dos pruebas que crean bóveda. Aquí no se puede ejecutar Windows, así que
+// lo que queda es comprobar que nadie vuelva a escribir la lista por su cuenta.
+func TestLaCarpetaDeConfiguracionSeApartaEnUnSoloSitio(t *testing.T) {
+	ficheros, err := filepath.Glob("*_test.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// El del ayudante, y el del equipo de cuentas, que elige su propia carpeta para
+	// poder tener dos equipos a la vez y lo dice en su comentario.
+	salvo := map[string]bool{"preferencias_test.go": true, "cuenta_test.go": true}
+	for _, f := range ficheros {
+		if salvo[f] {
+			continue
+		}
+		crudo, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(crudo), `Setenv("XDG_CONFIG_HOME"`) {
+			t.Errorf("%s aparta la carpeta por su cuenta; usa enConfiguracionDePruebas, "+
+				"que es donde están los cuatro nombres y por qué hacen falta", f)
+		}
 	}
 }

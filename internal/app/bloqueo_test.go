@@ -13,10 +13,13 @@ import (
 // bloquea, y una prueba que tarda quince minutos no se ejecuta nunca.
 func conReloj(t *testing.T) (*App, *sistemaFalso, *time.Time) {
 	t.Helper()
-	casa := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", casa)
-	t.Setenv("HOME", casa)
-	t.Setenv("USERPROFILE", casa)
+	// **Apartar la carpeta de configuración se hace en un solo sitio.** Esto tenía su
+	// propio juego de variables y le faltaba la de Windows (`AppData`), que es la que
+	// `os.UserConfigDir` consulta allí: en Linux y en macOS aislaba y **en Windows no**,
+	// así que todas estas pruebas compartían una carpeta. No se vio hasta que dos que
+	// crean bóveda cayeron juntas en el filtro del trabajo de Windows y la segunda se
+	// encontró la bóveda de la primera.
+	enConfiguracionDePruebas(t)
 
 	s := &sistemaFalso{}
 	a := Nueva("2.0.0", s)
@@ -192,10 +195,7 @@ func TestSePuedeApagarElBorradoDelPortapapeles(t *testing.T) {
 // el bloqueo de la bóveda y el borrado del portapapeles sin que nadie lo pidiera
 // y sin que se notara. Lo encontró una prueba de interfaz, no ésta.
 func TestUnGuardadoAMediasNoApagaLosRelojes(t *testing.T) {
-	casa := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", casa)
-	t.Setenv("HOME", casa)
-	t.Setenv("USERPROFILE", casa)
+	enConfiguracionDePruebas(t)
 
 	a := AbrirAjustes()
 	if err := a.Guardar(Preferencias{MinutosParaBloquear: 5, SegundosDePortapapeles: 10}); err != nil {
@@ -217,10 +217,7 @@ func TestUnGuardadoAMediasNoApagaLosRelojes(t *testing.T) {
 // al otro lado. Y un fichero de preferencias de antes de la bóveda no tiene los
 // campos: ahí no valen los ceros de Go, valen los de siempre.
 func TestLosPlazosSeRecortanYLosViejosSeQuedanConLoDeSiempre(t *testing.T) {
-	casa := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", casa)
-	t.Setenv("HOME", casa)
-	t.Setenv("USERPROFILE", casa)
+	enConfiguracionDePruebas(t)
 
 	a := AbrirAjustes()
 	if p := a.Ver(); p.MinutosParaBloquear != 15 || p.SegundosDePortapapeles != 30 {
