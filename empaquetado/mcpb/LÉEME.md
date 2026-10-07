@@ -24,7 +24,14 @@ server/esfinge-mcp     el binario, el de esa plataforma
 ```
 
 **Uno por plataforma**, porque el binario lo es: `esfinge-2.44.0-macos.mcpb`, `-windows.mcpb`, `-linux.mcpb`.
-Lo arma `herramientas/armar-mcpb.sh` y lo cuelga de la publicación `publicar.yml`.
+Lo arma `herramientas/armar-mcpb` —un programa de Go— y lo cuelga de la publicación `publicar.yml`.
+
+**Y está en Go y no en `sh` porque `zip` no existe en la máquina Windows de GitHub.** El guion anterior
+murió ahí con `zip: command not found` y tiró una publicación con todo lo demás en verde. Lo que sí hay
+en los tres trabajos es Go, porque los tres compilan Esfinge. Las dos alternativas eran peores:
+`Compress-Archive` de PowerShell sería **un camino aparte solo para Windows** —o sea el que nadie prueba
+desde aquí— y además **no guarda el permiso de ejecución**, que en macOS y en Linux hace falta: lo que se
+instala sale de este zip, y un servidor sin el bit puesto se instala y no arranca.
 
 ## Lo que hay que saber si se toca
 

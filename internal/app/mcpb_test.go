@@ -29,7 +29,7 @@ func TestElPaqueteDeClaudeDesktopTieneLaForma(t *testing.T) {
 	}
 
 	paquete := filepath.Join(t.TempDir(), "esfinge.mcpb")
-	armar := exec.Command(filepath.Join(raiz, "herramientas", "armar-mcpb.sh"), "9.9.9", binario, paquete)
+	armar := exec.Command("go", "run", "./herramientas/armar-mcpb", "9.9.9", binario, paquete)
 	armar.Dir = raiz
 	if salida, err := armar.CombinedOutput(); err != nil {
 		t.Fatalf("no se ha podido armar el paquete: %v\n%s", err, salida)
@@ -42,8 +42,10 @@ func TestElPaqueteDeClaudeDesktopTieneLaForma(t *testing.T) {
 	defer z.Close()
 
 	dentro := map[string]bool{}
+	modos := map[string]os.FileMode{}
 	for _, f := range z.File {
 		dentro[f.Name] = true
+		modos[f.Name] = f.Mode()
 	}
 	// **Las tres cosas que el formato exige.** Sin el manifiesto no instala; sin el
 	// binario en su sitio, instala y no arranca.
@@ -87,6 +89,12 @@ func TestElPaqueteDeClaudeDesktopTieneLaForma(t *testing.T) {
 	}
 	if !dentro[m.Servidor.Entrada] {
 		t.Errorf("el manifiesto dice que el servidor está en %q y ahí no hay nada", m.Servidor.Entrada)
+	}
+	// **Y el servidor sale ejecutable del zip.** Lo que se instala en macOS y en Linux
+	// es esto, y sin el bit puesto Claude Desktop lo instala y no arranca — un fallo
+	// que no se ve desde aquí y que el `zip` de antes daba por hecho.
+	if modo := modos[m.Servidor.Entrada]; modo&0o111 == 0 {
+		t.Errorf("el servidor va en el zip con permisos %v y no se podrá ejecutar", modo)
 	}
 }
 

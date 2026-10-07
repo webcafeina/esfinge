@@ -229,7 +229,7 @@ jobs:
       - name: Armar el paquete de Claude Desktop
         run: |
           lipo -create -output esfinge-mcp-universal esfinge-mcp-amd64 esfinge-mcp-arm64
-          herramientas/armar-mcpb.sh "${{ steps.v.outputs.n }}" esfinge-mcp-universal \
+          go run ./herramientas/armar-mcpb "${{ steps.v.outputs.n }}" esfinge-mcp-universal \
             "$PWD/Esfinge-${{ steps.v.outputs.n }}-macos.mcpb"
 
       - uses: actions/upload-artifact@v4
@@ -403,7 +403,7 @@ jobs:
       - name: Armar el paquete de Claude Desktop
         shell: bash
         run: |
-          herramientas/armar-mcpb.sh "${{ steps.v.outputs.n }}" \
+          go run ./herramientas/armar-mcpb "${{ steps.v.outputs.n }}" \
             build/windows/installer/esfinge-mcp.exe "$PWD/Esfinge-${{ steps.v.outputs.n }}-windows.mcpb"
 
       - uses: actions/upload-artifact@v4
@@ -502,7 +502,7 @@ jobs:
 
       - name: Armar el paquete de Claude Desktop
         run: |
-          herramientas/armar-mcpb.sh "${{ steps.v.outputs.n }}" esfinge-mcp \
+          go run ./herramientas/armar-mcpb "${{ steps.v.outputs.n }}" esfinge-mcp \
             "$PWD/Esfinge-${{ steps.v.outputs.n }}-linux.mcpb"
 
       - uses: actions/upload-artifact@v4
