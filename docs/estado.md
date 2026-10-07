@@ -17,8 +17,13 @@
 >
 > 1. **El aviso de la fila retirada queda embutido**, apretado contra el botón de quitarla. Lo vio él y lo
 >    dejó para la mejora siguiente. **Hace falta su captura antes de tocarlo**: aquí sale holgado.
-> 2. **Quien solo use la extensión no ve tachada la fila** —su copia sí se borra—, hasta que abra la ventana.
-> 3. **El intermitente de «Sincronizada»**, con voz desde ayer y **dos candidatos descartados midiendo**.
+> 2. **Y en la misma pantalla, una mejora que pidió**: un **indicativo animado en verde** en la fila de la
+>    bóveda de proyecto abierta, que hoy solo se distingue por el fondo y el rótulo. Lo que cuesta no es
+>    dibujarlo: el **verde es color propio en una pantalla de trabajo** (ADR 0021), así que sale de
+>    `internal/tema` **con sus parejas medidas**, y animado quiere decir que **se apaga con
+>    `prefers-reduced-motion`** y que el rótulo se queda.
+> 3. **Quien solo use la extensión no ve tachada la fila** —su copia sí se borra—, hasta que abra la ventana.
+> 4. **El intermitente de «Sincronizada»**, con voz desde ayer y **dos candidatos descartados midiendo**.
 >
 > **Y el Mac 2 sigue con su carpeta apartada**, que es lo único pendiente de hacer en una máquina:
 >
