@@ -37,8 +37,10 @@ func RutaDelCanal() string {
 type Fuente interface {
 	// Estado dice si hay bóveda, si está abierta y en cuál se trabaja. No abre nada.
 	Estado() Estado
-	// Buscar son las entradas que coinciden, **sin secretos**, con las dos banderas.
-	Buscar(texto string) ([]Entrada, error)
+	// Buscar son las entradas que coinciden, **sin secretos**, con las dos banderas, y
+	// **cuántas coinciden en total**: lo que vuelve está topado (ver [TopeDeResultados])
+	// y sin el total no habría forma de decir que hay más.
+	Buscar(texto string) ([]Entrada, int, error)
 	// Ver es una entrada **sin secretos**. Devuelve [ErrNoEsta] si no existe.
 	Ver(id string) (Entrada, error)
 	// Higiene es lo que está mal, por identificador y sin secretos.
@@ -285,11 +287,11 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 
 	switch p.Que {
 	case QueBuscar:
-		es, err := s.fuente.Buscar(p.Texto)
+		es, cuantas, err := s.fuente.Buscar(p.Texto)
 		if err != nil {
 			return mal(MotivoNoEntiendo, err.Error())
 		}
-		return Respuesta{OK: true, Entradas: es}
+		return Respuesta{OK: true, Entradas: es, Cuantas: cuantas}
 	case QueVer:
 		e, err := s.fuente.Ver(p.ID)
 		if errors.Is(err, ErrNoEsta) {

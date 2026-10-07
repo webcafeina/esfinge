@@ -2,6 +2,8 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -110,7 +112,7 @@ func TestElAgenteNoMantieneLaBovedaAbierta(t *testing.T) {
 	for i := 0; i < 30; i++ {
 		*ahora = ahora.Add(time.Minute)
 		_ = f.Estado()
-		_, _ = f.Buscar("")
+		_, _, _ = f.Buscar("")
 		_, _ = f.Ver("lo-que-sea")
 		_, _ = f.Higiene()
 		_, _ = f.Generar(24, "hex")
@@ -137,8 +139,8 @@ func TestLoQueElAgenteVeDeUnaEntradaNoLlevaSecretos(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := fuenteDelAgente{a}
-	es, err := f.Buscar("GitHub")
-	if err != nil || len(es) != 1 {
+	es, cuantas, err := f.Buscar("GitHub")
+	if err != nil || len(es) != 1 || cuantas != 1 {
 		t.Fatalf("la búsqueda ha dado %d entradas: %v", len(es), err)
 	}
 	e := es[0]
@@ -160,4 +162,64 @@ func contieneSecreto(t *testing.T, e agente.Entrada, secreto string) bool {
 		t.Fatal(err)
 	}
 	return strings.Contains(string(crudo), secreto)
+}
+
+// **Una búsqueda sin filtro no vuelca la bóveda entera**, y dice cuántas hay.
+//
+// No es una optimización: una bóveda de dos mil entradas en el contexto de un modelo es
+// la lista completa de sitios y usuarios de una persona —justo lo que la ADR 0024
+// decidió cifrar en el disco— y ahí ya no la protege nadie. Lo que vuelve es una
+// muestra **y el total**, que es lo que hace falta para poder decir cuántas hay sin
+// enumerarlas.
+func TestUnaBusquedaSinFiltroNoVuelcaLaBovedaEntera(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	cuantas := agente.TopeDeResultados + 12
+	for i := 0; i < cuantas; i++ {
+		if err := a.GuardarEnBoveda(boveda.Entrada{
+			Tipo: boveda.TipoCredencial, Titulo: fmt.Sprintf("Cuenta %02d", i), Secreto: "x",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	es, total, err := fuenteDelAgente{a}.Buscar("Cuenta")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(es) != agente.TopeDeResultados {
+		t.Errorf("han vuelto %d entradas y el tope son %d", len(es), agente.TopeDeResultados)
+	}
+	// **Y el total es el de verdad**, no el de lo que ha vuelto: sin esto, un agente
+	// que recibe veinticinco creería que la bóveda tiene veinticinco.
+	if total != cuantas {
+		t.Errorf("dice que hay %d y hay %d", total, cuantas)
+	}
+}
+
+// Lo que está en la papelera **no está** para el agente, aunque la bóveda lo encuentre.
+func TestElAgenteNoVeLoQueEstaEnLaPapelera(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Para borrar", Secreto: "x",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	lista, err := a.BuscarEnBoveda("Para borrar")
+	if err != nil || len(lista) != 1 {
+		t.Fatalf("no se ha guardado: %v", err)
+	}
+	id := lista[0].ID
+	if err := a.BorrarDeBoveda(id); err != nil {
+		t.Fatal(err)
+	}
+	f := fuenteDelAgente{a}
+	if _, err := f.Ver(id); !errors.Is(err, agente.ErrNoEsta) {
+		t.Errorf("una entrada de la papelera se puede ver: %v", err)
+	}
+	es, _, err := f.Buscar("Para borrar")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(es) != 0 {
+		t.Errorf("la búsqueda trae lo que está en la papelera: %+v", es)
+	}
 }

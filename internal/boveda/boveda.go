@@ -873,6 +873,32 @@ func (b *Boveda) Buscar(q string) []Entrada {
 	return out
 }
 
+// ConMarcas es una entrada sin secretos **con lo que se sabe de los que tenía**.
+type ConMarcas struct {
+	Entrada Entrada
+	Marcas  Marcas
+}
+
+// BuscarConMarcas es `Buscar` diciendo además si hay secreto y si hay código.
+//
+// **Existe para no recorrer la bóveda una vez por resultado.** Lo evidente —buscar y
+// luego pedir cada entrada con `Ver` para mirar sus marcas— es cuadrático: `Ver` recorre
+// todas las entradas, así que una búsqueda sin filtro sobre dos mil entradas son cuatro
+// millones de comparaciones. Aquí se recorre **una vez**, y las marcas se calculan sobre
+// la entrada de dentro, que es el único sitio donde se pueden calcular.
+func (b *Boveda) BuscarConMarcas(q string) []ConMarcas {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	var out []ConMarcas
+	for _, e := range b.cont.Entradas {
+		if e.Papelera || !e.Coincide(q) {
+			continue
+		}
+		out = append(out, ConMarcas{Entrada: e.SinSecretos(), Marcas: e.Marcas()})
+	}
+	return out
+}
+
 // Ver devuelve una entrada entera, con sus secretos. Se pide de una en una a
 // propósito: ver §SinSecretos.
 func (b *Boveda) Ver(id string) (Entrada, bool) {

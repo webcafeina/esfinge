@@ -72,6 +72,16 @@ var LoQueSePuedePedir = []string{
 	QueGenerar,
 }
 
+// TopeDeResultados es cuántas entradas vuelven como mucho de una búsqueda.
+//
+// **No es una optimización: es la segunda mitad de lo que la ADR 0024 protege.** Una
+// bóveda de dos mil entradas volcada entera al contexto de un modelo es la lista
+// completa de sitios y usuarios de una persona —exactamente lo que se decidió cifrar en
+// el disco— y ahí ya no la protege nadie. Con un tope, una búsqueda sin filtro da una
+// muestra **y el total**, que es lo que hace falta para decir «tienes 1.843 cuentas»
+// sin enumerarlas.
+const TopeDeResultados = 25
+
 // VersionDelProtocolo la mandan los dos lados en cada petición. Sirve para que una
 // versión vieja del binario y una nueva de Esfinge no se entiendan a medias: o se
 // entienden o se dice que no.
@@ -156,9 +166,12 @@ type Respuesta struct {
 	Estado   *Estado   `json:"estado,omitempty"`
 	Testigo  string    `json:"testigo,omitempty"`
 	Entradas []Entrada `json:"entradas,omitempty"`
-	Entrada  *Entrada  `json:"entrada,omitempty"`
-	Higiene  *Higiene  `json:"higiene,omitempty"`
-	Clave    string    `json:"clave,omitempty"`
+	// Cuantas son las que coinciden **en total**, que pueden ser más de las que
+	// vienen: ver [TopeDeResultados].
+	Cuantas int      `json:"cuantas,omitempty"`
+	Entrada *Entrada `json:"entrada,omitempty"`
+	Higiene *Higiene `json:"higiene,omitempty"`
+	Clave   string   `json:"clave,omitempty"`
 }
 
 // Los motivos, que son etiquetas estables y no frases.

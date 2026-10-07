@@ -187,16 +187,24 @@ func (f fuenteDelAgente) Estado() agente.Estado {
 	}
 }
 
-func (f fuenteDelAgente) Buscar(texto string) ([]agente.Entrada, error) {
+func (f fuenteDelAgente) Buscar(texto string) ([]agente.Entrada, int, error) {
 	b := f.a.boveda()
 	if b == nil {
-		return nil, boveda.ErrCerrada
+		return nil, 0, boveda.ErrCerrada
 	}
-	var out []agente.Entrada
-	for _, e := range b.Buscar(texto) {
-		out = append(out, laEntrada(b, e))
+	// **Una sola pasada.** Lo evidente —buscar y pedir cada entrada con `Ver` para
+	// mirar sus marcas— recorre la bóveda una vez por resultado, y eso es cuadrático:
+	// con dos mil entradas, cuatro millones de comparaciones por búsqueda. Y el freno
+	// deja hacer veinte búsquedas por minuto.
+	todas := b.BuscarConMarcas(texto)
+	out := make([]agente.Entrada, 0, len(todas))
+	for _, c := range todas {
+		if len(out) >= agente.TopeDeResultados {
+			break
+		}
+		out = append(out, laEntrada(c))
 	}
-	return out, nil
+	return out, len(todas), nil
 }
 
 func (f fuenteDelAgente) Ver(id string) (agente.Entrada, error) {
@@ -204,12 +212,14 @@ func (f fuenteDelAgente) Ver(id string) (agente.Entrada, error) {
 	if b == nil {
 		return agente.Entrada{}, boveda.ErrCerrada
 	}
-	for _, e := range b.Buscar("") {
-		if e.ID == id {
-			return laEntrada(b, e), nil
-		}
+	entera, hay := b.Ver(id)
+	// **Lo que está en la papelera no está**, aunque `Ver` lo encuentre: para el
+	// agente, una entrada borrada es una entrada que no existe. Restaurarla es de la
+	// ventana, que es donde se ve lo que se está recuperando.
+	if !hay || entera.Papelera {
+		return agente.Entrada{}, agente.ErrNoEsta
 	}
-	return agente.Entrada{}, agente.ErrNoEsta
+	return laEntrada(boveda.ConMarcas{Entrada: entera.SinSecretos(), Marcas: entera.Marcas()}), nil
 }
 
 // laEntrada pasa una entrada de la bóveda a lo que el agente ve.
@@ -220,7 +230,8 @@ func (f fuenteDelAgente) Ver(id string) (agente.Entrada, error) {
 // hubiera**, así que leer `TOTP != ""` sobre lo que llega aquí daría siempre falso.
 // Ya pasó una vez, al añadir `tieneCodigo` al canal del navegador: **todas las cuentas
 // salían sin segundo factor** y lo cazó una prueba antes de publicar, no la vista.
-func laEntrada(b *boveda.Boveda, e boveda.Entrada) agente.Entrada {
+func laEntrada(c boveda.ConMarcas) agente.Entrada {
+	e := c.Entrada
 	x := agente.Entrada{
 		ID:        e.ID,
 		Tipo:      string(e.Tipo),
@@ -231,10 +242,8 @@ func laEntrada(b *boveda.Boveda, e boveda.Entrada) agente.Entrada {
 		Etiquetas: e.Etiquetas,
 		Cambiada:  e.Cambiada,
 	}
-	if entera, hay := b.Ver(e.ID); hay {
-		x.TieneSecreto = entera.Secreto != "" || entera.Notas != "" || entera.Numero != ""
-		x.TieneCodigo = entera.TOTP != ""
-	}
+	x.TieneSecreto = c.Marcas.TieneSecreto
+	x.TieneCodigo = c.Marcas.TieneCodigo
 	return x
 }
 
@@ -243,45 +252,15 @@ func (f fuenteDelAgente) Higiene() (agente.Higiene, error) {
 	if b == nil {
 		return agente.Higiene{}, boveda.ErrCerrada
 	}
-	var h agente.Higiene
-	// **Reutilizadas quiere decir «la misma contraseña en sitios distintos»**, que no
-	// es lo que calcula `boveda.Repetidas()`: aquello es «la misma cuenta dos veces»,
-	// un ayudante para importar. Son dos preguntas distintas y la que la gente hace es
-	// ésta, así que se calcula aquí y se llama por su nombre.
-	porSecreto := map[string][]string{}
-	for _, e := range b.Buscar("") {
-		entera, hay := b.Ver(e.ID)
-		if !hay {
-			continue
-		}
-		if entera.Secreto != "" {
-			porSecreto[entera.Secreto] = append(porSecreto[entera.Secreto], e.ID)
-		}
-		if entera.Tipo == boveda.TipoCredencial && entera.TOTP == "" {
-			h.SinCodigo = append(h.SinCodigo, e.ID)
-		}
-		if caducada(entera) {
-			h.Caducadas = append(h.Caducadas, e.ID)
-		}
-	}
-	// **Solo los grupos, nunca la contraseña que comparten.** El mapa se recorre por
-	// los identificadores que ya están ordenados, para que la respuesta no cambie de
-	// orden entre dos llamadas iguales.
-	for _, ids := range porSecreto {
-		if len(ids) > 1 {
-			h.Repetidas = append(h.Repetidas, ids)
-		}
-	}
-	return h, nil
-}
-
-// caducada dice si una tarjeta o un documento ya no vale. **No hay caducidad de
-// contraseñas en este formato**, y no se inventa una.
-func caducada(e boveda.Entrada) bool {
-	if e.Caduca == "" {
-		return false
-	}
-	return e.Caduca < time.Now().UTC().Format("2006-01")
+	// **Lo calcula la bóveda, no esto.** Para saber qué contraseñas están reutilizadas
+	// hay que compararlas, y comparándolas aquí la bóveda entera acabaría en claro en
+	// el montón de este proceso. Lo que vuelve son identificadores.
+	h := b.Higiene(time.Now())
+	return agente.Higiene{
+		Repetidas: h.Reutilizadas,
+		SinCodigo: h.SinCodigo,
+		Caducadas: h.Caducadas,
+	}, nil
 }
 
 func (f fuenteDelAgente) Generar(bytes int, alfabeto string) (string, error) {

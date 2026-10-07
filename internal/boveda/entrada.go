@@ -294,6 +294,32 @@ func (e Entrada) SinSecretos() Entrada {
 	return e
 }
 
+// Marcas es **lo que se sabe de una entrada sin enseñar nada de ella**: que hay un
+// secreto, no cuál es.
+type Marcas struct {
+	TieneSecreto bool
+	TieneCodigo  bool
+}
+
+// Marcas se calcula **sobre la entrada entera**, y por eso existe.
+//
+// `SinSecretos` vacía la semilla del código **sin dejar marca de que la hubiera**, así
+// que leer `TOTP != ""` sobre lo que devuelve `Buscar` da siempre falso. Ya pasó una
+// vez, al añadir `tieneCodigo` al canal del navegador: **todas las cuentas salían sin
+// segundo factor**, y lo cazó una prueba antes de publicar, no la vista.
+//
+// Llamarla **después** de vaciar no da un error: da `false` en todo. Por eso quien la
+// quiera tiene que tener la entrada de dentro, y por eso `BuscarConMarcas` existe.
+func (e Entrada) Marcas() Marcas {
+	return Marcas{
+		// Lo que cuenta como secreto **depende de la clase**: en una credencial es la
+		// contraseña, en una nota el texto y en una tarjeta el número. La lista corta
+		// de aquí es la de las clases que tienen uno que se pueda usar.
+		TieneSecreto: e.Secreto != "" || e.Notas != "" || e.Numero != "" || e.NumeroDocumento != "",
+		TieneCodigo:  e.TOTP != "",
+	}
+}
+
 // vaciarLoSensible quita de la entrada todo lo que hay que proteger.
 //
 // **Está en un solo sitio a propósito**, y lo usan dos caminos que parecen

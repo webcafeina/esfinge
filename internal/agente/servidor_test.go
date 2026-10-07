@@ -24,12 +24,14 @@ func (b *bovedaFalsa) Estado() Estado {
 	return Estado{Existe: b.existe, Abierta: b.abierta, Boveda: "Zeri's Coffee"}
 }
 
-func (b *bovedaFalsa) Buscar(texto string) ([]Entrada, error) {
+func (b *bovedaFalsa) Buscar(texto string) ([]Entrada, int, error) {
 	b.pedidos++
+	// Dos de las que vuelven, y **más de las que vuelven en total**: es lo que deja
+	// comprobar que el total viaja aparte del tope.
 	return []Entrada{
 		{ID: "a1", Tipo: "credencial", Titulo: "GitHub", Usuario: "zeri", TieneSecreto: true, TieneCodigo: true},
 		{ID: "b2", Tipo: "nota", Titulo: "Wifi de casa", TieneSecreto: true},
-	}, nil
+	}, 7, nil
 }
 
 func (b *bovedaFalsa) Ver(id string) (Entrada, error) {
