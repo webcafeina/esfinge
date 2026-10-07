@@ -119,6 +119,8 @@ export type Preferencias = {
    * **Viene apagado**: esto no sale a la red, abre una puerta a esta máquina.
    */
   puenteDelNavegador: boolean;
+  /** El canal con los agentes de IA (ADR 0054). **Apagado de fábrica.** */
+  canalDeAgentes: boolean;
   /**
    * Deja que la extensión use tus llaves de acceso en las páginas (ADR 0048).
    * **Viene encendida**, y es el freno de emergencia de esa fase: apagada, el
@@ -256,6 +258,21 @@ export type EstadoDelNavegador = {
   avisados: string[];
   permitidos: NavegadorPermitido[];
 };
+
+/** Cómo está el canal con los agentes de IA (ADR 0054). */
+export type EstadoDelAgente = {
+  encendido: boolean;
+  escuchando: boolean;
+  donde: string;
+  error?: string;
+  /** Quién está esperando permiso, vacío si no hay nadie. */
+  pide?: string;
+  /** Los que tienen permiso. **Sin el testigo**: no cruza el puente. */
+  permitidos: { quien: string; desde: string }[];
+  /** El bloque que hay que pegarle al cliente MCP. */
+  configuracion: string;
+};
+
 
 /** Lo que hace falta saber para decidir qué pantalla de la bóveda se enseña. */
 /** Cómo va la sincronización con la cuenta (ADR 0038). */
@@ -901,6 +918,23 @@ export const esfinge = {
   /** Retira un permiso dado, por la fecha en que se dio. */
   olvidarNavegador: (desde: string) => llamar<void>("OlvidarNavegador", desde),
 
+  /**
+   * El canal con los agentes de IA (ADR 0054). **Con la lista puesta a la fuerza**,
+   * por lo mismo que el del navegador: una porción vacía de Go llega como `null` y un
+   * `null.length` en el render tira el panel entero de Ajustes.
+   */
+  estadoDelAgente: () =>
+    llamar<EstadoDelAgente>("EstadoDelAgente").then((e) => ({
+      ...e,
+      permitidos: e.permitidos ?? [],
+    })),
+
+  /** El «sí» de la persona: el agente que esté esperando recibe su permiso. */
+  permitirAgente: () => llamar<void>("PermitirAgente"),
+
+  /** Retira un permiso dado, **por la fecha**: el testigo no cruza el puente. */
+  olvidarAgente: (desde: string) => llamar<void>("OlvidarAgente", desde),
+
   /** Escribe las entradas **en claro**, por el diálogo del sistema. */
   exportarBoveda: () => llamar<string>("ExportarBoveda"),
 
@@ -976,6 +1010,11 @@ export function alDescargar(cb: (a: Avance) => void): () => void {
 /** Avisa de cómo va la sincronización con la cuenta. */
 export function alCambiarLaSincro(cb: (e: EstadoSincro) => void): () => void {
   return escuchar("sincro", cb);
+}
+
+/** Avisa cuando un agente de IA pide permiso (ADR 0054). */
+export function alPedirloUnAgente(cb: (quien: string) => void) {
+  return escuchar("agente-pide", cb);
 }
 
 export function alPedirloUnNavegador(cb: (quien: string) => void) {

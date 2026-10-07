@@ -1,6 +1,16 @@
 //go:build !windows
 
-package navegador
+// Package canal abre el socket local por el que Esfinge atiende a quien se lo ha
+// pedido: la extensión del navegador (ADR 0027) y los agentes de IA (ADR 0054).
+//
+// **Está aquí y no duplicado en cada uno** porque es exactamente el mismo código y
+// porque lo que resuelve —el tope de `sun_path`, distinguir un socket vivo de uno
+// huérfano, los permisos— son trampas que ya costaron encontrarse una vez. Dos copias
+// significan que el día que se arregle algo, se arregle en una.
+//
+// Lo que **no** vive aquí es el protocolo: cada canal tiene el suyo, su lista de
+// verbos y sus frenos, y ésa es la decisión de la ADR 0054.
+package canal
 
 import (
 	"fmt"
@@ -18,7 +28,9 @@ import (
 // el error diga esto en vez de un «invalid argument» del sistema.
 const largoMaximoDeRuta = 104
 
-// escuchar abre el socket local.
+// Escuchar abre el socket local. `deQue` nombra el canal, y sale en el error:
+// «La ruta del canal con el navegador no cabe…» dice dónde mirar; «la ruta del canal»
+// a secas, no.
 //
 // **No es TCP, y ésa es media respuesta a por qué esto es aceptable** en un
 // programa cuyo propio código dice que «un servidor HTTP en el binario del
@@ -26,11 +38,11 @@ const largoMaximoDeRuta = 104
 // (`internal/app/dev.go`). Un socket de dominio unix no tiene puerto: no se
 // alcanza desde otra máquina, ni desde otra sesión, ni por una página web que
 // pruebe direcciones locales. Lo alcanza quien pueda abrir ese fichero.
-func escuchar(ruta string) (net.Listener, error) {
+func Escuchar(ruta, deQue string) (net.Listener, error) {
 	if len(ruta) > largoMaximoDeRuta {
 		return nil, fmt.Errorf(
-			"La ruta del canal con el navegador no cabe en este sistema (%d caracteres, el tope son %d)",
-			len(ruta), largoMaximoDeRuta)
+			"La ruta del canal con %s no cabe en este sistema (%d caracteres, el tope son %d)",
+			deQue, len(ruta), largoMaximoDeRuta)
 	}
 	if err := os.MkdirAll(filepath.Dir(ruta), 0o700); err != nil {
 		return nil, err
@@ -63,4 +75,5 @@ func escuchar(ruta string) (net.Listener, error) {
 	return oyente, nil
 }
 
-func limpiar(ruta string) { os.Remove(ruta) }
+// Limpiar borra el fichero del socket al parar.
+func Limpiar(ruta string) { os.Remove(ruta) }

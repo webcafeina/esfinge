@@ -124,6 +124,15 @@ esfinge:
 puente:
 	CGO_ENABLED=0 $(GO) build -ldflags "$(LDFLAGS)" -o esfinge-puente ./cmd/esfinge-puente
 
+## mcp: el servidor MCP que lanza un agente de IA para hablar con la bóveda
+##
+## **Con «-H windowsgui» por lo mismo que el puente** (ADR 0054): lo lanza otro
+## programa, conserva la entrada y la salida estándar —que ahí *son* el protocolo— y
+## no abre una ventana de consola al arrancar.
+.PHONY: mcp
+mcp:
+	CGO_ENABLED=0 $(GO) build -ldflags "$(LDFLAGS)" -o esfinge-mcp ./cmd/esfinge-mcp
+
 ## extension: construye la extensión del navegador, para Chrome y para Firefox
 ##
 ## Salen dos porque **los manifiestos no son el mismo**: Chrome quiere un
@@ -174,6 +183,10 @@ publicar-cli:
 		[ "$$os" = "windows" ] && enlazador="$$enlazador -H windowsgui"; \
 		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build -ldflags "$$enlazador" \
 			-o "$(DIST)/$$puente" ./cmd/esfinge-puente || exit 1; \
+		servidor="esfinge-mcp-$(VERSION)-$$os-$$arch$$ext"; \
+		echo "  $$servidor"; \
+		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build -ldflags "$$enlazador" \
+			-o "$(DIST)/$$servidor" ./cmd/esfinge-mcp || exit 1; \
 	done
 	@cd $(DIST) && sha256sum esfinge-* > SHA256SUMS
 	@ls -lh $(DIST)

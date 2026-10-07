@@ -26,6 +26,10 @@ contents:
   # binario de la línea de comandos a propósito: ver cmd/esfinge-puente.
   - src: esfinge-puente
     dst: /usr/bin/esfinge-puente
+  # Y el que lanza un agente de IA (ADR 0054). Aparte por lo mismo que el puente, y
+  # en el PATH porque la configuración que Ajustes enseña lleva su ruta entera.
+  - src: esfinge-mcp
+    dst: /usr/bin/esfinge-mcp
   - src: empaquetado/linux/esfinge.desktop
     dst: /usr/share/applications/esfinge.desktop
   - src: empaquetado/linux/esfinge-mime.xml

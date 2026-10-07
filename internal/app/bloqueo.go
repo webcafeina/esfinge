@@ -77,6 +77,7 @@ func (a *App) aplicarPreferencias(p Preferencias) {
 	// en Ajustes y que siguiera escuchando hasta el siguiente arranque sería un
 	// interruptor que miente.
 	a.aplicarCanal(p)
+	a.aplicarCanalDeAgentes(p)
 
 	a.vig.mu.Lock()
 	defer a.vig.mu.Unlock()

@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 
 	"github.com/webcafeina/esfinge/internal/actualizacion"
+	"github.com/webcafeina/esfinge/internal/agente"
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/cripto"
 	"github.com/webcafeina/esfinge/internal/cuenta"
@@ -124,6 +125,15 @@ type App struct {
 	// ventana: un testigo de emparejamiento no pinta nada dentro del webview.
 	navegadores *navegadoresPermitidos
 
+	// canalDeAgentes es el socket por el que hablan los agentes de IA (ADR 0054).
+	// **Es otro canal**, con su interruptor, su testigo y sus frenos: apagar uno no
+	// puede apagar el otro, y el testigo del navegador no puede valer aquí.
+	canalDeAgentes *agente.Servidor
+	agentesFallo   string
+	// agentes son los que tienen permiso. En su propio fichero, por lo mismo que los
+	// navegadores.
+	agentes *agentesPermitidos
+
 	// descargador de iconos y el ritmo al que gotea. Se pueden sustituir con
 	// ApuntarIconosA, que es la costura que permite probar el camino entero sin
 	// esperar minutos ni salir a internet.
@@ -173,6 +183,7 @@ func Nueva(version string, sistema Sistema) *App {
 	a.cu.cliente = cuenta.Nuevo(cuenta.RaizPorDefecto)
 	a.cu.cliente.Version = version
 	a.navegadores = abrirNavegadores(rutaNavegadores())
+	a.agentes = abrirAgentes(rutaAgentes())
 	a.aplicarPreferencias(a.ajustes.Ver())
 	return a
 }

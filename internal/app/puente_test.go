@@ -90,6 +90,13 @@ var loQuePuedeCruzarElPuente = []string{
 	// devolver la lista, porque no pintan nada dentro del webview.
 	"EstadoDelNavegador", "PermitirNavegador", "OlvidarNavegador",
 
+	// El canal con los agentes de IA (ADR 0054). **Lo mismo y por lo mismo**: por
+	// aquí cruzan el ajuste, los permisos y el bloque de configuración que hay que
+	// pegarle al cliente; lo que el agente pregunta va por su propio socket y tiene
+	// su propia lista, `agente.LoQueSePuedePedir`. Los testigos tampoco salen:
+	// `EstadoDelAgente` los vacía, y por eso retirar uno se hace **por su fecha**.
+	"EstadoDelAgente", "PermitirAgente", "OlvidarAgente",
+
 	// La cuenta (ADR 0035). Por aquí viaja **la contraseña maestra hacia Go**, igual
 	// que al abrir la bóveda, y nunca de vuelta: lo que sale es el estado, sin
 	// sesión ni testigos, y la clave de recuperación una sola vez al crear la

@@ -5,6 +5,7 @@ import {
   alDescargar,
   alHaberNovedad,
   alOrdenar,
+  alPedirloUnAgente,
   alPedirloUnNavegador,
   alProgresar,
   alSoltarFicheros,
@@ -14,6 +15,7 @@ import {
   type Apertura,
   type Avance,
   type Entrada,
+  type EstadoDelAgente,
   type EstadoDelNavegador,
   type EstadoDesbloqueo,
   type Medida,
@@ -1057,6 +1059,11 @@ function Ajustes({
     esfinge.estadoDelNavegador().then(setNavegador).catch(() => {});
   }, []);
 
+  const [elAgente, setElAgente] = useState<EstadoDelAgente | null>(null);
+  const leerAgente = useCallback(() => {
+    esfinge.estadoDelAgente().then(setElAgente).catch(() => {});
+  }, []);
+
   // Los sitios en los que la extensión no ofrece guardar, que viven dentro de la
   // bóveda. Se vuelven a leer cuando el navegador apunta uno nuevo.
   const [excluidos, setExcluidos] = useState<string[]>([]);
@@ -1074,8 +1081,16 @@ function Ajustes({
     esfinge.vidrio().then(setVidrio).catch(() => {});
     // Cuando un navegador pide permiso hay que enterarse **sin que nadie
     // recargue nada**: quien lo está pidiendo está mirando la otra ventana.
-    return alPedirloUnNavegador(leerNavegador);
-  }, [leerPreferencias, leerNavegador]);
+    const dejarDeOir = alPedirloUnNavegador(leerNavegador);
+    // Y lo mismo con los agentes: quien lo está pidiendo está mirando su terminal,
+    // no esta ventana, así que esto tiene que aparecer **sin que nadie recargue nada**.
+    const dejarDeOirAgente = alPedirloUnAgente(leerAgente);
+    leerAgente();
+    return () => {
+      dejarDeOir();
+      dejarDeOirAgente();
+    };
+  }, [leerPreferencias, leerNavegador, leerAgente]);
 
   async function cambiar(cambio: Partial<Preferencias>) {
     const base = ultimasPrefs.current ?? prefs;
@@ -1087,6 +1102,7 @@ function Ajustes({
     try {
       await esfinge.guardarPreferencias(siguiente);
       leerNavegador();
+      leerAgente();
     } catch (e) {
       setError(mensaje(e));
     }
@@ -1340,6 +1356,117 @@ function Ajustes({
             </ul>
           </div>
         )}
+        {/* **El canal con los agentes de IA** (ADR 0054).
+
+            Va aquí, debajo del del navegador, porque es la misma clase de cosa: una
+            puerta hacia dentro de este ordenador. Y lleva su propio interruptor,
+            su propio socket y su propia lista de permitidos a propósito —apagar uno
+            no puede apagar el otro, y el permiso de un navegador no puede valer para
+            un agente—.
+
+            Lo que esta pantalla tiene que decir, y por eso está escrito aquí y no
+            solo en la documentación: **contra un agente que puede ejecutar órdenes
+            en tu equipo, lo que protege no es el portapapeles, es que cada uso se
+            apruebe y quede apuntado**. Es la misma honestidad con la que Esfinge
+            dice que Touch ID es un cerrojo y no una llave. */}
+        <label className="fila-ajuste">
+          <input
+            type="checkbox"
+            checked={prefs?.canalDeAgentes ?? false}
+            disabled={cargando}
+            onChange={(e) => cambiar({ canalDeAgentes: e.target.checked })}
+          />
+          <span>Dejar que un agente de IA consulte la bóveda</span>
+        </label>
+
+        <p className="nota">
+          Abre otro canal <strong>dentro de este ordenador</strong>, para que programas como Claude
+          puedan buscar en tu bóveda y ayudarte a ordenarla. <strong>No les da tus contraseñas</strong>
+          : lo que se usa se copia al portapapeles, y cada uso se aprueba aquí.
+        </p>
+
+        <p className="aviso">
+          Lo que un agente lea <strong>acaba en la conversación de su modelo</strong>, con quien lo
+          sirva. Y si ese agente puede ejecutar órdenes en tu equipo —como el de una terminal—,
+          puede leer el portapapeles: ahí lo que te protege no es la copia,{" "}
+          <strong>es que cada uso te lo pregunte y quede apuntado</strong>.
+        </p>
+
+        {elAgente?.error && <p className="error">{elAgente.error}</p>}
+
+        {elAgente?.escuchando && (
+          <>
+            <p className="nota seleccionable">Escucha en {elAgente.donde}</p>
+            {/* **La configuración se enseña, no se escribe.** Escribir en el fichero
+                de configuración de otro programa es algo que solo se hace cuando no
+                queda más remedio, como con los manifiestos del navegador; aquí sí
+                queda, y los clientes son muchos y cambian. */}
+            <label htmlFor="config-mcp">Pega esto en tu agente</label>
+            <textarea
+              id="config-mcp"
+              className="seleccionable"
+              readOnly
+              rows={7}
+              value={elAgente.configuracion}
+            />
+            <p className="nota">
+              En Claude Desktop va en <code>claude_desktop_config.json</code>; en Claude Code, con{" "}
+              <code>claude mcp add</code>. La ruta tiene que ser la de arriba, entera: algunos
+              arrancan desde una carpeta cualquiera y una ruta corta no encuentra nada.
+            </p>
+          </>
+        )}
+
+        {/* Lo que pide permiso. En «peligro» por lo mismo que el del navegador: su
+            respuesta le abre la bóveda a otro programa. */}
+        {elAgente?.pide && (
+          <div className="grupo peligro">
+            <label>{elAgente.pide} quiere consultar tu bóveda</label>
+            <p className="aviso">
+              Si no has sido tú al abrir ese programa, <strong>di que no</strong>. Con permiso podrá
+              ver qué cuentas tienes, de qué sitios y cuáles están mal; para usar una contraseña
+              tendrá que pedírtelo cada vez.
+            </p>
+            <div className="botones">
+              <button
+                className="principal"
+                onClick={async () => {
+                  await esfinge.permitirAgente();
+                  leerAgente();
+                }}
+              >
+                Permitirlo
+              </button>
+              <button onClick={leerAgente}>Ahora no</button>
+            </div>
+          </div>
+        )}
+
+        {elAgente && elAgente.permitidos?.length > 0 && (
+          <div>
+            <label>Agentes permitidos</label>
+            <ul className="lista-papelera">
+              {elAgente.permitidos.map((g) => (
+                <li key={g.desde}>
+                  <span className="nombre">{g.quien}</span>
+                  <span className="nota">Desde el {fecha(g.desde)}</span>
+                  <span className="acciones">
+                    <button
+                      className="discreto"
+                      onClick={async () => {
+                        await esfinge.olvidarAgente(g.desde);
+                        leerAgente();
+                      }}
+                    >
+                      Retirar
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* «Nunca en este sitio» se decide en la tarjeta de la página y se deshace
             aquí (ADR 0032). La lista está dentro de la bóveda, cifrada, y por eso
             solo se ve con la bóveda abierta. */}

@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/webcafeina/esfinge/internal/canal"
 )
 
 // RutaDelCanal es el socket por el que habla la extensión.
@@ -182,7 +184,7 @@ func Servir(ruta string, f Fuente) (*Servidor, error) {
 	if f == nil {
 		return nil, errors.New("No hay bóveda a la que preguntar")
 	}
-	oyente, err := escuchar(ruta)
+	oyente, err := canal.Escuchar(ruta, "el navegador")
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +224,7 @@ func (s *Servidor) Parar() error {
 		c.Close()
 	}
 	s.abiertas.Wait()
-	limpiar(s.ruta)
+	canal.Limpiar(s.ruta)
 	return err
 }
 

@@ -2556,3 +2556,54 @@ test("una bóveda compartida retirada se enseña como aviso y no se puede abrir"
   });
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * **El canal con los agentes de IA en Ajustes** (ADR 0054): viene apagado, se enciende,
+ * y lo que la pantalla dice es lo que hay que decir.
+ *
+ * Lo del aviso no es decoración. La ADR obliga a que **esta pantalla** diga que contra
+ * un agente que puede ejecutar órdenes en el equipo lo que protege no es el
+ * portapapeles, sino que cada uso se apruebe y quede apuntado — igual que la de Touch
+ * ID dice que es un cerrojo y no una llave. Una frase así se borra en un refactor sin
+ * que nadie lo note, y por eso hay una aserción que la vigila.
+ */
+test("el canal con los agentes viene apagado, se enciende y dice lo que es", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Ajustes").click();
+
+  const casilla = page.getByRole("checkbox", { name: "Dejar que un agente de IA consulte la bóveda" });
+  await expect(casilla).toBeVisible({ timeout: 20_000 });
+  // **Apagado de fábrica**, que es el lado seguro de equivocarse.
+  await expect(casilla).not.toBeChecked();
+
+  // Y el aviso que la ficha exige, con sus dos mitades.
+  const panel = page.locator(".panel:visible");
+  await expect(panel).toContainText("acaba en la conversación de su modelo");
+  await expect(panel).toContainText("que cada uso te lo pregunte y quede apuntado");
+
+  // Se enciende con `click`, no con `check`: el estado lo decide Go y vuelve después,
+  // y `check` exige que cambie en el mismo clic.
+  await casilla.click();
+  await expect(casilla).toBeChecked({ timeout: 20_000 });
+
+  // Y entonces dice por dónde escucha y qué hay que pegarle al agente.
+  await expect(panel).toContainText("agentes.sock");
+  const config = page.locator("#config-mcp");
+  await expect(config).toBeVisible();
+  await expect(config).toHaveValue(/"mcpServers"/);
+  // **La ruta tiene que ser absoluta**: Claude Desktop arranca los servidores desde un
+  // directorio indefinido, así que una relativa no encuentra nada.
+  await expect(config).toHaveValue(/"command": "\//);
+
+  await page.locator(".panel:visible .grupo").filter({ hasText: "agente de IA" }).first().screenshot({
+    path: `test-results/ajustes-agentes-${test.info().project.name}.png`,
+  });
+
+  // Y apagarlo lo apaga de verdad.
+  await casilla.click();
+  await expect(casilla).not.toBeChecked({ timeout: 20_000 });
+  await expect(panel).not.toContainText("agentes.sock");
+  expect(errores, errores.join(" | ")).toEqual([]);
+});

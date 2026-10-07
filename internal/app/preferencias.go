@@ -73,6 +73,18 @@ type Preferencias struct {
 	// el lado seguro de equivocarse.
 	PuenteDelNavegador bool `json:"puenteDelNavegador"`
 
+	// CanalDeAgentes abre el canal por el que un agente de IA consulta la bóveda
+	// (ADR 0054).
+	//
+	// **Viene apagado**, por lo mismo que el del navegador y con una razón de más:
+	// al otro lado de aquél hay una persona con una pestaña delante, y al otro lado
+	// de éste hay un programa que lee páginas, ficheros y correos, **y cualquiera de
+	// esos textos puede decirle qué pedir**.
+	//
+	// Aquí la regla del cero vuelve a jugar a favor: un guardado a medias llega con
+	// `false` y **apaga** la puerta.
+	CanalDeAgentes bool `json:"canalDeAgentes"`
+
 	// DesbloqueoSugeridoPara es **la bóveda** a la que ya se le ofreció desbloquear
 	// con el sistema (2.28.3). Vacío quiere decir que no se ha ofrecido a ninguna.
 	//

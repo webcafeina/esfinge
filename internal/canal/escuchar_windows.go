@@ -1,6 +1,6 @@
 //go:build windows
 
-package navegador
+package canal
 
 import (
 	"fmt"
@@ -45,7 +45,10 @@ import (
 //
 // Si algún día se comprueba quién se conecta —porque Esfinge se firme, por
 // ejemplo— esta decisión se revisa, y entonces la tubería sí se paga sola.
-func escuchar(ruta string) (net.Listener, error) {
+func Escuchar(ruta, deQue string) (net.Listener, error) {
+	// `deQue` no se usa aquí: el único error que lo lleva es el del tope de
+	// `sun_path`, que en Windows no aplica.
+	_ = deQue
 	if err := os.MkdirAll(filepath.Dir(ruta), 0o700); err != nil {
 		return nil, err
 	}
@@ -66,4 +69,5 @@ func escuchar(ruta string) (net.Listener, error) {
 	return net.Listen("unix", ruta)
 }
 
-func limpiar(ruta string) { os.Remove(ruta) }
+// Limpiar borra el fichero del socket al parar.
+func Limpiar(ruta string) { os.Remove(ruta) }

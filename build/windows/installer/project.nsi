@@ -109,6 +109,11 @@ Section
     # El puente del navegador, junto a Esfinge (ver la cabecera).
     File "esfinge-puente.exe"
 
+    # Y el servidor MCP, que es lo que lanza un agente de IA (ADR 0054). Junto a
+    # Esfinge por lo mismo: la configuración que Ajustes enseña apunta aquí con la
+    # ruta entera.
+    File "esfinge-mcp.exe"
+
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
 
@@ -126,6 +131,7 @@ Section "uninstall"
     # RMDir /r ya se lo lleva con la carpeta, pero se dice: que desinstalar quita el
     # puente no debería depender de dónde esté instalado.
     Delete "$INSTDIR\esfinge-puente.exe"
+    Delete "$INSTDIR\esfinge-mcp.exe"
 
     RMDir /r $INSTDIR
 

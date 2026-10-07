@@ -205,6 +205,17 @@ jobs:
           lipo -create -output build/bin/Esfinge.app/Contents/MacOS/esfinge-puente \
             esfinge-puente-amd64 esfinge-puente-arm64
           chmod +x build/bin/Esfinge.app/Contents/MacOS/esfinge-puente
+          # Y el servidor MCP, al lado y por lo mismo (ADR 0054): la configuración que
+          # Ajustes enseña apunta **ahí**, con ruta absoluta, así que tiene que seguir
+          # estando después de arrastrar la aplicación a Aplicaciones.
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=darwin GOARCH=$arch go build \
+              -ldflags "-s -w -X main.version=${{ steps.v.outputs.n }}" \
+              -o "esfinge-mcp-$arch" ./cmd/esfinge-mcp
+          done
+          lipo -create -output build/bin/Esfinge.app/Contents/MacOS/esfinge-mcp \
+            esfinge-mcp-amd64 esfinge-mcp-arm64
+          chmod +x build/bin/Esfinge.app/Contents/MacOS/esfinge-mcp
           ls -lh build/bin/Esfinge.app/Contents/MacOS/
 
       # La receta de la imagen vive en el guion, para que sea la misma aquí y en
@@ -344,7 +355,12 @@ jobs:
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build \
             -ldflags "-s -w -H windowsgui -X main.version=${{ steps.v.outputs.n }}" \
             -o build/windows/installer/esfinge-puente.exe ./cmd/esfinge-puente
-          ls -lh build/windows/installer/esfinge-puente.exe
+          # Y el servidor MCP, con el mismo subsistema gráfico y por lo mismo: lo lanza
+          # otro programa y la salida estándar *es* el protocolo (ADR 0054).
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build \
+            -ldflags "-s -w -H windowsgui -X main.version=${{ steps.v.outputs.n }}" \
+            -o build/windows/installer/esfinge-mcp.exe ./cmd/esfinge-mcp
+          ls -lh build/windows/installer/esfinge-puente.exe build/windows/installer/esfinge-mcp.exe
 
       - name: Compilar la aplicación y su instalador
         shell: bash
@@ -363,6 +379,12 @@ jobs:
           # y deja la extensión muerta en Windows sin decir nada.
           if ! 7z l "$nombre" | grep -qi "esfinge-puente.exe"; then
             echo "::error::El instalador no lleva esfinge-puente.exe"
+            exit 1
+          fi
+          # Lo mismo con el servidor MCP: sin él, la configuración que Ajustes enseña
+          # apunta a un fichero que no está, y eso no se ve hasta que alguien la pega.
+          if ! 7z l "$nombre" | grep -qi "esfinge-mcp.exe"; then
+            echo "::error::El instalador no lleva esfinge-mcp.exe"
             exit 1
           fi
 
@@ -446,6 +468,8 @@ jobs:
             -o esfinge ./cmd/esfinge
           CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${{ steps.v.outputs.n }}" \
             -o esfinge-puente ./cmd/esfinge-puente
+          CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${{ steps.v.outputs.n }}" \
+            -o esfinge-mcp ./cmd/esfinge-mcp
 
       - name: Armar el .deb y el .tar.gz
         run: |
@@ -453,7 +477,7 @@ jobs:
           nfpm package -f empaquetado/linux/nfpm.yaml -p deb -t .
           tar -czf "esfinge-${VERSION}-linux-amd64.tar.gz" \
             -C build/bin Esfinge \
-            -C "$GITHUB_WORKSPACE" esfinge esfinge-puente LICENSE
+            -C "$GITHUB_WORKSPACE" esfinge esfinge-puente esfinge-mcp LICENSE
           ls -lh *.deb *.tar.gz
 
       - uses: actions/upload-artifact@v4
