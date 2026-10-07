@@ -655,6 +655,12 @@ func (a *App) olvidarEntrada() {
 
 // cambiarBoveda deja `b` como la bóveda abierta, cerrando la que hubiera.
 func (a *App) cambiarBoveda(b *boveda.Boveda) {
+	// **Y se cierra la válvula del agente** (ADR 0054). Un «durante cinco minutos» se
+	// dio mirando una bóveda concreta —y una entrada concreta de ella—, así que no
+	// puede sobrevivir a que el suelo cambie: cerrar, abrir, entrar en un proyecto o
+	// salir de él. Aquí pasan **todos** esos caminos, que es por lo que está aquí y no
+	// repetido en cada uno.
+	a.permisos.cerrarLaValvula()
 	a.pararSincro()
 	a.mu.Lock()
 	antes := a.bov
@@ -940,6 +946,11 @@ func (a *App) pararSincro() {
 // al borrarla. **Una bóveda cerrada no sincroniza**: la sesión solo existe en
 // claro mientras está abierta.
 func (a *App) alCerrarLaBoveda() {
+	// **Y lo que un agente tuviera concedido** (ADR 0054). Va aquí y no solo en
+	// `cambiarBoveda` porque **cerrar no pasa por allí**: ni a mano, ni por el bloqueo
+	// por inactividad, ni al perder la sesión. Lo dijo la prueba de la válvula; estaba
+	// puesto donde parecía el sitio y no donde pasan todos los caminos.
+	a.permisos.cerrarLaValvula()
 	a.cu.mu.Lock()
 	m := a.cu.marcha
 	a.cu.mu.Unlock()

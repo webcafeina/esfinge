@@ -2639,6 +2639,7 @@ test("la tarjeta de lo que pide un agente dice quién, cuál y que no la ve", as
           titulo: "Hacienda",
           cuando: "2026-10-07T12:00:00Z",
         },
+        valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
       }),
     });
   });
@@ -2653,10 +2654,55 @@ test("la tarjeta de lo que pide un agente dice quién, cuál y que no la ve", as
   await expect(tarjeta).toContainText("Hacienda");
   // **Y que el agente no la ve**, que es lo que hace razonable decir que sí.
   await expect(tarjeta).toContainText("el agente no la ve");
-  // Los dos botones, y el de decir que no **no es el principal**.
-  await expect(tarjeta.getByRole("button", { name: "Copiar esa contraseña" })).toBeVisible();
+  // Los tres botones. **El «un rato» no puede ser el principal**: es lo único de esta
+  // pantalla que quita una pregunta, así que no puede ser lo que se pulsa sin mirar.
+  const soloEsta = tarjeta.getByRole("button", { name: "Solo ésta" });
+  const unRato = tarjeta.getByRole("button", { name: "Todo lo suyo, 5 minutos" });
+  await expect(soloEsta).toBeVisible();
+  await expect(unRato).toBeVisible();
   await expect(tarjeta.getByRole("button", { name: "No", exact: true })).toBeVisible();
+  await expect(soloEsta).toHaveClass(/principal/);
+  await expect(unRato).not.toHaveClass(/principal/);
 
   await tarjeta.screenshot({ path: `test-results/agente-pide-${test.info().project.name}.png` });
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * **El contador de la válvula** (ADR 0054), que es lo que hace soportable haber dicho
+ * «durante cinco minutos»: se ve lo que se le va dando y se puede cortar sin esperar a
+ * que caduque. Un permiso abierto que no se ve es un permiso que nadie retira.
+ */
+test("mientras la válvula está abierta, la ventana dice cuánto y deja cortar", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.route("**/api/EstadoDelAgente", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        encendido: true,
+        escuchando: true,
+        donde: "/tmp/agentes.sock",
+        permitidos: [{ quien: "Claude Code", desde: "2026-10-07T10:00:00Z" }],
+        configuracion: "{}",
+        valvula: { abierta: true, quedan: 184, usadas: 7, tope: 20, ultimos: ["GitHub", "Brevo", "Hacienda"] },
+      }),
+    });
+  });
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Ajustes").click();
+
+  const aviso = page.locator(".panel:visible .grupo.peligro").filter({ hasText: "Dándole lo que pida" });
+  await expect(aviso).toBeVisible({ timeout: 20_000 });
+  // **Cuánto queda y cuánto lleva**: sin el segundo, «cinco minutos» no dice nada de lo
+  // que está pasando ahora mismo.
+  await expect(aviso).toContainText("4 min");
+  await expect(aviso).toContainText("Van 7 de 20");
+  // Y qué se le ha dado, que es lo que deja ver si va por donde debe.
+  await expect(aviso).toContainText("Hacienda");
+  await expect(aviso.getByRole("button", { name: "Cortar" })).toBeVisible();
+
+  await aviso.screenshot({ path: `test-results/valvula-${test.info().project.name}.png` });
   expect(errores, errores.join(" | ")).toEqual([]);
 });

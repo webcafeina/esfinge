@@ -290,6 +290,8 @@ export type EstadoDelAgente = {
    * contraseña» no es una pregunta que se pueda contestar.
    */
   quiere?: { quien: string; que: string; id: string; titulo: string; cuando: string };
+  /** Cómo va el «todo lo de este agente durante un rato», si está abierta. */
+  valvula: { abierta: boolean; quedan: number; usadas: number; tope: number; ultimos?: string[] };
 };
 
 
@@ -954,8 +956,15 @@ export const esfinge = {
   /** Retira un permiso dado, **por la fecha**: el testigo no cruza el puente. */
   olvidarAgente: (desde: string) => llamar<void>("OlvidarAgente", desde),
 
-  /** El «sí» a lo que un agente está pidiendo. Vale **una vez y para esa entrada**. */
-  aprobarLoQuePideElAgente: () => llamar<void>("AprobarLoQuePideElAgente"),
+  /**
+   * El «sí» a lo que un agente está pidiendo.
+   *
+   * Con `unRato`, además abre la válvula: a partir de ahí no pregunta durante cinco
+   * minutos. Sin él vale **una vez y solo para esa entrada**.
+   */
+  aprobarLoQuePideElAgente: (unRato: boolean) => llamar<void>("AprobarLoQuePideElAgente", unRato),
+  /** Cierra la válvula en el acto. */
+  cortarAlAgente: () => llamar<void>("CortarAlAgente"),
   /** Y el «no», que **queda apuntado**: es la señal por la que el registro existe. */
   denegarLoQuePideElAgente: () => llamar<void>("DenegarLoQuePideElAgente"),
   /** Lo que se le ha dado a los agentes, para enseñarlo. Con la lista a la fuerza. */

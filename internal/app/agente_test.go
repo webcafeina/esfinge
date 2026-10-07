@@ -259,7 +259,7 @@ func TestCopiarUnaContrasenaSePideSeApruebaYSeCopia(t *testing.T) {
 	}
 
 	// --- Se aprueba, y entonces sí.
-	if err := a.AprobarLoQuePideElAgente(); err != nil {
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
 		t.Fatal(err)
 	}
 	c, err := f.CopiarSecreto("Claude Code", elBanco)
@@ -285,7 +285,7 @@ func TestCopiarUnaContrasenaSePideSeApruebaYSeCopia(t *testing.T) {
 
 	// --- **Y un sí para una entrada no vale para otra**, que es lo que impide que
 	// aprobar «la de GitHub» se lleve la del banco.
-	if err := a.AprobarLoQuePideElAgente(); err != nil {
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.CopiarSecreto("Claude Code", elCorreo); !errors.Is(err, agente.ErrPideAprobacion) {
@@ -314,7 +314,7 @@ func TestLoQueSeLeDaAUnAgenteQuedaApuntado(t *testing.T) {
 	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatal(err)
 	}
-	if err := a.AprobarLoQuePideElAgente(); err != nil {
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.CopiarSecreto("Claude Code", id); err != nil {
@@ -357,4 +357,130 @@ func TestLoQueSeLeDaAUnAgenteQuedaApuntado(t *testing.T) {
 func enElPortapapeles(s *sistemaFalso) string {
 	t, _ := s.LeerPortapapeles()
 	return t
+}
+
+// **La válvula: lo que deja hacer y, sobre todo, lo que no.**
+//
+// Es la única pieza de todo esto que **resta** seguridad, así que lo que esta prueba
+// vigila son sus límites, uno por caso:
+//
+//  1. Que mientras está abierta no pregunte otra vez.
+//  2. Que **se cierre sola al llegar al tope**, que es lo que impide que «cinco
+//     minutos» sea un cheque en blanco.
+//  3. Que **cortarla la cierre en el acto**.
+//  4. Que **cambiar de bóveda la cierre**: se dio mirando una, no otra.
+func TestLaValvulaYSusLimites(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	lista, err := a.BuscarEnBoveda("Banco")
+	if err != nil || len(lista) == 0 {
+		t.Fatal(err)
+	}
+	id := lista[0].ID
+
+	abrirLaValvula := func() {
+		t.Helper()
+		if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+			t.Fatalf("no ha pedido aprobación: %v", err)
+		}
+		if err := a.AprobarLoQuePideElAgente(true); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// --- 1. Abierta, no vuelve a preguntar.
+	abrirLaValvula()
+	for i := 0; i < 3; i++ {
+		if _, err := f.CopiarSecreto("Claude Code", id); err != nil {
+			t.Fatalf("con la válvula abierta, la vuelta %d pide aprobación: %v", i, err)
+		}
+	}
+	if v := a.EstadoDelAgente().Valvula; !v.Abierta || v.Usadas != 3 {
+		t.Errorf("la ventana dice %+v", v)
+	}
+
+	// --- 2. **Se cierra al llegar al tope.**
+	for i := 3; i < TopeDeLaValvula; i++ {
+		if _, err := f.CopiarSecreto("Claude Code", id); err != nil {
+			t.Fatalf("la vuelta %d ha fallado antes del tope: %v", i, err)
+		}
+	}
+	if v := a.EstadoDelAgente().Valvula; v.Abierta {
+		t.Error("la válvula sigue abierta pasado el tope: «cinco minutos» sería un cheque en blanco")
+	}
+	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("pasado el tope no vuelve a preguntar")
+	}
+
+	// --- 3. **Cortar la cierra en el acto.**
+	abrirLaValvula()
+	if err := a.CortarAlAgente(); err != nil {
+		t.Fatal(err)
+	}
+	if v := a.EstadoDelAgente().Valvula; v.Abierta {
+		t.Error("cortar no la ha cerrado")
+	}
+	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("después de cortar sigue dando sin preguntar")
+	}
+
+	// --- 4. **Cambiar de bóveda la cierra**: lo concedido se dio mirando una.
+	abrirLaValvula()
+	a.CerrarBoveda()
+	if v := a.EstadoDelAgente().Valvula; v.Abierta {
+		t.Error("cerrar la bóveda no ha cerrado la válvula")
+	}
+}
+
+// **Y lo que la válvula no cubre queda apuntado como tal.** Poder distinguir después lo
+// que se aprobó mirando de lo que pasó en bloque es media razón de que el registro
+// exista.
+func TestElRegistroDistingueLaValvula(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	lista, err := a.BuscarEnBoveda("Banco")
+	if err != nil || len(lista) == 0 {
+		t.Fatal(err)
+	}
+	id := lista[0].ID
+
+	// Uno preguntado.
+	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal(err)
+	}
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.CopiarSecreto("Claude Code", id); err != nil {
+		t.Fatal(err)
+	}
+	// Y uno por la válvula.
+	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal(err)
+	}
+	if err := a.AprobarLoQuePideElAgente(true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.CopiarSecreto("Claude Code", id); err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := a.RegistroDelAgente()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var preguntados, porValvula int
+	for _, ap := range r {
+		switch ap.Como {
+		case boveda.ApuntePreguntado:
+			preguntados++
+		case boveda.ApunteValvula:
+			porValvula++
+		}
+	}
+	// Uno y uno: **pedir aprobación no deja apunte**, solo hacerlo o negarlo. Lo que
+	// esto vigila es que los dos caminos se distingan después, no cuántos hay.
+	if preguntados != 1 || porValvula != 1 {
+		t.Errorf("el registro dice %d preguntados y %d por la válvula: %+v", preguntados, porValvula, r)
+	}
 }

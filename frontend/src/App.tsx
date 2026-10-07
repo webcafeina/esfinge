@@ -1473,11 +1473,22 @@ function Ajustes({
               <button
                 className="principal"
                 onClick={async () => {
-                  await esfinge.aprobarLoQuePideElAgente();
+                  await esfinge.aprobarLoQuePideElAgente(false);
                   leerAgente();
                 }}
               >
-                Copiar esa contraseña
+                Solo ésta
+              </button>
+              {/* **El «un rato» no es el botón principal**, y eso es a propósito: es
+                  lo único de esta pantalla que quita una pregunta, así que no puede
+                  ser lo que se pulsa sin mirar. */}
+              <button
+                onClick={async () => {
+                  await esfinge.aprobarLoQuePideElAgente(true);
+                  leerAgente();
+                }}
+              >
+                Todo lo suyo, 5 minutos
               </button>
               <button
                 onClick={async () => {
@@ -1486,6 +1497,35 @@ function Ajustes({
                 }}
               >
                 No
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* **El contador de la válvula, mientras está abierta.** Es lo que hace
+            soportable haber dicho «durante cinco minutos»: se ve lo que se le va
+            dando y se puede cortar sin esperar a que caduque. */}
+        {elAgente?.valvula?.abierta && (
+          <div className="grupo peligro">
+            <label>
+              Dándole lo que pida durante {Math.max(0, Math.ceil(elAgente.valvula.quedan / 60))} min
+            </label>
+            <p className="nota">
+              Van {elAgente.valvula.usadas} de {elAgente.valvula.tope}
+              {elAgente.valvula.ultimos && elAgente.valvula.ultimos.length > 0 && (
+                <> · {elAgente.valvula.ultimos.slice(-3).join(", ")}</>
+              )}
+              . Al llegar al tope vuelve a preguntar.
+            </p>
+            <div className="botones">
+              <button
+                className="principal"
+                onClick={async () => {
+                  await esfinge.cortarAlAgente();
+                  leerAgente();
+                }}
+              >
+                Cortar
               </button>
             </div>
           </div>

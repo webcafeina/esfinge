@@ -349,6 +349,8 @@ type EstadoDelAgente struct {
 	// contraseña» no es una pregunta que se pueda contestar. Lo que no lleva es la
 	// contraseña, claro.
 	Quiere *loQuePideUnAgente `json:"quiere,omitempty"`
+	// Valvula es cómo va el «todo lo de este agente durante un rato», si está abierta.
+	Valvula comoVaLaValvula `json:"valvula"`
 }
 
 // EstadoDelAgente dice cómo está la puerta de los agentes.
@@ -366,6 +368,7 @@ func (a *App) EstadoDelAgente() EstadoDelAgente {
 		Permitidos:    a.agentes.ver(),
 		Configuracion: ConfiguracionParaElCliente(),
 		Quiere:        a.permisos.loPendiente(),
+		Valvula:       a.permisos.comoVa(time.Now()),
 	}
 	if srv != nil {
 		e.Donde = srv.Donde()
@@ -393,6 +396,10 @@ func (a *App) PermitirAgente() error {
 func (a *App) OlvidarAgente(desde string) error {
 	for _, p := range a.agentes.ver() {
 		if p.Desde == desde {
+			// Retirar a un agente **cierra también lo que tuviera concedido**: si no,
+			// seguiría pudiendo durante lo que quedara de válvula, que es justo lo que
+			// quien pulsa «Retirar» está intentando que no pase.
+			a.permisos.cerrarLaValvula()
 			a.Actividad()
 			return a.agentes.olvidar(p.Testigo)
 		}
@@ -467,6 +474,21 @@ type loQuePideUnAgente struct {
 	Cuando string `json:"cuando"`
 }
 
+// PlazoDeLaValvula es lo que dura un «todo lo de este agente durante un rato».
+//
+// **Cinco minutos desde el clic, no desde el último uso.** Un plazo que se renueva con
+// el uso es una válvula permanente para un agente ocupado, que es justo lo contrario de
+// lo que se está concediendo.
+const PlazoDeLaValvula = 5 * time.Minute
+
+// TopeDeLaValvula es cuántas veces puede usarla antes de que se cierre sola.
+//
+// **Sin un tope, «cinco minutos» es un cheque en blanco**: un agente en un bucle puede
+// pedir cientos de veces en ese rato. Al llegar aquí la válvula se cierra y la
+// siguiente petición vuelve a preguntar, que es lo que devuelve a la persona al bucle —
+// y lo que un agente desbocado necesita que pase.
+const TopeDeLaValvula = 20
+
 type permisosDelAgente struct {
 	mu sync.Mutex
 	// pendiente es lo último que se ha pedido y nadie ha contestado.
@@ -474,25 +496,66 @@ type permisosDelAgente struct {
 	// concedidoPara es la entrada para la que hay un sí, y hasta cuándo vale.
 	concedidoPara string
 	hasta         time.Time
+
+	// valvulaHasta es hasta cuándo vale el «todo lo de este agente», y usadas cuántas
+	// veces se ha usado ya. Ver [PlazoDeLaValvula].
+	valvulaHasta time.Time
+	usadas       int
+	// loUltimo son los títulos de lo que se le ha ido dando, para que la ventana pueda
+	// enseñarlo mientras pasa. **Sin secretos**, como todo lo demás.
+	loUltimo []string
 }
 
 // pedir deja apuntado lo que se quiere y dice si ya había permiso **para eso mismo**.
 //
 // Si lo había, **se gasta**: un sí vale para una vez. Si el agente quiere dos, pregunta
 // dos veces, que es exactamente lo que el cliente eligió.
-func (p *permisosDelAgente) pedir(q loQuePideUnAgente, ahora time.Time) bool {
+// pedir dice si se puede hacer ya, y si no, lo deja pedido.
+//
+// `porValvula` dice si este verbo puede pasar por ella: **lo que se le enseña al agente
+// no pasa nunca**, y ésa es la frontera entera de la válvula. Ver [conceder].
+func (p *permisosDelAgente) pedir(q loQuePideUnAgente, porValvula bool, ahora time.Time) (bool, string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
+	// Un sí para esta entrada, que **se gasta**: un sí vale para una vez.
 	if p.concedidoPara != "" && p.concedidoPara == q.ID && ahora.Before(p.hasta) {
 		p.concedidoPara = ""
-		return true
+		return true, boveda.ApuntePreguntado
+	}
+	// O la válvula, si está abierta y si este verbo puede pasar por ella.
+	if porValvula && ahora.Before(p.valvulaHasta) {
+		p.usadas++
+		p.loUltimo = append(p.loUltimo, q.Titulo)
+		// **Y al llegar al tope se cierra**, en el mismo momento en que se usa la
+		// última: la siguiente vuelve a preguntar.
+		if p.usadas >= TopeDeLaValvula {
+			p.valvulaHasta = time.Time{}
+		}
+		return true, boveda.ApunteValvula
 	}
 	p.pendiente = &q
-	return false
+	return false, ""
+}
+
+// cerrarLaValvula la cierra ya, y olvida la cuenta.
+//
+// La llaman el botón de cortar **y todo lo que cambia el suelo bajo los pies**: cerrar
+// la bóveda, el bloqueo por inactividad, cambiar de bóveda y retirar al agente. Un
+// permiso dado para «esta bóveda, ahora» no puede sobrevivir a ninguna de esas cosas.
+func (p *permisosDelAgente) cerrarLaValvula() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.valvulaHasta = time.Time{}
+	p.concedidoPara = ""
+	p.usadas = 0
+	p.loUltimo = nil
 }
 
 // conceder dice que sí a lo que estuviera pendiente, y devuelve para qué era.
-func (p *permisosDelAgente) conceder(ahora time.Time) (loQuePideUnAgente, bool) {
+// conceder dice que sí a lo que estuviera pendiente. Con `unRato`, además abre la
+// válvula.
+func (p *permisosDelAgente) conceder(unRato bool, ahora time.Time) (loQuePideUnAgente, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.pendiente == nil {
@@ -500,9 +563,44 @@ func (p *permisosDelAgente) conceder(ahora time.Time) (loQuePideUnAgente, bool) 
 	}
 	q := *p.pendiente
 	p.pendiente = nil
+	if unRato {
+		// **Y entonces no se pone el permiso de una vez**, que es lo que parecía
+		// inofensivo y rompía la válvula entera: con los dos puestos, la petición
+		// siguiente consumía el individual, la válvula no se usaba nunca, su contador
+		// se quedaba a cero y **el tope no llegaba jamás**. Lo dijo la prueba del tope,
+		// no la lectura.
+		p.valvulaHasta = ahora.Add(PlazoDeLaValvula)
+		p.usadas = 0
+		p.loUltimo = nil
+		return q, true
+	}
 	p.concedidoPara = q.ID
 	p.hasta = ahora.Add(PlazoDelPermiso)
 	return q, true
+}
+
+// comoVaLaValvula es lo que la ventana enseña mientras está abierta.
+type comoVaLaValvula struct {
+	Abierta bool     `json:"abierta"`
+	Quedan  int      `json:"quedan"`
+	Usadas  int      `json:"usadas"`
+	Tope    int      `json:"tope"`
+	Ultimos []string `json:"ultimos,omitempty"`
+}
+
+func (p *permisosDelAgente) comoVa(ahora time.Time) comoVaLaValvula {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if !ahora.Before(p.valvulaHasta) {
+		return comoVaLaValvula{}
+	}
+	return comoVaLaValvula{
+		Abierta: true,
+		Quedan:  int(p.valvulaHasta.Sub(ahora).Seconds()),
+		Usadas:  p.usadas,
+		Tope:    TopeDeLaValvula,
+		Ultimos: append([]string(nil), p.loUltimo...),
+	}
 }
 
 // denegar lo quita sin conceder nada.
@@ -558,7 +656,11 @@ func (f fuenteDelAgente) CopiarSecreto(quien, id string) (agente.Copiado, error)
 		Quien: quien, Que: agente.QueCopiarSecreto, ID: id, Titulo: e.Titulo,
 		Cuando: ahora.UTC().Format(time.RFC3339),
 	}
-	if !f.a.permisos.pedir(q, ahora) {
+	// **Copiar puede pasar por la válvula**, y ésa es exactamente la línea: lo que la
+	// válvula cubre es **actuar** —el secreto se queda en este equipo y el portapapeles
+	// se borra solo—, no enseñar. Lo que se le enseña al agente pregunta siempre.
+	vale, como := f.a.permisos.pedir(q, true, ahora)
+	if !vale {
 		// **La ventana no se trae al frente** (ADR 0027): hacerlo dejaría que
 		// cualquier programa de esta máquina hiciera aparecer la ventana de un gestor
 		// de contraseñas cuando quisiera.
@@ -570,10 +672,10 @@ func (f fuenteDelAgente) CopiarSecreto(quien, id string) (agente.Copiado, error)
 	// persona. Lo que sí contó fue el clic de aprobarlo.
 	segundos, err := f.a.copiar(e.Secreto, false)
 	if err != nil {
-		f.a.apuntar(b, q, boveda.ApunteNegado)
+		f.a.apuntarComo(b, q, boveda.ApunteNegado, como)
 		return agente.Copiado{}, err
 	}
-	f.a.apuntar(b, q, boveda.ApunteHecho)
+	f.a.apuntarComo(b, q, boveda.ApunteHecho, como)
 	return agente.Copiado{Portapapeles: segundos, Titulo: e.Titulo}, nil
 }
 
@@ -584,9 +686,16 @@ func (f fuenteDelAgente) CopiarSecreto(quien, id string) (agente.Copiado, error)
 // dónde apuntar, y eso **la ventana lo dice**: una medida que no se aplica en silencio es
 // peor que no tenerla.
 func (a *App) apuntar(b *boveda.Boveda, q loQuePideUnAgente, resultado string) {
+	a.apuntarComo(b, q, resultado, boveda.ApuntePreguntado)
+}
+
+// apuntarComo es lo mismo diciendo **cómo se autorizó**: preguntando una por una o por
+// la válvula. Esa distinción es lo que deja leer el registro después y saber qué se dio
+// mirándolo y qué se dio en bloque.
+func (a *App) apuntarComo(b *boveda.Boveda, q loQuePideUnAgente, resultado, como string) {
 	err := b.Apuntar(boveda.Apunte{
 		Quien: q.Quien, Que: q.Que, Sobre: q.ID, Titulo: q.Titulo,
-		Resultado: resultado, Como: boveda.ApuntePreguntado,
+		Resultado: resultado, Como: como,
 	})
 	if err != nil {
 		log.Printf("esfinge: no se ha podido apuntar lo que se le dio a un agente: %v", err)
@@ -594,8 +703,8 @@ func (a *App) apuntar(b *boveda.Boveda, q loQuePideUnAgente, resultado string) {
 }
 
 // AprobarLoQuePideElAgente es el «sí» de la persona.
-func (a *App) AprobarLoQuePideElAgente() error {
-	if _, hay := a.permisos.conceder(time.Now()); !hay {
+func (a *App) AprobarLoQuePideElAgente(unRato bool) error {
+	if _, hay := a.permisos.conceder(unRato, time.Now()); !hay {
 		return errors.New("Ya no hay nada que aprobar")
 	}
 	// **Esto sí cuenta como actividad**: es un clic de una persona.
@@ -624,4 +733,14 @@ func (a *App) RegistroDelAgente() ([]boveda.Apunte, error) {
 		return nil, boveda.ErrCerrada
 	}
 	return b.Registro(), nil
+}
+
+// CortarAlAgente cierra la válvula en el acto.
+//
+// Es el botón que hace que «durante cinco minutos» sea soportable: lo que se concede se
+// puede retirar sin esperar a que caduque.
+func (a *App) CortarAlAgente() error {
+	a.permisos.cerrarLaValvula()
+	a.Actividad()
+	return nil
 }

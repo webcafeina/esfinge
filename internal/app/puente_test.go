@@ -101,6 +101,9 @@ var loQuePuedeCruzarElPuente = []string{
 	// alguien le ha dicho qué pedir y la bóveda. `RegistroDelAgente` es de lectura y
 	// **no se le da al agente**: existe para que lo lea la persona.
 	"AprobarLoQuePideElAgente", "DenegarLoQuePideElAgente", "RegistroDelAgente",
+	// Y cortar lo concedido, que es lo que hace soportable el «durante cinco minutos»:
+	// lo que se da se puede retirar sin esperar a que caduque.
+	"CortarAlAgente",
 
 	// La cuenta (ADR 0035). Por aquí viaja **la contraseña maestra hacia Go**, igual
 	// que al abrir la bóveda, y nunca de vuelta: lo que sale es el estado, sin
