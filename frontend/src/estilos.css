@@ -578,6 +578,23 @@ body {
  *
  * Si algún día no basta, lo siguiente no es seguir apretando: es dejar que la fila se
  * parta en dos, que es feo un momento y legible siempre. */
+/* **Y el de Ajustes se parte en dos filas antes que perder un rótulo.**
+ *
+ * Es lo que este mismo fichero dejó escrito como paso siguiente cuando apretar los
+ * botones no bastara, y aquí no basta: con «Actualizaciones» en vez de «Versión» las
+ * cinco pestañas piden 566 px de los 560 que hay, y 451 de los 427 con la ventana a
+ * 700. Medido, no razonado.
+ *
+ * **La diferencia con las clases de la bóveda es qué se pierde al quitar el rótulo.**
+ * Allí una llave o una tarjeta se adivinan por su glifo; aquí «Cuenta» y «Bóveda» son
+ * una silueta y una caja fuerte, que es justo el par que ya se confundió una vez. El
+ * rótulo es lo que dice qué hay dentro, así que lo que cede es la fila.
+ */
+.segmentado.envuelve {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
 .segmentado.compacto button {
   padding: 0 var(--espacio-2);
 }

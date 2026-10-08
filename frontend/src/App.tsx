@@ -1115,6 +1115,23 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
             <strong>la versión que tienes puesta</strong>, así que no hay que acertar con
             ninguna descarga.
           </p>
+          {/* **Lo que el paquete arrastra, y nadie lo adivina.**
+
+              El `.mcpb` lleva el servidor **dentro**, que es lo que hace que no se
+              rompa si mueves Esfinge de carpeta. El precio es el otro lado: al
+              actualizar Esfinge, ese servidor se queda como estaba. Y los clientes
+              MCP **se quedan con la lista de herramientas** al conectar, así que una
+              herramienta nueva no aparece ni reiniciando la conversación.
+
+              Lo vio el cliente con la 2.47.0: pidió crear una cuenta con su sitio y
+              el agente contestó que su versión no tenía ese campo. Tenía razón: era
+              la de antes. */}
+          <p className="aviso">
+            Al actualizar Esfinge, <strong>vuelve a guardarlo y a abrirlo</strong>. El servidor
+            va dentro del paquete, así que no se actualiza con la aplicación — y los agentes se
+            quedan con la lista de herramientas al arrancar. En Claude Code no hace falta: allí
+            la orden apunta a la Esfinge instalada.
+          </p>
           <div className="botones">
             <button className="principal" onClick={guardarElPaquete} disabled={guardando}>
               {guardando ? "Guardando…" : "Guardar el paquete…"}
@@ -1620,15 +1637,22 @@ function Ajustes({
           a su altura: ya no hay a dónde saltar, se abre su pestaña y ya está. */}
       <Segmentado
         opciones={[
-          { valor: "cuenta", etiqueta: "Cuenta", icono: "personal" },
-          { valor: "boveda", etiqueta: "Bóveda", icono: "boveda" },
-          { valor: "navegador", etiqueta: "Navegador", icono: "navegador" },
-          { valor: "agentes", etiqueta: "Agentes", icono: "mcp" },
-          { valor: "acerca", etiqueta: "Versión", icono: "descargar" },
+          // **Sin iconos, y eso lo decidió la regla.** La columna está topada en
+          // 560 px y no crece con la ventana; con los glifos puestos, las cinco
+          // pestañas pedían 566 en cuanto «Versión» pasó a llamarse
+          // «Actualizaciones». De las tres salidas posibles —quitar los iconos,
+          // dejar el rótulo solo en la activa o abreviar otro nombre— esta es la
+          // única que no quita información: **el rótulo es lo que dice qué hay
+          // dentro y el glifo era decoración**. Lo mide una prueba a tres anchos.
+          { valor: "cuenta", etiqueta: "Cuenta" },
+          { valor: "boveda", etiqueta: "Bóveda" },
+          { valor: "navegador", etiqueta: "Navegador" },
+          { valor: "agentes", etiqueta: "Agentes" },
+          { valor: "acerca", etiqueta: "Actualizaciones" },
         ]}
         valor={seccion}
         alCambiar={setSeccion}
-        conIconos
+        envuelve
       />
 
       {/* **El permiso que no caduca, dicho mientras dure** (2026-10-08).

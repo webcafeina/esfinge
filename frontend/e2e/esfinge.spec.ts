@@ -237,7 +237,7 @@ test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page 
   // encontró la anterior, así que al recargar puede salir sola. Eso es correcto
   // en la aplicación; aquí solo haría la prueba dependiente del orden.
   await seccion(page, "Ajustes").click();
-  await page.getByRole("tab", { name: "Versión" }).click();
+  await page.getByRole("tab", { name: "Actualizaciones" }).click();
   await page.getByRole("button", { name: "Buscar ahora" }).click();
 
   const banda = page.locator(".novedad");
@@ -276,7 +276,7 @@ test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
   await page.reload();
 
   await seccion(page, "Ajustes").click();
-  await page.getByRole("tab", { name: "Versión" }).click();
+  await page.getByRole("tab", { name: "Actualizaciones" }).click();
   const interruptor = page.getByRole("checkbox", { name: /versión nueva/ });
   await expect(interruptor).toBeChecked();
 
@@ -285,7 +285,7 @@ test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
   await interruptor.uncheck();
   await page.reload();
   await seccion(page, "Ajustes").click();
-  await page.getByRole("tab", { name: "Versión" }).click();
+  await page.getByRole("tab", { name: "Actualizaciones" }).click();
   await expect(page.getByRole("checkbox", { name: /versión nueva/ })).not.toBeChecked();
 
   // Y se deja como estaba, que el fichero de preferencias es de verdad y lo
@@ -1544,6 +1544,71 @@ test("un dato personal guarda la dirección por trozos y la enseña compuesta", 
 // rótulo de la última salía cortado por el borde del panel. Comparar lo que la
 // barra necesita con lo que mide es la pregunta que el CSS no contesta solo, y
 // vale para cualquier clase que se añada después de ésta.
+/**
+ * **Y las pestañas de Ajustes también caben**, que es lo mismo una pantalla más allá.
+ *
+ * La columna de contenido está topada en 560 px y **no crece con la ventana**, así que
+ * una barra de cinco pestañas con icono y rótulo va justa por definición. Cuando
+ * «Versión» pasó a llamarse «Actualizaciones» —lo pidió el cliente, y el rótulo corto
+ * se había elegido por sitio y no por claridad— eran ocho caracteres más, y eso es
+ * exactamente donde ya se rompió la barra de las clases de la bóveda.
+ *
+ * Se mide a varios anchos **y con cada pestaña activa**, por lo mismo que allí.
+ */
+test("las pestañas de Ajustes caben en su barra", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Ajustes").click();
+
+  const pestanas = ["Cuenta", "Bóveda", "Navegador", "Agentes", "Actualizaciones"];
+  for (const ancho of [700, 980, 1400]) {
+    await page.setViewportSize({ width: ancho, height: 620 });
+    for (const nombre of pestanas) {
+      await page.getByRole("tab", { name: nombre, exact: true }).click();
+      const m = await page
+        .locator(".panel:visible .segmentado")
+        .first()
+        .evaluate((el) => ({
+          necesita: el.scrollWidth,
+          mide: el.clientWidth,
+          cabe: el.parentElement ? el.parentElement.clientWidth : 0,
+        }));
+      expect(m.necesita, `«${nombre}» con la ventana de ${ancho}: ${JSON.stringify(m)}`)
+        .toBeLessThanOrEqual(m.mide);
+      expect(m.mide, `«${nombre}» con la ventana de ${ancho}: ${JSON.stringify(m)}`)
+        .toBeLessThanOrEqual(m.cabe);
+    }
+
+    // **Y los cinco rótulos se leen**, que es lo que de verdad se está protegiendo.
+    //
+    // Sin esto la prueba pasa sola desde que la fila se parte en dos: no desbordar
+    // es gratis cuando el contenido puede bajar de línea. Lo que no es gratis es
+    // que las cinco sigan diciendo su nombre, porque la salida barata —esconder el
+    // rótulo de las no activas— es justo la que aquí no vale: «Cuenta» y «Bóveda»
+    // son una silueta y una caja fuerte.
+    for (const nombre of pestanas) {
+      const caja = await page
+        .getByRole("tab", { name: nombre, exact: true })
+        .evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          const rotulo = el.querySelector(".rotulo") ?? el;
+          const rr = rotulo.getBoundingClientRect();
+          return { ancho: Math.round(r.width), rotulo: Math.round(rr.width) };
+        });
+      expect(caja.ancho, `«${nombre}» a ${ancho}: ${JSON.stringify(caja)}`).toBeGreaterThan(40);
+      expect(caja.rotulo, `el rótulo de «${nombre}» a ${ancho}: ${JSON.stringify(caja)}`)
+        .toBeGreaterThan(20);
+    }
+  }
+
+  await page.setViewportSize({ width: 980, height: 620 });
+  await page.locator(".panel:visible .segmentado").first().screenshot({
+    path: `test-results/ajustes-pestanas-${test.info().project.name}.png`,
+  });
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 test("las clases de la bóveda caben en su barra", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");

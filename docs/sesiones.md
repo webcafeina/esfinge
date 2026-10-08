@@ -5,6 +5,38 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-08 (4) · El conector se actualiza solo, y el rótulo que no era un rótulo
+
+- **El `.mcpb` no se actualizaba con Esfinge**, y eso lo descubrió él probando lo de la tanda anterior: pidió
+  crear una cuenta con su sitio y el agente contestó que su versión no tenía ese campo. **Tenía razón**: el
+  paquete lleva el servidor dentro —que es lo que hace que no se rompa al mover Esfinge— y por eso seguía
+  corriendo el de antes. Y los clientes MCP **se quedan con la lista de herramientas al conectar**, así que
+  no aparecería ni reiniciando la conversación.
+- **Ahora el binario del paquete le cede el turno al de la Esfinge instalada**: lo lanza con la misma
+  entrada y salida estándar y el cliente no nota nada. **Manda el de la aplicación y no el más nuevo**, que
+  es con quien se va a hablar. Y todo escrito para no romperse: sin Esfinge instalada, o si el relevo falla,
+  **sigue el del paquete**, que es lo que hay hoy.
+- **Dos cosas las encontraron las pruebas al escribirlo:**
+  - **Cederse el turno a uno mismo**, que es una cadena infinita de procesos — y no es un caso raro: es
+    **Claude Code**, donde la orden ya apunta al binario de dentro de la aplicación.
+  - **Las rutas de Windows se construían con el separador de esta máquina** (`C:\Program Files/Esfinge/…`).
+    En producción habría funcionado y **la tabla de Windows habría dejado de ser comprobable desde aquí**,
+    que es justo donde se comprueba. Es la regla que el proyecto ya tiene escrita para los manifiestos del
+    navegador.
+- **Y el rótulo «Versión» → «Actualizaciones», que no era cambiar una palabra.** Las cinco pestañas pedían
+  **566 px de los 560** que hay, y 451 de los 427 con la ventana a 700. La predicción escrita en la deuda se
+  cumplió entera, incluidas las salidas que no valían: quitar los iconos no bastó, y **dejar el rótulo solo
+  en la activa tampoco valía aquí** —allí una llave se adivina por su glifo; «Cuenta» y «Bóveda» son una
+  silueta y una caja fuerte—. Así que **la fila se parte en dos**, que es lo que el propio CSS tenía escrito
+  como paso siguiente desde que la sexta clase apretó la suya.
+- **Y la prueba de eso nació pasando sola**: con la fila partida, no desbordar es gratis. Ahora comprueba
+  además que **los cinco rótulos se leen**, que es lo que de verdad se protege.
+- **Se verificó** con `make comprobar` y `make e2e` (136) en verde y cada guarda mutada.
+- **Queda abierto**: las pruebas de MCP siguen el lunes. Con la 2.48.0 hay que **reinstalar el paquete una
+  última vez**; a partir de ahí se actualiza solo.
+
+---
+
 ## 2026-10-08 (3) · Las pruebas del agente en su Mac, y los siete arreglos que salieron
 
 - **Se recorrió el canal entero con Claude Desktop de verdad**, que es lo único que no se podía hacer desde

@@ -498,6 +498,7 @@ export function Segmentado<T extends string>({
   alCambiar,
   conIconos,
   compacto,
+  envuelve,
 }: {
   opciones: { valor: T; etiqueta: string; icono?: string }[];
   valor: T;
@@ -512,10 +513,19 @@ export function Segmentado<T extends string>({
    * se queda siempre.
    */
   compacto?: boolean;
+  /**
+   * Deja que la fila se parta en dos antes que perder un rótulo.
+   *
+   * **Es la salida cuando `compacto` no vale**, y lo que decide cuál usar es qué se
+   * pierde al quitar el rótulo: una llave o una tarjeta se adivinan por su glifo;
+   * «Cuenta» y «Bóveda» no.
+   */
+  envuelve?: boolean;
 }) {
   const clases = ["segmentado"];
   if (conIconos) clases.push("con-iconos");
   if (compacto) clases.push("compacto");
+  if (envuelve) clases.push("envuelve");
   return (
     <div className={clases.join(" ")} role="tablist">
       {opciones.map((o) => (
