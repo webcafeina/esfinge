@@ -82,6 +82,12 @@ const (
 const (
 	ApuntePreguntado = "preguntado"
 	ApunteValvula    = "valvula"
+	// ApunteSiempre es lo que pasó con el permiso permanente puesto (2026-10-08).
+	//
+	// **Se distingue de los otros dos a propósito**: con el «siempre» activo nadie
+	// mira nada en el momento, así que el registro es lo único que queda — y leerlo
+	// después solo sirve si dice que eso no lo aprobó nadie esa vez.
+	ApunteSiempre = "siempre"
 	// ApunteDirecto: no se preguntó porque ese verbo no lo necesita —crear, o editar
 	// algo que no es un secreto—. Se apunta igual, que es lo que deja leer después qué
 	// hizo un agente en la bóveda sin que nadie se enterara en el momento.

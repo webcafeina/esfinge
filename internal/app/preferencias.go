@@ -85,6 +85,32 @@ type Preferencias struct {
 	// `false` y **apaga** la puerta.
 	CanalDeAgentes bool `json:"canalDeAgentes"`
 
+	// SiempreAlAgente es «no me preguntes más por cada contraseña» (2026-10-08).
+	//
+	// Es el tercer botón de la tarjeta de aprobación, al lado de «solo ésta» y «todo
+	// lo suyo cinco minutos», y lo pidió el cliente al usarlo de verdad: aprobar una
+	// por una cansa, y lo que cansa se aprueba sin mirar — que es peor que no
+	// preguntar, porque da la apariencia de control sin el control.
+	//
+	// **Cubre lo mismo que la válvula y ni un verbo más**: copiar contraseñas sí; el
+	// código de un solo uso, cambiar un secreto y borrar **siguen preguntando uno a
+	// uno**. Esa frontera es la ADR 0054 entera —la válvula vale para *actuar*, no
+	// para *enseñar* ni para lo que no se deshace— y el cliente la mantuvo a
+	// propósito al elegir el alcance.
+	//
+	// **No caduca y sobrevive a cerrar la bóveda**, que es lo que significa
+	// «siempre»; por eso la ventana lo dice arriba, en todas las pestañas, con el
+	// botón de quitarlo al lado. Un permiso permanente que no se ve es un permiso que
+	// se olvida.
+	//
+	// La regla del cero vuelve a jugar a favor: un guardado a medias llega `false` y
+	// **lo quita**.
+	SiempreAlAgente bool `json:"siempreAlAgente"`
+
+	// SiempreAlAgenteQuien es a quién se le dio, para poder decirlo. Es el nombre que
+	// el programa da de sí mismo, igual que en la tarjeta.
+	SiempreAlAgenteQuien string `json:"siempreAlAgenteQuien,omitempty"`
+
 	// DesbloqueoSugeridoPara es **la bóveda** a la que ya se le ofreció desbloquear
 	// con el sistema (2.28.3). Vacío quiere decir que no se ha ofrecido a ninguna.
 	//

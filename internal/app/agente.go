@@ -270,6 +270,24 @@ func (f fuenteDelAgente) Higiene() (agente.Higiene, error) {
 	}, nil
 }
 
+// Resumen son los números de la bóveda, **sin un solo nombre** (2026-10-08).
+//
+// Nació de verlo usar: a «¿cuántas cuentas tengo?» un agente que solo tiene `buscar`
+// contesta trayéndose las primeras entradas **con sus títulos y sus usuarios** y
+// deduciendo el resto. Esto la contesta con números, que es a la vez la respuesta más
+// útil y la que menos cuenta de lo que hay dentro.
+func (f fuenteDelAgente) Resumen() (agente.Recuento, error) {
+	b := f.a.boveda()
+	if b == nil {
+		return agente.Recuento{}, boveda.ErrCerrada
+	}
+	r := b.Recontar()
+	return agente.Recuento{
+		Total: r.Total, Papelera: r.Papelera, PorClase: r.PorClase,
+		ConCodigo: r.ConCodigo, SinCodigo: r.SinCodigo,
+	}, nil
+}
+
 func (f fuenteDelAgente) Generar(bytes int, alfabeto string) (string, error) {
 	if bytes <= 0 {
 		bytes = 24
@@ -367,6 +385,12 @@ type EstadoDelAgente struct {
 	Quiere *loQuePideUnAgente `json:"quiere,omitempty"`
 	// Valvula es cómo va el «todo lo de este agente durante un rato», si está abierta.
 	Valvula comoVaLaValvula `json:"valvula"`
+	// Siempre dice si está puesto el permiso que no caduca, y SiempreQuien a quién se
+	// le dio. **La ventana lo tiene que enseñar en todas las pestañas**: un permiso
+	// permanente que no se ve es un permiso que se olvida.
+	Siempre      bool   `json:"siempre"`
+	SiempreQuien string `json:"siempreQuien,omitempty"`
+
 	// Dado es lo último que se le ha dado a un agente, para enseñarlo aquí mismo.
 	//
 	// **Va dentro del estado y no en una llamada aparte**, y eso es una regla de este
@@ -400,6 +424,8 @@ func (a *App) EstadoDelAgente() EstadoDelAgente {
 		Ruta:          rutaDelServidorMCPOEsfingeMCP(),
 		Quiere:        a.permisos.loPendiente(),
 		Valvula:       a.permisos.comoVa(time.Now()),
+		Siempre:       a.ajustes.Ver().SiempreAlAgente,
+		SiempreQuien:  a.ajustes.Ver().SiempreAlAgenteQuien,
 	}
 	// **Con la bóveda cerrada no hay nada que enseñar, y eso no es un error**: el
 	// registro vive dentro de ella.
@@ -541,6 +567,16 @@ type permisosDelAgente struct {
 	// loUltimo son los títulos de lo que se le ha ido dando, para que la ventana pueda
 	// enseñarlo mientras pasa. **Sin secretos**, como todo lo demás.
 	loUltimo []string
+
+	// siempre es el permiso que no caduca (2026-10-08). Vive en las preferencias, no
+	// aquí: esto es la copia que se consulta en caliente, y la pone `alArrancar` y
+	// cada vez que se enciende o se quita.
+	//
+	// **`cerrarLaValvula` no lo toca**, y eso es a propósito aunque incomode: cerrar
+	// la bóveda cierra la válvula porque fue un permiso para «esta bóveda, ahora», y
+	// esto es justo lo contrario. Lo que impide que se olvide es que la ventana lo
+	// diga **en todas las pestañas** mientras esté puesto.
+	siempre bool
 }
 
 // pedir deja apuntado lo que se quiere y dice si ya había permiso **para eso mismo**.
@@ -560,6 +596,17 @@ func (p *permisosDelAgente) pedir(q loQuePideUnAgente, porValvula bool, ahora ti
 		p.concedidoPara = ""
 		return true, boveda.ApuntePreguntado
 	}
+	// O el «siempre», si lo hay y si este verbo puede pasar por él.
+	//
+	// **El mismo alcance que la válvula y ni un verbo más**: `porValvula` es la
+	// frontera —lo que se le *enseña* al agente y lo que no se deshace no pasan— y
+	// aquí se reutiliza a propósito, para que no haya dos listas que puedan
+	// separarse. Lo eligió así el cliente teniendo delante la alternativa de dejar
+	// borrar fuera: «de todos modos iría a la papelera», y una frontera es más fácil
+	// de sostener que dos parecidas.
+	if porValvula && p.siempre {
+		return true, boveda.ApunteSiempre
+	}
 	// O la válvula, si está abierta y si este verbo puede pasar por ella.
 	if porValvula && ahora.Before(p.valvulaHasta) {
 		p.usadas++
@@ -573,6 +620,13 @@ func (p *permisosDelAgente) pedir(q loQuePideUnAgente, porValvula bool, ahora ti
 	}
 	p.pendiente = &q
 	return false, ""
+}
+
+// ponerElSiempre refleja en caliente lo que digan las preferencias.
+func (p *permisosDelAgente) ponerElSiempre(v bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.siempre = v
 }
 
 // cerrarLaValvula la cierra ya, y olvida la cuenta.
@@ -593,6 +647,12 @@ func (p *permisosDelAgente) cerrarLaValvula() {
 // conceder dice que sí a lo que estuviera pendiente. Con `unRato`, además abre la
 // válvula.
 func (p *permisosDelAgente) conceder(unRato bool, ahora time.Time) (loQuePideUnAgente, bool) {
+	return p.concederComo(unRato, false, ahora)
+}
+
+// concederComo es lo mismo con el tercer botón: `paraSiempre` deja el permiso puesto
+// hasta que alguien lo quite. Quien lo persiste es quien llama, en las preferencias.
+func (p *permisosDelAgente) concederComo(unRato, paraSiempre bool, ahora time.Time) (loQuePideUnAgente, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.pendiente == nil {
@@ -600,6 +660,13 @@ func (p *permisosDelAgente) conceder(unRato bool, ahora time.Time) (loQuePideUnA
 	}
 	q := *p.pendiente
 	p.pendiente = nil
+	if paraSiempre {
+		// **Y aquí tampoco se pone el permiso de una vez**, por lo mismo que con la
+		// válvula: con los dos puestos, la petición siguiente consumiría el
+		// individual y el camino del «siempre» no se ejercitaría nunca.
+		p.siempre = true
+		return q, true
+	}
 	if unRato {
 		// **Y entonces no se pone el permiso de una vez**, que es lo que parecía
 		// inofensivo y rompía la válvula entera: con los dos puestos, la petición
@@ -736,8 +803,27 @@ func (a *App) apuntarComo(b *boveda.Boveda, q loQuePideUnAgente, resultado, como
 	})
 	if err != nil {
 		log.Printf("esfinge: no se ha podido apuntar lo que se le dio a un agente: %v", err)
+		return
 	}
+	// **Y se avisa, porque si no la ventana no se entera nunca.**
+	//
+	// El apunte no se escribe al aprobar: se escribe cuando el agente **vuelve a
+	// pedirlo**, un instante después, y para entonces la ventana ya ha mirado. Como
+	// las secciones no se desmontan, ni cambiar de pestaña ni salir de Ajustes vuelven
+	// a preguntar: el registro no aparecía hasta reiniciar Esfinge. Lo vio el cliente
+	// con la 2.46.0, probando la primera contraseña de verdad.
+	//
+	// Es la regla de siempre en esta casa, con otra cara: **avisar a la ventana es que
+	// la ventana va a preguntar**, y lo que no se avisa no se pregunta.
+	a.sistema.Avisar(EventoAgenteApuntado, q.Quien)
 }
+
+// EventoAgenteApuntado avisa de que hay una línea nueva en el registro.
+//
+// Va aparte de `EventoAgenteQuiere` a propósito: aquél dice «hay algo que contestar» y
+// la ventana saca una tarjeta; éste dice «ya está hecho», y lo único que cambia es una
+// lista. Mezclarlos haría que terminar de dar una contraseña pareciera otra petición.
+const EventoAgenteApuntado = "agente-apuntado"
 
 // AprobarLoQuePideElAgente es el «sí» de la persona.
 func (a *App) AprobarLoQuePideElAgente(unRato bool) error {
@@ -747,6 +833,59 @@ func (a *App) AprobarLoQuePideElAgente(unRato bool) error {
 	// **Esto sí cuenta como actividad**: es un clic de una persona.
 	a.Actividad()
 	return nil
+}
+
+// AprobarSiempreAlAgente es el tercer botón: no volver a preguntar (2026-10-08).
+//
+// **Cubre lo mismo que la válvula y ni un verbo más** —copiar contraseñas sí; el
+// código, cambiar un secreto y borrar siguen preguntando— y **no caduca**, que es lo
+// que lo distingue de los otros dos. Lo pidió el cliente al usarlo de verdad: aprobar
+// una por una cansa, y lo que cansa se aprueba sin mirar, que es peor que no preguntar
+// porque da la apariencia de control sin el control.
+//
+// Se guarda en las preferencias **antes** de concederlo: si el disco falla, lo que no
+// puede pasar es que el permiso quede puesto en memoria y no se vea en la pantalla
+// que lo tiene que anunciar.
+func (a *App) AprobarSiempreAlAgente() error {
+	q := a.permisos.loPendiente()
+	if q == nil {
+		return errors.New("Ya no hay nada que aprobar")
+	}
+	if err := a.guardarElSiempre(true, q.Quien); err != nil {
+		return err
+	}
+	if _, hay := a.permisos.concederComo(false, true, time.Now()); !hay {
+		return errors.New("Ya no hay nada que aprobar")
+	}
+	a.Actividad()
+	return nil
+}
+
+// QuitarElSiempreAlAgente lo revoca. Es la mitad que hace que el botón de arriba sea
+// aceptable: un permiso que no se puede quitar no se da.
+func (a *App) QuitarElSiempreAlAgente() error {
+	if err := a.guardarElSiempre(false, ""); err != nil {
+		return err
+	}
+	a.Actividad()
+	return nil
+}
+
+func (a *App) guardarElSiempre(v bool, quien string) error {
+	p := a.ajustes.Ver()
+	p.SiempreAlAgente = v
+	p.SiempreAlAgenteQuien = quien
+	if err := a.ajustes.Guardar(p); err != nil {
+		return err
+	}
+	a.permisos.ponerElSiempre(v)
+	a.avisarDelAgente()
+	return nil
+}
+
+// avisarDelAgente le dice a la ventana que vuelva a pedir el estado.
+func (a *App) avisarDelAgente() {
+	a.sistema.Avisar(EventoAgenteApuntado, "")
 }
 
 // DenegarLoQuePideElAgente es el «no», y **queda apuntado**: «pidió la contraseña del

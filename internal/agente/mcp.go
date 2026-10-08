@@ -167,5 +167,39 @@ func quienDiceSer(params json.RawMessage) string {
 		} `json:"clientInfo"`
 	}
 	_ = json.Unmarshal(params, &p)
-	return p.ClientInfo.Nombre
+	return ComoSeLlama(p.ClientInfo.Nombre)
+}
+
+// losConocidos traduce los identificadores que mandan los clientes de verdad.
+//
+// **Claude Desktop se presenta como `claude-ai`**, que es lo que vio el cliente en la
+// tarjeta el 2026-10-08: un identificador técnico donde la pantalla pregunta si le
+// dejas las contraseñas a ese programa. No se puede aprobar lo que no se reconoce.
+var losConocidos = map[string]string{
+	"claude-ai":      "Claude",
+	"claude-code":    "Claude Code",
+	"claude-desktop": "Claude Desktop",
+	"cursor-vscode":  "Cursor",
+	"vscode":         "VS Code",
+	"windsurf":       "Windsurf",
+	"zed":            "Zed",
+}
+
+// ComoSeLlama deja el nombre en algo que una persona pueda reconocer **sin esconder
+// el que vino**.
+//
+// Y eso segundo no es un adorno: **el nombre lo manda el propio programa y nadie lo
+// comprueba**. Cambiar `claude-ai` por «Claude» a secas le daría aire de oficial a
+// algo que solo se ha autodeclarado, en la única pantalla donde se decide si otro
+// programa usa tus contraseñas. Así que se enseñan los dos —«Claude (claude-ai)»— y
+// la ventana dice de dónde sale el nombre.
+func ComoSeLlama(dice string) string {
+	dice = strings.TrimSpace(dice)
+	if dice == "" {
+		return ""
+	}
+	if bonito, hay := losConocidos[strings.ToLower(dice)]; hay {
+		return bonito + " (" + dice + ")"
+	}
+	return dice
 }

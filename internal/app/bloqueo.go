@@ -78,6 +78,11 @@ func (a *App) aplicarPreferencias(p Preferencias) {
 	// interruptor que miente.
 	a.aplicarCanal(p)
 	a.aplicarCanalDeAgentes(p)
+	// Y el permiso permanente del agente, por lo mismo: vive en las preferencias y
+	// esto es lo que lo pone en caliente, al arrancar y en cada guardado. Sin esta
+	// línea, quitarlo no haría nada hasta reiniciar — y un permiso que se cree
+	// quitado y sigue puesto es peor que no poder quitarlo.
+	a.permisos.ponerElSiempre(p.SiempreAlAgente)
 
 	a.vig.mu.Lock()
 	defer a.vig.mu.Unlock()

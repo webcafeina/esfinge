@@ -686,3 +686,141 @@ func TestUnAgenteNoCreaLlavesDeAcceso(t *testing.T) {
 		t.Fatalf("ha dejado crear una llave: %v", err)
 	}
 }
+
+// **Apuntar algo en el registro avisa a la ventana**, y sin eso el registro no se ve.
+//
+// El apunte no se escribe cuando se aprueba: se escribe cuando el agente **vuelve a
+// pedirlo**, un instante después, y para entonces la ventana ya ha preguntado por el
+// estado. Y como las secciones no se desmontan, ni cambiar de pestaña ni salir de
+// Ajustes vuelven a preguntar: «Lo que les has dado» se quedaba vacío hasta reiniciar
+// Esfinge. Lo vio el cliente con la 2.46.0, dando la primera contraseña de verdad.
+//
+// Es la regla de la casa con otra cara: **avisar a la ventana es que la ventana va a
+// preguntar**, y lo que no se avisa no se pregunta nunca.
+func TestDarleAlgoAUnAgenteAvisaALaVentana(t *testing.T) {
+	a, s, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	lista, err := a.BuscarEnBoveda("Banco")
+	if err != nil || len(lista) == 0 {
+		t.Fatal(err)
+	}
+
+	if _, err := f.CopiarSecreto("Claude", lista[0].ID); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal(err)
+	}
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
+	// **Aprobar no apunta nada**, y eso es justo lo que hacía que no se viera.
+	if s.hanAvisadoDe(EventoAgenteApuntado) {
+		t.Fatal("ha avisado de un apunte y todavía no se le ha dado nada")
+	}
+
+	if _, err := f.CopiarSecreto("Claude", lista[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.EstadoDelAgente().Dado) == 0 {
+		t.Fatal("no se ha apuntado lo que se le dio")
+	}
+	if !s.hanAvisadoDe(EventoAgenteApuntado) {
+		t.Error("se apuntó y no se avisó a la ventana: el registro no se vería hasta reiniciar")
+	}
+}
+
+// **El «siempre» cubre lo mismo que la válvula y ni un verbo más** (2026-10-08).
+//
+// Es el tercer botón, y la línea que no puede moverse: lo reversible pasa —copiar una
+// contraseña, o borrar, que va a la papelera— y **el código de un solo uso y cambiar un
+// secreto siguen preguntando uno a uno**, porque enseñar no se deshace y dejar una
+// cuenta sin forma de entrar tampoco.
+//
+// El cliente eligió ese alcance con la alternativa delante. Sin esta prueba, bastaría
+// con que alguien pasara `true` donde va `porValvula` para que un permiso permanente
+// empezara a soltar códigos, y nada se pondría rojo.
+func TestElSiempreNoCubreLoQueNoSeDeshace(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	lista, err := a.BuscarEnBoveda("Banco")
+	if err != nil || len(lista) == 0 {
+		t.Fatal(err)
+	}
+	id := lista[0].ID
+
+	// Se pide una contraseña y se concede «para siempre».
+	if _, err := f.CopiarSecreto("Claude", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal(err)
+	}
+	if err := a.AprobarSiempreAlAgente(); err != nil {
+		t.Fatal(err)
+	}
+
+	// **Las contraseñas pasan solas**, y más de una vez: eso es lo que se pidió.
+	for i := 0; i < 3; i++ {
+		if _, err := f.CopiarSecreto("Claude", id); err != nil {
+			t.Fatalf("con el «siempre» puesto, copiar la vez %d tenía que pasar: %v", i+1, err)
+		}
+	}
+
+	// **Y el código sigue preguntando.** Es la frontera entera.
+	if _, err := f.Codigo("Claude", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Errorf("el «siempre» ha soltado un código sin preguntar: %v", err)
+	}
+	a.DenegarLoQuePideElAgente()
+
+	// **Y borrar sí pasa**, igual que con la válvula: lo eligió el cliente con la
+	// alternativa delante, porque la entrada va a la papelera y se puede recuperar
+	// treinta días. Lo que decide la frontera no es si molesta, es si se deshace.
+	if _, err := f.Borrar("Claude", id); err != nil {
+		t.Errorf("borrar tenía que pasar con el «siempre», igual que con la válvula: %v", err)
+	}
+
+	// Y el registro distingue de dónde salió el permiso, que es lo único que queda
+	// cuando nadie mira en el momento.
+	var porSiempre int
+	for _, ap := range a.EstadoDelAgente().Dado {
+		if ap.Como == boveda.ApunteSiempre {
+			porSiempre++
+		}
+	}
+	if porSiempre < 3 {
+		t.Errorf("el registro apunta %d por el «siempre» y hubo al menos 3", porSiempre)
+	}
+}
+
+// **Y se puede quitar, que es lo que hace aceptable darlo.**
+//
+// Un permiso permanente sin forma de revocarlo no se da. Y tiene que valer **desde
+// ya**: quitarlo y que siguiera abierto hasta reiniciar sería un botón que miente, que
+// es justo lo que esta casa no deja pasar con los interruptores.
+func TestElSiempreSeQuitaYValeDesdeYa(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	lista, _ := a.BuscarEnBoveda("Banco")
+	id := lista[0].ID
+
+	if _, err := f.CopiarSecreto("Claude", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal(err)
+	}
+	if err := a.AprobarSiempreAlAgente(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.CopiarSecreto("Claude", id); err != nil {
+		t.Fatal(err)
+	}
+	// **La ventana lo tiene que poder decir**: sin esto no hay nada que enseñar y el
+	// permiso se olvida.
+	e := a.EstadoDelAgente()
+	if !e.Siempre || e.SiempreQuien == "" {
+		t.Errorf("el estado no dice que hay un permiso permanente: %+v", e)
+	}
+
+	if err := a.QuitarElSiempreAlAgente(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.CopiarSecreto("Claude", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Errorf("se quitó el «siempre» y sigue dando contraseñas: %v", err)
+	}
+	if a.EstadoDelAgente().Siempre {
+		t.Error("el estado sigue diciendo que está puesto")
+	}
+}

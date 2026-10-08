@@ -45,6 +45,15 @@ const (
 	// aburrido, y **no toca un solo secreto**. Devuelve identificadores y cuentas,
 	// nunca contraseñas.
 	QueHigiene = "higiene"
+
+	// QueResumen dice **cuántas hay de cada clase, y ni un nombre** (2026-10-08).
+	//
+	// Nació de verlo usar: a «¿cuántas cuentas tengo?» un agente que solo tiene
+	// `buscar` contesta trayéndose las primeras entradas **con sus títulos y sus
+	// usuarios** y deduciendo el resto —«las otras nueve no las he visto»—. Con esto
+	// la contesta con números, que es a la vez la respuesta más útil y la que menos
+	// cuenta de la bóveda.
+	QueResumen = "resumen"
 	// QueCopiarSecreto pone la contraseña de una entrada en el portapapeles.
 	//
 	// **El agente no la ve**: copia Esfinge y lo que vuelve es «copiado, se borra en N
@@ -107,6 +116,7 @@ var LoQueSePuedePedir = []string{
 	QueBuscar,
 	QueVer,
 	QueHigiene,
+	QueResumen,
 	QueGenerar,
 	QueCopiarSecreto,
 	QueCodigo,
@@ -269,10 +279,12 @@ type Respuesta struct {
 	Cuantas int      `json:"cuantas,omitempty"`
 	Entrada *Entrada `json:"entrada,omitempty"`
 	Higiene *Higiene `json:"higiene,omitempty"`
-	Copiado *Copiado `json:"copiado,omitempty"`
-	Codigo  *Codigo  `json:"codigo,omitempty"`
-	Escrito *Escrito `json:"escrito,omitempty"`
-	Clave   string   `json:"clave,omitempty"`
+	// Resumen son los números de la bóveda, sin un solo nombre dentro.
+	Resumen *Recuento `json:"resumen,omitempty"`
+	Copiado *Copiado  `json:"copiado,omitempty"`
+	Codigo  *Codigo   `json:"codigo,omitempty"`
+	Escrito *Escrito  `json:"escrito,omitempty"`
+	Clave   string    `json:"clave,omitempty"`
 }
 
 // Los motivos, que son etiquetas estables y no frases.
@@ -299,4 +311,16 @@ func bien() Respuesta { return Respuesta{OK: true} }
 
 func mal(motivo, texto string) Respuesta {
 	return Respuesta{OK: false, Motivo: motivo, Error: texto}
+}
+
+// Recuento es lo que hay en la bóveda **en números**.
+//
+// Es el espejo del de `internal/boveda` y vive aquí porque este paquete no importa la
+// bóveda: el binario que habla MCP no sabe abrir ninguna, y así sigue.
+type Recuento struct {
+	Total     int            `json:"total"`
+	Papelera  int            `json:"papelera"`
+	PorClase  map[string]int `json:"porClase"`
+	ConCodigo int            `json:"conCodigo"`
+	SinCodigo int            `json:"sinCodigo"`
 }

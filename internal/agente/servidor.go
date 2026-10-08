@@ -45,6 +45,8 @@ type Fuente interface {
 	Ver(id string) (Entrada, error)
 	// Higiene es lo que está mal, por identificador y sin secretos.
 	Higiene() (Higiene, error)
+	// Resumen son los números de la bóveda, sin nombres.
+	Resumen() (Recuento, error)
 	// Generar devuelve una contraseña nueva. **No toca la bóveda.**
 	Generar(bytes int, alfabeto string) (string, error)
 	// CopiarSecreto pone la contraseña de una entrada en el portapapeles **de este
@@ -344,6 +346,12 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 			return mal(MotivoNoEntiendo, err.Error())
 		}
 		return Respuesta{OK: true, Higiene: &h}
+	case QueResumen:
+		r, err := s.fuente.Resumen()
+		if err != nil {
+			return mal(MotivoNoEntiendo, err.Error())
+		}
+		return Respuesta{OK: true, Resumen: &r}
 	case QueCopiarSecreto:
 		c, err := s.fuente.CopiarSecreto(p.Quien, p.ID)
 		if errors.Is(err, ErrPideAprobacion) {
@@ -387,7 +395,7 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 // propio tope: es lo que acota **cuánto se puede enumerar en un minuto**, que es lo
 // que la ADR 0024 decidió proteger al cifrar la lista de sitios en el disco.
 func esBusqueda(que string) bool {
-	return que == QueBuscar || que == QueHigiene
+	return que == QueBuscar || que == QueHigiene || que == QueResumen
 }
 
 // esEscritura son los verbos que cambian la bóveda, **y por eso cuentan aparte**: lo que

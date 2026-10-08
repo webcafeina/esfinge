@@ -56,6 +56,11 @@ func (b *bovedaFalsa) Higiene() (Higiene, error) {
 	return Higiene{Reutilizadas: [][]string{{"a1", "b2"}}, SinCodigo: []string{"b2"}}, nil
 }
 
+func (b *bovedaFalsa) Resumen() (Recuento, error) {
+	b.pedidos++
+	return Recuento{Total: 78, Papelera: 2, PorClase: map[string]int{"credencial": 69, "nota": 9}, ConCodigo: 11, SinCodigo: 58}, nil
+}
+
 func (b *bovedaFalsa) Generar(bytes int, alfabeto string) (string, error) {
 	return "una-contrasena-nueva", nil
 }

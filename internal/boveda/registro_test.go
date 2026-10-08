@@ -1,6 +1,7 @@
 package boveda
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"strings"
@@ -147,5 +148,51 @@ func TestElRegistroViajaDentroDelCuerpoCifrado(t *testing.T) {
 	}
 	if strings.Contains(string(crudo), "Claude Code") {
 		t.Error("quién lo pidió está en claro en el fichero")
+	}
+}
+
+// **El resumen cuenta y no nombra**, que es la razón entera de que exista.
+//
+// La pregunta «¿qué tengo guardado?» se contestaba con `Buscar`, o sea trayéndose las
+// primeras entradas **con sus títulos y sus usuarios** al contexto de un modelo y
+// deduciendo el resto. Esto la contesta con números: es más útil y cuenta menos.
+//
+// Y la prueba mira **los bytes**, no los campos: un nombre que se colara por un campo
+// nuevo no lo vería una aserción escrita a mano.
+func TestElResumenCuentaYNoNombra(t *testing.T) {
+	b := conRegistro(t)
+	for _, e := range []Entrada{
+		{Titulo: "Banco Secreto", Usuario: "yo@ejemplo.es", Secreto: "s", TOTP: "GEZDGNBVGY3TQOJQ"},
+		{Titulo: "Correo Privado", Usuario: "otro@ejemplo.es", Secreto: "s"},
+		{Tipo: TipoNota, Titulo: "Mis cosas", Notas: "nada"},
+		{Tipo: TipoTarjeta, Titulo: "Visa de la empresa"},
+	} {
+		if err := b.Poner(e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Una en la papelera, que no cuenta como lo que tienes.
+	todas := b.Buscar("")
+	if err := b.Borrar(todas[0].ID); err != nil {
+		t.Fatal(err)
+	}
+
+	r := b.Recontar()
+	if r.Total != 3 || r.Papelera != 1 {
+		t.Errorf("dice %d vivas y %d en la papelera, y son 3 y 1: %+v", r.Total, r.Papelera, r)
+	}
+	if r.ConCodigo+r.SinCodigo != r.PorClase[string(TipoCredencial)] {
+		t.Errorf("los códigos no cuadran con las credenciales: %+v", r)
+	}
+
+	// **Ni un nombre, ni un usuario, ni un secreto en los bytes.**
+	crudo, err := json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, nada := range []string{"Banco", "Correo", "Visa", "ejemplo.es", "GEZDGNBVGY3TQOJQ", "Mis cosas"} {
+		if bytes.Contains(crudo, []byte(nada)) {
+			t.Errorf("el resumen lleva %q dentro: %s", nada, crudo)
+		}
 	}
 }

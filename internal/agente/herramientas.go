@@ -55,6 +55,14 @@ type Campo struct {
 	Tipo        string   `json:"type"`
 	Descripcion string   `json:"description,omitempty"`
 	Enum        []string `json:"enum,omitempty"`
+	// Items es de qué son los elementos cuando `Tipo` es `array`. Sin esto el
+	// esquema no dice de qué va la lista y el cliente no manda nada.
+	Items *Campo `json:"items,omitempty"`
+}
+
+// lista es un campo de texto repetido, que es la única forma de lista que hay aquí.
+func lista(desc string) Campo {
+	return Campo{Tipo: "array", Descripcion: desc, Items: &Campo{Tipo: "string"}}
 }
 
 func objeto(props map[string]Campo, obligatorios ...string) Esquema {
@@ -99,6 +107,17 @@ var LasHerramientas = []Herramienta{
 			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 		}, "id"),
 		Verbo:           QueVer,
+		PideAprobacion:  false,
+		DevuelveSecreto: false,
+		Escribe:         false,
+	},
+	{
+		Nombre: "esfinge_resumen",
+		Descripcion: "Cuántas entradas hay en la bóveda y de qué clase, **en números y sin ningún " +
+			"nombre**. Es lo que hay que usar para «¿qué tengo guardado?»: esfinge_buscar devuelve " +
+			"solo las primeras y obliga a adivinar el resto.",
+		Esquema:         objeto(map[string]Campo{}),
+		Verbo:           QueResumen,
 		PideAprobacion:  false,
 		DevuelveSecreto: false,
 		Escribe:         false,
@@ -159,6 +178,14 @@ var LasHerramientas = []Herramienta{
 			"secreto": {Tipo: "string", Descripcion: "La contraseña. Mejor no ponerla y usar generar."},
 			"notas":   {Tipo: "string"},
 			"generar": {Tipo: "boolean", Descripcion: "Que la contraseña la haga Esfinge y no salga de ahí."},
+			"carpeta": {Tipo: "string"},
+			// **Sin sitios, una credencial nace sin poder rellenarse sola**, que es
+			// para lo que existe la bóveda. El núcleo siempre supo aplicarlos; lo que
+			// faltaba era decirlo aquí, y lo que no está en el esquema **no existe**
+			// para el modelo. Lo dijo Claude al crear la primera entrada de verdad:
+			// «desde aquí no puedo rellenar el campo de sitios».
+			"sitios":    lista("Las direcciones donde se usa, p. ej. https://asana.com. Sin esto no se rellenará sola."),
+			"etiquetas": lista("Para agrupar."),
 		}, "titulo"),
 		Verbo:           QueCrear,
 		PideAprobacion:  false,
@@ -172,12 +199,14 @@ var LasHerramientas = []Herramienta{
 			"persona**, porque eso puede dejar una cuenta sin forma de entrar. La contraseña anterior se " +
 			"guarda en el historial de la entrada.",
 		Esquema: objeto(map[string]Campo{
-			"id":      {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
-			"titulo":  {Tipo: "string"},
-			"usuario": {Tipo: "string"},
-			"secreto": {Tipo: "string", Descripcion: "La contraseña nueva. Esto pide aprobación."},
-			"notas":   {Tipo: "string"},
-			"carpeta": {Tipo: "string"},
+			"id":        {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+			"titulo":    {Tipo: "string"},
+			"usuario":   {Tipo: "string"},
+			"secreto":   {Tipo: "string", Descripcion: "La contraseña nueva. Esto pide aprobación."},
+			"notas":     {Tipo: "string"},
+			"carpeta":   {Tipo: "string"},
+			"sitios":    lista("Sustituye la lista entera, no añade."),
+			"etiquetas": lista("Sustituye la lista entera, no añade."),
 		}, "id"),
 		Verbo:           QueEditar,
 		PideAprobacion:  false,

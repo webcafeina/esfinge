@@ -6,6 +6,7 @@ import {
   alHaberNovedad,
   alOrdenar,
   alPedirloUnAgente,
+  alApuntarloElAgente,
   alQuererAlgoUnAgente,
   alPedirloUnNavegador,
   alProgresar,
@@ -1041,6 +1042,38 @@ function DesbloqueoDelSistema() {
  * callado. Así que cada uno con su nombre, y se elige con el mismo control segmentado
  * que las clases de la bóveda — que ya existe y tiene sus colores medidos.
  */
+/**
+ * loQueSeLeDio pone en palabras una línea del registro.
+ *
+ * **Un registro que no dice qué se dio no contesta la pregunta para la que existe.**
+ * Hasta la 2.46.0 la línea ponía el sitio, quién y «copiada», y con eso no se sabe si
+ * lo que salió fue la contraseña, el código o si la entrada se borró. Lo vio el
+ * cliente mirando su primer apunte de verdad.
+ *
+ * Y la distinción que esto tiene que dejar leer, porque es la que decide cuánto
+ * importa cada línea: **la contraseña se copia al portapapeles y el agente no la ve;
+ * el código de un solo uso se le enseña**, y en cuanto se le enseña está en la
+ * conversación de su modelo. En el registro no pueden parecer lo mismo.
+ */
+function loQueSeLeDio(que: string, resultado: string): string {
+  if (resultado === "negado") return "Dijiste que no";
+  if (resultado !== "hecho") return "Nadie contestó";
+  switch (que) {
+    case "copiar-secreto":
+      return "La contraseña, copiada al portapapeles";
+    case "codigo":
+      return "El código de un solo uso, enseñado";
+    case "borrar":
+      return "Borrada, a la papelera";
+    case "crear":
+      return "La creó";
+    case "editar":
+      return "La cambió";
+    default:
+      return que;
+  }
+}
+
 function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
   const [cual, setCual] = useState<"desktop" | "code" | "cursor" | "vscode">("desktop");
   const [guardado, setGuardado] = useState("");
@@ -1294,11 +1327,15 @@ function Ajustes({
     // Y cuando pide algo que hay que aprobar, por lo mismo: quien lo pide está mirando
     // su terminal, no esta ventana.
     const dejarDeOirQuiere = alQuererAlgoUnAgente(leerAgente);
+    // Y cuando ya se le ha dado algo, que es cuando se escribe el apunte: al aprobar
+    // todavía no hay nada que enseñar.
+    const dejarDeOirApuntes = alApuntarloElAgente(leerAgente);
     leerAgente();
     return () => {
       dejarDeOir();
       dejarDeOirAgente();
       dejarDeOirQuiere();
+      dejarDeOirApuntes();
     };
   }, [leerPreferencias, leerNavegador, leerAgente]);
 
@@ -1366,29 +1403,6 @@ function Ajustes({
 
   return (
     <div className="panel">
-      {/* **Ajustes se recorre por pestañas y no en vertical** (2026-10-08).
-
-          Ordenarlo en bloques con cabecera lo hizo legible y **no resolvió el
-          problema**: lo dijo el cliente con la 2.45.0 puesta —«sigue habiendo
-          demasiado scroll, al estar todo encima de otro»—. Una pantalla de ajustes que
-          hay que recorrer es una pantalla donde no se encuentra nada; con una sección
-          a la vez, llegar a cualquiera cuesta un clic y ninguna lectura.
-
-          De paso cae el salto a la sección de los agentes, que nunca llegaba del todo
-          a su altura: ya no hay a dónde saltar, se abre su pestaña y ya está. */}
-      <Segmentado
-        opciones={[
-          { valor: "cuenta", etiqueta: "Cuenta", icono: "personal" },
-          { valor: "boveda", etiqueta: "Bóveda", icono: "boveda" },
-          { valor: "navegador", etiqueta: "Navegador", icono: "navegador" },
-          { valor: "agentes", etiqueta: "Agentes", icono: "mcp" },
-          { valor: "acerca", etiqueta: "Versión", icono: "descargar" },
-        ]}
-        valor={seccion}
-        alCambiar={setSeccion}
-        conIconos
-      />
-
       {/* **Lo que espera respuesta no vive en ninguna pestaña.**
 
           Un navegador que pide permiso, un agente que pide una contraseña o el aviso
@@ -1500,6 +1514,26 @@ function Ajustes({
                   Todo lo suyo, 5 minutos
                 </button>
               )}
+              {/* **Y el que no caduca.** Lo pidió el cliente al usarlo de verdad:
+                  aprobar una por una cansa, y **lo que cansa se aprueba sin mirar**,
+                  que es peor que no preguntar porque da la apariencia de control sin
+                  el control.
+
+                  Cubre lo mismo que la válvula —por eso cuelga de la misma
+                  condición— y va **el último de los que dicen que sí**: es el más
+                  cómodo y el que más abre, y el orden de los botones es lo que dice
+                  cuál es el camino de siempre. */}
+              {elAgente.quiere.que !== "codigo" && (
+                <button
+                  className="discreto"
+                  onClick={async () => {
+                    await esfinge.aprobarSiempreAlAgente();
+                    leerAgente();
+                  }}
+                >
+                  No volver a preguntar
+                </button>
+              )}
               <button
                 onClick={async () => {
                   await esfinge.denegarLoQuePideElAgente();
@@ -1569,6 +1603,61 @@ function Ajustes({
             </button>
             <button onClick={() => cambiar({ descargarIconos: false, iconosAvisados: true })}>
               No, gracias
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* **Ajustes se recorre por pestañas y no en vertical** (2026-10-08).
+
+          Ordenarlo en bloques con cabecera lo hizo legible y **no resolvió el
+          problema**: lo dijo el cliente con la 2.45.0 puesta —«sigue habiendo
+          demasiado scroll, al estar todo encima de otro»—. Una pantalla de ajustes que
+          hay que recorrer es una pantalla donde no se encuentra nada; con una sección
+          a la vez, llegar a cualquiera cuesta un clic y ninguna lectura.
+
+          De paso cae el salto a la sección de los agentes, que nunca llegaba del todo
+          a su altura: ya no hay a dónde saltar, se abre su pestaña y ya está. */}
+      <Segmentado
+        opciones={[
+          { valor: "cuenta", etiqueta: "Cuenta", icono: "personal" },
+          { valor: "boveda", etiqueta: "Bóveda", icono: "boveda" },
+          { valor: "navegador", etiqueta: "Navegador", icono: "navegador" },
+          { valor: "agentes", etiqueta: "Agentes", icono: "mcp" },
+          { valor: "acerca", etiqueta: "Versión", icono: "descargar" },
+        ]}
+        valor={seccion}
+        alCambiar={setSeccion}
+        conIconos
+      />
+
+      {/* **El permiso que no caduca, dicho mientras dure** (2026-10-08).
+
+          Un permiso permanente que no se ve es un permiso que se olvida, así que esto
+          va en la zona de estado —fuera de las pestañas, encima del selector— y no
+          dentro de la sección de agentes. Es la condición con la que se dio: el
+          cliente pidió el botón **y** que quedara señalado con prioridad visual y con
+          cómo revertirlo. */}
+      {elAgente?.siempre && (
+        <div className="grupo peligro">
+          <label>
+            {elAgente.siempreQuien || "Un agente"} puede usar tus contraseñas sin preguntarte
+          </label>
+          <p className="aviso">
+            Lo diste tú y <strong>no caduca</strong>. Sigue preguntando para el código de un
+            solo uso y para cambiar una contraseña, que son las dos cosas que no se deshacen.
+            Lo demás se lo lleva sin avisar —las contraseñas y mandar una entrada a la
+            papelera—, y lo único que queda es la lista de abajo.
+          </p>
+          <div className="botones">
+            <button
+              className="principal"
+              onClick={async () => {
+                await esfinge.quitarElSiempreAlAgente();
+                leerAgente();
+              }}
+            >
+              Volver a preguntarme
             </button>
           </div>
         </div>
@@ -1887,8 +1976,7 @@ function Ajustes({
                   <li key={d.id}>
                     <span className="nombre">{d.titulo || "Una entrada"}</span>
                     <span className="nota">
-                      {d.quien} · {fecha(d.cuando)} ·{" "}
-                      {d.resultado === "hecho" ? "copiada" : d.resultado === "negado" ? "dijiste que no" : d.resultado}
+                      {loQueSeLeDio(d.que, d.resultado)} · {d.quien} · {fecha(d.cuando)}
                     </span>
                   </li>
                 ))}

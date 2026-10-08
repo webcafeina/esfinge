@@ -1174,6 +1174,56 @@ func (b *Boveda) Cuantas() int {
 	return n
 }
 
+// Recuento es lo que hay dentro, **en números y sin un solo nombre** (ADR 0054).
+type Recuento struct {
+	// Total son las entradas vivas; Papelera, las que esperan a caducar.
+	Total    int `json:"total"`
+	Papelera int `json:"papelera"`
+	// PorClase son cuántas hay de cada tipo, con la clave del formato.
+	PorClase map[string]int `json:"porClase"`
+	// ConCodigo son las credenciales que guardan la semilla del segundo factor, y
+	// SinCodigo las que no. Es la pregunta que más se hace al ordenar una bóveda.
+	ConCodigo int `json:"conCodigo"`
+	SinCodigo int `json:"sinCodigo"`
+}
+
+// Recontar dice qué hay dentro sin decir qué es nada de ello.
+//
+// **Existe para que «¿qué tengo?» no cueste volcar la bóveda.** Un agente que solo
+// tiene `Buscar` contesta esa pregunta trayéndose las primeras entradas **con sus
+// títulos y sus usuarios** y deduciendo el resto; con esto la contesta con números y
+// **cero nombres**, que es a la vez la respuesta más útil y la que menos cuenta.
+//
+// La papelera va aparte y no suma: lo borrado no es lo que tienes, y meterlo en el
+// total haría que los números no cuadraran con lo que se ve en la ventana.
+func (b *Boveda) Recontar() Recuento {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	r := Recuento{PorClase: map[string]int{}}
+	for _, e := range b.cont.Entradas {
+		if e.Papelera {
+			r.Papelera++
+			continue
+		}
+		r.Total++
+		clase := e.Tipo
+		if clase == "" {
+			// Lo que no dice de qué es, es una credencial: es lo que hace el resto
+			// del formato y aquí no puede decir otra cosa.
+			clase = TipoCredencial
+		}
+		r.PorClase[string(clase)]++
+		if clase == TipoCredencial {
+			if e.TOTP != "" {
+				r.ConCodigo++
+			} else {
+				r.SinCodigo++
+			}
+		}
+	}
+	return r
+}
+
 // Ruta dice dónde vive, para poder enseñarlo y que nadie tenga que fiarse.
 func (b *Boveda) Ruta() string { return b.ruta }
 

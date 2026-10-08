@@ -2729,6 +2729,114 @@ test("la fila MCP lleva al bloque de los agentes y se queda marcada", async ({ p
 });
 
 /**
+ * **El permiso que no caduca se ve siempre, y se puede quitar** (2026-10-08).
+ *
+ * Lo pidió el cliente al usar el canal de verdad: aprobar una por una cansa, y **lo
+ * que cansa se aprueba sin mirar**, que es peor que no preguntar porque da la
+ * apariencia de control sin el control. La condición con la que se dio es ésta: que
+ * quede señalado con prioridad visual y con cómo revertirlo.
+ *
+ * Por eso el aviso va **fuera de las pestañas**, encima del selector: en la sección de
+ * agentes solo lo vería quien ya está mirando ahí, y un permiso permanente que no se
+ * ve es un permiso que se olvida.
+ */
+test("el permiso que no caduca se anuncia en todas las pestañas y se puede quitar", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.route("**/api/EstadoDelAgente", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        encendido: true,
+        escuchando: true,
+        donde: "/tmp/agentes.sock",
+        configuracion: "{}",
+        orden: "claude mcp add --scope user esfinge /tmp/esfinge-mcp",
+        vscode: "{}",
+        ruta: "/tmp/esfinge-mcp",
+        siempre: true,
+        siempreQuien: "Claude (claude-ai)",
+      }),
+    });
+  });
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Ajustes").click();
+
+  const aviso = page.locator(".panel:visible .grupo.peligro").filter({ hasText: "sin preguntarte" });
+  await expect(aviso).toBeVisible({ timeout: 20_000 });
+  await expect(aviso).toContainText("Claude (claude-ai)");
+  // **Y dice qué sigue preguntando**, que es lo que hace que darlo sea razonable.
+  await expect(aviso).toContainText("código de un solo uso");
+  // Con su forma de deshacerlo al lado: un permiso que no se puede quitar no se da.
+  await expect(aviso.getByRole("button", { name: "Volver a preguntarme" })).toBeVisible();
+
+  // **En todas las pestañas**, que es la condición con la que se dio.
+  for (const pestana of ["Bóveda", "Navegador", "Cuenta"]) {
+    await page.getByRole("tab", { name: pestana }).click();
+    await expect(aviso, `el aviso desaparece en «${pestana}»`).toBeVisible();
+  }
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * **El registro dice qué se le dio, y la contraseña y el código no se leen igual.**
+ *
+ * Un registro que pone el sitio, quién y «copiada» no contesta la pregunta para la
+ * que existe: con eso no se sabe si lo que salió fue la contraseña, el código o si la
+ * entrada se borró. Lo vio el cliente con la 2.46.0, mirando su primer apunte de
+ * verdad.
+ *
+ * Y la distinción que esta prueba vigila es la que decide cuánto importa cada línea:
+ * **la contraseña se copia y el agente no la ve; el código se le enseña**, y entonces
+ * está en la conversación de su modelo para siempre. En el registro no pueden parecer
+ * lo mismo.
+ */
+test("el registro de lo que se le ha dado dice qué, y distingue copiar de enseñar", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.route("**/api/EstadoDelAgente", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        encendido: true,
+        escuchando: true,
+        donde: "/tmp/agentes.sock",
+        configuracion: '{\n  "mcpServers": {}\n}',
+        orden: "claude mcp add --scope user esfinge /tmp/esfinge-mcp",
+        vscode: '{\n  "servers": {}\n}',
+        ruta: "/tmp/esfinge-mcp",
+        dado: [
+          { id: "1", cuando: "2026-10-08T12:39:00Z", quien: "Claude (claude-ai)",
+            que: "copiar-secreto", sobre: "a1", titulo: "asana.com", resultado: "hecho" },
+          { id: "2", cuando: "2026-10-08T12:40:00Z", quien: "Claude (claude-ai)",
+            que: "codigo", sobre: "a2", titulo: "github.com", resultado: "hecho" },
+          { id: "3", cuando: "2026-10-08T12:41:00Z", quien: "Claude (claude-ai)",
+            que: "borrar", sobre: "a3", titulo: "una nota", resultado: "negado" },
+        ],
+      }),
+    });
+  });
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Agentes" }).click();
+
+  const lista = page.locator(".panel:visible .lista-papelera").filter({ hasText: "asana.com" });
+  await expect(lista).toBeVisible({ timeout: 20_000 });
+
+  // **Qué se dio, no solo que se dio algo.**
+  await expect(lista).toContainText("La contraseña, copiada al portapapeles");
+  // **Y el código se dice distinto**, porque ése sí lo ve el agente.
+  await expect(lista).toContainText("El código de un solo uso, enseñado");
+  // Lo negado también deja rastro: saber qué no se dio vale tanto como lo otro.
+  await expect(lista).toContainText("Dijiste que no");
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
  * **La tarjeta de lo que un agente pide** (ADR 0054).
  *
  * Es la única pantalla de Esfinge donde se aprueba que **otro programa** use una

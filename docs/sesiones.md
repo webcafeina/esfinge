@@ -5,6 +5,49 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-08 (3) · Las pruebas del agente en su Mac, y los siete arreglos que salieron
+
+- **Se recorrió el canal entero con Claude Desktop de verdad**, que es lo único que no se podía hacer desde
+  aquí. Pasó todo: el `.mcpb` se guarda con el botón, se abre y se instala como «Esfinge»; el inventario y
+  la higiene sirven; la contraseña va al portapapeles y **el agente no la ve y lo dice**; el código **se le
+  enseña**, con dos botones y **sin válvula** —la decisión más delicada de la 0054, vista por fin montada—;
+  crear va directo y borrar pregunta y va a la papelera.
+- **Y salieron siete cosas que ninguna prueba veía**, todas del uso:
+  1. **`claude mcp add` usa ámbito `local`**: la orden quedaba atada a la carpeta donde se pegaba. Ahora
+     lleva `--scope user`.
+  2. **En un IDE hay dos agentes** —el del editor y Claude con su extensión— y la pantalla mandaba a
+     configurar el que no era.
+  3. **La tarjeta de aprobación iba debajo del selector de pestañas**, pareciendo de una sola.
+  4. **El nombre era `claude-ai`**, un identificador técnico donde se decide si otro programa usa tus
+     contraseñas. Ahora «Claude (claude-ai)»: **se embellece sin esconder el que vino**, porque ese nombre
+     lo manda el propio programa y nadie lo comprueba.
+  5. **El registro no se veía hasta reiniciar.** El apunte no se escribe al aprobar sino cuando el agente
+     **vuelve a pedir**, y para entonces la ventana ya ha mirado; como las secciones no se desmontan, nada
+     volvía a preguntar. Es «avisar a la ventana es que la ventana va a preguntar» con otra cara.
+  6. **El registro no decía qué se había dado.** Ahora distingue «La contraseña, copiada al portapapeles»
+     de «El código de un solo uso, enseñado», que es la diferencia que decide cuánto importa cada línea.
+  7. **`sitios` y `etiquetas` no estaban en el esquema**, así que toda entrada creada por un agente nacía
+     **sin poder rellenarse sola**. El núcleo siempre supo aplicarlos: lo que faltaba era declararlos, y
+     **lo que no está en el esquema no existe para el modelo**. Lo vigila una prueba que lee el fuente y
+     compara, por herramienta.
+- **Y dos cosas nuevas que pidió al usarlo:**
+  - **«No volver a preguntar»**, el tercer botón: permiso que **no caduca**, con el alcance **exacto de la
+    válvula** —lo eligió así con la alternativa delante, «de todos modos iría a la papelera»—. Queda
+    anunciado **arriba y en todas las pestañas** con su botón de quitarlo, que es la condición con la que
+    se dio, y en el registro esos usos se apuntan como `siempre`.
+  - **`esfinge_resumen`**, que contesta «¿qué tengo?» con números y **cero nombres**. Nació de ver al
+    agente traerse 25 entradas con sus títulos para contar: la respuesta más útil es también la que menos
+    cuenta de la bóveda.
+- **Y un error mío que conviene no repetir**: al preguntarle el alcance del «siempre» le enseñé que la
+  válvula **no** cubre borrar, y sí lo cubre. Lo destapó la prueba al ponerse roja, y se le dijo antes de
+  seguir. Decidir con un dato falso es peor que no decidir.
+- **Se verificó** con `make comprobar` y `make e2e` (134) en verde, y cada guarda mutada — dos de ellas
+  nacieron sin vigilar nada y se vio mutándolas: la del esquema pasaba con `sitios` fuera de `crear` porque
+  juntaba las dos herramientas en un saco.
+- **Queda abierto**: el rótulo «Versión» → «Actualizaciones» (en deuda), y probar la 2.47.0 en su Mac.
+
+---
+
 ## 2026-10-08 (2) · Ajustes por pestañas, y lo que el scroll tapaba
 
 - **La 2.45.0 no resolvió el problema y lo dijo él**: «sigue habiendo demasiado scroll, al estar todo encima

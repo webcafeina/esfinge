@@ -294,6 +294,9 @@ export type EstadoDelAgente = {
   vscode: string;
   /** Dónde está el servidor MCP, suelta, para quien tenga que escribirla a mano. */
   ruta: string;
+  /** Está puesto el permiso que no caduca, y a quién se le dio. */
+  siempre: boolean;
+  siempreQuien?: string;
   /**
    * Lo que un agente está pidiendo y hay que contestar, ausente si no hay nada.
    *
@@ -986,6 +989,17 @@ export const esfinge = {
   cortarAlAgente: () => llamar<void>("CortarAlAgente"),
 
   /**
+   * El tercer botón: no volver a preguntar por una contraseña (2026-10-08).
+   *
+   * **Cubre lo mismo que la válvula y ni un verbo más**: el código de un solo uso,
+   * cambiar un secreto y borrar siguen preguntando uno a uno. Y no caduca, que es lo
+   * que lo distingue — por eso la ventana lo anuncia mientras esté puesto.
+   */
+  aprobarSiempreAlAgente: () => llamar<void>("AprobarSiempreAlAgente"),
+  /** Y quitarlo, que es lo que hace aceptable darlo. */
+  quitarElSiempreAlAgente: () => llamar<void>("QuitarElSiempreAlAgente"),
+
+  /**
    * Guarda el paquete `.mcpb` de Claude Desktop donde diga el diálogo del sistema.
    *
    * El servidor MCP ya está dentro de esta instalación, así que no hace falta ir a
@@ -1081,6 +1095,19 @@ export function alPedirloUnAgente(cb: (quien: string) => void) {
 /** Avisa cuando un agente pide algo que hay que aprobar (ADR 0054). */
 export function alQuererAlgoUnAgente(cb: () => void) {
   return escuchar("agente-quiere", cb);
+}
+
+/**
+ * Y cuando algo **ya se le ha dado** a un agente, para que la lista de «Lo que les has
+ * dado» no se quede vieja.
+ *
+ * Hace falta porque el apunte no se escribe al aprobar sino cuando el agente vuelve a
+ * pedir, y para entonces la ventana ya ha mirado. Sin este aviso no se enteraba hasta
+ * reiniciar: las secciones no se desmontan, así que volver a Ajustes no vuelve a
+ * preguntar nada.
+ */
+export function alApuntarloElAgente(cb: (quien: string) => void): () => void {
+  return escuchar("agente-apuntado", cb);
 }
 
 export function alPedirloUnNavegador(cb: (quien: string) => void) {

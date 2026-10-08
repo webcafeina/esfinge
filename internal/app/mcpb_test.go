@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
+	"github.com/webcafeina/esfinge/internal/agente"
 	"github.com/webcafeina/esfinge/internal/mcpb"
 )
 
@@ -151,6 +154,94 @@ func TestGuardarElPaqueteEscribeUnZipQueSeAbre(t *testing.T) {
 	for _, hace := range []string{"manifest.json", "icon.png", mcpb.NombreDeDentro(ruta)} {
 		if !dentro[hace] {
 			t.Errorf("al paquete guardado le falta %q", hace)
+		}
+	}
+}
+
+// **Lo que el núcleo sabe aplicar tiene que estar declarado en el esquema**, porque el
+// esquema es lo único que el modelo ve.
+//
+// `crear` y `editar` aceptaban `sitios` y `etiquetas` desde el principio —el código los
+// aplica— y **no estaban en el esquema**, así que para el agente no existían: creaba
+// credenciales sin sitio, que son credenciales que no se rellenan solas, que es para lo
+// que existe la bóveda. Lo dijo Claude al crear la primera entrada de verdad, el
+// 2026-10-08: «desde aquí no puedo rellenar el campo de sitios».
+//
+// Esto se lee del propio fuente, como hace el vigilante del puente con `puente.ts`: la
+// lista de campos que el código entiende no se puede sacar por reflexión —es un `switch`
+// y unos `p.Campos["x"]`— y mantenerla a mano en dos sitios es exactamente el fallo que
+// se está arreglando.
+func TestLoQueElNucleoAplicaEstaEnElEsquema(t *testing.T) {
+	crudo, err := os.ReadFile("agente.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fuente := string(crudo)
+
+	// **Los campos de cada verbo, no los del fichero entero.** La primera versión de
+	// esto juntaba todos y le exigía a `editar` el `tipo` que solo usa `crear`: una
+	// prueba que falla por lo que no es manda a arreglar donde no hay nada roto.
+	cuerpoDe := func(nombre string) string {
+		i := strings.Index(fuente, ") "+nombre+"(")
+		if i < 0 {
+			t.Fatalf("no se encuentra %s en agente.go: el patrón ya no vale", nombre)
+		}
+		j := strings.Index(fuente[i:], "\nfunc ")
+		if j < 0 {
+			return fuente[i:]
+		}
+		return fuente[i : i+j]
+	}
+	camposDe := func(cuerpo string) map[string]bool {
+		out := map[string]bool{}
+		for _, m := range regexp.MustCompile(`p\.Campos\["([a-zñáéíóú]+)"\]`).FindAllStringSubmatch(cuerpo, -1) {
+			out[m[1]] = true
+		}
+		for _, m := range regexp.MustCompile(`case "([a-zñáéíóú]+)":`).FindAllStringSubmatch(cuerpo, -1) {
+			out[m[1]] = true
+		}
+		// `totp` se puede cambiar y **no se ofrece a propósito**: una semilla mal
+		// puesta deja una cuenta sin segundo factor y el agente no puede comprobarla.
+		delete(out, "totp")
+		// `generar` no es un campo de la entrada, es cómo se hace el secreto.
+		delete(out, "generar")
+		return out
+	}
+
+	lee := map[string]map[string]bool{
+		agente.QueCrear:  camposDe(cuerpoDe("Crear")),
+		agente.QueEditar: camposDe(cuerpoDe("Editar")),
+	}
+	for verbo, campos := range lee {
+		if len(campos) < 3 {
+			t.Fatalf("%s: solo se han encontrado %v en el fuente; el patrón ya no vale", verbo, campos)
+		}
+	}
+
+	// **Cada herramienta por su cuenta.** Juntarlas hace que baste con que un campo
+	// esté en una de las dos, y entonces quitarlo de `crear` —que es exactamente el
+	// fallo que se está arreglando— no pone nada rojo. Comprobado mutándolo.
+	for _, h := range agente.LasHerramientas {
+		campos, mira := lee[h.Verbo]
+		if !mira {
+			continue
+		}
+		declara := map[string]bool{}
+		for campo := range h.Esquema.Propiedades {
+			declara[campo] = true
+		}
+		for campo := range campos {
+			if !declara[campo] {
+				t.Errorf("%s: el núcleo aplica %q y el esquema no lo declara: para el modelo no existe",
+					h.Nombre, campo)
+			}
+		}
+		// Y las dos listas, que no van por el mapa y faltaban en las dos.
+		for _, campo := range []string{"sitios", "etiquetas"} {
+			if !declara[campo] {
+				t.Errorf("%s: falta %q; sin eso una credencial nace sin poder rellenarse sola",
+					h.Nombre, campo)
+			}
 		}
 	}
 }

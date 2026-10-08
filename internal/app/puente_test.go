@@ -105,6 +105,10 @@ var loQuePuedeCruzarElPuente = []string{
 	// con la bóveda cerrada y deja un 400 en una pantalla que por lo demás funciona —
 	// que es la trampa que ya costó una vuelta con `POST /api/Proyectos`.
 	"AprobarLoQuePideElAgente", "DenegarLoQuePideElAgente",
+	// Y el tercer botón, que no caduca (2026-10-08). Cruza el puente **con su
+	// pareja**: un permiso permanente sin forma de quitarlo no se da, y por eso las
+	// dos van juntas aquí y juntas en la pantalla.
+	"AprobarSiempreAlAgente", "QuitarElSiempreAlAgente",
 	// Y cortar lo concedido, que es lo que hace soportable el «durante cinco minutos»:
 	// lo que se da se puede retirar sin esperar a que caduque.
 	"CortarAlAgente",

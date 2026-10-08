@@ -231,6 +231,8 @@ func soloLoQueSale(h Herramienta, r Respuesta) any {
 		return r.Entrada
 	case QueHigiene:
 		return r.Higiene
+	case QueResumen:
+		return r.Resumen
 	case QueGenerar:
 		return map[string]any{"contrasena": r.Clave}
 	case QueCopiarSecreto:
