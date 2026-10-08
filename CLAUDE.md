@@ -273,6 +273,20 @@ No se cambian sin preguntar.
   parezca no haber hecho nada. El glifo es **nuestro**, como los de los gestores: el símbolo de MCP es marca
   de la Linux Foundation.
 
+- **Y lo que salió de usarlo de verdad el 2026-10-08**, que no se cambia sin preguntar:
+  **«No volver a preguntar»** es el tercer botón de la tarjeta —permiso que **no caduca**— y lo pidió al
+  aprobar una por una: **lo que cansa se aprueba sin mirar**, que es peor que no preguntar porque da la
+  apariencia de control sin el control. Su alcance es **el de la válvula y ni un verbo más**, y lo eligió con
+  la alternativa delante —«de todos modos iría a la papelera»—: una frontera es más fácil de sostener que dos
+  parecidas. Mientras está puesto, la ventana **lo dice arriba y en todas las pestañas**, con el botón de
+  quitarlo al lado: ésa fue la condición con la que se dio.
+  **Y Ajustes se recorre por pestañas** —Cuenta · Bóveda · Navegador · Agentes · Actualizaciones—, porque
+  ordenarlo en bloques lo hizo legible y no encontrable. **Lo que espera respuesta no vive en ninguna
+  pestaña**: lo que pide un agente, lo que pide un navegador y el aviso de los iconos salen arriba, pase lo
+  que pase, porque son estado y caducan. **Y hay una fila «MCP»** en la barra lateral que abre esa sección,
+  con el **símbolo oficial** —lo pidió él tras ver el nuestro: un glifo inventado para un protocolo no lo
+  reconoce nadie—.
+
 - **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
   mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda
   hasta la publicación siguiente — no es un fallo, es un aviso del flujo. Se hace igual: **el cliente para la
@@ -393,6 +407,29 @@ No se cambian sin preguntar.
   hace la tarjeta de dentro, que es la única de las dos pantallas que sigue ahí para decir que ha fallado.
 
 ## Trampas que ya costaron encontrarse
+
+**El paquete `.mcpb` no se actualiza con Esfinge, y los clientes se quedan con la lista de herramientas.**
+Lleva el servidor **dentro**, que es lo que impide que se rompa al mover la aplicación, y el precio es el
+otro lado: al actualizar Esfinge ese servidor se queda como estaba. Y como un cliente MCP pide
+`tools/list` **al conectar** y se la queda, una herramienta nueva no aparece ni reiniciando la
+conversación. Lo encontró el cliente pidiendo crear una cuenta con su sitio: el agente dijo que su versión
+no tenía ese campo, y **tenía razón**. Desde la 2.48.0 el binario del paquete **le cede el turno al de la
+Esfinge instalada** —lo lanza con la misma entrada y salida, y manda el de la aplicación porque es con
+quien se va a hablar—, y si no lo encuentra sigue él. En **Claude Code esto nunca pasó**: allí la orden
+apunta al binario de dentro de la aplicación.
+
+**Y lo que no está en el esquema no existe para el modelo.** `crear` y `editar` aceptaban `sitios` y
+`etiquetas` desde el principio —el código los aplica— y **no estaban declarados en las herramientas**, así
+que el agente creaba credenciales sin sitio: credenciales que no se rellenan solas, que es para lo que
+existe la bóveda. El núcleo sabía hacerlo y nadie se lo había dicho al modelo. Lo vigila
+`TestLoQueElNucleoAplicaEstaEnElEsquema`, que **lee el fuente** —la lista de campos es un `switch`, no se
+saca por reflexión— y compara **por herramienta**: la primera versión las juntaba en un saco y pasaba con
+`sitios` fuera de `crear`.
+
+**Un registro que no dice qué se dio no contesta la pregunta para la que existe.** La línea ponía el sitio,
+quién y «copiada», y con eso no se sabe si salió la contraseña, el código o si la entrada se borró. Y hay
+una distinción que ahí no puede perderse: **la contraseña se copia y el agente no la ve; el código se le
+enseña**, y entonces está en la conversación de su modelo para siempre.
 
 **Lo que el binario tiene que hacer solo, la prueba no se lo puede dar hecho.** El servidor MCP se empareja
 al arrancar, y **no lo hacía nunca**: solo `estado` contestaba y todo lo demás decía `sin-emparejar`. Lo

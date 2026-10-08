@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-10-07**
+Última actualización: **2026-10-08**
 
 > **No queda nada del proyecto sin comprobar en una máquina de verdad, salvo Windows y GNOME.** Las dos
 > fichas que quedaban vivas se cerraron hoy en los dos Macs del cliente:
@@ -91,43 +91,40 @@
 >   ejecución** dentro del zip, que `zip` ponía por costumbre y nadie comprobaba — sin él, lo que se instala
 >   en macOS y en Linux se instala y no arranca.
 >
-> **Lo probó el 2026-10-08 y falló al primer intento**, con el conector ya instalado: Claude Code no
-> encontraba Esfinge. **Una bandera que faltaba** —`claude mcp add` usa ámbito `local` de fábrica, o sea solo
-> la carpeta donde se pega la orden— y de ahí salió la 2.45.0.
-
-> **La 2.45.0: instalar el MCP deja de ser un bloque de JSON** (2026-10-08).
+> **Y el 2026-10-08 se probó el canal entero con Claude Desktop en su Mac, y pasó todo**: el `.mcpb` se
+> guarda con el botón y se instala; el inventario y la higiene sirven; la contraseña va al portapapeles y
+> **el agente no la ve y lo dice**; el código **se le enseña**, con dos botones y **sin válvula** —la
+> decisión más delicada de la 0054, vista por fin montada—; crear va directo y borrar pregunta.
 >
-> - **Ajustes son bloques con cabecera** —glifo, título, una línea y el interruptor de la sección— en orden
->   de uso: la bóveda primero, las actualizaciones al final. El canal de agentes compartía tarjeta con el del
->   navegador.
-> - **Cuatro caminos con su nombre** para conectar un agente, y no un genérico: **Claude Desktop** con un
->   botón que guarda el `.mcpb` —el servidor ya está dentro de la aplicación—, **Claude Code** con la orden y
->   su ámbito, y **Cursor** y **VS Code**, que leen claves distintas (`mcpServers` y `servers`): con la
->   equivocada no carga nada y no avisa nadie.
-> - **Una fila «MCP» en la barra**, encima de Ajustes, que abre ese bloque y se queda marcada ella.
-> - **Y la distinción que tuvo que señalar él**: en un IDE hay **dos agentes** —el del editor y Claude con su
->   extensión— y cada uno lee su configuración. La extensión de Claude Code es el mismo Claude Code y lee
->   `~/.claude.json`, así que con `--scope user` ya está. La pantalla mandaba a configurar el que no era.
+> **Lo que no se puede probar aquí lo encontró él, y fueron nueve cosas en un día.** Están todas publicadas,
+> de la 2.45.0 a la 2.48.0:
 >
-> **La siguiente acción sigue siendo suya: probar la 2.45.0 en su Mac.** Claude Desktop con el botón, Claude
-> Code en la terminal y dentro del editor. Lo que verá y conviene no sorprenderle: la primera petición de un
-> secreto **no se contesta** —sale una tarjeta en la ventana y el agente recibe «apruébalo y vuelve a
-> pedirlo»—, y **el agente no ve la contraseña**, que va al portapapeles.
+> | | |
+> |---|---|
+> | `claude mcp add` usa ámbito `local` | ahora con `--scope user` |
+> | En un IDE hay **dos agentes** y la pantalla mandaba al que no era | dicho en las tres pestañas |
+> | La tarjeta iba debajo del selector de pestañas | arriba, fuera de las pestañas |
+> | El nombre era `claude-ai` | «Claude (claude-ai)»: legible **sin esconder el crudo** |
+> | El registro no se veía hasta reiniciar | se avisa al apuntar |
+> | El registro no decía **qué** se dio | «la contraseña, copiada» ≠ «el código, enseñado» |
+> | `sitios` y `etiquetas` no estaban en el esquema | lo creado por un agente ya se rellena solo |
+> | Ajustes seguía siendo scroll | **pestañas**, y una fila «MCP» en la barra |
+> | El `.mcpb` no se actualizaba con Esfinge | **le cede el turno** al servidor instalado |
 >
-> **Y lo que no se puede probar desde aquí**: el botón de guardar el paquete abre el diálogo del sistema, que
-> lo pone Wails. Sí está probado que **no lo abre si no hay servidor que guardar** y que lo que escribe es un
-> zip con las tres cosas y el bit de ejecución puesto.
+> **Y dos cosas nuevas que pidió al usarlo**: **«No volver a preguntar»** —permiso sin caducidad, con el
+> alcance exacto de la válvula, anunciado arriba en todas las pestañas y con su botón de quitarlo— y
+> **`esfinge_resumen`**, que contesta «¿qué tengo?» con números y **cero nombres**, en vez de traerse 25
+> entradas con sus títulos para contar.
 >
-> **Lo que no se cambia sin preguntar, en una línea cada cosa:** el agente **actúa sin ver** —la contraseña
-> al portapapeles—, con **una excepción**, el código de un solo uso; **cada secreto se aprueba en la
-> ventana**; hay **válvula de cinco minutos** con cuatro formas de cerrarse, y **no cubre lo que no se
-> deshace** —el código, cambiar una contraseña, cambiar la semilla—; **crear y editar van directos**, borrar
-> pregunta; y **todo lo que entrega un secreto queda apuntado** dentro de la bóveda.
+> **La siguiente acción es suya, el lunes**: actualizar a la 2.48.0, **reinstalar el `.mcpb` una última
+> vez** —ésta es la que trae el relevo, a partir de ahí se actualiza solo— y seguir probando. Lo que queda
+> sin ver: si el aviso del permiso permanente **se sigue viendo o se vuelve invisible** de tanto estar, y
+> si el resumen contesta de un tiro.
 >
-> **Y lo más incómodo, que está dicho en la pantalla y en `seguridad.md`**: contra un agente que puede
-> ejecutar órdenes en tu equipo, **el portapapeles no es una frontera** —puede leerlo—; lo que protege es que
-> cada uso se apruebe y quede apuntado. El remoto —ChatGPT— sigue fuera, porque lleva dentro elegir entre que
-> el Worker vea los secretos o montar un túnel.
+> **Y lo que sigue sin poder probarse desde aquí**: el diálogo del sistema al guardar el paquete, y si el
+> relevo **encuentra la Esfinge instalada** en su Mac — la lógica está probada para los tres sistemas, pero
+> la lista de sitios donde buscar se queda corta el día que alguien la tenga en otra carpeta, y entonces no
+> se rompe nada: simplemente no releva.
 
 ---
 
