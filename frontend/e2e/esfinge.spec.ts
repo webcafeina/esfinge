@@ -237,6 +237,7 @@ test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page 
   // encontró la anterior, así que al recargar puede salir sola. Eso es correcto
   // en la aplicación; aquí solo haría la prueba dependiente del orden.
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Versión" }).click();
   await page.getByRole("button", { name: "Buscar ahora" }).click();
 
   const banda = page.locator(".novedad");
@@ -275,6 +276,7 @@ test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
   await page.reload();
 
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Versión" }).click();
   const interruptor = page.getByRole("checkbox", { name: /versión nueva/ });
   await expect(interruptor).toBeChecked();
 
@@ -283,6 +285,7 @@ test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
   await interruptor.uncheck();
   await page.reload();
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Versión" }).click();
   await expect(page.getByRole("checkbox", { name: /versión nueva/ })).not.toBeChecked();
 
   // Y se deja como estaba, que el fichero de preferencias es de verdad y lo
@@ -338,6 +341,7 @@ test("las llaves de acceso se pueden apagar en Ajustes, y se quedan apagadas", a
   });
   await page.reload();
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Navegador" }).click();
 
   const llaves = page.getByRole("checkbox", { name: /llaves de acceso/ });
   await expect(llaves).toBeChecked();
@@ -345,6 +349,7 @@ test("las llaves de acceso se pueden apagar en Ajustes, y se quedan apagadas", a
   await llaves.uncheck();
   await page.reload();
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Navegador" }).click();
   await expect(page.getByRole("checkbox", { name: /llaves de acceso/ })).not.toBeChecked();
 
   // Como el de arriba: el fichero de preferencias lo comparten las demás pruebas.
@@ -839,6 +844,7 @@ test("Ajustes dice qué es esto, de qué versión y de quién", async ({ page })
   const errores = vigilarConsola(page);
   await page.goto("/");
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Cuenta" }).click();
 
   // Acotada a «.contenido»: «Esfinge» está también en el lockup de la barra
   // lateral, que es la trampa de siempre de este fichero.
@@ -1094,6 +1100,7 @@ test("el canal con el navegador viene apagado y se enciende en Ajustes", async (
   const errores = vigilarConsola(page);
   await page.goto("/");
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Navegador" }).click();
 
   const casilla = page.getByLabel("Dejar que la extensión del navegador consulte la bóveda");
   await expect(casilla).toBeVisible({ timeout: 20_000 });
@@ -1140,6 +1147,7 @@ test("la lista de sitios excluidos se ve y se puede quitar", async ({ page }) =>
   expect(puesto.ok(), await puesto.text()).toBe(true);
 
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Navegador" }).click();
   const fila = page.locator(".lista-papelera li", { hasText: sitio });
   await expect(fila).toBeVisible({ timeout: 20_000 });
 
@@ -1150,6 +1158,7 @@ test("la lista de sitios excluidos se ve y se puede quitar", async ({ page }) =>
   await page.reload();
   await conLaBovedaAbierta(page);
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Navegador" }).click();
   await expect(page.locator(".lista-papelera li", { hasText: sitio })).toHaveCount(0);
 
   expect(errores, errores.join(" | ")).toEqual([]);
@@ -1166,6 +1175,7 @@ test("Ajustes manda sobre los dos relojes de la bóveda", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Bóveda" }).click();
 
   // **Esperando a que cada guardado llegue de vuelta**, y no por cortesía: la
   // llamada es asíncrona y recargar la aborta a media petición, con lo que la
@@ -1185,6 +1195,7 @@ test("Ajustes manda sobre los dos relojes de la bóveda", async ({ page }) => {
   await page.reload();
   const leidas = page.waitForResponse((r) => r.url().endsWith("/api/VerPreferencias"));
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Bóveda" }).click();
   await leidas;
 
   await expect(page.locator("#bloqueo")).toHaveValue("5");
@@ -1196,6 +1207,7 @@ test("Ajustes manda sobre los dos relojes de la bóveda", async ({ page }) => {
 
   // Se deja como estaba, que las pruebas de después comparten servidor.
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Bóveda" }).click();
   await guardandoPreferencias(page, () => page.locator("#bloqueo").selectOption("15"));
   await guardandoPreferencias(page, () => page.locator("#portapapeles").selectOption("30"));
 
@@ -1745,6 +1757,7 @@ test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ 
   // En Ajustes aparece ya marcado —lo activó abrir, no un botón de allí—, y ahí
   // es donde se dice lo que protege y lo que no.
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Bóveda" }).click();
   const interruptor = page.locator("#desbloqueo-del-sistema");
   await expect(interruptor).toBeVisible({ timeout: 20_000 });
   await expect(interruptor).toBeChecked({ timeout: 20_000 });
@@ -1789,6 +1802,7 @@ test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ 
 
   // Y al quitarlo, la pantalla de desbloquear deja de ofrecerlo.
   await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Bóveda" }).click();
   await page.locator("#desbloqueo-del-sistema").click();
   await expect(page.locator("#desbloqueo-del-sistema")).not.toBeChecked({ timeout: 20_000 });
   await seccion(page, "Bóveda").click();
@@ -2573,6 +2587,9 @@ test("el canal con los agentes viene apagado, se enciende y dice lo que es", asy
   await conLaBovedaAbierta(page);
   await seccion(page, "Ajustes").click();
 
+  // **Ajustes va por pestañas desde la 2.46.0**: cada sección se abre, no se baja.
+  await page.getByRole("tab", { name: "Agentes" }).click();
+
   const casilla = page.getByRole("checkbox", { name: "Dejar que un agente de IA consulte la bóveda" });
   await expect(casilla).toBeVisible({ timeout: 20_000 });
   // **Apagado de fábrica**, que es el lado seguro de equivocarse.
@@ -2696,11 +2713,12 @@ test("la fila MCP lleva al bloque de los agentes y se queda marcada", async ({ p
   await expect(filaMCP).toHaveAttribute("aria-current", "page");
   await expect(seccion(page, "Ajustes")).not.toHaveAttribute("aria-current", "page");
 
-  // Y lo que se ve es el bloque, no el principio de la pantalla. Se espera a que el
-  // desplazamiento termine: es suave, así que justo después del clic todavía no ha
-  // llegado — y comprobarlo antes es la carrera que ya costó una pasada con el shim.
+  // Y lo que se ve es la sección de los agentes, abierta: no hay desplazamiento que
+  // esperar ni altura que acertar, que es lo que nunca terminaba de funcionar.
   const bloque = page.locator("#ajustes-mcp");
-  await expect(bloque).toBeInViewport({ timeout: 10_000 });
+  await expect(bloque).toBeVisible();
+  await expect(bloque).toBeInViewport();
+  await expect(page.getByRole("tab", { name: "Agentes" })).toHaveAttribute("aria-selected", "true");
 
   // Y entrar por «Ajustes» marca Ajustes, que es la otra mitad.
   await seccion(page, "Ajustes").click();

@@ -194,6 +194,22 @@ export function Firma({ version }: { version: string }) {
  * se ve igual en los tres sistemas.
  */
 export function Icono({ nombre }: { nombre: string }) {
+  // **El de MCP es el oficial, y es el único que no se dibuja aquí.** Lo pidió el
+  // cliente tras ver el nuestro: un glifo inventado para un protocolo no lo reconoce
+  // nadie, y el parecido razonable no basta — o es el símbolo o es ruido. Se le dijo
+  // lo que arrastra: es marca de la Linux Foundation, y eso lo decide quien encarga.
+  //
+  // Va aparte porque **es relleno y no trazo**, así que no cabe en el `<svg>` común:
+  // metido ahí con `fill="none"` no se vería nada. Y lleva su propio `viewBox`, que
+  // es el del original: reescalarlo a mano es la forma de romper una curva.
+  if (nombre === "mcp") {
+    return (
+      <svg className="icono" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M13.85 0a4.16 4.16 0 0 0-2.95 1.217L1.456 10.66a.835.835 0 0 0 0 1.18.835.835 0 0 0 1.18 0l9.442-9.442a2.49 2.49 0 0 1 3.541 0 2.49 2.49 0 0 1 0 3.541L8.59 12.97l-.1.1a.835.835 0 0 0 0 1.18.835.835 0 0 0 1.18 0l.1-.098 7.03-7.034a2.49 2.49 0 0 1 3.542 0l.049.05a2.49 2.49 0 0 1 0 3.54l-8.54 8.54a1.96 1.96 0 0 0 0 2.755l1.753 1.753a.835.835 0 0 0 1.18 0 .835.835 0 0 0 0-1.18l-1.753-1.753a.266.266 0 0 1 0-.394l8.54-8.54a4.185 4.185 0 0 0 0-5.9l-.05-.05a4.16 4.16 0 0 0-2.95-1.218c-.2 0-.401.02-.6.048a4.17 4.17 0 0 0-1.17-3.552A4.16 4.16 0 0 0 13.85 0m0 3.333a.84.84 0 0 0-.59.245L6.275 10.56a4.186 4.186 0 0 0 0 5.902 4.186 4.186 0 0 0 5.902 0L19.16 9.48a.835.835 0 0 0 0-1.18.835.835 0 0 0-1.18 0l-6.985 6.984a2.49 2.49 0 0 1-3.54 0 2.49 2.49 0 0 1 0-3.54l6.983-6.985a.835.835 0 0 0 0-1.18.84.84 0 0 0-.59-.245" />
+      </svg>
+    );
+  }
+
   const trazos: Record<string, React.ReactNode> = {
     // Candado cerrado.
     cifrar: (
@@ -397,24 +413,6 @@ export function Icono({ nombre }: { nombre: string }) {
         <rect x="2.5" y="3.5" width="13" height="11" rx="2" />
         <path d="M2.5 7h13" />
         <circle cx="5" cy="5.2" r="0.6" />
-      </>
-    ),
-    // La bóveda de esta sección es la caja fuerte de la barra lateral, y no se
-    // repite el dibujo: `boveda` ya está arriba.
-    //
-    // **MCP, en nuestro trazo y no su logotipo**, por lo mismo que los glifos de los
-    // gestores: nombrar un protocolo con el que se interopera es legítimo —el rótulo
-    // va al lado— y meter la marca de otro dentro del binario es otra cosa. El
-    // símbolo de MCP es marca de la Linux Foundation.
-    //
-    // Lo que se dibuja es lo que el de ellos cuenta y es lo que el protocolo hace:
-    // **dos arcos que convergen en un punto**, el modelo y la herramienta
-    // encontrándose. A dieciséis píxeles eso es lo único que se lee de aquella forma.
-    mcp: (
-      <>
-        <path d="M2.5 13.5 8 6.2a2.6 2.6 0 0 1 4 3.3l-3.4 4" />
-        <path d="M6.6 4.6a2.6 2.6 0 0 1 4 0l4.9 5.6" />
-        <path d="M15.5 10.2 11 15.5" />
       </>
     ),
   };

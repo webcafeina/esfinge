@@ -325,12 +325,16 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await expect(b.getByText(correo)).toBeVisible();
   // El equipo de ahora, marcado; y exportar lo que hay de la cuenta.
   // Y el canal con el navegador, que con cuenta sobra: sigue estando —en local es
-  // la única forma— y lo dice donde se ve (2.25.4).
+  // la única forma— y lo dice donde se ve (2.25.4). **En su pestaña**: Ajustes se
+  // recorre por secciones desde la 2.46.0.
+  await b.getByRole("tab", { name: "Navegador" }).click();
   await expect(b.getByLabel("Dejar que la extensión del navegador consulte la bóveda")).not.toBeChecked();
   await expect(b.getByText("Con cuenta no hace falta.")).toBeVisible();
   await b.getByText("Con cuenta no hace falta.").scrollIntoViewIfNeeded();
   await retratar(b, "ajustes-canal-con-cuenta");
 
+  // Y de vuelta a la pestaña de la cuenta, que es donde viven los equipos.
+  await b.getByRole("tab", { name: "Cuenta" }).click();
   await expect(b.getByRole("heading", { name: "Equipos con tu cuenta" })).toBeVisible();
   // Dos: B, y el A que volvió a entrar con su código después de que B lo olvidara.
   await expect(b.locator(".lista-equipos li")).toHaveCount(2);

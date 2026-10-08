@@ -5,6 +5,37 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-08 (2) · Ajustes por pestañas, y lo que el scroll tapaba
+
+- **La 2.45.0 no resolvió el problema y lo dijo él**: «sigue habiendo demasiado scroll, al estar todo encima
+  de otro». Ordenar en bloques con cabecera lo hizo legible, no encontrable. Ahora Ajustes se recorre por
+  **pestañas** —Cuenta · Bóveda · Navegador · Agentes · Versión—, una sección a la vez.
+- **Con eso cae el salto a la sección de los agentes**, que nunca llegaba del todo a su altura. La causa, que
+  solo se entendió al quitarlo: **el contenido de arriba cambia de alto mientras el desplazamiento está en
+  curso** —llegan las preferencias, llega la cuenta—, así que la altura calculada al empezar ya no vale al
+  terminar. Con una pestaña no hay nada que acertar.
+- **El glifo de MCP pasa a ser el oficial.** Se había dibujado uno «en nuestro trazo», como los de los
+  gestores, y el cliente lo rechazó: un glifo inventado para un protocolo **no lo reconoce nadie**, y el
+  parecido razonable no basta. Se le dijo lo que arrastra —es marca de la Linux Foundation— y lo decidió él.
+  Va aparte en el componente porque **es relleno y no trazo**: en el `<svg>` común, con `fill="none"`, no se
+  vería nada.
+- **Y las pestañas destaparon dos cosas que el scroll tapaba**, que es lo que más valor tiene del día:
+  - **Las tarjetas de aprobación vivían dentro de su pestaña.** Un agente pidiendo una contraseña en una
+    pestaña que no se está mirando **no se ve**, que es peor que antes: ahí al menos bastaba con bajar. Ahora
+    todo lo que **espera respuesta** —emparejar un navegador, lo que pide un agente, la válvula, el aviso de
+    los iconos— sale arriba en cualquier pestaña. Son estado, no configuración.
+  - **La lista de «Nunca en este sitio» estaba en la sección de agentes**, y es del navegador. Viene de la
+    2.45.0, al partir la tarjeta que compartían: lo que quedaba por debajo del corte se fue al lado
+    equivocado. Con todo en una columna nadie lo veía.
+- **22 pruebas cayeron** al poner las pestañas, todas las que tocan Ajustes, y es lo correcto: buscaban cosas
+  que ahora hay que abrir. Cada una entra por la suya.
+- **Se verificó** con `make e2e` (130) y `make comprobar` en verde, y mirando las capturas: las cinco
+  pestañas caben en los 560 px con icono y rótulo, y la sección de agentes entra casi entera en una pantalla.
+- **Queda abierto**: que el cliente pruebe la 2.46.0 en su Mac. Lo de antes sigue sin probarse en una
+  máquina de verdad: el botón de guardar el paquete, y Claude dentro del editor.
+
+---
+
 ## 2026-10-08 · Instalar el MCP: cuatro caminos, y el que no se ve
 
 - **La 2.44.0 se probó en su Mac y falló al primer intento**, con el conector ya instalado: Claude Code no

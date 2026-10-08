@@ -1347,254 +1347,54 @@ function Ajustes({
   // tarda una llamada al proceso de al lado, pero una prueba lo pilló.
   const cargando = prefs === null;
 
-  // **Entrar por «MCP» lleva a su bloque.** Sin esto, la fila de la barra abre
-  // Ajustes por arriba y lo que se buscaba queda a una pantalla de distancia hacia
-  // abajo: el clic parecería no haber hecho nada.
+  // **Qué sección se está mirando.** De fábrica la cuenta, que es lo primero que
+  // alguien configura; entrando por la fila «MCP» de la barra, la de los agentes.
   //
-  // Va con `useEffect` y no en el clic porque el panel **puede no estar montado
-  // todavía** —las secciones se montan la primera vez que se visitan—, y entonces no
-  // hay a qué saltar. El salto es suave salvo que se haya pedido lo contrario, que
-  // es un movimiento grande y no decorativo.
-  const bloqueMCP = useRef<HTMLElement | null>(null);
+  // **Esto sustituye al desplazamiento**, que es lo que había hasta la 2.45.0 y nunca
+  // llegaba del todo a su altura: el bloque está abajo, el contenido de arriba cambia
+  // de alto mientras llegan las preferencias y la cuenta, y para cuando el salto
+  // termina lo que buscabas ya se ha movido. Con una pestaña no hay nada que acertar.
+  const [seccion, setSeccion] = useState<
+    "cuenta" | "boveda" | "navegador" | "agentes" | "acerca"
+  >(porElBloqueMCP ? "agentes" : "cuenta");
   useEffect(() => {
-    if (!porElBloqueMCP) return;
-    const quieto = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    bloqueMCP.current?.scrollIntoView({
-      behavior: quieto ? "auto" : "smooth",
-      block: "start",
-    });
+    // Volver a pulsar «MCP» con Ajustes ya abierto tiene que llevar otra vez ahí: el
+    // estado inicial solo vale la primera vez que esta pantalla se monta, y las
+    // secciones **no se desmontan** al cambiar de sección.
+    if (porElBloqueMCP) setSeccion("agentes");
   }, [porElBloqueMCP]);
 
   return (
     <div className="panel">
-      {/* La ficha de producto. Aquí es donde la ADR 0007 prometía que estaría la
-          marca —«en el icono y en Acerca de»— y donde el menú «Acerca de
-          Esfinge» lleva desde siempre, porque no hay diálogo aparte: la orden
-          navega a esta pantalla. Hasta la 2.11.0 lo que había era una línea con
-          el número de versión, así que la promesa estaba a medias.
+      {/* **Ajustes se recorre por pestañas y no en vertical** (2026-10-08).
 
-          Sustituye a la entradilla, que decía lo mismo con menos. */}
-      <div className="ficha">
-        <Marca lado={44} />
-        <div>
-          <h2>Esfinge</h2>
-          <p className="nota">Cifra y descifra secretos con una clave.</p>
-          <Firma version={version} />
-        </div>
-      </div>
+          Ordenarlo en bloques con cabecera lo hizo legible y **no resolvió el
+          problema**: lo dijo el cliente con la 2.45.0 puesta —«sigue habiendo
+          demasiado scroll, al estar todo encima de otro»—. Una pantalla de ajustes que
+          hay que recorrer es una pantalla donde no se encuentra nada; con una sección
+          a la vez, llegar a cualquiera cuesta un clic y ninguna lectura.
 
-      <GrupoCuenta alCrearCuenta={alCrearCuenta} alEntrar={alEntrar} />
+          De paso cae el salto a la sección de los agentes, que nunca llegaba del todo
+          a su altura: ya no hay a dónde saltar, se abre su pestaña y ya está. */}
+      <Segmentado
+        opciones={[
+          { valor: "cuenta", etiqueta: "Cuenta", icono: "personal" },
+          { valor: "boveda", etiqueta: "Bóveda", icono: "boveda" },
+          { valor: "navegador", etiqueta: "Navegador", icono: "navegador" },
+          { valor: "agentes", etiqueta: "Agentes", icono: "mcp" },
+          { valor: "acerca", etiqueta: "Versión", icono: "descargar" },
+        ]}
+        valor={seccion}
+        alCambiar={setSeccion}
+        conIconos
+      />
 
-      {/* Los dos relojes de la bóveda.
-       *
-       * Van aquí y no dentro de la bóveda porque son ajustes de la aplicación y
-       * porque el del portapapeles no es solo de la bóveda: también borra lo que
-       * copia «Usar como clave», que hasta la 2.11.x se quedaba ahí para siempre.
-       *
-       * «Nunca» viaja como -1 y no como 0. El cero es «no lo he dicho», que es lo
-       * que llega cuando alguien guarda un objeto a medias: si significara
-       * «nunca», ese descuido apagaría el bloqueo de la bóveda sin que nadie lo
-       * pidiera. Lo cuenta entero internal/app/preferencias.go. */}
-      <section className="bloque">
-        <header className="bloque-cabecera">
-          <Icono nombre="boveda" />
-          <div>
-            <h3>La bóveda</h3>
-            <p className="nota">Cuándo se cierra sola, cómo se abre y qué se borra al copiar.</p>
-          </div>
-        </header>
-        <div>
-          <label htmlFor="bloqueo">Cerrar la bóveda sola</label>
-          <select
-            id="bloqueo"
-            disabled={cargando}
-            value={prefs?.minutosParaBloquear ?? 15}
-            onChange={(e) => cambiar({ minutosParaBloquear: Number(e.target.value) })}
-          >
-            {[1, 5, 15, 30, 60, 240, NUNCA].map((m) => (
-              <option key={m} value={m}>
-                {m === NUNCA ? "Nunca" : `Tras ${m} ${m === 1 ? "minuto" : "minutos"} sin tocar nada`}
-              </option>
-            ))}
-          </select>
-          <p className="nota">
-            Cerrarla obliga a volver a escribir la contraseña maestra. Con «nunca» se queda
-            abierta hasta que se cierre a mano o se cierre la aplicación.
-          </p>
-        </div>
+      {/* **Lo que espera respuesta no vive en ninguna pestaña.**
 
-        <DesbloqueoDelSistema />
-
-        <label className="fila-ajuste">
-          <input
-            type="checkbox"
-            checked={prefs?.descargarIconos ?? true}
-            disabled={cargando}
-            onChange={(e) => cambiar({ descargarIconos: e.target.checked, iconosAvisados: true })}
-          />
-          <span>Descargar el icono de cada sitio de la bóveda</span>
-        </label>
-
-        <p className="nota">
-          Es la segunda cosa que Esfinge hace fuera de tu ordenador. Le pide el icono a cada sitio
-          de tu bóveda, directamente y nunca a un intermediario, y lo guarda cifrado junto a ella.
-          Quien pueda mirar tu red verá a qué sitios pregunta. Sin esto, cada entrada sale con un
-          cuadro de color y su inicial.
-        </p>
-
-        <div>
-          <label htmlFor="portapapeles">Borrar del portapapeles lo que se copie</label>
-          <select
-            id="portapapeles"
-            disabled={cargando}
-            value={prefs?.segundosDePortapapeles ?? 30}
-            onChange={(e) => cambiar({ segundosDePortapapeles: Number(e.target.value) })}
-          >
-            {[10, 30, 60, 120, NUNCA].map((s) => (
-              <option key={s} value={s}>
-                {s === NUNCA ? "Nunca" : `A los ${s} segundos`}
-              </option>
-            ))}
-          </select>
-          <p className="nota">
-            Vale para las contraseñas de la bóveda y para las que se generan aquí. Nunca se pisa
-            lo que hayas copiado tú después.
-          </p>
-        </div>
-      </section>
-
-      {/* **El aviso de los iconos, una vez.**
-       *
-       * Es la segunda cosa que Esfinge hace fuera de este ordenador y viene
-       * encendida, así que quien actualice empezará a preguntar por sus sitios sin
-       * haber pedido nada. La costumbre de esta casa para eso está escrita desde la
-       * ADR 0014: si se hace, se dice, y se deja apagar. Aquí se dice una vez, con
-       * el «no, gracias» al lado y con el dato incómodo delante —que el nombre del
-       * sitio viaja en claro aunque el icono venga cifrado—. */}
-      {prefs && prefs.descargarIconos && !prefs.iconosAvisados && (
-        <div className="grupo peligro">
-          <label>Esfinge va a pedir el icono de cada sitio de tu bóveda</label>
-          <p className="aviso">
-            Se lo pide <strong>a cada sitio directamente</strong>, nunca a un intermediario. Aun
-            así, quien pueda mirar tu red verá <strong>a qué sitios pregunta</strong>: el nombre
-            viaja en claro antes de que empiece el cifrado.
-          </p>
-          <p className="nota">
-            Va poco a poco y espaciado, no de golpe. Los iconos se guardan cifrados, junto a la
-            bóveda.
-          </p>
-          <div className="botones">
-            <button
-              className="principal"
-              onClick={() => cambiar({ iconosAvisados: true })}
-            >
-              De acuerdo
-            </button>
-            <button onClick={() => cambiar({ descargarIconos: false, iconosAvisados: true })}>
-              No, gracias
-            </button>
-          </div>
-        </div>
-      )}
-
-
-
-      {/* **El canal con el navegador.**
-       *
-       * Va aquí, con las otras dos cosas que Esfinge hace fuera de sí misma, y con
-       * una diferencia que hay que decir: las otras dos **salen** a la red y ésta
-       * **abre una puerta** a este ordenador. Por eso viene apagada, al revés que
-       * los iconos.
-       *
-       * Y cuando un navegador pide permiso, la respuesta se da aquí y no en el
-       * navegador: es lo único de todo esto que la página que estás mirando no
-       * puede tocar. */}
-      <section className="bloque">
-        <header className="bloque-cabecera">
-          <Icono nombre="navegador" />
-          <div>
-            <h3>El navegador</h3>
-            <p className="nota">La extensión de Esfinge: rellenar, guardar y los códigos.</p>
-          </div>
-          {/* **El interruptor de la sección vive en su cabecera**, y solo ahí. Dejar
-              también la casilla de antes sería preguntar dos veces lo mismo y dejar
-              sin respuesta única a quien la busque por su nombre. El rótulo se
-              conserva tal cual en `aria-label`: es como la localizan las pruebas y
-              quien usa un lector de pantalla. */}
-          <label className="interruptor">
-            <input
-              type="checkbox"
-              checked={prefs?.puenteDelNavegador ?? false}
-              disabled={cargando}
-              onChange={(e) => cambiar({ puenteDelNavegador: e.target.checked })}
-              aria-label="Dejar que la extensión del navegador consulte la bóveda"
-            />
-          </label>
-        </header>
-
-        <p className="nota">
-          Abre un canal <strong>dentro de este ordenador</strong>, no en la red: no hay puerto al
-          que nadie pueda conectarse desde fuera. Por él salen las cuentas del sitio que estés
-          mirando y, cuando las pides, una contraseña cada vez. Nunca la contraseña maestra.
-        </p>
-
-        {/* **Con cuenta, este canal sobra, y hay que decirlo donde se ve.** Desde la
-            2.25.0 la extensión entra con la cuenta en su propio panel y va siempre
-            por ella, esté Esfinge abierta o cerrada (ADR 0040). El interruptor se
-            queda —en local sigue siendo la única forma— y quien estrene Esfinge lo
-            tiene apagado, que es como viene de fábrica. Lo que no se hace es
-            apagarlo solo al entrar en una cuenta: en un navegador donde todavía no
-            se haya entrado con la cuenta, eso dejaría de rellenar sin avisar. */}
-        {cuenta?.modo === "cuenta" && (
-          <p className="nota">
-            <strong>Con cuenta no hace falta.</strong> Entra con tu cuenta en el panel de la
-            extensión y funcionará sola, también con Esfinge cerrada. Esto solo sirve si prefieres
-            que el navegador le pregunte a esta aplicación; si no lo usas, déjalo apagado.
-          </p>
-        )}
-
-        {navegador?.error && <p className="error">{navegador.error}</p>}
-
-        {navegador?.escuchando && (
-          <>
-            <p className="nota seleccionable">Escucha en {navegador.donde}</p>
-            {/* **A quién se ha avisado.** Sin esto, un navegador al que no se le
-                dejó el manifiesto se ve igual que uno al que sí: el interruptor
-                puesto y nada más. Costó un viaje al Mac. */}
-            {navegador.avisados.length > 0 ? (
-              <p className="nota">Avisados: {navegador.avisados.join(", ")}.</p>
-            ) : (
-              <p className="aviso">
-                No se ha avisado a ningún navegador. Si tienes uno instalado,
-                cuéntamelo: el canal está abierto pero ninguno sabe que existe.
-              </p>
-            )}
-          </>
-        )}
-
-        {/* **El freno de las llaves de acceso** (ADR 0048).
-            Va aquí, con lo del navegador, porque es de lo que apaga: no toca nada
-            de la bóveda ni de la ventana, solo lo que la extensión puede hacer
-            dentro de una página. Viene encendido, que es como se decidió
-            publicarlo, y existe porque hay código de Esfinge dentro de cada página
-            `https`: si un sitio cambia y deja de entrar, esto se apaga y se sigue
-            trabajando sin esperar a una versión. */}
-        <label className="fila-ajuste">
-          <input
-            type="checkbox"
-            checked={prefs?.llavesDeAccesoEnElNavegador ?? true}
-            disabled={cargando}
-            onChange={(e) => cambiar({ llavesDeAccesoEnElNavegador: e.target.checked })}
-          />
-          <span>Usar tus llaves de acceso en el navegador</span>
-        </label>
-
-        <p className="nota">
-          Cuando un sitio pida una llave de acceso, Esfinge se ofrecerá a poner la tuya. Si lo
-          apagas, el navegador preguntará como si Esfinge no estuviera y tus llaves seguirán
-          guardadas aquí. Apágalo si algún sitio deja de dejarte entrar.
-        </p>
-
+          Un navegador que pide permiso, un agente que pide una contraseña o el aviso
+          de los iconos son **estado, no configuración**: caducan y hay que
+          contestarlos. Metidos en su pestaña llegan y no se ven, que es peor que antes
+          —ahí al menos bastaba con bajar—. Así que salen arriba, en cualquier pestaña. */}
         {/* Lo que pide permiso. Va en «peligro» a propósito: es la única pregunta
             de esta pantalla cuya respuesta le abre la bóveda a otro programa. */}
         {navegador?.pide && (
@@ -1618,85 +1418,6 @@ function Ajustes({
             </div>
           </div>
         )}
-
-        {navegador && navegador.permitidos?.length > 0 && (
-          <div>
-            <label>Navegadores permitidos</label>
-            <ul className="lista-papelera">
-              {navegador.permitidos.map((n) => (
-                <li key={n.desde}>
-                  <span className="nombre">{n.quien}</span>
-                  <span className="nota">Desde el {fecha(n.desde)}</span>
-                  <span className="acciones">
-                    <button
-                      className="discreto"
-                      onClick={async () => {
-                        await esfinge.olvidarNavegador(n.desde);
-                        leerNavegador();
-                      }}
-                    >
-                      Retirar
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
-
-      {/* **El canal con los agentes de IA** (ADR 0054), en sección propia.
-
-          Hasta la 2.44.0 compartía tarjeta con el del navegador y se leía como una
-          lista larga: el cliente dijo que ahí se pierde, y tenía razón. Son la misma
-          clase de cosa —una puerta hacia dentro de este ordenador— pero no la misma
-          cosa, y cada una tiene su interruptor, su socket y su lista de permitidos a
-          propósito: apagar una no puede apagar la otra.
-
-          El `id` es a donde salta la fila «MCP» de la barra lateral. */}
-      <section className="bloque" id="ajustes-mcp" ref={bloqueMCP}>
-        <header className="bloque-cabecera">
-          <Icono nombre="mcp" />
-          <div>
-            <h3>Agentes de IA</h3>
-            <p className="nota">
-              Claude, Cursor y los demás, por el protocolo MCP.
-            </p>
-          </div>
-          <label className="interruptor">
-            <input
-              type="checkbox"
-              checked={prefs?.canalDeAgentes ?? false}
-              disabled={cargando}
-              onChange={(e) => cambiar({ canalDeAgentes: e.target.checked })}
-              aria-label="Dejar que un agente de IA consulte la bóveda"
-            />
-          </label>
-        </header>
-
-        
-        <p className="nota">
-          Abre otro canal <strong>dentro de este ordenador</strong>, para que programas como Claude
-          puedan buscar en tu bóveda y ayudarte a ordenarla. <strong>No les da tus contraseñas</strong>
-          : lo que se usa se copia al portapapeles, y cada uso se aprueba aquí.
-        </p>
-
-        <p className="aviso">
-          Lo que un agente lea <strong>acaba en la conversación de su modelo</strong>, con quien lo
-          sirva. Y si ese agente puede ejecutar órdenes en tu equipo —como el de una terminal—,
-          puede leer el portapapeles: ahí lo que te protege no es la copia,{" "}
-          <strong>es que cada uso te lo pregunte y quede apuntado</strong>.
-        </p>
-
-        {elAgente?.error && <p className="error">{elAgente.error}</p>}
-
-        {elAgente?.escuchando && (
-          <>
-            <p className="nota seleccionable">Escucha en {elAgente.donde}</p>
-            <ComoConectarlo elAgente={elAgente} />
-          </>
-        )}
-
         {/* Lo que pide permiso. En «peligro» por lo mismo que el del navegador: su
             respuesta le abre la bóveda a otro programa. */}
         {elAgente?.pide && (
@@ -1721,7 +1442,6 @@ function Ajustes({
             </div>
           </div>
         )}
-
         {/* **Lo que un agente quiere ahora mismo.** En «peligro» como la de emparejar,
             y por una razón de más: aquí lo que se aprueba es **una contraseña
             concreta**, y el sí vale una vez y solo para ella.
@@ -1791,7 +1511,6 @@ function Ajustes({
             </div>
           </div>
         )}
-
         {/* **El contador de la válvula, mientras está abierta.** Es lo que hace
             soportable haber dicho «durante cinco minutos»: se ve lo que se le va
             dando y se puede cortar sin esperar a que caduque. */}
@@ -1821,139 +1540,425 @@ function Ajustes({
           </div>
         )}
 
-        {elAgente && elAgente.permitidos?.length > 0 && (
-          <div>
-            <label>Agentes permitidos</label>
-            <ul className="lista-papelera">
-              {elAgente.permitidos.map((g) => (
-                <li key={g.desde}>
-                  <span className="nombre">{g.quien}</span>
-                  <span className="nota">Desde el {fecha(g.desde)}</span>
-                  <span className="acciones">
-                    <button
-                      className="discreto"
-                      onClick={async () => {
-                        await esfinge.olvidarAgente(g.desde);
-                        leerAgente();
-                      }}
-                    >
-                      Retirar
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
+      {/* **El aviso de los iconos, una vez.**
+       *
+       * Es la segunda cosa que Esfinge hace fuera de este ordenador y viene
+       * encendida, así que quien actualice empezará a preguntar por sus sitios sin
+       * haber pedido nada. La costumbre de esta casa para eso está escrita desde la
+       * ADR 0014: si se hace, se dice, y se deja apagar. Aquí se dice una vez, con
+       * el «no, gracias» al lado y con el dato incómodo delante —que el nombre del
+       * sitio viaja en claro aunque el icono venga cifrado—. */}
+      {prefs && prefs.descargarIconos && !prefs.iconosAvisados && (
+        <div className="grupo peligro">
+          <label>Esfinge va a pedir el icono de cada sitio de tu bóveda</label>
+          <p className="aviso">
+            Se lo pide <strong>a cada sitio directamente</strong>, nunca a un intermediario. Aun
+            así, quien pueda mirar tu red verá <strong>a qué sitios pregunta</strong>: el nombre
+            viaja en claro antes de que empiece el cifrado.
+          </p>
+          <p className="nota">
+            Va poco a poco y espaciado, no de golpe. Los iconos se guardan cifrados, junto a la
+            bóveda.
+          </p>
+          <div className="botones">
+            <button
+              className="principal"
+              onClick={() => cambiar({ iconosAvisados: true })}
+            >
+              De acuerdo
+            </button>
+            <button onClick={() => cambiar({ descargarIconos: false, iconosAvisados: true })}>
+              No, gracias
+            </button>
           </div>
-        )}
-
-        {/* **Lo que se le ha dado a un agente**, que es la otra mitad de dejarle
-            entrar: hasta la ADR 0054, Esfinge no registraba qué entradas se abrían, y
-            con una persona delante eso se sostiene —lo que has mirado lo has mirado
-            tú—. Con un programa pidiendo cosas, «¿qué le di la semana pasada?» es una
-            pregunta que se hace sola.
-
-            Vive **dentro de la bóveda cifrada**, así que esto solo se ve con ella
-            abierta. Se guardan noventa días. */}
-        {(elAgente?.dado?.length ?? 0) > 0 && (
-          <div>
-            <label>Lo que les has dado</label>
-            <ul className="lista-papelera">
-              {(elAgente?.dado ?? []).map((d) => (
-                <li key={d.id}>
-                  <span className="nombre">{d.titulo || "Una entrada"}</span>
-                  <span className="nota">
-                    {d.quien} · {fecha(d.cuando)} ·{" "}
-                    {d.resultado === "hecho" ? "copiada" : d.resultado === "negado" ? "dijiste que no" : d.resultado}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <p className="nota">Se guardan noventa días.</p>
-          </div>
-        )}
-
-        {/* «Nunca en este sitio» se decide en la tarjeta de la página y se deshace
-            aquí (ADR 0032). La lista está dentro de la bóveda, cifrada, y por eso
-            solo se ve con la bóveda abierta. */}
-        {excluidos.length > 0 && (
-          <div>
-            <label>Sitios en los que no se ofrece guardar</label>
-            <ul className="lista-papelera">
-              {excluidos.map((d) => (
-                <li key={d}>
-                  <span className="nombre">{d}</span>
-                  <span className="acciones">
-                    <button
-                      className="discreto"
-                      onClick={async () => {
-                        await esfinge.quitarSitioExcluido(d);
-                        leerExcluidos();
-                      }}
-                    >
-                      Quitar
-                    </button>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
-
-
-      {vidrio !== null && (
-        <p className="nota">
-          {vidrio
-            ? "Esta ventana usa el vidrio del sistema: la barra y el pie dejan ver lo que hay detrás."
-            : "Esta ventana es opaca: tu sistema no ofrece el vidrio, o esta versión no lo trae."}
-        </p>
+        </div>
       )}
 
-      <p className="nota">
-        Al actualizar no hay que desinstalar nada: en macOS se arrastra encima de la anterior,
-        en Windows el asistente la sustituye y en Linux lo hace el paquete. Tu historial y estos
-        ajustes se quedan donde están.
-      </p>
-
-      <section className="bloque">
-        <header className="bloque-cabecera">
-          <Icono nombre="descargar" />
+      {seccion === "cuenta" && (
+        <>
+        <div className="ficha">
+          <Marca lado={44} />
           <div>
-            <h3>Actualizaciones</h3>
-            <p className="nota">La única salida a internet que Esfinge hace por sí sola.</p>
+            <h2>Esfinge</h2>
+            <p className="nota">Cifra y descifra secretos con una clave.</p>
+            <Firma version={version} />
           </div>
-        </header>
-        <label className="fila-ajuste">
-          <input
-            type="checkbox"
-            checked={prefs?.buscarActualizaciones ?? true}
-            disabled={cargando}
-            onChange={(e) => cambiar({ buscarActualizaciones: e.target.checked })}
-          />
-          <span>Avisarme cuando haya una versión nueva</span>
-        </label>
+        </div>
+        <GrupoCuenta alCrearCuenta={alCrearCuenta} alEntrar={alEntrar} />
+        </>
+      )}
 
-        <p className="nota">
-          Una de las dos cosas que Esfinge hace fuera de tu ordenador: una vez al día le pregunta
-          a GitHub cuál es la última versión publicada. No manda nada de lo que cifras, ni quién
-          eres, ni cuántas veces la usas. En la petición viaja el número de versión que tienes,
-          que es lo que se compara, y GitHub ve tu dirección IP, como cualquier página que
-          visites.
-        </p>
+      {seccion === "boveda" && (
+        <section className="bloque">
+          <header className="bloque-cabecera">
+            <Icono nombre="boveda" />
+            <div>
+              <h3>La bóveda</h3>
+              <p className="nota">Cuándo se cierra sola, cómo se abre y qué se borra al copiar.</p>
+            </div>
+          </header>
+          <div>
+            <label htmlFor="bloqueo">Cerrar la bóveda sola</label>
+            <select
+              id="bloqueo"
+              disabled={cargando}
+              value={prefs?.minutosParaBloquear ?? 15}
+              onChange={(e) => cambiar({ minutosParaBloquear: Number(e.target.value) })}
+            >
+              {[1, 5, 15, 30, 60, 240, NUNCA].map((m) => (
+                <option key={m} value={m}>
+                  {m === NUNCA ? "Nunca" : `Tras ${m} ${m === 1 ? "minuto" : "minutos"} sin tocar nada`}
+                </option>
+              ))}
+            </select>
+            <p className="nota">
+              Cerrarla obliga a volver a escribir la contraseña maestra. Con «nunca» se queda
+              abierta hasta que se cierre a mano o se cierre la aplicación.
+            </p>
+          </div>
 
-        {prefs?.ultimaComprobacion && (
-          <p className="nota">Se miró por última vez el {fecha(prefs.ultimaComprobacion)}.</p>
+          <DesbloqueoDelSistema />
+
+          <label className="fila-ajuste">
+            <input
+              type="checkbox"
+              checked={prefs?.descargarIconos ?? true}
+              disabled={cargando}
+              onChange={(e) => cambiar({ descargarIconos: e.target.checked, iconosAvisados: true })}
+            />
+            <span>Descargar el icono de cada sitio de la bóveda</span>
+          </label>
+
+          <p className="nota">
+            Es la segunda cosa que Esfinge hace fuera de tu ordenador. Le pide el icono a cada sitio
+            de tu bóveda, directamente y nunca a un intermediario, y lo guarda cifrado junto a ella.
+            Quien pueda mirar tu red verá a qué sitios pregunta. Sin esto, cada entrada sale con un
+            cuadro de color y su inicial.
+          </p>
+
+          <div>
+            <label htmlFor="portapapeles">Borrar del portapapeles lo que se copie</label>
+            <select
+              id="portapapeles"
+              disabled={cargando}
+              value={prefs?.segundosDePortapapeles ?? 30}
+              onChange={(e) => cambiar({ segundosDePortapapeles: Number(e.target.value) })}
+            >
+              {[10, 30, 60, 120, NUNCA].map((s) => (
+                <option key={s} value={s}>
+                  {s === NUNCA ? "Nunca" : `A los ${s} segundos`}
+                </option>
+              ))}
+            </select>
+            <p className="nota">
+              Vale para las contraseñas de la bóveda y para las que se generan aquí. Nunca se pisa
+              lo que hayas copiado tú después.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {seccion === "navegador" && (
+        <section className="bloque">
+          <header className="bloque-cabecera">
+            <Icono nombre="navegador" />
+            <div>
+              <h3>El navegador</h3>
+              <p className="nota">La extensión de Esfinge: rellenar, guardar y los códigos.</p>
+            </div>
+            {/* **El interruptor de la sección vive en su cabecera**, y solo ahí. Dejar
+                también la casilla de antes sería preguntar dos veces lo mismo y dejar
+                sin respuesta única a quien la busque por su nombre. El rótulo se
+                conserva tal cual en `aria-label`: es como la localizan las pruebas y
+                quien usa un lector de pantalla. */}
+            <label className="interruptor">
+              <input
+                type="checkbox"
+                checked={prefs?.puenteDelNavegador ?? false}
+                disabled={cargando}
+                onChange={(e) => cambiar({ puenteDelNavegador: e.target.checked })}
+                aria-label="Dejar que la extensión del navegador consulte la bóveda"
+              />
+            </label>
+          </header>
+
+          <p className="nota">
+            Abre un canal <strong>dentro de este ordenador</strong>, no en la red: no hay puerto al
+            que nadie pueda conectarse desde fuera. Por él salen las cuentas del sitio que estés
+            mirando y, cuando las pides, una contraseña cada vez. Nunca la contraseña maestra.
+          </p>
+
+          {/* **Con cuenta, este canal sobra, y hay que decirlo donde se ve.** Desde la
+              2.25.0 la extensión entra con la cuenta en su propio panel y va siempre
+              por ella, esté Esfinge abierta o cerrada (ADR 0040). El interruptor se
+              queda —en local sigue siendo la única forma— y quien estrene Esfinge lo
+              tiene apagado, que es como viene de fábrica. Lo que no se hace es
+              apagarlo solo al entrar en una cuenta: en un navegador donde todavía no
+              se haya entrado con la cuenta, eso dejaría de rellenar sin avisar. */}
+          {cuenta?.modo === "cuenta" && (
+            <p className="nota">
+              <strong>Con cuenta no hace falta.</strong> Entra con tu cuenta en el panel de la
+              extensión y funcionará sola, también con Esfinge cerrada. Esto solo sirve si prefieres
+              que el navegador le pregunte a esta aplicación; si no lo usas, déjalo apagado.
+            </p>
+          )}
+
+          {navegador?.error && <p className="error">{navegador.error}</p>}
+
+          {navegador?.escuchando && (
+            <>
+              <p className="nota seleccionable">Escucha en {navegador.donde}</p>
+              {/* **A quién se ha avisado.** Sin esto, un navegador al que no se le
+                  dejó el manifiesto se ve igual que uno al que sí: el interruptor
+                  puesto y nada más. Costó un viaje al Mac. */}
+              {navegador.avisados.length > 0 ? (
+                <p className="nota">Avisados: {navegador.avisados.join(", ")}.</p>
+              ) : (
+                <p className="aviso">
+                  No se ha avisado a ningún navegador. Si tienes uno instalado,
+                  cuéntamelo: el canal está abierto pero ninguno sabe que existe.
+                </p>
+              )}
+            </>
+          )}
+
+          {/* **El freno de las llaves de acceso** (ADR 0048).
+              Va aquí, con lo del navegador, porque es de lo que apaga: no toca nada
+              de la bóveda ni de la ventana, solo lo que la extensión puede hacer
+              dentro de una página. Viene encendido, que es como se decidió
+              publicarlo, y existe porque hay código de Esfinge dentro de cada página
+              `https`: si un sitio cambia y deja de entrar, esto se apaga y se sigue
+              trabajando sin esperar a una versión. */}
+          <label className="fila-ajuste">
+            <input
+              type="checkbox"
+              checked={prefs?.llavesDeAccesoEnElNavegador ?? true}
+              disabled={cargando}
+              onChange={(e) => cambiar({ llavesDeAccesoEnElNavegador: e.target.checked })}
+            />
+            <span>Usar tus llaves de acceso en el navegador</span>
+          </label>
+
+          <p className="nota">
+            Cuando un sitio pida una llave de acceso, Esfinge se ofrecerá a poner la tuya. Si lo
+            apagas, el navegador preguntará como si Esfinge no estuviera y tus llaves seguirán
+            guardadas aquí. Apágalo si algún sitio deja de dejarte entrar.
+          </p>
+
+
+          {navegador && navegador.permitidos?.length > 0 && (
+            <div>
+              <label>Navegadores permitidos</label>
+              <ul className="lista-papelera">
+                {navegador.permitidos.map((n) => (
+                  <li key={n.desde}>
+                    <span className="nombre">{n.quien}</span>
+                    <span className="nota">Desde el {fecha(n.desde)}</span>
+                    <span className="acciones">
+                      <button
+                        className="discreto"
+                        onClick={async () => {
+                          await esfinge.olvidarNavegador(n.desde);
+                          leerNavegador();
+                        }}
+                      >
+                        Retirar
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {/* «Nunca en este sitio» se decide en la tarjeta de la página y se deshace
+              aquí (ADR 0032). La lista está dentro de la bóveda, cifrada, y por eso
+              solo se ve con la bóveda abierta. */}
+          {excluidos.length > 0 && (
+            <div>
+              <label>Sitios en los que no se ofrece guardar</label>
+              <ul className="lista-papelera">
+                {excluidos.map((d) => (
+                  <li key={d}>
+                    <span className="nombre">{d}</span>
+                    <span className="acciones">
+                      <button
+                        className="discreto"
+                        onClick={async () => {
+                          await esfinge.quitarSitioExcluido(d);
+                          leerExcluidos();
+                        }}
+                      >
+                        Quitar
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+
+      {seccion === "agentes" && (
+        <section className="bloque" id="ajustes-mcp">
+          <header className="bloque-cabecera">
+            <Icono nombre="mcp" />
+            <div>
+              <h3>Agentes de IA</h3>
+              <p className="nota">
+                Claude, Cursor y los demás, por el protocolo MCP.
+              </p>
+            </div>
+            <label className="interruptor">
+              <input
+                type="checkbox"
+                checked={prefs?.canalDeAgentes ?? false}
+                disabled={cargando}
+                onChange={(e) => cambiar({ canalDeAgentes: e.target.checked })}
+                aria-label="Dejar que un agente de IA consulte la bóveda"
+              />
+            </label>
+          </header>
+
+        
+          <p className="nota">
+            Abre otro canal <strong>dentro de este ordenador</strong>, para que programas como Claude
+            puedan buscar en tu bóveda y ayudarte a ordenarla. <strong>No les da tus contraseñas</strong>
+            : lo que se usa se copia al portapapeles, y cada uso se aprueba aquí.
+          </p>
+
+          <p className="aviso">
+            Lo que un agente lea <strong>acaba en la conversación de su modelo</strong>, con quien lo
+            sirva. Y si ese agente puede ejecutar órdenes en tu equipo —como el de una terminal—,
+            puede leer el portapapeles: ahí lo que te protege no es la copia,{" "}
+            <strong>es que cada uso te lo pregunte y quede apuntado</strong>.
+          </p>
+
+          {elAgente?.error && <p className="error">{elAgente.error}</p>}
+
+          {elAgente?.escuchando && (
+            <>
+              <p className="nota seleccionable">Escucha en {elAgente.donde}</p>
+              <ComoConectarlo elAgente={elAgente} />
+            </>
+          )}
+
+
+
+
+          {elAgente && elAgente.permitidos?.length > 0 && (
+            <div>
+              <label>Agentes permitidos</label>
+              <ul className="lista-papelera">
+                {elAgente.permitidos.map((g) => (
+                  <li key={g.desde}>
+                    <span className="nombre">{g.quien}</span>
+                    <span className="nota">Desde el {fecha(g.desde)}</span>
+                    <span className="acciones">
+                      <button
+                        className="discreto"
+                        onClick={async () => {
+                          await esfinge.olvidarAgente(g.desde);
+                          leerAgente();
+                        }}
+                      >
+                        Retirar
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* **Lo que se le ha dado a un agente**, que es la otra mitad de dejarle
+              entrar: hasta la ADR 0054, Esfinge no registraba qué entradas se abrían, y
+              con una persona delante eso se sostiene —lo que has mirado lo has mirado
+              tú—. Con un programa pidiendo cosas, «¿qué le di la semana pasada?» es una
+              pregunta que se hace sola.
+
+              Vive **dentro de la bóveda cifrada**, así que esto solo se ve con ella
+              abierta. Se guardan noventa días. */}
+          {(elAgente?.dado?.length ?? 0) > 0 && (
+            <div>
+              <label>Lo que les has dado</label>
+              <ul className="lista-papelera">
+                {(elAgente?.dado ?? []).map((d) => (
+                  <li key={d.id}>
+                    <span className="nombre">{d.titulo || "Una entrada"}</span>
+                    <span className="nota">
+                      {d.quien} · {fecha(d.cuando)} ·{" "}
+                      {d.resultado === "hecho" ? "copiada" : d.resultado === "negado" ? "dijiste que no" : d.resultado}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="nota">Se guardan noventa días.</p>
+            </div>
+          )}
+
+        </section>
+      )}
+
+      {seccion === "acerca" && (
+        <>
+        <section className="bloque">
+          <header className="bloque-cabecera">
+            <Icono nombre="descargar" />
+            <div>
+              <h3>Actualizaciones</h3>
+              <p className="nota">La única salida a internet que Esfinge hace por sí sola.</p>
+            </div>
+          </header>
+          <label className="fila-ajuste">
+            <input
+              type="checkbox"
+              checked={prefs?.buscarActualizaciones ?? true}
+              disabled={cargando}
+              onChange={(e) => cambiar({ buscarActualizaciones: e.target.checked })}
+            />
+            <span>Avisarme cuando haya una versión nueva</span>
+          </label>
+
+          <p className="nota">
+            Una de las dos cosas que Esfinge hace fuera de tu ordenador: una vez al día le pregunta
+            a GitHub cuál es la última versión publicada. No manda nada de lo que cifras, ni quién
+            eres, ni cuántas veces la usas. En la petición viaja el número de versión que tienes,
+            que es lo que se compara, y GitHub ve tu dirección IP, como cualquier página que
+            visites.
+          </p>
+
+          {prefs?.ultimaComprobacion && (
+            <p className="nota">Se miró por última vez el {fecha(prefs.ultimaComprobacion)}.</p>
+          )}
+
+          <div className="botones">
+            <button onClick={buscarAhora} disabled={buscando}>
+              {buscando ? "Buscando…" : "Buscar ahora"}
+            </button>
+          </div>
+
+          {dicho && <p className="exito">{dicho}</p>}
+          {error && <p className="error">{error}</p>}
+        </section>
+
+
+        {vidrio !== null && (
+          <p className="nota">
+            {vidrio
+              ? "Esta ventana usa el vidrio del sistema: la barra y el pie dejan ver lo que hay detrás."
+              : "Esta ventana es opaca: tu sistema no ofrece el vidrio, o esta versión no lo trae."}
+          </p>
         )}
 
-        <div className="botones">
-          <button onClick={buscarAhora} disabled={buscando}>
-            {buscando ? "Buscando…" : "Buscar ahora"}
-          </button>
-        </div>
+        <p className="nota">
+          Al actualizar no hay que desinstalar nada: en macOS se arrastra encima de la anterior,
+          en Windows el asistente la sustituye y en Linux lo hace el paquete. Tu historial y estos
+          ajustes se quedan donde están.
+        </p>
 
-        {dicho && <p className="exito">{dicho}</p>}
-        {error && <p className="error">{error}</p>}
-      </section>
+        </>
+      )}
     </div>
   );
 }
