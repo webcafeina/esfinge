@@ -257,7 +257,7 @@ No se cambian sin preguntar.
   **Y se instala arrastrando un paquete `.mcpb`** a Claude Desktop, o con `claude mcp add` en Claude Code. Lo
   preguntó el cliente comparando con **Cronos**, que se instala desde Extensiones pegando una URL: allí se
   puede porque es un servidor **remoto**, y **Esfinge no puede serlo** porque la bóveda está en el equipo. El
-  paquete vive en `empaquetado/mcpb/`, lo arma `herramientas/armar-mcpb.sh` —**sin la herramienta de
+  paquete vive en `empaquetado/mcpb/`, lo arma `herramientas/armar-mcpb` —**sin la herramienta de
   Anthropic**, que es un zip y una dependencia más en el camino de publicar ya costó cuatro publicaciones— y
   cuelga de la *release*, uno por sistema. El binario va **dentro**, con `${__dirname}`, y Claude Desktop le
   añade el `.exe` en Windows por su cuenta. Ajustes enseña **tres caminos en orden de coste** y el JSON queda
