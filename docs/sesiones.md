@@ -5,6 +5,44 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-08 · Instalar el MCP: cuatro caminos, y el que no se ve
+
+- **La 2.44.0 se probó en su Mac y falló al primer intento**, con el conector ya instalado: Claude Code no
+  encontraba Esfinge. La causa no era el paquete sino **una bandera que faltaba**: `claude mcp add` usa
+  ámbito `local` de fábrica, o sea **solo la carpeta donde se pega la orden**, y Ajustes la daba sin
+  `--scope user`. Aquí la bóveda es una por persona, no una por repositorio.
+- **Preguntó qué supondría pasar el MCP a remoto**, como Cronos. Se le contestó con los tres caminos y sus
+  costes —que el Worker descifre (rompe la ADR 0036), que haga de relé (ve pasar lo que el agente pide) o
+  **HTTP en el propio equipo**, que es lo que de verdad daría «pegar una URL» sin servidor de nadie— y se
+  decidió **no hacerlo**: lo que falló era una bandera, no la arquitectura. Queda escrito por si vuelve.
+- **Y pidió rehacer Ajustes**, que se leía como una lista larga donde todo pesaba igual. Ahora son **bloques
+  con cabecera** —glifo, título, una línea y el interruptor de la sección— en orden de uso: la bóveda
+  primero y las actualizaciones al final. El canal de agentes **compartía tarjeta con el del navegador**, que
+  era parte del problema.
+- **Conectar un agente pasa a tener cuatro caminos con su nombre**, con el control segmentado que ya usan las
+  clases de la bóveda. Un bloque genérico acierta en la mitad de los sitios: **VS Code lee `servers` donde
+  los demás leen `mcpServers`**, y con el equivocado no carga nada y no dice nada.
+- **Claude Desktop se instala desde un botón.** El servidor MCP ya está dentro de la aplicación, así que
+  mandar a alguien a la página de descargas era pedirle que acertara con su sistema y con su versión. Para
+  eso el armador se movió a `internal/mcpb`, que usan **la ventana y la publicación**: el paquete que se
+  publica y el que se guarda tienen que ser el mismo.
+- **Y una fila «MCP» en la barra lateral**, encima de Ajustes, que abre ese bloque y **se queda marcada
+  ella**. No es una pantalla, lo pidió así. El glifo es nuestro, como los de los gestores: el de MCP es marca
+  de la Linux Foundation.
+- **La distinción que tuvo que señalar él**, y que es la que más se equivoca: en un IDE hay **dos agentes**
+  —el propio del editor y Claude con su extensión— y cada uno lee su configuración. La extensión de Claude
+  Code **es el mismo Claude Code** y lee `~/.claude.json`, así que con `--scope user` ya está; lo de Cursor y
+  VS Code es para el otro. La pantalla lo decía mal: mandaba a configurar el agente que no es.
+- **Se verificó** con `make comprobar`, `make e2e` (130) y cada guarda mutada. Y **mirando las capturas**, que
+  es lo que encontró lo que ninguna aserción miraba: el interruptor de la cabecera salía con la casilla
+  nativa azul —la dibujada estaba atada a `.fila-ajuste`—, y **la captura de la pantalla entera mentía**, que
+  lo dijo preguntarle a la página por las cajas y no razonar sobre el CSS.
+- **Queda abierto**: que el cliente pruebe la 2.45.0 en su Mac —Claude Desktop con el botón, Claude Code en
+  terminal y dentro del editor—. Lo del botón de guardar el paquete **no se puede probar desde aquí**: el
+  diálogo del sistema lo pone Wails.
+
+---
+
 ## 2026-10-07 (2) · Los agentes por MCP: la 0054 entera, el paseo a mano y la 2.44.0
 
 - **Se escribió la ADR 0054 entera, las ocho entregas**, después de seis rondas de preguntas al cliente. Un

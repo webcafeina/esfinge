@@ -91,11 +91,32 @@
 >   ejecución** dentro del zip, que `zip` ponía por costumbre y nadie comprobaba — sin él, lo que se instala
 >   en macOS y en Linux se instala y no arranca.
 >
-> **La siguiente acción es suya, y es lo único que queda: probarlo en su Mac.** Mañana. Instalar el
-> `.mcpb` en Claude Desktop arrastrándolo, y en Claude Code con la orden que Ajustes da escrita; las dos
-> cosas necesitan **Esfinge abierta y la bóveda desbloqueada**. Lo que verá y conviene no sorprenderle: la
-> primera petición de un secreto **no se contesta** —sale una tarjeta en la ventana y el agente recibe
-> «apruébalo y vuelve a pedirlo»—, y **el agente no ve la contraseña**, que va al portapapeles.
+> **Lo probó el 2026-10-08 y falló al primer intento**, con el conector ya instalado: Claude Code no
+> encontraba Esfinge. **Una bandera que faltaba** —`claude mcp add` usa ámbito `local` de fábrica, o sea solo
+> la carpeta donde se pega la orden— y de ahí salió la 2.45.0.
+
+> **La 2.45.0: instalar el MCP deja de ser un bloque de JSON** (2026-10-08).
+>
+> - **Ajustes son bloques con cabecera** —glifo, título, una línea y el interruptor de la sección— en orden
+>   de uso: la bóveda primero, las actualizaciones al final. El canal de agentes compartía tarjeta con el del
+>   navegador.
+> - **Cuatro caminos con su nombre** para conectar un agente, y no un genérico: **Claude Desktop** con un
+>   botón que guarda el `.mcpb` —el servidor ya está dentro de la aplicación—, **Claude Code** con la orden y
+>   su ámbito, y **Cursor** y **VS Code**, que leen claves distintas (`mcpServers` y `servers`): con la
+>   equivocada no carga nada y no avisa nadie.
+> - **Una fila «MCP» en la barra**, encima de Ajustes, que abre ese bloque y se queda marcada ella.
+> - **Y la distinción que tuvo que señalar él**: en un IDE hay **dos agentes** —el del editor y Claude con su
+>   extensión— y cada uno lee su configuración. La extensión de Claude Code es el mismo Claude Code y lee
+>   `~/.claude.json`, así que con `--scope user` ya está. La pantalla mandaba a configurar el que no era.
+>
+> **La siguiente acción sigue siendo suya: probar la 2.45.0 en su Mac.** Claude Desktop con el botón, Claude
+> Code en la terminal y dentro del editor. Lo que verá y conviene no sorprenderle: la primera petición de un
+> secreto **no se contesta** —sale una tarjeta en la ventana y el agente recibe «apruébalo y vuelve a
+> pedirlo»—, y **el agente no ve la contraseña**, que va al portapapeles.
+>
+> **Y lo que no se puede probar desde aquí**: el botón de guardar el paquete abre el diálogo del sistema, que
+> lo pone Wails. Sí está probado que **no lo abre si no hay servidor que guardar** y que lo que escribe es un
+> zip con las tres cosas y el bit de ejecución puesto.
 >
 > **Lo que no se cambia sin preguntar, en una línea cada cosa:** el agente **actúa sin ver** —la contraseña
 > al portapapeles—, con **una excepción**, el código de un solo uso; **cada secreto se aprueba en la

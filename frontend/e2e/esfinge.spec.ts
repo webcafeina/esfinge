@@ -2603,6 +2603,15 @@ test("el canal con los agentes viene apagado, se enciende y dice lo que es", asy
   const orden = page.locator("#config-mcp-orden");
   await expect(orden).toBeVisible();
   await expect(orden).toHaveValue(/^claude mcp add --scope user esfinge \//);
+  // **Y que esa misma orden vale dentro del editor.** Es la distinción que el cliente
+  // tuvo que señalar: en un IDE hay dos agentes —el del propio editor y Claude con su
+  // extensión— y cada uno lee su configuración. Sin esta frase, quien usa Claude
+  // dentro de Cursor se va a la pestaña de Cursor y configura el agente que no es.
+  await expect(panel).toContainText("Vale también dentro de tu editor");
+
+  // Y las otras dos lo dicen por su lado, que es donde se equivoca uno.
+  await panel.getByRole("tab", { name: "Cursor" }).click();
+  await expect(panel).toContainText("el agente propio de Cursor");
 
   // Cursor: el bloque de siempre, con la ruta absoluta.
   await panel.getByRole("tab", { name: "Cursor" }).click();
@@ -2620,7 +2629,10 @@ test("el canal con los agentes viene apagado, se enciende y dice lo que es", asy
   await expect(vsc).not.toHaveValue(/"mcpServers"/);
 
   // La captura del bloque entero, que es lo que de verdad dice si se lee: ninguna
-  // aserción de arriba mira la jerarquía.
+  // aserción de arriba mira la jerarquía. En la pestaña de Claude Code, que es la que
+  // más se va a usar.
+  await panel.getByRole("tab", { name: "Claude Code" }).click();
+  await expect(page.locator("#config-mcp-orden")).toBeVisible();
   await page.locator("#ajustes-mcp").screenshot({
     path: `test-results/ajustes-agentes-${test.info().project.name}.png`,
   });

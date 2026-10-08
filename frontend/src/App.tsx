@@ -1105,11 +1105,28 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
             <code>--scope user</code> es lo que hace que esté en todos tus proyectos. Sin eso
             queda registrado solo en la carpeta desde donde lo ejecutes.
           </p>
+          {/* **Y esto cubre también los IDE, que es lo que no se ve.** La extensión de
+              Claude Code es el mismo Claude Code, y lee la misma configuración: con la
+              orden de arriba, Esfinge ya está dentro de tu editor. Sin decirlo, quien
+              usa Claude dentro de Cursor se va a la pestaña de Cursor y acaba
+              configurando **el agente de Cursor**, que es otro programa. */}
+          <p className="nota">
+            <strong>Vale también dentro de tu editor</strong>: la extensión de Claude Code
+            para VS Code, Cursor o JetBrains es el mismo Claude Code y lee esta misma
+            configuración. Con la orden de arriba no hay nada más que hacer.
+          </p>
         </div>
       )}
 
       {cual === "cursor" && (
         <div className="receta">
+          {/* **Esto es para el agente de Cursor, no para Claude dentro de Cursor.** Son
+              dos agentes distintos en el mismo editor y cada uno lee su configuración;
+              confundirlos es configurar el que no se está usando. */}
+          <p className="nota">
+            Esto es para <strong>el agente propio de Cursor</strong>. Si lo que usas ahí es la
+            extensión de Claude Code, lo tuyo es la pestaña anterior.
+          </p>
           <p className="nota">
             Va en <code>~/.cursor/mcp.json</code>, o en <code>.cursor/mcp.json</code> si lo
             quieres solo en un proyecto.
@@ -1127,6 +1144,10 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
 
       {cual === "vscode" && (
         <div className="receta">
+          <p className="nota">
+            Esto es para <strong>el agente propio de VS Code</strong>. Si ahí usas la extensión
+            de Claude Code, lo tuyo es la pestaña de Claude Code.
+          </p>
           <p className="nota">
             Va en <code>.vscode/mcp.json</code>, o en tu perfil con{" "}
             <strong>MCP: Add Server</strong> desde la paleta de órdenes.
