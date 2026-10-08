@@ -140,7 +140,14 @@ export function BarraLateral<T extends string>({
         {fila("historial", "Historial")}
       </nav>
 
+      {/* **MCP va encima de Ajustes y lleva al mismo panel.** Lo pidió así el cliente
+          el 2026-10-08, después de que instalarlo en Claude Code fallara por una
+          bandera que faltaba: lo que no se encuentra no se usa, y quien quiere
+          conectar su agente no se le ocurre mirar en Ajustes. Las dos filas abren la
+          misma pantalla y **cada una se queda marcada**, que es lo que dice por dónde
+          se entró; si no, el clic parecería no haber hecho nada. */}
       <nav className="abajo" aria-label="Configuración">
+        {fila("mcp", "MCP")}
         {fila("ajustes", "Ajustes")}
       </nav>
 
@@ -375,6 +382,39 @@ export function Icono({ nombre }: { nombre: string }) {
         <path d="M3 5.5h12M3 12.5h12" />
         <circle cx="7" cy="5.5" r="1.8" />
         <circle cx="11.5" cy="12.5" r="1.8" />
+      </>
+    ),
+    // Una flecha que baja a una bandeja: lo que llega de fuera.
+    descargar: (
+      <>
+        <path d="M9 3v8.5M5.6 8.1 9 11.5l3.4-3.4" />
+        <path d="M3.5 13.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1" />
+      </>
+    ),
+    // Una ventana de navegador: el marco y su barra.
+    navegador: (
+      <>
+        <rect x="2.5" y="3.5" width="13" height="11" rx="2" />
+        <path d="M2.5 7h13" />
+        <circle cx="5" cy="5.2" r="0.6" />
+      </>
+    ),
+    // La bóveda de esta sección es la caja fuerte de la barra lateral, y no se
+    // repite el dibujo: `boveda` ya está arriba.
+    //
+    // **MCP, en nuestro trazo y no su logotipo**, por lo mismo que los glifos de los
+    // gestores: nombrar un protocolo con el que se interopera es legítimo —el rótulo
+    // va al lado— y meter la marca de otro dentro del binario es otra cosa. El
+    // símbolo de MCP es marca de la Linux Foundation.
+    //
+    // Lo que se dibuja es lo que el de ellos cuenta y es lo que el protocolo hace:
+    // **dos arcos que convergen en un punto**, el modelo y la herramienta
+    // encontrándose. A dieciséis píxeles eso es lo único que se lee de aquella forma.
+    mcp: (
+      <>
+        <path d="M2.5 13.5 8 6.2a2.6 2.6 0 0 1 4 3.3l-3.4 4" />
+        <path d="M6.6 4.6a2.6 2.6 0 0 1 4 0l4.9 5.6" />
+        <path d="M15.5 10.2 11 15.5" />
       </>
     ),
   };

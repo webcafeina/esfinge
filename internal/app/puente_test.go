@@ -108,6 +108,11 @@ var loQuePuedeCruzarElPuente = []string{
 	// Y cortar lo concedido, que es lo que hace soportable el «durante cinco minutos»:
 	// lo que se da se puede retirar sin esperar a que caduque.
 	"CortarAlAgente",
+	// Y guardar el paquete de Claude Desktop, que **no toca la bóveda**: coge el
+	// servidor MCP que ya está al lado de Esfinge y lo mete en un zip donde diga el
+	// diálogo del sistema. Cruza el puente porque es un botón, y lo que elige el
+	// destino es una persona.
+	"GuardarPaqueteMCP",
 
 	// La cuenta (ADR 0035). Por aquí viaja **la contraseña maestra hacia Go**, igual
 	// que al abrir la bóveda, y nunca de vuelta: lo que sale es el estado, sin

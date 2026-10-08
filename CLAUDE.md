@@ -257,11 +257,21 @@ No se cambian sin preguntar.
   **Y se instala arrastrando un paquete `.mcpb`** a Claude Desktop, o con `claude mcp add` en Claude Code. Lo
   preguntó el cliente comparando con **Cronos**, que se instala desde Extensiones pegando una URL: allí se
   puede porque es un servidor **remoto**, y **Esfinge no puede serlo** porque la bóveda está en el equipo. El
-  paquete vive en `empaquetado/mcpb/`, lo arma `herramientas/armar-mcpb` —**sin la herramienta de
+  paquete lo arma `internal/mcpb` —**sin la herramienta de
   Anthropic**, que es un zip y una dependencia más en el camino de publicar ya costó cuatro publicaciones— y
   cuelga de la *release*, uno por sistema. El binario va **dentro**, con `${__dirname}`, y Claude Desktop le
-  añade el `.exe` en Windows por su cuenta. Ajustes enseña **tres caminos en orden de coste** y el JSON queda
-  plegado.
+  añade el `.exe` en Windows por su cuenta. **Y lo arma también la ventana**, con un botón en Ajustes: el
+  servidor ya está dentro de la aplicación, así que mandar a alguien a la página de descargas era pedirle que
+  acertara con su sistema y con la versión.
+  **Y en Ajustes hay cuatro caminos y no uno** (2026-10-08), porque el genérico acierta en la mitad de los
+  sitios y en la otra mitad falla callado: **Claude Code necesita `--scope user`** —sin eso el servidor queda
+  registrado solo en la carpeta donde se pegó la orden, y la bóveda es una por persona, no una por
+  repositorio— y **VS Code lee `servers` donde los demás leen `mcpServers`**. Los dos fallos son mudos. Lo
+  primero lo vio el cliente el primer día que lo instaló.
+  **Y hay una fila «MCP» en la barra lateral**, encima de Ajustes, que abre ese bloque: lo que no se
+  encuentra no se usa. No es una pantalla —lo pidió así—, y **se queda marcada ella** para que el clic no
+  parezca no haber hecho nada. El glifo es **nuestro**, como los de los gestores: el símbolo de MCP es marca
+  de la Linux Foundation.
 
 - **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
   mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda

@@ -174,7 +174,7 @@ una URL. **Esfinge no puede serlo**: la bóveda está en este equipo y lo que sa
 
 Lo que sí se puede es lo otro que Claude Desktop acepta: un **paquete `.mcpb`** —antes `.dxt`—, que es un zip
 con un manifiesto, el binario dentro y un icono, y que se instala **arrastrándolo a su ventana**. Vive en
-`empaquetado/mcpb/`, lo arma `herramientas/armar-mcpb.sh` en la publicación y cuelga de la *release* al lado
+`internal/mcpb`, lo arma la publicación **y también la ventana**, y cuelga de la *release* al lado
 del DMG, uno por sistema. Tres cosas de ese formato que no avisan si se hacen mal:
 
 - **El binario va dentro del paquete**, no apuntado desde fuera: `${__dirname}` se expande a donde se haya

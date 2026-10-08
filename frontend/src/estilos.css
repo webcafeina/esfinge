@@ -407,6 +407,102 @@ body {
   gap: var(--espacio-4);
 }
 
+/* ------------------------------------------------------------- bloques
+ *
+ * **Un bloque es un grupo con cabecera**, y existe porque Ajustes se había
+ * convertido en una lista de casillas donde todo pesaba lo mismo: el cliente dijo
+ * que ahí se pierde, y lo que faltaba no era color, era jerarquía.
+ *
+ * Tres pesos y ninguno inventado: el **título** de la sección en el tamaño de los
+ * títulos, el **glifo** apagado al lado para reconocerla de un vistazo, y el
+ * **interruptor** de la sección a la derecha, que es lo que más se busca. Todo lo
+ * demás —las notas, los avisos— se queda donde estaba y sigue pesando lo que pesaba.
+ */
+
+.bloque {
+  background: var(--tarjeta);
+  border: 0.5px solid var(--filete);
+  border-radius: var(--radio-grande);
+  padding: var(--espacio-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+}
+
+.bloque-cabecera {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espacio-3);
+}
+
+/* El glifo de la sección. Apagado como los de la barra lateral: señala, no compite
+ * con el título. Y **sin encogerse**, que es la trampa del `<svg>` sin dimensiones:
+ * dentro de un contenedor flexible, `flex-shrink` vale 1 de fábrica. */
+.bloque-cabecera > .icono {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin-top: 1px;
+  color: var(--apagado);
+}
+
+/* El texto de la cabecera se queda con el sitio que sobre, y **puede encogerse**:
+ * sin esto, una nota larga empuja el interruptor fuera de la tarjeta. */
+.bloque-cabecera > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.bloque-cabecera h3 {
+  margin: 0;
+  font-size: var(--texto-grande);
+  font-weight: 600;
+}
+
+.bloque-cabecera .nota {
+  margin-top: 2px;
+}
+
+/* El interruptor de la sección, arriba a la derecha. Es una casilla de las de
+ * siempre —la dibujada a mano, con el tic de piedra— y lo único que cambia es que
+ * aquí no lleva rótulo al lado: lo dice el título. Su nombre accesible va en
+ * `aria-label`, que es como la encuentran las pruebas y los lectores de pantalla. */
+.bloque-cabecera .interruptor {
+  flex: none;
+  display: flex;
+  align-items: center;
+  margin-top: 1px;
+}
+
+/* --------------------------------------------------- cómo conectar un agente
+ *
+ * Cada cliente MCP se configura distinto y **el que no coincide falla callado**, así
+ * que se elige uno y se enseña solo lo suyo. La receta va en una caja hundida para
+ * que se lea como «esto es lo que tienes que hacer» y no como un párrafo más.
+ */
+
+.conectar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+}
+
+.conectar .receta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  background: var(--suave);
+  border-radius: var(--radio-chico);
+  padding: var(--espacio-3);
+}
+
+/* Una línea que se copia. Monoespaciada porque es una orden, y **sin encogerse el
+ * texto**: aquí lo que importa es poder seleccionarla entera, no que quepa. */
+.para-copiar {
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-chico);
+}
+
 /* ------------------------------------------------------------ segmentado */
 
 .segmentado {
@@ -1140,8 +1236,15 @@ p {
  * blanco, y blanco sobre el oro da 1,68:1. Dibujándola, el tic es de piedra.
  *
  * De paso deja de ser la casilla diminuta de serie: 18 px, que es la medida a la
- * que macOS y Fluent las dibujan. */
-.fila-ajuste input[type="checkbox"] {
+ * que macOS y Fluent las dibujan.
+ *
+ * **Vale para las dos formas que hay de enseñar una casilla**, y eso hay que
+ * escribirlo: la fila con su rótulo al lado, y el interruptor de la cabecera de un
+ * bloque, que no lleva rótulo porque lo dice el título. Atada solo a `.fila-ajuste`,
+ * el interruptor salía con la casilla nativa —azul y diminuta— y nada avisaba: se vio
+ * en una captura. */
+.fila-ajuste input[type="checkbox"],
+.interruptor input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   flex-shrink: 0;
@@ -1158,14 +1261,16 @@ p {
 /* El tic va en el SVG y con la piedra escrita a pelo, no con una variable: es
  * una imagen de fondo y ahí las variables CSS no llegan. Es el mismo #2b2b31 que
  * «--sobre-acento», que vale en los dos temas. */
-.fila-ajuste input[type="checkbox"]:checked {
+.fila-ajuste input[type="checkbox"]:checked,
+.interruptor input[type="checkbox"]:checked {
   border-color: transparent;
   background: var(--relleno)
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.6l3 3 5.8-6.8' fill='none' stroke='%232b2b31' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
     center / 13px no-repeat;
 }
 
-.fila-ajuste:hover input[type="checkbox"]:not(:checked) {
+.fila-ajuste:hover input[type="checkbox"]:not(:checked),
+.interruptor:hover input[type="checkbox"]:not(:checked) {
   border-color: var(--acento);
 }
 

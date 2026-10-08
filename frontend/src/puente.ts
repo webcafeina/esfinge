@@ -286,6 +286,15 @@ export type EstadoDelAgente = {
   /** Y la orden de una línea para Claude Code, que no usa fichero. */
   orden: string;
   /**
+   * El mismo bloque **con otra clave**, para VS Code.
+   *
+   * No es lo mismo con otro nombre: VS Code lee `servers` y Claude y Cursor leen
+   * `mcpServers`. Darle el de Claude **no da error, no carga nada**.
+   */
+  vscode: string;
+  /** Dónde está el servidor MCP, suelta, para quien tenga que escribirla a mano. */
+  ruta: string;
+  /**
    * Lo que un agente está pidiendo y hay que contestar, ausente si no hay nada.
    *
    * **Lleva el título de la entrada**, y tiene que llevarlo: «un agente quiere una
@@ -975,6 +984,15 @@ export const esfinge = {
   aprobarLoQuePideElAgente: (unRato: boolean) => llamar<void>("AprobarLoQuePideElAgente", unRato),
   /** Cierra la válvula en el acto. */
   cortarAlAgente: () => llamar<void>("CortarAlAgente"),
+
+  /**
+   * Guarda el paquete `.mcpb` de Claude Desktop donde diga el diálogo del sistema.
+   *
+   * El servidor MCP ya está dentro de esta instalación, así que no hace falta ir a
+   * la web a por él: lo arma Esfinge con **la versión que tiene puesta**. Devuelve
+   * dónde lo ha dejado, o vacío si se canceló el diálogo.
+   */
+  guardarPaqueteMCP: () => llamar<string>("GuardarPaqueteMCP"),
   /** Y el «no», que **queda apuntado**: es la señal por la que el registro existe. */
   denegarLoQuePideElAgente: () => llamar<void>("DenegarLoQuePideElAgente"),
 

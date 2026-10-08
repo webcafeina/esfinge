@@ -35,6 +35,7 @@ import {
   BarraLateral,
   CampoClave,
   Firma,
+  Icono,
   Marca,
   nombreDe,
   PanelResultado,
@@ -46,7 +47,20 @@ import { avisoDelSistemaAlGuardar, Boveda } from "./boveda";
 import { Proyectos } from "./proyectos";
 import { Asistente, Bienvenida, GrupoCuenta, usaCuenta, usaSincroAlVolver, type TipoAsistente } from "./cuenta";
 
-type Tarea = "cifrar" | "descifrar" | "generar" | "boveda" | "proyectos" | "historial" | "ajustes";
+// **«mcp» no es una pantalla, es una puerta a un bloque de Ajustes.** Se pidió así
+// —«para no hacer una pantalla nueva»— y tiene su razón: lo que hay ahí dentro son
+// ajustes, y partirlos en dos sitios obligaría a decidir cuál enseña el interruptor.
+// Lo que gana es que **se encuentre**: quien busca cómo conectar su agente no mira en
+// Ajustes, mira en la barra.
+type Tarea =
+  | "cifrar"
+  | "descifrar"
+  | "generar"
+  | "boveda"
+  | "proyectos"
+  | "historial"
+  | "mcp"
+  | "ajustes";
 type Modo = "texto" | "ficheros";
 
 export default function App() {
@@ -382,8 +396,14 @@ export default function App() {
             <Historial recargar={tarea === "historial"} />
           </Panel>
 
-          <Panel activo={tarea === "ajustes"} visitado={visitadas.has("ajustes")}>
+          {/* **Las dos filas abren este panel**, y por eso `activo` mira las dos: si
+              «mcp» no contara, entrar por ahí dejaría la pantalla en blanco. */}
+          <Panel
+            activo={tarea === "ajustes" || tarea === "mcp"}
+            visitado={visitadas.has("ajustes") || visitadas.has("mcp")}
+          >
             <Ajustes
+              porElBloqueMCP={tarea === "mcp"}
               version={version}
               alEncontrar={setNovedad}
               alCrearCuenta={() => abrirAsistente({ que: "crear" })}
@@ -474,6 +494,7 @@ const TITULOS: Record<Tarea, string> = {
   boveda: "Bóveda",
   proyectos: "Proyectos",
   historial: "Historial",
+  mcp: "Ajustes",
   ajustes: "Ajustes",
 };
 
@@ -1003,16 +1024,179 @@ function DesbloqueoDelSistema() {
   );
 }
 
+/**
+ * ComoConectarlo: lo que hay que hacer en cada cliente para que vea la bóveda.
+ *
+ * **Son cuatro caminos distintos y no uno con variantes**, que es lo que había hasta
+ * la 2.44.0 —un párrafo, una orden y un JSON «para lo demás»— y por lo que instalarlo
+ * en Claude Code falló el primer día. Dos cosas lo demuestran:
+ *
+ *   - **Claude Code quiere `--scope user`.** Sin eso el servidor queda registrado solo
+ *     en la carpeta donde se pegó la orden, y desde cualquier otro proyecto Esfinge
+ *     no está. Sin ningún error.
+ *   - **VS Code no lee `mcpServers`, lee `servers`.** Pegarle el bloque de Claude
+ *     tampoco da error: no carga nada.
+ *
+ * Un bloque genérico acierta en la mitad de los sitios y en la otra mitad falla
+ * callado. Así que cada uno con su nombre, y se elige con el mismo control segmentado
+ * que las clases de la bóveda — que ya existe y tiene sus colores medidos.
+ */
+function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
+  const [cual, setCual] = useState<"desktop" | "code" | "cursor" | "vscode">("desktop");
+  const [guardado, setGuardado] = useState("");
+  const [fallo, setFallo] = useState("");
+  const [guardando, setGuardando] = useState(false);
+
+  async function guardarElPaquete() {
+    setFallo("");
+    setGuardado("");
+    setGuardando(true);
+    try {
+      const donde = await esfinge.guardarPaqueteMCP();
+      // Vacío es que se canceló el diálogo, que no es un fallo ni es nada que decir.
+      if (donde) setGuardado(donde);
+    } catch (e) {
+      setFallo(mensaje(e));
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="conectar">
+      <Segmentado
+        opciones={[
+          { valor: "desktop", etiqueta: "Claude Desktop" },
+          { valor: "code", etiqueta: "Claude Code" },
+          { valor: "cursor", etiqueta: "Cursor" },
+          { valor: "vscode", etiqueta: "VS Code" },
+        ]}
+        valor={cual}
+        alCambiar={setCual}
+      />
+
+      {cual === "desktop" && (
+        <div className="receta">
+          <p className="nota">
+            Un paquete que se instala abriéndolo. Lo arma Esfinge con{" "}
+            <strong>la versión que tienes puesta</strong>, así que no hay que acertar con
+            ninguna descarga.
+          </p>
+          <div className="botones">
+            <button className="principal" onClick={guardarElPaquete} disabled={guardando}>
+              {guardando ? "Guardando…" : "Guardar el paquete…"}
+            </button>
+          </div>
+          {guardado && (
+            <p className="nota seleccionable">
+              Guardado en {guardado}. <strong>Ábrelo con doble clic</strong> y Claude Desktop
+              lo instalará.
+            </p>
+          )}
+          {fallo && <p className="error">{fallo}</p>}
+        </div>
+      )}
+
+      {cual === "code" && (
+        <div className="receta">
+          <p className="nota">Pega esto en una terminal. No hay ningún fichero que tocar.</p>
+          <ParaCopiar id="config-mcp-orden" valor={elAgente.orden} />
+          <p className="nota">
+            <code>--scope user</code> es lo que hace que esté en todos tus proyectos. Sin eso
+            queda registrado solo en la carpeta desde donde lo ejecutes.
+          </p>
+        </div>
+      )}
+
+      {cual === "cursor" && (
+        <div className="receta">
+          <p className="nota">
+            Va en <code>~/.cursor/mcp.json</code>, o en <code>.cursor/mcp.json</code> si lo
+            quieres solo en un proyecto.
+          </p>
+          <textarea
+            id="config-mcp"
+            className="seleccionable"
+            readOnly
+            rows={7}
+            value={elAgente.configuracion}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+        </div>
+      )}
+
+      {cual === "vscode" && (
+        <div className="receta">
+          <p className="nota">
+            Va en <code>.vscode/mcp.json</code>, o en tu perfil con{" "}
+            <strong>MCP: Add Server</strong> desde la paleta de órdenes.
+          </p>
+          <textarea
+            id="config-mcp-vscode"
+            className="seleccionable"
+            readOnly
+            rows={8}
+            value={elAgente.vscode}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <p className="aviso">
+            Ojo: VS Code usa <code>servers</code> y los demás usan <code>mcpServers</code>.
+            Con el bloque equivocado <strong>no da ningún error y no carga nada</strong>.
+          </p>
+        </div>
+      )}
+
+      <details>
+        <summary>En otro agente</summary>
+        <p className="nota">
+          Casi todos esperan el bloque de arriba —el de Cursor— con la ruta entera. Si el
+          tuyo solo pide una orden, es ésta:
+        </p>
+        <ParaCopiar id="config-mcp-ruta" valor={elAgente.ruta} />
+      </details>
+    </div>
+  );
+}
+
+/**
+ * ParaCopiar es una línea que se copia: un campo de solo lectura que se selecciona
+ * entero al enfocarlo.
+ *
+ * **No lleva botón de copiar a propósito.** De un campo normal el navegador sí deja
+ * copiar —lo que no deja es de uno de contraseña, que es otra historia y está resuelta
+ * por Go—, así que un botón aquí sería un camino más que mantener para ganar un clic.
+ */
+function ParaCopiar({ id, valor }: { id: string; valor: string }) {
+  return (
+    <input
+      id={id}
+      className="seleccionable para-copiar"
+      readOnly
+      value={valor}
+      onFocus={(e) => e.currentTarget.select()}
+    />
+  );
+}
+
 function Ajustes({
   version,
   alEncontrar,
   alCrearCuenta,
   alEntrar,
+  porElBloqueMCP = false,
 }: {
   version: string;
   alEncontrar: (n: Novedad) => void;
   alCrearCuenta: () => void;
   alEntrar: (correo?: string, deNuevo?: boolean) => void;
+  /**
+   * Se ha entrado por la fila «MCP» de la barra lateral, no por «Ajustes».
+   *
+   * Es la misma pantalla —lo pidió así el cliente, «para no hacer una pantalla
+   * nueva»— y lo único que cambia es **por dónde se abre**: el bloque de los agentes
+   * está abajo del todo y llegar ahí a ciegas es no llegar.
+   */
+  porElBloqueMCP?: boolean;
 }) {
   const [cuenta] = usaCuenta();
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
@@ -1142,6 +1326,24 @@ function Ajustes({
   // tarda una llamada al proceso de al lado, pero una prueba lo pilló.
   const cargando = prefs === null;
 
+  // **Entrar por «MCP» lleva a su bloque.** Sin esto, la fila de la barra abre
+  // Ajustes por arriba y lo que se buscaba queda a una pantalla de distancia hacia
+  // abajo: el clic parecería no haber hecho nada.
+  //
+  // Va con `useEffect` y no en el clic porque el panel **puede no estar montado
+  // todavía** —las secciones se montan la primera vez que se visitan—, y entonces no
+  // hay a qué saltar. El salto es suave salvo que se haya pedido lo contrario, que
+  // es un movimiento grande y no decorativo.
+  const bloqueMCP = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!porElBloqueMCP) return;
+    const quieto = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    bloqueMCP.current?.scrollIntoView({
+      behavior: quieto ? "auto" : "smooth",
+      block: "start",
+    });
+  }, [porElBloqueMCP]);
+
   return (
     <div className="panel">
       {/* La ficha de producto. Aquí es donde la ADR 0007 prometía que estaría la
@@ -1162,38 +1364,83 @@ function Ajustes({
 
       <GrupoCuenta alCrearCuenta={alCrearCuenta} alEntrar={alEntrar} />
 
-      <div className="grupo">
+      {/* Los dos relojes de la bóveda.
+       *
+       * Van aquí y no dentro de la bóveda porque son ajustes de la aplicación y
+       * porque el del portapapeles no es solo de la bóveda: también borra lo que
+       * copia «Usar como clave», que hasta la 2.11.x se quedaba ahí para siempre.
+       *
+       * «Nunca» viaja como -1 y no como 0. El cero es «no lo he dicho», que es lo
+       * que llega cuando alguien guarda un objeto a medias: si significara
+       * «nunca», ese descuido apagaría el bloqueo de la bóveda sin que nadie lo
+       * pidiera. Lo cuenta entero internal/app/preferencias.go. */}
+      <section className="bloque">
+        <header className="bloque-cabecera">
+          <Icono nombre="boveda" />
+          <div>
+            <h3>La bóveda</h3>
+            <p className="nota">Cuándo se cierra sola, cómo se abre y qué se borra al copiar.</p>
+          </div>
+        </header>
+        <div>
+          <label htmlFor="bloqueo">Cerrar la bóveda sola</label>
+          <select
+            id="bloqueo"
+            disabled={cargando}
+            value={prefs?.minutosParaBloquear ?? 15}
+            onChange={(e) => cambiar({ minutosParaBloquear: Number(e.target.value) })}
+          >
+            {[1, 5, 15, 30, 60, 240, NUNCA].map((m) => (
+              <option key={m} value={m}>
+                {m === NUNCA ? "Nunca" : `Tras ${m} ${m === 1 ? "minuto" : "minutos"} sin tocar nada`}
+              </option>
+            ))}
+          </select>
+          <p className="nota">
+            Cerrarla obliga a volver a escribir la contraseña maestra. Con «nunca» se queda
+            abierta hasta que se cierre a mano o se cierre la aplicación.
+          </p>
+        </div>
+
+        <DesbloqueoDelSistema />
+
         <label className="fila-ajuste">
           <input
             type="checkbox"
-            checked={prefs?.buscarActualizaciones ?? true}
+            checked={prefs?.descargarIconos ?? true}
             disabled={cargando}
-            onChange={(e) => cambiar({ buscarActualizaciones: e.target.checked })}
+            onChange={(e) => cambiar({ descargarIconos: e.target.checked, iconosAvisados: true })}
           />
-          <span>Avisarme cuando haya una versión nueva</span>
+          <span>Descargar el icono de cada sitio de la bóveda</span>
         </label>
 
         <p className="nota">
-          Una de las dos cosas que Esfinge hace fuera de tu ordenador: una vez al día le pregunta
-          a GitHub cuál es la última versión publicada. No manda nada de lo que cifras, ni quién
-          eres, ni cuántas veces la usas. En la petición viaja el número de versión que tienes,
-          que es lo que se compara, y GitHub ve tu dirección IP, como cualquier página que
-          visites.
+          Es la segunda cosa que Esfinge hace fuera de tu ordenador. Le pide el icono a cada sitio
+          de tu bóveda, directamente y nunca a un intermediario, y lo guarda cifrado junto a ella.
+          Quien pueda mirar tu red verá a qué sitios pregunta. Sin esto, cada entrada sale con un
+          cuadro de color y su inicial.
         </p>
 
-        {prefs?.ultimaComprobacion && (
-          <p className="nota">Se miró por última vez el {fecha(prefs.ultimaComprobacion)}.</p>
-        )}
-
-        <div className="botones">
-          <button onClick={buscarAhora} disabled={buscando}>
-            {buscando ? "Buscando…" : "Buscar ahora"}
-          </button>
+        <div>
+          <label htmlFor="portapapeles">Borrar del portapapeles lo que se copie</label>
+          <select
+            id="portapapeles"
+            disabled={cargando}
+            value={prefs?.segundosDePortapapeles ?? 30}
+            onChange={(e) => cambiar({ segundosDePortapapeles: Number(e.target.value) })}
+          >
+            {[10, 30, 60, 120, NUNCA].map((s) => (
+              <option key={s} value={s}>
+                {s === NUNCA ? "Nunca" : `A los ${s} segundos`}
+              </option>
+            ))}
+          </select>
+          <p className="nota">
+            Vale para las contraseñas de la bóveda y para las que se generan aquí. Nunca se pisa
+            lo que hayas copiado tú después.
+          </p>
         </div>
-
-        {dicho && <p className="exito">{dicho}</p>}
-        {error && <p className="error">{error}</p>}
-      </div>
+      </section>
 
       {/* **El aviso de los iconos, una vez.**
        *
@@ -1229,6 +1476,8 @@ function Ajustes({
         </div>
       )}
 
+
+
       {/* **El canal con el navegador.**
        *
        * Va aquí, con las otras dos cosas que Esfinge hace fuera de sí misma, y con
@@ -1239,16 +1488,28 @@ function Ajustes({
        * Y cuando un navegador pide permiso, la respuesta se da aquí y no en el
        * navegador: es lo único de todo esto que la página que estás mirando no
        * puede tocar. */}
-      <div className="grupo">
-        <label className="fila-ajuste">
-          <input
-            type="checkbox"
-            checked={prefs?.puenteDelNavegador ?? false}
-            disabled={cargando}
-            onChange={(e) => cambiar({ puenteDelNavegador: e.target.checked })}
-          />
-          <span>Dejar que la extensión del navegador consulte la bóveda</span>
-        </label>
+      <section className="bloque">
+        <header className="bloque-cabecera">
+          <Icono nombre="navegador" />
+          <div>
+            <h3>El navegador</h3>
+            <p className="nota">La extensión de Esfinge: rellenar, guardar y los códigos.</p>
+          </div>
+          {/* **El interruptor de la sección vive en su cabecera**, y solo ahí. Dejar
+              también la casilla de antes sería preguntar dos veces lo mismo y dejar
+              sin respuesta única a quien la busque por su nombre. El rótulo se
+              conserva tal cual en `aria-label`: es como la localizan las pruebas y
+              quien usa un lector de pantalla. */}
+          <label className="interruptor">
+            <input
+              type="checkbox"
+              checked={prefs?.puenteDelNavegador ?? false}
+              disabled={cargando}
+              onChange={(e) => cambiar({ puenteDelNavegador: e.target.checked })}
+              aria-label="Dejar que la extensión del navegador consulte la bóveda"
+            />
+          </label>
+        </header>
 
         <p className="nota">
           Abre un canal <strong>dentro de este ordenador</strong>, no en la red: no hay puerto al
@@ -1361,29 +1622,38 @@ function Ajustes({
             </ul>
           </div>
         )}
-        {/* **El canal con los agentes de IA** (ADR 0054).
+      </section>
 
-            Va aquí, debajo del del navegador, porque es la misma clase de cosa: una
-            puerta hacia dentro de este ordenador. Y lleva su propio interruptor,
-            su propio socket y su propia lista de permitidos a propósito —apagar uno
-            no puede apagar el otro, y el permiso de un navegador no puede valer para
-            un agente—.
+      {/* **El canal con los agentes de IA** (ADR 0054), en sección propia.
 
-            Lo que esta pantalla tiene que decir, y por eso está escrito aquí y no
-            solo en la documentación: **contra un agente que puede ejecutar órdenes
-            en tu equipo, lo que protege no es el portapapeles, es que cada uso se
-            apruebe y quede apuntado**. Es la misma honestidad con la que Esfinge
-            dice que Touch ID es un cerrojo y no una llave. */}
-        <label className="fila-ajuste">
-          <input
-            type="checkbox"
-            checked={prefs?.canalDeAgentes ?? false}
-            disabled={cargando}
-            onChange={(e) => cambiar({ canalDeAgentes: e.target.checked })}
-          />
-          <span>Dejar que un agente de IA consulte la bóveda</span>
-        </label>
+          Hasta la 2.44.0 compartía tarjeta con el del navegador y se leía como una
+          lista larga: el cliente dijo que ahí se pierde, y tenía razón. Son la misma
+          clase de cosa —una puerta hacia dentro de este ordenador— pero no la misma
+          cosa, y cada una tiene su interruptor, su socket y su lista de permitidos a
+          propósito: apagar una no puede apagar la otra.
 
+          El `id` es a donde salta la fila «MCP» de la barra lateral. */}
+      <section className="bloque" id="ajustes-mcp" ref={bloqueMCP}>
+        <header className="bloque-cabecera">
+          <Icono nombre="mcp" />
+          <div>
+            <h3>Agentes de IA</h3>
+            <p className="nota">
+              Claude, Cursor y los demás, por el protocolo MCP.
+            </p>
+          </div>
+          <label className="interruptor">
+            <input
+              type="checkbox"
+              checked={prefs?.canalDeAgentes ?? false}
+              disabled={cargando}
+              onChange={(e) => cambiar({ canalDeAgentes: e.target.checked })}
+              aria-label="Dejar que un agente de IA consulte la bóveda"
+            />
+          </label>
+        </header>
+
+        
         <p className="nota">
           Abre otro canal <strong>dentro de este ordenador</strong>, para que programas como Claude
           puedan buscar en tu bóveda y ayudarte a ordenarla. <strong>No les da tus contraseñas</strong>
@@ -1402,40 +1672,7 @@ function Ajustes({
         {elAgente?.escuchando && (
           <>
             <p className="nota seleccionable">Escucha en {elAgente.donde}</p>
-            {/* **Lo fácil primero, y lo tosco después para quien lo necesite.**
-
-                Pegar un bloque de JSON en el fichero de configuración de otro programa
-                sale bien una vez de cada dos: hay que encontrar el fichero, no romper
-                su sintaxis y acertar con la ruta entera. Para Claude Desktop hay un
-                paquete que se instala arrastrándolo, y para Claude Code basta una
-                orden. El JSON se queda para lo demás, plegado. */}
-            <p className="nota">
-              <strong>En Claude Desktop</strong>: descarga el paquete{" "}
-              <code>Esfinge-…-macos.mcpb</code> de la página de descargas y arrástralo a su ventana,
-              o ábrelo con doble clic.
-            </p>
-            <label htmlFor="config-mcp-orden">En Claude Code</label>
-            <input
-              id="config-mcp-orden"
-              className="seleccionable"
-              readOnly
-              value={elAgente.orden}
-              onFocus={(e) => e.currentTarget.select()}
-            />
-            <details>
-              <summary>En otro agente, o a mano</summary>
-              <p className="nota">
-                Esto es lo que esperan los que se configuran con un fichero. La ruta tiene que ir
-                entera: algunos arrancan desde una carpeta cualquiera y una corta no encuentra nada.
-              </p>
-              <textarea
-                id="config-mcp"
-                className="seleccionable"
-                readOnly
-                rows={7}
-                value={elAgente.configuracion}
-              />
-            </details>
+            <ComoConectarlo elAgente={elAgente} />
           </>
         )}
 
@@ -1640,78 +1877,8 @@ function Ajustes({
             </ul>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Los dos relojes de la bóveda.
-       *
-       * Van aquí y no dentro de la bóveda porque son ajustes de la aplicación y
-       * porque el del portapapeles no es solo de la bóveda: también borra lo que
-       * copia «Usar como clave», que hasta la 2.11.x se quedaba ahí para siempre.
-       *
-       * «Nunca» viaja como -1 y no como 0. El cero es «no lo he dicho», que es lo
-       * que llega cuando alguien guarda un objeto a medias: si significara
-       * «nunca», ese descuido apagaría el bloqueo de la bóveda sin que nadie lo
-       * pidiera. Lo cuenta entero internal/app/preferencias.go. */}
-      <div className="grupo">
-        <div>
-          <label htmlFor="bloqueo">Cerrar la bóveda sola</label>
-          <select
-            id="bloqueo"
-            disabled={cargando}
-            value={prefs?.minutosParaBloquear ?? 15}
-            onChange={(e) => cambiar({ minutosParaBloquear: Number(e.target.value) })}
-          >
-            {[1, 5, 15, 30, 60, 240, NUNCA].map((m) => (
-              <option key={m} value={m}>
-                {m === NUNCA ? "Nunca" : `Tras ${m} ${m === 1 ? "minuto" : "minutos"} sin tocar nada`}
-              </option>
-            ))}
-          </select>
-          <p className="nota">
-            Cerrarla obliga a volver a escribir la contraseña maestra. Con «nunca» se queda
-            abierta hasta que se cierre a mano o se cierre la aplicación.
-          </p>
-        </div>
-
-        <DesbloqueoDelSistema />
-
-        <label className="fila-ajuste">
-          <input
-            type="checkbox"
-            checked={prefs?.descargarIconos ?? true}
-            disabled={cargando}
-            onChange={(e) => cambiar({ descargarIconos: e.target.checked, iconosAvisados: true })}
-          />
-          <span>Descargar el icono de cada sitio de la bóveda</span>
-        </label>
-
-        <p className="nota">
-          Es la segunda cosa que Esfinge hace fuera de tu ordenador. Le pide el icono a cada sitio
-          de tu bóveda, directamente y nunca a un intermediario, y lo guarda cifrado junto a ella.
-          Quien pueda mirar tu red verá a qué sitios pregunta. Sin esto, cada entrada sale con un
-          cuadro de color y su inicial.
-        </p>
-
-        <div>
-          <label htmlFor="portapapeles">Borrar del portapapeles lo que se copie</label>
-          <select
-            id="portapapeles"
-            disabled={cargando}
-            value={prefs?.segundosDePortapapeles ?? 30}
-            onChange={(e) => cambiar({ segundosDePortapapeles: Number(e.target.value) })}
-          >
-            {[10, 30, 60, 120, NUNCA].map((s) => (
-              <option key={s} value={s}>
-                {s === NUNCA ? "Nunca" : `A los ${s} segundos`}
-              </option>
-            ))}
-          </select>
-          <p className="nota">
-            Vale para las contraseñas de la bóveda y para las que se generan aquí. Nunca se pisa
-            lo que hayas copiado tú después.
-          </p>
-        </div>
-      </div>
 
       {vidrio !== null && (
         <p className="nota">
@@ -1726,6 +1893,46 @@ function Ajustes({
         en Windows el asistente la sustituye y en Linux lo hace el paquete. Tu historial y estos
         ajustes se quedan donde están.
       </p>
+
+      <section className="bloque">
+        <header className="bloque-cabecera">
+          <Icono nombre="descargar" />
+          <div>
+            <h3>Actualizaciones</h3>
+            <p className="nota">La única salida a internet que Esfinge hace por sí sola.</p>
+          </div>
+        </header>
+        <label className="fila-ajuste">
+          <input
+            type="checkbox"
+            checked={prefs?.buscarActualizaciones ?? true}
+            disabled={cargando}
+            onChange={(e) => cambiar({ buscarActualizaciones: e.target.checked })}
+          />
+          <span>Avisarme cuando haya una versión nueva</span>
+        </label>
+
+        <p className="nota">
+          Una de las dos cosas que Esfinge hace fuera de tu ordenador: una vez al día le pregunta
+          a GitHub cuál es la última versión publicada. No manda nada de lo que cifras, ni quién
+          eres, ni cuántas veces la usas. En la petición viaja el número de versión que tienes,
+          que es lo que se compara, y GitHub ve tu dirección IP, como cualquier página que
+          visites.
+        </p>
+
+        {prefs?.ultimaComprobacion && (
+          <p className="nota">Se miró por última vez el {fecha(prefs.ultimaComprobacion)}.</p>
+        )}
+
+        <div className="botones">
+          <button onClick={buscarAhora} disabled={buscando}>
+            {buscando ? "Buscando…" : "Buscar ahora"}
+          </button>
+        </div>
+
+        {dicho && <p className="exito">{dicho}</p>}
+        {error && <p className="error">{error}</p>}
+      </section>
     </div>
   );
 }

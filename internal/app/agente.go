@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -37,6 +38,8 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/agente"
 	"github.com/webcafeina/esfinge/internal/boveda"
+	"github.com/webcafeina/esfinge/internal/escritura"
+	"github.com/webcafeina/esfinge/internal/mcpb"
 )
 
 // EventoAgentePide avisa a la ventana de que un agente quiere emparejarse.
@@ -350,6 +353,12 @@ type EstadoDelAgente struct {
 	// Orden es lo mismo para Claude Code, que se configura con una orden y no con un
 	// fichero: una línea que se copia y se pega en una terminal.
 	Orden string `json:"orden"`
+	// VSCode es el mismo bloque **con otra clave**, porque VS Code no lee `mcpServers`.
+	// Ver `ConfiguracionParaVSCode`.
+	VSCode string `json:"vscode"`
+	// Ruta es dónde está el servidor MCP, suelta, para quien tenga que escribirla a
+	// mano en un cliente que no sea ninguno de los de la lista.
+	Ruta string `json:"ruta"`
 	// Quiere es lo que un agente está pidiendo y hay que contestar, nulo si nada.
 	//
 	// **Lleva el título de la entrada**, y tiene que llevarlo: «un agente quiere una
@@ -387,6 +396,8 @@ func (a *App) EstadoDelAgente() EstadoDelAgente {
 		Permitidos:    a.agentes.ver(),
 		Configuracion: ConfiguracionParaElCliente(),
 		Orden:         OrdenParaClaudeCode(),
+		VSCode:        ConfiguracionParaVSCode(),
+		Ruta:          rutaDelServidorMCPOEsfingeMCP(),
 		Quiere:        a.permisos.loPendiente(),
 		Valvula:       a.permisos.comoVa(time.Now()),
 	}
@@ -447,10 +458,7 @@ func (a *App) OlvidarAgente(desde string) error {
 // **La ruta es absoluta y eso no es un detalle**: Claude Desktop arranca los servidores
 // desde un directorio indefinido, así que una ruta relativa no encuentra nada.
 func ConfiguracionParaElCliente() string {
-	ruta, err := rutaDelServidorMCP()
-	if err != nil || ruta == "" {
-		ruta = "esfinge-mcp"
-	}
+	ruta := rutaDelServidorMCPOEsfingeMCP()
 	b, err := json.MarshalIndent(map[string]any{
 		"mcpServers": map[string]any{
 			"esfinge": map[string]any{"command": ruta},
@@ -1012,10 +1020,83 @@ func siNoDice(quien string) string {
 //
 // **La ruta va entera**, por lo mismo que en el bloque de configuración: lo que lo
 // arranca puede hacerlo desde cualquier carpeta.
+//
+// **Y `--scope user` no es un adorno.** El ámbito de `claude mcp add` es `local` de
+// fábrica, o sea **solo la carpeta donde se pegó la orden**: quien la pega en un sitio y
+// abre Claude Code en otro proyecto se encuentra con que Esfinge no está, y sin ningún
+// error que lo explique. Aquí la bóveda es una por persona, no una por repositorio. Lo
+// vio el cliente el 2026-10-08, con el conector recién instalado.
 func OrdenParaClaudeCode() string {
+	return "claude mcp add --scope user esfinge " + rutaDelServidorMCPOEsfingeMCP()
+}
+
+// GuardarPaqueteMCP escribe el `.mcpb` de Claude Desktop donde diga la persona.
+//
+// **Existe para no mandar a nadie a la página de descargas.** El servidor MCP ya está
+// dentro de esta aplicación —al lado del binario que se está ejecutando—, así que
+// pedirle a alguien que vaya a la web, acierte con su sistema y se descargue la versión
+// que coincida es trabajo que la ventana puede hacer sola y mejor: así sale **siempre
+// el de la versión que tiene puesta**.
+//
+// **Se comprueba que el servidor está antes de abrir el diálogo**, que es la lección de
+// `ExportarLlaves`: preguntar dónde guardar algo que no existe es pedirle a alguien que
+// decida sobre nada, y el fallo aparece al final, cuando ya ha elegido.
+func (a *App) GuardarPaqueteMCP() (string, error) {
 	ruta, err := rutaDelServidorMCP()
 	if err != nil || ruta == "" {
-		ruta = "esfinge-mcp"
+		return "", errors.New("No se encuentra el servidor MCP de esta instalación")
 	}
-	return "claude mcp add esfinge " + ruta
+	servidor, err := os.ReadFile(ruta)
+	if err != nil {
+		return "", errors.New("No se encuentra el servidor MCP al lado de Esfinge: " +
+			"vuelve a instalarla desde el paquete de tu sistema")
+	}
+
+	nombre := "Esfinge-" + a.version + ".mcpb"
+	destino, err := a.sistema.ElegirDondeGuardar("Guardar el paquete para Claude Desktop",
+		nombre, a.ajustes.CarpetaDeGuardar())
+	if err != nil || destino == "" {
+		return "", err
+	}
+	a.ajustes.RecordarCarpetaDeGuardar(filepath.Dir(destino))
+
+	err = escritura.Atomica(destino, escritura.Opciones{}, func(w io.Writer) error {
+		return mcpb.ArmarCon(a.version, mcpb.NombreDeDentro(ruta), servidor, w)
+	})
+	if err != nil {
+		return "", err
+	}
+	return destino, nil
+}
+
+// ConfiguracionParaVSCode es el mismo bloque con **otra clave**, y eso no es un detalle
+// de estilo.
+//
+// VS Code lee `servers`; Claude Desktop y Cursor leen `mcpServers`. Pegarle a VS Code
+// el bloque de Claude **no da ningún error: no carga nada**, que es exactamente la
+// clase de fallo mudo que esta casa ya ha pagado varias veces. Así que se enseñan los
+// dos, cada uno con su nombre, en vez de uno «genérico» que falla en la mitad.
+func ConfiguracionParaVSCode() string {
+	b, err := json.MarshalIndent(map[string]any{
+		"servers": map[string]any{
+			"esfinge": map[string]any{
+				"type":    "stdio",
+				"command": rutaDelServidorMCPOEsfingeMCP(),
+			},
+		},
+	}, "", "  ")
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+// rutaDelServidorMCPOEsfingeMCP es la ruta, o el nombre a secas si no se sabe dónde
+// está — que es lo que hacía cada sitio por su cuenta hasta que fueron cuatro.
+func rutaDelServidorMCPOEsfingeMCP() string {
+	ruta, err := rutaDelServidorMCP()
+	if err != nil || ruta == "" {
+		return "esfinge-mcp"
+	}
+	return ruta
 }

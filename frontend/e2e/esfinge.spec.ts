@@ -728,12 +728,12 @@ test("la marca está en la barra lateral y no estorba a la navegación", async (
   await expect(firma).toContainText("Webcafeína");
   await expect(firma).toContainText(/\d+\.\d+\.\d+/);
 
-  // **Y siguen siendo siete botones** —cinco hasta la bóveda, seis hasta las
-  // bóvedas de proyecto (ADR 0050)—. Todo el fichero de pruebas localiza las
-  // secciones con «.lateral + getByRole("button")»: si el lockup o la firma fueran
-  // interactivos, entrarían en ese localizador y romperían de golpe media suite.
-  // Por eso son texto, y por eso esto se cuenta.
-  await expect(page.locator(".lateral").getByRole("button")).toHaveCount(7);
+  // **Y son ocho botones** —cinco hasta la bóveda, seis hasta las bóvedas de
+  // proyecto (ADR 0050), siete hasta «MCP» (ADR 0054)—. Todo el fichero de pruebas
+  // localiza las secciones con «.lateral + getByRole("button")»: si el lockup o la
+  // firma fueran interactivos, entrarían en ese localizador y romperían de golpe
+  // media suite. Por eso son texto, y por eso esto se cuenta.
+  await expect(page.locator(".lateral").getByRole("button")).toHaveCount(8);
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
@@ -2588,35 +2588,113 @@ test("el canal con los agentes viene apagado, se enciende y dice lo que es", asy
   await casilla.click();
   await expect(casilla).toBeChecked({ timeout: 20_000 });
 
-  // Y entonces dice por dónde escucha y **cómo se instala en cada sitio**, que son tres
-  // caminos de distinto coste y van en ese orden: el paquete que se arrastra, la orden de
-  // una línea, y el bloque de JSON **plegado** para quien no tenga ninguna de las dos.
+  // Y entonces dice por dónde escucha y **cómo se conecta cada cliente**, que no es
+  // lo mismo con otro nombre: Claude Code necesita `--scope user` o queda registrado
+  // solo en una carpeta, y VS Code lee `servers` donde los demás leen `mcpServers`.
+  // Con el bloque equivocado **ninguno de los dos da error**, así que la pantalla
+  // tiene que enseñar los cuatro caminos por separado.
   await expect(panel).toContainText("agentes.sock");
-  await expect(panel).toContainText(".mcpb");
 
+  // Claude Desktop es lo primero y es un botón, no una descarga.
+  await expect(panel.getByRole("button", { name: "Guardar el paquete…" })).toBeVisible();
+
+  // Claude Code: la orden, con la ruta entera y con el ámbito.
+  await panel.getByRole("tab", { name: "Claude Code" }).click();
   const orden = page.locator("#config-mcp-orden");
   await expect(orden).toBeVisible();
-  // **La ruta tiene que ser absoluta** en los dos sitios: lo que arranca el servidor
-  // —Claude Desktop o Claude Code— puede hacerlo desde cualquier carpeta.
-  await expect(orden).toHaveValue(/^claude mcp add esfinge \//);
+  await expect(orden).toHaveValue(/^claude mcp add --scope user esfinge \//);
 
-  // Y el JSON empieza escondido, que es la diferencia entre enseñar lo fácil y enseñarlo
-  // todo a la vez.
+  // Cursor: el bloque de siempre, con la ruta absoluta.
+  await panel.getByRole("tab", { name: "Cursor" }).click();
   const config = page.locator("#config-mcp");
-  await expect(config).toBeHidden();
-  await panel.getByText("En otro agente, o a mano").click();
   await expect(config).toBeVisible();
   await expect(config).toHaveValue(/"mcpServers"/);
   await expect(config).toHaveValue(/"command": "\//);
 
-  await page.locator(".panel:visible .grupo").filter({ hasText: "agente de IA" }).first().screenshot({
+  // Y VS Code: **otra clave**. Es la aserción que impide que alguien los unifique
+  // «porque son iguales», que es justo lo que falla sin decir nada.
+  await panel.getByRole("tab", { name: "VS Code" }).click();
+  const vsc = page.locator("#config-mcp-vscode");
+  await expect(vsc).toBeVisible();
+  await expect(vsc).toHaveValue(/"servers"/);
+  await expect(vsc).not.toHaveValue(/"mcpServers"/);
+
+  // La captura del bloque entero, que es lo que de verdad dice si se lee: ninguna
+  // aserción de arriba mira la jerarquía.
+  await page.locator("#ajustes-mcp").screenshot({
     path: `test-results/ajustes-agentes-${test.info().project.name}.png`,
   });
+  // Y la pantalla entera, para juzgar los pesos de las secciones unas contra otras.
+  //
+  // **Con `fullPage` y después de subir arriba**, que no es un detalle: capturar un
+  // elemento más alto que la ventana con la página desplazada deja en blanco lo que
+  // no está pintado, y lo que se ve entonces es una pantalla medio vacía que no
+  // existe. Costó un diagnóstico creerlo: las nueve secciones estaban ahí, visibles
+  // y con su alto, y la captura decía otra cosa.
+  // **El que se desplaza no es la ventana**, es la columna de contenido: `window.scrollTo`
+  // aquí no hace nada y la captura sale por donde se quedó.
+  await page.evaluate(() => {
+    for (const e of Array.from(document.querySelectorAll("*"))) {
+      if (e.scrollTop > 0) e.scrollTop = 0;
+    }
+  });
+  for (const [n, hasta] of [[1, 0], [2, 700], [3, 1400], [4, 2100]] as const) {
+    await page.evaluate((y) => {
+      for (const e of Array.from(document.querySelectorAll("*"))) {
+        if (e.scrollHeight > e.clientHeight + 10) e.scrollTop = y;
+      }
+    }, hasta);
+    await page.screenshot({
+      path: `test-results/ajustes-entero-${n}-${test.info().project.name}.png`,
+    });
+  }
 
   // Y apagarlo lo apaga de verdad.
   await casilla.click();
   await expect(casilla).not.toBeChecked({ timeout: 20_000 });
   await expect(panel).not.toContainText("agentes.sock");
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * **La fila «MCP» de la barra lateral** (ADR 0054, 2026-10-08).
+ *
+ * No es una pantalla: abre Ajustes **por el bloque de los agentes**, que es lo que el
+ * cliente pidió —«para no hacer una pantalla nueva»— y lo que resuelve el problema de
+ * verdad, que es que ahí no llega quien no sabe que existe. Lo pidió después de que
+ * instalar el conector en Claude Code fallara el primer día.
+ *
+ * Dos cosas que esta prueba vigila y que se pierden solas en un refactor: que **lleve
+ * al bloque** —no al principio de Ajustes, donde lo que se buscaba queda a una
+ * pantalla hacia abajo— y que **quede marcada ella**, porque si se marcara «Ajustes»
+ * el clic parecería no haber hecho nada.
+ */
+test("la fila MCP lleva al bloque de los agentes y se queda marcada", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const filaMCP = seccion(page, "MCP");
+  await expect(filaMCP).toBeVisible();
+  await filaMCP.click();
+
+  // La pantalla es Ajustes, y lo dice la barra de herramientas.
+  await expect(page.locator(".titulo h1")).toHaveText("Ajustes");
+  // Pero la fila marcada es la de MCP, no la de Ajustes.
+  await expect(filaMCP).toHaveAttribute("aria-current", "page");
+  await expect(seccion(page, "Ajustes")).not.toHaveAttribute("aria-current", "page");
+
+  // Y lo que se ve es el bloque, no el principio de la pantalla. Se espera a que el
+  // desplazamiento termine: es suave, así que justo después del clic todavía no ha
+  // llegado — y comprobarlo antes es la carrera que ya costó una pasada con el shim.
+  const bloque = page.locator("#ajustes-mcp");
+  await expect(bloque).toBeInViewport({ timeout: 10_000 });
+
+  // Y entrar por «Ajustes» marca Ajustes, que es la otra mitad.
+  await seccion(page, "Ajustes").click();
+  await expect(seccion(page, "Ajustes")).toHaveAttribute("aria-current", "page");
+  await expect(filaMCP).not.toHaveAttribute("aria-current", "page");
+
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
