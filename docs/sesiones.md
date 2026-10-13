@@ -5,6 +5,34 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-13 (4) · La bóveda cambiaba y la pantalla no se enteraba
+
+- **El cliente guardó una entrada en la bóveda de un proyecto, el agente dijo la verdad —que estaba
+  guardada— y él no la veía.** No era un fallo de escritura: **el agente nunca mandaba
+  `EventoBovedaCambiada`**. Ese evento existe desde el canal del navegador, que lo manda en ocho sitios, y
+  su comentario dice literalmente «alguien de fuera ha escrito en la bóveda». Un agente es exactamente eso.
+- **Es el fallo del registro del jueves con otra cara**, y por eso ahora las dos cosas —decir dónde ha ido y
+  avisar— van **en una sola función** que usan los tres verbos: lo que se escribe por separado se olvida por
+  separado. La prueba los cubre **los tres**, y no por completismo: la vez anterior se olvidó justo el que
+  no se había pensado (`borrar`).
+- **Y lo confirmó él sin que hiciera falta nada más**: al cerrar el proyecto y volver a abrirlo, la entrada
+  estaba. El diagnóstico se cerró con una comprobación de diez segundos en vez de con una hipótesis.
+- **Dos apuntes más del agente, los dos ciertos y los dos míos a medias:**
+  - **`boveda` devolvía `""` en la personal.** Una cadena vacía no es un nombre: obligaba a mirar la
+    bandera para saber qué se decía — que es justo lo que se había arreglado en el estado dos horas antes y
+    se quedó corto aquí. Ahora dice `"Personal"`, y **los dos campos siguen**: el nombre es para leer y la
+    bandera para decidir, porque un proyecto podría llamarse «Personal». Es la misma separación que `error`
+    y `motivo`.
+  - **`crear` no dejaba elegir alfabeto y `generar` sí.** Para un sitio que exija símbolos había que
+    generarla aparte y pegarla, o sea **hacerla cruzar el chat**, que es lo que este canal existe para
+    evitar. Ahora se puede pedir, y sin pedir nada sigue siendo hexadecimal.
+- **Se verificó** con `make comprobar` y `make e2e` (136) en verde y cada guarda mutada.
+- **Lo de método que deja el día**: cuatro rondas de apuntes, todos de **un agente usando el producto**, y
+  ninguno lo vio una prueba. Dos de ellos eran arreglos míos **de ese mismo día** que se habían quedado a
+  medias.
+
+---
+
 ## 2026-10-13 (3) · El relevo probado, y que el agente sepa dónde está escribiendo
 
 - **El relevo del `.mcpb` funciona**, y por fin se pudo medir: con la 2.49.0 puesta y **sin tocar Claude

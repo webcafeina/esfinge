@@ -196,6 +196,12 @@ var LasHerramientas = []Herramienta{
 			"notas":   {Tipo: "string"},
 			"generar": {Tipo: "boolean", Descripcion: "Que la contraseña la haga Esfinge y no salga de ahí."},
 			"carpeta": {Tipo: "string"},
+			// **Con `generar`, qué alfabeto.** Por defecto hexadecimal, que es lo que
+			// no rompe una URL; un sitio que exija símbolos necesita otro, y sin esto
+			// había que generarla aparte y pegarla — o sea, hacerla pasar por el chat.
+			"alfabeto": {Tipo: "string", Descripcion: "Con generar:true. hex, alnum o simbolos. " +
+				"hex si no se dice nada, que es lo que no rompe una URL.",
+				Enum: []string{"hex", "alnum", "simbolos"}},
 			// **Sin sitios, una credencial nace sin poder rellenarse sola**, que es
 			// para lo que existe la bóveda. El núcleo siempre supo aplicarlos; lo que
 			// faltaba era decirlo aquí, y lo que no está en el esquema **no existe**

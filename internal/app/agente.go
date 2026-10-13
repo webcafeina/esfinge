@@ -192,7 +192,7 @@ func (f fuenteDelAgente) Estado() agente.Estado {
 		//
 		// Y va **con su bandera**, porque antes la personal se decía omitiendo el
 		// campo y eso no lo dice: un agente ve que falta, no que sea la de siempre.
-		Boveda:       e.NombreDelProyecto,
+		Boveda:       comoSeLlamaLaBoveda(e.NombreDelProyecto),
 		EsLaPersonal: e.NombreDelProyecto == "",
 		SoloLectura:  e.SoloLectura,
 	}
@@ -1001,7 +1001,15 @@ func (f fuenteDelAgente) Crear(quien string, p agente.Peticion) (agente.Escrito,
 		// contraseña que no ha visto, que es estrictamente mejor que una que se
 		// invente él — y eso lo dice la descripción de la herramienta, para que la
 		// prefiera.
-		clave, err := f.a.GenerarContrasena(largoDeLoQueGenera, alfabetoDeLoQueGenera)
+		// **El alfabeto se puede pedir, y si no se pide es hexadecimal.** Lo señaló el
+		// agente del cliente: `esfinge_generar` dejaba elegirlo y `crear` no, así que
+		// para un sitio que exija símbolos había que generar aparte y pegarla — o sea,
+		// hacerla pasar por el chat, que es lo que este canal evita.
+		alfabeto := p.Alfabeto
+		if alfabeto == "" {
+			alfabeto = alfabetoDeLoQueGenera
+		}
+		clave, err := f.a.GenerarContrasena(largoDeLoQueGenera, alfabeto)
 		if err != nil {
 			return agente.Escrito{}, err
 		}
@@ -1009,7 +1017,7 @@ func (f fuenteDelAgente) Crear(quien string, p agente.Peticion) (agente.Escrito,
 		// **Cómo es, nunca cuál.** Sin esto el agente no puede decir si lo guardado
 		// cumple lo que pide el sitio, y lo único que le queda es pedir que se la
 		// copien para mirarla — justo lo que este canal evita.
-		comoEs = &agente.ComoEs{Largo: len(clave), Alfabeto: alfabetoDeLoQueGenera}
+		comoEs = &agente.ComoEs{Largo: len(clave), Alfabeto: alfabeto}
 	}
 	if err := f.a.GuardarEnBoveda(e); err != nil {
 		return agente.Escrito{}, err
@@ -1023,7 +1031,7 @@ func (f fuenteDelAgente) Crear(quien string, p agente.Peticion) (agente.Escrito,
 	}
 	f.a.apuntarComo(b, loQuePideUnAgente{Quien: siNoDice(quien), Que: agente.QueCrear, ID: id, Titulo: titulo},
 		boveda.ApunteHecho, boveda.ApunteDirecto)
-	return f.donde(agente.Escrito{ID: id, Titulo: titulo, Generada: comoEs}), nil
+	return f.escrito(agente.Escrito{ID: id, Titulo: titulo, Generada: comoEs}), nil
 }
 
 // losSecretos son los campos cuyo cambio **tiene que aprobar una persona**.
@@ -1108,7 +1116,7 @@ func (f fuenteDelAgente) Editar(quien string, p agente.Peticion) (agente.Escrito
 	}
 	f.a.apuntarComo(b, loQuePideUnAgente{Quien: siNoDice(quien), Que: agente.QueEditar, ID: p.ID, Titulo: e.Titulo},
 		boveda.ApunteHecho, como)
-	return f.donde(agente.Escrito{ID: p.ID, Titulo: e.Titulo, Cambiados: cambiados}), nil
+	return f.escrito(agente.Escrito{ID: p.ID, Titulo: e.Titulo, Cambiados: cambiados}), nil
 }
 
 // Borrar la manda a la papelera, **con un sí**. Es lo único que quita algo de la vista,
@@ -1139,7 +1147,7 @@ func (f fuenteDelAgente) Borrar(quien, id string) (agente.Escrito, error) {
 		return agente.Escrito{}, err
 	}
 	f.a.apuntarComo(b, q, boveda.ApunteHecho, como)
-	return f.donde(agente.Escrito{ID: id, Titulo: e.Titulo, ALaPapelera: true, Dias: 30}), nil
+	return f.escrito(agente.Escrito{ID: id, Titulo: e.Titulo, ALaPapelera: true, Dias: 30}), nil
 }
 
 // bovedaParaEscribir dice si aquí se puede escribir, **con el porqué**: una bóveda de
@@ -1178,6 +1186,23 @@ func OrdenParaClaudeCode() string {
 	return "claude mcp add --scope user esfinge " + rutaDelServidorMCPOEsfingeMCP()
 }
 
+// escrito es lo que hay que hacer **después** de cambiar la bóveda desde un agente:
+// decir dónde ha ido y **avisar a la ventana**.
+//
+// Lo segundo faltaba, y es el mismo fallo que el del registro con otra cara: el agente
+// escribía, la bóveda quedaba bien y **la pantalla seguía enseñando lo de antes**. El
+// cliente guardó una entrada en la bóveda de un proyecto, el agente dijo la verdad —que
+// estaba guardada— y él no la veía. El evento existía desde el canal del navegador, que
+// lo manda en ocho sitios, y su comentario dice literalmente «alguien de fuera ha
+// escrito en la bóveda»: un agente es exactamente eso.
+//
+// Por eso las dos cosas van juntas en una función y no sueltas en cada verbo: lo que se
+// escribe por separado se olvida por separado.
+func (f fuenteDelAgente) escrito(e agente.Escrito) agente.Escrito {
+	f.a.sistema.Avisar(EventoBovedaCambiada, nil)
+	return f.donde(e)
+}
+
 // donde le pone a lo escrito **en qué bóveda ha ido**.
 //
 // Va en la respuesta y no solo en `estado` porque eso es lo que no depende de nada: un
@@ -1185,9 +1210,27 @@ func OrdenParaClaudeCode() string {
 // no era la bóveda que la persona tenía en la cabeza, se ve en el momento.
 func (f fuenteDelAgente) donde(e agente.Escrito) agente.Escrito {
 	est := f.a.EstadoBoveda()
-	e.Boveda = est.NombreDelProyecto
+	e.Boveda = comoSeLlamaLaBoveda(est.NombreDelProyecto)
 	e.EsLaPersonal = est.NombreDelProyecto == ""
 	return e
+}
+
+// comoSeLlamaLaBoveda da un nombre que se pueda leer, también a la personal.
+//
+// **La cadena vacía no es un nombre**, y dejarla obligaba a mirar la bandera para saber
+// qué se estaba diciendo — que es justo lo que se arregló hace un rato en el estado y se
+// quedó a medias aquí. Lo señaló el agente del cliente: «el campo debería devolver su
+// nombre y no una cadena vacía».
+//
+// Y los dos campos siguen, que es la misma separación que `Error` y `Motivo` en el resto
+// del protocolo: **el nombre es para leer y la bandera es para decidir**. Un proyecto
+// podría llamarse «Personal», así que quien tenga que elegir un camino mira
+// `esLaPersonal` y no el texto.
+func comoSeLlamaLaBoveda(proyecto string) string {
+	if proyecto == "" {
+		return "Personal"
+	}
+	return proyecto
 }
 
 // Cómo es la contraseña que Esfinge genera para un agente.

@@ -906,3 +906,129 @@ func TestAlGenerarSeDiceComoEsYNoCual(t *testing.T) {
 		t.Error("la contraseña ha salido en lo que se le devuelve al agente")
 	}
 }
+
+// **Lo que un agente escribe en la bóveda avisa a la ventana**, como lo que escribe el
+// navegador.
+//
+// Sin esto la bóveda queda bien y **la pantalla sigue enseñando lo de antes**: el
+// cliente guardó una entrada en la bóveda de un proyecto, el agente dijo la verdad —que
+// estaba guardada— y él no la veía. Es el fallo del registro otra vez con otra cara, y
+// el evento existía desde el canal del navegador, que lo manda en ocho sitios.
+//
+// Se prueban **los tres verbos que escriben**: olvidarse de uno es tan fácil como
+// olvidarse de los tres, y la última vez se olvidó justo el que no se había pensado.
+func TestLoQueEscribeUnAgenteAvisaALaVentana(t *testing.T) {
+	for _, c := range []struct {
+		que   string
+		hacer func(f fuenteDelAgente, id string) error
+	}{
+		{"crear", func(f fuenteDelAgente, _ string) error {
+			_, err := f.Crear("Claude", agente.Peticion{Campos: map[string]string{"titulo": "Nueva"}})
+			return err
+		}},
+		{"editar", func(f fuenteDelAgente, id string) error {
+			_, err := f.Editar("Claude", agente.Peticion{ID: id, Campos: map[string]string{"notas": "x"}})
+			return err
+		}},
+		{"borrar", func(f fuenteDelAgente, id string) error {
+			if _, err := f.Borrar("Claude", id); !errors.Is(err, agente.ErrPideAprobacion) {
+				return err
+			}
+			if err := f.a.AprobarLoQuePideElAgente(false); err != nil {
+				return err
+			}
+			_, err := f.Borrar("Claude", id)
+			return err
+		}},
+	} {
+		t.Run(c.que, func(t *testing.T) {
+			a, s, _, _, _ := conBoveda(t)
+			f := fuenteDelAgente{a}
+			lista, err := a.BuscarEnBoveda("Banco")
+			if err != nil || len(lista) == 0 {
+				t.Fatal(err)
+			}
+			if s.hanAvisadoDe(EventoBovedaCambiada) {
+				t.Fatal("ha avisado antes de que nadie escriba")
+			}
+			if err := c.hacer(f, lista[0].ID); err != nil {
+				t.Fatal(err)
+			}
+			if !s.hanAvisadoDe(EventoBovedaCambiada) {
+				t.Errorf("%s no avisa: la bóveda cambia y la pantalla sigue con lo de antes", c.que)
+			}
+		})
+	}
+}
+
+// **Al crear se puede pedir el alfabeto, y sin pedirlo sale hexadecimal.**
+//
+// Lo señaló el agente del cliente: `esfinge_generar` dejaba elegirlo y `crear` no, así
+// que para un sitio que exija símbolos había que generar la contraseña aparte y pasarla
+// — o sea, hacerla cruzar el chat, que es justo lo que este canal evita.
+//
+// Y el defecto se queda en hexadecimal, que no es una preferencia: una contraseña con
+// `/`, `+` o `@` dentro de una cadena de conexión la parte, y el error que sale no
+// menciona la contraseña por ninguna parte.
+func TestAlCrearSePuedeElegirElAlfabetoYPorDefectoEsHex(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+
+	sinDecir, err := f.Crear("Claude", agente.Peticion{
+		Campos: map[string]string{"titulo": "sin-decir.ejemplo.com"}, Generar: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sinDecir.Generada == nil || sinDecir.Generada.Alfabeto != "hex" {
+		t.Errorf("sin pedir alfabeto tiene que salir hex: %+v", sinDecir.Generada)
+	}
+
+	conSimbolos, err := f.Crear("Claude", agente.Peticion{
+		Campos:  map[string]string{"titulo": "con-simbolos.ejemplo.com"},
+		Generar: true, Alfabeto: "simbolos",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conSimbolos.Generada == nil || conSimbolos.Generada.Alfabeto != "simbolos" {
+		t.Fatalf("se pidió «simbolos» y dice %+v", conSimbolos.Generada)
+	}
+	// Y lo guardado sale de ese alfabeto de verdad: decirlo sin que lo sea es peor que
+	// no decirlo.
+	b := a.boveda()
+	entera, hay := b.Ver(conSimbolos.ID)
+	if !hay {
+		t.Fatal("no se ha guardado")
+	}
+	soloHex := true
+	for _, r := range entera.Secreto {
+		if !strings.ContainsRune("0123456789abcdef", r) {
+			soloHex = false
+		}
+	}
+	if soloHex {
+		t.Errorf("se pidió «simbolos» y la contraseña guardada solo tiene cifras hexadecimales")
+	}
+}
+
+// **Y la bóveda se dice con un nombre, también la personal.**
+//
+// La cadena vacía no es un nombre: obligaba a mirar la bandera para saber qué se estaba
+// diciendo. Los dos campos siguen, que es la separación de siempre en este protocolo —
+// **el nombre es para leer y la bandera es para decidir**, porque un proyecto podría
+// llamarse «Personal».
+func TestLaBovedaSeDiceConUnNombreTambienLaPersonal(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	if e := f.Estado(); e.Boveda != "Personal" || !e.EsLaPersonal {
+		t.Errorf("en la personal el estado dice %+v", e)
+	}
+	hecho, err := f.Crear("Claude", agente.Peticion{Campos: map[string]string{"titulo": "X"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hecho.Boveda != "Personal" || !hecho.EsLaPersonal {
+		t.Errorf("lo escrito dice %q / %v", hecho.Boveda, hecho.EsLaPersonal)
+	}
+}
