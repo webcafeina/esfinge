@@ -91,40 +91,31 @@
 >   ejecución** dentro del zip, que `zip` ponía por costumbre y nadie comprobaba — sin él, lo que se instala
 >   en macOS y en Linux se instala y no arranca.
 >
-> **Y el 2026-10-08 se probó el canal entero con Claude Desktop en su Mac, y pasó todo**: el `.mcpb` se
-> guarda con el botón y se instala; el inventario y la higiene sirven; la contraseña va al portapapeles y
-> **el agente no la ve y lo dice**; el código **se le enseña**, con dos botones y **sin válvula** —la
-> decisión más delicada de la 0054, vista por fin montada—; crear va directo y borrar pregunta.
+> **El canal con los agentes está probado de punta a punta y en uso**, con Claude Desktop y con Claude
+> Code. Pasan: inventario, higiene, la contraseña sin que el agente la vea, el código **con dos botones y
+> sin válvula**, crear con su sitio, editar, borrar a la papelera, el permiso que no caduca y el relevo del
+> paquete.
 >
-> **Lo que no se puede probar aquí lo encontró él, y fueron nueve cosas en un día.** Están todas publicadas,
-> de la 2.45.0 a la 2.48.0:
+> **Lo que lo ha ido puliendo no son las pruebas: es el agente usándolo.** Trece arreglos entre el 8 y el
+> 13 de octubre, de la 2.44.0 a la **2.51.0**, y los últimos cuatro salieron de apuntes que escribió el
+> propio agente mientras trabajaba. Dos de ellos eran arreglos del mismo día que se habían quedado a
+> medias.
 >
-> | | |
-> |---|---|
-> | `claude mcp add` usa ámbito `local` | ahora con `--scope user` |
-> | En un IDE hay **dos agentes** y la pantalla mandaba al que no era | dicho en las tres pestañas |
-> | La tarjeta iba debajo del selector de pestañas | arriba, fuera de las pestañas |
-> | El nombre era `claude-ai` | «Claude (claude-ai)»: legible **sin esconder el crudo** |
-> | El registro no se veía hasta reiniciar | se avisa al apuntar |
-> | El registro no decía **qué** se dio | «la contraseña, copiada» ≠ «el código, enseñado» |
-> | `sitios` y `etiquetas` no estaban en el esquema | lo creado por un agente ya se rellena solo |
-> | Ajustes seguía siendo scroll | **pestañas**, y una fila «MCP» en la barra |
-> | El `.mcpb` no se actualizaba con Esfinge | **le cede el turno** al servidor instalado |
+> **Lo último, que está SIN PUBLICAR** y es lo primero que hay que mirar al volver: la frase que llevan
+> `crear`, `editar` y `borrar` pedía mirar la bóveda **«si te nombran otra»**, y el caso que de verdad duele
+> es **el que no la nombra** —tienes un proyecto abierto, pides guardar algo sin pensar en dónde, y acaba en
+> la bóveda de un cliente—. Ahora dice **«antes de escribir, siempre»**. Son dos ficheros en el árbol
+> (`internal/agente/herramientas.go` y su prueba), con la guarda mutada, y **se acumulan a propósito** con
+> lo que salga de las pruebas siguientes en vez de sacar otra versión.
 >
-> **Y dos cosas nuevas que pidió al usarlo**: **«No volver a preguntar»** —permiso sin caducidad, con el
-> alcance exacto de la válvula, anunciado arriba en todas las pestañas y con su botón de quitarlo— y
-> **`esfinge_resumen`**, que contesta «¿qué tengo?» con números y **cero nombres**, en vez de traerse 25
-> entradas con sus títulos para contar.
->
-> **La siguiente acción es suya, el lunes**: actualizar a la 2.48.0, **reinstalar el `.mcpb` una última
-> vez** —ésta es la que trae el relevo, a partir de ahí se actualiza solo— y seguir probando. Lo que queda
-> sin ver: si el aviso del permiso permanente **se sigue viendo o se vuelve invisible** de tanto estar, y
-> si el resumen contesta de un tiro.
+> **La siguiente acción, esta tarde**: las dos pruebas que llevan desde el jueves esperando —**«No volver a
+> preguntar»**, para ver si el aviso de arriba se sigue viendo o **se vuelve invisible de tanto estar**, y
+> **`esfinge_resumen`**, si contesta «¿qué tengo?» de un tiro— y publicar lo acumulado con lo que salga de
+> ellas.
 >
 > **Y lo que sigue sin poder probarse desde aquí**: el diálogo del sistema al guardar el paquete, y si el
-> relevo **encuentra la Esfinge instalada** en su Mac — la lógica está probada para los tres sistemas, pero
-> la lista de sitios donde buscar se queda corta el día que alguien la tenga en otra carpeta, y entonces no
-> se rompe nada: simplemente no releva.
+> relevo encuentra la Esfinge instalada **en otro equipo** — en el suyo sí, comprobado el 2026-10-13 con la
+> 2.49.0, que es la primera versión en que los dos caminos daban resultados distintos.
 
 ---
 

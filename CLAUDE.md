@@ -418,6 +418,20 @@ Esfinge instalada** —lo lanza con la misma entrada y salida, y manda el de la 
 quien se va a hablar—, y si no lo encuentra sigue él. En **Claude Code esto nunca pasó**: allí la orden
 apunta al binario de dentro de la aplicación.
 
+**Lo que un agente escribe en la bóveda tiene que avisar a la ventana, como lo que escribe el navegador.**
+`EventoBovedaCambiada` existe desde el canal del navegador —que lo manda en ocho sitios— y su comentario
+dice literalmente «alguien de fuera ha escrito en la bóveda»: **un agente es exactamente eso** y no lo
+mandaba. El cliente guardó una entrada en la bóveda de un proyecto, el agente dijo la verdad —que estaba
+guardada— y **él no la veía** hasta cerrar y abrir. Por eso decir dónde ha ido y avisar van ahora **en una
+sola función** que usan los tres verbos: lo que se escribe por separado se olvida por separado, y la vez
+anterior se olvidó justo el que no se había pensado (`borrar`).
+
+**Y una descripción de herramienta con basura dentro compila.** Al añadir una frase a las descripciones, un
+script dejó escrito literalmente `"' + aviso + '"` dentro de la de `esfinge_editar`: es una cadena Go
+válida, así que **nada se puso rojo** y lo habría leído el modelo. Se vio mirando el fichero. Ahora hay una
+prueba que busca restos de interpolación en todas, y de paso encontró una herramienta que escribía sin su
+aviso.
+
 **Y comparar las dos puntas no prueba que estén unidas.** El arreglo de arriba se quedó a medias cinco
 días: el esquema declaraba `sitios` y `etiquetas`, el núcleo sabía aplicarlas, y **el traductor de en medio
 no las copiaba** —`ponerArgumentos` recorre los campos de texto uno a uno y ahí no estaban las listas—. El

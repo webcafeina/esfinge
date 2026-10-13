@@ -324,9 +324,20 @@ func TestLasDescripcionesSeLeenYDicenLoDeLaBoveda(t *testing.T) {
 				t.Errorf("%s lleva %q en su descripción: %s", h.Nombre, basura, h.Descripcion)
 			}
 		}
-		if h.Escribe && !strings.Contains(h.Descripcion, "bóveda que esté abierta") {
+		if !h.Escribe {
+			continue
+		}
+		if !strings.Contains(h.Descripcion, "bóveda que esté abierta") {
 			t.Errorf("%s escribe y no avisa de que lo hace en la bóveda abierta: sin eso, "+
 				"«guárdalo en el proyecto de tal cliente» acaba donde no toca", h.Nombre)
+		}
+		// **Y que se mire siempre, no solo al nombrar otra bóveda.** Ésa fue la primera
+		// versión de la frase y no servía: el caso que duele es el que **no** la nombra
+		// —tienes un proyecto abierto, pides guardar algo sin pensar en dónde—, y ahí el
+		// agente no miraba y solo podía contarlo **después de escribir**.
+		if !strings.Contains(h.Descripcion, "antes de escribir, siempre") {
+			t.Errorf("%s no pide mirar el estado antes de escribir **siempre**: pedirlo solo "+
+				"cuando se nombra otra bóveda deja fuera el caso que de verdad duele", h.Nombre)
 		}
 	}
 }

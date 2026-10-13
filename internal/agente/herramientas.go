@@ -69,21 +69,31 @@ func objeto(props map[string]Campo, obligatorios ...string) Esquema {
 	return Esquema{Tipo: "object", Propiedades: props, Obligatorios: obligatorios}
 }
 
-// enLaQueEsteAbierta es lo que llevan las dos herramientas que escriben.
+// enLaQueEsteAbierta es lo que llevan las herramientas que escriben.
 //
 // **Decirlo aquí es la diferencia entre esperarlo y pedirlo.** A un agente al que le
 // dicen «guarda esto en el proyecto de tal cliente» no le falta nada para hacerlo mal:
-// escribe en la bóveda que esté abierta, que puede ser otra, y nadie se entera hasta
-// que alguien busca esa cuenta donde no está. Que mire el estado antes depende de que
-// se acuerde; esta frase se lo pide, y lo que la herramienta devuelve lo remata
-// contando **dónde ha ido**.
+// escribe en la bóveda que esté abierta, que puede ser otra, y nadie se entera hasta que
+// alguien busca esa cuenta donde no está.
 //
-// Y lo que no se le ofrece, a propósito: cambiar de bóveda. Eso es administrar, y lo
-// hace la persona en la ventana (ADR 0054).
-const enLaQueEsteAbierta = "**Actúa sobre la bóveda que esté abierta y ninguna otra.** Si quien te lo " +
-	"pide nombra otra —un proyecto, el nombre de un cliente—, mira antes `esfinge_estado`: desde aquí " +
-	"no se puede cambiar de bóveda, así que lo que toca es pedirle que la abra, no actuar sobre la que " +
-	"no es. "
+// **Y se mira siempre, no solo cuando alguien nombra otra bóveda**, que es como estaba
+// escrito al principio y por eso no servía: el caso que de verdad duele es justo el que
+// **no** la nombra —tienes abierto un proyecto, pides guardar algo sin pensar en dónde, y
+// acaba en la bóveda de un cliente—. Pedirlo solo al nombrarla deja al agente contándolo
+// **después**, que es cuando ya está escrito y sincronizado. Lo señaló el agente del
+// cliente el 2026-10-13, probando exactamente ese caso.
+//
+// Lo que **no** se hace, y es decisión: pedir confirmación en la ventana al escribir
+// fuera de la personal. Crear y editar van directos desde la ADR 0032, y con un proyecto
+// abierto a propósito —que es el caso normal— preguntar cada vez es ruido. Lo que falta
+// no es una puerta más: es que el agente mire antes y lo diga.
+//
+// Y lo que tampoco se le ofrece: cambiar de bóveda. Eso es administrar, y lo hace la
+// persona en la ventana (ADR 0054).
+const enLaQueEsteAbierta = "**Actúa sobre la bóveda que esté abierta y ninguna otra, y no se puede " +
+	"cambiar desde aquí.** Mira `esfinge_estado` **antes de escribir, siempre**, y di en voz alta en qué " +
+	"bóveda vas a guardar: si es la de un proyecto y quien te lo pide no lo ha dicho, pregúntale antes de " +
+	"hacerlo. Si te nombra una bóveda distinta de la abierta, pídele que la abra él. "
 
 // LasHerramientas es el catálogo. **Cada una con sus tres banderas puestas
 // explícitamente**, aunque sean falsas: una bandera que falta es una decisión que nadie

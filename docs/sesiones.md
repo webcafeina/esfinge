@@ -5,6 +5,32 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-13 (5) · «Siempre», no «cuando te lo nombren» — y queda sin publicar
+
+- **La 2.51.0 se probó y las tres cosas funcionan**: la entrada **aparece sola** en la lista, el agente dice
+  en qué bóveda ha guardado y la contraseña sale con el alfabeto que se le pide. Probado además **en Claude
+  Code**, no solo en Desktop.
+- **Y de esa prueba salió el apunte siguiente**, con una parte equivocada y una buena. La equivocada: el
+  agente dijo «en la bóveda equivocada probablemente» cuando estaba **exactamente donde se había abierto a
+  propósito** — le faltaba contexto, no es un fallo del conector, pero conviene verlo porque **un agente que
+  avisa de más también cansa**.
+- **La buena, y es un hueco real**: la frase que llevaban las herramientas pedía mirar `esfinge_estado`
+  **«si quien te lo pide nombra otra bóveda»**, y en esa prueba no se nombró ninguna — así que no miró y
+  solo pudo contar dónde había guardado **después de hacerlo**. Y ése es justo el caso que duele: tienes un
+  proyecto abierto, pides guardar algo sin pensar en dónde, y acaba en la bóveda de un cliente. Ahora dice
+  **«antes de escribir, siempre»**, y que diga en voz alta en qué bóveda va a guardar.
+- **Lo que no se hizo, y queda escrito**: pedir confirmación en la ventana al escribir fuera de la personal.
+  Rompería la ADR 0032 —crear y editar van directos— y con un proyecto abierto a propósito, que es el caso
+  normal, preguntar cada vez es ruido. **Lo que faltaba no era una puerta más, era que el agente mirase
+  antes.**
+- **Esto queda SIN PUBLICAR**, a petición del cliente: se acumula con lo que salga de las pruebas
+  siguientes en vez de sacar otra versión. Son dos ficheros —`internal/agente/herramientas.go` y su
+  prueba— y la guarda está mutada.
+- **Y el ritmo, dicho en voz alta**: seis versiones en un día, las cuatro últimas salidas de apuntes del
+  agente y no de las pruebas. Dos de ellas eran arreglos de ese mismo día que se habían quedado a medias.
+
+---
+
 ## 2026-10-13 (4) · La bóveda cambiaba y la pantalla no se enteraba
 
 - **El cliente guardó una entrada en la bóveda de un proyecto, el agente dijo la verdad —que estaba
