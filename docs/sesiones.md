@@ -5,6 +5,31 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-13 · El alta del cartero, guardada en el repo del Caddy compartido
+
+- **Lo que estaba corriendo desde el 2026-09-29 y ningún repo recogía.** Al desplegar el cartero (ADR 0045)
+  quedaron sin comprometer los cambios del Caddy compartido —`~/produccion/webcafeina-local`, que **no es
+  este repo**—: la red `esfinge-borde` en el compose y el sitio de `cartero.webcafeina.com`. Llevaban
+  catorce días así, con el servicio sano pero **sin red de seguridad**: quien recreara Caddy con el compose
+  commiteado dejaba el contenedor sin esa red y **el correo de producción de Esfinge dejaba de salir**.
+- **Guardado en `ab04dac`** (webcafeina/webcafeina-local), tres ficheros por ruta: la red en
+  `docker-compose.prod.yml`, `sites/esfinge.caddy` y su fila en `sites/LEEME.md`. **Sin empujar**, y sin
+  tocar ningún contenedor: todo lo que se hizo contra el servidor fue de lectura.
+- **Lo que se comprobó antes**, y conviene que quede dicho porque era lo que decidía si commitear: los dos
+  diffs **solo llevan Esfinge** —se miró expresamente que no se hubiera colado nada de Kairós, que iba a
+  tocar los mismos ficheros justo después—; `sites/esfinge.caddy` es **idéntico** a `cartero/esfinge.caddy`
+  de aquí, que es su copia de referencia; la red tiene conectados a Caddy y al cartero; `caddy validate`
+  dice «Valid configuration» sobre el Caddyfile en vivo; y el alias y el puerto del sitio
+  (`esfinge-cartero:8791`) coinciden con el compose del cartero.
+- **Y lo que se dejó fuera a propósito**: `docker-compose.prod.yml.antes-de-esfinge`, una copia previa que
+  resultó **idéntica al HEAD** y por tanto redundante. Se borró, y sigue recuperable con
+  `git show 6d748e9:docker-compose.prod.yml`.
+- **Lo que esto deja dicho para la próxima vez**: un despliegue que toca el repo de otro proyecto **no
+  termina al funcionar**. Catorce días de servicio correcto no son catorce días de trabajo guardado, y nada
+  avisa — porque lo que falta solo se nota el día que alguien recrea algo.
+
+---
+
 ## 2026-10-08 (4) · El conector se actualiza solo, y el rótulo que no era un rótulo
 
 - **El `.mcpb` no se actualizaba con Esfinge**, y eso lo descubrió él probando lo de la tanda anterior: pidió
