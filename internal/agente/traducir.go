@@ -183,6 +183,38 @@ func ponerArgumentos(p *Peticion, args map[string]any) {
 			p.Campos[campo] = v
 		}
 	}
+	// **Y las listas, que van aparte porque `Campos` es de cadenas.**
+	//
+	// Esto faltaba, y es el tramo de en medio: el esquema las declaraba, el núcleo
+	// sabía aplicarlas y **aquí se caían**. El agente las mandaba, Esfinge no daba
+	// ningún error y la entrada nacía sin sitio — o sea, sin poder rellenarse sola,
+	// que es para lo que existe la bóveda. Lo vio el agente del cliente al no poder
+	// verificar lo que acababa de crear.
+	//
+	// Y lo que lo dejó pasar: la prueba que vigila esto comparaba **el esquema con el
+	// núcleo**, que son los dos extremos, y daba por supuesto el camino entre ellos.
+	p.Sitios = lasCadenas(args["sitios"])
+	p.Etiquetas = lasCadenas(args["etiquetas"])
+}
+
+// lasCadenas saca una lista de textos de lo que haya llegado por JSON.
+//
+// **Nula si no viene la clave, y vacía si viene vacía**, que no es lo mismo: nula es
+// «no la toques» y vacía es «déjala sin ninguna». Lo que no sea texto se ignora en vez
+// de romper la petición entera: un elemento raro en una lista no puede impedir guardar
+// lo demás.
+func lasCadenas(v any) []string {
+	bruto, vale := v.([]any)
+	if !vale {
+		return nil
+	}
+	out := []string{}
+	for _, x := range bruto {
+		if s, vale := x.(string); vale && s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 func preguntar(socket string, p Peticion) (Respuesta, error) {
@@ -226,7 +258,19 @@ func soloLoQueSale(h Herramienta, r Respuesta) any {
 	case QueBuscar:
 		// **El total va aparte de lo que vuelve**, que está topado: si no, un agente
 		// que recibe 25 de 1.843 creería que la bóveda tiene 25.
-		return map[string]any{"entradas": r.Entradas, "devueltas": len(r.Entradas), "enTotal": r.Cuantas}
+		// **Una lista vacía es `[]`, nunca `null`.** En Go un slice sin elementos
+		// serializa como `null`, y eso rompe a cualquier cliente que lo recorra sin
+		// comprobarlo antes. Lo vio el agente del cliente al buscar algo que no
+		// existía.
+		es := r.Entradas
+		if es == nil {
+			es = []Entrada{}
+		}
+		// **`coincidencias`, no «enTotal».** El nombre viejo no decía si era el total
+		// de la bóveda o el de lo que casa con la búsqueda, y con cero resultados esa
+		// diferencia es la que hay entre «no tienes nada» y «aquí no hay nada». Para
+		// lo otro está `esfinge_resumen`.
+		return map[string]any{"entradas": es, "devueltas": len(es), "coincidencias": r.Cuantas}
 	case QueVer:
 		return r.Entrada
 	case QueHigiene:

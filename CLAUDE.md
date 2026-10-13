@@ -418,6 +418,14 @@ Esfinge instalada** —lo lanza con la misma entrada y salida, y manda el de la 
 quien se va a hablar—, y si no lo encuentra sigue él. En **Claude Code esto nunca pasó**: allí la orden
 apunta al binario de dentro de la aplicación.
 
+**Y comparar las dos puntas no prueba que estén unidas.** El arreglo de arriba se quedó a medias cinco
+días: el esquema declaraba `sitios` y `etiquetas`, el núcleo sabía aplicarlas, y **el traductor de en medio
+no las copiaba** —`ponerArgumentos` recorre los campos de texto uno a uno y ahí no estaban las listas—. El
+agente las mandaba, **nadie daba error** y la entrada nacía sin sitio. Y la guarda que se escribió entonces
+no lo vio porque comparaba **el esquema contra el núcleo**, o sea los dos extremos. Ahora hay una prueba que
+arma los argumentos **a partir del propio esquema** y exige que cada campo declarado llegue a la petición.
+Lo encontró **el agente del cliente usando el producto**, al no poder verificar lo que acababa de crear.
+
 **Y lo que no está en el esquema no existe para el modelo.** `crear` y `editar` aceptaban `sitios` y
 `etiquetas` desde el principio —el código los aplica— y **no estaban declarados en las herramientas**, así
 que el agente creaba credenciales sin sitio: credenciales que no se rellenan solas, que es para lo que

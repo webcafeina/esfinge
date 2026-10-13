@@ -168,9 +168,40 @@ func TestLoQueSaleHaciaElModeloDiceCuantasHayDeVerdad(t *testing.T) {
 	if m["devueltas"] != 2 {
 		t.Errorf("dice que vuelven %v y vuelven dos", m["devueltas"])
 	}
-	if m["enTotal"] != 1843 {
-		t.Errorf("dice que hay %v en total y hay 1843: un agente creería que la bóveda "+
-			"tiene las que le han cabido", m["enTotal"])
+	// **`coincidencias`, no «enTotal».** El nombre viejo no decía si contaba la
+	// bóveda entera o lo que casa con la búsqueda, y con cero resultados esa
+	// diferencia es la que hay entre «no tienes nada guardado» y «aquí no hay nada».
+	// Lo señaló el agente del cliente el 2026-10-13.
+	if m["coincidencias"] != 1843 {
+		t.Errorf("dice que coinciden %v y coinciden 1843: un agente creería que la bóveda "+
+			"tiene las que le han cabido", m["coincidencias"])
+	}
+}
+
+// **Sin resultados sale `[]`, nunca `null`.**
+//
+// En Go un slice sin elementos serializa como `null`, y eso rompe a cualquier cliente
+// que lo recorra sin comprobarlo antes — que es lo normal cuando el esquema dice que
+// ahí va una lista. Lo vio el agente del cliente buscando algo que no existía.
+func TestBuscarSinResultadosDevuelveUnaListaVacia(t *testing.T) {
+	salida := soloLoQueSale(Herramienta{Verbo: QueBuscar}, Respuesta{OK: true})
+	m, ok := salida.(map[string]any)
+	if !ok {
+		t.Fatalf("lo que sale no es un objeto: %T", salida)
+	}
+	es, vale := m["entradas"].([]Entrada)
+	if !vale {
+		t.Fatalf("«entradas» no es una lista: %T", m["entradas"])
+	}
+	if es == nil {
+		t.Error("«entradas» sale nula, y en JSON eso es null: un cliente que la recorra revienta")
+	}
+	crudo, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(crudo, []byte(`"entradas":null`)) {
+		t.Errorf("sale null por el canal: %s", crudo)
 	}
 }
 
@@ -189,5 +220,84 @@ func TestLoQueSaleAlCopiarNoLlevaLaContrasena(t *testing.T) {
 	}
 	if strings.Contains(string(crudo), elSecreto) {
 		t.Errorf("lleva la contraseña dentro: %s", crudo)
+	}
+}
+
+// **Lo que el esquema declara tiene que llegar entero a la petición.**
+//
+// Ésta es la prueba que faltaba, y por su hueco se cayeron `sitios` y `etiquetas`
+// durante cinco días. El esquema los declaraba, el núcleo sabía aplicarlos, y **el
+// traductor de en medio no los copiaba**: el agente los mandaba, nadie daba error y la
+// entrada nacía sin sitio — o sea sin poder rellenarse sola, que es para lo que existe
+// la bóveda.
+//
+// Lo que lo dejó pasar es de método y vale para cualquier cosa con tres tramos: la
+// guarda que había comparaba **los dos extremos** —el esquema contra el núcleo— y daba
+// por supuesto el camino entre ellos. Comparar las puntas no prueba que estén unidas.
+func TestLoQueDeclaraElEsquemaLlegaALaPeticion(t *testing.T) {
+	// Un valor de cada tipo que el esquema puede declarar, para poder armar unos
+	// argumentos verosímiles a partir de él y no de una lista escrita a mano.
+	ejemplo := map[string]any{
+		"string":  "x",
+		"boolean": true,
+		// JSON no distingue enteros: todo número llega como float64, y por eso el
+		// esquema puede decir «integer» y aquí se arma igual.
+		"number":  float64(24),
+		"integer": float64(24),
+		"array":   []any{"https://ejemplo.com"},
+	}
+
+	for _, h := range LasHerramientas {
+		if len(h.Esquema.Propiedades) == 0 {
+			continue
+		}
+		args := map[string]any{}
+		for campo, c := range h.Esquema.Propiedades {
+			v, hay := ejemplo[c.Tipo]
+			if !hay {
+				t.Errorf("%s: el campo %q declara el tipo %q, que esta prueba no sabe armar",
+					h.Nombre, campo, c.Tipo)
+				continue
+			}
+			// Los enumerados solo admiten lo suyo.
+			if len(c.Enum) > 0 {
+				v = c.Enum[0]
+			}
+			args[campo] = v
+		}
+
+		var p Peticion
+		p.Que = h.Verbo
+		ponerArgumentos(&p, args)
+
+		for campo := range h.Esquema.Propiedades {
+			if !llega(p, campo) {
+				t.Errorf("%s: el esquema declara %q y la petición no lo lleva: el agente lo "+
+					"manda, nadie da error y se pierde por el camino", h.Nombre, campo)
+			}
+		}
+	}
+}
+
+// llega dice si ese campo del esquema se ve en la petición ya traducida.
+func llega(p Peticion, campo string) bool {
+	switch campo {
+	case "texto":
+		return p.Texto != ""
+	case "id":
+		return p.ID != ""
+	case "alfabeto":
+		return p.Alfabeto != ""
+	case "bytes":
+		return p.Bytes != 0
+	case "generar":
+		return p.Generar
+	case "sitios":
+		return p.Sitios != nil
+	case "etiquetas":
+		return p.Etiquetas != nil
+	default:
+		_, hay := p.Campos[campo]
+		return hay
 	}
 }

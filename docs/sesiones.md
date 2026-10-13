@@ -5,6 +5,36 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-13 (2) · Lo que el agente del cliente vio y las pruebas no
+
+- **`sitios` y `etiquetas` no llegaban, y llevaban cinco días así.** El 2026-10-08 se declararon en el
+  esquema y el núcleo ya sabía aplicarlas; lo que faltaba era **el tramo de en medio**: `ponerArgumentos`
+  copia los campos de texto uno a uno y ahí no estaban las listas. El agente las mandaba, **nadie daba
+  error** y la entrada nacía sin sitio — o sea sin poder rellenarse sola, que es para lo que existe la
+  bóveda.
+- **Y lo que lo dejó pasar es de método**: la guarda escrita aquel día comparaba **los dos extremos** —el
+  esquema contra el núcleo— y daba por supuesto el camino entre ellos. **Comparar las puntas no prueba que
+  estén unidas.** Ahora hay una prueba que arma unos argumentos **a partir del propio esquema** y comprueba
+  que cada campo declarado llega a la petición; mutada quitando `sitios`, canta las dos herramientas.
+- **Dos arreglos más del mismo informe**: `buscar` sin resultados devolvía `"entradas": null` —en Go un
+  slice vacío serializa así, y eso rompe a cualquier cliente que lo recorra—, y `enTotal` no decía si
+  contaba la bóveda o las coincidencias, que con cero resultados es la diferencia entre «no tienes nada» y
+  «aquí no hay nada». Ahora `[]` y **`coincidencias`**.
+- **Y uno que no se arregla, dicho con su porqué**: el agente pedía distinguir «bóveda cerrada» de «canal
+  apagado». **No se puede**: en los dos casos no existe el socket y el servidor MCP no tiene a quién
+  preguntar, y su propuesta de que lo diga `estado` tampoco vale porque `estado` viaja por ese mismo
+  socket. Se queda el mensaje con las dos causas, antes que inventar una señal fuera de la bóveda solo para
+  separarlas.
+- **Lo de método que deja el día, y es lo que más vale**: estos cuatro los encontró **un agente usando el
+  producto**, no las pruebas. Es el mismo patrón de la semana pasada una vuelta más arriba — y esta vez el
+  que mira no es el cliente, es el programa al que se le dio acceso.
+- **Y una corrección sobre lo que se dio por probado**: el relevo del `.mcpb` **sigue sin verificarse**. Al
+  reinstalar el paquete se le metió dentro el servidor de la 2.48.0, que ya traía `sitios`, así que lo que
+  se comprobó es que el paquete nuevo funciona. La 2.49.0 lo deja medible: si el agente puede crear con
+  sitio **sin reinstalar nada**, el relevo entró.
+
+---
+
 ## 2026-10-13 · El alta del cartero, guardada en el repo del Caddy compartido
 
 - **Lo que estaba corriendo desde el 2026-09-29 y ningún repo recogía.** Al desplegar el cartero (ADR 0045)
