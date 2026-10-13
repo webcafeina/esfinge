@@ -179,10 +179,18 @@ type Peticion struct {
 type Estado struct {
 	Existe  bool `json:"existe"`
 	Abierta bool `json:"abierta"`
-	// Boveda es el nombre de la que está abierta, vacío si es la personal. Ver
-	// [QueEstado]: es lo que evita que un agente escriba en la bóveda de otro
-	// cliente creyendo que está en la personal.
-	Boveda string `json:"boveda,omitempty"`
+	// Boveda es el nombre de la que está abierta, y EsLaPersonal dice si es la de
+	// siempre. Ver [QueEstado]: es lo que evita que un agente escriba en la bóveda de
+	// otro cliente creyendo que está en la personal.
+	//
+	// **Van los dos y sin `omitempty`, y eso es el arreglo.** Antes `Boveda` iba vacío
+	// en la personal y se omitía: «vacío es la personal» era un acuerdo que conocía el
+	// código y no el agente, que solo veía **un campo ausente** y concluía —con razón—
+	// que la herramienta no cumplía lo que su descripción promete. Un dato que hay que
+	// saber interpretar para que signifique algo no está dicho. Lo señaló el agente del
+	// cliente el 2026-10-13.
+	Boveda       string `json:"boveda"`
+	EsLaPersonal bool   `json:"esLaPersonal"`
 	// SoloLectura dice que aquí no se puede escribir: una compartida de solo ver, o
 	// una bóveda de una versión más nueva.
 	SoloLectura bool `json:"soloLectura,omitempty"`
@@ -256,6 +264,22 @@ type Escrito struct {
 	// Cambiados son los campos que se han tocado, para que el agente pueda decir qué
 	// ha hecho sin tener que volver a leerlos.
 	Cambiados []string `json:"cambiados,omitempty"`
+	// Boveda es **dónde ha ido**, y EsLaPersonal si era la de siempre.
+	//
+	// **Va en la respuesta y no solo en `estado`, y eso es lo que cierra el caso.**
+	// Mirar antes de escribir depende de que el modelo se acuerde; esto no depende de
+	// nada: aunque guarde sin comprobar, al terminar tiene el dato delante y lo dice.
+	// Y si no era la bóveda que la persona tenía en la cabeza, se ve **en el momento**
+	// y no tres semanas después buscando una cuenta donde no está.
+	Boveda       string `json:"boveda"`
+	EsLaPersonal bool   `json:"esLaPersonal"`
+	// Generada dice **cómo es** la contraseña que hizo Esfinge, nunca cuál.
+	//
+	// Sin esto, un agente que pide `generar: true` no puede decir si lo guardado
+	// cumple lo que exige el sitio —largo mínimo, qué caracteres admite— y lo único
+	// que le queda es pedir que se la copien al portapapeles para mirarla, que es
+	// justo lo que este canal evita. Lo pidió el agente del cliente el 2026-10-13.
+	Generada *ComoEs `json:"generada,omitempty"`
 	// ALaPapelera y Dias, al borrar: **decir que son treinta días es parte de la
 	// pregunta**, porque si no se está contestando algo más grave de lo que pasa.
 	ALaPapelera bool `json:"alaPapelera,omitempty"`
@@ -323,4 +347,14 @@ type Recuento struct {
 	PorClase  map[string]int `json:"porClase"`
 	ConCodigo int            `json:"conCodigo"`
 	SinCodigo int            `json:"sinCodigo"`
+}
+
+// ComoEs describe una contraseña **sin decirla**: cuánto mide y de qué alfabeto sale.
+//
+// Esfinge genera siempre en **hexadecimal**, y eso no es un detalle del canal sino una
+// regla de la casa: una contraseña con `/`, `+` o `@` dentro de una cadena de conexión
+// la parte, y el error que sale no menciona la contraseña por ninguna parte.
+type ComoEs struct {
+	Largo    int    `json:"largo"`
+	Alfabeto string `json:"alfabeto"`
 }

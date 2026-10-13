@@ -188,9 +188,13 @@ func (f fuenteDelAgente) Estado() agente.Estado {
 		Abierta: e.Abierta,
 		// **El nombre de la bóveda activa sí va**, al revés que en el canal del
 		// navegador: un agente que no sepa si está dentro de un proyecto puede guardar
-		// la cuenta de un cliente en la bóveda de otro. Vacío es la personal.
-		Boveda:      e.NombreDelProyecto,
-		SoloLectura: e.SoloLectura,
+		// la cuenta de un cliente en la bóveda de otro.
+		//
+		// Y va **con su bandera**, porque antes la personal se decía omitiendo el
+		// campo y eso no lo dice: un agente ve que falta, no que sea la de siempre.
+		Boveda:       e.NombreDelProyecto,
+		EsLaPersonal: e.NombreDelProyecto == "",
+		SoloLectura:  e.SoloLectura,
 	}
 }
 
@@ -991,16 +995,21 @@ func (f fuenteDelAgente) Crear(quien string, p agente.Peticion) (agente.Escrito,
 		Carpeta: p.Campos["carpeta"], Sitios: p.Sitios, Etiquetas: p.Etiquetas,
 	}
 	e.Secreto = p.Campos["secreto"]
+	var comoEs *agente.ComoEs
 	if p.Generar {
 		// **La hace Esfinge y no vuelve.** El agente crea una cuenta con una
 		// contraseña que no ha visto, que es estrictamente mejor que una que se
 		// invente él — y eso lo dice la descripción de la herramienta, para que la
 		// prefiera.
-		clave, err := f.a.GenerarContrasena(24, "hex")
+		clave, err := f.a.GenerarContrasena(largoDeLoQueGenera, alfabetoDeLoQueGenera)
 		if err != nil {
 			return agente.Escrito{}, err
 		}
 		e.Secreto = clave
+		// **Cómo es, nunca cuál.** Sin esto el agente no puede decir si lo guardado
+		// cumple lo que pide el sitio, y lo único que le queda es pedir que se la
+		// copien para mirarla — justo lo que este canal evita.
+		comoEs = &agente.ComoEs{Largo: len(clave), Alfabeto: alfabetoDeLoQueGenera}
 	}
 	if err := f.a.GuardarEnBoveda(e); err != nil {
 		return agente.Escrito{}, err
@@ -1014,7 +1023,7 @@ func (f fuenteDelAgente) Crear(quien string, p agente.Peticion) (agente.Escrito,
 	}
 	f.a.apuntarComo(b, loQuePideUnAgente{Quien: siNoDice(quien), Que: agente.QueCrear, ID: id, Titulo: titulo},
 		boveda.ApunteHecho, boveda.ApunteDirecto)
-	return agente.Escrito{ID: id, Titulo: titulo}, nil
+	return f.donde(agente.Escrito{ID: id, Titulo: titulo, Generada: comoEs}), nil
 }
 
 // losSecretos son los campos cuyo cambio **tiene que aprobar una persona**.
@@ -1099,7 +1108,7 @@ func (f fuenteDelAgente) Editar(quien string, p agente.Peticion) (agente.Escrito
 	}
 	f.a.apuntarComo(b, loQuePideUnAgente{Quien: siNoDice(quien), Que: agente.QueEditar, ID: p.ID, Titulo: e.Titulo},
 		boveda.ApunteHecho, como)
-	return agente.Escrito{ID: p.ID, Titulo: e.Titulo, Cambiados: cambiados}, nil
+	return f.donde(agente.Escrito{ID: p.ID, Titulo: e.Titulo, Cambiados: cambiados}), nil
 }
 
 // Borrar la manda a la papelera, **con un sí**. Es lo único que quita algo de la vista,
@@ -1130,7 +1139,7 @@ func (f fuenteDelAgente) Borrar(quien, id string) (agente.Escrito, error) {
 		return agente.Escrito{}, err
 	}
 	f.a.apuntarComo(b, q, boveda.ApunteHecho, como)
-	return agente.Escrito{ID: id, Titulo: e.Titulo, ALaPapelera: true, Dias: 30}, nil
+	return f.donde(agente.Escrito{ID: id, Titulo: e.Titulo, ALaPapelera: true, Dias: 30}), nil
 }
 
 // bovedaParaEscribir dice si aquí se puede escribir, **con el porqué**: una bóveda de
@@ -1168,6 +1177,33 @@ func siNoDice(quien string) string {
 func OrdenParaClaudeCode() string {
 	return "claude mcp add --scope user esfinge " + rutaDelServidorMCPOEsfingeMCP()
 }
+
+// donde le pone a lo escrito **en qué bóveda ha ido**.
+//
+// Va en la respuesta y no solo en `estado` porque eso es lo que no depende de nada: un
+// agente que guarde sin comprobar antes tiene el dato delante al terminar, y lo dice. Si
+// no era la bóveda que la persona tenía en la cabeza, se ve en el momento.
+func (f fuenteDelAgente) donde(e agente.Escrito) agente.Escrito {
+	est := f.a.EstadoBoveda()
+	e.Boveda = est.NombreDelProyecto
+	e.EsLaPersonal = est.NombreDelProyecto == ""
+	return e
+}
+
+// Cómo es la contraseña que Esfinge genera para un agente.
+//
+// **Hexadecimal, y eso no es una elección del canal.** Es la regla de la casa: una
+// contraseña con `/`, `+` o `@` dentro de una cadena de conexión la parte, y el error
+// que sale —`TypeError: Invalid URL`, o un fallo de autenticación que no cuadra— **no
+// menciona la contraseña por ninguna parte**. Un agente que la guarda para un servicio
+// no sabe dónde va a acabar pegada.
+//
+// Veinticuatro bytes son 48 caracteres: de sobra para cualquier política de sitio, que
+// es lo que el agente necesita poder decir.
+const (
+	largoDeLoQueGenera    = 24
+	alfabetoDeLoQueGenera = "hex"
+)
 
 // GuardarPaqueteMCP escribe el `.mcpb` de Claude Desktop donde diga la persona.
 //

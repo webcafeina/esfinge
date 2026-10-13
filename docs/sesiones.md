@@ -5,6 +5,39 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-13 (3) · El relevo probado, y que el agente sepa dónde está escribiendo
+
+- **El relevo del `.mcpb` funciona**, y por fin se pudo medir: con la 2.49.0 puesta y **sin tocar Claude
+  Desktop**, el agente creó una entrada **con su sitio**. El servidor que vive dentro del paquete es el de
+  la 2.48.0 y ése no sabe pasar las listas, así que quien atendió fue el de la aplicación. Es la primera vez
+  que los dos caminos dan resultados distintos, que es lo que hacía falta para distinguirlos.
+- **Tres apuntes más del agente del cliente, dos ciertos y uno imposible:**
+  - **`esfinge_estado` no decía en qué bóveda se trabaja**, aunque su descripción lo promete. El campo
+    existía y **se omitía en la personal**: «vacío es la personal» era un acuerdo que conocía el código y no
+    el agente, que solo veía un campo ausente. Ahora va siempre, con `esLaPersonal` al lado. **Un dato que
+    hay que saber interpretar para que signifique algo no está dicho.**
+  - **Al generar no se decía cómo era la contraseña.** Ahora `generada: {largo, alfabeto}` —cómo es, nunca
+    cuál—, con la prueba mirando los bytes. Y queda escrito por qué siempre es hexadecimal.
+  - **Avisar de duplicados al crear: no se hace**, y es decisión. Dos cuentas del mismo sitio es lo normal
+    —el selector de la extensión existe para eso— y una regla que diga que no a algo frecuente estorba más
+    de lo que protege.
+- **Y lo que preguntó el cliente**: si estando la personal abierta se puede guardar en la bóveda de un
+  proyecto. **No**, y no por el canal: solo hay una bóveda abierta a la vez y el agente no conmuta. Se
+  valoraron las tres formas de permitirlo —que el agente conmute, que escriba sin preguntar, que lo pida— y
+  se eligió **lo barato que cubre el mismo riesgo**: que las herramientas que escriben **digan en su
+  descripción** que actúan sobre la abierta y que **lo que devuelven diga dónde ha ido**. Eso no depende de
+  que el modelo se acuerde de comprobar nada.
+- **Dos cosas salieron al escribirlo**, las dos mirando y no ejecutando:
+  - **Un script dejó `"' + aviso + '"` literal dentro de la descripción de `esfinge_editar`.** **Compila**
+    —es una cadena Go válida— y lo habría leído el modelo. Ahora una prueba busca restos de interpolación
+    en todas las descripciones.
+  - **Y esa misma prueba encontró que `borrar` también escribía sin el aviso**, cuando solo se había
+    pensado en crear y editar. Equivocarse de bóveda al borrar duele más: la entrada desaparece de donde la
+    buscas.
+- **Se verificó** con `make comprobar` y `make e2e` (136) en verde y cada guarda mutada.
+
+---
+
 ## 2026-10-13 (2) · Lo que el agente del cliente vio y las pruebas no
 
 - **`sitios` y `etiquetas` no llegaban, y llevaban cinco días así.** El 2026-10-08 se declararon en el

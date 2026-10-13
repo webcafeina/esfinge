@@ -301,3 +301,32 @@ func llega(p Peticion, campo string) bool {
 		return hay
 	}
 }
+
+// **Ninguna descripción lleva basura, y las que escriben dicen lo de la bóveda.**
+//
+// Lo primero no es paranoia: al añadir la frase de la bóveda, un script dejó escrito
+// literalmente `"' + aviso + '"` dentro de la descripción de `esfinge_editar`. **Compila**
+// —es una cadena válida— y lo habría leído el modelo. Se vio mirando el fichero, no
+// ejecutando nada.
+//
+// Y lo segundo es lo que esa frase protege: un agente al que le dicen «guarda esto en el
+// proyecto de tal cliente» escribe en la bóveda que esté abierta, que puede ser otra, y
+// nadie se entera hasta que alguien busca esa cuenta donde no está.
+func TestLasDescripcionesSeLeenYDicenLoDeLaBoveda(t *testing.T) {
+	for _, h := range LasHerramientas {
+		if h.Descripcion == "" {
+			t.Errorf("%s no tiene descripción: el modelo elige por ella", h.Nombre)
+			continue
+		}
+		// Restos de plantilla o de interpolación a medias.
+		for _, basura := range []string{"' + ", " + '", "%!", "%s", "{{", "<nil>"} {
+			if strings.Contains(h.Descripcion, basura) {
+				t.Errorf("%s lleva %q en su descripción: %s", h.Nombre, basura, h.Descripcion)
+			}
+		}
+		if h.Escribe && !strings.Contains(h.Descripcion, "bóveda que esté abierta") {
+			t.Errorf("%s escribe y no avisa de que lo hace en la bóveda abierta: sin eso, "+
+				"«guárdalo en el proyecto de tal cliente» acaba donde no toca", h.Nombre)
+		}
+	}
+}

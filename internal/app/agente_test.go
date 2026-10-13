@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -822,5 +823,86 @@ func TestElSiempreSeQuitaYValeDesdeYa(t *testing.T) {
 	}
 	if a.EstadoDelAgente().Siempre {
 		t.Error("el estado sigue diciendo que está puesto")
+	}
+}
+
+// **El estado dice en qué bóveda se trabaja, también cuando es la personal.**
+//
+// Antes se decía **omitiendo el campo**, y eso no lo dice: un agente ve que falta, no
+// que sea la de siempre. La descripción de la herramienta prometía decirlo, así que
+// desde fuera parecía incumplida — lo señaló el agente del cliente el 2026-10-13.
+//
+// Y lo que esto protege de verdad: un agente que no sepa si está dentro de un proyecto
+// puede guardar la cuenta de un cliente en la bóveda de otro.
+func TestElEstadoDelAgenteDiceEnQueBovedaSeTrabaja(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+
+	e := f.Estado()
+	if !e.Abierta {
+		t.Fatal("la bóveda tendría que estar abierta")
+	}
+	if !e.EsLaPersonal {
+		t.Error("en la personal tiene que decir que lo es, no callarse")
+	}
+
+	// **Y sale por el canal**, que es lo que de verdad falló: el campo existía y
+	// `omitempty` lo borraba al serializar.
+	crudo, err := json.Marshal(e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, hace := range []string{`"boveda"`, `"esLaPersonal"`} {
+		if !bytes.Contains(crudo, []byte(hace)) {
+			t.Errorf("falta %s en lo que sale: %s", hace, crudo)
+		}
+	}
+}
+
+// **Al generar se dice cómo es la contraseña, nunca cuál.**
+//
+// Sin esto, un agente que pide `generar: true` no puede decir si lo guardado cumple lo
+// que exige el sitio, y lo único que le queda es pedir que se la copien al portapapeles
+// para mirarla — justo lo que este canal existe para evitar.
+//
+// Y la prueba mira **los bytes**: lo que no puede pasar es que por querer describirla
+// se cuele la contraseña.
+func TestAlGenerarSeDiceComoEsYNoCual(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+
+	hecho, err := f.Crear("Claude", agente.Peticion{
+		Campos:  map[string]string{"titulo": "prueba-generar.ejemplo.com"},
+		Generar: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hecho.Generada == nil {
+		t.Fatal("se generó la contraseña y no se dice cómo es")
+	}
+	if hecho.Generada.Alfabeto != "hex" {
+		t.Errorf("el alfabeto es %q y tiene que ser hex: una contraseña con «/» dentro de "+
+			"una cadena de conexión la parte", hecho.Generada.Alfabeto)
+	}
+	if hecho.Generada.Largo < 32 {
+		t.Errorf("dice que mide %d, que no llega para la política de ningún sitio", hecho.Generada.Largo)
+	}
+
+	// Y lo guardado de verdad mide eso: decirlo sin que sea cierto es peor que callar.
+	b := a.boveda()
+	entera, hay := b.Ver(hecho.ID)
+	if !hay {
+		t.Fatal("no se ha guardado")
+	}
+	if len(entera.Secreto) != hecho.Generada.Largo {
+		t.Errorf("dice %d y la contraseña mide %d", hecho.Generada.Largo, len(entera.Secreto))
+	}
+	crudo, err := json.Marshal(hecho)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(crudo, []byte(entera.Secreto)) {
+		t.Error("la contraseña ha salido en lo que se le devuelve al agente")
 	}
 }

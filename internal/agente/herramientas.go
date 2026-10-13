@@ -69,6 +69,22 @@ func objeto(props map[string]Campo, obligatorios ...string) Esquema {
 	return Esquema{Tipo: "object", Propiedades: props, Obligatorios: obligatorios}
 }
 
+// enLaQueEsteAbierta es lo que llevan las dos herramientas que escriben.
+//
+// **Decirlo aquí es la diferencia entre esperarlo y pedirlo.** A un agente al que le
+// dicen «guarda esto en el proyecto de tal cliente» no le falta nada para hacerlo mal:
+// escribe en la bóveda que esté abierta, que puede ser otra, y nadie se entera hasta
+// que alguien busca esa cuenta donde no está. Que mire el estado antes depende de que
+// se acuerde; esta frase se lo pide, y lo que la herramienta devuelve lo remata
+// contando **dónde ha ido**.
+//
+// Y lo que no se le ofrece, a propósito: cambiar de bóveda. Eso es administrar, y lo
+// hace la persona en la ventana (ADR 0054).
+const enLaQueEsteAbierta = "**Actúa sobre la bóveda que esté abierta y ninguna otra.** Si quien te lo " +
+	"pide nombra otra —un proyecto, el nombre de un cliente—, mira antes `esfinge_estado`: desde aquí " +
+	"no se puede cambiar de bóveda, así que lo que toca es pedirle que la abra, no actuar sobre la que " +
+	"no es. "
+
 // LasHerramientas es el catálogo. **Cada una con sus tres banderas puestas
 // explícitamente**, aunque sean falsas: una bandera que falta es una decisión que nadie
 // tomó, y hay una prueba que lo exige.
@@ -167,10 +183,11 @@ var LasHerramientas = []Herramienta{
 	},
 	{
 		Nombre: "esfinge_crear",
-		Descripcion: "Guarda una entrada nueva en la bóveda abierta. Si pones generar:true, **Esfinge hace la " +
-			"contraseña y no te la devuelve** — eso es mejor que inventarla tú, y luego se puede copiar con " +
-			"esfinge_copiar_contrasena. Tipos: credencial, nota, tarjeta, identidad, personal, wifi. **Las " +
-			"llaves de acceso no se crean aquí**: las emite el sitio.",
+		Descripcion: "Guarda una entrada nueva. " + enLaQueEsteAbierta +
+			"Si pones generar:true, **Esfinge hace la contraseña y no te la devuelve** — eso es mejor " +
+			"que inventarla tú, y luego se puede copiar con esfinge_copiar_contrasena; lo que sí te dice " +
+			"es cuánto mide y de qué alfabeto sale. Tipos: credencial, nota, tarjeta, identidad, " +
+			"personal, wifi. **Las llaves de acceso no se crean aquí**: las emite el sitio.",
 		Esquema: objeto(map[string]Campo{
 			"tipo":    {Tipo: "string", Descripcion: "credencial si no se dice nada.", Enum: []string{"credencial", "nota", "tarjeta", "identidad", "personal", "wifi"}},
 			"titulo":  {Tipo: "string", Descripcion: "Cómo se llama. Obligatorio."},
@@ -194,10 +211,11 @@ var LasHerramientas = []Herramienta{
 	},
 	{
 		Nombre: "esfinge_editar",
-		Descripcion: "Cambia campos de una entrada. Lo que no mandes **no se toca**. Cambiar el título, las " +
-			"notas o la carpeta va directo; **cambiar la contraseña o el código tiene que aprobarlo la " +
-			"persona**, porque eso puede dejar una cuenta sin forma de entrar. La contraseña anterior se " +
-			"guarda en el historial de la entrada.",
+		Descripcion: "Cambia campos de una entrada. " + enLaQueEsteAbierta +
+			"Lo que no mandes **no se toca**. Cambiar el título, las notas o la carpeta va directo; " +
+			"**cambiar la contraseña o el código tiene que aprobarlo la persona**, porque eso puede " +
+			"dejar una cuenta sin forma de entrar. La contraseña anterior se guarda en el historial " +
+			"de la entrada.",
 		Esquema: objeto(map[string]Campo{
 			"id":        {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 			"titulo":    {Tipo: "string"},
@@ -215,8 +233,9 @@ var LasHerramientas = []Herramienta{
 	},
 	{
 		Nombre: "esfinge_borrar",
-		Descripcion: "Manda una entrada a la papelera, donde se puede recuperar durante treinta días. **Tiene " +
-			"que aprobarlo la persona**: es lo único que quita algo de su vista.",
+		Descripcion: "Manda una entrada a la papelera, donde se puede recuperar durante treinta días. " +
+			enLaQueEsteAbierta +
+			"**Tiene que aprobarlo la persona**: es lo único que quita algo de su vista.",
 		Esquema: objeto(map[string]Campo{
 			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 		}, "id"),
