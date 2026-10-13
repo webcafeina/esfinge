@@ -1858,6 +1858,12 @@ salvo la activa, el glifo de la silueta al lado del carné de las identidades y 
 campos. Las tres se le señalaron antes de que las viera, que es la diferencia entre que las mire y que
 las descubra.
 
+Y **el canal con los agentes, usado de verdad** (2026-10-13), que es lo que lo ha pulido: con la 2.52.0,
+que el agente **pregunte antes de escribir** cuando lo abierto es la bóveda de un proyecto y nadie la ha
+nombrado; que **«No volver a preguntar» no cubra el código de un solo uso**; y que `esfinge_resumen`
+conteste de un tiro. Y con la 2.53.0, lo que salió de ahí: que **la tarjeta de aprobación se vea en una
+pantalla de trabajo** —«ha salido el aviso en la bóveda»—, que es lo que hasta ese día no pasaba.
+
 Sin verificar todavía, y es lo único que queda en todo el proyecto: **cómo quedan las estructuras de
 Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono de los `.esf`, que en Windows lo
 pone el instalador y en Linux el `.deb`.

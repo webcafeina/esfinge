@@ -38,9 +38,12 @@ Plantilla al final.
 - **Lo que se aprendió y está en CLAUDE.md**: había **cuatro** pruebas de esa tarjeta y las cuatro iban a
   Ajustes a buscarla. Una prueba que navega hasta donde está la cosa y entonces comprueba que está **no
   dice nada** sobre si está donde hace falta.
+- **Publicada la 2.53.0** —siete trabajos en verde a la primera— y **comprobada por él el mismo día**:
+  «ha salido el aviso en la bóveda». En una pantalla de trabajo y sin pasar por Ajustes, que es justo lo
+  que no ocurría.
 - **Queda abierto**: el **navegador tiene el mismo fallo** con su tarjeta de emparejar —a
-  [deuda.md](deuda.md), sin tocar a propósito para no meter el camino del navegador en esta publicación—;
-  y la decisión de si el flujo de publicar lleva plazo propio para macOS.
+  [deuda.md](deuda.md), sin tocar a propósito para no meter el camino del navegador en esta publicación, y
+  **es lo primero de mañana**—; y la decisión de si el flujo de publicar lleva plazo propio para macOS.
 
 ## 2026-10-13 (5) · «Siempre», no «cuando te lo nombren» — y queda sin publicar
 

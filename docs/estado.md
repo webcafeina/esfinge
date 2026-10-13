@@ -130,8 +130,25 @@
 > fallo** con su tarjeta de emparejar: está en [deuda.md](deuda.md), sin tocar a propósito para no meter un
 > cambio del camino del navegador en esta publicación.
 >
-> **La siguiente acción**: nada pendiente del canal de agentes. Lo que queda son las filas de
-> [deuda.md](deuda.md), y la primera es ésa del navegador.
+> **Publicada la 2.53.0** —siete trabajos en verde a la primera— y **comprobada por el cliente el mismo
+> día**: «ha salido el aviso en la bóveda». O sea, en una pantalla de trabajo y sin pasar por Ajustes, que
+> es exactamente lo que no ocurría.
+>
+> **La siguiente acción, mañana 2026-10-14, y en este orden:**
+>
+> 1. **La tarjeta de emparejar un navegador, que tiene el mismo fallo** y está sin tocar a propósito:
+>    `{navegador?.pide && …}` sigue dentro de `Ajustes`. **El camino ya está abierto** —la banda `.espera`
+>    existe, está medida y tiene prueba—, así que es mover ese bloque a un hermano de `LoQuePideUnAgente`
+>    (que entonces tendría que dejar de llamarse así) y escribirle su prueba **recorriendo pantallas**, no
+>    yendo a Ajustes a buscarla. La fila está en [deuda.md](deuda.md).
+> 2. **Y seguir probando el canal de agentes** usándolo, que es lo único que ha encontrado algo en seis
+>    días: trece arreglos del 8 al 13 de octubre, **todos salidos del uso y ninguno de las pruebas**.
+>
+> **Y lo que queda apuntado sin fecha**: el flujo de publicar **se muere callado** —el 2026-10-13 GitHub
+> canceló el trabajo de macOS a los quince minutos sin asignarle máquina, y la etiqueta se quedó sin
+> *release* con los otros cuatro en verde—. Media hora de trabajo ponerle plazo propio con mensaje, y es
+> literalmente la lección de las seis versiones con los tests en rojo: **lo que hay que respetar tiene que
+> parar algo**.
 >
 > **Y lo que sigue sin poder probarse desde aquí**: el diálogo del sistema al guardar el paquete, y si el
 > relevo encuentra la Esfinge instalada **en otro equipo** — en el suyo sí, comprobado el 2026-10-13 con la
