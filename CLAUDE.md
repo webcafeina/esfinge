@@ -514,6 +514,26 @@ método se puede pasar como referencia —`hacer(esfinge.vaciarPapeleraDeBoveda)
 es como se consigue que un aviso deje de leerse; y **no dice que la pantalla haga algo útil**, solo que
 exista quien lo llame.
 
+**Y la tercera cara de lo mismo: la pantalla existe, y está donde no se mira.** La tarjeta con la que se
+aprueba lo que pide un agente —el centro de la ADR 0054, «cada secreto se aprueba en la ventana»— vivía
+**dentro de Ajustes**, encima de sus pestañas. Cumplía la letra de la regla que ese mismo fichero tiene
+escrita —lo que espera respuesta no vive en ninguna pestaña— y no lo que hacía falta: con la bóveda abierta
+en la lista, que es como se trabaja, el agente decía «apruébalo en la ventana de Esfinge» y **en la ventana
+no había nada que aprobar**. La petición caducaba a los dos minutos sin que nadie se enterara. Igual el
+contador de la válvula con su botón de cortar, y el permiso que no caduca: dar el permiso en un sitio y
+esconder cómo se retira es peor que no darlo.
+
+**Lo grave es por qué estaba en verde.** Había **cuatro** pruebas de esa tarjeta, y las cuatro hacían
+`seccion(page, "Ajustes").click()` **antes** de buscarla. Una prueba que navega hasta donde está la cosa y
+entonces comprueba que está no prueba nada sobre si está donde hace falta. La regla general: **cuando algo
+es estado y no configuración, la prueba tiene que buscarlo desde donde esté la persona**, y si puede estar
+en varias pantallas, recorrerlas. Lo vigila ahora «la tarjeta de un agente sale en cualquier pantalla, no
+solo en Ajustes», que las recorre y además **contesta desde una de ellas**.
+
+Y el detalle que lo tapó al probarlo en el Mac: funcionó porque el cliente **venía de Ajustes → Agentes**
+de instalar el paquete, así que la ventana estaba aparcada en la única pantalla donde se veía. Lo mismo que
+«no preguntó tras hacerlo una vez no es no pregunta»: funcionar una vez no dice en qué condiciones.
+
 **Todo método exportado de `*App` queda expuesto a la interfaz.** Wails los enlaza por `Bind` y el
 servidor de desarrollo los publica por reflexión, sin listas que mantener — que es cómodo hasta que
 se exporta algo que no debería poder pedirse desde la ventana. Por eso `comprobarAlArrancar` va en

@@ -96,6 +96,32 @@ export default function App() {
   const [verAcceso, setVerAcceso] = useState(0);
   usaSincroAlVolver(cuenta?.modo === "cuenta");
 
+  // Lo que pide un agente de IA, **a este nivel y no dentro de Ajustes** (ADR 0054).
+  //
+  // Está aquí porque la tarjeta de aprobación se dibuja en cualquier pantalla, y
+  // porque el estado tiene que ser uno: Ajustes también lo necesita —la orden de
+  // configurar, la lista de agentes, el registro— y con una copia en cada sitio
+  // aprobar arriba dejaría la de abajo diciendo lo de antes.
+  const [elAgente, setElAgente] = useState<EstadoDelAgente | null>(null);
+  const leerAgente = useCallback(() => {
+    esfinge.estadoDelAgente().then(setElAgente).catch(() => {});
+  }, []);
+  useEffect(() => {
+    // Quien pide está mirando su terminal, no esta ventana, así que esto tiene que
+    // aparecer **sin que nadie recargue nada**. Son tres eventos y no uno: pedir
+    // emparejarse, pedir un secreto, y haberlo dado —que es cuando se escribe el
+    // apunte del registro, porque al aprobar todavía no hay nada que enseñar—.
+    const dejarDeOirPide = alPedirloUnAgente(leerAgente);
+    const dejarDeOirQuiere = alQuererAlgoUnAgente(leerAgente);
+    const dejarDeOirApuntes = alApuntarloElAgente(leerAgente);
+    leerAgente();
+    return () => {
+      dejarDeOirPide();
+      dejarDeOirQuiere();
+      dejarDeOirApuntes();
+    };
+  }, [leerAgente]);
+
   const abrirAsistente = (tipo: TipoAsistente) => {
     esfinge
       .estadoBoveda()
@@ -331,6 +357,11 @@ export default function App() {
           />
         )}
 
+        {/* **Y lo que pide un agente, aquí, pase lo que pase.** Mismo sitio que la
+            banda de versión nueva —entre la barra y el contenido— y por la misma razón:
+            es la ventana hablando, no la pantalla en la que estés trabajando. */}
+        <LoQuePideUnAgente elAgente={elAgente} leerAgente={leerAgente} />
+
         <main className="contenido">
           {/* Cada sección se queda montada desde la primera vez que se visita, y
               lo que hace se esconde en vez de desmontarse.
@@ -405,6 +436,8 @@ export default function App() {
           >
             <Ajustes
               porElBloqueMCP={tarea === "mcp"}
+              elAgente={elAgente}
+              leerAgente={leerAgente}
               version={version}
               alEncontrar={setNovedad}
               alCrearCuenta={() => abrirAsistente({ que: "crear" })}
@@ -1249,14 +1282,241 @@ function ParaCopiar({ id, valor }: { id: string; valor: string }) {
   );
 }
 
+/**
+ * Lo que un agente de IA pide o tiene concedido, **en cualquier pantalla**.
+ *
+ * Esto vivía dentro de `Ajustes`, encima de sus pestañas, y el comentario de allí
+ * decía que lo que espera respuesta no vive en ninguna pestaña. Era verdad a medias:
+ * salía en las cinco pestañas **de Ajustes**, y en el resto de la ventana no salía en
+ * ninguna parte. Así que con la bóveda abierta en la lista —que es como se trabaja— el
+ * agente decía «apruébalo en la ventana de Esfinge» y en la ventana **no había nada que
+ * aprobar**; la petición caducaba a los dos minutos sin que nadie se enterara. Lo
+ * encontró el cliente usándolo el 2026-10-13, y no lo vio ninguna prueba porque de la
+ * tarjeta de aprobación no había ninguna: las de Ajustes cubren la configuración.
+ *
+ * Y las cuatro cosas van juntas a propósito. Separarlas sería peor que no moverlas:
+ * aprobar «todo lo suyo, 5 minutos» aquí arriba y tener el contador con su botón de
+ * cortar escondido en otra pantalla es dar el permiso y esconder cómo se retira.
+ *
+ * **La suscripción sube con ellas.** Antes la montaba `Ajustes`, así que en una sesión
+ * en la que nadie entrara en Ajustes la ventana no escuchaba el evento siquiera.
+ */
+function LoQuePideUnAgente({
+  elAgente,
+  leerAgente,
+}: {
+  elAgente: EstadoDelAgente | null;
+  leerAgente: () => void;
+}) {
+  // Sin nada que contestar no se dibuja **nada**: una banda vacía con su filete en
+  // todas las pantallas sería ruido permanente, que es como se deja de leer un aviso.
+  const hayAlgo = Boolean(
+    elAgente?.pide || elAgente?.quiere || elAgente?.valvula?.abierta || elAgente?.siempre,
+  );
+  if (!hayAlgo) return null;
+
+  return (
+    <div className="espera">
+      {/* Lo que pide permiso. En «peligro» por lo mismo que el del navegador: su
+          respuesta le abre la bóveda a otro programa. */}
+      {elAgente?.pide && (
+        <div className="grupo peligro">
+          <label>{elAgente.pide} quiere consultar tu bóveda</label>
+          <p className="aviso">
+            Si no has sido tú al abrir ese programa, <strong>di que no</strong>. Con permiso podrá
+            ver qué cuentas tienes, de qué sitios y cuáles están mal; para usar una contraseña
+            tendrá que pedírtelo cada vez.
+          </p>
+          <div className="botones">
+            <button
+              className="principal"
+              onClick={async () => {
+                await esfinge.permitirAgente();
+                leerAgente();
+              }}
+            >
+              Permitirlo
+            </button>
+            <button onClick={leerAgente}>Ahora no</button>
+          </div>
+        </div>
+      )}
+      {/* **Lo que un agente quiere ahora mismo.** En «peligro» como la de emparejar,
+          y por una razón de más: aquí lo que se aprueba es **una contraseña
+          concreta**, y el sí vale una vez y solo para ella.
+
+          Dice **qué** se pide, no solo que se pide algo: «un agente quiere una
+          contraseña» no es una pregunta que se pueda contestar. */}
+      {elAgente?.quiere && (
+        <div className="grupo peligro">
+          <label>
+            {elAgente.quiere.quien} quiere{" "}
+            {elAgente.quiere.que === "codigo"
+              ? `el código de un solo uso de «${elAgente.quiere.titulo}»`
+              : `la contraseña de «${elAgente.quiere.titulo}»`}
+          </label>
+          {/* **Las dos peticiones no son lo mismo y no se dicen igual.** Una se copia
+              y el agente no la ve; la otra **se la enseñas**, y eso se queda en la
+              conversación de su modelo. Decirlas con el mismo texto sería esconder
+              justo la diferencia que hace falta para contestar. */}
+          {elAgente.quiere.que === "codigo" ? (
+            <p className="aviso">
+              Esas seis cifras <strong>sí las verá</strong>, y se quedarán en la conversación de
+              su modelo. Caducan en medio minuto y no sirven sin la contraseña, pero si no le has
+              pedido nada que lo necesite, <strong>di que no</strong>.
+            </p>
+          ) : (
+            <p className="aviso">
+              Se copiará al portapapeles de este ordenador: <strong>el agente no la ve</strong>.
+              Si no le has pedido nada que la necesite, <strong>di que no</strong>: lo que un
+              agente lee por ahí puede decirle qué pedir.
+            </p>
+          )}
+          <div className="botones">
+            <button
+              className="principal"
+              onClick={async () => {
+                await esfinge.aprobarLoQuePideElAgente(false);
+                leerAgente();
+              }}
+            >
+              {elAgente.quiere.que === "codigo" ? "Darle el código" : "Solo ésta"}
+            </button>
+            {/* **El «un rato» no es el botón principal**, y eso es a propósito: es
+                lo único de esta pantalla que quita una pregunta, así que no puede
+                ser lo que se pulsa sin mirar.
+
+                **Y no sale para el código**, porque la válvula no lo cubre: ofrecer
+                aquí un botón que no va a hacer lo que dice sería peor que no
+                ofrecerlo. */}
+            {elAgente.quiere.que !== "codigo" && (
+              <button
+                onClick={async () => {
+                  await esfinge.aprobarLoQuePideElAgente(true);
+                  leerAgente();
+                }}
+              >
+                Todo lo suyo, 5 minutos
+              </button>
+            )}
+            {/* **Y el que no caduca.** Lo pidió el cliente al usarlo de verdad:
+                aprobar una por una cansa, y **lo que cansa se aprueba sin mirar**,
+                que es peor que no preguntar porque da la apariencia de control sin
+                el control.
+
+                Cubre lo mismo que la válvula —por eso cuelga de la misma
+                condición— y va **el último de los que dicen que sí**: es el más
+                cómodo y el que más abre, y el orden de los botones es lo que dice
+                cuál es el camino de siempre. */}
+            {elAgente.quiere.que !== "codigo" && (
+              <button
+                className="discreto"
+                onClick={async () => {
+                  await esfinge.aprobarSiempreAlAgente();
+                  leerAgente();
+                }}
+              >
+                No volver a preguntar
+              </button>
+            )}
+            <button
+              onClick={async () => {
+                await esfinge.denegarLoQuePideElAgente();
+                leerAgente();
+              }}
+            >
+              No
+            </button>
+          </div>
+        </div>
+      )}
+      {/* **El contador de la válvula, mientras está abierta.** Es lo que hace
+          soportable haber dicho «durante cinco minutos»: se ve lo que se le va
+          dando y se puede cortar sin esperar a que caduque. */}
+      {elAgente?.valvula?.abierta && (
+        <div className="grupo peligro">
+          <label>
+            Dándole lo que pida durante {Math.max(0, Math.ceil(elAgente.valvula.quedan / 60))} min
+          </label>
+          <p className="nota">
+            Van {elAgente.valvula.usadas} de {elAgente.valvula.tope}
+            {elAgente.valvula.ultimos && elAgente.valvula.ultimos.length > 0 && (
+              <> · {elAgente.valvula.ultimos.slice(-3).join(", ")}</>
+            )}
+            . Al llegar al tope vuelve a preguntar.
+          </p>
+          <div className="botones">
+            <button
+              className="principal"
+              onClick={async () => {
+                await esfinge.cortarAlAgente();
+                leerAgente();
+              }}
+            >
+              Cortar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* **El permiso que no caduca, dicho mientras dure** (2026-10-08).
+
+          Un permiso permanente que no se ve es un permiso que se olvida. Es la
+          condición con la que se dio: el cliente pidió el botón **y** que quedara
+          señalado con prioridad visual y con cómo revertirlo.
+
+          Y por eso está aquí y no en Ajustes: puesto allí se cumplía la letra —se veía
+          en las cinco pestañas— y no lo que se había pedido, porque mientras un agente
+          trabaja nadie está mirando Ajustes. */}
+      {elAgente?.siempre && (
+        <div className="grupo peligro">
+          <label>
+            {elAgente.siempreQuien || "Un agente"} puede usar tus contraseñas sin preguntarte
+          </label>
+          <p className="aviso">
+            Lo diste tú y <strong>no caduca</strong>. Sigue preguntando para el código de un
+            solo uso y para cambiar una contraseña, que son las dos cosas que no se deshacen.
+            Lo demás se lo lleva sin avisar —las contraseñas y mandar una entrada a la
+            papelera—, y lo único que queda es la lista de abajo.
+          </p>
+          <div className="botones">
+            <button
+              className="principal"
+              onClick={async () => {
+                await esfinge.quitarElSiempreAlAgente();
+                leerAgente();
+              }}
+            >
+              Volver a preguntarme
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Ajustes({
   version,
   alEncontrar,
   alCrearCuenta,
   alEntrar,
+  elAgente,
+  leerAgente,
   porElBloqueMCP = false,
 }: {
   version: string;
+  /**
+   * El estado del agente **lo tiene la ventana**, no esta pantalla.
+   *
+   * Lo que se contesta —emparejar, aprobar un secreto, cortar la válvula, quitar el
+   * permiso que no caduca— se dibuja arriba y en cualquier pantalla. Aquí queda lo que
+   * de verdad es configuración: cómo conectarlo, quién está permitido y qué se le ha
+   * dado. Y el estado es uno porque los dos sitios lo leen: con una copia en cada uno,
+   * aprobar arriba dejaba esta lista diciendo lo de antes.
+   */
+  elAgente: EstadoDelAgente | null;
+  leerAgente: () => void;
   alEncontrar: (n: Novedad) => void;
   alCrearCuenta: () => void;
   alEntrar: (correo?: string, deNuevo?: boolean) => void;
@@ -1315,11 +1575,6 @@ function Ajustes({
     esfinge.estadoDelNavegador().then(setNavegador).catch(() => {});
   }, []);
 
-  const [elAgente, setElAgente] = useState<EstadoDelAgente | null>(null);
-  const leerAgente = useCallback(() => {
-    esfinge.estadoDelAgente().then(setElAgente).catch(() => {});
-  }, []);
-
   // Los sitios en los que la extensión no ofrece guardar, que viven dentro de la
   // bóveda. Se vuelven a leer cuando el navegador apunta uno nuevo.
   const [excluidos, setExcluidos] = useState<string[]>([]);
@@ -1338,23 +1593,11 @@ function Ajustes({
     // Cuando un navegador pide permiso hay que enterarse **sin que nadie
     // recargue nada**: quien lo está pidiendo está mirando la otra ventana.
     const dejarDeOir = alPedirloUnNavegador(leerNavegador);
-    // Y lo mismo con los agentes: quien lo está pidiendo está mirando su terminal,
-    // no esta ventana, así que esto tiene que aparecer **sin que nadie recargue nada**.
-    const dejarDeOirAgente = alPedirloUnAgente(leerAgente);
-    // Y cuando pide algo que hay que aprobar, por lo mismo: quien lo pide está mirando
-    // su terminal, no esta ventana.
-    const dejarDeOirQuiere = alQuererAlgoUnAgente(leerAgente);
-    // Y cuando ya se le ha dado algo, que es cuando se escribe el apunte: al aprobar
-    // todavía no hay nada que enseñar.
-    const dejarDeOirApuntes = alApuntarloElAgente(leerAgente);
-    leerAgente();
-    return () => {
-      dejarDeOir();
-      dejarDeOirAgente();
-      dejarDeOirQuiere();
-      dejarDeOirApuntes();
-    };
-  }, [leerPreferencias, leerNavegador, leerAgente]);
+    // **Los de los agentes los escucha la ventana**, no esta pantalla: lo que hay que
+    // contestar se dibuja arriba y en cualquier sección, así que montados aquí no se
+    // escuchaban siquiera hasta que alguien entrara en Ajustes.
+    return dejarDeOir;
+  }, [leerPreferencias, leerNavegador]);
 
   async function cambiar(cambio: Partial<Preferencias>) {
     const base = ultimasPrefs.current ?? prefs;
@@ -1449,147 +1692,6 @@ function Ajustes({
             </div>
           </div>
         )}
-        {/* Lo que pide permiso. En «peligro» por lo mismo que el del navegador: su
-            respuesta le abre la bóveda a otro programa. */}
-        {elAgente?.pide && (
-          <div className="grupo peligro">
-            <label>{elAgente.pide} quiere consultar tu bóveda</label>
-            <p className="aviso">
-              Si no has sido tú al abrir ese programa, <strong>di que no</strong>. Con permiso podrá
-              ver qué cuentas tienes, de qué sitios y cuáles están mal; para usar una contraseña
-              tendrá que pedírtelo cada vez.
-            </p>
-            <div className="botones">
-              <button
-                className="principal"
-                onClick={async () => {
-                  await esfinge.permitirAgente();
-                  leerAgente();
-                }}
-              >
-                Permitirlo
-              </button>
-              <button onClick={leerAgente}>Ahora no</button>
-            </div>
-          </div>
-        )}
-        {/* **Lo que un agente quiere ahora mismo.** En «peligro» como la de emparejar,
-            y por una razón de más: aquí lo que se aprueba es **una contraseña
-            concreta**, y el sí vale una vez y solo para ella.
-
-            Dice **qué** se pide, no solo que se pide algo: «un agente quiere una
-            contraseña» no es una pregunta que se pueda contestar. */}
-        {elAgente?.quiere && (
-          <div className="grupo peligro">
-            <label>
-              {elAgente.quiere.quien} quiere{" "}
-              {elAgente.quiere.que === "codigo"
-                ? `el código de un solo uso de «${elAgente.quiere.titulo}»`
-                : `la contraseña de «${elAgente.quiere.titulo}»`}
-            </label>
-            {/* **Las dos peticiones no son lo mismo y no se dicen igual.** Una se copia
-                y el agente no la ve; la otra **se la enseñas**, y eso se queda en la
-                conversación de su modelo. Decirlas con el mismo texto sería esconder
-                justo la diferencia que hace falta para contestar. */}
-            {elAgente.quiere.que === "codigo" ? (
-              <p className="aviso">
-                Esas seis cifras <strong>sí las verá</strong>, y se quedarán en la conversación de
-                su modelo. Caducan en medio minuto y no sirven sin la contraseña, pero si no le has
-                pedido nada que lo necesite, <strong>di que no</strong>.
-              </p>
-            ) : (
-              <p className="aviso">
-                Se copiará al portapapeles de este ordenador: <strong>el agente no la ve</strong>.
-                Si no le has pedido nada que la necesite, <strong>di que no</strong>: lo que un
-                agente lee por ahí puede decirle qué pedir.
-              </p>
-            )}
-            <div className="botones">
-              <button
-                className="principal"
-                onClick={async () => {
-                  await esfinge.aprobarLoQuePideElAgente(false);
-                  leerAgente();
-                }}
-              >
-                {elAgente.quiere.que === "codigo" ? "Darle el código" : "Solo ésta"}
-              </button>
-              {/* **El «un rato» no es el botón principal**, y eso es a propósito: es
-                  lo único de esta pantalla que quita una pregunta, así que no puede
-                  ser lo que se pulsa sin mirar.
-
-                  **Y no sale para el código**, porque la válvula no lo cubre: ofrecer
-                  aquí un botón que no va a hacer lo que dice sería peor que no
-                  ofrecerlo. */}
-              {elAgente.quiere.que !== "codigo" && (
-                <button
-                  onClick={async () => {
-                    await esfinge.aprobarLoQuePideElAgente(true);
-                    leerAgente();
-                  }}
-                >
-                  Todo lo suyo, 5 minutos
-                </button>
-              )}
-              {/* **Y el que no caduca.** Lo pidió el cliente al usarlo de verdad:
-                  aprobar una por una cansa, y **lo que cansa se aprueba sin mirar**,
-                  que es peor que no preguntar porque da la apariencia de control sin
-                  el control.
-
-                  Cubre lo mismo que la válvula —por eso cuelga de la misma
-                  condición— y va **el último de los que dicen que sí**: es el más
-                  cómodo y el que más abre, y el orden de los botones es lo que dice
-                  cuál es el camino de siempre. */}
-              {elAgente.quiere.que !== "codigo" && (
-                <button
-                  className="discreto"
-                  onClick={async () => {
-                    await esfinge.aprobarSiempreAlAgente();
-                    leerAgente();
-                  }}
-                >
-                  No volver a preguntar
-                </button>
-              )}
-              <button
-                onClick={async () => {
-                  await esfinge.denegarLoQuePideElAgente();
-                  leerAgente();
-                }}
-              >
-                No
-              </button>
-            </div>
-          </div>
-        )}
-        {/* **El contador de la válvula, mientras está abierta.** Es lo que hace
-            soportable haber dicho «durante cinco minutos»: se ve lo que se le va
-            dando y se puede cortar sin esperar a que caduque. */}
-        {elAgente?.valvula?.abierta && (
-          <div className="grupo peligro">
-            <label>
-              Dándole lo que pida durante {Math.max(0, Math.ceil(elAgente.valvula.quedan / 60))} min
-            </label>
-            <p className="nota">
-              Van {elAgente.valvula.usadas} de {elAgente.valvula.tope}
-              {elAgente.valvula.ultimos && elAgente.valvula.ultimos.length > 0 && (
-                <> · {elAgente.valvula.ultimos.slice(-3).join(", ")}</>
-              )}
-              . Al llegar al tope vuelve a preguntar.
-            </p>
-            <div className="botones">
-              <button
-                className="principal"
-                onClick={async () => {
-                  await esfinge.cortarAlAgente();
-                  leerAgente();
-                }}
-              >
-                Cortar
-              </button>
-            </div>
-          </div>
-        )}
 
       {/* **El aviso de los iconos, una vez.**
        *
@@ -1655,37 +1757,6 @@ function Ajustes({
         envuelve
       />
 
-      {/* **El permiso que no caduca, dicho mientras dure** (2026-10-08).
-
-          Un permiso permanente que no se ve es un permiso que se olvida, así que esto
-          va en la zona de estado —fuera de las pestañas, encima del selector— y no
-          dentro de la sección de agentes. Es la condición con la que se dio: el
-          cliente pidió el botón **y** que quedara señalado con prioridad visual y con
-          cómo revertirlo. */}
-      {elAgente?.siempre && (
-        <div className="grupo peligro">
-          <label>
-            {elAgente.siempreQuien || "Un agente"} puede usar tus contraseñas sin preguntarte
-          </label>
-          <p className="aviso">
-            Lo diste tú y <strong>no caduca</strong>. Sigue preguntando para el código de un
-            solo uso y para cambiar una contraseña, que son las dos cosas que no se deshacen.
-            Lo demás se lo lleva sin avisar —las contraseñas y mandar una entrada a la
-            papelera—, y lo único que queda es la lista de abajo.
-          </p>
-          <div className="botones">
-            <button
-              className="principal"
-              onClick={async () => {
-                await esfinge.quitarElSiempreAlAgente();
-                leerAgente();
-              }}
-            >
-              Volver a preguntarme
-            </button>
-          </div>
-        </div>
-      )}
 
       {seccion === "cuenta" && (
         <>

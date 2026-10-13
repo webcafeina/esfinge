@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-10-08**
+Última actualización: **2026-10-13**
 
 > **No queda nada del proyecto sin comprobar en una máquina de verdad, salvo Windows y GNOME.** Las dos
 > fichas que quedaban vivas se cerraron hoy en los dos Macs del cliente:
@@ -101,17 +101,37 @@
 > propio agente mientras trabajaba. Dos de ellos eran arreglos del mismo día que se habían quedado a
 > medias.
 >
-> **Lo último, que está SIN PUBLICAR** y es lo primero que hay que mirar al volver: la frase que llevan
-> `crear`, `editar` y `borrar` pedía mirar la bóveda **«si te nombran otra»**, y el caso que de verdad duele
-> es **el que no la nombra** —tienes un proyecto abierto, pides guardar algo sin pensar en dónde, y acaba en
-> la bóveda de un cliente—. Ahora dice **«antes de escribir, siempre»**. Son dos ficheros en el árbol
-> (`internal/agente/herramientas.go` y su prueba), con la guarda mutada, y **se acumulan a propósito** con
-> lo que salga de las pruebas siguientes en vez de sacar otra versión.
+> **Y la frase de `crear`/`editar`/`borrar`, que salió en la 2.52.0**: pedía mirar la bóveda «si te nombran
+> otra», y el caso que de verdad duele es **el que no la nombra** —tienes un proyecto abierto, pides guardar
+> algo sin pensar en dónde, y acaba en la bóveda de un cliente—. Ahora dice **«antes de escribir, siempre»**,
+> y **funciona**: el agente miró `esfinge_estado` por su cuenta, dijo que la abierta era Zeri's Coffee, dijo
+> que no puede cambiarla y **preguntó antes de escribir**.
+
+---
+
+> **La tarde del 2026-10-13: las tres pruebas pasan, y una de ellas destapó lo gordo.**
 >
-> **La siguiente acción, esta tarde**: las dos pruebas que llevan desde el jueves esperando —**«No volver a
-> preguntar»**, para ver si el aviso de arriba se sigue viendo o **se vuelve invisible de tanto estar**, y
-> **`esfinge_resumen`**, si contesta «¿qué tengo?» de un tiro— y publicar lo acumulado con lo que salga de
-> ellas.
+> **Las tres, en su Mac**: la frase nueva (arriba); **«No volver a preguntar»** —la segunda contraseña sin
+> aprobar, y el **código de un solo uso sigue preguntando**, que es la frontera que importa y que el propio
+> agente le explicó—; y **`esfinge_resumen`**, que contestó de un tiro con las ochenta entradas por clase y
+> se fue solo a la higiene.
+>
+> **Y entonces, al preguntarle si veía el aviso del permiso, salió que estaba mirándolo en Ajustes.** Eso
+> llevó a lo que se publica en la **2.53.0**: la tarjeta con la que se aprueba lo que pide un agente, el
+> contador de la válvula y el aviso del permiso que no caduca **vivían dentro de Ajustes**. Desde cualquier
+> pantalla de trabajo, el agente decía «apruébalo en la ventana de Esfinge» y **no había nada que aprobar**:
+> la petición caducaba a los dos minutos. Le funcionó de milagro porque venía de Ajustes de instalar el
+> paquete. Ahora van en una banda propia (`.espera`) entre la barra y el contenido, como la de versión nueva.
+>
+> **Lo que hay que saber de ese arreglo**: las **cuatro** pruebas que había de esa tarjeta estaban en verde
+> **porque iban a Ajustes a buscarla**; la nueva recorre las pantallas de trabajo y **contesta desde una de
+> ellas**, y la mutación —devolver la tarjeta a Ajustes— pone cinco en rojo. Las dos parejas de color nuevas
+> —el aviso y la nota sobre `Suave`— están **medidas**, 5,76 y 4,88 en claro. Y el **navegador tiene el mismo
+> fallo** con su tarjeta de emparejar: está en [deuda.md](deuda.md), sin tocar a propósito para no meter un
+> cambio del camino del navegador en esta publicación.
+>
+> **La siguiente acción**: nada pendiente del canal de agentes. Lo que queda son las filas de
+> [deuda.md](deuda.md), y la primera es ésa del navegador.
 >
 > **Y lo que sigue sin poder probarse desde aquí**: el diálogo del sistema al guardar el paquete, y si el
 > relevo encuentra la Esfinge instalada **en otro equipo** — en el suyo sí, comprobado el 2026-10-13 con la

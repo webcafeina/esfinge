@@ -49,6 +49,15 @@ func parejasDe(t Tema) []pareja {
 		{t.Aviso, t.Tarjeta, AANormal, "aviso dentro de un panel"},
 		{t.Error, t.Tarjeta, AANormal, "error dentro de un panel"},
 
+		// Y en la banda de lo que pide un agente, que vive sobre la superficie suave
+		// y no sobre una tarjeta (2026-10-13). Son dos parejas que antes no existían:
+		// esos textos estaban dentro de Ajustes, sobre `Tarjeta`, y al sacarlos de ahí
+		// cambió el fondo de debajo. Es la regla de siempre —una pareja que no está
+		// medida no se usa—, y aquí entra entera porque el fondo lo cambió un
+		// movimiento, no un color.
+		{t.Aviso, t.Suave, AANormal, "lo que pide un agente, en su banda"},
+		{t.Apagado, t.Suave, AANormal, "el contador de la válvula, en su banda"},
+
 		// Botones. El primario es el amarillo como fondo, que es para lo que sirve;
 		// el secundario vive sobre la superficie de tarjeta, y al pasar el puntero
 		// sube un escalón en la escala de superficies en vez de estrenar un color.

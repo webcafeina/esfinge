@@ -2805,7 +2805,7 @@ test("la fila MCP lleva al bloque de los agentes y se queda marcada", async ({ p
  * agentes solo lo vería quien ya está mirando ahí, y un permiso permanente que no se
  * ve es un permiso que se olvida.
  */
-test("el permiso que no caduca se anuncia en todas las pestañas y se puede quitar", async ({ page }) => {
+test("el permiso que no caduca se anuncia en cualquier pantalla y se puede quitar", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.route("**/api/EstadoDelAgente", async (route) => {
     await route.fulfill({
@@ -2826,9 +2826,10 @@ test("el permiso que no caduca se anuncia en todas las pestañas y se puede quit
   });
   await page.goto("/");
   await conLaBovedaAbierta(page);
-  await seccion(page, "Ajustes").click();
 
-  const aviso = page.locator(".panel:visible .grupo.peligro").filter({ hasText: "sin preguntarte" });
+  // **Sin pasar por Ajustes**, que es lo que esta prueba daba por bueno antes: la
+  // buscaba después de entrar ahí, y por eso no vio que fuera de Ajustes no salía.
+  const aviso = page.locator(".espera .grupo.peligro").filter({ hasText: "sin preguntarte" });
   await expect(aviso).toBeVisible({ timeout: 20_000 });
   await expect(aviso).toContainText("Claude (claude-ai)");
   // **Y dice qué sigue preguntando**, que es lo que hace que darlo sea razonable.
@@ -2836,7 +2837,15 @@ test("el permiso que no caduca se anuncia en todas las pestañas y se puede quit
   // Con su forma de deshacerlo al lado: un permiso que no se puede quitar no se da.
   await expect(aviso.getByRole("button", { name: "Volver a preguntarme" })).toBeVisible();
 
-  // **En todas las pestañas**, que es la condición con la que se dio.
+  // **En cualquier pantalla**, que es la condición con la que se dio. Antes esto
+  // recorría las pestañas de Ajustes, o sea el sitio donde ya se sabía que salía.
+  for (const pantalla of ["Cifrar", "Historial", "Bóveda"]) {
+    await seccion(page, pantalla).click();
+    await expect(aviso, `el aviso desaparece en «${pantalla}»`).toBeVisible();
+  }
+
+  // Y en las pestañas de Ajustes también, que ahora sale gratis: está por encima.
+  await seccion(page, "Ajustes").click();
   for (const pestana of ["Bóveda", "Navegador", "Cuenta"]) {
     await page.getByRole("tab", { name: pestana }).click();
     await expect(aviso, `el aviso desaparece en «${pestana}»`).toBeVisible();
@@ -2938,9 +2947,11 @@ test("la tarjeta de lo que pide un agente dice quién, cuál y que no la ve", as
   });
   await page.goto("/");
   await conLaBovedaAbierta(page);
-  await seccion(page, "Ajustes").click();
 
-  const tarjeta = page.locator(".panel:visible .grupo.peligro").filter({ hasText: "Claude Code" });
+  // **Aquí, con la bóveda abierta y sin entrar en Ajustes.** Esta prueba iba antes a
+  // Ajustes a buscar la tarjeta, así que estaba en verde con la tarjeta viviendo donde
+  // nadie la veía trabajando.
+  const tarjeta = page.locator(".espera .grupo.peligro").filter({ hasText: "Claude Code" });
   await expect(tarjeta).toBeVisible({ timeout: 20_000 });
   // **Quién y cuál**, los dos: sin el nombre de la entrada no se puede contestar.
   await expect(tarjeta).toContainText("Claude Code");
@@ -2984,9 +2995,10 @@ test("mientras la válvula está abierta, la ventana dice cuánto y deja cortar"
   });
   await page.goto("/");
   await conLaBovedaAbierta(page);
-  await seccion(page, "Ajustes").click();
 
-  const aviso = page.locator(".panel:visible .grupo.peligro").filter({ hasText: "Dándole lo que pida" });
+  // **Donde se está trabajando**, no en Ajustes: el contador y su botón de cortar son
+  // la forma de retirar lo que se concedió, y escondidos en otra pantalla no la son.
+  const aviso = page.locator(".espera .grupo.peligro").filter({ hasText: "Dándole lo que pida" });
   await expect(aviso).toBeVisible({ timeout: 20_000 });
   // **Cuánto queda y cuánto lleva**: sin el segundo, «cinco minutos» no dice nada de lo
   // que está pasando ahora mismo.
@@ -3029,9 +3041,8 @@ test("pedir el código se dice distinto, y ahí no se ofrece la válvula", async
   });
   await page.goto("/");
   await conLaBovedaAbierta(page);
-  await seccion(page, "Ajustes").click();
 
-  const tarjeta = page.locator(".panel:visible .grupo.peligro").filter({ hasText: "Claude Code" });
+  const tarjeta = page.locator(".espera .grupo.peligro").filter({ hasText: "Claude Code" });
   await expect(tarjeta).toBeVisible({ timeout: 20_000 });
   await expect(tarjeta).toContainText("código de un solo uso");
   // **Lo que la distingue**: aquí sí lo ve, y se queda donde se queda.
@@ -3042,5 +3053,93 @@ test("pedir el código se dice distinto, y ahí no se ofrece la válvula", async
   await expect(tarjeta.getByRole("button", { name: "Darle el código" })).toBeVisible();
 
   await tarjeta.screenshot({ path: `test-results/agente-pide-codigo-${test.info().project.name}.png` });
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * **Y lo que pide un agente se ve y se contesta desde cualquier pantalla** (2026-10-13).
+ *
+ * Esto es la prueba que faltaba, y faltaba de una forma concreta: las cuatro que ya
+ * había iban a Ajustes y buscaban la tarjeta ahí, así que estaban en verde con la
+ * tarjeta viviendo **dentro de Ajustes** —encima de sus pestañas, lo que cumplía la
+ * letra de «no vive en ninguna pestaña» y no lo que hacía falta—. Desde cualquier otra
+ * pantalla, el agente decía «apruébalo en la ventana de Esfinge» y en la ventana no
+ * había nada que aprobar: la petición caducaba a los dos minutos sin que nadie se
+ * enterara, y con ella se caía el centro de la ADR 0054 —cada secreto se aprueba en la
+ * ventana—.
+ *
+ * Lo encontró el cliente usándolo, y funcionó en su Mac por casualidad: venía de
+ * Ajustes → Agentes de instalar el paquete, así que la ventana estaba aparcada en la
+ * única pantalla donde eso se veía.
+ *
+ * Por eso aquí se recorren las pantallas de trabajo **y se contesta en una de ellas**:
+ * que se vea sin poder decir que sí sería la mitad del arreglo.
+ */
+test("la tarjeta de un agente sale en cualquier pantalla, no solo en Ajustes", async ({ page }) => {
+  const errores = vigilarConsola(page);
+
+  // El falso tiene memoria: en cuanto se aprueba deja de pedir, que es lo que permite
+  // comprobar el gesto entero y no solo que el dibujo esté.
+  let aprobado = false;
+  await page.route("**/api/AprobarLoQuePideElAgente", async (route) => {
+    aprobado = true;
+    await route.fulfill({ status: 200, contentType: "application/json", body: "null" });
+  });
+  await page.route("**/api/EstadoDelAgente", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        encendido: true,
+        escuchando: true,
+        donde: "/tmp/agentes.sock",
+        configuracion: "{}",
+        orden: "claude mcp add --scope user esfinge /tmp/esfinge-mcp",
+        vscode: "{}",
+        ruta: "/tmp/esfinge-mcp",
+        quiere: aprobado
+          ? undefined
+          : {
+              quien: "Claude Code",
+              que: "copiar-secreto",
+              id: "a1",
+              titulo: "Hacienda",
+              cuando: "2026-10-13T16:00:00Z",
+            },
+        valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const tarjeta = page.locator(".espera .grupo.peligro").filter({ hasText: "Claude Code" });
+  await expect(tarjeta).toBeVisible({ timeout: 20_000 });
+
+  // **Y no está dentro del panel de la pantalla**, que es exactamente lo que estaba
+  // mal: ahí la tapaba cualquier sección que no fuera Ajustes.
+  await expect(page.locator(".panel .grupo.peligro").filter({ hasText: "Claude Code" })).toHaveCount(0);
+
+  // En las pantallas de trabajo, una por una. La bóveda va primera porque es donde se
+  // está cuando se le pide algo a un agente, y es la que no salía.
+  for (const pantalla of ["Bóveda", "Cifrar", "Descifrar", "Historial"]) {
+    await seccion(page, pantalla).click();
+    await expect(tarjeta, `no sale en «${pantalla}»`).toBeVisible();
+    await expect(tarjeta).toContainText("Hacienda");
+  }
+
+  // La ventana entera, para mirarla: lo que esta banda tiene que parecer es la propia
+  // ventana hablando —como la de versión nueva— y no una tarjeta del trabajo. Eso no
+  // lo dice ninguna aserción.
+  await seccion(page, "Bóveda").click();
+  await page.screenshot({
+    path: `test-results/agente-pide-en-la-boveda-${test.info().project.name}.png`,
+  });
+
+  // Y se contesta desde donde se está, sin ir a buscarla a ninguna parte.
+  await tarjeta.getByRole("button", { name: "Solo ésta" }).click();
+  await expect(tarjeta).toHaveCount(0, { timeout: 20_000 });
+
   expect(errores, errores.join(" | ")).toEqual([]);
 });

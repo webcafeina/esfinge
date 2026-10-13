@@ -5,6 +5,43 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-13 (6) · Las tres pruebas pasan, y la última destapa dónde no se veía la tarjeta
+
+- **Se publicó la 2.52.0** con lo que quedaba acumulado: la frase de `crear`/`editar`/`borrar` pasa de
+  «mira la bóveda si te nombran otra» a **«antes de escribir, siempre»**. La publicación **se cayó la
+  primera vez**: GitHub canceló el trabajo de macOS a los **quince minutos justos sin asignarle runner**
+  —cero pasos empezados—, y con él se saltaron «Publicar» y «Tiendas», así que **la etiqueta se quedó sin
+  *release* con los otros cuatro trabajos en verde**. Relanzado, salió. Queda propuesto ponerle al flujo un
+  plazo propio con mensaje: hoy eso **no para nada y no lo dice nadie**.
+- **Las tres pruebas pendientes, hechas por el cliente en su Mac, y las tres pasan:**
+  - **La frase nueva**: con Zeri's Coffee abierto y pidiéndole guardar algo **sin decirle dónde**, el agente
+    miró `esfinge_estado` por su cuenta, dijo cuál estaba abierta, dijo que **no puede cambiarla** y
+    **preguntó antes de escribir**. Era el commit que no se había probado nunca.
+  - **«No volver a preguntar»**: la segunda contraseña salió sin aprobar, y **el código de un solo uso
+    siguió preguntando** — la frontera que importa, y el propio agente se la explicó al cliente.
+  - **`esfinge_resumen`**: contestó de un tiro —ochenta entradas por clase, papelera— y se fue solo a la
+    higiene. Encontró de paso un problema de verdad: **Google, Brevo y Asana comparten contraseña y
+    ninguna tiene segundo factor**.
+- **Y de preguntarle si veía el aviso del permiso salió lo gordo, que es la 2.53.0.** La tarjeta de
+  aprobación, el contador de la válvula y el aviso del permiso que no caduca **vivían dentro de Ajustes**.
+  Cumplían la letra de «lo que espera respuesta no vive en ninguna pestaña» —salían en las cinco de
+  Ajustes— y no lo que hacía falta: **desde cualquier pantalla de trabajo no se veían**, así que el agente
+  decía «apruébalo en la ventana» y no había nada que aprobar. **Le funcionó por casualidad**: venía de
+  Ajustes → Agentes de instalar el paquete. Ahora van en una banda propia entre la barra y el contenido,
+  como la de versión nueva, con su suscripción subida también —antes ni se escuchaba el evento si nadie
+  entraba en Ajustes—.
+- **Lo que se verificó, y con qué**: `make comprobar` entero; la prueba nueva recorre las pantallas de
+  trabajo **y contesta desde una de ellas**; **mutado** —devolver la tarjeta a Ajustes— pone **cinco**
+  pruebas en rojo, incluida la nueva; las **dos parejas de color nuevas** —aviso y nota sobre `Suave`—
+  medidas con `make contraste`, 5,76 y 4,88 en claro, 6,96 y 5,96 en oscuro; y **las capturas de los dos
+  temas miradas**, que es lo único que dice si la banda se lee como la ventana hablando.
+- **Lo que se aprendió y está en CLAUDE.md**: había **cuatro** pruebas de esa tarjeta y las cuatro iban a
+  Ajustes a buscarla. Una prueba que navega hasta donde está la cosa y entonces comprueba que está **no
+  dice nada** sobre si está donde hace falta.
+- **Queda abierto**: el **navegador tiene el mismo fallo** con su tarjeta de emparejar —a
+  [deuda.md](deuda.md), sin tocar a propósito para no meter el camino del navegador en esta publicación—;
+  y la decisión de si el flujo de publicar lleva plazo propio para macOS.
+
 ## 2026-10-13 (5) · «Siempre», no «cuando te lo nombren» — y queda sin publicar
 
 - **La 2.51.0 se probó y las tres cosas funcionan**: la entrada **aparece sola** en la lista, el agente dice

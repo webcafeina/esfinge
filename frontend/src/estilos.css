@@ -1240,6 +1240,51 @@ p {
   text-decoration: none;
 }
 
+/* ------------------------------------------------- lo que espera respuesta
+ *
+ * Un agente que pide emparejarse, uno que pide una contraseña, la válvula abierta con
+ * su contador y el permiso que no caduca. Va entre la barra y el contenido, igual que
+ * la banda de versión nueva y con el mismo material, porque es lo mismo: **la ventana
+ * hablando**, no la pantalla en la que se esté trabajando.
+ *
+ * Estaba dentro de Ajustes, encima de sus pestañas. Se veía en las cinco y en ninguna
+ * otra pantalla, así que con la bóveda abierta en la lista el agente decía «apruébalo
+ * en la ventana» y no había nada que aprobar a la vista (2026-10-13).
+ */
+.espera {
+  background: var(--suave);
+  border-bottom: 0.5px solid var(--filete);
+  padding: var(--espacio-4) var(--espacio-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  flex-shrink: 0;
+  /* Con varias cosas a la vez —válvula abierta, permiso puesto y uno pidiendo— esto
+   * no puede comerse la ventana: lo que queda debajo es el trabajo. */
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+/* **Dentro de la banda no son tarjetas**: la banda ya es la superficie, y una tarjeta
+ * encima son dos fondos. Lo que se conserva es el filete de aviso, que es lo que dice
+ * que esto hay que contestarlo.
+ *
+ * Va con `.grupo.peligro` en el selector y no con `.grupo` a secas **para no depender
+ * del orden del fichero**: `.espera .grupo` empata en peso con `.grupo.peligro`, y en
+ * esta casa esos empates ya se han perdido una vez —los de la barra lateral llevan
+ * `nav` por lo mismo—. */
+.espera .grupo.peligro {
+  background: none;
+  border: 0;
+  border-left: 2px solid var(--aviso);
+  border-radius: 0;
+  padding: 0 0 0 var(--espacio-4);
+  margin: 0;
+  /* La columna de trabajo está topada en 560; estas frases son de leer, así que se
+   * topan igual en vez de estirarse con la ventana. */
+  max-width: 560px;
+}
+
 .fila-ajuste {
   display: flex;
   align-items: center;
