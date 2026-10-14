@@ -44,6 +44,7 @@ Plantilla al final.
 - **Y eso costó dos hipótesis, la primera equivocada.** «Dos listas en vuelo y gana la última» era
   plausible, encajaba con el síntoma y era falsa — **lo dijo que la prueba escrita para ella pasara en verde
   al mutar el arreglo**. Sin esa mutación se habría publicado un arreglo que no arreglaba nada.
+- **Cerrado con la 2.56.1 puesta en su Mac y las pruebas para mañana.**
 - **Queda abierto**: probarlo él —es lo único que dice si deja de ser molesto— y, sin prueba, que una
   compartida **de solo ver** conteste su motivo propio al escribir: el camino existe, montar dos cuentas para
   esa prueba es el coste que ya bloquea otras dos filas de `deuda.md`.

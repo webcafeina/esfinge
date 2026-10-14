@@ -168,8 +168,18 @@
 > eligió él. Lo que cuesta está en `docs/seguridad.md`: **la bóveda abierta era un cerrojo de hecho y deja de
 > serlo**, y la lista de proyectos es la lista de clientes.
 >
-> **La siguiente acción**: **probarlo él en su Mac** —que es lo que de verdad dice si deja de ser molesto— y
-> seguir usando el canal, que es lo único que ha encontrado algo en seis días.
+> **Y a los diez minutos de publicarla salió lo que había roto, arreglado en la 2.56.1**: la lista de la
+> bóveda se vuelve a pedir **cuando alguien escribe** y no **cuando cambia la bóveda**, que son dos avisos
+> distintos. Hasta ese día bastaba por casualidad —conmutar con el ratón rehace esa sección—, y un agente no
+> hace eso: iba al proyecto, escribía, la lista se repintaba **ahí dentro** y al volver se quedaba con las
+> del proyecto. El cliente vio dos entradas ajenas, «80 entradas en total» y «Esa entrada ya no está en la
+> bóveda» al pulsarlas. **No se perdió nada.** Y la primera explicación fue otra, plausible y falsa: lo dijo
+> **mutar el arreglo y ver que la prueba seguía verde**.
+>
+> **La siguiente acción, el 2026-10-15**: **probarlo él**, que ya tiene la 2.56.1 puesta. Lo que hay que
+> saber al final no es si funciona, sino **si ha dejado de ser molesto**, que era el encargo. Y de paso:
+> que la lista no se quede con la de otra bóveda, que el ir y venir de la ventana no estorbe, que no le
+> muevan la bóveda si está conmutando él, y qué tal contesta a «¿qué bóvedas tengo?».
 >
 > **Y lo que queda apuntado sin fecha**: el flujo de publicar **se muere callado** —el 2026-10-13 GitHub
 > canceló el trabajo de macOS a los quince minutos sin asignarle máquina, y la etiqueta se quedó sin
