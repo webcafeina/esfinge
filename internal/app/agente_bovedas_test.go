@@ -1,0 +1,221 @@
+package app
+
+import (
+	"errors"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/webcafeina/esfinge/internal/agente"
+	"github.com/webcafeina/esfinge/internal/boveda"
+)
+
+// **Lo que se pide en otra bóveda ocurre en otra bóveda, y la ventana vuelve** (ADR 0055).
+//
+// Esto es el centro de la entrega. Lo que hace que valga la pena escribirlo así —abriendo
+// el fichero del proyecto al final en vez de mirar lo que quedó en memoria— es la lección
+// de `vaciarLoSensible`: lo que se comprueba sobre el objeto abierto no dice dónde ha
+// acabado el byte.
+func TestElAgenteTrabajaEnLaBovedaQueSeLeDiceYLaVentanaVuelve(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	f := fuenteDelAgente{a}
+
+	// Se parte de la personal, que es donde `conUnProyecto` deja las cosas.
+	if a.bovedaActiva() != "" {
+		t.Fatalf("esto empieza en la personal y está en %q", a.bovedaActiva())
+	}
+
+	hecho := false
+	if err := a.enLaBoveda("Acme", func() error {
+		hecho = true
+		// **Dentro se está dentro**: si esto no fuera verdad, el verbo escribiría en la
+		// bóveda de siempre creyendo que está en la otra, que es el fallo que esto viene
+		// a quitar.
+		if a.bovedaActiva() != ref {
+			t.Errorf("dentro de «Acme» la activa es %q", a.bovedaActiva())
+		}
+		return a.GuardarEnBoveda(boveda.Entrada{
+			Tipo: boveda.TipoCredencial, Titulo: "Figma", Secreto: "x",
+		})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !hecho {
+		t.Fatal("no se ha hecho nada dentro")
+	}
+
+	// **La vuelta no es inmediata, y eso es a propósito**: tres acciones seguidas en la
+	// misma bóveda tienen que ser una ida y una vuelta. Aquí se fuerza el vencimiento en
+	// vez de esperar diez segundos de reloj de verdad.
+	if a.bovedaActiva() != ref {
+		t.Errorf("antes del respiro se sigue dentro, y está en %q", a.bovedaActiva())
+	}
+	a.volverDeDondeLeDejoElAgente()
+	if a.bovedaActiva() != "" {
+		t.Errorf("la ventana no ha vuelto a la personal: está en %q", a.bovedaActiva())
+	}
+
+	// Y lo guardado está **en el fichero del proyecto**, no en el que se estaba mirando.
+	if es, _ := a.BuscarEnBoveda("Figma"); len(es) != 0 {
+		t.Errorf("la entrada ha acabado en la personal (%d coincidencias)", len(es))
+	}
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if es, _ := a.BuscarEnBoveda("Figma"); len(es) != 1 {
+		t.Errorf("la entrada no está en el proyecto: %d coincidencias", len(es))
+	}
+	_ = f
+}
+
+// **Y no se tira de nadie.** Si la persona conmuta mientras tanto, la vuelta no se hace:
+// deshacer lo que alguien acaba de hacer con el ratón es peor que dejarlo donde está, y
+// además lo dejaría en una bóveda que no eligió.
+func TestSiLaPersonaConmutaElAgenteNoLaDevuelve(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+
+	if err := a.enLaBoveda("Acme", func() error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	// La persona se va a su bóveda por su cuenta, antes de que venza el respiro.
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+	// Y vuelve al proyecto, también ella.
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+
+	a.volverDeDondeLeDejoElAgente()
+	if a.bovedaActiva() != ref {
+		t.Errorf("le han movido la bóveda por debajo: está en %q y la dejó en el proyecto",
+			a.bovedaActiva())
+	}
+}
+
+// **Lo que hace un agente no cuenta como actividad**, ni siquiera conmutando de bóveda.
+//
+// Es la regla absoluta de esta casa, la del goteo de iconos y la del código de un solo
+// uso: con el agente tocando otra bóveda cada minuto, una bóveda abierta encima de la
+// mesa no se cerraría nunca.
+func TestConmutarPorUnAgenteNoMantieneLaBovedaAbierta(t *testing.T) {
+	a, _, _ := conUnProyecto(t)
+
+	if err := a.GuardarPreferencias(Preferencias{
+		MinutosParaBloquear: 1, SegundosDePortapapeles: 5,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Treinta idas y vueltas con el reloj corriendo, que es lo que haría un agente
+	// trabajando en el proyecto de un cliente durante media hora.
+	ahora := time.Now()
+	a.vig.mu.Lock()
+	a.vig.ahora = func() time.Time { return ahora }
+	a.vig.ultimaActividad = ahora
+	a.vig.mu.Unlock()
+
+	for i := 0; i < 30; i++ {
+		ahora = ahora.Add(time.Minute)
+		if err := a.enLaBoveda("Acme", func() error { return nil }); err != nil {
+			t.Fatal(err)
+		}
+		a.volverDeDondeLeDejoElAgente()
+	}
+
+	if !a.vig.tocaBloquear() {
+		t.Error("no toca cerrar: conmutar por un agente ha movido el reloj del bloqueo")
+	}
+}
+
+// Nombrar una bóveda que no existe, o nombrar una que está dormida, **no son el mismo
+// problema y no se contestan igual**: una se arregla diciendo otro nombre y la otra
+// abriéndola una vez en Esfinge, que el agente no puede hacer.
+func TestLosNombresDeBovedaQueNoLlevanANingunaSeDistinguen(t *testing.T) {
+	a, _, _ := conUnProyecto(t)
+
+	err := a.enLaBoveda("La que no existe", func() error { return nil })
+	if !errors.Is(err, agente.ErrNoEsaBoveda) {
+		t.Errorf("una bóveda que no existe tendría que decirlo con su motivo: %v", err)
+	}
+
+	// Y la que sí existe se encuentra por su nombre, con mayúsculas o sin ellas: quien
+	// habla con un agente escribe «acme», no la referencia al azar.
+	if err := a.enLaBoveda("acme", func() error { return nil }); err != nil {
+		t.Errorf("no ha encontrado «acme»: %v", err)
+	}
+}
+
+// La lista que ve el agente: la personal, los proyectos de este equipo y las
+// compartidas. **Lo archivado no sale**, porque archivar es decir «con esto ya no se
+// trabaja» y ofrecérselo sería deshacer esa decisión por la puerta de atrás.
+func TestLaListaDeBovedasDelAgenteDiceCualEstaAbiertaYDondeSeEscribe(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+
+	lista, err := a.bovedasParaElAgente()
+	if err != nil {
+		t.Fatal(err)
+	}
+	porNombre := map[string]BovedaParaElAgente{}
+	for _, b := range lista {
+		porNombre[b.Nombre] = b
+	}
+	if p, hay := porNombre["Personal"]; !hay || !p.EsLaPersonal || !p.Abierta {
+		t.Errorf("la personal tiene que estar, decir que lo es y decir que está abierta: %+v", p)
+	}
+	if p, hay := porNombre["Acme"]; !hay || p.Abierta || !p.SeEscribe {
+		t.Errorf("el proyecto tiene que estar, cerrado y con escritura: %+v", p)
+	}
+
+	// Con el proyecto abierto, la lista lo dice. Si esto no cambiara, el agente no
+	// podría saber nunca dónde está trabajando.
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	lista, _ = a.bovedasParaElAgente()
+	for _, b := range lista {
+		if b.Nombre == "Acme" && !b.Abierta {
+			t.Error("con el proyecto abierto, la lista sigue diciendo que no lo está")
+		}
+		if b.EsLaPersonal && b.Abierta {
+			t.Error("la personal no está abierta y la lista dice que sí")
+		}
+	}
+}
+
+// **Una bóveda que existe y no está en este equipo tiene motivo propio.**
+//
+// No es «no existe» y el arreglo no es el mismo: ahí no hay nada que el agente pueda
+// hacer —hay que abrirla una vez en Esfinge para que se baje—, y contestarle «no hay
+// ninguna bóveda con ese nombre» le haría buscar un nombre que ya tenía bien.
+func TestUnaBovedaDormidaSeDiceComoTalYNoComoQueNoExiste(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+
+	// Se le quita el fichero de debajo: es exactamente lo que ve un equipo que todavía
+	// no la ha bajado.
+	if err := os.Remove(rutaDeProyecto(ref)); err != nil {
+		t.Fatal(err)
+	}
+
+	err := a.enLaBoveda("Acme", func() error {
+		t.Error("no tendría que haber llegado a hacer nada")
+		return nil
+	})
+	if !errors.Is(err, agente.ErrBovedaDormida) {
+		t.Errorf("una bóveda dormida tiene que decirlo con su motivo, y dice: %v", err)
+	}
+	if errors.Is(err, agente.ErrNoEsaBoveda) {
+		t.Error("se está diciendo que no existe, y existe: lo que pasa es que no está aquí")
+	}
+
+	// Y tampoco sale en la lista: ofrecer algo que no se puede abrir es ofrecer un fallo.
+	lista, err := a.bovedasParaElAgente()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, b := range lista {
+		if b.Nombre == "Acme" {
+			t.Error("una bóveda que no está en este equipo no se ofrece para nombrarla")
+		}
+	}
+}

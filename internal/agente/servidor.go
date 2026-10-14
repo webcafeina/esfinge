@@ -47,6 +47,16 @@ type Fuente interface {
 	Higiene() (Higiene, error)
 	// Resumen son los números de la bóveda, sin nombres.
 	Resumen() (Recuento, error)
+	// Bovedas son las que se pueden nombrar: la personal, los proyectos que estén en
+	// este equipo y las compartidas (ADR 0055).
+	Bovedas() ([]UnaBoveda, error)
+	// EnLaBoveda hace algo en la bóveda que se nombra **y devuelve la ventana a donde
+	// estaba** (ADR 0055).
+	//
+	// Está aquí y no repartido por cada verbo a propósito: así la conmutación se
+	// decide **en un solo sitio** y ningún verbo tiene que acordarse de ella. Devuelve
+	// [ErrNoEsaBoveda] o [ErrBovedaDormida] si el nombre no lleva a ninguna.
+	EnLaBoveda(nombre string, hacer func() error) error
 	// Generar devuelve una contraseña nueva. **No toca la bóveda.**
 	Generar(bytes int, alfabeto string) (string, error)
 	// CopiarSecreto pone la contraseña de una entrada en el portapapeles **de este
@@ -84,6 +94,15 @@ var ErrNoEsta = errors.New("Esa entrada no está en la bóveda")
 // compartida de solo ver, o algo que **no se crea a mano** —una llave de acceso la
 // emite el sitio (ADR 0048), no se inventa—.
 var ErrNoSeEscribe = errors.New("Aquí no se puede escribir")
+
+// ErrNoEsaBoveda es que ese nombre no lleva a ninguna bóveda, o lleva a varias.
+// **No es [ErrNoEsta]**, que habla de una entrada: aquí lo que hay que cambiar es el
+// nombre, no la búsqueda.
+var ErrNoEsaBoveda = errors.New("No hay ninguna bóveda con ese nombre")
+
+// ErrBovedaDormida es que existe y **no está en este equipo**. Motivo propio porque el
+// arreglo no lo puede hacer el agente: hay que abrirla una vez en Esfinge.
+var ErrBovedaDormida = errors.New("Esa bóveda no está en este equipo todavía")
 
 var ErrPideAprobacion = errors.New(
 	"Hace falta que lo apruebes en la ventana de Esfinge. Cuando lo hagas, vuelve a pedirlo")
@@ -324,7 +343,46 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 		return mal(MotivoCerrada, "La bóveda está cerrada: ábrela en Esfinge")
 	}
 
+	// **Y aquí se decide en cuál se trabaja, en un solo sitio** (ADR 0055).
+	//
+	// Sin nombre, la abierta: es como ha funcionado todo hasta la 2.55.0. Con nombre,
+	// se conmuta a ésa, se hace lo que sea y la ventana vuelve sola a donde estaba.
+	//
+	// Va envuelto y no repartido por los verbos **a propósito**: un `switch` con
+	// catorce ramas que tuvieran que acordarse cada una de conmutar es un sitio del que
+	// acabaría faltando una, y la que faltara escribiría en la bóveda equivocada sin
+	// decirlo. El orden tampoco es casual: **la comprobación de que hay bóveda abierta
+	// va antes**, porque sin la personal desbloqueada no hay clave con la que abrir
+	// ninguna otra.
+	if p.Boveda == "" {
+		return s.atenderEnLaBoveda(p)
+	}
+	var r Respuesta
+	err := s.fuente.EnLaBoveda(p.Boveda, func() error {
+		r = s.atenderEnLaBoveda(p)
+		return nil
+	})
+	switch {
+	case errors.Is(err, ErrBovedaDormida):
+		return mal(MotivoBovedaDormida, err.Error())
+	case errors.Is(err, ErrNoEsaBoveda):
+		return mal(MotivoNoEsaBoveda, err.Error())
+	case err != nil:
+		return mal(MotivoNoEntiendo, err.Error())
+	}
+	return r
+}
+
+// atenderEnLaBoveda resuelve lo que ya trabaja sobre una bóveda concreta: la que esté
+// abierta cuando se llama. Quién la ha elegido lo decide [Servidor.Atender].
+func (s *Servidor) atenderEnLaBoveda(p Peticion) Respuesta {
 	switch p.Que {
+	case QueBovedas:
+		bs, err := s.fuente.Bovedas()
+		if err != nil {
+			return mal(MotivoNoEntiendo, err.Error())
+		}
+		return Respuesta{OK: true, Bovedas: bs}
 	case QueBuscar:
 		es, cuantas, err := s.fuente.Buscar(p.Texto)
 		if err != nil {

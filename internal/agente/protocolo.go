@@ -54,6 +54,15 @@ const (
 	// la contesta con números, que es a la vez la respuesta más útil y la que menos
 	// cuenta de la bóveda.
 	QueResumen = "resumen"
+	// QueBovedas son las bóvedas que se pueden nombrar (ADR 0055): la personal, los
+	// proyectos que estén en este equipo y las compartidas.
+	//
+	// **Hace falta para poder decir «en Zeri's»**, y tiene un coste que está dicho en
+	// la ADR y en `docs/seguridad.md`: la lista de proyectos es la lista de clientes, y
+	// la ADR 0050 la protegía a propósito —los ficheros se llaman por una referencia al
+	// azar para que un listado de la carpeta no la delate—. No hay forma de dar lo que
+	// se pide sin esto.
+	QueBovedas = "bovedas"
 	// QueCopiarSecreto pone la contraseña de una entrada en el portapapeles.
 	//
 	// **El agente no la ve**: copia Esfinge y lo que vuelve es «copiado, se borra en N
@@ -117,6 +126,7 @@ var LoQueSePuedePedir = []string{
 	QueVer,
 	QueHigiene,
 	QueResumen,
+	QueBovedas,
 	QueGenerar,
 	QueCopiarSecreto,
 	QueCodigo,
@@ -149,6 +159,16 @@ type Peticion struct {
 	// que sí, no para decidir nada.
 	Quien string `json:"quien,omitempty"`
 	Que   string `json:"que"`
+
+	// Boveda es **en cuál se quiere la acción** (ADR 0055), por su nombre. Vacío es
+	// «la que esté abierta», que es como funcionaba todo hasta la 2.55.0.
+	//
+	// **Va en la petición y no en un verbo `abrir`**, y eso no es estilo. Con un verbo,
+	// el agente tendría que acordarse de haber conmutado y de volver, y lo que un
+	// agente no recuerda entre llamadas es justo lo que se le olvida: una acción
+	// acabaría en la bóveda de otro cliente sin que nada lo dijera. Pegada a la acción
+	// no hay estado que perder.
+	Boveda string `json:"boveda,omitempty"`
 
 	// Texto es lo que se busca.
 	Texto string `json:"texto,omitempty"`
@@ -210,6 +230,22 @@ type Estado struct {
 	// manifiesta como una herramienta que «no existe», que es un síntoma que no se
 	// parece a su causa.
 	Version string `json:"version"`
+}
+
+// UnaBoveda es una de las que el agente puede nombrar (ADR 0055).
+//
+// **Sin referencia**: el identificador al azar es un detalle de implementación y no le
+// sirve a nadie para hablar. Lo que se nombra es el nombre.
+type UnaBoveda struct {
+	Nombre       string `json:"nombre"`
+	EsLaPersonal bool   `json:"esLaPersonal"`
+	Abierta      bool   `json:"abierta"`
+	// SeEscribe: en una compartida de solo ver, no (ADR 0052). **Es un permiso y no un
+	// fallo**, y se dice antes para que el agente no lo descubra al ir a guardar.
+	SeEscribe bool `json:"seEscribe"`
+	// Compartida dice que es de otra persona, para que el agente no la confunda con un
+	// proyecto propio al hablar.
+	Compartida bool `json:"compartida,omitempty"`
 }
 
 // Entrada es lo que el agente ve de una entrada de la bóveda. **No lleva ni un
@@ -321,6 +357,8 @@ type Respuesta struct {
 	Higiene *Higiene `json:"higiene,omitempty"`
 	// Resumen son los números de la bóveda, sin un solo nombre dentro.
 	Resumen *Recuento `json:"resumen,omitempty"`
+	// Bovedas son las que se pueden nombrar (ADR 0055).
+	Bovedas []UnaBoveda `json:"bovedas,omitempty"`
 	Copiado *Copiado  `json:"copiado,omitempty"`
 	Codigo  *Codigo   `json:"codigo,omitempty"`
 	Escrito *Escrito  `json:"escrito,omitempty"`
@@ -335,6 +373,14 @@ const (
 	MotivoDemasiado    = "demasiado"
 	MotivoNoEntiendo   = "no-entiendo"
 	MotivoNoEsta       = "no-esta"
+	// MotivoNoEsaBoveda: el nombre de bóveda que se ha dicho no lleva a ninguna, o
+	// lleva a varias. **No es lo mismo que `no-esta`**, que habla de una entrada: aquí
+	// el arreglo es decir otro nombre, no buscar otra cosa.
+	MotivoNoEsaBoveda = "no-esa-boveda"
+	// MotivoBovedaDormida: esa bóveda existe y **no está en este equipo**. Tiene motivo
+	// propio porque el arreglo es distinto y no lo puede hacer el agente: hay que
+	// abrirla una vez en Esfinge para que se baje.
+	MotivoBovedaDormida = "boveda-dormida"
 	// MotivoPideAprobacion: hace falta un sí en la ventana. **No es un error**: es el
 	// camino normal la primera vez que se pide algo, y lo que hay que hacer es
 	// aprobarlo y **volver a pedirlo**.

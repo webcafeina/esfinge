@@ -513,9 +513,32 @@ disco — «lo que hay que ocultar no es el dibujo, es la lista de sitios». Por
 **está topada** y devuelve una muestra y el total, en vez de volcarla entera al contexto de un modelo.
 
 **Lo que no puede hacer**, y no hay verbo para ello: ni exportar, ni importar, ni cambiar la contraseña
-maestra, ni la clave de recuperación, ni borrar la bóveda, ni tocar la cuenta, ni crear o entregar proyectos,
-ni compartir, ni abrir la bóveda —si está cerrada, se le dice y la abre una persona—. Tampoco puede cambiar
-de bóveda: trabaja sobre la que esté abierta.
+maestra, ni la clave de recuperación, ni borrar la bóveda, ni tocar la cuenta, ni crear, archivar o entregar
+proyectos, ni compartir, ni abrir la bóveda —si está cerrada, se le dice y la abre una persona—.
+
+### Y desde la ADR 0055 puede trabajar en cualquiera de tus bóvedas
+
+Hasta entonces actuaba sobre la que tuvieras abierta y ninguna otra, y eso era **un cerrojo de hecho**: lo que
+un agente podía tocar era lo que tú ya habías decidido abrir. **Ese cerrojo ya no está.** Ahora cada acción
+puede decir en qué bóveda la quiere, por su nombre, y Esfinge conmuta, hace lo que sea y devuelve la ventana a
+donde estaba. No pide permiso, porque abrir otra no pide contraseña: con la personal desbloqueada la clave ya
+está en memoria.
+
+Se cambió porque lo contrario era inservible con varias bóvedas —había que ir conmutando a mano y el agente
+contestaba todo el rato que no podía—, y se cambió **sabiendo lo que cuesta**:
+
+> Un agente al que alguien le cuele una instrucción puede **inventariar la bóveda de cualquiera de tus
+> clientes**, no solo la que tuvieras abierta. Los secretos siguen pidiendo aprobación en la ventana, y el
+> código de un solo uso también. **Lo que se abre sin preguntar es el inventario.**
+
+**Y la lista de proyectos es la lista de tus clientes.** La ADR 0050 la protegía a propósito: los ficheros se
+llaman por una referencia al azar para que un listado de la carpeta no la delate. Un agente emparejado la
+tiene, porque sin ella no se puede decir «guárdalo en el de tal cliente».
+
+Lo que sí se mantiene: **lo archivado no se le ofrece** —archivar es decir «con esto ya no se trabaja»—, lo
+que no está bajado en este equipo tampoco, y **la tarjeta con la que apruebas un secreto dice en qué bóveda
+está pasando**: desde que puede ocurrir en una que no estás mirando, aprobar sin saber dónde es aprobar a
+ciegas.
 
 ## Decisiones que afectan a la seguridad
 
@@ -527,5 +550,7 @@ de bóveda: trabaja sobre la que esté abierta.
 - [ADR 0049](adr/0049-las-redes-wifi.md) — Por qué el código de una red está a la vista.
 - [ADR 0050](adr/0050-varias-bovedas.md) — Por qué un proyecto se abre con la bóveda personal, y qué se
   pierde con ella.
+- [ADR 0055](adr/0055-la-boveda-se-nombra-en-cada-accion.md) — Por qué un agente puede trabajar en cualquiera
+  de tus bóvedas, y qué cerrojo se quitó con ello.
 - [ADR 0052](adr/0052-dar-acceso-a-un-proyecto.md) — Qué sabe el servidor de quién tiene acceso, y por qué
   «solo ver» lo impone él y no el cifrado.

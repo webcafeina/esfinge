@@ -1423,6 +1423,12 @@ function LoQueEsperaRespuesta({
             {elAgente.quiere.que === "codigo"
               ? `el código de un solo uso de «${elAgente.quiere.titulo}»`
               : `la contraseña de «${elAgente.quiere.titulo}»`}
+            {/* **Y en qué bóveda** (ADR 0055). Desde que un agente puede nombrarla, esto
+                puede estar pasando en una que no estás mirando, y «la contraseña de
+                GitHub» no es la misma pregunta en la tuya que en la de un cliente. */}
+            {elAgente.quiere.boveda && (
+              <span className="aparte"> · en {elAgente.quiere.boveda}</span>
+            )}
           </label>
           {/* **Las dos peticiones no son lo mismo y no se dicen igual.** Una se copia
               y el agente no la ve; la otra **se la enseñas**, y eso se queda en la

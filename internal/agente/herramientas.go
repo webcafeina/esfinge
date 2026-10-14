@@ -69,6 +69,17 @@ func objeto(props map[string]Campo, obligatorios ...string) Esquema {
 	return Esquema{Tipo: "object", Propiedades: props, Obligatorios: obligatorios}
 }
 
+// campoDeBoveda es **en cuál se quiere la acción** (ADR 0055).
+//
+// Lo lleva todo lo que toca la bóveda, y eso es el diseño entero: la bóveda es un dato
+// de cada acción y no un modo. Un modo hay que recordarlo entre llamadas, y lo que un
+// agente no recuerda acaba escrito donde no iba.
+var campoDeBoveda = Campo{
+	Tipo: "string",
+	Descripcion: "En qué bóveda quieres que se haga, por su nombre —`esfinge_bovedas` las lista—. " +
+		"Vacío es la que esté abierta. Esfinge conmuta sola y devuelve la ventana a donde estaba.",
+}
+
 // enLaQueEsteAbierta es lo que llevan las herramientas que escriben.
 //
 // **Decirlo aquí es la diferencia entre esperarlo y pedirlo.** A un agente al que le
@@ -88,12 +99,17 @@ func objeto(props map[string]Campo, obligatorios ...string) Esquema {
 // abierto a propósito —que es el caso normal— preguntar cada vez es ruido. Lo que falta
 // no es una puerta más: es que el agente mire antes y lo diga.
 //
-// Y lo que tampoco se le ofrece: cambiar de bóveda. Eso es administrar, y lo hace la
-// persona en la ventana (ADR 0054).
-const enLaQueEsteAbierta = "**Actúa sobre la bóveda que esté abierta y ninguna otra, y no se puede " +
-	"cambiar desde aquí.** Mira `esfinge_estado` **antes de escribir, siempre**, y di en voz alta en qué " +
-	"bóveda vas a guardar: si es la de un proyecto y quien te lo pide no lo ha dicho, pregúntale antes de " +
-	"hacerlo. Si te nombra una bóveda distinta de la abierta, pídele que la abra él. "
+// **Y desde la ADR 0055 la bóveda se puede nombrar**, lo que cambia la mitad de esta
+// frase y no la otra. Lo que decía al final —«si te nombra otra bóveda, pídele que la
+// abra él»— era justo lo molesto: «es muy molesto tener que ir cambiando de bóveda y que
+// diga todo el rato que no puede hacer algo» (el cliente, 2026-10-14). Ahora se nombra en
+// `boveda` y ya está. Lo que **no** cambia es el caso sin nombrar, que es el que duele:
+// ahí se mira y se pregunta, igual que antes.
+const enLaQueEsteAbierta = "**Di en `boveda` en cuál quieres que se haga**, con su nombre, y se hará " +
+	"ahí: no hace falta que nadie cambie de bóveda a mano. `esfinge_bovedas` las lista. " +
+	"**Y si no te han dicho dónde**, mira `esfinge_estado` —antes de escribir, siempre—, di en voz alta " +
+	"en qué bóveda vas a guardar, y si es la de un proyecto y quien te lo pide no lo ha nombrado, " +
+	"pregúntale antes de hacerlo. "
 
 // LasHerramientas es el catálogo. **Cada una con sus tres banderas puestas
 // explícitamente**, aunque sean falsas: una bandera que falta es una decisión que nadie
@@ -120,6 +136,7 @@ var LasHerramientas = []Herramienta{
 			"sitios, tipo y si tienen contraseña y segundo factor. **Nunca devuelve contraseñas.** La " +
 			"búsqueda no mira los secretos, solo los títulos, usuarios y sitios.",
 		Esquema: objeto(map[string]Campo{
+			"boveda": campoDeBoveda,
 			"texto": {Tipo: "string", Descripcion: "Lo que se busca. Vacío devuelve las primeras."},
 		}),
 		Verbo:           QueBuscar,
@@ -133,9 +150,23 @@ var LasHerramientas = []Herramienta{
 			"semilla del código, ni el número de una tarjeta, ni el texto de una nota. Para usar la " +
 			"contraseña está esfinge_copiar_contrasena.",
 		Esquema: objeto(map[string]Campo{
+			"boveda": campoDeBoveda,
 			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 		}, "id"),
 		Verbo:           QueVer,
+		PideAprobacion:  false,
+		DevuelveSecreto: false,
+		Escribe:         false,
+	},
+	{
+		Nombre: "esfinge_bovedas",
+		Descripcion: "Las bóvedas que hay en este equipo y que puedes nombrar en `boveda`: la personal, " +
+			"los proyectos y las que te han compartido. Dice cuál está abierta y **en cuál se puede " +
+			"escribir**: una compartida puede ser de solo ver, y eso es un permiso y no un fallo. " +
+			"Úsala cuando quien te habla nombre una bóveda y quieras asegurarte de cuál es, o cuando " +
+			"te pregunte qué bóvedas tiene.",
+		Esquema:         objeto(nil),
+		Verbo:           QueBovedas,
 		PideAprobacion:  false,
 		DevuelveSecreto: false,
 		Escribe:         false,
@@ -145,7 +176,7 @@ var LasHerramientas = []Herramienta{
 		Descripcion: "Cuántas entradas hay en la bóveda y de qué clase, **en números y sin ningún " +
 			"nombre**. Es lo que hay que usar para «¿qué tengo guardado?»: esfinge_buscar devuelve " +
 			"solo las primeras y obliga a adivinar el resto.",
-		Esquema:         objeto(map[string]Campo{}),
+		Esquema:         objeto(map[string]Campo{"boveda": campoDeBoveda}),
 		Verbo:           QueResumen,
 		PideAprobacion:  false,
 		DevuelveSecreto: false,
@@ -156,7 +187,7 @@ var LasHerramientas = []Herramienta{
 		Descripcion: "Lo que está mal en la bóveda, por identificador y sin secretos: contraseñas reutilizadas " +
 			"en varios sitios, entradas duplicadas, credenciales sin segundo factor y tarjetas caducadas. " +
 			"Dice cuáles son, nunca cuáles son las contraseñas.",
-		Esquema:         objeto(nil),
+		Esquema:         objeto(map[string]Campo{"boveda": campoDeBoveda}),
 		Verbo:           QueHigiene,
 		PideAprobacion:  false,
 		DevuelveSecreto: false,
@@ -169,6 +200,7 @@ var LasHerramientas = []Herramienta{
 			"que la pidas, Esfinge preguntará en su ventana; si contesta que hace falta aprobarlo, dilo y " +
 			"vuelve a pedirlo cuando la persona diga que sí. Se borra sola del portapapeles pasado un rato.",
 		Esquema: objeto(map[string]Campo{
+			"boveda": campoDeBoveda,
 			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 		}, "id"),
 		Verbo:          QueCopiarSecreto,
@@ -185,6 +217,7 @@ var LasHerramientas = []Herramienta{
 			"minuto y no sirve sin la contraseña. Hace falta que la persona lo apruebe en la ventana de " +
 			"Esfinge **cada vez**, aunque te haya dado permiso para otras cosas.",
 		Esquema: objeto(map[string]Campo{
+			"boveda": campoDeBoveda,
 			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 		}, "id"),
 		Verbo:          QueCodigo,
@@ -202,6 +235,7 @@ var LasHerramientas = []Herramienta{
 			"es cuánto mide y de qué alfabeto sale. Tipos: credencial, nota, tarjeta, identidad, " +
 			"personal, wifi. **Las llaves de acceso no se crean aquí**: las emite el sitio.",
 		Esquema: objeto(map[string]Campo{
+			"boveda": campoDeBoveda,
 			"tipo":    {Tipo: "string", Descripcion: "credencial si no se dice nada.", Enum: []string{"credencial", "nota", "tarjeta", "identidad", "personal", "wifi"}},
 			"titulo":  {Tipo: "string", Descripcion: "Cómo se llama. Obligatorio."},
 			"usuario": {Tipo: "string"},
@@ -236,6 +270,7 @@ var LasHerramientas = []Herramienta{
 			"dejar una cuenta sin forma de entrar. La contraseña anterior se guarda en el historial " +
 			"de la entrada.",
 		Esquema: objeto(map[string]Campo{
+			"boveda": campoDeBoveda,
 			"id":        {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 			"titulo":    {Tipo: "string"},
 			"usuario":   {Tipo: "string"},
@@ -256,6 +291,7 @@ var LasHerramientas = []Herramienta{
 			enLaQueEsteAbierta +
 			"**Tiene que aprobarlo la persona**: es lo único que quita algo de su vista.",
 		Esquema: objeto(map[string]Campo{
+			"boveda": campoDeBoveda,
 			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 		}, "id"),
 		Verbo:           QueBorrar,

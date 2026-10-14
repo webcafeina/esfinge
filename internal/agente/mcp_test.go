@@ -282,6 +282,8 @@ func TestLoQueDeclaraElEsquemaLlegaALaPeticion(t *testing.T) {
 // llega dice si ese campo del esquema se ve en la petición ya traducida.
 func llega(p Peticion, campo string) bool {
 	switch campo {
+	case "boveda":
+		return p.Boveda != ""
 	case "texto":
 		return p.Texto != ""
 	case "id":
@@ -327,17 +329,25 @@ func TestLasDescripcionesSeLeenYDicenLoDeLaBoveda(t *testing.T) {
 		if !h.Escribe {
 			continue
 		}
-		if !strings.Contains(h.Descripcion, "bóveda que esté abierta") {
-			t.Errorf("%s escribe y no avisa de que lo hace en la bóveda abierta: sin eso, "+
-				"«guárdalo en el proyecto de tal cliente» acaba donde no toca", h.Nombre)
+		// **Que se puede nombrar la bóveda** (ADR 0055). Sin esto, el agente tiene el
+		// campo en el esquema y no sabe que es la respuesta a «guárdalo en Zeri's»:
+		// seguiría pidiéndole a la persona que conmute, que es justo lo que molestaba.
+		if !strings.Contains(h.Descripcion, "`boveda`") {
+			t.Errorf("%s escribe y no dice que la bóveda se puede nombrar: el campo existe y "+
+				"el modelo no se entera, así que sigue pidiendo que conmutes a mano", h.Nombre)
 		}
 		// **Y que se mire siempre, no solo al nombrar otra bóveda.** Ésa fue la primera
 		// versión de la frase y no servía: el caso que duele es el que **no** la nombra
 		// —tienes un proyecto abierto, pides guardar algo sin pensar en dónde—, y ahí el
 		// agente no miraba y solo podía contarlo **después de escribir**.
+		// **Y que sin nombre se mire siempre.** Ésta es la mitad que la ADR 0055 no
+		// cambia: nombrar la bóveda arregla el caso en que alguien la nombra, y el que
+		// duele es el otro —tienes un proyecto abierto, pides guardar algo sin pensar en
+		// dónde—. Ahí el agente tiene que mirar y preguntar, como desde la 2.52.0.
 		if !strings.Contains(h.Descripcion, "antes de escribir, siempre") {
-			t.Errorf("%s no pide mirar el estado antes de escribir **siempre**: pedirlo solo "+
-				"cuando se nombra otra bóveda deja fuera el caso que de verdad duele", h.Nombre)
+			t.Errorf("%s no pide mirar el estado antes de escribir **siempre**: con la bóveda "+
+				"ya nombrada eso sobra, pero el caso que de verdad duele es el que no la "+
+				"nombra y ahí sigue haciendo falta", h.Nombre)
 		}
 	}
 }

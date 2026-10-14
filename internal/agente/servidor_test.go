@@ -2,6 +2,7 @@ package agente
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +24,17 @@ type bovedaFalsa struct {
 	copiado string
 	// escritas cuenta los cambios, que es lo que mira la prueba del freno.
 	escritas int
+	// bovedas son las que se pueden nombrar, y **enQueBoveda es dónde dice el doble
+	// que se está trabajando**: lo cambia `EnLaBoveda` mientras dura la acción, que es
+	// como una prueba comprueba que la conmutación de verdad envuelve al verbo.
+	bovedas     []UnaBoveda
+	enQueBoveda string
+	// idasYVueltas las cuenta. **Un doble que solo apunta el argumento no dice si le
+	// han llamado**, y aquí hace falta saberlo para comprobar que sin nombre de bóveda
+	// no se conmuta nada.
+	idasYVueltas int
+	// vueltas cuenta las veces que se ha deshecho la ida, para la misma razón.
+	vueltas int
 }
 
 // elSecreto es un centinela: **no tiene que salir por el canal por ningún sitio**, y
@@ -30,7 +42,51 @@ type bovedaFalsa struct {
 const elSecreto = "CONTRASENA-QUE-NO-DEBE-SALIR"
 
 func (b *bovedaFalsa) Estado() Estado {
-	return Estado{Existe: b.existe, Abierta: b.abierta, Boveda: "Zeri's Coffee"}
+	donde := b.enQueBoveda
+	if donde == "" {
+		donde = "Personal"
+	}
+	return Estado{Existe: b.existe, Abierta: b.abierta, Boveda: donde}
+}
+
+func (b *bovedaFalsa) Bovedas() ([]UnaBoveda, error) {
+	if b.bovedas == nil {
+		return []UnaBoveda{
+			{Nombre: "Personal", EsLaPersonal: true, Abierta: true, SeEscribe: true},
+			{Nombre: "Zeri's Coffee", SeEscribe: true},
+			{Nombre: "Solo mirar", SeEscribe: false, Compartida: true},
+		}, nil
+	}
+	return b.bovedas, nil
+}
+
+// EnLaBoveda imita lo que hace Esfinge: **conmuta, hace y vuelve**. Que vuelva es lo
+// que deja comprobar que el verbo trabajó dentro y no fuera.
+func (b *bovedaFalsa) EnLaBoveda(nombre string, hacer func() error) error {
+	hay := false
+	for _, v := range mustBovedas(b) {
+		if v.Nombre == nombre {
+			hay = true
+		}
+	}
+	if !hay {
+		return fmt.Errorf("%w: «%s»", ErrNoEsaBoveda, nombre)
+	}
+	if nombre == "Dormida" {
+		return fmt.Errorf("%w: «%s»", ErrBovedaDormida, nombre)
+	}
+	b.idasYVueltas++
+	antes := b.enQueBoveda
+	b.enQueBoveda = nombre
+	err := hacer()
+	b.enQueBoveda = antes
+	b.vueltas++
+	return err
+}
+
+func mustBovedas(b *bovedaFalsa) []UnaBoveda {
+	vs, _ := b.Bovedas()
+	return vs
 }
 
 func (b *bovedaFalsa) Buscar(texto string) ([]Entrada, int, error) {

@@ -5,6 +5,40 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-14 (2) · La bóveda deja de ser un modo y pasa a ser un dato de cada acción
+
+- **ADR 0055**, pedida por el cliente tras una semana de uso: «es muy molesto tener que ir cambiando de bóveda
+  y que diga todo el rato que no puede hacer algo». Lo que se vio al plantearlo es que **el fallo de fondo no
+  era que faltara una funcionalidad: era que la bóveda fuera un modo**. Un modo hay que recordarlo, y lo que
+  un agente no recuerda entre llamadas lo paga quien le pide las cosas — la misma familia que los arreglos del
+  13, con el signo cambiado.
+- **Lo que decidió él**, con las alternativas y sus costes delante: **cambia, hace y vuelve**; **sin permiso en
+  la ventana** —nombrarla basta—; y ve **los proyectos de este equipo y las compartidas**.
+- **Y lo que se decidió al escribirlo**: que fuera **un argumento y no un verbo `abrir`**, porque con un verbo
+  el agente tiene que acordarse de haber conmutado y de volver; que **vuelva tras un respiro y no tras cada
+  llamada**, porque cada conmutación rearranca la sincronización y el goteo de iconos; y que **conmutar por un
+  agente no cuente como actividad ni marque el proyecto como usado**.
+- **Lo que no hizo falta escribir, y conviene saberlo**: la subida ya estaba resuelta. `alCerrarLaBoveda` vacía
+  lo pendiente **antes** de parar la sincronización, así que lo que el agente escribe en otra bóveda se sube al
+  salir de ella. Eso es lo que descartó la alternativa de escribir sin abrir.
+- **Lo que verificó, y con qué**: `make comprobar` y `make e2e` enteros; la tubería entera por los bytes de MCP
+  hasta el fichero de otro proyecto; y **cuatro mutaciones**, una por guarda.
+- **Y una de ellas cazó un fallo de diseño, no de código.** La vuelta comparaba «en qué bóveda estamos», y eso
+  **no distingue «no se ha movido nadie» de «se fue y volvió al mismo sitio»**: con la persona yendo a la
+  personal y volviendo al proyecto, el agente se la llevaba de vuelta. Lo dijo la prueba, no la lectura. Ahora
+  es un contador de conmutaciones, que es exacto.
+- **Y de paso cayó la intermitente del banner**, la de la extensión, que llevaba apuntada desde el 6 de
+  octubre y era su segunda vez. La ficha decía qué mirar cuando volviera —**de qué reloj depende la
+  prueba**— y era eso: el plazo se cuenta desde que el banner **se dibuja** y la espera la contaba la prueba
+  desde su lado, con **100 ms de margen** en una mitad y **50 por el lado contrario** en la otra. En una
+  máquina cargada el tiempo real se escapa y la prueba dice «ha aceptado antes de dar tiempo a leerlo»
+  cuando ya había dado tiempo de sobra: **el fallo era de la prueba y no del producto**. Ahora cada mitad
+  cae de su lado con unos 400 ms y **lleva su mensaje**, que es lo que faltaba para que al caer dijera cuál
+  de las dos se rompió.
+- **Queda abierto**: probarlo él —es lo único que dice si deja de ser molesto— y, sin prueba, que una
+  compartida **de solo ver** conteste su motivo propio al escribir: el camino existe, montar dos cuentas para
+  esa prueba es el coste que ya bloquea otras dos filas de `deuda.md`.
+
 ## 2026-10-14 · La tarjeta del navegador, y la excusa que tapaba que no hubiera prueba
 
 - **Se movió la tarjeta de emparejar un navegador** a la banda `.espera`, que es el mismo arreglo que el

@@ -542,6 +542,13 @@ type loQuePideUnAgente struct {
 	ID     string `json:"id"`
 	Titulo string `json:"titulo"`
 	Cuando string `json:"cuando"`
+	// Boveda es en cuál está pasando esto (ADR 0055).
+	//
+	// **Desde que la acción puede ocurrir en una bóveda que no estás mirando, aprobar
+	// sin saber dónde es aprobar a ciegas**: «la contraseña de GitHub» no es la misma
+	// pregunta en tu bóveda que en la de un cliente. Va sin `omitempty` por lo mismo
+	// que en `Estado`: un campo ausente no dice «la personal», no dice nada.
+	Boveda string `json:"boveda"`
 }
 
 // PlazoDeLaValvula es lo que dura un «todo lo de este agente durante un rato».
@@ -766,6 +773,7 @@ func (f fuenteDelAgente) CopiarSecreto(quien, id string) (agente.Copiado, error)
 	q := loQuePideUnAgente{
 		Quien: quien, Que: agente.QueCopiarSecreto, ID: id, Titulo: e.Titulo,
 		Cuando: ahora.UTC().Format(time.RFC3339),
+		Boveda: f.dondeEstamos(),
 	}
 	// **Copiar puede pasar por la válvula**, y ésa es exactamente la línea: lo que la
 	// válvula cubre es **actuar** —el secreto se queda en este equipo y el portapapeles
@@ -947,6 +955,7 @@ func (f fuenteDelAgente) Codigo(quien, id string) (agente.Codigo, error) {
 	q := loQuePideUnAgente{
 		Quien: quien, Que: agente.QueCodigo, ID: id, Titulo: e.Titulo,
 		Cuando: ahora.UTC().Format(time.RFC3339),
+		Boveda: f.dondeEstamos(),
 	}
 	// **`false`**: por la válvula no pasa. Es el único sitio donde se dice, y es lo que
 	// hace que la regla sea una regla y no una excepción.
@@ -1076,6 +1085,7 @@ func (f fuenteDelAgente) Editar(quien string, p agente.Peticion) (agente.Escrito
 		q := loQuePideUnAgente{
 			Quien: siNoDice(quien), Que: agente.QueEditar, ID: p.ID, Titulo: e.Titulo,
 			Cuando: ahora.UTC().Format(time.RFC3339),
+			Boveda: f.dondeEstamos(),
 		}
 		// **Y la válvula no lo cubre**, por lo mismo que el código: dejar una cuenta
 		// sin forma de entrar no es reversible de la forma en que lo es una copia.
@@ -1139,6 +1149,7 @@ func (f fuenteDelAgente) Borrar(quien, id string) (agente.Escrito, error) {
 	q := loQuePideUnAgente{
 		Quien: siNoDice(quien), Que: agente.QueBorrar, ID: id, Titulo: e.Titulo,
 		Cuando: ahora.UTC().Format(time.RFC3339),
+		Boveda: f.dondeEstamos(),
 	}
 	vale, como := f.a.permisos.pedir(q, true, ahora)
 	if !vale {
@@ -1229,6 +1240,14 @@ func (f fuenteDelAgente) donde(e agente.Escrito) agente.Escrito {
 // del protocolo: **el nombre es para leer y la bandera es para decidir**. Un proyecto
 // podría llamarse «Personal», así que quien tenga que elegir un camino mira
 // `esLaPersonal` y no el texto.
+// dondeEstamos es el nombre de la bóveda en la que se está trabajando ahora mismo.
+//
+// Lo usan las tarjetas de aprobación: desde la ADR 0055 la acción puede estar pasando en
+// una bóveda que no estás mirando, y **aprobar sin saber dónde es aprobar a ciegas**.
+func (f fuenteDelAgente) dondeEstamos() string {
+	return comoSeLlamaLaBoveda(f.a.EstadoBoveda().NombreDelProyecto)
+}
+
 func comoSeLlamaLaBoveda(proyecto string) string {
 	if proyecto == "" {
 		return "Personal"

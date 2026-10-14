@@ -185,3 +185,66 @@ func primerTexto(t *testing.T, m map[string]any) string {
 	}
 	return fmt.Sprint(c[0].(map[string]any)["text"])
 }
+
+// **La tubería entera, nombrando la bóveda** (ADR 0055).
+//
+// Los bytes de MCP por donde entran de verdad → el socket → el traductor → el canal →
+// **el fichero de otro proyecto** → la vuelta. Es lo que de verdad contesta a «guarda
+// esto en Zeri's», y recorre de paso las dos piezas que ya se cayeron por separado: que
+// el campo del esquema llegue a la petición, y que lo escrito acabe donde se dijo.
+func TestLaTuberiaEnteraEscribiendoEnOtraBoveda(t *testing.T) {
+	// **Sin volver a apartar la configuración**: `conUnProyecto` ya lo hace, y llamarlo
+	// otra vez estrena carpeta y deja el proyecto recién creado en la de antes. El
+	// síntoma es una lista de bóvedas donde falta justo el proyecto que acabas de crear.
+	a, _, ref := conUnProyecto(t)
+
+	socket := filepath.Join(t.TempDir(), "a.sock")
+	srv, err := agente.Servir(socket, fuenteDelAgente{a})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srv.Parar()
+	if err := a.PermitirAgente(); err != nil {
+		t.Fatal(err)
+	}
+
+	// --- 1. Las bóvedas que se pueden nombrar, por la tubería.
+	rs := hablarMCP(t, socket,
+		`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"esfinge_bovedas","arguments":{}}}`,
+	)
+	if texto := primerTexto(t, rs[0]); !strings.Contains(texto, "Acme") ||
+		!strings.Contains(texto, "Personal") {
+		t.Fatalf("la lista de bóvedas no trae las dos: %q", texto)
+	}
+
+	// --- 2. Y se crea **en la que se nombra**, estando en la personal.
+	if a.bovedaActiva() != "" {
+		t.Fatalf("esto empieza en la personal y está en %q", a.bovedaActiva())
+	}
+	rs = hablarMCP(t, socket,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"esfinge_crear",`+
+			`"arguments":{"boveda":"Acme","tipo":"credencial","titulo":"Figma","usuario":"yo@ejemplo.com","secreto":"x"}}}`,
+	)
+	texto := primerTexto(t, rs[0])
+	// **Y lo dice**: que haya ido a otra bóveda sin decirlo sería peor que no poder.
+	if !strings.Contains(texto, "Acme") {
+		t.Errorf("no dice en qué bóveda ha guardado: %q", texto)
+	}
+
+	// --- 3. La ventana vuelve sola a donde estaba.
+	a.volverDeDondeLeDejoElAgente()
+	if a.bovedaActiva() != "" {
+		t.Errorf("la ventana se ha quedado en %q en vez de volver a la personal", a.bovedaActiva())
+	}
+
+	// --- 4. Y la entrada está **en el fichero del proyecto**, no en el que se miraba.
+	if es, _ := a.BuscarEnBoveda("Figma"); len(es) != 0 {
+		t.Errorf("ha acabado en la personal: %d coincidencias", len(es))
+	}
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if es, _ := a.BuscarEnBoveda("Figma"); len(es) != 1 {
+		t.Errorf("no está en el proyecto: %d coincidencias", len(es))
+	}
+}

@@ -157,6 +157,11 @@ func ponerArgumentos(p *Peticion, args map[string]any) {
 	if args == nil {
 		return
 	}
+	// **En cuál se quiere la acción** (ADR 0055). Va el primero porque es lo único de
+	// aquí que decide **dónde** pasa todo lo demás.
+	if v, ok := args["boveda"].(string); ok {
+		p.Boveda = v
+	}
 	if v, ok := args["texto"].(string); ok {
 		p.Texto = v
 	}
@@ -277,6 +282,14 @@ func soloLoQueSale(h Herramienta, r Respuesta) any {
 		return r.Higiene
 	case QueResumen:
 		return r.Resumen
+	case QueBovedas:
+		// **Vacía no se devuelve nula**, por lo mismo que en `buscar`: `null` obliga al
+		// modelo a interpretar, y una lista vacía dice lo que es.
+		bs := r.Bovedas
+		if bs == nil {
+			bs = []UnaBoveda{}
+		}
+		return map[string]any{"bovedas": bs}
 	case QueGenerar:
 		return map[string]any{"contrasena": r.Clave}
 	case QueCopiarSecreto:

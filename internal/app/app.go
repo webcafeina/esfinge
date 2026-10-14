@@ -137,6 +137,11 @@ type App struct {
 	// un permiso que sobrevive a cerrar Esfinge es un permiso que nadie recuerda haber
 	// dado.
 	permisos permisosDelAgente
+	// ag es la ida y vuelta a otra bóveda (ADR 0055): a dónde devolver la ventana
+	// cuando el agente termine. Ver `agente_bovedas.go`.
+	ag loDelAgenteEnOtraBoveda
+	// conmutaciones cuenta los cambios de bóveda. Ver `ponerActivaDe`.
+	conmutaciones uint64
 
 	// descargador de iconos y el ritmo al que gotea. Se pueden sustituir con
 	// ApuntarIconosA, que es la costura que permite probar el camino entero sin

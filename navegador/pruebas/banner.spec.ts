@@ -87,12 +87,39 @@ test("banner: sombra cerrada, y un clic fabricado por la página no decide nada"
  */
 test("banner: un clic demasiado pronto no acepta, y sí cancela", async ({ page }) => {
   await abrir(page, UNA);
-  await pulsar(page, "button.principal", 300);
+  // **Lo antes posible, y no «un poco antes del plazo».**
+  //
+  // Esto pulsaba a los 300 ms contra un plazo de 400, o sea con 100 de margen, y se
+  // cayó dos veces —2026-10-06 y 2026-10-14— en máquinas cargadas. No era el producto:
+  // el plazo se cuenta **desde que el banner se dibuja** y la espera la cuenta la prueba
+  // desde el suyo, así que cualquier atasco entre las dos cosas hace que el tiempo real
+  // pase de 400 y el clic se acepte **con razón**. La prueba decía «ha aceptado antes de
+  // dar tiempo a leerlo» cuando ya había dado tiempo de sobra.
+  //
+  // La regla es la misma que la del plazo del puente, del derecho en vez de del revés:
+  // **un plazo es una decisión sobre un caso, y la prueba tiene que caer del lado bueno
+  // con holgura**, no rozarlo. Aquí eso es pulsar enseguida, que además es lo que de
+  // verdad hace quien pulsa sin leer.
+  await pulsar(page, "button.principal", 30);
   expect(await decisiones(page), "ha aceptado antes de dar tiempo a leerlo").toEqual([]);
 
+  // Y «Ahora no» sí, que es la otra mitad: lo que el plazo protege es decir que sí, no
+  // poder quitárselo de encima.
+  //
+  // **Y aquí el margen hay que darlo por el otro lado, que es lo que se vio al arreglar
+  // lo de arriba**: el plazo no se cuenta desde que la prueba llama a `abrir`, sino desde
+  // que el banner **se dibuja** —`desde` se reinicia dentro de `poner`—. Si el dibujado
+  // llega tarde, el tiempo real es menor que la espera, y con 300 contra un plazo de 250
+  // eso son 50 ms de margen. Se espera de sobra: pasarse solo puede hacer que acepte, que
+  // es lo que esta mitad quiere.
+  //
+  // **Y lleva mensaje**, que es lo que faltaba: sin él, las dos mitades de esta prueba
+  // caen diciendo lo mismo y no hay forma de saber cuál se rompió.
   await abrir(page, UNA);
-  await pulsar(page, "button:not(.principal):not(.discreto)", 300);
-  expect(await decisiones(page)).toEqual([{ accion: "ahora-no" }]);
+  await pulsar(page, "button:not(.principal):not(.discreto)", 700);
+  expect(await decisiones(page), "«Ahora no» no ha podido quitarse el banner de encima").toEqual([
+    { accion: "ahora-no" },
+  ]);
 });
 
 test("banner: con una llave, aceptar manda su identificador", async ({ page }) => {

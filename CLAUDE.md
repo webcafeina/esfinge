@@ -273,6 +273,24 @@ No se cambian sin preguntar.
   parezca no haber hecho nada. El glifo es **nuestro**, como los de los gestores: el símbolo de MCP es marca
   de la Linux Foundation.
 
+- **Y desde la ADR 0055 la bóveda se nombra en cada acción, en vez de ser un modo** (2026-10-14). La 0054
+  decía que un agente actúa sobre la abierta y ninguna otra; una semana de uso con varias la puso del revés
+  —«es muy molesto tener que ir cambiando de bóveda y que diga todo el rato que no puede hacer algo»—. El
+  fallo de fondo era **que fuera un modo**: un modo hay que recordarlo, y lo que un agente no recuerda entre
+  llamadas lo paga quien le pide las cosas. Ahora todas las herramientas aceptan **`boveda` por su nombre** y
+  Esfinge **conmuta, hace y devuelve la ventana a donde estaba**; sin nombre, la abierta y la regla de la
+  2.52.0 —mirar antes de escribir **siempre** y preguntar si es la de un proyecto que nadie ha nombrado—. Lo
+  que no se cambia sin preguntar: **sin permiso en la ventana** —lo eligió él frente a preguntar una vez por
+  bóveda, y abrir otra no pide contraseña porque la clave ya está en memoria desde la 0050—; **vuelve tras un
+  respiro y no tras cada llamada**, porque cada conmutación rearranca la sincronización y el goteo de iconos;
+  **no devuelve a nadie a la fuerza** si la persona ha conmutado mientras tanto; y **conmutar por un agente
+  no cuenta como actividad ni marca el proyecto como usado**, que son la regla absoluta del reloj y el orden
+  de una lista que es de la persona. Y lo que cuesta, dicho en voz alta y escrito en `docs/seguridad.md`: **la
+  bóveda abierta era un cerrojo de hecho y deja de serlo** —un agente con una instrucción colada puede
+  inventariar la de cualquier cliente; los secretos siguen pidiendo aprobación— y **la lista de proyectos es
+  la lista de clientes**, que la 0050 protegía a propósito. **Y la tarjeta de aprobación dice en qué bóveda**
+  está pasando: aprobar sin saber dónde es aprobar a ciegas.
+
 - **Y lo que salió de usarlo de verdad el 2026-10-08**, que no se cambia sin preguntar:
   **«No volver a preguntar»** es el tercer botón de la tarjeta —permiso que **no caduca**— y lo pidió al
   aprobar una por una: **lo que cansa se aprueba sin mirar**, que es peor que no preguntar porque da la

@@ -187,6 +187,13 @@ func (a *App) ponerActiva(ref, nombre string, llavePrincipal []byte) {
 // (ADR 0052). Con lo mío los dos van vacíos: en mi bóveda no hay permiso que mirar.
 func (a *App) ponerActivaDe(dueno, ref, nombre, permiso string, llavePrincipal []byte) {
 	a.mu.Lock()
+	// **Cada conmutación deja su número**, y por aquí pasan todas: abrir un proyecto,
+	// volver a la personal, abrir una compartida y cerrarlo todo.
+	//
+	// Existe porque mirar *en cuál* se está no distingue «no se ha movido nadie» de
+	// «alguien se fue y volvió al mismo sitio», y de esa diferencia depende que la
+	// vuelta del agente no le mueva la ventana a quien la estaba usando (ADR 0055).
+	a.conmutaciones++
 	vieja := a.llavePrincipal
 	a.duenoActivo, a.permisoActivo = dueno, permiso
 	a.activa, a.nombreActivo = ref, nombre
@@ -319,6 +326,14 @@ func (a *App) conLaPersonal(hacer func(*boveda.Boveda) error) error {
 	}
 	defer p.Cerrar()
 	return hacer(p)
+}
+
+// cuantasConmutaciones es el número de veces que se ha cambiado de bóveda. Ver
+// `ponerActivaDe`.
+func (a *App) cuantasConmutaciones() uint64 {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.conmutaciones
 }
 
 // Proyectos son las bóvedas de proyecto de la personal.
@@ -464,9 +479,12 @@ func (a *App) BajarProyecto(ref string) error {
 }
 
 // AbrirProyecto conmuta: cierra lo que haya abierto y abre ese proyecto.
-func (a *App) AbrirProyecto(ref string) error {
+func (a *App) AbrirProyecto(ref string) error { return a.abrirProyecto(ref, true) }
+
+// abrirProyecto es lo mismo diciendo **quién lo pide**. Ver `conmutarA`.
+func (a *App) abrirProyecto(ref string, deUnaPersona bool) error {
 	if ref == "" {
-		return a.VolverALaBovedaPersonal()
+		return a.volverALaPersonal(deUnaPersona)
 	}
 	llave := a.llaveDeLaPrincipal()
 	if len(llave) == 0 {
@@ -493,7 +511,7 @@ func (a *App) AbrirProyecto(ref string) error {
 		}
 		return nil
 	})
-	a.conmutarA(p, ref, nombre, llave)
+	a.conmutarA(p, ref, nombre, llave, deUnaPersona)
 	return nil
 }
 
@@ -574,6 +592,11 @@ func (a *App) BajarCompartida(dueno, ref string) error {
 // personal, no de su clave— y la sincronización apunta a **la cuenta de la otra
 // persona**, que es lo que `duenoActivo` lleva.
 func (a *App) AbrirCompartida(dueno, ref string) error {
+	return a.abrirCompartida(dueno, ref, true)
+}
+
+// abrirCompartida es lo mismo diciendo **quién lo pide**. Ver `conmutarA`.
+func (a *App) abrirCompartida(dueno, ref string, deUnaPersona bool) error {
 	c, hay := a.laCompartida(dueno, ref)
 	if !hay {
 		return errors.New("Esa bóveda compartida ya no está en tu lista")
@@ -603,7 +626,7 @@ func (a *App) AbrirCompartida(dueno, ref string) error {
 		return boveda.ErrCerrada
 	}
 	defer cripto.Borrar(llave)
-	a.conmutarACompartida(p, dueno, ref, c.Nombre, c.Permiso, llave)
+	a.conmutarACompartida(p, dueno, ref, c.Nombre, c.Permiso, llave, deUnaPersona)
 	return nil
 }
 
@@ -621,11 +644,15 @@ func (a *App) laCompartida(dueno, ref string) (boveda.Compartida, bool) {
 // conmutarACompartida es `conmutarA` diciendo de quién es, con el mismo orden: **el
 // estado completo antes del aviso**, porque `cambiarBoveda` avisa a la ventana y la
 // ventana contesta preguntando el estado.
-func (a *App) conmutarACompartida(p *boveda.Boveda, dueno, ref, nombre, permiso string, llavePrincipal []byte) {
+func (a *App) conmutarACompartida(p *boveda.Boveda, dueno, ref, nombre, permiso string, llavePrincipal []byte, deUnaPersona bool) {
 	a.alCerrarLaBoveda()
 	a.ponerActivaDe(dueno, ref, nombre, permiso, llavePrincipal)
 	a.cambiarBoveda(p)
-	a.Actividad()
+	// Lo mismo que en `conmutarA`: el reloj del bloqueo solo lo mueve quien está
+	// delante de la ventana.
+	if deUnaPersona {
+		a.Actividad()
+	}
 	a.buscarIconosSiProcede(a.ctx)
 	a.alAbrirLaBoveda(p)
 }
@@ -652,7 +679,10 @@ func (a *App) conmutarACompartida(p *boveda.Boveda, dueno, ref, nombre, permiso 
 //
 // **Si no se puede reabrir, se cierra todo**: dejar el proyecto abierto porque la
 // personal falló sería quedarse en la bóveda de un cliente sin haberlo pedido.
-func (a *App) VolverALaBovedaPersonal() error {
+func (a *App) VolverALaBovedaPersonal() error { return a.volverALaPersonal(true) }
+
+// volverALaPersonal es lo mismo diciendo **quién lo pide**. Ver `conmutarA`.
+func (a *App) volverALaPersonal(deUnaPersona bool) error {
 	if a.bovedaActiva() == "" {
 		return nil
 	}
@@ -670,7 +700,9 @@ func (a *App) VolverALaBovedaPersonal() error {
 	// `cambiarBoveda` avisa a la ventana y la ventana contesta preguntando el estado.
 	a.ponerActiva("", "", nil)
 	a.cambiarBoveda(p)
-	a.Actividad()
+	if deUnaPersona {
+		a.Actividad()
+	}
 	a.buscarIconosSiProcede(a.ctx)
 	a.alAbrirLaBoveda(p)
 	return nil
@@ -785,7 +817,17 @@ func (a *App) conOtraBoveda(ref string, llavePrincipal []byte, hacer func(*boved
 // **Pasa por `alCerrarLaBoveda()` y no solo por `cambiarBoveda`**: lo primero
 // vacía lo que quede por subir de la bóveda que se abandona, y sin eso se perdería
 // su último guardado.
-func (a *App) conmutarA(p *boveda.Boveda, ref, nombre string, llavePrincipal []byte) {
+// `deUnaPersona` dice si esto lo ha pedido alguien con el ratón, y **no es un
+// detalle**: de ahí cuelgan las dos cosas que un agente no puede provocar.
+//
+//   - **El reloj del bloqueo.** La regla de esta casa es absoluta —lo que se repite
+//     solo no cuenta como actividad— y ya la aprendimos con el goteo de iconos y con
+//     el código de un solo uso. Un agente trabajando en otra bóveda cada minuto
+//     dejaría la tuya abierta encima de la mesa para siempre.
+//   - **El orden de la lista de proyectos.** `marcarProyectoUsado` es lo que ordena lo
+//     que el cliente ve, y que un agente pase por Zeri's no es que él la haya abierto:
+//     reordenarle la lista por detrás es mentirle sobre lo que ha hecho.
+func (a *App) conmutarA(p *boveda.Boveda, ref, nombre string, llavePrincipal []byte, deUnaPersona bool) {
 	a.alCerrarLaBoveda()
 	// **Primero se apunta cuál es la activa y después se cambia**, porque
 	// `cambiarBoveda` **avisa a la ventana** y la ventana contesta preguntando el
@@ -794,8 +836,10 @@ func (a *App) conmutarA(p *boveda.Boveda, ref, nombre string, llavePrincipal []b
 	// siguiente aviso, que puede no llegar nunca.
 	a.ponerActiva(ref, nombre, llavePrincipal)
 	a.cambiarBoveda(p)
-	a.marcarProyectoUsado(ref)
-	a.Actividad()
+	if deUnaPersona {
+		a.marcarProyectoUsado(ref)
+		a.Actividad()
+	}
 	a.buscarIconosSiProcede(a.ctx)
 	// Y la sincronización apunta a **esta** bóveda: `nuevoSincronizador` le pregunta
 	// a `bovedaActiva()`, que ya es la de ahora. Lo que no se publica desde aquí es

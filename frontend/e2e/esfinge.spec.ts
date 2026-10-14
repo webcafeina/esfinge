@@ -2946,6 +2946,7 @@ test("la tarjeta de lo que pide un agente dice quién, cuál y que no la ve", as
           id: "a1",
           titulo: "Hacienda",
           cuando: "2026-10-07T12:00:00Z",
+          boveda: "Zeri's Coffee",
         },
         valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
       }),
@@ -2964,6 +2965,11 @@ test("la tarjeta de lo que pide un agente dice quién, cuál y que no la ve", as
   await expect(tarjeta).toContainText("Hacienda");
   // **Y que el agente no la ve**, que es lo que hace razonable decir que sí.
   await expect(tarjeta).toContainText("el agente no la ve");
+  // **Y en qué bóveda está pasando** (ADR 0055). Desde que un agente puede nombrarla,
+  // esto puede estar ocurriendo en una que no estás mirando, y «la contraseña de
+  // GitHub» no es la misma pregunta en la tuya que en la de un cliente: aprobar sin
+  // saber dónde es aprobar a ciegas.
+  await expect(tarjeta).toContainText("Zeri's Coffee");
   // Los tres botones. **El «un rato» no puede ser el principal**: es lo único de esta
   // pantalla que quita una pregunta, así que no puede ser lo que se pulsa sin mirar.
   const soloEsta = tarjeta.getByRole("button", { name: "Solo ésta" });

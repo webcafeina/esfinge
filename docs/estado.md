@@ -160,8 +160,16 @@
 >
 > **No queda nada pendiente de comprobar en una máquina** salvo lo de siempre: Windows y GNOME.
 >
-> **La siguiente acción**: **seguir usando el canal de agentes**, que es lo único que ha encontrado algo en
-> seis días —quince arreglos del 8 al 14 de octubre, **todos salidos del uso y ninguno de las pruebas**—.
+> **Y de usarlo salió lo siguiente, que es una funcionalidad y no un arreglo: la ADR 0055.** Un agente
+> actuaba sobre la bóveda abierta y ninguna otra (ADR 0054), y con varias eso era inservible: «es muy molesto
+> tener que ir cambiando de bóveda y que diga todo el rato que no puede hacer algo». **El fallo de fondo era
+> que la bóveda fuera un modo.** Ahora se nombra en cada acción (`boveda`), Esfinge **conmuta, hace y devuelve
+> la ventana a donde estaba**, y hay `esfinge_bovedas` para saber cuáles hay. **Sin permiso en la ventana**, lo
+> eligió él. Lo que cuesta está en `docs/seguridad.md`: **la bóveda abierta era un cerrojo de hecho y deja de
+> serlo**, y la lista de proyectos es la lista de clientes.
+>
+> **La siguiente acción**: **probarlo él en su Mac** —que es lo que de verdad dice si deja de ser molesto— y
+> seguir usando el canal, que es lo único que ha encontrado algo en seis días.
 >
 > **Y lo que queda apuntado sin fecha**: el flujo de publicar **se muere callado** —el 2026-10-13 GitHub
 > canceló el trabajo de macOS a los quince minutos sin asignarle máquina, y la etiqueta se quedó sin

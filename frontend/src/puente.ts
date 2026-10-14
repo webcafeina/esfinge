@@ -303,7 +303,22 @@ export type EstadoDelAgente = {
    * **Lleva el título de la entrada**, y tiene que llevarlo: «un agente quiere una
    * contraseña» no es una pregunta que se pueda contestar.
    */
-  quiere?: { quien: string; que: string; id: string; titulo: string; cuando: string };
+  quiere?: {
+    quien: string;
+    que: string;
+    id: string;
+    titulo: string;
+    cuando: string;
+    /**
+     * En qué bóveda está pasando (ADR 0055).
+     *
+     * Desde que un agente puede nombrar la bóveda, la acción puede estar ocurriendo en
+     * una que no estás mirando: **aprobar sin saber dónde es aprobar a ciegas**, porque
+     * «la contraseña de GitHub» no es la misma pregunta en la tuya que en la de un
+     * cliente.
+     */
+    boveda: string;
+  };
   /** Cómo va el «todo lo de este agente durante un rato», si está abierta. */
   valvula: { abierta: boolean; quedan: number; usadas: number; tope: number; ultimos?: string[] };
   /**
