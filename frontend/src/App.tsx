@@ -106,6 +106,22 @@ export default function App() {
   const leerAgente = useCallback(() => {
     esfinge.estadoDelAgente().then(setElAgente).catch(() => {});
   }, []);
+
+  // Y lo mismo con el navegador, por lo mismo: la pregunta de emparejarse se dibuja
+  // arriba y en cualquier pantalla, y Ajustes necesita el resto del estado —por dónde
+  // escucha, a quién se ha avisado—, así que el estado es uno y se lo pasa la ventana.
+  const [navegador, setNavegador] = useState<EstadoDelNavegador | null>(null);
+  const leerNavegador = useCallback(() => {
+    esfinge.estadoDelNavegador().then(setNavegador).catch(() => {});
+  }, []);
+  useEffect(() => {
+    // Quien lo pide está mirando la otra ventana, así que esto tiene que aparecer
+    // **sin que nadie recargue nada**.
+    const dejarDeOir = alPedirloUnNavegador(leerNavegador);
+    leerNavegador();
+    return dejarDeOir;
+  }, [leerNavegador]);
+
   useEffect(() => {
     // Quien pide está mirando su terminal, no esta ventana, así que esto tiene que
     // aparecer **sin que nadie recargue nada**. Son tres eventos y no uno: pedir
@@ -357,10 +373,15 @@ export default function App() {
           />
         )}
 
-        {/* **Y lo que pide un agente, aquí, pase lo que pase.** Mismo sitio que la
+        {/* **Y lo que pide quien está fuera, aquí, pase lo que pase.** Mismo sitio que la
             banda de versión nueva —entre la barra y el contenido— y por la misma razón:
             es la ventana hablando, no la pantalla en la que estés trabajando. */}
-        <LoQuePideUnAgente elAgente={elAgente} leerAgente={leerAgente} />
+        <LoQueEsperaRespuesta
+          navegador={navegador}
+          leerNavegador={leerNavegador}
+          elAgente={elAgente}
+          leerAgente={leerAgente}
+        />
 
         <main className="contenido">
           {/* Cada sección se queda montada desde la primera vez que se visita, y
@@ -438,6 +459,8 @@ export default function App() {
               porElBloqueMCP={tarea === "mcp"}
               elAgente={elAgente}
               leerAgente={leerAgente}
+              navegador={navegador}
+              leerNavegador={leerNavegador}
               version={version}
               alEncontrar={setNovedad}
               alCrearCuenta={() => abrirAsistente({ que: "crear" })}
@@ -1283,7 +1306,12 @@ function ParaCopiar({ id, valor }: { id: string; valor: string }) {
 }
 
 /**
- * Lo que un agente de IA pide o tiene concedido, **en cualquier pantalla**.
+ * Lo que alguien de fuera pide o tiene concedido, **en cualquier pantalla**.
+ *
+ * Son dos programas y la misma pregunta: un navegador que quiere emparejarse y un
+ * agente de IA que quiere emparejarse o usar un secreto. Van juntos porque **lo que
+ * los distingue no es lo que hay que hacer con ellos**: los dos llegan mientras estás
+ * trabajando en otra cosa, los dos caducan y los dos se contestan aquí.
  *
  * Esto vivía dentro de `Ajustes`, encima de sus pestañas, y el comentario de allí
  * decía que lo que espera respuesta no vive en ninguna pestaña. Era verdad a medias:
@@ -1300,23 +1328,64 @@ function ParaCopiar({ id, valor }: { id: string; valor: string }) {
  *
  * **La suscripción sube con ellas.** Antes la montaba `Ajustes`, así que en una sesión
  * en la que nadie entrara en Ajustes la ventana no escuchaba el evento siquiera.
+ *
+ * **Y el del navegador llegó un día después** (2026-10-14), a propósito: se quedó fuera
+ * de la 2.53.0 para que la publicación que arreglaba lo del agente no llevara dentro un
+ * cambio del camino del navegador. Tenía el mismo fallo y dolía menos **por casualidad**,
+ * porque emparejar el navegador se hace una vez y justo después de haber entrado en
+ * Ajustes a encender el canal — que es exactamente la casualidad que tapó el otro.
+ *
+ * Lo que **no** se ha traído es el aviso de los iconos, y no por olvido: pregunta algo
+ * que no corre prisa y que nadie está esperando desde fuera, así que puesto aquí se
+ * quedaría encima del trabajo hasta que alguien lo contestara. Vive donde se contesta.
  */
-function LoQuePideUnAgente({
+function LoQueEsperaRespuesta({
+  navegador,
+  leerNavegador,
   elAgente,
   leerAgente,
 }: {
+  navegador: EstadoDelNavegador | null;
+  leerNavegador: () => void;
   elAgente: EstadoDelAgente | null;
   leerAgente: () => void;
 }) {
   // Sin nada que contestar no se dibuja **nada**: una banda vacía con su filete en
   // todas las pantallas sería ruido permanente, que es como se deja de leer un aviso.
   const hayAlgo = Boolean(
-    elAgente?.pide || elAgente?.quiere || elAgente?.valvula?.abierta || elAgente?.siempre,
+    navegador?.pide ||
+      elAgente?.pide ||
+      elAgente?.quiere ||
+      elAgente?.valvula?.abierta ||
+      elAgente?.siempre,
   );
   if (!hayAlgo) return null;
 
   return (
     <div className="espera">
+      {/* El navegador pidiendo emparejarse. Va en «peligro» a propósito: es una
+          pregunta cuya respuesta le abre la bóveda a otro programa. */}
+      {navegador?.pide && (
+        <div className="grupo peligro">
+          <label>{navegador.pide} quiere consultar tu bóveda</label>
+          <p className="aviso">
+            Si no has sido tú al abrir el navegador, <strong>di que no</strong>. Con permiso podrá
+            preguntar qué cuentas tienes de cada sitio que visites y pedir su contraseña.
+          </p>
+          <div className="botones">
+            <button
+              className="principal"
+              onClick={async () => {
+                await esfinge.permitirNavegador();
+                leerNavegador();
+              }}
+            >
+              Permitirlo
+            </button>
+            <button onClick={leerNavegador}>Ahora no</button>
+          </div>
+        </div>
+      )}
       {/* Lo que pide permiso. En «peligro» por lo mismo que el del navegador: su
           respuesta le abre la bóveda a otro programa. */}
       {elAgente?.pide && (
@@ -1503,6 +1572,8 @@ function Ajustes({
   alEntrar,
   elAgente,
   leerAgente,
+  navegador,
+  leerNavegador,
   porElBloqueMCP = false,
 }: {
   version: string;
@@ -1514,9 +1585,14 @@ function Ajustes({
    * de verdad es configuración: cómo conectarlo, quién está permitido y qué se le ha
    * dado. Y el estado es uno porque los dos sitios lo leen: con una copia en cada uno,
    * aprobar arriba dejaba esta lista diciendo lo de antes.
+   *
+   * **Y lo mismo con el navegador** desde el 2026-10-14: aquí queda por dónde escucha
+   * y a quién se ha avisado, y la pregunta de emparejarse se contesta arriba.
    */
   elAgente: EstadoDelAgente | null;
   leerAgente: () => void;
+  navegador: EstadoDelNavegador | null;
+  leerNavegador: () => void;
   alEncontrar: (n: Novedad) => void;
   alCrearCuenta: () => void;
   alEntrar: (correo?: string, deNuevo?: boolean) => void;
@@ -1531,7 +1607,6 @@ function Ajustes({
 }) {
   const [cuenta] = usaCuenta();
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
-  const [navegador, setNavegador] = useState<EstadoDelNavegador | null>(null);
   const [vidrio, setVidrio] = useState<boolean | null>(null);
   const [buscando, setBuscando] = useState(false);
   const [dicho, setDicho] = useState("");
@@ -1571,10 +1646,6 @@ function Ajustes({
       .catch(() => {});
   }, []);
 
-  const leerNavegador = useCallback(() => {
-    esfinge.estadoDelNavegador().then(setNavegador).catch(() => {});
-  }, []);
-
   // Los sitios en los que la extensión no ofrece guardar, que viven dentro de la
   // bóveda. Se vuelven a leer cuando el navegador apunta uno nuevo.
   const [excluidos, setExcluidos] = useState<string[]>([]);
@@ -1588,16 +1659,11 @@ function Ajustes({
 
   useEffect(() => {
     leerPreferencias();
-    leerNavegador();
     esfinge.vidrio().then(setVidrio).catch(() => {});
-    // Cuando un navegador pide permiso hay que enterarse **sin que nadie
-    // recargue nada**: quien lo está pidiendo está mirando la otra ventana.
-    const dejarDeOir = alPedirloUnNavegador(leerNavegador);
-    // **Los de los agentes los escucha la ventana**, no esta pantalla: lo que hay que
-    // contestar se dibuja arriba y en cualquier sección, así que montados aquí no se
-    // escuchaban siquiera hasta que alguien entrara en Ajustes.
-    return dejarDeOir;
-  }, [leerPreferencias, leerNavegador]);
+    // **Lo que llega de fuera lo escucha la ventana**, no esta pantalla: un navegador
+    // o un agente que piden permiso se contestan arriba y en cualquier sección, así que
+    // montados aquí no se escuchaban siquiera hasta que alguien entrara en Ajustes.
+  }, [leerPreferencias]);
 
   async function cambiar(cambio: Partial<Preferencias>) {
     const base = ultimasPrefs.current ?? prefs;
@@ -1663,35 +1729,18 @@ function Ajustes({
 
   return (
     <div className="panel">
-      {/* **Lo que espera respuesta no vive en ninguna pestaña.**
+      {/* **Lo que espera respuesta no vive en ninguna pestaña — ni en esta pantalla.**
 
-          Un navegador que pide permiso, un agente que pide una contraseña o el aviso
-          de los iconos son **estado, no configuración**: caducan y hay que
-          contestarlos. Metidos en su pestaña llegan y no se ven, que es peor que antes
-          —ahí al menos bastaba con bajar—. Así que salen arriba, en cualquier pestaña. */}
-        {/* Lo que pide permiso. Va en «peligro» a propósito: es la única pregunta
-            de esta pantalla cuya respuesta le abre la bóveda a otro programa. */}
-        {navegador?.pide && (
-          <div className="grupo peligro">
-            <label>{navegador.pide} quiere consultar tu bóveda</label>
-            <p className="aviso">
-              Si no has sido tú al abrir el navegador, <strong>di que no</strong>. Con permiso podrá
-              preguntar qué cuentas tienes de cada sitio que visites y pedir su contraseña.
-            </p>
-            <div className="botones">
-              <button
-                className="principal"
-                onClick={async () => {
-                  await esfinge.permitirNavegador();
-                  leerNavegador();
-                }}
-              >
-                Permitirlo
-              </button>
-              <button onClick={leerNavegador}>Ahora no</button>
-            </div>
-          </div>
-        )}
+          Esto decía que un navegador pidiendo permiso, un agente pidiendo una
+          contraseña y el aviso de los iconos salen arriba «en cualquier pestaña», y
+          cumplirlo así era cumplir la letra: se veían en las cinco pestañas de Ajustes
+          y en ninguna otra pantalla. Los dos primeros viven ya en
+          `LoQueEsperaRespuesta`, que se dibuja encima del contenido y en cualquier
+          sección.
+
+          El de los iconos **se queda aquí a propósito**: no lo espera nadie de fuera,
+          no caduca, y arriba se quedaría encima del trabajo hasta que se contestara.
+          Se contesta donde se configura. */}
 
       {/* **El aviso de los iconos, una vez.**
        *

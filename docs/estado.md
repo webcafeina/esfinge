@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-10-13**
+Última actualización: **2026-10-14**
 
 > **No queda nada del proyecto sin comprobar en una máquina de verdad, salvo Windows y GNOME.** Las dos
 > fichas que quedaban vivas se cerraron hoy en los dos Macs del cliente:
@@ -134,15 +134,21 @@
 > día**: «ha salido el aviso en la bóveda». O sea, en una pantalla de trabajo y sin pasar por Ajustes, que
 > es exactamente lo que no ocurría.
 >
-> **La siguiente acción, mañana 2026-10-14, y en este orden:**
+> **Hecho el 2026-10-14, en la 2.54.0: la tarjeta del navegador, que tenía el mismo fallo.** El
+> componente pasa a llamarse `LoQueEsperaRespuesta` —son dos programas y la misma pregunta— y el estado
+> del navegador sube a la ventana como el del agente. **El aviso de los iconos se queda en Ajustes a
+> propósito**: no lo espera nadie de fuera y no caduca, así que arriba se quedaría encima del trabajo.
 >
-> 1. **La tarjeta de emparejar un navegador, que tiene el mismo fallo** y está sin tocar a propósito:
->    `{navegador?.pide && …}` sigue dentro de `Ajustes`. **El camino ya está abierto** —la banda `.espera`
->    existe, está medida y tiene prueba—, así que es mover ese bloque a un hermano de `LoQuePideUnAgente`
->    (que entonces tendría que dejar de llamarse así) y escribirle su prueba **recorriendo pantallas**, no
->    yendo a Ajustes a buscarla. La fila está en [deuda.md](deuda.md).
-> 2. **Y seguir probando el canal de agentes** usándolo, que es lo único que ha encontrado algo en seis
->    días: trece arreglos del 8 al 13 de octubre, **todos salidos del uso y ninguno de las pruebas**.
+> **Y lo que apareció al ir a probarlo, que es lo que hay que recordar**: esa tarjeta **no tenía ninguna
+> prueba de interfaz**, y había un comentario explicando por qué —«hace falta conectarse al socket, y
+> desde un navegador no se abre uno»—. Es cierto del **camino entero**, que está probado en Go, y **no de
+> la ventana**: para ver dónde se dibuja basta con contestar el estado, que es lo que hacen las cuatro del
+> agente desde siempre. La excusa era correcta sobre una cosa y se estaba aplicando a otra, y mientras
+> tanto el aviso llevaba desde el principio saliendo solo en Ajustes.
+>
+> **La siguiente acción**: **seguir probando el canal de agentes usándolo**, que es lo único que ha
+> encontrado algo en seis días —catorce arreglos del 8 al 14 de octubre, **todos salidos del uso y
+> ninguno de las pruebas**—.
 >
 > **Y lo que queda apuntado sin fecha**: el flujo de publicar **se muere callado** —el 2026-10-13 GitHub
 > canceló el trabajo de macOS a los quince minutos sin asignarle máquina, y la etiqueta se quedó sin

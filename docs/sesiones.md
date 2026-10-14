@@ -5,6 +5,33 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-14 · La tarjeta del navegador, y la excusa que tapaba que no hubiera prueba
+
+- **Se movió la tarjeta de emparejar un navegador** a la banda `.espera`, que es el mismo arreglo que el
+  de ayer con el agente y en el mismo fichero. El componente pasa a llamarse **`LoQueEsperaRespuesta`**:
+  son dos programas y la misma pregunta —los dos llegan mientras estás en otra cosa, los dos caducan y los
+  dos se contestan ahí—. El estado del navegador **sube a la ventana** como el del agente, porque Ajustes
+  sigue necesitando el resto —por dónde escucha, a quién se ha avisado— y con dos copias, permitir arriba
+  dejaba la lista de abajo diciendo lo de antes.
+- **El aviso de los iconos NO se movió, y está escrito por qué**: no lo espera nadie de fuera y no caduca,
+  así que arriba se quedaría encima del trabajo hasta contestarlo. Se contesta donde se configura. El
+  comentario de ese fichero nombraba las tres cosas y ahora dice cuál se queda y por qué.
+- **Lo que apareció al ir a escribir la prueba, y es la lección del día**: esa tarjeta **no tenía ninguna
+  prueba de interfaz**, y había un comentario de hace meses explicando que no se podía —«para provocarla
+  hace falta conectarse al socket, y desde un navegador no se abre uno»—. Eso es verdad del **camino
+  entero**, que está probado en Go, y **no de la ventana**: para comprobar **dónde se dibuja** basta con
+  contestar el estado, que es exactamente lo que hacen las cuatro pruebas del agente desde siempre. Una
+  excusa correcta sobre una cosa se estaba aplicando a otra, y mientras tanto el aviso llevaba desde el
+  principio saliendo solo en Ajustes. Ese comentario está reescrito para que no vuelva a servir de
+  coartada.
+- **Qué se verificó, y con qué**: `make comprobar` y `make e2e` enteros, código 0, **140 pruebas** de
+  interfaz en los dos temas —dos más que ayer—; la nueva recorre Bóveda, Cifrar e Historial y **contesta
+  desde la bóveda**; **mutada** —devolviendo el bloque a Ajustes— se pone roja, y la del agente sigue
+  verde, que es lo correcto siendo independientes.
+- **Publicado como 2.54.0.** La fila de [deuda.md](deuda.md) queda tachada con su fecha.
+- **Queda abierto**: nada de esta familia. Lo que sigue es **usar el canal de agentes**, que es lo único
+  que ha encontrado algo en seis días.
+
 ## 2026-10-13 (6) · Las tres pruebas pasan, y la última destapa dónde no se veía la tarjeta
 
 - **Se publicó la 2.52.0** con lo que quedaba acumulado: la frase de `crear`/`editar`/`borrar` pasa de

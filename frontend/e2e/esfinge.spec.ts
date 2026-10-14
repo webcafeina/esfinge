@@ -1091,11 +1091,17 @@ test("vaciar la papelera se lo lleva, y pide una segunda pulsación", async ({ p
 // sí misma, y la diferencia importa: aquéllas salen a la red y ésta abre una
 // puerta a este ordenador. Encenderlo y apagarlo tiene que valer desde ya.
 //
-// Lo que esta prueba **no** cubre, y hay que decirlo: el aviso de «un navegador
-// quiere consultar tu bóveda». Para provocarlo hace falta que algo se conecte al
-// socket, y desde un navegador no se puede abrir un socket de dominio unix. Ese
-// camino está probado en Go (`TestElEmparejamientoSePideYSeConcedeUnaVez`) y se
-// verá de verdad cuando exista la extensión.
+// Lo que esta prueba **no** cubre es el aviso de «un navegador quiere consultar tu
+// bóveda»: para provocarlo de verdad hace falta conectarse al socket, y desde un
+// navegador no se abre uno. Ese camino está probado en Go
+// (`TestElEmparejamientoSePideYSeConcedeUnaVez`).
+//
+// **Pero eso no era excusa para no probar la ventana**, y durante mucho tiempo lo fue:
+// aquí decía que el aviso no se podía ver, y lo que no se podía recorrer era el camino
+// entero. Para comprobar **dónde se dibuja** basta con contestar el estado, que es lo
+// que hacen las del agente — y cuando por fin se hizo, el aviso llevaba desde siempre
+// saliendo solo en Ajustes. Está en «la tarjeta de un navegador sale en cualquier
+// pantalla».
 test("el canal con el navegador viene apagado y se enciende en Ajustes", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
@@ -3139,6 +3145,73 @@ test("la tarjeta de un agente sale en cualquier pantalla, no solo en Ajustes", a
 
   // Y se contesta desde donde se está, sin ir a buscarla a ninguna parte.
   await tarjeta.getByRole("button", { name: "Solo ésta" }).click();
+  await expect(tarjeta).toHaveCount(0, { timeout: 20_000 });
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * **Y lo que pide un navegador, igual: en cualquier pantalla** (2026-10-14).
+ *
+ * Es el mismo fallo que el del agente y en el mismo fichero, y se quedó fuera de la
+ * 2.53.0 a propósito para no meter el camino del navegador en la publicación que
+ * arreglaba el otro. Quien pulsa «Conectar» en el panel de la extensión lee «apruébalo
+ * en Esfinge», y si Esfinge estaba en la bóveda —que es donde se está— no había nada
+ * que aprobar a la vista.
+ *
+ * Dolía menos **por casualidad**: emparejar el navegador se hace una vez y justo
+ * después de haber entrado en Ajustes a encender el canal, que es exactamente la
+ * casualidad que tapó el del agente.
+ *
+ * Y esta tarjeta **no tenía ninguna prueba de interfaz**. El comentario de «el canal
+ * con el navegador viene apagado» decía que no se podía, porque para provocarla hay que
+ * conectarse al socket y desde un navegador no se abre uno. Es verdad para el camino
+ * entero —y ése está probado en Go—, pero lo que aquí se comprueba es **la ventana**:
+ * para eso basta con contestar el estado, igual que hacen las cuatro del agente.
+ */
+test("la tarjeta de un navegador sale en cualquier pantalla, no solo en Ajustes", async ({ page }) => {
+  const errores = vigilarConsola(page);
+
+  let permitido = false;
+  await page.route("**/api/PermitirNavegador", async (route) => {
+    permitido = true;
+    await route.fulfill({ status: 200, contentType: "application/json", body: "null" });
+  });
+  await page.route("**/api/EstadoDelNavegador", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        encendido: true,
+        escuchando: true,
+        donde: "/tmp/navegador.sock",
+        avisados: [],
+        pide: permitido ? undefined : "Firefox",
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const tarjeta = page.locator(".espera .grupo.peligro").filter({ hasText: "Firefox" });
+  await expect(tarjeta).toBeVisible({ timeout: 20_000 });
+  // **Quién lo pide**, que es lo único con lo que se puede contestar: si no has sido tú
+  // al abrir ese navegador, la respuesta es que no.
+  await expect(tarjeta).toContainText("quiere consultar tu bóveda");
+  await expect(tarjeta).toContainText("di que no");
+
+  // Y no dentro del panel de la pantalla, que es donde estaba.
+  await expect(page.locator(".panel .grupo.peligro").filter({ hasText: "Firefox" })).toHaveCount(0);
+
+  for (const pantalla of ["Bóveda", "Cifrar", "Historial"]) {
+    await seccion(page, pantalla).click();
+    await expect(tarjeta, `no sale en «${pantalla}»`).toBeVisible();
+  }
+
+  // Y se contesta desde donde se está.
+  await seccion(page, "Bóveda").click();
+  await tarjeta.getByRole("button", { name: "Permitirlo" }).click();
   await expect(tarjeta).toHaveCount(0, { timeout: 20_000 });
 
   expect(errores, errores.join(" | ")).toEqual([]);
