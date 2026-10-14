@@ -146,9 +146,18 @@
 > agente desde siempre. La excusa era correcta sobre una cosa y se estaba aplicando a otra, y mientras
 > tanto el aviso llevaba desde el principio saliendo solo en Ajustes.
 >
+> **Y la 2.55.0, del mismo día y salida de una pregunta suya**: «¿cómo sé que el MCP instalado en Claude
+> Desktop se ha actualizado?». No había forma. **`esfinge_estado` dice ahora la versión de la Esfinge que
+> contesta**, que no es la que el cliente MCP enseña en su lista de extensiones —ésa es la del paquete y no
+> cambia nunca, porque el paquete le cede el turno a la aplicación—. Y de paso es **el diagnóstico del
+> relevo**: si no encuentra la aplicación y contesta el binario viejo de dentro del paquete, se ve en el
+> número en vez de salir como una herramienta que «no existe».
+>
 > **La siguiente acción**: **seguir probando el canal de agentes usándolo**, que es lo único que ha
-> encontrado algo en seis días —catorce arreglos del 8 al 14 de octubre, **todos salidos del uso y
-> ninguno de las pruebas**—.
+> encontrado algo en seis días —quince arreglos del 8 al 14 de octubre, **todos salidos del uso y
+> ninguno de las pruebas**—. Y cuando Chrome publique, la tarjeta del navegador en su Mac (aunque **esa
+> prueba no depende de Chrome**: la 2.54.0 no tocó `navegador/`; lo que sí hace falta es **retirar el
+> emparejamiento** primero, o no habrá nada que preguntar).
 >
 > **Y lo que queda apuntado sin fecha**: el flujo de publicar **se muere callado** —el 2026-10-13 GitHub
 > canceló el trabajo de macOS a los quince minutos sin asignarle máquina, y la etiqueta se quedó sin

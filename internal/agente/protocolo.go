@@ -194,6 +194,22 @@ type Estado struct {
 	// SoloLectura dice que aquí no se puede escribir: una compartida de solo ver, o
 	// una bóveda de una versión más nueva.
 	SoloLectura bool `json:"soloLectura,omitempty"`
+	// Version es la de la Esfinge **que está contestando**, y por eso va aquí y no en
+	// una herramienta aparte: es el único dato que no se puede averiguar de ninguna
+	// otra forma desde dentro de una conversación.
+	//
+	// Hace falta porque el paquete `.mcpb` **lleva el servidor dentro y no se actualiza
+	// con la aplicación**: lo que Claude Desktop enseña en Extensiones es la versión del
+	// paquete que se arrastró, y desde la 2.48.0 ése le cede el turno al binario de la
+	// Esfinge instalada. O sea que el número de la pantalla y el que de verdad corre
+	// **son distintos a propósito**, y hasta ahora no había forma de preguntar por el
+	// segundo. Lo preguntó el cliente el 2026-10-14: «¿cómo sé que se ha actualizado?».
+	//
+	// Y de paso es el diagnóstico del relevo: si algún día no encuentra la aplicación y
+	// contesta el binario viejo de dentro del paquete, **aquí se ve**. Sin esto, eso se
+	// manifiesta como una herramienta que «no existe», que es un síntoma que no se
+	// parece a su causa.
+	Version string `json:"version"`
 }
 
 // Entrada es lo que el agente ve de una entrada de la bóveda. **No lleva ni un

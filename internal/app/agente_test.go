@@ -834,6 +834,58 @@ func TestElSiempreSeQuitaYValeDesdeYa(t *testing.T) {
 //
 // Y lo que esto protege de verdad: un agente que no sepa si está dentro de un proyecto
 // puede guardar la cuenta de un cliente en la bóveda de otro.
+// **Y dice con qué Esfinge se está hablando**, que es lo único que un agente no puede
+// averiguar de ninguna otra forma.
+//
+// El paquete `.mcpb` lleva el servidor dentro y **no se actualiza con la aplicación**:
+// lo que el cliente MCP enseña en su lista de extensiones es la versión del paquete que
+// alguien arrastró, y desde la 2.48.0 ése le cede el turno al binario de la Esfinge
+// instalada. Así que el número de la pantalla y el que de verdad contesta son distintos
+// a propósito, y hasta la 2.55.0 **no había forma de preguntar por el segundo**. Lo
+// preguntó el cliente el 2026-10-14: «¿cómo sé que se ha actualizado?».
+//
+// Y de paso es el diagnóstico del relevo: si no encuentra la aplicación y contesta el
+// binario viejo de dentro del paquete, aquí se ve — en vez de manifestarse como una
+// herramienta que «no existe», que es un síntoma que no se parece a su causa.
+func TestElEstadoDelAgenteDiceQueVersionContesta(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+
+	// La de **esta** aplicación, no una constante del paquete del canal: con una
+	// constante diría siempre lo mismo y no distinguiría quién contesta, que es justo
+	// para lo que existe.
+	if hace, quiero := f.Estado().Version, a.Version(); hace != quiero {
+		t.Errorf("dice la versión %q y esta Esfinge es la %q", hace, quiero)
+	}
+
+	crudo, err := json.Marshal(f.Estado())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(crudo, []byte(`"version":"2.0.0"`)) {
+		t.Errorf("la versión no sale en lo que recibe el agente: %s", crudo)
+	}
+
+	// **Y sale aunque esté vacía, que es cuando de verdad hace falta.**
+	//
+	// Es la misma trampa que ya se tragó `boveda`: con `omitempty` el campo desaparece
+	// justo en el caso raro, y lo que el agente ve entonces no es «no se sabe», es
+	// **nada** — y de una ausencia no se puede concluir nada, que es literalmente lo
+	// que el agente del cliente dijo el 2026-10-13.
+	//
+	// Y esta aserción hay que escribirla así: con la versión puesta, `omitempty` no
+	// borra nada y **la prueba pasa con él**. Comprobado poniéndolo.
+	enConfiguracionDePruebas(t)
+	sinVersion := fuenteDelAgente{Nueva("", &sistemaFalso{})}
+	crudo, err = json.Marshal(sinVersion.Estado())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(crudo, []byte(`"version":""`)) {
+		t.Errorf("una versión vacía tiene que decirse vacía, no omitirse: %s", crudo)
+	}
+}
+
 func TestElEstadoDelAgenteDiceEnQueBovedaSeTrabaja(t *testing.T) {
 	a, _, _, _, _ := conBoveda(t)
 	f := fuenteDelAgente{a}

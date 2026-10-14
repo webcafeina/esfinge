@@ -29,6 +29,18 @@ Plantilla al final.
   desde la bóveda**; **mutada** —devolviendo el bloque a Ajustes— se pone roja, y la del agente sigue
   verde, que es lo correcto siendo independientes.
 - **Publicado como 2.54.0.** La fila de [deuda.md](deuda.md) queda tachada con su fecha.
+- **Y de una pregunta suya salió la 2.55.0**: «¿cómo sé que el MCP de Claude Desktop se ha actualizado?».
+  La respuesta era que **no se podía saber**. Ahora `esfinge_estado` dice **la versión de la Esfinge que
+  contesta**, que no es la que el cliente enseña en Extensiones —ésa es la del paquete, que no se actualiza
+  porque lleva el servidor dentro y le cede el turno a la aplicación—, y la descripción de la herramienta lo
+  explica para que el modelo sepa contestarlo. De paso queda **el diagnóstico del relevo**: si contestara el
+  binario viejo de dentro del paquete, se vería en el número en vez de salir como una herramienta que «no
+  existe».
+- **Y la prueba de eso casi nace sin vigilar nada, lo cazó mutarla.** Decía proteger la trampa del
+  `omitempty` —la que ya se tragó `boveda`— y no la protegía: `omitempty` solo borra el campo cuando el
+  valor está vacío, y «2.0.0» no lo está, así que la mutación pasaba en verde. Ahora ejercita **una Esfinge
+  sin versión**, que es justo cuando el campo tiene que seguir saliendo. Mutada por los dos lados: quitar el
+  campo del JSON y no rellenarlo la ponen roja por separado.
 - **Queda abierto**: nada de esta familia. Lo que sigue es **usar el canal de agentes**, que es lo único
   que ha encontrado algo en seis días.
 

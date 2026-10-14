@@ -195,6 +195,9 @@ func (f fuenteDelAgente) Estado() agente.Estado {
 		Boveda:       comoSeLlamaLaBoveda(e.NombreDelProyecto),
 		EsLaPersonal: e.NombreDelProyecto == "",
 		SoloLectura:  e.SoloLectura,
+		// **La de la Esfinge que contesta**, que no es la que enseña el cliente MCP en
+		// su lista de extensiones: ésa es la del paquete, y el paquete no se actualiza.
+		Version: f.a.version,
 	}
 }
 

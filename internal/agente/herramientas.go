@@ -104,7 +104,10 @@ var LasHerramientas = []Herramienta{
 		Descripcion: "Dice si hay una bóveda de Esfinge en este equipo, si está abierta y en cuál se está " +
 			"trabajando. Todas las demás herramientas actúan sobre esa bóveda y ninguna otra, así que " +
 			"conviene mirar esto antes de guardar algo. Si está cerrada, la persona tiene que abrirla en " +
-			"Esfinge: no se puede abrir desde aquí.",
+			"Esfinge: no se puede abrir desde aquí. **Y dice la versión de la Esfinge que contesta**, que " +
+			"es la respuesta a «¿se ha actualizado?»: el número que el cliente enseña en su lista de " +
+			"extensiones es el del paquete instalado y no cambia al actualizar Esfinge, porque el paquete " +
+			"le cede el turno a la aplicación. Si no coinciden, manda éste.",
 		Esquema:         objeto(nil),
 		Verbo:           QueEstado,
 		PideAprobacion:  false,
