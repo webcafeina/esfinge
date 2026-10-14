@@ -153,11 +153,15 @@
 > relevo**: si no encuentra la aplicación y contesta el binario viejo de dentro del paquete, se ve en el
 > número en vez de salir como una herramienta que «no existe».
 >
-> **La siguiente acción**: **seguir probando el canal de agentes usándolo**, que es lo único que ha
-> encontrado algo en seis días —quince arreglos del 8 al 14 de octubre, **todos salidos del uso y
-> ninguno de las pruebas**—. Y cuando Chrome publique, la tarjeta del navegador en su Mac (aunque **esa
-> prueba no depende de Chrome**: la 2.54.0 no tocó `navegador/`; lo que sí hace falta es **retirar el
-> emparejamiento** primero, o no habrá nada que preguntar).
+> **Y las dos cosas quedaron comprobadas en su Mac el mismo 2026-10-14**: la **versión por el canal**
+> —contestó 2.55.0 y enumeró **las once herramientas**, que son las once del fuente, o sea el relevo
+> confirmado por otro camino— y **la tarjeta del navegador**, retirando antes el permiso y pidiéndolo con
+> Esfinge en la bóveda: «todo correcto».
+>
+> **No queda nada pendiente de comprobar en una máquina** salvo lo de siempre: Windows y GNOME.
+>
+> **La siguiente acción**: **seguir usando el canal de agentes**, que es lo único que ha encontrado algo en
+> seis días —quince arreglos del 8 al 14 de octubre, **todos salidos del uso y ninguno de las pruebas**—.
 >
 > **Y lo que queda apuntado sin fecha**: el flujo de publicar **se muere callado** —el 2026-10-13 GitHub
 > canceló el trabajo de macOS a los quince minutos sin asignarle máquina, y la etiqueta se quedó sin

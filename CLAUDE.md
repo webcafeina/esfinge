@@ -1864,6 +1864,12 @@ nombrado; que **«No volver a preguntar» no cubra el código de un solo uso**; 
 conteste de un tiro. Y con la 2.53.0, lo que salió de ahí: que **la tarjeta de aprobación se vea en una
 pantalla de trabajo** —«ha salido el aviso en la bóveda»—, que es lo que hasta ese día no pasaba.
 
+Y el 2026-10-14 las dos que quedaban. **La tarjeta de emparejar un navegador** (2.54.0), retirando antes el
+permiso en Ajustes → Navegador y pidiéndolo con Esfinge en la bóveda: sale arriba y se contesta ahí. Y **la
+versión por el canal** (2.55.0), que además confirmó el relevo por otro camino: el agente enumeró **las once
+herramientas**, que son exactamente las once del fuente — con el relevo fallando habría salido la lista
+corta del paquete que se instaló en su día.
+
 Sin verificar todavía, y es lo único que queda en todo el proyecto: **cómo quedan las estructuras de
 Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono de los `.esf`, que en Windows lo
 pone el instalador y en Linux el `.deb`.

@@ -41,8 +41,13 @@ Plantilla al final.
   valor está vacío, y «2.0.0» no lo está, así que la mutación pasaba en verde. Ahora ejercita **una Esfinge
   sin versión**, que es justo cuando el campo tiene que seguir saliendo. Mutada por los dos lados: quitar el
   campo del JSON y no rellenarlo la ponen roja por separado.
-- **Queda abierto**: nada de esta familia. Lo que sigue es **usar el canal de agentes**, que es lo único
-  que ha encontrado algo en seis días.
+- **Y las dos se comprobaron en su Mac el mismo día.** La versión: contestó **2.55.0** y de paso enumeró
+  **las once herramientas**, que son exactamente las once del fuente — el relevo confirmado por un camino
+  que no era el que buscábamos, porque con él fallando habría salido la lista corta del paquete. Y la
+  tarjeta del navegador, retirando antes el permiso en Ajustes → Navegador y pidiéndolo con Esfinge en la
+  bóveda: «todo correcto».
+- **Queda abierto**: nada de esta familia, y **nada pendiente de comprobar en una máquina** salvo Windows y
+  GNOME. Lo que sigue es **usar el canal de agentes**, que es lo único que ha encontrado algo en seis días.
 
 ## 2026-10-13 (6) · Las tres pruebas pasan, y la última destapa dónde no se veía la tarjeta
 
