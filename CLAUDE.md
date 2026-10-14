@@ -532,6 +532,26 @@ método se puede pasar como referencia —`hacer(esfinge.vaciarPapeleraDeBoveda)
 es como se consigue que un aviso deje de leerse; y **no dice que la pantalla haga algo útil**, solo que
 exista quien lo llame.
 
+**Avisar de que alguien ha escrito no es avisar de que ha cambiado la bóveda, y la lista solo oía lo
+primero.** Son dos eventos: `boveda-cambiada` lo manda quien **escribe** desde fuera, y conmutar manda
+`EventoEstadoBoveda`. La lista de la bóveda solo escuchaba el primero, y hasta la ADR 0055 eso bastaba
+**por una casualidad**: conmutar con el ratón **rehace esa sección entera** (`selloBoveda`), así que la
+lista se rehacía con ella. Desde que **un agente conmuta por debajo** esa casualidad desaparece: el agente
+va a la bóveda de un proyecto, **escribe** —y la lista se repinta ahí dentro, con lo suyo, correctamente—,
+vuelve a la personal, y ese aviso la lista no lo oye. **Se queda enseñando las entradas del proyecto para
+siempre**: filas que al pulsarlas dicen «Esa entrada ya no está en la bóveda», con el contador diciendo «80
+entradas en total» porque ése sí se refresca. Lo vio el cliente **a los diez minutos** de publicar la 2.56.0.
+
+Dos cosas de método que costaron encontrarlo. **La primera explicación era otra** —«dos listas en vuelo y
+gana la última»— y era plausible, encajaba con el síntoma y **estaba equivocada**; lo único que lo dijo fue
+que **la prueba escrita para ella pasaba en verde al mutar el arreglo**. Y la prueba de esto **tiene que
+volver por la API y no por el botón de salir**: por el botón, `selloBoveda` rehace la sección y el fallo no
+se puede ver, así que la prueba pasaría con él dentro.
+
+Y el corolario para cualquier contador de éstos: **se cuentan peticiones, no cambios**. Contando cambios,
+un aviso que llegue entre que se pide la buena y que contesta la tira también, y la lista se queda con lo de
+antes. La pregunta no es «¿ha cambiado algo?», es «¿hay una más nueva que ésta?».
+
 **Y la tercera cara de lo mismo: la pantalla existe, y está donde no se mira.** La tarjeta con la que se
 aprueba lo que pide un agente —el centro de la ADR 0054, «cada secreto se aprueba en la ventana»— vivía
 **dentro de Ajustes**, encima de sus pestañas. Cumplía la letra de la regla que ese mismo fichero tiene

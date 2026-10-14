@@ -907,11 +907,28 @@ function Dentro({
   // las cuentas. Lo mismo vale para cualquier pregunta que llegue tarde.
   const cerrada = useRef(false);
 
+  // **Solo pinta la última lista que se ha pedido.**
+  //
+  // Una respuesta que llega tarde pisaba a la buena, que es la trampa de las
+  // preferencias con otra cara. Hasta la 2.56.0 costaba verla —la bóveda solo cambiaba
+  // cuando la cambiaba una persona— y desde que **un agente la conmuta por debajo** hay
+  // dos listas en vuelo contra bóvedas distintas con cualquier tanda de trabajo.
+  //
+  // Contar **peticiones** y no cambios de bóveda no es un detalle: con un contador de
+  // cambios, un aviso que llegue entre que se pide la buena y que contesta la tira
+  // también, y entonces la lista se queda con lo de antes. La pregunta que hay que
+  // contestar no es «¿ha cambiado algo?», es «¿hay una más nueva que ésta?».
+  const ultimaPeticion = useRef(0);
+
   const buscar = useCallback(async (texto: string) => {
     if (cerrada.current) return;
+    const mia = ++ultimaPeticion.current;
     try {
-      setLista(await esfinge.buscarEnBoveda(texto));
+      const lista = await esfinge.buscarEnBoveda(texto);
+      if (cerrada.current || mia !== ultimaPeticion.current) return;
+      setLista(lista);
     } catch (e) {
+      if (cerrada.current || mia !== ultimaPeticion.current) return;
       setError(mensaje(e));
     }
   }, []);
@@ -981,7 +998,26 @@ function Dentro({
   // **Y cuando el navegador guarda o actualiza una cuenta, la lista se pide otra vez.**
   // Lo escribe otro —la extensión, por el canal—, y sin este aviso la lista seguía
   // enseñando lo de antes hasta que se tocara el buscador.
-  useEffect(() => alCambiarLaBoveda(() => buscar(q)), [buscar, q]);
+  useEffect(() => alCambiarLaBoveda(() => void buscar(q)), [buscar, q]);
+
+  // **Y cuando cambia la bóveda, que no es lo mismo que cuando alguien escribe en ella.**
+  //
+  // Esto faltaba, y es lo que el cliente vio a los diez minutos de publicar la ADR 0055:
+  // un agente conmutaba a la bóveda de un proyecto, **escribía** —eso sí avisa, y la
+  // lista se volvía a pedir estando dentro, con lo suyo— y al volver a la personal **ese
+  // aviso la lista no lo escuchaba**. Se quedaba enseñando las entradas del proyecto para
+  // siempre: dos filas que al pulsarlas decían «Esa entrada ya no está en la bóveda»,
+  // con el contador diciendo «80 entradas en total» porque ése sí se había refrescado.
+  //
+  // Hasta entonces no hacía falta porque **conmutar rehace esta sección** (`selloBoveda`),
+  // y eso solo pasa cuando conmuta una persona con el ratón.
+  useEffect(
+    () =>
+      alCambiarElEstadoDeLaBoveda((abierta) => {
+        if (abierta) void buscar(q);
+      }),
+    [buscar, q],
+  );
 
   // **Las repetidas, la misma cuenta que otra**, se cuentan cada vez que cambia la
   // lista. Salieron de juntar dos bóvedas importadas del mismo gestor al entrar

@@ -35,6 +35,15 @@ Plantilla al final.
   cuando ya había dado tiempo de sobra: **el fallo era de la prueba y no del producto**. Ahora cada mitad
   cae de su lado con unos 400 ms y **lleva su mensaje**, que es lo que faltaba para que al caer dijera cuál
   de las dos se rompió.
+- **Y a los diez minutos de publicarla el cliente vio lo que había roto**: su bóveda enseñaba dos entradas
+  de un proyecto, el contador decía «80 entradas en total» —verdad, y de su personal— y al pulsarlas salía
+  «Esa entrada ya no está en la bóveda». **No se perdió nada**: lo que estaba mal era lo que se pintaba.
+  La causa, en la 2.56.1: la lista se vuelve a pedir **cuando alguien escribe** y no **cuando cambia la
+  bóveda**, que son dos avisos. Hasta ayer bastaba por casualidad, porque conmutar con el ratón rehace esa
+  sección; un agente no hace eso.
+- **Y eso costó dos hipótesis, la primera equivocada.** «Dos listas en vuelo y gana la última» era
+  plausible, encajaba con el síntoma y era falsa — **lo dijo que la prueba escrita para ella pasara en verde
+  al mutar el arreglo**. Sin esa mutación se habría publicado un arreglo que no arreglaba nada.
 - **Queda abierto**: probarlo él —es lo único que dice si deja de ser molesto— y, sin prueba, que una
   compartida **de solo ver** conteste su motivo propio al escribir: el camino existe, montar dos cuentas para
   esa prueba es el coste que ya bloquea otras dos filas de `deuda.md`.

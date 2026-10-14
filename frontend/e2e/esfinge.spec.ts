@@ -3222,3 +3222,81 @@ test("la tarjeta de un navegador sale en cualquier pantalla, no solo en Ajustes"
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * **La lista se entera de que ha cambiado la bóveda** (2026-10-14).
+ *
+ * Lo vio el cliente a los diez minutos de publicar la ADR 0055: su bóveda enseñaba dos
+ * entradas de un proyecto, el contador decía «80 entradas en total» —que era verdad, y de
+ * su personal— y al pulsar cualquiera de las dos salía «Esa entrada ya no está en la
+ * bóveda», porque esos identificadores eran de la otra. No se había perdido nada: lo que
+ * estaba mal era lo que se pintaba.
+ *
+ * El mecanismo, que costó dos hipótesis equivocadas antes de verlo: **la lista se vuelve a
+ * pedir cuando alguien escribe** (`boveda-cambiada`) **y no cuando cambia la bóveda**, que
+ * es otro aviso. Así que un agente conmuta a un proyecto, escribe —y la lista se repinta
+ * ahí dentro, con lo suyo, correctamente—, vuelve a la personal, y **ese aviso la lista no
+ * lo escuchaba**: se quedaba con las del proyecto para siempre.
+ *
+ * Hasta entonces no hacía falta porque **conmutar rehace esta sección**, y eso solo pasa
+ * cuando conmuta una persona con el ratón. Por eso aquí se vuelve **por la API** y no por
+ * el botón: con el botón esto pasa en verde con el fallo dentro, comprobado.
+ */
+test("la lista se entera de que ha cambiado la bóveda, no solo de que alguien ha escrito", async ({
+  page,
+}) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const enLaPersonal = `SoloEnLaPersonal ${Date.now()}`;
+  const enElProyecto = `SoloEnElProyecto ${Date.now()}`;
+
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(enLaPersonal);
+  await page.locator("#boveda-secreto").fill("x");
+  await accion(page, "Guardar").click();
+  await expect(page.locator(".lista-boveda").getByRole("button", { name: enLaPersonal })).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // Un proyecto con su entrada. Guardarla **avisa**, así que al salir de aquí la lista
+  // está enseñando la del proyecto: ése es el punto de partida del fallo.
+  const nombre = `Tardia ${Date.now()}`;
+  await seccion(page, "Proyectos").click();
+  await accion(page, "Nueva bóveda de proyecto").click();
+  await page.locator("#proyecto-nombre").fill(nombre);
+  await accion(page, "Crear").click();
+  const fila = page.locator(".panel:visible .proyectos").getByRole("button", { name: new RegExp(nombre) });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
+  await fila.click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill(enElProyecto);
+  await page.locator("#boveda-secreto").fill("x");
+  await accion(page, "Guardar").click();
+  await expect(page.locator(".lista-boveda").getByRole("button", { name: enElProyecto })).toBeVisible({
+    timeout: 20_000,
+  });
+
+  // **Y se vuelve como vuelve un agente**: Go cambia la bóveda y la ventana solo recibe
+  // el aviso, sin rehacer la sección. Con el botón de salir, `selloBoveda` la rehace y el
+  // fallo no se puede ver.
+  await page.evaluate(() =>
+    fetch("/api/VolverALaBovedaPersonal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "[]",
+    }).then(() => undefined),
+  );
+
+  const lista = page.locator(".lista-boveda");
+  await expect(lista.getByRole("button", { name: enLaPersonal })).toBeVisible({ timeout: 20_000 });
+  await expect(
+    lista.getByRole("button", { name: enElProyecto }),
+    "la lista se ha quedado con las entradas del proyecto: al pulsarlas dicen que ya no están",
+  ).toHaveCount(0);
+
+  await volverALaPersonal(page);
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
