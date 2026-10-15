@@ -33,6 +33,13 @@ Plantilla al final.
   mutaciones** —dejar la entrada en la papelera, no llevarse el secreto, y que «déjala» mueva igual—, las
   tres en rojo por su motivo. Y la guarda de las descripciones pide a `mover` **su propia frase**, no la de
   los demás: meterle la de los otros habría sido una palabra para que el test callara.
+- **Y al probar la 2.57.0 su agente encontró otra cosa, arreglada en la 2.57.1.** Dijo que lanzar llamadas
+  en paralelo cambiaba la bóveda abierta; el síntoma era real y la causa no: el servidor MCP atiende **en
+  serie**. Lo que pasaba era **el respiro de la 0055** —la ventana no vuelve hasta diez segundos después—,
+  así que la llamada siguiente sin nombrar bóveda miraba la que nombró la anterior. Con una lectura es
+  confuso; con una escritura es guardar en la bóveda de un cliente sin que nadie lo pida. Ahora **cualquier
+  llamada sin bóveda deshace el respiro antes de hacer nada**. Y de paso lo tercero que pidió: **el error
+  dice en qué bóveda buscó**.
 - **Queda abierto**: probarlo él, la rama que falta de la 0055, y sin prueba que mover **a una compartida de
   solo ver** conteste su motivo propio — el mismo coste de dos cuentas que ya bloquea otras filas.
 

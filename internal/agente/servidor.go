@@ -56,6 +56,12 @@ type Fuente interface {
 	// con el despacho ya envuelto en una conmutación, volver a conmutar aquí dentro se
 	// bloquearía contra su propio cerrojo.
 	Mover(quien string, p Peticion) (Movido, error)
+	// EnLaPersonaLaDejo deshace **ya** una conmutación que haya hecho el agente, sin
+	// esperar al respiro.
+	//
+	// La llama todo lo que **no** nombra bóveda: sin esto, una llamada sin `boveda`
+	// que llegue dentro del respiro trabaja sobre la bóveda que nombró la anterior.
+	EnLaPersonaLaDejo()
 	// EnLaBoveda hace algo en la bóveda que se nombra **y devuelve la ventana a donde
 	// estaba** (ADR 0055).
 	//
@@ -92,6 +98,10 @@ type Fuente interface {
 }
 
 // ErrNoEsta es que esa entrada no existe, o está en la papelera.
+// ErrNoEsta es que esa entrada no está. **El mensaje dice en cuál se ha buscado**, y
+// eso no es adorno: lo pidió el agente del cliente —«parece que la entrada no existe
+// cuando en realidad buscó en otra bóveda»—, y es la regla de esta casa de que un
+// mensaje impreciso no es impreciso, señala a otro sitio.
 var ErrNoEsta = errors.New("Esa entrada no está en la bóveda")
 
 // ErrPideAprobacion es que hace falta un sí en la ventana. **No es un fallo**: es el
@@ -389,6 +399,20 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 	// va antes**, porque sin la personal desbloqueada no hay clave con la que abrir
 	// ninguna otra.
 	if p.Boveda == "" {
+		// **Sin nombrar bóveda se trabaja en la de la persona, siempre.**
+		//
+		// Lo encontró el agente del cliente el 2026-10-15, y describió bien el síntoma
+		// y mal la causa: dijo que eran llamadas en paralelo, y este servidor atiende
+		// **en serie**. Lo que pasaba es el **respiro** de la ADR 0055 — la ventana no
+		// vuelve tras cada llamada sino a los diez segundos, para que tres acciones en
+		// la misma bóveda no sean seis conmutaciones—, así que durante ese rato la
+		// activa seguía siendo la que nombró la llamada anterior y lo que llegara sin
+		// nombrarla miraba ahí. Su síntoma: «no está en la bóveda» de una entrada que
+		// sí estaba, pero en otra.
+		//
+		// Con una lectura es confuso; **con una escritura es lo que todo esto viene a
+		// impedir**: guardar en la bóveda de un cliente sin que nadie lo haya pedido.
+		s.fuente.EnLaPersonaLaDejo()
 		return s.atenderEnLaBoveda(p)
 	}
 	var r Respuesta

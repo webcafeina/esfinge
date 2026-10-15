@@ -285,6 +285,17 @@ func (a *App) volverDeDondeLeDejoElAgente() {
 	}
 }
 
+// EnLaPersonaLaDejo deshace ya una conmutación del agente, sin esperar al respiro.
+//
+// **Es lo que hace que «sin nombrar bóveda» signifique siempre lo mismo.** El respiro
+// de la ADR 0055 deja la bóveda nombrada activa diez segundos para no conmutar seis
+// veces en una tanda, y eso convertía la llamada siguiente sin `boveda` en una llamada
+// sobre la bóveda de antes. Lo encontró el agente del cliente el 2026-10-15.
+//
+// **Respeta la misma regla que la vuelta por respiro**: si quien conmutó fue la
+// persona, aquí no se toca nada.
+func (f fuenteDelAgente) EnLaPersonaLaDejo() { f.a.volverDeDondeLeDejoElAgente() }
+
 // EnLaBoveda es lo que el canal llama. Ver [App.enLaBoveda].
 func (f fuenteDelAgente) EnLaBoveda(nombre string, hacer func() error) error {
 	return f.a.enLaBoveda(nombre, hacer)

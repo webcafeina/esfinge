@@ -37,6 +37,9 @@ type bovedaFalsa struct {
 	vueltas int
 	// movidas cuenta los movimientos entre bóvedas.
 	movidas int
+	// devueltas cuenta las veces que se ha deshecho una conmutación sin esperar al
+	// respiro, que es lo que hace cualquier llamada que no nombra bóveda.
+	devueltas int
 }
 
 // elSecreto es un centinela: **no tiene que salir por el canal por ningún sitio**, y
@@ -107,6 +110,13 @@ func (b *bovedaFalsa) Mover(quien string, p Peticion) (Movido, error) {
 		ID: "nuevo", Titulo: "GitHub", Desde: "Personal", Hasta: p.Destino,
 		SeQuedaCopia: p.DejarCopia, ConSecreto: true,
 	}, nil
+}
+
+// EnLaPersonaLaDejo deshace la ida. El doble **cuenta las veces**, que es lo que deja
+// comprobar que una llamada sin bóveda la deshace y una con bóveda no.
+func (b *bovedaFalsa) EnLaPersonaLaDejo() {
+	b.devueltas++
+	b.enQueBoveda = ""
 }
 
 func mustBovedas(b *bovedaFalsa) []UnaBoveda {
@@ -472,5 +482,54 @@ func TestBorrarPideUnSiYDiceLosDias(t *testing.T) {
 	// grave de lo que pasa.
 	if !r.Escrito.ALaPapelera || r.Escrito.Dias != 30 {
 		t.Errorf("no dice que va a la papelera treinta días: %+v", r.Escrito)
+	}
+}
+
+// **Lo que no nombra bóveda trabaja en la de la persona, aunque la anterior conmutara.**
+//
+// Lo encontró el agente del cliente el 2026-10-15, y describió bien el síntoma y mal la
+// causa: dijo «llamadas en paralelo», y este servidor atiende **en serie**. Lo que
+// pasaba era el **respiro** de la ADR 0055: la ventana no vuelve tras cada llamada sino
+// a los diez segundos, así que durante ese rato la bóveda activa seguía siendo la que
+// nombró la llamada anterior y lo que llegara sin nombrarla miraba ahí. Su síntoma fue
+// «no está en la bóveda» de una entrada que sí estaba, en otra.
+//
+// Con una lectura es confuso. **Con una escritura es lo que todo esto viene a impedir**:
+// guardar en la bóveda de un cliente sin que nadie lo haya pedido.
+func TestSinNombrarBovedaSeTrabajaEnLaDeLaPersona(t *testing.T) {
+	b := &bovedaFalsa{existe: true, abierta: true, testigo: "t"}
+	s := &Servidor{fuente: b}
+
+	// 1 · Una llamada que **sí** nombra bóveda conmuta y deja el respiro corriendo.
+	r := s.Atender(Peticion{Version: VersionDelProtocolo, Testigo: "t", Que: QueBuscar, Boveda: "Zeri's Coffee"})
+	if !r.OK {
+		t.Fatalf("la primera tendría que haber ido bien: %+v", r)
+	}
+	if b.idasYVueltas != 1 {
+		t.Fatalf("no ha conmutado: %d idas", b.idasYVueltas)
+	}
+	if b.devueltas != 0 {
+		t.Error("ha deshecho la ida nombrando bóveda: entonces el respiro no sirve para nada")
+	}
+
+	// 2 · Y la siguiente **sin** nombrarla la deshace antes de mirar nada.
+	r = s.Atender(Peticion{Version: VersionDelProtocolo, Testigo: "t", Que: QueBuscar})
+	if !r.OK {
+		t.Fatalf("la segunda tendría que haber ido bien: %+v", r)
+	}
+	if b.devueltas != 1 {
+		t.Error("una llamada sin bóveda no ha devuelto la ventana: trabajaría sobre la que " +
+			"nombró la anterior, que es el fallo que vio el agente del cliente")
+	}
+
+	// **Y lo que de verdad duele es con una escritura**, no con una búsqueda.
+	b.devueltas = 0
+	r = s.Atender(Peticion{Version: VersionDelProtocolo, Testigo: "t", Que: QueCrear})
+	if !r.OK {
+		t.Fatalf("crear tendría que haber ido bien: %+v", r)
+	}
+	if b.devueltas != 1 {
+		t.Error("una escritura sin bóveda no ha devuelto la ventana: se guardaría en la " +
+			"bóveda de un cliente sin que nadie lo haya pedido")
 	}
 }

@@ -532,6 +532,21 @@ método se puede pasar como referencia —`hacer(esfinge.vaciarPapeleraDeBoveda)
 es como se consigue que un aviso deje de leerse; y **no dice que la pantalla haga algo útil**, solo que
 exista quien lo llame.
 
+**Un plazo de gracia convierte «lo de siempre» en «lo de la llamada anterior».** El respiro de la ADR 0055
+—la ventana no vuelve tras cada acción del agente sino a los diez segundos, para que tres acciones en la
+misma bóveda no sean seis conmutaciones— dejaba la bóveda **nombrada** activa durante ese rato. Así que la
+llamada siguiente **sin** nombrar bóveda trabajaba sobre la de antes: con una lectura es confuso —«esa
+entrada no está» de una que sí está, en otra bóveda— y **con una escritura es justo lo que todo esto viene
+a impedir**, guardar en la bóveda de un cliente sin que nadie lo haya pedido. Ahora cualquier llamada que no
+nombre bóveda **deshace el respiro antes de hacer nada**, así que «sin nombrar» vuelve a significar siempre
+lo mismo.
+
+**Y la mitad de método, que ya ha pasado dos veces en dos días: el agente da el síntoma bien y la causa
+mal.** Éste dijo «llamadas en paralelo», y el servidor MCP atiende **en serie** —lee una línea, contesta,
+lee la siguiente—, así que por ahí no podía ser. Creerle habría puesto un cerrojo donde no hacía falta
+dejando el fallo dentro. **Lo que vale de un informe suyo es lo que vio, no lo que deduce**, igual que de
+una persona.
+
 **Avisar de que alguien ha escrito no es avisar de que ha cambiado la bóveda, y la lista solo oía lo
 primero.** Son dos eventos: `boveda-cambiada` lo manda quien **escribe** desde fuera, y conmutar manda
 `EventoEstadoBoveda`. La lista de la bóveda solo escuchaba el primero, y hasta la ADR 0055 eso bastaba
