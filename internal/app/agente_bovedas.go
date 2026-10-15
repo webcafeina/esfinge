@@ -383,6 +383,34 @@ func (a *App) moverEntreBovedas(quien string, p agente.Peticion) (agente.Movido,
 	movida := e.Copia()
 	conSecreto := e.Secreto != ""
 
+	// **Y si va a quitarla del origen, lo aprueba la persona en la ventana.**
+	//
+	// La frontera es «lo que quita algo de tu bóveda», que es la misma de `borrar`: lo
+	// decidió el cliente el 2026-10-15 cuando su agente señaló la inconsistencia —mover
+	// es **más** destructiva que borrar, porque no pasa por la papelera, y era la única
+	// acción del canal que no pedía nada—. Con `dejar_copia` no quita nada y va directo.
+	//
+	// **Y no pasa por la válvula ni por «No volver a preguntar»**, al revés que borrar.
+	// Eso no es una excepción inventada: la razón por la que borrar sí pasa fue suya
+	// —«de todos modos iría a la papelera»— y aquí no va, así que la razón no vale. Es
+	// la misma regla que el código de un solo uso y que cambiar una contraseña: lo que
+	// no se deshace no pasa por la válvula.
+	if !p.DejarCopia {
+		ahora := time.Now()
+		q := loQuePideUnAgente{
+			Quien: quien, Que: agente.QueMover, ID: p.ID, Titulo: e.Titulo,
+			Cuando: ahora.UTC().Format(time.RFC3339),
+			Boveda: nombreOrigen, Destino: destino.nombre,
+		}
+		vale, _ := a.permisos.pedir(q, false, ahora)
+		if !vale {
+			a.sistema.Avisar(EventoAgenteQuiere, q)
+			a.ag.sello = a.cuantasConmutaciones()
+			a.programarLaVuelta()
+			return agente.Movido{}, agente.ErrPideAprobacion
+		}
+	}
+
 	// 2 · En el destino, **y primero**: si esto falla, en el origen no se ha tocado
 	// nada. Al revés —quitar y luego escribir— un fallo en medio perdería la entrada.
 	if err := a.irA(destino, false); err != nil {

@@ -40,6 +40,16 @@ Plantilla al final.
   confuso; con una escritura es guardar en la bóveda de un cliente sin que nadie lo pida. Ahora **cualquier
   llamada sin bóveda deshace el respiro antes de hacer nada**. Y de paso lo tercero que pidió: **el error
   dice en qué bóveda buscó**.
+- **Y con la 2.57.1 puesta, su agente auditó los esquemas enteros: nueve hallazgos, ocho ciertos y cuatro
+  rotos por mí en tres días.** De ahí sale la **2.58.0**: `mover` **pide aprobación cuando quita** —con
+  `dejar_copia` no— y **no pasa por la válvula**, porque la razón por la que `borrar` sí pasa era que iba a
+  la papelera y esto no va; las cuatro descripciones que se habían quedado mintiendo; y **`generar` en
+  `editar`**, que era lo más serio: sin eso, rotar una contraseña obligaba a escribirla en el chat.
+- **El que no era un fallo**: que no se pueda poner la semilla del segundo factor. Es una decisión con razón
+  escrita —cualquier cadena de letras es base32 válida— y lo que sí había que arreglar es que `editar` lo
+  prometiera.
+- **Y cinco a `deuda.md`** con sus palabras: el largo de 48 caracteres, las notas que se machacan sin
+  aprobación ni historial, papelera y restaurar, paginación de `buscar`, y los campos de tarjeta y wifi.
 - **Queda abierto**: probarlo él, la rama que falta de la 0055, y sin prueba que mover **a una compartida de
   solo ver** conteste su motivo propio — el mismo coste de dos cuentas que ya bloquea otras filas.
 

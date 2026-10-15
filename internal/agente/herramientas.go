@@ -118,8 +118,9 @@ var LasHerramientas = []Herramienta{
 	{
 		Nombre: "esfinge_estado",
 		Descripcion: "Dice si hay una bóveda de Esfinge en este equipo, si está abierta y en cuál se está " +
-			"trabajando. Todas las demás herramientas actúan sobre esa bóveda y ninguna otra, así que " +
-			"conviene mirar esto antes de guardar algo. Si está cerrada, la persona tiene que abrirla en " +
+			"trabajando. Las demás actúan sobre **ésa** mientras no les digas otra en `boveda`, así que " +
+			"conviene mirar esto antes de guardar algo sin nombrarla. Si está cerrada, la persona tiene " +
+			"que abrirla en " +
 			"Esfinge: no se puede abrir desde aquí. **Y dice la versión de la Esfinge que contesta**, que " +
 			"es la respuesta a «¿se ha actualizado?»: el número que el cliente enseña en su lista de " +
 			"extensiones es el del paquete instalado y no cambia al actualizar Esfinge, porque el paquete " +
@@ -132,12 +133,13 @@ var LasHerramientas = []Herramienta{
 	},
 	{
 		Nombre: "esfinge_buscar",
-		Descripcion: "Busca entradas en la bóveda abierta y devuelve lo que no es secreto: título, usuario, " +
+		Descripcion: "Busca entradas y devuelve lo que no es secreto: título, usuario, " +
 			"sitios, tipo y si tienen contraseña y segundo factor. **Nunca devuelve contraseñas.** La " +
-			"búsqueda no mira los secretos, solo los títulos, usuarios y sitios.",
+			"búsqueda no mira los secretos, solo los títulos, usuarios y sitios. Busca en la bóveda " +
+			"abierta mientras no le digas otra en `boveda`.",
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
-			"texto": {Tipo: "string", Descripcion: "Lo que se busca. Vacío devuelve las primeras."},
+			"texto":  {Tipo: "string", Descripcion: "Lo que se busca. Vacío devuelve las primeras."},
 		}),
 		Verbo:           QueBuscar,
 		PideAprobacion:  false,
@@ -151,7 +153,7 @@ var LasHerramientas = []Herramienta{
 			"contraseña está esfinge_copiar_contrasena.",
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
-			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+			"id":     {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 		}, "id"),
 		Verbo:           QueVer,
 		PideAprobacion:  false,
@@ -201,7 +203,7 @@ var LasHerramientas = []Herramienta{
 			"vuelve a pedirlo cuando la persona diga que sí. Se borra sola del portapapeles pasado un rato.",
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
-			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+			"id":     {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 		}, "id"),
 		Verbo:          QueCopiarSecreto,
 		PideAprobacion: true,
@@ -218,7 +220,7 @@ var LasHerramientas = []Herramienta{
 			"Esfinge **cada vez**, aunque te haya dado permiso para otras cosas.",
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
-			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+			"id":     {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 		}, "id"),
 		Verbo:          QueCodigo,
 		PideAprobacion: true,
@@ -235,7 +237,7 @@ var LasHerramientas = []Herramienta{
 			"es cuánto mide y de qué alfabeto sale. Tipos: credencial, nota, tarjeta, identidad, " +
 			"personal, wifi. **Las llaves de acceso no se crean aquí**: las emite el sitio.",
 		Esquema: objeto(map[string]Campo{
-			"boveda": campoDeBoveda,
+			"boveda":  campoDeBoveda,
 			"tipo":    {Tipo: "string", Descripcion: "credencial si no se dice nada.", Enum: []string{"credencial", "nota", "tarjeta", "identidad", "personal", "wifi"}},
 			"titulo":  {Tipo: "string", Descripcion: "Cómo se llama. Obligatorio."},
 			"usuario": {Tipo: "string"},
@@ -266,12 +268,26 @@ var LasHerramientas = []Herramienta{
 		Nombre: "esfinge_editar",
 		Descripcion: "Cambia campos de una entrada. " + enLaQueEsteAbierta +
 			"Lo que no mandes **no se toca**. Cambiar el título, las notas o la carpeta va directo; " +
-			"**cambiar la contraseña o el código tiene que aprobarlo la persona**, porque eso puede " +
-			"dejar una cuenta sin forma de entrar. La contraseña anterior se guarda en el historial " +
-			"de la entrada.",
+			"**cambiar la contraseña tiene que aprobarlo la persona**, porque eso puede dejar una cuenta " +
+			"sin forma de entrar. La anterior se guarda en el historial de la entrada.\n\n" +
+			"**Para rotar una contraseña usa `generar`, no la escribas**: la hace Esfinge, no te la enseña " +
+			"y no pasa por esta conversación. Escribirla en `secreto` la deja en el historial del chat " +
+			"para siempre.\n\n" +
+			"**La semilla del segundo factor no se cambia desde aquí, a propósito**: cualquier cadena de " +
+			"letras es base32 válida, así que una mal copiada no da error y deja la cuenta sin segundo " +
+			"factor sin que nadie se entere. Eso se hace en Esfinge.",
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
-			"id":        {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+			"id":     {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+			"generar": {
+				Tipo:        "boolean",
+				Descripcion: "Pone una contraseña nueva hecha por Esfinge. **Es la forma de rotar una**: no te la enseña y no pasa por la conversación.",
+			},
+			"alfabeto": {
+				Tipo:        "string",
+				Enum:        []string{"hex", "alnum", "simbolos"},
+				Descripcion: "Con qué se hace la de `generar`. De fábrica hexadecimal.",
+			},
 			"titulo":    {Tipo: "string"},
 			"usuario":   {Tipo: "string"},
 			"secreto":   {Tipo: "string", Descripcion: "La contraseña nueva. Esto pide aprobación."},
@@ -289,10 +305,10 @@ var LasHerramientas = []Herramienta{
 		Nombre: "esfinge_borrar",
 		Descripcion: "Manda una entrada a la papelera, donde se puede recuperar durante treinta días. " +
 			enLaQueEsteAbierta +
-			"**Tiene que aprobarlo la persona**: es lo único que quita algo de su vista.",
+			"**Tiene que aprobarlo la persona**, como todo lo que quita algo de su vista.",
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
-			"id": {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
+			"id":     {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
 		}, "id"),
 		Verbo:           QueBorrar,
 		PideAprobacion:  true,

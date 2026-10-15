@@ -318,6 +318,8 @@ export type EstadoDelAgente = {
      * cliente.
      */
     boveda: string;
+    /** A dónde se la lleva, cuando lo que se pide es mover (ADR 0056). */
+    destino?: string;
   };
   /** Cómo va el «todo lo de este agente durante un rato», si está abierta. */
   valvula: { abierta: boolean; quedan: number; usadas: number; tope: number; ultimos?: string[] };

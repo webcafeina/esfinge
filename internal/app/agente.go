@@ -542,6 +542,9 @@ type loQuePideUnAgente struct {
 	ID     string `json:"id"`
 	Titulo string `json:"titulo"`
 	Cuando string `json:"cuando"`
+	// Destino es a dónde se lleva, cuando lo que se pide es mover (ADR 0056). Vacío en
+	// todo lo demás.
+	Destino string `json:"destino,omitempty"`
 	// Boveda es en cuál está pasando esto (ADR 0055).
 	//
 	// **Desde que la acción puede ocurrir en una bóveda que no estás mirando, aprobar
@@ -1068,6 +1071,29 @@ func (f fuenteDelAgente) Editar(quien string, p agente.Peticion) (agente.Escrito
 	e, hay := b.Ver(p.ID)
 	if !hay || e.Papelera {
 		return agente.Escrito{}, agente.ErrNoEsta
+	}
+
+	// **Rotar sin escribirla.** Sin esto, cambiar una contraseña obliga a pasarla en
+	// claro por la conversación —y ahí se queda para siempre—, que es justo lo que este
+	// canal existe para evitar. `crear` lo tenía desde el principio y `editar` no: lo
+	// señaló el agente del cliente el 2026-10-15 auditando los esquemas, y tenía razón.
+	if p.Generar {
+		alfabeto := p.Alfabeto
+		if alfabeto == "" {
+			alfabeto = alfabetoDeLoQueGenera
+		}
+		// **El largo no se ofrece aquí**, y por eso no se lee: lo que el núcleo aplica
+		// tiene que estar declarado en el esquema o es código que el modelo no puede
+		// alcanzar. Que 24 bytes en hexadecimal sean 48 caracteres —y que haya sitios
+		// que no los acepten— está apuntado en `deuda.md`, con su arreglo.
+		clave, err := f.a.GenerarContrasena(largoDeLoQueGenera, alfabeto)
+		if err != nil {
+			return agente.Escrito{}, err
+		}
+		if p.Campos == nil {
+			p.Campos = map[string]string{}
+		}
+		p.Campos["secreto"] = clave
 	}
 
 	tocaUnSecreto := false

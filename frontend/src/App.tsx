@@ -1434,7 +1434,17 @@ function LoQueEsperaRespuesta({
               y el agente no la ve; la otra **se la enseñas**, y eso se queda en la
               conversación de su modelo. Decirlas con el mismo texto sería esconder
               justo la diferencia que hace falta para contestar. */}
-          {elAgente.quiere.que === "codigo" ? (
+          {/* **Mover dice lo suyo**, que no es ninguna de las otras dos: aquí no se
+              enseña nada ni se copia nada, se **quita** de una bóveda. Y lo que hace
+              falta para contestar es a dónde va, porque si el destino está compartido
+              el secreto pasa a verlo todo el que tenga acceso. */}
+          {elAgente.quiere.que === "mover" ? (
+            <p className="aviso">
+              Sale de {elAgente.quiere.boveda} y <strong>deja de estar ahí</strong>: no va a la
+              papelera, porque queda en {elAgente.quiere.destino}. Si esa bóveda está compartida,
+              lo que lleve dentro <strong>lo verá todo el que tenga acceso</strong>.
+            </p>
+          ) : elAgente.quiere.que === "codigo" ? (
             <p className="aviso">
               Esas seis cifras <strong>sí las verá</strong>, y se quedarán en la conversación de
               su modelo. Caducan en medio minuto y no sirven sin la contraseña, pero si no le has

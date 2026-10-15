@@ -244,6 +244,20 @@ func TestMoverLlevaLaEntradaEnteraYNoDejaNadaDetras(t *testing.T) {
 	}
 	id := es[0].ID
 
+	// **Lo primero que tiene que pasar es que pida permiso**, porque esto quita algo de
+	// la bóveda — y eso es más de lo que hace `borrar`, que lo manda a la papelera y
+	// aun así lo pregunta. Lo decidió el cliente el 2026-10-15 cuando su agente señaló
+	// que la acción más destructiva del canal era la única que no pasaba por la ventana.
+	if _, err := f.Mover("Claude", agente.Peticion{ID: id, Destino: "Acme"}); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatalf("mover tendría que pedir aprobación y ha contestado: %v", err)
+	}
+	if es, _ := a.BuscarEnBoveda("Brevo"); len(es) != 1 {
+		t.Fatal("ha tocado la entrada sin que nadie lo aprobara")
+	}
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
+
 	m, err := f.Mover("Claude", agente.Peticion{ID: id, Destino: "Acme"})
 	if err != nil {
 		t.Fatal(err)
@@ -326,9 +340,12 @@ func TestMoverConDejarCopiaLaDejaEnLasDos(t *testing.T) {
 		t.Fatal(err)
 	}
 	es, _ := a.BuscarEnBoveda("Compartida")
+	// **Con «déjala» no pide nada**, y ésa es la frontera exacta que eligió el cliente:
+	// lo que se aprueba es **quitar**, no copiar. Si esto pidiera aprobación, la regla
+	// sería otra y habría que decirlo.
 	m, err := f.Mover("Claude", agente.Peticion{ID: es[0].ID, Destino: "Acme", DejarCopia: true})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("copiar no tendría que pedir nada, y ha contestado: %v", err)
 	}
 	if !m.SeQuedaCopia {
 		t.Error("no dice que se queda copia, y se queda")

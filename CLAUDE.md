@@ -532,6 +532,22 @@ método se puede pasar como referencia —`hacer(esfinge.vaciarPapeleraDeBoveda)
 es como se consigue que un aviso deje de leerse; y **no dice que la pantalla haga algo útil**, solo que
 exista quien lo llame.
 
+**Añadir una herramienta deja mintiendo a las de al lado, y en este canal los textos no son
+documentación: son lo único que el modelo ve.** En tres días —`boveda`, `bovedas` y `mover`— se quedaron
+falsas cuatro descripciones: `estado` decía «todas las demás actúan sobre esa bóveda **y ninguna otra**»
+cuando ya se podía nombrar otra, `buscar` decía «busca en la bóveda abierta», `borrar` decía ser «lo único
+que quita algo de su vista» cuando `mover` también quita, y `editar` prometía «cambiar el código» sin
+tener parámetro para ello. Ninguna la cazó una prueba: las cazó **el agente del cliente leyendo los
+esquemas**, y dos de ellas le habrían hecho pedirle a una persona que conmutara de bóveda a mano, que es
+justo lo que se acababa de quitar. **Al añadir un verbo o un campo, releer las descripciones de los
+vecinos** — y la regla de arriba, la de que lo que el núcleo aplica tiene que estar en el esquema, tiene
+gemela: **lo que el esquema promete tiene que existir**.
+
+**Y de una auditoría suya, lo que vale es lo que vio.** De nueve hallazgos, ocho eran ciertos y uno era una
+decisión escrita que él no podía conocer: que la semilla del segundo factor **no se ofrezca a propósito**,
+porque cualquier cadena de letras es base32 válida y una mal puesta deja la cuenta sin segundo factor sin
+que nada avise. Aceptar los nueve habría abierto esa puerta con un argumento ajeno.
+
 **Un plazo de gracia convierte «lo de siempre» en «lo de la llamada anterior».** El respiro de la ADR 0055
 —la ventana no vuelve tras cada acción del agente sino a los diez segundos, para que tres acciones en la
 misma bóveda no sean seis conmutaciones— dejaba la bóveda **nombrada** activa durante ese rato. Así que la

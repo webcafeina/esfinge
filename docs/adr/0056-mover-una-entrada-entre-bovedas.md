@@ -36,6 +36,17 @@ Lo decidido con el cliente, que no se cambia sin preguntar:
 | **La del origen se va del todo** | No a la papelera: en un movimiento no se pierde nada, porque está en el destino, y deshacerlo es moverla de vuelta |
 | **Pregunta el agente, no la ventana** | *«Debe preguntarte, pero el agente en la conversación, como las bóvedas. No en la ventana»* |
 
+**Y eso cambió el mismo día**, al probarlo: su agente auditó los esquemas y señaló que **mover es más
+destructiva que borrar** —quita del origen **sin pasar por la papelera**— y que sin embargo `borrar` pide
+aprobación en la ventana y `mover` no pedía nada. La inconsistencia era nuestra: esta ADR argumenta «mover
+es crear y borrar, y borrar ya pregunta» y luego se construyó saltándose justo esa pregunta. El cliente
+eligió la frontera: **se aprueba lo que quita**. Con `dejar_copia` no quita nada y va directo.
+
+**Y no pasa por la válvula ni por «No volver a preguntar»**, al revés que `borrar`. No es una excepción
+inventada: la razón por la que `borrar` sí pasa la dio el cliente el 2026-10-08 —«de todos modos iría a la
+papelera»— y aquí **no va**, así que la razón no vale. Es la misma regla que el código de un solo uso y que
+cambiar una contraseña: lo que no se deshace no pasa por la válvula.
+
 **No es administrar**: mover es crear y borrar, que el agente ya hace. No crea, archiva, entrega ni comparte
 bóvedas.
 
