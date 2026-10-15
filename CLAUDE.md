@@ -532,6 +532,14 @@ método se puede pasar como referencia —`hacer(esfinge.vaciarPapeleraDeBoveda)
 es como se consigue que un aviso deje de leerse; y **no dice que la pantalla haga algo útil**, solo que
 exista quien lo llame.
 
+**Y el patrón del día, que apareció tres veces seguidas: una prueba escrita por quien acaba de arreglar
+algo tiende a ordenar los pasos como funcionan.** El 2026-10-15, las tres: la primera probaba mover **en la
+dirección que no necesita conmutar**; la segunda **reintentaba en el acto**, cuando en la realidad pasan
+diez segundos; y la tercera **aprobaba después del respiro**, que es el único orden en que el sí sobrevive.
+Las tres pasaban en verde con el fallo dentro. Lo que las separa de una prueba buena no es más aserciones:
+es **escribir la secuencia con los tiempos de quien la vive** —que tarda en leer, en decidir y en pulsar—
+en vez de con los de quien la programa. Y lo único que lo dice es mutar.
+
 **Una operación que conmuta de bóveda se invalidaba a sí misma.** `cambiarBoveda` cierra la válvula y con
 ella **el sí concedido**, que es lo correcto cuando el suelo cambia por cualquier otro motivo: un permiso
 dado mirando una bóveda no puede valer en otra. Pero `mover` **tiene que conmutar al origen**, así que el

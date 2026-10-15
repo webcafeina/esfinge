@@ -58,6 +58,13 @@ Plantilla al final.
 - **Y las dos pruebas fallaron antes de acertar**: la que había solo ejercitaba la dirección que funciona, y
   la nueva reintentaba en el acto —cuando en la realidad pasan más de diez segundos y el respiro ya ha
   devuelto la ventana—. Las dos pasaban con el fallo dentro, y las dos lo dijo mutarlas.
+- **Y el día cierra con un fallo vivo**: la 2.58.1 no arregló el bucle del todo. Protegió el sí de la
+  conmutación que hace `mover` y falta **la vuelta automática de la ventana**, que también cierra la
+  válvula. Es una carrera de diez segundos y por eso al cliente le falla siempre: aprueba deprisa. Entero en
+  `deuda.md`, con el arreglo y con por qué la prueba no lo vio.
+- **Y el patrón del día, tres veces**: mis pruebas ordenaban los pasos **como funcionan**, no como los vive
+  quien usa el producto — la dirección fácil, el reintento instantáneo, el aprobar tarde. Las tres en verde
+  con el fallo dentro, las tres descubiertas al mutar. Está en `CLAUDE.md`.
 - **Queda abierto**: probarlo él, la rama que falta de la 0055, y sin prueba que mover **a una compartida de
   solo ver** conteste su motivo propio — el mismo coste de dos cuentas que ya bloquea otras filas.
 

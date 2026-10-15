@@ -191,8 +191,17 @@
 > papelera**; y **pregunta el agente en la conversación, no la ventana** — con su coste escrito en
 > `docs/seguridad.md`, porque una frase de una descripción la lee el modelo y puede saltársela.
 >
-> **La siguiente acción**: **probar `esfinge_mover`** —el caso de Brevo, que es el que lo provocó— y la
-> rama que falta de la 0055. Lo que hay que
+> **Y el día acabó con un fallo vivo, que es lo primero de mañana**: mover entre bóvedas **sigue pidiendo
+> aprobación sin fin si se aprueba deprisa**. La 2.58.1 protegió el sí de la conmutación que hace `mover` y
+> **falta la otra**: la vuelta automática de la ventana —el respiro— también pasa por `cambiarBoveda` y por
+> `alCerrarLaBoveda`, y las dos cierran la válvula, que borra el sí. Es una carrera de diez segundos: quien
+> aprueba rápido lo pierde. Está entero en [deuda.md](deuda.md), con el arreglo y con **por qué la prueba no
+> lo vio** — está escrita aprobando *después* del respiro, el único orden que funciona.
+>
+> **Antes de tocar nada, confirmar con el agente que la versión era la 2.58.1.**
+>
+> **Y sigue pendiente**: la rama que falta de la 0055 —un proyecto abierto, sin nombrar bóveda, que
+> pregunte— y las seis filas nuevas de `deuda.md` que salieron de la auditoría de su agente. Lo que hay que
 > saber al final no es si funciona, sino **si ha dejado de ser molesto**, que era el encargo. Y de paso:
 > que la lista no se quede con la de otra bóveda, que el ir y venir de la ventana no estorbe, que no le
 > muevan la bóveda si está conmutando él, y qué tal contesta a «¿qué bóvedas tengo?».
