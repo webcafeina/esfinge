@@ -162,6 +162,12 @@ func ponerArgumentos(p *Peticion, args map[string]any) {
 	if v, ok := args["boveda"].(string); ok {
 		p.Boveda = v
 	}
+	if v, ok := args["destino"].(string); ok {
+		p.Destino = v
+	}
+	if v, ok := args["dejar_copia"].(bool); ok {
+		p.DejarCopia = v
+	}
 	if v, ok := args["texto"].(string); ok {
 		p.Texto = v
 	}
@@ -303,6 +309,8 @@ func soloLoQueSale(h Herramienta, r Respuesta) any {
 		return r.Codigo
 	case QueCrear, QueEditar, QueBorrar:
 		return r.Escrito
+	case QueMover:
+		return r.Movido
 	}
 	return map[string]any{"hecho": true}
 }

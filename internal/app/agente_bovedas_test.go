@@ -1,6 +1,8 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"os"
 	"testing"
@@ -217,5 +219,152 @@ func TestUnaBovedaDormidaSeDiceComoTalYNoComoQueNoExiste(t *testing.T) {
 		if b.Nombre == "Acme" {
 			t.Error("una bóveda que no está en este equipo no se ofrece para nombrarla")
 		}
+	}
+}
+
+// **Mover lleva la entrada entera, con su secreto, y no deja nada detrás** (ADR 0056).
+//
+// Es el centro de la entrega, y se comprueba **abriendo los dos ficheros** en vez de
+// mirar lo que quedó en memoria: es la lección de `vaciarLoSensible`, y aquí importa más
+// porque lo que tiene que viajar es justo lo que no se puede ver desde fuera.
+func TestMoverLlevaLaEntradaEnteraYNoDejaNadaDetras(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	f := fuenteDelAgente{a}
+
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Brevo", Usuario: "yo@ejemplo.com",
+		Secreto: "la-contrasena-de-brevo", TOTP: "JBSWY3DPEHPK3PXP",
+		Sitios: []string{"https://login.brevo.com"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	es, _ := a.BuscarEnBoveda("Brevo")
+	if len(es) != 1 {
+		t.Fatalf("hacen falta una entrada para mover y hay %d", len(es))
+	}
+	id := es[0].ID
+
+	m, err := f.Mover("Claude", agente.Peticion{ID: id, Destino: "Acme"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Desde != "Personal" || m.Hasta != "Acme" {
+		t.Errorf("no dice de dónde a dónde: %+v", m)
+	}
+	if !m.ConSecreto {
+		t.Error("llevaba contraseña y dice que no: quien lo pidió no puede saber que ha movido algo sensible")
+	}
+	// **Lo que vuelve no lleva el secreto**, que es la promesa de todo el canal.
+	crudo, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(crudo, []byte("la-contrasena-de-brevo")) {
+		t.Errorf("la contraseña ha salido por el canal: %s", crudo)
+	}
+
+	// La ventana vuelve a donde estaba, como en cualquier otra acción del agente.
+	a.volverDeDondeLeDejoElAgente()
+	if a.bovedaActiva() != "" {
+		t.Errorf("la ventana se ha quedado en %q", a.bovedaActiva())
+	}
+
+	// **En la personal no queda nada, ni en la papelera.** Si quedara, la contraseña
+	// del cliente seguiría treinta días en la bóveda de la que se quería sacar.
+	if es, _ := a.BuscarEnBoveda("Brevo"); len(es) != 0 {
+		t.Errorf("sigue en la personal: %d coincidencias", len(es))
+	}
+	if p, err := a.PapeleraDeBoveda(); err != nil {
+		t.Fatal(err)
+	} else {
+		for _, e := range p {
+			if e.Titulo == "Brevo" {
+				t.Error("se ha quedado en la papelera de la personal, con su contraseña dentro")
+			}
+		}
+	}
+
+	// Y en el proyecto está **entera**: contraseña, segundo factor y sitio.
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	llegadas, _ := a.BuscarEnBoveda("Brevo")
+	if len(llegadas) != 1 {
+		t.Fatalf("no ha llegado al proyecto: %d coincidencias", len(llegadas))
+	}
+	entera, hay := a.boveda().Ver(llegadas[0].ID)
+	if !hay {
+		t.Fatal("no se encuentra la que ha llegado")
+	}
+	if entera.Secreto != "la-contrasena-de-brevo" {
+		t.Errorf("la contraseña no ha viajado: %q", entera.Secreto)
+	}
+	if entera.TOTP != "JBSWY3DPEHPK3PXP" {
+		t.Errorf("el segundo factor no ha viajado: %q", entera.TOTP)
+	}
+	if len(entera.Sitios) != 1 || entera.Sitios[0] != "https://login.brevo.com" {
+		t.Errorf("el sitio no ha viajado: %v", entera.Sitios)
+	}
+	// **Identificador nuevo**: los de una bóveda son suyos.
+	if entera.ID == id {
+		t.Error("se ha llevado el identificador de la otra bóveda")
+	}
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// **Y con «déjala», se queda en las dos.** Es lo que pidió el cliente para una cuenta
+// compartida, y lo que no puede pasar es que se mueva cuando se dijo que se copiara.
+func TestMoverConDejarCopiaLaDejaEnLasDos(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	f := fuenteDelAgente{a}
+
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Compartida", Secreto: "x",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	es, _ := a.BuscarEnBoveda("Compartida")
+	m, err := f.Mover("Claude", agente.Peticion{ID: es[0].ID, Destino: "Acme", DejarCopia: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !m.SeQuedaCopia {
+		t.Error("no dice que se queda copia, y se queda")
+	}
+	if es, _ := a.BuscarEnBoveda("Compartida"); len(es) != 1 {
+		t.Errorf("se ha movido cuando se pidió copiar: %d en la personal", len(es))
+	}
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if es, _ := a.BuscarEnBoveda("Compartida"); len(es) != 1 {
+		t.Errorf("no ha llegado al proyecto: %d", len(es))
+	}
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Mover a una bóveda que no existe **no mueve nada**: ni la deja a medias ni la guarda
+// en la que estuviera abierta.
+func TestMoverAUnaBovedaQueNoExisteNoTocaNada(t *testing.T) {
+	a, _, _ := conUnProyecto(t)
+	f := fuenteDelAgente{a}
+
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Quieta", Secreto: "x",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	es, _ := a.BuscarEnBoveda("Quieta")
+
+	_, err := f.Mover("Claude", agente.Peticion{ID: es[0].ID, Destino: "La que no existe"})
+	if !errors.Is(err, agente.ErrNoEsaBoveda) {
+		t.Errorf("tendría que decir que esa bóveda no existe, y dice: %v", err)
+	}
+	if es, _ := a.BuscarEnBoveda("Quieta"); len(es) != 1 {
+		t.Error("ha tocado la entrada cuando no tenía que mover nada")
 	}
 }

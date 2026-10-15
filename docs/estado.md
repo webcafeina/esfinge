@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-10-14**
+Última actualización: **2026-10-15**
 
 > **No queda nada del proyecto sin comprobar en una máquina de verdad, salvo Windows y GNOME.** Las dos
 > fichas que quedaban vivas se cerraron hoy en los dos Macs del cliente:
@@ -176,7 +176,23 @@
 > bóveda» al pulsarlas. **No se perdió nada.** Y la primera explicación fue otra, plausible y falsa: lo dijo
 > **mutar el arreglo y ver que la prueba seguía verde**.
 >
-> **La siguiente acción, el 2026-10-15**: **probarlo él**, que ya tiene la 2.56.1 puesta. Lo que hay que
+> **Probado el 2026-10-15, y tres de cuatro pasan**: escribir en una bóveda nombrada estando en otra, el
+> catálogo de `esfinge_bovedas`, y que un nombre que no existe **no caiga en la abierta** —«rechaza los
+> nombres que no existen en vez de guardar en la que esté abierta», dicho por el propio agente—. **La cuarta
+> sigue sin probarse**: hace falta **un proyecto abierto** y pedirle algo sin nombrar bóveda, que es donde
+> tiene que preguntar.
+>
+> **Y de ahí salió la ADR 0056, que es la 2.57.0.** Lo primero que quiso hacer con varias bóvedas fue
+> llevarse algo de una a otra —«guárdame mi credencial de Brevo en Zeri's»— y no se podía: el agente tuvo
+> que crear la entrada a medias, sacar la contraseña al portapapeles y pedirle que la pegara. **Lo pidió él
+> como funcionalidad**: «mover o duplicar entradas entre bóvedas sin que el secreto pase por Claude».
+> Ahora `esfinge_mover` lleva la entrada **entera** y **el secreto no cruza el canal**. Lo que decidió el
+> cliente: **mueve de fábrica** y copia con `dejar_copia`; **la del origen se va del todo, no a la
+> papelera**; y **pregunta el agente en la conversación, no la ventana** — con su coste escrito en
+> `docs/seguridad.md`, porque una frase de una descripción la lee el modelo y puede saltársela.
+>
+> **La siguiente acción**: **probar `esfinge_mover`** —el caso de Brevo, que es el que lo provocó— y la
+> rama que falta de la 0055. Lo que hay que
 > saber al final no es si funciona, sino **si ha dejado de ser molesto**, que era el encargo. Y de paso:
 > que la lista no se quede con la de otra bóveda, que el ir y venir de la ventana no estorbe, que no le
 > muevan la bóveda si está conmutando él, y qué tal contesta a «¿qué bóvedas tengo?».

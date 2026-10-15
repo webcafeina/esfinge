@@ -284,6 +284,10 @@ func llega(p Peticion, campo string) bool {
 	switch campo {
 	case "boveda":
 		return p.Boveda != ""
+	case "destino":
+		return p.Destino != ""
+	case "dejar_copia":
+		return p.DejarCopia
 	case "texto":
 		return p.Texto != ""
 	case "id":
@@ -344,10 +348,20 @@ func TestLasDescripcionesSeLeenYDicenLoDeLaBoveda(t *testing.T) {
 		// cambia: nombrar la bóveda arregla el caso en que alguien la nombra, y el que
 		// duele es el otro —tienes un proyecto abierto, pides guardar algo sin pensar en
 		// dónde—. Ahí el agente tiene que mirar y preguntar, como desde la 2.52.0.
-		if !strings.Contains(h.Descripcion, "antes de escribir, siempre") {
-			t.Errorf("%s no pide mirar el estado antes de escribir **siempre**: con la bóveda "+
-				"ya nombrada eso sobra, pero el caso que de verdad duele es el que no la "+
-				"nombra y ahí sigue haciendo falta", h.Nombre)
+		//
+		// **Mover dice lo suyo, y no es la misma frase**, que es lo que se vio al
+		// escribirlo: el destino de un movimiento va siempre nombrado —es obligatorio—,
+		// así que «antes de escribir» no es su caso. El suyo es el **origen**, que sí
+		// puede ir sin nombrar: con un proyecto abierto, mover «la cuenta de Brevo» se
+		// llevaría la del proyecto y no la tuya. Pedirle la frase de los demás habría
+		// sido meter una palabra para que el test callara.
+		frase := "antes de escribir, siempre"
+		if h.Verbo == QueMover {
+			frase = "antes de mover, siempre"
+		}
+		if !strings.Contains(h.Descripcion, frase) {
+			t.Errorf("%s no pide preguntar %q: el caso que de verdad duele es el que no "+
+				"nombra la bóveda, y ahí hace falta", h.Nombre, frase)
 		}
 	}
 }

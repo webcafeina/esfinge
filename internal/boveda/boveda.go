@@ -923,6 +923,29 @@ func (b *Boveda) Ver(id string) (Entrada, bool) {
 }
 
 // Poner añade o sustituye una entrada y guarda.
+// PonerNueva guarda una entrada **como una entrada nueva de esta bóveda** y devuelve
+// su identificador.
+//
+// Existe para mover una entrada de una bóveda a otra (ADR 0056): **los identificadores
+// son de cada bóveda**, así que llevarse el de la otra podría chocar con uno de aquí, y
+// `Poner` genera uno solo cuando llega vacío — y entonces no hay forma de saber cuál ha
+// puesto, porque recibe la entrada por valor.
+//
+// **La fecha de creación se conserva**: es la misma credencial cambiada de sitio, no una
+// nueva, y en las llaves de acceso esa fecha es lo único que distingue dos filas
+// idénticas en pantalla.
+func (b *Boveda) PonerNueva(e Entrada) (string, error) {
+	id, err := azarHex()
+	if err != nil {
+		return "", err
+	}
+	e.ID = id
+	if err := b.Poner(e); err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
 func (b *Boveda) Poner(e Entrada) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()

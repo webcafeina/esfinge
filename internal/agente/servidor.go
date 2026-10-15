@@ -50,6 +50,12 @@ type Fuente interface {
 	// Bovedas son las que se pueden nombrar: la personal, los proyectos que estén en
 	// este equipo y las compartidas (ADR 0055).
 	Bovedas() ([]UnaBoveda, error)
+	// Mover lleva una entrada entera de una bóveda a otra (ADR 0056).
+	//
+	// **Se ocupa él de las dos bóvedas**, y por eso no pasa por [Fuente.EnLaBoveda]:
+	// con el despacho ya envuelto en una conmutación, volver a conmutar aquí dentro se
+	// bloquearía contra su propio cerrojo.
+	Mover(quien string, p Peticion) (Movido, error)
 	// EnLaBoveda hace algo en la bóveda que se nombra **y devuelve la ventana a donde
 	// estaba** (ADR 0055).
 	//
@@ -327,6 +333,34 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 			return mal(MotivoNoEntiendo, err.Error())
 		}
 		return Respuesta{OK: true, Clave: clave}
+	}
+
+	// **Mover va por fuera de la envoltura de abajo**, y no es un capricho: se ocupa él
+	// de las dos bóvedas —lee en una, escribe en otra y vuelve—, así que envolverlo en
+	// una conmutación lo dejaría conmutando dentro de su propio cerrojo. Aquí `boveda`
+	// dice de dónde sale y `destino` a dónde va.
+	if p.Que == QueMover {
+		est := s.fuente.Estado()
+		if !est.Abierta {
+			if !est.Existe {
+				return mal(MotivoSinBoveda, "Todavía no hay ninguna bóveda en este equipo")
+			}
+			return mal(MotivoCerrada, "La bóveda está cerrada: ábrela en Esfinge")
+		}
+		m, err := s.fuente.Mover(p.Quien, p)
+		switch {
+		case errors.Is(err, ErrBovedaDormida):
+			return mal(MotivoBovedaDormida, err.Error())
+		case errors.Is(err, ErrNoEsaBoveda):
+			return mal(MotivoNoEsaBoveda, err.Error())
+		case errors.Is(err, ErrNoEsta):
+			return mal(MotivoNoEsta, err.Error())
+		case errors.Is(err, ErrNoSeEscribe):
+			return mal(MotivoNoSeEscribe, err.Error())
+		case err != nil:
+			return mal(MotivoNoEntiendo, err.Error())
+		}
+		return Respuesta{OK: true, Movido: &m}
 	}
 
 	// Y a partir de aquí hace falta la bóveda. Los dos casos se distinguen porque el

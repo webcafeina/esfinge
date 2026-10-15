@@ -5,6 +5,37 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-15 · Mover una entrada entre bóvedas, que lo pidió el agente
+
+- **Probó la ADR 0055 y tres de cuatro pasan.** La cuarta no llegó a probarse: pidió la contraseña del
+  banco y el agente se paró por su propia política, y luego la de Notion desde la personal —donde lo
+  correcto es decirlo, no preguntar—. Falta **un proyecto abierto sin nombrar bóveda**.
+- **Y lo primero que quiso hacer con varias bóvedas fue llevarse algo de una a otra**, que es justo lo que
+  faltaba: «guárdame mi credencial de Brevo en Zeri's». El agente no pudo, y el rodeo que se inventó —crear
+  la entrada a medias, sacar la contraseña al portapapeles y pedirle que la pegara— **es peor que la
+  funcionalidad**: obliga a manejar el secreto a mano y deja la misma credencial en dos sitios, cosa que él
+  mismo le avisó. Y la pidió con esas palabras: «mover o duplicar entradas entre bóvedas sin que el secreto
+  pase por Claude, porque ahora es justo lo que falta».
+- **ADR 0056 y 2.57.0**: `esfinge_mover` lleva la entrada entera —contraseña, segundo factor e historial— y
+  **el secreto no cruza el canal**, porque lo lee y lo escribe Esfinge por dentro.
+- **Lo que decidió el cliente**: mueve de fábrica y copia con `dejar_copia`; **la del origen se va del todo y
+  no a la papelera** —con papelera, la contraseña del cliente se quedaría treinta días en la bóveda de la
+  que se la quería sacar—; y **pregunta el agente en la conversación, no la ventana**.
+- **Y eso último lleva su coste escrito**, que es la parte que no se puede olvidar: una frase en la
+  descripción de una herramienta **la lee el modelo y puede saltársela**; una tarjeta la impone Go. Para «en
+  qué bóveda escribo» el coste es una entrada donde no iba; aquí sería un secreto en manos de otra persona.
+  Se compensa con lo único que no depende del modelo: **el movimiento se apunta en el registro**.
+- **Tres cosas que costaron pensarse** y están en la ADR: el orden es **destino primero**, porque al revés un
+  fallo en medio pierde la entrada; quitar del origen **deja lápida**, o el otro equipo la resucita al
+  sincronizar; y `mover` va **por fuera de la envoltura de conmutación** de la 0055, o conmutaría dentro de
+  su propio cerrojo y se bloquearía contra sí mismo.
+- **Qué se verificó**: `make comprobar` y `make e2e` enteros, código 0, 142 pruebas de interfaz; y **tres
+  mutaciones** —dejar la entrada en la papelera, no llevarse el secreto, y que «déjala» mueva igual—, las
+  tres en rojo por su motivo. Y la guarda de las descripciones pide a `mover` **su propia frase**, no la de
+  los demás: meterle la de los otros habría sido una palabra para que el test callara.
+- **Queda abierto**: probarlo él, la rama que falta de la 0055, y sin prueba que mover **a una compartida de
+  solo ver** conteste su motivo propio — el mismo coste de dos cuentas que ya bloquea otras filas.
+
 ## 2026-10-14 (2) · La bóveda deja de ser un modo y pasa a ser un dato de cada acción
 
 - **ADR 0055**, pedida por el cliente tras una semana de uso: «es muy molesto tener que ir cambiando de bóveda

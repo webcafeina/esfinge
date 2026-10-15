@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/webcafeina/esfinge/internal/agente"
+	"github.com/webcafeina/esfinge/internal/boveda"
 )
 
 // Trabajar en una bóveda que no es la abierta, y volver (ADR 0055).
@@ -303,4 +304,178 @@ func (f fuenteDelAgente) Bovedas() ([]agente.UnaBoveda, error) {
 		})
 	}
 	return out, nil
+}
+
+// ---------------------------------------------- llevar una entrada a otra bóveda
+
+// Mover lleva una entrada entera de una bóveda a otra (ADR 0056).
+//
+// **El secreto no cruza el canal**: se lee y se escribe aquí dentro, y lo que vuelve
+// dice qué se movió y a dónde, nunca qué llevaba. Es lo mismo que hace copiar al
+// portapapeles, con la diferencia de que aquí ni siquiera sale del programa.
+//
+// Lo pidió el agente del cliente **al no poder hacerlo** (2026-10-15): lo único que
+// tenía era crear la entrada a medias, sacar la contraseña al portapapeles y pedirle a
+// una persona que la pegara. Eso es peor que la funcionalidad —obliga a manejar el
+// secreto a mano y deja la misma credencial en dos bóvedas— y él mismo lo señaló.
+func (f fuenteDelAgente) Mover(quien string, p agente.Peticion) (agente.Movido, error) {
+	return f.a.moverEntreBovedas(siNoDice(quien), p)
+}
+
+// moverEntreBovedas es el camino entero, **con el cerrojo del agente cogido una sola
+// vez**.
+//
+// No usa `enLaBoveda` y eso no es duplicar código: aquél conmuta una vez y programa la
+// vuelta, y esto conmuta dos —al destino y de vuelta al origen— dentro del mismo
+// cerrojo. Llamándolo se bloquearía contra sí mismo.
+func (a *App) moverEntreBovedas(quien string, p agente.Peticion) (agente.Movido, error) {
+	destino, err := a.buscarLaBoveda(p.Destino)
+	if err != nil {
+		return agente.Movido{}, err
+	}
+
+	a.ag.mu.Lock()
+	defer a.ag.mu.Unlock()
+
+	// **A dónde volver se apunta antes de tocar nada**, igual que en `enLaBoveda`: si
+	// esto empieza con la persona en su bóveda, ahí tiene que acabar.
+	if a.ag.volver == nil {
+		a.ag.volver = a.comoVolverAqui()
+	}
+
+	// 1 · En el origen, que es donde `Atender` nos haya dejado o la que diga `boveda`.
+	if p.Boveda != "" {
+		otro, err := a.buscarLaBoveda(p.Boveda)
+		if err != nil {
+			return agente.Movido{}, err
+		}
+		if err := a.irA(otro, false); err != nil {
+			return agente.Movido{}, err
+		}
+	}
+	origen := a.comoVolverAqui()
+	nombreOrigen := comoSeLlamaLaBoveda(a.EstadoBoveda().NombreDelProyecto)
+	if a.bovedaActiva() == destino.ref {
+		return agente.Movido{}, fmt.Errorf("«%s» ya está en esa bóveda", nombreOrigen)
+	}
+
+	b, err := a.bovedaParaEscribirAgente()
+	if err != nil {
+		return agente.Movido{}, err
+	}
+	// **La entrada entera, con su secreto.** `b.Ver` devuelve el original; lo que lo
+	// recorta es la capa del agente, y aquí no se pasa por ella.
+	e, hay := b.Ver(p.ID)
+	if !hay || e.Papelera {
+		return agente.Movido{}, agente.ErrNoEsta
+	}
+	movida := e.Copia()
+	conSecreto := e.Secreto != ""
+
+	// 2 · En el destino, **y primero**: si esto falla, en el origen no se ha tocado
+	// nada. Al revés —quitar y luego escribir— un fallo en medio perdería la entrada.
+	if err := a.irA(destino, false); err != nil {
+		return agente.Movido{}, err
+	}
+	dest, err := a.bovedaParaEscribirAgente()
+	if err != nil {
+		// De vuelta al origen antes de rendirse: dejarlo en la bóveda de otro porque
+		// no se podía escribir ahí sería cambiar de sitio a quien está mirando.
+		_ = origen()
+		return agente.Movido{}, err
+	}
+	// **Identificador nuevo**: los de una bóveda son suyos, y llevarse el de la otra
+	// podría chocar con uno de aquí.
+	nuevoID, err := dest.PonerNueva(movida)
+	if err != nil {
+		_ = origen()
+		return agente.Movido{}, err
+	}
+	a.avisarDeQueAlguienHaEscrito()
+
+	// 3 · De vuelta al origen, a quitarla.
+	//
+	// **Y si esto falla, se dice.** La entrada está en el destino y sigue aquí: eso es
+	// una credencial duplicada, que es justo lo que este verbo viene a evitar, y
+	// callarlo dejaría a alguien creyendo que la ha sacado de su bóveda personal.
+	if err := origen(); err != nil {
+		return agente.Movido{}, fmt.Errorf(
+			"se ha copiado a «%s» y no se ha podido quitar de «%s», así que está en las dos: %w",
+			destino.nombre, nombreOrigen, err)
+	}
+	if !p.DejarCopia {
+		if err := a.quitarDelTodo(p.ID); err != nil {
+			return agente.Movido{}, fmt.Errorf(
+				"se ha copiado a «%s» y no se ha podido quitar de «%s», así que está en las dos: %w",
+				destino.nombre, nombreOrigen, err)
+		}
+		a.avisarDeQueAlguienHaEscrito()
+	}
+
+	// **Al registro de la bóveda de origen**, que es de Go y no depende de que el
+	// modelo se acuerde de contarlo (ADR 0056).
+	a.apuntarMovimiento(quien, e.Titulo, nombreOrigen, destino.nombre, conSecreto)
+
+	a.ag.sello = a.cuantasConmutaciones()
+	a.programarLaVuelta()
+	return agente.Movido{
+		ID: nuevoID, Titulo: e.Titulo,
+		Desde: nombreOrigen, Hasta: destino.nombre,
+		SeQuedaCopia: p.DejarCopia, ConSecreto: conSecreto,
+	}, nil
+}
+
+// avisarDeQueAlguienHaEscrito es lo que ya hace `escrito` para los otros verbos: sin
+// esto, la bóveda queda bien y **la pantalla sigue con lo de antes**.
+//
+// Aquí se manda **dos veces**, una por bóveda tocada, y no es de más: la ventana puede
+// estar mirando cualquiera de las dos.
+func (a *App) avisarDeQueAlguienHaEscrito() {
+	a.sistema.Avisar(EventoBovedaCambiada, nil)
+}
+
+// apuntarMovimiento deja constancia en el registro de la bóveda de origen (ADR 0056).
+//
+// **Es la mitad que no depende del modelo.** La tarjeta de la ventana no se usa aquí
+// —lo decidió el cliente: que pregunte el agente en la conversación—, y una frase en una
+// descripción la lee el modelo y puede saltársela. Esto lo escribe Go, así que la
+// pregunta «¿qué ha hecho un agente con mis secretos?» se sigue pudiendo contestar.
+func (a *App) apuntarMovimiento(quien, titulo, desde, hasta string, conSecreto bool) {
+	b := a.boveda()
+	if b == nil {
+		return
+	}
+	que := agente.QueMover
+	if !conSecreto {
+		// Sin secreto dentro, mover es mover papeles. Se apunta igual —lo que se mueve
+		// y a dónde es lo que importa— pero se distingue de lo que lleva una llave.
+		que = agente.QueMover + ":sin-secreto"
+	}
+	if err := b.Apuntar(boveda.Apunte{
+		Quien: quien, Que: que, Titulo: titulo,
+		Sobre: desde + " → " + hasta, Resultado: boveda.ApunteHecho,
+	}); err != nil {
+		log.Printf("esfinge: no se ha podido apuntar un movimiento entre bóvedas: %v", err)
+	}
+}
+
+// quitarDelTodo manda la entrada a la papelera y la saca de ella, que es la única
+// forma de borrar de verdad **dejando lápida**.
+//
+// La lápida no es un detalle: sin ella, el equipo de al lado tiene la entrada viva y en
+// la siguiente sincronización la resucita, con lo que mover dejaría la credencial del
+// cliente de vuelta en la bóveda personal sin que nadie lo hubiera pedido.
+//
+// Y los dos pasos son a propósito en `BorrarDelTodo` —«una entrada viva se borra en dos
+// pasos»—; aquí se dan los dos de golpe porque **no se pierde nada**: la entrada está en
+// el destino, y deshacerlo es moverla de vuelta.
+func (a *App) quitarDelTodo(id string) error {
+	b := a.boveda()
+	if b == nil {
+		return boveda.ErrCerrada
+	}
+	if err := b.Borrar(id); err != nil {
+		return err
+	}
+	return b.BorrarDelTodo(id)
 }

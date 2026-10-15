@@ -535,6 +535,19 @@ contestaba todo el rato que no podía—, y se cambió **sabiendo lo que cuesta*
 llaman por una referencia al azar para que un listado de la carpeta no la delate. Un agente emparejado la
 tiene, porque sin ella no se puede decir «guárdalo en el de tal cliente».
 
+**Y desde la ADR 0056 puede llevarse una entrada de una bóveda a otra**, entera y con su contraseña. El
+secreto **no cruza el canal** —lo lee y lo escribe Esfinge por dentro, igual que al copiar al portapapeles—,
+así que el agente sigue sin verlo. Lo que hay que saber:
+
+> Mover una contraseña a una **bóveda compartida** (ADR 0052) **se la da a todas las personas con acceso**, y
+> quitarla después no deshace que la hayan podido ver. Esfinge **no pregunta en la ventana** antes de mover:
+> lo pregunta el agente en la conversación, que es lo que decidió el cliente. **Una frase en la descripción
+> de una herramienta la lee el modelo y puede saltársela**; una tarjeta de la ventana la impone Esfinge.
+
+Lo que no depende del modelo, y por eso está: **todo movimiento se apunta en el registro de la bóveda**, con
+de dónde a dónde y si llevaba contraseña. Es lo que deja contestar «¿qué ha hecho un agente con mis
+secretos?» aunque el agente no haya preguntado nada.
+
 Lo que sí se mantiene: **lo archivado no se le ofrece** —archivar es decir «con esto ya no se trabaja»—, lo
 que no está bajado en este equipo tampoco, y **la tarjeta con la que apruebas un secreto dice en qué bóveda
 está pasando**: desde que puede ocurrir en una que no estás mirando, aprobar sin saber dónde es aprobar a

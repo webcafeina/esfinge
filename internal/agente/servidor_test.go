@@ -35,6 +35,8 @@ type bovedaFalsa struct {
 	idasYVueltas int
 	// vueltas cuenta las veces que se ha deshecho la ida, para la misma razón.
 	vueltas int
+	// movidas cuenta los movimientos entre bóvedas.
+	movidas int
 }
 
 // elSecreto es un centinela: **no tiene que salir por el canal por ningún sitio**, y
@@ -82,6 +84,29 @@ func (b *bovedaFalsa) EnLaBoveda(nombre string, hacer func() error) error {
 	b.enQueBoveda = antes
 	b.vueltas++
 	return err
+}
+
+// Mover imita lo justo: apunta de dónde a dónde, y **nunca devuelve el secreto**. Hay
+// una prueba que busca el centinela en los bytes de todas las respuestas, y ésta tiene
+// que pasar por ella como las demás.
+func (b *bovedaFalsa) Mover(quien string, p Peticion) (Movido, error) {
+	hay := false
+	for _, v := range mustBovedas(b) {
+		if v.Nombre == p.Destino {
+			hay = true
+		}
+	}
+	if !hay {
+		return Movido{}, fmt.Errorf("%w: «%s»", ErrNoEsaBoveda, p.Destino)
+	}
+	if p.ID != "a1" {
+		return Movido{}, ErrNoEsta
+	}
+	b.movidas++
+	return Movido{
+		ID: "nuevo", Titulo: "GitHub", Desde: "Personal", Hasta: p.Destino,
+		SeQuedaCopia: p.DejarCopia, ConSecreto: true,
+	}, nil
 }
 
 func mustBovedas(b *bovedaFalsa) []UnaBoveda {

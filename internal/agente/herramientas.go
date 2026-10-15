@@ -300,6 +300,40 @@ var LasHerramientas = []Herramienta{
 		Escribe:         true,
 	},
 	{
+		Nombre: "esfinge_mover",
+		Descripcion: "Lleva una entrada **entera** de una bóveda a otra: su contraseña, su segundo factor y " +
+			"su historial. **Tú no ves nada de eso**: lo lee y lo escribe Esfinge por dentro, igual que al " +
+			"copiar al portapapeles. Es lo que hay que usar para «pasa esta cuenta a la bóveda de tal " +
+			"cliente»: crear una a mano y pedirle a la persona que pegue la contraseña deja la credencial en " +
+			"dos sitios y la obliga a manejarla.\n\n" +
+			"De fábrica **mueve**: la entrada deja de estar en el origen, y **se va del todo, no a la " +
+			"papelera** —en un movimiento no se pierde nada, porque está en el destino—. Con `dejar_copia` " +
+			"se queda también en el origen; dilo solo si te lo piden, porque la misma credencial en dos " +
+			"bóvedas se desfasa el día que una cambie y nada avisa.\n\n" +
+			"Con `boveda` dices **de dónde sale** y con `destino` **a dónde va**. Si no dices el origen se " +
+			"saca de la bóveda abierta, así que mira `esfinge_estado` antes: con un proyecto abierto, " +
+			"mover «la cuenta de Brevo» se llevaría la del proyecto y no la tuya.\n\n" +
+			"**Pregunta antes de mover, siempre**, diciendo de qué bóveda a cuál. Y si el destino es una " +
+			"bóveda compartida, dilo con todas las letras: lo que muevas ahí lo verá **todo el que tenga " +
+			"acceso**, y quitarlo después no deshace que lo hayan visto.",
+		Esquema: objeto(map[string]Campo{
+			"boveda": campoDeBoveda,
+			"id":     {Tipo: "string", Descripcion: "La entrada que se lleva, por su identificador."},
+			"destino": {
+				Tipo:        "string",
+				Descripcion: "A qué bóveda se lleva, por su nombre. `esfinge_bovedas` las lista.",
+			},
+			"dejar_copia": {
+				Tipo:        "boolean",
+				Descripcion: "Dejarla también en el origen. De fábrica no: se mueve.",
+			},
+		}, "id", "destino"),
+		Verbo:           QueMover,
+		PideAprobacion:  false,
+		DevuelveSecreto: false,
+		Escribe:         true,
+	},
+	{
 		Nombre: "esfinge_generar",
 		Descripcion: "Genera una contraseña nueva al azar. **No toca la bóveda**: no la lee ni guarda nada. " +
 			"Para crear una cuenta con una contraseña nueva es mejor pedírselo a esfinge_crear, que la " +

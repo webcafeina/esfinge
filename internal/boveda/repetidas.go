@@ -116,6 +116,13 @@ func juntarEn(queda *Entrada, otra Entrada) {
 	}
 }
 
+// Copia es una copia honda: las listas y el mapa no se comparten con el original.
+//
+// **La copia plana de Go comparte listas y mapas**, así que escribir en la copia
+// escribiría en la bóveda de donde salió. Ya costó una vez al juntar bóvedas, y vuelve
+// a hacer falta al mover una entrada de una bóveda a otra (ADR 0056).
+func (e Entrada) Copia() Entrada { return copiaHonda(e) }
+
 func copiaHonda(e Entrada) Entrada {
 	e.Sitios = append([]string(nil), e.Sitios...)
 	e.Etiquetas = append([]string(nil), e.Etiquetas...)

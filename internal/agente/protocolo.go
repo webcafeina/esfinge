@@ -63,6 +63,15 @@ const (
 	// azar para que un listado de la carpeta no la delate—. No hay forma de dar lo que
 	// se pide sin esto.
 	QueBovedas = "bovedas"
+	// QueMover lleva una entrada **entera** de una bóveda a otra (ADR 0056), con su
+	// contraseña, su segundo factor y su historial.
+	//
+	// **El secreto no cruza el canal**: lo lee y lo escribe Esfinge por dentro, y el
+	// agente sigue sin verlo — exactamente como copiar al portapapeles. Lo pidió el
+	// agente del cliente al no poder hacerlo: lo único que tenía era sacar la
+	// contraseña al portapapeles y que la pegara una persona a mano, que es **peor que
+	// la funcionalidad** y además deja la misma credencial en dos sitios.
+	QueMover = "mover"
 	// QueCopiarSecreto pone la contraseña de una entrada en el portapapeles.
 	//
 	// **El agente no la ve**: copia Esfinge y lo que vuelve es «copiado, se borra en N
@@ -127,6 +136,7 @@ var LoQueSePuedePedir = []string{
 	QueHigiene,
 	QueResumen,
 	QueBovedas,
+	QueMover,
 	QueGenerar,
 	QueCopiarSecreto,
 	QueCodigo,
@@ -169,6 +179,14 @@ type Peticion struct {
 	// acabaría en la bóveda de otro cliente sin que nada lo dijera. Pegada a la acción
 	// no hay estado que perder.
 	Boveda string `json:"boveda,omitempty"`
+
+	// Destino es a qué bóveda se lleva una entrada, por su nombre (ADR 0056). Con
+	// `boveda` se dice de dónde sale; con éste, a dónde va.
+	Destino string `json:"destino,omitempty"`
+	// DejarCopia la deja también en el origen. **De fábrica no**: duplicar una
+	// credencial es lo que crea el problema de que un día cambie en el sitio, se
+	// actualice una y la otra se quede desfasada sin que nada avise.
+	DejarCopia bool `json:"dejarCopia,omitempty"`
 
 	// Texto es lo que se busca.
 	Texto string `json:"texto,omitempty"`
@@ -246,6 +264,23 @@ type UnaBoveda struct {
 	// Compartida dice que es de otra persona, para que el agente no la confunda con un
 	// proyecto propio al hablar.
 	Compartida bool `json:"compartida,omitempty"`
+}
+
+// Movido es el resultado de llevar una entrada de una bóveda a otra (ADR 0056).
+//
+// **Dice las dos bóvedas por su nombre**, por lo mismo que `Escrito`: un agente que no
+// puede decir de dónde a dónde ha movido algo no puede contarlo, y quien se lo pidió no
+// puede comprobarlo.
+type Movido struct {
+	ID     string `json:"id"`
+	Titulo string `json:"titulo"`
+	Desde  string `json:"desde"`
+	Hasta  string `json:"hasta"`
+	// SeQuedaCopia dice si la del origen sigue ahí.
+	SeQuedaCopia bool `json:"seQuedaCopia"`
+	// ConSecreto dice si lo que se ha movido llevaba contraseña. **No dice cuál**: es
+	// para que el agente pueda avisar de que ha movido algo sensible.
+	ConSecreto bool `json:"conSecreto"`
 }
 
 // Entrada es lo que el agente ve de una entrada de la bóveda. **No lleva ni un
@@ -359,6 +394,8 @@ type Respuesta struct {
 	Resumen *Recuento `json:"resumen,omitempty"`
 	// Bovedas son las que se pueden nombrar (ADR 0055).
 	Bovedas []UnaBoveda `json:"bovedas,omitempty"`
+	// Movido es lo que se ha llevado de una bóveda a otra (ADR 0056).
+	Movido *Movido `json:"movido,omitempty"`
 	Copiado *Copiado  `json:"copiado,omitempty"`
 	Codigo  *Codigo   `json:"codigo,omitempty"`
 	Escrito *Escrito  `json:"escrito,omitempty"`
