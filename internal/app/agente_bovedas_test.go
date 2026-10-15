@@ -385,3 +385,79 @@ func TestMoverAUnaBovedaQueNoExisteNoTocaNada(t *testing.T) {
 		t.Error("ha tocado la entrada cuando no tenía que mover nada")
 	}
 }
+
+// **Mover desde una bóveda que no es la abierta no entra en bucle** (2026-10-15).
+//
+// Lo vio el cliente moviendo una credencial **de vuelta** a su bóveda: aprobaba en la
+// ventana, el agente reintentaba, y Esfinge volvía a pedir permiso. Seis veces.
+//
+// La causa: `cambiarBoveda` cierra la válvula y **con ella el sí concedido**, que es lo
+// correcto cuando el suelo cambia por cualquier otro motivo. Pero mover **tiene que
+// conmutar al origen**, o sea que el reintento borraba su propia aprobación antes de
+// mirarla. Una operación no puede invalidarse a sí misma.
+//
+// **Y la prueba que había no lo veía porque solo ejercitaba la dirección que funciona**:
+// de la personal a un proyecto con la personal abierta no hay que conmutar al origen, y
+// el sí sobrevive. Es la lección de siempre: probar el camino real, no el fácil.
+func TestMoverDesdeUnaBovedaQueNoEsLaAbiertaNoPideAprobacionSinFin(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	f := fuenteDelAgente{a}
+
+	// La entrada nace en el proyecto…
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "DeVuelta", Secreto: "x",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	es, _ := a.BuscarEnBoveda("DeVuelta")
+	id := es[0].ID
+
+	// …y se trabaja desde la personal, que es como estaba el cliente.
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+
+	pide := agente.Peticion{ID: id, Boveda: "Acme", Destino: "Personal"}
+	if _, err := f.Mover("Claude", pide); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatalf("la primera vez tiene que pedir aprobación: %v", err)
+	}
+	// **Y aquí pasa el respiro, que es lo que la primera versión de esta prueba no
+	// reproducía.** Entre que Esfinge pide permiso y la persona lo da pasan más de diez
+	// segundos, así que la ventana ya ha vuelto a su bóveda — y entonces el reintento
+	// **tiene que volver a conmutar al origen**, que es justo donde se perdía el sí.
+	// Sin esta línea la prueba pasaba con el fallo dentro, comprobado mutándolo.
+	a.volverDeDondeLeDejoElAgente()
+	if a.bovedaActiva() != "" {
+		t.Fatalf("el respiro tendría que haber devuelto la ventana y está en %q", a.bovedaActiva())
+	}
+
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
+
+	// **Y al reintentar tiene que valer.** Aquí es donde se iba en bucle.
+	m, err := f.Mover("Claude", pide)
+	if err != nil {
+		t.Fatalf("con el sí dado, el reintento tendría que funcionar y dice: %v", err)
+	}
+	if m.Desde != "Acme" || m.Hasta != "Personal" {
+		t.Errorf("no dice de dónde a dónde: %+v", m)
+	}
+
+	a.volverDeDondeLeDejoElAgente()
+	if llegadas, _ := a.BuscarEnBoveda("DeVuelta"); len(llegadas) != 1 {
+		t.Errorf("no ha llegado a la personal: %d", len(llegadas))
+	}
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if quedan, _ := a.BuscarEnBoveda("DeVuelta"); len(quedan) != 0 {
+		t.Errorf("sigue en el proyecto: %d", len(quedan))
+	}
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+}

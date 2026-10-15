@@ -651,6 +651,38 @@ func (p *permisosDelAgente) ponerElSiempre(v bool) {
 // La llaman el botón de cortar **y todo lo que cambia el suelo bajo los pies**: cerrar
 // la bóveda, el bloqueo por inactividad, cambiar de bóveda y retirar al agente. Un
 // permiso dado para «esta bóveda, ahora» no puede sobrevivir a ninguna de esas cosas.
+// elSiEnLaMano saca el permiso concedido y lo devuelve, para poder reponerlo.
+//
+// **Existe porque una operación no puede invalidarse a sí misma.** `cambiarBoveda`
+// cierra la válvula —y con ella el sí concedido—, que es lo correcto cuando el suelo
+// cambia por cualquier otro motivo. Pero `mover` **tiene que conmutar de bóveda**: ésa
+// es la operación que se acaba de aprobar, así que la conmutación no puede tirar su
+// propia aprobación.
+//
+// Sin esto, mover desde una bóveda que no es la abierta entraba en bucle: el reintento
+// conmutaba al origen, el sí se borraba y la ventana volvía a preguntar, para siempre.
+// Lo vio el cliente el 2026-10-15 moviendo una credencial **de vuelta** a su bóveda, y
+// su agente dejó dicho dónde mirar: «con qué datos se guarda la aprobación».
+func (p *permisosDelAgente) elSiEnLaMano() (string, time.Time) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	para, hasta := p.concedidoPara, p.hasta
+	return para, hasta
+}
+
+// devolverElSi repone lo que sacó [permisosDelAgente.elSiEnLaMano].
+//
+// **Solo repone el sí concreto, no la válvula**: que conmutar cierre la válvula sigue
+// siendo lo que tiene que pasar.
+func (p *permisosDelAgente) devolverElSi(para string, hasta time.Time) {
+	if para == "" {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.concedidoPara, p.hasta = para, hasta
+}
+
 func (p *permisosDelAgente) cerrarLaValvula() {
 	p.mu.Lock()
 	defer p.mu.Unlock()

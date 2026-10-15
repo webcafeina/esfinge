@@ -50,6 +50,14 @@ Plantilla al final.
   prometiera.
 - **Y cinco a `deuda.md`** con sus palabras: el largo de 48 caracteres, las notas que se machacan sin
   aprobación ni historial, papelera y restaurar, paginación de `buscar`, y los campos de tarjeta y wifi.
+- **Y al probar la 2.58.0, el bucle: 2.58.1.** Mover una credencial **de vuelta** a su bóveda pedía
+  aprobación sin fin, seis veces. La causa: `cambiarBoveda` cierra la válvula y con ella el sí concedido, y
+  mover **tiene que conmutar al origen** — o sea que el reintento borraba su propia aprobación. **Una
+  operación se invalidaba a sí misma.** Lo escondía la asimetría: de la personal a un proyecto con la
+  personal abierta no hay conmutación de origen, y ahí el sí sobrevivía.
+- **Y las dos pruebas fallaron antes de acertar**: la que había solo ejercitaba la dirección que funciona, y
+  la nueva reintentaba en el acto —cuando en la realidad pasan más de diez segundos y el respiro ya ha
+  devuelto la ventana—. Las dos pasaban con el fallo dentro, y las dos lo dijo mutarlas.
 - **Queda abierto**: probarlo él, la rama que falta de la 0055, y sin prueba que mover **a una compartida de
   solo ver** conteste su motivo propio — el mismo coste de dos cuentas que ya bloquea otras filas.
 

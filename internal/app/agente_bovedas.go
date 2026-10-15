@@ -360,8 +360,17 @@ func (a *App) moverEntreBovedas(quien string, p agente.Peticion) (agente.Movido,
 		if err != nil {
 			return agente.Movido{}, err
 		}
-		if err := a.irA(otro, false); err != nil {
-			return agente.Movido{}, err
+		// **Ya estar ahí no es conmutar.** Sin esto se reabría la misma bóveda, y cada
+		// reapertura cierra la válvula y borra el sí concedido.
+		if a.bovedaActiva() != otro.ref {
+			// **Y la conmutación no puede tirar la aprobación de esta misma
+			// operación.** Ver `elSiEnLaMano`: sin esto, mover desde una bóveda que no
+			// es la abierta entra en bucle pidiendo permiso.
+			para, hasta := a.permisos.elSiEnLaMano()
+			if err := a.irA(otro, false); err != nil {
+				return agente.Movido{}, err
+			}
+			a.permisos.devolverElSi(para, hasta)
 		}
 	}
 	origen := a.comoVolverAqui()

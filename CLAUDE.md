@@ -532,6 +532,22 @@ método se puede pasar como referencia —`hacer(esfinge.vaciarPapeleraDeBoveda)
 es como se consigue que un aviso deje de leerse; y **no dice que la pantalla haga algo útil**, solo que
 exista quien lo llame.
 
+**Una operación que conmuta de bóveda se invalidaba a sí misma.** `cambiarBoveda` cierra la válvula y con
+ella **el sí concedido**, que es lo correcto cuando el suelo cambia por cualquier otro motivo: un permiso
+dado mirando una bóveda no puede valer en otra. Pero `mover` **tiene que conmutar al origen**, así que el
+reintento borraba su propia aprobación antes de mirarla y la ventana volvía a pedirla. Para siempre. Lo vio
+el cliente moviendo una credencial **de vuelta** a su bóveda, seis veces seguidas, y su agente dejó dicho
+dónde mirar: «con qué datos se guarda la aprobación».
+
+Y la asimetría que lo escondía: de la personal a un proyecto **con la personal abierta no hay conmutación de
+origen**, así que ahí el sí sobrevivía. Solo fallaba al revés.
+
+**Dos cosas de pruebas de ahí, y las dos ya han costado antes.** La prueba que había **solo ejercitaba la
+dirección que funciona**. Y la prueba nueva **tampoco lo cazaba**: reintentaba en el acto, y en la realidad
+entre que Esfinge pide permiso y la persona lo da pasan **más de diez segundos**, o sea que el respiro ya ha
+devuelto la ventana y es el reintento el que vuelve a conmutar. Sin reproducir ese tiempo pasaba con el
+fallo dentro. Lo dijo mutarla, las dos veces.
+
 **Añadir una herramienta deja mintiendo a las de al lado, y en este canal los textos no son
 documentación: son lo único que el modelo ve.** En tres días —`boveda`, `bovedas` y `mover`— se quedaron
 falsas cuatro descripciones: `estado` decía «todas las demás actúan sobre esa bóveda **y ninguna otra**»
