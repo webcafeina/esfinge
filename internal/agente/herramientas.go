@@ -200,7 +200,8 @@ var LasHerramientas = []Herramienta{
 		Descripcion: "Pone la contraseña de una entrada en el portapapeles de este ordenador, para que la " +
 			"persona la pegue. **No te la devuelve a ti**: tú recibes solo la confirmación. La primera vez " +
 			"que la pidas, Esfinge preguntará en su ventana; si contesta que hace falta aprobarlo, dilo y " +
-			"vuelve a pedirlo cuando la persona diga que sí. Se borra sola del portapapeles pasado un rato.",
+			"vuelve a pedirlo **con los mismos argumentos** cuando la persona diga que sí. Se borra sola " +
+			"del portapapeles pasado un rato.",
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
 			"id":     {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
@@ -331,7 +332,10 @@ var LasHerramientas = []Herramienta{
 			"mover «la cuenta de Brevo» se llevaría la del proyecto y no la tuya.\n\n" +
 			"**Pregunta antes de mover, siempre**, diciendo de qué bóveda a cuál. Y si el destino es una " +
 			"bóveda compartida, dilo con todas las letras: lo que muevas ahí lo verá **todo el que tenga " +
-			"acceso**, y quitarlo después no deshace que lo hayan visto.",
+			"acceso**, y quitarlo después no deshace que lo hayan visto.\n\n" +
+			"**La persona lo aprueba en la ventana** cuando quita del origen, que es lo normal; con " +
+			"`dejar_copia` no quita nada y va directo. Si te dice que hace falta aprobarlo, vuelve a " +
+			"pedirlo **con los mismos argumentos**.",
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
 			"id":     {Tipo: "string", Descripcion: "La entrada que se lleva, por su identificador."},
@@ -344,8 +348,11 @@ var LasHerramientas = []Herramienta{
 				Descripcion: "Dejarla también en el origen. De fábrica no: se mueve.",
 			},
 		}, "id", "destino"),
-		Verbo:           QueMover,
-		PideAprobacion:  false,
+		Verbo: QueMover,
+		// **Sí, y es la única condicional**: la pide cuando quita del origen y no con
+		// `dejar_copia` (2026-10-15). Estaba a `false` de cuando no pedía nada, y lo que
+		// eso dejaba falso es el paseo a mano, que es donde se leen estas marcas.
+		PideAprobacion:  true,
 		DevuelveSecreto: false,
 		Escribe:         true,
 	},

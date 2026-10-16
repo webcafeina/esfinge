@@ -5,6 +5,55 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-16 · El bucle de aprobaciones, y por qué el arreglo de ayer era medio arreglo
+
+- **Se cerró el fallo vivo con el que acabó ayer**: mover entre bóvedas pedía aprobación sin fin si se
+  aprobaba en menos de diez segundos. Publicado en la **2.58.2**.
+- **Y la causa no era la que arregló la 2.58.1.** Aquélla protegió el sí concedido de **la conmutación que
+  hace `mover`**, guardándolo y reponiéndolo a mano dentro del verbo. Lo que faltaba estaba un piso más
+  abajo: **la vuelta automática de la ventana** —el respiro de diez segundos de la ADR 0055— pasa por el
+  mismo `cerrarLaValvula`, así que aprobar deprisa borraba el sí **antes** del reintento. Y por estar en el
+  verbo, dejaba fuera a `copiar_contrasena`, `codigo` y `borrar` en una bóveda nombrada: **el mismo bucle,
+  sin que nadie lo hubiera probado**.
+- **El arreglo es al revés de lo que parecía.** En vez de proteger el sí de quien conmuta, **el sí nombra
+  entera la acción que se aprobó** —quién, verbo, entrada, bóveda y destino, en `mismaPeticion`—, y entonces
+  no hay dónde gastarlo mal y conmutar no tiene de qué protegerlo. `cerrarLaValvula` deja de tocarlo y quien
+  se lo lleva son los dos gestos que lo quieren: el botón de cortar y retirar al agente
+  (`retirarLoConcedido`). Es **más** estricto que antes: se comparaba solo el identificador de la entrada.
+- **Y se cayó el andamio de ayer** —`elSiEnLaMano` / `devolverElSi`—, que es la señal de que esta vez está en
+  su sitio. Cuando un arreglo obliga a añadir código en cada sitio que pueda pisarlo, el sitio es otro.
+- **El coste, escrito con todas las letras** en la ADR 0054 («Qué vida tiene un sí») y en
+  [`seguridad.md`](seguridad.md): un sí puede sobrevivir a cerrar la bóveda, hasta los dos minutos de
+  `PlazoDelPermiso`. No abre ninguna puerta —con la bóveda cerrada el agente no puede nada, y reabrir pide la
+  maestra o el dedo— y lo que se gastaría es la misma acción que esa persona acaba de aprobar. La
+  alternativa era distinguir «cerrar» de «conmutar» dentro de `alCerrarLaBoveda`, por donde pasan los dos:
+  la línea repetida en siete sitios que ya costó una publicación.
+- **Qué se verificó.** La prueba que había se reescribió **con el orden de quien lo vive** —aprobar primero,
+  respiro después— y **cae a la primera** con el código de ayer; eso fue lo que reprodujo el bucle del
+  cliente. Más tres nuevas: el verbo general que faltaba (`copiar_contrasena` en bóveda nombrada), que un sí
+  no se gasta en otra cosa —cinco peticiones que cambian **un solo campo** cada una— y que lo que la persona
+  retira se va de verdad. **Las cuatro mutadas**, cada una contra lo que dice proteger. `make comprobar`
+  entero y `make e2e` en verde.
+- **Y el paseo a mano tenía un agujero**: llegaba solo hasta crear en la personal, sin bóvedas, sin mover y
+  sin aprobación. Se le añadió el tramo entero —`esfinge_bovedas`, crear en la del cliente, mover, aprobar
+  deprisa, respiro, reintentar— y **encontró dos cosas al primer intento**: `mover` declaraba
+  `PideAprobacion: false` desde que empezó a pedirla —y ese campo **solo lo lee el paseo**, que es donde se
+  leen todas juntas— y **el registro de un movimiento no decía cómo se autorizó**, `"Brevo" · hecho ()` al
+  lado de los `(preguntado)` y `(directo)`. Eso último es la pregunta para la que el registro existe.
+  Tercera vez que ese paseo encuentra algo que ninguna prueba veía.
+- **Tres textos que se quedaron mintiendo**, y en este canal los textos son lo único que ve el modelo: el
+  mensaje de pedir aprobación ahora dice que el reintento va **con los mismos argumentos** —con el sí atado a
+  la bóveda, uno que se deje el `boveda` por el camino pide otra cosa y vuelve a preguntar con razón—;
+  `esfinge_mover` dice que lo aprueba la persona cuando quita; y `seguridad.md` decía que mover **no**
+  pregunta en la ventana, que dejó de ser verdad en la 2.58.0.
+- **Lo que queda abierto**: que el cliente confirme que el bucle se ha ido **en su Mac**, que es donde se
+  vio. Y su credencial de **Brevo** sigue solo en Zeri's, con contraseña y sin copia en la personal.
+- **Y el patrón del día, que ya es el cuarto de la misma forma**: tres versiones seguidas de una prueba que
+  ordenaba los pasos como funcionan —la dirección que no conmuta, el reintento instantáneo, el respiro antes
+  de aprobar—. Las tres en verde con el fallo dentro.
+
+---
+
 ## 2026-10-15 · Mover una entrada entre bóvedas, que lo pidió el agente
 
 - **Probó la ADR 0055 y tres de cuatro pasan.** La cuarta no llegó a probarse: pidió la contraseña del

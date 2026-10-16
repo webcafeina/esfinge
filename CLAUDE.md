@@ -556,6 +556,30 @@ entre que Esfinge pide permiso y la persona lo da pasan **más de diez segundos*
 devuelto la ventana y es el reintento el que vuelve a conmutar. Sin reproducir ese tiempo pasaba con el
 fallo dentro. Lo dijo mutarla, las dos veces.
 
+**Y el arreglo de arriba era medio arreglo, que es lo que de verdad hay que aprenderse de esto.** Guardaba el
+sí a mano antes de conmutar y lo reponía después, **dentro de `mover`** — así que tapaba la conmutación de ese
+verbo y dejaba fuera **la vuelta automática de la ventana**, que pasa por el mismo `cerrarLaValvula` diez
+segundos más tarde. Resultado: aprobando en **menos** de diez segundos el bucle seguía igual, y por eso al
+cliente le fallaba siempre —aprueba deprisa— mientras aquí parecía bien. Y dejaba fuera a
+`copiar_contrasena`, `codigo` y `borrar`, que en una bóveda nombrada tenían el mismo fallo **sin que nadie lo
+hubiera probado**. Dos señales de que se estaba parcheando el síntoma: **el arreglo vivía en un verbo** cuando
+la causa era del permiso, y **había que acordarse de repetirlo** en cada sitio que conmutara.
+
+Lo que lo cerró (2026-10-16) fue darle la vuelta: en vez de proteger el sí de quien conmuta, **que el sí nombre
+entera la acción que se aprobó** —quién, verbo, entrada, bóveda y destino, en `mismaPeticion`—. Entonces no hay
+dónde gastarlo mal y conmutar no tiene de qué protegerlo; `cerrarLaValvula` deja de tocarlo y quien se lo lleva
+son los dos gestos que lo quieren, el botón de cortar y retirar al agente. Es **más** estricto que antes, no
+menos: antes se comparaba solo el identificador de la entrada. Y la señal de que esta vez estaba en el sitio:
+**se cayó el andamio de la versión anterior**. Cuando un arreglo obliga a añadir código en cada sitio que
+pueda pisarlo, el sitio es otro. El coste —un sí sobrevive a cerrar la bóveda, dos minutos— está en la ADR
+0054 y en `docs/seguridad.md`, dicho con todas las letras.
+
+**Y de ahí la tercera prueba mala seguida con la misma forma.** La primera ejercitaba la dirección que no
+conmuta; la segunda reintentaba en el acto; la tercera **forzaba el respiro antes de aprobar**, que es el único
+orden en el que el sí sobrevive. Las tres en verde con el fallo dentro. Escribir la secuencia con los tiempos
+de quien la vive —la tarjeta sale, se lee, se decide, se pulsa, y eso son **segundos**, no diez— la caza a la
+primera.
+
 **Añadir una herramienta deja mintiendo a las de al lado, y en este canal los textos no son
 documentación: son lo único que el modelo ve.** En tres días —`boveda`, `bovedas` y `mover`— se quedaron
 falsas cuatro descripciones: `estado` decía «todas las demás actúan sobre esa bóveda **y ninguna otra**»
@@ -563,7 +587,16 @@ cuando ya se podía nombrar otra, `buscar` decía «busca en la bóveda abierta�
 que quita algo de su vista» cuando `mover` también quita, y `editar` prometía «cambiar el código» sin
 tener parámetro para ello. Ninguna la cazó una prueba: las cazó **el agente del cliente leyendo los
 esquemas**, y dos de ellas le habrían hecho pedirle a una persona que conmutara de bóveda a mano, que es
-justo lo que se acababa de quitar. **Al añadir un verbo o un campo, releer las descripciones de los
+justo lo que se acababa de quitar.
+
+**Y lo mismo vale para lo que no es texto.** Al hacer que `mover` pidiera aprobación (2.58.0) se quedó su
+`PideAprobacion: false`, de cuando no pedía nada. Nadie lee esa bandera en producción —es documentación con
+forma de campo—, y por eso no rompió nada: lo único que la lee es **el paseo a mano**, que imprime «pide un
+sí» al lado de cada herramienta. Así que el único sitio donde se leen todas juntas las estaba leyendo mal. Lo
+mismo le pasó al registro: `apuntarMovimiento` no ponía `Como`, de la misma época, y los apuntes salían
+`"Brevo" · hecho ()` al lado de los `(preguntado)` y `(directo)` de los demás. **Las dos las vio el paseo y
+ninguna prueba**, que es la tercera vez que ese paseo encuentra algo. **Al añadir un verbo o un campo, releer
+las descripciones de los
 vecinos** — y la regla de arriba, la de que lo que el núcleo aplica tiene que estar en el esquema, tiene
 gemela: **lo que el esquema promete tiene que existir**.
 

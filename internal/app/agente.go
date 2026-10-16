@@ -469,10 +469,10 @@ func (a *App) PermitirAgente() error {
 func (a *App) OlvidarAgente(desde string) error {
 	for _, p := range a.agentes.ver() {
 		if p.Desde == desde {
-			// Retirar a un agente **cierra también lo que tuviera concedido**: si no,
+			// Retirar a un agente **se lleva todo lo que tuviera concedido**: si no,
 			// seguiría pudiendo durante lo que quedara de válvula, que es justo lo que
 			// quien pulsa «Retirar» está intentando que no pase.
-			a.permisos.cerrarLaValvula()
+			a.permisos.retirarLoConcedido()
 			a.Actividad()
 			return a.agentes.olvidar(p.Testigo)
 		}
@@ -573,9 +573,16 @@ type permisosDelAgente struct {
 	mu sync.Mutex
 	// pendiente es lo último que se ha pedido y nadie ha contestado.
 	pendiente *loQuePideUnAgente
-	// concedidoPara es la entrada para la que hay un sí, y hasta cuándo vale.
-	concedidoPara string
-	hasta         time.Time
+	// concedido es la petición para la que hay un sí, y hasta cuándo vale.
+	//
+	// **Se guarda entera y se compara entera** (`mismaPeticion`), no por el
+	// identificador de la entrada. Eso es lo que permite que **nada ajeno tenga que
+	// borrarla**: un sí para «mover DeVuelta de Acme a Personal» no se puede gastar en
+	// otro verbo, ni en otra entrada, ni en otra bóveda, ni hacia otro destino, así que
+	// conmutar de bóveda no hace falta que lo tire — y tirarlo era el bucle de
+	// aprobaciones que vio el cliente. Ver [permisosDelAgente.cerrarLaValvula].
+	concedido *loQuePideUnAgente
+	hasta     time.Time
 
 	// valvulaHasta es hasta cuándo vale el «todo lo de este agente», y usadas cuántas
 	// veces se ha usado ya. Ver [PlazoDeLaValvula].
@@ -599,8 +606,7 @@ type permisosDelAgente struct {
 // pedir deja apuntado lo que se quiere y dice si ya había permiso **para eso mismo**.
 //
 // Si lo había, **se gasta**: un sí vale para una vez. Si el agente quiere dos, pregunta
-// dos veces, que es exactamente lo que el cliente eligió.
-// pedir dice si se puede hacer ya, y si no, lo deja pedido.
+// dos veces, que es exactamente lo que el cliente eligió. Si no lo había, lo deja pedido.
 //
 // `porValvula` dice si este verbo puede pasar por ella: **lo que se le enseña al agente
 // no pasa nunca**, y ésa es la frontera entera de la válvula. Ver [conceder].
@@ -608,9 +614,9 @@ func (p *permisosDelAgente) pedir(q loQuePideUnAgente, porValvula bool, ahora ti
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	// Un sí para esta entrada, que **se gasta**: un sí vale para una vez.
-	if p.concedidoPara != "" && p.concedidoPara == q.ID && ahora.Before(p.hasta) {
-		p.concedidoPara = ""
+	// Un sí para esto mismo, que **se gasta**: un sí vale para una vez.
+	if p.concedido != nil && mismaPeticion(*p.concedido, q) && ahora.Before(p.hasta) {
+		p.concedido = nil
 		return true, boveda.ApuntePreguntado
 	}
 	// O el «siempre», si lo hay y si este verbo puede pasar por él.
@@ -646,53 +652,67 @@ func (p *permisosDelAgente) ponerElSiempre(v bool) {
 	p.siempre = v
 }
 
-// cerrarLaValvula la cierra ya, y olvida la cuenta.
+// mismaPeticion dice si dos peticiones son la misma cosa, para gastar un sí.
 //
-// La llaman el botón de cortar **y todo lo que cambia el suelo bajo los pies**: cerrar
-// la bóveda, el bloqueo por inactividad, cambiar de bóveda y retirar al agente. Un
-// permiso dado para «esta bóveda, ahora» no puede sobrevivir a ninguna de esas cosas.
-// elSiEnLaMano saca el permiso concedido y lo devuelve, para poder reponerlo.
+// **Compara lo que define la acción y nada más.** `Cuando` es el instante y nunca
+// coincide; `Titulo` sale de la entrada y es informativo. Lo demás sí: quién lo pide,
+// qué verbo, qué entrada, en qué bóveda y —si mueve— hacia dónde.
 //
-// **Existe porque una operación no puede invalidarse a sí misma.** `cambiarBoveda`
-// cierra la válvula —y con ella el sí concedido—, que es lo correcto cuando el suelo
-// cambia por cualquier otro motivo. Pero `mover` **tiene que conmutar de bóveda**: ésa
-// es la operación que se acaba de aprobar, así que la conmutación no puede tirar su
-// propia aprobación.
-//
-// Sin esto, mover desde una bóveda que no es la abierta entraba en bucle: el reintento
-// conmutaba al origen, el sí se borraba y la ventana volvía a preguntar, para siempre.
-// Lo vio el cliente el 2026-10-15 moviendo una credencial **de vuelta** a su bóveda, y
-// su agente dejó dicho dónde mirar: «con qué datos se guarda la aprobación».
-func (p *permisosDelAgente) elSiEnLaMano() (string, time.Time) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	para, hasta := p.concedidoPara, p.hasta
-	return para, hasta
+// Esto es lo que hace que un sí pueda vivir sin que nadie lo vigile: **no hay forma de
+// gastarlo en otra cosa de la que se aprobó.** Antes solo se comparaba el identificador
+// de la entrada, y entonces el sí era genérico de más y había que borrarlo cada vez que
+// el suelo cambiaba — que es de donde salió el bucle.
+func mismaPeticion(a, b loQuePideUnAgente) bool {
+	return a.Quien == b.Quien && a.Que == b.Que && a.ID == b.ID &&
+		a.Boveda == b.Boveda && a.Destino == b.Destino
 }
 
-// devolverElSi repone lo que sacó [permisosDelAgente.elSiEnLaMano].
+// cerrarLaValvula cierra el «todo lo de este agente durante un rato», y olvida la
+// cuenta.
 //
-// **Solo repone el sí concreto, no la válvula**: que conmutar cierre la válvula sigue
-// siendo lo que tiene que pasar.
-func (p *permisosDelAgente) devolverElSi(para string, hasta time.Time) {
-	if para == "" {
-		return
-	}
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.concedidoPara, p.hasta = para, hasta
-}
-
+// La llaman **todo lo que cambia el suelo bajo los pies**: cerrar la bóveda, el bloqueo
+// por inactividad y cambiar de bóveda. Un «durante cinco minutos» se dio mirando una
+// bóveda y no puede sobrevivir a ninguna de esas cosas, porque **no nombra nada**: vale
+// para lo que el agente pida después, y lo que pida después puede estar en otro sitio.
+//
+// **Y no toca el sí concreto, que es lo contrario de lo que hacía hasta la 2.58.1.**
+// Ahí está el bucle de aprobaciones que el cliente vio seis veces seguidas: la vuelta
+// automática de la ventana —el respiro de la ADR 0055— pasa por aquí, así que aprobar en
+// menos de diez segundos borraba el sí **antes** de que el agente reintentara, y Esfinge
+// volvía a preguntar. Para siempre, y solo si se aprueba deprisa.
+//
+// Lo que protege al sí ya no es que algo lo borre, es que **nombra entera la acción que
+// se aprobó** (`mismaPeticion`): verbo, entrada, bóveda y destino. Un permiso así no se
+// puede gastar en otra parte, así que conmutar no tiene de qué protegerlo. Quien lo
+// retira es quien lo quiso retirar: ver [permisosDelAgente.retirarLoConcedido].
+//
+// El coste, dicho en voz alta: **un sí puede sobrevivir a cerrar la bóveda**, hasta los
+// dos minutos de [PlazoDelPermiso]. No abre ninguna puerta —con la bóveda cerrada el
+// agente no puede hacer nada, y para reabrirla hace falta la maestra o el dedo— y lo que
+// se gastaría es exactamente la acción que esa persona aprobó hace menos de dos minutos.
 func (p *permisosDelAgente) cerrarLaValvula() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.valvulaHasta = time.Time{}
-	p.concedidoPara = ""
 	p.usadas = 0
 	p.loUltimo = nil
 }
 
-// conceder dice que sí a lo que estuviera pendiente, y devuelve para qué era.
+// retirarLoConcedido borra **todo** lo que un agente tenga en la mano: la válvula, el sí
+// concreto y lo que estuviera pidiendo.
+//
+// La llaman los dos gestos con los que una persona dice «retírale lo que le has dado»:
+// el botón de cortar y retirar al agente de la lista. Ahí sí hay que llevarse el sí
+// concreto por delante, porque quien pulsa está intentando justo eso — y dejar vivo un
+// permiso de hace un minuto sería desoír el clic.
+func (p *permisosDelAgente) retirarLoConcedido() {
+	p.cerrarLaValvula()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.concedido = nil
+	p.pendiente = nil
+}
+
 // conceder dice que sí a lo que estuviera pendiente. Con `unRato`, además abre la
 // válvula.
 func (p *permisosDelAgente) conceder(unRato bool, ahora time.Time) (loQuePideUnAgente, bool) {
@@ -727,7 +747,7 @@ func (p *permisosDelAgente) concederComo(unRato, paraSiempre bool, ahora time.Ti
 		p.loUltimo = nil
 		return q, true
 	}
-	p.concedidoPara = q.ID
+	p.concedido = &q
 	p.hasta = ahora.Add(PlazoDelPermiso)
 	return q, true
 }
@@ -952,12 +972,13 @@ func (a *App) DenegarLoQuePideElAgente() error {
 	return nil
 }
 
-// CortarAlAgente cierra la válvula en el acto.
+// CortarAlAgente le retira en el acto lo que tenga concedido.
 //
 // Es el botón que hace que «durante cinco minutos» sea soportable: lo que se concede se
-// puede retirar sin esperar a que caduque.
+// puede retirar sin esperar a que caduque. **Y se lleva también el sí concreto**, que es
+// lo único que conmutar de bóveda ya no toca.
 func (a *App) CortarAlAgente() error {
-	a.permisos.cerrarLaValvula()
+	a.permisos.retirarLoConcedido()
 	a.Actividad()
 	return nil
 }

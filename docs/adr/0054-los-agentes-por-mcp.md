@@ -218,6 +218,63 @@ tampón. **Se midió y no**: veinte apuntes con dos mil entradas son 838 ms **en
 descarta el cuerpo sin guardar, así que un tampón convertiría **matar el proceso en borrar el rastro**. La fila
 de la deuda se cerró con la medición, no con código, y lo que había escrito en ella era incorrecto.
 
+## Qué vida tiene un sí, y por qué nadie tiene que vigilarlo (2026-10-16)
+
+Un permiso concedido se guarda hasta que se gasta o caduca, y la pregunta que costó **dos versiones** es qué
+otras cosas pueden llevárselo por delante. La respuesta que parecía evidente era «todo lo que cambie el suelo»
+—cerrar la bóveda, el bloqueo, conmutar de bóveda— y era la que había: `cerrarLaValvula` borraba la válvula
+**y el sí concreto**, con el argumento de que un permiso dado mirando una bóveda no puede valer en otra.
+
+**El argumento era bueno y la implementación lo volvía falso.** Desde la ADR 0055, la ventana vuelve sola a su
+bóveda a los diez segundos, y esa vuelta pasa por `cambiarBoveda` y por `alCerrarLaBoveda`. Así que aprobar en
+**menos** de diez segundos —o sea, aprobar deprisa, que es lo que hace cualquiera— borraba el sí antes de que
+el agente reintentara, y Esfinge volvía a preguntar. Sin fin. El cliente lo vio seis veces seguidas moviendo
+una credencial de vuelta a su bóveda; tardando más de diez segundos funcionaba, lo que explica que aquí
+pareciera bien.
+
+**La 2.58.1 lo parcheó en el verbo y no en la causa**: guardaba el sí antes de conmutar y lo reponía después,
+dentro de `mover`. Eso tapaba la conmutación de `mover` y dejaba fuera la vuelta automática, que pasa por el
+mismo sitio — y dejaba fuera a `copiar_contrasena`, `codigo` y `borrar`, que tienen el mismo problema en una
+bóveda nombrada y que **nadie había probado**.
+
+### Lo que se hace, que es lo contrario
+
+En vez de proteger el sí de quien conmuta, **el sí nombra entera la acción que se aprobó**: quién la pide, qué
+verbo, qué entrada, en qué bóveda y —si mueve— hacia dónde (`mismaPeticion`). Antes se comparaba solo el
+identificador de la entrada, y por eso había que tirarlo cada vez que algo se movía: era genérico de más.
+Nombrándolo entero **no hay dónde gastarlo mal**, así que conmutar no tiene de qué protegerlo.
+
+Eso es **más** estricto que lo que había, no menos: un sí para «mover esto de Acme a Personal» ya no se puede
+gastar en copiar su contraseña, ni en moverlo hacia otra parte, ni en una entrada de otra bóveda con el mismo
+identificador.
+
+Quien se lleva el sí por delante son **los dos gestos de una persona que quiere retirarlo**: el botón de
+cortar y retirar al agente de la lista (`retirarLoConcedido`). Y la válvula sigue cerrándose con todo lo
+demás, porque **ella sí es genérica**: vale para lo que el agente pida después, y lo que pida después puede
+estar en otro sitio.
+
+### Lo que esto cuesta, dicho en voz alta
+
+**Un sí puede sobrevivir a cerrar la bóveda**, hasta los dos minutos de `PlazoDelPermiso`. Antes no.
+
+No abre ninguna puerta, y conviene ver por qué antes de aceptarlo: con la bóveda cerrada el agente no puede
+hacer nada —todo contesta `cerrada`—, y para que vuelva a haber bóveda hace falta la contraseña maestra o el
+dedo, o sea una persona delante. Lo que podría gastarse en esa ventana es **exactamente la acción que esa
+misma persona aprobó hace menos de dos minutos**. La alternativa era distinguir «cerrar» de «conmutar» dentro
+de `alCerrarLaBoveda`, por donde pasan los dos, y eso es la línea repetida en siete sitios que ya costó una
+publicación con `enConfiguracionDePruebas`.
+
+### Y la mitad de método
+
+**La prueba que había pasaba en verde con el bucle dentro, dos versiones seguidas, por el orden de sus pasos.**
+Forzaba el respiro **antes** de aprobar, que es el único orden en que el sí sobrevive. Escrita con los tiempos
+de quien la vive —la tarjeta sale, se lee, se pulsa, y eso son segundos— cae a la primera. Es la tercera vez en
+dos días que una prueba ordena los pasos como funcionan en vez de como pasan, y lo único que lo dijo fue
+mutar.
+
+Y la señal de que esta vez el arreglo está donde toca: **se cae el andamio de la anterior**. `elSiEnLaMano` y
+`devolverElSi` dejan de hacer falta y se van.
+
 ## Verificación
 
 Lo que hay que poder decir al acabar, y cada prueba mutada:
@@ -228,6 +285,9 @@ Lo que hay que poder decir al acabar, y cada prueba mutada:
 | Que el secreto no vuelve por el canal | Serializar la respuesta a JSON y buscar la contraseña **en los bytes**, no en los tipos |
 | Que no mantiene la bóveda abierta | 30 vueltas de un minuto pidiendo cosas con el reloj corriendo, y la bóveda cerrada al final |
 | Que la válvula no cubre lo que se enseña | Con la válvula abierta, el código **sigue pidiendo** aprobación |
+| Que un sí sobrevive a la vuelta de la ventana | Se pide en una bóveda nombrada, **se aprueba y el respiro vence después** —el orden de quien lo vive—, y el reintento funciona. Para `mover` y para un secreto, que es la mitad que faltaba |
+| Que un sí no se gasta en otra cosa | Cinco peticiones que cambian **un solo campo** cada una —verbo, entrada, bóveda, destino, quién— y ninguna puede gastarlo; y la misma, exacta, sí |
+| Que lo que una persona retira se va | El botón de cortar y retirar al agente, los dos con el sí ya concedido |
 | Que el freno es del servidor | **Una conexión nueva por petición**, que es como se descubrió que el otro freno no frenaba |
 | Que añadir un verbo es una decisión | La lista recorrida, y ninguno contesta «no entiendo» |
 | La tubería entera | Los bytes de MCP por donde entran de verdad → socket → bóveda real → respuesta |

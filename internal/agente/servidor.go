@@ -120,8 +120,13 @@ var ErrNoEsaBoveda = errors.New("No hay ninguna bóveda con ese nombre")
 // arreglo no lo puede hacer el agente: hay que abrirla una vez en Esfinge.
 var ErrBovedaDormida = errors.New("Esa bóveda no está en este equipo todavía")
 
+// **Y dice que el reintento va con los mismos argumentos**, que no es un detalle de
+// estilo: el sí se concede para la acción entera —verbo, entrada, bóveda y destino— y no
+// se gasta en otra. Un reintento que se deje el `boveda` por el camino pide otra cosa, y
+// Esfinge vuelve a preguntar con razón. Es lo que separa «hay que aprobarlo» de un bucle.
 var ErrPideAprobacion = errors.New(
-	"Hace falta que lo apruebes en la ventana de Esfinge. Cuando lo hagas, vuelve a pedirlo")
+	"Hace falta que lo apruebes en la ventana de Esfinge. Cuando lo hagas, vuelve a pedir " +
+		"exactamente lo mismo, con los mismos argumentos: el sí vale para lo que se aprobó y no para otra cosa")
 
 // Los topes, **del canal y no de una conexión**.
 //

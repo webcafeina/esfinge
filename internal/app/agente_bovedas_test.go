@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -424,18 +425,20 @@ func TestMoverDesdeUnaBovedaQueNoEsLaAbiertaNoPideAprobacionSinFin(t *testing.T)
 	if _, err := f.Mover("Claude", pide); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatalf("la primera vez tiene que pedir aprobación: %v", err)
 	}
-	// **Y aquí pasa el respiro, que es lo que la primera versión de esta prueba no
-	// reproducía.** Entre que Esfinge pide permiso y la persona lo da pasan más de diez
-	// segundos, así que la ventana ya ha vuelto a su bóveda — y entonces el reintento
-	// **tiene que volver a conmutar al origen**, que es justo donde se perdía el sí.
-	// Sin esta línea la prueba pasaba con el fallo dentro, comprobado mutándolo.
+	// **Se aprueba primero y el respiro pasa después**, que es el orden de quien lo
+	// vive: la tarjeta sale, se lee, se pulsa —y eso son segundos, no diez—, y el
+	// reloj de la vuelta sigue corriendo por detrás.
+	//
+	// **La segunda versión de esta prueba lo hacía al revés** —respiro y luego
+	// aprobar— y ése es el único orden en el que el sí sobrevive, así que pasaba en
+	// verde con el bucle dentro. Por eso al cliente le fallaba siempre: aprueba
+	// deprisa.
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
 	a.volverDeDondeLeDejoElAgente()
 	if a.bovedaActiva() != "" {
 		t.Fatalf("el respiro tendría que haber devuelto la ventana y está en %q", a.bovedaActiva())
-	}
-
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
-		t.Fatal(err)
 	}
 
 	// **Y al reintentar tiene que valer.** Aquí es donde se iba en bucle.
@@ -459,5 +462,218 @@ func TestMoverDesdeUnaBovedaQueNoEsLaAbiertaNoPideAprobacionSinFin(t *testing.T)
 	}
 	if err := a.VolverALaBovedaPersonal(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// **Y el bucle no era de `mover`: era de cualquier cosa que se apruebe en una bóveda
+// nombrada.**
+//
+// Esto es lo que la 2.58.1 no vio. Se parcheó la conmutación de `mover` —guardando el sí
+// y reponiéndolo a mano— y el fallo estaba un piso más abajo: **la vuelta automática de
+// la ventana** cierra la válvula igual, así que pedir la contraseña de una entrada de un
+// proyecto desde la personal entraba en el mismo bucle sin que nadie lo hubiera probado.
+//
+// El orden es el de quien lo vive: se pide, se aprueba deprisa, y el respiro vence
+// **después**.
+func TestPedirUnSecretoEnUnaBovedaNombradaNoPideAprobacionSinFin(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	f := fuenteDelAgente{a}
+
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Brevo", Secreto: "s3creto",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	es, _ := a.BuscarEnBoveda("Brevo")
+	id := es[0].ID
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+
+	// El agente nombra la bóveda, se conmuta y se pide la contraseña de dentro.
+	pedir := func() error {
+		var errDentro error
+		if err := a.enLaBoveda("Acme", func() error {
+			_, errDentro = f.CopiarSecreto("Claude", id)
+			return nil
+		}); err != nil {
+			return err
+		}
+		return errDentro
+	}
+	if err := pedir(); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatalf("la primera vez tiene que pedir aprobación: %v", err)
+	}
+
+	// Se aprueba **antes** de que venza el respiro, y el respiro vence después.
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
+	a.volverDeDondeLeDejoElAgente()
+	if a.bovedaActiva() != "" {
+		t.Fatalf("el respiro tendría que haber devuelto la ventana y está en %q", a.bovedaActiva())
+	}
+
+	// Y el reintento tiene que llevarse la contraseña, no volver a preguntar.
+	if err := pedir(); err != nil {
+		t.Fatalf("con el sí dado, el reintento tendría que funcionar y dice: %v", err)
+	}
+	a.volverDeDondeLeDejoElAgente()
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// **Y el registro de un movimiento dice cómo se autorizó**, que es la pregunta para la
+// que existe.
+//
+// Decía solo «hecho», de cuando mover no pedía nada; desde la 2.58.0 sí pide, y un apunte
+// que no distingue lo aprobado de lo que fue directo no contesta «¿qué ha hecho un agente
+// con mis secretos?». **Lo vio el paseo a mano** leyendo el registro al final, no una
+// prueba: ahí salía `"Brevo" · hecho ()` al lado de `(preguntado)` y `(directo)`.
+func TestElRegistroDeUnMovimientoDiceComoSeAutorizo(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	f := fuenteDelAgente{a}
+
+	pon := func(titulo string) string {
+		if err := a.GuardarEnBoveda(boveda.Entrada{
+			Tipo: boveda.TipoCredencial, Titulo: titulo, Secreto: "x",
+		}); err != nil {
+			t.Fatal(err)
+		}
+		es, _ := a.BuscarEnBoveda(titulo)
+		return es[0].ID
+	}
+	quitando, dejandoCopia := pon("Quitando"), pon("ConCopia")
+
+	// Uno que quita del origen: lo aprueba la persona.
+	if _, err := f.Mover("Claude", agente.Peticion{ID: quitando, Destino: "Acme"}); !errors.Is(
+		err, agente.ErrPideAprobacion) {
+		t.Fatalf("tendría que pedir aprobación: %v", err)
+	}
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Mover("Claude", agente.Peticion{ID: quitando, Destino: "Acme"}); err != nil {
+		t.Fatal(err)
+	}
+	// Y uno con copia, que va directo.
+	if _, err := f.Mover("Claude", agente.Peticion{
+		ID: dejandoCopia, Destino: "Acme", DejarCopia: true}); err != nil {
+		t.Fatal(err)
+	}
+	a.volverDeDondeLeDejoElAgente()
+
+	var preguntado, directo int
+	for _, ap := range a.EstadoDelAgente().Dado {
+		if !strings.HasPrefix(ap.Que, agente.QueMover) {
+			continue
+		}
+		switch ap.Como {
+		case boveda.ApuntePreguntado:
+			preguntado++
+		case boveda.ApunteDirecto:
+			directo++
+		}
+	}
+	if preguntado != 1 || directo != 1 {
+		t.Errorf("el registro dice %d aprobados y %d directos: %+v",
+			preguntado, directo, a.EstadoDelAgente().Dado)
+	}
+	_ = ref
+}
+
+// **Un sí nombra entera la acción que se aprobó, y no se gasta en otra.**
+//
+// Es lo que sustituye a que conmutar borrara el permiso: si el sí solo dijera «la entrada
+// X», sería genérico de más y habría que tirarlo cada vez que el suelo cambia. Diciendo
+// verbo, entrada, bóveda y destino, **no hay dónde gastarlo mal** — y entonces conmutar
+// no tiene de qué protegerlo.
+//
+// Lo que esto cierra es lo que el permiso viejo dejaba abierto: aprobar una cosa y que el
+// agente se lleve otra con el mismo identificador de entrada.
+func TestUnSiNoSeGastaEnOtraCosa(t *testing.T) {
+	ahora := time.Now()
+	aprobado := loQuePideUnAgente{
+		Quien: "Claude", Que: agente.QueMover, ID: "abc",
+		Boveda: "Acme", Destino: "Personal",
+	}
+
+	otras := []struct {
+		por string
+		q   loQuePideUnAgente
+	}{
+		{"el verbo", loQuePideUnAgente{
+			Quien: "Claude", Que: agente.QueCopiarSecreto, ID: "abc",
+			Boveda: "Acme", Destino: "Personal"}},
+		{"la bóveda", loQuePideUnAgente{
+			Quien: "Claude", Que: agente.QueMover, ID: "abc",
+			Boveda: "Beta", Destino: "Personal"}},
+		{"el destino", loQuePideUnAgente{
+			Quien: "Claude", Que: agente.QueMover, ID: "abc",
+			Boveda: "Acme", Destino: "Beta"}},
+		{"la entrada", loQuePideUnAgente{
+			Quien: "Claude", Que: agente.QueMover, ID: "otra",
+			Boveda: "Acme", Destino: "Personal"}},
+		{"quién lo pide", loQuePideUnAgente{
+			Quien: "Otro", Que: agente.QueMover, ID: "abc",
+			Boveda: "Acme", Destino: "Personal"}},
+	}
+	for _, c := range otras {
+		var p permisosDelAgente
+		p.pendiente = &aprobado
+		if _, ok := p.conceder(false, ahora); !ok {
+			t.Fatal("no ha concedido")
+		}
+		if vale, _ := p.pedir(c.q, false, ahora); vale {
+			t.Errorf("el sí se ha gastado en algo que cambia %s", c.por)
+		}
+	}
+
+	// Y lo mismo, exacto, sí vale: que esto no sea una prueba que lo rechaza todo.
+	var p permisosDelAgente
+	p.pendiente = &aprobado
+	if _, ok := p.conceder(false, ahora); !ok {
+		t.Fatal("no ha concedido")
+	}
+	if vale, _ := p.pedir(aprobado, false, ahora); !vale {
+		t.Error("la misma petición no ha podido gastar su propio sí")
+	}
+}
+
+// **Y lo que la persona retira a mano se va de verdad**, que es lo único que conmutar ya
+// no toca.
+//
+// Si esto se pone rojo, el botón de cortar ha dejado de significar lo que dice: diría que
+// ha retirado el permiso y el agente podría gastarlo en el reintento siguiente.
+func TestCortarAlAgenteSeLlevaElSiConcedido(t *testing.T) {
+	a, _, _ := conUnProyecto(t)
+	ahora := time.Now()
+	q := loQuePideUnAgente{
+		Quien: "Claude", Que: agente.QueCopiarSecreto, ID: "abc", Boveda: "Personal",
+	}
+
+	a.permisos.pendiente = &q
+	if _, ok := a.permisos.conceder(false, ahora); !ok {
+		t.Fatal("no ha concedido")
+	}
+	if err := a.CortarAlAgente(); err != nil {
+		t.Fatal(err)
+	}
+	if vale, _ := a.permisos.pedir(q, false, ahora); vale {
+		t.Error("el sí ha sobrevivido al botón de cortar")
+	}
+
+	// Y retirar al agente de la lista, igual.
+	a.permisos.pendiente = &q
+	if _, ok := a.permisos.conceder(false, ahora); !ok {
+		t.Fatal("no ha concedido")
+	}
+	a.permisos.retirarLoConcedido()
+	if vale, _ := a.permisos.pedir(q, false, ahora); vale {
+		t.Error("el sí ha sobrevivido a retirar al agente")
 	}
 }

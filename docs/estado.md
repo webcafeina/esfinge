@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-10-15**
+Última actualización: **2026-10-16**
 
 > **No queda nada del proyecto sin comprobar en una máquina de verdad, salvo Windows y GNOME.** Las dos
 > fichas que quedaban vivas se cerraron hoy en los dos Macs del cliente:
@@ -191,14 +191,29 @@
 > papelera**; y **pregunta el agente en la conversación, no la ventana** — con su coste escrito en
 > `docs/seguridad.md`, porque una frase de una descripción la lee el modelo y puede saltársela.
 >
-> **Y el día acabó con un fallo vivo, que es lo primero de mañana**: mover entre bóvedas **sigue pidiendo
-> aprobación sin fin si se aprueba deprisa**. La 2.58.1 protegió el sí de la conmutación que hace `mover` y
-> **falta la otra**: la vuelta automática de la ventana —el respiro— también pasa por `cambiarBoveda` y por
-> `alCerrarLaBoveda`, y las dos cierran la válvula, que borra el sí. Es una carrera de diez segundos: quien
-> aprueba rápido lo pierde. Está entero en [deuda.md](deuda.md), con el arreglo y con **por qué la prueba no
-> lo vio** — está escrita aprobando *después* del respiro, el único orden que funciona.
+> **Y el día acabó con un fallo vivo, saldado el 2026-10-16 en la 2.58.2**: mover entre bóvedas pedía
+> aprobación sin fin si se aprobaba deprisa. La 2.58.1 había protegido el sí de la conmutación que hace
+> `mover` y **faltaba la otra**: la vuelta automática de la ventana —el respiro— pasa por el mismo sitio diez
+> segundos más tarde. Carrera de diez segundos: quien aprueba rápido lo perdía, que es por lo que al cliente
+> le fallaba **siempre** y aquí parecía bien.
 >
-> **Antes de tocar nada, confirmar con el agente que la versión era la 2.58.1.**
+> **Y el arreglo de la 2.58.1 era medio arreglo por estar en el verbo y no en la causa**: le pasaba igual a
+> `copiar_contrasena`, `codigo` y `borrar` en una bóveda nombrada, sin que nadie lo hubiera probado. Lo que lo
+> cierra es darle la vuelta: en vez de proteger el sí de quien conmuta, **que el sí nombre entera la acción
+> que se aprobó** —quién, verbo, entrada, bóveda y destino—, y entonces no hay dónde gastarlo mal. Es **más**
+> estricto que antes, y **se cae el andamio** de la versión anterior, que es la señal de que esta vez está en
+> su sitio. El porqué y el coste —un sí sobrevive a cerrar la bóveda, dos minutos— en la **ADR 0054**, «Qué
+> vida tiene un sí», y en `docs/seguridad.md`.
+>
+> **Y dos cosas más que encontró el paseo a mano**, al añadirle el tramo de bóvedas que no tenía: `mover`
+> declaraba `PideAprobacion: false` desde que empezó a pedirla, y **el registro de un movimiento no decía cómo
+> se autorizó** —`"Brevo" · hecho ()` al lado de los `(preguntado)`—, que es justo la pregunta para la que ese
+> registro existe. Ninguna prueba las miraba. Tercera vez que ese paseo encuentra algo.
+>
+> **Lo que queda por confirmar con él**: que el bucle se ha ido **en su Mac**, que es donde se vio. Aquí está
+> recorrido entero por el socket —pedir, aprobar deprisa, respiro, reintentar, movido— y mutado tres veces.
+> Y una cosa suya que sigue esperando: **su credencial de Brevo quedó solo en Zeri's**, con contraseña y sin
+> copia en la personal; se mueve a mano desde la ventana, o con el agente ya arreglado.
 >
 > **Y sigue pendiente**: la rama que falta de la 0055 —un proyecto abierto, sin nombrar bóveda, que
 > pregunte— y las seis filas nuevas de `deuda.md` que salieron de la auditoría de su agente. Lo que hay que

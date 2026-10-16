@@ -540,9 +540,18 @@ secreto **no cruza el canal** —lo lee y lo escribe Esfinge por dentro, igual q
 así que el agente sigue sin verlo. Lo que hay que saber:
 
 > Mover una contraseña a una **bóveda compartida** (ADR 0052) **se la da a todas las personas con acceso**, y
-> quitarla después no deshace que la hayan podido ver. Esfinge **no pregunta en la ventana** antes de mover:
-> lo pregunta el agente en la conversación, que es lo que decidió el cliente. **Una frase en la descripción
-> de una herramienta la lee el modelo y puede saltársela**; una tarjeta de la ventana la impone Esfinge.
+> quitarla después no deshace que la hayan podido ver.
+
+**Y desde la 2.58.0 mover se aprueba en la ventana cuando quita del origen**, igual que borrar. No fue así al
+principio —se decidió que lo preguntara el agente en la conversación— y lo cambió el cliente al verle la
+inconsistencia que su propio agente le señaló: **mover es más destructiva que borrar**, porque no pasa por la
+papelera, y era la única acción del canal que no pedía nada. Con `dejar_copia` no quita nada y va directo. **Y
+no pasa por la válvula ni por «No volver a preguntar»**: lo que no se deshace no pasa por ellas, igual que el
+código de un solo uso.
+
+Lo que se dijo entonces y sigue valiendo: **una frase en la descripción de una herramienta la lee el modelo y
+puede saltársela**; una tarjeta de la ventana la impone Esfinge. Por eso lo que de verdad protege no es que el
+agente pregunte, sino lo de abajo.
 
 Lo que no depende del modelo, y por eso está: **todo movimiento se apunta en el registro de la bóveda**, con
 de dónde a dónde y si llevaba contraseña. Es lo que deja contestar «¿qué ha hecho un agente con mis
@@ -552,6 +561,27 @@ Lo que sí se mantiene: **lo archivado no se le ofrece** —archivar es decir «
 que no está bajado en este equipo tampoco, y **la tarjeta con la que apruebas un secreto dice en qué bóveda
 está pasando**: desde que puede ocurrir en una que no estás mirando, aprobar sin saber dónde es aprobar a
 ciegas.
+
+### Cuánto vive un sí, y qué se lo lleva (2026-10-16)
+
+Un permiso que das en la ventana **vale para la acción que aprobaste y para nada más**: para ese agente, ese
+verbo, esa entrada, esa bóveda y —si mueve— ese destino. Se gasta en cuanto se usa, una vez, y caduca en dos
+minutos si nadie lo recoge. Aprobar «la contraseña de GitHub» no sirve para que el siguiente intento se lleve
+la del banco, ni la misma entrada de la bóveda de otro cliente.
+
+**Lo que se lo lleva antes de tiempo son los dos gestos con los que tú lo retiras**: el botón de cortar y
+retirar al agente de la lista. La válvula de cinco minutos, en cambio, se cierra con cualquier cosa que mueva
+el suelo —cerrar la bóveda, el bloqueo por inactividad, conmutar de bóveda—, y es la diferencia que importa:
+**la válvula no nombra nada**, así que vale para lo que el agente pida después, y lo que pida después puede
+estar en otro sitio.
+
+Hasta la 2.58.1 un sí concreto también se iba con todo eso, y eso **lo rompía**: la ventana vuelve sola a su
+bóveda a los diez segundos (ADR 0055), así que aprobar deprisa borraba tu propio permiso antes de que el
+agente reintentara y Esfinge volvía a preguntar sin fin. El coste de arreglarlo, dicho sin adornos:
+
+> **Un sí puede sobrevivir a cerrar la bóveda**, hasta dos minutos. No abre ninguna puerta: con la bóveda
+> cerrada el agente no puede hacer nada, y para reabrirla hace falta la contraseña maestra o el dedo. Lo que
+> podría gastarse en ese rato es **exactamente la acción que acabas de aprobar**.
 
 ## Decisiones que afectan a la seguridad
 

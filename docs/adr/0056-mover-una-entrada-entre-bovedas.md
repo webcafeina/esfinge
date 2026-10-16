@@ -108,6 +108,15 @@ dentro de su propio cerrojo y **se bloqueara contra sí mismo**.
   los demás: su destino va siempre nombrado, y el que puede ir sin nombrar es el **origen**. Meterle la
   frase de los otros habría sido poner una palabra para que el test callara.
 
+- **Que aprobar deprisa no deja un bucle** (2026-10-16): se pide desde una bóveda que no es la abierta, **se
+  aprueba y el respiro vence después** —el orden de quien lo vive— y el reintento mueve. Las dos versiones
+  anteriores de esta prueba pasaban en verde con el bucle dentro: la primera ejercitaba la dirección que no
+  necesita conmutar, la segunda forzaba el respiro **antes** de aprobar. El porqué del arreglo, que no es de
+  este verbo sino del permiso entero, está en la **ADR 0054**, «Qué vida tiene un sí».
+- **Que el registro dice cómo se autorizó.** Decía solo «hecho», de cuando mover no pedía nada, y eso no
+  contesta la pregunta para la que el registro existe. **Lo vio el paseo a mano** leyendo el registro al
+  final, no una prueba. Mutado.
+
 **Lo que no se ha comprobado**: mover **a una bóveda compartida de solo ver** —tiene que contestar su motivo
 propio—, por el mismo coste que ya bloquea otras filas de `deuda.md`: hacen falta dos cuentas. Y que esto
 resuelva de verdad el caso del cliente, que lo dice él usándolo.

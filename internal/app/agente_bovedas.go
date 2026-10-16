@@ -360,17 +360,18 @@ func (a *App) moverEntreBovedas(quien string, p agente.Peticion) (agente.Movido,
 		if err != nil {
 			return agente.Movido{}, err
 		}
-		// **Ya estar ahí no es conmutar.** Sin esto se reabría la misma bóveda, y cada
-		// reapertura cierra la válvula y borra el sí concedido.
+		// **Ya estar ahí no es conmutar**, y evitarlo sigue valiendo la pena: cada
+		// reapertura rearranca la sincronización y el goteo de iconos.
+		//
+		// Lo que **ya no** hace falta aquí es proteger el sí concedido de la
+		// conmutación. Lo intentó la 2.58.1 guardándolo y reponiéndolo a mano, y era
+		// medio arreglo: tapaba la conmutación de `mover` y no la vuelta automática de
+		// la ventana, que pasa por el mismo sitio. Ahora el sí **nombra entera la
+		// acción** y conmutar no lo toca. Ver `cerrarLaValvula`.
 		if a.bovedaActiva() != otro.ref {
-			// **Y la conmutación no puede tirar la aprobación de esta misma
-			// operación.** Ver `elSiEnLaMano`: sin esto, mover desde una bóveda que no
-			// es la abierta entra en bucle pidiendo permiso.
-			para, hasta := a.permisos.elSiEnLaMano()
 			if err := a.irA(otro, false); err != nil {
 				return agente.Movido{}, err
 			}
-			a.permisos.devolverElSi(para, hasta)
 		}
 	}
 	origen := a.comoVolverAqui()
@@ -404,6 +405,12 @@ func (a *App) moverEntreBovedas(quien string, p agente.Peticion) (agente.Movido,
 	// —«de todos modos iría a la papelera»— y aquí no va, así que la razón no vale. Es
 	// la misma regla que el código de un solo uso y que cambiar una contraseña: lo que
 	// no se deshace no pasa por la válvula.
+	//
+	// **Y cómo se autorizó va al registro**, que es la pregunta para la que existe: un
+	// apunte que dice «hecho» y no dice si alguien lo aprobó no contesta nada. Sale de
+	// `pedir` y no escrito a fuego, para que el día que cambie la frontera el registro no
+	// se quede diciendo lo de antes.
+	como := boveda.ApunteDirecto
 	if !p.DejarCopia {
 		ahora := time.Now()
 		q := loQuePideUnAgente{
@@ -411,7 +418,8 @@ func (a *App) moverEntreBovedas(quien string, p agente.Peticion) (agente.Movido,
 			Cuando: ahora.UTC().Format(time.RFC3339),
 			Boveda: nombreOrigen, Destino: destino.nombre,
 		}
-		vale, _ := a.permisos.pedir(q, false, ahora)
+		vale, comoSeDio := a.permisos.pedir(q, false, ahora)
+		como = comoSeDio
 		if !vale {
 			a.sistema.Avisar(EventoAgenteQuiere, q)
 			a.ag.sello = a.cuantasConmutaciones()
@@ -462,7 +470,7 @@ func (a *App) moverEntreBovedas(quien string, p agente.Peticion) (agente.Movido,
 
 	// **Al registro de la bóveda de origen**, que es de Go y no depende de que el
 	// modelo se acuerde de contarlo (ADR 0056).
-	a.apuntarMovimiento(quien, e.Titulo, nombreOrigen, destino.nombre, conSecreto)
+	a.apuntarMovimiento(quien, e.Titulo, nombreOrigen, destino.nombre, conSecreto, como)
 
 	a.ag.sello = a.cuantasConmutaciones()
 	a.programarLaVuelta()
@@ -484,11 +492,15 @@ func (a *App) avisarDeQueAlguienHaEscrito() {
 
 // apuntarMovimiento deja constancia en el registro de la bóveda de origen (ADR 0056).
 //
-// **Es la mitad que no depende del modelo.** La tarjeta de la ventana no se usa aquí
-// —lo decidió el cliente: que pregunte el agente en la conversación—, y una frase en una
-// descripción la lee el modelo y puede saltársela. Esto lo escribe Go, así que la
-// pregunta «¿qué ha hecho un agente con mis secretos?» se sigue pudiendo contestar.
-func (a *App) apuntarMovimiento(quien, titulo, desde, hasta string, conSecreto bool) {
+// **Es la mitad que no depende del modelo.** Una frase en una descripción —«pregunta
+// antes de mover, siempre»— la lee el modelo y puede saltársela; esto lo escribe Go, así
+// que la pregunta «¿qué ha hecho un agente con mis secretos?» se sigue pudiendo
+// contestar. Desde la 2.58.0 la ventana **también** pregunta cuando se quita del origen,
+// y aun así este apunte hace falta: con `dejar_copia` no hay tarjeta ninguna.
+//
+// **Y dice cómo se autorizó** (`Como`), que es lo que no decía: un apunte que pone
+// «hecho» y nada más no distingue lo que alguien aprobó de lo que fue directo.
+func (a *App) apuntarMovimiento(quien, titulo, desde, hasta string, conSecreto bool, como string) {
 	b := a.boveda()
 	if b == nil {
 		return
@@ -501,7 +513,7 @@ func (a *App) apuntarMovimiento(quien, titulo, desde, hasta string, conSecreto b
 	}
 	if err := b.Apuntar(boveda.Apunte{
 		Quien: quien, Que: que, Titulo: titulo,
-		Sobre: desde + " → " + hasta, Resultado: boveda.ApunteHecho,
+		Sobre: desde + " → " + hasta, Resultado: boveda.ApunteHecho, Como: como,
 	}); err != nil {
 		log.Printf("esfinge: no se ha podido apuntar un movimiento entre bóvedas: %v", err)
 	}

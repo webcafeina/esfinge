@@ -107,9 +107,16 @@ func TestPaseoMCPAMano(t *testing.T) {
 
 	lista, _ := a.BuscarEnBoveda("Hacienda")
 	id := lista[0].ID
+	// **Y el de Brevo se coge ahora**, con la personal abierta. Más abajo ya no se puede:
+	// después de trabajar en una bóveda nombrada la ventana se queda dentro durante el
+	// respiro, y buscar «en la personal» busca en la del cliente. Lo enseñó este paseo a
+	// la primera.
+	idBrevo := idDe(t, a, "Brevo")
 	decir("6 · copiar la contraseña, la primera vez", peticion(4, "esfinge_copiar_contrasena", map[string]any{"id": id}))
 
-	t.Logf("\n━━━ 7 · la persona dice que sí en la ventana ━━━\n  (Ajustes → «Claude Code quiere la contraseña de «Hacienda»» → Solo ésta)")
+	t.Logf("\n━━━ 7 · la persona dice que sí en la ventana ━━━" +
+		"\n  (la banda de arriba, en cualquier pantalla: «Claude Code quiere la contraseña de" +
+		" «Hacienda»» → Solo ésta)")
 	if err := a.AprobarLoQuePideElAgente(false); err != nil {
 		t.Fatal(err)
 	}
@@ -118,11 +125,70 @@ func TestPaseoMCPAMano(t *testing.T) {
 	decir("9 · crear una cuenta con contraseña generada",
 		peticion(6, "esfinge_crear", map[string]any{"titulo": "Cliente nuevo", "usuario": "yo@ahí.com", "generar": true}))
 
-	t.Logf("\n━━━ 10 · y lo que queda apuntado en la bóveda ━━━")
+	// ---- y el tramo de las bóvedas, que es lo que ha costado dos versiones ----
+	//
+	// **Va aquí porque lo de las bóvedas se ve entero o no se ve.** El bucle de
+	// aprobaciones del 15 y el 16 de octubre vivía justo en esta secuencia —nombrar una
+	// bóveda, que pida permiso, aprobar deprisa y reintentar— y el paseo llegaba solo
+	// hasta el paso 9, con todo en la personal.
+	ref, err := a.CrearProyecto("Acme")
+	if err != nil {
+		t.Fatal(err)
+	}
+	decir("11 · ¿qué bóvedas hay?", peticion(7, "esfinge_bovedas", nil))
+	decir("12 · crear en la bóveda del cliente, sin salir de la mía",
+		peticion(8, "esfinge_crear", map[string]any{
+			"boveda": "Acme", "titulo": "Panel de Acme", "usuario": "admin@acme.com", "generar": true}))
+	decir("13 · y buscarlo ahí", peticion(9, "esfinge_buscar", map[string]any{"boveda": "Acme", "texto": "Panel"}))
+
+	// El agente deja de nombrar bóveda, así que el respiro se deshace y «sin nombrar»
+	// vuelve a querer decir «la mía». Es lo que hace cada llamada sin `boveda`.
+	a.volverDeDondeLeDejoElAgente()
+	decir("14 · traerse «Brevo» de la mía a la bóveda del cliente", peticion(10, "esfinge_mover",
+		map[string]any{"id": idBrevo, "destino": "Acme"}))
+	t.Logf("\n━━━ 15 · la persona aprueba **deprisa**, y el respiro vence después ━━━" +
+		"\n  (es el orden que daba el bucle: aprobar en menos de diez segundos)")
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
+	a.volverDeDondeLeDejoElAgente()
+	decir("16 · el reintento, con los mismos argumentos", peticion(11, "esfinge_mover",
+		map[string]any{"id": idBrevo, "destino": "Acme"}))
+
+	a.volverDeDondeLeDejoElAgente()
+	if err := a.AbrirProyecto(ref); err != nil {
+		t.Fatal(err)
+	}
+	llegadas, _ := a.BuscarEnBoveda("Brevo")
+	t.Logf("\n━━━ 17 · y «Brevo» está en la bóveda del cliente: %d ━━━", len(llegadas))
+	if len(llegadas) != 1 {
+		t.Errorf("el movimiento no ha llegado al destino: %d", len(llegadas))
+	}
+	if err := a.VolverALaBovedaPersonal(); err != nil {
+		t.Fatal(err)
+	}
+
+	// **Y aquí dirá «Un agente» y no «Claude Code», y eso no es el fallo del 2026-10-07.**
+	// Es de este paseo: `decir` abre una conexión por paso, así que el saludo con el
+	// nombre solo entra en la primera y el traductor de las demás nace sin él. En
+	// producción el cliente MCP arranca el binario una vez y le habla por el mismo
+	// `stdin`. Lo que vigila que el nombre llegue de verdad es la prueba de la tubería,
+	// que manda el saludo y la llamada **en la misma conexión**.
+	t.Logf("\n━━━ 18 · y lo que queda apuntado en la bóveda ━━━")
 	r := a.EstadoDelAgente().Dado
 	for _, ap := range r {
 		t.Logf("  %s · %s · %q · %s (%s)", ap.Cuando, ap.Quien, ap.Titulo, ap.Resultado, ap.Como)
 	}
+}
+
+// idDe busca una entrada por su título en la bóveda que esté abierta.
+func idDe(t *testing.T, a *App, titulo string) string {
+	t.Helper()
+	es, err := a.BuscarEnBoveda(titulo)
+	if err != nil || len(es) == 0 {
+		t.Fatalf("no está «%s» en la bóveda abierta: %v", titulo, err)
+	}
+	return es[0].ID
 }
 
 func peticion(id int, nombre string, args map[string]any) string {
