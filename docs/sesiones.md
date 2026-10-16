@@ -46,8 +46,13 @@ Plantilla al final.
   la bóveda, uno que se deje el `boveda` por el camino pide otra cosa y vuelve a preguntar con razón—;
   `esfinge_mover` dice que lo aprueba la persona cuando quita; y `seguridad.md` decía que mover **no**
   pregunta en la ventana, que dejó de ser verdad en la 2.58.0.
-- **Lo que queda abierto**: que el cliente confirme que el bucle se ha ido **en su Mac**, que es donde se
-  vio. Y su credencial de **Brevo** sigue solo en Zeri's, con contraseña y sin copia en la personal.
+- **Publicada la 2.58.2**, siete trabajos en verde y *release* comprobada —no borrador, 28 paquetes—.
+  Buscando el run **por la etiqueta** y mirando la *release*, que es la trampa que casi dio por publicada una
+  versión que no había arrancado. No toca `navegador/`, así que nada que decirle de la revisión de Chrome.
+- **Lo que queda abierto, y es todo de su lado**: lo prueba **el lunes 2026-10-19**, que lo dejó dicho él.
+  Que `esfinge_estado` diga 2.58.2 —si no, reiniciar Claude Desktop entero—; mover algo aprobando deprisa,
+  con **su Brevo**, que sigue solo en Zeri's con contraseña y sin copia en la personal; y **la rama que falta
+  de la ADR 0055**, que nunca se ha probado: con un proyecto abierto y sin nombrar bóveda, que pregunte.
 - **Y el patrón del día, que ya es el cuarto de la misma forma**: tres versiones seguidas de una prueba que
   ordenaba los pasos como funcionan —la dirección que no conmuta, el reintento instantáneo, el respiro antes
   de aprobar—. Las tres en verde con el fallo dentro.

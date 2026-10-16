@@ -210,10 +210,28 @@
 > se autorizó** —`"Brevo" · hecho ()` al lado de los `(preguntado)`—, que es justo la pregunta para la que ese
 > registro existe. Ninguna prueba las miraba. Tercera vez que ese paseo encuentra algo.
 >
-> **Lo que queda por confirmar con él**: que el bucle se ha ido **en su Mac**, que es donde se vio. Aquí está
-> recorrido entero por el socket —pedir, aprobar deprisa, respiro, reintentar, movido— y mutado tres veces.
-> Y una cosa suya que sigue esperando: **su credencial de Brevo quedó solo en Zeri's**, con contraseña y sin
-> copia en la personal; se mueve a mano desde la ventana, o con el agente ya arreglado.
+> **La 2.58.2 está publicada y la *release* comprobada** —siete trabajos en verde, 28 paquetes, no borrador—.
+> Esta versión **no toca `navegador/`**, así que no hay nada que decirle de la revisión de Chrome.
+>
+> ## La siguiente acción: que lo pruebe el lunes 2026-10-19
+>
+> Lo dejó dicho el viernes 16: «haremos las pruebas el lunes». **No hay nada que escribir antes de eso**, y lo
+> que hay que saber al final **no es si funciona, es si ha dejado de ser molesto**, que era el encargo.
+>
+> Por orden, y el orden importa:
+>
+> 1. **Que actualice y que `esfinge_estado` diga 2.58.2.** Si dice otra cosa, el relevo del `.mcpb` no ha
+>    pasado y hace falta **reiniciar Claude Desktop entero** — conversación nueva no basta, porque el cliente
+>    MCP se queda la lista al conectar.
+> 2. **Mover algo entre bóvedas aprobando deprisa**, que es lo que fallaba. **Su Brevo sirve**: quedó solo en
+>    Zeri's, con contraseña y sin copia en la personal, y traerla de vuelta es exactamente el camino que le dio
+>    el bucle seis veces. Si lo prefiere a mano, desde la ventana.
+> 3. **Y la rama que falta de la ADR 0055, que nunca se ha probado**: con **un proyecto abierto**, pedirle algo
+>    **sin nombrarle la bóveda**. Ahí tiene que **preguntar antes de escribir** (regla de la 2.52.0). Es lo
+>    único de la 0055 que sigue sin ver.
+>
+> De paso, lo que ya se dijo el 15 y sigue valiendo: que la lista no se quede con la de otra bóveda, que el ir
+> y venir de la ventana no estorbe, y que no le muevan la bóveda si está conmutando él.
 >
 > **Y sigue pendiente**: la rama que falta de la 0055 —un proyecto abierto, sin nombrar bóveda, que
 > pregunte— y las seis filas nuevas de `deuda.md` que salieron de la auditoría de su agente. Lo que hay que
