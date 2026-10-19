@@ -715,7 +715,27 @@ func convergen(t *testing.T, semilla uint64) {
 // abre, conserva todo y se sincroniza. El fichero se generó una vez y **no se
 // regenera**: es la prueba de que lo que tienen hoy los equipos del cliente sigue
 // sirviendo, igual que los vectores fijos del formato (ADR 0022).
+//
+// **Y se lee con el reloj de su época, que no es un detalle: sin eso la prueba caduca
+// sola.** Dentro hay una entrada en la papelera, borrada el 2026-09-18, y abrir una
+// bóveda **purga lo que pasó de [PlazoPapelera]**. Con el reloj de verdad eso se la
+// llevaba a los treinta días de esa fecha —el 2026-10-18, un domingo— y la prueba se
+// puso roja sin que nadie tocara nada, **en la puerta de una publicación**. El fichero
+// no se puede regenerar, así que lo que tiene que ceder es el reloj.
+//
+// La regla que deja, y vale para cualquier vector fijo que lleve fechas dentro: **un
+// dato congelado se lee con el tiempo congelado**. Si una purga por antigüedad corre
+// contra él con el reloj del sistema, la prueba tiene fecha de caducidad y nadie la ha
+// escrito en ninguna parte.
 func TestUnaBovedaDeLa2222SeAbreYSeSincroniza(t *testing.T) {
+	conReloj(t, func() time.Time {
+		// El día después de lo último que se escribió en ese fichero: la papelera y las
+		// lápidas de dentro están vivas, que es lo que esta prueba viene a comprobar.
+		return time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)
+	}, func() { laBovedaDeLa2222(t) })
+}
+
+func laBovedaDeLa2222(t *testing.T) {
 	datos, err := os.ReadFile("testdata/boveda-2.22.2.esfinge")
 	if err != nil {
 		t.Fatal(err)

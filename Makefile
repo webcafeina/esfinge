@@ -29,7 +29,13 @@ comprobar:
 		os=$${objetivo%%/*}; arch=$${objetivo##*/}; \
 		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build ./... || exit 1; \
 	done
-	$(GO) test ./...
+	@# **Con `-count=1`, que no es cosmético: sin él Go reutiliza resultados en caché y
+	@# esta puerta da verdes de pruebas que no ha ejecutado.** El 2026-10-19 eso tapó una
+	@# prueba que se había puesto roja sola —un fichero fijo con una papelera que caducó
+	@# a los treinta días— y la cazó la puerta de la publicación, con caché frío, en vez
+	@# de ésta. Es la lección de las seis versiones con los tests en rojo: lo que hay que
+	@# respetar tiene que **parar** algo, y para parar hay que haber mirado.
+	$(GO) test -count=1 ./...
 	cd $(FRONT) && $(PNPM) exec tsc -b --noEmit
 	@# Y la extensión: tipos, que el manifiesto declare lo que el código usa, y
 	@# qué campo se rellena en una página de verdad.

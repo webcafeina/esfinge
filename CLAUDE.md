@@ -1798,6 +1798,24 @@ para `runtime.GOOS`**, así que la tabla de Windows se prueba desde aquí; y **l
 un Windows es la máquina de GitHub al publicar**, que prueba el registro de verdad y que el instalador
 lleve el puente, no que un navegador lo lance.
 
+**`go test` sin `-count=1` da verdes de pruebas que no ha ejecutado, y así `make comprobar` tapó una que se
+había puesto roja sola.** La primera orden de la puerta era `go test ./...` a secas, así que Go reutilizaba
+resultados en caché: `ok internal/boveda (cached)`. Las otras dos tandas de ese objetivo filtran —una con
+`-run Cruzada` y otra con `-race` sobre tres paquetes—, de modo que **esa prueba no corría en ninguna**. Quien
+la cazó fue la puerta de la publicación, con caché frío, **después de empujar la etiqueta**: los seis trabajos
+en «skipped» y ninguna *release*. La puerta hizo su trabajo; la de aquí mentía. Ahora lleva `-count=1`, que
+tarda unos minutos más y es lo que hace que un verde signifique algo.
+
+**Y lo que tapaba: un dato congelado leído con el reloj de verdad caduca solo.** `boveda-2.22.2.esfinge` es
+un vector fijo —como los del formato `ESF1`, no se regenera— y lleva dentro **una entrada en la papelera
+borrada el 2026-09-18**. Abrir una bóveda **purga lo que pasó de `PlazoPapelera`**, treinta días, así que el
+**2026-10-18** —un domingo, sin que nadie tocara nada— la entrada dejó de estar ahí y la prueba se puso roja.
+Lo que cede es el reloj, no el fichero: ahora se lee con `conReloj` fijado al día siguiente de lo último que
+se escribió dentro. **La regla, que vale para cualquier vector fijo con fechas**: si una purga por antigüedad
+corre contra él con el reloj del sistema, la prueba tiene fecha de caducidad y no está escrita en ninguna
+parte. Las de `cripto` y `qr` no la tienen —son bytes y matrices, sin plazos—, y se comprobó antes de darlo
+por cerrado.
+
 **Y el corolario pequeño, que costó un commit el mismo día: `make comprobar | tail` no dice si
 `make` ha fallado.** El código de salida de una tubería es el del **último** mandato, así que
 `make comprobar 2>&1 | tail -3 && git commit` compromete igual con `go vet` en rojo: lo que se mira
