@@ -40,6 +40,18 @@ Plantilla al final.
   comentario de la propia tarjeta ya decía que ofrecer un botón que no hace lo que dice es peor que no
   ofrecerlo — la regla estaba bien y **su condición era una copia**.
 
+- **Y lo probó con la 2.58.3, movió de ida y de vuelta, y funcionó.** De paso preguntó si es correcto que la
+  tarjeta de mover ya no ofrezca «5 minutos» ni «No volver a preguntar»: **sí, es el arreglo de hoy**, y
+  siguen saliendo para copiar una contraseña y para borrar.
+- **Dos hallazgos más de su agente, y solo uno valía por lo que decía.** Vio que **el identificador cambia**
+  en cada movimiento —cierto y a propósito: los de una bóveda son suyos— y que **la fecha de cambio pasa a
+  hoy**. De lo segundo dedujo que engañaría a `esfinge_higiene`, haciendo pasar una contraseña vieja por
+  nueva: **falso**, la higiene no mide antigüedad de contraseñas y su comentario dice que no se inventa una
+  caducidad que el formato no tiene. **Pero lo que vio era cierto y vale por su cuenta**: mover no cambia
+  nada de dentro, así que decir «cambiada hoy» es un dato falso en la columna que se mira para decidir si
+  rotar. Lo repone ahora `PonerNueva`, con su prueba de ida y vuelta —**esperando a que cambie el segundo**—
+  y mutada. **Tercera vez que un informe suyo trae el síntoma bien y la causa mal**: comprobarlo en el
+  código cuesta dos minutos.
 ---
 
 ## 2026-10-16 · El bucle de aprobaciones, y por qué el arreglo de ayer era medio arreglo

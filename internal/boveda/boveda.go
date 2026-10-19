@@ -931,19 +931,48 @@ func (b *Boveda) Ver(id string) (Entrada, bool) {
 // `Poner` genera uno solo cuando llega vacío — y entonces no hay forma de saber cuál ha
 // puesto, porque recibe la entrada por valor.
 //
-// **La fecha de creación se conserva**: es la misma credencial cambiada de sitio, no una
-// nueva, y en las llaves de acceso esa fecha es lo único que distingue dos filas
-// idénticas en pantalla.
+// **Las dos fechas se conservan**: es la misma credencial cambiada de sitio, no una
+// nueva. La de creación, porque en las llaves de acceso es lo único que distingue dos
+// filas idénticas en pantalla. Y la de cambio, porque **mover no cambia nada de dentro**:
+// el secreto, el segundo factor y el historial son los mismos, así que decir «cambiada
+// hoy» de una contraseña de septiembre es poner una fecha falsa justo en la columna que
+// alguien mira para decidir si la rota. Lo vio el agente del cliente moviendo una de ida
+// y de vuelta (2026-10-19).
+//
+// Quien decide quién escribió después es `Revision`, nunca estas fechas —lo dice el
+// comentario del campo—, así que conservarlas no afecta a la fusión.
 func (b *Boveda) PonerNueva(e Entrada) (string, error) {
 	id, err := azarHex()
 	if err != nil {
 		return "", err
 	}
 	e.ID = id
+	cambiada := e.Cambiada
 	if err := b.Poner(e); err != nil {
 		return "", err
 	}
+	// `Poner` pone la fecha de cambio a ahora, que es lo correcto para una edición y no
+	// para esto. Se repone después, que es el único sitio donde se sabe que el contenido
+	// no se ha tocado.
+	if cambiada != "" {
+		b.reponerCambiada(id, cambiada)
+	}
 	return id, nil
+}
+
+// reponerCambiada devuelve a una entrada la fecha de cambio que traía, para cuando lo
+// que ha pasado es un movimiento y no una edición. Ver [Boveda.PonerNueva].
+func (b *Boveda) reponerCambiada(id, cambiada string) {
+	b.mu.Lock()
+	for i := range b.cont.Entradas {
+		if b.cont.Entradas[i].ID == id {
+			b.cont.Entradas[i].Cambiada = cambiada
+			b.cuerpoSucio = true
+			break
+		}
+	}
+	b.mu.Unlock()
+	_ = b.Guardar()
 }
 
 func (b *Boveda) Poner(e Entrada) error {

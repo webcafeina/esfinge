@@ -113,6 +113,17 @@ dentro de su propio cerrojo y **se bloqueara contra sí mismo**.
   anteriores de esta prueba pasaban en verde con el bucle dentro: la primera ejercitaba la dirección que no
   necesita conmutar, la segunda forzaba el respiro **antes** de aprobar. El porqué del arreglo, que no es de
   este verbo sino del permiso entero, está en la **ADR 0054**, «Qué vida tiene un sí».
+- **Que las dos fechas de la entrada se conservan** (2026-10-19). Mover no cambia nada de dentro —el secreto,
+  el segundo factor y el historial son los mismos—, así que poner la fecha de cambio a hoy es escribir un
+  dato falso **justo en la columna que alguien mira para decidir si rota una contraseña**. `Poner` la pisa, que
+  es lo correcto para una edición, y `PonerNueva` la repone: es el único sitio donde se sabe que el contenido
+  no se ha tocado. La prueba mueve **de ida y de vuelta**, como lo hizo el agente del cliente, y **espera a que
+  cambie el segundo** antes de empezar: sin eso, un movimiento dentro del mismo segundo pasaría por bueno
+  pisando la fecha. Mutado.
+
+  **El identificador sí cambia a propósito**, y eso no se toca: los de una bóveda son suyos y llevarse el de
+  la otra podría chocar. Lo que cuesta es que una referencia guardada a la entrada deja de valer tras el
+  movimiento, y por eso la respuesta dice el nuevo.
 - **Que el registro dice cómo se autorizó.** Decía solo «hecho», de cuando mover no pedía nada, y eso no
   contesta la pregunta para la que el registro existe. **Lo vio el paseo a mano** leyendo el registro al
   final, no una prueba. Mutado.

@@ -242,6 +242,16 @@
 > —lo vio él, «el aviso nuevo se ha puesto encima»— y eso **no se arregla a ciegas**, porque hay que elegir
 > entre encolar, rechazar la segunda o bloquear la tarjeta un momento. Es decisión suya.
 >
+> **Y lo probó con la 2.58.3: movió de ida y de vuelta y funcionó.** Preguntó si es correcto que la tarjeta de
+> mover ya no ofrezca «5 minutos» ni «No volver a preguntar» — **sí, es el arreglo**, y siguen saliendo para
+> copiar una contraseña y para borrar.
+>
+> **De los dos hallazgos que trajo su agente, uno valió y el otro era una deducción falsa.** Que el
+> identificador cambia en cada movimiento es cierto y a propósito. Que la fecha de cambio pasa a hoy también
+> es cierto, pero **no engaña a `esfinge_higiene`** como decía: la higiene no mide antigüedad de contraseñas.
+> Aun así se arregló, porque mover no cambia nada de dentro y «cambiada hoy» es un dato falso en la columna
+> que se mira para decidir si rotar. Está en la **2.58.4**, con su prueba de ida y vuelta y mutada.
+>
 > ## Y lo que sigue pendiente de probar
 
 >

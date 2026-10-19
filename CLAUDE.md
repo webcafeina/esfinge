@@ -630,6 +630,13 @@ las descripciones de los
 vecinos** — y la regla de arriba, la de que lo que el núcleo aplica tiene que estar en el esquema, tiene
 gemela: **lo que el esquema promete tiene que existir**.
 
+**Mover una entrada no cambia nada de dentro, así que no puede decir que la contraseña es de hoy.** `Poner`
+pone la fecha de cambio a ahora —correcto para una edición— y un movimiento pasaba por ahí, así que una
+contraseña de septiembre salía «cambiada hoy» **en la columna que se mira para decidir si rotarla**. La repone
+`PonerNueva`, que es el único sitio donde se sabe que el contenido no se ha tocado; la de creación ya se
+conservaba. Y la prueba **espera a que cambie el segundo**: el formato va a segundos, así que un movimiento
+dentro del mismo segundo pasaría por bueno pisando la fecha — es lo mismo que costó la de la lápida.
+
 **Y de una auditoría suya, lo que vale es lo que vio.** De nueve hallazgos, ocho eran ciertos y uno era una
 decisión escrita que él no podía conocer: que la semilla del segundo factor **no se ofrezca a propósito**,
 porque cualquier cadena de letras es base32 válida y una mal puesta deja la cuenta sin segundo factor sin
@@ -643,6 +650,13 @@ entrada no está» de una que sí está, en otra bóveda— y **con una escritur
 a impedir**, guardar en la bóveda de un cliente sin que nadie lo haya pedido. Ahora cualquier llamada que no
 nombre bóveda **deshace el respiro antes de hacer nada**, así que «sin nombrar» vuelve a significar siempre
 lo mismo.
+
+**Y van tres: el agente da el síntoma bien y la causa mal.** La tercera fue el 2026-10-19 — vio que mover
+cambiaba la fecha, que es cierto, y dedujo que eso engañaría a `esfinge_higiene` haciendo pasar una
+contraseña vieja por nueva. **Falso**: la higiene no mide antigüedad de contraseñas y su propio comentario
+dice que «no hay caducidad de contraseñas en este formato, y no se inventa una». El hallazgo valía, pero por
+otra razón que la que daba, y aceptar la razón habría llevado a tocar la higiene en vez de `PonerNueva`.
+**Comprobar la deducción en el código cuesta dos minutos y es lo que separa un hallazgo de un desvío.**
 
 **Y la mitad de método, que ya ha pasado dos veces en dos días: el agente da el síntoma bien y la causa
 mal.** Éste dijo «llamadas en paralelo», y el servidor MCP atiende **en serie** —lee una línea, contesta,

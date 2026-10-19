@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -853,4 +854,103 @@ func TestLosVerbosQueNoPasanPorLaValvulaSonLosQueSeSabe(t *testing.T) {
 				"y aun así pasa por la válvula", h.Nombre)
 		}
 	}
+}
+
+// **Mover no cambia nada de dentro, así que no puede decir que la contraseña es de hoy.**
+//
+// `Poner` pone la fecha de cambio a ahora, que es lo correcto para una edición y no para
+// un movimiento: el secreto, el segundo factor y el historial son los mismos. Decir
+// «cambiada hoy» de una contraseña de septiembre pone una fecha falsa **justo en la
+// columna que alguien mira para decidir si la rota**.
+//
+// Lo vio el agente del cliente el 2026-10-19 moviendo una de ida y de vuelta. Su
+// diagnóstico —que eso engañaría a `esfinge_higiene`— **era falso**: la higiene no mide
+// antigüedad de contraseñas, y no se inventa una caducidad que el formato no tiene. Pero
+// lo que vio era cierto y vale por su cuenta.
+func TestMoverNoToqueteaLaFechaDeCambio(t *testing.T) {
+	a, _, ref := conUnProyecto(t)
+	f := fuenteDelAgente{a}
+
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "DeSeptiembre", Secreto: "x",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	es, _ := a.BuscarEnBoveda("DeSeptiembre")
+	id := es[0].ID
+
+	// La fecha que tiene ahora, y **se espera a que cambie el segundo**: el formato va a
+	// segundos, así que sin esperar un movimiento en el mismo segundo pasaría por bueno
+	// aunque pisara la fecha. Es lo mismo que costó la prueba de la lápida.
+	antes, _ := a.boveda().Ver(id)
+	if antes.Cambiada == "" {
+		t.Fatal("la entrada nace sin fecha de cambio")
+	}
+	time.Sleep(1100 * time.Millisecond)
+
+	// Se mueve **nombrando el origen**, que es como lo hizo él: «de Personal a Acme» y
+	// luego «de Acme a Personal», sin tocar la ventana en medio.
+	mover := func(origen, destino, titulo string) {
+		t.Helper()
+		buscar := func() string {
+			t.Helper()
+			var id string
+			if err := a.enLaBoveda(origen, func() error {
+				es, err := a.BuscarEnBoveda(titulo)
+				if err != nil || len(es) == 0 {
+					return fmt.Errorf("no está «%s» en %s", titulo, origen)
+				}
+				id = es[0].ID
+				return nil
+			}); err != nil {
+				t.Fatal(err)
+			}
+			a.volverDeDondeLeDejoElAgente()
+			return id
+		}
+		p := agente.Peticion{ID: buscar(), Boveda: origen, Destino: destino}
+		if _, err := f.Mover("Claude", p); !errors.Is(err, agente.ErrPideAprobacion) {
+			t.Fatalf("tendría que pedir aprobación: %v", err)
+		}
+		if err := a.AprobarLoQuePideElAgente(false); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.Mover("Claude", p); err != nil {
+			t.Fatalf("el reintento tendría que mover: %v", err)
+		}
+		a.volverDeDondeLeDejoElAgente()
+	}
+
+	mira := func(donde, cuando string) {
+		t.Helper()
+		if err := a.enLaBoveda(donde, func() error {
+			es, _ := a.BuscarEnBoveda("DeSeptiembre")
+			if len(es) != 1 {
+				return fmt.Errorf("en %s hay %d copias", donde, len(es))
+			}
+			e, _ := a.boveda().Ver(es[0].ID)
+			if e.Cambiada != antes.Cambiada {
+				t.Errorf("%s: dice que se cambió el %q y fue el %q",
+					cuando, e.Cambiada, antes.Cambiada)
+			}
+			if e.Creada != antes.Creada {
+				t.Errorf("%s: la fecha de creación tampoco se conserva: %q, era %q",
+					cuando, e.Creada, antes.Creada)
+			}
+			// Y el secreto sigue ahí, que es lo que hace que la fecha vieja sea la verdad.
+			if e.Secreto != "x" {
+				t.Errorf("%s: el secreto no ha llegado: %q", cuando, e.Secreto)
+			}
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		a.volverDeDondeLeDejoElAgente()
+	}
+
+	mover("Personal", "Acme", "DeSeptiembre")
+	mira("Acme", "tras la ida")
+	mover("Acme", "Personal", "DeSeptiembre")
+	mira("Personal", "tras la vuelta")
+	_ = ref
 }
