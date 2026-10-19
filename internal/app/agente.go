@@ -545,6 +545,14 @@ type loQuePideUnAgente struct {
 	// Destino es a dónde se lleva, cuando lo que se pide es mover (ADR 0056). Vacío en
 	// todo lo demás.
 	Destino string `json:"destino,omitempty"`
+	// PorValvula dice si **este verbo** puede ir por la válvula de cinco minutos y por
+	// el permiso que no caduca, y existe para que **la ventana no tenga su propia
+	// lista**: los dos botones anchos de la tarjeta cuelgan de aquí.
+	//
+	// Tenía una, escrita como `que !== "codigo"`, y el día que `mover` entró en el grupo
+	// de los que no pasan se quedó corta: la tarjeta ofrecía dos botones que no hacían lo
+	// que decían —y su propio comentario advertía de eso mismo—. Ver [PasaPorLaValvula].
+	PorValvula bool `json:"porValvula"`
 	// Boveda es en cuál está pasando esto (ADR 0055).
 	//
 	// **Desde que la acción puede ocurrir en una bóveda que no estás mirando, aprobar
@@ -603,14 +611,41 @@ type permisosDelAgente struct {
 	siempre bool
 }
 
+// PasaPorLaValvula dice si un verbo puede ir por la válvula de cinco minutos y por el
+// permiso que no caduca. **Es el único sitio donde eso se decide**, y por eso es una
+// función del verbo y no un argumento.
+//
+// Antes era un literal en cada llamada a `pedir` y, en la ventana, un `que !== "codigo"`
+// escrito a mano. O sea **la misma regla en tres listas**, y el 2026-10-19 estaban
+// desalineadas: Go decía que el código, editar y mover no pasan; la ventana solo excluía
+// el código; y `concederComo` daba por hecho que todos pasaban. Resultado: el cliente
+// aprobó un movimiento con «No volver a preguntar», **no se concedió nada** —bucle
+// infinito, no la carrera del día 16— y de paso **se encendió el permiso permanente de
+// copiar contraseñas**, que era lo grave. Es el patrón de `vaciarLoSensible` y de
+// `enConfiguracionDePruebas` por tercera vez: la regla en un sitio, y quien la necesite
+// que pregunte.
+//
+// La frontera es la de la ADR 0054, dicha entera: **no pasa lo que se le enseña al
+// agente** —el código de un solo uso— **ni lo que no se deshace** —cambiar una
+// contraseña o una semilla, y mover, que no va a la papelera—.
+func PasaPorLaValvula(que string) bool {
+	switch que {
+	case agente.QueCodigo, agente.QueEditar, agente.QueMover:
+		return false
+	default:
+		return true
+	}
+}
+
 // pedir deja apuntado lo que se quiere y dice si ya había permiso **para eso mismo**.
 //
 // Si lo había, **se gasta**: un sí vale para una vez. Si el agente quiere dos, pregunta
 // dos veces, que es exactamente lo que el cliente eligió. Si no lo había, lo deja pedido.
 //
-// `porValvula` dice si este verbo puede pasar por ella: **lo que se le enseña al agente
-// no pasa nunca**, y ésa es la frontera entera de la válvula. Ver [conceder].
-func (p *permisosDelAgente) pedir(q loQuePideUnAgente, porValvula bool, ahora time.Time) (bool, string) {
+// Si el verbo pasa por la válvula lo dice [PasaPorLaValvula], y no quien llama: era un
+// argumento y eso lo convertía en una lista repetida.
+func (p *permisosDelAgente) pedir(q loQuePideUnAgente, ahora time.Time) (bool, string) {
+	porValvula := PasaPorLaValvula(q.Que)
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -641,6 +676,9 @@ func (p *permisosDelAgente) pedir(q loQuePideUnAgente, porValvula bool, ahora ti
 		}
 		return true, boveda.ApunteValvula
 	}
+	// **Se rellena aquí y no en cada verbo**, que es el sitio por donde pasan todas:
+	// ponerlo en los cinco sitios que piden sería la cuarta lista de lo mismo.
+	q.PorValvula = porValvula
 	p.pendiente = &q
 	return false, ""
 }
@@ -729,6 +767,28 @@ func (p *permisosDelAgente) concederComo(unRato, paraSiempre bool, ahora time.Ti
 	}
 	q := *p.pendiente
 	p.pendiente = nil
+
+	// **Un alcance amplio sobre un verbo que no entra en él concede solo esta vez.**
+	//
+	// Es lo que faltaba y lo que el cliente vio el 2026-10-19: los dos botones anchos
+	// ponían la válvula o el «siempre» **y nada más**, dando por hecho que el verbo
+	// pasaría por ahí. Para los tres que no pasan —el código, editar lo que no se
+	// deshace y mover cuando quita— eso **no concedía nada en absoluto**, y el reintento
+	// volvía a preguntar para siempre.
+	//
+	// Y la otra mitad, que es la de seguridad: **no se enciende un alcance que esta
+	// petición no puede usar**. Aprobar un movimiento encendía el permiso permanente de
+	// copiar contraseñas y de borrar, o sea **concedía sobre otros verbos** algo que la
+	// persona no estaba mirando, y encima sin hacer lo que había pedido. Lo que ve en la
+	// pantalla es un movimiento; lo que se concede no puede ser otra cosa.
+	//
+	// La ventana no debería llegar aquí con esos botones —cuelgan de `PorValvula`, que
+	// viaja en la petición—, y esto es el cinturón de debajo: si las dos listas se vuelven
+	// a desalinear, lo peor que pasa es que el alcance amplio valga una vez.
+	if !PasaPorLaValvula(q.Que) {
+		unRato, paraSiempre = false, false
+	}
+
 	if paraSiempre {
 		// **Y aquí tampoco se pone el permiso de una vez**, por lo mismo que con la
 		// válvula: con los dos puestos, la petición siguiente consumiría el
@@ -833,7 +893,7 @@ func (f fuenteDelAgente) CopiarSecreto(quien, id string) (agente.Copiado, error)
 	// **Copiar puede pasar por la válvula**, y ésa es exactamente la línea: lo que la
 	// válvula cubre es **actuar** —el secreto se queda en este equipo y el portapapeles
 	// se borra solo—, no enseñar. Lo que se le enseña al agente pregunta siempre.
-	vale, como := f.a.permisos.pedir(q, true, ahora)
+	vale, como := f.a.permisos.pedir(q, ahora)
 	if !vale {
 		// **La ventana no se trae al frente** (ADR 0027): hacerlo dejaría que
 		// cualquier programa de esta máquina hiciera aparecer la ventana de un gestor
@@ -920,6 +980,19 @@ func (a *App) AprobarSiempreAlAgente() error {
 	q := a.permisos.loPendiente()
 	if q == nil {
 		return errors.New("Ya no hay nada que aprobar")
+	}
+	// **Y no se enciende para un verbo que no lo puede usar.** Esto es lo que le pasó al
+	// cliente el 2026-10-19: aprobó un movimiento con este botón y lo que se guardó fue
+	// el permiso permanente de **copiar contraseñas y borrar**, que no era lo que estaba
+	// mirando — y el movimiento no se hizo. Un permiso se concede sobre lo que la
+	// pantalla enseña, nunca sobre lo de al lado. `concederComo` lo repite por su lado:
+	// la pregunta es la misma y no puede contestarse distinto en dos sitios.
+	if !PasaPorLaValvula(q.Que) {
+		if _, hay := a.permisos.concederComo(false, false, time.Now()); !hay {
+			return errors.New("Ya no hay nada que aprobar")
+		}
+		a.Actividad()
+		return nil
 	}
 	if err := a.guardarElSiempre(true, q.Quien); err != nil {
 		return err
@@ -1015,7 +1088,7 @@ func (f fuenteDelAgente) Codigo(quien, id string) (agente.Codigo, error) {
 	}
 	// **`false`**: por la válvula no pasa. Es el único sitio donde se dice, y es lo que
 	// hace que la regla sea una regla y no una excepción.
-	vale, _ := f.a.permisos.pedir(q, false, ahora)
+	vale, _ := f.a.permisos.pedir(q, ahora)
 	if !vale {
 		f.a.sistema.Avisar(EventoAgenteQuiere, q)
 		return agente.Codigo{}, agente.ErrPideAprobacion
@@ -1168,7 +1241,7 @@ func (f fuenteDelAgente) Editar(quien string, p agente.Peticion) (agente.Escrito
 		}
 		// **Y la válvula no lo cubre**, por lo mismo que el código: dejar una cuenta
 		// sin forma de entrar no es reversible de la forma en que lo es una copia.
-		vale, _ := f.a.permisos.pedir(q, false, ahora)
+		vale, _ := f.a.permisos.pedir(q, ahora)
 		if !vale {
 			f.a.sistema.Avisar(EventoAgenteQuiere, q)
 			return agente.Escrito{}, agente.ErrPideAprobacion
@@ -1230,7 +1303,7 @@ func (f fuenteDelAgente) Borrar(quien, id string) (agente.Escrito, error) {
 		Cuando: ahora.UTC().Format(time.RFC3339),
 		Boveda: f.dondeEstamos(),
 	}
-	vale, como := f.a.permisos.pedir(q, true, ahora)
+	vale, como := f.a.permisos.pedir(q, ahora)
 	if !vale {
 		f.a.sistema.Avisar(EventoAgenteQuiere, q)
 		return agente.Escrito{}, agente.ErrPideAprobacion

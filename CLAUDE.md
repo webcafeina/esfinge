@@ -574,6 +574,36 @@ menos: antes se comparaba solo el identificador de la entrada. Y la señal de qu
 pueda pisarlo, el sitio es otro. El coste —un sí sobrevive a cerrar la bóveda, dos minutos— está en la ADR
 0054 y en `docs/seguridad.md`, dicho con todas las letras.
 
+**Y el lunes siguiente el bucle volvió, por debajo y por otra causa: la misma regla escrita en tres
+listas.** «¿Este verbo entra en la válvula?» se contestaba en Go con un literal en cada llamada a `pedir`, en
+la tarjeta con un `que !== "codigo"` a mano, y en `concederComo` con una suposición —los dos botones anchos
+ponían la válvula o el «siempre» **y nada más**, dando por hecho que el verbo pasaría por ahí—. El día que
+`mover` entró en el grupo de los que **no** entran, Go se enteró y las otras dos no.
+
+Dos cosas salían de ahí, y la segunda es la grave. **Una**: aprobar un movimiento con cualquiera de los dos
+botones anchos **no concedía nada en absoluto**, así que el reintento volvía a preguntar — bucle **determinista**,
+no la carrera de la víspera, y el mismo para el código y para editar una contraseña, **sin que nadie lo
+hubiera probado**. **Dos**: `AprobarSiempreAlAgente` guardaba el permiso que no caduca **antes** de mirar el
+verbo, así que pulsar «No volver a preguntar» en una tarjeta de mover **encendía el permiso permanente de
+copiar contraseñas y de borrar** y el movimiento seguía sin hacerse. La persona lee un movimiento y concede
+otra cosa: **un permiso se concede sobre lo que la pantalla enseña, nunca sobre lo de al lado.**
+
+Lo que lo cierra: `PasaPorLaValvula(que)` **es el único sitio** —función del verbo, no argumento—, el valor
+**viaja en la petición** y los botones de la tarjeta cuelgan de él. Más dos cinturones, por si vuelve a
+desalinearse algo: un alcance amplio sobre un verbo que no entra **concede solo esta vez**, y no se enciende
+ningún permiso global que esa petición no pueda usar.
+
+**Y es la tercera vez que esto cuesta un fallo**, después de `vaciarLoSensible` y de
+`enConfiguracionDePruebas` —que tiró una publicación—. El patrón no es el descuido: es que **añadir un caso
+obliga a acordarse de N sitios**, y acordarse no es defensa. Un sitio, y los demás preguntan; y cuando no se
+pueden juntar —Go y TypeScript—, **una prueba que compare las dos listas entre sí**, que es lo que de verdad
+cierra la familia. Aquí son dos: una **lee `App.tsx`** y exige que los botones cuelguen del campo de Go, y
+otra recorre las herramientas declaradas y las compara con la lista por su nombre.
+
+Y la señal que estaba escrita y no se leyó: el comentario de esa misma tarjeta decía que «ofrecer aquí un
+botón que no va a hacer lo que dice sería peor que no ofrecerlo». La regla era correcta; lo que falló es que
+**su condición era una copia y no la fuente**.
+
 **Y de ahí la tercera prueba mala seguida con la misma forma.** La primera ejercitaba la dirección que no
 conmuta; la segunda reintentaba en el acto; la tercera **forzaba el respiro antes de aprobar**, que es el único
 orden en el que el sí sobrevive. Las tres en verde con el fallo dentro. Escribir la secuencia con los tiempos

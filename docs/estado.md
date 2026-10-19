@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-10-16**
+Última actualización: **2026-10-19**
 
 > **No queda nada del proyecto sin comprobar en una máquina de verdad, salvo Windows y GNOME.** Las dos
 > fichas que quedaban vivas se cerraron hoy en los dos Macs del cliente:
@@ -213,7 +213,37 @@
 > **La 2.58.2 está publicada y la *release* comprobada** —siete trabajos en verde, 28 paquetes, no borrador—.
 > Esta versión **no toca `navegador/`**, así que no hay nada que decirle de la revisión de Chrome.
 >
-> ## La siguiente acción: que lo pruebe el lunes 2026-10-19
+> ## Lo probó el lunes 2026-10-19, y el bucle estaba vivo por debajo
+>
+> **Lo primero, porque es acción suya**: al aprobar pulsó **«No volver a preguntar»**, y eso le **encendió el
+> permiso permanente** —el que cubre copiar contraseñas y borrar entradas, sin caducidad—. **Tiene que
+> quitarlo**: la ventana lo dice arriba en todas las pestañas, con el botón al lado. Y su credencial de
+> **baristologia.com no se movió**: sigue en Personal.
+>
+> **La causa no era la de la víspera.** El día 16 se arregló que la vuelta de la ventana borrara el sí; esto
+> estaba un piso más abajo y era **determinista**: la misma regla —«¿este verbo entra en la válvula?»—
+> escrita en **tres listas** —el argumento de `pedir`, un `que !== "codigo"` en la tarjeta, y lo que
+> `concederComo` daba por hecho— y desalineadas desde que `mover` entró en el grupo de los que no entran. Los
+> dos botones anchos **no concedían nada** para mover, para el código y para editar una contraseña, así que
+> el reintento volvía a preguntar siempre. **Y lo grave**: «No volver a preguntar» guardaba el permiso global
+> **antes** de mirar el verbo, o sea que concedía sobre *otros* verbos lo que la persona no estaba mirando, y
+> encima sin hacer lo pedido.
+>
+> **Arreglado en la 2.58.3**: `PasaPorLaValvula` es el único sitio, el valor **viaja en la petición** y los
+> botones cuelgan de él —la ventana deja de tener lista propia—, más dos cinturones: un alcance amplio sobre
+> un verbo que no entra concede **solo esta vez**, y no se enciende nada global que esa petición no pueda
+> usar. Seis casos probados —tres botones × dos verbos—, el de seguridad aparte, **dos guardas que comparan
+> las listas entre sí** y una de interfaz sobre la tarjeta de mover. Las cuatro protecciones mutadas.
+>
+> **Y es la tercera vez que una regla en dos listas cuesta un fallo**, después de `vaciarLoSensible` y de
+> `enConfiguracionDePruebas`. Está en `CLAUDE.md` y en la ADR 0054.
+>
+> **Lo que queda abierto de hoy**, en [deuda.md](deuda.md): **una petición nueva pisa la que estás leyendo**
+> —lo vio él, «el aviso nuevo se ha puesto encima»— y eso **no se arregla a ciegas**, porque hay que elegir
+> entre encolar, rechazar la segunda o bloquear la tarjeta un momento. Es decisión suya.
+>
+> ## Y lo que sigue pendiente de probar
+
 >
 > Lo dejó dicho el viernes 16: «haremos las pruebas el lunes». **No hay nada que escribir antes de eso**, y lo
 > que hay que saber al final **no es si funciona, es si ha dejado de ser molesto**, que era el encargo.

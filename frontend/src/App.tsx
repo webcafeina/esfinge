@@ -1471,10 +1471,15 @@ function LoQueEsperaRespuesta({
                 lo único de esta pantalla que quita una pregunta, así que no puede
                 ser lo que se pulsa sin mirar.
 
-                **Y no sale para el código**, porque la válvula no lo cubre: ofrecer
-                aquí un botón que no va a hacer lo que dice sería peor que no
-                ofrecerlo. */}
-            {elAgente.quiere.que !== "codigo" && (
+                **Y solo sale si este verbo entra en la válvula**: ofrecer aquí un
+                botón que no va a hacer lo que dice sería peor que no ofrecerlo.
+
+                Eso lo decía un `que !== "codigo"` escrito aquí, o sea **la misma regla
+                que Go en otra lista**, y el día que `mover` entró en el grupo de los que
+                no pasan se quedó corta. El cliente aprobó un movimiento con el botón de
+                al lado: no se movió nada y se encendió el permiso permanente de copiar
+                contraseñas. Ahora lo dice Go en la propia petición. */}
+            {elAgente.quiere.porValvula && (
               <button
                 onClick={async () => {
                   await esfinge.aprobarLoQuePideElAgente(true);
@@ -1490,10 +1495,10 @@ function LoQueEsperaRespuesta({
                 el control.
 
                 Cubre lo mismo que la válvula —por eso cuelga de la misma
-                condición— y va **el último de los que dicen que sí**: es el más
-                cómodo y el que más abre, y el orden de los botones es lo que dice
-                cuál es el camino de siempre. */}
-            {elAgente.quiere.que !== "codigo" && (
+                condición, que ahora es la de Go— y va **el último de los que dicen que
+                sí**: es el más cómodo y el que más abre, y el orden de los botones es lo
+                que dice cuál es el camino de siempre. */}
+            {elAgente.quiere.porValvula && (
               <button
                 className="discreto"
                 onClick={async () => {

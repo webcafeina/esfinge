@@ -270,7 +270,8 @@ var LasHerramientas = []Herramienta{
 		Descripcion: "Cambia campos de una entrada. " + enLaQueEsteAbierta +
 			"Lo que no mandes **no se toca**. Cambiar el título, las notas o la carpeta va directo; " +
 			"**cambiar la contraseña tiene que aprobarlo la persona**, porque eso puede dejar una cuenta " +
-			"sin forma de entrar. La anterior se guarda en el historial de la entrada.\n\n" +
+			"sin forma de entrar — y **cada una se aprueba aparte**, aunque te haya dado permiso para " +
+			"otras cosas. La anterior se guarda en el historial de la entrada.\n\n" +
 			"**Para rotar una contraseña usa `generar`, no la escribas**: la hace Esfinge, no te la enseña " +
 			"y no pasa por esta conversación. Escribirla en `secreto` la deja en el historial del chat " +
 			"para siempre.\n\n" +
@@ -335,7 +336,9 @@ var LasHerramientas = []Herramienta{
 			"acceso**, y quitarlo después no deshace que lo hayan visto.\n\n" +
 			"**La persona lo aprueba en la ventana** cuando quita del origen, que es lo normal; con " +
 			"`dejar_copia` no quita nada y va directo. Si te dice que hace falta aprobarlo, vuelve a " +
-			"pedirlo **con los mismos argumentos**.",
+			"pedirlo **con los mismos argumentos**. Y cada movimiento **se aprueba uno a uno**: aquí no " +
+			"hay permiso que valga para los siguientes, porque esto no va a la papelera. Si te piden " +
+			"mover varias, dilo antes: va a tener que aprobarlas una por una.",
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
 			"id":     {Tipo: "string", Descripcion: "La entrada que se lleva, por su identificador."},

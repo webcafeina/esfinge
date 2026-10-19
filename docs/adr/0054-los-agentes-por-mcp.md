@@ -275,6 +275,58 @@ mutar.
 Y la señal de que esta vez el arreglo está donde toca: **se cae el andamio de la anterior**. `elSiEnLaMano` y
 `devolverElSi` dejan de hacer falta y se van.
 
+## Qué alcance tiene cada botón, y por qué la ventana no decide eso (2026-10-19)
+
+La tarjeta tiene tres botones que dicen que sí —«Solo ésta», «Todo lo suyo, 5 minutos» y «No volver a
+preguntar»— y los dos últimos tienen **el mismo alcance que la válvula y ni un verbo más**, que es la frontera
+que eligió el cliente el 2026-10-08. De ahí sale una pregunta que hay que contestar en **un** sitio: ¿este
+verbo entra en la válvula?
+
+**Estaba contestada en tres, y desalineada.** En Go era un literal en cada llamada a `pedir`; en la tarjeta,
+un `que !== "codigo"` escrito a mano; y en `concederComo`, una suposición —con `unRato` o `paraSiempre`
+ponía la válvula o el «siempre» **y nada más**, dando por hecho que el verbo pasaría por ahí—. Cuando `mover`
+entró en el grupo de los que no entran (2.58.0), Go se enteró y las otras dos no.
+
+Lo que eso producía, visto por el cliente con la 2.58.2:
+
+- **Bucle infinito y determinista.** Aprobar un movimiento con cualquiera de los dos botones anchos **no
+  concedía nada**: el reintento volvía a preguntar, siempre, sin carrera de por medio. No es el fallo del día
+  16 —ése era la vuelta de la ventana borrando el sí— sino otro debajo. Y le pasaba igual al código de un
+  solo uso y a editar una contraseña, **sin que nadie lo hubiera probado**.
+- **Y lo grave: concedía sobre otros verbos.** `AprobarSiempreAlAgente` guardaba el permiso que no caduca
+  **antes** de mirar qué verbo estaba pendiente, así que pulsar «No volver a preguntar» en una tarjeta de
+  mover **encendía el permiso permanente de copiar contraseñas y de borrar** —en las preferencias, sin
+  caducidad— y el movimiento seguía sin hacerse. La persona lee un movimiento y concede otra cosa. Eso es lo
+  contrario de lo que esta ADR promete, y por eso cuenta como fallo de seguridad y no de usabilidad.
+
+### Lo que se hace
+
+**`PasaPorLaValvula(que)` es el único sitio donde se decide**, función del verbo y no argumento de nadie. La
+frontera, dicha entera: no entra **lo que se le enseña al agente** —el código— ni **lo que no se deshace**
+—cambiar una contraseña o una semilla, y mover, que no va a la papelera—.
+
+De ahí salen tres cosas que antes estaban sueltas:
+
+1. **`pedir` pregunta**, en vez de que se lo digan sus cinco llamadas.
+2. **El valor viaja en la petición** (`porValvula`), y los dos botones anchos de la tarjeta cuelgan de él. La
+   ventana deja de tener lista propia, que es lo que de verdad cierra la familia.
+3. **Dos cinturones por debajo**, para el día que alguien vuelva a desalinear algo: un alcance amplio sobre un
+   verbo que no entra **concede solo esta vez** —que es lo que la persona está diciendo— y **no se enciende
+   ningún permiso global** que esta petición no pueda usar.
+
+### Y la mitad de método
+
+Es **la tercera vez** que la misma regla escrita en dos listas cuesta un fallo: `vaciarLoSensible`
+—los campos sensibles en dos sitios y solo uno completo—, `enConfiguracionDePruebas` —siete listas y a seis
+les faltaba Windows, y tiró una publicación— y ésta. El patrón no es el descuido: es que **añadir un caso
+nuevo obliga a acordarse de N sitios**, y acordarse no es defensa. Lo que lo cierra no es revisar mejor, es
+que **haya un sitio y los demás pregunten**; y cuando no se puede juntar —Go y TypeScript—, una prueba que
+**compare las dos listas entre sí**, no cada una contra lo que parece.
+
+Y una señal que había escrita y no se leyó: el comentario de la tarjeta decía, de su propia mano, que
+«ofrecer aquí un botón que no va a hacer lo que dice sería peor que no ofrecerlo». La regla estaba bien; lo
+que falló fue que **su condición era una copia** y no la fuente.
+
 ## Verificación
 
 Lo que hay que poder decir al acabar, y cada prueba mutada:
@@ -287,6 +339,10 @@ Lo que hay que poder decir al acabar, y cada prueba mutada:
 | Que la válvula no cubre lo que se enseña | Con la válvula abierta, el código **sigue pidiendo** aprobación |
 | Que un sí sobrevive a la vuelta de la ventana | Se pide en una bóveda nombrada, **se aprueba y el respiro vence después** —el orden de quien lo vive—, y el reintento funciona. Para `mover` y para un secreto, que es la mitad que faltaba |
 | Que un sí no se gasta en otra cosa | Cinco peticiones que cambian **un solo campo** cada una —verbo, entrada, bóveda, destino, quién— y ninguna puede gastarlo; y la misma, exacta, sí |
+| Que los tres botones valen para lo que no entra en la válvula | **Tres botones × dos verbos** —mover y el código—, los seis aprobando y reintentando. Antes pasaban dos de seis |
+| Que aprobar una cosa no concede sobre otra | Se aprueba un movimiento con «No volver a preguntar» y después **copiar una contraseña tiene que seguir preguntando** |
+| Que la ventana no tiene lista propia | Una guarda **lee `App.tsx`** y exige que los botones anchos cuelguen de `porValvula`, y que no haya vuelto a aparecer un `que !== "<verbo>"` |
+| Que los verbos que no entran son los que se sabe | Se recorren **las herramientas declaradas** y se comparan con la lista, por su nombre; y lo que se le enseña al agente **y se aprueba** no entra nunca, dicho por las banderas |
 | Que lo que una persona retira se va | El botón de cortar y retirar al agente, los dos con el sí ya concedido |
 | Que el freno es del servidor | **Una conexión nueva por petición**, que es como se descubrió que el otro freno no frenaba |
 | Que añadir un verbo es una decisión | La lista recorrida, y ninguno contesta «no entiendo» |

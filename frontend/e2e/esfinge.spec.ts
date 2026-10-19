@@ -2947,6 +2947,10 @@ test("la tarjeta de lo que pide un agente dice quién, cuál y que no la ve", as
           titulo: "Hacienda",
           cuando: "2026-10-07T12:00:00Z",
           boveda: "Zeri's Coffee",
+          // **Lo dice Go** (`PasaPorLaValvula`): copiar una contraseña entra en la
+          // válvula, así que los dos botones anchos salen. Para los verbos que no
+          // entran llega `false` y no salen, que es lo de abajo.
+          porValvula: true,
         },
         valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
       }),
@@ -2981,6 +2985,72 @@ test("la tarjeta de lo que pide un agente dice quién, cuál y que no la ve", as
   await expect(unRato).not.toHaveClass(/principal/);
 
   await tarjeta.screenshot({ path: `test-results/agente-pide-${test.info().project.name}.png` });
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * **Y la tarjeta de un verbo que no entra en la válvula no ofrece los botones anchos**
+ * (2026-10-19).
+ *
+ * Ofrecer un botón que no va a hacer lo que dice es peor que no ofrecerlo, y eso estaba
+ * escrito en el propio componente — aplicado solo al código, con un `que !== "codigo"` a
+ * mano. El día que `mover` entró en el grupo de los que no pasan, la tarjeta siguió
+ * enseñando «Todo lo suyo, 5 minutos» y «No volver a preguntar»: el cliente pulsó el
+ * segundo, **no se movió nada** y se le encendió el permiso permanente de copiar
+ * contraseñas, que no era lo que estaba mirando.
+ *
+ * Ahora la condición la manda Go en la propia petición (`porValvula`). Esta prueba mira
+ * la pantalla; la que mira que nadie vuelva a escribir la lista a mano está en Go.
+ */
+test("un movimiento se aprueba solo para esta vez, sin los botones que no le valen", async ({
+  page,
+}) => {
+  const errores = vigilarConsola(page);
+  await page.route("**/api/EstadoDelAgente", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        encendido: true,
+        escuchando: true,
+        donde: "/tmp/agentes.sock",
+        permitidos: [{ quien: "Claude Code", desde: "2026-10-07T10:00:00Z" }],
+        configuracion: "{}",
+        quiere: {
+          quien: "Claude Code",
+          que: "mover",
+          id: "a1",
+          titulo: "baristologia.com",
+          cuando: "2026-10-19T10:00:00Z",
+          boveda: "Personal",
+          destino: "Zeri's Coffee",
+          // **Mover no entra en la válvula**: no va a la papelera, así que no se deshace.
+          porValvula: false,
+        },
+        valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
+      }),
+    });
+  });
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  const tarjeta = page.locator(".espera .grupo.peligro").filter({ hasText: "Claude Code" });
+  await expect(tarjeta).toBeVisible({ timeout: 20_000 });
+  // Dice de dónde a dónde, que es lo que hace falta para contestar.
+  await expect(tarjeta).toContainText("baristologia.com");
+  await expect(tarjeta).toContainText("Zeri's Coffee");
+
+  // **Y solo hay un sí.** Si salieran los otros dos, prometerían un alcance que este
+  // verbo no puede tener.
+  await expect(tarjeta.getByRole("button", { name: "Solo ésta" })).toBeVisible();
+  await expect(
+    tarjeta.getByRole("button", { name: "Todo lo suyo, 5 minutos" }),
+  ).toHaveCount(0);
+  await expect(tarjeta.getByRole("button", { name: /No volver a preguntar/ })).toHaveCount(0);
+  // El «No» sí, que no es un permiso.
+  await expect(tarjeta.getByRole("button", { name: "No", exact: true })).toBeVisible();
+
+  await tarjeta.screenshot({ path: `test-results/agente-mover-${test.info().project.name}.png` });
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
@@ -3117,6 +3187,7 @@ test("la tarjeta de un agente sale en cualquier pantalla, no solo en Ajustes", a
               id: "a1",
               titulo: "Hacienda",
               cuando: "2026-10-13T16:00:00Z",
+              porValvula: true,
             },
         valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
       }),

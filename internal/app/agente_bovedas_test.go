@@ -628,7 +628,7 @@ func TestUnSiNoSeGastaEnOtraCosa(t *testing.T) {
 		if _, ok := p.conceder(false, ahora); !ok {
 			t.Fatal("no ha concedido")
 		}
-		if vale, _ := p.pedir(c.q, false, ahora); vale {
+		if vale, _ := p.pedir(c.q, ahora); vale {
 			t.Errorf("el sí se ha gastado en algo que cambia %s", c.por)
 		}
 	}
@@ -639,7 +639,7 @@ func TestUnSiNoSeGastaEnOtraCosa(t *testing.T) {
 	if _, ok := p.conceder(false, ahora); !ok {
 		t.Fatal("no ha concedido")
 	}
-	if vale, _ := p.pedir(aprobado, false, ahora); !vale {
+	if vale, _ := p.pedir(aprobado, ahora); !vale {
 		t.Error("la misma petición no ha podido gastar su propio sí")
 	}
 }
@@ -663,7 +663,7 @@ func TestCortarAlAgenteSeLlevaElSiConcedido(t *testing.T) {
 	if err := a.CortarAlAgente(); err != nil {
 		t.Fatal(err)
 	}
-	if vale, _ := a.permisos.pedir(q, false, ahora); vale {
+	if vale, _ := a.permisos.pedir(q, ahora); vale {
 		t.Error("el sí ha sobrevivido al botón de cortar")
 	}
 
@@ -673,7 +673,184 @@ func TestCortarAlAgenteSeLlevaElSiConcedido(t *testing.T) {
 		t.Fatal("no ha concedido")
 	}
 	a.permisos.retirarLoConcedido()
-	if vale, _ := a.permisos.pedir(q, false, ahora); vale {
+	if vale, _ := a.permisos.pedir(q, ahora); vale {
 		t.Error("el sí ha sobrevivido a retirar al agente")
+	}
+}
+
+// **Lo que vio el cliente el 2026-10-19 con la 2.58.2: aprobó con «No volver a
+// preguntar» y el bucle siguió igual.**
+//
+// No es la carrera del 16 —ésa está arreglada— sino otra cosa y **determinista**: los dos
+// botones de permiso amplio de la tarjeta (`unRato` y `paraSiempre`) **no conceden el sí
+// individual**, a propósito, dando por hecho que el verbo pasará por la válvula. Y hay
+// tres verbos que **no pasan** por la válvula: el código de un solo uso, editar lo que no
+// se deshace, y mover cuando quita. Para ésos, pulsar cualquiera de los dos **no concede
+// nada en absoluto** y el reintento vuelve a preguntar. Para siempre.
+//
+// Esta prueba recorre los tres botones por los dos caminos. Si solo pasa el primero, la
+// tarjeta está ofreciendo botones que no hacen lo que dicen.
+func TestLosTresBotonesDeLaTarjetaValenParaLoQueNoPasaPorLaValvula(t *testing.T) {
+	porCadaBoton := []struct {
+		nombre  string
+		aprobar func(a *App) error
+	}{
+		{"Solo ésta", func(a *App) error { return a.AprobarLoQuePideElAgente(false) }},
+		{"Todo lo suyo, 5 minutos", func(a *App) error { return a.AprobarLoQuePideElAgente(true) }},
+		{"No volver a preguntar", func(a *App) error { return a.AprobarSiempreAlAgente() }},
+	}
+	for _, boton := range porCadaBoton {
+		t.Run("mover con «"+boton.nombre+"»", func(t *testing.T) {
+			a, _, _ := conUnProyecto(t)
+			f := fuenteDelAgente{a}
+			if err := a.GuardarEnBoveda(boveda.Entrada{
+				Tipo: boveda.TipoCredencial, Titulo: "Baristologia", Secreto: "x",
+			}); err != nil {
+				t.Fatal(err)
+			}
+			es, _ := a.BuscarEnBoveda("Baristologia")
+			pide := agente.Peticion{ID: es[0].ID, Destino: "Acme"}
+
+			if _, err := f.Mover("Claude", pide); !errors.Is(err, agente.ErrPideAprobacion) {
+				t.Fatalf("la primera vez tiene que pedir aprobación: %v", err)
+			}
+			if err := boton.aprobar(a); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.Mover("Claude", pide); err != nil {
+				t.Fatalf("aprobado con «%s», el reintento tendría que mover y dice: %v",
+					boton.nombre, err)
+			}
+			a.volverDeDondeLeDejoElAgente()
+		})
+
+		t.Run("el código con «"+boton.nombre+"»", func(t *testing.T) {
+			a, _, _, _, _ := conBoveda(t)
+			f := fuenteDelAgente{a}
+			if err := a.GuardarEnBoveda(boveda.Entrada{
+				Tipo: boveda.TipoCredencial, Titulo: "ConCodigo", Secreto: "x",
+				TOTP: "JBSWY3DPEHPK3PXP",
+			}); err != nil {
+				t.Fatal(err)
+			}
+			es, _ := a.BuscarEnBoveda("ConCodigo")
+			id := es[0].ID
+
+			if _, err := f.Codigo("Claude", id); !errors.Is(err, agente.ErrPideAprobacion) {
+				t.Fatalf("la primera vez tiene que pedir aprobación: %v", err)
+			}
+			if err := boton.aprobar(a); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.Codigo("Claude", id); err != nil {
+				t.Fatalf("aprobado con «%s», el reintento tendría que dar el código y dice: %v",
+					boton.nombre, err)
+			}
+		})
+	}
+}
+
+// **Y lo que de verdad importa de ese fallo: concede más de lo que la persona cree.**
+//
+// «No volver a preguntar» en una tarjeta de mover **enciende el permiso permanente** —que
+// cubre copiar contraseñas y borrar entradas, y vive en las preferencias— **y el
+// movimiento no se hace**. O sea: la persona cree estar aprobando un movimiento y lo que
+// concede es un permiso que no caduca sobre *otros* verbos, sin obtener lo que pedía.
+//
+// Eso es lo contrario de lo que promete la ADR 0054, y por eso esto es un fallo de
+// seguridad y no solo del bucle. Le pasó al cliente el 2026-10-19.
+func TestAprobarUnMovimientoNoPuedeEncenderElPermisoDeOtrosVerbos(t *testing.T) {
+	a, _, _ := conUnProyecto(t)
+	f := fuenteDelAgente{a}
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Baristologia", Secreto: "x",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	es, _ := a.BuscarEnBoveda("Baristologia")
+	id := es[0].ID
+
+	// Se pide un movimiento y se aprueba con el botón que no caduca.
+	if _, err := f.Mover("Claude", agente.Peticion{ID: id, Destino: "Acme"}); !errors.Is(
+		err, agente.ErrPideAprobacion) {
+		t.Fatal("tendría que pedir aprobación")
+	}
+	if err := a.AprobarSiempreAlAgente(); err != nil {
+		t.Fatal(err)
+	}
+	a.volverDeDondeLeDejoElAgente()
+
+	// **Y ahora copiar una contraseña no puede ir directo.** Si va, lo que se encendió
+	// aprobando un movimiento es un permiso sobre otra cosa.
+	if _, err := f.CopiarSecreto("Claude", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("aprobar un movimiento ha encendido el permiso permanente de copiar contraseñas")
+	}
+}
+
+// **Y lo que de verdad cierra esta familia: que la ventana no tenga su propia lista.**
+//
+// El fallo del 2026-10-19 no fue de lógica, fue de **la misma regla escrita en tres
+// sitios**: el argumento de `pedir` en Go, un `que !== "codigo"` en la tarjeta, y lo que
+// `concederComo` daba por hecho. Es el patrón de `vaciarLoSensible` y de
+// `enConfiguracionDePruebas`, que ya costaron lo suyo.
+//
+// Esta prueba **lee el fuente de la ventana** y exige dos cosas: que los botones anchos
+// cuelguen del campo que manda Go, y que no haya quedado ninguna lista escrita a mano.
+// Si alguien vuelve a poner `que !== "<verbo>"` ahí, se pone roja.
+func TestLaTarjetaNoTieneSuPropiaListaDeLoQuePasaPorLaValvula(t *testing.T) {
+	fuente, err := os.ReadFile("../../frontend/src/App.tsx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	texto := string(fuente)
+
+	// Los dos botones anchos preguntan a Go.
+	if n := strings.Count(texto, "elAgente.quiere.porValvula &&"); n != 2 {
+		t.Errorf("los botones anchos tendrían que colgar de `porValvula` y hay %d, no 2", n)
+	}
+	// Y nadie decide esto comparando el verbo a mano.
+	for _, lista := range []string{
+		`elAgente.quiere.que !== "codigo"`,
+		`elAgente.quiere.que !== "mover"`,
+		`elAgente.quiere.que !== "editar"`,
+	} {
+		if strings.Contains(texto, lista) {
+			t.Errorf("la tarjeta ha vuelto a escribir su propia lista: %s\n"+
+				"Lo que pasa por la válvula lo dice app.PasaPorLaValvula, y viaja en la petición.",
+				lista)
+		}
+	}
+}
+
+// Y la gemela, por el otro lado: **los tres verbos que no pasan son los tres**, dicho con
+// sus nombres, para que añadir uno nuevo obligue a pasar por aquí.
+//
+// Si esta se pone roja, la pregunta no es cuál arreglar: es si el verbo nuevo **se le
+// enseña al agente** o **no se deshace**, que es la frontera de la ADR 0054.
+func TestLosVerbosQueNoPasanPorLaValvulaSonLosQueSeSabe(t *testing.T) {
+	noPasan := map[string]bool{
+		agente.QueCodigo: true, agente.QueEditar: true, agente.QueMover: true,
+	}
+	for _, h := range agente.LasHerramientas {
+		if h.Verbo == "" {
+			continue
+		}
+		if PasaPorLaValvula(h.Verbo) == noPasan[h.Verbo] {
+			t.Errorf("«%s» (%s): PasaPorLaValvula dice %v y la lista de esta prueba dice que %s",
+				h.Nombre, h.Verbo, PasaPorLaValvula(h.Verbo),
+				map[bool]string{true: "no pasa", false: "sí pasa"}[noPasan[h.Verbo]])
+		}
+	}
+	// Y lo que se le enseña al agente **y pide aprobación** nunca pasa, dicho por las
+	// banderas y no por su nombre: es la frontera entera de la válvula.
+	//
+	// **Las dos banderas, no solo una**: `esfinge_generar` devuelve una contraseña que el
+	// modelo ve y aun así pasa, porque **no toca la bóveda y no pide nada** — no hay
+	// permiso que ampliar. La válvula habla de lo que se aprueba.
+	for _, h := range agente.LasHerramientas {
+		if h.DevuelveSecreto && h.PideAprobacion && PasaPorLaValvula(h.Verbo) {
+			t.Errorf("«%s» le enseña un secreto al agente, lo aprueba una persona, "+
+				"y aun así pasa por la válvula", h.Nombre)
+		}
 	}
 }

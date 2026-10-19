@@ -5,6 +5,43 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-19 · El bucle estaba más abajo: la misma regla en tres listas
+
+- **Lo probó en su Mac y el bucle seguía.** No era lo del viernes —eso estaba arreglado— sino otra causa
+  debajo, y **determinista** en vez de carrera: la pregunta «¿este verbo entra en la válvula?» estaba
+  contestada **en tres sitios** —el argumento de `pedir` en Go, un `que !== "codigo"` en la tarjeta, y lo que
+  `concederComo` daba por hecho— y desalineados desde que `mover` entró en el grupo de los que no entran
+  (2.58.0). Los dos botones anchos **no concedían nada** para mover, el código y editar una contraseña.
+- **Y lo grave no era el bucle.** `AprobarSiempreAlAgente` guardaba el permiso que no caduca **antes** de
+  mirar el verbo: pulsar «No volver a preguntar» en una tarjeta de mover **encendía el permiso permanente de
+  copiar contraseñas y borrar** —sobre otros verbos— **y el movimiento no se hacía**. La persona lee una cosa
+  y concede otra. Le quedó encendido en su equipo y se le dijo lo primero.
+- **El dato que lo resolvió fue suyo**: «le había dado incluso a No volver a preguntar». Sin eso, el síntoma
+  —«sigue pidiendo aprobación»— apuntaba al arreglo del viernes y habría costado otra vuelta. Y lo que el
+  agente **dedujo** —«el permiso caducó o se abrió otra petición»— era plausible y falso, como ya van dos
+  veces: lo que vale de su informe es lo que vio.
+- **Arreglado así**: `PasaPorLaValvula(que)` es el único sitio —función del verbo, no argumento—, el valor
+  **viaja en la petición** (`porValvula`) y los dos botones anchos cuelgan de él, así que la ventana deja de
+  tener lista propia. Con dos cinturones para el día que algo vuelva a desalinearse: un alcance amplio sobre
+  un verbo que no entra **concede solo esta vez**, y **no se enciende ningún permiso global** que esa
+  petición no pueda usar.
+- **Qué se verificó.** Seis casos —**tres botones × dos verbos**, mover y el código—, de los que antes
+  pasaban dos; el de seguridad aparte, comprobando que tras aprobar un movimiento copiar una contraseña
+  **sigue preguntando**; **dos guardas que comparan las listas entre sí** —una lee `App.tsx` y exige que los
+  botones cuelguen del campo de Go; la otra recorre las herramientas declaradas—; y una de interfaz que mira
+  la tarjeta de mover en los dos temas. **Las cuatro protecciones mutadas.** `make comprobar` y `make e2e`
+  (144) en verde.
+- **Lo que queda abierto**: una petición nueva **pisa la que estás leyendo** —lo vio él, «el aviso nuevo se ha
+  puesto encima»—, y eso no se arregla a ciegas porque hay que elegir entre encolar, rechazar la segunda o
+  bloquear la tarjeta un momento. A `deuda.md`, es decisión suya.
+- **Y el patrón, que ya es el tercero de la misma forma** —`vaciarLoSensible`, `enConfiguracionDePruebas` y
+  éste—: la misma regla en N listas. No se cierra revisando mejor, se cierra **con un sitio del que los demás
+  preguntan**, y cuando no se pueden juntar, con una prueba que compare las listas entre sí. De paso: el
+  comentario de la propia tarjeta ya decía que ofrecer un botón que no hace lo que dice es peor que no
+  ofrecerlo — la regla estaba bien y **su condición era una copia**.
+
+---
+
 ## 2026-10-16 · El bucle de aprobaciones, y por qué el arreglo de ayer era medio arreglo
 
 - **Se cerró el fallo vivo con el que acabó ayer**: mover entre bóvedas pedía aprobación sin fin si se

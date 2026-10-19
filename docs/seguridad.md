@@ -562,6 +562,32 @@ que no está bajado en este equipo tampoco, y **la tarjeta con la que apruebas u
 está pasando**: desde que puede ocurrir en una que no estás mirando, aprobar sin saber dónde es aprobar a
 ciegas.
 
+### Qué alcance tiene cada botón (2026-10-19)
+
+Los tres botones que dicen que sí no conceden lo mismo, y la diferencia importa:
+
+- **«Solo ésta»** aprueba **esa acción y nada más**: ese verbo, esa entrada, esa bóveda. Se gasta al usarse.
+- **«Todo lo suyo, 5 minutos»** abre la válvula: lo que ese agente pida durante cinco minutos, con un tope de
+  veinte usos y un botón para cortarla antes.
+- **«No volver a preguntar»** es lo mismo sin caducidad, y mientras está puesto **la ventana lo dice arriba en
+  todas las pestañas**, con el botón de quitarlo al lado. Ésa fue la condición con la que se dio.
+
+**Y los dos anchos no cubren todo.** Quedan fuera **lo que se le enseña al agente** —el código de un solo
+uso— y **lo que no se deshace**: cambiar una contraseña o una semilla, y mover una entrada, que no va a la
+papelera. Para esos verbos, **cada vez se aprueba una vez**, y la tarjeta **no ofrece** los otros dos
+botones: ofrecer uno que no va a hacer lo que dice es peor que no ofrecerlo.
+
+Esto último estuvo roto entre la 2.58.0 y la 2.58.2, y conviene saber cómo porque es la clase de fallo que
+no se ve:
+
+> La tarjeta ofrecía los tres botones para un movimiento. Pulsando «No volver a preguntar», **el movimiento
+> no se hacía** —se volvía a pedir aprobación sin fin— y en cambio **sí se encendía el permiso permanente de
+> copiar contraseñas y de borrar**. O sea: lo que la pantalla enseñaba era un movimiento y lo que se concedía
+> era otra cosa, sobre otros verbos, sin caducidad.
+
+Ahora **un permiso se concede sobre lo que la pantalla enseña y nunca sobre lo de al lado**, y quien decide
+si un verbo entra en la válvula es un solo sitio del que la ventana pregunta, en vez de una lista repetida.
+
 ### Cuánto vive un sí, y qué se lo lleva (2026-10-16)
 
 Un permiso que das en la ventana **vale para la acción que aprobaste y para nada más**: para ese agente, ese

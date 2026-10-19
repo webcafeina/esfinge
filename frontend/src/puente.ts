@@ -320,6 +320,18 @@ export type EstadoDelAgente = {
     boveda: string;
     /** A dónde se la lleva, cuando lo que se pide es mover (ADR 0056). */
     destino?: string;
+    /**
+     * Si **este verbo** puede ir por la válvula de cinco minutos y por el permiso que
+     * no caduca. Lo dice Go (`PasaPorLaValvula`), y los dos botones anchos de la
+     * tarjeta cuelgan de aquí.
+     *
+     * **No se deduce del verbo en esta pantalla**, y por eso viaja: había un
+     * `que !== "codigo"` escrito a mano y el día que `mover` entró en el grupo de los
+     * que no pasan se quedó corto. La tarjeta ofrecía dos botones que no hacían lo que
+     * decían, y el cliente aprobó con uno de ellos: no se movió nada y se encendió el
+     * permiso permanente de otros verbos.
+     */
+    porValvula: boolean;
   };
   /** Cómo va el «todo lo de este agente durante un rato», si está abierta. */
   valvula: { abierta: boolean; quedan: number; usadas: number; tope: number; ultimos?: string[] };

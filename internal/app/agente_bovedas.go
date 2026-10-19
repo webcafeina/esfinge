@@ -418,7 +418,7 @@ func (a *App) moverEntreBovedas(quien string, p agente.Peticion) (agente.Movido,
 			Cuando: ahora.UTC().Format(time.RFC3339),
 			Boveda: nombreOrigen, Destino: destino.nombre,
 		}
-		vale, comoSeDio := a.permisos.pedir(q, false, ahora)
+		vale, comoSeDio := a.permisos.pedir(q, ahora)
 		como = comoSeDio
 		if !vale {
 			a.sistema.Avisar(EventoAgenteQuiere, q)
