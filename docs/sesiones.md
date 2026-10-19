@@ -94,6 +94,14 @@ Plantilla al final.
   instante y se cayeron todas — la trampa del testigo puesto por el ayudante, que hacía el paso que hace
   producción.
 
+- **Cierre del día: seis versiones publicadas —2.58.3 a 2.58.6, con una reetiquetada— y las seis salieron de
+  él usándolo.** Ninguna de una prueba. Y con la última, **la deuda del canal de agentes queda a cero**.
+- **Queda pendiente para el 2026-10-20: probar el MCP en Claude Code**, que lo pidió al cerrar. Solo se ha
+  probado Claude Desktop, y no son el mismo camino: allí la orden apunta al binario **de dentro de la
+  aplicación** —así que el relevo del `.mcpb` no interviene—, hace falta **`--scope user`** —sin él queda
+  registrado solo en la carpeta donde se pegó la orden, y es un fallo mudo que ya vio él— y es **el escenario
+  de dos agentes a la vez**, que es lo que la 2.58.6 vino a cerrar.
+
 ---
 
 ## 2026-10-16 · El bucle de aprobaciones, y por qué el arreglo de ayer era medio arreglo

@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-10-19**
+Última actualización: **2026-10-19**, al cierre
 
 > **No queda nada del proyecto sin comprobar en una máquina de verdad, salvo Windows y GNOME.** Las dos
 > fichas que quedaban vivas se cerraron hoy en los dos Macs del cliente:
@@ -282,6 +282,22 @@
 > Cuatro pruebas mutadas, y de paso dos hallazgos: **`mover` contestaba `no-entiendo`** cuando pedía
 > aprobación, y **cuatro pruebas preparaban lo pendiente a mano**, que es la trampa del testigo puesto por el
 > ayudante.
+>
+> ## La siguiente acción: probar el MCP en Claude Code (2026-10-20)
+>
+> Lo pidió él al cerrar el 19: **hasta ahora solo se ha probado Claude Desktop**, y no son el mismo camino.
+>
+> - **La orden apunta al binario de dentro de la aplicación**, así que ahí el relevo del `.mcpb` no interviene
+>   y la versión no puede quedarse vieja por ese lado. En Claude Code **esto nunca ha pasado**, y por eso
+>   conviene ver si de verdad no pasa.
+> - **Hace falta `--scope user`.** Sin él el servidor queda registrado solo en la carpeta donde se pegó la
+>   orden, y la bóveda es una por persona y no una por repositorio. **Es un fallo mudo** y lo vio él el primer
+>   día que lo instaló. En Ajustes hay un camino propio para esto, de los cuatro.
+> - **Y es el escenario de dos agentes a la vez**, que es justo lo que la 2.58.6 vino a cerrar: con Desktop y
+>   Code abiertos, el segundo tiene que recibir «hay otra cosa esperando» y la tarjeta no debe cambiar debajo.
+>   Eso aquí está probado con dos nombres de agente; en su Mac serían dos clientes de verdad.
+>
+> **Lo que hay que saber al final sigue siendo lo mismo**: no si funciona, sino si ha dejado de ser molesto.
 >
 > ## Y lo que sigue pendiente de probar
 
