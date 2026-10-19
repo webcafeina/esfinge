@@ -78,6 +78,22 @@ Plantilla al final.
 - **Con eso, de todo el proyecto solo queda Windows y GNOME en máquinas de verdad.** Cinco versiones
   publicadas en el día —2.58.3 a 2.58.5, con una reetiquetada—, y **las cinco salieron de él usándolo**.
 
+- **Y la última fila de la deuda, saldada: una petición nueva pisaba la que estabas leyendo (2.58.6).** Lo
+  eligió por las dos mitades. **Una**: cada petición lleva referencia y la ventana la devuelve al contestar,
+  así que un sí sobre una tarjeta que ya cambió no concede nada y lo dice —la referencia se lee **en el
+  render**, que leída en el manejador del clic volvería a aprobar lo de después—. **Dos**: la segunda espera
+  turno con su motivo propio, **entre agentes y no dentro de uno** —el mismo pidiendo otra cosa es el mismo
+  interlocutor, y bloquearlo contra sí mismo lo deja dos minutos sin trabajar; lo destapó una prueba que
+  hacía eso—. Y lo pendiente **caduca a los dos minutos al mirarlo**, así que la tarjeta se cae sola.
+- **Cuatro pruebas, las cuatro mutadas** — y **la primera mutación no se cazaba**, lo que destapó que faltaba
+  justo la del caso que la referencia protege: pulsar con la vieja. Sin mutar, ese arreglo se habría quedado
+  sin prueba.
+- **Dos hallazgos del camino.** `mover` contestaba `no-entiendo` cuando pedía aprobación: su traductor de
+  errores se quedó corto al añadir el verbo, así que el texto llegaba bien y **el motivo era falso**. Y
+  **cuatro pruebas preparaban lo pendiente a mano** (`p.pendiente = &q`): al darle plazo caducaban al
+  instante y se cayeron todas — la trampa del testigo puesto por el ayudante, que hacía el paso que hace
+  producción.
+
 ---
 
 ## 2026-10-16 · El bucle de aprobaciones, y por qué el arreglo de ayer era medio arreglo

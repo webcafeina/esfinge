@@ -430,6 +430,14 @@ const (
 	// camino normal la primera vez que se pide algo, y lo que hay que hacer es
 	// aprobarlo y **volver a pedirlo**.
 	MotivoPideAprobacion = "pide-aprobacion"
+	// MotivoOtraEsperando: hay **otra** petición esperando respuesta en la ventana, y
+	// hasta que alguien la conteste ésta no entra.
+	//
+	// **Hay una persona y una ventana.** Con dos agentes a la vez —Claude Desktop y
+	// Claude Code— el segundo pisaba la tarjeta del primero y quien la estaba leyendo
+	// aprobaba otra cosa. Esperar turno es lo honesto; la de delante caduca, así que
+	// esto no bloquea para siempre.
+	MotivoOtraEsperando = "otra-esperando"
 	// MotivoNoSeEscribe: aquí no se puede escribir —una bóveda de solo lectura, o una
 	// compartida de solo ver—, o lo que se pide no se puede crear a mano.
 	MotivoNoSeEscribe = "no-se-escribe"

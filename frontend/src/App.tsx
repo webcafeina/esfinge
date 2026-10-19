@@ -1361,6 +1361,14 @@ function LoQueEsperaRespuesta({
   );
   if (!hayAlgo) return null;
 
+  // **La referencia de lo que se está pintando**, para devolvérsela a Go al contestar.
+  //
+  // Se coge aquí y no dentro del manejador del clic a propósito: lo que se aprueba tiene
+  // que ser **lo que se dibujó**, y si entre el render y el clic llega otra petición, Go
+  // ve que ya no es ésa y no concede nada. Leerla dentro del manejador aprobaría la de
+  // después, que es el fallo que esto viene a quitar.
+  const refDeLoQuePide = elAgente?.quiere?.ref ?? "";
+
   return (
     <div className="espera">
       {/* El navegador pidiendo emparejarse. Va en «peligro» a propósito: es una
@@ -1461,7 +1469,7 @@ function LoQueEsperaRespuesta({
             <button
               className="principal"
               onClick={async () => {
-                await esfinge.aprobarLoQuePideElAgente(false);
+                await esfinge.aprobarLoQuePideElAgente(refDeLoQuePide, false);
                 leerAgente();
               }}
             >
@@ -1482,7 +1490,7 @@ function LoQueEsperaRespuesta({
             {elAgente.quiere.porValvula && (
               <button
                 onClick={async () => {
-                  await esfinge.aprobarLoQuePideElAgente(true);
+                  await esfinge.aprobarLoQuePideElAgente(refDeLoQuePide, true);
                   leerAgente();
                 }}
               >
@@ -1502,7 +1510,7 @@ function LoQueEsperaRespuesta({
               <button
                 className="discreto"
                 onClick={async () => {
-                  await esfinge.aprobarSiempreAlAgente();
+                  await esfinge.aprobarSiempreAlAgente(refDeLoQuePide);
                   leerAgente();
                 }}
               >

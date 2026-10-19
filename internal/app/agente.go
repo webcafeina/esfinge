@@ -550,6 +550,38 @@ func rutaDelServidorMCP() (string, error) {
 // media hora después de que la persona lo diera pensando en otra cosa.
 const PlazoDelPermiso = 2 * time.Minute
 
+// noEraEsoQueAprobabas es lo que se contesta cuando lo que se pulsó ya no es lo que
+// está esperando: o lo contestó alguien, o caducó, o llegó otra cosa.
+//
+// **Dice las tres, porque desde la ventana no se distinguen** y lo que hay que hacer es
+// el mismo en los tres casos: mirar qué hay ahora y contestar eso.
+const noEraEsoQueAprobabas = "Eso ya no es lo que está esperando: míralo otra vez antes de contestar"
+
+// PlazoParaContestar es lo que una petición espera en la ventana antes de darse por
+// abandonada.
+//
+// **Existe porque desde el 2026-10-19 la segunda petición espera su turno** en vez de
+// pisar la primera: sin plazo, una que nadie contesta dejaría a todos los agentes
+// esperando para siempre. Dos minutos es lo que tarda alguien en ver la banda de arriba y
+// decidir; pasados, la siguiente ocupa su sitio y la vieja se da por caída.
+const PlazoParaContestar = 2 * time.Minute
+
+// refDePeticion es la referencia con la que la ventana dice **qué** está aprobando.
+//
+// Al azar y no un contador, por lo mismo que las referencias de los ficheros de proyecto:
+// un número que sube cuenta cuántas veces se le ha pedido algo a esta persona, y eso no
+// hace falta para nada.
+func refDePeticion() string {
+	var b [8]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		// Sin azar no se puede identificar la petición, y lo que **no** se hace es
+		// devolver una vacía: eso haría que la ventana aprobara «lo que haya», que es
+		// justo lo que esto viene a quitar.
+		return "sin-referencia"
+	}
+	return hex.EncodeToString(b[:])
+}
+
 // EventoAgenteQuiere avisa a la ventana de que un agente pide algo que hay que aprobar.
 const EventoAgenteQuiere = "agente-quiere"
 
@@ -567,6 +599,14 @@ type loQuePideUnAgente struct {
 	// Destino es a dónde se lleva, cuando lo que se pide es mover (ADR 0056). Vacío en
 	// todo lo demás.
 	Destino string `json:"destino,omitempty"`
+	// Ref identifica **esta** petición, para que la ventana pueda decir qué está
+	// aprobando y no «lo que haya».
+	//
+	// Sin esto, `AprobarLoQuePideElAgente` concedía lo pendiente a ciegas: si entre que
+	// alguien leía la tarjeta y pulsaba llegaba otra petición, **aprobaba la nueva
+	// creyendo que aprobaba la que vio**. Es la misma regla que obligó a poner la bóveda
+	// aquí: aprobar sin saber qué es aprobar a ciegas.
+	Ref string `json:"ref"`
 	// PorValvula dice si **este verbo** puede ir por la válvula de cinco minutos y por
 	// el permiso que no caduca, y existe para que **la ventana no tenga su propia
 	// lista**: los dos botones anchos de la tarjeta cuelgan de aquí.
@@ -603,6 +643,11 @@ type permisosDelAgente struct {
 	mu sync.Mutex
 	// pendiente es lo último que se ha pedido y nadie ha contestado.
 	pendiente *loQuePideUnAgente
+	// pedidaEn es cuándo llegó lo pendiente, **para que caduque**.
+	//
+	// Hace falta desde que una segunda petición espera su turno en vez de pisar: sin
+	// plazo, una que nadie contesta bloquearía a todos los agentes para siempre.
+	pedidaEn time.Time
 	// concedido es la petición para la que hay un sí, y hasta cuándo vale.
 	//
 	// **Se guarda entera y se compara entera** (`mismaPeticion`), no por el
@@ -666,7 +711,7 @@ func PasaPorLaValvula(que string) bool {
 //
 // Si el verbo pasa por la válvula lo dice [PasaPorLaValvula], y no quien llama: era un
 // argumento y eso lo convertía en una lista repetida.
-func (p *permisosDelAgente) pedir(q loQuePideUnAgente, ahora time.Time) (bool, string) {
+func (p *permisosDelAgente) pedir(q loQuePideUnAgente, ahora time.Time) (bool, string, error) {
 	porValvula := PasaPorLaValvula(q.Que)
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -674,7 +719,7 @@ func (p *permisosDelAgente) pedir(q loQuePideUnAgente, ahora time.Time) (bool, s
 	// Un sí para esto mismo, que **se gasta**: un sí vale para una vez.
 	if p.concedido != nil && mismaPeticion(*p.concedido, q) && ahora.Before(p.hasta) {
 		p.concedido = nil
-		return true, boveda.ApuntePreguntado
+		return true, boveda.ApuntePreguntado, nil
 	}
 	// O el «siempre», si lo hay y si este verbo puede pasar por él.
 	//
@@ -685,7 +730,7 @@ func (p *permisosDelAgente) pedir(q loQuePideUnAgente, ahora time.Time) (bool, s
 	// borrar fuera: «de todos modos iría a la papelera», y una frontera es más fácil
 	// de sostener que dos parecidas.
 	if porValvula && p.siempre {
-		return true, boveda.ApunteSiempre
+		return true, boveda.ApunteSiempre, nil
 	}
 	// O la válvula, si está abierta y si este verbo puede pasar por ella.
 	if porValvula && ahora.Before(p.valvulaHasta) {
@@ -696,13 +741,37 @@ func (p *permisosDelAgente) pedir(q loQuePideUnAgente, ahora time.Time) (bool, s
 		if p.usadas >= TopeDeLaValvula {
 			p.valvulaHasta = time.Time{}
 		}
-		return true, boveda.ApunteValvula
+		return true, boveda.ApunteValvula, nil
 	}
 	// **Se rellena aquí y no en cada verbo**, que es el sitio por donde pasan todas:
 	// ponerlo en los cinco sitios que piden sería la cuarta lista de lo mismo.
 	q.PorValvula = porValvula
-	p.pendiente = &q
-	return false, ""
+
+	// **Y no se pisa lo que otro agente esté esperando.**
+	//
+	// Con dos a la vez —Claude Desktop y Claude Code— esto pasa de verdad: el segundo
+	// llegaba y cambiaba la tarjeta debajo de quien la estaba leyendo. Se le dice que
+	// espere su turno, que es lo honesto cuando hay una persona y una ventana.
+	//
+	// **Entre agentes y no dentro de uno**, y esa frontera es la decisión fina de aquí.
+	// El mismo agente pidiendo otra cosa es el mismo interlocutor cambiando de tema:
+	// bloquearlo contra sí mismo lo dejaría dos minutos sin poder trabajar porque nadie
+	// contestó lo de antes. Lo que protege entonces a quien está leyendo no es esta
+	// puerta, es la referencia: si la tarjeta cambió, el clic no concede nada y lo dice.
+	//
+	// Y si es **lo mismo otra vez** —el reintento de siempre— no es una segunda petición
+	// y se deja como está, con su referencia, para que el sí siga valiendo.
+	if p.pendiente != nil && p.pendiente.Quien != q.Quien &&
+		!mismaPeticion(*p.pendiente, q) &&
+		ahora.Before(p.pedidaEn.Add(PlazoParaContestar)) {
+		return false, "", fmt.Errorf("%w: «%s», de %s", agente.ErrOtraEsperando,
+			p.pendiente.Titulo, p.pendiente.Quien)
+	}
+	if p.pendiente == nil || !mismaPeticion(*p.pendiente, q) {
+		q.Ref = refDePeticion()
+		p.pendiente, p.pedidaEn = &q, ahora
+	}
+	return false, "", nil
 }
 
 // ponerElSiempre refleja en caliente lo que digan las preferencias.
@@ -775,16 +844,28 @@ func (p *permisosDelAgente) retirarLoConcedido() {
 
 // conceder dice que sí a lo que estuviera pendiente. Con `unRato`, además abre la
 // válvula.
-func (p *permisosDelAgente) conceder(unRato bool, ahora time.Time) (loQuePideUnAgente, bool) {
-	return p.concederComo(unRato, false, ahora)
+func (p *permisosDelAgente) conceder(ref string, unRato bool, ahora time.Time) (loQuePideUnAgente, bool) {
+	return p.concederComo(ref, unRato, false, ahora)
 }
 
 // concederComo es lo mismo con el tercer botón: `paraSiempre` deja el permiso puesto
 // hasta que alguien lo quite. Quien lo persiste es quien llama, en las preferencias.
-func (p *permisosDelAgente) concederComo(unRato, paraSiempre bool, ahora time.Time) (loQuePideUnAgente, bool) {
+func (p *permisosDelAgente) concederComo(ref string, unRato, paraSiempre bool, ahora time.Time) (loQuePideUnAgente, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.pendiente == nil {
+		return loQuePideUnAgente{}, false
+	}
+	// **Se concede lo que la ventana dice estar aprobando, no «lo que haya».**
+	//
+	// `ref` es la referencia de la petición que se enseñó. Si ya no es la pendiente,
+	// aquí no se concede nada: quien pulsó estaba mirando otra cosa.
+	//
+	// **Y se exige, no se acepta vacía.** Dejar pasar «lo que haya» para las llamadas
+	// que no la manden sería dejar abierta justo la puerta que esto cierra — y haría que
+	// las pruebas se saltaran el paso que la ventana sí hace, que es la trampa del
+	// testigo puesto a mano.
+	if p.pendiente.Ref != ref {
 		return loQuePideUnAgente{}, false
 	}
 	q := *p.pendiente
@@ -870,10 +951,20 @@ func (p *permisosDelAgente) denegar() (loQuePideUnAgente, bool) {
 	return q, true
 }
 
+// loPendiente es lo que la ventana enseña, **y nada si ya ha caducado**.
+//
+// Que caduque aquí y no con un reloj es lo que hace que la tarjeta se caiga sola: la
+// ventana pregunta por el estado a menudo, así que una petición que nadie contestó en
+// [PlazoParaContestar] desaparece sin que haga falta vigilarla. Antes se quedaba puesta
+// para siempre, y desde que la segunda espera su turno eso bloquearía a los demás.
 func (p *permisosDelAgente) loPendiente() *loQuePideUnAgente {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.pendiente == nil {
+		return nil
+	}
+	if time.Now().After(p.pedidaEn.Add(PlazoParaContestar)) {
+		p.pendiente = nil
 		return nil
 	}
 	q := *p.pendiente
@@ -915,7 +1006,10 @@ func (f fuenteDelAgente) CopiarSecreto(quien, id string) (agente.Copiado, error)
 	// **Copiar puede pasar por la válvula**, y ésa es exactamente la línea: lo que la
 	// válvula cubre es **actuar** —el secreto se queda en este equipo y el portapapeles
 	// se borra solo—, no enseñar. Lo que se le enseña al agente pregunta siempre.
-	vale, como := f.a.permisos.pedir(q, ahora)
+	vale, como, err := f.a.permisos.pedir(q, ahora)
+	if err != nil {
+		return agente.Copiado{}, err
+	}
 	if !vale {
 		// **La ventana no se trae al frente** (ADR 0027): hacerlo dejaría que
 		// cualquier programa de esta máquina hiciera aparecer la ventana de un gestor
@@ -978,9 +1072,9 @@ func (a *App) apuntarComo(b *boveda.Boveda, q loQuePideUnAgente, resultado, como
 const EventoAgenteApuntado = "agente-apuntado"
 
 // AprobarLoQuePideElAgente es el «sí» de la persona.
-func (a *App) AprobarLoQuePideElAgente(unRato bool) error {
-	if _, hay := a.permisos.conceder(unRato, time.Now()); !hay {
-		return errors.New("Ya no hay nada que aprobar")
+func (a *App) AprobarLoQuePideElAgente(ref string, unRato bool) error {
+	if _, hay := a.permisos.conceder(ref, unRato, time.Now()); !hay {
+		return errors.New(noEraEsoQueAprobabas)
 	}
 	// **Esto sí cuenta como actividad**: es un clic de una persona.
 	a.Actividad()
@@ -998,7 +1092,7 @@ func (a *App) AprobarLoQuePideElAgente(unRato bool) error {
 // Se guarda en las preferencias **antes** de concederlo: si el disco falla, lo que no
 // puede pasar es que el permiso quede puesto en memoria y no se vea en la pantalla
 // que lo tiene que anunciar.
-func (a *App) AprobarSiempreAlAgente() error {
+func (a *App) AprobarSiempreAlAgente(ref string) error {
 	q := a.permisos.loPendiente()
 	if q == nil {
 		return errors.New("Ya no hay nada que aprobar")
@@ -1010,8 +1104,8 @@ func (a *App) AprobarSiempreAlAgente() error {
 	// pantalla enseña, nunca sobre lo de al lado. `concederComo` lo repite por su lado:
 	// la pregunta es la misma y no puede contestarse distinto en dos sitios.
 	if !PasaPorLaValvula(q.Que) {
-		if _, hay := a.permisos.concederComo(false, false, time.Now()); !hay {
-			return errors.New("Ya no hay nada que aprobar")
+		if _, hay := a.permisos.concederComo(ref, false, false, time.Now()); !hay {
+			return errors.New(noEraEsoQueAprobabas)
 		}
 		a.Actividad()
 		return nil
@@ -1019,8 +1113,8 @@ func (a *App) AprobarSiempreAlAgente() error {
 	if err := a.guardarElSiempre(true, q.Quien); err != nil {
 		return err
 	}
-	if _, hay := a.permisos.concederComo(false, true, time.Now()); !hay {
-		return errors.New("Ya no hay nada que aprobar")
+	if _, hay := a.permisos.concederComo(ref, false, true, time.Now()); !hay {
+		return errors.New(noEraEsoQueAprobabas)
 	}
 	a.Actividad()
 	return nil
@@ -1110,7 +1204,10 @@ func (f fuenteDelAgente) Codigo(quien, id string) (agente.Codigo, error) {
 	}
 	// **`false`**: por la válvula no pasa. Es el único sitio donde se dice, y es lo que
 	// hace que la regla sea una regla y no una excepción.
-	vale, _ := f.a.permisos.pedir(q, ahora)
+	vale, _, err := f.a.permisos.pedir(q, ahora)
+	if err != nil {
+		return agente.Codigo{}, err
+	}
 	if !vale {
 		f.a.sistema.Avisar(EventoAgenteQuiere, q)
 		return agente.Codigo{}, agente.ErrPideAprobacion
@@ -1263,7 +1360,10 @@ func (f fuenteDelAgente) Editar(quien string, p agente.Peticion) (agente.Escrito
 		}
 		// **Y la válvula no lo cubre**, por lo mismo que el código: dejar una cuenta
 		// sin forma de entrar no es reversible de la forma en que lo es una copia.
-		vale, _ := f.a.permisos.pedir(q, ahora)
+		vale, _, err := f.a.permisos.pedir(q, ahora)
+		if err != nil {
+			return agente.Escrito{}, err
+		}
 		if !vale {
 			f.a.sistema.Avisar(EventoAgenteQuiere, q)
 			return agente.Escrito{}, agente.ErrPideAprobacion
@@ -1325,7 +1425,10 @@ func (f fuenteDelAgente) Borrar(quien, id string) (agente.Escrito, error) {
 		Cuando: ahora.UTC().Format(time.RFC3339),
 		Boveda: f.dondeEstamos(),
 	}
-	vale, como := f.a.permisos.pedir(q, ahora)
+	vale, como, err := f.a.permisos.pedir(q, ahora)
+	if err != nil {
+		return agente.Escrito{}, err
+	}
 	if !vale {
 		f.a.sistema.Avisar(EventoAgenteQuiere, q)
 		return agente.Escrito{}, agente.ErrPideAprobacion

@@ -218,6 +218,44 @@ tampón. **Se midió y no**: veinte apuntes con dos mil entradas son 838 ms **en
 descarta el cuerpo sin guardar, así que un tampón convertiría **matar el proceso en borrar el rastro**. La fila
 de la deuda se cerró con la medición, no con código, y lo que había escrito en ella era incorrecto.
 
+## Una pregunta a la vez, y se aprueba lo que se leyó (2026-10-19)
+
+Hay **una persona y una ventana**, y desde que puede haber dos agentes a la vez —Claude Desktop y Claude
+Code— eso deja de ser una obviedad. Lo que había: `pedir` ponía lo pendiente encima de lo que hubiera, y
+`AprobarLoQuePideElAgente` concedía **lo que hubiera, sin decir qué**. Entre las dos cosas, una petición que
+llegara entre leer la tarjeta y pulsarla **se aprobaba en lugar de la que se leyó**. Lo vio el cliente —«el
+aviso nuevo se ha puesto encima»— y eligió cerrarlo por las dos mitades:
+
+**Una · la ventana dice qué aprueba.** Cada petición lleva una referencia al azar; la tarjeta la devuelve al
+contestar, y si ya no es la que espera, **no se concede nada** y se dice por qué. Es la misma regla que
+obligó a poner la bóveda en la tarjeta, aplicada al tiempo en vez de al sitio: aprobar sin saber **qué** es
+aprobar a ciegas. La referencia se lee **en el render** y no dentro del manejador del clic, que si no
+volvería a aprobar lo de después.
+
+**Dos · la segunda espera turno**, con `otra-esperando` como motivo propio, y el agente sabe qué hacer
+porque lo dicen las descripciones de los cuatro verbos que piden aprobación.
+
+**Y la frontera fina: entre agentes, no dentro de uno.** Un mismo agente que pide otra cosa es el mismo
+interlocutor cambiando de tema, y bloquearlo contra sí mismo lo dejaría dos minutos sin poder trabajar
+porque nadie contestó lo de antes — lo destapó una prueba que hacía justo eso. Dentro de un agente la
+tarjeta sí puede cambiar, y ahí lo que protege a quien lee no es la puerta, es la referencia.
+
+**Y lo pendiente caduca**, a los dos minutos y **al mirarlo**: la ventana pregunta por el estado a menudo,
+así que la tarjeta se cae sola sin un reloj que la vigile. Sin eso, un agente que pide algo y se va —su
+cliente lo mató, la conversación se cerró— dejaría a los demás fuera para siempre.
+
+### Dos cosas que salieron de hacerlo
+
+**`mover` contestaba `no-entiendo` cuando pedía aprobación.** Su traductor de errores se quedó corto al
+añadir el verbo: el texto llegaba bien y **el motivo era falso**, así que un agente no podía distinguir
+«apruébalo» de «no sé qué me pides» sin leer español. Es la regla de releer a los vecinos, aquí en el
+traductor de errores y no en las descripciones.
+
+**Y cuatro pruebas preparaban lo pendiente a mano** (`p.pendiente = &q`). Mientras eso no tuvo consecuencias
+pasó desapercibido; al darle plazo, caducaban al instante y se cayeron todas. Es la trampa del testigo puesto
+a mano: **el ayudante hacía el paso que hace producción**, así que ese paso no lo probaba nadie. Ahora dejan
+la petición con `pedir`, como el programa.
+
 ## Qué vida tiene un sí, y por qué nadie tiene que vigilarlo (2026-10-16)
 
 Un permiso concedido se guarda hasta que se gasta o caduca, y la pregunta que costó **dos versiones** es qué
@@ -344,6 +382,10 @@ Lo que hay que poder decir al acabar, y cada prueba mutada:
 | Que la ventana no tiene lista propia | Una guarda **lee `App.tsx`** y exige que los botones anchos cuelguen de `porValvula`, y que no haya vuelto a aparecer un `que !== "<verbo>"` |
 | Que los verbos que no entran son los que se sabe | Se recorren **las herramientas declaradas** y se comparan con la lista, por su nombre; y lo que se le enseña al agente **y se aprueba** no entra nunca, dicho por las banderas |
 | Que lo que una persona retira se va | El botón de cortar y retirar al agente, los dos con el sí ya concedido |
+| Que una petición nueva no pisa la que se lee | **Dos agentes**: el segundo recibe `otra-esperando` y la tarjeta sigue enseñando lo del primero |
+| Que un agente no se bloquea contra sí mismo | El mismo pide otra cosa y **entra**, porque es el mismo interlocutor cambiando de tema |
+| Que pulsar sobre una tarjeta que cambió no concede nada | Se lee la referencia, cambia lo pendiente, y el sí **sobre la vieja** no concede **ninguna de las dos**. Su mutación es la que destapó que esta prueba faltaba |
+| Que lo pendiente caduca | Pasado el plazo la tarjeta se cae sola y otro agente puede pedir lo suyo |
 | Que el freno es del servidor | **Una conexión nueva por petición**, que es como se descubrió que el otro freno no frenaba |
 | Que añadir un verbo es una decisión | La lista recorrida, y ninguno contesta «no entiendo» |
 | La tubería entera | Los bytes de MCP por donde entran de verdad → socket → bóveda real → respuesta |

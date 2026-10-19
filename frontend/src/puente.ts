@@ -321,6 +321,11 @@ export type EstadoDelAgente = {
     /** A dónde se la lleva, cuando lo que se pide es mover (ADR 0056). */
     destino?: string;
     /**
+     * Identifica **esta** petición, y se devuelve al aprobarla para que Go sepa qué se
+     * estaba mirando. Ver `aprobarLoQuePideElAgente`.
+     */
+    ref: string;
+    /**
      * Si **este verbo** puede ir por la válvula de cinco minutos y por el permiso que
      * no caduca. Lo dice Go (`PasaPorLaValvula`), y los dos botones anchos de la
      * tarjeta cuelgan de aquí.
@@ -1013,7 +1018,16 @@ export const esfinge = {
    * Con `unRato`, además abre la válvula: a partir de ahí no pregunta durante cinco
    * minutos. Sin él vale **una vez y solo para esa entrada**.
    */
-  aprobarLoQuePideElAgente: (unRato: boolean) => llamar<void>("AprobarLoQuePideElAgente", unRato),
+  /**
+   * Aprueba lo que pide un agente, **diciendo qué**.
+   *
+   * `ref` es la referencia de la petición que la tarjeta estaba enseñando. Si cuando
+   * llega ya no es la que espera —la contestó alguien, caducó, o llegó otra—, Go **no
+   * concede nada** y lo dice. Sin eso se aprobaba «lo que hubiera», así que una petición
+   * que llegara entre leer y pulsar se aprobaba creyendo que era la que se vio.
+   */
+  aprobarLoQuePideElAgente: (ref: string, unRato: boolean) =>
+    llamar<void>("AprobarLoQuePideElAgente", ref, unRato),
   /** Cierra la válvula en el acto. */
   cortarAlAgente: () => llamar<void>("CortarAlAgente"),
 
@@ -1024,7 +1038,7 @@ export const esfinge = {
    * cambiar un secreto y borrar siguen preguntando uno a uno. Y no caduca, que es lo
    * que lo distingue — por eso la ventana lo anuncia mientras esté puesto.
    */
-  aprobarSiempreAlAgente: () => llamar<void>("AprobarSiempreAlAgente"),
+  aprobarSiempreAlAgente: (ref: string) => llamar<void>("AprobarSiempreAlAgente", ref),
   /** Y quitarlo, que es lo que hace aceptable darlo. */
   quitarElSiempreAlAgente: () => llamar<void>("QuitarElSiempreAlAgente"),
 

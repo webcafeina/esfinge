@@ -2951,6 +2951,7 @@ test("la tarjeta de lo que pide un agente dice quién, cuál y que no la ve", as
           // válvula, así que los dos botones anchos salen. Para los verbos que no
           // entran llega `false` y no salen, que es lo de abajo.
           porValvula: true,
+          ref: "r1",
         },
         valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
       }),
@@ -3026,6 +3027,7 @@ test("un movimiento se aprueba solo para esta vez, sin los botones que no le val
           destino: "Zeri's Coffee",
           // **Mover no entra en la válvula**: no va a la papelera, así que no se deshace.
           porValvula: false,
+          ref: "r1",
         },
         valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
       }),
@@ -3188,6 +3190,7 @@ test("la tarjeta de un agente sale en cualquier pantalla, no solo en Ajustes", a
               titulo: "Hacienda",
               cuando: "2026-10-13T16:00:00Z",
               porValvula: true,
+          ref: "r1",
             },
         valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
       }),

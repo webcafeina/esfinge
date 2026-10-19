@@ -117,7 +117,7 @@ func TestPaseoMCPAMano(t *testing.T) {
 	t.Logf("\n━━━ 7 · la persona dice que sí en la ventana ━━━" +
 		"\n  (la banda de arriba, en cualquier pantalla: «Claude Code quiere la contraseña de" +
 		" «Hacienda»» → Solo ésta)")
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobar(t, a, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -148,7 +148,7 @@ func TestPaseoMCPAMano(t *testing.T) {
 		map[string]any{"id": idBrevo, "destino": "Acme"}))
 	t.Logf("\n━━━ 15 · la persona aprueba **deprisa**, y el respiro vence después ━━━" +
 		"\n  (es el orden que daba el bucle: aprobar en menos de diez segundos)")
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobar(t, a, false); err != nil {
 		t.Fatal(err)
 	}
 	a.volverDeDondeLeDejoElAgente()

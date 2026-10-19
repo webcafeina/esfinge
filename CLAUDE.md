@@ -630,6 +630,25 @@ las descripciones de los
 vecinos** — y la regla de arriba, la de que lo que el núcleo aplica tiene que estar en el esquema, tiene
 gemela: **lo que el esquema promete tiene que existir**.
 
+**Una petición nueva pisaba la que alguien estaba leyendo, y el botón aprobaba «lo que hubiera».** Dos
+descuidos que por separado no se ven y juntos dejan aprobar a ciegas: `pedir` ponía lo pendiente encima de lo
+que hubiera, y `AprobarLoQuePideElAgente` concedía sin que nadie dijera **qué**. Con dos agentes a la vez
+—Claude Desktop y Claude Code— eso pasa de verdad. Ahora cada petición lleva **referencia** y la ventana la
+devuelve al contestar, así que un sí sobre una tarjeta que ya cambió no concede nada; la segunda **espera
+turno**; y lo pendiente **caduca a los dos minutos al mirarlo**, que es lo que hace que la tarjeta se caiga
+sola sin un reloj. La referencia se lee **en el render** y no dentro del manejador del clic — leída ahí
+volvería a aprobar lo de después.
+
+Y la frontera que costó pensar: **la espera de turno es entre agentes, no dentro de uno**. El mismo agente
+pidiendo otra cosa es el mismo interlocutor cambiando de tema, y bloquearlo contra sí mismo lo deja dos
+minutos sin trabajar porque nadie contestó lo anterior; lo destapó una prueba que hacía exactamente eso.
+
+**Y dos cosas de ahí.** `mover` contestaba `no-entiendo` cuando pedía aprobación —su traductor de errores se
+quedó corto al añadir el verbo, así que el texto llegaba bien y **el motivo era falso**—. Y **cuatro pruebas
+preparaban lo pendiente a mano** (`p.pendiente = &q`): mientras eso no tuvo consecuencias pasó
+desapercibido, y al darle plazo caducaban al instante y se cayeron todas. Es la trampa del testigo puesto a
+mano otra vez: **el ayudante hacía el paso que hace producción**, así que ese paso no lo probaba nadie.
+
 **Un verbo que genera sin decir cuánto largo da invita al modelo a prometer que lo puede cambiar.** El
 agente del cliente creó una credencial de Apple, eligió `alnum` por su cuenta —bien razonado: el hex no lleva
 mayúsculas y Apple exige una— y añadió «si la rechaza por larga, te la regenero más corta». **No podía**: el

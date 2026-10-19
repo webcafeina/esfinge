@@ -256,7 +256,7 @@ func TestMoverLlevaLaEntradaEnteraYNoDejaNadaDetras(t *testing.T) {
 	if es, _ := a.BuscarEnBoveda("Brevo"); len(es) != 1 {
 		t.Fatal("ha tocado la entrada sin que nadie lo aprobara")
 	}
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobar(t, a, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -434,7 +434,7 @@ func TestMoverDesdeUnaBovedaQueNoEsLaAbiertaNoPideAprobacionSinFin(t *testing.T)
 	// aprobar— y ése es el único orden en el que el sí sobrevive, así que pasaba en
 	// verde con el bucle dentro. Por eso al cliente le fallaba siempre: aprueba
 	// deprisa.
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobar(t, a, false); err != nil {
 		t.Fatal(err)
 	}
 	a.volverDeDondeLeDejoElAgente()
@@ -510,7 +510,7 @@ func TestPedirUnSecretoEnUnaBovedaNombradaNoPideAprobacionSinFin(t *testing.T) {
 	}
 
 	// Se aprueba **antes** de que venza el respiro, y el respiro vence después.
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobar(t, a, false); err != nil {
 		t.Fatal(err)
 	}
 	a.volverDeDondeLeDejoElAgente()
@@ -555,7 +555,7 @@ func TestElRegistroDeUnMovimientoDiceComoSeAutorizo(t *testing.T) {
 		err, agente.ErrPideAprobacion) {
 		t.Fatalf("tendría que pedir aprobación: %v", err)
 	}
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobar(t, a, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.Mover("Claude", agente.Peticion{ID: quitando, Destino: "Acme"}); err != nil {
@@ -624,23 +624,31 @@ func TestUnSiNoSeGastaEnOtraCosa(t *testing.T) {
 			Boveda: "Acme", Destino: "Personal"}},
 	}
 	for _, c := range otras {
+		// **La petición se deja pendiente con `pedir`, no a mano.** Poniendo
+		// `p.pendiente` directamente se salta lo que hace producción —la referencia y
+		// el instante en que llegó— y entonces caduca al momento: la trampa del estado
+		// preparado, que aquí la destapó añadirle plazo a lo pendiente.
 		var p permisosDelAgente
-		p.pendiente = &aprobado
-		if _, ok := p.conceder(false, ahora); !ok {
+		if vale, _, err := p.pedir(aprobado, ahora); vale || err != nil {
+			t.Fatalf("la primera vez no puede valer: %v %v", vale, err)
+		}
+		if _, ok := p.conceder(p.loPendiente().Ref, false, ahora); !ok {
 			t.Fatal("no ha concedido")
 		}
-		if vale, _ := p.pedir(c.q, ahora); vale {
+		if vale, _, _ := p.pedir(c.q, ahora); vale {
 			t.Errorf("el sí se ha gastado en algo que cambia %s", c.por)
 		}
 	}
 
 	// Y lo mismo, exacto, sí vale: que esto no sea una prueba que lo rechaza todo.
 	var p permisosDelAgente
-	p.pendiente = &aprobado
-	if _, ok := p.conceder(false, ahora); !ok {
+	if vale, _, err := p.pedir(aprobado, ahora); vale || err != nil {
+		t.Fatalf("la primera vez no puede valer: %v %v", vale, err)
+	}
+	if _, ok := p.conceder(p.loPendiente().Ref, false, ahora); !ok {
 		t.Fatal("no ha concedido")
 	}
-	if vale, _ := p.pedir(aprobado, ahora); !vale {
+	if vale, _, _ := p.pedir(aprobado, ahora); !vale {
 		t.Error("la misma petición no ha podido gastar su propio sí")
 	}
 }
@@ -657,24 +665,28 @@ func TestCortarAlAgenteSeLlevaElSiConcedido(t *testing.T) {
 		Quien: "Claude", Que: agente.QueCopiarSecreto, ID: "abc", Boveda: "Personal",
 	}
 
-	a.permisos.pendiente = &q
-	if _, ok := a.permisos.conceder(false, ahora); !ok {
+	if vale, _, err := a.permisos.pedir(q, ahora); vale || err != nil {
+		t.Fatalf("la primera vez no puede valer: %v %v", vale, err)
+	}
+	if _, ok := a.permisos.conceder(a.permisos.loPendiente().Ref, false, ahora); !ok {
 		t.Fatal("no ha concedido")
 	}
 	if err := a.CortarAlAgente(); err != nil {
 		t.Fatal(err)
 	}
-	if vale, _ := a.permisos.pedir(q, ahora); vale {
+	if vale, _, _ := a.permisos.pedir(q, ahora); vale {
 		t.Error("el sí ha sobrevivido al botón de cortar")
 	}
 
 	// Y retirar al agente de la lista, igual.
-	a.permisos.pendiente = &q
-	if _, ok := a.permisos.conceder(false, ahora); !ok {
+	if vale, _, err := a.permisos.pedir(q, ahora); vale || err != nil {
+		t.Fatalf("la primera vez no puede valer: %v %v", vale, err)
+	}
+	if _, ok := a.permisos.conceder(a.permisos.loPendiente().Ref, false, ahora); !ok {
 		t.Fatal("no ha concedido")
 	}
 	a.permisos.retirarLoConcedido()
-	if vale, _ := a.permisos.pedir(q, ahora); vale {
+	if vale, _, _ := a.permisos.pedir(q, ahora); vale {
 		t.Error("el sí ha sobrevivido a retirar al agente")
 	}
 }
@@ -696,9 +708,9 @@ func TestLosTresBotonesDeLaTarjetaValenParaLoQueNoPasaPorLaValvula(t *testing.T)
 		nombre  string
 		aprobar func(a *App) error
 	}{
-		{"Solo ésta", func(a *App) error { return a.AprobarLoQuePideElAgente(false) }},
-		{"Todo lo suyo, 5 minutos", func(a *App) error { return a.AprobarLoQuePideElAgente(true) }},
-		{"No volver a preguntar", func(a *App) error { return a.AprobarSiempreAlAgente() }},
+		{"Solo ésta", func(a *App) error { return aprobar(t, a, false) }},
+		{"Todo lo suyo, 5 minutos", func(a *App) error { return aprobar(t, a, true) }},
+		{"No volver a preguntar", func(a *App) error { return aprobarSiempre(t, a) }},
 	}
 	for _, boton := range porCadaBoton {
 		t.Run("mover con «"+boton.nombre+"»", func(t *testing.T) {
@@ -776,7 +788,7 @@ func TestAprobarUnMovimientoNoPuedeEncenderElPermisoDeOtrosVerbos(t *testing.T) 
 		err, agente.ErrPideAprobacion) {
 		t.Fatal("tendría que pedir aprobación")
 	}
-	if err := a.AprobarSiempreAlAgente(); err != nil {
+	if err := aprobarSiempre(t, a); err != nil {
 		t.Fatal(err)
 	}
 	a.volverDeDondeLeDejoElAgente()
@@ -912,7 +924,7 @@ func TestMoverNoToqueteaLaFechaDeCambio(t *testing.T) {
 		if _, err := f.Mover("Claude", p); !errors.Is(err, agente.ErrPideAprobacion) {
 			t.Fatalf("tendría que pedir aprobación: %v", err)
 		}
-		if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		if err := aprobar(t, a, false); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := f.Mover("Claude", p); err != nil {
@@ -990,7 +1002,7 @@ func TestElLargoPedidoLlegaALaContrasenaGuardada(t *testing.T) {
 	if _, err := f.Editar("Claude", p); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatalf("rotar una contraseña tiene que pedir aprobación: %v", err)
 	}
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobar(t, a, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.Editar("Claude", p); err != nil {

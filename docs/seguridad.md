@@ -562,6 +562,22 @@ que no está bajado en este equipo tampoco, y **la tarjeta con la que apruebas u
 está pasando**: desde que puede ocurrir en una que no estás mirando, aprobar sin saber dónde es aprobar a
 ciegas.
 
+### Una pregunta a la vez (2026-10-19)
+
+Hay **una persona y una ventana**, así que las preguntas de un agente se contestan de una en una. Mientras
+hay una esperando, otro agente recibe «hay otra cosa esperando» y vuelve a pedir lo suyo; y la que nadie
+contesta **caduca a los dos minutos**, para que un agente que se fue no bloquee a los demás.
+
+**Y lo que apruebas es lo que estabas leyendo.** La tarjeta devuelve a Esfinge la referencia de la petición
+que tenía pintada: si entre que la lees y pulsas ha cambiado —otra petición, o alguien la contestó antes—,
+**no se concede nada** y la ventana lo dice. Es la misma regla que puso la bóveda en la tarjeta, ahora
+aplicada al tiempo:
+
+> Aprobar sin saber **qué** es aprobar a ciegas, igual que aprobar sin saber **dónde**.
+
+Antes se concedía «lo que hubiera pendiente», así que una petición que llegara en ese hueco se aprobaba en
+lugar de la que se había leído. Lo vio el cliente al toparse con dos avisos encima del otro.
+
 ### Qué alcance tiene cada botón (2026-10-19)
 
 Los tres botones que dicen que sí no conceden lo mismo, y la diferencia importa:

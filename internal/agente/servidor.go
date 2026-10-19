@@ -124,6 +124,15 @@ var ErrBovedaDormida = errors.New("Esa bóveda no está en este equipo todavía"
 // estilo: el sí se concede para la acción entera —verbo, entrada, bóveda y destino— y no
 // se gasta en otra. Un reintento que se deje el `boveda` por el camino pide otra cosa, y
 // Esfinge vuelve a preguntar con razón. Es lo que separa «hay que aprobarlo» de un bucle.
+// ErrOtraEsperando es que hay **otra** petición esperando respuesta en la ventana.
+//
+// **No es un fallo tuyo ni de Esfinge**: hay una persona y una ventana, así que las
+// preguntas se contestan de una en una. Lo que hay que hacer es decírselo y volver a
+// pedir lo tuyo. La de delante caduca a los dos minutos, así que esto no se queda
+// atascado.
+var ErrOtraEsperando = errors.New(
+	"Hay otra cosa esperando respuesta en la ventana de Esfinge. Dile que la conteste y vuelve a pedir esto")
+
 var ErrPideAprobacion = errors.New(
 	"Hace falta que lo apruebes en la ventana de Esfinge. Cuando lo hagas, vuelve a pedir " +
 		"exactamente lo mismo, con los mismos argumentos: el sí vale para lo que se aprobó y no para otra cosa")
@@ -364,6 +373,16 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 		}
 		m, err := s.fuente.Mover(p.Quien, p)
 		switch {
+		// **Los dos primeros no son fallos y hay que decirlo con su motivo.** Estaban
+		// cayendo en `no-entiendo`, que es un motivo falso: el agente no podía
+		// distinguir «apruébalo en la ventana» de «no sé qué me pides», y lo único que
+		// le llegaba bien era la frase en español. Se quedó corto al añadir el verbo
+		// (2026-10-15) — es la regla de releer a los vecinos, aquí en el traductor de
+		// errores y no en las descripciones.
+		case errors.Is(err, ErrPideAprobacion):
+			return mal(MotivoPideAprobacion, err.Error())
+		case errors.Is(err, ErrOtraEsperando):
+			return mal(MotivoOtraEsperando, err.Error())
 		case errors.Is(err, ErrBovedaDormida):
 			return mal(MotivoBovedaDormida, err.Error())
 		case errors.Is(err, ErrNoEsaBoveda):
@@ -475,6 +494,9 @@ func (s *Servidor) atenderEnLaBoveda(p Peticion) Respuesta {
 		return Respuesta{OK: true, Resumen: &r}
 	case QueCopiarSecreto:
 		c, err := s.fuente.CopiarSecreto(p.Quien, p.ID)
+		if errors.Is(err, ErrOtraEsperando) {
+			return mal(MotivoOtraEsperando, err.Error())
+		}
 		if errors.Is(err, ErrPideAprobacion) {
 			// **Su propio motivo, y no un error cualquiera**: quien llama tiene que
 			// poder distinguir «todavía no» de «no» sin leer una frase en español.
@@ -489,6 +511,9 @@ func (s *Servidor) atenderEnLaBoveda(p Peticion) Respuesta {
 		return Respuesta{OK: true, Copiado: &c}
 	case QueCodigo:
 		c, err := s.fuente.Codigo(p.Quien, p.ID)
+		if errors.Is(err, ErrOtraEsperando) {
+			return mal(MotivoOtraEsperando, err.Error())
+		}
 		if errors.Is(err, ErrPideAprobacion) {
 			return mal(MotivoPideAprobacion, err.Error())
 		}
@@ -534,6 +559,8 @@ func loEscrito(e Escrito, err error) Respuesta {
 		return Respuesta{OK: true, Escrito: &e}
 	case errors.Is(err, ErrPideAprobacion):
 		return mal(MotivoPideAprobacion, err.Error())
+	case errors.Is(err, ErrOtraEsperando):
+		return mal(MotivoOtraEsperando, err.Error())
 	case errors.Is(err, ErrNoEsta):
 		return mal(MotivoNoEsta, err.Error())
 	case errors.Is(err, ErrNoSeEscribe):

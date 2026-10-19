@@ -125,6 +125,14 @@ const enLaQueEsteAbierta = "**Di en `boveda` en cuál quieres que se haga**, con
 //
 // Desde ese mismo día hay `caracteres`, así que ahora **sí puede**; la frase se queda
 // porque decir cuánto sale de fábrica es lo que evita que lo averigüe generando.
+// elTurno es lo que hay que hacer si otra cosa está esperando respuesta en la ventana.
+//
+// Va en las descripciones de los verbos que piden aprobación porque **el motivo no basta
+// si el modelo no sabe qué hacer con él**: hay una persona y una ventana, así que las
+// preguntas se contestan de una en una.
+const elTurno = "Si te dice que hay **otra cosa esperando respuesta** en la ventana, no es un fallo: " +
+	"hay una persona y una ventana. Dile que la conteste y vuelve a pedir lo tuyo."
+
 const largoDeLoGenerado = "Sin decir nada da 48 caracteres con hex, 33 con alnum y 30 con " +
 	"simbolos; con `caracteres` se pide el largo exacto, que es lo que hay que hacer cuando el " +
 	"sitio pone un máximo. **No la hagas con esfinge_generar para pegarla en `secreto`**, que " +
@@ -221,7 +229,7 @@ var LasHerramientas = []Herramienta{
 			"persona la pegue. **No te la devuelve a ti**: tú recibes solo la confirmación. La primera vez " +
 			"que la pidas, Esfinge preguntará en su ventana; si contesta que hace falta aprobarlo, dilo y " +
 			"vuelve a pedirlo **con los mismos argumentos** cuando la persona diga que sí. Se borra sola " +
-			"del portapapeles pasado un rato.",
+			"del portapapeles pasado un rato. " + elTurno,
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
 			"id":     {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
@@ -238,7 +246,7 @@ var LasHerramientas = []Herramienta{
 		Descripcion: "Da el código de un solo uso —seis cifras— de una entrada que tenga segundo factor, con " +
 			"los segundos que le quedan de vida. **Éste sí te lo devuelve a ti**, porque caduca en medio " +
 			"minuto y no sirve sin la contraseña. Hace falta que la persona lo apruebe en la ventana de " +
-			"Esfinge **cada vez**, aunque te haya dado permiso para otras cosas.",
+			"Esfinge **cada vez**, aunque te haya dado permiso para otras cosas. " + elTurno,
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
 			"id":     {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
@@ -331,7 +339,7 @@ var LasHerramientas = []Herramienta{
 		Nombre: "esfinge_borrar",
 		Descripcion: "Manda una entrada a la papelera, donde se puede recuperar durante treinta días. " +
 			enLaQueEsteAbierta +
-			"**Tiene que aprobarlo la persona**, como todo lo que quita algo de su vista.",
+			"**Tiene que aprobarlo la persona**, como todo lo que quita algo de su vista. " + elTurno,
 		Esquema: objeto(map[string]Campo{
 			"boveda": campoDeBoveda,
 			"id":     {Tipo: "string", Descripcion: "El identificador que devuelve esfinge_buscar."},
@@ -360,7 +368,7 @@ var LasHerramientas = []Herramienta{
 			"acceso**, y quitarlo después no deshace que lo hayan visto.\n\n" +
 			"**La persona lo aprueba en la ventana** cuando quita del origen, que es lo normal; con " +
 			"`dejar_copia` no quita nada y va directo. Si te dice que hace falta aprobarlo, vuelve a " +
-			"pedirlo **con los mismos argumentos**. Y cada movimiento **se aprueba uno a uno**: aquí no " +
+			"pedirlo **con los mismos argumentos**. " + elTurno + " Y cada movimiento **se aprueba uno a uno**: aquí no " +
 			"hay permiso que valga para los siguientes, porque esto no va a la papelera. Si te piden " +
 			"mover varias, dilo antes: va a tener que aprobarlas una por una.",
 		Esquema: objeto(map[string]Campo{

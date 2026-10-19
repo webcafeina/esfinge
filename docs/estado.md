@@ -275,6 +275,14 @@
 >
 > **Con eso, de todo el proyecto solo queda Windows y GNOME en máquinas de verdad.**
 >
+> **Y la fila que quedaba en `deuda.md`, saldada en la 2.58.6**: una petición nueva pisaba la que estabas
+> leyendo. Lo eligió él por las **dos mitades**: la ventana devuelve la referencia de lo que tenía pintado,
+> así que un sí sobre una tarjeta que ya cambió **no concede nada**; y la segunda **espera turno** —entre
+> agentes, no dentro de uno—, con lo pendiente caducando a los dos minutos para que nadie bloquee a nadie.
+> Cuatro pruebas mutadas, y de paso dos hallazgos: **`mover` contestaba `no-entiendo`** cuando pedía
+> aprobación, y **cuatro pruebas preparaban lo pendiente a mano**, que es la trampa del testigo puesto por el
+> ayudante.
+>
 > ## Y lo que sigue pendiente de probar
 
 >

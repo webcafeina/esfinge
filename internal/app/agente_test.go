@@ -260,7 +260,7 @@ func TestCopiarUnaContrasenaSePideSeApruebaYSeCopia(t *testing.T) {
 	}
 
 	// --- Se aprueba, y entonces sí.
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobarLoQueSeVe(f.a, false); err != nil {
 		t.Fatal(err)
 	}
 	c, err := f.CopiarSecreto("Claude Code", elBanco)
@@ -286,7 +286,7 @@ func TestCopiarUnaContrasenaSePideSeApruebaYSeCopia(t *testing.T) {
 
 	// --- **Y un sí para una entrada no vale para otra**, que es lo que impide que
 	// aprobar «la de GitHub» se lleve la del banco.
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobarLoQueSeVe(f.a, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.CopiarSecreto("Claude Code", elCorreo); !errors.Is(err, agente.ErrPideAprobacion) {
@@ -315,7 +315,7 @@ func TestLoQueSeLeDaAUnAgenteQuedaApuntado(t *testing.T) {
 	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatal(err)
 	}
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobarLoQueSeVe(f.a, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.CopiarSecreto("Claude Code", id); err != nil {
@@ -383,7 +383,7 @@ func TestLaValvulaYSusLimites(t *testing.T) {
 		if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
 			t.Fatalf("no ha pedido aprobación: %v", err)
 		}
-		if err := a.AprobarLoQuePideElAgente(true); err != nil {
+		if err := aprobar(t, a, true); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -448,7 +448,7 @@ func TestElRegistroDistingueLaValvula(t *testing.T) {
 	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatal(err)
 	}
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobarLoQueSeVe(f.a, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.CopiarSecreto("Claude Code", id); err != nil {
@@ -458,7 +458,7 @@ func TestElRegistroDistingueLaValvula(t *testing.T) {
 	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatal(err)
 	}
-	if err := a.AprobarLoQuePideElAgente(true); err != nil {
+	if err := aprobar(t, a, true); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.CopiarSecreto("Claude Code", id); err != nil {
@@ -506,7 +506,7 @@ func TestLaValvulaNoCubreElCodigo(t *testing.T) {
 	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatal(err)
 	}
-	if err := a.AprobarLoQuePideElAgente(true); err != nil {
+	if err := aprobar(t, a, true); err != nil {
 		t.Fatal(err)
 	}
 	// Copiar ya no pregunta...
@@ -519,7 +519,7 @@ func TestLaValvulaNoCubreElCodigo(t *testing.T) {
 	}
 
 	// Y aprobándolo, llega — con sus segundos.
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobarLoQueSeVe(f.a, false); err != nil {
 		t.Fatal(err)
 	}
 	c, err := f.Codigo("Claude Code", id)
@@ -630,7 +630,7 @@ func TestCambiarUnSecretoPreguntaYElTituloNo(t *testing.T) {
 	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatal(err)
 	}
-	if err := a.AprobarLoQuePideElAgente(true); err != nil {
+	if err := aprobar(t, a, true); err != nil {
 		t.Fatal(err)
 	}
 	_, err = f.Editar("Claude Code", agente.Peticion{ID: id, Campos: map[string]string{"secreto": "otra"}})
@@ -639,7 +639,7 @@ func TestCambiarUnSecretoPreguntaYElTituloNo(t *testing.T) {
 	}
 
 	// Aprobándolo sí, **y la anterior queda en el historial**.
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobarLoQueSeVe(f.a, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.Editar("Claude Code", agente.Peticion{ID: id, Campos: map[string]string{"secreto": "otra"}}); err != nil {
@@ -709,7 +709,7 @@ func TestDarleAlgoAUnAgenteAvisaALaVentana(t *testing.T) {
 	if _, err := f.CopiarSecreto("Claude", lista[0].ID); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatal(err)
 	}
-	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+	if err := aprobarLoQueSeVe(f.a, false); err != nil {
 		t.Fatal(err)
 	}
 	// **Aprobar no apunta nada**, y eso es justo lo que hacía que no se viera.
@@ -751,7 +751,7 @@ func TestElSiempreNoCubreLoQueNoSeDeshace(t *testing.T) {
 	if _, err := f.CopiarSecreto("Claude", id); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatal(err)
 	}
-	if err := a.AprobarSiempreAlAgente(); err != nil {
+	if err := aprobarSiempre(t, a); err != nil {
 		t.Fatal(err)
 	}
 
@@ -802,7 +802,7 @@ func TestElSiempreSeQuitaYValeDesdeYa(t *testing.T) {
 	if _, err := f.CopiarSecreto("Claude", id); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Fatal(err)
 	}
-	if err := a.AprobarSiempreAlAgente(); err != nil {
+	if err := aprobarSiempre(t, a); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.CopiarSecreto("Claude", id); err != nil {
@@ -986,7 +986,7 @@ func TestLoQueEscribeUnAgenteAvisaALaVentana(t *testing.T) {
 			if _, err := f.Borrar("Claude", id); !errors.Is(err, agente.ErrPideAprobacion) {
 				return err
 			}
-			if err := f.a.AprobarLoQuePideElAgente(false); err != nil {
+			if err := aprobarLoQueSeVe(f.a, false); err != nil {
 				return err
 			}
 			_, err := f.Borrar("Claude", id)
@@ -1113,5 +1113,227 @@ func TestElLargoQueElEsquemaPrometeEsElQueSale(t *testing.T) {
 		if !strings.Contains(agente.LargoDeLoGenerado(), fmt.Sprint(c.dice)) {
 			t.Errorf("el esquema no dice los %d caracteres de %s", c.dice, c.alfabeto)
 		}
+	}
+}
+
+// **Una petición nueva no puede pisar la que alguien está leyendo** (2026-10-19).
+//
+// `pedir` hacía `p.pendiente = &q` sin mirar si ya había una esperando, y
+// `AprobarLoQuePideElAgente` concedía **lo que hubiera**, sin decir qué. Entre las dos
+// cosas, si entre que lees la tarjeta y pulsas llegaba otra petición, **aprobabas la
+// nueva creyendo que aprobabas la que viste**.
+//
+// Importa más desde que puede haber dos agentes a la vez —Claude Desktop y Claude Code—,
+// y es la misma regla que ya obligó a poner la bóveda en la tarjeta: **aprobar sin saber
+// qué es aprobar a ciegas**.
+func TestUnaPeticionNuevaNoPisaLaQueSeEstaLeyendo(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	es, _ := a.BuscarEnBoveda("Banco")
+	banco := es[0].ID
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Hacienda", Secreto: "otra",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	otras, _ := a.BuscarEnBoveda("Hacienda")
+	hacienda := otras[0].ID
+
+	// El primer agente pide la del Banco, y eso es lo que la ventana enseña.
+	if _, err := f.CopiarSecreto("Claude Desktop", banco); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal("tendría que pedir aprobación")
+	}
+	loQueSeVe := a.EstadoDelAgente().Quiere
+	if loQueSeVe == nil || loQueSeVe.Titulo != "Banco" {
+		t.Fatalf("la ventana no está enseñando la del Banco: %+v", loQueSeVe)
+	}
+
+	// Y mientras alguien la lee, **otro** agente pide otra cosa: espera su turno.
+	_, err := f.CopiarSecreto("Claude Code", hacienda)
+	if !errors.Is(err, agente.ErrOtraEsperando) {
+		t.Fatalf("el segundo agente tendría que esperar su turno, y dice: %v", err)
+	}
+
+	// **Lo que se enseña sigue siendo lo que se enseñaba.** Si ha cambiado, la persona
+	// está mirando una cosa y el botón hará otra.
+	ahora := a.EstadoDelAgente().Quiere
+	if ahora == nil || ahora.Titulo != "Banco" {
+		t.Errorf("la tarjeta ha cambiado debajo: enseñaba «Banco» y ahora %+v", ahora)
+	}
+
+	// Y al aprobar se concede **lo que se estaba viendo**, no lo último que llegó.
+	if err := aprobarLoQueSeVe(f.a, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.CopiarSecreto("Claude Desktop", banco); err != nil {
+		t.Errorf("se aprobó la del Banco y no se puede copiar: %v", err)
+	}
+	// La de Hacienda, en cambio, sigue sin permiso: nadie la aprobó.
+	if _, err := f.CopiarSecreto("Claude Code", hacienda); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("ha copiado la de Hacienda, que nadie aprobó")
+	}
+}
+
+// **Pero un agente no espera turno contra sí mismo**, y esa frontera es la decisión fina
+// del arreglo de arriba.
+//
+// Un agente que pide otra cosa es el mismo interlocutor cambiando de tema; bloquearlo
+// lo dejaría dos minutos sin poder trabajar porque nadie contestó lo de antes. A quien
+// está leyendo lo protege la referencia, no esta puerta: si la tarjeta cambió, el clic no
+// concede nada.
+func TestUnAgenteNoEsperaTurnoContraSiMismo(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	es, _ := a.BuscarEnBoveda("Banco")
+	id := es[0].ID
+
+	// Pide cambiar la contraseña y nadie contesta…
+	if _, err := f.Editar("Claude Code", agente.Peticion{
+		ID: id, Campos: map[string]string{"secreto": "otra"},
+	}); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatalf("cambiar un secreto tiene que pedir aprobación: %v", err)
+	}
+	// …y cambia de tema. **Eso no es esperar turno**: es el mismo que pregunta.
+	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Errorf("un agente se ha bloqueado contra sí mismo: %v", err)
+	}
+	// Y lo que la ventana enseña es lo último que pidió, con su referencia nueva.
+	q := a.EstadoDelAgente().Quiere
+	if q == nil || q.Que != agente.QueCopiarSecreto {
+		t.Fatalf("la tarjeta no enseña lo último que pidió: %+v", q)
+	}
+	// **Y un sí para eso no vale para lo de antes.**
+	if err := aprobar(t, a, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Editar("Claude Code", agente.Peticion{
+		ID: id, Campos: map[string]string{"secreto": "otra"},
+	}); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("el sí de copiar ha servido para cambiar la contraseña")
+	}
+}
+
+// aprobar contesta lo que la ventana esté enseñando, **leyendo su referencia del estado
+// como lo hace la ventana**.
+//
+// No se le pasa a mano: la referencia la pone Go al dejar la petición pendiente y la
+// ventana la devuelve al pulsar. Una prueba que se la inventara —o que mandara una vacía—
+// se saltaría ese paso, que es la trampa del testigo puesto a mano: el ayudante haría lo
+// que en producción hace el programa, y entonces nadie prueba esa parte.
+func aprobar(t *testing.T, a *App, unRato bool) error {
+	t.Helper()
+	if a.EstadoDelAgente().Quiere == nil {
+		t.Fatal("no hay nada esperando aprobación")
+	}
+	return aprobarLoQueSeVe(a, unRato)
+}
+
+// aprobarLoQueSeVe es lo mismo sin `t`, para los casos de una tabla que se declaran
+// antes de que exista la `App` y solo pueden devolver el error.
+func aprobarLoQueSeVe(a *App, unRato bool) error {
+	q := a.EstadoDelAgente().Quiere
+	if q == nil {
+		return errors.New("no hay nada esperando aprobación")
+	}
+	return a.AprobarLoQuePideElAgente(q.Ref, unRato)
+}
+
+// aprobarSiempre es lo mismo con el tercer botón.
+func aprobarSiempre(t *testing.T, a *App) error {
+	t.Helper()
+	q := a.EstadoDelAgente().Quiere
+	if q == nil {
+		t.Fatal("no hay nada esperando aprobación")
+	}
+	return a.AprobarSiempreAlAgente(q.Ref)
+}
+
+// **Y una petición que nadie contesta caduca, o bloquearía a los demás para siempre.**
+//
+// Es la otra mitad de que la segunda espere su turno: sin plazo, un agente que pide algo
+// y se va —su cliente lo mató, la conversación se cerró— deja a todos los demás fuera.
+// Caduca al mirarla, no con un reloj aparte: la ventana pregunta por el estado a menudo,
+// así que la tarjeta **se cae sola** sin nada que vigilarla.
+func TestLoQuePideUnAgenteCaducaSiNadieContesta(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	es, _ := a.BuscarEnBoveda("Banco")
+	id := es[0].ID
+
+	if _, err := f.CopiarSecreto("Claude Desktop", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal("tendría que pedir aprobación")
+	}
+	if a.EstadoDelAgente().Quiere == nil {
+		t.Fatal("la ventana no está enseñando nada")
+	}
+
+	// Pasa el plazo sin que nadie conteste. **Se mueve el instante en que se pidió**, que
+	// es lo que hay, en vez de esperar dos minutos de reloj.
+	a.permisos.mu.Lock()
+	a.permisos.pedidaEn = a.permisos.pedidaEn.Add(-PlazoParaContestar - time.Minute)
+	a.permisos.mu.Unlock()
+
+	// La tarjeta se ha caído sola.
+	if q := a.EstadoDelAgente().Quiere; q != nil {
+		t.Errorf("la petición caducada sigue en la ventana: %+v", q)
+	}
+	// Y otro agente puede pedir lo suyo, que es para lo que existe el plazo.
+	if _, err := f.CopiarSecreto("Claude Code", id); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Errorf("el segundo sigue bloqueado por una petición caducada: %v", err)
+	}
+}
+
+// **Pulsar sobre una tarjeta que ya ha cambiado no concede nada**, y esto es la mitad del
+// arreglo que no se ve: la que protege a quien estaba leyendo.
+//
+// El caso es exacto: lees la tarjeta de A, llega B, y pulsas. El botón manda la
+// referencia de **A**, que es lo que estaba pintado; Go ve que lo pendiente es B y no
+// concede nada. Sin esta comprobación se aprobaba «lo que hubiera», o sea B — la cosa que
+// no has leído.
+//
+// La espera de turno tapa casi todos los casos, y por eso esto hace falta igual: **dentro
+// de un mismo agente la tarjeta sí puede cambiar**, que es la frontera que se eligió.
+func TestPulsarSobreUnaTarjetaQueYaHaCambiadoNoConcedeNada(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+	es, _ := a.BuscarEnBoveda("Banco")
+	banco := es[0].ID
+	if err := a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Hacienda", Secreto: "otra",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	otras, _ := a.BuscarEnBoveda("Hacienda")
+	hacienda := otras[0].ID
+
+	// Se pide la del Banco y **se lee la referencia de lo que se está viendo**.
+	if _, err := f.CopiarSecreto("Claude Code", banco); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal("tendría que pedir aprobación")
+	}
+	loQueLei := a.EstadoDelAgente().Quiere
+	if loQueLei == nil || loQueLei.Titulo != "Banco" {
+		t.Fatalf("la ventana no enseña la del Banco: %+v", loQueLei)
+	}
+
+	// El mismo agente cambia de tema antes de que nadie pulse.
+	if _, err := f.CopiarSecreto("Claude Code", hacienda); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatal("la segunda tendría que pedir aprobación")
+	}
+
+	// Y ahora se pulsa con la referencia de lo que se leyó. **No concede nada y lo dice.**
+	err := a.AprobarLoQuePideElAgente(loQueLei.Ref, false)
+	if err == nil {
+		t.Fatal("ha aceptado un sí sobre una tarjeta que ya había cambiado")
+	}
+	if !strings.Contains(err.Error(), "ya no es lo que está esperando") {
+		t.Errorf("el mensaje no dice qué ha pasado: %v", err)
+	}
+
+	// Y lo importante: **no se ha concedido ninguna de las dos**.
+	if _, err := f.CopiarSecreto("Claude Code", banco); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("se ha concedido la del Banco, que no era lo pendiente")
+	}
+	if _, err := f.CopiarSecreto("Claude Code", hacienda); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Error("se ha concedido la de Hacienda, que nadie aprobó")
 	}
 }
