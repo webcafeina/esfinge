@@ -215,10 +215,11 @@
 >
 > ## Lo probó el lunes 2026-10-19, y el bucle estaba vivo por debajo
 >
-> **Lo primero, porque es acción suya**: al aprobar pulsó **«No volver a preguntar»**, y eso le **encendió el
-> permiso permanente** —el que cubre copiar contraseñas y borrar entradas, sin caducidad—. **Tiene que
-> quitarlo**: la ventana lo dice arriba en todas las pestañas, con el botón al lado. Y su credencial de
-> **baristologia.com no se movió**: sigue en Personal.
+> **Al aprobar pulsó «No volver a preguntar»**, y eso le **encendió el permiso permanente** —el que cubre
+> copiar contraseñas y borrar entradas, sin caducidad—. **Ya lo quitó él**, el mismo día y por su cuenta
+> (dicho el 2026-10-19): la ventana lo dice arriba en todas las pestañas con el botón al lado, que fue la
+> condición con la que se dio ese botón, y funcionó. **Nada pendiente de ahí.** Y su credencial de
+> baristologia.com, que entonces no se movió, **la movió después con la 2.58.3** de ida y de vuelta.
 >
 > **La causa no era la de la víspera.** El día 16 se arregló que la vuelta de la ventana borrara el sí; esto
 > estaba un piso más abajo y era **determinista**: la misma regla —«¿este verbo entra en la válvula?»—
