@@ -23,10 +23,10 @@ En tu ordenador, sin cuentas ni servidores; o en todos tus equipos, con una cuen
 
 | Sistema | Descarga | Notas |
 |---|---|---|
-| **macOS** | [Esfinge-2.58.2.dmg](https://github.com/webcafeina/esfinge/releases/download/v2.58.2/Esfinge-2.58.2.dmg) | Universal: Apple Silicon e Intel |
-| **Windows** | [Esfinge-2.58.2-windows-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.58.2/Esfinge-2.58.2-windows-instalador.exe) | Asistente de instalación |
-| **Linux · Debian y Ubuntu** | [esfinge_2.58.2_amd64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.58.2/esfinge_2.58.2_amd64.deb) | Aplicación y línea de comandos |
-| **Linux · cualquiera** | [esfinge-2.58.2-linux-amd64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.58.2/esfinge-2.58.2-linux-amd64.tar.gz) | Los binarios sueltos |
+| **macOS** | [Esfinge-2.58.3.dmg](https://github.com/webcafeina/esfinge/releases/download/v2.58.3/Esfinge-2.58.3.dmg) | Universal: Apple Silicon e Intel |
+| **Windows** | [Esfinge-2.58.3-windows-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.58.3/Esfinge-2.58.3-windows-instalador.exe) | Asistente de instalación |
+| **Linux · Debian y Ubuntu** | [esfinge_2.58.3_amd64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.58.3/esfinge_2.58.3_amd64.deb) | Aplicación y línea de comandos |
+| **Linux · cualquiera** | [esfinge-2.58.3-linux-amd64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.58.3/esfinge-2.58.3-linux-amd64.tar.gz) | Los binarios sueltos |
 | **Línea de comandos** | [todos los sistemas](https://github.com/webcafeina/esfinge/releases/latest) | Seis objetivos, con sus SHA256 |
 
 **Y para usar la bóveda desde un agente de IA** (Claude Desktop y compañía), el paquete de su sistema. Se
@@ -34,13 +34,13 @@ instala arrastrándolo a la ventana del agente, y necesita Esfinge abierta:
 
 | | |
 |---|---|
-| **macOS** | [Esfinge-2.58.2-macos.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.58.2/Esfinge-2.58.2-macos.mcpb) |
-| **Windows** | [Esfinge-2.58.2-windows.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.58.2/Esfinge-2.58.2-windows.mcpb) |
-| **Linux** | [Esfinge-2.58.2-linux.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.58.2/Esfinge-2.58.2-linux.mcpb) |
+| **macOS** | [Esfinge-2.58.3-macos.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.58.3/Esfinge-2.58.3-macos.mcpb) |
+| **Windows** | [Esfinge-2.58.3-windows.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.58.3/Esfinge-2.58.3-windows.mcpb) |
+| **Linux** | [Esfinge-2.58.3-linux.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.58.3/Esfinge-2.58.3-linux.mcpb) |
 
 En **Claude Code** no hace falta: Ajustes da la orden escrita, con la ruta de tu equipo.
 
-Versión **2.58.2**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
+Versión **2.58.3**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
 
 <!-- descargas:fin -->
 
