@@ -116,7 +116,7 @@ func TestElAgenteNoMantieneLaBovedaAbierta(t *testing.T) {
 		_, _, _ = f.Buscar("")
 		_, _ = f.Ver("lo-que-sea")
 		_, _ = f.Higiene()
-		_, _ = f.Generar(24, "hex")
+		_, _ = f.Generar(0, 24, "hex")
 		a.repasar()
 	}
 	if a.EstadoBoveda().Abierta {
@@ -1082,5 +1082,36 @@ func TestLaBovedaSeDiceConUnNombreTambienLaPersonal(t *testing.T) {
 	}
 	if hecho.Boveda != "Personal" || !hecho.EsLaPersonal {
 		t.Errorf("lo escrito dice %q / %v", hecho.Boveda, hecho.EsLaPersonal)
+	}
+}
+
+// **El largo que el esquema promete es el que sale de verdad.**
+//
+// Acabo de escribir ese número en dos sitios —`largoDeLoQueGenera` en el código y la frase
+// del esquema que el modelo lee— y eso es la familia de fallos que ya ha costado tres
+// veces. Si alguien toca el uno sin el otro, el modelo promete un largo que no es.
+//
+// Lo que no se puede hacer es comparar la frase con otra frase: hay que **generar de
+// verdad** con cada alfabeto y contar.
+func TestElLargoQueElEsquemaPrometeEsElQueSale(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	for _, c := range []struct {
+		alfabeto string
+		dice     int
+	}{
+		{"hex", 48}, {"alnum", 33}, {"simbolos", 30},
+	} {
+		clave, err := a.GenerarContrasena(largoDeLoQueGenera, c.alfabeto)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(clave) != c.dice {
+			t.Errorf("con %s salen %d caracteres y el esquema dice %d",
+				c.alfabeto, len(clave), c.dice)
+		}
+		// Y el número tiene que estar escrito en la frase que lee el modelo.
+		if !strings.Contains(agente.LargoDeLoGenerado(), fmt.Sprint(c.dice)) {
+			t.Errorf("el esquema no dice los %d caracteres de %s", c.dice, c.alfabeto)
+		}
 	}
 }

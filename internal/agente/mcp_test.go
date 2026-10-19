@@ -296,6 +296,8 @@ func llega(p Peticion, campo string) bool {
 		return p.Alfabeto != ""
 	case "bytes":
 		return p.Bytes != 0
+	case "caracteres":
+		return p.Caracteres != 0
 	case "generar":
 		return p.Generar
 	case "sitios":

@@ -52,6 +52,18 @@ Plantilla al final.
   rotar. Lo repone ahora `PonerNueva`, con su prueba de ida y vuelta —**esperando a que cambie el segundo**—
   y mutada. **Tercera vez que un informe suyo trae el síntoma bien y la causa mal**: comprobarlo en el
   código cuesta dos minutos.
+- **Y por la tarde, usándolo: `caracteres` al generar (2.58.5).** Creó una credencial de iCloud para
+  `alvaro@webcafeina.com`, su agente eligió `alnum` por su cuenta —bien razonado: el hex no lleva mayúsculas y
+  Apple exige una— y le prometió que si Apple la rechazaba por larga se la regeneraría más corta. **No
+  podía**: el largo iba a fuego y acortarla obligaba a pasar la contraseña por el chat. Ahora se pide en
+  caracteres en las tres herramientas, con `GenerarDeLargo` en el núcleo y el **mínimo medido en bits** —16
+  con hex, 11 con alnum, 10 con símbolos—, que por debajo dice que no. Cinco pruebas, tres mutadas, incluida
+  una de reparto para el recorte. **Y la guarda de `sitios`/`etiquetas` me cazó** que el traductor no copiaba
+  el campo nuevo, en las tres herramientas: exactamente para lo que existe.
+- **Lo que esa sesión no probó, y conviene no confundirlo**: la credencial se creó con **la personal abierta**,
+  donde escribir sin preguntar es lo correcto. **La rama que falta de la ADR 0055 sigue sin verse** — hace
+  falta abrir un proyecto y pedirle algo sin nombrar bóveda.
+
 ---
 
 ## 2026-10-16 · El bucle de aprobaciones, y por qué el arreglo de ayer era medio arreglo

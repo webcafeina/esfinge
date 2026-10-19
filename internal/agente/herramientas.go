@@ -114,6 +114,26 @@ const enLaQueEsteAbierta = "**Di en `boveda` en cuál quieres que se haga**, con
 // LasHerramientas es el catálogo. **Cada una con sus tres banderas puestas
 // explícitamente**, aunque sean falsas: una bandera que falta es una decisión que nadie
 // tomó, y hay una prueba que lo exige.
+// largoDeLoGenerado dice cuánto sale y que no se elige.
+//
+// **Hace falta decirlo porque si no el modelo promete poder.** El 2026-10-19 el agente del
+// cliente creó una credencial de Apple, eligió `alnum` por su cuenta —bien razonado: el hex
+// no lleva mayúsculas y Apple exige una— y añadió «si Apple la rechaza por larga, dímelo y
+// te la regenero más corta». **No puede**: el largo va a fuego y la única forma de acortarla
+// sería generarla con `esfinge_generar` y pegarla en `secreto`, o sea **hacerla pasar por la
+// conversación**, que es justo lo que `generar` existe para evitar.
+//
+// Desde ese mismo día hay `caracteres`, así que ahora **sí puede**; la frase se queda
+// porque decir cuánto sale de fábrica es lo que evita que lo averigüe generando.
+const largoDeLoGenerado = "Sin decir nada da 48 caracteres con hex, 33 con alnum y 30 con " +
+	"simbolos; con `caracteres` se pide el largo exacto, que es lo que hay que hacer cuando el " +
+	"sitio pone un máximo. **No la hagas con esfinge_generar para pegarla en `secreto`**, que " +
+	"eso la deja en esta conversación para siempre."
+
+// LargoDeLoGenerado es la frase de arriba, para que una prueba de `internal/app` pueda
+// comprobar que el número que promete es el que sale al generar de verdad.
+func LargoDeLoGenerado() string { return largoDeLoGenerado }
+
 var LasHerramientas = []Herramienta{
 	{
 		Nombre: "esfinge_estado",
@@ -245,12 +265,14 @@ var LasHerramientas = []Herramienta{
 			"secreto": {Tipo: "string", Descripcion: "La contraseña. Mejor no ponerla y usar generar."},
 			"notas":   {Tipo: "string"},
 			"generar": {Tipo: "boolean", Descripcion: "Que la contraseña la haga Esfinge y no salga de ahí."},
+			"caracteres": {Tipo: "integer", Descripcion: "Con generar:true, cuántos caracteres. " +
+				"Pídelo cuando el sitio ponga un máximo; sin esto sale el largo de siempre."},
 			"carpeta": {Tipo: "string"},
 			// **Con `generar`, qué alfabeto.** Por defecto hexadecimal, que es lo que
 			// no rompe una URL; un sitio que exija símbolos necesita otro, y sin esto
 			// había que generarla aparte y pegarla — o sea, hacerla pasar por el chat.
 			"alfabeto": {Tipo: "string", Descripcion: "Con generar:true. hex, alnum o simbolos. " +
-				"hex si no se dice nada, que es lo que no rompe una URL.",
+				"hex si no se dice nada, que es lo que no rompe una URL. " + largoDeLoGenerado,
 				Enum: []string{"hex", "alnum", "simbolos"}},
 			// **Sin sitios, una credencial nace sin poder rellenarse sola**, que es
 			// para lo que existe la bóveda. El núcleo siempre supo aplicarlos; lo que
@@ -288,8 +310,10 @@ var LasHerramientas = []Herramienta{
 			"alfabeto": {
 				Tipo:        "string",
 				Enum:        []string{"hex", "alnum", "simbolos"},
-				Descripcion: "Con qué se hace la de `generar`. De fábrica hexadecimal.",
+				Descripcion: "Con qué se hace la de `generar`. De fábrica hexadecimal. " + largoDeLoGenerado,
 			},
+			"caracteres": {Tipo: "integer", Descripcion: "Con generar:true, cuántos caracteres. " +
+				"Pídelo cuando el sitio ponga un máximo; sin esto sale el largo de siempre."},
 			"titulo":    {Tipo: "string"},
 			"usuario":   {Tipo: "string"},
 			"secreto":   {Tipo: "string", Descripcion: "La contraseña nueva. Esto pide aprobación."},
@@ -365,7 +389,9 @@ var LasHerramientas = []Herramienta{
 			"Para crear una cuenta con una contraseña nueva es mejor pedírselo a esfinge_crear, que la " +
 			"genera y la guarda sin que nadie llegue a verla.",
 		Esquema: objeto(map[string]Campo{
-			"bytes":    {Tipo: "integer", Descripcion: "Cuánta aleatoriedad. 24 si no se dice nada."},
+			"caracteres": {Tipo: "integer", Descripcion: "Cuántos caracteres. **Manda sobre bytes** si pones los dos, " +
+				"y es lo que hay que pedir cuando el sitio pone un máximo."},
+			"bytes":    {Tipo: "integer", Descripcion: "Cuánta aleatoriedad, si prefieres pedirla en bits. 24 bytes si no se dice nada."},
 			"alfabeto": {Tipo: "string", Descripcion: "hex, alnum o simbolos. hex si no se dice nada, que es lo que no rompe una URL.", Enum: []string{"hex", "alnum", "simbolos"}},
 		}),
 		Verbo:          QueGenerar,

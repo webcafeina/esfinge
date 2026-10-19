@@ -11,10 +11,12 @@ import (
 // bovedaFalsa es una fuente entera, con lo justo para que las pruebas puedan mirar qué
 // se ha pedido y qué no.
 type bovedaFalsa struct {
-	existe  bool
-	abierta bool
-	testigo string
-	pedidos int
+	caracteresPedidos, bytesPedidos int
+	alfabetoPedido                  string
+	existe                          bool
+	abierta                         bool
+	testigo                         string
+	pedidos                         int
 	// aprobado simula que la persona ya dijo que sí en la ventana.
 	aprobado        bool
 	codigoAprobado  bool
@@ -152,7 +154,11 @@ func (b *bovedaFalsa) Resumen() (Recuento, error) {
 	return Recuento{Total: 78, Papelera: 2, PorClase: map[string]int{"credencial": 69, "nota": 9}, ConCodigo: 11, SinCodigo: 58}, nil
 }
 
-func (b *bovedaFalsa) Generar(bytes int, alfabeto string) (string, error) {
+func (b *bovedaFalsa) Generar(caracteres, bytes int, alfabeto string) (string, error) {
+	// **Apunta lo que le piden**, que es lo que permite comprobar que el largo llega
+	// hasta aquí y no se queda en el traductor. Un doble que solo devuelve algo no
+	// distingue «me han pedido veinte» de «no me han pedido nada».
+	b.caracteresPedidos, b.bytesPedidos, b.alfabetoPedido = caracteres, bytes, alfabeto
 	return "una-contrasena-nueva", nil
 }
 

@@ -954,3 +954,69 @@ func TestMoverNoToqueteaLaFechaDeCambio(t *testing.T) {
 	mira("Personal", "tras la vuelta")
 	_ = ref
 }
+
+// **El largo pedido llega hasta la contraseña guardada, por los tres caminos.**
+//
+// Lo pidió el uso: el agente del cliente creó una credencial de Apple el 2026-10-19,
+// eligió `alnum` por su cuenta —bien razonado— y añadió que si Apple la rechazaba por
+// larga se la regeneraría más corta. **No podía**: el largo iba a fuego y acortarla
+// obligaba a generarla aparte y pegarla en `secreto`, o sea a **hacerla pasar por la
+// conversación de un modelo**, que es lo que `generar` existe para evitar.
+//
+// Se comprueba **el largo de lo guardado**, no lo que diga la respuesta: lo que importa
+// es la contraseña que acabó en la bóveda.
+func TestElLargoPedidoLlegaALaContrasenaGuardada(t *testing.T) {
+	a, _, _, _, _ := conBoveda(t)
+	f := fuenteDelAgente{a}
+
+	// 1 · Al crear.
+	esc, err := f.Crear("Claude", agente.Peticion{
+		Campos:  map[string]string{"titulo": "iCloud", "usuario": "alvaro@webcafeina.com"},
+		Generar: true, Alfabeto: "alnum", Caracteres: 20,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, hay := a.boveda().Ver(esc.ID)
+	if !hay {
+		t.Fatal("no se ha guardado")
+	}
+	if n := len([]rune(e.Secreto)); n != 20 {
+		t.Errorf("al crear se pidieron 20 caracteres y la guardada mide %d", n)
+	}
+
+	// 2 · Al editar, que además pide aprobación.
+	p := agente.Peticion{ID: esc.ID, Generar: true, Alfabeto: "simbolos", Caracteres: 16}
+	if _, err := f.Editar("Claude", p); !errors.Is(err, agente.ErrPideAprobacion) {
+		t.Fatalf("rotar una contraseña tiene que pedir aprobación: %v", err)
+	}
+	if err := a.AprobarLoQuePideElAgente(false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Editar("Claude", p); err != nil {
+		t.Fatal(err)
+	}
+	e, _ = a.boveda().Ver(esc.ID)
+	if n := len([]rune(e.Secreto)); n != 16 {
+		t.Errorf("al editar se pidieron 16 caracteres y la guardada mide %d", n)
+	}
+
+	// 3 · Y en generar, que no toca la bóveda.
+	clave, err := f.Generar(24, 0, "hex")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := len([]rune(clave)); n != 24 {
+		t.Errorf("generar 24 caracteres ha dado %d", n)
+	}
+
+	// **Y por debajo del suelo de entropía dice que no**, en vez de guardar algo flojo.
+	if _, err := f.Generar(8, 0, "hex"); err == nil {
+		t.Error("ha generado una de 8 caracteres en hexadecimal, que son 32 bits")
+	}
+	if _, err := f.Crear("Claude", agente.Peticion{
+		Campos: map[string]string{"titulo": "Floja"}, Generar: true, Caracteres: 8,
+	}); err == nil {
+		t.Error("ha creado una credencial con una contraseña de 8 caracteres hex")
+	}
+}

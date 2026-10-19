@@ -195,6 +195,14 @@ type Peticion struct {
 	// Bytes y Alfabeto son para generar.
 	Bytes    int    `json:"bytes,omitempty"`
 	Alfabeto string `json:"alfabeto,omitempty"`
+	// Caracteres es el largo pedido, **y manda sobre Bytes** cuando llegan los dos.
+	//
+	// Un sitio limita lo que acepta **en caracteres**, no en bits, así que es lo que
+	// alguien pide —«una de veinte»— y lo que un formulario rechaza. Hasta el 2026-10-19
+	// solo se podían pedir bytes de entropía, y para acortar una contraseña había que
+	// generarla aparte y pegarla en `secreto`: o sea **hacerla pasar por la conversación
+	// de un modelo**, que es justo lo que `generar` existe para evitar.
+	Caracteres int `json:"caracteres,omitempty"`
 
 	// Campos es lo que se escribe, al crear y al editar.
 	//
@@ -450,9 +458,11 @@ type Recuento struct {
 
 // ComoEs describe una contraseña **sin decirla**: cuánto mide y de qué alfabeto sale.
 //
-// Esfinge genera siempre en **hexadecimal**, y eso no es un detalle del canal sino una
-// regla de la casa: una contraseña con `/`, `+` o `@` dentro de una cadena de conexión
-// la parte, y el error que sale no menciona la contraseña por ninguna parte.
+// **De fábrica en hexadecimal**, y eso no es un detalle del canal sino una regla de la
+// casa: una contraseña con `/`, `+` o `@` dentro de una cadena de conexión la parte, y el
+// error que sale no menciona la contraseña por ninguna parte. Se puede pedir otro
+// alfabeto —hay sitios que exigen una mayúscula o un símbolo— y entonces esto es lo que
+// deja decir si lo guardado cumple lo que pedía el sitio, **sin enseñarlo**.
 type ComoEs struct {
 	Largo    int    `json:"largo"`
 	Alfabeto string `json:"alfabeto"`

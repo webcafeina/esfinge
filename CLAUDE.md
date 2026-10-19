@@ -630,6 +630,19 @@ las descripciones de los
 vecinos** — y la regla de arriba, la de que lo que el núcleo aplica tiene que estar en el esquema, tiene
 gemela: **lo que el esquema promete tiene que existir**.
 
+**Un verbo que genera sin decir cuánto largo da invita al modelo a prometer que lo puede cambiar.** El
+agente del cliente creó una credencial de Apple, eligió `alnum` por su cuenta —bien razonado: el hex no lleva
+mayúsculas y Apple exige una— y añadió «si la rechaza por larga, te la regenero más corta». **No podía**: el
+largo iba a fuego, y la única forma de acortarla era generarla con `esfinge_generar` y pegarla en `secreto`,
+o sea **hacerla pasar por la conversación de un modelo**, que es lo que `generar` existe para evitar. Dos
+cosas salieron de ahí: el esquema **dice ahora lo que da** —48 con hex, 33 con alnum, 30 con símbolos— y hay
+`caracteres` en las tres herramientas. **La regla: un parámetro que no existe se deduce igual si el verbo
+hace algo que admite grados.**
+
+Y el mínimo de ese parámetro **sale de los bits, no de un número redondo**: el suelo son los 64 bits de
+`Generar`, que en hexadecimal son 16 caracteres y con símbolos 10. Un mínimo igual para los tres sería dejar
+pasar basura en hex o prohibir largos que con símbolos están bien.
+
 **Mover una entrada no cambia nada de dentro, así que no puede decir que la contraseña es de hoy.** `Poner`
 pone la fecha de cambio a ahora —correcto para una edición— y un movimiento pasaba por ahí, así que una
 contraseña de septiembre salía «cambiada hoy» **en la columna que se mira para decidir si rotarla**. La repone

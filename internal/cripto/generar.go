@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
 )
@@ -80,11 +81,15 @@ func BytesParaCaracteres(a Alfabeto, caracteres int) int {
 // En hexadecimal salen 2 caracteres por byte. En los demás alfabetos, tantos
 // caracteres como hagan falta para alcanzar los mismos bits de entropía, de modo
 // que --bytes signifique siempre lo mismo se elija el alfabeto que se elija.
+// topeDeBytes es lo máximo que se acepta de entropía: más no aporta nada y no cabe en
+// ningún sitio.
+const topeDeBytes = 256
+
 func Generar(a Alfabeto, bytes int) (string, error) {
 	if bytes < 8 {
 		return "", errors.New("Menos de 8 bytes no es una contraseña, es una invitación")
 	}
-	if bytes > 256 {
+	if bytes > topeDeBytes {
 		return "", errors.New("Más de 256 bytes no aporta nada y no cabe en ningún sitio")
 	}
 
@@ -114,4 +119,70 @@ func Generar(a Alfabeto, bytes int) (string, error) {
 		out[i] = runas[v.Int64()]
 	}
 	return string(out), nil
+}
+
+// MinimoDeCaracteres es el menor largo que se acepta con ese alfabeto, y **sale de los
+// bits, no de un número redondo**.
+//
+// El suelo de esta casa son los 8 bytes de [Generar] —«menos de 8 bytes no es una
+// contraseña, es una invitación»—, o sea 64 bits. Cuántos caracteres son eso depende del
+// alfabeto: 16 en hexadecimal, 11 con letras y números, 10 con símbolos. Poner un mínimo
+// igual para los tres sería o dejar pasar basura en hex o prohibir largos que con
+// símbolos están bien.
+func MinimoDeCaracteres(a Alfabeto) int {
+	for n := 1; n <= 64; n++ {
+		if BytesParaCaracteres(a, n) >= 8 {
+			return n
+		}
+	}
+	return 64
+}
+
+// MaximoDeCaracteres es el mayor largo que se acepta, por el mismo tope de 256 bytes que
+// [Generar]: más no aporta nada y no cabe en ningún sitio.
+func MaximoDeCaracteres(a Alfabeto) int { return Caracteres(a, topeDeBytes) }
+
+// GenerarDeLargo devuelve una contraseña de **exactamente** esos caracteres.
+//
+// Existe porque un sitio limita lo que acepta **en caracteres** y no en bits: Apple, que
+// pide una mayúscula, o cualquier formulario con un máximo. Hasta el 2026-10-19 el canal
+// de los agentes solo podía pedir bytes de entropía, así que para acortar una contraseña
+// había que generarla aparte y pegarla — es decir, **hacerla pasar por la conversación de
+// un modelo**, que es justo lo que `generar` existe para evitar. Lo destapó el agente del
+// cliente prometiéndole que podía acortarla.
+//
+// **Se pide de más y se recorta**, y eso no sesga nada: cada carácter sale de un sorteo
+// uniforme e independiente (ver el porqué de `rand.Int` en [Generar]), así que quedarse
+// con los primeros n es tan uniforme como el conjunto. Lo que **sí** haría falta mirar es
+// lo contrario —rellenar a mano si faltaran—, y por eso se pide un byte de más en vez de
+// ajustar al límite.
+func GenerarDeLargo(a Alfabeto, caracteres int) (string, error) {
+	if min := MinimoDeCaracteres(a); caracteres < min {
+		return "", fmt.Errorf(
+			"Con %s, menos de %d caracteres no es una contraseña: son menos de 64 bits",
+			a.Nombre, min)
+	}
+	if max := MaximoDeCaracteres(a); caracteres > max {
+		return "", fmt.Errorf(
+			"Con %s, más de %d caracteres no aporta nada y no cabe en ningún sitio",
+			a.Nombre, max)
+	}
+	// El byte de más es para no quedarse corto por el redondeo, **y no puede pasarse del
+	// tope de [Generar]**: con hexadecimal, el largo máximo ya pide los 256 justos, así
+	// que sumarle uno lo rechazaba. Lo cazó la prueba de los bordes, no la lectura.
+	bytes := BytesParaCaracteres(a, caracteres) + 1
+	if bytes > topeDeBytes {
+		bytes = topeDeBytes
+	}
+	clave, err := Generar(a, bytes)
+	if err != nil {
+		return "", err
+	}
+	runas := []rune(clave)
+	if len(runas) < caracteres {
+		// No puede pasar —se pide un byte de más— y si pasara, lo que no se hace es
+		// devolver una contraseña más corta de la que alguien va a dar por buena.
+		return "", fmt.Errorf("Esfinge no ha sabido hacer una contraseña de %d caracteres", caracteres)
+	}
+	return string(runas[:caracteres]), nil
 }

@@ -181,6 +181,9 @@ func ponerArgumentos(p *Peticion, args map[string]any) {
 	if v, ok := args["bytes"].(float64); ok {
 		p.Bytes = int(v)
 	}
+	if v, ok := args["caracteres"].(float64); ok {
+		p.Caracteres = int(v)
+	}
 	if v, ok := args["generar"].(bool); ok {
 		p.Generar = v
 	}

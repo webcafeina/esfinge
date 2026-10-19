@@ -252,6 +252,17 @@
 > Aun así se arregló, porque mover no cambia nada de dentro y «cambiada hoy» es un dato falso en la columna
 > que se mira para decidir si rotar. Está en la **2.58.4**, con su prueba de ida y vuelta y mutada.
 >
+> **Y del uso del 2026-10-19 por la tarde salió la 2.58.5: `caracteres` al generar.** Creó una credencial de
+> Apple y su agente le prometió que podía acortar la contraseña si Apple la rechazaba — **no podía**, el largo
+> iba a fuego. Ahora se pide en caracteres en las tres herramientas, con el **mínimo medido en bits** (16 con
+> hex, 11 con alnum, 10 con símbolos) para que nadie genere algo flojo. Era la fila de `deuda.md` del día 15,
+> que su agente encontró leyendo los esquemas y **confirmó usándolo**.
+>
+> **Ojo con lo que esa sesión NO probó.** Creó la credencial con **la personal abierta**, así que escribir sin
+> preguntar es **lo correcto** —la regla de la 2.52.0 solo exige preguntar cuando lo abierto es la bóveda de un
+> proyecto y nadie la ha nombrado—. **La rama que falta sigue sin verse** y hay que montarla a propósito: abrir
+> un proyecto y entonces pedirle que guarde algo **sin nombrarle la bóveda**.
+>
 > ## Y lo que sigue pendiente de probar
 
 >

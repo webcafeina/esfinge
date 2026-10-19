@@ -70,7 +70,7 @@ type Fuente interface {
 	// [ErrNoEsaBoveda] o [ErrBovedaDormida] si el nombre no lleva a ninguna.
 	EnLaBoveda(nombre string, hacer func() error) error
 	// Generar devuelve una contraseña nueva. **No toca la bóveda.**
-	Generar(bytes int, alfabeto string) (string, error)
+	Generar(caracteres, bytes int, alfabeto string) (string, error)
 	// CopiarSecreto pone la contraseña de una entrada en el portapapeles **de este
 	// equipo**, si hay un sí para ella. Devuelve [ErrPideAprobacion] si no lo hay, y
 	// entonces **deja pedido el permiso**: quien llama tiene que volver a intentarlo.
@@ -343,7 +343,7 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 	// **Generar no toca la bóveda**, así que se contesta esté como esté: pedir una
 	// contraseña nueva con la bóveda cerrada es razonable y no cuenta nada de dentro.
 	if p.Que == QueGenerar {
-		clave, err := s.fuente.Generar(p.Bytes, p.Alfabeto)
+		clave, err := s.fuente.Generar(p.Caracteres, p.Bytes, p.Alfabeto)
 		if err != nil {
 			return mal(MotivoNoEntiendo, err.Error())
 		}

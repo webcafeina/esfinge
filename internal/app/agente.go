@@ -38,6 +38,7 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/agente"
 	"github.com/webcafeina/esfinge/internal/boveda"
+	"github.com/webcafeina/esfinge/internal/cripto"
 	"github.com/webcafeina/esfinge/internal/escritura"
 	"github.com/webcafeina/esfinge/internal/mcpb"
 )
@@ -295,14 +296,35 @@ func (f fuenteDelAgente) Resumen() (agente.Recuento, error) {
 	}, nil
 }
 
-func (f fuenteDelAgente) Generar(bytes int, alfabeto string) (string, error) {
-	if bytes <= 0 {
-		bytes = 24
-	}
+func (f fuenteDelAgente) Generar(caracteres, bytes int, alfabeto string) (string, error) {
+	return f.a.generarParaElAgente(caracteres, bytes, alfabeto)
+}
+
+// generarParaElAgente hace la contraseña que pide el canal, **y es el único sitio donde
+// se decide cómo**.
+//
+// `caracteres` manda sobre `bytes` cuando se piden los dos, porque un largo en caracteres
+// es lo que limita un formulario y por eso es lo que alguien pide; los bytes son la
+// entropía y están para quien piense en ella. Sin ninguno de los dos, lo de siempre.
+//
+// **Estaba repetido tres veces** —`crear`, `editar` y `generar` tenían cada uno su `if`—
+// y añadir el largo habría hecho cuatro. La misma regla en N sitios se desalinea sola, y
+// aquí ya ha costado tres fallos.
+func (a *App) generarParaElAgente(caracteres, bytes int, alfabeto string) (string, error) {
 	if alfabeto == "" {
-		alfabeto = "hex"
+		alfabeto = alfabetoDeLoQueGenera
 	}
-	return f.a.GenerarContrasena(bytes, alfabeto)
+	al, hay := cripto.Alfabetos[alfabeto]
+	if !hay {
+		return "", fmt.Errorf("El alfabeto «%s» no existe", alfabeto)
+	}
+	if caracteres > 0 {
+		return cripto.GenerarDeLargo(al, caracteres)
+	}
+	if bytes <= 0 {
+		bytes = largoDeLoQueGenera
+	}
+	return a.GenerarContrasena(bytes, alfabeto)
 }
 
 // Emparejar le pregunta a la persona, en la ventana. **No espera a nadie**: al otro
@@ -1150,7 +1172,7 @@ func (f fuenteDelAgente) Crear(quien string, p agente.Peticion) (agente.Escrito,
 		if alfabeto == "" {
 			alfabeto = alfabetoDeLoQueGenera
 		}
-		clave, err := f.a.GenerarContrasena(largoDeLoQueGenera, alfabeto)
+		clave, err := f.a.generarParaElAgente(p.Caracteres, 0, alfabeto)
 		if err != nil {
 			return agente.Escrito{}, err
 		}
@@ -1208,11 +1230,11 @@ func (f fuenteDelAgente) Editar(quien string, p agente.Peticion) (agente.Escrito
 		if alfabeto == "" {
 			alfabeto = alfabetoDeLoQueGenera
 		}
-		// **El largo no se ofrece aquí**, y por eso no se lee: lo que el núcleo aplica
-		// tiene que estar declarado en el esquema o es código que el modelo no puede
-		// alcanzar. Que 24 bytes en hexadecimal sean 48 caracteres —y que haya sitios
-		// que no los acepten— está apuntado en `deuda.md`, con su arreglo.
-		clave, err := f.a.GenerarContrasena(largoDeLoQueGenera, alfabeto)
+		// **Y el largo sí se ofrece** desde el 2026-10-19: un sitio limita lo que
+		// acepta en caracteres, y sin esto acortarla obligaba a generarla aparte y
+		// pegarla, o sea a hacerla pasar por la conversación de un modelo. Lo destapó
+		// el agente del cliente prometiéndole que podía hacerla más corta.
+		clave, err := f.a.generarParaElAgente(p.Caracteres, 0, alfabeto)
 		if err != nil {
 			return agente.Escrito{}, err
 		}
