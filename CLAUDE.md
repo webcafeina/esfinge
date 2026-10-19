@@ -2071,6 +2071,13 @@ versión por el canal** (2.55.0), que además confirmó el relevo por otro camin
 herramientas**, que son exactamente las once del fuente — con el relevo fallando habría salido la lista
 corta del paquete que se instaló en su día.
 
+Y el 2026-10-19, **la última ficha que le quedaba a la ADR 0055**: con la bóveda de un proyecto abierta, le
+pidió crear una credencial **sin nombrar bóveda** y el agente **preguntó antes de escribir**, ofreciéndole las
+tres que tiene en el equipo. Es la mitad de esa ADR que no vive en el código sino en las descripciones, y la
+pregunta salió **en los controles nativos de Claude Desktop** — o sea que una frase del esquema se convirtió
+en una pregunta de verdad y no en un párrafo que nadie lee. De paso preguntó el alfabeto sin que se lo
+pidieran, que es lo que se gana al decir en el esquema lo que hay.
+
 Sin verificar todavía, y es lo único que queda en todo el proyecto: **cómo quedan las estructuras de
 Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono de los `.esf`, que en Windows lo
 pone el instalador y en Linux el `.deb`.

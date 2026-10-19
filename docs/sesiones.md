@@ -64,6 +64,20 @@ Plantilla al final.
   donde escribir sin preguntar es lo correcto. **La rama que falta de la ADR 0055 sigue sin verse** — hace
   falta abrir un proyecto y pedirle algo sin nombrar bóveda.
 
+- **Y al final del día, la última ficha del proyecto: la rama de la ADR 0055, comprobada.** Con **Zeri's
+  Coffee abierta** le pidió crear una credencial **sin nombrar bóveda**; el agente miró `esfinge_estado`, vio
+  que lo abierto no era la personal y **preguntó antes de escribir**, ofreciéndole las tres bóvedas del
+  equipo. **Nada que arreglar.** Es la mitad de esa ADR que no vive en el código sino en las descripciones, y
+  la pregunta salió **en los controles nativos de Claude Desktop**: una frase del esquema convertida en una
+  pregunta de verdad y no en un párrafo que nadie lee. De paso preguntó **el alfabeto** sin que se lo
+  pidieran, que es lo que se gana al decir en el esquema lo que hay — el arreglo de la 2.58.5 del mismo día.
+- **Y el permiso permanente que se le encendió por la mañana lo había quitado él mismo**, por su cuenta y sin
+  que nadie le dijera dónde. Eso cierra otra cosa que no estaba comprobada: que el aviso de arriba en todas
+  las pestañas, con su botón al lado, hace lo que se le pidió. Fue **la condición con la que se dio ese
+  botón** en octubre.
+- **Con eso, de todo el proyecto solo queda Windows y GNOME en máquinas de verdad.** Cinco versiones
+  publicadas en el día —2.58.3 a 2.58.5, con una reetiquetada—, y **las cinco salieron de él usándolo**.
+
 ---
 
 ## 2026-10-16 · El bucle de aprobaciones, y por qué el arreglo de ayer era medio arreglo

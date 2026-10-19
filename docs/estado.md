@@ -264,6 +264,17 @@
 > proyecto y nadie la ha nombrado—. **La rama que falta sigue sin verse** y hay que montarla a propósito: abrir
 > un proyecto y entonces pedirle que guarde algo **sin nombrarle la bóveda**.
 >
+> ## Y la última ficha quedó cerrada el mismo 2026-10-19
+>
+> **La rama de la ADR 0055 que nunca se había visto, comprobada en su Mac**: con **Zeri's Coffee abierta** le
+> pidió crear una credencial **sin nombrar bóveda**, y el agente miró el estado, vio que lo abierto era la de
+> un proyecto y **preguntó antes de escribir**, ofreciéndole las tres bóvedas del equipo. **Nada que
+> arreglar.** Dos cosas que vale la pena saber: la pregunta salió **en los controles nativos de Claude
+> Desktop**, así que la frase del esquema se convirtió en una pregunta de verdad; y preguntó **también el
+> alfabeto**, sin que se lo pidieran, que es lo que se gana con lo de la 2.58.5.
+>
+> **Con eso, de todo el proyecto solo queda Windows y GNOME en máquinas de verdad.**
+>
 > ## Y lo que sigue pendiente de probar
 
 >

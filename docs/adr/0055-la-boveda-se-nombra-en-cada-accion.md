@@ -103,6 +103,18 @@ existe no crea ni destruye nada.
 - **Que el campo llega**: lo vigila `TestLoQueDeclaraElEsquemaLlegaALaPeticion`, que arma los argumentos desde
   el propio esquema. Es la guarda que nació del día que `sitios` se perdió cinco días en el traductor.
 
+**Y comprobado en su Mac el 2026-10-19, que era lo último que le faltaba a esta ficha**: con **Zeri's Coffee
+abierta** —la bóveda de un proyecto— le pidió crear una credencial **sin nombrar bóveda**. El agente miró
+`esfinge_estado`, vio que lo abierto no era la personal y **preguntó antes de escribir**, ofreciéndole las tres
+bóvedas que tiene en el equipo. Eso es exactamente la mitad de esta ADR que no vive en el código sino en los
+textos: sin nombre, la abierta **y la regla de la 2.52.0**.
+
+Dos cosas que conviene leer de ahí. La pregunta salió **en los controles nativos de Claude Desktop**, con las
+opciones y una recomendación, así que la frase de la descripción se convirtió en una pregunta de verdad y no
+en un párrafo que alguien lee. Y el agente **preguntó también el alfabeto**, que no se le había pedido: eso
+sale de que desde la 2.58.5 el esquema dice lo que hay —alfabetos y largo—, y es la demostración de que en
+este canal **los textos son el producto**. Nada que arreglar.
+
 **Lo que no se ha comprobado**: con una bóveda **compartida de solo ver**, que escribir conteste su motivo
 propio. El camino existe —`porQueNoSeEscribe` ya lo decide— y la lista ya dice `seEscribe: false`, pero montar
 dos cuentas con una bóveda compartida para esta prueba es el mismo coste que ya bloquea otras dos filas de
