@@ -362,9 +362,10 @@ núcleo, el apartado «Proyectos» en la ventana, llevar entradas de una bóveda
 selector del panel de la extensión y —la E6— entregar un proyecto, archivarlo y borrarlo
 ([ADR 0051](adr/0051-entregar-una-boveda.md)). El detalle, abajo.
 
-### La siguiente acción, al retomar
+### Lo que quedaba de las bóvedas por proyecto (ADR 0050-0051), terminado
 
-**El plan está terminado.** Lo que queda no es código:
+**Se queda aquí porque lo cerrado no se borra**, y el título decía «la siguiente acción»: eso competía con la
+de arriba y al retomar se podía leer como lo que toca hacer ahora. **No lo es desde el 2026-10-02.**
 
 1. **El servidor ya está desplegado, los dos** (2026-10-02): ~~desplegarlo~~.
    - **Pruebas primero, y la migración comprobada allí sobre un Durable Object de verdad**: una cuenta dada
