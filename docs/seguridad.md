@@ -562,6 +562,26 @@ que no está bajado en este equipo tampoco, y **la tarjeta con la que apruebas u
 está pasando**: desde que puede ocurrir en una que no estás mirando, aprobar sin saber dónde es aprobar a
 ciegas.
 
+### El permiso es de este equipo, no de un programa (2026-10-20)
+
+Cuando dejas entrar a un agente, lo que se autoriza es **este equipo**. El testigo con el que un cliente MCP
+se identifica vive en un fichero de tu carpeta de configuración, con permisos 600, y **lo crea el primero que
+llega y lo reutilizan todos los demás**: si autorizas Claude Desktop y luego instalas Claude Code, el segundo
+entra sin preguntarte nada.
+
+Eso es lo que hay, y hasta la 2.58.7 **la pantalla decía otra cosa**: enseñaba una lista de «agentes
+permitidos» con un nombre y un «Retirar» por fila, o sea la forma de un permiso por programa. Ahora dice
+«Permiso de este equipo», con un solo «Retirar» —que los echa a todos, porque comparten testigo— y, debajo,
+**quién ha hablado de verdad**: eso Esfinge sí lo sabe, porque el nombre del cliente viaja en cada petición.
+
+> Esto **no** es una puerta nueva: el modelo de amenaza ya acepta que un programa que corre como tú puede
+> leer ese fichero, igual que puede leer el portapapeles. Lo que se arregló es que la pantalla no te hiciera
+> creer que el permiso era por programa.
+
+Y lo que sigue siendo por petición, y es lo que de verdad protege: **cada secreto se aprueba en la ventana**,
+la tarjeta dice **qué cliente** lo pide y **en qué bóveda**, y el registro de dentro de la bóveda apunta a
+quién se le dio cada cosa con su nombre.
+
 ### Una pregunta a la vez (2026-10-19)
 
 Hay **una persona y una ventana**, así que las preguntas de un agente se contestan de una en una. Mientras

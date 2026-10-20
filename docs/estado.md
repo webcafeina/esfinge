@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-10-19**, al cierre
+Última actualización: **2026-10-20**
 
 > **No queda nada del proyecto sin comprobar en una máquina de verdad, salvo Windows y GNOME.** Las dos
 > fichas que quedaban vivas se cerraron hoy en los dos Macs del cliente:
@@ -283,7 +283,28 @@
 > aprobación, y **cuatro pruebas preparaban lo pendiente a mano**, que es la trampa del testigo puesto por el
 > ayudante.
 >
-> ## La siguiente acción: probar el MCP en Claude Code (2026-10-20)
+> ## Probado en Claude Code el 2026-10-20, y salieron dos cosas
+>
+> **Lo que funciona**: la ruta que calcula Esfinge —`/Applications/Esfinge.app/Contents/MacOS/esfinge-mcp`,
+> el mismo patrón que su Apolo—, la versión **2.58.6**, **las trece herramientas exactas** del fuente, el
+> nombre **«Claude Code (claude-code)»** en la tarjeta y el camino de aprobación entero. Y **no pidió
+> emparejamiento**, que es correcto y conviene saber por qué: ver abajo.
+>
+> **Y dos fallos que solo se veían aquí, los dos de la misma familia —lo que la pantalla y los textos dicen no
+> era lo que pasa—.** Arreglados en la **2.58.7**, con su porqué en la ADR 0054 y en `docs/seguridad.md`:
+>
+> 1. **El agente decía que no podía usar las bóvedas que no están abiertas.** El canal devolvía
+>    `abierta: false` y en Esfinge **«cerrada» quiere decir bloqueada**, así que juntó los dos sentidos. **Y
+>    sí podía**: al nombrarla funcionó a la primera y lo dijo él mismo. Una palabra con dos sentidos le
+>    quitaba **la funcionalidad entera de la ADR 0055**. El campo se llama ahora `activa` y la descripción
+>    desmiente la lectura equivocada en vez de callarla.
+> 2. **La lista de Ajustes decía un programa y entraban todos.** El testigo del cliente vive en **un fichero
+>    por usuario**, así que Claude Code entró con el de Desktop y no salía en la lista. Ahora dice **«Permiso
+>    de este equipo · Autorizado desde… · Han hablado: …»** con un solo Retirar, `permitir` **sustituye** en
+>    vez de acumular filas que nadie usa, y se apunta quién habla de verdad. **Y lo grave de por qué aguantó
+>    tres semanas: esa lista no tenía ninguna prueba de interfaz.**
+>
+> ## Lo de antes: probar el MCP en Claude Code (hecho)
 >
 > Lo pidió él al cerrar el 19: **hasta ahora solo se ha probado Claude Desktop**, y no son el mismo camino.
 >

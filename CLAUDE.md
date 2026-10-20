@@ -630,6 +630,28 @@ las descripciones de los
 vecinos** — y la regla de arriba, la de que lo que el núcleo aplica tiene que estar en el esquema, tiene
 gemela: **lo que el esquema promete tiene que existir**.
 
+**Una palabra con dos sentidos le quitó al agente una funcionalidad entera.** `esfinge_bovedas` devolvía
+`abierta: false` para las bóvedas que no son la activa, y en Esfinge **«cerrada» quiere decir bloqueada** —la
+que pide la contraseña maestra—. El modelo juntó los dos sentidos y contestó «están cerradas, Esfinge no me
+deja abrirlas desde aquí». **Y sí podía**: al nombrar la bóveda funcionó a la primera, y lo dijo él mismo —«la
+búsqueda funcionó aunque la bóveda figuraba como cerrada»—. Justo lo que la ADR 0055 vino a quitar, devuelto
+por el vocabulario. El campo se llama ahora `activa`, y la descripción **desmiente la lectura equivocada en
+vez de callarla**: que las demás se nombran igual, que se conmuta **sin pedir contraseña** y qué significa
+«cerrada» aquí. Es la trampa de `huella` —la criptográfica y la dactilar— en un sitio donde cuesta más:
+**aquí los textos son el producto**, así que una palabra ambigua no es un detalle de estilo.
+
+**Y el permiso de los agentes es del equipo, no de un programa, pero la pantalla decía lo contrario.** El
+testigo que guarda el cliente MCP vive en **un fichero por usuario** (`agente-testigo`), así que lo crea el
+primero que llega y lo reutilizan todos: el cliente instaló Claude Code, entró con el permiso que le había
+dado a Claude Desktop **y no salía en la lista**, que seguía enseñando un solo agente con el nombre del otro
+y su botón de «Retirar». Y `permitir` hacía `append`, así que un emparejamiento nuevo habría dejado filas
+**válidas y sin uso** —el cliente solo tiene un fichero—, sin forma de saber cuál estaba viva.
+
+Tres cosas lo cierran: `permitir` **sustituye** en vez de acumular, se apunta **quién ha hablado de verdad**
+—el nombre viaja en cada petición, y por eso la tarjeta sí decía «Claude Code»— y la pantalla dice «Permiso
+de este equipo · Autorizado desde… · Han hablado: …» con un solo Retirar. **Y lo grave de por qué nadie lo
+vio en tres semanas: esa lista no tenía ninguna prueba de interfaz.** Lo que no se mira no se mira.
+
 **Una petición nueva pisaba la que alguien estaba leyendo, y el botón aprobaba «lo que hubiera».** Dos
 descuidos que por separado no se ven y juntos dejan aprobar a ciegas: `pedir` ponía lo pendiente encima de lo
 que hubiera, y `AprobarLoQuePideElAgente` concedía sin que nadie dijera **qué**. Con dos agentes a la vez

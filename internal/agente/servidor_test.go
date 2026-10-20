@@ -11,6 +11,7 @@ import (
 // bovedaFalsa es una fuente entera, con lo justo para que las pruebas puedan mirar qué
 // se ha pedido y qué no.
 type bovedaFalsa struct {
+	quienHablo                      string
 	caracteresPedidos, bytesPedidos int
 	alfabetoPedido                  string
 	existe                          bool
@@ -59,7 +60,7 @@ func (b *bovedaFalsa) Estado() Estado {
 func (b *bovedaFalsa) Bovedas() ([]UnaBoveda, error) {
 	if b.bovedas == nil {
 		return []UnaBoveda{
-			{Nombre: "Personal", EsLaPersonal: true, Abierta: true, SeEscribe: true},
+			{Nombre: "Personal", EsLaPersonal: true, Activa: true, SeEscribe: true},
 			{Nombre: "Zeri's Coffee", SeEscribe: true},
 			{Nombre: "Solo mirar", SeEscribe: false, Compartida: true},
 		}, nil
@@ -219,7 +220,13 @@ func (b *bovedaFalsa) Emparejar(quien string) (string, error) {
 	return b.testigo, nil
 }
 
-func (b *bovedaFalsa) Emparejado(t string) bool { return t != "" && t == b.testigo }
+// **Apunta el nombre que le llega**, que es lo que permite comprobar que el canal pasa
+// quién habla y no solo el testigo: un doble que ignore el argumento no distingue «me lo
+// han dicho» de «no me lo han dicho».
+func (b *bovedaFalsa) Emparejado(t, quien string) bool {
+	b.quienHablo = quien
+	return t != "" && t == b.testigo
+}
 
 func servidorDePrueba(t *testing.T) (*Servidor, *bovedaFalsa) {
 	t.Helper()

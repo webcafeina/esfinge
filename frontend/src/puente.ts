@@ -280,7 +280,19 @@ export type EstadoDelAgente = {
   /** Quién está esperando permiso, vacío si no hay nadie. */
   pide?: string;
   /** Los que tienen permiso. **Sin el testigo**: no cruza el puente. */
-  permitidos: { quien: string; desde: string }[];
+  /**
+   * El permiso de este equipo. **Tiene una fila**, no una por programa.
+   *
+   * El testigo que guarda el cliente MCP vive en un fichero por usuario, así que lo crea
+   * el primero que llega y lo reutilizan todos: no es un permiso por agente aunque la
+   * pantalla lo enseñara así hasta el 2026-10-20. `clientes` es quién ha hablado de
+   * verdad, que es lo que Esfinge sí sabe —el nombre viaja en cada petición—.
+   */
+  permitidos: {
+    quien: string;
+    desde: string;
+    clientes?: { quien: string; ultima: string }[];
+  }[];
   /** El bloque para los clientes que se configuran con un fichero. **Lo tosco.** */
   configuracion: string;
   /** Y la orden de una línea para Claude Code, que no usa fichero. */

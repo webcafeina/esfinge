@@ -218,6 +218,52 @@ tampón. **Se midió y no**: veinte apuntes con dos mil entradas son 838 ms **en
 descarta el cuerpo sin guardar, así que un tampón convertiría **matar el proceso en borrar el rastro**. La fila
 de la deuda se cerró con la medición, no con código, y lo que había escrito en ella era incorrecto.
 
+## Qué autoriza el emparejamiento, y qué palabra frenaba al agente (2026-10-20)
+
+Probarlo en **Claude Code** —hasta entonces solo se había usado Claude Desktop— destapó dos cosas, y las dos
+son de lo mismo: **lo que la pantalla y los textos dicen no era lo que pasa**.
+
+### El permiso es del equipo
+
+El testigo con el que un cliente MCP se identifica lo guarda **él**, en un fichero de la carpeta de
+configuración del usuario. O sea **uno por persona**: lo crea el primero que llega y lo reutilizan todos. Así
+que al instalar Claude Code entró con el permiso que se le había dado a Claude Desktop, sin preguntar nada
+—correcto— y **sin salir en la lista de Ajustes**, que seguía enseñando un solo agente con el nombre del otro
+y su botón de «Retirar».
+
+Eso es una pantalla con la forma de un permiso por programa sobre un permiso por equipo. Y había una segunda
+mitad peor: `permitir` hacía `append`, así que un emparejamiento nuevo habría dejado **filas válidas y sin
+uso** —el cliente solo tiene un fichero, así que solo el último testigo se usa—, sin forma de saber desde la
+pantalla cuál estaba viva.
+
+Tres cosas lo cierran. `permitir` **sustituye** en vez de acumular, porque una fila es decir lo que hay. Se
+apunta **quién ha hablado de verdad** —el nombre viaja en cada petición, que es por lo que la tarjeta sí
+decía «Claude Code»— con `visto`, que **no cuenta como actividad** y solo guarda si el nombre es nuevo o si
+su última vez tiene más de un minuto, para no escribir un fichero por llamada. Y la pantalla dice **«Permiso
+de este equipo · Autorizado desde… · Han hablado: …»**.
+
+**Y lo grave de por qué nadie lo vio en tres semanas: esa lista no tenía ninguna prueba de interfaz.** Es la
+misma familia que la tarjeta que vivía dentro de Ajustes: lo que no se mira no se mira.
+
+### Y «cerrada» significaba dos cosas
+
+`esfinge_bovedas` devolvía `abierta: false` para las bóvedas que no son la activa. En Esfinge **«cerrada»
+quiere decir bloqueada** —la que pide la contraseña maestra—, así que el modelo juntó los dos sentidos y
+contestó «están cerradas, Esfinge no me deja abrirlas desde aquí».
+
+**Y sí podía.** Al nombrar la bóveda funcionó a la primera, y lo dijo él mismo: «la búsqueda funcionó aunque
+la bóveda figuraba como cerrada, porque Esfinge cambia a ella sola». O sea que **una palabra con dos sentidos
+le quitaba la funcionalidad entera de la ADR 0055**, que existe precisamente para que el agente no diga que
+no puede.
+
+El campo se llama ahora `activa`, y la descripción **desmiente la lectura equivocada en vez de callarla**:
+que las que no son la activa se nombran igual, que Esfinge conmuta **sin pedir ninguna contraseña**, y qué
+quiere decir «cerrada» aquí. La guarda mira las dos mitades —el nombre en el JSON y las frases— porque el
+fallo era de texto y **aquí los textos son el producto**.
+
+Es la trampa de `huella` —la criptográfica y la dactilar— en un sitio donde cuesta más: una palabra ambigua
+en una pantalla la lee una persona que ya sabe de qué va; en un esquema la lee un modelo que solo tiene eso.
+
 ## Una pregunta a la vez, y se aprueba lo que se leyó (2026-10-19)
 
 Hay **una persona y una ventana**, y desde que puede haber dos agentes a la vez —Claude Desktop y Claude
@@ -386,6 +432,10 @@ Lo que hay que poder decir al acabar, y cada prueba mutada:
 | Que un agente no se bloquea contra sí mismo | El mismo pide otra cosa y **entra**, porque es el mismo interlocutor cambiando de tema |
 | Que pulsar sobre una tarjeta que cambió no concede nada | Se lee la referencia, cambia lo pendiente, y el sí **sobre la vieja** no concede **ninguna de las dos**. Su mutación es la que destapó que esta prueba faltaba |
 | Que lo pendiente caduca | Pasado el plazo la tarjeta se cae sola y otro agente puede pedir lo suyo |
+| Que el permiso es uno por equipo | Se empareja **dos veces** y la lista tiene **una fila**; el testigo viejo deja de valer |
+| Que se sabe quién ha hablado | Dos clientes con el mismo testigo, el último primero, y hablar otra vez **no duplica** |
+| Que la pantalla lo dice | Una de interfaz que entra en Ajustes → Agentes: «Permiso de este equipo», los dos nombres, y **que no vuelva a decir «Agentes permitidos»** |
+| Que no se le dice «cerrada» a una bóveda que puede usar | El campo se llama `activa` en el JSON, y la descripción dice las tres cosas que lo desmienten. Mutadas las dos mitades |
 | Que el freno es del servidor | **Una conexión nueva por petición**, que es como se descubrió que el otro freno no frenaba |
 | Que añadir un verbo es una decisión | La lista recorrida, y ninguno contesta «no entiendo» |
 | La tubería entera | Los bytes de MCP por donde entran de verdad → socket → bóveda real → respuesta |

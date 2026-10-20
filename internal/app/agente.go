@@ -61,10 +61,28 @@ func rutaAgentes() string {
 // bóveda no tiene por qué pasearse por ahí.
 type AgentePermitido struct {
 	Testigo string `json:"testigo"`
-	// Quien es cómo se llamó a sí mismo. **No se cree**: sirve para que la persona
-	// sepa a quién le dijo que sí, no para decidir nada.
+	// Quien es cómo se llamó a sí mismo **al pedir el permiso**. No se cree: sirve para
+	// que la persona sepa a quién le dijo que sí, no para decidir nada.
+	//
+	// **Y no es la lista de quién puede entrar**, que es lo que la pantalla hacía creer:
+	// para eso está `Clientes`.
 	Quien string `json:"quien"`
 	Desde string `json:"desde"`
+	// Clientes son los que han hablado de verdad con este permiso, **el último primero**.
+	//
+	// Existe porque el testigo que guarda el cliente vive en **un fichero por usuario**,
+	// así que lo crea el primero que llega y lo reutilizan todos los demás: Claude Code
+	// entró con el de Claude Desktop y la pantalla seguía diciendo que había un solo
+	// agente, con su nombre. La información la tenía Esfinge —el nombre viaja en cada
+	// petición, por eso la tarjeta sí decía «Claude Code»— y no la enseñaba en ninguna
+	// parte. Lo vio el cliente el 2026-10-20 probando Claude Code.
+	Clientes []ClienteVisto `json:"clientes,omitempty"`
+}
+
+// ClienteVisto es un programa que ha hablado con este permiso, y cuándo fue la última vez.
+type ClienteVisto struct {
+	Quien  string `json:"quien"`
+	Ultima string `json:"ultima"`
 }
 
 // agentesPermitidos lleva la lista y su fichero. Es el gemelo de
@@ -134,7 +152,13 @@ func (g *agentesPermitidos) permitir(ahora time.Time) (AgentePermitido, error) {
 	if p.Quien == "" {
 		p.Quien = "Un agente"
 	}
-	g.lista = append(g.lista, p)
+	// **Sustituye, no acumula.** El testigo del cliente vive en un fichero por usuario,
+	// así que al dar uno nuevo **todos los clientes pasan a usar ése** y los anteriores
+	// se quedarían en la lista válidos y sin que nadie los use: una puerta abierta que la
+	// pantalla ya no explica, y sin forma de saber cuál de las filas está viva.
+	//
+	// Un permiso por equipo es lo que hay; que la lista tenga una fila es decirlo.
+	g.lista = []AgentePermitido{p}
 	g.porEntregar = p.Testigo
 	g.pendiente = ""
 	return p, g.guardar()
@@ -150,6 +174,61 @@ func (g *agentesPermitidos) recoger(quien string) (string, bool) {
 	t := g.porEntregar
 	g.porEntregar = ""
 	return t, true
+}
+
+// visto apunta que este cliente ha hablado, para que la pantalla pueda decir quién usa
+// el permiso y no solo quién lo pidió.
+//
+// **Pone al día en vez de duplicar**, y deja el último primero: lo que alguien quiere ver
+// es quién está usando esto ahora.
+//
+// **No cuenta como actividad** —no toca el reloj del bloqueo—, que es la regla absoluta de
+// esta casa: lo que se repite solo no mantiene una bóveda abierta. Y **se guarda poco**:
+// solo cuando el nombre es nuevo o cuando su última vez tiene más de un minuto, porque si
+// no escribiría un fichero en cada llamada del agente.
+func (g *agentesPermitidos) visto(testigo, quien string, ahora time.Time) {
+	if testigo == "" || quien == "" {
+		return
+	}
+	g.mu.Lock()
+	hayQueGuardar := false
+	for i := range g.lista {
+		if g.lista[i].Testigo != testigo {
+			continue
+		}
+		clientes := g.lista[i].Clientes
+		var yaEstaba *ClienteVisto
+		resto := make([]ClienteVisto, 0, len(clientes)+1)
+		for j := range clientes {
+			if clientes[j].Quien == quien {
+				yaEstaba = &clientes[j]
+				continue
+			}
+			resto = append(resto, clientes[j])
+		}
+		if yaEstaba == nil {
+			hayQueGuardar = true
+		} else if antes, err := time.Parse(time.RFC3339, yaEstaba.Ultima); err != nil ||
+			ahora.Sub(antes) >= time.Minute {
+			hayQueGuardar = true
+		} else {
+			// Nada que decir: ya está primero y su fecha es de hace un momento.
+			if len(clientes) > 0 && clientes[0].Quien == quien {
+				g.mu.Unlock()
+				return
+			}
+			hayQueGuardar = true
+		}
+		g.lista[i].Clientes = append([]ClienteVisto{{
+			Quien: quien, Ultima: ahora.UTC().Format(time.RFC3339),
+		}}, resto...)
+		break
+	}
+	g.mu.Unlock()
+	if hayQueGuardar {
+		// Que no se pueda guardar no rompe nada: es un apunte para la pantalla.
+		_ = g.guardar()
+	}
 }
 
 func (g *agentesPermitidos) quienPide() string {
@@ -338,7 +417,18 @@ func (f fuenteDelAgente) Emparejar(quien string) (string, error) {
 	return "", errors.New("Permite este agente en la ventana de Esfinge")
 }
 
-func (f fuenteDelAgente) Emparejado(testigo string) bool { return f.a.agentes.vale(testigo) }
+// Emparejado valida el testigo **y apunta quién ha hablado**.
+//
+// Las dos cosas aquí y no en sitios distintos, por lo mismo que decir dónde se escribió y
+// avisar a la ventana van en una sola función: **lo que se escribe por separado se olvida
+// por separado**, y lo que se olvidó la vez anterior fue justo el apunte.
+func (f fuenteDelAgente) Emparejado(testigo, quien string) bool {
+	if !f.a.agentes.vale(testigo) {
+		return false
+	}
+	f.a.agentes.visto(testigo, siNoDice(quien), time.Now())
+	return true
+}
 
 // ------------------------------------------------------- encender y apagar
 

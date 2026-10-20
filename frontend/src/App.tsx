@@ -2108,14 +2108,34 @@ function Ajustes({
 
 
 
+          {/* **El permiso es del equipo, no de un programa**, y la pantalla lo dice
+              así desde el 2026-10-20.
+
+              Antes era una lista de «agentes permitidos» con un nombre y un «Retirar»
+              por fila, o sea la forma de un permiso por programa. Y no lo es: el testigo
+              que guarda el cliente vive en **un fichero por usuario**, así que lo crea el
+              primero que llega y lo reutilizan todos. El cliente instaló Claude Code,
+              entró con el permiso de Claude Desktop y **aquí seguía saliendo un solo
+              agente, con el nombre del otro**. Lo que leía era falso en lo que importa:
+              quién puede entrar.
+
+              Lo que sí sabe Esfinge —porque el nombre viaja en cada petición, y por eso
+              la tarjeta de aprobación sí dice «Claude Code»— es **quién ha hablado**. Eso
+              es lo que va debajo. */}
           {elAgente && elAgente.permitidos?.length > 0 && (
             <div>
-              <label>Agentes permitidos</label>
+              <label>Permiso de este equipo</label>
               <ul className="lista-papelera">
                 {elAgente.permitidos.map((g) => (
                   <li key={g.desde}>
-                    <span className="nombre">{g.quien}</span>
-                    <span className="nota">Desde el {fecha(g.desde)}</span>
+                    <span className="nombre">
+                      Autorizado desde el {fecha(g.desde)}
+                    </span>
+                    <span className="nota">
+                      {g.clientes && g.clientes.length > 0
+                        ? `Han hablado: ${g.clientes.map((c) => c.quien).join(" · ")}`
+                        : `Lo pidió ${g.quien}. Cualquier cliente MCP tuyo puede usarlo.`}
+                    </span>
                     <span className="acciones">
                       <button
                         className="discreto"

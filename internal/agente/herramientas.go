@@ -191,10 +191,14 @@ var LasHerramientas = []Herramienta{
 	{
 		Nombre: "esfinge_bovedas",
 		Descripcion: "Las bóvedas que hay en este equipo y que puedes nombrar en `boveda`: la personal, " +
-			"los proyectos y las que te han compartido. Dice cuál está abierta y **en cuál se puede " +
-			"escribir**: una compartida puede ser de solo ver, y eso es un permiso y no un fallo. " +
+			"los proyectos y las que te han compartido. Dice cuál es la **activa** ahora y **en cuál se " +
+			"puede escribir**: una compartida puede ser de solo ver, y eso es un permiso y no un fallo. " +
 			"Úsala cuando quien te habla nombre una bóveda y quieras asegurarte de cuál es, o cuando " +
-			"te pregunte qué bóvedas tiene.",
+			"te pregunte qué bóvedas tiene.\n\n" +
+			"**Las que no son la activa se usan igual**: nómbralas en `boveda` y Esfinge conmuta sola, sin " +
+			"pedir ninguna contraseña. **No digas que están cerradas ni que no puedes abrirlas**, porque " +
+			"no es verdad: en Esfinge «cerrada» quiere decir **bloqueada** —la que pide la contraseña " +
+			"maestra—, y si eso pasara no podrías ni ver esta lista.",
 		Esquema:         objeto(nil),
 		Verbo:           QueBovedas,
 		PideAprobacion:  false,

@@ -310,7 +310,9 @@ func (f fuenteDelAgente) Bovedas() ([]agente.UnaBoveda, error) {
 	out := make([]agente.UnaBoveda, 0, len(lista))
 	for _, b := range lista {
 		out = append(out, agente.UnaBoveda{
-			Nombre: b.Nombre, EsLaPersonal: b.EsLaPersonal, Abierta: b.Abierta,
+			// `Abierta` de la ventana es `Activa` para el agente: la palabra importa,
+			// ver el comentario del campo en `agente.UnaBoveda`.
+			Nombre: b.Nombre, EsLaPersonal: b.EsLaPersonal, Activa: b.Abierta,
 			SeEscribe: b.SeEscribe, Compartida: b.Compartida,
 		})
 	}

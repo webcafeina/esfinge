@@ -5,6 +5,38 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-20 · El MCP en Claude Code: dos cosas que solo se veían ahí
+
+- **Se probó guiado, paso a paso**, que es lo que hizo que salieran: `claude mcp list` antes de instalar
+  —`esfinge` no estaba, y **`apolo` sí**, con un binario dentro de su `.app` y conectado, o sea el patrón
+  validado—, la orden copiada **de la propia aplicación** para que la ruta la calculara ella, y luego la
+  versión, las herramientas, una contraseña y una búsqueda en otra bóveda.
+- **Lo que funciona**: la ruta sale bien, **2.58.6**, **las trece herramientas exactas** del fuente, la
+  tarjeta dice **«Claude Code (claude-code)»** —el nombre viaja en cada petición— y el camino de aprobación
+  entero, dos veces.
+- **Y no pidió emparejamiento, que es correcto**: el testigo del cliente vive en **un fichero por usuario**,
+  así que lo creó Desktop el 8/10 y Claude Code lo reutilizó. El permiso es **del equipo**.
+- **Fallo 1 · una palabra con dos sentidos le quitaba una funcionalidad entera.** `esfinge_bovedas` devolvía
+  `abierta: false` para las que no son la activa, y en Esfinge «cerrada» quiere decir **bloqueada**. El agente
+  contestó «están cerradas, Esfinge no me deja abrirlas desde aquí» — **y sí podía**: al nombrar la bóveda
+  funcionó a la primera y lo dijo él mismo, «funcionó aunque la bóveda figuraba como cerrada». Justo lo que la
+  ADR 0055 vino a quitar, devuelto por el vocabulario. El campo pasa a `activa` y la descripción **desmiente
+  la lectura equivocada en vez de callarla**. Guarda de las dos mitades, mutada por las dos.
+- **Fallo 2 · la lista de agentes decía un programa y entraban todos.** Lo preguntó él —«¿por qué no sale
+  Claude Code?»— y la respuesta es que **nunca se emparejó**: la lista es de emparejamientos, no de quién
+  entra. Y `permitir` hacía `append`, así que un emparejamiento nuevo habría dejado filas **válidas y sin
+  uso**. Ahora: sustituye en vez de acumular, se apunta **quién ha hablado** (`visto`, que no cuenta como
+  actividad y no escribe en cada llamada), y la pantalla dice «Permiso de este equipo · Autorizado desde… ·
+  Han hablado: …» con un solo Retirar. **Lo grave: esa lista no tenía ninguna prueba de interfaz** — por eso
+  aguantó tres semanas. Ahora la tiene, en los dos temas.
+- **Qué se verificó**: cuatro pruebas nuevas, las de texto y las del permiso mutadas; `make e2e` (146) y
+  `make comprobar` enteros, sin un solo `(cached)`.
+- **Y la lección del día, que ya tiene gemela en este fichero**: una palabra ambigua en una pantalla la lee
+  alguien que ya sabe de qué va; **en un esquema la lee un modelo que solo tiene eso**. Es `huella` otra vez,
+  donde cuesta más.
+
+---
+
 ## 2026-10-19 · El bucle estaba más abajo: la misma regla en tres listas
 
 - **Lo probó en su Mac y el bucle seguía.** No era lo del viernes —eso estaba arreglado— sino otra causa

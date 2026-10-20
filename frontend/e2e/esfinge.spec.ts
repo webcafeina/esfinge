@@ -2652,6 +2652,66 @@ test("una bóveda compartida retirada se enseña como aviso y no se puede abrir"
  * ID dice que es un cerrojo y no una llave. Una frase así se borra en un refactor sin
  * que nadie lo note, y por eso hay una aserción que la vigila.
  */
+/**
+ * **El permiso de los agentes es del equipo, y la pantalla tiene que decir eso**
+ * (2026-10-20).
+ *
+ * Era una lista de «agentes permitidos» con un nombre y un «Retirar» por fila, o sea la
+ * forma de un permiso por programa. Y no lo es: el testigo que guarda el cliente MCP vive
+ * en un fichero por usuario, así que lo crea el primero que llega y lo reutilizan todos.
+ * El cliente instaló Claude Code, entró con el permiso que le había dado a Claude Desktop
+ * **y aquí seguía saliendo un solo agente, con el nombre del otro**.
+ *
+ * Y lo grave de por qué nadie lo vio: **esta lista no tenía ninguna prueba de interfaz**.
+ * Lo que no se mira no se mira.
+ */
+test("el permiso de los agentes es del equipo y dice quién ha hablado", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.route("**/api/EstadoDelAgente", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        encendido: true,
+        escuchando: true,
+        donde: "/tmp/agentes.sock",
+        // **Una fila**, con quién lo pidió y quién ha hablado de verdad.
+        permitidos: [
+          {
+            quien: "Claude (claude-ai)",
+            desde: "2026-10-08T14:07:00Z",
+            clientes: [
+              { quien: "Claude Code", ultima: "2026-10-20T09:30:00Z" },
+              { quien: "Claude (claude-ai)", ultima: "2026-10-19T12:00:00Z" },
+            ],
+          },
+        ],
+        configuracion: "{}",
+        valvula: { abierta: false, quedan: 0, usadas: 0, tope: 20 },
+      }),
+    });
+  });
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Agentes" }).click();
+
+  const panel = page.locator(".panel:visible");
+  // **Lo que es**: el permiso de este equipo, no una lista de programas.
+  await expect(panel).toContainText("Permiso de este equipo");
+  await expect(panel).toContainText("Autorizado desde");
+  // **Y quién ha hablado de verdad**, que es lo que contesta «¿quién usa esto?».
+  await expect(panel).toContainText("Claude Code");
+  await expect(panel).toContainText("Claude (claude-ai)");
+
+  // Y **no** vuelve a decir «Agentes permitidos», que es el rótulo que hacía creer que
+  // el permiso era por programa.
+  await expect(panel).not.toContainText("Agentes permitidos");
+
+  await panel.screenshot({ path: `test-results/permiso-equipo-${test.info().project.name}.png` });
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 test("el canal con los agentes viene apagado, se enciende y dice lo que es", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");

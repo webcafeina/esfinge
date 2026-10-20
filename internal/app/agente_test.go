@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -72,7 +73,7 @@ func TestElAgenteSeEmparejaUnaVezYSuTestigoNoCruza(t *testing.T) {
 	if err != nil || testigo == "" {
 		t.Fatalf("no ha recogido el testigo: %v", err)
 	}
-	if !f.Emparejado(testigo) {
+	if !f.Emparejado(testigo, "Claude Code") {
 		t.Error("el testigo que acaba de dar no vale")
 	}
 
@@ -94,7 +95,7 @@ func TestElAgenteSeEmparejaUnaVezYSuTestigoNoCruza(t *testing.T) {
 	if err := a.OlvidarAgente(e.Permitidos[0].Desde); err != nil {
 		t.Fatal(err)
 	}
-	if f.Emparejado(testigo) {
+	if f.Emparejado(testigo, "Claude Code") {
 		t.Error("sigue valiendo después de retirarlo")
 	}
 }
@@ -1335,5 +1336,86 @@ func TestPulsarSobreUnaTarjetaQueYaHaCambiadoNoConcedeNada(t *testing.T) {
 	}
 	if _, err := f.CopiarSecreto("Claude Code", hacienda); !errors.Is(err, agente.ErrPideAprobacion) {
 		t.Error("se ha concedido la de Hacienda, que nadie aprobó")
+	}
+}
+
+// **El permiso de los agentes es uno por equipo, y la lista tiene que decir eso**
+// (2026-10-20).
+//
+// Lo que había: `permitir` hacía `append`, así que cada emparejamiento añadía una fila
+// con su nombre y su botón de «Retirar» — la pantalla de un permiso por programa. Y el
+// cliente guarda el testigo en **un fichero por usuario**, así que en realidad hay uno y
+// lo reutilizan todos: Claude Code entró con el de Claude Desktop y **no salía en la
+// lista**. Lo vio el cliente probando Claude Code.
+//
+// Dos cosas mal, y la segunda es peor: la lista no dice quién puede entrar, y si alguna
+// vez se emparejara algo otra vez acumularía filas **de las que solo una está en uso**,
+// sin forma de saber cuál desde la pantalla.
+func TestElPermisoDeLosAgentesEsUnoPorEquipo(t *testing.T) {
+	g := abrirAgentes(filepath.Join(t.TempDir(), "agentes.json"))
+	ahora := time.Now()
+
+	// Se empareja uno.
+	g.recoger("Claude Desktop")
+	primero, err := g.permitir(ahora)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Y más tarde, otra vez —porque alguien borró el fichero del testigo, o retiró y
+	// volvió a dar el permiso—.
+	g.recoger("Claude Code")
+	segundo, err := g.permitir(ahora.Add(time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// **Una sola fila**: es lo que hay de verdad, porque el testigo del cliente es uno.
+	if n := len(g.ver()); n != 1 {
+		t.Errorf("la lista tiene %d filas y el equipo solo puede tener un permiso: %+v", n, g.ver())
+	}
+	// Y el que vale es el último, que es el que el cliente tiene en el disco.
+	if !g.vale(segundo.Testigo) {
+		t.Error("el testigo recién dado no vale")
+	}
+	if g.vale(primero.Testigo) {
+		t.Error("el testigo viejo sigue valiendo: es una puerta que la pantalla ya no enseña")
+	}
+}
+
+// **Y la pantalla dice quién ha hablado de verdad, no solo quién se emparejó.**
+//
+// El nombre viaja en cada petición —por eso la tarjeta decía «Claude Code» y el registro
+// lo apunta bien—, así que Esfinge lo sabe y puede decirlo. Sin esto, la única respuesta
+// a «¿quién está usando esto?» era el nombre del primero que pidió permiso, y eso es lo
+// que hizo creer que Claude Code no estaba dentro.
+func TestLaListaDiceQuienHaHabladoDeVerdad(t *testing.T) {
+	g := abrirAgentes(filepath.Join(t.TempDir(), "agentes.json"))
+	ahora := time.Now()
+	g.recoger("Claude Desktop")
+	p, err := g.permitir(ahora)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Habla el que se emparejó…
+	g.visto(p.Testigo, "Claude Desktop", ahora)
+	// …y después otro, con el mismo testigo, que es lo que pasa de verdad.
+	g.visto(p.Testigo, "Claude Code", ahora.Add(time.Minute))
+
+	fila := g.ver()[0]
+	if len(fila.Clientes) != 2 {
+		t.Fatalf("tendría que haber apuntado los dos clientes: %+v", fila.Clientes)
+	}
+	// El más reciente primero, que es lo que alguien quiere ver.
+	if fila.Clientes[0].Quien != "Claude Code" {
+		t.Errorf("el primero de la lista tendría que ser el último que habló: %+v", fila.Clientes)
+	}
+	// Y hablar otra vez no duplica: pone al día la fecha.
+	g.visto(p.Testigo, "Claude Desktop", ahora.Add(2*time.Minute))
+	if n := len(g.ver()[0].Clientes); n != 2 {
+		t.Errorf("hablar otra vez ha duplicado al cliente: %d", n)
+	}
+	if g.ver()[0].Clientes[0].Quien != "Claude Desktop" {
+		t.Error("el que acaba de hablar tendría que estar primero")
 	}
 }

@@ -94,7 +94,10 @@ type Fuente interface {
 	// hable con la bóveda. Devuelve el testigo si dice que sí.
 	Emparejar(quien string) (string, error)
 	// Emparejado dice si ese testigo es uno de los que se dieron.
-	Emparejado(testigo string) bool
+	// Emparejado dice si ese testigo vale, **y recibe el nombre del cliente** porque es
+	// el único sitio por donde pasan todas las peticiones con los dos datos juntos: así
+	// la ventana puede decir quién está usando el permiso y no solo quién lo pidió.
+	Emparejado(testigo, quien string) bool
 }
 
 // ErrNoEsta es que esa entrada no existe, o está en la papelera.
@@ -345,7 +348,7 @@ func (s *Servidor) Atender(p Peticion) Respuesta {
 		return Respuesta{OK: true, Testigo: t}
 	}
 
-	if !s.fuente.Emparejado(p.Testigo) {
+	if !s.fuente.Emparejado(p.Testigo, p.Quien) {
 		return mal(MotivoSinEmparejar, "Permite este agente en la ventana de Esfinge")
 	}
 

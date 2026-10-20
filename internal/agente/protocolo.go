@@ -265,7 +265,20 @@ type Estado struct {
 type UnaBoveda struct {
 	Nombre       string `json:"nombre"`
 	EsLaPersonal bool   `json:"esLaPersonal"`
-	Abierta      bool   `json:"abierta"`
+	// Activa es la que está puesta ahora mismo, **y se llama así porque «abierta» hacía
+	// que el modelo se negara a usar las demás** (2026-10-20).
+	//
+	// En Esfinge **«cerrada» quiere decir bloqueada**: la bóveda que pide la contraseña
+	// maestra. Lo que no es la activa **no está cerrada en ese sentido** —se conmuta sin
+	// contraseña, porque la clave ya está en memoria desde la ADR 0050—, pero un campo
+	// llamado `abierta: false` se lee como lo primero. El agente del cliente dijo
+	// literalmente «están cerradas, Esfinge no me deja abrirlas desde aquí» **y sí
+	// podía**: al nombrarlas funcionó a la primera.
+	//
+	// Es la misma trampa que `huella` —la criptográfica y la dactilar— con otra palabra,
+	// y aquí cuesta más porque **el texto es lo único que ve el modelo**: una palabra con
+	// dos sentidos le quita una funcionalidad entera que el cliente pidió.
+	Activa bool `json:"activa"`
 	// SeEscribe: en una compartida de solo ver, no (ADR 0052). **Es un permiso y no un
 	// fallo**, y se dice antes para que el agente no lo descubra al ir a guardar.
 	SeEscribe bool `json:"seEscribe"`
