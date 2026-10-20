@@ -325,15 +325,14 @@ func (a *App) EmpezarRegistro(correo string) error {
 	return a.cliente().EmpezarAlta(a.ctxCuenta(), c)
 }
 
-// MaestraSirveParaCuenta dice si una contraseña vale como contraseña de una
+// maestraSirveParaCuenta dice si una contraseña vale como contraseña de una
 // cuenta: con cuenta, la bóveda cifrada vive también en el servidor, y si alguien
 // la robara de allí la única defensa sería la contraseña (ADR 0035).
-func maestraSirveParaCuenta(maestra string) error {
-	if cripto.Evaluar(maestra).Nivel < 3 {
-		return errors.New("Con cuenta, la contraseña maestra tiene que ser al menos «Buena»: alárgala o usa varias palabras sin relación")
-	}
-	return nil
-}
+//
+// **La regla está en `internal/cuenta` y no aquí**, desde que la línea de comandos
+// también puede dar de alta una cuenta (ADR 0057): escrita dos veces, la del
+// servidor se habría quedado con el listón de otro día.
+func maestraSirveParaCuenta(maestra string) error { return cuenta.MaestraSirve(maestra) }
 
 // TerminarRegistro crea la cuenta con el código del correo.
 //

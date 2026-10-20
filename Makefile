@@ -56,7 +56,10 @@ comprobar:
 	cd navegador && $(PNPM) exec playwright test -c pruebas-reales
 	@# Y el cliente y la sincronización contra ese mismo servidor, levantado en
 	@# local: la tubería entera, de la bóveda de un equipo a la de otro.
-	herramientas/con-servidor.sh $(GO) test -race -count=1 ./internal/cuenta ./internal/sincro ./internal/app
+	@# Y la línea de comandos, que desde la ADR 0057 también da de alta una cuenta y
+	@# sincroniza —lo que un servidor necesita para recibir las bóvedas que se le
+	@# marquen—: eso solo se puede probar contra el servidor de verdad.
+	herramientas/con-servidor.sh $(GO) test -race -count=1 ./internal/cuenta ./internal/sincro ./internal/app ./internal/cli
 
 ## servidor: levanta el servidor de cuentas en local, con el buzón de pruebas
 .PHONY: servidor

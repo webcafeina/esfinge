@@ -2,9 +2,9 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,10 +14,12 @@ import (
 	"github.com/webcafeina/esfinge/internal/codigos"
 	"github.com/webcafeina/esfinge/internal/cripto"
 	"github.com/webcafeina/esfinge/internal/qr"
+	"github.com/webcafeina/esfinge/internal/rutas"
 	"github.com/webcafeina/esfinge/internal/wifi"
 )
 
-// La bóveda desde la línea de comandos: **solo leer**.
+// La bóveda desde la línea de comandos: **solo leer**, con una excepción que
+// está en `servidor.go`.
 //
 // Editar desde aquí puede esperar; consultar, no. Lo que un script necesita es
 // sacar una contraseña para metérsela a otra cosa, y para eso hacen falta dos
@@ -27,11 +29,22 @@ import (
 // El `--json` no es un adorno. Es la costura de la que va a colgar el
 // autorrelleno del navegador cuando llegue: la extensión hablará con esto, no
 // con la ventana.
+//
+// Y la excepción: `servidor activar` **escribe**, porque poner una ranura es lo
+// único que puede dejar esta bóveda abriéndose sin contraseña en un servidor, y
+// poner una ranura exige la bóveda abierta —o sea saber la maestra— (ADR 0057).
 
 type opcionesBoveda struct {
 	ruta  string
 	json  bool
 	clave OrigenClave
+	// sinSincronizar se salta la pasada que se hace al abrir en un servidor. Lo pide
+	// quien tiene prisa y sabe lo que hace: lo que se lee puede estar viejo.
+	sinSincronizar bool
+	// compartida es el nombre de una bóveda que le han compartido a este equipo
+	// (ADR 0057). **Por su nombre y no por su ruta**, porque el fichero se llama por
+	// una referencia al azar y lo que alguien escribe en un guion es «Tempero».
+	compartida string
 }
 
 func comandoBoveda(o *opciones) *cobra.Command {
@@ -45,7 +58,9 @@ func comandoBoveda(o *opciones) *cobra.Command {
 			"hay aquí es lo que necesita un script —sacar una contraseña para dársela\n" +
 			"a otra cosa— y la forma de salir si algún día la ventana no arranca.\n\n" +
 			"La clave se pide por el terminal, o con --clave-env o --clave-fichero.\n" +
-			"Vale tanto la contraseña maestra como la clave de recuperación.",
+			"Vale tanto la contraseña maestra como la clave de recuperación.\n\n" +
+			"En un servidor puede no pedir nada, y se trabaja con una bóveda que le\n" +
+			"hayan compartido diciendo su nombre con --compartida. Ver «servidor».",
 		Args:          cobra.NoArgs,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -57,6 +72,10 @@ func comandoBoveda(o *opciones) *cobra.Command {
 	f.StringVar(&ob.clave.Variable, "clave-env", "", "Leer la clave de una variable de entorno")
 	f.StringVar(&ob.clave.Fichero, "clave-fichero", "", "Leer la clave de un fichero")
 	f.BoolVar(&ob.json, "json", false, "Sacar los datos en JSON, para tuberías")
+	f.BoolVar(&ob.sinSincronizar, "sin-sincronizar", false,
+		"En un servidor, no ponerse al día con la cuenta antes de leer")
+	f.StringVar(&ob.compartida, "compartida", "",
+		"Trabajar con una bóveda que le hayan compartido a este equipo, por su nombre")
 
 	cmd.AddCommand(
 		comandoBovedaListar(o, &ob),
@@ -64,6 +83,8 @@ func comandoBoveda(o *opciones) *cobra.Command {
 		comandoBovedaCodigo(o, &ob),
 		comandoBovedaWifi(o, &ob),
 		comandoBovedaExportar(o, &ob),
+		comandoBovedaEjecutar(o, &ob),
+		comandoBovedaServidor(o, &ob),
 	)
 	return cmd
 }
@@ -339,20 +360,43 @@ func comandoBovedaExportar(o *opciones, ob *opcionesBoveda) *cobra.Command {
 
 // abrirBoveda pide la clave y desbloquea. Vale tanto la contraseña maestra como
 // la de recuperación: la bóveda prueba las dos ranuras y no hace falta decirlo.
+//
+// **Y en un servidor puede no pedir nada** (ADR 0057): si esta bóveda lleva la
+// ranura del servidor y la llave está en este equipo, abre con ella. Lo decide el
+// fichero de la bóveda, así que donde nadie lo haya activado esto no cambia nada.
+//
+// Y **en un servidor se pone al día antes de dejar leer nada**, que es lo que hace
+// que una credencial cambiada en el Mac llegue aquí.
 func abrirBoveda(o *opciones, ob *opcionesBoveda) (*boveda.Boveda, error) {
+	if ob.compartida != "" {
+		if ob.ruta != "" {
+			return nil, errUso{errors.New("--boveda y --compartida dicen dos bóvedas distintas; elige una")}
+		}
+		// Ésa se pone al día por su cuenta, contra la cuenta de su dueño.
+		return abrirLaCompartidaPorNombre(o, ob, ob.compartida)
+	}
+	b, err := abrirLaBoveda(o, ob)
+	if err != nil {
+		return nil, err
+	}
+	ponerseAlDia(o, ob, b)
+	return b, nil
+}
+
+// abrirLaBoveda abre y nada más: lo usan los comandos que no quieren una pasada de
+// sincronización por delante —los de montar el servidor, y el que la pide él mismo—.
+func abrirLaBoveda(o *opciones, ob *opcionesBoveda) (*boveda.Boveda, error) {
 	e, err := estilos(o.tema)
 	if err != nil {
 		return nil, err
 	}
-	ruta := ob.ruta
-	if ruta == "" {
-		ruta = rutaDeLaBoveda()
+	ruta, err := rutaElegida(ob)
+	if err != nil {
+		return nil, err
 	}
-	if ruta == "" {
-		return nil, fmt.Errorf("No sé dónde está la bóveda en este sistema; dila con --boveda")
-	}
-	if _, err := os.Stat(ruta); err != nil {
-		return nil, fmt.Errorf("No hay ninguna bóveda en %s; créala desde la aplicación", ruta)
+
+	if b, err := abrirConLaLlaveDelServidor(e, o.silencio, ob, ruta); b != nil || err != nil {
+		return b, err
 	}
 
 	// Sin confirmación: aquí se abre algo que ya existe, no se crea nada.
@@ -365,16 +409,34 @@ func abrirBoveda(o *opciones, ob *opcionesBoveda) (*boveda.Boveda, error) {
 	return boveda.Abrir(ruta, string(clave))
 }
 
-// rutaDeLaBoveda es la misma que usa la ventana. Se repite aquí y no se importa
-// de internal/app a propósito: la línea de comandos no depende del paquete de la
-// ventana, y meterle esa dependencia por una ruta sería pagar caro.
-func rutaDeLaBoveda() string {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return ""
+// rutaElegida es con qué bóveda se va a trabajar, y comprueba que está ahí.
+//
+// Va aparte de abrirBoveda porque hay cosas que se saben **sin abrir nada** y que
+// hay que mirar antes de pedirle a nadie la contraseña: si esta bóveda es la de un
+// proyecto, o si se abre sola en este equipo.
+func rutaElegida(ob *opcionesBoveda) (string, error) {
+	ruta := ob.ruta
+	if ruta == "" {
+		ruta = rutaDeLaBoveda()
 	}
-	return filepath.Join(dir, "Esfinge", "boveda.esfinge")
+	if ruta == "" {
+		return "", fmt.Errorf("No sé dónde está la bóveda en este sistema; dila con --boveda")
+	}
+	if _, err := os.Stat(ruta); err != nil {
+		return "", fmt.Errorf("No hay ninguna bóveda en %s; créala desde la aplicación", ruta)
+	}
+	return ruta, nil
 }
+
+// rutaDeLaBoveda es la misma que usa la ventana, **y desde la ADR 0057 sale del
+// mismo sitio**: `internal/rutas`.
+//
+// Antes se repetía aquí a propósito, para no depender del paquete de la ventana
+// —que arrastra Wails y no cruza de plataforma—. Esa razón sigue en pie; lo que
+// cambió es que ahora la línea de comandos también busca bóvedas de proyecto y
+// compartidas, y tres rutas copiadas se desalinean solas: el fallo sería dos sitios
+// donde buscar la misma bóveda, cada programa sobre su copia.
+func rutaDeLaBoveda() string { return rutas.BovedaPrincipal() }
 
 // escribirJSON saca los datos con sangría, que es lo que espera quien va a
 // mirarlos, y sigue siendo válido para quien los vaya a procesar.

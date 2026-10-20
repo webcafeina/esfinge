@@ -645,6 +645,48 @@ agente reintentara y Esfinge volvía a preguntar sin fin. El coste de arreglarlo
 > cerrada el agente no puede hacer nada, y para reabrirla hace falta la contraseña maestra o el dedo. Lo que
 > podría gastarse en ese rato es **exactamente la acción que acabas de aprobar**.
 
+## La bóveda en un servidor
+
+Desde la [ADR 0057](adr/0057-la-boveda-en-un-servidor.md), una bóveda puede abrirse **en una máquina donde
+no hay nadie**: un servidor donde trabajan agentes. Hay que activarlo a mano, con una orden y con la bóveda
+abierta, y **no se activa solo en ningún sitio**. En el Mac del cliente no hay nada de esto y la ventana no
+lo ofrece.
+
+Lo que hay que saber antes de usarlo, dicho con las palabras de Touch ID:
+
+> **Esto no es un cerrojo.** Touch ID protege de quien se sienta delante de tu ordenador desbloqueado. Aquí
+> no hay nadie a quien pedirle nada, y la llave está en un fichero del disco: **quien entre en el servidor
+> abre las bóvedas que se le hayan marcado.** No protege de eso.
+
+Y la otra mitad, que es por lo que se hace igual: **la alternativa realista no era tenerlos a salvo, era
+tenerlos en ficheros `.env` en claro**, que es donde están hoy —111 variables solo en uno—, que lee
+cualquiera que entre, que no dejan rastro y que un agente se mete en su conversación al abrirlos. Es el
+mismo trato que la bóveda hace con el segundo factor y con los datos personales.
+
+Qué cambia de verdad, entonces: los secretos quedan **cifrados en reposo**, se cambian en el Mac y llegan
+solos, **queda apuntado** lo que usó cada despliegue, y quitarle el acceso al servidor es **rotar la clave
+desde el Mac** (ADR 0052) en vez de entrar a borrar un fichero.
+
+Cuatro cosas más que lo acotan:
+
+- **El alcance.** La llave del servidor abre **su** bóveda, que está vacía, y de ahí solo las bóvedas de
+  proyecto que se le hayan marcado. **Nunca la bóveda personal de nadie**: el servidor es otra cuenta, no
+  otro equipo tuyo.
+- **Solo ver.** El permiso que se le da es de lectura, y **lo impone el servidor**: el servidor tiene la
+  clave para abrir lo que se le compartió, lo que no puede es subir. Como consecuencia, lo que `ejecutar`
+  apunte en el registro **se queda en su copia y no llega al Mac**.
+- **Una sola llave sin sellar en el disco**, y fuera de la carpeta de la bóveda: una copia de seguridad de
+  esa carpeta no se lleva la llave dentro. La sesión de la cuenta y su clave de acceso van selladas con la
+  clave de la bóveda, así que cuelgan de esa misma llave.
+- **Nada corre de forma permanente.** Cada orden abre la bóveda, hace lo suyo y la cierra, y la cierra
+  también **antes de lanzar el programa**. No hay un servicio con la clave en memoria, ni canal de agentes:
+  sin proceso permanente no hay socket, y una aprobación sin ventana donde aprobar sería un cerrojo pintado.
+
+Y lo que **no** es, por si se lee como una frontera: con la llave de ese equipo, `esfinge boveda ver` también
+saca la contraseña en pantalla. Lo que `esfinge boveda ejecutar` hace es que **el camino cómodo no se la
+enseñe** —el secreto va al entorno del programa y el agente ve solo su salida— y que quede rastro. Es
+exactamente el trato del portapapeles de la ADR 0054, en una máquina sin pantalla.
+
 ## Decisiones que afectan a la seguridad
 
 - [ADR 0002](adr/0002-formato-esf1.md) — El cifrado y por qué esos algoritmos.
@@ -659,3 +701,5 @@ agente reintentara y Esfinge volvía a preguntar sin fin. El coste de arreglarlo
   de tus bóvedas, y qué cerrojo se quitó con ello.
 - [ADR 0052](adr/0052-dar-acceso-a-un-proyecto.md) — Qué sabe el servidor de quién tiene acceso, y por qué
   «solo ver» lo impone él y no el cifrado.
+- [ADR 0057](adr/0057-la-boveda-en-un-servidor.md) — Por qué en un servidor la llave está en el disco, qué
+  deja de proteger con ello y qué se gana.

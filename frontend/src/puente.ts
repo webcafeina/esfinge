@@ -127,6 +127,14 @@ export type Preferencias = {
    * navegador pregunta como si Esfinge no estuviera.
    */
   llavesDeAccesoEnElNavegador: boolean;
+  /**
+   * La cuenta de Esfinge del servidor de esta casa, si hay uno (ADR 0057).
+   *
+   * Vacío, **la ventana no menciona nada**: un selector para un servidor que no
+   * existe es ruido sobre algo que no se puede arreglar. Con él puesto, dentro de una
+   * bóveda de proyecto sale el interruptor que le da acceso de solo ver.
+   */
+  correoDelServidor: string;
 };
 
 /** Lo que se manda para apagar uno de los dos relojes de la bóveda. */

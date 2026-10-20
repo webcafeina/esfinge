@@ -1202,3 +1202,58 @@ func TestLaPapeleraDeUnEquipoNoSeLlevaLoQueOtroAcabaDeCambiar(t *testing.T) {
 		t.Fatalf("en A: papelera=%v secreto=%q", enA.Papelera, enA.Secreto)
 	}
 }
+
+// Las dos listas de ranuras locales se comparan **entre sí**: la de Go y la del
+// espejo de TypeScript (ADR 0040).
+//
+// Es la cuarta vez que la misma regla en dos sitios cuesta un fallo —`vaciarLoSensible`,
+// `enConfiguracionDePruebas`, `PasaPorLaValvula`—, y aquí no se pueden juntar porque
+// son dos lenguajes. Lo que queda es esto.
+//
+// **Y desalinearse no falla**, que es lo que lo hace peligroso: la ranura que un lado
+// sube y el otro no deja a las dos bóvedas pasándose la misma sin fin, y la que acabe
+// subiendo le da al servidor una segunda puerta a la bóveda. No hay nada que se ponga
+// rojo por su cuenta.
+//
+// No necesita Node: lo que compara es una lista literal, así que **se lee el fuente**
+// y corre siempre, no solo con ESFINGE_CRUZADA.
+func TestLasRanurasLocalesSonLasMismas(t *testing.T) {
+	const fuente = "../../navegador/src/nucleo/boveda.ts"
+	datos, err := os.ReadFile(fuente)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// `export const RANURAS_LOCALES = new Set([...]);`, con los tipos entre comillas.
+	i := strings.Index(string(datos), "RANURAS_LOCALES = new Set([")
+	if i < 0 {
+		t.Fatalf("no encuentro RANURAS_LOCALES en %s; si se ha escrito de otra forma, esta prueba deja de comparar nada", fuente)
+	}
+	resto := string(datos)[i:]
+	j := strings.Index(resto, "])")
+	if j < 0 {
+		t.Fatalf("la lista de %s no cierra donde se esperaba", fuente)
+	}
+	enTS := map[string]bool{}
+	for _, trozo := range strings.Split(resto[:j], ",") {
+		if a := strings.Index(trozo, `"`); a >= 0 {
+			if b := strings.Index(trozo[a+1:], `"`); b >= 0 {
+				enTS[trozo[a+1:a+1+b]] = true
+			}
+		}
+	}
+	if len(enTS) == 0 {
+		t.Fatalf("no he sacado ningún tipo de %s", fuente)
+	}
+
+	for tipo := range ranurasLocales {
+		if !enTS[tipo] {
+			t.Errorf("Go tiene %q como ranura local y el espejo de TypeScript no: el espejo la subiría", tipo)
+		}
+	}
+	for tipo := range enTS {
+		if !ranurasLocales[tipo] {
+			t.Errorf("el espejo de TypeScript tiene %q como ranura local y Go no: Go la subiría", tipo)
+		}
+	}
+	t.Logf("%d ranuras locales en Go y %d en el espejo", len(ranurasLocales), len(enTS))
+}

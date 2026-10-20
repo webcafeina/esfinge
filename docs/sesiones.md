@@ -5,6 +5,42 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-20 · La bóveda en un servidor, para los agentes del VPS
+
+- **Lo pidió el cliente**: *«habría que pensar alguna forma de resolver o facilitar la gestión de
+  credenciales que puedan usar agentes en proyectos en el VPS, ya que este caso se acabará dando»*. Se
+  planificó entero en modo plan, con sus preguntas, y salió la [ADR 0057](adr/0057-la-boveda-en-un-servidor.md).
+- **Lo que hay en el VPS hoy**: dieciséis proyectos con sus secretos en ficheros `.env` **en claro** —111
+  variables solo en `webcafeina-local`—, que los agentes que trabajan allí leen, y al leerlos **entran en la
+  conversación de un modelo**. Eso es lo que esto viene a quitar.
+- **Decidido con él**: ranura propia del servidor, alcance por proyecto con un selector, **el VPS es otra
+  persona con su cuenta** (ADR 0052), ejecutar con el secreto dentro sin verlo, y **nada corriendo de forma
+  permanente**. Y a mitad de camino, una pregunta más: **qué pasa cuando la sesión de la cuenta caduca** —30
+  días deslizantes, 90 máximo— eligió **guardar la clave de acceso** (nunca la maestra) para que el servidor
+  vuelva a entrar solo.
+- **Escrito**: la ranura del servidor y su máquina compartida con la de Touch ID; el llavero de fichero
+  (`~/.esfinge-servidor`, fuera de la carpeta de las bóvedas); `esfinge boveda ejecutar`; el alta, entrar,
+  recibir y una pasada de sincronización en la línea de comandos; `--compartida` por nombre; y el selector en
+  la ventana con su preferencia en Ajustes → Cuenta.
+- **Verificado**: `make comprobar` entero; cada protección **mutada** una a una —la ranura que no viaja, la
+  precedencia de una clave dicha a mano, el orden de la comprobación del proyecto, el cierre de la bóveda
+  antes de lanzar, el aviso de que no se pudo apuntar, el sellado de la clave de acceso y la vuelta a
+  entrar—; y **el paseo de los dos equipos contra el servidor de cuentas de verdad**, donde la ventana crea
+  el proyecto, el servidor se da de alta, recibe el acceso, le da el secreto a un programa **por el argv
+  entero**, la ventana cambia la contraseña y el servidor usa la nueva.
+- **Tres hallazgos del camino**, los tres de la misma familia:
+  - **El plan decía que haría falta montar `internal/app`** con un `Sistema` sin pantalla para sincronizar.
+    Leyendo el paquete, no: `internal/sincro` ya es autónomo. Se ahorró la pieza más cara.
+  - **Recorrer el procedimiento encontró un paso imposible**: la sesión caduca y volver a entrar exige la
+    clave de acceso, que el VPS no tendría. Eso no estaba en el plan y se decidió con el cliente.
+  - **La lista de variables que aparta la carpeta de configuración tenía una cuarta copia** en
+    `cmd/dev/main.go`, **a la que le faltaban dos**. La encontró el vigilante nuevo, que ahora recorre el
+    repositorio entero en vez de un paquete. Es el mismo patrón que ya tiró una publicación.
+- **Queda abierto**: montarlo en el VPS, que es lo único de la ficha que no se puede hacer desde aquí y lo
+  que encuentra las cosas. Los pasos están al principio de [`estado.md`](estado.md).
+
+---
+
 ## 2026-10-20 · El MCP en Claude Code: dos cosas que solo se veían ahí
 
 - **Se probó guiado, paso a paso**, que es lo que hizo que salieran: `claude mcp list` antes de instalar

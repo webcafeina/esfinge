@@ -2,6 +2,45 @@
 
 Última actualización: **2026-10-20**
 
+## La siguiente acción: montar esto en el VPS
+
+Está escrito entero y en verde lo de la **[ADR 0057](adr/0057-la-boveda-en-un-servidor.md)** —la bóveda en un
+servidor— y **no se ha usado todavía en el VPS**. Eso es lo único que queda de esa ficha, y es lo que
+encuentra las cosas.
+
+Los pasos, en este orden y desde el VPS:
+
+```sh
+esfinge boveda servidor alta --correo servidor@webcafeina.com   # crea su cuenta y su bóveda, y da la clave de recuperación
+esfinge boveda servidor activar                                  # para que se abra sin contraseña en ese equipo
+```
+
+Después, en el Mac: **Ajustes → Cuenta → «Tu servidor»**, con ese correo; y dentro de la bóveda de un
+proyecto, **«Quién tiene acceso…» → «Trabajar con esta bóveda en el servidor»**. Y de vuelta en el VPS:
+
+```sh
+esfinge boveda servidor recibir
+esfinge boveda ejecutar --compartida Tempero --var CF_TOKEN="Cloudflare API" -- wrangler deploy
+```
+
+**Lo que hay que saber antes de empezar**, y está dicho en la pantalla y en
+[`seguridad.md`](seguridad.md): la llave queda en un fichero del VPS, así que **quien entre en él abre las
+bóvedas que se le marquen**. Lo que cambia respecto a hoy es que esas contraseñas dejan de estar en claro en
+un `.env` —111 variables solo en uno—, se cambian desde el Mac, queda apuntado lo que se usa, y quitarle el
+acceso es rotar la clave desde la ventana en vez de entrar a borrar un fichero.
+
+**Dos detalles de la puesta en marcha** que no se ven hasta tropezar con ellos:
+
+- La clave de recuperación sale **una sola vez y por la salida estándar**. Apúntala fuera del VPS.
+- Tras marcar el proyecto en el Mac, **la ranura tiene que subir**: si `recibir` dice que lo bajado no lo abre
+  la identidad de este equipo, es eso y se arregla esperando un minuto. El mensaje lo dice.
+
+Y lo que esa ficha deja decidido y **no se cambia sin preguntar**: el VPS es **otra cuenta**, no otro equipo
+tuyo —si lo fuera, se bajaría tu bóveda personal entera—; el permiso es de **solo ver**; y **no corre nada de
+forma permanente**, así que ahí no hay canal de agentes ni bóveda abierta entre órdenes.
+
+---
+
 > **No queda nada del proyecto sin comprobar en una máquina de verdad, salvo Windows y GNOME.** Las dos
 > fichas que quedaban vivas se cerraron hoy en los dos Macs del cliente:
 >

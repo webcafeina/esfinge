@@ -2385,6 +2385,104 @@ test("quién tiene acceso: la fila no pierde el nombre y la huella va antes", as
 });
 
 /**
+ * **El selector del servidor** (ADR 0057): sale dentro de un proyecto, dice lo que
+ * cuesta, y **sin servidor puesto no se menciona en ninguna parte**.
+ *
+ * Lo que de verdad vigila es lo segundo. Un interruptor que da acceso a una máquina
+ * cuya llave está en un fichero no puede aparecer porque sí: aparece porque alguien
+ * ha dicho en Ajustes cuál es su servidor. Y la frase que dice qué no protege es la
+ * regla de Touch ID —se dice en la pantalla donde se activa, no solo en la
+ * documentación—, así que se comprueba que está, no que exista el interruptor.
+ *
+ * Lo que esta prueba **no** hace es pulsarlo: dar acceso exige una cuenta, y aquí se
+ * trabaja en local. Eso lo recorre entero `TestPaseoDeUnProyectoHastaUnServidor`,
+ * contra el servidor de verdad.
+ */
+test("el selector del servidor sale dentro de un proyecto y dice lo que cuesta", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+
+  // Primero: sin servidor puesto, **no se menciona**.
+  await seccion(page, "Proyectos").click();
+  const nombre = `Servidor ${Date.now()}`;
+  await accion(page, "Nueva bóveda de proyecto").click();
+  await page.locator("#proyecto-nombre").fill(nombre);
+  await accion(page, "Crear").click();
+  const fila = page.locator(".panel:visible .proyectos").getByRole("button", { name: new RegExp(nombre) });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
+  await fila.click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 20_000 });
+
+  // **El bloque se despliega solo con un proyecto abierto**, así que esto no lo abre:
+  // se asegura de que está abierto. Pulsar a ciegas lo cerraría, que es lo que pasó al
+  // escribir esta prueba.
+  const abrirElAcceso = async () => {
+    await seccion(page, "Proyectos").click();
+    const activa = page.locator('.panel:visible .proyectos li[data-activo="si"]');
+    await expect(activa).toBeVisible({ timeout: 20_000 });
+    const bloque = page.locator(".panel:visible .el-acceso");
+    if ((await bloque.count()) === 0) {
+      await activa.getByRole("button", { name: "Quién tiene acceso…" }).click();
+    }
+    await expect(bloque).toBeVisible({ timeout: 20_000 });
+  };
+  const elInterruptor = page
+    .locator(".panel:visible .el-acceso")
+    .getByRole("checkbox", { name: "Trabajar con esta bóveda en el servidor" });
+
+  await abrirElAcceso();
+  await expect(
+    elInterruptor,
+    "sale el selector del servidor sin que nadie haya dicho cuál es su servidor",
+  ).toHaveCount(0);
+
+  // Ahora se dice cuál es, en Ajustes → Cuenta.
+  await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Cuenta" }).click();
+  const campo = page.locator("#correo-del-servidor");
+  await expect(campo).toBeVisible({ timeout: 20_000 });
+  await campo.fill("servidor@ejemplo.com");
+  await campo.blur();
+  // Lo que cuesta se dice **aquí también**, donde se configura.
+  await expect(
+    page.locator(".contenido").getByText("quien entre en él abre las bóvedas que le marques", { exact: false }),
+  ).toBeVisible();
+  // Y se retrata, porque el glifo del servidor es nuevo y **un icono se mira**: un
+  // `<svg>` mal dibujado pasa todas las aserciones del mundo.
+  await page.locator(".contenido .bloque", { has: page.locator("#correo-del-servidor") }).screenshot({
+    path: `test-results/servidor-en-ajustes-${test.info().project.name}.png`,
+  });
+
+  // Y ahora sí sale, apagado, diciendo a quién se le daría y qué podrá hacer.
+  await abrirElAcceso();
+  await expect(elInterruptor).toBeVisible();
+  await expect(elInterruptor).not.toBeChecked();
+  const bloque = page.locator(".panel:visible .el-acceso");
+  await expect(bloque.getByText("servidor@ejemplo.com", { exact: false }).first()).toBeVisible();
+  await expect(bloque.getByText("solo ver", { exact: false }).first()).toBeVisible();
+  await bloque.screenshot({ path: `test-results/selector-del-servidor-${test.info().project.name}.png` });
+
+  // Y se quita diciendo que no hay servidor, que es el camino de vuelta: lo que no
+  // existe no se menciona.
+  await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Cuenta" }).click();
+  await page.locator("#correo-del-servidor").fill("");
+  await page.locator("#correo-del-servidor").blur();
+  await abrirElAcceso();
+  await expect(
+    elInterruptor,
+    "el selector sigue ahí después de quitar el servidor de Ajustes",
+  ).toHaveCount(0);
+
+  // **Y se sale del proyecto**, que una prueba que conmuta de bóveda tiene que dejar
+  // abierta la de siempre (ADR 0050).
+  await volverALaPersonal(page);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
  * Y lo que la lista tiene que decir cuando **no se puede hacer nada**: con la bóveda
  * cerrada no hay nombres que enseñar, porque viven dentro de ella.
  */

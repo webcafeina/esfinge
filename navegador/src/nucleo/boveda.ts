@@ -41,13 +41,20 @@ import { ERR_CHECKSUM, normalizar, nuevaRecuperacion, pareceRecuperacion } from 
 export const FORMATO = 1;
 export const RANURA_MAESTRA = "maestra";
 export const RANURA_RECUPERACION = "recuperacion";
-/** Las que abren la bóveda solo en un equipo y no se suben nunca. */
-export const RANURAS_LOCALES = new Set(["llavero-del-sistema", "pin"]);
+/**
+ * Las que abren la bóveda solo en un equipo y no se suben nunca: Touch ID, un PIN,
+ * la llave de un servidor (ADR 0057).
+ *
+ * **Esta lista está escrita dos veces**, aquí y en `ranurasLocales` de Go. Las compara
+ * `TestLasRanurasLocalesSonLasMismas`, porque desalineadas no fallan: una ranura que
+ * un lado sube y el otro no deja a las dos bóvedas pasándose la misma sin fin.
+ */
+export const RANURAS_LOCALES = new Set(["llavero-del-sistema", "pin", "llave-del-servidor"]);
 
 /**
  * La ranura que abre una bóveda de proyecto con la bóveda personal (ADR 0050).
  *
- * **No está en `RANURAS_LOCALES`**, al contrario que las dos de arriba: es lo único
+ * **No está en `RANURAS_LOCALES`**, al contrario que las de arriba: es lo único
  * que permite que otro equipo abra el proyecto, así que viaja con él.
  */
 export const RANURA_PRINCIPAL = "boveda-principal";

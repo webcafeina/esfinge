@@ -163,6 +163,24 @@ type Preferencias struct {
 	// equivocarse, porque apagarlas es ceder al navegador y ceder siempre funciona;
 	// al revés, un descuido soltaría el freno que alguien acababa de echar.
 	LlavesDeAccesoEnElNavegador bool `json:"llavesDeAccesoEnElNavegador"`
+
+	// CorreoDelServidor es la cuenta de Esfinge del servidor de esta casa, si hay uno
+	// (ADR 0057). Vacío quiere decir que no hay, y entonces **la ventana no menciona
+	// nada**: un selector para un servidor que no existe es ruido sobre algo que no se
+	// puede arreglar, que es la regla de la biometría.
+	//
+	// Con él puesto, dentro de una bóveda de proyecto sale un interruptor —«Trabajar
+	// con esta bóveda en el servidor»— que por debajo **da acceso de solo ver a esa
+	// cuenta** (ADR 0052), sin ningún mecanismo nuevo. Lo que el interruptor añade al
+	// «Dar acceso» de siempre son dos cosas: no hay que acordarse del correo, y **la
+	// pantalla dice lo que cuesta** — un servidor tiene su llave en el disco, y eso
+	// no se parece a dar acceso a una persona.
+	//
+	// **Es local, como las carpetas de los diálogos**: cuál es tu servidor es de este
+	// equipo, no de la bóveda. Y aquí la regla del cero juega a favor: un guardado a
+	// medias llega vacío y **el selector desaparece**, que es el lado seguro de
+	// equivocarse — nadie da un acceso por descuido.
+	CorreoDelServidor string `json:"correoDelServidor"`
 }
 
 // Nunca es lo que se manda para apagar uno de los dos relojes.

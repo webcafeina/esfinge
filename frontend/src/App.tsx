@@ -1675,6 +1675,13 @@ function Ajustes({
       .catch(() => {});
   }, []);
 
+  // El correo del servidor mientras se escribe (ADR 0057). **`null` es «nadie ha
+  // tecleado»**, y entonces manda lo que digan las preferencias: con una cadena vacía
+  // de partida, el campo se quedaría con lo del primer render —antes de que las
+  // preferencias lleguen— y no se pondría al día nunca, que es la trampa de siempre
+  // de React con un campo no controlado.
+  const [correoDelServidor, setCorreoDelServidor] = useState<string | null>(null);
+
   // Los sitios en los que la extensión no ofrece guardar, que viven dentro de la
   // bóveda. Se vuelven a leer cuando el navegador apunta uno nuevo.
   const [excluidos, setExcluidos] = useState<string[]>([]);
@@ -1847,6 +1854,49 @@ function Ajustes({
           </div>
         </div>
         <GrupoCuenta alCrearCuenta={alCrearCuenta} alEntrar={alEntrar} />
+
+        {/* **El servidor de esta casa** (ADR 0057).
+            Va en Cuenta porque es una cuenta: la del servidor, que no es la tuya. Con
+            esto puesto, dentro de una bóveda de proyecto sale un interruptor que le da
+            acceso de solo ver; vacío, **no se menciona en ninguna parte**, que es la
+            regla de la biometría —no se ofrece lo que no hay—. */}
+        <section className="bloque">
+          <header className="bloque-cabecera">
+            <Icono nombre="servidor" />
+            <div>
+              <h3>Tu servidor</h3>
+              <p className="nota">Para que un servidor pueda usar las contraseñas de un proyecto.</p>
+            </div>
+          </header>
+          <div>
+            <label htmlFor="correo-del-servidor">Cuenta de Esfinge de tu servidor</label>
+            <input
+              id="correo-del-servidor"
+              type="email"
+              autoComplete="off"
+              placeholder="servidor@ejemplo.com"
+              disabled={cargando}
+              value={correoDelServidor ?? prefs?.correoDelServidor ?? ""}
+              onChange={(e) => setCorreoDelServidor(e.target.value)}
+              onBlur={() => {
+                const v = (correoDelServidor ?? "").trim();
+                if (correoDelServidor !== null && v !== (prefs?.correoDelServidor ?? "")) {
+                  void cambiar({ correoDelServidor: v });
+                }
+              }}
+            />
+            <p className="nota">
+              Es la cuenta del servidor, <strong>no la tuya</strong>: tiene su propia contraseña y su
+              propia bóveda, vacía. Con esto puesto, dentro de una bóveda de proyecto aparece
+              «Trabajar con esta bóveda en el servidor».
+            </p>
+            <p className="aviso">
+              Un servidor guarda su llave en un fichero, así que <strong>quien entre en él abre las
+              bóvedas que le marques</strong>. No protege de eso: lo que cambia es que las contraseñas
+              dejan de estar en claro en un <code>.env</code> y que queda apuntado lo que se usa.
+            </p>
+          </div>
+        </section>
         </>
       )}
 

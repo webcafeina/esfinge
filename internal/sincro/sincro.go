@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -451,4 +452,31 @@ func escribir(ruta string, datos []byte) error {
 		_, err := w.Write(datos)
 		return err
 	})
+}
+
+// BorrarLaBovedaEntera quita el fichero de una bóveda **y todo lo que cuelga de
+// él**: la generación anterior, los iconos, el recuerdo de la sincronización y su
+// base, y lo que una interrupción dejara a medias.
+//
+// Lo usa quien se queda sin acceso a una bóveda de otra persona (ADR 0053) y quien
+// archiva un proyecto. **Vive aquí y no en quien la llama** porque son cinco
+// sufijos y dos de ellos son de este paquete: escrita dos veces —la ventana y la
+// línea de comandos— se quedaría corta en uno de los dos lados, y lo que quedaría
+// olvidado en el disco es **la copia anterior de una bóveda que había que borrar**.
+//
+// Lo de después del fichero es limpieza: que falte alguno no invalida el borrado,
+// que ya está hecho, y devolver un error ahí haría creer que no se ha borrado nada.
+func BorrarLaBovedaEntera(ruta string) error {
+	if ruta == "" {
+		return errors.New("No encuentro esa bóveda en este sistema")
+	}
+	if err := os.Remove(ruta); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	_ = os.Remove(ruta + ".anterior")
+	_ = os.Remove(boveda.RutaDeIconos(ruta))
+	_ = (JuntoALaBoveda{Ruta: ruta}).Olvidar()
+	_ = os.Remove(ruta + ".antes-de-fundir")
+	escritura.LimpiarHuerfanos(filepath.Dir(ruta), 0)
+	return nil
 }

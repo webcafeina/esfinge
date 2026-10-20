@@ -10,6 +10,7 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/llavero"
+	"github.com/webcafeina/esfinge/internal/rutas"
 	"github.com/webcafeina/esfinge/internal/sincro"
 )
 
@@ -330,7 +331,7 @@ func TestElRegistroNoLlevaNombresYLosFicherosVanPorReferencia(t *testing.T) {
 	}
 
 	// Y el fichero se llama por la referencia, no por el proyecto.
-	entradas, err := os.ReadDir(filepath.Join(carpetaDeEsfinge(), carpetaDeProyectos))
+	entradas, err := os.ReadDir(rutas.CarpetaDeProyectos())
 	if err != nil {
 		t.Fatal(err)
 	}

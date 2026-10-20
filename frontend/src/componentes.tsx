@@ -415,6 +415,20 @@ export function Icono({ nombre }: { nombre: string }) {
         <circle cx="5" cy="5.2" r="0.6" />
       </>
     ),
+    // Un servidor: dos bandejas apiladas, cada una con su piloto. Es la forma con la
+    // que se dibuja una máquina sin pantalla desde siempre.
+    //
+    // **Lo que lo hace reconocible a dieciséis píxeles son las dos bandejas**, no los
+    // pilotos: mirando la captura, un punto de 1,4 al lado de un trazo de 1,4 casi no
+    // está. Se quedan porque a tamaños mayores son lo que lo separa de una lista, y
+    // porque es lo que hace el icono del navegador de aquí al lado.
+    servidor: (
+      <>
+        <rect x="2.5" y="3.5" width="13" height="5" rx="1.5" />
+        <rect x="2.5" y="9.5" width="13" height="5" rx="1.5" />
+        <path d="M5 6h0.01M5 12h0.01" />
+      </>
+    ),
   };
 
   return (

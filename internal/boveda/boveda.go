@@ -566,6 +566,17 @@ func leerDocumento(datos []byte) (documento, error) {
 	return doc, nil
 }
 
+// documentoEn lee de un fichero lo que va en claro: el identificador, la serie y
+// los sobres. Es lo que se puede preguntar **sin la contraseña**, y lo que hay que
+// mirar antes de pedírsela a nadie.
+func documentoEn(ruta string) (documento, error) {
+	datos, err := os.ReadFile(ruta)
+	if err != nil {
+		return documento{}, err
+	}
+	return leerDocumento(datos)
+}
+
 // desempaquetar abre el sello y el cuerpo con la clave de bóveda y comprueba que
 // cuadran con lo de fuera. No escribe nada.
 func desempaquetar(doc documento, llave []byte) (sello, contenido, error) {

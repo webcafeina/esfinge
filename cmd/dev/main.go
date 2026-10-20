@@ -15,6 +15,7 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/app"
 	"github.com/webcafeina/esfinge/internal/llavero"
+	"github.com/webcafeina/esfinge/internal/rutas"
 )
 
 func main() {
@@ -34,8 +35,10 @@ func main() {
 	// pruebas crearían una con una contraseña maestra que está escrita en el
 	// fichero de pruebas, en el mismo sitio donde va la de verdad.
 	//
-	// Se apuntan las tres variables que mira os.UserConfigDir en cada sistema
-	// aunque aquí solo corra en Linux: cuesta dos líneas y no hay que acordarse.
+	// Las variables que mira os.UserConfigDir en cada sistema salen de
+	// `rutas.ApartarLaCarpeta`, que es el único sitio donde están: aquí había una
+	// copia **a la que le faltaban dos**, que es el mismo descuido que ya tiró una
+	// publicación desde las pruebas.
 	if *config == "" {
 		tmp, err := os.MkdirTemp("", "esfinge-config-")
 		if err != nil {
@@ -43,9 +46,7 @@ func main() {
 		}
 		*config = tmp
 	}
-	os.Setenv("XDG_CONFIG_HOME", *config) // Linux
-	os.Setenv("HOME", *config)            // macOS
-	os.Setenv("APPDATA", *config)         // Windows
+	rutas.ApartarLaCarpeta(*config, func(nombre, valor string) { _ = os.Setenv(nombre, valor) })
 	log.Printf("Configuración aislada en %s", *config)
 
 	if *carpeta == "" {

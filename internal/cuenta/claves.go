@@ -94,3 +94,20 @@ func NormalizarCorreo(c string) (string, error) {
 	}
 	return n, nil
 }
+
+// MaestraSirve dice si una contraseña vale como contraseña de una cuenta.
+//
+// Con cuenta, la bóveda cifrada vive **también en el servidor**, y si alguien la
+// robara de allí la única defensa sería la contraseña (ADR 0035). Por eso con
+// cuenta el listón sube a «Buena», y sin cuenta no.
+//
+// **Está aquí y no en la ventana** porque desde la ADR 0057 la línea de comandos
+// también puede dar de alta una cuenta —la del servidor— y una regla escrita dos
+// veces se desalinea sola: la del servidor se habría quedado con el listón del día
+// en que se copió.
+func MaestraSirve(maestra string) error {
+	if cripto.Evaluar(maestra).Nivel < 3 {
+		return errors.New("Con cuenta, la contraseña maestra tiene que ser al menos «Buena»: alárgala o usa varias palabras sin relación")
+	}
+	return nil
+}

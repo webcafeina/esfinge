@@ -12,6 +12,7 @@ import (
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/escritura"
 	"github.com/webcafeina/esfinge/internal/qr"
+	"github.com/webcafeina/esfinge/internal/rutas"
 	"github.com/webcafeina/esfinge/internal/sincro"
 	"github.com/webcafeina/esfinge/internal/wifi"
 )
@@ -84,12 +85,7 @@ type ResumenImportacion struct {
 // cuenta, la sesión, la identidad para compartir, la ranura del llavero del sistema
 // y la ceremonia de recuperación son de la personal y no de la que esté abierta. Lo
 // que necesita la activa usa `a.rutaActiva()`, y son dos sitios contados.
-func rutaBovedaPrincipal() string {
-	if c := carpetaDeEsfinge(); c != "" {
-		return filepath.Join(c, "boveda.esfinge")
-	}
-	return ""
-}
+func rutaBovedaPrincipal() string { return rutas.BovedaPrincipal() }
 
 // EstadoBoveda dice si hay bóveda, si está abierta y cuánto lleva dentro.
 //

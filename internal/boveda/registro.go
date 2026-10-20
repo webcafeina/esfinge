@@ -92,6 +92,13 @@ const (
 	// algo que no es un secreto—. Se apunta igual, que es lo que deja leer después qué
 	// hizo un agente en la bóveda sin que nadie se enterara en el momento.
 	ApunteDirecto = "directo"
+	// ApunteLlaveDelEquipo: lo abrió la llave de este equipo, en un servidor, y **no
+	// había a quién preguntar** (ADR 0057).
+	//
+	// Se distingue de los otros cuatro por lo mismo que `ApunteSiempre`: ahí nadie
+	// miró nada en el momento, así que el registro es lo único que queda y leerlo
+	// después solo sirve si dice que eso no lo aprobó nadie.
+	ApunteLlaveDelEquipo = "llave-del-equipo"
 )
 
 // Apuntar deja constancia. **No falla si no se puede**: lo que se estuviera haciendo ya

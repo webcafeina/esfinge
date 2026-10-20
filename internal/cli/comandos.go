@@ -115,7 +115,13 @@ func soloArgumentosConocidos(cmd *cobra.Command, args []string) error {
 
 func codigoDe(err error) int {
 	var uso errUso
+	var hijo errDelHijo
 	switch {
+	// **El código del programa que se lanzó, tal cual**: dentro de un guion,
+	// «esfinge boveda ejecutar -- algo» tiene que fallar igual que «algo» o el guion
+	// no se entera (ADR 0057).
+	case errors.As(err, &hijo):
+		return hijo.codigo
 	case errors.As(err, &uso):
 		return SalidaUso
 	case errors.Is(err, cripto.ErrClaveIncorrecta):

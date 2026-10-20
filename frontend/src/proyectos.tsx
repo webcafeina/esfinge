@@ -382,7 +382,7 @@ export function Proyectos({
                   `p.activo` aquí y no se limpia al salir porque esto no se entera de que
                   alguien salió: lo que cambia es la lista, y la lista llega con `activo`
                   ya puesto. */}
-              {p.activo && elAcceso === p.ref && <ElAcceso alFallar={setError} />}
+              {p.activo && elAcceso === p.ref && <ElAcceso alFallar={setError} activo={activo} />}
               {alAcabar === p.ref && (
                 <AlAcabarElProyecto
                   proyecto={p}
@@ -832,13 +832,16 @@ function CompartidasConmigo({
  *   - **Quien recibe acceso ve el correo de los demás que lo tienen.** No hay forma
  *     de que no lo vea si la lista se puede leer, así que se dice.
  */
-function ElAcceso({ alFallar }: { alFallar: (m: string) => void }) {
+function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo: boolean }) {
   const [gente, setGente] = useState<QuienTieneAcceso[] | null>(null);
   const [correo, setCorreo] = useState("");
   const [permiso, setPermiso] = useState<"ver" | "editar">("editar");
   const [huella, setHuella] = useState("");
   const [trabajando, setTrabajando] = useState(false);
   const [quitando, setQuitando] = useState("");
+  // El correo del servidor de esta casa, si hay uno (ADR 0057). Vacío, **no se
+  // menciona nada**: un interruptor para un servidor que no existe es ruido.
+  const [servidor, setServidor] = useState("");
 
   const recargar = useCallback(async () => {
     try {
@@ -851,6 +854,18 @@ function ElAcceso({ alFallar }: { alFallar: (m: string) => void }) {
   useEffect(() => {
     void recargar();
   }, [recargar]);
+  // **Se lee al entrar en la sección, no solo al montarse.** Las secciones se
+  // esconden y no se desmontan, así que este bloque puede llevar abierto desde antes
+  // de que alguien pusiera su servidor en Ajustes: leyéndolo una sola vez, el
+  // interruptor no aparecería hasta cerrar y abrir el bloque. Es lo mismo que hace el
+  // historial.
+  useEffect(() => {
+    if (!activo) return;
+    esfinge
+      .verPreferencias()
+      .then((p) => setServidor(p.correoDelServidor ?? ""))
+      .catch(() => {});
+  }, [activo]);
 
   async function mirar() {
     setTrabajando(true);
@@ -877,8 +892,61 @@ function ElAcceso({ alFallar }: { alFallar: (m: string) => void }) {
     }
   }
 
+  // El titular del servidor en esta bóveda, si lo tiene: es lo que dice si el
+  // interruptor está puesto, y lo que hace falta para quitarlo.
+  const elDelServidor = servidor === "" ? undefined : gente?.find((t) => t.correo === servidor);
+
+  async function alternarElServidor(poner: boolean) {
+    setTrabajando(true);
+    try {
+      if (poner) await esfinge.darAcceso(servidor, "ver");
+      else if (elDelServidor) await esfinge.quitarAcceso(elDelServidor.titular);
+      await recargar();
+    } catch (e) {
+      alFallar(mensaje(e));
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
   return (
     <div className="el-acceso">
+      {/* **El selector del servidor** (ADR 0057), arriba y aparte de las personas.
+          Por debajo no hay nada nuevo: es «dar acceso de solo ver» a la cuenta del
+          servidor. Lo que añade son dos cosas, y la segunda es la que importa: no hay
+          que acordarse del correo, y **la pantalla dice lo que cuesta** — un servidor
+          tiene su llave en un fichero, y eso no se parece a dar acceso a una persona.
+          Sale solo si hay un servidor puesto en Ajustes. */}
+      {servidor !== "" && gente !== null && (
+        <>
+          <label className="fila-ajuste">
+            <input
+              type="checkbox"
+              checked={elDelServidor !== undefined}
+              disabled={trabajando}
+              onChange={(e) => void alternarElServidor(e.target.checked)}
+            />
+            <span>Trabajar con esta bóveda en el servidor</span>
+          </label>
+          <p className={elDelServidor !== undefined ? "aviso" : "nota"}>
+            {elDelServidor !== undefined ? (
+              <>
+                <strong>{servidor}</strong> puede leer esta bóveda, y su llave está en un fichero de
+                ese equipo: <strong>quien entre en él abre esto</strong>. A cambio, las contraseñas de
+                este proyecto dejan de estar en claro en un <code>.env</code> y queda apuntado lo que
+                se usa. Quitándolo, <strong>la clave se rota</strong> y su copia deja de abrir.
+              </>
+            ) : (
+              <>
+                Le dará acceso de <strong>solo ver</strong> a <strong>{servidor}</strong>, para que lo
+                que corra ahí use estas contraseñas sin tenerlas escritas en un fichero. Puede leer,
+                no puede cambiar nada.
+              </>
+            )}
+          </p>
+        </>
+      )}
+
       {gente !== null && gente.length > 0 && (
         <ul className="titulares">
           {gente.map((t) => (

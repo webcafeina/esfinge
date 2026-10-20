@@ -37,14 +37,12 @@ import (
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/cripto"
 	"github.com/webcafeina/esfinge/internal/escritura"
+	"github.com/webcafeina/esfinge/internal/rutas"
 	"github.com/webcafeina/esfinge/internal/sincro"
 )
 
 // nombreDelRegistro vive al lado de las preferencias y de los navegadores.
 const nombreDelRegistro = "bovedas.json"
-
-// carpetaDeProyectos es donde van los ficheros, **nombrados por su referencia**.
-const carpetaDeProyectos = "proyectos"
 
 // registro es el índice de ficheros, y **no es la verdad**: la verdad son los
 // ficheros, y los nombres viven cifrados dentro de la bóveda personal.
@@ -65,13 +63,10 @@ type proyectoEnDisco struct {
 	Fichero string `json:"fichero"`
 }
 
-func carpetaDeEsfinge() string {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(dir, "Esfinge")
-}
+// carpetaDeEsfinge y las rutas de abajo viven en `internal/rutas` desde la ADR
+// 0057: **las lee también la línea de comandos**, y el mismo dato en dos sitios se
+// desalinea solo. Aquí se quedan los nombres de siempre, delegando.
+func carpetaDeEsfinge() string { return rutas.DeEsfinge() }
 
 func rutaDelRegistro() string {
 	if c := carpetaDeEsfinge(); c != "" {
@@ -81,12 +76,7 @@ func rutaDelRegistro() string {
 }
 
 // rutaDeProyecto es dónde vive el fichero de una referencia.
-func rutaDeProyecto(ref string) string {
-	if c := carpetaDeEsfinge(); c != "" {
-		return filepath.Join(c, carpetaDeProyectos, ref+".esfinge")
-	}
-	return ""
-}
+func rutaDeProyecto(ref string) string { return rutas.Proyecto(ref) }
 
 func leerRegistro() registroDeBovedas {
 	r := registroDeBovedas{Version: 1}
@@ -132,7 +122,7 @@ func apuntarLaBoveda(ref string) error {
 	}
 	r.Proyectos = append(r.Proyectos, proyectoEnDisco{
 		Ref:     ref,
-		Fichero: filepath.Join(carpetaDeProyectos, ref+".esfinge"),
+		Fichero: rutas.RelativaDeProyecto(ref),
 	})
 	return guardarRegistro(r)
 }
@@ -517,10 +507,6 @@ func (a *App) abrirProyecto(ref string, deUnaPersona bool) error {
 
 // ------------------------------------------------- las que me han compartido
 
-// carpetaDeCompartidas separa lo ajeno de lo mío **en el disco**, que es lo que hace
-// que una no se pueda confundir con la otra al mirar la carpeta o al borrar.
-const carpetaDeCompartidas = "compartidas"
-
 // rutaDeCompartida: el fichero local de una bóveda ajena.
 //
 // Lleva el dueño en el nombre porque **la referencia es de su cuenta, no de la mía**:
@@ -528,12 +514,7 @@ const carpetaDeCompartidas = "compartidas"
 // nada la una de la otra, y si el fichero se llamara solo por la referencia la segunda
 // pisaría a la primera. Es la misma razón por la que el nombre de un proyecto no
 // nombra su fichero, una vuelta más arriba.
-func rutaDeCompartida(dueno, ref string) string {
-	if c := carpetaDeEsfinge(); c != "" {
-		return filepath.Join(c, carpetaDeCompartidas, dueno+"-"+ref+".esfinge")
-	}
-	return ""
-}
+func rutaDeCompartida(dueno, ref string) string { return rutas.Compartida(dueno, ref) }
 
 // BajarCompartida se trae a este equipo una bóveda a la que me han dado acceso.
 //
@@ -1032,19 +1013,8 @@ func (a *App) BorrarProyecto(ref, maestra string) error {
 // borrarElFicheroYSusSatelites: el fichero y **todo lo que es una copia de lo que
 // había dentro**. La lista sale de `BorrarBoveda`, que ya la tenía escrita, y no se
 // reinventa aquí.
-func borrarElFicheroYSusSatelites(ruta string) error {
-	if ruta == "" {
-		return errors.New("No encuentro esa bóveda en este sistema")
-	}
-	if err := os.Remove(ruta); err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	// Lo de abajo es limpieza: que falte alguno no invalida el borrado, que ya está
-	// hecho, y devolver un error aquí haría creer que no se ha borrado nada.
-	_ = os.Remove(ruta + ".anterior")
-	_ = os.Remove(boveda.RutaDeIconos(ruta))
-	_ = (sincro.JuntoALaBoveda{Ruta: ruta}).Olvidar()
-	_ = os.Remove(ruta + ".antes-de-fundir")
-	escritura.LimpiarHuerfanos(filepath.Dir(ruta), 0)
-	return nil
-}
+// borrarElFicheroYSusSatelites vive en `internal/sincro` desde la ADR 0057: **lo
+// llama también la línea de comandos**, cuando a un servidor le quitan el acceso a
+// una bóveda compartida, y son cinco sufijos que escritos dos veces se quedarían
+// cortos en uno de los dos lados.
+func borrarElFicheroYSusSatelites(ruta string) error { return sincro.BorrarLaBovedaEntera(ruta) }

@@ -35,10 +35,16 @@ import (
 )
 
 // ranurasLocales son las que abren la bóveda **solo en este equipo** —Touch ID,
-// Windows Hello, un PIN— y no se suben nunca. Otro equipo no sabría qué hacer con
-// ellas, y una ranura de PIN en el servidor sería una forma de abrir la bóveda
-// con cuatro cifras.
-var ranurasLocales = map[string]bool{"llavero-del-sistema": true, "pin": true}
+// Windows Hello, un PIN, la llave de un servidor— y no se suben nunca. Otro
+// equipo no sabría qué hacer con ellas, y una ranura de PIN en el servidor sería
+// una forma de abrir la bóveda con cuatro cifras.
+//
+// **Esta lista está escrita dos veces**, aquí y en `RANURAS_LOCALES` del espejo de
+// TypeScript (ADR 0040). Las compara `TestLasRanurasLocalesSonLasMismas`, porque
+// desalineadas no fallan: una ranura que un lado sube y el otro no deja a las dos
+// bóvedas pasándose la misma sin fin, y la que se suba le da al servidor una
+// segunda puerta.
+var ranurasLocales = map[string]bool{"llavero-del-sistema": true, "pin": true, "llave-del-servidor": true}
 
 var (
 	// ErrOtraBoveda: lo que llega es una bóveda, pero no ésta.
