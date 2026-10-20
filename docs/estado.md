@@ -297,7 +297,9 @@
 >    `abierta: false` y en Esfinge **«cerrada» quiere decir bloqueada**, así que juntó los dos sentidos. **Y
 >    sí podía**: al nombrarla funcionó a la primera y lo dijo él mismo. Una palabra con dos sentidos le
 >    quitaba **la funcionalidad entera de la ADR 0055**. El campo se llama ahora `activa` y la descripción
->    desmiente la lectura equivocada en vez de callarla.
+>    desmiente la lectura equivocada en vez de callarla. **Comprobado en su Mac con la 2.58.7, por los dos
+>    lados**: con la bóveda bloqueada dice «cerrada, o sea bloqueada y a la espera de la contraseña maestra»,
+>    y con ella abierta dice que las otras se usan nombrándolas **sin pedir contraseña**.
 > 2. **La lista de Ajustes decía un programa y entraban todos.** El testigo del cliente vive en **un fichero
 >    por usuario**, así que Claude Code entró con el de Desktop y no salía en la lista. Ahora dice **«Permiso
 >    de este equipo · Autorizado desde… · Han hablado: …»** con un solo Retirar, `permitir` **sustituye** en

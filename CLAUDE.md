@@ -2119,6 +2119,15 @@ pregunta salió **en los controles nativos de Claude Desktop** — o sea que una
 en una pregunta de verdad y no en un párrafo que nadie lee. De paso preguntó el alfabeto sin que se lo
 pidieran, que es lo que se gana al decir en el esquema lo que hay.
 
+Y el 2026-10-20, **el canal en Claude Code** —hasta entonces solo se había usado Claude Desktop—: la ruta que
+calcula la aplicación, la versión, las trece herramientas, el nombre «Claude Code (claude-code)» en la tarjeta
+y el camino de aprobación entero. De ahí salieron los dos fallos de la 2.58.7, y **el arreglo del vocabulario
+quedó comprobado por los dos lados el mismo día**: con la bóveda bloqueada el agente dice «cerrada, o sea
+bloqueada y a la espera de la contraseña maestra» —el sentido verdadero, y lo explica— y con ella abierta dice
+«Personal es **la activa**; para usar las otras basta con que me la nombres, Esfinge cambia sola **sin pedir
+contraseña**». Las dos mitades, que es lo que no se podía dar por hecho: que la palabra siguiera sirviendo
+para el caso en que sí está bloqueada.
+
 Sin verificar todavía, y es lo único que queda en todo el proyecto: **cómo quedan las estructuras de
 Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono de los `.esf`, que en Windows lo
 pone el instalador y en Linux el `.deb`.

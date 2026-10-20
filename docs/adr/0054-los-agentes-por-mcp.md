@@ -436,6 +436,7 @@ Lo que hay que poder decir al acabar, y cada prueba mutada:
 | Que se sabe quién ha hablado | Dos clientes con el mismo testigo, el último primero, y hablar otra vez **no duplica** |
 | Que la pantalla lo dice | Una de interfaz que entra en Ajustes → Agentes: «Permiso de este equipo», los dos nombres, y **que no vuelva a decir «Agentes permitidos»** |
 | Que no se le dice «cerrada» a una bóveda que puede usar | El campo se llama `activa` en el JSON, y la descripción dice las tres cosas que lo desmienten. Mutadas las dos mitades |
+| **Y comprobado en su Mac el mismo día** | Con la bóveda bloqueada el agente dice «cerrada, o sea bloqueada y a la espera de la contraseña maestra»; con ella abierta, «Personal es la activa; para usar las otras basta con nombrarlas, Esfinge cambia sola sin pedir contraseña». **Las dos mitades**: que la palabra siga sirviendo donde sí es verdad era lo que no se podía dar por hecho |
 | Que el freno es del servidor | **Una conexión nueva por petición**, que es como se descubrió que el otro freno no frenaba |
 | Que añadir un verbo es una decisión | La lista recorrida, y ninguno contesta «no entiendo» |
 | La tubería entera | Los bytes de MCP por donde entran de verdad → socket → bóveda real → respuesta |
