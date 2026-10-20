@@ -37,7 +37,8 @@ Plantilla al final.
     `cmd/dev/main.go`, **a la que le faltaban dos**. La encontró el vigilante nuevo, que ahora recorre el
     repositorio entero en vez de un paquete. Es el mismo patrón que ya tiró una publicación.
 - **Queda abierto**: montarlo en el VPS, que es lo único de la ficha que no se puede hacer desde aquí y lo
-  que encuentra las cosas. Los pasos están al principio de [`estado.md`](estado.md).
+  que encuentra las cosas. Los pasos están al principio de [`estado.md`](estado.md). Lo dejó para esa misma
+  tarde. **Comprometido y empujado** (`85917b2`), **sin etiqueta**: no se ha publicado ninguna versión.
 
 ---
 

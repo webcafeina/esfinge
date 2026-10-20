@@ -305,6 +305,23 @@ No se cambian sin preguntar.
   con el **símbolo oficial** —lo pidió él tras ver el nuestro: un glifo inventado para un protocolo no lo
   reconoce nadie—.
 
+- **Y la bóveda se abre también en un servidor, sin nadie delante** (ADR 0057, 2026-10-20). Lo pidió el
+  cliente por los agentes que trabajan en el VPS: allí los secretos viven en ficheros `.env` **en claro**
+  —111 variables solo en uno— y al leerlos **entran en la conversación de un modelo**, que es lo que la 0054
+  vino a evitar en el Mac. Y aquí **no hay ventana donde aprobar nada, y nada la sustituye**: lo que queda es
+  acotar el alcance, dejar rastro y que el secreto no pase por la conversación. Lo que no se cambia sin
+  preguntar: **el VPS es otra cuenta**, no otro equipo tuyo —si lo fuera, entrar le bajaría tu bóveda
+  personal entera—; el permiso es de **solo ver** y lo impone el servidor; **nada corre de forma
+  permanente**, así que allí **no existe el canal de agentes** ni hay bóveda abierta entre órdenes; y **se
+  guarda la clave de acceso de su cuenta, nunca la maestra**, para que vuelva a entrar solo cuando la sesión
+  caduque —frente a entrar a mano cada 90 días, cuyo fallo es mudo—. Lo que cuesta, con las palabras de
+  Touch ID y dicho en la pantalla donde se activa: **quien entre en el servidor abre las bóvedas que se le
+  marquen**; `esfinge boveda ejecutar` solo consigue que **el camino cómodo no se las enseñe** —el secreto va
+  al entorno del proceso hijo, la bóveda se cierra antes de lanzarlo y queda apuntado— y no es una frontera
+  contra quien tenga terminal allí. Dos cosas técnicas: **la llave va fuera de la carpeta de las bóvedas**
+  (regla de la 0044), y **quitarle el acceso borra su copia** (0053), porque rotar la clave corta lo que
+  llega y no lo que ya está en el disco.
+
 - **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
   mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda
   hasta la publicación siguiente — no es un fallo, es un aviso del flujo. Se hace igual: **el cliente para la
@@ -499,6 +516,12 @@ variable que faltaba sino que **haya un solo sitio** —`enConfiguracionDePrueba
 copiadas y a seis les faltaba Windows; es el mismo patrón que lo de `vaciarLoSensible`. Y como aquí no se
 puede ejecutar Windows, lo vigila una prueba que **lee los propios ficheros de prueba** y se pone roja si
 alguien vuelve a escribir la lista a mano.
+
+**Y había una cuarta copia, fuera de las pruebas** (2026-10-20): `cmd/dev/main.go` ponía tres de las cinco,
+con un comentario diciendo que las apuntaba todas. No hacía daño —ahí solo corre Linux— y es exactamente la
+forma en que esto vuelve. La lista vive ahora en `rutas.ApartarLaCarpeta`, que **no importa `testing`** y
+recibe el `t.Setenv` que la aplica, y el vigilante **recorre el repositorio entero** en vez de un paquete: un
+paquete nuevo queda cubierto sin que nadie se acuerde de nada. La encontró el vigilante el día que se amplió.
 
 **Y `zip` no existe en la máquina Windows de GitHub.** El guion que armaba el `.mcpb` murió ahí con `zip:
 command not found` y se llevó el trabajo entero con todo lo demás en verde. Lo arma ahora un programa de Go

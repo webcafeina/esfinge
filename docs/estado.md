@@ -4,8 +4,9 @@
 
 ## La siguiente acción: montar esto en el VPS
 
-Está escrito entero y en verde lo de la **[ADR 0057](adr/0057-la-boveda-en-un-servidor.md)** —la bóveda en un
-servidor— y **no se ha usado todavía en el VPS**. Eso es lo único que queda de esa ficha, y es lo que
+**Quedó para la tarde del 2026-10-20.** Está escrito entero, en verde y **empujado** (`85917b2`, sin
+etiqueta: no se ha publicado versión) lo de la **[ADR 0057](adr/0057-la-boveda-en-un-servidor.md)** —la
+bóveda en un servidor— y **no se ha usado todavía en el VPS**. Eso es lo único que queda de esa ficha, y es lo que
 encuentra las cosas.
 
 Los pasos, en este orden y desde el VPS:
