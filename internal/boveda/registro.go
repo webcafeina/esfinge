@@ -92,8 +92,10 @@ const (
 	// algo que no es un secreto—. Se apunta igual, que es lo que deja leer después qué
 	// hizo un agente en la bóveda sin que nadie se enterara en el momento.
 	ApunteDirecto = "directo"
-	// ApunteLlaveDelEquipo: lo abrió la llave de este equipo, en un servidor, y **no
-	// había a quién preguntar** (ADR 0057).
+	// ApunteLlaveDelEquipo: lo hizo la línea de comandos, donde **no había a quién
+	// preguntar** (ADR 0057) — normalmente en un servidor, abriendo con la llave de
+	// ese equipo, y también cuando alguien teclea la maestra en un terminal: ahí
+	// tampoco hay ventana donde aprobar nada, que es lo que este valor dice.
 	//
 	// Se distingue de los otros cuatro por lo mismo que `ApunteSiempre`: ahí nadie
 	// miró nada en el momento, así que el registro es lo único que queda y leerlo

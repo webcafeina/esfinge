@@ -857,14 +857,13 @@ func (f fuenteDelNavegador) bovedaParaEscribir() (*boveda.Boveda, error) {
 // algo que no va a salir de este navegador sería media promesa — y en un gestor de
 // contraseñas eso es peor que ninguna. **No se iguale esto "por consistencia" sin
 // preguntar**: la diferencia es la pantalla, no un descuido.
+// **La regla vive en `boveda.PorQueNoSeEscribe` desde la ADR 0058**, porque también
+// la pregunta la línea de comandos y la misma regla en dos sitios se desalinea sola.
+// Lo que se queda aquí es lo de la App: de quién es la bóveda abierta y con qué
+// permiso, que es estado suyo y va detrás de su cerrojo.
 func (f fuenteDelNavegador) porQueNoSeEscribe(b *boveda.Boveda) string {
-	if b.SoloLectura() {
-		return "Esta bóveda es de una versión más nueva de Esfinge y aquí no se puede escribir en ella"
-	}
-	if f.a.soloPuedoVerLaActiva() {
-		return "Solo puedes ver esta bóveda compartida: lo que escribieras aquí no llegaría a nadie más"
-	}
-	return ""
+	dueno, permiso := f.a.deQuienEsLaActiva()
+	return boveda.PorQueNoSeEscribe(b, dueno, permiso)
 }
 
 func cuentaDe(x boveda.Entrada) navegador.Cuenta {

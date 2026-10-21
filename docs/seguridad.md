@@ -460,10 +460,18 @@ por lo que es.
 
 **Quitar el acceso no borra lo que la otra persona ya tiene.** Deja de recibir cambios desde ese momento, y
 lo que estuviera en su equipo se queda ahí; desde aquí no hay forma de borrarlo y prometerlo sería mentir.
-Lo que sí hace es que **no sirva para seguir**: al quitarlo se rota la clave de la bóveda y se vuelve a
-sellar para los que quedan, así que ni una copia vieja del fichero ni la clave que esa persona vio abren lo
-que venga después. La ranura retirada se queda marcada en el fichero —una lápida— porque borrarla a secas la
-resucitaría en cuanto sincronizara un equipo con una copia de antes.
+Lo que sí hace es que **no sirva para seguir**: el servidor deja de servirle la bóveda —contesta 403— y su
+copia **se borra de su equipo** la próxima vez que sincronice (ADR 0053). La ranura retirada se queda marcada
+en el fichero —una lápida— porque borrarla a secas la resucitaría en cuanto sincronizara un equipo con una
+copia de antes.
+
+**Lo que todavía no hace, y aquí se decía que sí** (corregido el 2026-10-21): **la clave de la bóveda no
+cambia**. Quien tuvo acceso se la llevó, así que una copia del fichero que consiga por otro camino la seguirá
+abriendo. Lo que lo impide hoy es que **no puede conseguir ninguna**: el servidor no se la sirve. Rotarla
+exige un cambio del formato —que el cuerpo se cifre con una **clave de contenido** envuelta aparte, en vez de
+con la clave de bóveda— porque hoy rotar obligaría a reenvolver también la ranura maestra y la de
+recuperación, y para eso harían falta la contraseña y la clave de recuperación delante. Está decidido hacerlo
+y está en [`deuda.md`](deuda.md).
 
 **Y en el navegador, desde la C6:** la extensión también puede tener una bóveda ajena, cifrada, en
 `storage.local`, y subir a la cuenta de esa persona lo que se guarde en ella. Con permiso de solo ver **no
@@ -664,8 +672,9 @@ cualquiera que entre, que no dejan rastro y que un agente se mete en su conversa
 mismo trato que la bóveda hace con el segundo factor y con los datos personales.
 
 Qué cambia de verdad, entonces: los secretos quedan **cifrados en reposo**, se cambian en el Mac y llegan
-solos, **queda apuntado** lo que usó cada despliegue, y quitarle el acceso al servidor es **rotar la clave
-desde el Mac** (ADR 0052) en vez de entrar a borrar un fichero.
+solos, **queda apuntado** lo que usó cada despliegue, y quitarle el acceso al servidor se hace **desde el
+Mac** (ADR 0052) en vez de entrar a borrar un fichero: el servidor deja de poder bajarla y su copia se borra
+sola la próxima vez que trabaje.
 
 Cuatro cosas más que lo acotan:
 

@@ -16,10 +16,17 @@ package boveda
 //
 // Lo evidente sería envolverla con la clave de bóveda de esa persona, igual que el
 // dueño. Funciona, y **mata la revocación**: solo ella podría volver a crear su
-// ranura, así que el día que haya que rotar la clave —que es lo que pasa al quitarle
-// el acceso a alguien— el dueño no podría reenvolver para los que quedan sin
-// tenerlos delante. Sellando hacia la pública, que está publicada en el servidor
-// desde la ADR 0043, el dueño rehace la de cualquiera él solo.
+// ranura, así que el día que haya que rotar la clave el dueño no podría reenvolver
+// para los que quedan sin tenerlos delante. Sellando hacia la pública, que está
+// publicada en el servidor desde la ADR 0043, el dueño rehace la de cualquiera él
+// solo.
+//
+// **Y ese día no ha llegado: rotar al quitar el acceso no se hace** (visto el
+// 2026-10-21, deuda de severidad alta). La ADR 0052 lo prometía y el formato no lo
+// permite, porque todas las ranuras envuelven esta misma clave y dos de ellas —la
+// maestra y la de recuperación— no se pueden reenvolver sin tener delante lo que las
+// abre. Lo que esto de aquí deja hecho es la mitad barata, para el día que el cuerpo
+// se cifre con una clave de contenido y rotar sea gratis.
 //
 // **El tipo lleva dentro a quién es, y eso no es estilo.** El sello indexa los
 // sobres por su tipo (`sel.Huellas[tipo]`, `sel.Sobres[tipo]`) y `fundirSobres` los
@@ -170,8 +177,9 @@ func (b *Boveda) AbrirSellado(sellado string) ([]byte, error) {
 
 // PonerAcceso le da acceso a una identidad, o se lo renueva.
 //
-// Renovar es lo que hace rotar la clave: el mismo miembro, el mismo tipo de ranura y
-// un contenedor nuevo con la clave nueva dentro.
+// Renovar es lo que haría rotar la clave: el mismo miembro, el mismo tipo de ranura y
+// un contenedor nuevo con la clave nueva dentro. **Hoy nadie rota** —ver la cabecera
+// de este fichero—, así que renovar solo se usa cuando se vuelve a dar un acceso.
 func (b *Boveda) PonerAcceso(id string, para Identidad) error {
 	if id == "" {
 		return errors.New("Falta decir a quién se le da el acceso")
@@ -201,9 +209,11 @@ func (b *Boveda) PonerAcceso(id string, para Identidad) error {
 
 // RetirarAcceso le quita el acceso, **dejando la lápida**.
 //
-// Lo que esto no hace, y por eso al lado va siempre una rotación de la clave: no
-// borra lo que esa persona ya se bajó, y no le quita de la cabeza la clave que vio
-// mientras tuvo acceso.
+// Lo que esto no hace, y conviene no engañarse porque **no hay nada al lado que lo
+// tape**: no borra lo que esa persona ya se bajó —eso lo hace la ADR 0053, pidiéndole
+// a su Esfinge que lo borre, o sea cooperando— y **no cambia la clave**, que es la
+// misma antes y después (ver la cabecera). O sea que quien tuvo acceso conserva la
+// llave de todo lo que venga después; es deuda escrita, con severidad alta.
 func (b *Boveda) RetirarAcceso(id string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -743,4 +753,44 @@ func fundirTitulares(l, r, b []Titular, hayBase bool) []Titular {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
+}
+
+// PorQueNoSeEscribe dice por qué no se puede escribir en esta bóveda, o "" si sí.
+//
+// `dueno` es la cuenta de quien la comparte, **vacío si la bóveda es propia**, y
+// `permiso` es lo que esa persona dijo que se puede hacer con ella.
+//
+// Son dos razones distintas y las dos tienen que decir **la suya**, porque mandan a
+// mirar a sitios distintos:
+//
+//   - **De solo lectura**: la escribió una versión más nueva de Esfinge, así que aquí
+//     no se entiende entera y escribir encima se llevaría por delante lo que no se
+//     entiende.
+//   - **Compartida de solo ver**: la clave para descifrarla sí está —escribir
+//     funcionaría— y lo que no se puede es **subirlo**, porque el servidor contesta
+//     403. Lo impone el servidor, no el cifrado, y se dice con esas mismas palabras
+//     (ADR 0052).
+//
+// **Un permiso vacío cuenta como «solo ver»**, que es el lado seguro de equivocarse:
+// si no se ha podido leer la lista, lo que cuesta equivocarse hacia aquí es no
+// ofrecer escribir; hacia el otro lado, escribir algo que no va a llegar a nadie.
+//
+// **La regla vive aquí y no en quien la llama** desde la ADR 0058: la preguntan la
+// ventana, el canal del navegador, el de los agentes y la línea de comandos, y la
+// misma regla escrita en dos sitios se desalinea sola — en este proyecto ya ha
+// costado tres fallos, uno de ellos una publicación.
+//
+// Lo que **no** decide esto es **quién pregunta**: la ventana deja editar una
+// compartida de solo ver a propósito —ahí hay pantalla donde explicar que lo escrito
+// no sube— y el canal del navegador y el del agente no. Esa asimetría es de quien
+// llama, está razonada en `internal/app/navegador.go`, y **no se iguala «por
+// consistencia» sin preguntar**.
+func PorQueNoSeEscribe(b *Boveda, dueno, permiso string) string {
+	if b.SoloLectura() {
+		return "Esta bóveda es de una versión más nueva de Esfinge y aquí no se puede escribir en ella"
+	}
+	if dueno != "" && permiso != "editar" {
+		return "Solo puedes ver esta bóveda compartida: lo que escribieras aquí no llegaría a nadie más"
+	}
+	return ""
 }

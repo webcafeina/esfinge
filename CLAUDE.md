@@ -219,7 +219,13 @@ No se cambian sin preguntar.
   editar, y **lo impone el servidor, no el cifrado** —quien puede ver tiene la clave, lo que no puede es
   subir, y eso se dice con esas palabras igual que lo de Touch ID—; **hace falta cuenta**; **quien puede
   editar puede dar acceso a otros**; **la lista de quién tiene acceso la ven todos**; y **al quitar el acceso
-  se rota la clave**. Lo que **no** se hace: borrar en remoto lo que ya se bajó —no se puede prometer— ni
+  el servidor deja de servir la bóveda y la copia de quien lo pierde se borra** (ADR 0053).
+  **Ojo con lo que esa ficha dice y no se hizo**: decía que al revocar **se rota la clave de bóveda**, y eso
+  no existe —`RetirarAcceso` solo pone la lápida, y `b.llave` no cambia nunca—. No fue un descuido: **el
+  formato no lo permite**, porque todas las ranuras envuelven esa misma clave y reenvolver la maestra y la de
+  recuperación exigiría tenerlas delante. Se decidió el 2026-10-21 arreglarlo con una **clave de contenido**,
+  y hasta entonces lo que protege es el 403 del servidor y el borrado de la copia.
+  Lo que **no** se hace: borrar en remoto lo que ya se bajó —no se puede prometer— ni
   dejar que quien recibe borre la bóveda para todos.
   **Y tres cosas técnicas que cuestan caro si se tocan a ciegas.** La ranura de cada titular va **sellada
   hacia su identidad pública**, no envuelta con su clave de bóveda: envolviéndola solo esa persona podría
@@ -319,8 +325,8 @@ No se cambian sin preguntar.
   marquen**; `esfinge boveda ejecutar` solo consigue que **el camino cómodo no se las enseñe** —el secreto va
   al entorno del proceso hijo, la bóveda se cierra antes de lanzarlo y queda apuntado— y no es una frontera
   contra quien tenga terminal allí. Dos cosas técnicas: **la llave va fuera de la carpeta de las bóvedas**
-  (regla de la 0044), y **quitarle el acceso borra su copia** (0053), porque rotar la clave corta lo que
-  llega y no lo que ya está en el disco.
+  (regla de la 0044), y **quitarle el acceso borra su copia** (0053), que es lo único que llega a lo que ya
+  está en el disco.
 
 - **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
   mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda

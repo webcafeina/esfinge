@@ -251,9 +251,17 @@ func (a *App) duenoDeLaActiva() string {
 // hacia ahí cuesta una tarjeta que no sale, y al otro lado cuesta escribir algo que no
 // va a llegar a nadie.
 func (a *App) soloPuedoVerLaActiva() bool {
+	dueno, permiso := a.deQuienEsLaActiva()
+	return dueno != "" && permiso != "editar"
+}
+
+// deQuienEsLaActiva es de quién es la bóveda abierta y con qué permiso: vacíos los
+// dos si es propia. Es lo que `boveda.PorQueNoSeEscribe` necesita saber y que solo
+// sabe la App, porque es estado suyo y vive detrás de su cerrojo.
+func (a *App) deQuienEsLaActiva() (dueno, permiso string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	return a.duenoActivo != "" && a.permisoActivo != "editar"
+	return a.duenoActivo, a.permisoActivo
 }
 
 // rutaActiva es el fichero de la bóveda abierta, o el de la personal si no hay

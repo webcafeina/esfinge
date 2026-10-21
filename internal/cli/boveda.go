@@ -18,19 +18,24 @@ import (
 	"github.com/webcafeina/esfinge/internal/wifi"
 )
 
-// La bóveda desde la línea de comandos: **solo leer**, con una excepción que
-// está en `servidor.go`.
+// La bóveda desde la línea de comandos.
 //
-// Editar desde aquí puede esperar; consultar, no. Lo que un script necesita es
-// sacar una contraseña para metérsela a otra cosa, y para eso hacen falta dos
-// piezas que ya existen —la clave nunca por argumento, y una salida limpia por
-// la estándar— más una que no existía: **salida estructurada**.
+// Nació **solo para leer**, y con una razón: editar podía esperar y consultar no. Lo
+// que un script necesita es sacar una contraseña para metérsela a otra cosa, y para
+// eso hacen falta dos piezas que ya existen —la clave nunca por argumento, y una
+// salida limpia por la estándar— más una que no existía: **salida estructurada**.
 //
 // El `--json` no es un adorno. Es la costura de la que va a colgar el
 // autorrelleno del navegador cuando llegue: la extensión hablará con esto, no
 // con la ventana.
 //
-// Y la excepción: `servidor activar` **escribe**, porque poner una ranura es lo
+// **Y desde la ADR 0058 también escribe**: `crear` y `editar`, en `escribir.go`, que
+// es lo que necesita un agente trabajando en un servidor sin ventana —si no puede
+// guardar el testigo que acaba de rotar, se lo tiene que dar a una persona por el
+// chat, y entonces el secreto entra en la conversación de un modelo—. Lo que **no**
+// hay es `borrar`: en la ventana pide un sí y aquí no hay quién lo dé.
+//
+// Antes de eso ya escribía una cosa: `servidor activar`, porque poner una ranura es lo
 // único que puede dejar esta bóveda abriéndose sin contraseña en un servidor, y
 // poner una ranura exige la bóveda abierta —o sea saber la maestra— (ADR 0057).
 
@@ -53,10 +58,11 @@ func comandoBoveda(o *opciones) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "boveda",
 		Short: "Consulta la bóveda de contraseñas",
-		Long: "Lee la bóveda que gestiona la aplicación con ventana.\n\n" +
-			"Solo lee: añadir y cambiar entradas se hace desde la ventana. Lo que\n" +
-			"hay aquí es lo que necesita un script —sacar una contraseña para dársela\n" +
-			"a otra cosa— y la forma de salir si algún día la ventana no arranca.\n\n" +
+		Long: "Lee la bóveda que gestiona la aplicación con ventana, y escribe en ella.\n\n" +
+			"Lo que hay aquí es lo que necesita un script —sacar una contraseña para\n" +
+			"dársela a otra cosa, crear una entrada o rotar un secreto— y la forma de\n" +
+			"salir si algún día la ventana no arranca. Borrar no está: eso se hace en\n" +
+			"la ventana, donde hay quien lo confirme.\n\n" +
 			"La clave se pide por el terminal, o con --clave-env o --clave-fichero.\n" +
 			"Vale tanto la contraseña maestra como la clave de recuperación.\n\n" +
 			"En un servidor puede no pedir nada, y se trabaja con una bóveda que le\n" +
@@ -76,12 +82,19 @@ func comandoBoveda(o *opciones) *cobra.Command {
 		"En un servidor, no ponerse al día con la cuenta antes de leer")
 	f.StringVar(&ob.compartida, "compartida", "",
 		"Trabajar con una bóveda que le hayan compartido a este equipo, por su nombre")
+	// **Y `-q`, que no estaba.** Lo declaran `cifrar` y `descifrar` en
+	// `banderasComunes` y aquí faltaba, así que `esfinge boveda ... -q` fallaba con
+	// «unknown flag» — justo en el programa que más se mete en un guion, y donde las
+	// frases de cortesía molestan más.
+	f.BoolVarP(&o.silencio, "silencio", "q", false, "Sin marca ni mensajes de cortesía")
 
 	cmd.AddCommand(
 		comandoBovedaListar(o, &ob),
 		comandoBovedaVer(o, &ob),
 		comandoBovedaCodigo(o, &ob),
 		comandoBovedaWifi(o, &ob),
+		comandoBovedaCrear(o, &ob),
+		comandoBovedaEditar(o, &ob),
 		comandoBovedaExportar(o, &ob),
 		comandoBovedaEjecutar(o, &ob),
 		comandoBovedaServidor(o, &ob),

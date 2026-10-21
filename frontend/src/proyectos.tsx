@@ -934,7 +934,8 @@ function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo:
                 <strong>{servidor}</strong> puede leer esta bóveda, y su llave está en un fichero de
                 ese equipo: <strong>quien entre en él abre esto</strong>. A cambio, las contraseñas de
                 este proyecto dejan de estar en claro en un <code>.env</code> y queda apuntado lo que
-                se usa. Quitándolo, <strong>la clave se rota</strong> y su copia deja de abrir.
+                se usa. Quitándolo, el servidor deja de poder bajarla y{" "}
+                <strong>su copia se borra</strong> la próxima vez que trabaje.
               </>
             ) : (
               <>

@@ -237,36 +237,55 @@ func laCompartidaQueSeLlama(b *boveda.Boveda, nombre string) (boveda.Compartida,
 // Y la pone al día antes de devolverla, por lo mismo que la personal: una credencial
 // vieja en un servidor es un fallo mudo.
 func abrirLaCompartidaPorNombre(o *opciones, ob *opcionesBoveda, nombre string) (*boveda.Boveda, error) {
-	mia, err := abrirLaBoveda(o, ob)
-	if err != nil {
-		return nil, err
+	b, mia, _, err := abrirLaCompartidaConLaPersonal(o, ob, nombre)
+	if mia != nil {
+		mia.Cerrar()
 	}
-	defer mia.Cerrar()
+	return b, err
+}
 
-	comp, err := laCompartidaQueSeLlama(mia, nombre)
+// abrirLaCompartidaConLaPersonal es lo mismo y **devuelve la personal abierta**, que
+// es lo que necesita quien va a escribir (ADR 0058): la sesión de la cuenta vive
+// sellada dentro de la personal y la compartida no la lleva dentro, así que subir lo
+// escrito exige tener las dos a la vez. Quien lee no la necesita y la cierra en el
+// acto.
+//
+// En cualquier error devuelve `mia` a nil **y la cierra él**: así quien llama solo
+// tiene que cerrar lo que recibe.
+func abrirLaCompartidaConLaPersonal(o *opciones, ob *opcionesBoveda, nombre string) (
+	b, mia *boveda.Boveda, comp boveda.Compartida, err error) {
+	mia, err = abrirLaBoveda(o, ob)
 	if err != nil {
-		return nil, err
+		return nil, nil, boveda.Compartida{}, err
+	}
+	fallo := func(err error) (*boveda.Boveda, *boveda.Boveda, boveda.Compartida, error) {
+		mia.Cerrar()
+		return nil, nil, boveda.Compartida{}, err
+	}
+
+	comp, err = laCompartidaQueSeLlama(mia, nombre)
+	if err != nil {
+		return fallo(err)
 	}
 	ruta := rutas.Compartida(comp.Dueno, comp.Ref)
 	if _, err := os.Stat(ruta); err != nil {
-		return nil, fmt.Errorf(
-			"«%s» no está todavía en este equipo; tráela con «esfinge boveda servidor recibir»", comp.Nombre)
+		return fallo(fmt.Errorf(
+			"«%s» no está todavía en este equipo; tráela con «esfinge boveda servidor recibir»", comp.Nombre))
 	}
-	b, err := boveda.AbrirCompartida(ruta, comp.Titular, mia)
+	b, err = boveda.AbrirCompartida(ruta, comp.Titular, mia)
 	if err != nil {
-		return nil, err
+		return fallo(err)
 	}
-	// La pasada va **con la personal todavía abierta**: la sesión vive sellada en
-	// ella, y la compartida no la lleva dentro.
+	// La pasada va **con la personal todavía abierta**, por lo mismo de arriba.
 	if !ob.sinSincronizar {
 		if err := ponerAlDiaLaCompartida(o, mia, b, comp); err != nil {
 			// Puede venir ya cerrada —`retirarLaCompartida` la cierra para poder
 			// borrar el fichero—, y cerrar dos veces no hace daño.
 			b.Cerrar()
-			return nil, err
+			return fallo(err)
 		}
 	}
-	return b, nil
+	return b, mia, comp, nil
 }
 
 // ponerAlDiaLaCompartida hace una pasada contra **la cuenta de la otra persona**,
@@ -279,22 +298,7 @@ func abrirLaCompartidaPorNombre(o *opciones, ob *opcionesBoveda, nombre string) 
 // **Salvo una cosa, y es la que devuelve error: que le hayan quitado el acceso**
 // (ADR 0053). Entonces la bóveda se va de este equipo y no hay nada que abrir.
 func ponerAlDiaLaCompartida(o *opciones, mia, b *boveda.Boveda, comp boveda.Compartida) error {
-	s, err := abrirLaCuenta(mia, mia.Ruta())
-	if err != nil {
-		return nil
-	}
-	ctx, cancelar := context.WithTimeout(context.Background(), elPlazoDeLaRed)
-	defer cancelar()
-	err = s.conLaSesion(ctx, func(token string) error {
-		sin := &sincro.Sincronizador{
-			Servidor: laCompartidaRemota{c: s.c, dueno: comp.Dueno, ref: comp.Ref},
-			Boveda:   b,
-			Memoria:  sincro.JuntoALaBoveda{Ruta: b.Ruta()},
-			Token:    func() string { return token },
-		}
-		_, err := sin.Sincronizar(ctx)
-		return err
-	})
+	err := unaPasadaDeLaCompartida(mia, b, comp)
 	if err == nil {
 		return nil
 	}
@@ -309,13 +313,42 @@ func ponerAlDiaLaCompartida(o *opciones, mia, b *boveda.Boveda, comp boveda.Comp
 	return nil
 }
 
+// unaPasadaDeLaCompartida es la pasada y nada más: la de `ponerseAlDia` para una
+// bóveda que es de otra cuenta.
+//
+// Va aparte porque la piden dos sitios con reacciones distintas al fallo —antes de
+// leer, lo que hay que decir es que lo leído puede estar viejo; después de escribir,
+// que lo guardado no ha subido todavía— y la frase es la mitad del trabajo.
+//
+// **Y si no hay cuenta aquí, no hay nada que hacer y tampoco es un error**: así
+// funcionan las pruebas que no levantan servidor.
+func unaPasadaDeLaCompartida(mia, b *boveda.Boveda, comp boveda.Compartida) error {
+	s, err := abrirLaCuenta(mia, mia.Ruta())
+	if err != nil {
+		return nil
+	}
+	ctx, cancelar := context.WithTimeout(context.Background(), elPlazoDeLaRed)
+	defer cancelar()
+	return s.conLaSesion(ctx, func(token string) error {
+		sin := &sincro.Sincronizador{
+			Servidor: laCompartidaRemota{c: s.c, dueno: comp.Dueno, ref: comp.Ref},
+			Boveda:   b,
+			Memoria:  sincro.JuntoALaBoveda{Ruta: b.Ruta()},
+			Token:    func() string { return token },
+		}
+		_, err := sin.Sincronizar(ctx)
+		return err
+	})
+}
+
 // retirarLaCompartida se va de una bóveda a la que han quitado el acceso: **la
 // tacha en la lista y borra el fichero de este equipo** (ADR 0053).
 //
 // Es lo mismo que hace la ventana, y en un servidor importa más: la copia de un
 // proyecto de un cliente con el que ya no se trabaja se quedaría ahí, legible por
-// quien entre en la máquina, **para siempre**. Rotar la clave al revocar (ADR 0052)
-// corta lo que llega, no lo que ya está en el disco.
+// quien entre en la máquina, **para siempre**. Y es lo único que llega hasta ahí: el
+// 403 del servidor corta lo que baja, no lo que ya está en el disco — y la rotación de
+// la clave que la ADR 0052 prometía **no existe** (ver su apartado del 2026-10-21).
 //
 // **`Revocado` y no `SinAcceso`**, que ahí está toda la diferencia entre dejar de
 // sincronizar y destruir una bóveda: el 403 también es «solo puedes ver» —que es

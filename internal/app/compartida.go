@@ -245,9 +245,11 @@ func (a *App) DarAcceso(correo, permiso string) error {
 // QuitarAcceso se lo quita a ese titular: **la puerta del servidor primero**, que es
 // la que corta de verdad y en el acto, y después la ranura.
 //
-// Lo que esto **no** hace, y la pantalla lo dice sin disimularlo: no borra lo que esa
-// persona ya se bajó, y no le quita de la cabeza la clave que vio mientras tuvo
-// acceso. Por eso al lado va rotar la clave.
+// Lo que esto **no** hace, y la pantalla lo dice sin disimularlo: no le quita de la
+// cabeza la clave que vio mientras tuvo acceso —y **la clave no se rota**, aunque la
+// ADR 0052 lo prometiera: ver la cabecera de `internal/boveda/compartida.go`—. Lo que
+// sí llega al disco de esa persona es el borrado de su copia (ADR 0053), que es
+// cooperativo: lo hace su Esfinge cuando el servidor se lo dice.
 func (a *App) QuitarAcceso(titular string) error {
 	ref := a.bovedaActiva()
 	if ref == "" || a.duenoDeLaActiva() != "" {

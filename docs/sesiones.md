@@ -5,6 +5,34 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-21 (tarde) · La 0058 a medias, y la rotación que no existía
+
+- **El hallazgo del día, leyendo el código para otra cosa**: **quitar el acceso a una bóveda de proyecto
+  no rota la clave**, y estaba prometido en cinco sitios más una prueba cuyo nombre lo decía y que no
+  comprobaba nada. `RetirarAcceso` solo pone la lápida y `b.llave` no cambia nunca. **Y no era un
+  descuido: el formato no lo permite**, porque todas las ranuras envuelven esa misma clave y la maestra y
+  la de recuperación no se pueden reenvolver sin tenerlas delante. Anotado en los cinco sitios —tachado,
+  no borrado— y en `deuda.md` con severidad alta.
+- **Decidido con el cliente el arreglo**: una **clave de contenido** envuelta aparte, que además hace que
+  quien recibe una compartida deje de llevarse la clave de bóveda. Es el cambio de formato más grande
+  desde que existe la bóveda —dos núcleos, cruzadas, vectores nuevos, migración— y **tendrá ADR propia**.
+  No entró hoy.
+- **De la ADR 0058 (que el servidor escriba), los dos primeros pasos.** El 1, la regla de «aquí no se
+  escribe» movida a `boveda.PorQueNoSeEscribe` con la ventana delegando, sin tocar pruebas. El 2,
+  `internal/cli/escribir.go` con `crear` y `editar`: cuatro orígenes del secreto y **ninguno es un
+  argumento**, `--generar` con alfabeto y largo, `--quien` que no autentica nada, el apunte y la pasada de
+  subida de después. De camino salieron tres cosas: la personal tiene que quedarse **abierta** para poder
+  subir lo escrito, `unaPasadaDeLaCompartida` se extrajo porque las frases de fallo son distintas antes de
+  leer y después de escribir, y **`boveda` no declaraba `-q`**.
+- **Lo que se verificó**: `make comprobar` entero en verde **antes** de `escribir.go`; después,
+  `go build ./...`, `go vet ./internal/...` y `go test -count=1 ./internal/cli/`.
+- **Queda abierto, y es lo primero al volver**: `make comprobar` entero, **las pruebas del paso 2** —que
+  no existen— cada una mutada, y el **paseo a mano** con el binario, que no se hizo. Luego los pasos 3 a 6
+  de la 0058 (la ventana) y decidir si va antes la clave de contenido.
+- **Se paró a media tarde**, a petición del cliente. Todo comprometido sin empujar.
+
+---
+
 ## 2026-10-21 · Montar la 0057 en el VPS, guiando paso a paso
 
 - **Se montó entero en el VPS de verdad**, contra el servidor de cuentas de producción: alta, activar,

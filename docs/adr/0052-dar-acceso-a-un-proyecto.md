@@ -40,7 +40,7 @@ proyecto**: cualquiera puede recibir acceso el día que haga falta.
 | **Recompartir** | **Sí, quien puede editar** |
 | **La lista de quién tiene acceso** | **La ven todos los que la tienen** |
 | **Última mano** | **«Nombre (correo)»**, y **no a la vista todo el rato** |
-| **Al quitar el acceso** | **Se rota la clave** y se vuelve a envolver para los que quedan |
+| **Al quitar el acceso** | ~~**Se rota la clave** y se vuelve a envolver para los que quedan~~ · **No se hizo, y no por descuido: ver abajo (2026-10-21)** |
 
 ### La ranura va sellada hacia la identidad, no envuelta con la clave de quien recibe
 
@@ -48,6 +48,11 @@ Es la decisión técnica entera, y la evidente no sirve. Envolver la clave del p
 bóveda de esa persona** —que es lo que hace `boveda-principal` para el dueño (ADR 0050)— funciona… y deja
 que **solo ella** pueda rehacer esa ranura. El día que haya que rotar la clave, el dueño no podría
 reenvolver para los que quedan sin tenerlos delante.
+
+> **Esta parte sigue en pie y es la mitad buena** (nota del 2026-10-21): el sello hacia la identidad es
+> exactamente lo que haría barato rotar. Lo que esta ficha no vio es que **las otras dos ranuras lo
+> bloquean** —la maestra y la de recuperación—, así que la rotación nunca se hizo. Ver el apartado del
+> final.
 
 Así que cada titular tiene una ranura con la clave del proyecto **sellada hacia su identidad pública**, que
 es la primitiva de los sobres de compartir (ADR 0043) y ya está publicada en el servidor:
@@ -70,9 +75,14 @@ sube, y **el primer equipo con una copia de antes la resucita**. Hace falta una 
 marcado como retirado, con su fecha, y lo retirado gana a lo vivo. Es el mismo patrón que las lápidas de las
 entradas y por la misma razón — sin ellas, «quitada aquí» y «nunca existió allí» son indistinguibles.
 
-**Eso convierte rotar la clave en lo que de verdad hace que revocar aguante**, y no en un extra: aunque una
+~~**Eso convierte rotar la clave en lo que de verdad hace que revocar aguante**, y no en un extra: aunque una
 ranura vuelva por una copia vieja, lleva dentro la clave de antes y ya no abre nada. El cliente eligió rotar
-sin saber esto; esto lo confirma por una segunda razón.
+sin saber esto; esto lo confirma por una segunda razón.~~
+
+**Y el argumento era bueno, lo que falla es que la rotación no se hizo** (2026-10-21). Sin ella, una ranura
+que vuelva por una copia vieja **lleva dentro la clave de ahora y abre**, así que la lápida es lo único que
+sostiene esto, y la lápida es cooperativa: la pone el dueño en su fichero y gana al fundir. Ver el apartado
+del final.
 
 ### La bóveda no se muda de sitio
 
@@ -250,3 +260,34 @@ podía ver, porque todas sincronizan bien:
   terminado con **una lista de los estados que cuentan como final** y el nuevo no estaba en ella. **No era de
   esta ficha**: `muchos-borrados` llevaba igual desde la 2.25.2 y nadie había pulsado ahí. Ahora se escribe al
   revés —terminada es «ya no está sincronizando»—, y lo que queda sin prueba está en `deuda.md` con el porqué.
+
+---
+
+## Lo que esta ficha prometió y el formato no permitía (2026-10-21)
+
+**La rotación de la clave al revocar no existe**, y llevaba desde esta ficha escrita en tres sitios como si
+existiera: aquí, en `docs/seguridad.md` y en la pantalla del selector del servidor. `RetirarAcceso` solo
+pone la lápida, y `b.llave` **no cambia nunca** —solo se asigna al crear y al abrir—.
+
+No fue un descuido al implementar: **el formato no lo permite**. Todas las ranuras envuelven *la misma
+cosa*, la clave de bóveda, y el cuerpo se cifra con ella —es lo que `CambiarMaestra` dice en su comentario
+cuando explica que «el cuerpo no se toca»—. Así que rotar obliga a reenvolver **todas** las ranuras, y dos
+de ellas no se pueden reenvolver sin tener delante lo que las abre: la **maestra** —habría que pedir la
+contraseña en cada revocación— y la de **recuperación**, que solo se puede sustituir por una nueva, o sea
+**una ceremonia de clave de recuperación cada vez que se quita un acceso**, que es justo lo que la ADR 0050
+descartó.
+
+Lo que esta ficha sí acertó es la pieza que diseñó para ello: la ranura de cada titular va **sellada hacia
+su identidad pública**, así que el dueño puede rehacerla sin tener a nadie delante. Esa mitad está bien y es
+la que hará que rotar sea barato; lo que no se vio es que la maestra y la recuperación lo bloquean.
+
+**Lo que protege hoy**, dicho sin adornos: el servidor deja de servirle la bóveda —403— y su copia **se
+borra** de su equipo en la siguiente pasada (ADR 0053). Lo que no protege: quien tuvo acceso se llevó la
+clave de bóveda y la conserva, así que una copia del fichero que consiga por otro camino la abre.
+
+**Y se decidió arreglarlo** el 2026-10-21, con el cliente y con el coste delante: el cuerpo pasará a
+cifrarse con una **clave de contenido** envuelta aparte —bajo la clave de bóveda y bajo la identidad de cada
+titular—, y entonces rotar es clave de contenido nueva, recifrar el cuerpo y volver a sellar solo para los
+que quedan, sin tocar la maestra ni la recuperación. De paso arregla algo que hoy está peor de lo que
+parecía: **quien recibe una bóveda compartida deja de llevarse la clave de bóveda**, que es la que protege
+la contraseña maestra.

@@ -58,7 +58,7 @@ pena:
 | repetidas entre `.env` y `.env.produccion` | una copia, sincronizada |
 | cambiar una es editar en el servidor | se cambian en el Mac y llegan solas |
 | sin rastro de qué se usó | registro dentro del cuerpo cifrado |
-| quitarle el acceso = entrar y borrar | revocar en el Mac **rota la clave** (ADR 0052) |
+| quitarle el acceso = entrar y borrar | revocar en el Mac **le borra su copia** (ADR 0053) |
 | el agente las lee y entran en su conversación | el camino cómodo no se las enseña |
 
 Y el alcance está acotado: la llave del servidor abre **su** bóveda, y de ahí solo las que se hayan marcado.

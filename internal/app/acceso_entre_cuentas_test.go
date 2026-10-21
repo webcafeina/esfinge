@@ -259,7 +259,7 @@ func TestPaseoDeUnAccesoEntreDosCuentas(t *testing.T) {
 	// había vuelto a mirar. Es el mismo error que esperar a un estado en vez de al hecho.
 	esperarA(t, ana.a, "Correo de Zeri")
 
-	paso(t, 9, "Ana le quita el acceso, que rota la clave")
+	paso(t, 9, "Ana le quita el acceso")
 	if err := ana.a.QuitarAcceso(titular); err != nil {
 		t.Fatalf("Ana no ha podido quitar el acceso: %v", err)
 	}
@@ -270,11 +270,11 @@ func TestPaseoDeUnAccesoEntreDosCuentas(t *testing.T) {
 	if len(quien) != 0 {
 		t.Fatalf("tras quitarlo, quién tiene acceso dice %+v", quien)
 	}
-	// Y Ana sigue trabajando en lo suyo, que es lo que la rotación no puede romper.
+	// Y Ana sigue trabajando en lo suyo, que es lo que quitar un acceso no puede romper.
 	if err := ana.a.GuardarEnBoveda(boveda.Entrada{
-		Tipo: boveda.TipoCredencial, Titulo: "Después de rotar", Secreto: "x",
+		Tipo: boveda.TipoCredencial, Titulo: "Después de quitarlo", Secreto: "x",
 	}); err != nil {
-		t.Fatalf("Ana no puede escribir en su propio proyecto tras rotar: %v", err)
+		t.Fatalf("Ana no puede escribir en su propio proyecto tras quitar el acceso: %v", err)
 	}
 	alDia(t, ana.a, time.Now())
 

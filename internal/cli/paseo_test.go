@@ -251,9 +251,11 @@ func TestPaseoDeUnProyectoHastaUnServidor(t *testing.T) {
 	b.Cerrar()
 
 	elPaso(t, 9, "y al quitarle el acceso, el servidor se va y borra su copia")
-	// **Rotar la clave corta lo que llega, no lo que ya está en el disco** (ADR
-	// 0052), así que sin esto la bóveda de un cliente con el que ya no se trabaja se
-	// quedaría en el VPS, legible por quien entre, para siempre.
+	// **Esto es lo único que llega al disco del servidor.** El 403 corta lo que baja
+	// y la rotación de la clave que la ADR 0052 prometía **no existe** (ver su
+	// apartado del 2026-10-21), así que sin este borrado la bóveda de un cliente con
+	// el que ya no se trabaja se quedaría en el VPS, legible por quien entre, para
+	// siempre.
 	ventana.usar(t)
 	quien, err = a.QuienTiene()
 	if err != nil {

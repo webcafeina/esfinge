@@ -27,8 +27,13 @@ investigó, y la respuesta cambia la decisión:
 O sea que **el borrado de todos ellos es cooperativo, no criptográfico**: el servidor deja de servir y el
 cliente obedece borrando su caché. Y ahí está el error de la frase de la 0052: juntó dos cosas que son
 distintas. **No se puede prometer** es verdad. **No se puede hacer** no lo era, y por eso la 0052 no hizo la
-mitad que sí se puede hacer: Esfinge cierra la puerta en el servidor —el 403— y **rota la clave**, que los
-demás no hacen, pero nadie le dice al Esfinge del otro que borre el fichero que ya tiene en el disco.
+mitad que sí se puede hacer: Esfinge cierra la puerta en el servidor —el 403— ~~y **rota la clave**, que los
+demás no hacen~~, pero nadie le dice al Esfinge del otro que borre el fichero que ya tiene en el disco.
+
+> **Corrección del 2026-10-21**: la rotación de la clave que esta ficha daba por hecha **no existe** —la
+> prometía la 0052 y nunca se implementó, porque el formato no lo permite; ver su apartado del final—. Lo
+> que esta ficha decidió sigue valiendo entero, y **vale más** de lo que parecía al escribirla: con el
+> borrado de la copia, Esfinge hace lo mismo que Dashlane y Bitwarden, no una mitad más.
 
 Entonces lo que pasa hoy es lo que el cliente vio: la bóveda de un cliente suyo **se queda abierta y
 legible** en el equipo de quien ya no trabaja con él, para siempre, a menos que esa persona la borre a mano.
@@ -125,8 +130,11 @@ permisos; si bajar da «revocado», no hay interpretación posible. El 403 de su
   base—, así que no hace falta inventar una lápida como con las ranuras. Hay que comprobarlo con dos
   equipos del mismo titular: sin base, la fusión conserva, y entonces el segundo equipo podría resucitar la
   fila.
-- **Y rotar la clave sigue siendo lo que de verdad aguanta.** El borrado es cooperativo; la rotación es lo
-  que hace que una copia vieja del fichero no sirva para leer nada de lo que venga después.
+- ~~**Y rotar la clave sigue siendo lo que de verdad aguanta.** El borrado es cooperativo; la rotación es lo
+  que hace que una copia vieja del fichero no sirva para leer nada de lo que venga después.~~
+  **Falso, descubierto el 2026-10-21**: esa rotación no existe, así que **hoy lo único que aguanta es esto**
+  —el borrado cooperativo— y una copia vieja del fichero sigue abriendo. Está en la deuda con severidad
+  alta, y el arreglo decidido es una **clave de contenido**.
 
 ## Verificación
 

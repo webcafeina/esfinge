@@ -2,6 +2,73 @@
 
 Última actualización: **2026-10-21**
 
+## SE RETOMA AQUÍ · La ADR 0058 a medias, y un hallazgo grave de camino
+
+Sesión parada a media tarde del 2026-10-21 porque el cliente se tuvo que ir. **Todo está comprometido**
+(sin empujar) y compila; lo que falta son pruebas, no código perdido.
+
+### 1 · Lo que apareció de camino, y es lo importante de hoy
+
+**Quitar el acceso a una bóveda de proyecto NO rota la clave, y estaba prometido en cinco sitios**
+—ADR 0052, `docs/decisiones.md`, `docs/seguridad.md`, el selector del servidor y `CLAUDE.md`—, más una
+prueba que se llamaba «Ana le quita el acceso, que rota la clave» y no comprobaba rotación ninguna.
+`RetirarAcceso` solo pone la lápida; `b.llave` **no cambia nunca**.
+
+Y no fue un descuido al implementar: **el formato no lo permite**. Todas las ranuras envuelven la misma
+clave de bóveda, así que rotar obliga a reenvolverlas todas, y dos no se pueden reenvolver sin tener
+delante lo que las abre —la **maestra** y la de **recuperación**, que solo se sustituye emitiendo otra, o
+sea una ceremonia por revocación, justo lo que la ADR 0050 descartó—.
+
+**Lo que protege hoy** es el 403 del servidor y el borrado de la copia (ADR 0053), que es cooperativo.
+Ya está **anotado en los cinco sitios** (tachado, no borrado) y está en [`deuda.md`](deuda.md) con
+severidad alta.
+
+**Y el arreglo está decidido con el cliente**: el cuerpo pasa a cifrarse con una **clave de contenido**
+envuelta aparte —bajo la clave de bóveda y bajo la identidad de cada titular—, y entonces rotar es clave
+nueva, recifrar el cuerpo y volver a sellar solo para los que quedan. De paso, **quien recibe una
+compartida deja de llevarse la clave de bóveda**. Es el cambio de formato más grande desde que existe la
+bóveda: los **dos núcleos** (Go y el espejo de TypeScript), las cruzadas, vectores congelados nuevos y
+migración de lo ya emitido. **Tendrá su ADR propia y no entró hoy.**
+
+### 2 · La ADR 0058: que el servidor escriba
+
+Plan completo y **aprobado** en `~/.claude/plans/vamos-a-realizar-un-precious-adleman.md`. Decidido con
+el cliente: **escribir no se aprueba** —crea y pisa secretos sin que nadie mire, y queda apuntado—, el
+permiso va **por proyecto** con un segundo interruptor, `--quien` **no autentica nada** y se dice, escriben
+en **cualquier bóveda que la línea de comandos pueda abrir** y la huella se confirma **una vez por
+servidor**.
+
+De los seis pasos del plan:
+
+- **Paso 1, hecho.** `boveda.PorQueNoSeEscribe(b, dueno, permiso)` al final de
+  `internal/boveda/compartida.go`, con `fuenteDelNavegador.porQueNoSeEscribe` y el nuevo
+  `App.deQuienEsLaActiva()` delegando. **Sin tocar ninguna prueba** y las de `app` siguen en verde.
+- **Paso 2, escrito y sin pruebas.** `internal/cli/escribir.go`: `crear` y `editar`, los cuatro orígenes
+  del secreto (`--secreto-stdin|-env|-fichero|--generar`, **nunca un argumento**), `--alfabeto`,
+  `--caracteres`, `--quien`, `--tipo` validado contra la lista con la llave de acceso negada, el apunte
+  con `ApunteLlaveDelEquipo` y la pasada de subida de después. `editar` **parchea solo lo que se nombre**
+  mirando `Flags().Changed`, y el secreto se lee **antes de abrir la bóveda** (regla de `ExportarLlaves`).
+  De camino: `abrirLaCompartidaConLaPersonal` devuelve la personal **abierta** —la sesión vive sellada en
+  ella y sin eso no se puede subir lo escrito—, se extrajo `unaPasadaDeLaCompartida`, y **`boveda` ya
+  declara `-q`**, que no lo declaraba y fallaba con «unknown flag».
+- **Pasos 3 a 6, sin empezar**: la huella en Ajustes, `CambiarPermiso` y el segundo interruptor, el tramo
+  nuevo del paseo y la ADR 0058 con sus docs.
+
+### 3 · Lo primero al volver, en este orden
+
+1. **`make comprobar` entero** (unos 6-7 minutos). Lo último verde fue **antes** de `escribir.go`; después
+   solo se ha corrido `go build ./...`, `go vet ./internal/...` y `go test ./internal/cli/`.
+2. **Las pruebas del paso 2**, que es lo que falta para darlo por hecho. La tabla de verificación está en
+   el plan, y lo que no puede faltar: que con permiso `ver` los dos verbos contesten el porqué, que el
+   secreto **no exista** como bandera, que `editar` deje el anterior en el historial, que el apunte lleve
+   `Quien`, y que lo escrito **suba**. Cada una mutada.
+3. **El paseo a mano** con el binario de verdad (`make esfinge`), que en este proyecto es lo que encuentra
+   lo que ninguna prueba ve. No se llegó a hacer.
+4. Y entonces decidir el orden de lo que queda: **la clave de contenido** (ADR propia, cara) frente a los
+   **pasos 3-6 de la 0058** (la ventana, baratos).
+
+---
+
 ## Montado en el VPS el 2026-10-21, y funciona
 
 La **[ADR 0057](adr/0057-la-boveda-en-un-servidor.md)** —la bóveda en un servidor— **ya no es solo
