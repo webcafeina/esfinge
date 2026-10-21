@@ -243,7 +243,12 @@ Lo comprobado de verdad, con sus pruebas:
 
 **Lo que no se ha comprobado:**
 
-- **Nada de esto se ha usado todavía en el VPS de verdad.** Lo que hay son pruebas.
+- ~~Nada de esto se ha usado todavía en el VPS de verdad.~~ **Montado en el VPS el 2026-10-21**, contra el
+  servidor de cuentas de producción y guiando al cliente paso a paso: alta con `info+servidor@webcafeina.com`
+  —el `+` evitó tener que crear un buzón en Workspace—, activar, acceso de solo ver a «Zeri's Coffee» con la
+  huella comparada por los dos lados, `recibir` y `ejecutar` entregando el secreto a un programa sin que
+  apareciera en ninguna pantalla. El apunte quedó en el registro. **El selector de la ventana no hizo falta**:
+  por debajo es dar acceso de solo ver, y eso la 2.58.7 ya lo hacía.
 - **Que sea cómodo en un despliegue real.** Eso lo dice el cliente usándolo, que es lo que ha encontrado
   todo lo demás este mes.
 - **Que el selector se entienda al verlo en el Mac.** Lo de aquí son capturas miradas en dos temas, no una

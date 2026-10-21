@@ -2151,6 +2151,14 @@ bloqueada y a la espera de la contraseña maestra» —el sentido verdadero, y l
 contraseña**». Las dos mitades, que es lo que no se podía dar por hecho: que la palabra siguiera sirviendo
 para el caso en que sí está bloqueada.
 
+Y el 2026-10-21, **la bóveda en un servidor** (ADR 0057), montada en el VPS de verdad y contra el servidor
+de cuentas de producción: alta, activar, acceso de solo ver desde el Mac con **la huella comparada por los
+dos lados**, `recibir` y `ejecutar` entregando el secreto al entorno de un programa **sin que apareciera en
+ninguna pantalla**, con su apunte en el registro. La cuenta es `info+servidor@webcafeina.com`: el `+` la
+hace una cuenta distinta para Esfinge —`NormalizarCorreo` no lo quita a propósito— y la entrega en la
+bandeja de siempre, así que **no hizo falta crear ningún buzón**. El selector de la ventana **no hizo
+falta**: por debajo es dar acceso de solo ver, y eso ya estaba publicado.
+
 Sin verificar todavía, y es lo único que queda en todo el proyecto: **cómo quedan las estructuras de
 Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono de los `.esf`, que en Windows lo
 pone el instalador y en Linux el `.deb`.

@@ -1,44 +1,58 @@
 # Estado
 
-Última actualización: **2026-10-20**
+Última actualización: **2026-10-21**
 
-## La siguiente acción: montar esto en el VPS
+## Montado en el VPS el 2026-10-21, y funciona
 
-**Quedó para la tarde del 2026-10-20.** Está escrito entero, en verde y **empujado** (`85917b2`, sin
-etiqueta: no se ha publicado versión) lo de la **[ADR 0057](adr/0057-la-boveda-en-un-servidor.md)** —la
-bóveda en un servidor— y **no se ha usado todavía en el VPS**. Eso es lo único que queda de esa ficha, y es lo que
-encuentra las cosas.
+La **[ADR 0057](adr/0057-la-boveda-en-un-servidor.md)** —la bóveda en un servidor— **ya no es solo
+pruebas**: está montada en el VPS de verdad, contra el servidor de cuentas de producción, y el camino
+entero se recorrió guiando al cliente paso a paso.
 
-Los pasos, en este orden y desde el VPS:
+Lo que se hizo y lo que contestó cada tramo:
+
+1. **`servidor alta --correo info+servidor@webcafeina.com`**. La dirección lleva `+` a propósito: Gmail
+   la entrega en su bandeja de siempre y para Esfinge es **una cuenta distinta** —`NormalizarCorreo` no
+   quita lo que va tras el «+», que es una regla de Gmail y no del correo—, así que no hizo falta crear
+   ningún buzón en Workspace. Dejó `boveda.esfinge` y un `servidor.json` con **la sesión, la clave de
+   acceso y la confianza, las tres selladas** (`ESF1.`).
+2. **`servidor activar`**. La llave quedó en `~/.esfinge-servidor`, 600 y **fuera** de la carpeta de las
+   bóvedas.
+3. **En el Mac, acceso de solo ver a esa cuenta**, con **las dos mitades del ritual de la huella**: él
+   comparó la del servidor —que se sacó aquí con un programa de un solo uso— antes de dársela, y
+   `recibir` dijo de quién venía.
+4. **`servidor recibir`** → «Aceptadas 1: Zeri's Coffee».
+5. **`boveda ejecutar --compartida`** → el programa recibió el secreto en su entorno **sin que apareciera
+   en ninguna pantalla**, y quedó el apunte `ejecutar · llave-del-equipo · hecho` en el registro, al lado
+   de lo que el agente había hecho por MCP en esa misma bóveda.
+
+**El selector de la ventana no hizo falta** y sigue sin publicarse: por debajo no es más que dar acceso de
+solo ver, y eso la 2.58.7 ya lo hace. Lo que el selector añade es no tener que acordarse del correo y que
+la pantalla diga lo que cuesta.
+
+## La siguiente acción: llevar un `.env` de verdad a su bóveda
+
+Lo que queda es **el trabajo para el que existe todo esto**, y es donde se verá si es cómodo: coger un
+proyecto del VPS —`Tempero` es el candidato obvio, con 38 variables más 24 de producción—, meter sus
+credenciales en su bóveda desde el Mac, marcarla para el servidor igual que Zeri's, y cambiar el
+despliegue por:
 
 ```sh
-esfinge boveda servidor alta --correo servidor@webcafeina.com   # crea su cuenta y su bóveda, y da la clave de recuperación
-esfinge boveda servidor activar                                  # para que se abra sin contraseña en ese equipo
-```
-
-Después, en el Mac: **Ajustes → Cuenta → «Tu servidor»**, con ese correo; y dentro de la bóveda de un
-proyecto, **«Quién tiene acceso…» → «Trabajar con esta bóveda en el servidor»**. Y de vuelta en el VPS:
-
-```sh
-esfinge boveda servidor recibir
 esfinge boveda ejecutar --compartida Tempero --var CF_TOKEN="Cloudflare API" -- wrangler deploy
 ```
 
-**Lo que hay que saber antes de empezar**, y está dicho en la pantalla y en
-[`seguridad.md`](seguridad.md): la llave queda en un fichero del VPS, así que **quien entre en él abre las
-bóvedas que se le marquen**. Lo que cambia respecto a hoy es que esas contraseñas dejan de estar en claro en
-un `.env` —111 variables solo en uno—, se cambian desde el Mac, queda apuntado lo que se usa, y quitarle el
-acceso es rotar la clave desde la ventana en vez de entrar a borrar un fichero.
+**Dos cosas que ya se saben y conviene tener delante** al hacerlo:
 
-**Dos detalles de la puesta en marcha** que no se ven hasta tropezar con ellos:
+- **`ejecutar` solo entrega el secreto**, no el usuario ni el código de un solo uso. En cuanto aparezca el
+  primer caso que necesite el usuario —una cadena de conexión partida en dos variables— ahí está la fila de
+  [`deuda.md`](deuda.md) y se decide con ese caso delante, que es lo que dirá cuál de las tres formas
+  posibles es la buena.
+- **Lo que use el servidor no se ve desde el Mac**, porque con permiso de solo ver no sube nada. Se mira
+  allí.
 
-- La clave de recuperación sale **una sola vez y por la salida estándar**. Apúntala fuera del VPS.
-- Tras marcar el proyecto en el Mac, **la ranura tiene que subir**: si `recibir` dice que lo bajado no lo abre
-  la identidad de este equipo, es eso y se arregla esperando un minuto. El mensaje lo dice.
+**Y queda decidir si se publica** la versión con el selector. No corre prisa: lo que hay empujado
+(`fd31423`) funciona sin ella.
 
-Y lo que esa ficha deja decidido y **no se cambia sin preguntar**: el VPS es **otra cuenta**, no otro equipo
-tuyo —si lo fuera, se bajaría tu bóveda personal entera—; el permiso es de **solo ver**; y **no corre nada de
-forma permanente**, así que ahí no hay canal de agentes ni bóveda abierta entre órdenes.
+---
 
 ---
 

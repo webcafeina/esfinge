@@ -5,6 +5,30 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-10-21 · Montar la 0057 en el VPS, guiando paso a paso
+
+- **Se montó entero en el VPS de verdad**, contra el servidor de cuentas de producción: alta, activar,
+  acceso de solo ver desde el Mac, `recibir` y `ejecutar`. El cliente ejecutó lo que pedía contraseña y
+  **la clave de recuperación no pasó por la conversación**, que era la condición.
+- **La dirección lleva `+`**: `info+servidor@webcafeina.com`. Gmail la entrega en su bandeja y para Esfinge
+  es una cuenta distinta, así que **no hizo falta crear ningún buzón en Workspace** —que habría necesitado a
+  Nacho y no se resolvía hoy—. Lo permite que `NormalizarCorreo` no quite lo que va tras el «+» a propósito.
+- **El ritual de la huella se hizo por los dos lados**, que es la única vez que se puede: la del servidor se
+  sacó aquí con un programa de un solo uso —una huella es pública— y él la comparó antes de dar el acceso;
+  `recibir` dijo de quién venía para que lo comprobara al revés.
+- **Verificado lo que promete la ficha**: abre sin contraseña, sincroniza, el secreto llega al entorno del
+  programa sin aparecer en pantalla, y el apunte quedó en el registro al lado de lo que el agente había
+  hecho por MCP en esa misma bóveda. Y se confirmó el coste escrito en `deuda.md`: ese apunte **no llega al
+  Mac**, porque con solo ver no sube nada.
+- **El selector de la ventana no hizo falta** y sigue sin publicar: por debajo es dar acceso de solo ver.
+- **Un descuido propio, con su lección**: comprobé si el `esfinge` instalado tenía el modo servidor
+  **mirando el código de salida** de `--help`, y dijo que sí. Era el de la 1.x, del 4 de septiembre, que
+  ignora los argumentos que no entiende y sale con 0. Mirar **lo que contesta** lo dijo en dos segundos.
+- **Queda abierto**: llevar un `.env` de verdad —`Tempero`— a su bóveda y cambiar el despliegue, que es el
+  trabajo para el que existe todo esto; y decidir si se publica la versión con el selector.
+
+---
+
 ## 2026-10-20 · La bóveda en un servidor, para los agentes del VPS
 
 - **Lo pidió el cliente**: *«habría que pensar alguna forma de resolver o facilitar la gestión de
