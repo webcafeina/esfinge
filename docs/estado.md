@@ -55,13 +55,40 @@ tampoco está allí—: se acuerda de lo que el servidor dijo, en `storage.sessi
    justo lo que la 0058 deja de ser verdad— y se ha puesto del revés, así que ahora vigila la puerta nueva.
    Lo que no tiene prueba es **el segundo interruptor**, que para salir necesita un acceso dado de verdad y
    por tanto una cuenta: eso es `cuentas.spec.ts`. En `deuda.md`.
-3. **La ventana no pinta `como`** en el registro, así que un apunte que no aprobó nadie se lee igual que uno
-   aprobado a mano. En `deuda.md`, y **el rótulo «Lo que les has dado» no se cambia sin preguntar**.
+3. ~~**La ventana no pinta `como`** en el registro~~ — **hecho el 2026-11-05**, abajo.
+
+## El registro, legible (2026-11-05)
+
+Lo que la 0058 dejó a medias en la pantalla. `Como` llegaba entero a la ventana y **nadie lo pintaba**, así
+que un apunte que **no aprobó nadie** se leía igual que uno aprobado de uno en uno — que es justo lo que ese
+campo existe para evitar. Y tres verbos salían con el identificador en crudo.
+
+Ahora cada apunte dice en un segundo renglón **si lo aprobó alguien**, con dos grupos de frases —«Lo
+aprobaste» y «No lo aprobó nadie: …» con su motivo, que para la línea de comandos es *sin ventana donde
+preguntar*—. **Lo que no se sabe no se inventa**: un apunte de antes de que el campo existiera no dice ni
+que sí ni que no.
+
+**Y de ahí salió lo de siempre, por sacar la captura y mirarla.** La prueba pasaba en verde y en la pantalla
+pasaban dos cosas que `toContainText` no puede ver, porque el texto estaba en el DOM: el **nombre de la
+entrada se recortaba hasta una letra** —`github.com` salía «g», que es la trampa del nombre del proyecto
+otra vez— y el renglón nuevo **se salía de la fila cortado**. Una fila del registro no es una de la
+papelera: dice qué se dio, quién, cuándo y cómo se autorizó, y eso no cabe en una línea. Va con clase propia
+(`.lista-papelera.registro`), en dos renglones y con las notas alineadas con el nombre.
+
+La prueba **mide** las dos: que ningún título salga recortado —por el recorte y no por un ancho mínimo, que
+deja de significar nada en cuanto cambie la tipografía— y que el «cómo» esté **debajo** y no al lado.
+Comprobado quitando la clase: ocho de los nueve títulos salen recortados y la aserción los nombra.
+
+**Lo que queda de esa fila, y es del cliente:** el rótulo **«Lo que les has dado»** en Ajustes → Agentes ya
+no describe todos los apuntes, porque desde la 0058 los escribe también la línea de comandos de este equipo.
+Esa pantalla la aprobó él en el contexto de los agentes, así que **no se cambia sin preguntar**.
 
 ## La siguiente acción: mirarlo en una pantalla
 
 1. **Verlo en el Mac**: la huella en Ajustes → Cuenta, los dos interruptores de un proyecto, y que al marcar
-   el segundo el VPS pueda crear una entrada en la siguiente orden.
+   el segundo el VPS pueda crear una entrada en la siguiente orden. Y de paso el registro, que ahora dice
+   quién aprobó cada cosa.
+2. **Decidir el rótulo** de Ajustes → Agentes, que es lo único que espera una respuesta suya.
 3. **Y la prueba de interfaz del segundo interruptor**, en `cuentas.spec.ts`, que es lo único de esto que
    se queda sin vigilar.
 

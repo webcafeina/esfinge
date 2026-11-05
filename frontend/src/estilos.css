@@ -1936,8 +1936,40 @@ p {
   text-overflow: ellipsis;
 }
 
-/* Cuándo se borró va pegado a las acciones y no al nombre: lo que se compara de
- * un vistazo al bajar por la lista es el plazo, no el título. */
+/* **El registro no es la papelera: cada apunte son dos renglones, o tres** (ADR 0058).
+ *
+ * Una fila de la papelera es «nombre … borrada el 3 de octubre» y cabe en una línea con
+ * el plazo pegado a la derecha, que es lo que se compara de un vistazo al bajar. Una del
+ * registro dice qué se dio, quién, cuándo y **si lo aprobó alguien**, y eso no cabe. En
+ * la regla de arriba pasaban las dos cosas que se vieron **sacando la captura y
+ * mirándola**, con la prueba en verde: el nombre se encogía hasta el recorte —`github.com`
+ * salía como «g», que es la trampa del nombre del proyecto otra vez— y el «cómo» se
+ * salía de la fila cortado.
+ *
+ * Así que aquí el nombre ocupa su renglón, las notas van debajo **alineadas con él** —sin
+ * el `margin-left: auto` de la papelera, que al envolver deja unas filas sangradas y
+ * otras no— y el «cómo» baja al suyo cuando lo hay. Va en una clase aparte y no en la
+ * regla general a propósito: la papelera y el buzón la comparten y ahí no hace falta, y
+ * una regla que no hace falta se acaba cambiando por otra razón. */
+.lista-papelera.registro li {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  padding-top: var(--espacio-2);
+  padding-bottom: var(--espacio-2);
+}
+
+.lista-papelera.registro .nombre,
+.lista-papelera.registro .nota {
+  flex-basis: 100%;
+  margin-left: 0;
+}
+
+/* Lo que se dio puede ser largo —«No lo aprobó nadie: fue la línea de comandos, sin
+ * ventana donde preguntar»— y con `nowrap` se saldría igual que antes. */
+.lista-papelera.registro .nota {
+  white-space: normal;
+}
+
 .lista-papelera .nota {
   margin-left: auto;
   white-space: nowrap;

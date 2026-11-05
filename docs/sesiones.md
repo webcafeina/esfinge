@@ -5,6 +5,29 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-05 (tarde) · El registro, legible
+
+- **Se cerró lo que la 0058 dejó a medias en la pantalla.** `Como` llegaba entero a la ventana y
+  `loQueSeLeDio` **no lo miraba**, así que un apunte que no aprobó nadie se leía igual que uno aprobado de
+  uno en uno — que es justo lo que ese campo existe para evitar. Ahora cada apunte dice en un segundo
+  renglón si lo aprobó alguien, con su motivo, y **lo que no se sabe no se inventa**: un apunte de antes de
+  que el campo existiera no dice ni que sí ni que no. Y los tres verbos que salían en crudo —`mover`,
+  `mover:sin-secreto` y `ejecutar`— tienen su caso.
+- **Y de ahí, lo de siempre, por sacar la captura y mirarla.** Con la prueba en verde, en pantalla pasaban
+  dos cosas que `toContainText` no puede ver porque el texto estaba en el DOM: el **nombre de la entrada se
+  recortaba hasta una letra** —`github.com` salía «g»— y el renglón nuevo **se salía de la fila cortado**.
+  Una fila del registro no es una de la papelera, así que va con clase propia, en dos renglones y con las
+  notas alineadas con el nombre.
+- **Se verificó midiendo, no mirando.** La prueba comprueba que ningún título salga recortado —por el
+  recorte, no por un ancho mínimo, que deja de significar nada en cuanto cambie la tipografía— y que el
+  «cómo» esté debajo y no al lado. **Mutada quitando la clase**: ocho de los nueve títulos salen recortados
+  y la aserción los nombra. Y los 142 de `esfinge.spec.ts` en los dos temas, más la puerta entera.
+- **Queda abierto, y es del cliente**: el rótulo **«Lo que les has dado»** de Ajustes → Agentes ya no
+  describe todos los apuntes, porque desde la 0058 los escribe también la línea de comandos de este equipo.
+  Esa pantalla la aprobó él en el contexto de los agentes, así que **no se cambia sin preguntar**.
+
+---
+
 ## 2026-11-05 · La ADR 0058 entera, y el permiso que no llegaba
 
 - **Se cerró el paso 2** con sus pruebas: trece protecciones, las trece mutadas. Y el **paseo a mano** con el

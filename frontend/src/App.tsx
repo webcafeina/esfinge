@@ -1125,8 +1125,51 @@ function loQueSeLeDio(que: string, resultado: string): string {
       return "La creó";
     case "editar":
       return "La cambió";
+    case "mover":
+      return "Movida a otra bóveda, con su secreto";
+    case "mover:sin-secreto":
+      return "Movida a otra bóveda";
+    case "ejecutar":
+      return "La contraseña, al entorno de un programa";
     default:
       return que;
+  }
+}
+
+/**
+ * comoSeAutorizo pone en palabras **si alguien aprobó esa línea**.
+ *
+ * Es la mitad del registro que faltaba. `Como` existe desde la 2.58.0 y su propio
+ * comentario dice para qué: «leerlo después solo sirve si dice que eso no lo aprobó
+ * nadie esa vez». Llegaba entero a la ventana y **la pantalla no lo pintaba**, así que
+ * un apunte que nadie aprobó se leía igual que uno aprobado de uno en uno — y desde la
+ * ADR 0058 eso tapa una distinción nueva, porque ahora hay apuntes que **no pasaron por
+ * ninguna ventana**: los que escribe la línea de comandos en un servidor.
+ *
+ * Por eso las frases se escriben en dos grupos y no en cinco matices: **lo aprobaste**
+ * o **no lo aprobó nadie**, y luego por qué. Lo que se lee de un tirón es la primera
+ * mitad, que es la que contesta la pregunta.
+ *
+ * Vacío son los apuntes de antes de que el campo existiera, y entonces no se dice nada:
+ * inventar «no lo aprobó nadie» para una línea que no lo sabe sería peor que callar.
+ */
+function comoSeAutorizo(como: string | undefined, resultado: string): string {
+  // Con un «no» o sin respuesta ya lo dice `loQueSeLeDio`, y añadir cómo se pidió ahí
+  // se leería al revés: «Dijiste que no · Lo aprobaste».
+  if (resultado !== "hecho") return "";
+  switch (como) {
+    case "preguntado":
+      return "Lo aprobaste";
+    case "valvula":
+      return "Lo aprobaste antes, dentro de los cinco minutos";
+    case "siempre":
+      return "No lo aprobó nadie: tenías puesto «no volver a preguntar»";
+    case "directo":
+      return "No lo aprobó nadie: ese verbo no pregunta";
+    case "llave-del-equipo":
+      return "No lo aprobó nadie: fue la línea de comandos, sin ventana donde preguntar";
+    default:
+      return "";
   }
 }
 
@@ -2301,13 +2344,20 @@ function Ajustes({
           {(elAgente?.dado?.length ?? 0) > 0 && (
             <div>
               <label>Lo que les has dado</label>
-              <ul className="lista-papelera">
+              <ul className="lista-papelera registro">
                 {(elAgente?.dado ?? []).map((d) => (
                   <li key={d.id}>
                     <span className="nombre">{d.titulo || "Una entrada"}</span>
                     <span className="nota">
                       {loQueSeLeDio(d.que, d.resultado)} · {d.quien} · {fecha(d.cuando)}
                     </span>
+                    {/* **Y si lo aprobó alguien, en su propia línea** (ADR 0058).
+                        Metido en la de arriba se perdía entre el verbo, el nombre y la
+                        fecha, y es justo lo que hay que poder leer de un tirón al repasar
+                        el registro: cuáles no aprobó nadie. */}
+                    {comoSeAutorizo(d.como, d.resultado) !== "" && (
+                      <span className="nota como">{comoSeAutorizo(d.como, d.resultado)}</span>
+                    )}
                   </li>
                 ))}
               </ul>

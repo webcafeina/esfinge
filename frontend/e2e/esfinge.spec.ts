@@ -3062,8 +3062,16 @@ test("el permiso que no caduca se anuncia en cualquier pantalla y se puede quita
  * **la contraseña se copia y el agente no la ve; el código se le enseña**, y entonces
  * está en la conversación de su modelo para siempre. En el registro no pueden parecer
  * lo mismo.
+ *
+ * **Y desde la ADR 0058, dos cosas más.** Que ningún verbo salga con su nombre en crudo
+ * —`mover`, `mover:sin-secreto` y `ejecutar` lo hacían, porque no tenían caso en el
+ * `switch` y nadie mira ese `default`—, y que la línea diga **si lo aprobó alguien**:
+ * `Como` llegaba entero a la ventana y la pantalla no lo pintaba, así que un apunte que
+ * nadie aprobó se leía igual que uno aprobado de uno en uno. Eso es exactamente lo que
+ * ese campo existe para impedir, y desde que la línea de comandos también escribe en un
+ * servidor **tapa una distinción nueva**: allí no hay ventana donde aprobar nada.
  */
-test("el registro de lo que se le ha dado dice qué, y distingue copiar de enseñar", async ({ page }) => {
+test("el registro dice qué se dio, con qué verbo y si lo aprobó alguien", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.route("**/api/EstadoDelAgente", async (route) => {
     await route.fulfill({
@@ -3084,6 +3092,27 @@ test("el registro de lo que se le ha dado dice qué, y distingue copiar de ense�
             que: "codigo", sobre: "a2", titulo: "github.com", resultado: "hecho" },
           { id: "3", cuando: "2026-10-08T12:41:00Z", quien: "Claude (claude-ai)",
             que: "borrar", sobre: "a3", titulo: "una nota", resultado: "negado" },
+          // Los tres verbos que salían **con el nombre en crudo** porque no tenían caso
+          // en el `switch`: dos los trajo la ADR 0056 y el otro la 0057.
+          { id: "4", cuando: "2026-10-08T12:42:00Z", quien: "Claude (claude-ai)",
+            que: "mover", sobre: "Personal → Tempero", titulo: "brevo.com",
+            resultado: "hecho", como: "preguntado" },
+          { id: "5", cuando: "2026-10-08T12:43:00Z", quien: "Claude (claude-ai)",
+            que: "mover:sin-secreto", sobre: "Personal → Tempero", titulo: "una tarjeta",
+            resultado: "hecho", como: "preguntado" },
+          { id: "6", cuando: "2026-10-08T12:44:00Z", quien: "wrangler deploy",
+            que: "ejecutar", sobre: "a6", titulo: "Cloudflare API",
+            resultado: "hecho", como: "llave-del-equipo" },
+          // Y los dos que **nadie aprobó** por los otros dos caminos.
+          { id: "7", cuando: "2026-10-08T12:45:00Z", quien: "Claude (claude-ai)",
+            que: "copiar-secreto", sobre: "a7", titulo: "neon.tech",
+            resultado: "hecho", como: "siempre" },
+          { id: "8", cuando: "2026-10-08T12:46:00Z", quien: "Claude (claude-ai)",
+            que: "crear", sobre: "a8", titulo: "resend.com",
+            resultado: "hecho", como: "directo" },
+          // Y uno de antes de que el campo existiera, que no sabe cómo se autorizó.
+          { id: "9", cuando: "2026-10-08T12:47:00Z", quien: "Claude (claude-ai)",
+            que: "codigo", sobre: "a9", titulo: "stripe.com", resultado: "hecho" },
         ],
       }),
     });
@@ -3102,6 +3131,70 @@ test("el registro de lo que se le ha dado dice qué, y distingue copiar de ense�
   await expect(lista).toContainText("El código de un solo uso, enseñado");
   // Lo negado también deja rastro: saber qué no se dio vale tanto como lo otro.
   await expect(lista).toContainText("Dijiste que no");
+
+  // **Y los tres verbos que salían con el nombre en crudo** (`mover`, `mover:sin-secreto`
+  // y `ejecutar`). Lo que se comprueba es que **no** salga el verbo pelado: una frase
+  // nueva se puede discutir, un identificador en la pantalla no.
+  await expect(lista).toContainText("Movida a otra bóveda, con su secreto");
+  await expect(lista).toContainText("Movida a otra bóveda");
+  await expect(lista).toContainText("La contraseña, al entorno de un programa");
+  for (const crudo of ["mover:sin-secreto", "ejecutar"]) {
+    await expect(lista, `el verbo «${crudo}» sale en crudo en la pantalla`).not.toContainText(crudo);
+  }
+
+  // **Y si lo aprobó alguien, que es la mitad para la que el registro existe** (ADR
+  // 0058). Llegaba entero a la ventana y la pantalla no lo pintaba, así que un apunte
+  // que nadie aprobó se leía **igual** que uno aprobado de uno en uno.
+  await expect(lista.locator("li").filter({ hasText: "brevo.com" })).toContainText("Lo aprobaste");
+  await expect(lista.locator("li").filter({ hasText: "neon.tech" })).toContainText(
+    "No lo aprobó nadie",
+  );
+  await expect(lista.locator("li").filter({ hasText: "resend.com" })).toContainText(
+    "No lo aprobó nadie",
+  );
+  // El de la línea de comandos **dice por qué**, que es lo que la 0058 añade: allí no
+  // hay ventana donde aprobar nada.
+  await expect(lista.locator("li").filter({ hasText: "Cloudflare API" })).toContainText(
+    "sin ventana donde preguntar",
+  );
+
+  // **Y lo que no se sabe no se inventa**: un apunte de antes de que el campo existiera
+  // no dice ni que sí ni que no. Decir «no lo aprobó nadie» de una línea que no lo sabe
+  // sería peor que callar.
+  const viejo = lista.locator("li").filter({ hasText: "stripe.com" });
+  await expect(viejo).toContainText("El código de un solo uso, enseñado");
+  await expect(viejo, "un apunte sin `como` se inventa cómo se autorizó").not.toContainText(
+    "aprob",
+  );
+
+  // **Y se lee, que es lo que ninguna aserción de texto mira.** Las dos cosas de aquí
+  // salieron de **sacar la captura y mirarla**, con la prueba en verde: una fila del
+  // registro es más larga que una de la papelera —qué se dio, quién, cuándo y encima
+  // cómo se autorizó— y en una sola línea flexible el nombre se recortaba a casi nada
+  // (`github.com` salía como «g», que es la trampa del nombre del proyecto otra vez) y
+  // lo último se salía de la fila cortado. `toContainText` las daba las dos por buenas,
+  // porque el texto estaba en el DOM.
+  //
+  // Así que se **mide**. Lo del nombre se mira por el recorte y no por un ancho mínimo:
+  // un número redondo deja de significar nada en cuanto cambie la tipografía o el
+  // relleno, y lo que de verdad se quiere saber es si el título cabe entero.
+  const recortados = await lista.locator(".nombre").evaluateAll((es) =>
+    es.filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent ?? ""),
+  );
+  expect(recortados, `el nombre de la entrada sale recortado: ${recortados.join(", ")}`).toEqual([]);
+
+  // Y el «cómo» va **debajo**, no al lado: al lado es donde se salía de la fila.
+  const deLaCLI = lista.locator("li").filter({ hasText: "Cloudflare API" });
+  const arriba = await deLaCLI.locator(".nota").first().boundingBox();
+  const abajo = await deLaCLI.locator(".como").boundingBox();
+  expect(arriba, "la fila de la línea de comandos no tiene nota").not.toBeNull();
+  expect(abajo, "la fila de la línea de comandos no dice cómo se autorizó").not.toBeNull();
+  expect(
+    abajo!.y,
+    "el «cómo» va en la misma línea que lo demás, así que se sale de la fila",
+  ).toBeGreaterThan(arriba!.y + arriba!.height - 2);
+
+  await lista.screenshot({ path: `test-results/registro-del-agente-${test.info().project.name}.png` });
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
