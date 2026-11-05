@@ -155,9 +155,10 @@ personal del equipo quedara fuera. Lo eligió el cliente al revés, con el coste
   igual; lo que no se entera es la pantalla. Está en la ayuda de los dos verbos.
 - **Quien tenga el permiso de escribir en una bóveda de proyecto puede dar acceso a otras cuentas**, que con
   solo ver no puede. Lo dice la pantalla del interruptor.
-- **El Worker cambia**, así que esto no funciona entero hasta desplegarlo. Mientras no se despliegue, el
-  permiso sigue sin propagarse y el segundo interruptor cambia el permiso en el servidor sin que el equipo de
-  quien lo recibe se entere.
+- **El Worker cambia**, así que esto no funcionaba entero hasta desplegarlo — **desplegado el 2026-11-05**,
+  pruebas y producción. Conviene saber qué pasa con un Worker viejo, porque es lo que hay mientras se
+  despliega: el permiso no llega, y entonces el segundo interruptor lo cambia en el servidor **sin que el
+  equipo de quien lo recibe se entere**, que es el fallo que esta ficha viene a quitar.
 - **Y una cosa que no hace y parece que sí**: el registro sigue sin enseñarse en la línea de comandos. Los
   apuntes de una compartida llegan a la ventana del dueño por la sincronización, que es donde se leen.
 
@@ -196,6 +197,10 @@ Lo que se puede decir al acabar, y cada protección mutada:
   cuenta, y eso vive en el paseo.
 - **El segundo interruptor no tiene prueba de interfaz**: para que salga hace falta un acceso dado de
   verdad, o sea una cuenta, y eso es `cuentas.spec.ts` con sus dos ventanas. Está en `deuda.md`.
-- **El Worker no está desplegado** con este cambio.
+- **Los dos Workers están desplegados** (2026-11-05): pruebas y producción, las dos ejecuciones en verde y
+  `/v1/salud` contestando. Lo que no se ha podido comprobar **contra un Worker desplegado** es la cabecera en
+  sí: el buzón del de pruebas está detrás de Cloudflare Access y desde la máquina de desarrollo no hay
+  credenciales de Cloudflare para sacar el código del alta de su D1. La prueba pasa contra `workerd`, que es
+  el mismo código.
 - **Que un agente de verdad lo use bien.** Eso lo dirá Serafín usándolo, que es lo que ha encontrado todo lo
   demás de este mes.

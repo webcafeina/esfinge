@@ -30,8 +30,13 @@ Plantilla al final.
   La fila se vuelve a leer después de la pasada.
 - **Verificado**: dieciocho protecciones mutadas, el paseo de dos equipos con su paso 9 nuevo —la ventana
   sube el permiso, el servidor **se entera solo** y escribe—, y el paseo a mano con el binario.
-- **Queda abierto, y es lo primero**: **desplegar el Worker** (lo lanza el cliente), **verlo en una pantalla**
-  —nada de la ventana se ha visto con ojos— y lo del registro.
+- **Y se desplegó**: pruebas (42028933251) y después **producción** (42030198182), las dos en verde, con
+  `/v1/salud` contestando y `/v1/boveda` en 401 sin sesión. Producción lo bloqueó el clasificador de modo
+  automático de Claude Code —«Production Deploy»—, no el proyecto; **no se rodeó**, y el cliente eligió
+  desatascarlo con una regla de permiso acotada a `gh workflow run servidor.yml`, en
+  `.claude/settings.json` para que valga en sus dos equipos.
+- **Queda abierto, y es lo primero**: **verlo en una pantalla** —nada de la ventana se ha visto con ojos— y
+  lo del registro.
 - **Y una que me corrigió el propio repositorio**: dije que el selector del servidor no tenía prueba de
   interfaz y **sí la tenía**. Su última aserción era «y ahora sí sale» con el correo puesto, o sea justo lo
   que la 0058 deja de ser verdad: la prueba habría cazado el cambio en `make e2e` —que no entra en

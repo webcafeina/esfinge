@@ -353,7 +353,7 @@ No se cambian sin preguntar.
   interruptor cambia el permiso **en el sitio** (`CambiarPermiso`): ni rota la clave, ni añade ranura, ni le
   hace borrar su copia como haría quitar y volver a dar. **La extensión no lo escribe en la bóveda** —esa
   lista la gestiona la ventana, es la misma línea por la que `anotarUso` no está allí— y se acuerda de lo que
-  el servidor dijo. **Esto no funciona entero hasta desplegar el Worker.**
+  el servidor dijo. **Los dos Workers están desplegados desde el 2026-11-05.**
 
 - **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
   mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda

@@ -41,15 +41,15 @@ tampoco está allí—: se acuerda de lo que el servidor dijo, en `storage.sessi
 
 ### Lo que NO está comprobado, y es lo que falta
 
-1. **El Worker de pruebas está desplegado** (2026-11-05, ejecución 42028933251, y `/v1/salud` contesta).
-   **El de producción no**: el despliegue a producción lo tiene que lanzar el cliente —
-   `gh workflow run servidor.yml -f desplegar=produccion`—. Hasta entonces el permiso **no se propaga** y el
-   segundo interruptor cambia el permiso en el servidor sin que el VPS se entere.
-   Y lo que **no se ha podido comprobar contra el desplegado**, que es distinto de que no funcione: el buzón
-   del Worker de pruebas está detrás de Cloudflare Access, así que `TestServidorDiceElPermisoAlBajarIncluidoEn304`
-   no puede leer el código del alta desde aquí —dice «no ha llegado nada a…»— y desde esta máquina no hay
-   credenciales de Cloudflare para sacarlo de su D1. Esa prueba **sí pasa contra `workerd`**, que es el mismo
-   código. Para cerrarlo hace falta el navegador del cliente, que es quien pasa esa puerta.
+1. **Los dos Workers están desplegados** (2026-11-05): pruebas en la ejecución 42028933251 y **producción
+   en la 42030198182**, las dos en verde, con `/v1/salud` contestando en las dos y `/v1/boveda` devolviendo
+   401 sin sesión, como debe. Así que el permiso **ya se propaga** y el segundo interruptor hace lo que dice.
+   Lo que **no se ha podido comprobar contra un Worker desplegado**, que es distinto de que no funcione: el
+   buzón del de pruebas está detrás de Cloudflare Access, así que
+   `TestServidorDiceElPermisoAlBajarIncluidoEn304` no puede leer el código del alta desde aquí —dice «no ha
+   llegado nada a…»— y en esta máquina no hay credenciales de Cloudflare para sacarlo de su D1. Esa prueba
+   **sí pasa contra `workerd`**, que es el mismo código, y el paseo de dos equipos recorre la cadena entera.
+   Lo que lo cerraría del todo es el navegador del cliente, que es quien pasa esa puerta.
 2. **Nada de la ventana se ha visto con ojos.** Está escrito, con `tsc` en verde y con `make e2e` detrás:
    la prueba del selector de la 0057 **ya existía** —afirmaba «y ahora sí sale» con el correo puesto, que es
    justo lo que la 0058 deja de ser verdad— y se ha puesto del revés, así que ahora vigila la puerta nueva.
@@ -58,10 +58,9 @@ tampoco está allí—: se acuerda de lo que el servidor dijo, en `storage.sessi
 3. **La ventana no pinta `como`** en el registro, así que un apunte que no aprobó nadie se lee igual que uno
    aprobado a mano. En `deuda.md`, y **el rótulo «Lo que les has dado» no se cambia sin preguntar**.
 
-## La siguiente acción: desplegar y mirarlo en una pantalla
+## La siguiente acción: mirarlo en una pantalla
 
-1. **Desplegar el Worker** (`servidor.yml` a mano), que es lo único que falta para que el permiso se propague.
-2. **Verlo en el Mac**: la huella en Ajustes → Cuenta, los dos interruptores de un proyecto, y que al marcar
+1. **Verlo en el Mac**: la huella en Ajustes → Cuenta, los dos interruptores de un proyecto, y que al marcar
    el segundo el VPS pueda crear una entrada en la siguiente orden.
 3. **Y la prueba de interfaz del segundo interruptor**, en `cuentas.spec.ts`, que es lo único de esto que
    se queda sin vigilar.
