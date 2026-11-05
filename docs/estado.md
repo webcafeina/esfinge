@@ -1,73 +1,81 @@
 # Estado
 
-Última actualización: **2026-10-21**
+Última actualización: **2026-11-05**
 
-## SE RETOMA AQUÍ · La ADR 0058 a medias, y un hallazgo grave de camino
+## La ADR 0058, entera (2026-11-05)
 
-Sesión parada a media tarde del 2026-10-21 porque el cliente se tuvo que ir. **Todo está comprometido**
-(sin empujar) y compila; lo que falta son pruebas, no código perdido.
+**Los seis pasos hechos.** La línea de comandos escribe, la huella del servidor es obligatoria, el permiso
+se cambia en el sitio y **llega al equipo de quien lo tiene**, el paseo de dos equipos lo recorre y está
+escrito en la [ADR 0058](adr/0058-que-el-servidor-escriba.md).
 
-### 1 · Lo que apareció de camino, y es lo importante de hoy
+### Lo que quedó hecho
 
-**Quitar el acceso a una bóveda de proyecto NO rota la clave, y estaba prometido en cinco sitios**
-—ADR 0052, `docs/decisiones.md`, `docs/seguridad.md`, el selector del servidor y `CLAUDE.md`—, más una
-prueba que se llamaba «Ana le quita el acceso, que rota la clave» y no comprobaba rotación ninguna.
-`RetirarAcceso` solo pone la lápida; `b.llave` **no cambia nunca**.
+| | |
+|---|---|
+| **1 · La regla en un sitio** | `boveda.PorQueNoSeEscribe`, que preguntan la ventana, el navegador, los agentes y la línea de comandos |
+| **2 · `crear` y `editar`** | `internal/cli/escribir.go`. Cuatro orígenes del secreto y **ninguno es un argumento**; `--generar` no la ve nadie; `editar` cambia solo lo que se nombre; sin `borrar` |
+| **3 · La huella del servidor** | Obligatoria, una vez en Ajustes y **comparada en cada proyecto**. Se guarda **cuál es**, no un sí/no. Más `esfinge boveda servidor huella`, sin el cual la ceremonia no se puede hacer |
+| **4 · El segundo interruptor** | `CambiarPermiso`, en el sitio: ni rota la clave, ni añade ranura, ni le hace borrar su copia |
+| **5 · El paseo** | Paso 9 nuevo: la ventana sube el permiso, **el servidor se entera solo** —sin volver a `recibir`— y escribe, y lo escrito llega a la ventana |
+| **6 · La ADR y los documentos** | ADR 0058, su línea en `decisiones.md`, `seguridad.md` y la viñeta de `CLAUDE.md` |
+
+### Lo que hizo falta y el plan no había visto
+
+**El permiso que guarda quien recibe se quedaba viejo.** Vivía solo en su bóveda y únicamente se escribía
+al aceptar el sobre del buzón, y el servidor **no lo decía al bajar**. Así que subirle el permiso a alguien
+no le llegaba nunca: el servidor le aceptaba subidas y su Esfinge seguía negándose a escribir, de modo que
+el interruptor habría dicho una cosa y la máquina otra. Lo eligió el cliente entre cuatro opciones: **que lo
+diga el servidor**, en la cabecera `Esfinge-Permiso`, **también en el 304**.
+
+Eso tocó cuatro sitios: el Worker, el cliente de Go, la ventana y el espejo de TypeScript. En la extensión
+**no se escribe en la bóveda** —esa lista la gestiona la ventana, que es la línea por la que `anotarUso`
+tampoco está allí—: se acuerda de lo que el servidor dijo, en `storage.session`.
+
+### Lo verificado, y con qué
+
+- **Dieciocho protecciones mutadas, dieciocho rojas**, entre ellas las cinco de la cadena del permiso y la
+  del 304 puesto solo en el 200.
+- **El paseo de dos equipos contra el Worker local**, los diez pasos.
+- **El paseo a mano con el binario** (v2.58.7): crear, generar, rotar, listar, `ver`, `-q`, los seis casos
+  que tienen que negarse, y `servidor huella` por tubería y en JSON.
+
+### Lo que NO está comprobado, y es lo que falta
+
+1. **El Worker no está desplegado.** Hasta que se lance `servidor.yml`, el permiso no se propaga y el
+   segundo interruptor cambia el permiso en el servidor sin que el VPS se entere. **Lo lanza el cliente.**
+2. **Nada de la ventana se ha visto con ojos.** Está escrito, con `tsc` en verde y con `make e2e` detrás:
+   la prueba del selector de la 0057 **ya existía** —afirmaba «y ahora sí sale» con el correo puesto, que es
+   justo lo que la 0058 deja de ser verdad— y se ha puesto del revés, así que ahora vigila la puerta nueva.
+   Lo que no tiene prueba es **el segundo interruptor**, que para salir necesita un acceso dado de verdad y
+   por tanto una cuenta: eso es `cuentas.spec.ts`. En `deuda.md`.
+3. **La ventana no pinta `como`** en el registro, así que un apunte que no aprobó nadie se lee igual que uno
+   aprobado a mano. En `deuda.md`, y **el rótulo «Lo que les has dado» no se cambia sin preguntar**.
+
+## La siguiente acción: desplegar y mirarlo en una pantalla
+
+1. **Desplegar el Worker** (`servidor.yml` a mano), que es lo único que falta para que el permiso se propague.
+2. **Verlo en el Mac**: la huella en Ajustes → Cuenta, los dos interruptores de un proyecto, y que al marcar
+   el segundo el VPS pueda crear una entrada en la siguiente orden.
+3. **Y la prueba de interfaz del segundo interruptor**, en `cuentas.spec.ts`, que es lo único de esto que
+   se queda sin vigilar.
+
+Y después, lo único grande que queda en el proyecto: **la clave de contenido**.
+
+## La rotación al revocar, que no existe (2026-10-21)
+
+**Quitar el acceso a una bóveda de proyecto no rota la clave**, y estaba prometido en cinco sitios —ADR
+0052, `decisiones.md`, `seguridad.md`, el selector del servidor y `CLAUDE.md`— más una prueba que se llamaba
+«Ana le quita el acceso, que rota la clave» y que no comprobaba rotación ninguna. `RetirarAcceso` solo pone
+la lápida; `b.llave` **no cambia nunca**.
 
 Y no fue un descuido al implementar: **el formato no lo permite**. Todas las ranuras envuelven la misma
-clave de bóveda, así que rotar obliga a reenvolverlas todas, y dos no se pueden reenvolver sin tener
-delante lo que las abre —la **maestra** y la de **recuperación**, que solo se sustituye emitiendo otra, o
-sea una ceremonia por revocación, justo lo que la ADR 0050 descartó—.
+clave de bóveda, así que rotar obliga a reenvolverlas todas, y dos no se pueden reenvolver sin tener delante
+lo que las abre: la **maestra** y la de **recuperación**, que solo se sustituye emitiendo otra — o sea una
+ceremonia por revocación, justo lo que la ADR 0050 descartó.
 
-**Lo que protege hoy** es el 403 del servidor y el borrado de la copia (ADR 0053), que es cooperativo.
-Ya está **anotado en los cinco sitios** (tachado, no borrado) y está en [`deuda.md`](deuda.md) con
-severidad alta.
-
-**Y el arreglo está decidido con el cliente**: el cuerpo pasa a cifrarse con una **clave de contenido**
-envuelta aparte —bajo la clave de bóveda y bajo la identidad de cada titular—, y entonces rotar es clave
-nueva, recifrar el cuerpo y volver a sellar solo para los que quedan. De paso, **quien recibe una
-compartida deja de llevarse la clave de bóveda**. Es el cambio de formato más grande desde que existe la
-bóveda: los **dos núcleos** (Go y el espejo de TypeScript), las cruzadas, vectores congelados nuevos y
-migración de lo ya emitido. **Tendrá su ADR propia y no entró hoy.**
-
-### 2 · La ADR 0058: que el servidor escriba
-
-Plan completo y **aprobado** en `~/.claude/plans/vamos-a-realizar-un-precious-adleman.md`. Decidido con
-el cliente: **escribir no se aprueba** —crea y pisa secretos sin que nadie mire, y queda apuntado—, el
-permiso va **por proyecto** con un segundo interruptor, `--quien` **no autentica nada** y se dice, escriben
-en **cualquier bóveda que la línea de comandos pueda abrir** y la huella se confirma **una vez por
-servidor**.
-
-De los seis pasos del plan:
-
-- **Paso 1, hecho.** `boveda.PorQueNoSeEscribe(b, dueno, permiso)` al final de
-  `internal/boveda/compartida.go`, con `fuenteDelNavegador.porQueNoSeEscribe` y el nuevo
-  `App.deQuienEsLaActiva()` delegando. **Sin tocar ninguna prueba** y las de `app` siguen en verde.
-- **Paso 2, escrito y sin pruebas.** `internal/cli/escribir.go`: `crear` y `editar`, los cuatro orígenes
-  del secreto (`--secreto-stdin|-env|-fichero|--generar`, **nunca un argumento**), `--alfabeto`,
-  `--caracteres`, `--quien`, `--tipo` validado contra la lista con la llave de acceso negada, el apunte
-  con `ApunteLlaveDelEquipo` y la pasada de subida de después. `editar` **parchea solo lo que se nombre**
-  mirando `Flags().Changed`, y el secreto se lee **antes de abrir la bóveda** (regla de `ExportarLlaves`).
-  De camino: `abrirLaCompartidaConLaPersonal` devuelve la personal **abierta** —la sesión vive sellada en
-  ella y sin eso no se puede subir lo escrito—, se extrajo `unaPasadaDeLaCompartida`, y **`boveda` ya
-  declara `-q`**, que no lo declaraba y fallaba con «unknown flag».
-- **Pasos 3 a 6, sin empezar**: la huella en Ajustes, `CambiarPermiso` y el segundo interruptor, el tramo
-  nuevo del paseo y la ADR 0058 con sus docs.
-
-### 3 · Lo primero al volver, en este orden
-
-1. **`make comprobar` entero** (unos 6-7 minutos). Lo último verde fue **antes** de `escribir.go`; después
-   solo se ha corrido `go build ./...`, `go vet ./internal/...` y `go test ./internal/cli/`.
-2. **Las pruebas del paso 2**, que es lo que falta para darlo por hecho. La tabla de verificación está en
-   el plan, y lo que no puede faltar: que con permiso `ver` los dos verbos contesten el porqué, que el
-   secreto **no exista** como bandera, que `editar` deje el anterior en el historial, que el apunte lleve
-   `Quien`, y que lo escrito **suba**. Cada una mutada.
-3. **El paseo a mano** con el binario de verdad (`make esfinge`), que en este proyecto es lo que encuentra
-   lo que ninguna prueba ve. No se llegó a hacer.
-4. Y entonces decidir el orden de lo que queda: **la clave de contenido** (ADR propia, cara) frente a los
-   **pasos 3-6 de la 0058** (la ventana, baratos).
-
----
+**Lo que protege hoy** es el 403 del servidor y el borrado de la copia (ADR 0053), que es cooperativo. Está
+anotado en los cinco sitios —tachado, no borrado— y en [`deuda.md`](deuda.md) con severidad alta, con el
+arreglo decidido con el cliente.
 
 ## Montado en el VPS el 2026-10-21, y funciona
 
@@ -96,7 +104,7 @@ Lo que se hizo y lo que contestó cada tramo:
 solo ver, y eso la 2.58.7 ya lo hace. Lo que el selector añade es no tener que acordarse del correo y que
 la pantalla diga lo que cuesta.
 
-## La siguiente acción: llevar un `.env` de verdad a su bóveda
+## Y lo que de verdad lo pondrá a prueba: llevar un `.env` entero a su bóveda
 
 Lo que queda es **el trabajo para el que existe todo esto**, y es donde se verá si es cómodo: coger un
 proyecto del VPS —`Tempero` es el candidato obvio, con 38 variables más 24 de producción—, meter sus

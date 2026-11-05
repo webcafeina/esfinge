@@ -66,6 +66,7 @@ func comandoBovedaServidor(o *opciones, ob *opcionesBoveda) *cobra.Command {
 		comandoServidorRecibir(o, ob),
 		comandoServidorSincronizar(o, ob),
 		comandoServidorEstado(o, ob),
+		comandoServidorHuella(o, ob),
 	)
 	return cmd
 }
@@ -177,6 +178,63 @@ func comandoServidorQuitar(o *opciones, ob *opcionesBoveda) *cobra.Command {
 			_ = llavero.DelServidor().Borrar(b.ID())
 			if !o.silencio {
 				fmt.Fprintln(os.Stderr, e.Ok("Quitado. Esta bóveda vuelve a pedir la contraseña maestra."))
+			}
+			return nil
+		},
+	}
+}
+
+// comandoServidorHuella enseña la huella de identidad de esta bóveda, que es lo que
+// alguien tiene que comparar en el otro equipo antes de darle acceso (ADR 0043).
+//
+// **Existe porque sin él la ceremonia no se puede hacer.** La ventana enseña la huella
+// que el servidor de cuentas publica para esa dirección, y compararla exige verla
+// también **aquí**, dicha por este equipo y no por el servidor — que es el que se
+// quiere descartar. Hasta la 0058 no había forma: la primera vez se sacó con un
+// programa de un solo uso, y la pantalla mandaba a compararla con algo que no se podía
+// leer. Es la trampa de `ExportarLlaves` otra vez: lo que hace falta para decidir se
+// mira antes de pedirle a alguien que decida.
+//
+// **Una huella es pública** —es un resumen de las llaves públicas—, así que esto no
+// enseña ningún secreto y se puede pegar en un chat sin pensarlo. Lo que protege es
+// justo eso: que las dos partes digan la misma en voz alta.
+func comandoServidorHuella(o *opciones, ob *opcionesBoveda) *cobra.Command {
+	return &cobra.Command{
+		Use:   "huella",
+		Short: "Enseña la huella de identidad de este equipo, para compararla",
+		Long: "Escribe la huella de identidad de esta bóveda.\n\n" +
+			"Es lo que hay que comparar con lo que enseña la ventana del otro equipo\n" +
+			"antes de darle acceso a una bóveda de proyecto: si las dos coinciden, lo\n" +
+			"que se comparta se cifra hacia este equipo y no hacia nadie más.\n\n" +
+			"No es un secreto: es un resumen de las llaves públicas, y se puede decir\n" +
+			"en voz alta o pegar en un chat.",
+		Example:       "  esfinge boveda servidor huella",
+		Args:          cobra.NoArgs,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			// **Sin pasada de sincronización**: la identidad es de este fichero y no
+			// cambia nunca, así que salir a la red aquí solo añade formas de fallar.
+			b, err := abrirLaBoveda(o, ob)
+			if err != nil {
+				return err
+			}
+			defer b.Cerrar()
+			i, err := b.Identidad()
+			if err != nil {
+				return err
+			}
+			if ob.json {
+				return escribirJSON(map[string]any{"huella": i.Huella})
+			}
+			// Por la salida estándar y sin adornos, que esto se copia y se pega.
+			fmt.Print(i.Huella)
+			if aTerminal(os.Stdout) {
+				fmt.Println()
+				if e, err := estilos(o.tema); err == nil && !o.silencio {
+					fmt.Fprintln(os.Stderr, e.Info(
+						"Compárala con la que enseña la ventana antes de aceptar ningún acceso."))
+				}
 			}
 			return nil
 		},

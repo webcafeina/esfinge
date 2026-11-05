@@ -135,6 +135,18 @@ export type Preferencias = {
    * bóveda de proyecto sale el interruptor que le da acceso de solo ver.
    */
   correoDelServidor: string;
+  /**
+   * La huella de ese servidor **que ya se comparó por otro camino** (ADR 0058).
+   *
+   * Vacía quiere decir que nadie la ha mirado, y entonces el interruptor de cada
+   * proyecto **no sale**: dar un acceso sella la clave de la bóveda hacia unas llaves
+   * públicas, y esto es lo único que prueba que son del servidor y no unas que el
+   * servidor de cuentas se haya inventado.
+   *
+   * **La ventana no la manda** —la pone `confirmarHuellaDelServidor`—, y Go la borra
+   * sola en cuanto el correo cambia: lo confirmado es de un servidor concreto.
+   */
+  huellaDelServidor: string;
 };
 
 /** Lo que se manda para apagar uno de los dos relojes de la bóveda. */
@@ -876,6 +888,34 @@ export const esfinge = {
    * desde aquí no hay forma de borrarlo. La pantalla lo dice con esas palabras.
    */
   quitarAcceso: (titular: string) => llamar<void>("QuitarAcceso", titular),
+  /**
+   * Le sube o le baja el permiso a quien ya tiene acceso (ADR 0058).
+   *
+   * **Se cambia en el sitio**: no quita y vuelve a dar, que le costaría a esa persona
+   * borrar su copia y volver a bajarse la bóveda entera. Lo que esa persona tiene
+   * guardado se pone al día por su sincronización, porque el servidor dice el permiso
+   * al bajar.
+   */
+  cambiarPermiso: (titular: string, permiso: "ver" | "editar") =>
+    llamar<void>("CambiarPermiso", titular, permiso),
+  /**
+   * Apunta que alguien ha comparado la huella del servidor de esta casa (ADR 0058).
+   *
+   * Se le manda **la huella que la pantalla enseñó**, no se le pide que la vuelva a
+   * buscar: Go la comprueba contra el servidor antes de darla por buena, así que lo
+   * que queda confirmado es lo que la persona miró y no lo que hubiera un segundo
+   * después.
+   */
+  confirmarHuellaDelServidor: (huella: string) =>
+    llamar<void>("ConfirmarHuellaDelServidor", huella),
+  /**
+   * El interruptor de «Trabajar con esta bóveda en el servidor» (ADR 0057 y 0058).
+   *
+   * No es `darAcceso` con el correo del servidor: **compara la huella** antes de
+   * sellar nada, y se niega si no es la que se confirmó. Hasta la 0058 el interruptor
+   * se saltaba eso, que es lo único que protege en el primer envío.
+   */
+  darAccesoAlServidor: () => llamar<void>("DarAccesoAlServidor"),
 
   /** Quién tiene acceso a la bóveda abierta. La ven todos los que la tienen. */
   quienTiene: () => llamar<QuienTieneAcceso[] | null>("QuienTiene").then((l) => l ?? []),

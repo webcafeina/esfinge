@@ -248,15 +248,33 @@ export class Cliente {
 
   /**
    * Baja una bóveda **de otra cuenta** a la que tengo acceso (ADR 0052). Mismo
-   * `ETag`, mismo 304, mismo todo: para la sincronización es una bóveda más.
+   * `ETag` y mismo 304: para la sincronización es una bóveda más.
+   *
+   * **Con una cosa que las demás no tienen**: dice con qué permiso me deja el servidor
+   * (ADR 0058). Por eso no comparte `bajarDeRuta` con las otras y devuelve dos cosas
+   * en vez de una — el permiso llega aunque no llegue cuerpo.
    */
   async bajarCompartida(
     token: string,
     dueno: string,
     ref: string,
     siNoCoincide: number,
-  ): Promise<{ datos: string; version: number } | null> {
-    return this.bajarDeRuta(rutaDeCompartida(dueno, ref), token, siNoCoincide);
+  ): Promise<{ cuerpo: { datos: string; version: number } | null; permiso: string }> {
+    const cabeceras: Record<string, string> = {};
+    if (siNoCoincide > 0) cabeceras["If-None-Match"] = `"${siNoCoincide}"`;
+    const r = await this.pedir("GET", rutaDeCompartida(dueno, ref), { token, cabeceras });
+    // **El permiso se lee antes de mirar el estado**, porque llega también con un 304
+    // (ADR 0058) — y el 304 es el caso normal: se baja cada minuto y casi nunca ha
+    // cambiado nada. Leyéndolo solo con el cuerpo, un permiso nuevo no se sabría hasta
+    // que alguien editara algo, y eso puede no pasar nunca.
+    const permiso = r.headers.get("Esfinge-Permiso") ?? "";
+    if (r.status === 304) return { cuerpo: null, permiso };
+    if (r.status !== 200) throw await this.error(r);
+    const version = leerEtiqueta(r.headers.get("ETag"));
+    if (version === null) throw new Error("El servidor no ha dicho qué versión de la bóveda es");
+    const datos = await r.text();
+    if (datos.length > TAMANO_MAXIMO) throw new Error("Lo que ha llegado del servidor es demasiado grande");
+    return { cuerpo: { datos, version }, permiso };
   }
 
   /**

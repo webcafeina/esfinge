@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/webcafeina/esfinge/internal/boveda"
@@ -242,6 +243,141 @@ func (a *App) DarAcceso(correo, permiso string) error {
 	return a.cliente().Mandar(a.ctxCuenta(), token, c, sobre)
 }
 
+// CambiarPermiso le sube o le baja el permiso a quien ya tiene acceso (ADR 0058).
+//
+// **Se cambia en el sitio, y eso es toda la decisión.** Los dos caminos que parecen
+// equivalentes no lo son, y conviene que quede escrito para que nadie los reintente:
+//
+//   - **Volver a llamar a `DarAcceso`** acuña un titular nuevo (`cripto.Azar(8)`), así
+//     que dejaría una **ranura huérfana** en la bóveda y el titular guardado dejaría de
+//     ser el que conoce el servidor — y entonces «quitar» apuntaría al que no es.
+//   - **Quitar y volver a dar** es correcto y caro: quitar hace que esa persona **borre
+//     su copia** (ADR 0053), así que subirle el permiso le costaría volver a bajarse la
+//     bóveda entera. En un servidor, en medio de un despliegue, eso es el despliegue
+//     caído.
+//
+// Lo que lo hace barato ya estaba hecho: la tabla del servidor es un `upsert` por
+// `(ref, cuenta)` y `PonerTitular` actualiza por identificador. Así que **ni rota la
+// clave, ni añade ranura, ni obliga a nadie a volver a bajar nada**.
+//
+// Y no manda ningún sobre nuevo: el permiso que esa persona tiene guardado se pone al
+// día **por la sincronización**, porque desde la 0058 el servidor lo dice al bajar (ver
+// `apuntarElPermiso`). Mandando un sobre habría que aceptarlo, y en un servidor eso es
+// un `recibir` a mano que nadie va a correr.
+func (a *App) CambiarPermiso(titular, permiso string) error {
+	if permiso != "ver" && permiso != "editar" {
+		return errors.New("Ese permiso no existe")
+	}
+	ref := a.bovedaActiva()
+	if ref == "" || a.duenoDeLaActiva() != "" {
+		return errors.New("Entra en el proyecto para cambiar quién tiene acceso")
+	}
+	p := a.boveda()
+	if p == nil {
+		return boveda.ErrCerrada
+	}
+	// **El correo y la huella salen de lo guardado**, no de quien llama: la ventana
+	// manda un identificador de ranura y nada más, así que no puede apuntar un permiso
+	// a una dirección que no sea la que ya tenía acceso.
+	var quien boveda.Titular
+	for _, t := range p.Titulares() {
+		if t.ID == titular {
+			quien = t
+		}
+	}
+	if quien.ID == "" {
+		return errors.New("Esa persona no tiene acceso a esta bóveda")
+	}
+	if quien.Permiso == permiso {
+		return nil
+	}
+	token, err := a.sesionDeCuenta()
+	if err != nil {
+		return err
+	}
+
+	// **El servidor primero**, que es quien lo impone: si lo de dentro se guardara antes
+	// y esto fallara, la pantalla diría «puede editar» y el servidor seguiría diciendo
+	// que no. Al revés, lo peor que queda es la pantalla diciendo lo de antes de algo
+	// que ya puede — y la pasada siguiente lo cuadra.
+	if err := a.cliente().DarAcceso(a.ctxCuenta(), token, ref, quien.Correo, permiso, titular); err != nil {
+		return err
+	}
+	quien.Permiso = permiso
+	a.Actividad()
+	return p.PonerTitular(quien)
+}
+
+// ------------------------------------------------- el servidor de esta casa
+
+// ConfirmarHuellaDelServidor apunta que alguien ha comparado la huella de ese
+// servidor por otro camino (ADR 0058, sobre la 0043).
+//
+// **Recibe la huella que la pantalla enseñó**, no la que haya ahora, y la comprueba
+// contra el servidor antes de darla por buena. Pidiéndola otra vez aquí se guardaría
+// lo que contestara en este segundo, que puede no ser lo que la persona miró — es la
+// misma razón por la que la tarjeta de un agente lleva referencia.
+func (a *App) ConfirmarHuellaDelServidor(huella string) error {
+	correo := a.ajustes.Ver().CorreoDelServidor
+	if strings.TrimSpace(correo) == "" {
+		return errors.New("Primero pon la cuenta de Esfinge de tu servidor")
+	}
+	ahora, err := a.HuellaDe(correo)
+	if err != nil {
+		return err
+	}
+	if ahora.Huella != huella {
+		return errors.New(
+			"La huella ha cambiado mientras la mirabas; vuelve a pedirla y compárala otra vez")
+	}
+	p := a.ajustes.Ver()
+	p.HuellaDelServidor = huella
+	// Por la puerta de los ajustes y no escribiendo el campo a mano, para que pase por
+	// el mismo sitio que todo lo demás.
+	return a.ajustes.PonerHuellaDelServidor(huella, p.CorreoDelServidor)
+}
+
+// DarAccesoAlServidor es lo que hace el interruptor de cada proyecto: **acceso de solo
+// ver a la cuenta del servidor de esta casa** (ADR 0057), sin ningún mecanismo nuevo.
+//
+// Lo que añade sobre llamar a `DarAcceso` con ese correo es la única cosa que faltaba,
+// y faltaba de verdad: **comprobar la huella**. Hasta la 0058 el interruptor sellaba la
+// clave de la bóveda hacia las llaves públicas que el servidor de cuentas diera para
+// esa dirección, **sin que nadie las hubiera comparado nunca** — justo lo que la ADR
+// 0043 dice que es lo único que protege en el primer envío. Con una persona la pantalla
+// te obliga a mirar la huella; el interruptor se lo saltaba.
+//
+// **Y se compara en cada proyecto, aunque solo se confirme una vez.** Confirmar una vez
+// es lo que se eligió para que marcar el quinto proyecto sea un clic, pero si la
+// comparación no se repitiera al sellar, el servidor de cuentas podría publicar otras
+// llaves después y solo el primer proyecto estaría protegido. Confirmar es de la
+// persona; comparar es de cada vez.
+func (a *App) DarAccesoAlServidor() error {
+	p := a.ajustes.Ver()
+	correo := strings.TrimSpace(p.CorreoDelServidor)
+	if correo == "" {
+		return errors.New("No hay ningún servidor puesto en Ajustes")
+	}
+	if p.HuellaDelServidor == "" {
+		return errors.New(
+			"Antes compara la huella de tu servidor en Ajustes: es lo único que prueba que las contraseñas van a tu equipo")
+	}
+	ahora, err := a.HuellaDe(correo)
+	if err != nil {
+		return err
+	}
+	if ahora.Huella != p.HuellaDelServidor {
+		// **No se da el acceso y no se guarda la huella nueva.** Puede ser que el
+		// servidor haya vuelto a instalarse, y puede ser otra cosa; las dos se arreglan
+		// igual —compararla otra vez por otro camino— y decidirlo no es de aquí.
+		return fmt.Errorf(
+			"La huella de %s no es la que confirmaste: ahora es %s y tenías apuntada %s. "+
+				"No le doy acceso hasta que la compares otra vez en Ajustes",
+			correo, ahora.Huella, p.HuellaDelServidor)
+	}
+	return a.DarAcceso(correo, "ver")
+}
+
 // QuitarAcceso se lo quita a ese titular: **la puerta del servidor primero**, que es
 // la que corta de verdad y en el acto, y después la ranura.
 //
@@ -271,6 +407,55 @@ func (a *App) QuitarAcceso(titular string) error {
 	}
 	a.Actividad()
 	return p.OlvidarTitular(titular)
+}
+
+// apuntarElPermiso guarda lo que el servidor acaba de decir que puedo hacer en una
+// bóveda ajena (ADR 0058), y pone al día la ventana si era la abierta.
+//
+// Hasta aquí el permiso solo llegaba **dentro del sobre que se acepta en el buzón**, o
+// sea una vez y para siempre. Cambiárselo a alguien no viajaba: el servidor empezaba a
+// aceptarle subidas y su Esfinge seguía creyendo que solo podía ver, así que no le
+// ofrecía editar. Y al revés es peor de leer —cree que puede, y al subir se encuentra
+// un 403—, porque entonces lo escrito se queda en su equipo y en ninguna otra parte.
+//
+// Dos cosas de cómo está escrito:
+//
+//   - **Solo escribe si ha cambiado.** Guardar la bóveda personal despierta su
+//     sincronización, así que apuntarlo en cada pasada sería subirla cada minuto para
+//     decir lo mismo. Es la regla de la fecha de uso de una llave de acceso.
+//   - **El estado completo antes del aviso.** La ventana contesta a `EventoEstadoBoveda`
+//     preguntando el estado, así que avisar antes de tener el permiso puesto la deja con
+//     el de antes hasta el aviso siguiente, que puede no llegar.
+func (a *App) apuntarElPermiso(dueno, ref, permiso string) {
+	if dueno == "" || ref == "" || permiso == "" {
+		return
+	}
+	cambio := false
+
+	comp, hay := a.laCompartida(dueno, ref)
+	if hay && comp.Permiso != permiso {
+		comp.Permiso = permiso
+		if err := a.conLaPersonal(func(b *boveda.Boveda) error {
+			return b.PonerCompartida(comp)
+		}); err != nil {
+			log.Printf("esfinge: no he podido apuntar el permiso nuevo de «%s»: %v", comp.Nombre, err)
+		} else {
+			cambio = true
+		}
+	}
+
+	// Y lo que la ventana tiene en la mano, que se fijó al abrirla: sin esto, a quien
+	// esté dentro de la bóveda no le cambia nada hasta que salga y vuelva a entrar.
+	a.mu.Lock()
+	if a.duenoActivo == dueno && a.activa == ref && a.permisoActivo != permiso {
+		a.permisoActivo = permiso
+		cambio = true
+	}
+	a.mu.Unlock()
+
+	if cambio {
+		a.sistema.Avisar(EventoEstadoBoveda, a.EstadoBoveda())
+	}
 }
 
 // QuienTiene lista a las personas con acceso a la bóveda abierta, **juntando las dos

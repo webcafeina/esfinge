@@ -32,6 +32,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -284,6 +285,13 @@ func abrirLaCompartidaConLaPersonal(o *opciones, ob *opcionesBoveda, nombre stri
 			b.Cerrar()
 			return fallo(err)
 		}
+		// **Y la fila se vuelve a leer después de la pasada**, que es donde el permiso
+		// se pone al día (ADR 0058). Devolviendo la de antes, la primera orden después
+		// de que alguien suba el permiso seguiría negándose a escribir y la segunda
+		// funcionaría — un «a la segunda va» que no hay forma de entender desde fuera.
+		if ahora, hay := mia.LaCompartida(comp.Dueno, comp.Ref); hay {
+			comp = ahora
+		}
 	}
 	return b, mia, comp, nil
 }
@@ -329,9 +337,10 @@ func unaPasadaDeLaCompartida(mia, b *boveda.Boveda, comp boveda.Compartida) erro
 	}
 	ctx, cancelar := context.WithTimeout(context.Background(), elPlazoDeLaRed)
 	defer cancelar()
-	return s.conLaSesion(ctx, func(token string) error {
+	remota := &laCompartidaRemota{c: s.c, dueno: comp.Dueno, ref: comp.Ref}
+	err = s.conLaSesion(ctx, func(token string) error {
 		sin := &sincro.Sincronizador{
-			Servidor: laCompartidaRemota{c: s.c, dueno: comp.Dueno, ref: comp.Ref},
+			Servidor: remota,
 			Boveda:   b,
 			Memoria:  sincro.JuntoALaBoveda{Ruta: b.Ruta()},
 			Token:    func() string { return token },
@@ -339,6 +348,29 @@ func unaPasadaDeLaCompartida(mia, b *boveda.Boveda, comp boveda.Compartida) erro
 		_, err := sin.Sincronizar(ctx)
 		return err
 	})
+	// **El permiso se apunta aunque la pasada haya fallado**, que es lo correcto: el
+	// servidor ya ha dicho lo que me deja hacer, y lo que falle después —la subida, por
+	// ejemplo, justamente por el permiso— no lo desmiente. Al revés, con un permiso
+	// recién bajado a «ver», la pasada falla **porque** es el nuevo.
+	ponerAlDiaElPermiso(mia, comp, remota.permiso)
+	return err
+}
+
+// ponerAlDiaElPermiso guarda en mi bóveda lo que el servidor acaba de decir que puedo
+// hacer con la de otra persona (ADR 0058).
+//
+// **Escribe solo si ha cambiado.** No es por ahorrar: guardar reescribe la bóveda
+// personal y despierta su sincronización, así que hacerlo en cada pasada sería subir la
+// bóveda cada minuto para decir lo mismo. Es la misma razón por la que la fecha de uso
+// de una llave de acceso no se reescribe si no ha cambiado.
+func ponerAlDiaElPermiso(mia *boveda.Boveda, comp boveda.Compartida, permiso string) {
+	if permiso == "" || permiso == comp.Permiso {
+		return
+	}
+	comp.Permiso = permiso
+	if err := mia.PonerCompartida(comp); err != nil {
+		log.Printf("esfinge: no he podido apuntar el permiso nuevo de «%s»: %v", comp.Nombre, err)
+	}
 }
 
 // retirarLaCompartida se va de una bóveda a la que han quitado el acceso: **la
@@ -375,15 +407,30 @@ func ahoraRFC3339() string { return time.Now().UTC().Format(time.RFC3339) }
 
 // laCompartidaRemota apunta la sincronización a la bóveda de otra cuenta. Es el
 // espejo de `bovedaRemota` de la ventana.
+//
+// **Y se queda con el permiso que diga el servidor** (ADR 0058). Va aquí, como efecto
+// de bajar, y no como un valor más de `sincro.Servidor`: esa interfaz la implementan
+// también la bóveda personal y la de un proyecto, donde no hay ningún permiso que
+// mirar, así que ensancharla para esto sería hacer que tres sitios hablen de algo que
+// solo le pasa a uno.
 type laCompartidaRemota struct {
 	c          *cuenta.Cliente
 	dueno, ref string
+	// permiso es lo último que contestó el servidor, o vacío si no llegó a contestar.
+	permiso string
 }
 
-func (r laCompartidaRemota) Bajar(ctx context.Context, token string, siNoCoincide int64) ([]byte, int64, bool, error) {
-	return r.c.BajarCompartida(ctx, token, r.dueno, r.ref, siNoCoincide)
+func (r *laCompartidaRemota) Bajar(ctx context.Context, token string, siNoCoincide int64) ([]byte, int64, bool, error) {
+	datos, version, cambio, permiso, err := r.c.BajarCompartidaConPermiso(ctx, token, r.dueno, r.ref, siNoCoincide)
+	// **Se apunta aunque la bajada falle**, porque un 304 también trae el permiso y
+	// para `sincro` un 304 es «no hay cambio»: esperar al cuerpo sería no enterarse
+	// nunca de un permiso nuevo mientras nadie edite nada.
+	if permiso != "" {
+		r.permiso = permiso
+	}
+	return datos, version, cambio, err
 }
 
-func (r laCompartidaRemota) Subir(ctx context.Context, token string, siCoincide int64, datos []byte) (int64, error) {
+func (r *laCompartidaRemota) Subir(ctx context.Context, token string, siCoincide int64, datos []byte) (int64, error) {
 	return r.c.SubirACompartida(ctx, token, r.dueno, r.ref, siCoincide, datos)
 }

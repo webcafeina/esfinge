@@ -1682,6 +1682,13 @@ function Ajustes({
   // de React con un campo no controlado.
   const [correoDelServidor, setCorreoDelServidor] = useState<string | null>(null);
 
+  // La huella del servidor **que se está mirando ahora**, antes de confirmarla (ADR
+  // 0058). Es distinta de `prefs.huellaDelServidor`, que es la que ya se comparó: la
+  // de aquí todavía no prueba nada y por eso no se guarda hasta que alguien diga que
+  // coincide.
+  const [huellaVista, setHuellaVista] = useState("");
+  const [mirandoHuella, setMirandoHuella] = useState(false);
+
   // Los sitios en los que la extensión no ofrece guardar, que viven dentro de la
   // bóveda. Se vuelven a leer cuando el navegador apunta uno nuevo.
   const [excluidos, setExcluidos] = useState<string[]>([]);
@@ -1895,6 +1902,86 @@ function Ajustes({
               bóvedas que le marques</strong>. No protege de eso: lo que cambia es que las contraseñas
               dejan de estar en claro en un <code>.env</code> y que queda apuntado lo que se usa.
             </p>
+
+            {/* **La huella, y aquí es donde va** (ADR 0058, sobre la 0043).
+                Se compara **una vez por servidor** y no una por proyecto: la identidad
+                es la misma para todas sus bóvedas, y preguntarla en cada una es la
+                forma segura de que se pulse sin mirar. Pero es **obligatoria**, porque
+                hasta ahora el interruptor sellaba la clave de la bóveda hacia las
+                llaves que el servidor de cuentas diera para esa dirección **sin que
+                nadie las hubiera comparado nunca** — con una persona la pantalla te
+                obliga a mirar la huella, y el interruptor se lo saltaba.
+                Go la borra sola si el correo cambia, así que esto vuelve a salir. */}
+            {(prefs?.correoDelServidor ?? "") !== "" && (
+              <div className="la-huella-del-servidor">
+                {prefs?.huellaDelServidor ? (
+                  <p className="nota">
+                    Su huella está comparada: <code className="huella">{prefs.huellaDelServidor}</code>.
+                    Si cambias el correo habrá que volver a compararla.
+                  </p>
+                ) : huellaVista === "" ? (
+                  <>
+                    <p className="aviso">
+                      <strong>Falta comparar su huella.</strong> Hasta que lo hagas no podrás marcarle
+                      ninguna bóveda: es lo único que prueba que las contraseñas van a tu servidor y no
+                      a quien se haya puesto en medio.
+                    </p>
+                    <div className="botones">
+                      <button
+                        className="discreto"
+                        disabled={mirandoHuella || cargando}
+                        onClick={async () => {
+                          setMirandoHuella(true);
+                          setError("");
+                          try {
+                            const i = await esfinge.huellaDe(prefs?.correoDelServidor ?? "");
+                            setHuellaVista(i.huella);
+                          } catch (e) {
+                            setError(mensaje(e));
+                          } finally {
+                            setMirandoHuella(false);
+                          }
+                        }}
+                      >
+                        {mirandoHuella ? "Mirando…" : "Ver su huella"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="nota">
+                      Su huella es <code className="huella">{huellaVista}</code>. Compárala con la que
+                      enseña ese equipo —<code>esfinge boveda servidor huella</code>— antes de decir que
+                      coincide.
+                    </p>
+                    <div className="botones">
+                      <button
+                        className="principal"
+                        disabled={mirandoHuella}
+                        onClick={async () => {
+                          setMirandoHuella(true);
+                          setError("");
+                          try {
+                            await esfinge.confirmarHuellaDelServidor(huellaVista);
+                            setHuellaVista("");
+                            await leerPreferencias();
+                          } catch (e) {
+                            setError(mensaje(e));
+                          } finally {
+                            setMirandoHuella(false);
+                          }
+                        }}
+                      >
+                        Coincide, es mi servidor
+                      </button>
+                      <button className="discreto" onClick={() => setHuellaVista("")}>
+                        No coincide
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </section>
         </>

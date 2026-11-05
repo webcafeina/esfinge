@@ -2394,11 +2394,17 @@ test("quién tiene acceso: la fila no pierde el nombre y la huella va antes", as
  * regla de Touch ID —se dice en la pantalla donde se activa, no solo en la
  * documentación—, así que se comprueba que está, no que exista el interruptor.
  *
- * Lo que esta prueba **no** hace es pulsarlo: dar acceso exige una cuenta, y aquí se
- * trabaja en local. Eso lo recorre entero `TestPaseoDeUnProyectoHastaUnServidor`,
- * contra el servidor de verdad.
+ * **Y desde la ADR 0058, que no sale hasta que su huella se ha comparado.** Eso es lo
+ * que esta prueba vigila ahora: con el correo puesto y la huella sin comparar el
+ * interruptor **no está**, y en su sitio hay una frase que dice qué falta. Antes
+ * aparecía, y pulsarlo sellaba la clave de la bóveda hacia unas llaves que nadie había
+ * mirado — justo lo que con una persona esta misma pantalla te obliga a hacer.
+ *
+ * Lo que esta prueba **no** hace es confirmar la huella ni pulsarlo: las dos cosas
+ * exigen una cuenta, y aquí se trabaja en local. Eso lo recorre entero
+ * `TestPaseoDeUnProyectoHastaUnServidor`, contra el servidor de verdad.
  */
-test("el selector del servidor sale dentro de un proyecto y dice lo que cuesta", async ({ page }) => {
+test("el selector del servidor: sin su huella comparada no sale, y dice qué falta", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
   await conLaBovedaAbierta(page);
@@ -2454,25 +2460,51 @@ test("el selector del servidor sale dentro de un proyecto y dice lo que cuesta",
     path: `test-results/servidor-en-ajustes-${test.info().project.name}.png`,
   });
 
-  // Y ahora sí sale, apagado, diciendo a quién se le daría y qué podrá hacer.
+  // **Y con el correo puesto todavía no sale: falta comparar su huella** (ADR 0058).
+  //
+  // Hasta esa ficha, aquí el interruptor ya aparecía — y pulsarlo sellaba la clave de
+  // esta bóveda hacia las llaves públicas que el servidor de cuentas diera para esa
+  // dirección, **sin que nadie las hubiera comparado nunca**. Con una persona esta misma
+  // pantalla te obliga a mirar la huella antes de dejarte dar el acceso; el interruptor
+  // se lo saltaba. Esta aserción es la que dice que ya no.
   await abrirElAcceso();
-  await expect(elInterruptor).toBeVisible();
-  await expect(elInterruptor).not.toBeChecked();
   const bloque = page.locator(".panel:visible .el-acceso");
-  await expect(bloque.getByText("servidor@ejemplo.com", { exact: false }).first()).toBeVisible();
-  await expect(bloque.getByText("solo ver", { exact: false }).first()).toBeVisible();
-  await bloque.screenshot({ path: `test-results/selector-del-servidor-${test.info().project.name}.png` });
+  await expect(
+    elInterruptor,
+    "el interruptor sale con la huella del servidor sin comparar",
+  ).toHaveCount(0);
+  // Y no se queda callado: dice qué falta y dónde se arregla, que si no esto parece que
+  // el correo no se ha guardado.
+  await expect(bloque.getByText("su huella sin comparar", { exact: false })).toBeVisible();
+  await expect(bloque.getByText("Ajustes", { exact: false }).first()).toBeVisible();
+  await bloque.screenshot({ path: `test-results/selector-sin-huella-${test.info().project.name}.png` });
+
+  // **Y en Ajustes está el camino, con su aviso.**
+  //
+  // Lo que no hace esta prueba es **confirmarla**: comparar la huella exige preguntarle
+  // al servidor de cuentas quién es esa dirección, y aquí se trabaja en local. Así que
+  // el interruptor no llega a salir nunca en este fichero — lo que se vigila es la
+  // puerta, que es lo que no existía. El camino entero con una cuenta de verdad lo
+  // recorre `TestPaseoDeUnProyectoHastaUnServidor`.
+  await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Cuenta" }).click();
+  await expect(
+    page.locator(".contenido").getByText("Falta comparar su huella", { exact: false }),
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".contenido").getByRole("button", { name: "Ver su huella" })).toBeVisible();
 
   // Y se quita diciendo que no hay servidor, que es el camino de vuelta: lo que no
   // existe no se menciona.
-  await seccion(page, "Ajustes").click();
-  await page.getByRole("tab", { name: "Cuenta" }).click();
   await page.locator("#correo-del-servidor").fill("");
   await page.locator("#correo-del-servidor").blur();
   await abrirElAcceso();
   await expect(
     elInterruptor,
     "el selector sigue ahí después de quitar el servidor de Ajustes",
+  ).toHaveCount(0);
+  await expect(
+    bloque.getByText("su huella sin comparar", { exact: false }),
+    "el aviso de la huella sigue ahí sin ningún servidor puesto",
   ).toHaveCount(0);
 
   // **Y se sale del proyecto**, que una prueba que conmuta de bóveda tiene que dejar

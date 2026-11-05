@@ -70,6 +70,22 @@ const S = {
    */
   dueno: "cuenta-dueno",
   /**
+   * El permiso que el servidor dijo la última vez de cada bóveda ajena (ADR 0058),
+   * como `dueno|ref` → `ver` | `editar`.
+   *
+   * **Aquí y no en la bóveda, a propósito.** La lista de compartidas la gestiona la
+   * ventana: este lado la lee y la abre, y escribir en ella desde el navegador es la
+   * línea que `Boveda.compartidas()` dice que no se cruza —por eso `anotarUso` tampoco
+   * está—. Lo que hace falta no es gestionar la lista, es **no equivocarse sobre lo que
+   * se puede hacer**, y para eso basta con acordarse de lo que el servidor acaba de
+   * decir. La ventana lo escribirá cuando la abra, y entonces llegará por la bóveda.
+   *
+   * En `storage.session` porque **el trabajador se muere cada pocos minutos** y esto
+   * tiene que sobrevivirle; y porque irse al cerrar el navegador no cuesta nada: la
+   * pasada siguiente lo vuelve a preguntar.
+   */
+  permisos: "cuenta-permisos",
+  /**
    * La clave de la bóveda **personal**, mientras hay un proyecto abierto: sin ella,
    * cambiar de proyecto pediría la contraseña maestra cada vez.
    *
@@ -439,7 +455,10 @@ export async function estado(): Promise<EstadoDeCuenta> {
     // y la lista todavía sin leer, `laAjenaAbierta` es `undefined`: ahí lo prudente es
     // «solo puedo ver», porque equivocarse hacia ahí cuesta una tarjeta que no sale y
     // equivocarse al otro lado cuesta escribir algo que no va a subir nunca.
-    soloPuedoVer: dueno !== "" && laAjenaAbierta?.permiso !== "editar",
+    //
+    // **Y manda lo que dijo el servidor en la última pasada** (ADR 0058): el de la
+    // lista lo escribió la ventana al aceptar el acceso y puede ser de hace semanas.
+    soloPuedoVer: dueno !== "" && (await elPermisoDe(dueno, activa, laAjenaAbierta?.permiso)) !== "editar",
   };
 }
 
@@ -516,8 +535,8 @@ export async function abrirCompartida(dueno: string, ref: string): Promise<void>
     if (!d?.sesion) throw new Error("Vuelve a entrar en la cuenta para traerte esa bóveda");
     const token = await conLaPersonal((p) => p.abrirSecreto(d.sesion));
     const bajada = await new Cliente(d.servidor).bajarCompartida(token, dueno, ref, 0);
-    if (!bajada) throw new Error("Esa bóveda compartida ya no está en el servidor");
-    texto = bajada.datos;
+    if (!bajada.cuerpo) throw new Error("Esa bóveda compartida ya no está en el servidor");
+    texto = bajada.cuerpo.datos;
   }
 
   // **Se abre antes de guardar nada**, igual que un proyecto: así un acceso retirado no
@@ -770,6 +789,43 @@ async function conSesion<T>(hacer: (b: Boveda, cliente: Cliente, token: string) 
 }
 
 /**
+ * apuntarElPermiso guarda en mi lista lo que el servidor acaba de decir que puedo
+ * hacer con la bóveda de otra persona (ADR 0058).
+ *
+ * Es el espejo de `App.apuntarElPermiso`. Hasta aquí el permiso solo llegaba **dentro
+ * del sobre que se acepta en el buzón**, o sea una vez: cambiárselo a alguien no
+ * viajaba nunca a su equipo, y entonces el panel seguía diciendo lo de antes — sin
+ * ofrecer guardar a quien ya podía, o ofreciéndolo a quien ya no y dejando lo escrito
+ * aquí y en ninguna otra parte.
+ *
+ * **Solo escribe si ha cambiado**: guardar la personal despierta su sincronización, así
+ * que hacerlo en cada pasada sería subirla cada minuto para decir lo mismo.
+ */
+async function apuntarElPermiso(dueno: string, ref: string, permiso: string): Promise<void> {
+  if (dueno === "" || permiso === "") return;
+  const todos = (await sesion<Record<string, string>>(S.permisos)) ?? {};
+  const clave = `${dueno}|${ref}`;
+  if (todos[clave] === permiso) return;
+  await api.storage.session.set({ [S.permisos]: { ...todos, [clave]: permiso } });
+  // Lo que el panel enseña cuelga de esto, así que hay que decírselo.
+  avisarDeCambios();
+}
+
+/**
+ * elPermisoDe es con qué permiso cuento para esa bóveda: **lo último que dijo el
+ * servidor**, y si todavía no ha dicho nada, lo que haya en mi lista.
+ *
+ * Ese orden es el que importa: el de la lista lo escribió la ventana cuando se aceptó
+ * el acceso y puede ser de hace semanas, mientras que el otro es de la última pasada.
+ * Al revés se seguiría usando el viejo teniendo el bueno delante.
+ */
+async function elPermisoDe(dueno: string, ref: string, deLaLista: string | undefined): Promise<string> {
+  if (dueno === "") return "";
+  const todos = (await sesion<Record<string, string>>(S.permisos)) ?? {};
+  return todos[`${dueno}|${ref}`] ?? deLaLista ?? "";
+}
+
+/**
  * Publica las llaves de esta bóveda, **que es lo que hace falta para recibir**.
  *
  * Va con cada sincronización y no al entrar en «Compartir»: quien nunca ha
@@ -955,6 +1011,7 @@ async function unaPasada(aunqueBorreMucho = false): Promise<void> {
   const dueno = await duenoActivo();
   try {
     const r = await pasada(b, cliente, token, memoriaDe(ref, dueno), aunqueBorreMucho, ref, dueno);
+    await apuntarElPermiso(dueno, ref, r.permiso ?? "");
     // **Y de paso, las copias que esperaban** (B3). Que falle no ensucia la
     // sincronización, que sí ha ido bien: se repasa en la siguiente.
     await repasarPendientes(b, cliente, token).catch(() => {});
@@ -1143,13 +1200,19 @@ export async function atenderConCuenta(p: Peticion, dePersona: boolean): Promise
  * Y se mira con cuidado al revés: si no se puede leer la lista —la bóveda se cerró entre
  * medias— se contesta que **sí** solo se puede ver. Equivocarse hacia ahí cuesta una
  * tarjeta que no sale; al otro lado cuesta escribir algo que no va a subir nunca.
+ *
+ * **Y manda lo que dijo el servidor en la última pasada** (ADR 0058), que es quien de
+ * verdad impone el permiso: el de la lista lo escribió la ventana al aceptar el acceso,
+ * así que después de un cambio de permiso dice lo de antes — y entonces esto le negaría
+ * guardar a quien ya puede, o se lo ofrecería a quien ya no.
  */
 async function soloPuedoVer(): Promise<boolean> {
   const dueno = await duenoActivo();
   if (dueno === "") return false;
   const ref = await refActiva();
   try {
-    return (await conLaPersonal(async (p) => p.laCompartida(dueno, ref)))?.permiso !== "editar";
+    const deLaLista = (await conLaPersonal(async (p) => p.laCompartida(dueno, ref)))?.permiso;
+    return (await elPermisoDe(dueno, ref, deLaLista)) !== "editar";
   } catch {
     return true;
   }

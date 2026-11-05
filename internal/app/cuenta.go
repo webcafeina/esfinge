@@ -829,11 +829,23 @@ type bovedaRemota struct {
 	c     *cuenta.Cliente
 	dueno string
 	ref   string
+	// alSaberElPermiso se llama con lo que el servidor diga que puedo hacer en una
+	// bóveda ajena (ADR 0058). Va como retrollamada y no como un valor más de
+	// `sincro.Servidor` por lo mismo que esta estructura existe: `internal/sincro` no
+	// sabe que hay más de una bóveda, y menos aún que algunas son de otra persona.
+	alSaberElPermiso func(permiso string)
 }
 
 func (r bovedaRemota) Bajar(ctx context.Context, token string, siNoCoincide int64) ([]byte, int64, bool, error) {
 	if r.dueno != "" {
-		return r.c.BajarCompartida(ctx, token, r.dueno, r.ref, siNoCoincide)
+		datos, version, cambio, permiso, err := r.c.BajarCompartidaConPermiso(ctx, token, r.dueno, r.ref, siNoCoincide)
+		// **Aunque la bajada no traiga cuerpo.** Un 304 es el caso normal —se baja cada
+		// minuto y casi nunca ha cambiado nada— y trae el permiso igual: esperar al
+		// cuerpo sería no enterarse de un permiso nuevo hasta que alguien editara algo.
+		if permiso != "" && r.alSaberElPermiso != nil {
+			r.alSaberElPermiso(permiso)
+		}
+		return datos, version, cambio, err
 	}
 	return r.c.BajarDe(ctx, token, r.ref, siNoCoincide)
 }
@@ -846,10 +858,18 @@ func (r bovedaRemota) Subir(ctx context.Context, token string, siCoincide int64,
 }
 
 func (a *App) nuevoSincronizador(b *boveda.Boveda) *sincro.Sincronizador {
+	// **De quién y cuál se leen una sola vez**, aquí, y la retrollamada se queda con
+	// esos dos: un sincronizador es de la bóveda que estaba activa cuando se armó, y
+	// preguntándolo dentro se apuntaría el permiso de una bóveda en la fila de otra el
+	// día que alguien conmute mientras una pasada está en vuelo.
+	dueno, ref := a.duenoDeLaActiva(), a.bovedaActiva()
 	return &sincro.Sincronizador{
-		Servidor: bovedaRemota{c: a.cliente(), dueno: a.duenoDeLaActiva(), ref: a.bovedaActiva()},
-		Boveda:   b,
-		Memoria:  sincro.JuntoALaBoveda{Ruta: b.Ruta()},
+		Servidor: bovedaRemota{
+			c: a.cliente(), dueno: dueno, ref: ref,
+			alSaberElPermiso: func(permiso string) { a.apuntarElPermiso(dueno, ref, permiso) },
+		},
+		Boveda:  b,
+		Memoria: sincro.JuntoALaBoveda{Ruta: b.Ruta()},
 		Token: func() string {
 			a.cu.mu.Lock()
 			defer a.cu.mu.Unlock()

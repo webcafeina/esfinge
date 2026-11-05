@@ -505,18 +505,33 @@ export class Cuenta extends DurableObject<Env> {
 	 * cualquiera. Lo que lo impide es que a un Durable Object **solo le habla su
 	 * Worker**.
 	 */
+	/**
+	 * Y **dice con qué permiso**, que es lo único que hace que el del cliente no se
+	 * quede viejo (ADR 0058).
+	 *
+	 * Hasta aquí el permiso solo viajaba dentro del sobre que se acepta en el buzón, así
+	 * que cambiárselo a alguien no llegaba nunca a su equipo: el servidor empezaba a
+	 * aceptarle subidas y **su Esfinge seguía creyendo que solo podía ver**, así que se
+	 * negaba a escribir él mismo. Al revés pasaba lo contrario y peor de leer: creía que
+	 * podía editar y se encontraba un 403 al subir.
+	 *
+	 * Va aquí y no en un endpoint propio porque **esta llamada ya se hace cada minuto**,
+	 * y un camino más para saber lo mismo es un camino más que puede fallar solo.
+	 */
 	async leerComoMiembro(
 		quien: string,
 		ref: string,
 		siNoCoincide: number | null,
-	): Promise<Resultado<{ version: number; datos: ArrayBuffer | null }>> {
+	): Promise<Resultado<{ version: number; datos: ArrayBuffer | null; permiso: string }>> {
 		const m = this.miembro(ref, quien);
 		// **El `revocado` de aquí es el que borra del disco del otro equipo** (ADR 0053),
 		// y por eso va en bajar y no en subir: un `GET` es lo único que puede hacer
 		// cualquier titular con cualquiera de los dos permisos, así que si bajar dice
 		// esto, no hay otra interpretación posible. El 403 de subir sí la tiene.
 		if (!m) return mal(403, "Ya no tienes acceso a esa bóveda.", "revocado");
-		return this.leerLaBoveda(ref, siNoCoincide);
+		const r = this.leerLaBoveda(ref, siNoCoincide);
+		if (!r.ok) return r;
+		return bien({ ...r.datos, permiso: m.permiso });
 	}
 
 	private leerLaBoveda(ref: string, siNoCoincide: number | null): Resultado<{ version: number; datos: ArrayBuffer | null }> {

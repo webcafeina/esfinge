@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -181,6 +182,25 @@ type Preferencias struct {
 	// medias llega vacío y **el selector desaparece**, que es el lado seguro de
 	// equivocarse — nadie da un acceso por descuido.
 	CorreoDelServidor string `json:"correoDelServidor"`
+
+	// HuellaDelServidor es la huella de identidad de ese servidor **que alguien
+	// comparó por otro camino** (ADR 0043, y la 0058 la hace obligatoria). Vacía
+	// quiere decir que nadie la ha mirado, y entonces el interruptor de cada proyecto
+	// **no sale**: dar un acceso es sellar la clave de la bóveda hacia unas llaves
+	// públicas, y lo único que prueba que esas llaves son del servidor y no unas que
+	// el servidor de cuentas se haya inventado es esta comparación.
+	//
+	// **Se guarda cuál es, no un sí/no**, y eso no es un detalle: es exactamente la
+	// lección de la ranura de Touch ID (ADR 0044). Con un booleano, cambiar el correo
+	// a otro servidor dejaría la marca puesta, y el interruptor sellaría hacia unas
+	// llaves que nadie ha visto en su vida **sin que nadie se lo mencionara**. Por eso
+	// `Ajustes.Guardar` la borra en cuanto el correo cambia, y por eso al dar el acceso
+	// se vuelve a comparar: si el servidor publicara otras llaves después, confirmar
+	// una vez solo habría protegido al primer proyecto.
+	//
+	// **La ventana no la manda**: la pone `ConfirmarHuellaDelServidor` y nada más, como
+	// las carpetas de los diálogos. Así un guardado a medias no puede darla por buena.
+	HuellaDelServidor string `json:"huellaDelServidor"`
 }
 
 // Nunca es lo que se manda para apagar uno de los dos relojes.
@@ -296,7 +316,37 @@ func (a *Ajustes) Guardar(p Preferencias) error {
 	p.UltimaComprobacion = a.p.UltimaComprobacion
 	p.CarpetaAbrir = a.p.CarpetaAbrir
 	p.CarpetaGuardar = a.p.CarpetaGuardar
+	// La huella del servidor tampoco la manda la ventana, **y además se cae en cuanto
+	// el correo cambia**: la huella es de un servidor concreto, así que apuntar a otro
+	// deja lo confirmado sin significado. Lo decide aquí y no la pantalla, por lo mismo
+	// que la marca de Touch ID.
+	//
+	// Un guardado a medias llega con el correo vacío y por tanto distinto, así que
+	// también la borra. Es el lado seguro de equivocarse —hay que volver a confirmarla—
+	// y va en la misma dirección que el selector, que con el correo vacío desaparece.
+	p.HuellaDelServidor = a.p.HuellaDelServidor
+	if p.CorreoDelServidor != a.p.CorreoDelServidor {
+		p.HuellaDelServidor = ""
+	}
 	a.p = fundir(a.p, p)
+	return a.guardar()
+}
+
+// PonerHuellaDelServidor apunta la huella comparada, **y solo si el correo sigue
+// siendo el mismo que cuando se miró**.
+//
+// Ese segundo argumento no es ceremonia: entre que la pantalla pide la huella y
+// alguien pulsa «coincide» caben segundos, y en ese rato se puede haber cambiado el
+// correo en la fila de arriba. Sin esto se apuntaría la huella de un servidor como si
+// fuera la del otro, que es exactamente el fallo que esta preferencia existe para
+// impedir.
+func (a *Ajustes) PonerHuellaDelServidor(huella, correo string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.p.CorreoDelServidor != correo {
+		return errors.New("El correo del servidor ha cambiado mientras mirabas la huella; vuelve a pedirla")
+	}
+	a.p.HuellaDelServidor = huella
 	return a.guardar()
 }
 

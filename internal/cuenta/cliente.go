@@ -307,32 +307,46 @@ func (c *Cliente) BajarDe(ctx context.Context, token, ref string, siNoCoincide i
 // bajarDeRuta es lo común a bajar cualquier bóveda: la propia, la de un proyecto o
 // la de otra cuenta a la que tengo acceso. Lo único que cambia es la dirección.
 func (c *Cliente) bajarDeRuta(ctx context.Context, ruta, token string, siNoCoincide int64) (datos []byte, version int64, cambio bool, err error) {
+	datos, version, cambio, _, err = c.bajarDeRutaConPermiso(ctx, ruta, token, siNoCoincide)
+	return datos, version, cambio, err
+}
+
+// bajarDeRutaConPermiso es lo mismo diciendo además **con qué permiso me deja el
+// servidor** (ADR 0058), que es lo que viaja en la cabecera `Esfinge-Permiso`.
+//
+// Solo lo dice en una bóveda compartida; en la propia y en un proyecto llega vacío,
+// porque ahí no hay permiso que mirar. Y **llega también con un 304**, que es el caso
+// normal: mandándolo solo con el cuerpo, un cambio de permiso sin cambio de contenido
+// no se sabría hasta que alguien editara algo, y eso puede no pasar nunca.
+func (c *Cliente) bajarDeRutaConPermiso(ctx context.Context, ruta, token string, siNoCoincide int64) (
+	datos []byte, version int64, cambio bool, permiso string, err error) {
 	cab := map[string]string{}
 	if siNoCoincide > 0 {
 		cab["If-None-Match"] = fmt.Sprintf("%q", strconv.FormatInt(siNoCoincide, 10))
 	}
 	resp, err := c.pedir(ctx, "GET", ruta, token, "", nil, cab)
 	if err != nil {
-		return nil, 0, false, err
+		return nil, 0, false, "", err
 	}
 	defer resp.Body.Close()
+	permiso = resp.Header.Get("Esfinge-Permiso")
 	switch resp.StatusCode {
 	case http.StatusNotModified:
-		return nil, siNoCoincide, false, nil
+		return nil, siNoCoincide, false, permiso, nil
 	case http.StatusNotFound:
-		return nil, 0, false, ErrSinBoveda
+		return nil, 0, false, permiso, ErrSinBoveda
 	case http.StatusOK:
 		version, ok := LeerEtiqueta(resp.Header.Get("ETag"))
 		if !ok {
-			return nil, 0, false, errors.New("El servidor no ha dicho qué versión de la bóveda es")
+			return nil, 0, false, permiso, errors.New("El servidor no ha dicho qué versión de la bóveda es")
 		}
 		datos, err := leerHasta(resp.Body, TamanoMaximo)
 		if err != nil {
-			return nil, 0, false, err
+			return nil, 0, false, permiso, err
 		}
-		return datos, version, true, nil
+		return datos, version, true, permiso, nil
 	default:
-		return nil, 0, false, errorDe(resp)
+		return nil, 0, false, permiso, errorDe(resp)
 	}
 }
 
@@ -391,6 +405,17 @@ func rutaDeCompartida(dueno, ref string) string {
 // 304, mismo todo: para la sincronización es una bóveda más.
 func (c *Cliente) BajarCompartida(ctx context.Context, token, dueno, ref string, siNoCoincide int64) ([]byte, int64, bool, error) {
 	return c.bajarDeRuta(ctx, rutaDeCompartida(dueno, ref), token, siNoCoincide)
+}
+
+// BajarCompartidaConPermiso es lo mismo diciendo **con qué permiso me deja ahora el
+// servidor** (ADR 0058).
+//
+// Lo pide la sincronización, y es lo único que hace que el permiso guardado en mi
+// bóveda no se quede viejo: hasta aquí solo viajaba dentro del sobre que se acepta en
+// el buzón, así que cambiárselo a alguien **no llegaba nunca a su equipo**.
+func (c *Cliente) BajarCompartidaConPermiso(ctx context.Context, token, dueno, ref string, siNoCoincide int64) (
+	[]byte, int64, bool, string, error) {
+	return c.bajarDeRutaConPermiso(ctx, rutaDeCompartida(dueno, ref), token, siNoCoincide)
 }
 
 // SubirACompartida es `SubirA` contra la bóveda de otra cuenta.

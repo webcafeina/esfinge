@@ -451,6 +451,12 @@ coste que la lista de sitios de la [ADR 0024](adr/0024-iconos-de-los-sitios.md),
 Lo que **no** sube es de quién es cada cosa a ojos de una persona: ni los nombres de los proyectos, ni los
 correos de los miembros. En la lista del servidor cada persona es un identificador al azar.
 
+**Y el permiso se puede cambiar después** (ADR 0058), sin quitar el acceso y volver a darlo: eso haría que
+esa persona borrara su copia y tuviera que bajarse la bóveda entera otra vez. Quien recibe se entera **por su
+sincronización**, porque desde la 0058 el servidor dice el permiso al bajar; hasta entonces solo viajaba
+dentro del sobre que se acepta en el buzón, así que cambiárselo no le llegaba nunca y su Esfinge seguía
+diciendo lo de antes.
+
 **«Solo puede ver» lo impone el servidor, no el cifrado.** Quien recibe acceso de solo ver tiene la clave
 para descifrar esa bóveda, porque es la única forma de que pueda leerla: lo que le impide cambiarla para los
 demás es que el servidor rechaza su subida. Puede escribir en su copia, y esa copia no llega a nadie. Está
@@ -681,9 +687,15 @@ Cuatro cosas más que lo acotan:
 - **El alcance.** La llave del servidor abre **su** bóveda, que está vacía, y de ahí solo las bóvedas de
   proyecto que se le hayan marcado. **Nunca la bóveda personal de nadie**: el servidor es otra cuenta, no
   otro equipo tuyo.
-- **Solo ver.** El permiso que se le da es de lectura, y **lo impone el servidor**: el servidor tiene la
-  clave para abrir lo que se le compartió, lo que no puede es subir. Como consecuencia, lo que `ejecutar`
-  apunte en el registro **se queda en su copia y no llega al Mac**.
+- **Solo ver de fábrica, y escribir se da proyecto a proyecto** (ADR 0058). El permiso que se le da es de
+  lectura, y **lo impone el servidor**: tiene la clave para abrir lo que se le compartió, lo que no puede es
+  subir. Marcando el segundo interruptor de un proyecto pasa a poder **crear y cambiar** credenciales de esa
+  bóveda —y solo de ésa— **sin que nadie lo apruebe**, porque allí no hay ventana donde aprobar nada; queda
+  apuntado. Lo que eso cuesta, dicho entero: quien entre en ese equipo puede **cambiar lo que usan tus
+  clientes** y **dar acceso a otras cuentas**, que con solo ver no puede.
+  **Y la consecuencia del registro se da la vuelta**: con solo ver, lo que `ejecutar` apunta **se queda en su
+  copia y no llega al Mac**; con escritura, **sí llega**, porque el registro vive dentro del cuerpo cifrado y
+  el cuerpo sube.
 - **Una sola llave sin sellar en el disco**, y fuera de la carpeta de la bóveda: una copia de seguridad de
   esa carpeta no se lleva la llave dentro. La sesión de la cuenta y su clave de acceso van selladas con la
   clave de la bóveda, así que cuelgan de esa misma llave.
@@ -712,3 +724,6 @@ exactamente el trato del portapapeles de la ADR 0054, en una máquina sin pantal
   «solo ver» lo impone él y no el cifrado.
 - [ADR 0057](adr/0057-la-boveda-en-un-servidor.md) — Por qué en un servidor la llave está en el disco, qué
   deja de proteger con ello y qué se gana.
+- [ADR 0058](adr/0058-que-el-servidor-escriba.md) — Por qué un servidor puede escribir sin que nadie lo
+  apruebe, por qué la huella de su cuenta hay que compararla, y por qué el permiso tiene que llegar al equipo
+  de quien lo tiene.

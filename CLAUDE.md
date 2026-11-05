@@ -328,6 +328,33 @@ No se cambian sin preguntar.
   (regla de la 0044), y **quitarle el acceso borra su copia** (0053), que es lo único que llega a lo que ya
   está en el disco.
 
+- **Y desde la ADR 0058 el servidor también escribe** (2026-11-05). Lo pidió el cliente nada más ver la 0057
+  en marcha: un agente que rota un testigo en el VPS tiene que poder guardarlo, porque si no **se lo tiene que
+  dar a una persona por el chat** y el secreto acaba en la conversación de un modelo — el agujero no se tapa
+  prohibiendo escribir, se abre. La línea de comandos gana `crear` y `editar` (`internal/cli/escribir.go`),
+  **sin `borrar`** —en la ventana pide un sí y aquí no hay quién lo dé—, con el secreto **nunca como
+  argumento** —cuatro orígenes, y `--generar` es el mejor porque no la ve nadie, ni quien la pide— y `editar`
+  cambiando **solo lo que se nombre**, mirando si la bandera se usó y no su valor. **Escribir no se aprueba**,
+  y eso no contradice a la 0054: dentro de la bóveda **sí se deshace** —el anterior cae al historial— y lo
+  irreversible pasó en el proveedor, así que en una máquina sin pantalla **no guardarlo es más peligroso que
+  guardarlo**. En la ventana no cambia nada.
+  **Y dos cosas que eran agujeros y no mejoras.** La **huella del servidor** pasa a ser obligatoria: el
+  selector de la 0057 sellaba la clave de la bóveda hacia las llaves que el servidor de cuentas diera para esa
+  dirección **sin que nadie las hubiera comparado** —con una persona la pantalla te obliga, y el interruptor se
+  lo saltaba—. Se confirma **una vez por servidor** en Ajustes y **se compara en cada proyecto** —confirmar es
+  de la persona, comparar es de cada vez, o solo el primer proyecto estaría protegido—, se guarda **cuál es** y
+  no un sí/no (la lección exacta de la 0044) y Go la borra al cambiar el correo. Y hace falta `esfinge boveda
+  servidor huella`, porque sin eso la pantalla manda a comparar con algo que en el servidor no se puede leer.
+  **Y el permiso tiene que llegar al otro equipo**: el que guarda quien recibe solo se escribía al aceptar el
+  sobre del buzón, así que cambiárselo **no le llegaba nunca** — al subirlo, el servidor le aceptaba subidas y
+  su Esfinge seguía negándose a escribir; al bajarlo, creía que podía y se encontraba un 403 con lo escrito
+  atrapado en su equipo. Ahora el servidor **lo dice al bajar** (cabecera `Esfinge-Permiso`, **también en el
+  304**, que es el caso normal y el que importa en la extensión) y la sincronización lo apunta. El segundo
+  interruptor cambia el permiso **en el sitio** (`CambiarPermiso`): ni rota la clave, ni añade ranura, ni le
+  hace borrar su copia como haría quitar y volver a dar. **La extensión no lo escribe en la bóveda** —esa
+  lista la gestiona la ventana, es la misma línea por la que `anotarUso` no está allí— y se acuerda de lo que
+  el servidor dijo. **Esto no funciona entero hasta desplegar el Worker.**
+
 - **Y se publica siempre, sin esperar a ninguna tienda** (2026-10-02). Chrome no admite un paquete nuevo
   mientras revisa el anterior, así que publicar durante una revisión deja **ese** paquete fuera de la tienda
   hasta la publicación siguiente — no es un fallo, es un aviso del flujo. Se hace igual: **el cliente para la
@@ -658,6 +685,18 @@ ninguna prueba**, que es la tercera vez que ese paseo encuentra algo. **Al añad
 las descripciones de los
 vecinos** — y la regla de arriba, la de que lo que el núcleo aplica tiene que estar en el esquema, tiene
 gemela: **lo que el esquema promete tiene que existir**.
+
+**Y la misma regla una planta más arriba: al añadir una fuente de apuntes, la pantalla que los lee se queda
+diciendo lo de antes.** `Como` existe para que leer el registro después sirva —«solo sirve si dice que eso
+no lo aprobó nadie esa vez», dice su propio comentario— y se arregló en Go en la 2.58.0; **`loQueSeLeDio`
+nunca lo ha pintado**, así que en la ventana un apunte que no aprobó nadie se lee igual que uno aprobado de
+uno en uno. Mientras los apuntes venían todos del canal de los agentes eso era una pérdida; desde que los
+escribe también la línea de comandos **tapa una distinción que es la mitad del argumento de la 0058**. Con
+ello, dos cosas de la misma pantalla: el rótulo **«Lo que les has dado»** en Ajustes → Agentes ya no describe
+todos los apuntes, y el `switch` no tiene caso para `ejecutar` ni para `mover`, que salen con el verbo en
+crudo. **Lo vio el paseo a mano** mirando qué pinta la ventana con lo que la línea de comandos acababa de
+escribir, no una prueba; está en `deuda.md` y **el rótulo no se cambia sin preguntar**, porque esa pantalla la
+aprobó el cliente para los agentes.
 
 **Una palabra con dos sentidos le quitó al agente una funcionalidad entera.** `esfinge_bovedas` devolvía
 `abierta: false` para las bóvedas que no son la activa, y en Esfinge **«cerrada» quiere decir bloqueada** —la

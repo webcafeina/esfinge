@@ -463,6 +463,68 @@ func TestServidorSoloVerNoSube(t *testing.T) {
 	}
 }
 
+// **El servidor dice el permiso al bajar, y también cuando no manda cuerpo** (ADR
+// 0058). Es lo único que hace que el permiso guardado en el equipo de quien recibe no
+// se quede viejo: hasta aquí solo viajaba dentro del sobre que se acepta en el buzón,
+// así que cambiárselo a alguien no le llegaba nunca.
+//
+// **El 304 tiene su propia aserción y hace falta**, aunque el paseo de dos equipos no
+// pase por ahí: cambiar un permiso escribe en la bóveda del dueño, así que en el camino
+// normal la bajada siguiente trae cuerpo y es un 200. Donde el 304 importa es en la
+// extensión, que se acuerda del permiso en `storage.session` y lo pierde al cerrar el
+// navegador: si al volver no llegara con el 304, se quedaría con el de su lista, que es
+// el de cuando se aceptó el acceso.
+func TestServidorDiceElPermisoAlBajarIncluidoEn304(t *testing.T) {
+	c := servidor(t)
+	const ref = "c1c2c3d4e5f60718"
+	const titular = "3333444455556666"
+	doc := bovedaDePrueba("2123456789abcdef0123456789abcdef", "")
+
+	duena := alta(t, c, correoNuevo(t), "la maestra de la dueña", bytes.Repeat([]byte{9}, 32))
+	correoDeAna := correoNuevo(t)
+	ana := alta(t, c, correoDeAna, "la maestra de Ana", bytes.Repeat([]byte{8}, 32))
+
+	if _, err := c.SubirA(ctx, duena.Token, ref, 0, doc); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.DarAcceso(ctx, duena.Token, ref, correoDeAna, "ver", titular); err != nil {
+		t.Fatal(err)
+	}
+
+	_, version, _, permiso, err := c.BajarCompartidaConPermiso(ctx, ana.Token, duena.Cuenta, ref, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if permiso != "ver" {
+		t.Errorf("al bajar con cuerpo dice el permiso %q", permiso)
+	}
+
+	// Y ahora **sin cuerpo**: la misma versión, que es lo que contesta un 304.
+	_, _, cambio, permiso, err := c.BajarCompartidaConPermiso(ctx, ana.Token, duena.Cuenta, ref, version)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cambio {
+		t.Fatal("ha traído cuerpo pidiéndole la versión que ya se tenía")
+	}
+	if permiso != "ver" {
+		t.Errorf("con un 304 no dice el permiso: %q", permiso)
+	}
+
+	// Y al subírselo, lo dice sin que nadie acepte nada: **el mismo titular**, que es
+	// lo que hace que esto se cambie en el sitio y no quitando y volviendo a dar.
+	if err := c.DarAcceso(ctx, duena.Token, ref, correoDeAna, "editar", titular); err != nil {
+		t.Fatal(err)
+	}
+	_, _, _, permiso, err = c.BajarCompartidaConPermiso(ctx, ana.Token, duena.Cuenta, ref, version)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if permiso != "editar" {
+		t.Errorf("el permiso nuevo no ha llegado: %q", permiso)
+	}
+}
+
 // **Quitarle el acceso a alguien es un 403, no un 401**, y la diferencia no es de
 // estilo: el 401 cierra la bóveda de quien lo recibe porque su sesión se perdió, y
 // aquí su sesión está perfectamente. Confundirlos cerraría la bóveda personal de Ana

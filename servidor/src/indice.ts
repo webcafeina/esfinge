@@ -555,10 +555,22 @@ async function leerCompartida(p: Request, env: Env, dueno: string, ref: string):
 	const quien = await quienLlama(p, env);
 	const r = await objeto(env, dueno).leerComoMiembro(quien, ref, etiqueta(p.headers.get("If-None-Match")));
 	const d = abrir(r);
-	if (!d.datos) return new Response(null, { status: 304, headers: { ETag: `"${d.version}"` } });
+	// **El permiso va también en el 304**, y eso no es simetría: el 304 es el caso
+	// normal —se baja cada minuto y casi nunca ha cambiado nada—, así que mandándolo
+	// solo con el cuerpo, subirle el permiso a alguien no le llegaría hasta que alguien
+	// más editara algo. Puede no pasar nunca.
+	const conPermiso = { "Esfinge-Permiso": d.permiso };
+	if (!d.datos) {
+		return new Response(null, { status: 304, headers: { ETag: `"${d.version}"`, ...conPermiso } });
+	}
 	return new Response(d.datos, {
 		status: 200,
-		headers: { "Content-Type": "application/json", ETag: `"${d.version}"`, "Cache-Control": "no-store" },
+		headers: {
+			"Content-Type": "application/json",
+			ETag: `"${d.version}"`,
+			"Cache-Control": "no-store",
+			...conPermiso,
+		},
 	});
 }
 

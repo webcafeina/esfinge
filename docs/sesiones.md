@@ -5,6 +5,69 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-05 · La ADR 0058 entera, y el permiso que no llegaba
+
+- **Se cerró el paso 2** con sus pruebas: trece protecciones, las trece mutadas. Y el **paseo a mano** con el
+  binario, que encontró lo de siempre — la ventana recibe `como` en cada apunte del registro y **no lo pinta
+  nunca**, así que un apunte que no aprobó nadie se lee igual que uno aprobado a mano. A `deuda.md`; el
+  rótulo de esa pantalla no se toca sin preguntar.
+- **El paso 3, la huella del servidor, era un agujero y no una mejora**: el selector de la 0057 sellaba la
+  clave de la bóveda hacia las llaves que el servidor de cuentas diera para esa dirección **sin que nadie las
+  hubiera comparado**. Ahora es obligatoria, se confirma una vez en Ajustes y **se compara en cada proyecto**,
+  y se guarda **cuál es** y no un sí/no — la lección exacta de la ranura de Touch ID.
+- **Y al escribir la pantalla salió que la ceremonia no se podía hacer**: mandaba a comparar con algo que en
+  el servidor no se puede leer. De ahí `esfinge boveda servidor huella`. Es `ExportarLlaves` otra vez.
+- **Lo que paró el paso 4, y hubo que preguntar.** El plan daba por hecho que cambiar el permiso bastaba, y
+  el permiso que guarda quien recibe **vivía solo en su bóveda** y solo se escribía al aceptar el sobre del
+  buzón: el servidor no lo decía al bajar. Subírselo a alguien **no le llegaba nunca**, así que el interruptor
+  habría dicho una cosa y la máquina otra. El cliente eligió entre cuatro opciones: **que lo diga el
+  servidor**, en la cabecera `Esfinge-Permiso` y **también en el 304**.
+- **Eso tocó cuatro sitios**: el Worker, el cliente de Go, la ventana —que además pone al día lo que tiene en
+  la mano, para que a quien esté dentro le cambie sin salir y entrar— y el espejo de TypeScript, donde **no se
+  escribe en la bóveda** porque esa lista la gestiona la ventana.
+- **Y un fallo de mi propio cableado, visto al ir a escribir el paseo**: la pasada aprende el permiso después
+  de leer la fila, así que la primera orden tras un cambio se habría negado y la segunda habría funcionado.
+  La fila se vuelve a leer después de la pasada.
+- **Verificado**: dieciocho protecciones mutadas, el paseo de dos equipos con su paso 9 nuevo —la ventana
+  sube el permiso, el servidor **se entera solo** y escribe—, y el paseo a mano con el binario.
+- **Queda abierto, y es lo primero**: **desplegar el Worker** (lo lanza el cliente), **verlo en una pantalla**
+  —nada de la ventana se ha visto con ojos— y lo del registro.
+- **Y una que me corrigió el propio repositorio**: dije que el selector del servidor no tenía prueba de
+  interfaz y **sí la tenía**. Su última aserción era «y ahora sí sale» con el correo puesto, o sea justo lo
+  que la 0058 deja de ser verdad: la prueba habría cazado el cambio en `make e2e` —que no entra en
+  `make comprobar`—. Se ha puesto del revés y ahora vigila la puerta nueva. Lo que de verdad no tiene prueba
+  es el segundo interruptor, que para salir necesita una cuenta.
+  Después, la clave de contenido.
+
+---
+
+## 2026-11-05 (mañana) · Las pruebas de la 0058, y lo que encontró el paseo
+
+- **El paso 2 de la ADR 0058 queda cerrado**: `internal/cli/escribir_test.go`, trece protecciones y **las
+  trece mutadas una a una**. Lo que vigilan: que el secreto **no sea un argumento** —se comprueba pidiéndole
+  a cobra las banderas que no tienen que existir, porque una prueba de comportamiento pasaría igual con un
+  `--secreto` al lado—, que los tres orígenes de fuera guarden lo mismo y recorten el salto de la tubería,
+  que dos a la vez se nieguen, que `--generar` diga **cómo es** la contraseña y no cuál —buscándola en los
+  bytes de lo que se escribe—, que `editar` cambie **solo lo que se nombre** mirando `Changed` y no el valor,
+  que el anterior caiga al historial, que el apunte lleve `quien` y `llave-del-equipo`, que el tipo se
+  compruebe contra la lista con la llave de acceso negada aparte, y que `boveda` declare `-q`.
+- **Y la compartida de solo ver se ejercita sin servidor**: `unaCompartidaEnEsteEquipo` monta la personal, una
+  bóveda ajena con su ranura **sellada hacia la identidad de aquí** y su fila en la lista. Con `ver` los dos
+  verbos se niegan y dicen por qué, y **no entra nada**; con `editar` la misma bóveda sí se escribe, que es
+  lo que impide que la primera pase con la escritura rota del todo.
+- **El paseo a mano, con el binario de verdad** sobre una bóveda creada por la ventana de desarrollo
+  (`cmd/dev -config`). Todo lo que tenía que funcionar funcionó, y los seis casos que tenían que negarse se
+  negaron diciendo por qué.
+- **Lo que encontró el paseo, que ninguna prueba mira**: los apuntes llegan a la ventana con `como` entero y
+  **`loQueSeLeDio` no lo pinta**, así que en pantalla un apunte que no aprobó nadie se lee igual que uno
+  aprobado de uno en uno — justo lo que ese campo existe para evitar. Con ello, el rótulo «Lo que les has
+  dado» en Ajustes → Agentes, que ya no describe todos los apuntes, y dos verbos sin caso en el `switch`.
+  Anotado en `deuda.md`, severidad media. **El rótulo no se toca sin preguntar.**
+- **Queda abierto y es una decisión**: la clave de contenido (ADR propia, cara) o los pasos 3 a 6 de la 0058
+  (la ventana, baratos). Nada de esto está publicado: en el VPS corre la 2.58.7.
+
+---
+
 ## 2026-10-21 (tarde) · La 0058 a medias, y la rotación que no existía
 
 - **El hallazgo del día, leyendo el código para otra cosa**: **quitar el acceso a una bóveda de proyecto

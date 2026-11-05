@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/webcafeina/esfinge/internal/app"
 	"github.com/webcafeina/esfinge/internal/boveda"
@@ -250,7 +251,51 @@ func TestPaseoDeUnProyectoHastaUnServidor(t *testing.T) {
 	t.Logf("   el servidor contesta: %v", err)
 	b.Cerrar()
 
-	elPaso(t, 9, "y al quitarle el acceso, el servidor se va y borra su copia")
+	elPaso(t, 9, "la ventana le sube el permiso a editar, y el servidor se entera solo")
+	// **Esto es la ADR 0058 entera, y sin esto el interruptor sería mentira.** El
+	// permiso que guarda quien recibe solo se escribía al aceptar el sobre del buzón, así
+	// que subírselo no le llegaba nunca: el servidor empezaba a aceptarle subidas y su
+	// Esfinge seguía negándose a escribir. Ahora el servidor lo dice **al bajar**, y la
+	// pasada que va por delante de abrir lo recoge.
+	//
+	// Y se comprueba **sin volver a `recibir`**: es lo que distingue cambiar el permiso
+	// en el sitio de quitar y volver a dar.
+	ventana.usar(t)
+	quien, err = a.QuienTiene()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(quien) != 1 {
+		t.Fatalf("quién tiene acceso dice %+v", quien)
+	}
+	if err := a.CambiarPermiso(quien[0].Titular, "editar"); err != nil {
+		t.Fatalf("no ha podido subirle el permiso: %v", err)
+	}
+	if err := a.SincronizarAhora(); err != nil {
+		t.Fatal(err)
+	}
+
+	servidor.usar(t)
+	// **Por una variable de entorno y no por la línea**: lo que se escribe en la línea
+	// queda en el historial del shell y lo lee un `ps`, y eso vale también aquí.
+	t.Setenv("EL_TESTIGO_NUEVO", "el-testigo-que-ha-rotado-el-agente")
+	// Y ahora **sí** escribe, por el argv de verdad: la pasada de abrir trae el permiso
+	// nuevo, la fila se vuelve a leer con él y la guarda deja pasar.
+	if codigo := conArgv(t, "esfinge", "boveda", "crear",
+		"--compartida", "Zeri's",
+		"--titulo", "Lo que el servidor ya puede guardar",
+		"--secreto-env", "EL_TESTIGO_NUEVO",
+		"--quien", "Serafin",
+		"-q"); codigo != SalidaOK {
+		t.Fatal("con permiso de editar, el servidor no ha podido crear una entrada")
+	}
+
+	// Y lo escrito **sube**, que es la otra mitad: guardarlo aquí y que no salga de este
+	// equipo sería lo mismo que no poder escribir, con peor cara.
+	ventana.usar(t)
+	esperarEnLaVentana(t, a, "Lo que el servidor ya puede guardar")
+
+	elPaso(t, 10, "y al quitarle el acceso, el servidor se va y borra su copia")
 	// **Esto es lo único que llega al disco del servidor.** El 403 corta lo que baja
 	// y la rotación de la clave que la ADR 0052 prometía **no existe** (ver su
 	// apartado del 2026-10-21), así que sin este borrado la bóveda de un cliente con
@@ -322,6 +367,27 @@ func laCompartidaDelServidor(t *testing.T, o *opciones, ob *opcionesBoveda, nomb
 	return comp
 }
 
+// esperarEnLaVentana pide pasadas hasta que ese título aparece.
+//
+// **Se espera al contenido y no a que la sincronización diga «al día»**: `alDia` se
+// conforma con una pasada anterior, y la de aquí puede haber terminado antes de que el
+// servidor subiera. Esperar al estado era decir que no llega nada cuando lo que pasa es
+// que todavía no se ha vuelto a mirar.
+func esperarEnLaVentana(t *testing.T, a *app.App, titulo string) {
+	t.Helper()
+	for i := 0; i < 30; i++ {
+		if err := a.SincronizarAhora(); err == nil {
+			for _, e := range buscarEnLaVentana(t, a, titulo) {
+				if e.Titulo == titulo {
+					return
+				}
+			}
+		}
+		time.Sleep(300 * time.Millisecond)
+	}
+	t.Fatalf("«%s» no ha llegado a la ventana", titulo)
+}
+
 // buscarEnLaVentana saca la entrada entera del proyecto abierto en la ventana.
 func buscarEnLaVentana(t *testing.T, a *app.App, q string) []boveda.Entrada {
 	t.Helper()
@@ -365,7 +431,7 @@ func intentarSubirLaCompartida(t *testing.T, o *opciones, ob *opcionesBoveda,
 	defer cancelar()
 	return s.conLaSesion(ctx, func(token string) error {
 		sin := &sincro.Sincronizador{
-			Servidor: laCompartidaRemota{c: s.c, dueno: comp.Dueno, ref: comp.Ref},
+			Servidor: &laCompartidaRemota{c: s.c, dueno: comp.Dueno, ref: comp.Ref},
 			Boveda:   b,
 			Memoria:  sincro.JuntoALaBoveda{Ruta: b.Ruta()},
 			Token:    func() string { return token },

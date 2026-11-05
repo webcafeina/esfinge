@@ -174,6 +174,24 @@ var loQuePuedeCruzarElPuente = []string{
 	"AbrirCompartida", "BajarCompartida",
 	"DarAcceso", "QuitarAcceso", "QuienTiene", "AceptarAcceso",
 	"Compartidas", "DejarDeVerCompartida",
+
+	// El servidor de esta casa (ADR 0057 y 0058). Los dos se han pensado y no se han
+	// añadido de paso, que es lo que pide la línea de arriba:
+	//
+	//   - `DarAccesoAlServidor` **sella una ranura**, que es justo lo que esa nota dice
+	//     que hay que mirar dos veces. Entra porque es **estrictamente más estrecho**
+	//     que el `DarAcceso` que ya estaba: no recibe a quién —sale de las preferencias
+	//     de este equipo— ni con qué permiso —siempre «ver»—, y además **se niega si la
+	//     huella no es la confirmada**. La ventana no puede apuntarlo a donde quiera.
+	//   - `ConfirmarHuellaDelServidor` no toca ninguna bóveda: apunta en las
+	//     preferencias una huella que Go comprueba antes de creerse.
+	"DarAccesoAlServidor", "ConfirmarHuellaDelServidor",
+
+	// Y cambiarle el permiso a quien ya tiene acceso (ADR 0058). Entra con el mismo
+	// razonamiento que `DarAcceso`, del que es **estrictamente más estrecho**: no sella
+	// ninguna ranura ni acuña titular, solo mueve entre «ver» y «editar» a alguien que
+	// ya estaba, y el correo lo saca de lo guardado y no de quien llama.
+	"CambiarPermiso",
 }
 
 func TestLoQueCruzaElPuenteEstaEnLaLista(t *testing.T) {

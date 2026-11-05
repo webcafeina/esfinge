@@ -22,7 +22,21 @@ export interface Memoria {
   guardar(r: Recuerdo, base: string): Promise<void>;
 }
 
-export type Resultado = { version: number; bajo: boolean; subio: boolean; fusion?: Fusion };
+export type Resultado = {
+  version: number;
+  bajo: boolean;
+  subio: boolean;
+  fusion?: Fusion;
+  /**
+   * Con qué permiso me deja el servidor, cuando la bóveda es de otra persona y el
+   * servidor lo ha dicho (ADR 0058). Vacío en la personal y en un proyecto, donde no
+   * hay permiso que mirar.
+   *
+   * Sale de aquí y no se aplica aquí: `pasada` no sabe de bóvedas personales ni de
+   * listas de compartidas, que es donde vive lo que hay que poner al día.
+   */
+  permiso?: string;
+};
 
 export const ERR_RETROCESO =
   "El servidor tiene una bóveda más vieja que la que ya se vio aquí; no se sincroniza hasta mirarlo";
@@ -53,8 +67,16 @@ export async function pasada(
    */
   dueno = "",
 ): Promise<Resultado> {
-  const bajar = (siNoCoincide: number) =>
-    dueno === "" ? cliente.bajar(token, siNoCoincide, ref) : cliente.bajarCompartida(token, dueno, ref, siNoCoincide);
+  // **Lo que diga el servidor del permiso se apunta de paso** (ADR 0058), aunque la
+  // bajada no traiga cuerpo: ahí está el único camino por el que un permiso cambiado
+  // llega al equipo de quien lo tiene.
+  let permiso = "";
+  const bajar = async (siNoCoincide: number) => {
+    if (dueno === "") return cliente.bajar(token, siNoCoincide, ref);
+    const r = await cliente.bajarCompartida(token, dueno, ref, siNoCoincide);
+    if (r.permiso !== "") permiso = r.permiso;
+    return r.cuerpo;
+  };
   const subir = (siCoincide: number, datos: string) =>
     dueno === ""
       ? cliente.subir(token, siCoincide, datos, ref)
@@ -72,6 +94,9 @@ export async function pasada(
       if (!sinBoveda(e)) throw e;
       vacia = true;
     }
+    // **En un solo sitio y no en cada salida**: de aquí abajo hay tres `return r`, y
+    // acordarse en los tres es como se queda uno sin él.
+    r.permiso = permiso;
     if (vacia) {
       if (recuerdo.version > 0) throw new Error(`${ERR_RETROCESO} (aquí se vio la ${recuerdo.version} y allí no hay ninguna)`);
       sobre = 0; // la cuenta está vacía: lo de aquí es la primera versión

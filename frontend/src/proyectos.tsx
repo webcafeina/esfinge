@@ -842,6 +842,11 @@ function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo:
   // El correo del servidor de esta casa, si hay uno (ADR 0057). Vacío, **no se
   // menciona nada**: un interruptor para un servidor que no existe es ruido.
   const [servidor, setServidor] = useState("");
+  // Y si su huella **ya se comparó** (ADR 0058). Sin ella el interruptor no sale, y no
+  // es por prudencia: ponerlo sería ofrecer sellar la clave de esta bóveda hacia unas
+  // llaves que nadie ha visto, que es justo lo que la huella existe para impedir. Lo
+  // dice Go en las preferencias, y Go la borra en cuanto el correo cambia.
+  const [huellaDelServidor, setHuellaDelServidor] = useState("");
 
   const recargar = useCallback(async () => {
     try {
@@ -863,7 +868,10 @@ function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo:
     if (!activo) return;
     esfinge
       .verPreferencias()
-      .then((p) => setServidor(p.correoDelServidor ?? ""))
+      .then((p) => {
+        setServidor(p.correoDelServidor ?? "");
+        setHuellaDelServidor(p.huellaDelServidor ?? "");
+      })
       .catch(() => {});
   }, [activo]);
 
@@ -896,10 +904,33 @@ function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo:
   // interruptor está puesto, y lo que hace falta para quitarlo.
   const elDelServidor = servidor === "" ? undefined : gente?.find((t) => t.correo === servidor);
 
+  // **El segundo interruptor, y solo si el primero está puesto** (ADR 0058): que el
+  // servidor pueda además escribir en esta bóveda.
+  //
+  // Por debajo no quita y vuelve a dar: `cambiarPermiso` lo mueve en el sitio, que es
+  // lo que evita que al marcarlo el servidor pierda su copia y tenga que volver a
+  // bajarse la bóveda entera — en medio de un despliegue, eso es el despliegue caído.
+  async function alternarLaEscritura(poner: boolean) {
+    if (!elDelServidor) return;
+    setTrabajando(true);
+    try {
+      await esfinge.cambiarPermiso(elDelServidor.titular, poner ? "editar" : "ver");
+      await recargar();
+    } catch (e) {
+      alFallar(mensaje(e));
+    } finally {
+      setTrabajando(false);
+    }
+  }
+
   async function alternarElServidor(poner: boolean) {
     setTrabajando(true);
     try {
-      if (poner) await esfinge.darAcceso(servidor, "ver");
+      // **No es `darAcceso` con su correo**: `darAccesoAlServidor` compara la huella
+      // con la que se confirmó antes de sellar nada, y se niega si no cuadra. Confirmar
+      // es una vez por servidor; comparar es cada vez, porque si no, confirmar una vez
+      // solo habría protegido al primer proyecto.
+      if (poner) await esfinge.darAccesoAlServidor();
       else if (elDelServidor) await esfinge.quitarAcceso(elDelServidor.titular);
       await recargar();
     } catch (e) {
@@ -917,7 +948,13 @@ function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo:
           que acordarse del correo, y **la pantalla dice lo que cuesta** — un servidor
           tiene su llave en un fichero, y eso no se parece a dar acceso a una persona.
           Sale solo si hay un servidor puesto en Ajustes. */}
-      {servidor !== "" && gente !== null && (
+      {servidor !== "" && huellaDelServidor === "" && gente !== null && (
+        <p className="aviso">
+          Tienes un servidor puesto —<strong>{servidor}</strong>— y <strong>su huella sin comparar</strong>.
+          Compárala en Ajustes → Cuenta y aquí aparecerá el interruptor para marcarle esta bóveda.
+        </p>
+      )}
+      {servidor !== "" && huellaDelServidor !== "" && gente !== null && (
         <>
           <label className="fila-ajuste">
             <input
@@ -945,6 +982,41 @@ function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo:
               </>
             )}
           </p>
+
+          {/* **Y el segundo, debajo y solo si el primero está puesto** (ADR 0058).
+              Debajo porque es lo que es: una cosa más sobre un acceso que ya existe, no
+              otra forma de darlo. Lo pidió así el cliente. */}
+          {elDelServidor !== undefined && (
+            <>
+              <label className="fila-ajuste sangrada">
+                <input
+                  type="checkbox"
+                  checked={elDelServidor.permiso === "editar"}
+                  disabled={trabajando}
+                  onChange={(e) => void alternarLaEscritura(e.target.checked)}
+                />
+                <span>y puede escribir en ella</span>
+              </label>
+              <p className={elDelServidor.permiso === "editar" ? "aviso" : "nota"}>
+                {elDelServidor.permiso === "editar" ? (
+                  <>
+                    Lo que corra en <strong>{servidor}</strong> puede <strong>crear y cambiar</strong> las
+                    credenciales de esta bóveda <strong>sin que nadie lo apruebe</strong>; queda apuntado
+                    en el registro. A cambio, un agente que rote un testigo puede guardarlo él en vez de
+                    tener que dárselo a alguien por un chat. Lo que cuesta: quien entre en ese equipo
+                    puede <strong>cambiar lo que usan tus clientes</strong> y <strong>dar acceso a otras
+                    cuentas</strong>, que con solo ver no puede.
+                  </>
+                ) : (
+                  <>
+                    Hoy solo lee. Marcándolo podrá <strong>guardar y rotar</strong> contraseñas de esta
+                    bóveda por su cuenta, sin que nadie lo apruebe — que es lo que hace falta para que un
+                    agente que cambia un testigo no tenga que dárselo a una persona por un chat.
+                  </>
+                )}
+              </p>
+            </>
+          )}
         </>
       )}
 

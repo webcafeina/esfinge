@@ -1292,6 +1292,14 @@ p {
   cursor: pointer;
 }
 
+/* Una casilla que cuelga de la de arriba: el segundo interruptor del servidor, que
+ * es una cosa más sobre un acceso que ya existe y no otra forma de darlo (ADR 0058).
+ * La sangría es lo que lo dice sin una palabra; sin ella, las dos se leen como dos
+ * decisiones del mismo nivel. */
+.fila-ajuste.sangrada {
+  margin-left: var(--espacio-5);
+}
+
 /* La casilla se dibuja entera, y **no es por gusto**: la del navegador se pinta
  * con el color de acento del sistema —azul— y no hay forma de que respete el
  * nuestro. Con «accent-color» tampoco valdría: el navegador dibuja el tic en
