@@ -41,8 +41,15 @@ tampoco está allí—: se acuerda de lo que el servidor dijo, en `storage.sessi
 
 ### Lo que NO está comprobado, y es lo que falta
 
-1. **El Worker no está desplegado.** Hasta que se lance `servidor.yml`, el permiso no se propaga y el
-   segundo interruptor cambia el permiso en el servidor sin que el VPS se entere. **Lo lanza el cliente.**
+1. **El Worker de pruebas está desplegado** (2026-11-05, ejecución 42028933251, y `/v1/salud` contesta).
+   **El de producción no**: el despliegue a producción lo tiene que lanzar el cliente —
+   `gh workflow run servidor.yml -f desplegar=produccion`—. Hasta entonces el permiso **no se propaga** y el
+   segundo interruptor cambia el permiso en el servidor sin que el VPS se entere.
+   Y lo que **no se ha podido comprobar contra el desplegado**, que es distinto de que no funcione: el buzón
+   del Worker de pruebas está detrás de Cloudflare Access, así que `TestServidorDiceElPermisoAlBajarIncluidoEn304`
+   no puede leer el código del alta desde aquí —dice «no ha llegado nada a…»— y desde esta máquina no hay
+   credenciales de Cloudflare para sacarlo de su D1. Esa prueba **sí pasa contra `workerd`**, que es el mismo
+   código. Para cerrarlo hace falta el navegador del cliente, que es quien pasa esa puerta.
 2. **Nada de la ventana se ha visto con ojos.** Está escrito, con `tsc` en verde y con `make e2e` detrás:
    la prueba del selector de la 0057 **ya existía** —afirmaba «y ahora sí sale» con el correo puesto, que es
    justo lo que la 0058 deja de ser verdad— y se ha puesto del revés, así que ahora vigila la puerta nueva.
