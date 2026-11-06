@@ -1645,6 +1645,18 @@ lectura pedida antes de un cambio puede llegar después**. Con un interruptor se
 desplegable, porque el siguiente clic parte del estado viejo y deshace lo que se acababa de hacer. El
 remedio es el mismo, `cambiosHechos`, y hay que ponerlo desde el principio.
 
+**Y un campo sin botón de guardar, con una prueba que hace `blur()` a mano, pasan en verde los dos.** El
+correo del servidor (ADR 0058) se guarda al salir del foco y no tiene botón, así que escribirlo y **pulsar
+Intro no guardaba nada** — y el campo se quedaba con el texto puesto, o sea con la apariencia de haberlo
+hecho. Lo único que lo delataba era que debajo **no apareciera el bloque de la huella**, que es justo lo que
+nadie sabe todavía que hay que mirar. Lo vio el cliente al montar su servidor por primera vez. Lo tapaba su
+propia prueba, que hacía `fill()` y un **`blur()` a mano**: el gesto que no existe fuera de una prueba. Ahora
+teclea letra a letra, pulsa Intro y **comprueba en Go**, porque mirar la pantalla no distingue «guardado» de
+«escrito y perdido» — enseña lo mismo en los dos casos. Dos reglas: **si una prueba provoca el guardado con
+un gesto que una persona no hace, ese guardado no lo prueba nadie** —es la del testigo puesto a mano otra
+vez—, y el arreglo va **donde ya está la regla** (Intro suelta el foco) y no en un segundo camino que
+guarde, que se desalinearía solo.
+
 **Una fecha del formato se escribe con `rfc3339(ahora())`, nunca con `toISOString()`.** El formato tiene
 resolución de un segundo y el núcleo de TypeScript tiene su `rfc3339()` y su reloj parable desde el principio;
 aun así `confirmada` se escribió con `new Date().toISOString()` y entró **con milisegundos**, o sea algo que Go
