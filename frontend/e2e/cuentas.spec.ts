@@ -649,8 +649,29 @@ test("el servidor de un proyecto: la huella, el acceso y que además escriba", a
   await page.getByRole("tab", { name: "Cuenta" }).click();
   const campo = page.locator("#correo-del-servidor");
   await expect(campo).toBeVisible({ timeout: 20_000 });
-  await campo.fill(delServidor);
-  await campo.blur();
+  // **Se teclea y se pulsa Intro, que es lo que hace una persona.** Esto era `fill` y
+  // un `blur()` a mano —el gesto que no existe fuera de una prueba—, y con él pasaba
+  // en verde mientras **Intro no guardaba nada**: el campo se quedaba con el correo
+  // escrito y en Go no había ninguno, o sea la apariencia de haberlo hecho. Aquí no hay
+  // botón de guardar, así que Intro es justo lo que alguien pulsa. Lo vio el cliente al
+  // poner su servidor por primera vez (2026-11-06).
+  await campo.click();
+  await campo.pressSequentially(delServidor);
+  await campo.press("Enter");
+  // **Y se comprueba en Go, no en la pantalla**, que es lo que el fallo enseñó: la
+  // pantalla seguía enseñando lo escrito, así que mirarla no distingue «guardado» de
+  // «escrito y perdido».
+  await expect
+    .poll(
+      async () =>
+        (
+          (await (await request.post(`${B}/api/VerPreferencias`, { data: [] })).json()) as {
+            correoDelServidor?: string;
+          }
+        ).correoDelServidor ?? "",
+      { timeout: 20_000, message: "el correo del servidor no llegó a Go al pulsar Intro" },
+    )
+    .toEqual(delServidor);
   await accion(page, "Ver su huella").click();
   const laHuella = page.locator(".la-huella-del-servidor .huella");
   await expect(laHuella).toBeVisible({ timeout: 20_000 });

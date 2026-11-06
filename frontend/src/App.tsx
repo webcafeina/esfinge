@@ -1920,6 +1920,16 @@ function Ajustes({
           </header>
           <div>
             <label htmlFor="correo-del-servidor">Cuenta de Esfinge de tu servidor</label>
+            {/* **Intro guarda, porque es lo que hace una persona** (2026-11-06).
+                Esto solo guardaba al salir del campo, y aquí no hay botón: quien
+                escribía el correo y pulsaba Intro **no guardaba nada y el campo se
+                quedaba con el texto puesto**, o sea con la apariencia de haberlo hecho.
+                Lo único que lo delataba era que debajo no aparecía el bloque de la
+                huella, que es lo que hay que mirar y nadie sabe todavía. Lo vio el
+                cliente al ponerlo por primera vez.
+                **Intro suelta el foco en vez de guardar él**: la regla de cuándo se
+                guarda vive en un solo sitio, y dos caminos que guardan se desalinean
+                solos —es lo que este proyecto ya ha pagado tres veces—. */}
             <input
               id="correo-del-servidor"
               type="email"
@@ -1928,6 +1938,9 @@ function Ajustes({
               disabled={cargando}
               value={correoDelServidor ?? prefs?.correoDelServidor ?? ""}
               onChange={(e) => setCorreoDelServidor(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
               onBlur={() => {
                 const v = (correoDelServidor ?? "").trim();
                 if (correoDelServidor !== null && v !== (prefs?.correoDelServidor ?? "")) {
