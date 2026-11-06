@@ -5,6 +5,41 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-06 (tarde) · La 2.59.1, y un campo que no guardaba
+
+- **Se cerró la trampa de la bandera vacía** (`ac46751`): `--compartida ""` era «no se ha dicho», así que
+  Esfinge trabajaba con **otra bóveda sin avisar**. Se marca **donde se declara** —una anotación de cobra, no
+  una lista en otro fichero—, y la frontera no es el tipo de bandera sino para qué sirve: las que eligen
+  dónde o de dónde no admiten vacío, las de contenido sí, porque `editar --notas ""` es cómo se vacían las
+  notas. Y un cinturón: cobra ejecuta **un solo** `PersistentPreRunE`, el más cercano al verbo, así que hay
+  una prueba que recorre el árbol y se pone roja si algún hijo define el suyo. Cuatro mutaciones, cuatro
+  rojas. De paso salió que `correr`, el ayudante de las pruebas de escribir, llama a `cmd.RunE` **a mano** y
+  se salta el `PersistentPreRunE`: las nuevas van por `laRaiz` y `Execute`, como lo recorre el programa.
+- **Se iba a empezar el paso 2 y lo paró el cliente a la primera pantalla**: «el campo está vacío, pero si lo
+  pongo no hay botón de guardado y no se queda». Era verdad y era un fallo mudo — el peor de los dos de hoy.
+- **Se reprodujo con un navegador de verdad antes de tocar nada**, con tres gestos y mirando lo que había en
+  Go: con **Intro**, `""` y el campo enseñando el correo; pulsando **fuera**, guardado; **cambiando de
+  pestaña**, guardado. O sea: Intro no guardaba y la pantalla no lo decía. El arreglo es que **Intro suelta
+  el foco**, no que guarde él: así la regla de cuándo se guarda sigue en un sitio.
+- **Lo que de verdad enseñó el fallo está en la prueba.** La de la 0058 hacía `fill()` y un `blur()` **a
+  mano** —el gesto que no existe fuera de una prueba— y pasaba en verde con esto dentro. Ahora teclea letra a
+  letra, pulsa Intro y **comprueba en Go**: mirar la pantalla no distingue «guardado» de «escrito y perdido».
+  Mutada quitando el `onKeyDown`: roja, y lo dice con sus palabras. Está en `CLAUDE.md`.
+- **Se publicó la 2.59.1** con los dos arreglos, sin nada de `navegador/` —así que no hay paquete nuevo en la
+  tienda de Chrome y no había revisión que cancelar—. Y **se actualizó el VPS**: SHA256 comprobado contra
+  `SHA256SUMS`, el anterior guardado al lado, y la bandera vacía comprobada a mano allí (código 2).
+- **Antes de darle permiso de escritura a nada se miró qué tenía pendiente de subir** la copia de «Zeri's
+  Coffee» del VPS, que era 384 bytes más grande que la del servidor. Se abrieron las dos y se comparó: **un
+  solo apunte del registro**, el `ejecutar` del 21 de octubre, y las dos entradas idénticas. Al marcar el
+  interruptor, eso es lo primero que subirá — la 0058 cumpliéndose.
+- **Una corrección**: se regeneró la tabla de descargas del README a mano y **eso lo hace el flujo de
+  publicar**. Commit duplicado tirado y apuntado en `CLAUDE.md`.
+- **Queda abierto**: el paso 2 en la ventana, aplazado por el cliente al **lunes 2026-11-09** —la ceremonia
+  está escrita en [`estado.md`](estado.md), con la huella y la advertencia de no tocar el primer
+  interruptor— y luego el `.env` de Tempero, pendiente desde el 21 de octubre.
+
+---
+
 ## 2026-11-06 · Publicada la 2.59.0, y la prueba que faltaba
 
 - **Se publicó la 2.59.0.** Al mirar qué hacía falta para que el VPS escribiera salió lo que nadie había

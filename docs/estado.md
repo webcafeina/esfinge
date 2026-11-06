@@ -2,6 +2,50 @@
 
 Última actualización: **2026-11-06**
 
+## Publicada la 2.59.1 (2026-11-06, tarde)
+
+Dos fallos mudos, los dos en el camino de montar un servidor, y los dos los vio **el cliente usándolo**:
+
+- **Intro no guardaba el correo del servidor** en Ajustes → Cuenta. Ese campo no tiene botón —guarda al
+  salir del foco—, así que escribirlo y pulsar Intro **no guardaba nada y el campo se quedaba con el texto
+  puesto**, o sea con la apariencia de haberlo hecho. Lo único que lo delataba era que debajo **no
+  apareciera el bloque de la huella**, que es justo lo que nadie sabe todavía que hay que mirar. Lo tapaba
+  su propia prueba, que hacía `fill()` y un `blur()` a mano: el gesto que no existe fuera de una prueba.
+  Ahora teclea letra a letra, pulsa Intro y **comprueba en Go**, porque la pantalla enseña lo mismo esté
+  guardado o perdido. Mutada: roja.
+- **`--compartida ""`** ya no pasa por «no se ha dicho» (`ac46751`, de por la mañana).
+
+**El VPS está en la 2.59.1**: bajado, SHA256 comprobado contra `SHA256SUMS`, el anterior guardado como
+`~/.local/bin/esfinge-2.59.0-20261106`, y la bandera vacía comprobada a mano allí —error de uso, código 2—.
+El Mac también lo actualizó el cliente.
+
+Y una de método, apuntada en `CLAUDE.md`: **la tabla de descargas del README la reescribe el propio flujo de
+publicar**. Hacerla a mano después deja un commit que no cambia nada y un empujón rechazado.
+
+### Dónde se retoma: el paso 2, el lunes 2026-11-09
+
+Lo aplazó el cliente —era viernes por la tarde—. **No falta nada de código**: lo que falta es la ceremonia
+en la ventana, que es suya.
+
+1. **Ajustes → Cuenta → «Tu servidor»**: poner `info+servidor@webcafeina.com`. Con la 2.59.1, Intro ya
+   vale. La señal de que ha entrado es que debajo sale «Falta comparar su huella».
+2. **«Ver su huella»** y compararla con la que dice este equipo —`esfinge boveda servidor huella`—, que el
+   2026-11-06 era `KWW4-JYHV-EE10-1DB9-CE2T-W4DH-GYQ7`. Si coincide: «Coincide, es mi servidor».
+3. **Abrir el proyecto de Zeri's Coffee** y, en «Quién tiene acceso…», marcar **solo el segundo**
+   interruptor. El primero está puesto desde el 21 de octubre y **desmarcarlo sería quitar el acceso**: el
+   servidor perdería su copia y habría que volver a `recibir`.
+4. Desde el VPS: que `listar --compartida "Zeri's Coffee"` **deje de avisar**, y entonces `crear` y
+   `editar` con `--generar` sobre una entrada de prueba —`prueba-escritura-vps.ejemplo.com`—, para ver en
+   la ventana que el secreto anterior **cae al historial**. La entrada **la borra el cliente desde la
+   ventana**: la línea de comandos no tiene `borrar`, a propósito.
+
+**Y un dato medido que conviene no volver a averiguar**: la copia local de «Zeri's Coffee» en el VPS tiene
+**un solo cambio pendiente de subir**, y no es una entrada: es **un apunte del registro**, el `ejecutar` del
+2026-10-21T11:40:50Z de la prueba de la 0057. Las dos entradas son idénticas a las del servidor, misma
+revisión y misma fecha de cambio. Así que al marcar el interruptor **lo primero que subirá es ese apunte**,
+y eso es la 0058 cumpliéndose delante: con solo ver, el registro de lo que el servidor usa se queda
+atrapado en el servidor. Se comprobó **abriendo las dos copias y comparándolas**, no deduciéndolo.
+
 ## Publicada la 2.59.0 (2026-11-06)
 
 **La 0057 y la 0058 estaban las dos sin etiquetar**, detrás de la `v2.58.7`: el binario que se montó en el
@@ -15,7 +59,8 @@ decidido.
 
 ### Lo que falta para que el VPS escriba, por orden
 
-1. **Actualizar el binario del VPS** a la 2.59.0.
+1. ~~**Actualizar el binario del VPS** a la 2.59.0.~~ Hecho el 2026-11-06, y a la **2.59.1**,
+   que es la que lleva el arreglo de `--compartida ""`.
 2. **Marcar el segundo interruptor** del proyecto en el Mac. Sin eso, el binario nuevo tendría el verbo y no
    el permiso, y el servidor le devolvería un 403.
 3. **Llevar un `.env` de verdad** —`Tempero`— a su bóveda y cambiar el despliegue. Es el trabajo para el que
