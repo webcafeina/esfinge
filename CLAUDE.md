@@ -60,6 +60,10 @@ desde aquí, porque no usa cgo.
 en los tres sistemas, arma el DMG, el instalador de Windows y el `.deb`, y cuelga todo de la
 publicación de GitHub. Los empaquetados viven en `empaquetado/`, uno por sistema.
 
+**Y la tabla de descargas del README la reescribe el propio flujo**, que la comprometa él
+(`github-actions[bot]`). `make descargas` existe para arreglarla a mano si hace falta, **no es un paso de
+publicar**: hacerlo después deja un commit que no cambia nada y un empujón rechazado.
+
 ## Cómo se prueba lo que no se puede ejecutar
 
 Aquí no hay entorno gráfico, así que la interfaz se ejercita en un navegador contra el mismo Go que
