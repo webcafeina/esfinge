@@ -1,6 +1,34 @@
 # Estado
 
-Última actualización: **2026-11-05**
+Última actualización: **2026-11-06**
+
+## Publicada la 2.59.0 (2026-11-06)
+
+**La 0057 y la 0058 estaban las dos sin etiquetar**, detrás de la `v2.58.7`: el binario que se montó en el
+VPS el 21 de octubre se compiló a mano y **sabe leer y no sabe escribir**. Ya hay versión
+([v2.59.0](https://github.com/webcafeina/esfinge/releases/tag/v2.59.0)), con los tres empaquetados, los seis
+binarios de la línea de comandos y los tres `.mcpb`.
+
+**La extensión entraba en esta publicación** —el núcleo aprendió a leer `Esfinge-Permiso`—, así que si Chrome
+estaba revisando el paquete anterior, éste se queda fuera hasta la siguiente. Se publicó igual, que es lo
+decidido.
+
+### Lo que falta para que el VPS escriba, por orden
+
+1. **Actualizar el binario del VPS** a la 2.59.0.
+2. **Marcar el segundo interruptor** del proyecto en el Mac. Sin eso, el binario nuevo tendría el verbo y no
+   el permiso, y el servidor le devolvería un 403.
+3. **Llevar un `.env` de verdad** —`Tempero`— a su bóveda y cambiar el despliegue. Es el trabajo para el que
+   existe todo esto y sigue pendiente desde el 21 de octubre.
+
+## La prueba del segundo interruptor (2026-11-06)
+
+En `cuentas.spec.ts`, que es lo único de la 0058 que se quedaba sin vigilar. Recorre la ceremonia entera y
+comprueba que el permiso **se mueve en el sitio**. Cuatro mutaciones, cuatro rojas. Está en `deuda.md`, con
+las dos lecciones que dejó: que **las aserciones de Go van antes que las de la pantalla** —si no, el síntoma
+se ve en la casilla y las que importan no llegan a ejecutarse— y que `EstadoDeCuenta.correo` lleva
+`omitempty`, así que **llega `undefined` y no `""`**, y compararlo con `""` manda por el camino contrario sin
+que nada dé error.
 
 ## La ADR 0058, entera (2026-11-05)
 

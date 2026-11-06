@@ -5,6 +5,37 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-06 · Publicada la 2.59.0, y la prueba que faltaba
+
+- **Se publicó la 2.59.0.** Al mirar qué hacía falta para que el VPS escribiera salió lo que nadie había
+  mirado: **la 0057 y la 0058 estaban las dos sin etiquetar**, detrás de la `v2.58.7`. O sea que el binario
+  montado en el VPS el 21 de octubre sabe leer y **no sabe escribir**, y la mitad que la 0058 vino a dar no
+  estaba en ninguna parte. La extensión entraba en esta publicación, así que se le dijo al cliente lo de la
+  revisión de Chrome; se publicó igual, que es lo decidido.
+- **Se escribió la prueba del segundo interruptor** (`cuentas.spec.ts`), que era lo único de la 0058 sin
+  vigilar: la ceremonia de la huella entera, que el primer interruptor sale solo con ella comparada, que el
+  segundo **no existe hasta que el acceso está dado**, que su texto nombra lo que se gana y lo que cuesta, y
+  que el permiso **se mueve en el sitio** —el mismo titular y uno solo—. **Cuatro mutaciones, cuatro rojas.**
+- **El «servidor» de esa prueba es una dirección sin cuenta, y es correcto**: el servidor de cuentas devuelve
+  llaves inventadas pero fijas para no delatar quién tiene cuenta, y `DarAcceso` escribe la ranura **antes**
+  de hablar con él. La pantalla ve lo mismo que vería con un VPS. Lo que no cubre está dicho en la prueba:
+  que el otro equipo se entere del permiso, que es el paseo en Go.
+- **Y dos cosas que costaron encontrarse, las dos del ayudante y no del código.** `bovedaDeB` decidía si el
+  equipo estaba estrenado **mirando la pantalla**, y la ventana monta con su barra lateral un instante antes
+  de que el estado la mande a la bienvenida: ejecutando la prueba sola —el caso que su comentario dice
+  cubrir— se iba a pulsar un botón que desaparecía, y esperaba los tres minutos del plazo. Y al pasar a
+  preguntarle a Go, `correo` lleva `omitempty`: **llega `undefined`, no `""`**, así que la comparación daba
+  falso y mandaba otra vez por el camino contrario, sin error en ninguna parte. Se decide por `modo`, que es
+  lo que mira la pantalla.
+- **Y una de la prueba sobre sí misma**: las aserciones de Go iban **después** de mirar la casilla, así que
+  cualquier forma de romper el cambio de permiso se veía antes en la casilla y las que dicen *en el sitio*
+  no llegaban a ejecutarse nunca. Puestas delante —y con el poll preguntando **si alguno puede editar ya**,
+  no por el primero de la lista— son ellas las que cantan. Lo dijo mutar, no leer.
+- **Queda abierto**: actualizar el binario del VPS a la 2.59.0, marcar el segundo interruptor en el Mac, y
+  llevar el `.env` de Tempero a su bóveda. Y el rótulo «Lo que les has dado», que es del cliente.
+
+---
+
 ## 2026-11-05 (tarde) · El registro, legible
 
 - **Se cerró lo que la 0058 dejó a medias en la pantalla.** `Como` llegaba entero a la ventana y

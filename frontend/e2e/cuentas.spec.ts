@@ -415,12 +415,29 @@ async function bovedaDeB(page: Page, request: APIRequestContext): Promise<string
   // arriba ya dejó este equipo en una cuenta; ejecutando solo ésta, el equipo se
   // estrena y hay que crearla. Mirar cuál de las dos cosas es sale más barato que
   // depender del orden de las pruebas.
-  // Y se espera a que haya algo que mirar: preguntar antes de que React pinte
-  // contesta «no» a las dos cosas y manda por el camino equivocado.
-  const bienvenida = page.getByRole("heading", { name: "Te damos la bienvenida a Esfinge" });
-  await expect(bienvenida.or(page.locator(".lateral")).first()).toBeVisible({ timeout: 30_000 });
+  //
+  // **Y se le pregunta a Go, no a la pantalla** (2026-11-06). Esto miraba si la
+  // bienvenida estaba visible, y ahí hay una carrera que solo se ve ejecutando esta
+  // prueba sola: la ventana **monta con su barra lateral** y solo al llegar el estado
+  // descubre que no hay bóveda ni modo elegido y la bienvenida la tapa entera. Así que
+  // la espera se cumplía por la barra, `isVisible()` contestaba «no» a la bienvenida y
+  // se iba por el camino de abrir la bóveda — a pulsar un botón que desaparecía un
+  // instante después, y a esperarlo los tres minutos del plazo. El estado de la cuenta
+  // no tiene esa carrera: es lo que Go sabe, no lo que ha dado tiempo a pintar.
+  //
+  // **Y se mira `modo`, que es lo que la pantalla mira**, no `correo`. Ese campo lleva
+  // `omitempty`, así que en un equipo recién estrenado **no viene** y en TypeScript es
+  // `undefined`: compararlo con `""` da falso y manda por el camino contrario sin que
+  // nada dé error. `modo` vale `""` hasta que alguien elige, y ése es exactamente el
+  // caso de la bienvenida.
+  const antes = (await (
+    await request.post(`${B}/api/EstadoDeCuenta`, { data: [] })
+  ).json()) as { modo: string };
 
-  if (await bienvenida.isVisible()) {
+  if (antes.modo === "") {
+    await expect(
+      page.getByRole("heading", { name: "Te damos la bienvenida a Esfinge" }),
+    ).toBeVisible({ timeout: 30_000 });
     const correo = `comparte-${Date.now()}@ejemplo.com`;
     await accion(page, "Crear una cuenta").click();
     await page.locator("#cuenta-correo").fill(correo);
@@ -436,7 +453,9 @@ async function bovedaDeB(page: Page, request: APIRequestContext): Promise<string
   } else {
     // La ventana arranca en Cifrar: a la bóveda se va por la barra lateral, y el
     // selector se acota ahí porque «Bóveda» también es el título de la pantalla.
-    await page.locator(".lateral").getByRole("button", { name: "Bóveda" }).click();
+    const aLaBoveda = page.locator(".lateral").getByRole("button", { name: "Bóveda" });
+    await expect(aLaBoveda).toBeVisible({ timeout: 30_000 });
+    await aLaBoveda.click();
     // Y otra vez: se espera a que la pantalla esté, y solo entonces se mira si
     // está cerrada. Preguntar antes contesta «no» y deja la bóveda sin abrir.
     const cerrada = page.locator("#boveda-llave");
@@ -561,4 +580,224 @@ test("compartir una copia y recogerla del buzón", async ({ page, request }) => 
   await expect(accion(page, "Te han mandado (1)")).toHaveCount(0);
   await page.getByRole("button", { name: "Sincronizar ahora" }).first().click();
   await expect(accion(page, "Te han mandado (1)")).toBeVisible({ timeout: 30_000 });
+});
+
+/**
+ * **El servidor de un proyecto: la huella, el acceso, y que además pueda escribir**
+ * (ADR 0057 y [0058](../../docs/adr/0058-que-el-servidor-escriba.md)).
+ *
+ * La otra mitad de «el selector del servidor» de `esfinge.spec.ts`. Aquella vigila la
+ * **puerta** —sin servidor puesto no se menciona, y con la huella sin comparar el
+ * interruptor no sale— y **ahí se para**, porque confirmar la huella exige preguntarle
+ * al servidor de cuentas quién es esa dirección y allí se trabaja en local. Lo que
+ * falta es todo lo de después, y es donde vive la decisión de la 0058: que marcando el
+ * primero aparezca **el segundo**, que diga lo que cuesta y que cambie el permiso de
+ * verdad.
+ *
+ * **El «servidor» es una dirección sin cuenta, y es correcto que lo sea.** El servidor
+ * de cuentas contesta a `LlavesDe` con unas llaves **inventadas pero fijas** cuando esa
+ * dirección no tiene cuenta —es como no delata quién la tiene—, así que la huella sale
+ * y es estable, y `DarAcceso` escribe la ranura y el titular **en el fichero, antes** de
+ * hablar con el servidor. O sea que la pantalla ve exactamente lo que vería con un VPS
+ * de verdad.
+ *
+ * Lo que esto **no** cubre, y hay que decirlo para que nadie lo dé por cubierto: que el
+ * otro equipo se entere del permiso y pueda escribir. Eso es la cadena entera y la
+ * recorre `TestPaseoDeUnProyectoHastaUnServidor` en Go, contra el Worker de verdad.
+ * Aquí se prueba **la pantalla**.
+ */
+test("el servidor de un proyecto: la huella, el acceso y que además escriba", async ({ page, request }) => {
+  test.skip(test.info().project.name !== "claro", "Usa la cuenta que deja la prueba anterior");
+  test.setTimeout(180_000);
+
+  const errores = vigilarConsola(page);
+  await bovedaDeB(page, request);
+
+  const seccion = (nombre: string) =>
+    page.locator(".lateral").getByRole("button", { name: nombre, exact: true });
+
+  // 1 · Un proyecto nuevo, que es donde sale el selector.
+  await seccion("Proyectos").click();
+  const nombre = `Servidor ${Date.now()}`;
+  await accion(page, "Nueva bóveda de proyecto").click();
+  await page.locator("#proyecto-nombre").fill(nombre);
+  await accion(page, "Crear").click();
+  const fila = page.locator(".panel:visible .proyectos").getByRole("button", { name: new RegExp(nombre) });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
+  await fila.click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 30_000 });
+
+  // **El bloque se despliega solo con un proyecto abierto**, así que esto se asegura de
+  // que está abierto en vez de pulsar a ciegas, que lo cerraría.
+  const bloque = page.locator(".panel:visible .el-acceso");
+  const abrirElAcceso = async () => {
+    await seccion("Proyectos").click();
+    const activa = page.locator('.panel:visible .proyectos li[data-activo="si"]');
+    await expect(activa).toBeVisible({ timeout: 20_000 });
+    if ((await bloque.count()) === 0) {
+      await activa.getByRole("button", { name: "Quién tiene acceso…" }).click();
+    }
+    await expect(bloque).toBeVisible({ timeout: 20_000 });
+  };
+  const elPrimero = bloque.getByRole("checkbox", { name: "Trabajar con esta bóveda en el servidor" });
+  const elSegundo = bloque.getByRole("checkbox", { name: "y puede escribir en ella" });
+
+  // 2 · El servidor en Ajustes, y **su huella comparada**, que es lo que la 0058 hizo
+  // obligatorio. Hasta aquí llegaba la otra prueba.
+  const delServidor = `servidor-${Date.now()}@ejemplo.com`;
+  await seccion("Ajustes").click();
+  await page.getByRole("tab", { name: "Cuenta" }).click();
+  const campo = page.locator("#correo-del-servidor");
+  await expect(campo).toBeVisible({ timeout: 20_000 });
+  await campo.fill(delServidor);
+  await campo.blur();
+  await accion(page, "Ver su huella").click();
+  const laHuella = page.locator(".la-huella-del-servidor .huella");
+  await expect(laHuella).toBeVisible({ timeout: 20_000 });
+  // **Se enseña antes de dejar confirmar**: es lo único que protege del servidor de
+  // cuentas, y una huella que no se ve no protege nada.
+  await expect(page.getByText("Compárala con la que", { exact: false })).toBeVisible();
+  const huella = ((await laHuella.textContent()) ?? "").trim();
+  expect(huella, "la huella del servidor sale vacía").not.toEqual("");
+  await accion(page, "Coincide, es mi servidor").click();
+  // **Se espera al hecho y no al clic.** Confirmar es una ida y vuelta a Go, y leer las
+  // preferencias en el acto las trae sin la huella: la pantalla deja de ofrecer
+  // compararla y dice que ya está, y ésa es la señal de que el guardado volvió.
+  await expect(
+    page.locator(".la-huella-del-servidor").getByText("Su huella está comparada", { exact: false }),
+  ).toBeVisible({ timeout: 20_000 });
+
+  // **Y se guarda cuál es, no un sí/no** (la lección de la ADR 0044): con un sí/no,
+  // cambiar de servidor dejaría la confirmación del anterior puesta.
+  const prefs = (await (
+    await request.post(`${B}/api/VerPreferencias`, { data: [] })
+  ).json()) as { huellaDelServidor: string; correoDelServidor: string };
+  expect(prefs.huellaDelServidor, "se guardó un sí/no en vez de la huella").toEqual(huella);
+  expect(prefs.correoDelServidor).toEqual(delServidor);
+
+  // 3 · Ahora **sí** sale el primero, que es la puerta que la otra prueba deja cerrada.
+  await abrirElAcceso();
+  await expect(elPrimero, "el interruptor no sale con la huella ya comparada").toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(elPrimero).not.toBeChecked();
+  await expect(
+    bloque.getByText("su huella sin comparar", { exact: false }),
+    "sigue diciendo que falta comparar la huella después de comparada",
+  ).toHaveCount(0);
+
+  // **Y el segundo no está todavía**: es una cosa más sobre un acceso que aún no existe.
+  await expect(
+    elSegundo,
+    "el interruptor de escribir sale sin haber dado el acceso",
+  ).toHaveCount(0);
+
+  // 4 · Se da el acceso. **Con `click` y no con `check`**: la casilla se desactiva, le
+  // pide el cambio a Go y se vuelve a dibujar con lo que Go conteste, así que no cambia
+  // de estado en el mismo clic y `check` falla con un mensaje que no se parece a nada.
+  await elPrimero.click();
+  await expect(elPrimero).toBeChecked({ timeout: 30_000 });
+  await expect(bloque.getByText("quien entre en él abre esto", { exact: false })).toBeVisible();
+
+  // Los titulares tal y como quedan al dar el acceso. **El identificador de éste es lo
+  // que después dice si el permiso se cambió en el sitio o quitando y volviendo a dar.**
+  const titulares = async () =>
+    ((await (await request.post(`${B}/api/QuienTiene`, { data: [] })).json()) ??
+      []) as { correo: string; permiso: string; titular: string }[];
+  const alDarlo = (await titulares()).filter((t) => t.correo === delServidor);
+  expect(alDarlo.length, "el servidor no figura entre quienes tienen acceso").toEqual(1);
+  const suTitular = alDarlo[0].titular;
+  expect(alDarlo[0].permiso, "el acceso se dio con algo que no es «ver»").toEqual("ver");
+
+  // 5 · Y **ahora** aparece el segundo, apagado y diciendo lo que daría.
+  await expect(elSegundo, "no sale el interruptor de escribir con el acceso dado").toBeVisible({
+    timeout: 20_000,
+  });
+  await expect(elSegundo).not.toBeChecked();
+  await expect(bloque.getByText("Hoy solo lee", { exact: false })).toBeVisible();
+  await expect(bloque.getByText("guardar y rotar", { exact: false })).toBeVisible();
+
+  // 6 · Se marca, y **la pantalla dice lo que se gana y lo que cuesta**, que es la
+  // condición con la que el cliente lo pidió. Se comprueban las dos mitades: sin la
+  // segunda, esto sería un interruptor que regala permisos sin decirlo.
+  await elSegundo.click();
+
+  // **Y lo primero que se mira es lo que Go guardó, no la casilla.** Puestas al revés,
+  // cualquier forma de romper esto se ve antes en la casilla y las aserciones de abajo
+  // no llegan a ejecutarse nunca — o sea que no vigilan nada propio. Comprobado
+  // mutando `CambiarPermiso` para que acuñe un titular nuevo: así colocadas, lo dicen
+  // ellas y con su nombre.
+  // El poll pregunta **si alguno puede editar ya**, no por el primero de la lista: con
+  // `find` sobre el primero, una mutación que acuñe un titular nuevo se cae aquí y las
+  // dos aserciones de debajo —las que dicen *en el sitio*— no llegan a ejecutarse nunca.
+  await expect
+    .poll(async () => (await titulares()).some((t) => t.correo === delServidor && t.permiso === "editar"), {
+      timeout: 30_000,
+      message: "la casilla dice «puede escribir» y el permiso guardado no cambió",
+    })
+    .toEqual(true);
+
+  // **Que el permiso se mueve en el sitio**, que es la decisión de la 0058: ni rota la
+  // clave, ni añade ranura, ni le hace borrar su copia como haría quitar el acceso y
+  // volver a darlo — en medio de un despliegue, eso es el despliegue caído. Lo que lo
+  // distingue es que **el titular sigue siendo el mismo y sigue habiendo uno solo**:
+  // `DarAcceso` acuña uno nuevo y deja el anterior como ranura huérfana.
+  const alMarcarlo = (await titulares()).filter((t) => t.correo === delServidor);
+  expect(
+    alMarcarlo.length,
+    "cambiar el permiso dejó más de un titular para el mismo servidor",
+  ).toEqual(1);
+  expect(
+    alMarcarlo[0].titular,
+    "cambiar el permiso acuñó un titular nuevo en vez de cambiarlo en el sitio",
+  ).toEqual(suTitular);
+
+  await expect(elSegundo).toBeChecked({ timeout: 30_000 });
+  await expect(bloque.getByText("crear y cambiar", { exact: false })).toBeVisible();
+  await expect(bloque.getByText("sin que nadie lo apruebe", { exact: false })).toBeVisible();
+  await expect(bloque.getByText("cambiar lo que usan tus clientes", { exact: false })).toBeVisible();
+  await expect(bloque.getByText("dar acceso a otras", { exact: false })).toBeVisible();
+  await bloque.screenshot({ path: `test-results/servidor-puede-escribir-${test.info().project.name}.png` });
+
+  // **Y la fila dice que el servidor no le deja entrar, que aquí es la verdad.** La
+  // ranura está en la bóveda y el miembro no está en el servidor, porque esta dirección
+  // no tiene cuenta: se le invitó. Con un VPS de verdad esa frase no sale. Se comprueba
+  // por dos razones: para que quien mire la captura no crea que algo falla, y porque es
+  // justo el caso que la pantalla decidió **enseñar en vez de disimular** — así se
+  // arregla antes, y no el día que esa máquina no entra.
+  await expect(
+    bloque.locator(".titulares").getByText("El servidor no le deja entrar"),
+  ).toBeVisible();
+
+  // 8 · Y se quita **en el sitio**: ni rota la clave, ni añade ranura, ni le hace borrar
+  // su copia como haría quitar el acceso y volver a darlo. Lo que prueba que es en el
+  // sitio es que **el titular sigue siendo el mismo**: con `DarAcceso` otra vez se
+  // acuñaría uno nuevo y quedaría una ranura huérfana.
+  await elSegundo.click();
+  await expect
+    .poll(async () => (await titulares()).find((t) => t.correo === delServidor)?.permiso, {
+      timeout: 30_000,
+      message: "quitar la escritura no devolvió el permiso a «ver»",
+    })
+    .toEqual("ver");
+  const alQuitarlo = (await titulares()).filter((t) => t.correo === delServidor);
+  expect(alQuitarlo.length, "quitar la escritura dejó más de un titular").toEqual(1);
+  expect(alQuitarlo[0].titular, "quitar la escritura acuñó un titular nuevo").toEqual(suTitular);
+  await expect(elSegundo).not.toBeChecked({ timeout: 30_000 });
+
+  // **Y se sale del proyecto**, que una prueba que conmuta de bóveda tiene que dejar
+  // abierta la de siempre (ADR 0050).
+  await seccion("Proyectos").click();
+  const salir = page.locator(".herramientas .salir-proyecto");
+  if ((await salir.count()) > 0) {
+    await expect(salir).toHaveText("Salir del proyecto");
+    await salir.click();
+    // Entre los dos clics se espera **al rótulo nuevo**: sin eso caen en el mismo
+    // render y el segundo vuelve a armar en vez de confirmar.
+    await expect(salir).toHaveText("Sí, salir y cerrar");
+    await salir.click();
+    await expect(salir).toHaveCount(0, { timeout: 20_000 });
+  }
+
+  expect(errores, errores.join(" | ")).toEqual([]);
 });
