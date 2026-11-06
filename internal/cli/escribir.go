@@ -397,6 +397,10 @@ func banderasDelSecreto(cmd *cobra.Command, s *origenDelSecreto) {
 	f.StringVar(&s.alfabeto, "alfabeto", cripto.AlfHex.Nombre, "hex, alnum o simbolos")
 	f.IntVar(&s.caracteres, "caracteres", 0,
 		"Cuántos caracteres con --generar (por defecto, 48 en hexadecimal)")
+	// **De dónde sale el secreto tampoco admite el vacío**: `--secreto-env ""` se
+	// leería como que nadie dijo de dónde, y entonces `crear` pide otro origen o
+	// `editar` deja el secreto como estaba — las dos cosas, en silencio.
+	exigeValor(f, "secreto-env", "secreto-fichero")
 }
 
 // elTipoQueSePide comprueba el `--tipo`, **contra la lista y no contra nada**.

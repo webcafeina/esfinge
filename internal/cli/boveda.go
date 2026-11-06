@@ -71,6 +71,12 @@ func comandoBoveda(o *opciones) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE:          func(cmd *cobra.Command, _ []string) error { return cmd.Help() },
+		// Corre antes de cualquier verbo de la bóveda, incluidos los de «servidor»:
+		// ninguno define el suyo, y si alguno lo hiciera **se saltaría éste**, que es
+		// lo que vigila `TestNingunVerboDeLaBovedaSeSaltaLaVigilancia`.
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			return vigilarLasQueExigenValor(cmd)
+		},
 	}
 
 	f := cmd.PersistentFlags()
@@ -82,6 +88,11 @@ func comandoBoveda(o *opciones) *cobra.Command {
 		"En un servidor, no ponerse al día con la cuenta antes de leer")
 	f.StringVar(&ob.compartida, "compartida", "",
 		"Trabajar con una bóveda que le hayan compartido a este equipo, por su nombre")
+	// **Las que eligen dónde o de dónde no admiten el vacío** (ver `banderas.go`):
+	// puestas y vacías caen en el camino de «no se ha dicho» y se trabaja con otra
+	// bóveda sin avisar. Se marca aquí, al lado de donde se declaran, para que no haya
+	// una lista en otro sitio que se desalinee.
+	exigeValor(f, "boveda", "clave-env", "clave-fichero", "compartida")
 	// **Y `-q`, que no estaba.** Lo declaran `cifrar` y `descifrar` en
 	// `banderasComunes` y aquí faltaba, así que `esfinge boveda ... -q` fallaba con
 	// «unknown flag» — justo en el programa que más se mete en un guion, y donde las

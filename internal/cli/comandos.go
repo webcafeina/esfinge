@@ -42,9 +42,11 @@ type opciones struct {
 }
 
 // Ejecutar corre la línea de comandos y devuelve el código de salida.
-func Ejecutar(version string) int {
-	var o opciones
-
+// laRaiz arma el árbol de comandos. **Está aparte de `Ejecutar` para que una prueba
+// pueda recorrerlo tal cual lo recorre el programa**: llamando a `cmd.RunE` a mano se
+// salta el `PersistentPreRunE`, que es justo lo que algunas de ellas comprueban, y una
+// prueba que rodea la pieza que vigila no vigila nada.
+func laRaiz(o *opciones, version string) *cobra.Command {
 	raiz := &cobra.Command{
 		Use:   "esfinge",
 		Short: "Cifra y descifra secretos con una clave",
@@ -69,16 +71,23 @@ func Ejecutar(version string) int {
 		"Paleta: claro, oscuro o auto")
 
 	raiz.AddCommand(
-		comandoCifrar(&o),
-		comandoDescifrar(&o),
-		comandoGenerar(&o),
-		comandoBoveda(&o),
+		comandoCifrar(o),
+		comandoDescifrar(o),
+		comandoGenerar(o),
+		comandoBoveda(o),
 	)
 
 	// Cobra habla inglés de fábrica. La herramienta es para un cliente que la va
 	// a abrir en español, y una ayuda medio traducida se lee peor que ninguna.
 	// Va después de AddCommand porque también reescribe los subcomandos.
 	castellanizar(raiz)
+
+	return raiz
+}
+
+func Ejecutar(version string) int {
+	var o opciones
+	raiz := laRaiz(&o, version)
 
 	// La consulta de versiones nuevas sale ya, para que le dé tiempo mientras se
 	// cifra. Lo que no hace nunca es retrasar el resultado: ver novedad.go.
