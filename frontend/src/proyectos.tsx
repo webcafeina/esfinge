@@ -33,11 +33,21 @@ export function Proyectos({
   activo,
   alEntrar,
   verAcceso = 0,
+  alPedirLaCuenta,
 }: {
   /** Si la sección está a la vista: se recarga al entrar, como el historial. */
   activo: boolean;
   /** Se llama al conmutar, para llevar a la bóveda. */
   alEntrar: () => void;
+  /**
+   * Lleva a Ajustes → Cuenta, que es donde se compara la huella de un servidor.
+   *
+   * **Es el camino inverso del de «Quién tiene acceso…»**, y por la misma razón que
+   * está escrita ahí (2026-10-06): la pieza vive donde le toca y *ahí no es donde se
+   * busca*. Decirle a alguien «ve a Ajustes → Cuenta» en un aviso es dictarle una ruta;
+   * el cliente recorrió esto entero el 2026-11-09 y dijo que no era nada intuitivo.
+   */
+  alPedirLaCuenta: () => void;
   /**
    * Sube cada vez que alguien pide ver quién tiene acceso **desde dentro del
    * proyecto**, y entonces esta pantalla despliega ese bloque en la fila del proyecto
@@ -382,7 +392,9 @@ export function Proyectos({
                   `p.activo` aquí y no se limpia al salir porque esto no se entera de que
                   alguien salió: lo que cambia es la lista, y la lista llega con `activo`
                   ya puesto. */}
-              {p.activo && elAcceso === p.ref && <ElAcceso alFallar={setError} activo={activo} />}
+              {p.activo && elAcceso === p.ref && (
+                <ElAcceso alFallar={setError} activo={activo} alPedirLaCuenta={alPedirLaCuenta} />
+              )}
               {alAcabar === p.ref && (
                 <AlAcabarElProyecto
                   proyecto={p}
@@ -832,7 +844,15 @@ function CompartidasConmigo({
  *   - **Quien recibe acceso ve el correo de los demás que lo tienen.** No hay forma
  *     de que no lo vea si la lista se puede leer, así que se dice.
  */
-function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo: boolean }) {
+function ElAcceso({
+  alFallar,
+  activo,
+  alPedirLaCuenta,
+}: {
+  alFallar: (m: string) => void;
+  activo: boolean;
+  alPedirLaCuenta: () => void;
+}) {
   const [gente, setGente] = useState<QuienTieneAcceso[] | null>(null);
   const [correo, setCorreo] = useState("");
   const [permiso, setPermiso] = useState<"ver" | "editar">("editar");
@@ -949,10 +969,18 @@ function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo:
           tiene su llave en un fichero, y eso no se parece a dar acceso a una persona.
           Sale solo si hay un servidor puesto en Ajustes. */}
       {servidor !== "" && huellaDelServidor === "" && gente !== null && (
-        <p className="aviso">
-          Tienes un servidor puesto —<strong>{servidor}</strong>— y <strong>su huella sin comparar</strong>.
-          Compárala en Ajustes → Cuenta y aquí aparecerá el interruptor para marcarle esta bóveda.
-        </p>
+        <>
+          <p className="aviso">
+            Tienes un servidor puesto —<strong>{servidor}</strong>— y{" "}
+            <strong>su huella sin comparar</strong>. Hasta que la compares no se le puede marcar
+            ninguna bóveda.
+          </p>
+          <div className="botones">
+            <button className="discreto" onClick={alPedirLaCuenta}>
+              Comparar su huella
+            </button>
+          </div>
+        </>
       )}
       {servidor !== "" && huellaDelServidor !== "" && gente !== null && (
         <>

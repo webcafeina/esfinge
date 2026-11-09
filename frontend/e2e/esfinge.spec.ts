@@ -2459,6 +2459,12 @@ test("el selector del servidor: sin su huella comparada no sale, y dice qué fal
   await page.locator(".contenido .bloque", { has: page.locator("#correo-del-servidor") }).screenshot({
     path: `test-results/servidor-en-ajustes-${test.info().project.name}.png`,
   });
+  // **Y se deja Ajustes en otra pestaña a propósito.** Esta pantalla no se desmonta, así
+  // que si se queda en «Cuenta» volver desde el proyecto la encuentra ya puesta y la
+  // aserción de más abajo pasaría **con el camino roto**: comprobaría que se ve algo que
+  // no se ha movido. Dejándola en «Agentes», llegar a la huella exige que el botón haga
+  // su trabajo.
+  await page.getByRole("tab", { name: "Agentes" }).click();
 
   // **Y con el correo puesto todavía no sale: falta comparar su huella** (ADR 0058).
   //
@@ -2476,18 +2482,22 @@ test("el selector del servidor: sin su huella comparada no sale, y dice qué fal
   // Y no se queda callado: dice qué falta y dónde se arregla, que si no esto parece que
   // el correo no se ha guardado.
   await expect(bloque.getByText("su huella sin comparar", { exact: false })).toBeVisible();
-  await expect(bloque.getByText("Ajustes", { exact: false }).first()).toBeVisible();
+  // **Y lleva allí en vez de dictar la ruta** (2026-11-09). Antes decía «compárala en
+  // Ajustes → Cuenta», que es darle indicaciones a quien está en otra pantalla; el
+  // cliente recorrió esto entero y dijo que no era nada intuitivo. Es el camino inverso
+  // del de «Quién tiene acceso…», que existe por esta misma razón.
+  const irALaCuenta = bloque.getByRole("button", { name: "Comparar su huella" });
+  await expect(irALaCuenta).toBeVisible();
   await bloque.screenshot({ path: `test-results/selector-sin-huella-${test.info().project.name}.png` });
 
-  // **Y en Ajustes está el camino, con su aviso.**
+  // **Y el botón abre Ajustes en la pestaña Cuenta**, sin que nadie toque el segmentado:
+  // eso es lo que se comprueba, no que el aviso nombre un sitio.
   //
-  // Lo que no hace esta prueba es **confirmarla**: comparar la huella exige preguntarle
-  // al servidor de cuentas quién es esa dirección, y aquí se trabaja en local. Así que
-  // el interruptor no llega a salir nunca en este fichero — lo que se vigila es la
-  // puerta, que es lo que no existía. El camino entero con una cuenta de verdad lo
-  // recorre `TestPaseoDeUnProyectoHastaUnServidor`.
-  await seccion(page, "Ajustes").click();
-  await page.getByRole("tab", { name: "Cuenta" }).click();
+  // Lo que no hace esta prueba es **confirmar la huella**: comparar exige preguntarle al
+  // servidor de cuentas quién es esa dirección, y aquí se trabaja en local. Así que el
+  // interruptor no llega a salir nunca en este fichero — lo que se vigila es la puerta.
+  // El camino entero con una cuenta de verdad lo recorre `TestPaseoDeUnProyectoHastaUnServidor`.
+  await irALaCuenta.click();
   await expect(
     page.locator(".contenido").getByText("Falta comparar su huella", { exact: false }),
   ).toBeVisible({ timeout: 20_000 });
@@ -3876,6 +3886,12 @@ test("el registro se vuelve a leer al abrir la bóveda, no solo cuando habla un 
   ).toBeVisible({ timeout: 20_000 });
   await expect(
     page.locator(".contenido").getByText("prueba-escritura-vps.ejemplo.com"),
+  ).toBeVisible();
+  // **Y dice de qué bóveda es**, que es lo que faltaba para poder leerlo: aquí la
+  // personal, porque no hay ningún proyecto abierto.
+  await expect(
+    page.locator(".contenido").getByText("Esto es el registro de tu bóveda", { exact: false }),
+    "el registro no dice de qué bóveda es",
   ).toBeVisible();
 
   expect(errores, errores.join(" | ")).toEqual([]);

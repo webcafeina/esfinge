@@ -687,6 +687,13 @@ test("el servidor de un proyecto: la huella, el acceso y que además escriba", a
   await expect(
     page.locator(".la-huella-del-servidor").getByText("Su huella está comparada", { exact: false }),
   ).toBeVisible({ timeout: 20_000 });
+  // **Y dice qué toca después, con su camino** (2026-11-09): lo siguiente —marcarle una
+  // bóveda— vive dentro de cada proyecto, así que una confirmación que no lleva a
+  // ninguna parte deja a quien la lee donde estaba.
+  const aProyectos = page.locator(".contenido").getByRole("button", { name: "Ir a Proyectos" });
+  await expect(aProyectos, "tras comparar la huella no dice qué hacer ahora").toBeVisible();
+  await aProyectos.click();
+  await expect(page.locator(".panel:visible .proyectos")).toBeVisible({ timeout: 20_000 });
 
   // **Y se guarda cuál es, no un sí/no** (la lección de la ADR 0044): con un sí/no,
   // cambiar de servidor dejaría la confirmación del anterior puesta.

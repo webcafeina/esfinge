@@ -94,6 +94,10 @@ export default function App() {
   // Contador y no booleano: lo que viaja es un gesto, y con un booleano el segundo
   // clic no haría nada hasta apagarlo.
   const [verAcceso, setVerAcceso] = useState(0);
+  // Y lo mismo hacia Ajustes → Cuenta, que es donde se compara la huella de un
+  // servidor: **un contador y no un booleano**, porque lo que llega es un gesto y
+  // pulsarlo dos veces tiene que volver a llevar allí.
+  const [verLaCuenta, setVerLaCuenta] = useState(0);
   usaSincroAlVolver(cuenta?.modo === "cuenta");
 
   // Lo que pide un agente de IA, **a este nivel y no dentro de Ajustes** (ADR 0054).
@@ -452,6 +456,10 @@ export default function App() {
             <Proyectos
               activo={tarea === "proyectos"}
               verAcceso={verAcceso}
+              alPedirLaCuenta={() => {
+                setVerLaCuenta((n) => n + 1);
+                setTarea("ajustes");
+              }}
               alEntrar={() => {
                 // Conmutar rehace la pantalla de la bóveda: lo que había montado era
                 // la lista de la otra, con su búsqueda y su ficha abierta.
@@ -473,6 +481,9 @@ export default function App() {
           >
             <Ajustes
               porElBloqueMCP={tarea === "mcp"}
+              verLaCuenta={verLaCuenta}
+              alIrAProyectos={() => setTarea("proyectos")}
+              enQueBoveda={nombreDelProyecto}
               elAgente={elAgente}
               leerAgente={leerAgente}
               navegador={navegador}
@@ -1663,6 +1674,9 @@ function Ajustes({
   navegador,
   leerNavegador,
   porElBloqueMCP = false,
+  verLaCuenta = 0,
+  alIrAProyectos,
+  enQueBoveda = "",
 }: {
   version: string;
   /**
@@ -1692,6 +1706,23 @@ function Ajustes({
    * está abajo del todo y llegar ahí a ciegas es no llegar.
    */
   porElBloqueMCP?: boolean;
+  /**
+   * Sube cada vez que alguien pide llegar a «Tu servidor» **desde un proyecto**, y
+   * entonces esta pantalla se abre en la pestaña Cuenta. Contador y no booleano, por lo
+   * mismo que `verAcceso`: lo que llega es un gesto.
+   */
+  verLaCuenta?: number;
+  /** Lleva a la lista de proyectos, que es lo que toca después de comparar la huella. */
+  alIrAProyectos: () => void;
+  /**
+   * El nombre de la bóveda de proyecto abierta, o vacío si es la personal (ADR 0050).
+   *
+   * **Lo necesita el registro**: es de la bóveda abierta y no de todas, y sin decir cuál
+   * se lee mal. Le pasó al cliente el 2026-11-09 — leyó el de su bóveda personal
+   * buscando lo que había escrito un servidor en la de un proyecto, y lo que vio era
+   * cierto y de otro sitio.
+   */
+  enQueBoveda?: string;
 }) {
   const [cuenta] = usaCuenta();
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
@@ -1844,6 +1875,9 @@ function Ajustes({
     // secciones **no se desmontan** al cambiar de sección.
     if (porElBloqueMCP) setSeccion("agentes");
   }, [porElBloqueMCP]);
+  useEffect(() => {
+    if (verLaCuenta > 0) setSeccion("cuenta");
+  }, [verLaCuenta]);
 
   return (
     <div className="panel">
@@ -2020,10 +2054,22 @@ function Ajustes({
             {(prefs?.correoDelServidor ?? "") !== "" && (
               <div className="la-huella-del-servidor">
                 {prefs?.huellaDelServidor ? (
-                  <p className="nota">
-                    Su huella está comparada: <code className="huella">{prefs.huellaDelServidor}</code>.
-                    Si cambias el correo habrá que volver a compararla.
-                  </p>
+                  /* **Y aquí se dice qué toca después** (2026-11-09). Esto se quedaba en
+                     «está comparada» y punto, y lo siguiente —marcarle una bóveda— vive
+                     en otra pantalla, dentro de cada proyecto: quien no lo sabía se
+                     quedaba mirando una confirmación que no llevaba a ninguna parte. */
+                  <>
+                    <p className="nota">
+                      Su huella está comparada:{" "}
+                      <code className="huella">{prefs.huellaDelServidor}</code>. Ahora márcale las
+                      bóvedas que quieras, una por proyecto.
+                    </p>
+                    <div className="botones">
+                      <button className="discreto" onClick={alIrAProyectos}>
+                        Ir a Proyectos
+                      </button>
+                    </div>
+                  </>
                 ) : huellaVista === "" ? (
                   <>
                     <p className="aviso">
@@ -2419,6 +2465,18 @@ function Ajustes({
           {(elAgente?.dado?.length ?? 0) > 0 && (
             <div>
               <label>Lo que les has dado</label>
+              {/* **De qué bóveda es** (2026-11-09, lo pidió el cliente después de
+                  tropezar con ello). El registro vive dentro del cuerpo cifrado, así
+                  que es de la bóveda abierta y de ninguna otra — y sin decirlo se lee
+                  como si fuera de todas: él buscó aquí lo que un servidor había escrito
+                  en la bóveda de un proyecto, con su personal abierta, y lo que vio era
+                  cierto y de otro sitio. El rótulo **no se toca**: cómo se llama ahora
+                  que hay dos fuentes sigue siendo decisión suya. */}
+              <p className="nota">
+                Esto es el registro de{" "}
+                {enQueBoveda !== "" ? <strong>{enQueBoveda}</strong> : <>tu bóveda</>}; cada bóveda
+                tiene el suyo.
+              </p>
               <ul className="lista-papelera registro">
                 {(elAgente?.dado ?? []).map((d) => (
                   <li key={d.id}>
