@@ -5,6 +5,52 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-09 · El paso 2, la 2.59.2, y Tempero leyendo de la bóveda
+
+- **Se cerró el paso 2 de la 0058, por los dos lados.** El cliente comparó la huella del servidor y
+  marcó «y puede escribir en ella» en Zeri's Coffee; desde el VPS, `crear` y `editar` con `--generar`
+  —dos secretos que no vio nadie—, subidos solos, y **el apunte del `ejecutar` del 21 de octubre subió
+  con ellos**: llevaba dos semanas atrapado aquí porque con solo ver el registro no sube. Esa es,
+  literalmente, la mitad que la ADR 0058 prometía. Antes de tocar nada se midió qué había pendiente en
+  la copia local —384 bytes de diferencia, **un solo apunte**— abriendo las dos copias y comparándolas.
+- **Y cuatro fallos que solo salen usándolo, los cuatro vistos por él**: el campo del correo del
+  servidor que **no guardaba con Intro** y se quedaba con el texto puesto; el error de Ajustes que se
+  dibujaba **dentro de la pestaña de Actualizaciones**, así que «Ver su huella» fallaba y no decía nada;
+  ese botón **ofrecido con la bóveda cerrada**, cuando comparar la huella exige la sesión de la cuenta;
+  y **el registro, que solo se volvía a leer cuando hablaba un agente** — los tres eventos que escuchaba
+  son del canal de los agentes y ninguno de la bóveda, así que lo que escribió el VPS llegó a la bóveda
+  y no a la pantalla. Publicadas en la **2.59.2**.
+- **Tres enganches más, a petición suya** —«todo este procedimiento no es nada intuitivo en la
+  ventana»—: el aviso del proyecto **lleva** a Ajustes en vez de dictar la ruta, al confirmar la huella
+  se dice qué toca después con su botón a Proyectos, y el registro **dice de qué bóveda es**. Sin
+  publicar todavía.
+- **Y el paso 3, el trabajo de verdad: Tempero en producción leyendo sus secretos de la bóveda.** Los
+  siete los metió **el servidor leyendo el fichero** por la entrada estándar, y se comprobó que son
+  byte a byte los mismos comparando SHA-256 a los dos lados: catorce valores, ninguno visto. El
+  despliegue quedó en [PR #31](https://github.com/DevCafeina/Tempero/pull/31) de Tempero, con humo en
+  verde (doce), la CI en verde y `/health` contestando `ok` con la base de datos en 23 ms.
+- **Lo que de verdad costó pensar ahí fue la precedencia de Docker Compose, y se midió en cinco
+  escenarios.** El camino obvio —el paso-a-través, el nombre a secas en `environment:`— **borra** lo que
+  trae el `env_file:` cuando la variable no está en el entorno: habría roto el despliegue de siempre sin
+  tocarlo. Con `${VAR:?…}` la interpolación cae al `--env-file`, el camino viejo sigue valiendo y, si no
+  hay valor en ninguna parte, Compose **aborta** en vez de arrancar con un secreto en blanco, que es lo
+  que haría con `${VAR}` a secas.
+- **Y revisar el propio cambio encontró lo que habría roto el paso siguiente**: la exigencia alcanzaba a
+  `humo.sh` —`environment` se suma aunque `env_file` se redeclare con `!override`— y `.env.humo` no
+  definía `META_APP_SECRET`. Se habría caído la próxima vez que alguien lanzara la comprobación.
+- **Dos hallazgos ajenos, apuntados donde viven**: el procedimiento de Tempero mandaba generar las
+  contraseñas con `openssl rand -base64 36` **y las mete dentro de una URL** —corregido a hexadecimal,
+  con su porqué—, y `humo.sh` pisa las etiquetas de las imágenes de producción. Más la deuda de las
+  siete que siguen en claro en el fichero, que es a propósito y es la vuelta atrás, en
+  [PR #32](https://github.com/DevCafeina/Tempero/pull/32).
+- **Una corrección de la ADR 0057**: «111 variables» no era Tempero, que tiene 24 en producción y siete
+  secretos de verdad. El de 121 es `webcafeina-local`.
+- **Queda abierto**: publicar los tres enganches, **vaciar el `.env.produccion`** cuando haya arrancado
+  dos veces, el rótulo «Lo que les has dado» —decisión suya, sin contestar— y la **clave de contenido**,
+  que sigue siendo lo único grande que le falta al proyecto.
+
+---
+
 ## 2026-11-06 (tarde) · La 2.59.1, y un campo que no guardaba
 
 - **Se cerró la trampa de la bandera vacía** (`ac46751`): `--compartida ""` era «no se ha dicho», así que

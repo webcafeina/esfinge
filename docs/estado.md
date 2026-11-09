@@ -1,6 +1,60 @@
 # Estado
 
-Última actualización: **2026-11-06**
+Última actualización: **2026-11-09**
+
+## La 0057 y la 0058 haciendo su trabajo: Tempero en producción (2026-11-09)
+
+**Los siete secretos de producción de Tempero ya no se leen de un fichero en claro.** Viven en una
+bóveda de proyecto compartida con la cuenta del servidor, y los pone en el entorno del proceso
+`esfinge boveda ejecutar` al desplegar. Es el trabajo para el que se escribieron las dos ADR, pendiente
+desde el 2026-10-21, y está **desplegado y comprobado**:
+
+| | |
+|---|---|
+| `/health` de la API | `ok` — **base de datos en 23 ms**, motor de tareas latiendo hace 2 s |
+| Los cinco servicios | En pie; cero líneas con pinta de fallo en api y worker |
+| Migraciones | `No migrations to run!` |
+| Vuelta atrás | Intacta: el `.env.produccion` sin tocar |
+
+Lo que eso prueba y ninguna validación podía decir: **la contraseña de Postgres y la de Redis salieron
+de la bóveda, llegaron al contenedor y funcionan**.
+
+### Cómo quedó, y las cinco medidas que lo sostienen
+
+El cambio vive en Tempero ([PR #31](https://github.com/DevCafeina/Tempero/pull/31)): un guion que
+`ejecutar` lanza con los siete `--var`, y el compose pidiendo con `${VAR:?…}` los **cuatro** que el
+código lee. Con Docker Compose v5.7.0:
+
+1. Variable solo en `--env-file` → gana el fichero.
+2. En el entorno y en `--env-file` → **gana el entorno**.
+3. En el entorno y en el `env_file:` del servicio → **gana el entorno**.
+4. En ninguna parte con `${VAR}` a secas → **aviso por `stderr` y cadena vacía**. Por eso hay guarda
+   en dos sitios: Compose no se niega, y un `--var` mal escrito habría levantado Tempero con
+   `CLAVE_DATOS` vacía.
+5. Y la que descartó el camino que parecía obvio: el **paso-a-través** —el nombre a secas en
+   `environment:`— **borra** lo que trae el `env_file:` cuando la variable no está en el entorno. Habría
+   roto el despliegue de siempre sin tocarlo. Con `${VAR:?…}` la interpolación cae al `--env-file` y el
+   camino viejo sigue valiendo, que es lo que hace que la vuelta atrás sea gratis.
+
+### Lo que se hizo sin que ningún secreto pasara por ninguna parte
+
+Las siete entradas las creó **el servidor leyendo el fichero**, por la entrada estándar
+(`--secreto-stdin`): ni pantalla, ni argumento, ni historial. Y se comprobó que lo guardado es **byte a
+byte** lo del fichero comparando las ocho primeras cifras del SHA-256 a los dos lados — catorce valores
+y ninguno visto. Esa comprobación es la que cierra el riesgo de verdad: una `CLAVE_DATOS` con un
+carácter de menos no da error, da datos que no se descifran.
+
+### Y una corrección de la ADR 0057
+
+Decía «111 variables solo en uno» hablando de Tempero. **Falso para Tempero**: son 24 en producción y
+38 en desarrollo, de las cuales **nueve son secretos y dos están vacías**, así que los de verdad son
+siete. El fichero de 121 es `proyectos/webcafeina-local/.env`.
+
+### Lo que queda, apuntado en la deuda de Tempero
+
+[PR #32](https://github.com/DevCafeina/Tempero/pull/32): vaciar el `.env.produccion` de las siete
+—cuando haya arrancado dos veces; hoy es la vuelta atrás—, que `DATABASE_URL` duplica la contraseña de
+`APP_DB_PASSWORD`, y que `humo.sh` pisa las etiquetas de las imágenes de producción.
 
 ## Publicada la 2.59.1 (2026-11-06, tarde)
 
@@ -63,8 +117,8 @@ decidido.
    que es la que lleva el arreglo de `--compartida ""`.
 2. **Marcar el segundo interruptor** del proyecto en el Mac. Sin eso, el binario nuevo tendría el verbo y no
    el permiso, y el servidor le devolvería un 403.
-3. **Llevar un `.env` de verdad** —`Tempero`— a su bóveda y cambiar el despliegue. Es el trabajo para el que
-   existe todo esto y sigue pendiente desde el 21 de octubre.
+3. ~~**Llevar un `.env` de verdad** —`Tempero`— a su bóveda y cambiar el despliegue.~~ **Hecho el
+   2026-11-09**, desplegado y comprobado contra `/health`.
 
 ## La prueba del segundo interruptor (2026-11-06)
 

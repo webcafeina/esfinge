@@ -2220,6 +2220,20 @@ hace una cuenta distinta para Esfinge —`NormalizarCorreo` no lo quita a propó
 bandeja de siempre, así que **no hizo falta crear ningún buzón**. El selector de la ventana **no hizo
 falta**: por debajo es dar acceso de solo ver, y eso ya estaba publicado.
 
+Y el 2026-11-09, **la 0057 y la 0058 haciendo el trabajo para el que se escribieron**: los siete secretos
+de producción de **Tempero** salieron de su `.env` en claro y viven en una bóveda de proyecto compartida
+con la cuenta del servidor; el despliegue los recibe por `esfinge boveda ejecutar` y la API contesta `ok`
+con la base de datos en 23 ms. Tres cosas que sólo se saben haciéndolo. **Los metió el servidor leyendo
+el fichero**, por la entrada estándar, y se comprobó que son **byte a byte** los mismos comparando ocho
+cifras del SHA-256 a los dos lados: catorce valores y ninguno visto por nadie — es la comprobación que
+cierra el riesgo, porque una clave de cifrado con un carácter de menos no da error, da datos que no se
+descifran. **El paso 2 se cerró antes**, con el segundo interruptor marcado en la ventana: al subir el
+permiso, lo primero que subió fue **un apunte del registro de hacía dos semanas**, atrapado en el servidor
+porque con solo ver el registro no sube — la mitad de la 0058 vista por fin en una pantalla. Y **cuatro
+fallos que solo salen usándolo** salieron de ahí, con la 2.59.2: un campo que no guardaba con Intro, un
+error que se dibujaba en otra pestaña, un botón ofrecido cuando no podía funcionar, y el registro
+reeleyéndose sólo cuando hablaba un agente.
+
 Sin verificar todavía, y es lo único que queda en todo el proyecto: **cómo quedan las estructuras de
 Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono de los `.esf`, que en Windows lo
 pone el instalador y en Linux el `.deb`.
