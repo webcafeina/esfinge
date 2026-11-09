@@ -3871,7 +3871,7 @@ test("el registro se vuelve a leer al abrir la bóveda, no solo cuando habla un 
 
   await seccion(page, "Ajustes").click();
   await page.getByRole("tab", { name: "Agentes" }).click();
-  const elRegistro = page.locator(".contenido").getByText("Lo que les has dado", { exact: false });
+  const elRegistro = page.locator(".contenido").getByText("Lo que ha salido de la bóveda", { exact: false });
   await expect(elRegistro).toHaveCount(0);
 
   // Y ahora hay registro que enseñar, como cuando se abre la bóveda de verdad. **Se

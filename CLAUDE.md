@@ -695,12 +695,21 @@ diciendo lo de antes.** `Como` existe para que leer el registro después sirva �
 no lo aprobó nadie esa vez», dice su propio comentario— y se arregló en Go en la 2.58.0; **`loQueSeLeDio`
 nunca lo ha pintado**, así que en la ventana un apunte que no aprobó nadie se lee igual que uno aprobado de
 uno en uno. Mientras los apuntes venían todos del canal de los agentes eso era una pérdida; desde que los
-escribe también la línea de comandos **tapa una distinción que es la mitad del argumento de la 0058**. Con
-ello, dos cosas de la misma pantalla: el rótulo **«Lo que les has dado»** en Ajustes → Agentes ya no describe
-todos los apuntes, y el `switch` no tiene caso para `ejecutar` ni para `mover`, que salen con el verbo en
-crudo. **Lo vio el paseo a mano** mirando qué pinta la ventana con lo que la línea de comandos acababa de
-escribir, no una prueba; está en `deuda.md` y **el rótulo no se cambia sin preguntar**, porque esa pantalla la
-aprobó el cliente para los agentes.
+escribe también la línea de comandos **tapa una distinción que es la mitad del argumento de la 0058**.
+**Lo vio el paseo a mano** mirando qué pinta la ventana con lo que la línea de comandos acababa de escribir,
+no una prueba. Arreglado el 2026-11-05: `comoSeAutorizo` pinta un segundo renglón y los tres verbos que
+salían en crudo tienen su caso.
+
+Y de ahí salieron **tres cosas más de la misma pantalla, que ya no son de código sino de qué dice**. El
+rótulo decía «Lo que les has dado», de cuando los apuntes venían todos de un agente: desde la 0058 ni
+«les» ni «has» son ciertos —el apunte de un despliegue lo hizo un servidor, sin que nadie se lo diera a
+nadie—. **Desde el 2026-11-09 es «Lo que ha salido de la bóveda»**, elegido por el cliente entre tres y por
+una razón que conviene no perder: **describe los dos casos sin nombrar a quién**, así que sigue valiendo
+para la fuente siguiente. El bloque **dice ahora de qué bóveda es el registro** —vive dentro del cuerpo
+cifrado, así que es de la abierta y de ninguna otra, y sin decirlo se lee como si fuera de todas—. Y **se
+vuelve a leer al cambiar de bóveda**, que es lo que antes no hacía: escuchaba los tres eventos del canal de
+los agentes y ninguno de los dos de la bóveda, así que lo que escribía un servidor llegaba a la bóveda y no
+a la pantalla.
 
 **Una palabra con dos sentidos le quitó al agente una funcionalidad entera.** `esfinge_bovedas` devolvía
 `abierta: false` para las bóvedas que no son la activa, y en Esfinge **«cerrada» quiere decir bloqueada** —la

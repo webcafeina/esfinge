@@ -2464,7 +2464,14 @@ function Ajustes({
               abierta. Se guardan noventa días. */}
           {(elAgente?.dado?.length ?? 0) > 0 && (
             <div>
-              <label>Lo que les has dado</label>
+              {/* **«Lo que ha salido de la bóveda», y lo eligió el cliente** (2026-11-09).
+                  Se llamaba «Lo que les has dado», de cuando los apuntes venían todos del
+                  canal de los agentes. Desde la ADR 0058 los escribe también la línea de
+                  comandos de un servidor, así que ni «les» ni «has» eran ciertos: el de
+                  hoy lo hizo el VPS, sin que nadie se lo diera a nadie. Se le ofrecieron
+                  tres y escogió éste porque **describe los dos casos sin nombrar a
+                  quién**, que es lo que lo deja valiendo para lo que venga después. */}
+              <label>Lo que ha salido de la bóveda</label>
               {/* **De qué bóveda es** (2026-11-09, lo pidió el cliente después de
                   tropezar con ello). El registro vive dentro del cuerpo cifrado, así
                   que es de la bóveda abierta y de ninguna otra — y sin decirlo se lee

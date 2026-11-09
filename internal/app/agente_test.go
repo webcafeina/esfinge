@@ -694,7 +694,7 @@ func TestUnAgenteNoCreaLlavesDeAcceso(t *testing.T) {
 // El apunte no se escribe cuando se aprueba: se escribe cuando el agente **vuelve a
 // pedirlo**, un instante después, y para entonces la ventana ya ha preguntado por el
 // estado. Y como las secciones no se desmontan, ni cambiar de pestaña ni salir de
-// Ajustes vuelven a preguntar: «Lo que les has dado» se quedaba vacío hasta reiniciar
+// Ajustes vuelven a preguntar: «Lo que ha salido de la bóveda» se quedaba vacío hasta reiniciar
 // Esfinge. Lo vio el cliente con la 2.46.0, dando la primera contraseña de verdad.
 //
 // Es la regla de la casa con otra cara: **avisar a la ventana es que la ventana va a
