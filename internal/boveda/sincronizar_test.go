@@ -50,7 +50,10 @@ func clonar(t *testing.T, b *Boveda, nombre string) *equipo {
 	if err := json.Unmarshal(crudo, &cont); err != nil {
 		t.Fatal(err)
 	}
-	otra := &Boveda{ruta: ruta, doc: b.doc, sel: b.sel, cont: cont, llave: append([]byte(nil), b.llave...)}
+	// La cadena de claves va también: este ayudante monta una bóveda **sin pasar por el
+	// constructor**, y sin ella el segundo equipo no tendría con qué cifrar el cuerpo.
+	llave := append([]byte(nil), b.llave...)
+	otra := &Boveda{ruta: ruta, doc: b.doc, sel: b.sel, cont: cont, llave: llave, claves: b.claves}
 	otra.doc.Sobres = append([]sobre(nil), b.doc.Sobres...)
 	return &equipo{nombre: nombre, b: otra, serie: -1}
 }
@@ -673,7 +676,7 @@ func convergen(t *testing.T, semilla uint64) {
 	}
 
 	docS, _ := leerDocumento(s.datos)
-	_, contS, err := desempaquetar(docS, origen.llave)
+	_, contS, err := desempaquetar(docS, origen.claves)
 	if err != nil {
 		t.Fatal(err)
 	}

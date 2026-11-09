@@ -366,11 +366,15 @@ func AbrirConLaLlaveDe(ruta string, otra *Boveda) (*Boveda, error) {
 	if doc.ID != id {
 		return nil, ErrOtraBoveda
 	}
-	sel, cont, err := desempaquetar(doc, llave)
+	claves, err := laCadenaDe(doc, llave)
 	if err != nil {
 		return nil, err
 	}
-	return &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, soloLectura: soloSeLee(doc.Formato, FormatoQueSeEscribe)}, nil
+	sel, cont, err := desempaquetar(doc, claves)
+	if err != nil {
+		return nil, err
+	}
+	return &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, claves: claves, soloLectura: soloSeLee(doc.Formato, FormatoQueSeEscribe)}, nil
 }
 
 // OpcionesDeFusion cambian lo que Fundir se atreve a hacer solo.
@@ -406,7 +410,7 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	if docR.ID != b.doc.ID {
 		return Fusion{}, ErrOtraBoveda
 	}
-	selR, contR, err := desempaquetar(docR, b.llave)
+	selR, contR, err := desempaquetar(docR, b.claves)
 	if err != nil {
 		return Fusion{}, err
 	}
@@ -419,7 +423,7 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	var sobresB []sobre
 	if len(base) > 0 {
 		if docB, err := leerDocumento(base); err == nil && docB.ID == b.doc.ID {
-			if _, c, err := desempaquetar(docB, b.llave); err == nil {
+			if _, c, err := desempaquetar(docB, b.claves); err == nil {
 				contB = &c
 				sobresB = docB.Sobres
 			}

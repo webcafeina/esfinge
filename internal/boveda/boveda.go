@@ -153,9 +153,16 @@ type sobre struct {
 
 // documento es el JSON en claro que hay en el disco.
 type documento struct {
-	Esfinge  string  `json:"esfinge"`
-	Aviso    string  `json:"aviso"`
-	Formato  int     `json:"formato"`
+	Esfinge string `json:"esfinge"`
+	Aviso   string `json:"aviso"`
+	Formato int    `json:"formato"`
+	// Epoca es la clave de contenido con la que está cifrado el cuerpo (ADR 0059). Va
+	// **en claro y a propósito**: `desempaquetar` tiene que elegir la clave antes de
+	// descifrar, así que no puede vivir dentro de lo cifrado. Lo que cuesta es que
+	// filtra cuántas veces ha rotado esta bóveda; lo que lo contiene es que **no es una
+	// autoridad**: el sello lleva la misma dentro y, si no cuadran, `ErrManipulada`.
+	// Vacía en el formato 1.
+	Epoca    string  `json:"epoca,omitempty"`
 	ID       string  `json:"id"`
 	Serie    int64   `json:"serie"`
 	Cambiada string  `json:"cambiada"`
@@ -198,6 +205,11 @@ type sello struct {
 	// de dentro no la puede escribir nadie que no tenga la clave. Una bóveda que no
 	// se ha sincronizado nunca la lleva a cero.
 	Sincro int64 `json:"sincro,omitempty"`
+	// Epoca es la clave de contenido con la que está cifrado este cuerpo (ADR 0059),
+	// **autenticada aquí dentro**. Fuera va la misma en claro, porque hay que elegir la
+	// clave antes de poder descifrar nada; la de fuera es una pista y ésta es la que
+	// manda, igual que `Serie`. Vacía en el formato 1, que no tiene épocas.
+	Epoca string `json:"epoca,omitempty"`
 	// Cuerpo es la huella del cuerpo, y es lo que ata las dos piezas.
 	//
 	// Al separar el sello del cuerpo, revertir el cuerpo a uno viejo dejó de
@@ -338,6 +350,13 @@ type Boveda struct {
 	sel   sello
 	cont  contenido
 	llave []byte // la clave de bóveda, en base64url y como bytes ASCII
+	// claves son las de contenido (ADR 0059). **En el formato 1 es una cadena de una
+	// sola clave, y esa clave es la de bóveda**: así todo el código trabaja siempre con
+	// una cadena y el formato de siempre es el caso degenerado, sin condicionales.
+	claves cadenaDeClaves
+	// titular es quién soy yo en esta bóveda, si es de otra persona. Hace falta para
+	// encontrar **mi** ranura en el documento remoto al fundir. Vacío en las propias.
+	titular string
 	// cuerpoSucio marca que hay cambios en las entradas. Sin él, cada guardado
 	// recifraría el cuerpo aunque solo se hubiera tocado una llave.
 	cuerpoSucio bool
@@ -451,6 +470,10 @@ func sinRanuras(ruta string) (*Boveda, error) {
 	b := &Boveda{
 		ruta:  ruta,
 		llave: llave,
+		// Una bóveda nace en el formato que este código escribe, así que su cadena es la
+		// degenerada: una sola clave, la de bóveda, y ninguna época. El día que el
+		// formato que se escribe sea el 2, esto pasa a ser una cadena de verdad.
+		claves: cadenaDeUnaClave(llave),
 		doc: documento{
 			Esfinge:  marca,
 			Aviso:    avisoDelFichero,
@@ -562,13 +585,19 @@ func abrir(ruta string, datos []byte, llaveTecleada string, purgar bool) (*Boved
 // y purga lo caducado si toca. Lo comparten abrir —la contraseña tecleada— y
 // `AbrirConElSistema`, que prueba una sola ranura.
 func conLlave(ruta string, doc documento, llave []byte, purgar bool) (*Boveda, error) {
-	// Que la llave abriera un sobre y esto no se deje abrir significa que el
-	// fichero está mezclado, no que la clave esté mal.
-	sel, cont, err := desempaquetar(doc, llave)
+	// La cadena de claves de contenido (ADR 0059). En el formato 1 sale una de una sola
+	// clave, que es la de bóveda, así que lo de abajo es el mismo camino para las dos.
+	claves, err := laCadenaDe(doc, llave)
 	if err != nil {
 		return nil, err
 	}
-	b := &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, soloLectura: soloSeLee(doc.Formato, FormatoQueSeEscribe)}
+	// Que la llave abriera un sobre y esto no se deje abrir significa que el
+	// fichero está mezclado, no que la clave esté mal.
+	sel, cont, err := desempaquetar(doc, claves)
+	if err != nil {
+		return nil, err
+	}
+	b := &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, claves: claves, soloLectura: soloSeLee(doc.Formato, FormatoQueSeEscribe)}
 
 	if !purgar {
 		return b, nil
@@ -614,7 +643,43 @@ func documentoEn(ruta string) (documento, error) {
 
 // desempaquetar abre el sello y el cuerpo con la clave de bóveda y comprueba que
 // cuadran con lo de fuera. No escribe nada.
-func desempaquetar(doc documento, llave []byte) (sello, contenido, error) {
+// desempaquetar abre el sello y el cuerpo con **la clave de la época** que el documento
+// declara (ADR 0059).
+//
+// Si la declarada no abre, prueba las demás de la más nueva a la más vieja. No es por
+// prudencia: `doc.Epoca` va en claro, así que cualquiera que pueda escribir el fichero la
+// cambia, y probar es lo que la convierte en una pista en vez de una autoridad. Cuesta
+// poco porque estas claves van con `PerfilLlave` —8 MiB, una pasada—, que es también la
+// razón por la que `abrir` puede probar todos los sobres contra la contraseña tecleada.
+//
+// Y una vez una clave abre, **lo que falle después es terminal**: ya se sabe cuál era la
+// clave, así que seguir probando solo taparía el motivo verdadero.
+func desempaquetar(doc documento, claves cadenaDeClaves) (sello, contenido, error) {
+	if claves.vacia() {
+		return sello{}, contenido{}, ErrCerrada
+	}
+	orden := claves.deLaMasNuevaALaMasVieja()
+	if k, hay := claves.clave(doc.Epoca); hay {
+		orden = append([]ClaveDeContenido{{ID: doc.Epoca, Clave: string(k)}}, orden...)
+	}
+	var ultimo error = ErrManipulada
+	for _, k := range orden {
+		sel, cont, err := conUnaClave(doc, []byte(k.Clave))
+		if err != nil {
+			ultimo = err
+			continue
+		}
+		// **El sello manda sobre lo que dice el JSON de fuera.** Si no cuadran, alguien
+		// ha tocado la declaración: es lo mismo que `coherente` hace con la serie.
+		if sel.Epoca != doc.Epoca {
+			return sello{}, contenido{}, ErrManipulada
+		}
+		return sel, cont, nil
+	}
+	return sello{}, contenido{}, ultimo
+}
+
+func conUnaClave(doc documento, llave []byte) (sello, contenido, error) {
 	var sel sello
 	var cont contenido
 	crudoSello, err := cripto.AbrirTexto(doc.Sello, llave)
@@ -737,6 +802,12 @@ func (b *Boveda) guardar() error {
 	if b.llave == nil {
 		return ErrCerrada
 	}
+	// **Y que haya con qué cifrar el cuerpo**, que desde la ADR 0059 no es lo mismo que
+	// tener la clave de bóveda. Sin esto, una época declarada sin su clave dejaría el
+	// cuerpo cifrado con lo que hubiera y el fichero no volvería a abrirse nunca.
+	if b.claveActual() == nil {
+		return ErrCerrada
+	}
 	if b.soloLectura {
 		return ErrFormatoNuevo
 	}
@@ -766,7 +837,7 @@ func (b *Boveda) guardar() error {
 		}
 		defer cripto.Borrar(claro)
 
-		cuerpo, err := cripto.SellarTexto(claro, b.llave, cripto.PerfilLlave)
+		cuerpo, err := cripto.SellarTexto(claro, b.claveActual(), cripto.PerfilLlave)
 		if err != nil {
 			b.doc.Serie--
 			return err
@@ -776,6 +847,7 @@ func (b *Boveda) guardar() error {
 
 	b.sel.ID = b.doc.ID
 	b.sel.Serie = b.doc.Serie
+	b.sel.Epoca = b.doc.Epoca
 	b.sel.Cuerpo = huellaDe(b.doc.Cuerpo)
 	b.sel.Huellas = map[string]string{}
 	b.sel.Sobres = map[string]string{}
@@ -788,7 +860,7 @@ func (b *Boveda) guardar() error {
 		b.doc.Serie--
 		return err
 	}
-	sellado, err := cripto.SellarTexto(crudoSello, b.llave, cripto.PerfilLlave)
+	sellado, err := cripto.SellarTexto(crudoSello, b.claveActual(), cripto.PerfilLlave)
 	if err != nil {
 		b.doc.Serie--
 		return err
@@ -902,6 +974,9 @@ func (b *Boveda) Cerrar() {
 	defer b.mu.Unlock()
 	cripto.Borrar(b.llave)
 	b.llave = nil
+	// Y las de contenido, que son claves igual: dejarlas en memoria sería cerrar la
+	// puerta de delante y dejar la de atrás abierta.
+	b.claves = cadenaDeClaves{}
 	b.cont = contenido{}
 }
 
@@ -910,6 +985,16 @@ func (b *Boveda) Abierta() bool {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.llave != nil
+}
+
+// claveActual es la clave con la que se cifra el cuerpo ahora mismo.
+//
+// En el formato 1 es la clave de bóveda: la cadena tiene una sola clave y es ésa.
+// Devuelve nil cuando la época declarada no está en la cadena, que es un estado que no
+// debería existir y que `guardar` convierte en un error en vez de en un cuerpo ilegible.
+func (b *Boveda) claveActual() []byte {
+	k, _ := b.claves.clave(b.doc.Epoca)
+	return k
 }
 
 // SoloLectura dice si la bóveda viene de un formato que este código sabe leer pero
