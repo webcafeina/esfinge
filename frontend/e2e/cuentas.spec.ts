@@ -677,7 +677,7 @@ test("el servidor de un proyecto: la huella, el acceso y que además escriba", a
   await expect(laHuella).toBeVisible({ timeout: 20_000 });
   // **Se enseña antes de dejar confirmar**: es lo único que protege del servidor de
   // cuentas, y una huella que no se ve no protege nada.
-  await expect(page.getByText("Compárala con la que", { exact: false })).toBeVisible();
+  await expect(page.getByText("Compárala con lo que diga ese equipo", { exact: false })).toBeVisible();
   const huella = ((await laHuella.textContent()) ?? "").trim();
   expect(huella, "la huella del servidor sale vacía").not.toEqual("");
   await accion(page, "Coincide, es mi servidor").click();

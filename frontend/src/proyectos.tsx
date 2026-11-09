@@ -968,17 +968,14 @@ function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo:
           <p className={elDelServidor !== undefined ? "aviso" : "nota"}>
             {elDelServidor !== undefined ? (
               <>
-                <strong>{servidor}</strong> puede leer esta bóveda, y su llave está en un fichero de
-                ese equipo: <strong>quien entre en él abre esto</strong>. A cambio, las contraseñas de
-                este proyecto dejan de estar en claro en un <code>.env</code> y queda apuntado lo que
-                se usa. Quitándolo, el servidor deja de poder bajarla y{" "}
+                Su llave está en un fichero de ese equipo, así que{" "}
+                <strong>quien entre en él abre esto</strong>. Al quitarlo,{" "}
                 <strong>su copia se borra</strong> la próxima vez que trabaje.
               </>
             ) : (
               <>
-                Le dará acceso de <strong>solo ver</strong> a <strong>{servidor}</strong>, para que lo
-                que corra ahí use estas contraseñas sin tenerlas escritas en un fichero. Puede leer,
-                no puede cambiar nada.
+                Le dará acceso de <strong>solo ver</strong> a <strong>{servidor}</strong>: podrá usar
+                estas contraseñas, no cambiarlas.
               </>
             )}
           </p>
@@ -1000,18 +997,15 @@ function ElAcceso({ alFallar, activo }: { alFallar: (m: string) => void; activo:
               <p className={elDelServidor.permiso === "editar" ? "aviso" : "nota"}>
                 {elDelServidor.permiso === "editar" ? (
                   <>
-                    Lo que corra en <strong>{servidor}</strong> puede <strong>crear y cambiar</strong> las
-                    credenciales de esta bóveda <strong>sin que nadie lo apruebe</strong>; queda apuntado
-                    en el registro. A cambio, un agente que rote un testigo puede guardarlo él en vez de
-                    tener que dárselo a alguien por un chat. Lo que cuesta: quien entre en ese equipo
-                    puede <strong>cambiar lo que usan tus clientes</strong> y <strong>dar acceso a otras
-                    cuentas</strong>, que con solo ver no puede.
+                    Puede <strong>crear y cambiar</strong> credenciales de esta bóveda{" "}
+                    <strong>sin que nadie lo apruebe</strong>, y queda apuntado. Quien entre en ese
+                    equipo puede <strong>cambiar lo que usan tus clientes</strong> y{" "}
+                    <strong>dar acceso a otras cuentas</strong>.
                   </>
                 ) : (
                   <>
                     Hoy solo lee. Marcándolo podrá <strong>guardar y rotar</strong> contraseñas de esta
-                    bóveda por su cuenta, sin que nadie lo apruebe — que es lo que hace falta para que un
-                    agente que cambia un testigo no tenga que dárselo a una persona por un chat.
+                    bóveda por su cuenta, sin que nadie lo apruebe.
                   </>
                 )}
               </p>

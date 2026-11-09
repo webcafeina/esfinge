@@ -3657,3 +3657,226 @@ test("la lista se entera de que ha cambiado la bóveda, no solo de que alguien h
   await volverALaPersonal(page);
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * Un fallo de Ajustes se lee **en la pestaña donde ocurre**.
+ *
+ * El `<p className="error">` del panel vivía dentro de la sección de
+ * «Actualizaciones», que es donde se escribió, así que cualquier fallo de las otras
+ * cuatro se apuntaba en un estado que **no dibujaba nadie**: el cliente pulsó «Ver su
+ * huella» en Cuenta y no pasó nada, ni bien ni mal, y por eso no pudo seguir ni decirme
+ * por qué. Es la misma regla que ya vigila la tarjeta de los agentes —lo que espera
+ * respuesta no vive en ninguna pestaña—, aquí con un error, que también es estado.
+ *
+ * **Se provoca de verdad y no se simula**: en local no hay cuenta, así que pedirle al
+ * servidor la huella de una dirección falla sola. Y se comprueba **desde la pestaña
+ * Cuenta**, sin tocar el control segmentado: navegar hasta donde está el mensaje es la
+ * afirmación que el fallo convertía en falsa.
+ */
+test("un fallo de Ajustes se lee en la pestaña donde pasa", async ({ page, request }) => {
+  const errores = vigilarConsola(page);
+
+  // **Las preferencias se leen y se reponen enteras** (la regla del guardado a
+  // medias): este correo hace aparecer el interruptor del servidor en los proyectos,
+  // así que dejarlo puesto cambiaría lo que ven otras pruebas.
+  const verPrefs = async () =>
+    (await (await request.post("/api/VerPreferencias", { data: [] })).json()) as Record<
+      string,
+      unknown
+    >;
+  const antes = await verPrefs();
+
+  try {
+    await page.goto("/");
+    await seccion(page, "Ajustes").click();
+    await page.getByRole("tab", { name: "Cuenta" }).click();
+
+    const campo = page.locator("#correo-del-servidor");
+    await expect(campo).toBeVisible({ timeout: 20_000 });
+    // Se teclea y se pulsa Intro, que es lo que hace una persona: ese campo no tiene
+    // botón de guardar.
+    await campo.click();
+    await campo.pressSequentially("servidor@ejemplo.com");
+    await campo.press("Enter");
+    await expect
+      .poll(async () => (await verPrefs()).correoDelServidor ?? "", {
+        timeout: 20_000,
+        message: "el correo del servidor no llegó a Go al pulsar Intro",
+      })
+      .toEqual("servidor@ejemplo.com");
+
+    await accion(page, "Ver su huella").click();
+
+    const elError = page.locator(".contenido .error:visible");
+    await expect(
+      elError,
+      "«Ver su huella» ha fallado y la pestaña Cuenta no dice nada: el error se pinta en otra",
+    ).toBeVisible({ timeout: 20_000 });
+    expect(((await elError.textContent()) ?? "").trim(), "el error sale en blanco").not.toEqual("");
+  } finally {
+    await request.post("/api/GuardarPreferencias", {
+      data: [{ ...antes, correoDelServidor: "" }],
+    });
+  }
+
+  // El fallo es a propósito: sin cuenta no hay a quién preguntarle la huella. Son dos
+  // apuntes —la petición que falló y la línea genérica del navegador— y los dos se
+  // descuentan por separado, que es lo que exige que hayan ocurrido de verdad.
+  olvidarEsperado(errores, /HuellaDe/);
+  olvidarEsperado(errores, /status of 400/);
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * Con la bóveda cerrada, comparar la huella **no se ofrece: se dice qué hacer**.
+ *
+ * Es la otra mitad del fallo de arriba, y la que de verdad lo evita. Pedirle al
+ * servidor de cuentas quién es una dirección necesita la sesión de la cuenta, que vive
+ * mientras la bóveda está abierta; el botón se ofrecía igual y fallaba. Es la regla que
+ * ya costó `ExportarLlaves` —pedía clave y sitio para un fichero que no iba a existir—:
+ * **lo que hace falta para decidir se mira antes de pedirle a alguien que decida.**
+ *
+ * **Y se comprueban los dos lados**, porque esconder un botón que funciona sería el
+ * fallo contrario: con la bóveda abierta tiene que seguir ahí.
+ */
+test("con la bóveda cerrada no se ofrece comparar la huella del servidor", async ({
+  page,
+  request,
+}) => {
+  const errores = vigilarConsola(page);
+
+  const verPrefs = async () =>
+    (await (await request.post("/api/VerPreferencias", { data: [] })).json()) as Record<
+      string,
+      unknown
+    >;
+  const antes = await verPrefs();
+
+  try {
+    await page.goto("/");
+    await conLaBovedaAbierta(page);
+
+    await seccion(page, "Ajustes").click();
+    await page.getByRole("tab", { name: "Cuenta" }).click();
+    const campo = page.locator("#correo-del-servidor");
+    await expect(campo).toBeVisible({ timeout: 20_000 });
+    await campo.click();
+    await campo.pressSequentially("servidor@ejemplo.com");
+    await campo.press("Enter");
+
+    const elBoton = page.locator(".contenido").getByRole("button", { name: "Ver su huella" });
+    const laFrase = page.locator(".contenido").getByText("Abre tu bóveda para comparar su huella");
+    // Con la bóveda abierta, el botón está.
+    await expect(elBoton).toBeVisible({ timeout: 20_000 });
+
+    // Se cierra a mano, que es lo que hace el botón de la bóveda, y **se vuelve a
+    // Ajustes**: lo que se comprueba es lo que ve quien estaba aquí.
+    await seccion(page, "Bóveda").click();
+    await accion(page, "Cerrar la bóveda").click();
+    await seccion(page, "Ajustes").click();
+
+    await expect(
+      laFrase,
+      "con la bóveda cerrada no dice que haya que abrirla para comparar la huella",
+    ).toBeVisible({ timeout: 20_000 });
+    await expect(
+      elBoton,
+      "con la bóveda cerrada se sigue ofreciendo «Ver su huella», que no puede funcionar",
+    ).toHaveCount(0);
+
+    // Y al abrirla vuelve a ofrecerse: esto no es esconderlo, es no prometerlo.
+    await conLaBovedaAbierta(page);
+    await seccion(page, "Ajustes").click();
+    await expect(elBoton).toBeVisible({ timeout: 20_000 });
+    await expect(laFrase).toHaveCount(0);
+  } finally {
+    // La bóveda se deja abierta, que es como la esperan las demás, y el correo del
+    // servidor se repone: puesto, haría salir su interruptor en los proyectos.
+    await conLaBovedaAbierta(page);
+    await request.post("/api/GuardarPreferencias", {
+      data: [{ ...antes, correoDelServidor: "" }],
+    });
+  }
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
+/**
+ * El registro **se vuelve a leer cuando cambia la bóveda**, porque vive dentro de ella.
+ *
+ * Lo que había solo escuchaba los tres eventos del canal de los agentes, así que
+ * `EstadoDelAgente` se preguntaba una vez y no se volvía a pedir hasta que hablara un
+ * agente: abrir la bóveda, cerrarla o entrar en un proyecto dejaba en pantalla **el
+ * registro de otra bóveda, o ninguno**. Lo vio el cliente con la ADR 0058 recién
+ * montada: escribió desde el VPS, **la entrada apareció en la lista del proyecto y el
+ * registro no**, que es justo la mitad que esa ADR dice que se gana.
+ *
+ * **El estado se dobla a propósito**: lo que se comprueba es que la ventana vuelve a
+ * preguntar, no lo que Go contesta —eso ya lo vigila la prueba de al lado, que pinta los
+ * nueve apuntes—. Y el doble **imita a Go en lo que importa aquí**: con la bóveda cerrada
+ * no hay registro, porque está dentro del cuerpo cifrado. Así que el bloque solo puede
+ * salir si alguien ha vuelto a preguntar después de abrirla.
+ */
+test("el registro se vuelve a leer al abrir la bóveda, no solo cuando habla un agente", async ({
+  page,
+}) => {
+  const errores = vigilarConsola(page);
+
+  // Lo que el doble contesta, que lo decide la prueba: es el equivalente de que la
+  // bóveda esté abierta.
+  let conRegistro = false;
+  await page.route("**/api/EstadoDelAgente", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        encendido: true,
+        escuchando: true,
+        donde: "/tmp/agentes.sock",
+        configuracion: '{\n  "mcpServers": {}\n}',
+        orden: "claude mcp add --scope user esfinge /tmp/esfinge-mcp",
+        vscode: '{\n  "servers": {}\n}',
+        ruta: "/tmp/esfinge-mcp",
+        dado: conRegistro
+          ? [
+              {
+                id: "1",
+                cuando: "2026-11-09T09:25:44Z",
+                quien: "Serafín (el servidor)",
+                que: "crear",
+                sobre: "a1",
+                titulo: "prueba-escritura-vps.ejemplo.com",
+                resultado: "hecho",
+                como: "llave-del-equipo",
+              },
+            ]
+          : [],
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await conLaBovedaAbierta(page);
+  await accion(page, "Cerrar la bóveda").click();
+
+  await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Agentes" }).click();
+  const elRegistro = page.locator(".contenido").getByText("Lo que les has dado", { exact: false });
+  await expect(elRegistro).toHaveCount(0);
+
+  // Y ahora hay registro que enseñar, como cuando se abre la bóveda de verdad. **Se
+  // vuelve a Ajustes**: lo que se mira es lo que ve quien ya estaba ahí.
+  conRegistro = true;
+  await conLaBovedaAbierta(page);
+  await seccion(page, "Ajustes").click();
+
+  await expect(
+    elRegistro,
+    "el registro no se ha vuelto a pedir al abrir la bóveda: la pantalla se queda con lo de antes",
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(
+    page.locator(".contenido").getByText("prueba-escritura-vps.ejemplo.com"),
+  ).toBeVisible();
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});

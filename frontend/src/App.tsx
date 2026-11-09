@@ -130,11 +130,27 @@ export default function App() {
     const dejarDeOirPide = alPedirloUnAgente(leerAgente);
     const dejarDeOirQuiere = alQuererAlgoUnAgente(leerAgente);
     const dejarDeOirApuntes = alApuntarloElAgente(leerAgente);
+    // **Y dos eventos más, porque el registro vive dentro de la bóveda** (2026-11-09).
+    // Los tres de arriba son del canal de los agentes, así que esto solo se volvía a
+    // leer cuando hablaba un agente: abrir la bóveda, cerrarla o entrar en un proyecto
+    // dejaba en pantalla **el registro de otra bóveda, o ninguno**, para siempre. Y
+    // desde la ADR 0058 hay una fuente más que no pasa por aquí —la línea de comandos
+    // de un servidor—, cuyos apuntes llegan **por la sincronización**: el cliente
+    // escribió desde el VPS, la entrada apareció en la lista y el registro no, porque
+    // nadie había vuelto a preguntar.
+    //
+    // **Son dos y no uno**, que es la distinción que este proyecto ya ha pagado:
+    // `boveda-estado` es abrir, cerrar y conmutar; `boveda-cambiada` es que alguien de
+    // fuera ha escrito —y lo manda la pasada de sincronización cuando baja algo—.
+    const dejarDeOirBoveda = alCambiarElEstadoDeLaBoveda(leerAgente);
+    const dejarDeOirEscrito = alCambiarLaBoveda(leerAgente);
     leerAgente();
     return () => {
       dejarDeOirPide();
       dejarDeOirQuiere();
       dejarDeOirApuntes();
+      dejarDeOirBoveda();
+      dejarDeOirEscrito();
     };
   }, [leerAgente]);
 
@@ -1684,6 +1700,22 @@ function Ajustes({
   const [dicho, setDicho] = useState("");
   const [error, setError] = useState("");
 
+  // **Si la bóveda está abierta**, que es lo que hace falta para pedirle al servidor de
+  // cuentas la huella de una dirección: la sesión de la cuenta vive mientras lo está.
+  // `null` es «todavía no se sabe», y entonces se ofrece igual: esconder un botón que
+  // funciona es peor que ofrecer uno que va a decir por qué no.
+  //
+  // **Es `boveda-estado` y no `boveda-cambiada`**, que son dos eventos distintos: el
+  // segundo lo manda quien escribe desde fuera y no dice nada de abrir ni cerrar.
+  const [bovedaAbierta, setBovedaAbierta] = useState<boolean | null>(null);
+  useEffect(() => {
+    esfinge
+      .estadoBoveda()
+      .then((e) => setBovedaAbierta(e.abierta))
+      .catch(() => {});
+    return alCambiarElEstadoDeLaBoveda(setBovedaAbierta);
+  }, []);
+
   // Lo último que se ha decidido guardar, que **no es lo mismo que el estado**.
   //
   // Go recibe el objeto entero, así que cada cambio manda también lo que no se ha
@@ -1893,6 +1925,15 @@ function Ajustes({
       />
 
 
+      {/* **El error va encima de las pestañas, no dentro de una** (2026-11-09).
+          Estaba dentro de la de «Actualizaciones», que es donde se escribió, así que
+          cualquier fallo de las otras cuatro —guardar una preferencia, pedir la huella
+          del servidor— se apuntaba en un estado que **no lo dibujaba nadie**: el cliente
+          pulsó «Ver su huella» en Cuenta y no pasó nada, ni bien ni mal. Es la misma
+          regla que ya está escrita aquí para lo que pide un agente: **lo que espera
+          respuesta no vive en ninguna pestaña**, y un error es estado, no configuración. */}
+      {error && <p className="error">{error}</p>}
+
       {seccion === "cuenta" && (
         <>
         <div className="ficha">
@@ -1915,7 +1956,10 @@ function Ajustes({
             <Icono nombre="servidor" />
             <div>
               <h3>Tu servidor</h3>
-              <p className="nota">Para que un servidor pueda usar las contraseñas de un proyecto.</p>
+              <p className="nota">
+                Para que un servidor use las contraseñas de un proyecto sin tenerlas en un{" "}
+                <code>.env</code>.
+              </p>
             </div>
           </header>
           <div>
@@ -1948,15 +1992,20 @@ function Ajustes({
                 }
               }}
             />
+            {/* **Dos líneas, y una es la que cuesta** (2026-11-09, a petición del cliente:
+                «veo exceso de texto»). Aquí había cuatro párrafos antes de poder hacer
+                nada. Lo que no se toca es la frase de lo que cuesta, con las palabras de
+                Touch ID y en la pantalla donde se activa (ADR 0057): decirlo solo en la
+                documentación sería venderlo. Lo que se fue: que su bóveda está vacía, que
+                tiene su propia contraseña, el nombre del interruptor que aparecerá después
+                —se lee en el proyecto, no hace falta anunciarlo— y qué se gana, que ya
+                está en el subtítulo. */}
             <p className="nota">
-              Es la cuenta del servidor, <strong>no la tuya</strong>: tiene su propia contraseña y su
-              propia bóveda, vacía. Con esto puesto, dentro de una bóveda de proyecto aparece
-              «Trabajar con esta bóveda en el servidor».
+              Es la cuenta del servidor, <strong>no la tuya</strong>.
             </p>
             <p className="aviso">
-              Un servidor guarda su llave en un fichero, así que <strong>quien entre en él abre las
-              bóvedas que le marques</strong>. No protege de eso: lo que cambia es que las contraseñas
-              dejan de estar en claro en un <code>.env</code> y que queda apuntado lo que se usa.
+              Su llave vive en un fichero de ese equipo, así que{" "}
+              <strong>quien entre en él abre las bóvedas que le marques</strong>.
             </p>
 
             {/* **La huella, y aquí es donde va** (ADR 0058, sobre la 0043).
@@ -1978,10 +2027,22 @@ function Ajustes({
                 ) : huellaVista === "" ? (
                   <>
                     <p className="aviso">
-                      <strong>Falta comparar su huella.</strong> Hasta que lo hagas no podrás marcarle
-                      ninguna bóveda: es lo único que prueba que las contraseñas van a tu servidor y no
-                      a quien se haya puesto en medio.
+                      <strong>Falta comparar su huella.</strong> Sin eso no podrás marcarle ninguna
+                      bóveda.
                     </p>
+                    {/* **Con la bóveda cerrada no se ofrece: se dice qué hacer** (2026-11-09).
+                        Comparar la huella es preguntarle al servidor de cuentas quién es
+                        esa dirección, y esa sesión existe mientras la bóveda está
+                        abierta. El botón estaba ahí igual, fallaba, y **el motivo era el
+                        correcto** —«Abre la bóveda de la cuenta para hacer esto»— pero no
+                        tenía dónde dibujarse, así que pulsarlo no hacía nada: el cliente
+                        se quedó parado en la primera pantalla de montar su servidor. Lo
+                        de arriba lo arregla; esto es la otra mitad, la regla que ya costó
+                        `ExportarLlaves`: **lo que hace falta para decidir se mira antes de
+                        pedirle a alguien que decida**. */}
+                    {bovedaAbierta === false ? (
+                      <p className="nota">Abre tu bóveda para comparar su huella.</p>
+                    ) : (
                     <div className="botones">
                       <button
                         className="discreto"
@@ -2002,13 +2063,14 @@ function Ajustes({
                         {mirandoHuella ? "Mirando…" : "Ver su huella"}
                       </button>
                     </div>
+                    )}
                   </>
                 ) : (
                   <>
                     <p className="nota">
-                      Su huella es <code className="huella">{huellaVista}</code>. Compárala con la que
-                      enseña ese equipo —<code>esfinge boveda servidor huella</code>— antes de decir que
-                      coincide.
+                      Su huella es <code className="huella">{huellaVista}</code>. Compárala con lo que
+                      diga ese equipo —<code>esfinge boveda servidor huella</code>—: es lo único que
+                      prueba que las contraseñas van a tu servidor y no a quien se haya puesto en medio.
                     </p>
                     <div className="botones">
                       <button
@@ -2420,7 +2482,6 @@ function Ajustes({
           </div>
 
           {dicho && <p className="exito">{dicho}</p>}
-          {error && <p className="error">{error}</p>}
         </section>
 
 
