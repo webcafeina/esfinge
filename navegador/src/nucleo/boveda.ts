@@ -38,7 +38,34 @@ import {
 } from "./compartida";
 import { ERR_CHECKSUM, normalizar, nuevaRecuperacion, pareceRecuperacion } from "./recuperacion";
 
-export const FORMATO = 1;
+/**
+ * Los dos formatos de bóveda, **y son dos a propósito** (2026-11-09).
+ *
+ * Los mismos números y el mismo razonamiento que en Go (`internal/boveda/boveda.go`),
+ * que es lo que exige la ADR 0040. Con uno solo no se puede repartir un cambio de
+ * formato en dos publicaciones, y aquí hace falta precisamente por esta extensión: se
+ * publica en las tiendas **aparte de la aplicación** y puede ir varias versiones por
+ * detrás, así que empezar a escribir un formato nuevo el mismo día que se aprende a
+ * leerlo deja sin abrir su bóveda a quien tenga la extensión vieja.
+ *
+ * - `FORMATO_QUE_SE_LEE`: lo máximo que esto entiende. Por encima, `leerDocumento` se
+ *   niega y manda a actualizar.
+ * - `FORMATO_QUE_SE_ESCRIBE`: lo máximo que se atreve a escribir. Entre los dos, la
+ *   bóveda se abre, se lee entera y **no se guarda**.
+ *
+ * Un formato más viejo se escribe sin más, que es como se migra. Hasta el 2026-11-09
+ * esto estaba al revés en los dos núcleos y no se notaba porque el único formato que
+ * existía era el 1.
+ *
+ * Los compara `TestCruzadaLosFormatosSonLosMismos`: desalineados no fallan solos.
+ */
+export const FORMATO_QUE_SE_LEE = 1;
+export const FORMATO_QUE_SE_ESCRIBE = 1;
+
+/** soloSeLee dice si un documento de ese formato se abre **sin poder escribir**. */
+export function soloSeLee(formato: number, queSeEscribe: number): boolean {
+  return formato > queSeEscribe;
+}
 export const RANURA_MAESTRA = "maestra";
 export const RANURA_RECUPERACION = "recuperacion";
 /**
@@ -169,7 +196,7 @@ export function leerDocumento(texto: string): Documento {
   }
   if (!o || typeof o !== "object" || o.esfinge !== MARCA) throw new ErrorBoveda("no-es-boveda");
   const formato = typeof o.formato === "number" ? o.formato : 0;
-  if (formato > FORMATO) throw new ErrorBoveda("formato-nuevo");
+  if (formato > FORMATO_QUE_SE_LEE) throw new ErrorBoveda("formato-nuevo");
   const t = (v: unknown) => (typeof v === "string" ? v : "");
   const sobres = Array.isArray(o.sobres)
     ? (o.sobres as Record<string, unknown>[]).map((s) => {
@@ -324,7 +351,7 @@ export class Boveda {
     const doc: Documento = {
       esfinge: MARCA,
       aviso: AVISO,
-      formato: FORMATO,
+      formato: FORMATO_QUE_SE_ESCRIBE,
       id: azarHex(),
       serie: 0,
       cambiada: cuando,
@@ -354,7 +381,7 @@ export class Boveda {
     const doc: Documento = {
       esfinge: MARCA,
       aviso: AVISO,
-      formato: FORMATO,
+      formato: FORMATO_QUE_SE_ESCRIBE,
       id: azarHex(),
       serie: 0,
       cambiada: cuando,
@@ -498,7 +525,7 @@ export class Boveda {
 
   private static async conLlave(doc: Documento, llave: string, opciones: { purgar?: boolean }): Promise<Boveda> {
     const { sel, cont } = await desempaquetar(doc, llave);
-    const b = new Boveda(doc, sel, cont, llave, doc.formato < FORMATO);
+    const b = new Boveda(doc, sel, cont, llave, soloSeLee(doc.formato, FORMATO_QUE_SE_ESCRIBE));
     if (opciones.purgar) {
       const t = ahora().getTime();
       // Y de paso, las copias que llevan más de un mes esperando (B3).

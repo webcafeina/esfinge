@@ -763,9 +763,11 @@ func fundirTitulares(l, r, b []Titular, hayBase bool) []Titular {
 // Son dos razones distintas y las dos tienen que decir **la suya**, porque mandan a
 // mirar a sitios distintos:
 //
-//   - **De solo lectura**: la escribió una versión más nueva de Esfinge, así que aquí
-//     no se entiende entera y escribir encima se llevaría por delante lo que no se
-//     entiende.
+//   - **De solo lectura**: declara un formato que esta versión sabe leer y **todavía no
+//     escribe**, así que aquí no se entiende entera y escribir encima se llevaría por
+//     delante lo que no se entiende. No es «la escribió una versión más nueva» a secas:
+//     un formato por encima de lo que se sabe leer no llega hasta aquí, lo para
+//     `leerDocumento`.
 //   - **Compartida de solo ver**: la clave para descifrarla sí está —escribir
 //     funcionaría— y lo que no se puede es **subirlo**, porque el servidor contesta
 //     403. Lo impone el servidor, no el cifrado, y se dice con esas mismas palabras

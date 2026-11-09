@@ -7,6 +7,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1256,4 +1257,51 @@ func TestLasRanurasLocalesSonLasMismas(t *testing.T) {
 		}
 	}
 	t.Logf("%d ranuras locales en Go y %d en el espejo", len(ranurasLocales), len(enTS))
+}
+
+// **Los dos formatos valen lo mismo en los dos núcleos.**
+//
+// Hermana de la de arriba, y por la misma razón: desalineados **no fallan solos**. Si Go
+// escribiera el formato 2 y el espejo solo lo leyera, la extensión abriría la bóveda en
+// solo lectura y dejaría de ofrecer guardar contraseñas, sin que nada se pusiera rojo —y
+// el reparto en dos publicaciones, que es lo que existe para que eso no pase, se
+// apoyaría en que alguien se acuerde de cambiar dos números en dos ficheros.
+//
+// Lee el fuente del espejo, como su hermana: desde aquí no se puede importar TypeScript.
+func TestLosFormatosSonLosMismos(t *testing.T) {
+	const fuente = "../../navegador/src/nucleo/boveda.ts"
+	datos, err := os.ReadFile(fuente)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// `export const FORMATO_QUE_SE_LEE = 1;`
+	deTS := func(nombre string) int {
+		t.Helper()
+		marca := "export const " + nombre + " = "
+		i := strings.Index(string(datos), marca)
+		if i < 0 {
+			t.Fatalf("no encuentro %s en %s; si se ha escrito de otra forma, esta prueba deja de comparar nada", nombre, fuente)
+		}
+		resto := string(datos)[i+len(marca):]
+		j := strings.Index(resto, ";")
+		if j < 0 {
+			t.Fatalf("%s no acaba en punto y coma en %s", nombre, fuente)
+		}
+		n, err := strconv.Atoi(strings.TrimSpace(resto[:j]))
+		if err != nil {
+			t.Fatalf("%s no es un número en %s: %v", nombre, fuente, err)
+		}
+		return n
+	}
+
+	if n := deTS("FORMATO_QUE_SE_LEE"); n != FormatoQueSeLee {
+		t.Errorf("Go lee hasta el formato %d y el espejo hasta el %d", FormatoQueSeLee, n)
+	}
+	if n := deTS("FORMATO_QUE_SE_ESCRIBE"); n != FormatoQueSeEscribe {
+		t.Errorf("Go escribe hasta el formato %d y el espejo hasta el %d: uno escribiría lo que el otro abre en solo lectura", FormatoQueSeEscribe, n)
+	}
+	// Y el invariante de los dos: no se puede escribir lo que no se sabe leer.
+	if FormatoQueSeEscribe > FormatoQueSeLee {
+		t.Errorf("se escribe hasta el %d y solo se lee hasta el %d", FormatoQueSeEscribe, FormatoQueSeLee)
+	}
 }

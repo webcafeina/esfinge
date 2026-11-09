@@ -81,8 +81,41 @@ import (
 	"github.com/webcafeina/esfinge/internal/escritura"
 )
 
-// Formato de la bóveda que este código entiende.
-const Formato = 1
+// Los dos formatos de bóveda, y **son dos a propósito** (2026-11-09).
+//
+// Con uno solo no se puede repartir un cambio de formato en dos publicaciones, y aquí
+// hace falta: la extensión se publica en las tiendas **aparte de la aplicación** y puede
+// ir varias versiones por detrás, así que empezar a escribir un formato nuevo el mismo
+// día que se aprende a leerlo deja a quien tenga la extensión vieja sin poder abrir su
+// bóveda. Es la disciplina de la ADR 0048 —meter el formato antes de que haya datos—,
+// convertida en un mecanismo en vez de una promesa.
+//
+//   - FormatoQueSeLee: lo máximo que este código entiende. Por encima, `leerDocumento`
+//     se niega y dice que hay que actualizar.
+//   - FormatoQueSeEscribe: lo máximo que se atreve a escribir. Entre los dos, la bóveda
+//     se abre, se lee entera y **no se guarda**.
+//
+// **Un formato más viejo se escribe sin más**, que es como se migra. Hasta el 2026-11-09
+// esto estaba al revés —`soloLectura` se calculaba con `<`, así que una bóveda vieja se
+// abría sin poder escribir— y no se notaba porque el único formato que existía era el 1;
+// el día que se hubiera publicado un 2, **todas las bóvedas existentes se habrían vuelto
+// de solo lectura**.
+//
+// Los dos números tienen que valer lo mismo en el espejo de TypeScript
+// (`navegador/src/nucleo/boveda.ts`), y los compara `TestCruzadaLosFormatosSonLosMismos`:
+// desalineados no fallan solos, un lado escribiría lo que el otro abre en solo lectura.
+const (
+	FormatoQueSeLee     = 1
+	FormatoQueSeEscribe = 1
+)
+
+// soloSeLee dice si un documento de ese formato se abre **sin poder escribir**.
+//
+// Está aparte y recibe el límite porque hoy los dos números valen 1, así que el caso
+// asimétrico —el que va a existir durante la publicación que solo aprende a leer— no se
+// puede montar con las constantes puestas. Sacándolo aquí, la regla se prueba con
+// números explícitos en vez de con un caso que todavía no ocurre.
+func soloSeLee(formato, queSeEscribe int) bool { return formato > queSeEscribe }
 
 // Tipos de ranura. Son una lista abierta a propósito: añadir
 // «llavero-del-sistema» para Touch ID, o «servidor» cuando haya cuentas, no
@@ -308,7 +341,9 @@ type Boveda struct {
 	// cuerpoSucio marca que hay cambios en las entradas. Sin él, cada guardado
 	// recifraría el cuerpo aunque solo se hubiera tocado una llave.
 	cuerpoSucio bool
-	// soloLectura cuando el formato es más nuevo del que entendemos.
+	// soloLectura cuando el formato es **más nuevo de lo que este código escribe**: se
+	// puede mirar y no se puede guardar encima. Por encima de `FormatoQueSeLee` no se
+	// llega aquí, que eso lo para `leerDocumento`.
 	soloLectura bool
 	// alGuardar se llama tras cada guardado que sale bien, **en su propia
 	// gorrutina**: se guarda con el cerrojo cogido, y quien escucha —la
@@ -419,7 +454,7 @@ func sinRanuras(ruta string) (*Boveda, error) {
 		doc: documento{
 			Esfinge:  marca,
 			Aviso:    avisoDelFichero,
-			Formato:  Formato,
+			Formato:  FormatoQueSeEscribe,
 			ID:       hex.EncodeToString(id),
 			Serie:    0,
 			Cambiada: time.Now().UTC().Format(time.RFC3339),
@@ -533,7 +568,7 @@ func conLlave(ruta string, doc documento, llave []byte, purgar bool) (*Boveda, e
 	if err != nil {
 		return nil, err
 	}
-	b := &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, soloLectura: doc.Formato < Formato}
+	b := &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, soloLectura: soloSeLee(doc.Formato, FormatoQueSeEscribe)}
 
 	if !purgar {
 		return b, nil
@@ -560,7 +595,7 @@ func leerDocumento(datos []byte) (documento, error) {
 	if err := json.Unmarshal(datos, &doc); err != nil || doc.Esfinge != marca {
 		return documento{}, ErrNoEsBoveda
 	}
-	if doc.Formato > Formato {
+	if doc.Formato > FormatoQueSeLee {
 		return documento{}, ErrFormatoNuevo
 	}
 	return doc, nil
@@ -877,7 +912,8 @@ func (b *Boveda) Abierta() bool {
 	return b.llave != nil
 }
 
-// SoloLectura dice si la bóveda viene de un formato que no entendemos del todo.
+// SoloLectura dice si la bóveda viene de un formato que este código sabe leer pero
+// todavía no escribe.
 func (b *Boveda) SoloLectura() bool { return b.soloLectura }
 
 // Buscar devuelve las entradas que encajan, **sin secretos**.

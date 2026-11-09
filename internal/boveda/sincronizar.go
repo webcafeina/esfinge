@@ -370,7 +370,7 @@ func AbrirConLaLlaveDe(ruta string, otra *Boveda) (*Boveda, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, soloLectura: doc.Formato < Formato}, nil
+	return &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, soloLectura: soloSeLee(doc.Formato, FormatoQueSeEscribe)}, nil
 }
 
 // OpcionesDeFusion cambian lo que Fundir se atreve a hacer solo.

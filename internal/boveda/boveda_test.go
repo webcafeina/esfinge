@@ -297,8 +297,10 @@ func TestNoEsBoveda(t *testing.T) {
 	}
 }
 
-// Una bóveda de una versión más nueva se puede mirar, pero **no se guarda
-// encima**: escribir sobre algo que no se entiende del todo es borrarlo.
+// Un formato **por encima de lo que este código sabe leer** no se abre en absoluto, y
+// el error manda a actualizar. Lo que se abre sin poder escribir es otra cosa —un
+// formato que se sabe leer y todavía no se escribe— y eso lo prueba
+// `TestLaReglaDeLosDosFormatos`.
 func TestUnFormatoMasNuevoNoSeAbre(t *testing.T) {
 	b, _, ruta := nueva(t)
 	b.Cerrar()
@@ -306,12 +308,73 @@ func TestUnFormatoMasNuevoNoSeAbre(t *testing.T) {
 	var doc documento
 	datos, _ := os.ReadFile(ruta)
 	json.Unmarshal(datos, &doc)
-	doc.Formato = Formato + 1
+	doc.Formato = FormatoQueSeLee + 1
 	fuera, _ := json.Marshal(doc)
 	os.WriteFile(ruta, fuera, 0o600)
 
 	if _, err := Abrir(ruta, maestra); !errors.Is(err, ErrFormatoNuevo) {
 		t.Errorf("quiero ErrFormatoNuevo, tengo %v", err)
+	}
+}
+
+// **La regla de los dos formatos**, con números explícitos.
+//
+// Hasta el 2026-11-09 esto estaba al revés: `soloLectura` se calculaba con `<`, así que
+// una bóveda de un formato **más viejo** se abría sin poder escribir. No se notaba
+// porque el único formato que existía era el 1 — y el día que se hubiera publicado un 2,
+// **todas las bóvedas que existen se habrían vuelto de solo lectura**. Esta prueba es la
+// que no deja que vuelva.
+//
+// Se prueba la regla y no las constantes porque hoy las dos valen 1: el caso asimétrico
+// —se lee y no se escribe— es el que va a existir en la publicación que solo aprende a
+// leer, y hay que poder comprobarlo antes de que exista.
+func TestLaReglaDeLosDosFormatos(t *testing.T) {
+	for _, c := range []struct {
+		formato, queSeEscribe int
+		soloLectura           bool
+		porque                string
+	}{
+		{1, 1, false, "lo de siempre: el formato de hoy se escribe"},
+		{0, 1, false, "una bóveda sin el campo se escribe, que es como se migra"},
+		{1, 2, false, "un formato más viejo se escribe sin más: así se migra"},
+		{2, 1, true, "lo que se sabe leer y todavía no se escribe"},
+		{3, 1, true, "y lo mismo más arriba, si alguna vez se lee"},
+	} {
+		if hay := soloSeLee(c.formato, c.queSeEscribe); hay != c.soloLectura {
+			t.Errorf("formato %d con escribir hasta %d: soloLectura=%v, quiero %v (%s)",
+				c.formato, c.queSeEscribe, hay, c.soloLectura, c.porque)
+		}
+	}
+}
+
+// Y la mitad que de verdad habría roto a todo el mundo: una bóveda del formato de
+// siempre, abierta por un código que ya sabe escribir uno más nuevo, **se guarda**.
+func TestUnFormatoViejoSeAbreYSeEscribe(t *testing.T) {
+	b, _, ruta := nueva(t)
+	b.Cerrar()
+
+	var doc documento
+	datos, _ := os.ReadFile(ruta)
+	if err := json.Unmarshal(datos, &doc); err != nil {
+		t.Fatal(err)
+	}
+	// Como si este código escribiera ya un formato por delante del fichero.
+	doc.Formato = FormatoQueSeEscribe - 1
+	fuera, _ := json.Marshal(doc)
+	if err := os.WriteFile(ruta, fuera, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	otra, err := Abrir(ruta, maestra)
+	if err != nil {
+		t.Fatalf("una bóveda de un formato más viejo no se abre: %v", err)
+	}
+	defer otra.Cerrar()
+	if otra.SoloLectura() {
+		t.Error("una bóveda de un formato más viejo se abre sin poder escribir: eso dejaría de solo lectura todas las que existen el día que se suba el formato")
+	}
+	if err := otra.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Lo de después"}); err != nil {
+		t.Errorf("no se puede escribir en una bóveda de un formato más viejo: %v", err)
 	}
 }
 

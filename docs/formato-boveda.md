@@ -34,7 +34,15 @@ JSON en claro, `formato: 1`. Los campos criptográficos son líneas `ESF1.…` c
 
 - **`serie`** cuenta los guardados de **este fichero** y sirve para no pisar lo que otro proceso haya
   escrito. No es la versión del servidor.
-- Un `formato` mayor que el que se entiende **no se abre**, y uno menor se abre solo para leer.
+- Hay **dos** formatos y no uno, y de eso depende poder repartir un cambio en dos
+  publicaciones: `FormatoQueSeLee` es lo máximo que se entiende y `FormatoQueSeEscribe` lo
+  máximo que se escribe. Un `formato` por encima del primero **no se abre** —y el error
+  manda a actualizar—; entre los dos **se abre y no se guarda**; y por debajo **se abre y
+  se escribe**, que es como se migra. Hasta el 2026-11-09 esto estaba escrito aquí al
+  revés —«uno menor se abre solo para leer»— y el código hacía eso mismo: el día que se
+  hubiera publicado un formato 2, todas las bóvedas existentes se habrían vuelto de solo
+  lectura. Los dos números tienen que valer lo mismo en los dos núcleos, y los compara
+  `TestLosFormatosSonLosMismos`.
 
 ## Las claves
 
