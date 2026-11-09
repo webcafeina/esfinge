@@ -49,6 +49,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/webcafeina/esfinge/internal/cripto"
 )
 
 const (
@@ -127,7 +129,7 @@ func SellarHaciaIdentidad(secreto []byte, para Identidad) (string, error) {
 // tiene el acceso.
 func (b *Boveda) AbrirSellado(sellado string) ([]byte, error) {
 	b.mu.Lock()
-	if b.llave == nil {
+	if b.cerrada() {
 		b.mu.Unlock()
 		return nil, ErrCerrada
 	}
@@ -298,11 +300,32 @@ func AbrirCompartidaBytes(ruta string, datos []byte, id string, personal *Boveda
 	if i < 0 || doc.Sobres[i].Codificacion == CodificacionRetirada {
 		return nil, ErrSinAcceso
 	}
-	llave, err := personal.AbrirSellado(doc.Sobres[i].Contenedor)
+	claro, err := personal.AbrirSellado(doc.Sobres[i].Contenedor)
 	if err != nil {
 		return nil, err
 	}
-	return conLlave(ruta, doc, llave, true)
+	// **Qué lleva dentro una ranura de acceso, y lo dice el claro** (ADR 0059).
+	//
+	// Las de antes de la 0059 llevan la clave de bóveda; las de después, la cadena de
+	// claves de contenido. Se decide mirando **lo que ha salido del sobre** y no el campo
+	// `codificacion` del JSON de fuera: ese campo vive donde cualquiera que pueda
+	// escribir el fichero lo cambia —va en el sello, así que se detectaría, pero decidir
+	// cómo interpretar un secreto por un dato de fuera es poner el carro delante—.
+	//
+	// Las dos formas conviven a propósito y no es transitorio: migrar una bóveda al
+	// formato 2 **deja las ranuras viejas como están**, porque con la clave de bóveda que
+	// llevan dentro se desenvuelve la cadena igual. Eso es lo que hace que migrar no
+	// necesite red ni las identidades de nadie — y también por lo que migrar, solo,
+	// no cierra nada: hasta que se rote, el titular sigue teniendo la clave de bóveda.
+	if esCadena(claro) {
+		defer cripto.Borrar(claro)
+		claves, err := leerCadena(claro)
+		if err != nil {
+			return nil, err
+		}
+		return conClaves(ruta, doc, claves, id, true)
+	}
+	return conLlave(ruta, doc, claro, true)
 }
 
 // indiceDeRanura es `(*Boveda).ranura` sobre un documento suelto: hace falta antes de
@@ -479,7 +502,7 @@ func (b *Boveda) LaCompartida(dueno, ref string) (Compartida, bool) {
 func (b *Boveda) PonerCompartida(c Compartida) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	if c.Dueno == "" || c.Ref == "" {
@@ -505,7 +528,7 @@ func (b *Boveda) PonerCompartida(c Compartida) error {
 func (b *Boveda) OlvidarCompartida(dueno, ref string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	for i, v := range b.cont.Compartidas {
@@ -529,7 +552,7 @@ func (b *Boveda) OlvidarCompartida(dueno, ref string) error {
 func (b *Boveda) RetirarCompartida(dueno, ref, cuando string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	for i, v := range b.cont.Compartidas {
@@ -663,7 +686,7 @@ func (b *Boveda) Titulares() []Titular {
 func (b *Boveda) PonerTitular(t Titular) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	if t.ID == "" {
@@ -689,7 +712,7 @@ func (b *Boveda) PonerTitular(t Titular) error {
 func (b *Boveda) OlvidarTitular(id string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	for i, v := range b.cont.Titulares {

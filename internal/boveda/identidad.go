@@ -131,7 +131,7 @@ func agrupar(s string, cada int) string {
 func (b *Boveda) Identidad() (Identidad, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return Identidad{}, ErrCerrada
 	}
 	if b.cont.Identidad == nil {

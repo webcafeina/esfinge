@@ -112,7 +112,7 @@ const (
 func (b *Boveda) Apuntar(a Apunte) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	if a.ID == "" {

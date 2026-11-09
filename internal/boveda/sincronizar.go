@@ -114,7 +114,7 @@ func (b *Boveda) GuardarEn(ruta string) error {
 func (b *Boveda) Posesion() ([]byte, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		return nil, ErrCerrada
 	}
 	return PosesionDeLlave(b.llave)
@@ -136,7 +136,7 @@ func IDDe(datos []byte) (string, error) {
 func (b *Boveda) SellarSecreto(claro []byte) (string, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		return "", ErrCerrada
 	}
 	return cripto.SellarTexto(claro, b.llave, cripto.PerfilLlave)
@@ -146,7 +146,7 @@ func (b *Boveda) SellarSecreto(claro []byte) (string, error) {
 func (b *Boveda) AbrirSecreto(sellado string) ([]byte, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		return nil, ErrCerrada
 	}
 	return cripto.AbrirTexto(sellado, b.llave)
@@ -170,7 +170,7 @@ func (b *Boveda) Traer(otra *Boveda) (int, error) {
 
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return 0, ErrCerrada
 	}
 	hay := map[string]bool{}
@@ -231,7 +231,7 @@ func (b *Boveda) PrepararSubida(version int64) ([]byte, int64, error) {
 // `cambio`, esa ranura sustituye a la de su tipo **solo en lo que se sube**: el
 // fichero de aquí no se toca.
 func (b *Boveda) prepararSubida(version int64, cambio *sobre) ([]byte, int64, error) {
-	if b.llave == nil {
+	if b.cerrada() {
 		return nil, 0, ErrCerrada
 	}
 	if b.cuerpoSucio {
@@ -287,7 +287,7 @@ type MaestraNueva struct{ s sobre }
 func (b *Boveda) SubidaConMaestra(nueva string, version int64) ([]byte, MaestraNueva, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		return nil, MaestraNueva{}, ErrCerrada
 	}
 	if strings.TrimSpace(nueva) == "" {
@@ -306,7 +306,7 @@ func (b *Boveda) SubidaConMaestra(nueva string, version int64) ([]byte, MaestraN
 func (b *Boveda) PonerMaestra(m MaestraNueva) (int64, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		return 0, ErrCerrada
 	}
 	if i := b.ranura(RanuraMaestra); i >= 0 {
@@ -396,7 +396,7 @@ type OpcionesDeFusion struct {
 func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeFusion) (Fusion, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return Fusion{}, ErrCerrada
 	}
 	if b.soloLectura {

@@ -591,13 +591,36 @@ func conLlave(ruta string, doc documento, llave []byte, purgar bool) (*Boveda, e
 	if err != nil {
 		return nil, err
 	}
-	// Que la llave abriera un sobre y esto no se deje abrir significa que el
+	return armar(ruta, doc, llave, claves, "", purgar)
+}
+
+// conClaves arma **la vista de un titular**: una bóveda de otra persona, abierta con la
+// cadena de claves que le sellaron y **sin la clave de bóveda** (ADR 0059).
+//
+// Eso es el objetivo entero, no un efecto: mientras el acceso entregaba la clave de
+// bóveda, quitarlo no significaba nada —quien la tuvo la conserva— y además se estaba
+// regalando la clave que protege la contraseña maestra. Aquí dentro, `b.llave` es nil, y
+// lo que necesita esa clave se niega con otra frase: ver `sinClaveDeBoveda`.
+//
+// El `titular` se guarda porque al fundir hay que encontrar **mi** ranura en el documento
+// remoto, y la bóveda no sabría cuál es la mía.
+func conClaves(ruta string, doc documento, claves cadenaDeClaves, titular string, purgar bool) (*Boveda, error) {
+	return armar(ruta, doc, nil, claves, titular, purgar)
+}
+
+// armar es lo común de los dos: desempaquetar con la cadena y purgar lo caducado.
+func armar(ruta string, doc documento, llave []byte, claves cadenaDeClaves, titular string, purgar bool) (*Boveda, error) {
+	// Que la clave abriera un sobre y esto no se deje abrir significa que el
 	// fichero está mezclado, no que la clave esté mal.
 	sel, cont, err := desempaquetar(doc, claves)
 	if err != nil {
 		return nil, err
 	}
-	b := &Boveda{ruta: ruta, doc: doc, sel: sel, cont: cont, llave: llave, claves: claves, soloLectura: soloSeLee(doc.Formato, FormatoQueSeEscribe)}
+	b := &Boveda{
+		ruta: ruta, doc: doc, sel: sel, cont: cont,
+		llave: llave, claves: claves, titular: titular,
+		soloLectura: soloSeLee(doc.Formato, FormatoQueSeEscribe),
+	}
 
 	if !purgar {
 		return b, nil
@@ -799,12 +822,15 @@ func (b *Boveda) Guardar() error {
 // guardar es lo mismo con el cerrojo ya cogido, para los métodos de aquí que
 // terminan guardando sin soltarlo.
 func (b *Boveda) guardar() error {
-	if b.llave == nil {
+	// **Guardar no necesita la clave de bóveda, necesita con qué cifrar el cuerpo**, y
+	// desde la ADR 0059 no son lo mismo: un titular con permiso de editar guarda con la
+	// clave de su época y nunca ve la de bóveda.
+	if b.cerrada() {
 		return ErrCerrada
 	}
-	// **Y que haya con qué cifrar el cuerpo**, que desde la ADR 0059 no es lo mismo que
-	// tener la clave de bóveda. Sin esto, una época declarada sin su clave dejaría el
-	// cuerpo cifrado con lo que hubiera y el fichero no volvería a abrirse nunca.
+	// Y que esa clave esté de verdad: sin esto, una época declarada sin su clave dejaría
+	// el cuerpo cifrado con lo que hubiera y el fichero no volvería a abrirse nunca. Es
+	// el riesgo número uno de este cambio.
 	if b.claveActual() == nil {
 		return ErrCerrada
 	}
@@ -926,7 +952,7 @@ func (b *Boveda) comprobarSerieEnDisco() error {
 func (b *Boveda) CambiarMaestra(nueva string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		return ErrCerrada
 	}
 	if strings.TrimSpace(nueva) == "" {
@@ -949,7 +975,7 @@ func (b *Boveda) CambiarMaestra(nueva string) error {
 func (b *Boveda) RotarRecuperacion() (string, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		return "", ErrCerrada
 	}
 	nueva, err := NuevaRecuperacion()
@@ -986,6 +1012,28 @@ func (b *Boveda) Abierta() bool {
 	defer b.mu.Unlock()
 	return b.llave != nil
 }
+
+// cerrada dice que aquí no hay con qué trabajar.
+//
+// **Tener la clave de bóveda y tener con qué descifrar el cuerpo dejaron de ser lo mismo
+// con la ADR 0059.** Un titular abre una bóveda compartida con la cadena de claves que le
+// sellaron y **nunca ve la clave de bóveda**, que es justo lo que hace que quitarle el
+// acceso signifique algo. Así que lo que decide si se puede trabajar es la cadena.
+//
+// Lo que sí necesita la clave de bóveda —cambiar la maestra, rotar la de recuperación,
+// poner una ranura, desprender una copia— se niega aparte y con otra frase: eso es de
+// quien comparte, no de quien recibe.
+func (b *Boveda) cerrada() bool { return b.claves.vacia() }
+
+// sinClaveDeBoveda dice que esto no se puede hacer **aquí**, porque hace falta la clave
+// de bóveda y no solo poder descifrar el cuerpo.
+//
+// Es la otra mitad de `cerrada`, y la frontera entre el dueño y quien recibe el acceso:
+// cambiar la contraseña maestra, rotar la de recuperación, poner una ranura o desprender
+// una copia son cosas de quien comparte. Hoy las dos condiciones valen lo mismo —toda
+// bóveda abierta trae las dos—, y dejan de valerlo en cuanto un titular abra con su
+// cadena y sin la clave de bóveda.
+func (b *Boveda) sinClaveDeBoveda() bool { return b.llave == nil }
 
 // claveActual es la clave con la que se cifra el cuerpo ahora mismo.
 //
@@ -1110,7 +1158,7 @@ func (b *Boveda) reponerCambiada(id, cambiada string) {
 func (b *Boveda) Poner(e Entrada) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	ahora := time.Now().UTC().Format(time.RFC3339)
@@ -1175,7 +1223,7 @@ var ahora = time.Now
 func (b *Boveda) Borrar(id string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	for i, e := range b.cont.Entradas {
@@ -1221,7 +1269,7 @@ func (b *Boveda) Papelera() []Entrada {
 func (b *Boveda) Restaurar(id string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	for i, e := range b.cont.Entradas {
@@ -1242,7 +1290,7 @@ func (b *Boveda) Restaurar(id string) error {
 func (b *Boveda) BorrarDelTodo(id string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	for i, e := range b.cont.Entradas {
@@ -1263,7 +1311,7 @@ func (b *Boveda) BorrarDelTodo(id string) error {
 func (b *Boveda) VaciarPapelera() (int, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return 0, ErrCerrada
 	}
 	// Con un plazo en el futuro entra todo, sea de cuando sea.
@@ -1418,7 +1466,7 @@ func (b *Boveda) Ruta() string { return b.ruta }
 func (b *Boveda) Excluir(dominio string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	dominio = strings.ToLower(strings.TrimSpace(dominio))
@@ -1440,7 +1488,7 @@ func (b *Boveda) Excluir(dominio string) error {
 func (b *Boveda) QuitarExclusion(dominio string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	dominio = strings.ToLower(strings.TrimSpace(dominio))

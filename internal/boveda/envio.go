@@ -123,7 +123,7 @@ func loQueSeFirma(s Envio) []byte {
 // es la contraseña de ahora, no de dónde viene ni por dónde ha pasado.
 func (b *Boveda) MandarEntrada(e Entrada, para Identidad) (Envio, error) {
 	b.mu.Lock()
-	if b.llave == nil {
+	if b.cerrada() {
 		b.mu.Unlock()
 		return Envio{}, ErrCerrada
 	}
@@ -158,7 +158,7 @@ func (b *Boveda) MandarEntrada(e Entrada, para Identidad) (Envio, error) {
 // vuelta y no hacía falta moverla.
 func (b *Boveda) sellarSobre(claro []byte, version int, para Identidad) (Envio, error) {
 	b.mu.Lock()
-	if b.llave == nil {
+	if b.cerrada() {
 		b.mu.Unlock()
 		return Envio{}, ErrCerrada
 	}
@@ -237,7 +237,7 @@ func (b *Boveda) AbrirEnvio(s Envio) (Entrada, Identidad, error) {
 // lo que no es.
 func (b *Boveda) abrirSobre(s Envio, espera int) ([]byte, Identidad, error) {
 	b.mu.Lock()
-	if b.llave == nil {
+	if b.cerrada() {
 		b.mu.Unlock()
 		return nil, Identidad{}, ErrCerrada
 	}

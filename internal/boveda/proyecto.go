@@ -117,7 +117,7 @@ func (b *Boveda) Proyecto(ref string) (Proyecto, bool) {
 func (b *Boveda) PonerProyecto(p Proyecto) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	if p.Ref == "" {
@@ -143,7 +143,7 @@ func (b *Boveda) PonerProyecto(p Proyecto) error {
 func (b *Boveda) OlvidarProyecto(ref string) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	for i, v := range b.cont.Proyectos {
@@ -248,7 +248,7 @@ func unProyecto(l, r, b Proyecto, hayBase bool) Proyecto {
 func (b *Boveda) LlaveParaProyectos() []byte {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		return nil
 	}
 	return append([]byte(nil), b.llave...)
@@ -389,7 +389,7 @@ func abrirProyectoBytes(ruta string, datos, llavePrincipal []byte) (*Boveda, err
 func (b *Boveda) PonerRanuraPrincipal(llavePrincipal []byte) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		return ErrCerrada
 	}
 	if len(llavePrincipal) == 0 {
@@ -484,7 +484,7 @@ func (b *Boveda) Desprender(maestraNueva string) (*Boveda, string, error) {
 		return nil, "", errors.New("La contraseña maestra no puede estar vacía")
 	}
 	b.mu.Lock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		b.mu.Unlock()
 		return nil, "", ErrCerrada
 	}

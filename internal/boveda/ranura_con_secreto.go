@@ -56,7 +56,7 @@ func secretoDeRanura() ([]byte, error) { return cripto.Azar(32) }
 func (b *Boveda) ponerRanuraConSecreto(tipo string, secreto []byte) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.sinClaveDeBoveda() {
 		return ErrCerrada
 	}
 	if len(secreto) < 16 {

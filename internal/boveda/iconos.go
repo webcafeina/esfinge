@@ -78,7 +78,7 @@ func (b *Boveda) Iconos() map[string]Icono {
 }
 
 func (b *Boveda) leerIconos() map[string]Icono {
-	if b.llave == nil {
+	if b.cerrada() {
 		return nil
 	}
 	datos, err := os.ReadFile(b.rutaIconos())
@@ -106,7 +106,7 @@ func (b *Boveda) leerIconos() map[string]Icono {
 func (b *Boveda) PonerIconos(nuevos map[string]Icono) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/webcafeina/esfinge/internal/cripto"
 )
 
 // relojQueAvanza para el reloj de la bóveda donde se diga y devuelve con qué
@@ -443,5 +445,128 @@ func TestEntregarNoSeLlevaLoQueMeHanCompartido(t *testing.T) {
 	// Y la original no se toca, que es lo que comprueba que la copia es honda.
 	if hay := p.Compartidas(); len(hay) != 1 {
 		t.Fatalf("entregar se ha llevado la lista del original: %+v", hay)
+	}
+}
+
+// conClavesDeContenido le pone a una bóveda de proyecto ya abierta su cadena de claves,
+// cifra el cuerpo con la de ahora y deja la ranura de ese titular llevando **la cadena**
+// en vez de la clave de bóveda (ADR 0059).
+//
+// Es un **fixture**, no una copia de producción: lo que escribe el formato 2 de verdad es
+// `RotarClaveDeContenido`, que llega con la publicación que empieza a escribir. Aquí hace
+// falta antes, porque la publicación que solo aprende a leer tiene que poder probar que
+// lee — y si no se pudiera montar el documento, la prueba tendría que esperar a después
+// de haberlo publicado. Usa solo primitivas que ya existen y no decide nada por su
+// cuenta.
+//
+// **No sube el número de formato**, y eso es deliberado: `FormatoQueSeLee` vale 1 hasta
+// que el espejo de TypeScript entienda la cadena, porque subirlo antes sería declarar que
+// se entiende un documento que el espejo aceptaría y después no sabría descifrar. Lo que
+// esta prueba ejercita es el **mecanismo** —la cadena desde la ranura, el cuerpo por
+// época, el titular sin clave de bóveda—, no la puerta de la versión, que ya tiene la
+// suya en `TestLaReglaDeLosDosFormatos`.
+func conClavesDeContenido(t *testing.T, p *Boveda, titular string, para Identidad) cadenaDeClaves {
+	t.Helper()
+	c, err := nuevaCadena(PorMigracion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	crudo, err := c.bytes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sobreContenido, err := cripto.SellarTexto(crudo, p.llave, cripto.PerfilLlave)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sellada, err := SellarHaciaIdentidad(crudo, para)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cuando := ahora().UTC().Format(time.RFC3339)
+
+	p.mu.Lock()
+	p.doc.Epoca = c.Actual
+	p.claves = c
+	p.doc.Sobres = append(p.doc.Sobres,
+		sobre{Tipo: RanuraDeContenido, Creado: cuando, Contenedor: sobreContenido})
+	for i := range p.doc.Sobres {
+		if p.doc.Sobres[i].Tipo == TipoDeAcceso(titular) {
+			p.doc.Sobres[i] = sobre{Tipo: TipoDeAcceso(titular), Creado: cuando,
+				Contenedor: sellada, Codificacion: CodificacionSellada}
+		}
+	}
+	p.cuerpoSucio = true
+	err = p.guardar()
+	p.mu.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+// **Un titular con ranura nueva abre la bóveda y no se lleva la clave de bóveda.**
+//
+// Es el objetivo entero de la ADR 0059, y hasta ahora era lo contrario: dar acceso
+// entregaba la clave de bóveda, así que quitarlo no significaba nada —quien la tuvo la
+// conserva— y además se regalaba la clave que protege la contraseña maestra.
+func TestElTitularDeUnaRanuraNuevaNoSeLlevaLaClaveDeBoveda(t *testing.T) {
+	_, ruta, llave := personalYProyecto(t)
+	ana, idAna := unaPersonal(t, "ana")
+
+	p, err := AbrirProyecto(ruta, llave)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Cloudflare", Secreto: "el testigo"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.PonerAcceso("1111222233334444", idAna); err != nil {
+		t.Fatal(err)
+	}
+	c := conClavesDeContenido(t, p, "1111222233334444", idAna)
+	p.Cerrar()
+
+	deAna, err := AbrirCompartida(ruta, "1111222233334444", ana)
+	if err != nil {
+		t.Fatalf("Ana no abre una bóveda del formato 2 con su ranura nueva: %v", err)
+	}
+	defer deAna.Cerrar()
+
+	// Lee lo de dentro: el cuerpo está cifrado con la clave de la época.
+	if e := deAna.Buscar("Cloudflare"); len(e) != 1 {
+		t.Fatalf("Ana abre y no ve las entradas: %d", len(e))
+	}
+	if deAna.cerrada() {
+		t.Error("una bóveda abierta por un titular se declara cerrada: no podría ni leer el registro")
+	}
+
+	// **Y no tiene la clave de bóveda.** Lo que la necesita se niega, y la clave de la
+	// época **no sirve** para abrir la bóveda por la puerta del dueño.
+	if deAna.LlaveParaProyectos() != nil {
+		t.Error("el titular se lleva la clave de bóveda: eso es justo lo que la 0059 viene a quitar")
+	}
+	if _, err := deAna.Posesion(); err == nil {
+		t.Error("el titular puede probar la posesión de la cuenta de otra persona")
+	}
+	if _, err := deAna.SellarSecreto([]byte("lo que sea")); err == nil {
+		t.Error("el titular sella secretos con una clave que no tiene")
+	}
+	k, hay := c.clave(c.Actual)
+	if !hay {
+		t.Fatal("la cadena del fixture no trae su clave")
+	}
+	if otra, err := AbrirConLaClave(ruta, k); err == nil {
+		otra.Cerrar()
+		t.Error("la clave de contenido abre la bóveda como si fuera la de bóveda: entonces no hay dos claves")
+	}
+
+	// **Y escribe**: con permiso de editar, un titular guarda, y lo que guarda va cifrado
+	// con la clave de la época, no con una que él no tiene.
+	if err := deAna.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Lo que Ana guarda"}); err != nil {
+		t.Errorf("un titular no puede escribir en la bóveda que le han compartido: %v", err)
+	}
+	if e := deAna.Buscar("Lo que Ana guarda"); len(e) != 1 {
+		t.Error("lo que Ana guardó no está")
 	}
 }
