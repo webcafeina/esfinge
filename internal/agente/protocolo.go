@@ -416,11 +416,11 @@ type Respuesta struct {
 	// Bovedas son las que se pueden nombrar (ADR 0055).
 	Bovedas []UnaBoveda `json:"bovedas,omitempty"`
 	// Movido es lo que se ha llevado de una bóveda a otra (ADR 0056).
-	Movido *Movido `json:"movido,omitempty"`
-	Copiado *Copiado  `json:"copiado,omitempty"`
-	Codigo  *Codigo   `json:"codigo,omitempty"`
-	Escrito *Escrito  `json:"escrito,omitempty"`
-	Clave   string    `json:"clave,omitempty"`
+	Movido  *Movido  `json:"movido,omitempty"`
+	Copiado *Copiado `json:"copiado,omitempty"`
+	Codigo  *Codigo  `json:"codigo,omitempty"`
+	Escrito *Escrito `json:"escrito,omitempty"`
+	Clave   string   `json:"clave,omitempty"`
 }
 
 // Los motivos, que son etiquetas estables y no frases.
