@@ -145,8 +145,13 @@ leyendo el paquete, no.
 En cada bóveda de proyecto, un interruptor: **«Trabajar con esta bóveda en el servidor»**. Por debajo es
 **dar acceso de solo ver a la cuenta del VPS** — el mecanismo entero de la [0052](0052-dar-acceso-a-un-proyecto.md),
 sin inventar nada: permiso que **impone el servidor y no el cifrado**, ranura sellada hacia su identidad
-pública, **clave rotada al quitarlo** con su lápida, y la fila en la lista de quién tiene acceso. No añade
+pública, ~~**clave rotada al quitarlo**~~ con su lápida, y la fila en la lista de quién tiene acceso. No añade
 ni un método al puente: llama a `darAcceso` y `quitarAcceso`, que ya estaban.
+
+**La clave no se rota** (tachado el 2026-11-09, al encontrarse este sexto sitio): `RetirarAcceso` pone la
+lápida y nada más, y la clave de bóveda no cambia nunca. Es la deuda de `docs/deuda.md`, en marcha como
+[ADR 0059](0059-la-clave-de-contenido.md). Lo que protege al quitarle el acceso al servidor es el 403 y el
+borrado de su copia, igual que con una persona.
 
 Lo que añade respecto a escribir el correo a mano en «Dar acceso» son dos cosas, y la segunda es la que
 importa: no hay que acordarse del correo, y **la pantalla dice lo que cuesta** — un servidor tiene su llave

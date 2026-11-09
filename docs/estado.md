@@ -2,6 +2,62 @@
 
 Última actualización: **2026-11-09**
 
+## Empezada la clave de contenido, ADR 0059 (2026-11-09, segunda parte)
+
+**El plan aprobado está en `~/.claude/plans/adr-0059-clave-de-contenido.md`.** Léelo antes de
+seguir: lleva el diseño entero, las cuatro decisiones del cliente, los riesgos de pérdida de datos y el
+reparto en dos publicaciones.
+
+`main` en **`75af788`**, árbol limpio, `make comprobar` en verde con las cruzadas dentro — que es la prueba
+de que **el formato 1 sigue saliendo byte a byte igual**, porque el espejo de TypeScript no se ha tocado.
+
+### Hecho
+
+| | |
+|---|---|
+| **Fase 0** · `0d52f06` | Los dos formatos y la regla al derecho. `soloLectura` se calculaba con `<`, así que publicar un formato 2 habría dejado **de solo lectura todas las bóvedas que existen** |
+| **A1 · la cadena** · `079f0e2` | El cuerpo se cifra con la clave de su época. Puro refactor |
+| **A1 · el titular** · `75af788` | Abre con su cadena y **no se lleva la clave de bóveda** |
+
+### Lo siguiente, en este orden
+
+1. **La carga v2 al dar acceso.** `PonerAcceso` (`internal/boveda/compartida.go:185`) sella hoy `b.llave`;
+   tiene que sellar **la cadena** cuando la bóveda la tenga, o un titular con «editar» no podrá dar acceso
+   a nadie en una bóveda de formato 2 — y eso lo decidió la ADR 0052.
+2. **`Fundir` con dos épocas**, que es la pieza donde un error se paga en datos. Lo que no se puede olvidar:
+   los sobres que llevan claves —`contenido` y todas las `acceso:*`— se resuelven **en bloque por el lado
+   que gana la época**, no uno por uno. Resolviéndolos por separado, un titular se queda con una ranura que
+   no contiene la época del cuerpo y **no abre su propia bóveda**.
+3. **A2, el espejo de TypeScript**, y solo entonces **los dos formatos suben a 2, los dos a la vez**.
+
+### Cuatro cosas que cuestan de volver a averiguar
+
+- **`FormatoQueSeLee` no sube hasta que el espejo entienda la cadena.** Subirlo antes hace que la extensión
+  **acepte** un documento que luego no sabrá descifrar, y el error sería «la bóveda no cuadra por dentro»:
+  manda a mirar al sitio equivocado. Lo vigila `TestLosFormatosSonLosMismos`, que lee el fuente del espejo.
+- **El truco que evita los condicionales**: en el formato 1 la cadena es **una cadena de una sola clave, y
+  esa clave es la de bóveda** (`cadenaDeUnaClave`). El formato de siempre es el caso degenerado del nuevo.
+- **Dos guardas y no una**: `cerrada()` es «¿hay con qué trabajar?» —un titular sí— y `sinClaveDeBoveda()`
+  es «eso es de quien comparte». Hoy valen lo mismo; empiezan a diferir con un titular de formato 2.
+- **El fixture `conClavesDeContenido`** (`internal/boveda/compartida_test.go`) monta una bóveda con cadena
+  **sin tocar el número de formato**, a propósito: prueba el mecanismo, no la puerta de la versión.
+
+### Dos correcciones al plan, encontradas al ejecutarlo
+
+- **`rotar.go` no puede ir en la publicación A.** Con `FormatoQueSeEscribe = 1`, una bóveda que pasara a
+  formato 2 se abriría en solo lectura y `guardar` se negaría: rotar es inherentemente de la B.
+- **Y por lo mismo, el vector congelado de A3** —una bóveda de proyecto de formato 2 de verdad— **no se
+  puede grabar en la A**, porque en la A nada escribe formato 2. Se graba en la B, con el código que la
+  escribe, y se congela entonces.
+
+### Una del método que ya ha pasado dos veces hoy
+
+Las dos primeras mutaciones de la pieza del titular salieron rojas **fallando al abrir**, así que la
+aserción que de verdad paga la pieza no llegaba a ejecutarse. La precisa es tocar `conClaves` para que el
+titular reciba una clave: entonces la bóveda abre y cantan las tres del medio. Es el mismo patrón que la
+prueba del segundo interruptor de esta mañana: **una aserción detrás de otra que falla primero no vigila
+nada**.
+
 ## La 0057 y la 0058 haciendo su trabajo: Tempero en producción (2026-11-09)
 
 **Los siete secretos de producción de Tempero ya no se leen de un fichero en claro.** Viven en una

@@ -5,6 +5,53 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-09 (segunda parte) · La clave de contenido, empezada por su mitad delicada
+
+- **Se planificó la ADR 0059 en modo plan**, con tres exploraciones en paralelo y las cuatro decisiones
+  tomadas con el cliente: **solo bóvedas de proyecto**, **se guardan todas las claves**, **dos
+  publicaciones** —leer y luego escribir— y **rotar al revocar y a mano**. El plan está en
+  `~/.claude/plans/adr-0059-clave-de-contenido.md`.
+- **Y se corrigió el argumento heredado.** La ADR 0052 decía que rotar era imposible porque habría que
+  reenvolver la maestra y la de recuperación; **una bóveda de proyecto no tiene ninguna de las dos**, y el
+  acceso compartido solo existe ahí. El motivo verdadero es **la fusión**: `Fundir` descifra el remoto con
+  la clave local, un equipo que reabre desde su ranura se queda con su fichero local cifrado con la vieja,
+  y dos personas con «editar» rotando a la vez dejan un cuerpo ilegible. Eso es lo que obliga a guardar
+  **todas** las claves, y no la comodidad.
+- **Fase 0: un fallo latente que era una bomba.** `soloLectura` se calculaba `doc.Formato < Formato` en los
+  tres sitios, al revés de lo que dicen sus comentarios y las frases de usuario. No se notaba porque el
+  único formato que existe es el 1 — **el día que se publicara un 2, todas las bóvedas existentes se
+  volverían de solo lectura**. Donde había una constante hay dos, y eso es lo que convierte el reparto en
+  dos publicaciones en un mecanismo en vez de una promesa.
+- **La regla se extrajo a una función a propósito** (`soloSeLee(formato, queSeEscribe)`): hoy los dos
+  números valen 1, así que el caso que importa —se lee y no se escribe— no se puede construir con las
+  constantes puestas. Dentro del constructor, la prueba habría tenido que esperar a que el caso existiera,
+  o sea a después de publicarlo.
+- **La cadena de claves**, con el identificador **al azar y no un contador**: dos equipos del mismo dueño
+  rotando a la vez desde la misma época crearían los dos «la 3» con claves distintas. Hay una prueba que lo
+  dice con esas palabras.
+- **Y el truco que evita los condicionales**: en el formato 1 la cadena es una cadena de **una sola clave**,
+  la de bóveda. Así el formato de siempre es el caso degenerado del nuevo y no hay diez sitios preguntando
+  «¿esta bóveda tiene claves de contenido?», que es el patrón que aquí ya ha costado tres fallos.
+- **El titular ya no se lleva la clave de bóveda**, que es el centro de la ADR. De ahí salió el cambio más
+  extenso: las **39 guardas** que preguntaban `b.llave == nil` para decir «¿está abierta?» se partieron en
+  `cerrada()` y `sinClaveDeBoveda()`, una por una y mirando en qué función estaba cada una.
+- **Lo que lo encontró fue la prueba y no el compilador**, tres veces: `sinRanuras` y un ayudante de las
+  pruebas construyen la bóveda **sin pasar por el constructor** y se quedaban sin cadena, y `guardar`
+  seguía pidiendo la clave de bóveda —así que un titular con «editar» no podía guardar—. Cambiar una firma
+  lo encuentra el compilador; cambiar un **invariante** lo encuentran las pruebas.
+- **`FormatoQueSeLee` no se subió a 2, y es deliberado**: el espejo de TypeScript no entiende la cadena
+  todavía, y declarar que se entiende el formato 2 haría que la extensión aceptara un documento que después
+  no sabría descifrar.
+- **Dos correcciones al plan al ejecutarlo**: `rotar.go` no puede ir en la publicación A —con
+  `FormatoQueSeEscribe = 1`, una bóveda de formato 2 se abre en solo lectura y `guardar` se niega— y por lo
+  mismo el **vector congelado** de una bóveda de formato 2 **no se puede grabar en la A**: se graba en la B.
+- **Y una del método, la segunda vez en el mismo día**: dos mutaciones salieron rojas **fallando al abrir**,
+  así que la aserción que paga la pieza no llegaba a ejecutarse. La precisa fue tocar `conClaves`.
+- **Queda abierto**: la carga v2 al dar acceso, `Fundir` con dos épocas —donde un error se paga en datos—,
+  y después el espejo. El punto exacto está al principio de [`estado.md`](estado.md).
+
+---
+
 ## 2026-11-09 · El paso 2, la 2.59.2, y Tempero leyendo de la bóveda
 
 - **Se cerró el paso 2 de la 0058, por los dos lados.** El cliente comparó la huella del servidor y

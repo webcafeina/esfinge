@@ -480,6 +480,25 @@ No se cambian sin preguntar.
 
 ## Trampas que ya costaron encontrarse
 
+**Una regla cuyo caso límite todavía no existe se escribe al revés y nadie se entera.** `soloLectura` se
+calculaba `doc.Formato < Formato` en los tres sitios —los dos núcleos—, al revés de lo que dicen sus
+comentarios y las frases que ve el usuario. No se notaba porque **el único formato que existe es el 1**: el
+día que se publicara un 2, **todas las bóvedas que existen se habrían vuelto de solo lectura**, y el cliente
+lo habría descubierto con su bóveda delante. Lo que lo cierra son **dos constantes** —`FormatoQueSeLee` y
+`FormatoQueSeEscribe`— en vez de una, que además es lo que hace posible publicar primero el leer y luego el
+escribir; y **la regla extraída a una función**, porque con los dos números a 1 el caso que importa no se
+puede construir con las constantes puestas y la prueba habría tenido que esperar a que el fallo fuera
+observable, o sea a después de publicarlo. **La regla general: si una guarda tiene un caso que hoy no puede
+ocurrir, ese caso no lo prueba nadie** — y una prueba que no puede nacer hasta después de la publicación no
+es una prueba, es una esperanza.
+
+**Y el truco que evita diez condicionales nuevos: que el caso de siempre sea el degenerado del nuevo.** Al
+añadir las claves de contenido (ADR 0059), la bóveda de formato 1 pasa a tener **una cadena de una sola
+clave, y esa clave es la de bóveda**. Así no hay diez sitios preguntando «¿esta bóveda tiene claves de
+contenido?», que es exactamente el patrón que aquí ya ha costado tres fallos —`vaciarLoSensible`,
+`enConfiguracionDePruebas` y `PasaPorLaValvula`—.
+
+
 **El paquete `.mcpb` no se actualiza con Esfinge, y los clientes se quedan con la lista de herramientas.**
 Lleva el servidor **dentro**, que es lo que impide que se rompa al mover la aplicación, y el precio es el
 otro lado: al actualizar Esfinge ese servidor se queda como estaba. Y como un cliente MCP pide
