@@ -9,6 +9,7 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/llavero"
+	"github.com/webcafeina/esfinge/internal/rutas"
 )
 
 // unServidorDePruebas deja una bóveda con una entrada, la llave del servidor
@@ -185,5 +186,112 @@ func TestActivarEnUnProyectoSeNiegaAntesDePedirNada(t *testing.T) {
 	}
 	if llavero.DelServidor().Hay() {
 		t.Error("ha dejado una llave en el disco antes de negarse")
+	}
+}
+
+// **`estado` dice qué bóvedas le han compartido y con qué permiso** (2026-11-09).
+//
+// Hasta hoy decía si la llave abre y nada más, así que quien trabaja en un servidor no
+// tenía dónde saber qué tiene: el nombre se anuncia una vez, al aceptarlo con
+// «recibir», y el permiso no se decía en ninguna parte. Para averiguarlo en el VPS hubo
+// que escribir un programa de un solo uso.
+//
+// Dos cosas que esto vigila y que no son el listado: que **el permiso se diga en
+// palabras** —«solo puede ver» contra «puede ver y escribir», que es la diferencia
+// entre poder desplegar y poder rotar un secreto— y que una fila **sin su fichero** lo
+// diga, porque es el estado de una bóveda compartida que nadie ha aceptado todavía y
+// confundirla con una disponible manda a pelearse con un error al ir a usarla.
+func TestElEstadoDeUnServidorDiceQueBovedasTieneYConQuePermiso(t *testing.T) {
+	rutas.ApartarLaCarpeta(t.TempDir(), t.Setenv)
+	ruta, conLaMaestra := unServidorDePruebas(t)
+	o := &opciones{tema: "oscuro", silencio: true}
+
+	conClave := &opcionesBoveda{ruta: ruta}
+	conClave.clave.Fichero = conLaMaestra
+	if err := comandoServidorActivar(o, conClave).RunE(nil, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	const dueno, ref = "aaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbb"
+	b, err := abrirBoveda(o, &opcionesBoveda{ruta: ruta})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// La primera con su fichero en este equipo; la segunda sin él.
+	if err := b.PonerCompartida(boveda.Compartida{
+		Dueno: dueno, Ref: ref, Nombre: "Zeri's Coffee",
+		Titular: "cccccccc", Permiso: "ver", Desde: ahoraRFC3339(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.PonerCompartida(boveda.Compartida{
+		Dueno: "dddddddddddddddd", Ref: "eeeeeeeeeeeeeeee", Nombre: "Tempero",
+		Titular: "ffffffff", Permiso: "editar", Desde: ahoraRFC3339(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	b.Cerrar()
+
+	otra, _, err := boveda.Crear(rutas.Compartida(dueno, ref), "la maestra de la otra persona, bien larga")
+	if err != nil {
+		t.Fatal(err)
+	}
+	otra.Cerrar()
+
+	dicho := loQueSaleAlError(t, func() {
+		if err := comandoServidorEstado(o, &opcionesBoveda{ruta: ruta}).RunE(nil, nil); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	for _, quiero := range []string{
+		"Zeri's Coffee", "solo puede ver",
+		"Tempero", "puede ver y escribir",
+	} {
+		if !strings.Contains(dicho, quiero) {
+			t.Errorf("el estado no dice %q:\n%s", quiero, dicho)
+		}
+	}
+	// Y la que no está aquí lo dice, con qué hacer.
+	if !strings.Contains(dicho, "todavía no está aquí") {
+		t.Errorf("una compartida sin su fichero sale como si estuviera disponible:\n%s", dicho)
+	}
+}
+
+// Y **sin la llave de este equipo no se menciona ninguna**, que es lo que mantiene la
+// promesa de este comando: no pide la contraseña. En un portátil la bóveda no se abre
+// sola, así que aquí no hay nada que leer — y leerlo exigiría preguntar la maestra, que
+// es justo lo que `estado` no hace.
+func TestElEstadoNoEnsenaLasCompartidasSinLaLlaveDelServidor(t *testing.T) {
+	rutas.ApartarLaCarpeta(t.TempDir(), t.Setenv)
+	ruta, conLaMaestra := unServidorDePruebas(t)
+	o := &opciones{tema: "oscuro", silencio: true}
+
+	conClave := &opcionesBoveda{ruta: ruta}
+	conClave.clave.Fichero = conLaMaestra
+	b, err := abrirBoveda(o, conClave)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := b.PonerCompartida(boveda.Compartida{
+		Dueno: "aaaaaaaaaaaaaaaa", Ref: "bbbbbbbbbbbbbbbb", Nombre: "Zeri's Coffee",
+		Titular: "cccccccc", Permiso: "ver", Desde: ahoraRFC3339(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	b.Cerrar()
+
+	dicho := loQueSaleAlError(t, func() {
+		if err := comandoServidorEstado(o, &opcionesBoveda{ruta: ruta}).RunE(nil, nil); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if strings.Contains(dicho, "Zeri's Coffee") {
+		t.Errorf("enseña las compartidas sin que la bóveda se abra sola en este equipo:\n%s", dicho)
+	}
+	// **Y tampoco dice que no tenga ninguna**, que es la otra mitad: no haber podido
+	// mirar no es lo mismo que no tener, y esta bóveda tiene una.
+	if strings.Contains(dicho, "Todavía no le han compartido") {
+		t.Errorf("dice que no tiene ninguna cuando lo que pasa es que no ha podido mirar:\n%s", dicho)
 	}
 }

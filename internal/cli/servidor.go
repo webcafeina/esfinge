@@ -34,6 +34,7 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/llavero"
+	"github.com/webcafeina/esfinge/internal/rutas"
 	"github.com/webcafeina/esfinge/internal/salida"
 )
 
@@ -247,7 +248,10 @@ func comandoServidorEstado(o *opciones, ob *opcionesBoveda) *cobra.Command {
 		Short: "Dice si esta bóveda se abre sin contraseña en este equipo",
 		Long: "Enseña si la bóveda lleva la ranura del servidor y si la llave sigue\n" +
 			"estando. **No pide la contraseña**: las dos cosas se pueden saber sin\n" +
-			"abrir nada.",
+			"abrir nada.\n\n" +
+			"Y si se abre sin contraseña, dice además **qué bóvedas le han\n" +
+			"compartido y con qué permiso**, que es lo que hace falta para trabajar\n" +
+			"con ellas: el nombre solo se anuncia al aceptarlas con «recibir».",
 		Example:       "  esfinge boveda servidor estado --json",
 		Args:          cobra.NoArgs,
 		SilenceUsage:  true,
@@ -277,14 +281,26 @@ func comandoServidorEstado(o *opciones, ob *opcionesBoveda) *cobra.Command {
 				permisos = fmt.Sprintf("%o", info.Mode().Perm())
 			}
 
+			// **Las bóvedas compartidas, cuando se pueden saber sin contraseña.**
+			//
+			// Este comando prometía no abrir nada, y lo sigue cumpliendo donde eso es
+			// lo único posible: en un portátil no hay ranura y aquí no se pregunta
+			// nada. Pero en un servidor la bóveda **se abre sola**, y entonces negarse
+			// a mirar dentro no protege de nada y deja al que trabaja ahí sin saber
+			// qué tiene. Hasta hoy la única forma de averiguarlo era un programa de un
+			// solo uso.
+			compartidas, pudeMirar := lasCompartidasDeAqui(e, ob)
+
 			if ob.json {
 				return escribirJSON(map[string]any{
-					"boveda":   ruta,
-					"ranura":   ranura,
-					"llave":    hayLlave,
-					"fichero":  f.Ruta,
-					"permisos": permisos,
-					"abre":     ranura && hayLlave,
+					"boveda":      ruta,
+					"ranura":      ranura,
+					"llave":       hayLlave,
+					"fichero":     f.Ruta,
+					"permisos":    permisos,
+					"abre":        ranura && hayLlave,
+					"version":     o.version,
+					"compartidas": compartidas,
 				})
 			}
 			switch {
@@ -303,8 +319,89 @@ func comandoServidorEstado(o *opciones, ob *opcionesBoveda) *cobra.Command {
 			default:
 				fmt.Fprintln(os.Stderr, e.Info("Esta bóveda solo se abre con la contraseña maestra."))
 			}
+			// **Y solo se dice algo si se ha podido mirar.** No es lo mismo «no tiene
+			// ninguna» que «no he podido abrir para verlo»: con `--clave-env` puesto, o
+			// sin la llave de este equipo, decir lo primero sería mentir.
+			if pudeMirar {
+				if len(compartidas) == 0 {
+					fmt.Fprintln(os.Stderr, e.Info(
+						"Todavía no le han compartido ninguna bóveda; tráelas con «esfinge boveda servidor recibir»."))
+				} else {
+					fmt.Fprintln(os.Stderr, e.Info("Bóvedas compartidas con este servidor:"))
+					for _, c := range compartidas {
+						linea := "    " + c.Nombre + " · " + fraseDelPermiso(c.Permiso)
+						if !c.Aqui {
+							linea += " · todavía no está aquí («servidor recibir»)"
+						}
+						fmt.Fprintln(os.Stderr, linea)
+					}
+				}
+			}
 			return nil
 		},
+	}
+}
+
+// compartidaDeAqui es lo que `estado` dice de cada bóveda compartida. Lleva **menos
+// de lo que hay** a propósito: el nombre y el permiso son para trabajar, y de quién
+// es o desde cuándo se leen en el JSON, que es donde mira un programa.
+type compartidaDeAqui struct {
+	Nombre  string `json:"nombre"`
+	Permiso string `json:"permiso"`
+	// Aqui dice si el fichero está de verdad en este equipo. Una fila sin fichero no
+	// es un error: es una bóveda que han compartido y que todavía no se ha aceptado
+	// con «recibir», y decirlo es la diferencia entre entenderlo y pelearse con un
+	// «no está todavía en este equipo» al ir a usarla.
+	Aqui   bool   `json:"aqui"`
+	Dueno  string `json:"dueno"`
+	Huella string `json:"huella,omitempty"`
+	Desde  string `json:"desde,omitempty"`
+}
+
+// lasCompartidasDeAqui las lee **sin pedir ninguna contraseña**, y dice además si ha
+// podido mirar: quien llama necesita distinguir «no tiene ninguna» de «no he podido
+// abrir para verlo», porque decir lo primero cuando pasa lo segundo es mentir.
+//
+// **Quien se niega es `abrirConLaLlaveDelServidor`**, que devuelve `nil, nil` cuando
+// aquí no hay con qué abrir: sin ranura, sin llave, o con una clave dicha a mano, que
+// manda. Comprobar aparte si la bóveda «abre sola» sería la misma regla en dos sitios —
+// y se vio que no vigilaba nada al mutarla.
+//
+// Cualquier fallo al abrir se traga: esto es un informe, y un informe que revienta por
+// no poder contar una de sus líneas es peor que uno que cuenta las demás.
+func lasCompartidasDeAqui(e salida.Estilos, ob *opcionesBoveda) ([]compartidaDeAqui, bool) {
+	ruta, err := rutaElegida(ob)
+	if err != nil {
+		return nil, false
+	}
+	b, err := abrirConLaLlaveDelServidor(e, true, ob, ruta)
+	if err != nil || b == nil {
+		return nil, false
+	}
+	defer b.Cerrar()
+	var out []compartidaDeAqui
+	for _, c := range lasCompartidasVivas(b) {
+		_, err := os.Stat(rutas.Compartida(c.Dueno, c.Ref))
+		out = append(out, compartidaDeAqui{
+			Nombre: c.Nombre, Permiso: c.Permiso, Aqui: err == nil,
+			Dueno: c.Dueno, Huella: c.Huella, Desde: c.Desde,
+		})
+	}
+	return out, true
+}
+
+// fraseDelPermiso lo dice en palabras, y **el vacío no se calla**: una bóveda
+// aceptada antes de la ADR 0058 no lleva permiso apuntado, y eso no es «no puede»
+// sino «todavía no se sabe» — se sabrá en la primera pasada, porque lo dice el
+// servidor al bajar.
+func fraseDelPermiso(p string) string {
+	switch p {
+	case "editar":
+		return "puede ver y escribir"
+	case "ver":
+		return "solo puede ver"
+	default:
+		return "permiso todavía sin saber"
 	}
 }
 

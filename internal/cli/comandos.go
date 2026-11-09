@@ -39,6 +39,12 @@ type opciones struct {
 	clave    OrigenClave
 	forzar   bool
 	silencio bool
+	// version es la de este binario. La lleva aquí porque **`servidor estado` la
+	// dice**: en un servidor, ése es el comando que se ejecuta para orientarse, y
+	// saber con qué binario se está hablando es la mitad de poder decidir si lo que
+	// no funciona es el permiso o es que la máquina tiene una versión vieja. Pasó
+	// exactamente eso el 2026-11-06, con un binario de septiembre.
+	version string
 }
 
 // Ejecutar corre la línea de comandos y devuelve el código de salida.
@@ -47,6 +53,7 @@ type opciones struct {
 // salta el `PersistentPreRunE`, que es justo lo que algunas de ellas comprueban, y una
 // prueba que rodea la pieza que vigila no vigila nada.
 func laRaiz(o *opciones, version string) *cobra.Command {
+	o.version = version
 	raiz := &cobra.Command{
 		Use:   "esfinge",
 		Short: "Cifra y descifra secretos con una clave",

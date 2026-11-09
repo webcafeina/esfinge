@@ -205,6 +205,20 @@ func bajarLaCompartida(ctx context.Context, c *cuenta.Cliente, token string,
 //
 // **Por el nombre y no por la referencia** porque la referencia es hex al azar: lo
 // que alguien escribe en un guion de despliegue es «Tempero».
+// lasCompartidasVivas son las que este equipo tiene de verdad: las que no están
+// tachadas por una lápida (ADR 0053). Las retiradas se quedan en la lista para poder
+// decir cuál se fue, pero su fichero ya no está, así que nombrarlas sería ofrecer algo
+// que no se puede abrir.
+func lasCompartidasVivas(b *boveda.Boveda) []boveda.Compartida {
+	var vivas []boveda.Compartida
+	for _, c := range b.Compartidas() {
+		if c.Retirada == "" {
+			vivas = append(vivas, c)
+		}
+	}
+	return vivas
+}
+
 func laCompartidaQueSeLlama(b *boveda.Boveda, nombre string) (boveda.Compartida, error) {
 	q := strings.ToLower(strings.TrimSpace(nombre))
 	var encajan []boveda.Compartida
@@ -218,8 +232,23 @@ func laCompartidaQueSeLlama(b *boveda.Boveda, nombre string) (boveda.Compartida,
 	}
 	switch len(encajan) {
 	case 0:
+		// **El error dice cuáles hay**, que es la mitad que faltaba: el nombre solo se
+		// anuncia una vez, al aceptarlas en `recibir`, así que quien se equivoca al
+		// escribirlo no tenía dónde volver a verlo. Y si no hay ninguna, eso es otra
+		// cosa y se dice distinto: lo que falta entonces es `recibir`, no afinar.
+		vivas := lasCompartidasVivas(b)
+		if len(vivas) == 0 {
+			return boveda.Compartida{}, fmt.Errorf(
+				"A este servidor no le han compartido ninguna bóveda todavía; " +
+					"tráelas con «esfinge boveda servidor recibir»")
+		}
+		var nombres []string
+		for _, c := range vivas {
+			nombres = append(nombres, "«"+c.Nombre+"»")
+		}
 		return boveda.Compartida{}, fmt.Errorf(
-			"A este servidor no le han compartido ninguna bóveda que encaje con «%s»", nombre)
+			"A este servidor no le han compartido ninguna bóveda que encaje con «%s». Tiene %s",
+			nombre, strings.Join(nombres, ", "))
 	case 1:
 		return encajan[0], nil
 	default:
