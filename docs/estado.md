@@ -1,34 +1,50 @@
 # Estado
 
-Última actualización: **2026-11-09**
+Última actualización: **2026-11-10**
 
-## Empezada la clave de contenido, ADR 0059 (2026-11-09, segunda parte)
+## La clave de contenido: hecha la A1 entera, ADR 0059 (2026-11-09 y 10)
 
 **El plan aprobado está en `~/.claude/plans/adr-0059-clave-de-contenido.md`.** Léelo antes de
 seguir: lleva el diseño entero, las cuatro decisiones del cliente, los riesgos de pérdida de datos y el
 reparto en dos publicaciones.
 
-`main` en **`75af788`**, árbol limpio, `make comprobar` en verde con las cruzadas dentro — que es la prueba
+`main` en **`3cbc517`**, árbol limpio, `make comprobar` en verde con las cruzadas dentro — que es la prueba
 de que **el formato 1 sigue saliendo byte a byte igual**, porque el espejo de TypeScript no se ha tocado.
 
-### Hecho
+### Hecho: la A1 entera
 
 | | |
 |---|---|
 | **Fase 0** · `0d52f06` | Los dos formatos y la regla al derecho. `soloLectura` se calculaba con `<`, así que publicar un formato 2 habría dejado **de solo lectura todas las bóvedas que existen** |
-| **A1 · la cadena** · `079f0e2` | El cuerpo se cifra con la clave de su época. Puro refactor |
-| **A1 · el titular** · `75af788` | Abre con su cadena y **no se lleva la clave de bóveda** |
+| **La cadena** · `079f0e2` | El cuerpo se cifra con la clave de su época. Puro refactor |
+| **El titular** · `75af788` | Abre con su cadena y **no se lleva la clave de bóveda** |
+| **Dar acceso** · `3d9e102` | Una ranura de acceso lleva dentro **la cadena**, y por eso **un titular que puede editar puede dar acceso a otros** — `PonerAcceso` exigía la clave de bóveda, que es justo lo que no tiene |
+| **La fusión** · `3cbc517` | Dos épocas, con los sobres que llevan claves resueltos **en bloque** |
 
-### Lo siguiente, en este orden
+### Lo siguiente: la A2, el espejo de TypeScript
 
-1. **La carga v2 al dar acceso.** `PonerAcceso` (`internal/boveda/compartida.go:185`) sella hoy `b.llave`;
-   tiene que sellar **la cadena** cuando la bóveda la tenga, o un titular con «editar» no podrá dar acceso
-   a nadie en una bóveda de formato 2 — y eso lo decidió la ADR 0052.
-2. **`Fundir` con dos épocas**, que es la pieza donde un error se paga en datos. Lo que no se puede olvidar:
-   los sobres que llevan claves —`contenido` y todas las `acceso:*`— se resuelven **en bloque por el lado
-   que gana la época**, no uno por uno. Resolviéndolos por separado, un titular se queda con una ranura que
-   no contiene la época del cuerpo y **no abre su propia bóveda**.
-3. **A2, el espejo de TypeScript**, y solo entonces **los dos formatos suben a 2, los dos a la vez**.
+Sigue a Go línea a línea: `navegador/src/nucleo/claves.ts` *(nuevo)* · `boveda.ts` · `compartida.ts` ·
+`fundir.ts`. Y **solo cuando esté, los dos formatos suben a 2, los dos a la vez**.
+
+**Cinco cosas que la A2 tiene que llevar dentro**, y las tres últimas son deuda que se ha dejado a
+propósito porque **hoy no se puede probar**:
+
+1. **`leerDocumento` del espejo reconstruye el objeto campo a campo**, así que sin añadir `epoca` ahí un
+   documento del formato 2 **la pierde al guardarse**. Es la trampa de `Extra` con otra cara.
+2. **El sello del espejo también lleva `epoca`**, y se escribe al guardar **y al preparar la subida**. En Go
+   eso costó un fallo hoy mismo: estaba en un sitio y no en el otro, y el síntoma en el equipo que recibe es
+   «alguien ha editado el fichero a mano».
+3. **`fundirSobres` gana el parámetro del lado**, y entonces **`TestCruzadaFusionAlAzar` tiene que generar
+   casos con dos épocas** (hay un comentario en `cruzada_test.go` diciéndolo). Sin eso la cruzada dirá que
+   los dos núcleos funden igual sin haber tocado el caso que importa.
+4. **`Fundir` tiene que negarse con un remoto de un formato que se sabe leer y no escribir**, que es
+   exactamente lo que va a existir en la publicación A: `FormatoQueSeLee = 2` y `FormatoQueSeEscribe = 1`.
+   Hoy `leerDocumento` rechaza antes cualquier formato 2, así que esa guarda **no se puede probar** y no se
+   ha escrito: escribirla ahora sería dejarla sin prueba hasta después de publicarla, que es el error que la
+   fase 0 vino a arreglar.
+5. **Y adoptar el formato del remoto cuando sea mayor** (`b.doc.Formato`), por lo mismo: el documento que
+   queda tras fundir lleva la época y el sobre `contenido` del otro lado, o sea que **es** del formato 2 y
+   tiene que declararlo. Misma razón para no haberlo escrito hoy.
 
 ### Cuatro cosas que cuestan de volver a averiguar
 
@@ -50,13 +66,23 @@ de que **el formato 1 sigue saliendo byte a byte igual**, porque el espejo de Ty
   puede grabar en la A**, porque en la A nada escribe formato 2. Se graba en la B, con el código que la
   escribe, y se congela entonces.
 
-### Una del método que ya ha pasado dos veces hoy
+### Tres del método, de las dos tardes
 
-Las dos primeras mutaciones de la pieza del titular salieron rojas **fallando al abrir**, así que la
-aserción que de verdad paga la pieza no llegaba a ejecutarse. La precisa es tocar `conClaves` para que el
-titular reciba una clave: entonces la bóveda abre y cantan las tres del medio. Es el mismo patrón que la
-prueba del segundo interruptor de esta mañana: **una aserción detrás de otra que falla primero no vigila
-nada**.
+- **Una mutación puede ponerse roja por el motivo equivocado.** Las dos primeras de la pieza del titular
+  salieron rojas **fallando al abrir**, así que la aserción que de verdad paga la pieza no llegaba a
+  ejecutarse. La precisa es tocar `conClaves` para que el titular reciba una clave: entonces la bóveda abre
+  y cantan las tres del medio. **Una aserción detrás de otra que falla primero no vigila nada.**
+- **Y una prueba puede sentarse en un empate.** La de la época comparaba dos sobres `contenido` nacidos **en
+  el mismo segundo** —las fechas van a segundos—, y entonces quién gana lo decide el desempate del
+  contenedor, o sea el azar del cifrado: pasaba o fallaba a cara o cruz. Lo destapó mutar otra cosa, al ver
+  rojo un test que la mutación no podía tocar. Ahora va con `conReloj` y la rotación es **diez segundos
+  después**, que es lo que se quería probar.
+- **El tercer sitio donde la misma regla estaba escrita dos veces.** El sello se armaba en `guardar` y en
+  `prepararSubida`: la época de la 0059 se añadió al primero y no al segundo, así que el documento que salía
+  declaraba una época y su sello llevaba otra — y eso, en el equipo que lo recibe, es «alguien ha editado el
+  fichero a mano». Lo encontraron las pruebas de la fusión, no la lectura. Ahora hay **un solo sitio**
+  (`ponerLoQueSella`), y de paso la subida se sella con la clave de la época y no con la de bóveda, que es
+  la única forma de que **un titular pueda subir**.
 
 ## La 0057 y la 0058 haciendo su trabajo: Tempero en producción (2026-11-09)
 
