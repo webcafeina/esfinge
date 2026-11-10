@@ -490,6 +490,15 @@ No se cambian sin preguntar.
 
 ## Trampas que ya costaron encontrarse
 
+**Una prueba que fabrica el escenario con el reloj de verdad y lo ejercita con el de mentira depende de la
+hora del día.** Las pruebas de la fusión con dos épocas montaban el proyecto fuera de `conReloj` —o sea con
+la hora real— y rotaban dentro, a las 09:00:10 de mentira. Quién gana la época lo decide la fecha del sobre
+`contenido`, así que **pasaban por la mañana y fallaban a media mañana**: a las 08:39 el sobre de verdad era
+más viejo que el de mentira y a las 09:05 ya no. Y mientras pasaban, dos de las tres lo hacían **por el
+motivo equivocado** —ganaba el lado de aquí, que es el caso que no se quería probar—, así que su mutación
+tampoco valía. El escenario entero va con el mismo reloj. Es la familia de «un dato congelado leído con el
+reloj de verdad caduca solo», con la diferencia de que esto **no** falla siempre: falla a unas horas.
+
 **Una regla cuyo caso límite todavía no existe se escribe al revés y nadie se entera.** `soloLectura` se
 calculaba `doc.Formato < Formato` en los tres sitios —los dos núcleos—, al revés de lo que dicen sus
 comentarios y las frases que ve el usuario. No se notaba porque **el único formato que existe es el 1**: el

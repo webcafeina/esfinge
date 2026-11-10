@@ -121,17 +121,18 @@ func unProyectoConCadenaYUnTitular(t *testing.T) (ruta string, llave []byte, ana
 // bóveda; y lo que queda tiene que abrirse después, que es lo único que de verdad dice si
 // la época y la clave del cuerpo han quedado de acuerdo.
 func TestFundirConDosEpocasSeQuedaConLaClaveQueGana(t *testing.T) {
-	ruta, llave, _, idAna := unProyectoConCadenaYUnTitular(t)
-	// **Con el reloj en la mano, y no es un detalle.** Las fechas van a segundos, así
-	// que los dos sobres `contenido` nacen en el mismo y entonces quién gana la época lo
-	// decide el desempate del contenedor, o sea el azar del cifrado: la prueba pasaba o
-	// fallaba a cara o cruz. Lo que hay que probar es que gana **el que ha rotado
-	// después**, y para eso el después tiene que existir.
+	// **Con el reloj en la mano de principio a fin, y no es un detalle.** Las fechas van
+	// a segundos, así que si los dos sobres `contenido` nacen en el mismo, quién gana la
+	// época lo decide el desempate del contenedor, o sea el azar del cifrado. Y **el
+	// escenario entero tiene que ir con el mismo reloj**: fabricando el proyecto con el de
+	// verdad y rotando con el de mentira, quién gana depende de la hora del día a la que
+	// se corra la prueba — pasaba por la mañana y fallaba a media mañana.
 	reloj := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
 
 	var c cadenaDeClaves
 	var remoto []byte
 	conReloj(t, func() time.Time { return reloj }, func() {
+		ruta, llave, _, idAna := unProyectoConCadenaYUnTitular(t)
 		// El otro equipo: la misma bóveda, una entrada suya, y rota.
 		rutaOtro := copiaDelFichero(t, ruta)
 		otro, err := AbrirProyecto(rutaOtro, llave)
@@ -172,21 +173,22 @@ func TestFundirConDosEpocasSeQuedaConLaClaveQueGana(t *testing.T) {
 			t.Errorf("el cuerpo se queda en la época %q y la que gana es %q", a.doc.Epoca, c.Actual)
 		}
 		a.Cerrar()
-	})
 
-	// **Y se vuelve a abrir**, que es lo que se paga aquí: una época declarada sin la
-	// clave con la que está cifrado el cuerpo no da error al guardar, da un fichero
-	// perdido.
-	vuelta, err := AbrirProyecto(ruta, llave)
-	if err != nil {
-		t.Fatalf("tras fundir dos épocas, la bóveda no se abre: %v", err)
-	}
-	defer vuelta.Cerrar()
-	for _, q := range []string{"Cloudflare", "Lo del otro equipo", "Lo de este equipo"} {
-		if e := vuelta.Buscar(q); len(e) != 1 {
-			t.Errorf("tras fundir no está %q", q)
+		// **Y se vuelve a abrir**, que es lo que se paga aquí: una época declarada sin la
+		// clave con la que está cifrado el cuerpo no da error al guardar, da un fichero
+		// perdido.
+		vuelta, err := AbrirProyecto(ruta, llave)
+		if err != nil {
+			t.Fatalf("tras fundir dos épocas, la bóveda no se abre: %v", err)
 		}
-	}
+		defer vuelta.Cerrar()
+		for _, q := range []string{"Cloudflare", "Lo del otro equipo", "Lo de este equipo"} {
+			if e := vuelta.Buscar(q); len(e) != 1 {
+				t.Errorf("tras fundir no está %q", q)
+			}
+		}
+	})
+	_ = c
 }
 
 // **Las ranuras de acceso salen del lado que pone la época, aunque la de aquí sea más
@@ -198,11 +200,14 @@ func TestFundirConDosEpocasSeQuedaConLaClaveQueGana(t *testing.T) {
 // dentro la cadena de antes, con la que el cuerpo nuevo no se descifra. Ana abriría su
 // sobre, sacaría una cadena sin la época del cuerpo y **no abriría su propia bóveda**.
 func TestAlFundirDosEpocasLasRanurasDeAccesoVanConLaClave(t *testing.T) {
-	ruta, llave, ana, idAna := unProyectoConCadenaYUnTitular(t)
+	// El escenario entero con el mismo reloj: ver la prueba de arriba.
 	reloj := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
-
-	var remoto []byte
+	var ruta string
+	var ana *Boveda
 	conReloj(t, func() time.Time { return reloj }, func() {
+		var llave []byte
+		var idAna Identidad
+		ruta, llave, ana, idAna = unProyectoConCadenaYUnTitular(t)
 		rutaOtro := copiaDelFichero(t, ruta)
 		otro, err := AbrirProyecto(rutaOtro, llave)
 		if err != nil {
@@ -211,7 +216,7 @@ func TestAlFundirDosEpocasLasRanurasDeAccesoVanConLaClave(t *testing.T) {
 		// Allí se rota, resellando la ranura de Ana con la cadena nueva.
 		reloj = reloj.Add(10 * time.Second)
 		rotarAMano(t, otro, map[string]Identidad{idDeAna: idAna})
-		remoto, _, err = otro.PrepararSubida(1)
+		remoto, _, err := otro.PrepararSubida(1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -250,10 +255,14 @@ func TestAlFundirDosEpocasLasRanurasDeAccesoVanConLaClave(t *testing.T) {
 // acceso a alguien aquí y rotar en otro equipo se lo devolvería, que es exactamente lo
 // que la lápida de la ADR 0052 existe para que no pase.
 func TestAlFundirDosEpocasUnaLapidaNoRevive(t *testing.T) {
-	ruta, llave, ana, idAna := unProyectoConCadenaYUnTitular(t)
+	// El escenario entero con el mismo reloj: ver la primera prueba de este fichero.
 	reloj := time.Date(2026, 11, 10, 9, 0, 0, 0, time.UTC)
-
+	var ruta string
+	var ana *Boveda
 	conReloj(t, func() time.Time { return reloj }, func() {
+		var llave []byte
+		var idAna Identidad
+		ruta, llave, ana, idAna = unProyectoConCadenaYUnTitular(t)
 		rutaOtro := copiaDelFichero(t, ruta)
 		otro, err := AbrirProyecto(rutaOtro, llave)
 		if err != nil {

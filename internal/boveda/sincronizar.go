@@ -428,7 +428,7 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	// **Las dos épocas** (ADR 0059). Mientras los dos lados estén en la misma clave de
 	// contenido esto no hace nada, que es el caso normal y el único que existe en el
 	// formato 1: `clavesQueAbren` devuelve la de aquí y el lado es «los dos».
-	clavesR, err := b.clavesQueAbren(docR)
+	clavesR, llaveR, err := b.clavesQueAbren(docR)
 	if err != nil {
 		return Fusion{}, err
 	}
@@ -448,7 +448,7 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 		if docB, err := leerDocumento(base); err == nil && docB.ID == b.doc.ID {
 			// La base puede ser de una tercera época: la de antes de que alguien
 			// rotara. Se abre con lo que la abra, y si no se abre se funde sin ella.
-			if clavesB, err := b.clavesQueAbren(docB); err == nil {
+			if clavesB, _, err := b.clavesQueAbren(docB); err == nil {
 				if _, c, err := desempaquetar(docB, clavesB); err == nil {
 					contB = &c
 					sobresB = docB.Sobres
@@ -513,6 +513,9 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	// Y si la época que gana es la de allí, el cuerpo se vuelve a cifrar con **su**
 	// clave: la cadena y la época declarada se ponen a la vez (ver `ponerEpoca`).
 	if lado == clavesDeAlla {
+		// Las dos cosas de ese lado: la cadena con su época **y su clave de bóveda**, que
+		// es la que envuelven las ranuras que acaban de entrar.
+		b.llave = llaveR
 		if err := b.ponerEpoca(clavesR, docR.Epoca); err != nil {
 			b.reponer(antes)
 			return f, err
@@ -654,13 +657,18 @@ func fundirSobres(l, r, b []sobre, hayBase bool, lado ladoDeLasClaves) []sobre {
 		sl, enL := mL[tipo]
 		sr, enR := mR[tipo]
 		sb, enB := mB[tipo]
-		// **Los sobres que llevan claves salen de un solo lado, y todos del mismo**
-		// (ADR 0059). Resolviéndolos uno por uno, el cuerpo puede quedar cifrado con la
-		// clave de un lado y la ranura de un titular llevar dentro la del otro: esa
-		// persona abre su sobre, saca una cadena que no tiene la época del cuerpo y
-		// **no abre su propia bóveda**. Por eso esto no es una optimización ni un
-		// detalle de orden: es la diferencia entre fundir y perder una bóveda.
-		if lado != clavesDeLosDos && llevaClaves(tipo) {
+		// **Si las épocas no son la misma, las ranuras salen de un solo lado, y todas
+		// del mismo** (ADR 0059). Resolviéndolas una por una, el cuerpo puede quedar
+		// cifrado con la clave de un lado y la ranura de alguien llevar dentro la del
+		// otro: esa persona abre su sobre, saca una clave que no es la del cuerpo y **no
+		// abre su propia bóveda**. No es una optimización ni un detalle de orden: es la
+		// diferencia entre fundir y perder una bóveda.
+		//
+		// **Y son todas, no solo las que llevan la cadena**, porque rotar cambia también
+		// la clave de bóveda: la ranura principal, la maestra y la de recuperación
+		// envuelven **ésa**, así que una de la época de antes abre una bóveda que ya no
+		// es ésta. Las de este equipo se quedan como están, como siempre.
+		if lado != clavesDeLosDos && !ranurasLocales[tipo] {
 			if s, queda := deUnSoloLado(tipo, sl, sr, enL, enR, lado,
 				elQueGana(tipo, sl, sr, sb, enL, enR, enB, hayBase)); queda {
 				out = append(out, s)
@@ -672,19 +680,29 @@ func fundirSobres(l, r, b []sobre, hayBase bool, lado ladoDeLasClaves) []sobre {
 	return out
 }
 
-// deUnSoloLado resuelve un sobre que lleva claves, cuando los dos lados están en épocas
-// distintas. `gana` es lo que dirían las reglas de siempre, que aquí sirve para una sola
-// cosa y no para elegir el contenedor: decir si esa ranura sigue viva.
+// deUnSoloLado resuelve una ranura cuando los dos lados están en épocas distintas.
+// `gana` es lo que dirían las reglas de siempre, que aquí sirve para una sola cosa y no
+// para elegir el contenedor: decir si esa ranura sigue viva.
 func deUnSoloLado(tipo string, sl, sr sobre, enL, enR bool, lado ladoDeLasClaves, gana sobre) (sobre, bool) {
 	delLado, hay := sl, enL
 	if lado == clavesDeAlla {
 		delLado, hay = sr, enR
 	}
-	// El sobre `contenido` **es** la cadena: sale del lado que gana la época y no se
-	// mira nada más. Volver a decidirlo con las reglas de las ranuras sería tener la
-	// misma regla en dos sitios, y ya se sabe lo que hacen esas.
-	if tipo == RanuraDeContenido {
-		return delLado, hay
+	// Las que no son de acceso —`contenido`, la ranura principal, la maestra, la de
+	// recuperación— salen del lado que gana la época y no se mira nada más. Volver a
+	// decidirlo con las reglas de las ranuras sería tener la misma regla en dos sitios.
+	//
+	// **Y si ese lado no la tiene, se queda la del otro**: éstas no se caen nunca. Una
+	// ranura de la época de antes abre una bóveda que ya no es ésta, y eso se ve y se
+	// arregla; **no tener ninguna es no tener puerta**.
+	if IDDeAcceso(tipo) == "" {
+		if !hay {
+			if lado == clavesDeAlla {
+				return sl, enL
+			}
+			return sr, enR
+		}
+		return delLado, true
 	}
 	// Una ranura de acceso tiene **dos cosas que decidir y no son la misma**. Si sigue
 	// viva lo dicen las reglas de siempre, porque una lápida no se resucita ni por el
@@ -1143,6 +1161,7 @@ type comoEstaba struct {
 	sobres  []sobre
 	sucio   bool
 	claves  cadenaDeClaves
+	llave   []byte
 	epoca   string
 	formato int
 }
@@ -1150,11 +1169,11 @@ type comoEstaba struct {
 func (b *Boveda) apuntarComoEsta() comoEstaba {
 	return comoEstaba{
 		cont: b.cont, sobres: b.doc.Sobres, sucio: b.cuerpoSucio,
-		claves: b.claves, epoca: b.doc.Epoca, formato: b.doc.Formato,
+		claves: b.claves, llave: b.llave, epoca: b.doc.Epoca, formato: b.doc.Formato,
 	}
 }
 
 func (b *Boveda) reponer(x comoEstaba) {
 	b.cont, b.doc.Sobres, b.cuerpoSucio = x.cont, x.sobres, x.sucio
-	b.claves, b.doc.Epoca, b.doc.Formato = x.claves, x.epoca, x.formato
+	b.claves, b.llave, b.doc.Epoca, b.doc.Formato = x.claves, x.llave, x.epoca, x.formato
 }

@@ -105,12 +105,8 @@ import (
 // (`navegador/src/nucleo/boveda.ts`), y los compara `TestCruzadaLosFormatosSonLosMismos`:
 // desalineados no fallan solos, un lado escribiría lo que el otro abre en solo lectura.
 const (
-	// **Se lee el 2 desde el 2026-11-10** (publicación A de la ADR 0059), y no se
-	// escribe: así una bóveda con claves de contenido se abre entera, se dice que no se
-	// puede escribir con la frase que ya existe, y **nada de aquí la crea** — eso es la
-	// publicación B. Los dos números suben por separado a propósito.
 	FormatoQueSeLee     = 2
-	FormatoQueSeEscribe = 1
+	FormatoQueSeEscribe = 2
 )
 
 // soloSeLee dice si un documento de ese formato se abre **sin poder escribir**.
@@ -120,6 +116,22 @@ const (
 // puede montar con las constantes puestas. Sacándolo aquí, la regla se prueba con
 // números explícitos en vez de con un caso que todavía no ocurre.
 func soloSeLee(formato, queSeEscribe int) bool { return formato > queSeEscribe }
+
+// Los formatos que existen, por lo que **son** y no por lo que esta versión haga con
+// ellos (ADR 0059).
+//
+// Hacen falta los dos porque **el formato que un documento declara es el que describe su
+// contenido**, no el máximo que este código sabe escribir: una bóveda nueva no usa claves
+// de contenido, así que declara el 1 y la abre cualquier Esfinge anterior. Declarar el
+// máximo dejaría a una bóveda recién creada sin poder abrirse en el Esfinge de al lado
+// **sin que nadie hubiera pedido nada**.
+const (
+	// FormatoBase es el de siempre: el cuerpo cifrado con la clave de bóveda.
+	FormatoBase = 1
+	// FormatoConClavesDeContenido es el de una bóveda cuyo cuerpo se cifra con una clave
+	// de contenido y que declara su época (ADR 0059).
+	FormatoConClavesDeContenido = 2
+)
 
 // Tipos de ranura. Son una lista abierta a propósito: añadir
 // «llavero-del-sistema» para Touch ID, o «servidor» cuando haya cuentas, no
@@ -358,6 +370,18 @@ type Boveda struct {
 	// sola clave, y esa clave es la de bóveda**: así todo el código trabaja siempre con
 	// una cadena y el formato de siempre es el caso degenerado, sin condicionales.
 	claves cadenaDeClaves
+	// principal es la clave de bóveda de la personal con la que se abrió este proyecto,
+	// y **solo la tiene una bóveda de proyecto del dueño** (ADR 0050).
+	//
+	// Está aquí desde que rotar cambia también la clave de bóveda (ADR 0059): la de cada
+	// documento sale **de ese documento**, por su ranura principal, y para abrirla hace
+	// falta ésta. Sin ella, un equipo que lleve tiempo sin abrir este proyecto no podría
+	// volver a fundir nunca: su fichero lleva la clave de antes y la nueva solo está
+	// dentro del que acaba de bajar.
+	//
+	// No es una exposición nueva: la 0050 ya dice que la clave de la personal está en
+	// memoria mientras hay un proyecto abierto. `Cerrar` la borra.
+	principal []byte
 	// titular es quién soy yo en esta bóveda, si es de otra persona. Hace falta para
 	// encontrar **mi** ranura en el documento remoto al fundir. Vacío en las propias.
 	titular string
@@ -474,14 +498,14 @@ func sinRanuras(ruta string) (*Boveda, error) {
 	b := &Boveda{
 		ruta:  ruta,
 		llave: llave,
-		// Una bóveda nace en el formato que este código escribe, así que su cadena es la
-		// degenerada: una sola clave, la de bóveda, y ninguna época. El día que el
-		// formato que se escribe sea el 2, esto pasa a ser una cadena de verdad.
+		// Una bóveda nace **sin claves de contenido**, así que su cadena es la degenerada
+		// —una sola clave, la de bóveda, y ninguna época— y declara el formato que eso
+		// es. Pasa al 2 cuando alguien rota, y no antes.
 		claves: cadenaDeUnaClave(llave),
 		doc: documento{
 			Esfinge:  marca,
 			Aviso:    avisoDelFichero,
-			Formato:  FormatoQueSeEscribe,
+			Formato:  FormatoBase,
 			ID:       hex.EncodeToString(id),
 			Serie:    0,
 			Cambiada: time.Now().UTC().Format(time.RFC3339),
@@ -998,14 +1022,23 @@ func (b *Boveda) Cerrar() {
 	// Y las de contenido, que son claves igual: dejarlas en memoria sería cerrar la
 	// puerta de delante y dejar la de atrás abierta.
 	b.claves = cadenaDeClaves{}
+	// Y la de la personal, que en una bóveda de proyecto está aquí desde la 0059.
+	cripto.Borrar(b.principal)
+	b.principal = nil
 	b.cont = contenido{}
 }
 
 // Abierta dice si se puede trabajar.
+//
+// **Lo dice la cadena y no la clave de bóveda** (ADR 0059): una bóveda compartida abierta
+// por un titular no tiene la segunda y se lee y se escribe igual. Con la pregunta puesta
+// en la clave de bóveda, `App.boveda()` devolvía nil con una bóveda de ésas abierta, o sea
+// que la ventana entera se comportaba como si estuviera cerrada. No llegó a notarse porque
+// nada escribía el formato 2 todavía.
 func (b *Boveda) Abierta() bool {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.llave != nil
+	return !b.cerrada()
 }
 
 // cerrada dice que aquí no hay con qué trabajar.

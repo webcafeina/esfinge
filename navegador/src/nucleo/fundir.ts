@@ -36,10 +36,9 @@ import {
 import { CODIFICACION_RETIRADA } from "./compartida";
 import {
   claveDe,
+  esDeAcceso,
   laCadenaDe,
   ladoDeLaFusion,
-  llevaClaves,
-  RANURA_DE_CONTENIDO,
   type CadenaDeClaves,
   type LadoDeLasClaves,
 } from "./claves";
@@ -243,11 +242,13 @@ export function fundirSobres(l: Sobre[], r: Sobre[], b: Sobre[], hayBase: boolea
     const sl = mL.get(tipo)!;
     const sr = mR.get(tipo);
     const sb = mB.get(tipo);
-    // **Los sobres que llevan claves salen de un solo lado, y todos del mismo**
-    // (ADR 0059). Resolviéndolos uno por uno, el cuerpo puede quedar cifrado con la clave
-    // de un lado y la ranura de un titular llevar dentro la del otro: esa persona abre su
-    // sobre, saca una cadena sin la época del cuerpo y **no abre su propia bóveda**.
-    if (lado !== "los-dos" && llevaClaves(tipo)) {
+    // **Si las épocas no son la misma, las ranuras salen de un solo lado, y todas del
+    // mismo** (ADR 0059). Resolviéndolas una por una, el cuerpo puede quedar cifrado con
+    // la clave de un lado y la ranura de alguien llevar dentro la del otro: esa persona
+    // abre su sobre, saca una clave que no es la del cuerpo y **no abre su propia
+    // bóveda**. Y son todas y no solo las que llevan la cadena, porque rotar cambia
+    // también la clave de bóveda, que es lo que envuelven las demás.
+    if (lado !== "los-dos" && !RANURAS_LOCALES.has(tipo)) {
       const s = deUnSoloLado(tipo, sl, sr, lado, elQueGana(tipo, sl, sr, sb, hayBase));
       if (s) out.push(s);
       continue;
@@ -270,10 +271,11 @@ function deUnSoloLado(
   gana: Sobre,
 ): Sobre | null {
   const delLado = lado === "alla" ? sr : sl;
-  // El sobre `contenido` **es** la cadena: sale del lado que gana la época y no se mira
-  // nada más. Volver a decidirlo con las reglas de las ranuras sería tener la misma regla
-  // en dos sitios.
-  if (tipo === RANURA_DE_CONTENIDO) return delLado ?? null;
+  // Las que no son de acceso —`contenido`, la ranura principal, la maestra, la de
+  // recuperación— salen del lado que gana la época y no se mira nada más. **Y si ese lado
+  // no la tiene, se queda la del otro**: éstas no se caen nunca, porque no tener ninguna
+  // es no tener puerta.
+  if (!esDeAcceso(tipo)) return delLado ?? (lado === "alla" ? sl : sr) ?? null;
   // Una ranura de acceso tiene **dos cosas que decidir y no son la misma**. Si sigue viva
   // lo dicen las reglas de siempre, porque una lápida no se resucita ni por el lado que
   // pone la época. Qué lleva dentro lo dice la época, porque con la cadena del otro lado

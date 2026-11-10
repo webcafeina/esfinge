@@ -71,7 +71,16 @@ import {
  * Los compara `TestCruzadaLosFormatosSonLosMismos`: desalineados no fallan solos.
  */
 export const FORMATO_QUE_SE_LEE = 2;
-export const FORMATO_QUE_SE_ESCRIBE = 1;
+export const FORMATO_QUE_SE_ESCRIBE = 2;
+
+/**
+ * Los formatos que existen, por lo que **son** y no por lo que esta versión haga con
+ * ellos (ADR 0059). El formato que un documento declara es el que describe su contenido,
+ * no el máximo que se sabe escribir: una bóveda nueva no usa claves de contenido, declara
+ * el 1 y la abre cualquier Esfinge anterior.
+ */
+export const FORMATO_BASE = 1;
+export const FORMATO_CON_CLAVES_DE_CONTENIDO = 2;
 
 /** soloSeLee dice si un documento de ese formato se abre **sin poder escribir**. */
 export function soloSeLee(formato: number, queSeEscribe: number): boolean {
@@ -435,7 +444,7 @@ export class Boveda {
     const doc: Documento = {
       esfinge: MARCA,
       aviso: AVISO,
-      formato: FORMATO_QUE_SE_ESCRIBE,
+      formato: FORMATO_BASE,
       id: azarHex(),
       serie: 0,
       cambiada: cuando,
@@ -468,7 +477,7 @@ export class Boveda {
     const doc: Documento = {
       esfinge: MARCA,
       aviso: AVISO,
-      formato: FORMATO_QUE_SE_ESCRIBE,
+      formato: FORMATO_BASE,
       id: azarHex(),
       serie: 0,
       cambiada: cuando,
@@ -1136,7 +1145,11 @@ export class Boveda {
   _ponerEpoca(claves: CadenaDeClaves, epoca: string): void {
     if (claveDe(claves, epoca) === null) throw new ErrorBoveda("manipulada");
     this.claves = claves;
-    this.doc = { ...this.doc, ...(epoca ? { epoca } : {}) };
+    // Y el formato, que es **una consecuencia de esto** y no una cosa aparte: declarar
+    // una época y seguir diciendo que el documento es del formato de siempre haría que
+    // una Esfinge anterior lo abriera y se encontrara un cuerpo que no descifra.
+    const formato = epoca ? FORMATO_CON_CLAVES_DE_CONTENIDO : FORMATO_BASE;
+    this.doc = { ...this.doc, formato, ...(epoca ? { epoca } : {}) };
     if (!epoca) delete this.doc.epoca;
   }
 }
