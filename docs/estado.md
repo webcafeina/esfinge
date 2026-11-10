@@ -37,14 +37,21 @@ De ahí tres cosas que no se tocan a ciegas, y están en la ficha:
 | **B4** | El paseo de dos cuentas contra el servidor de verdad, con dos pasos nuevos: Ana rota con Beto dentro y **a Beto le sigue llegando**, y al quitarle el acceso lo que se llevó ya no abre |
 | **B5** | La ficha corregida —decía que la clave de bóveda no cambia nunca—, `seguridad.md`, `formato-boveda.md`, `decisiones.md`, `CLAUDE.md` y la deuda tachada |
 
-### Lo que queda
+### Y las tres cosas que quedaban, hechas
 
-- **El botón no tiene prueba de interfaz**, y está en la deuda: es la trampa de la pantalla que existe donde
-  nadie mira. Va en `cuentas.spec.ts`, que es la que tiene cuenta y dos ventanas.
-- **El vector congelado** de una bóveda de proyecto del formato 2, que **ya se puede grabar** porque hay
-  código que escribe ese formato.
-- **Y el ayudante `rotarAMano`** de las pruebas de la A tiene que llamar a `RotarLasClaves`: hace lo que hace
-  producción, que es la trampa de siempre, y ahora producción existe.
+- **El botón ya tiene prueba de interfaz** (`cuentas.spec.ts`): que se encuentra donde está la persona, que
+  hace falta pulsar dos veces, que **dice que lo ha hecho** —por dentro no cambia nada que se vea— y que
+  después la bóveda se sigue leyendo y escribiendo. Mutada quitando la confirmación.
+- **El vector congelado está grabado**: `internal/boveda/testdata/proyecto-formato2.esfinge`, con dos épocas,
+  una ranura de acceso viva, la lápida de uno al que se le quitó y el cuerpo cifrado con la clave de ahora.
+  Se lee **con el reloj de su época** y afirma, entre otras cosas, que **la clave de bóveda de antes de
+  migrar no abre nada**: la deuda congelada en bytes. El generador se borró, como manda la ADR 0022.
+- **Y los dos ayudantes que repetían producción se fueron.** Las pruebas de la A rotan con `RotarLasClaves`:
+  **136 líneas menos y 52 más**. De paso apareció otro hueco: `CrearProyecto` no se quedaba con la clave de
+  la personal, así que una bóveda recién creada no podía rotar hasta cerrarla y volver a abrirla.
+
+Así que **la B está lista para fusionar** en cuanto la A esté publicada y la extensión aprobada en las
+tiendas. Lo único que no se puede comprobar desde aquí sigue siendo la flota mezclada de verdad.
 
 ## La clave de contenido: hecha la A1 entera, ADR 0059 (2026-11-09 y 10)
 

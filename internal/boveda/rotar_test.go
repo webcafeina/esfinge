@@ -422,3 +422,82 @@ func TestDesprenderVuelveAlFormatoDeSiempre(t *testing.T) {
 		t.Error("la copia entregada lleva el sobre de las claves de contenido")
 	}
 }
+
+// **Una bóveda de proyecto del formato 2, congelada** (ADR 0059, y el argumento de la
+// [ADR 0022] una planta más arriba).
+//
+// Lleva dentro lo que no se puede volver a fabricar igual: dos épocas —la de migrar y una
+// rotación más—, una ranura de acceso viva, la lápida de uno al que se le quitó, y el
+// cuerpo cifrado con la clave de la época de ahora. **No se regenera**: si esta prueba se
+// pone roja, o el cambio está mal o toca subir el formato y grabar un vector nuevo al
+// lado.
+//
+// **Y se lee con el reloj de su época**, por lo que ya costó una vez: un dato congelado con
+// fechas dentro, leído con el reloj del sistema, caduca solo.
+//
+// Las dos claves están aquí escritas a propósito: son de un fichero de pruebas, y lo que
+// prueban es justo lo que no se puede probar de otra forma — que **la de antes de migrar
+// ya no abre nada**.
+func TestUnProyectoDelFormato2Congelado(t *testing.T) {
+	// La clave de bóveda de la personal con la que se envolvió su ranura principal.
+	const principal = "PaeyTzf0AWfdHZ1MywIlMLju5zcRh7s4RQj4GSuE8Mc"
+	// Y la clave de bóveda que tenía **antes de la primera rotación**: lo que se habría
+	// llevado quien tuviera acceso entonces.
+	const laDeAntesDeMigrar = "2-PZXmwMRt7f3HeFmVn9yNVflcqMG0JI6sxSKCLqfv0"
+
+	conReloj(t, func() time.Time { return time.Date(2026, 11, 11, 12, 0, 0, 0, time.UTC) }, func() {
+		datos, err := os.ReadFile("testdata/proyecto-formato2.esfinge")
+		if err != nil {
+			t.Fatal(err)
+		}
+		ruta := filepath.Join(t.TempDir(), "proyecto.esfinge")
+		if err := os.WriteFile(ruta, datos, 0o600); err != nil {
+			t.Fatal(err)
+		}
+
+		p, err := AbrirProyecto(ruta, []byte(principal))
+		if err != nil {
+			t.Fatalf("una bóveda del formato 2 ya grabada no se abre: %v", err)
+		}
+		defer p.Cerrar()
+
+		// Lo de dentro, entero.
+		cf := buscar(t, p, "Cloudflare de Zeri")
+		if cf.Secreto != "el testigo" || len(cf.Sitios) != 1 {
+			t.Errorf("la credencial no llega entera: %s", canon(cf))
+		}
+		if n := buscar(t, p, "Cómo se despliega"); n.Notas != "lo de siempre" {
+			t.Errorf("la nota no llega entera: %s", canon(n))
+		}
+
+		// La forma del formato 2: dos épocas más la de antes, y la declarada es la de ahora.
+		p.mu.Lock()
+		formato, epoca, claves, actual := p.doc.Formato, p.doc.Epoca, len(p.claves.Claves), p.claves.Actual
+		p.mu.Unlock()
+		if formato != FormatoConClavesDeContenido || epoca == "" || epoca != actual {
+			t.Errorf("formato %d, época %q y la cadena dice que la de ahora es %q", formato, epoca, actual)
+		}
+		if claves != 3 {
+			t.Errorf("la cadena tiene %d claves y el vector se grabó con tres", claves)
+		}
+
+		// Un acceso vivo y una lápida, que no cuenta como acceso.
+		if a := p.Accesos(); len(a) != 1 || a[0] != "1111222233334444" {
+			t.Errorf("los accesos del vector son %v", a)
+		}
+
+		// **Y la clave de antes de migrar no abre nada**, que es la deuda que esto paga.
+		if otra, err := AbrirConLaClave(ruta, []byte(laDeAntesDeMigrar)); err == nil {
+			otra.Cerrar()
+			t.Error("la bóveda se abre con la clave de bóveda de antes de migrar")
+		}
+
+		// Y se sigue pudiendo escribir en ella, que es lo que la publicación B añade.
+		if p.SoloLectura() {
+			t.Error("una bóveda del formato 2 se abre de solo lectura en la versión que lo escribe")
+		}
+		if err := p.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Después del vector"}); err != nil {
+			t.Errorf("no se puede escribir en la bóveda congelada: %v", err)
+		}
+	})
+}

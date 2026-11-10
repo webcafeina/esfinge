@@ -829,3 +829,92 @@ test("el servidor de un proyecto: la huella, el acceso y que además escriba", a
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * **Cambiar la clave de una bóveda de proyecto** (ADR 0059).
+ *
+ * El botón existe porque rotar es lo que hace que quitar un acceso signifique algo, y esta
+ * prueba está por lo que esta casa ya pagó con la tarjeta de los agentes: **una pantalla
+ * que existe y está donde nadie mira**. Lo que comprueba es que se encuentra, que hace
+ * falta pulsar dos veces, que **dice que lo ha hecho** —por dentro no cambia nada que se
+ * vea, así que sin esa línea parecería no haber hecho nada— y que después la bóveda se
+ * sigue usando.
+ */
+test("cambiar la clave de una bóveda de proyecto", async ({ page, request }) => {
+  test.skip(test.info().project.name !== "claro", "Usa la cuenta que deja la prueba anterior");
+  test.setTimeout(120_000);
+
+  const errores = vigilarConsola(page);
+  await bovedaDeB(page, request);
+
+  const seccion = (nombre: string) =>
+    page.locator(".lateral").getByRole("button", { name: nombre, exact: true });
+
+  await seccion("Proyectos").click();
+  const nombre = `Clave ${Date.now()}`;
+  await accion(page, "Nueva bóveda de proyecto").click();
+  await page.locator("#proyecto-nombre").fill(nombre);
+  await accion(page, "Crear").click();
+  const fila = page.locator(".panel:visible .proyectos").getByRole("button", { name: new RegExp(nombre) });
+  await expect(fila).toBeVisible({ timeout: 20_000 });
+  await fila.click();
+  await expect(page.locator("#boveda-buscar")).toBeVisible({ timeout: 30_000 });
+
+  // Algo dentro, para poder comprobar después que se sigue leyendo.
+  await seccion("Bóveda").click();
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill("Antes de cambiar la clave");
+  await page.locator("#boveda-secreto").fill("s3cr3t0");
+  await accion(page, "Guardar").click();
+  await expect(page.locator(".lista-boveda")).toContainText("Antes de cambiar la clave", { timeout: 20_000 });
+
+  // El bloque de quién tiene acceso, que es donde vive el botón.
+  const bloque = page.locator(".panel:visible .el-acceso");
+  await seccion("Proyectos").click();
+  const activa = page.locator('.panel:visible .proyectos li[data-activo="si"]');
+  await expect(activa).toBeVisible({ timeout: 20_000 });
+  if ((await bloque.count()) === 0) {
+    await activa.getByRole("button", { name: "Quién tiene acceso…" }).click();
+  }
+  await expect(bloque).toBeVisible({ timeout: 20_000 });
+
+  const cambiar = bloque.locator(".cambiar-la-clave");
+  const boton = cambiar.getByRole("button");
+  await expect(boton, "no se encuentra el botón de cambiar la clave").toHaveText("Cambiar la clave de esta bóveda");
+  await expect(cambiar.locator(".nota")).toContainText("solo para quien tiene acceso ahora mismo");
+
+  await boton.click();
+  // Entre los dos clics se espera **al rótulo nuevo**: sin eso caen en el mismo render y
+  // el segundo vuelve a armar en vez de confirmar.
+  await expect(boton).toHaveText("Sí, cambiar la clave");
+  await boton.click();
+
+  await expect(cambiar.locator(".nota"), "cambiar la clave no dice que lo haya hecho").toContainText(
+    "Clave cambiada",
+    { timeout: 30_000 },
+  );
+  await expect(boton).toHaveText("Cambiar la clave de esta bóveda");
+
+  // Y la bóveda se sigue usando con la clave nueva, que es la mitad que de verdad importa.
+  await seccion("Bóveda").click();
+  await expect(page.locator(".lista-boveda")).toContainText("Antes de cambiar la clave", { timeout: 20_000 });
+  await accion(page, "Nueva").click();
+  await page.locator("#boveda-titulo").fill("Después de cambiar la clave");
+  await page.locator("#boveda-secreto").fill("otro");
+  await accion(page, "Guardar").click();
+  await expect(page.locator(".lista-boveda")).toContainText("Después de cambiar la clave", { timeout: 20_000 });
+
+  // **Y se sale del proyecto**, que una prueba que conmuta de bóveda tiene que dejar
+  // abierta la de siempre (ADR 0050).
+  await seccion("Proyectos").click();
+  const salir = page.locator(".herramientas .salir-proyecto");
+  if ((await salir.count()) > 0) {
+    await expect(salir).toHaveText("Salir del proyecto");
+    await salir.click();
+    await expect(salir).toHaveText("Sí, salir y cerrar");
+    await salir.click();
+    await expect(salir).toHaveCount(0, { timeout: 20_000 });
+  }
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});

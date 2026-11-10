@@ -1,0 +1,35 @@
+{
+  "esfinge": "bóveda",
+  "aviso": "Bóveda de Esfinge. Las contraseñas van cifradas; esto de fuera solo dice cómo abrirlas. No la edites a mano.",
+  "formato": 2,
+  "epoca": "a5f7513dc128b872",
+  "id": "6ae61649f7607f30be07d3430f82d3b3",
+  "serie": 10,
+  "cambiada": "2026-11-10T10:20:00Z",
+  "sobres": [
+    {
+      "tipo": "boveda-principal",
+      "creado": "2026-11-10T12:00:00Z",
+      "contenedor": "ESF1.RVNGMQEAAAAgAAAAAAEBkfZ8pEkfdPl-duxMaCeJvd0oMv5X8Pns9zoJARYZLb8lRfTmdRnGhUNljVZCvXzKD6jSzGk4FeM4VKaGV2J7oyOnlD8xj6fgwYHXhfO7TQAB1Rv4G9zuc_SVAuSoLW0X_6dl"
+    },
+    {
+      "tipo": "acceso:1111222233334444",
+      "creado": "2026-11-10T12:00:00Z",
+      "contenedor": "ACC1.l_3B35C16Beizs_XXXuerDwbXNoOyPuOP_E8mfh0ZxE.2zZPrpDZtXCMyMMVFMYwz_ncTwQPO2MYWS8-nGP7Xdd1LRWTIxB-zEPOeRWxJm0NJpQBNa5LhLVs1fdOZ2ALYhqS8n0EPOhrCPreXGN7GtMuNjr9vxiC5KAKKxleXLR74go6Ev4qQZx9l0jAsIy8q4qpmXfpH5SB9KBbUgq8Al0Wr5fgxNgqsX69j92pR7sBvuq-qF8-aeDzdzxLkCr_eMwVtkJIE-GgH7S9jeVq2oksJiY_Ax0qwabb39hr-x8deylcdeCrHjy0r1dPLcRhsbMfHdzORzl5x6nP5L25rHOJarWw7uaqGjL3yR_rkg_FRRda1JF7sJizsRufJXFDOPQ_8ebY5w8585-5N1JGgoBbGmZc_ensY9DClX2DZpI28woaygs2EHBOzRhAyGeXFf4HavvQZPQthPgSKrLGqtlYUawG0Zq0AzyPvaW-NZpUJU6a0kySZ2YV4ybpGjRxAahAtpp3_JS5SWaJoGFz3IaWyzX5I5SFx9G-elEe2hqiMpxP8seZrOM9cgAiug8bCz0-WtXlY4dPrm6e0ftZBB3L_IQSOMAKWfqzBqHjlSS9LQkrXlKTRC6uhtVWhC6oXE5N22sPohSXXTQcTr0",
+      "codificacion": "sobre-x25519-v1"
+    },
+    {
+      "tipo": "acceso:5555666677778888",
+      "creado": "2026-11-10T12:00:00Z",
+      "contenedor": "",
+      "codificacion": "retirada"
+    },
+    {
+      "tipo": "contenido",
+      "creado": "2026-11-10T12:00:00Z",
+      "contenedor": "ESF1.RVNGMQEAAAAgAAAAAAEBCbSvkpx3oi0lNFS0hvZKCBS9Co7wwaDj9oLb3S6LvsE7kicgF-T7H5LJwWQH8onUegQEfgV0s2pfOR8xAv_wv-xumF9nhtdTIUJD9Gys6-SOxzQeh-6gtiYnHsUxwTU0DgH93CfUcgqmwy_ZuieS3YUPpenCcfur4oPRkSaTh7DqfDs4uyNG4a1SNfTViFoWXeZGEjze5cOXwBD6dz_g9iAywnGmiFfc-sdKPXAHw0Q-Ark_VwtWhJ75Beq1CywnPJyojOnyQsgSoeVk15XVPOL1kVQgSC0bRWZlqDUMbK6WPIbgjLKiDGNM2Zf7fjn3RTS-Z0gStshdwcugepQTycOZ8VgvmxDOiWpXqhC5hL4BU6-W3BnN2zZoU6TtYlBXxC-Ky-LVPbJbWIhBGhZv3xKXCFgy6VP1lXl8cMlkDW7EDnzgjDS4iVRbcvvyH_zwcDnvGOXv_XKlBQVzDK1qoXhnBznBYqquCxfIAi1QnvN0FoaTtGMFwrKoUUUlQVmnzGBdx7DQ5rCm2NnV-exNBr7JhGUE9xYAWTpTAMIRNd1KpPwAUJvIY4r87PR0sjww9xHfLdtRWo7mcZ3GERkAEgzEUZNM1lQ-7KzZxO8GIO7KS8_yJ-U3LNOJodcavJqNTELXEjJ5dkx_3S97nxjV8NqrKJKY"
+    }
+  ],
+  "sello": "ESF1.RVNGMQEAAAAgAAAAAAEBEYvjbYb2UzfbafaGPTldwwfcdylb-rcv7QTZLv0mOqDTTIcK9dKLqxuDP7bvM9qOJJZkoiZznEaG04KBuF4Ub8HYe3UJVe2oYnPlBrPZMyRkTp4NRvzcuwcnO3rZdrlNM6-T5Xy0PxXkrLgalYVkt_Mz-VsVDAw4lxdQxRj_pK9BrFK6UwmitXve02CugCcpd-pUoV2IBqy1actM1C7iwmcs9tII-fEIkIvd0b8HcSeiUSf4TVhzzGWLYLFRW3ZW7D_YI84RmZvyZ5uLurgA8J42XrUu17-cAf1E_Gwb3plMnnsQZ05mderDT9XhJgmpQNc2_G3YeSSmcv5Q_m_UOPq5t1cEdWFs-cW7dWwVGiQbVczHEisBOz_fSHALxB1rWLhiGnkw05IfyTb3zw0lyvO8JVCd2X2Z0cNMZIHpspdAQcfrPuLssMK6S1l4BjJZoAc_clk9oIxng1BmyEWjPAIk2UeovJqfQW6I7d9EM79qqyvdUvrrkTSXkHUydIgw2-l6Z4bZJZ0D7qXGExT649zqR-3bJkeCYG3cVBnbzzF5BzHOpdv6OuLnTWqqmgoZ2xfsl0ADLTv_PJSBt9FT-sOTRI6VR4D4S7IgE2IAGjagKBcV2Fk8Wl0gQv8ZMZjqVc3ROOHugYWyMUjoD9YCM6qoq27SmSLag9LnT8JQ7CQrdBXNouj6po6gYVNpJPQlcJ01eDMg23k8SkLjOWqQTFPBBM_tVhMG7V_TXeFtewW-jZMzaUngaLV88hFDrxJOSVznyZmdv-R89UVK1aGfMFzQBI4LlaJ9tdEsIEC4yYEbVkaOs3Ly8zgO7djEoH5KevDQwbxVbJ3tZky-X6xSaH7bhPqtNlK9vwcSLQWAZ_NYHXbpEjbLA5guyF_a3kFhUaXe8rdt21S4nCNZpzqfm5ayqbyfryDwdIokzn3UZryCEbv51NoklYbAXbRaWQwRl0OKcGDKXDvgQ8sg4K6cuAfgbqXVLJG3yXP96LCOuiD0orDWg2cvYJf0O0LPQ5d1K2jr7CJmIxuo8aiVmZVFYQEaAMr2vm8UD-o0gV5ruXzi6oGDQTkAuegICy6-xIXufBiyXPQLnByb0UikzvKiASAXXkIbmEkCuCCZav0KH8dtT8Uqzx8Iyu6d7Da_yhPZ5PPduk4GV1mYijrhXg7QHQse_zH7gAunOPtYKwg0UkvITp5ZJR1t38rIunzRrnCQB7kCY8Gnr2hBhsLNZ2zrOpHeMi-9uLiO",
+  "cuerpo": "ESF1.RVNGMQEAAAAgAAAAAAEBcSS6tAhuV7w34wQRGE1_2ZNsy5gjkDKSMmwabQ6iX4nrGOcpw87gANV0jnr3CYhkYf5yGPPhIPN3HezRfXstkPxIi7T3B2Hok42LDuPS76gKKl2xRasyeizJCscs44cD_cMTMlLXlw_S3oTg6j4sPznzWSoeRusDsuhjoMpHqqMHc0p-OuR_bh0LkpC-Wjx_ImodxBKXGhiUnPS_7Q_kdtN8fsLdKnGyhFX899gvgT_yZTVLoWki69DCdl1YADVNutKphd_0XvBhvtdm5M0yXWi4iNRFY4U5qCCZ43cKZYFLalfsYKq0v2qnlg7FAGR7GtaQ9gzh53g5OVL1bfvPFMk5P6-HXQyN8iPeiwpMJMBd07SBfCmJzb1nq1sMX_IJ_L0Y-i0LYbfNzm7_a7GaVCvPQ7_Xjsjv0GkU2qVQVKI1VFwdA8WUkZPuCsd7Kz5Et4kkqQokihE5Qf_KAobQYaezn-L-ZSJg6DX6VyYEn35ZUw1gVN7Cu430IbIpw4Xx6PrcePHY1KILlplFwmfnOxYUYy1RA1049KVAed9TQw8EHkbzQP9m86XYP1nD4pDqZPqQuRPA84FbB6WYpyjo1SAgAShqUYbu5sZ0j4jJyQn9uJwtdac-CAZJPsp9ZpjIXkerZbpF4MOtVNpBEjHgkuHmtAwNFR-7rsCb8LC-skuvgWXpGTACy-V7Mv8bb2GSjUS6WPCPHCL-3I1DABt3RMms546zSsbww7EBbBkP3agSK777AFG8DHzDFteoJq6Zoe0gQONcu5204DQdZR8euJO5rHRAQOTb4WPFzjkE-YX1JqonTaP4FH_ZA6YGahLJCt680aWLJKFvKdDZSrlsBuvudufLddMuq7AfMpHwogjqHUHHaLKzgy9G8Yioeq7klqv1A8lX_qBjTuyx3YkNmn-A-LteqfCEQAX0nOpQ_aKUwABpFfiw9TsYNOUGvm18chcZ7JLoMNOqKJop-phUCMI_F2S-1ZQWuv0K-yLium-MHeurHQEmwCS8YuCD13aDP9wmhP1GfiMCwpW-9qHW65egZktHP1oosis8Xx8oEJnznkJRBMZxwEB1d3L1iTqzIL3BlprrOlNRDsSaOPH3e2xEMxr4YXbHa3LR2lQHrQA4yAMpYBA"
+}

@@ -265,6 +265,12 @@ que sirva.
   memoria— pasaba en verde, porque el fichero quedaba igual de bien cerrado. La que vale es **rotar solo la
   de contenido**, o sea el diseño que se descartó, y entonces canta «se leen 3 entradas: rotar no ha cortado
   a nadie».
+- **Y un vector congelado** del formato 2 (`internal/boveda/testdata/proyecto-formato2.esfinge`): dos
+  épocas, una ranura de acceso viva, la lápida de uno al que se le quitó, y la afirmación que paga la deuda
+  **grabada en bytes** — la clave de bóveda de antes de migrar no abre nada. Se lee con el reloj de su época,
+  no se regenera, y su generador se borró ([0022](0022-vectores-fijos.md)).
+- **Y las pruebas de la publicación A rotan con la rotación de verdad**: los dos ayudantes que hacían lo que
+  hace producción se fueron en cuanto existió, que es la única forma de que ese paso lo pruebe alguien.
 - **Que al cortar no se rompa nada**: quien sigue teniendo acceso abre y lee; el dueño abre su proyecto con
   su personal —sin reenvolver la ranura principal no abriría nadie—; una lápida no revive; rotar exige las
   identidades y **compara la huella** con la que se comparó al dar el acceso; un titular no rota; y una
@@ -281,15 +287,10 @@ que sirva.
   esté fuera y la extensión aprobada en las tiendas**: la primera versión con la B dentro ya escribe el
   formato 2, y si eso llega antes que la A, el otro Mac y la extensión se encuentran una bóveda que no saben
   leer. La extensión no se puede forzar a actualizarse.
-- **Nadie lo ha visto con ojos.** El botón de cambiar la clave tiene tipos y **no tiene prueba de
-  interfaz**, que es la trampa que esta casa ya ha pagado: una pantalla que existe y está donde no se mira.
-  Queda en la deuda.
-- **El vector congelado** de una bóveda de proyecto del formato 2 —dos épocas y un titular, que no se
-  regenera, como los del formato `ESF1` ([0022](0022-vectores-fijos.md))— **sigue sin grabarse**. Ahora ya se
-  puede: hay código que escribe ese formato.
-- **Y el ayudante de las pruebas de la A** (`rotarAMano`), que hace lo que hace producción, **sigue ahí**.
-  Ahora que `RotarLasClaves` existe, esas pruebas tienen que llamar a la de verdad. Es la trampa del
-  ayudante, dicha en su sitio y no corregida todavía.
+- **Nadie lo ha visto con ojos en un Mac.** Lo que sí hay es prueba de interfaz del botón —que se encuentra
+  donde está la persona, los dos toques, que dice que lo ha hecho y que después la bóveda se sigue usando—,
+  por lo que esta casa ya pagó con la tarjeta de los agentes: una pantalla que existe y está donde no se
+  mira.
 - **Una flota mezclada de verdad** —un Mac con la A y otro sin ella— y que las tiendas hayan aprobado la
   extensión. Eso lo dice el cliente actualizando.
 

@@ -321,6 +321,10 @@ func CrearProyecto(ruta string, llavePrincipal []byte) (*Boveda, error) {
 		return nil, err
 	}
 	b.doc.Sobres = append(b.doc.Sobres, s)
+	// **Se queda con la clave de la personal**, igual que al abrir (ADR 0059): sin ella,
+	// una bóveda recién creada no podría rotar su clave hasta cerrarla y volver a abrirla,
+	// y nadie entendería por qué.
+	b.principal = append([]byte(nil), llavePrincipal...)
 	if ruta == "" {
 		return b, nil
 	}
