@@ -229,16 +229,28 @@ No se cambian sin preguntar.
   formato no lo permite**, porque todas las ranuras envuelven esa misma clave. Se decidió el 2026-10-21
   arreglarlo con una **clave de contenido**, y hasta entonces lo que protege es el 403 del servidor y el
   borrado de la copia.
-  **Y ya tiene ficha, la ADR 0059, con la publicación A hecha el 2026-11-09.** Lo que hay que saber sin
-  abrirla: el cuerpo se cifra con una **clave de contenido** y la clave de bóveda envuelve **la cadena** de
-  todas las que ha habido, así que rotar es clave nueva, recifrar y resellar solo para los que quedan. **El
-  motivo que esta ficha daba era falso** —una bóveda de proyecto no tiene maestra ni clave de recuperación—:
-  lo que lo bloqueaba es **la fusión**, y por eso se guardan **todas** las claves y no solo la última, o un
-  equipo que vuelve de estar desconectado no puede descifrar su propio fichero. **Solo bóvedas de proyecto**,
-  **dos publicaciones** —leer y luego escribir, con dos constantes de formato— y **rotar al revocar y a
-  mano**, que el botón manual es lo que migra los accesos ya dados. De paso, **quien recibe un acceso deja de
-  llevarse la clave de bóveda** y **quien puede editar puede dar acceso a otros**, que la 0052 decía y el
-  código no permitía. **Rotar todavía no existe**: es la publicación B, así que la deuda sigue abierta.
+  **Y ya tiene ficha, la ADR 0059**, con la publicación A en `main` y **la B escrita y sin publicar, en la
+  rama `clave-de-contenido-b`**. Lo que hay que saber sin abrirla: el cuerpo se cifra con una **clave de
+  contenido** y la clave de bóveda envuelve **la cadena** de todas las que ha habido, así que rotar es clave
+  nueva, recifrar y resellar solo para los que quedan. **El motivo que la 0052 daba era falso** —una bóveda de
+  proyecto no tiene maestra ni clave de recuperación—: lo que lo bloqueaba es **la fusión**, y por eso se
+  guardan **todas** las claves y no solo la última, o un equipo que vuelve de estar desconectado no puede
+  descifrar su propio fichero. **Solo bóvedas de proyecto**, **dos publicaciones** —leer y luego escribir, con
+  dos constantes de formato— y **rotar al revocar y a mano**, que el botón manual es lo que migra los accesos
+  ya dados.
+  **Y rotar cambia las dos claves, la de contenido y la de bóveda** (2026-11-10). Con solo la primera **no se
+  corta a nadie de los de antes**: su ranura lleva dentro la clave de bóveda y con ella se desenvuelve la
+  cadena; comprobado en código —leía una entrada creada después de rotar— y elegido por el cliente entre tres
+  opciones. De ahí tres cosas que no se tocan a ciegas: **una bóveda de proyecto se queda con la clave de la
+  personal**, porque la clave de bóveda de cada documento sale **de ese documento** y sin eso un equipo que
+  venga por detrás no podría fundir nunca más; **quien tiene acceso recoge la cadena por su bóveda personal**
+  en su propia sincronización, o una rotación le dejaría parado para siempre; y **al fundir con dos épocas
+  salen de un solo lado todas las ranuras**, no solo las que llevan la cadena. De paso, **quien recibe un
+  acceso deja de llevarse la clave de bóveda** y **quien puede editar puede dar acceso a otros**, que la 0052
+  decía y el código no permitía.
+  **La B no se fusiona hasta que la A esté publicada y la extensión aprobada en las tiendas**: la primera
+  versión con la B dentro ya escribe el formato 2, y si llega antes que la A, el otro Mac y la extensión se
+  encuentran una bóveda que no saben leer.
   Lo que **no** se hace: borrar en remoto lo que ya se bajó —no se puede prometer— ni
   dejar que quien recibe borre la bóveda para todos.
   **Y tres cosas técnicas que cuestan caro si se tocan a ciegas.** La ranura de cada titular va **sellada

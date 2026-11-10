@@ -471,13 +471,21 @@ copia **se borra de su equipo** la próxima vez que sincronice (ADR 0053). La ra
 en el fichero —una lápida— porque borrarla a secas la resucitaría en cuanto sincronizara un equipo con una
 copia de antes.
 
-**Lo que todavía no hace, y aquí se decía que sí** (corregido el 2026-10-21): **la clave de la bóveda no
-cambia**. Quien tuvo acceso se la llevó, así que una copia del fichero que consiga por otro camino la seguirá
-abriendo. Lo que lo impide hoy es que **no puede conseguir ninguna**: el servidor no se la sirve. Rotarla
-exige un cambio del formato —que el cuerpo se cifre con una **clave de contenido** envuelta aparte, en vez de
-con la clave de bóveda— porque hoy rotar obligaría a reenvolver también la ranura maestra y la de
-recuperación, y para eso harían falta la contraseña y la clave de recuperación delante. Está decidido hacerlo
-y está en [`deuda.md`](deuda.md).
+**Y desde la [ADR 0059](adr/0059-la-clave-de-contenido.md), quitar el acceso cambia la clave de la bóveda.**
+Hasta entonces no la cambiaba, aunque aquí se dijera que sí: quien tuvo acceso se la llevó, así que una copia
+del fichero que consiguiera por otro camino la seguía abriendo, **y también lo que se escribiera después**.
+Ahora el cuerpo se cifra con una **clave de contenido** y la clave de bóveda envuelve la cadena de todas las
+que ha habido, así que rotar es clave nueva, recifrar el cuerpo y volver a sellar solo para los que quedan.
+
+**Y rotar cambia las dos claves, la de contenido y la de bóveda**, por una razón que conviene no volver a
+discutir: una ranura de acceso de antes de esa ADR lleva dentro **la clave de bóveda**, y con ella se
+desenvuelve el sobre que lleva la cadena. Cambiando solo la de contenido, quien tuvo acceso antes seguía
+leyendo lo que viniera después — comprobado en código antes de decidirlo.
+
+**Lo que esto sigue sin hacer**, y es lo de siempre: **no le quita de la cabeza lo que vio**. Lo que esa
+persona leyó o copió a mano mientras tenía acceso es suyo, y una copia del fichero que se hubiera guardado
+abre lo que había en ese momento. Lo que cambia es que **no abre lo que venga después**. Si lo de dentro no
+puede estar en sus manos, lo que hay que cambiar son las contraseñas, no solo la clave de la bóveda.
 
 **Y en el navegador, desde la C6:** la extensión también puede tener una bóveda ajena, cifrada, en
 `storage.local`, y subir a la cuenta de esa persona lo que se guarde en ella. Con permiso de solo ver **no

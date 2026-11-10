@@ -2,6 +2,50 @@
 
 Última actualización: **2026-11-10**
 
+## La publicación B escrita y sin publicar (2026-11-10)
+
+**Vive en la rama `clave-de-contenido-b`, y `main` se queda con la A.** No se fusiona hasta que la A esté
+publicada y **la extensión aprobada en las tiendas**: la primera versión con la B dentro ya escribe el
+formato 2, y si llega antes que la A, el otro Mac y la extensión se encuentran una bóveda que no saben leer.
+La extensión no se puede forzar a actualizarse.
+
+### Lo que cambió el diseño: rotar cambia las dos claves
+
+Al ir a escribir la B se vio que **con solo la clave de contenido no se corta a nadie de los de antes**: una
+ranura de acceso anterior a la 0059 lleva dentro la **clave de bóveda**, y con ella se desenvuelve el sobre
+`contenido`, o sea la cadena, o sea todas las claves que vengan después. Comprobado en código —leía una
+entrada creada después de rotar, con su secreto— y **elegido por el cliente entre tres opciones**: las dos
+claves siempre, las dos solo al migrar, o solo la de contenido diciéndolo. Eligió **las dos siempre**, que es
+una regla sola y sin casos especiales.
+
+De ahí tres cosas que no se tocan a ciegas, y están en la ficha:
+
+1. **Una bóveda de proyecto se queda con la clave de la personal**, porque la clave de bóveda de cada
+   documento sale **de ese documento** (su ranura principal). Sin eso, un equipo que venga por detrás no
+   podría fundir nunca más: reabrir no ayuda, porque lo que reabre es su fichero viejo.
+2. **Quien tiene acceso recoge la cadena por su bóveda personal**, y lo hace su propia sincronización
+   (`RecogerLaCadena` en el `Sincronizador`). Sin eso, una rotación le deja parado para siempre.
+3. **Al fundir con dos épocas salen de un solo lado todas las ranuras**, no solo las que llevan la cadena.
+
+### Hecho
+
+| | |
+|---|---|
+| **B1** · `bb47d31` | `internal/boveda/rotar.go`, las dos claves, la cadena que hereda, el formato como consecuencia de la época, y dos fallos de la A1 que esto destapó: `Abierta()` preguntaba por la clave de bóveda y un titular abierto por el camino viejo no sabía quién era |
+| **B2** | `App.RotarLaClave`, `QuitarAcceso` rotando al final —si rotar falla, **el acceso sigue quitado**— y el método en el puente |
+| **B3** | El botón de dos toques en `ElAcceso`, con su línea, y el aviso de quitar el acceso **sin la frase que ha dejado de ser verdad** |
+| **B4** | El paseo de dos cuentas contra el servidor de verdad, con dos pasos nuevos: Ana rota con Beto dentro y **a Beto le sigue llegando**, y al quitarle el acceso lo que se llevó ya no abre |
+| **B5** | La ficha corregida —decía que la clave de bóveda no cambia nunca—, `seguridad.md`, `formato-boveda.md`, `decisiones.md`, `CLAUDE.md` y la deuda tachada |
+
+### Lo que queda
+
+- **El botón no tiene prueba de interfaz**, y está en la deuda: es la trampa de la pantalla que existe donde
+  nadie mira. Va en `cuentas.spec.ts`, que es la que tiene cuenta y dos ventanas.
+- **El vector congelado** de una bóveda de proyecto del formato 2, que **ya se puede grabar** porque hay
+  código que escribe ese formato.
+- **Y el ayudante `rotarAMano`** de las pruebas de la A tiene que llamar a `RotarLasClaves`: hace lo que hace
+  producción, que es la trampa de siempre, y ahora producción existe.
+
 ## La clave de contenido: hecha la A1 entera, ADR 0059 (2026-11-09 y 10)
 
 **El plan aprobado está en `~/.claude/plans/adr-0059-clave-de-contenido.md`.** Léelo antes de

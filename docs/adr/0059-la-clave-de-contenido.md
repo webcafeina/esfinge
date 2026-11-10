@@ -1,6 +1,6 @@
 # 0059 · La clave de contenido: que quitar un acceso signifique algo
 
-**Fecha:** 2026-11-09 · **Estado:** aceptada · **publicación A hecha, la B por hacer** · **Arregla la [0052](0052-dar-acceso-a-un-proyecto.md) · Toca la [0038](0038-sincronizar-la-boveda.md), la [0040](0040-la-extension-cliente-de-la-cuenta.md), la [0050](0050-varias-bovedas.md), la [0053](0053-quitar-el-acceso-borra-la-copia.md) y la [0057](0057-la-boveda-en-un-servidor.md)**
+**Fecha:** 2026-11-09 · **Estado:** aceptada · **publicación A hecha; la B escrita y sin publicar** (rama `clave-de-contenido-b`) · **Arregla la [0052](0052-dar-acceso-a-un-proyecto.md) · Toca la [0038](0038-sincronizar-la-boveda.md), la [0040](0040-la-extension-cliente-de-la-cuenta.md), la [0050](0050-varias-bovedas.md), la [0053](0053-quitar-el-acceso-borra-la-copia.md) y la [0057](0057-la-boveda-en-un-servidor.md)**
 
 ## Contexto
 
@@ -33,8 +33,15 @@ El de verdad es otro, y es el que decide el diseño: **la fusión**.
 ## Decisión
 
 **El cuerpo se cifra con una clave de contenido, y la clave de bóveda pasa a envolver la cadena de todas las
-que ha habido.** La clave de bóveda **no cambia nunca**, así que cualquier equipo abre siempre su fichero
-local y el remoto; lo que rota vive **dentro** de la bóveda, al lado de las anteriores.
+que ha habido.** Lo que rota vive **dentro** de la bóveda, al lado de las anteriores, así que una clave vieja
+sigue abriendo los ficheros viejos y nadie pierde lo que no hubiera subido.
+
+**Y rotar cambia las dos claves: la de contenido y la de bóveda** (decidido el 2026-11-10, al implementar la
+publicación B; ver el apartado de abajo). La primera versión de esta ficha decía que la de bóveda no cambia
+nunca y que con eso bastaba, **y era falso**: una ranura de acceso anterior a esta ADR lleva dentro la clave
+de bóveda, y con ella se desenvuelve el sobre `contenido`, o sea la cadena, o sea todas las claves de
+contenido que vengan después. Comprobado en código antes de decidir nada: con lo que se llevó, un titular de
+antes leía una entrada creada **después** de rotar, con su secreto.
 
 ```
 B Ó V E D A   D E   P R O Y E C T O   (formato 2)
@@ -128,18 +135,50 @@ la clave de bóveda, pero un titular no puede —la suya va sellada hacia su ide
 delante—, así que se le pide **cerrar y volver a abrir**, que es por donde pasa. No `ErrManipulada`, que
 manda a mirar donde no hay nada.
 
+### Rotar cambia las dos claves, y lo que eso obliga
+
+Rotar hace, en un solo guardado: clave de contenido nueva en la cadena, **clave de bóveda nueva**, la ranura
+principal reenvuelta con la clave de la bóveda personal del dueño, el sobre `contenido` envuelto con la clave
+de bóveda nueva, y la ranura de cada titular vivo resellada hacia su identidad. **Nunca las lápidas**:
+resellarlas sería devolverle el acceso a quien lo perdió.
+
+**Y la cadena hereda la clave de antes**, también cuando la bóveda no tenía cadena todavía: el cuerpo de los
+ficheros que ya existen está cifrado con ella —el local de un equipo que venga por detrás, la copia
+`.antes-de-fundir`— y sin heredarla no se podrían volver a leer. No es un regalo a quien se la llevó: para
+llegar a ella hay que abrir el sobre `contenido`, que a partir de la rotación va envuelto con la nueva. **Lo
+que corta no es esconder esa clave, es que deje de ser la que abre la cadena.**
+
+Lo que una clave de bóveda que cambia obliga a resolver, y es el coste que el cliente aceptó:
+
+- **El dueño no nota nada.** Una bóveda de proyecto se queda con la clave de su bóveda personal —que ya está
+  en memoria mientras hay un proyecto abierto (0050)—, así que **la clave de bóveda de cada documento sale de
+  ese documento**, por su ranura principal. Un equipo suyo que lleve tiempo sin abrir ese proyecto funde sin
+  reabrir nada. Sin eso no podría fundir nunca más: su fichero lleva la clave de antes, la del que baja solo
+  está dentro del que baja, y **reabrir no ayuda, porque lo que reabre es su fichero viejo**.
+- **Quien tiene acceso recoge la cadena por su bóveda personal** (`RecogerCadenaDe`), que es lo único que
+  abre su ranura. Lo hace su propia sincronización, una vez, en cuanto lo que baja no se puede leer. Sin eso,
+  una rotación le dejaría la sincronización parada **para siempre**.
+- **Y al fundir, si las dos épocas no son la misma, todas las ranuras salen de un solo lado**, no solo las
+  que llevan la cadena: la principal, la maestra y la de recuperación envuelven la clave de bóveda, así que
+  una de la época de antes abre una bóveda que ya no es ésta.
+
 ### Una bóveda pasa al formato 2 solo al rotar, y lo dispara una persona
 
 No hay migración perezosa dentro de `guardar()`: un cambio de formato que ocurre por su cuenta es un cambio
 que nadie decidió, y el primero en enterarse sería el compañero cuyo Esfinge deja de abrir la bóveda.
 
-**Y migrar, solo, no cierra nada**, que hay que decirlo: las ranuras `acceso:` de antes se quedan, y llevan
-dentro la clave de bóveda. Eso es lo que hace la migración barata y es también por lo que **el botón manual
-es la herramienta de migración**: el dueño lo pulsa una vez después de actualizar, y a partir de ahí nadie
-más tiene la clave de bóveda.
+**Y migrar es rotar**, no un paso aparte: la primera rotación es la que crea la cadena, cambia la clave de
+bóveda y resella las ranuras de antes. Por eso **el botón manual es la herramienta de migración**: el dueño
+lo pulsa una vez después de actualizar y, a partir de ahí, nadie que no tenga acceso ahora mismo tiene nada
+que sirva.
 
 ## Alternativas descartadas
 
+- **Rotar solo la clave de contenido**, que es lo que decía la primera versión de esta ficha. **No corta a
+  nadie de los de antes**, y eso es precisamente la deuda que esto viene a pagar: los titulares que existen
+  hoy recibieron su acceso antes de esta ADR. Se descartó con el cliente el 2026-11-10 con las tres opciones
+  delante —las dos claves siempre, las dos solo al migrar, o solo la de contenido diciéndolo—. Eligió **las
+  dos siempre**: una regla sola, «rotar rota todo», sin un caso especial que se olvide.
 - **Reenvolver la maestra y la de recuperación en cada revocación**, que es lo que la 0052 dio por
   imposible: **no aplica**, porque una bóveda de proyecto no tiene ninguna de las dos. Y donde sí las hay
   —la personal— sería pedir la contraseña en cada revocación y **una ceremonia de clave de recuperación por
@@ -168,6 +207,19 @@ más tiene la clave de bóveda.
   (`sinClaveDeBoveda`): las 39 guardas que preguntaban por la clave de bóveda se partieron en dos, una a una.
 - **La época filtra cuántas veces se ha vuelto a cifrar esta bóveda.** Va en claro y no hay alternativa:
   hay que elegir la clave antes de descifrar.
+- **Una bóveda de proyecto guarda en memoria la clave de su bóveda personal**, que es lo que permite sacar la
+  clave de bóveda de cualquier documento suyo. No es exposición nueva —la 0050 ya la tiene en memoria
+  mientras hay un proyecto abierto— y `Cerrar` la borra, pero queda dicho.
+- **`Abierta()` pasa a preguntarle a la cadena**, no a la clave de bóveda. Lo preguntaba a la segunda, así
+  que con una bóveda compartida del formato nuevo abierta `App.boveda()` devolvía nil y **la ventana entera
+  se habría comportado como si estuviera cerrada**. No llegó a notarse porque nada escribía el formato 2.
+- **Quitar un acceso rota la clave**, y en ese orden: el 403 del servidor primero, la lápida después, y la
+  rotación al final. Si rotar falla —el servidor no contesta, la huella de alguien ha cambiado—, **el acceso
+  sigue quitado** y se dice que la clave no se ha cambiado. Deshacer la revocación porque no se ha podido
+  rotar sería lo contrario de lo que ha pedido quien pulsa.
+- **Y rotar necesita red**, porque las identidades de los titulares no están dentro de la bóveda. Una bóveda
+  de proyecto abierta desde la línea de comandos con su clave suelta **no puede rotar**, y se dice: sin la
+  clave de la personal no hay con qué reenvolver la ranura principal.
 - **Nada escribe el formato 2 todavía.** En la publicación A una bóveda así se abre entera y **no se
   guarda**, con la frase que ya existe; y fundir se niega con un remoto de ese formato, porque fundir acaba
   guardando.
@@ -206,18 +258,38 @@ más tiene la clave de bóveda.
   cruzada porque su generador **no hacía ni una ranura de acceso ni una lápida**. Quitarla otra vez pone en
   rojo **33 de 401**.
 
+**Y de la publicación B**, también con las dos puertas en verde y cada protección mutada:
+
+- **La prueba que paga la deuda**: tras rotar, la clave de bóveda que un titular de antes se llevó **no abre
+  la bóveda**. Y la mutación que la vigila tuvo que buscarse: la primera —dejar de apuntar la clave nueva en
+  memoria— pasaba en verde, porque el fichero quedaba igual de bien cerrado. La que vale es **rotar solo la
+  de contenido**, o sea el diseño que se descartó, y entonces canta «se leen 3 entradas: rotar no ha cortado
+  a nadie».
+- **Que al cortar no se rompa nada**: quien sigue teniendo acceso abre y lee; el dueño abre su proyecto con
+  su personal —sin reenvolver la ranura principal no abriría nadie—; una lápida no revive; rotar exige las
+  identidades y **compara la huella** con la que se comparó al dar el acceso; un titular no rota; y una
+  rotación que no se puede guardar **no deja nada a medias**.
+- **Y el paseo de dos cuentas contra el servidor de verdad**, que es donde esto se ve entero: Ana rota
+  mientras Beto tiene acceso y **a Beto le sigue llegando** —su sincronización recoge la cadena nueva por su
+  bóveda personal—, y a partir de ahí Beto ya no tiene clave de bóveda; después Ana le quita el acceso, que
+  rota otra vez, y lo que Beto se llevó ya no abre nada. Las dos mitades mutadas: sin la recogida, a Beto
+  deja de llegarle todo; sin la rotación al revocar, su clave sigue abriendo.
+
 **Lo que no se ha comprobado, y hay que decirlo:**
 
-- **Rotar no existe.** Es la publicación B, y con ella `RetirarAcceso` rotando, `Desprender` desmigrando, la
-  pantalla y el paseo de dos equipos contra el servidor de verdad. Hasta entonces, **la deuda sigue
-  abierta**: esta publicación prepara el formato y no cierra el agujero.
-- **Las dos épocas no pueden darse en producción hoy**, porque nada escribe el formato 2: toda esa fusión la
-  ejercitan las pruebas y nadie más. El escenario se crea con un ayudante (`rotarAMano`) que hace lo que hará
-  `RotarClaveDeContenido`, y **eso es exactamente la trampa del ayudante que hace lo que hace producción**:
-  cuando exista la de verdad, ese ayudante se tira y se llama a aquélla.
+- **No se ha publicado.** La B vive en una rama (`clave-de-contenido-b`) y **no se fusiona hasta que la A
+  esté fuera y la extensión aprobada en las tiendas**: la primera versión con la B dentro ya escribe el
+  formato 2, y si eso llega antes que la A, el otro Mac y la extensión se encuentran una bóveda que no saben
+  leer. La extensión no se puede forzar a actualizarse.
+- **Nadie lo ha visto con ojos.** El botón de cambiar la clave tiene tipos y **no tiene prueba de
+  interfaz**, que es la trampa que esta casa ya ha pagado: una pantalla que existe y está donde no se mira.
+  Queda en la deuda.
 - **El vector congelado** de una bóveda de proyecto del formato 2 —dos épocas y un titular, que no se
-  regenera, como los del formato `ESF1` ([0022](0022-vectores-fijos.md))— **no se puede grabar todavía** por lo mismo. Se graba en la
-  B, con el código que lo escribe.
+  regenera, como los del formato `ESF1` ([0022](0022-vectores-fijos.md))— **sigue sin grabarse**. Ahora ya se
+  puede: hay código que escribe ese formato.
+- **Y el ayudante de las pruebas de la A** (`rotarAMano`), que hace lo que hace producción, **sigue ahí**.
+  Ahora que `RotarLasClaves` existe, esas pruebas tienen que llamar a la de verdad. Es la trampa del
+  ayudante, dicha en su sitio y no corregida todavía.
 - **Una flota mezclada de verdad** —un Mac con la A y otro sin ella— y que las tiendas hayan aprobado la
   extensión. Eso lo dice el cliente actualizando.
 

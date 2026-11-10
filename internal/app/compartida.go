@@ -378,14 +378,71 @@ func (a *App) DarAccesoAlServidor() error {
 	return a.DarAcceso(correo, "ver")
 }
 
-// QuitarAcceso se lo quita a ese titular: **la puerta del servidor primero**, que es
-// la que corta de verdad y en el acto, y después la ranura.
+// RotarLaClave vuelve a cifrar esta bóveda de proyecto con claves nuevas y la deja
+// abierta solo para quien tiene acceso ahora mismo (ADR 0059).
 //
-// Lo que esto **no** hace, y la pantalla lo dice sin disimularlo: no le quita de la
-// cabeza la clave que vio mientras tuvo acceso —y **la clave no se rota**, aunque la
-// ADR 0052 lo prometiera: ver la cabecera de `internal/boveda/compartida.go`—. Lo que
-// sí llega al disco de esa persona es el borrado de su copia (ADR 0053), que es
-// cooperativo: lo hace su Esfinge cuando el servidor se lo dice.
+// **Necesita red**, y por eso esto vive aquí y no en `internal/boveda`: las identidades
+// de quien tiene acceso no están dentro de la bóveda, y hay que resellar la ranura de cada
+// uno hacia la suya. La huella se compara contra la que se comparó al dar el acceso, y eso
+// lo hace la bóveda, que es quien las tiene apuntadas.
+func (a *App) RotarLaClave() error {
+	ref := a.bovedaActiva()
+	if ref == "" || a.duenoDeLaActiva() != "" {
+		return errors.New("Entra en el proyecto para cambiar su clave")
+	}
+	p := a.boveda()
+	if p == nil {
+		return boveda.ErrCerrada
+	}
+	if err := a.rotarLaClaveDe(p); err != nil {
+		return err
+	}
+	a.Actividad()
+	return nil
+}
+
+// rotarLaClaveDe pide al servidor las llaves de quien tiene acceso y rota.
+func (a *App) rotarLaClaveDe(p *boveda.Boveda) error {
+	vivos := map[string]bool{}
+	for _, id := range p.Accesos() {
+		vivos[id] = true
+	}
+	para := map[string]boveda.Identidad{}
+	if len(vivos) > 0 {
+		token, err := a.sesionDeCuenta()
+		if err != nil {
+			return err
+		}
+		for _, t := range p.Titulares() {
+			if !vivos[t.ID] {
+				continue
+			}
+			l, err := a.cliente().LlavesDe(a.ctxCuenta(), token, t.Correo)
+			if err != nil {
+				// **Con el nombre de quién**, que es lo que hace falta para arreglarlo:
+				// «no he podido pedir unas llaves» no dice de quién ni a quién preguntar.
+				return fmt.Errorf("No he podido pedir las llaves de %s, así que no cambio la clave: %w", t.Correo, err)
+			}
+			para[t.ID] = boveda.Identidad{Suite: l.Suite, Cifrado: l.Cifrado, Firma: l.Firma}
+		}
+	}
+	return p.RotarLasClaves(para, boveda.PorLaMano)
+}
+
+// QuitarAcceso se lo quita a ese titular: **la puerta del servidor primero**, que es
+// la que corta de verdad y en el acto, después la ranura, y al final **la clave de la
+// bóveda, que se rota** (ADR 0059).
+//
+// **Ese orden importa.** Quitar el acceso es lo urgente y lo que corta en el acto; rotar
+// es lo que hace que no se pueda volver a entrar con lo que esa persona se llevó, y
+// necesita red y las llaves de los que quedan. Si rotar falla —el servidor no contesta, la
+// huella de alguien ha cambiado—, **el acceso sigue quitado** y se dice que la clave no se
+// ha cambiado: deshacer la revocación porque no se ha podido rotar sería lo contrario de
+// lo que ha pedido quien pulsa.
+//
+// Lo que esto **no** hace, y la pantalla lo dice sin disimularlo: no le quita de la cabeza
+// lo que vio mientras tuvo acceso. Lo que sí llega a su disco es el borrado de su copia
+// (ADR 0053), que es cooperativo: lo hace su Esfinge cuando el servidor se lo dice.
 func (a *App) QuitarAcceso(titular string) error {
 	ref := a.bovedaActiva()
 	if ref == "" || a.duenoDeLaActiva() != "" {
@@ -406,7 +463,13 @@ func (a *App) QuitarAcceso(titular string) error {
 		return err
 	}
 	a.Actividad()
-	return p.OlvidarTitular(titular)
+	if err := p.OlvidarTitular(titular); err != nil {
+		return err
+	}
+	if err := a.rotarLaClaveDe(p); err != nil {
+		return fmt.Errorf("Le he quitado el acceso, pero no he podido cambiar la clave de la bóveda: %w", err)
+	}
+	return nil
 }
 
 // apuntarElPermiso guarda lo que el servidor acaba de decir que puedo hacer en una

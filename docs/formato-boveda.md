@@ -91,6 +91,12 @@ recuperación.
 - **Es una cadena y no una clave** porque la fusión lo exige: un equipo que estuvo
   desconectado tiene su fichero cifrado con la época anterior, y sin esa clave no podría
   descifrar su propio lado. Rotar **no quita ninguna**.
+- **Y rotar cambia también la clave de bóveda**: reenvuelve la ranura principal con la
+  clave de la bóveda personal del dueño, envuelve la cadena con la clave nueva y resella la
+  ranura de cada titular vivo. Con solo la de contenido no se corta a quien tuvo acceso
+  antes de la 0059, porque su ranura lleva dentro la clave de bóveda. Por eso **la clave de
+  bóveda de un documento sale de ese documento**, por su ranura principal: es lo que
+  permite que un equipo que viene por detrás siga fundiendo.
 - El `id` son 8 bytes al azar y **no un contador**: dos equipos del dueño rotando a la vez
   desde la misma época crearían los dos «la 3» con claves distintas. `n` solo ordena.
 
@@ -323,8 +329,9 @@ segundos, así que dar un acceso y quitarlo en el mismo no es raro; volver a dar
 entonces la viva es de un segundo posterior—; y si no, el de `creado` mayor, y si empatan, el de
 `contenedor` mayor.
 
-**Y si los dos lados declaran `epoca` distinta** (formato 2), los sobres que llevan claves —`contenido` y
-todas las `acceso:*`— **salen de un solo lado y todos del mismo**: el que gane su sobre `contenido` por las
+**Y si los dos lados declaran `epoca` distinta** (formato 2), **todas las ranuras que no sean de este equipo
+salen de un solo lado y todas del mismo** —`contenido`, las `acceso:*`, la principal, la maestra y la de
+recuperación: rotar cambia también la clave de bóveda, que es lo que las tres últimas envuelven—: el que gane su sobre `contenido` por las
 dos últimas reglas de arriba, que es también la época con la que queda cifrado el cuerpo. Resolviéndolos uno
 por uno, el cuerpo puede quedar cifrado con la clave de un lado y la ranura de un titular llevar dentro la
 del otro, y entonces **esa persona no abre su propia bóveda**. De una `acceso:*`, lo que dicen las reglas de
