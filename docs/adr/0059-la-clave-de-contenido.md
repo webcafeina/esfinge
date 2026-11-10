@@ -275,6 +275,12 @@ que sirva.
   su personal —sin reenvolver la ranura principal no abriría nadie—; una lápida no revive; rotar exige las
   identidades y **compara la huella** con la que se comparó al dar el acceso; un titular no rota; y una
   rotación que no se puede guardar **no deja nada a medias**.
+- **Y lo mismo en la extensión**, que desde la C6 también abre bóvedas compartidas: dos cruzadas nuevas
+  recorren los dos caminos —quien tiene acceso se niega con el motivo que manda a reabrir, recoge la cadena
+  por su bóveda personal y funde; y el dueño de un proyecto saca la clave de bóveda del propio documento—.
+  **Escribirlas destapó que el espejo no podía leer una bóveda compartida del formato 2 en absoluto**: diez
+  de sus métodos pedían la clave de bóveda como prueba de estar abierta, y un titular del formato nuevo no la
+  tiene. No lo decía ninguna cruzada porque **el lado de Go nunca le había dado una**.
 - **Y el paseo de dos cuentas contra el servidor de verdad**, que es donde esto se ve entero: Ana rota
   mientras Beto tiene acceso y **a Beto le sigue llegando** —su sincronización recoge la cadena nueva por su
   bóveda personal—, y a partir de ahí Beto ya no tiene clave de bóveda; después Ana le quita el acceso, que

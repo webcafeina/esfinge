@@ -9,7 +9,7 @@
  * y no un bucle: el trabajador de fondo se muere solo cada pocos minutos.
  */
 
-import type { Boveda } from "./boveda";
+import { ErrorBoveda, type Boveda } from "./boveda";
 import { conflicto, sinBoveda, type Cliente } from "./cliente";
 import { fundir, type Fusion } from "./fundir";
 
@@ -66,6 +66,13 @@ export async function pasada(
    * dueño detrás de una indirección sería ordenar media casa.
    */
   dueno = "",
+  /**
+   * Se llama cuando lo que baja va cifrado con una clave que esta bóveda no tiene, o sea
+   * cuando **el dueño ha rotado** (ADR 0059). Lo pone quien tiene la bóveda personal
+   * delante, porque la ranura de quien tiene acceso solo la abre su identidad. Sin esto,
+   * una rotación le dejaría la sincronización parada para siempre.
+   */
+  recogerLaCadena: ((datos: string) => Promise<void>) | null = null,
 ): Promise<Resultado> {
   // **Lo que diga el servidor del permiso se apunta de paso** (ADR 0058), aunque la
   // bajada no traiga cuerpo: ahí está el único camino por el que un permiso cambiado
@@ -108,7 +115,17 @@ export async function pasada(
       if (bajada.version < recuerdo.version) {
         throw new Error(`${ERR_RETROCESO} (aquí se vio la ${recuerdo.version} y allí dice la ${bajada.version})`);
       }
-      const f = await fundir(b, bajada.datos, bajada.version, base, { aunqueBorreMucho });
+      let f;
+      try {
+        f = await fundir(b, bajada.datos, bajada.version, base, { aunqueBorreMucho });
+      } catch (e) {
+        // **Una rotación no puede dejar a nadie parado para siempre** (ADR 0059): se
+        // recoge la cadena nueva por donde se puede y se vuelve a fundir. Una vez: si
+        // tampoco con ella, lo que falla es otra cosa y se dice.
+        if (!(e instanceof ErrorBoveda) || e.codigo !== "epoca-que-no-se-tiene" || !recogerLaCadena) throw e;
+        await recogerLaCadena(bajada.datos);
+        f = await fundir(b, bajada.datos, bajada.version, base, { aunqueBorreMucho });
+      }
       r.fusion = f;
       r.bajo = f.cambio;
       recuerdo = { version: bajada.version, serie: f.serie };

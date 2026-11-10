@@ -50,6 +50,24 @@ De ahí tres cosas que no se tocan a ciegas, y están en la ficha:
   **136 líneas menos y 52 más**. De paso apareció otro hueco: `CrearProyecto` no se quedaba con la clave de
   la personal, así que una bóveda recién creada no podía rotar hasta cerrarla y volver a abrirla.
 
+### Y la mitad de la B que estaba sin hacer: la extensión
+
+Al cruzar la rotación contra el espejo salieron **tres divergencias**, y la primera es la grave:
+
+1. **El espejo no podía leer una bóveda compartida del formato 2 en absoluto.** Diez de sus métodos
+   —`buscar`, `ver`, `poner`, `borrar`, la papelera, los sitios excluidos— pedían **la clave de bóveda** como
+   prueba de que la bóveda está abierta, y un titular del formato nuevo no la tiene. Ninguna cruzada lo
+   decía porque **el lado de Go nunca le había dado una**: solo producía compartidas del formato 1.
+2. **No tenía recogida de cadena**, así que tras una rotación la extensión de quien tiene acceso se quedaba
+   parada para siempre, igual que se quedaba la ventana antes de arreglarlo.
+3. **Y `clavesQueAbren` propagaba el error** en vez de seguir probando, así que contestaba «la bóveda no
+   cuadra por dentro» cuando lo que había que decir es «ciérrala y vuelve a abrirla».
+
+Más una que me pillé a mí mismo: un atajo pasándole **la clave de la personal** a `laCadenaDe`, cuando el
+sobre `contenido` va envuelto con la **de bóveda**. Son dos pasos, como en Go.
+
+Lo cubren **dos cruzadas nuevas** —`compartidaRecoger` y `proyectoFundir`—, una por camino, las dos mutadas.
+
 Así que **la B está lista para fusionar** en cuanto la A esté publicada y la extensión aprobada en las
 tiendas. Lo único que no se puede comprobar desde aquí sigue siendo la flota mezclada de verdad.
 

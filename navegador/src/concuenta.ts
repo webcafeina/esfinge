@@ -1010,7 +1010,14 @@ async function unaPasada(aunqueBorreMucho = false): Promise<void> {
   const ref = await refActiva();
   const dueno = await duenoActivo();
   try {
-    const r = await pasada(b, cliente, token, memoriaDe(ref, dueno), aunqueBorreMucho, ref, dueno);
+    const r = await pasada(
+      b, cliente, token, memoriaDe(ref, dueno), aunqueBorreMucho, ref, dueno,
+      // **Solo en una bóveda de otra persona** (ADR 0059): si el dueño rota, lo que baja
+      // va cifrado con una clave que ésta no tiene, y la cadena nueva solo la abre la
+      // identidad de quien tiene el acceso, o sea su bóveda personal. En la propia no hace
+      // falta, porque su clave de bóveda no cambia.
+      dueno === "" ? null : (datos: string) => conLaPersonal((p) => b.recogerCadenaDe(datos, p)),
+    );
     await apuntarElPermiso(dueno, ref, r.permiso ?? "");
     // **Y de paso, las copias que esperaban** (B3). Que falle no ensucia la
     // sincronización, que sí ha ido bien: se repasa en la siguiente.

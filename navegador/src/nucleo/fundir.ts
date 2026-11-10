@@ -18,15 +18,16 @@ import { compartidasDe, fundirCompartidas, ponerCompartidas } from "./compartida
 import { fundirProyectos, ponerProyectos, proyectosDe } from "./proyecto";
 import { fundirRegistro, ponerRegistro, registroDe } from "./registro";
 import { fundirTitulares, ponerTitulares, titularesDe } from "./titular";
+import { abrirTexto } from "./esf1";
 import {
   ahora,
   Boveda,
   canonContenido,
-  comoErrorDeBoveda,
   desempaquetar,
   ErrorBoveda,
   FORMATO_QUE_SE_ESCRIBE,
   leerDocumento,
+  RANURA_PRINCIPAL,
   RANURAS_LOCALES,
   soloSeLee,
   type Contenido,
@@ -116,7 +117,7 @@ async function fundirSinCola(
   if (soloSeLee(docR.formato, FORMATO_QUE_SE_ESCRIBE)) throw new ErrorBoveda("formato-nuevo");
   // **Las dos épocas** (ADR 0059). Mientras los dos lados estén en la misma clave de
   // contenido esto no hace nada, que es el caso normal y el único del formato 1.
-  const clavesR = await clavesQueAbren(docR, estado);
+  const { claves: clavesR, llave: llaveR } = await clavesQueAbren(docR, estado);
   const lado = ladoDeLaFusion(doc.epoca ?? "", docR.epoca ?? "", doc.sobres, docR.sobres);
   const { sel: selR, cont: contR } = await desempaquetar(docR, clavesR);
   if ((selR.sincro ?? 0) !== version) {
@@ -131,7 +132,7 @@ async function fundirSinCola(
       const docB = leerDocumento(base);
       if (docB.id === doc.id) {
         // La base puede ser de una tercera época: la de antes de que alguien rotara.
-        contB = (await desempaquetar(docB, await clavesQueAbren(docB, estado))).cont;
+        contB = (await desempaquetar(docB, (await clavesQueAbren(docB, estado)).claves)).cont;
         sobresB = docB.sobres;
       }
     } catch {
@@ -165,7 +166,7 @@ async function fundirSinCola(
   boveda._ponerFundido(r.contenido, r.sobres);
   // Y si la época que gana es la de allí, el cuerpo se vuelve a cifrar con **su** clave:
   // la cadena y la época declarada se ponen a la vez (ver `_ponerEpoca`).
-  if (lado === "alla") boveda._ponerEpoca(clavesR, docR.epoca ?? "");
+  if (lado === "alla") boveda._ponerEpoca(clavesR, docR.epoca ?? "", llaveR);
   await boveda._guardarSinCola();
   f.serie = boveda.serie;
   return f;
@@ -185,19 +186,53 @@ async function fundirSinCola(
  */
 async function clavesQueAbren(
   doc: Documento,
-  estado: { llave: string | null; claves: CadenaDeClaves },
-): Promise<CadenaDeClaves> {
+  estado: { llave: string | null; claves: CadenaDeClaves; principal: string | null },
+): Promise<{ claves: CadenaDeClaves; llave: string | null }> {
   const epoca = doc.epoca ?? "";
-  if (claveDe(estado.claves, epoca) !== null) return estado.claves;
-  if (estado.llave === null) throw new ErrorBoveda("epoca-que-no-se-tiene");
-  let claves: CadenaDeClaves;
-  try {
-    claves = await laCadenaDe(doc.sobres, estado.llave);
-  } catch (e) {
-    comoErrorDeBoveda(e);
+  if (claveDe(estado.claves, epoca) !== null) return { claves: estado.claves, llave: estado.llave };
+  // **Se prueban todas y se sigue tras un fallo**, igual que en Go: una de ellas no abrir
+  // es el caso normal —la de aquí es la de antes— y no un fichero roto. Propagando el
+  // error, lo que salía era «la bóveda no cuadra por dentro», que manda a mirar donde no
+  // hay nada. Lo encontró la cruzada de la rotación.
+  for (const llave of await llavesQueAbrenUnDocumento(doc, estado)) {
+    let claves: CadenaDeClaves;
+    try {
+      claves = await laCadenaDe(doc.sobres, llave);
+    } catch {
+      continue;
+    }
+    if (claveDe(claves, epoca) !== null) return { claves, llave };
   }
-  if (claveDe(claves, epoca) === null) throw new ErrorBoveda("epoca-que-no-se-tiene");
-  return claves;
+  throw new ErrorBoveda("epoca-que-no-se-tiene");
+}
+
+/**
+ * Las claves de bóveda con las que se puede intentar desenvolver la cadena de **ese**
+ * documento, en orden: la de aquí primero y después **la que el propio documento declara
+ * en su ranura principal**, que hace falta desde que rotar cambia también la clave de
+ * bóveda. Ver `llavesQueAbrenUnDocumento` en Go.
+ *
+ * **Y son dos pasos, no uno**: la ranura principal lleva dentro la clave de bóveda de ese
+ * documento, envuelta con la de la personal. Pasar la de la personal directamente no abre
+ * nada, porque el sobre `contenido` va envuelto con la de bóveda.
+ */
+async function llavesQueAbrenUnDocumento(
+  doc: Documento,
+  estado: { llave: string | null; principal: string | null },
+): Promise<string[]> {
+  const out: string[] = [];
+  if (estado.llave !== null) out.push(estado.llave);
+  if (estado.principal !== null) {
+    const s = doc.sobres.find((x) => x.tipo === RANURA_PRINCIPAL);
+    if (s) {
+      try {
+        out.push(new TextDecoder().decode(await abrirTexto(s.contenedor, estado.principal)));
+      } catch {
+        // Esa ranura no la abre esta personal: el documento es de otra bóveda.
+      }
+    }
+  }
+  return out;
 }
 
 function vivas(es: Entrada[]): Set<string> {

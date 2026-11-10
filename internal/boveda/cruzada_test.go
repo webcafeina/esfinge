@@ -827,6 +827,89 @@ func TestCruzadaUnFormatoQueNoSeEscribeNoSeFunde(t *testing.T) {
 	}, "actualiza antes de tocarla")
 }
 
+// **Go rota y la extensión se rehace** (ADR 0059, publicación B).
+//
+// Es el camino de una rotación visto desde el navegador, y hace falta cruzarlo porque la
+// extensión **también abre bóvedas compartidas** desde la C6: si esto se desvía, la
+// primera vez que el dueño cambie la clave la sincronización de quien tiene acceso se
+// queda parada **para siempre** y nada más se pone rojo. Volver a abrir no lo arregla: lo
+// que se reabre es su fichero de aquí, que es el que tiene la cadena de antes.
+//
+// La lápida y la rotación las escribe Go a propósito: hacerlas a mano en el espejo sería
+// comprobar el espejo contra sí mismo.
+func TestCruzadaUnaRotacionNoDejaParadaALaExtension(t *testing.T) {
+	cruzada.Activa(t)
+	const titular = "1111222233334444"
+	_, ruta, llave := personalYProyecto(t)
+	ana, idAna := unaPersonal(t, "ana")
+
+	p, err := AbrirProyecto(ruta, llave)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entradasRaras()[:3] {
+		if err := p.Poner(e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := darAccesoCompleto(t, p, titular, idAna); err != nil {
+		t.Fatal(err)
+	}
+	// La bóveda tal como se la bajó la extensión **antes** de la rotación, y la personal
+	// de Ana tal como la tendría en su navegador.
+	antes, err := os.ReadFile(ruta)
+	if err != nil {
+		t.Fatal(err)
+	}
+	personal, err := os.ReadFile(ana.Ruta())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Y aquí se rota y se escribe algo más.
+	if err := p.RotarLasClaves(map[string]Identidad{titular: idAna}, PorRevocacion); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Después de rotar", Secreto: "lo nuevo"}); err != nil {
+		t.Fatal(err)
+	}
+	remoto, _, err := p.PrepararSubida(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var suya struct {
+		resumenDeBoveda
+		Dijo string `json:"dijo"`
+	}
+	cruzada.Pedir(t, map[string]any{
+		"orden": "compartidaRecoger", "antes": string(antes), "remoto": string(remoto),
+		"titular": titular, "personal": string(personal), "maestra": maestraDePrueba, "version": 1,
+	}, &suya)
+	// **Primero se niega, y con el motivo que manda a cerrar y volver a abrir**: si
+	// contestara «la bóveda no cuadra por dentro», quien lo viera iría a buscar un fichero
+	// roto que no existe.
+	if suya.Dijo != "epoca-que-no-se-tiene" {
+		t.Errorf("antes de recoger la cadena, la extensión dice %q", suya.Dijo)
+	}
+	// Y después funde, y lo que queda es lo mismo que aquí. **Sin comparar la posesión**:
+	// la calcula con la clave de bóveda y un titular no la tiene, que es el objetivo.
+	aqui := resumenDe(t, p)
+	aqui.Posesion, suya.Posesion = "", ""
+	mismoResumen(t, "la extensión se rehace tras una rotación", aqui, suya.resumenDeBoveda)
+
+	// **Y el otro camino, el del dueño**: la extensión con el proyecto abierto por su
+	// ranura principal, con el fichero de antes, fundiendo lo que se rotó aquí. Saca la
+	// clave de bóveda del propio documento, y si no pudiera no volvería a fundir nunca.
+	var comoDueno resumenDeBoveda
+	cruzada.Pedir(t, map[string]any{
+		"orden": "proyectoFundir", "antes": string(antes), "remoto": string(remoto),
+		"principal": string(llave), "version": 1,
+	}, &comoDueno)
+	comoDueno.Posesion = ""
+	mismoResumen(t, "la extensión funde una rotación como dueña del proyecto", aqui, comoDueno)
+}
+
 // La identidad para compartir, igual en los dos (ADR 0043).
 //
 // **Si las llaves no coinciden, lo que se manda desde la ventana no lo abre el

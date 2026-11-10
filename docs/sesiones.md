@@ -47,6 +47,12 @@ Plantilla al final.
   relojes** falla a unas horas y no a otras —las de las épocas pasaban por la mañana y fallaban a las nueve—
   y, mientras pasaban, dos lo hacían ejercitando el caso que no se quería probar. Y los selectores de una
   prueba de interfaz **no se adivinan**: me inventé «Añadir» y `#entrada-titulo`.
+- **Y la mitad de la B que faltaba: la extensión.** Al cruzar la rotación contra el espejo salieron tres
+  divergencias, y la grave es que **el espejo no podía leer una bóveda compartida del formato 2 en
+  absoluto** —diez de sus métodos pedían la clave de bóveda como prueba de estar abierta—. No lo decía
+  ninguna cruzada porque **el lado de Go nunca le había dado una**. Con ella: la recogida de cadena en la
+  extensión, el error que manda a reabrir en vez de a buscar un fichero roto, y dos cruzadas nuevas, una por
+  camino. **La regla que deja: una cruzada solo compara lo que el otro lado le llega a dar.**
 - **Lo que queda**: la A lista para publicar, y la B en la rama `clave-de-contenido-b` **hasta que la A esté
   fuera y la extensión aprobada en las tiendas**. Lo único no comprobable desde aquí es la flota mezclada.
 
