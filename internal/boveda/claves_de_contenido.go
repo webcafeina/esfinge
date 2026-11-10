@@ -344,6 +344,19 @@ func llevaClaves(tipo string) bool {
 	return tipo == RanuraDeContenido || IDDeAcceso(tipo) != ""
 }
 
+// ladoDeLaFusion es el lado de una fusión entera: «los dos» mientras las épocas sean la
+// misma, que es el caso normal y el único que existe en el formato 1.
+//
+// **Una sola función, y la llaman la fusión de verdad y la prueba cruzada.** Escrita dos
+// veces se desalinea sola, y con la cruzada preguntándole lo mismo a los dos núcleos eso
+// significaría comparar dos respuestas a dos preguntas distintas.
+func ladoDeLaFusion(epocaL, epocaR string, l, r []sobre) ladoDeLasClaves {
+	if epocaL == epocaR {
+		return clavesDeLosDos
+	}
+	return ladoQueGanaLaEpoca(l, r)
+}
+
 // ladoQueGanaLaEpoca dice con qué clave queda cifrado el cuerpo cuando los dos lados
 // están en épocas distintas, o sea cuando uno de los dos ha rotado.
 //

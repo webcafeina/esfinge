@@ -37,6 +37,17 @@ import {
   type Compartida,
 } from "./compartida";
 import { ERR_CHECKSUM, normalizar, nuevaRecuperacion, pareceRecuperacion } from "./recuperacion";
+import {
+  cadenaDeUnaClave,
+  cadenaVacia,
+  claveDe,
+  deLaMasNuevaALaMasVieja,
+  ERR_CADENA_NUEVA,
+  esCadena,
+  laCadenaDe,
+  leerCadena,
+  type CadenaDeClaves,
+} from "./claves";
 
 /**
  * Los dos formatos de bóveda, **y son dos a propósito** (2026-11-09).
@@ -59,7 +70,7 @@ import { ERR_CHECKSUM, normalizar, nuevaRecuperacion, pareceRecuperacion } from 
  *
  * Los compara `TestCruzadaLosFormatosSonLosMismos`: desalineados no fallan solos.
  */
-export const FORMATO_QUE_SE_LEE = 1;
+export const FORMATO_QUE_SE_LEE = 2;
 export const FORMATO_QUE_SE_ESCRIBE = 1;
 
 /** soloSeLee dice si un documento de ese formato se abre **sin poder escribir**. */
@@ -104,7 +115,9 @@ export type CodigoDeError =
   | "retroceso"
   | "muchos-borrados"
   | "papelera"
-  | "sin-acceso";
+  | "sin-acceso"
+  | "cadena-nueva"
+  | "epoca-que-no-se-tiene";
 
 /** Las mismas frases que Go: el mismo fallo tiene que decir lo mismo en la ventana y en el panel. */
 const MENSAJES: Record<CodigoDeError, string> = {
@@ -119,7 +132,22 @@ const MENSAJES: Record<CodigoDeError, string> = {
   "muchos-borrados": "Juntar los cambios de otro equipo borraría más de la mitad de la bóveda",
   papelera: "Esa entrada no está en la papelera",
   "sin-acceso": ERR_SIN_ACCESO,
+  "cadena-nueva": ERR_CADENA_NUEVA,
+  "epoca-que-no-se-tiene": "Esta bóveda se ha vuelto a cifrar; ciérrala y vuelve a abrirla para seguir",
 };
+
+/**
+ * Traduce lo que lanza `claves.ts` al error que lee la pantalla.
+ *
+ * Hace falta porque ese módulo es una **hoja** y no puede construir un `ErrorBoveda` sin
+ * cerrar un ciclo de importaciones con éste. Lo que no se reconoce es «manipulada», que es
+ * lo que contesta Go ante una cadena que no cuadra.
+ */
+export function comoErrorDeBoveda(e: unknown): never {
+  if (e instanceof ErrorBoveda) throw e;
+  if (e instanceof Error && e.message === ERR_CADENA_NUEVA) throw new ErrorBoveda("cadena-nueva");
+  throw new ErrorBoveda("manipulada");
+}
 
 export class ErrorBoveda extends Error {
   constructor(
@@ -136,6 +164,13 @@ export type Documento = {
   esfinge: string;
   aviso: string;
   formato: number;
+  /**
+   * La clave de contenido con la que está cifrado el cuerpo (ADR 0059). Va **en claro y a
+   * propósito**: hay que elegir la clave antes de poder descifrar nada. No es una
+   * autoridad —el sello lleva la misma dentro, y si no cuadran es «manipulada»—. Vacía en
+   * el formato 1, y entonces no se escribe.
+   */
+  epoca?: string;
   id: string;
   serie: number;
   cambiada: string;
@@ -155,6 +190,11 @@ export type Sello = {
    */
   sobres?: Record<string, string>;
   sincro?: number;
+  /**
+   * La época de este cuerpo, **autenticada aquí dentro** (ADR 0059). Fuera va la misma en
+   * claro; ésta es la que manda, igual que `serie`.
+   */
+  epoca?: string;
   cuerpo: string;
 };
 
@@ -198,6 +238,11 @@ export function leerDocumento(texto: string): Documento {
   const formato = typeof o.formato === "number" ? o.formato : 0;
   if (formato > FORMATO_QUE_SE_LEE) throw new ErrorBoveda("formato-nuevo");
   const t = (v: unknown) => (typeof v === "string" ? v : "");
+  // **La época se lee aquí o se pierde al guardar.** Esto reconstruye el objeto campo a
+  // campo, así que lo que no se nombre no existe: es la trampa de `Extra`, y aquí se paga
+  // con un cuerpo que nadie puede volver a descifrar. Y va **en su sitio**, entre el
+  // formato y el identificador, porque el orden de las claves es el documento.
+  const epoca = t(o.epoca);
   const sobres = Array.isArray(o.sobres)
     ? (o.sobres as Record<string, unknown>[]).map((s) => {
         const x: Sobre = { tipo: t(s?.tipo), creado: t(s?.creado), contenedor: t(s?.contenedor) };
@@ -209,6 +254,7 @@ export function leerDocumento(texto: string): Documento {
     esfinge: MARCA,
     aviso: t(o.aviso),
     formato,
+    ...(epoca ? { epoca } : {}),
     id: t(o.id),
     serie: typeof o.serie === "number" ? o.serie : 0,
     cambiada: t(o.cambiada),
@@ -254,8 +300,42 @@ export function contenidoAJSON(c: Contenido): Record<string, ValorJSON> {
   return out;
 }
 
-/** Abre el sello y el cuerpo con la clave de bóveda y comprueba que cuadran con lo de fuera. */
-export async function desempaquetar(doc: Documento, llave: string): Promise<{ sel: Sello; cont: Contenido }> {
+/**
+ * Abre el sello y el cuerpo **con la clave de su época** y comprueba que cuadran con lo
+ * de fuera (ADR 0059).
+ *
+ * La época declarada en el JSON de fuera dice cuál probar primero, y si no abre se
+ * prueban las demás de la más nueva a la más vieja: esa declaración va en claro, así que
+ * es una pista y no una autoridad. Lo que manda es la que lleva el sello dentro, y si no
+ * cuadra con la de fuera es «manipulada», igual que con la serie.
+ *
+ * En el formato 1 la cadena es la de una sola clave, la de bóveda, y la época es vacía en
+ * los dos lados: el camino es el mismo y no hay una rama para el formato de siempre.
+ */
+export async function desempaquetar(doc: Documento, claves: CadenaDeClaves): Promise<{ sel: Sello; cont: Contenido }> {
+  if (cadenaVacia(claves)) throw new ErrorBoveda("cerrada");
+  const epoca = doc.epoca ?? "";
+  const orden = deLaMasNuevaALaMasVieja(claves);
+  const laDeclarada = claveDe(claves, epoca);
+  if (laDeclarada !== null) orden.unshift({ id: epoca, n: 0, clave: laDeclarada, creada: "" });
+  let ultimo: unknown = new ErrorBoveda("manipulada");
+  for (const k of orden) {
+    let abierto: { sel: Sello; cont: Contenido };
+    try {
+      abierto = await conUnaClave(doc, k.clave);
+    } catch (e) {
+      ultimo = e;
+      continue;
+    }
+    // **El sello manda sobre lo que dice el JSON de fuera.** Si no cuadran, alguien ha
+    // tocado la declaración: es lo mismo que `coherente` hace con la serie.
+    if ((abierto.sel.epoca ?? "") !== epoca) throw new ErrorBoveda("manipulada");
+    return abierto;
+  }
+  throw ultimo;
+}
+
+async function conUnaClave(doc: Documento, llave: string): Promise<{ sel: Sello; cont: Contenido }> {
   let sel: Sello;
   let cont: Contenido;
   try {
@@ -268,6 +348,7 @@ export async function desempaquetar(doc: Documento, llave: string): Promise<{ se
     };
     if (s.sobres && typeof s.sobres === "object") sel.sobres = s.sobres as Record<string, string>;
     if (typeof s.sincro === "number" && s.sincro !== 0) sel.sincro = s.sincro;
+    if (typeof s.epoca === "string" && s.epoca) sel.epoca = s.epoca;
     cont = contenidoDesde(JSON.parse(deUtf8.decode(await abrirTexto(doc.cuerpo, llave))));
   } catch {
     throw new ErrorBoveda("manipulada");
@@ -335,7 +416,10 @@ export class Boveda {
     private sel: Sello,
     private cont: Contenido,
     private llave: string | null,
+    private claves: CadenaDeClaves | null,
     readonly soloLectura: boolean,
+    /** Quién soy en esta bóveda cuando es de otra persona: su `acceso:<titular>`. */
+    private titular: string = "",
   ) {}
 
   /** Se llama tras cada guardado con el documento nuevo. Quien use la bóveda decide dónde vive. */
@@ -362,7 +446,10 @@ export class Boveda {
       sello: "",
       cuerpo: "",
     };
-    const b = new Boveda(doc, { id: doc.id, serie: 0, huellas: {}, cuerpo: "" }, { entradas: [] }, llave, false);
+    const b = new Boveda(
+      doc, { id: doc.id, serie: 0, huellas: {}, cuerpo: "" }, { entradas: [] },
+      llave, cadenaDeUnaClave(llave), false,
+    );
     b.cuerpoSucio = true;
     return { boveda: b, recuperacion };
   }
@@ -389,7 +476,10 @@ export class Boveda {
       sello: "",
       cuerpo: "",
     };
-    const b = new Boveda(doc, { id: doc.id, serie: 0, huellas: {}, cuerpo: "" }, { entradas: [] }, llave, false);
+    const b = new Boveda(
+      doc, { id: doc.id, serie: 0, huellas: {}, cuerpo: "" }, { entradas: [] },
+      llave, cadenaDeUnaClave(llave), false,
+    );
     b.cuerpoSucio = true;
     return { boveda: b };
   }
@@ -476,7 +566,25 @@ export class Boveda {
     } catch {
       throw new ErrorBoveda("sin-acceso");
     }
-    return Boveda.conLlave(doc, deUtf8.decode(llave), {});
+    const claro = deUtf8.decode(llave);
+    // **Qué lleva dentro una ranura de acceso, y lo dice el claro** (ADR 0059): las de
+    // antes, la clave de bóveda; las de después, la cadena de claves de contenido. Se
+    // mira **lo que ha salido del sobre** y no el `codificacion` del JSON de fuera, que
+    // vive donde cualquiera que pueda escribir el fichero lo cambia.
+    //
+    // Las dos formas conviven a propósito: migrar una bóveda al formato 2 deja las
+    // ranuras viejas como están, porque con la clave de bóveda que llevan dentro se
+    // desenvuelve la cadena igual.
+    if (esCadena(claro)) {
+      let claves: CadenaDeClaves;
+      try {
+        claves = leerCadena(claro);
+      } catch (e) {
+        comoErrorDeBoveda(e);
+      }
+      return Boveda.conClaves(doc, claves, titular, {});
+    }
+    return Boveda.conLlave(doc, claro, {});
   }
 
   /**
@@ -524,8 +632,43 @@ export class Boveda {
   }
 
   private static async conLlave(doc: Documento, llave: string, opciones: { purgar?: boolean }): Promise<Boveda> {
-    const { sel, cont } = await desempaquetar(doc, llave);
-    const b = new Boveda(doc, sel, cont, llave, soloSeLee(doc.formato, FORMATO_QUE_SE_ESCRIBE));
+    // La cadena de claves de contenido (ADR 0059). En el formato 1 sale la de una sola
+    // clave, que es la de bóveda, así que lo de abajo es el mismo camino para las dos.
+    let claves: CadenaDeClaves;
+    try {
+      claves = await laCadenaDe(doc.sobres, llave);
+    } catch (e) {
+      comoErrorDeBoveda(e);
+    }
+    return Boveda.armar(doc, llave, claves, "", opciones);
+  }
+
+  /**
+   * **La vista de un titular** (ADR 0059): una bóveda de otra persona, abierta con la
+   * cadena que le sellaron y **sin la clave de bóveda**.
+   *
+   * Eso es el objetivo entero y no un efecto: mientras el acceso entregaba la clave de
+   * bóveda, quitarlo no significaba nada. Aquí `llave` es nula, y lo que la necesita
+   * —la posesión, sellar un secreto, la clave de la sesión— se niega con «cerrada».
+   */
+  private static async conClaves(
+    doc: Documento,
+    claves: CadenaDeClaves,
+    titular: string,
+    opciones: { purgar?: boolean },
+  ): Promise<Boveda> {
+    return Boveda.armar(doc, null, claves, titular, opciones);
+  }
+
+  private static async armar(
+    doc: Documento,
+    llave: string | null,
+    claves: CadenaDeClaves,
+    titular: string,
+    opciones: { purgar?: boolean },
+  ): Promise<Boveda> {
+    const { sel, cont } = await desempaquetar(doc, claves);
+    const b = new Boveda(doc, sel, cont, llave, claves, soloSeLee(doc.formato, FORMATO_QUE_SE_ESCRIBE), titular);
     if (opciones.purgar) {
       const t = ahora().getTime();
       // Y de paso, las copias que llevan más de un mes esperando (B3).
@@ -541,18 +684,42 @@ export class Boveda {
     return b;
   }
 
+  /**
+   * La clave de bóveda, que es **lo que no tiene un titular**: la posesión, sellar un
+   * secreto y la clave de la sesión la necesitan, y ahí se niegan con «cerrada».
+   */
   private clave(): string {
     if (this.llave === null) throw new ErrorBoveda("cerrada");
     return this.llave;
   }
 
-  get abierta(): boolean {
-    return this.llave !== null;
+  /**
+   * La clave con la que se cifra el cuerpo ahora mismo. En el formato 1 es la de bóveda:
+   * la cadena tiene una sola clave y es ésa.
+   *
+   * **Guardar necesita esto y no la clave de bóveda** (ADR 0059): un titular con permiso
+   * de editar guarda con la clave de su época y nunca ve la otra.
+   */
+  private claveDelCuerpo(): string {
+    const k = this.claves === null ? null : claveDe(this.claves, this.doc.epoca ?? "");
+    // Una época declarada sin su clave no debería existir: se contesta «cerrada» en vez
+    // de cifrar el cuerpo con lo que hubiera y dejar el fichero sin abrir nunca más.
+    if (k === null) throw new ErrorBoveda("cerrada");
+    return k;
   }
 
-  /** Olvida la clave y el contenido. No hay vuelta atrás: se abre otra vez. */
+  /**
+   * **Abierta la dice la cadena, no la clave de bóveda.** Una bóveda abierta por un
+   * titular no tiene la segunda y se puede leer y escribir igual.
+   */
+  get abierta(): boolean {
+    return !cadenaVacia(this.claves);
+  }
+
+  /** Olvida las claves y el contenido. No hay vuelta atrás: se abre otra vez. */
   cerrar(): void {
     this.llave = null;
+    this.claves = null;
     this.cont = { entradas: [] };
   }
 
@@ -593,18 +760,13 @@ export class Boveda {
 
   /** @internal Guardar, ya dentro de la cola. */
   async _guardarSinCola(): Promise<string> {
-    const llave = this.clave();
+    const llave = this.claveDelCuerpo();
     if (this.soloLectura) throw new ErrorBoveda("formato-nuevo");
     const doc = { ...this.doc, serie: this.doc.serie + 1, cambiada: rfc3339(new Date()) };
     if (this.cuerpoSucio || !doc.cuerpo) {
       doc.cuerpo = await sellarTexto(utf8.encode(JSON.stringify(contenidoAJSON(this.cont))), llave, PERFIL_LLAVE);
     }
-    const sel: Sello = { id: doc.id, serie: doc.serie, huellas: {}, sobres: {}, cuerpo: await huella(doc.cuerpo) };
-    for (const s of doc.sobres) {
-      sel.huellas[s.tipo] = await huella(s.contenedor);
-      sel.sobres![s.tipo] = await huellaDeSobre(s);
-    }
-    if (this.sel.sincro) sel.sincro = this.sel.sincro;
+    const sel = await loQueSella(doc, doc.sobres, this.sel.sincro);
     doc.sello = await sellarTexto(utf8.encode(JSON.stringify(ordenSello(sel))), llave, PERFIL_LLAVE);
     this.doc = doc;
     this.sel = sel;
@@ -623,17 +785,12 @@ export class Boveda {
   }
 
   private async prepararSubidaSinCola(version: number): Promise<{ texto: string; serie: number }> {
-    const llave = this.clave();
+    // **Con la clave de la época, no con la de bóveda** (ADR 0059): es la que tiene al
+    // otro lado quien va a abrir esto, y es la única que tiene un titular.
+    const llave = this.claveDelCuerpo();
     if (this.cuerpoSucio) throw new Error("La bóveda tiene cambios sin guardar");
     const sobres = this.doc.sobres.filter((s) => !RANURAS_LOCALES.has(s.tipo));
-    const sel: Sello = {
-      id: this.doc.id, serie: this.doc.serie, huellas: {}, sobres: {}, cuerpo: await huella(this.doc.cuerpo),
-    };
-    for (const s of sobres) {
-      sel.huellas[s.tipo] = await huella(s.contenedor);
-      sel.sobres![s.tipo] = await huellaDeSobre(s);
-    }
-    if (version) sel.sincro = version;
+    const sel = await loQueSella(this.doc, sobres, version);
     const doc: Documento = {
       ...this.doc,
       sobres,
@@ -956,7 +1113,8 @@ export class Boveda {
 
   /** @internal Lo que usa `fundir.ts`. */
   get _estado() {
-    return { doc: this.doc, cont: this.cont, llave: this.clave() };
+    if (this.claves === null) throw new ErrorBoveda("cerrada");
+    return { doc: this.doc, cont: this.cont, llave: this.llave, claves: this.claves, titular: this.titular };
   }
 
   /** @internal */
@@ -964,6 +1122,22 @@ export class Boveda {
     this.cont = cont;
     this.doc = { ...this.doc, sobres };
     this.cuerpoSucio = true;
+  }
+
+  /**
+   * @internal Deja la cadena y la época declarada **a la vez**, y se niega si esa cadena
+   * no lleva esa clave.
+   *
+   * Es el riesgo número uno de la ADR 0059: una época declarada sin la clave con la que
+   * se va a cifrar el cuerpo no da un error al escribir, da un fichero que no vuelve a
+   * abrirse y un mensaje que manda a mirar donde no hay nada. Por eso las dos cosas no se
+   * pueden poner por separado — igual que `ponerEpoca` en Go.
+   */
+  _ponerEpoca(claves: CadenaDeClaves, epoca: string): void {
+    if (claveDe(claves, epoca) === null) throw new ErrorBoveda("manipulada");
+    this.claves = claves;
+    this.doc = { ...this.doc, ...(epoca ? { epoca } : {}) };
+    if (!epoca) delete this.doc.epoca;
   }
 }
 
@@ -982,8 +1156,28 @@ function ordenSello(s: Sello): Record<string, unknown> {
   const o: Record<string, unknown> = { id: s.id, serie: s.serie, huellas: s.huellas };
   if (s.sobres && Object.keys(s.sobres).length) o.sobres = s.sobres;
   if (s.sincro) o.sincro = s.sincro;
+  if (s.epoca) o.epoca = s.epoca;
   o.cuerpo = s.cuerpo;
   return o;
+}
+
+/**
+ * Lo que el sello dice del documento: su serie, su época, la huella del cuerpo y la de
+ * cada sobre.
+ *
+ * **Un solo sitio, y no es cosmética**: esto hace falta al guardar y al preparar una
+ * subida, y escrito dos veces ya se desalineó en Go —la época se añadió a uno y no al
+ * otro, y el equipo que lo recibía decía «alguien ha editado el fichero a mano»—.
+ */
+async function loQueSella(doc: Documento, sobres: Sobre[], sincro: number | undefined): Promise<Sello> {
+  const sel: Sello = { id: doc.id, serie: doc.serie, huellas: {}, sobres: {}, cuerpo: await huella(doc.cuerpo) };
+  for (const s of sobres) {
+    sel.huellas[s.tipo] = await huella(s.contenedor);
+    sel.sobres![s.tipo] = await huellaDeSobre(s);
+  }
+  if (sincro) sel.sincro = sincro;
+  if (doc.epoca) sel.epoca = doc.epoca;
+  return sel;
 }
 
 /** Para comparar contenidos: la forma canónica del JSON, con los vacíos fuera. */

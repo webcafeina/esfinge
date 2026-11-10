@@ -232,6 +232,10 @@ type casoDeFusion struct {
 	SobresR []sobre    `json:"sobresR"`
 	SobresB []sobre    `json:"sobresB"`
 	Ahora   string     `json:"ahora"`
+	// Las épocas de los dos lados (ADR 0059). Distintas, los sobres que llevan claves
+	// se resuelven en bloque, y **los dos núcleos tienen que elegir el mismo lado**.
+	EpocaL string `json:"epocaL"`
+	EpocaR string `json:"epocaR"`
 }
 
 type resultadoDeFusion struct {
@@ -479,6 +483,30 @@ func (g generador) sobres() []sobre {
 		}
 		out = append(out, s)
 	}
+	// **Y los sobres que llevan claves** (ADR 0059): el `contenido`, que es la cadena, y
+	// las ranuras de acceso **en sus tres estados** —una de antes de la 0059, una con la
+	// cadena dentro y una lápida—. Sin esto la cruzada no tocaba ni una ranura de acceso
+	// ni una lápida, y por eso no dijo durante mes y medio que los dos núcleos fundían
+	// distinto una lápida contra una ranura viva del mismo segundo.
+	if g.r.IntN(3) > 0 {
+		out = append(out, sobre{Tipo: RanuraDeContenido, Creado: g.fecha(),
+			Contenedor: "ESF1." + g.de("ddd", "eee")})
+	}
+	for _, id := range refsDePrueba[:2] {
+		switch g.r.IntN(4) {
+		case 0:
+			// Nada: a esa persona no se le ha dado acceso en este lado.
+		case 1:
+			out = append(out, sobre{Tipo: TipoDeAcceso(id), Creado: g.fecha(),
+				Contenedor: "ACC1." + g.de("fff", "ggg"), Codificacion: CodificacionSellada})
+		case 2:
+			out = append(out, sobre{Tipo: TipoDeAcceso(id), Creado: g.fecha(),
+				Contenedor: "ACC1." + g.de("hhh", "iii"), Codificacion: CodificacionSellada})
+		default:
+			out = append(out, sobre{Tipo: TipoDeAcceso(id), Creado: g.fecha(),
+				Codificacion: CodificacionRetirada})
+		}
+	}
 	return out
 }
 
@@ -492,6 +520,9 @@ func (g generador) caso() casoDeFusion {
 		L: g.lado(base, ids), R: g.lado(base, ids),
 		SobresL: g.sobres(), SobresR: g.sobres(),
 		Ahora: "2026-09-22T13:14:15Z",
+		// Pocas épocas, para que choquen: la misma en los dos lados es el caso normal, y
+		// distintas es el que obliga a resolver en bloque.
+		EpocaL: g.de("", "", "ep1", "ep2"), EpocaR: g.de("", "", "ep1", "ep2"),
 	}
 	if g.r.IntN(5) > 0 {
 		b := contenido{Entradas: base}
@@ -572,12 +603,11 @@ func TestCruzadaFusionAlAzar(t *testing.T) {
 			b = &x
 		}
 		cont := fundirContenido(l, r, b, ahoraT, &f)
-		// `clavesDeLosDos` porque es lo que vale en el formato 1 —los dos lados en la
-		// misma época— y es lo único que el espejo sabe hacer todavía: su `fundirSobres`
-		// no tiene ese parámetro hasta la A2 de la ADR 0059. **Cuando lo tenga, aquí hay
-		// que generar casos con las dos épocas**, o esta cruzada dirá que los dos lados
-		// funden igual sin haber tocado el caso que importa.
-		sobres := fundirSobres(c.SobresL, c.SobresR, c.SobresB, c.B != nil, clavesDeLosDos)
+		// **El lado lo calcula cada núcleo por su cuenta**, con la función que usa la
+		// fusión de verdad: pasándoselo ya decidido, lo que se compararía serían dos
+		// respuestas a dos preguntas distintas y quién gana la época no lo vigilaría nadie.
+		lado := ladoDeLaFusion(c.EpocaL, c.EpocaR, c.SobresL, c.SobresR)
+		sobres := fundirSobres(c.SobresL, c.SobresR, c.SobresB, c.B != nil, lado)
 		quiero := resultadoDeFusion{canonDeContenido(t, cont), canonDeSobres(t, sobres), f.Traidas, f.Conflictos}
 		if suyos[i] != quiero {
 			fallos++
@@ -763,6 +793,38 @@ func TestCruzadaSubidaYFusion(t *testing.T) {
 	cruzada.Pedir(t, map[string]any{"orden": "fundirBoveda", "local": suya.Texto, "remoto": string(deGo), "version": 6,
 		"base": string(base), "llave": maestra, "ahora": "2026-09-22T13:14:15Z"}, &fundida)
 	mismoResumen(t, "la extensión funde lo que subió Go", resumenDe(t, b), fundida)
+}
+
+// **Los dos núcleos se niegan a fundir un remoto de un formato que no saben escribir**
+// (ADR 0059), y por el mismo motivo.
+//
+// Es lo que existe en la publicación A —se lee el 2 y se escribe el 1— y lo que impide
+// que fundir, que acaba guardando, escriba un fichero declarando el formato de aquí con
+// la época del otro lado dentro. Se comprueba en los dos porque **cada núcleo tiene su
+// guarda**: con una sola, el equipo que no la tenga rompe la bóveda para los dos.
+func TestCruzadaUnFormatoQueNoSeEscribeNoSeFunde(t *testing.T) {
+	cruzada.Activa(t)
+	if FormatoQueSeLee <= FormatoQueSeEscribe {
+		t.Skip("los dos números valen lo mismo: el caso no existe en esta versión")
+	}
+	b, _, ruta := nueva(t)
+	if err := b.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Lo de aquí"}); err != nil {
+		t.Fatal(err)
+	}
+	subida, _, err := b.PrepararSubida(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	local, _ := os.ReadFile(ruta)
+	remoto := enElFormato(t, subida, FormatoQueSeEscribe+1)
+
+	// Go ya tiene su prueba en `epocas_test.go`; aquí lo que se comprueba es que el
+	// espejo dice lo mismo, y **se mira el motivo**: un error de tipo por haber cambiado
+	// una firma también haría fallar esto sin ejercitar nada.
+	cruzada.PedirEsperandoError(t, map[string]any{
+		"orden": "fundirBoveda", "local": string(local), "remoto": string(remoto),
+		"version": 1, "llave": maestra, "ahora": "2026-11-10T09:00:00Z",
+	}, "actualiza antes de tocarla")
 }
 
 // La identidad para compartir, igual en los dos (ADR 0043).

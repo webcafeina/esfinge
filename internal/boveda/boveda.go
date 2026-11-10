@@ -105,7 +105,11 @@ import (
 // (`navegador/src/nucleo/boveda.ts`), y los compara `TestCruzadaLosFormatosSonLosMismos`:
 // desalineados no fallan solos, un lado escribiría lo que el otro abre en solo lectura.
 const (
-	FormatoQueSeLee     = 1
+	// **Se lee el 2 desde el 2026-11-10** (publicación A de la ADR 0059), y no se
+	// escribe: así una bóveda con claves de contenido se abre entera, se dice que no se
+	// puede escribir con la frase que ya existe, y **nada de aquí la crea** — eso es la
+	// publicación B. Los dos números suben por separado a propósito.
+	FormatoQueSeLee     = 2
 	FormatoQueSeEscribe = 1
 )
 

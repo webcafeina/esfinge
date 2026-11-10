@@ -417,6 +417,14 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	if docR.ID != b.doc.ID {
 		return Fusion{}, ErrOtraBoveda
 	}
+	// **Un formato que se sabe leer pero no escribir no se funde** (ADR 0059), que es
+	// justo lo que existe en la publicación A. Fundir acaba guardando, y sin esto se
+	// escribiría un fichero que declara el formato de aquí llevando dentro la época y la
+	// cadena del otro lado: una bóveda que no vuelve a abrir nadie. Se dice con la frase
+	// de siempre —actualiza— y no con una nueva.
+	if soloSeLee(docR.Formato, FormatoQueSeEscribe) {
+		return Fusion{}, ErrFormatoNuevo
+	}
 	// **Las dos épocas** (ADR 0059). Mientras los dos lados estén en la misma clave de
 	// contenido esto no hace nada, que es el caso normal y el único que existe en el
 	// formato 1: `clavesQueAbren` devuelve la de aquí y el lado es «los dos».
@@ -424,10 +432,7 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	if err != nil {
 		return Fusion{}, err
 	}
-	lado := clavesDeLosDos
-	if docR.Epoca != b.doc.Epoca {
-		lado = ladoQueGanaLaEpoca(b.doc.Sobres, docR.Sobres)
-	}
+	lado := ladoDeLaFusion(b.doc.Epoca, docR.Epoca, b.doc.Sobres, docR.Sobres)
 	selR, contR, err := desempaquetar(docR, clavesR)
 	if err != nil {
 		return Fusion{}, err

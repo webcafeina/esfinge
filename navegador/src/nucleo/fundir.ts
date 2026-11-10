@@ -22,13 +22,27 @@ import {
   ahora,
   Boveda,
   canonContenido,
+  comoErrorDeBoveda,
   desempaquetar,
   ErrorBoveda,
+  FORMATO_QUE_SE_ESCRIBE,
   leerDocumento,
   RANURAS_LOCALES,
+  soloSeLee,
   type Contenido,
+  type Documento,
   type Sobre,
 } from "./boveda";
+import { CODIFICACION_RETIRADA } from "./compartida";
+import {
+  claveDe,
+  laCadenaDe,
+  ladoDeLaFusion,
+  llevaClaves,
+  RANURA_DE_CONTENIDO,
+  type CadenaDeClaves,
+  type LadoDeLasClaves,
+} from "./claves";
 import { canonEntrada, entradaAJSON, entradaDesde, MAXIMO_HISTORIAL, rfc3339, type Antigua, type Entrada } from "./entrada";
 
 export type Fusion = {
@@ -60,10 +74,12 @@ export async function fundirPiezas(
   sobresR: Sobre[],
   sobresB: Sobre[],
   cuando: Date,
+  epocaL = "",
+  epocaR = "",
 ): Promise<Resultado> {
   const f = { traidas: 0, conflictos: 0 };
   const contenido = await fundirContenido(l, r, b, cuando, f);
-  const sobres = fundirSobres(sobresL, sobresR, sobresB, b !== null);
+  const sobres = fundirSobres(sobresL, sobresR, sobresB, b !== null, ladoDeLaFusion(epocaL, epocaR, sobresL, sobresR));
   return { contenido, sobres, ...f };
 }
 
@@ -92,10 +108,18 @@ async function fundirSinCola(
   opciones: { aunqueBorreMucho?: boolean },
 ): Promise<Fusion> {
   if (boveda.soloLectura) throw new ErrorBoveda("formato-nuevo");
-  const { doc, cont, llave } = boveda._estado;
+  const estado = boveda._estado;
+  const { doc, cont } = estado;
   const docR = leerDocumento(remoto);
   if (docR.id !== doc.id) throw new ErrorBoveda("otra-boveda");
-  const { sel: selR, cont: contR } = await desempaquetar(docR, llave);
+  // **Un formato que se sabe leer pero no escribir no se funde** (ADR 0059): fundir acaba
+  // guardando. Ver el mismo trozo en `internal/boveda/sincronizar.go`.
+  if (soloSeLee(docR.formato, FORMATO_QUE_SE_ESCRIBE)) throw new ErrorBoveda("formato-nuevo");
+  // **Las dos épocas** (ADR 0059). Mientras los dos lados estén en la misma clave de
+  // contenido esto no hace nada, que es el caso normal y el único del formato 1.
+  const clavesR = await clavesQueAbren(docR, estado);
+  const lado = ladoDeLaFusion(doc.epoca ?? "", docR.epoca ?? "", doc.sobres, docR.sobres);
+  const { sel: selR, cont: contR } = await desempaquetar(docR, clavesR);
   if ((selR.sincro ?? 0) !== version) {
     throw new ErrorBoveda("retroceso", `El servidor ha devuelto una versión de la bóveda que no cuadra (dice la ${version} y lleva dentro la ${selR.sincro ?? 0})`);
   }
@@ -107,7 +131,8 @@ async function fundirSinCola(
     try {
       const docB = leerDocumento(base);
       if (docB.id === doc.id) {
-        contB = (await desempaquetar(docB, llave)).cont;
+        // La base puede ser de una tercera época: la de antes de que alguien rotara.
+        contB = (await desempaquetar(docB, await clavesQueAbren(docB, estado))).cont;
         sobresB = docB.sobres;
       }
     } catch {
@@ -115,7 +140,9 @@ async function fundirSinCola(
     }
   }
 
-  const r = await fundirPiezas(cont, contR, contB, doc.sobres, docR.sobres, sobresB, ahora());
+  const r = await fundirPiezas(
+    cont, contR, contB, doc.sobres, docR.sobres, sobresB, ahora(), doc.epoca ?? "", docR.epoca ?? "",
+  );
   const f: Fusion = {
     traidas: r.traidas,
     conflictos: r.conflictos,
@@ -137,12 +164,42 @@ async function fundirSinCola(
   }
   if (!f.cambio) return f;
   boveda._ponerFundido(r.contenido, r.sobres);
+  // Y si la época que gana es la de allí, el cuerpo se vuelve a cifrar con **su** clave:
+  // la cadena y la época declarada se ponen a la vez (ver `_ponerEpoca`).
+  if (lado === "alla") boveda._ponerEpoca(clavesR, docR.epoca ?? "");
   await boveda._guardarSinCola();
   f.serie = boveda.serie;
   return f;
 }
 
 // ------------------------------------------------------------------ piezas
+
+/**
+ * Una cadena con la que se pueda descifrar ese documento, que puede no ser la de aquí: al
+ * fundir, el otro lado pudo volver a cifrar la bóveda (ADR 0059).
+ *
+ * El dueño la saca **del propio documento**, porque el sobre `contenido` va envuelto con
+ * la clave de bóveda y ésa no cambia nunca. Un titular no puede: la suya se la sellaron
+ * hacia su identidad, y para recoger la nueva hace falta su bóveda personal, que al fundir
+ * no está delante. A él se le dice que cierre y vuelva a abrir, que es por donde pasa su
+ * identidad — y **no que el fichero esté roto**, que manda a mirar donde no hay nada.
+ */
+async function clavesQueAbren(
+  doc: Documento,
+  estado: { llave: string | null; claves: CadenaDeClaves },
+): Promise<CadenaDeClaves> {
+  const epoca = doc.epoca ?? "";
+  if (claveDe(estado.claves, epoca) !== null) return estado.claves;
+  if (estado.llave === null) throw new ErrorBoveda("epoca-que-no-se-tiene");
+  let claves: CadenaDeClaves;
+  try {
+    claves = await laCadenaDe(doc.sobres, estado.llave);
+  } catch (e) {
+    comoErrorDeBoveda(e);
+  }
+  if (claveDe(claves, epoca) === null) throw new ErrorBoveda("epoca-que-no-se-tiene");
+  return claves;
+}
 
 function vivas(es: Entrada[]): Set<string> {
   return new Set(es.filter((e) => !e.papelera).map((e) => e.id));
@@ -172,8 +229,10 @@ function sinLocales(ss: Sobre[]): Sobre[] {
 const mismoSobre = (a: Sobre, b: Sobre) =>
   a.tipo === b.tipo && a.creado === b.creado && a.contenedor === b.contenedor && (a.codificacion ?? "") === (b.codificacion ?? "");
 
+const esRetirada = (s: Sobre | undefined) => s?.codificacion === CODIFICACION_RETIRADA;
+
 /** De cada tipo de ranura, cuál queda. Ver `fundirSobres` en Go. */
-export function fundirSobres(l: Sobre[], r: Sobre[], b: Sobre[], hayBase: boolean): Sobre[] {
+export function fundirSobres(l: Sobre[], r: Sobre[], b: Sobre[], hayBase: boolean, lado: LadoDeLasClaves): Sobre[] {
   const mL = porTipo(l);
   const mR = porTipo(r);
   const mB = porTipo(b);
@@ -184,15 +243,69 @@ export function fundirSobres(l: Sobre[], r: Sobre[], b: Sobre[], hayBase: boolea
     const sl = mL.get(tipo)!;
     const sr = mR.get(tipo);
     const sb = mB.get(tipo);
-    if (RANURAS_LOCALES.has(tipo) || !sr) out.push(sl);
-    else if (!mL.has(tipo)) out.push(sr);
-    else if (mismoSobre(sl, sr)) out.push(sl);
-    else if (hayBase && sb && mismoSobre(sl, sb)) out.push(sr);
-    else if (hayBase && sb && mismoSobre(sr, sb)) out.push(sl);
-    else if (sr.creado > sl.creado || (sr.creado === sl.creado && compararComoGo(sr.contenedor, sl.contenedor) > 0)) out.push(sr);
-    else out.push(sl);
+    // **Los sobres que llevan claves salen de un solo lado, y todos del mismo**
+    // (ADR 0059). Resolviéndolos uno por uno, el cuerpo puede quedar cifrado con la clave
+    // de un lado y la ranura de un titular llevar dentro la del otro: esa persona abre su
+    // sobre, saca una cadena sin la época del cuerpo y **no abre su propia bóveda**.
+    if (lado !== "los-dos" && llevaClaves(tipo)) {
+      const s = deUnSoloLado(tipo, sl, sr, lado, elQueGana(tipo, sl, sr, sb, hayBase));
+      if (s) out.push(s);
+      continue;
+    }
+    out.push(elQueGana(tipo, sl, sr, sb, hayBase));
   }
   return out;
+}
+
+/**
+ * Resuelve un sobre que lleva claves cuando los dos lados están en épocas distintas.
+ * `gana` es lo que dirían las reglas de siempre, que aquí sirve para una sola cosa y no
+ * para elegir el contenedor: decir si esa ranura sigue viva.
+ */
+function deUnSoloLado(
+  tipo: string,
+  sl: Sobre | undefined,
+  sr: Sobre | undefined,
+  lado: LadoDeLasClaves,
+  gana: Sobre,
+): Sobre | null {
+  const delLado = lado === "alla" ? sr : sl;
+  // El sobre `contenido` **es** la cadena: sale del lado que gana la época y no se mira
+  // nada más. Volver a decidirlo con las reglas de las ranuras sería tener la misma regla
+  // en dos sitios.
+  if (tipo === RANURA_DE_CONTENIDO) return delLado ?? null;
+  // Una ranura de acceso tiene **dos cosas que decidir y no son la misma**. Si sigue viva
+  // lo dicen las reglas de siempre, porque una lápida no se resucita ni por el lado que
+  // pone la época. Qué lleva dentro lo dice la época, porque con la cadena del otro lado
+  // esa persona no abriría.
+  if (esRetirada(gana)) return gana;
+  // Y si el lado que pone la época no tiene ranura viva para esa persona —se le dio el
+  // acceso aquí mientras allí se rotaba—, la ranura **se cae**: lo del otro lado lleva una
+  // clave con la que el cuerpo no se abre, y aquí no se puede sellar la buena, porque hace
+  // falta la identidad de esa persona y **una fusión elige contenedores, nunca fabrica
+  // cifrado**.
+  if (!delLado || esRetirada(delLado)) return null;
+  return delLado;
+}
+
+/** Las reglas de siempre: a tres bandas con la base, y si no, la más reciente. */
+function elQueGana(tipo: string, sl: Sobre | undefined, sr: Sobre | undefined, sb: Sobre | undefined, hayBase: boolean): Sobre {
+  if (RANURAS_LOCALES.has(tipo) || !sr) return sl!;
+  if (!sl) return sr;
+  if (mismoSobre(sl, sr)) return sl;
+  if (hayBase && sb && mismoSobre(sl, sb)) return sr;
+  if (hayBase && sb && mismoSobre(sr, sb)) return sl;
+  // **Del mismo segundo, gana la retirada** (ADR 0052). Una lápida tiene el contenedor
+  // vacío, así que la regla de abajo se la llevaría por delante; y las fechas van a
+  // segundos, así que dar acceso y quitarlo en el mismo no es raro al probarlo. Volver a
+  // darlo después **sí** gana, porque entonces la viva es de un segundo posterior.
+  //
+  // **Esto faltaba aquí y estaba en Go** (visto el 2026-11-10 al escribir la A2 de la
+  // ADR 0059): los dos núcleos fundían distinto desde la ADR 0052, y la cruzada no lo
+  // decía porque su generador no hacía ni una ranura de acceso ni una lápida.
+  if (sr.creado === sl.creado && esRetirada(sr) !== esRetirada(sl)) return esRetirada(sr) ? sr : sl;
+  if (sr.creado > sl.creado || (sr.creado === sl.creado && compararComoGo(sr.contenedor, sl.contenedor) > 0)) return sr;
+  return sl;
 }
 
 async function fundirContenido(

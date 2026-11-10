@@ -40,6 +40,9 @@ type Caso = {
   sobresR: Sobre[] | null;
   sobresB: Sobre[] | null;
   ahora: string;
+  /** Las épocas de los dos lados (ADR 0059): el lado lo calcula este núcleo por su cuenta. */
+  epocaL?: string;
+  epocaR?: string;
 };
 
 async function resumen(b: Boveda) {
@@ -90,6 +93,8 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
           c.sobresR ?? [],
           c.sobresB ?? [],
           new Date(c.ahora),
+          c.epocaL ?? "",
+          c.epocaR ?? "",
         );
         out.push({
           contenido: canonContenido(r.contenido),

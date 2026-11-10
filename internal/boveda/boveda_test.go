@@ -325,9 +325,10 @@ func TestUnFormatoMasNuevoNoSeAbre(t *testing.T) {
 // **todas las bóvedas que existen se habrían vuelto de solo lectura**. Esta prueba es la
 // que no deja que vuelva.
 //
-// Se prueba la regla y no las constantes porque hoy las dos valen 1: el caso asimétrico
-// —se lee y no se escribe— es el que va a existir en la publicación que solo aprende a
-// leer, y hay que poder comprobarlo antes de que exista.
+// Se prueba la regla y no las constantes porque la tabla tiene que seguir valiendo
+// cuando los números cambien. **El caso asimétrico ya existe de verdad** desde el
+// 2026-11-10 —se lee el 2 y se escribe el 1—, y lo recorre entero la prueba de abajo,
+// que es la que esto no podía ser antes de que existiera.
 func TestLaReglaDeLosDosFormatos(t *testing.T) {
 	for _, c := range []struct {
 		formato, queSeEscribe int
@@ -375,6 +376,50 @@ func TestUnFormatoViejoSeAbreYSeEscribe(t *testing.T) {
 	}
 	if err := otra.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Lo de después"}); err != nil {
 		t.Errorf("no se puede escribir en una bóveda de un formato más viejo: %v", err)
+	}
+}
+
+// **Y el caso asimétrico, recorrido entero**: una bóveda de un formato que esta versión
+// sabe leer y no escribir se abre, se lee y **no se guarda**.
+//
+// Esto no se podía escribir hasta hoy: con los dos números a 1 no había forma de
+// construir el caso, y el único sitio donde existía era la tabla de arriba. Es la razón
+// de que la regla viva en una función y no dentro del constructor — una prueba que no
+// puede nacer hasta después de publicar lo que vigila no es una prueba.
+func TestUnFormatoQueSoloSeLeeSeAbreYNoSeEscribe(t *testing.T) {
+	if FormatoQueSeLee <= FormatoQueSeEscribe {
+		t.Skip("los dos números valen lo mismo: el caso no existe en esta versión")
+	}
+	b, _, ruta := nueva(t)
+	if err := b.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Lo de antes"}); err != nil {
+		t.Fatal(err)
+	}
+	b.Cerrar()
+
+	var doc documento
+	datos, _ := os.ReadFile(ruta)
+	if err := json.Unmarshal(datos, &doc); err != nil {
+		t.Fatal(err)
+	}
+	doc.Formato = FormatoQueSeEscribe + 1
+	fuera, _ := json.Marshal(doc)
+	if err := os.WriteFile(ruta, fuera, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	otra, err := Abrir(ruta, maestra)
+	if err != nil {
+		t.Fatalf("una bóveda de un formato que se sabe leer no se abre: %v", err)
+	}
+	defer otra.Cerrar()
+	if !otra.SoloLectura() {
+		t.Error("se abre como si se pudiera escribir, y esta versión no sabe escribir ese formato")
+	}
+	if e := otra.Buscar("Lo de antes"); len(e) != 1 {
+		t.Error("se abre y no se lee, que es lo único que se puede hacer con ella")
+	}
+	if err := otra.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Lo de ahora"}); !errors.Is(err, ErrFormatoNuevo) {
+		t.Errorf("escribir en ella dice %v, y tiene que decir que actualices", err)
 	}
 }
 

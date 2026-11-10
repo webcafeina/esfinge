@@ -9,6 +9,7 @@ package boveda
 // listas de sobres.
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -325,4 +326,47 @@ func TestUnTitularSinLaEpocaNuevaNoDiceQueLaBovedaEsteRota(t *testing.T) {
 	if e := deAna.Buscar("Cloudflare"); len(e) != 1 {
 		t.Error("la fusión fallida se ha llevado lo que había en memoria")
 	}
+}
+
+// **Y un remoto de un formato que se sabe leer pero no escribir no se funde.**
+//
+// Es exactamente lo que existe en la publicación A de la ADR 0059: se lee el 2 y se
+// escribe el 1. Sin esta guarda, fundir —que acaba guardando— escribiría un fichero
+// declarando el formato de aquí con la época y la cadena del otro lado dentro: una bóveda
+// que no vuelve a abrir nadie. Tampoco se podía probar hasta que los dos números
+// dejaran de valer lo mismo.
+func TestFundirNoSeFiaDeUnRemotoDeUnFormatoQueNoSeEscribe(t *testing.T) {
+	if FormatoQueSeLee <= FormatoQueSeEscribe {
+		t.Skip("los dos números valen lo mismo: el caso no existe en esta versión")
+	}
+	b, _, _ := nueva(t)
+	if err := b.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Lo de aquí"}); err != nil {
+		t.Fatal(err)
+	}
+	subida, _, err := b.PrepararSubida(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Como si lo hubiera escrito una versión que ya sabe escribir el formato siguiente.
+	// **El formato no va dentro del sello**, así que esto es lo que puede llegar de
+	// verdad del servidor, no un fichero imposible.
+	remoto := enElFormato(t, subida, FormatoQueSeEscribe+1)
+	if _, err := b.Fundir(remoto, 1, nil, OpcionesDeFusion{}); !errors.Is(err, ErrFormatoNuevo) {
+		t.Fatalf("fundir un remoto que esta versión no sabe escribir dice %v", err)
+	}
+}
+
+// enElFormato reescribe el número de formato de un documento, dejando todo lo demás.
+func enElFormato(t *testing.T, datos []byte, formato int) []byte {
+	t.Helper()
+	var doc documento
+	if err := json.Unmarshal(datos, &doc); err != nil {
+		t.Fatal(err)
+	}
+	doc.Formato = formato
+	fuera, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return fuera
 }
