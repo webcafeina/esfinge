@@ -5,6 +5,36 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-10 · La clave de contenido entera, y publicada la A
+
+La sesión larga de la ADR 0059: **acabada la publicación A** —la que solo aprende a leer—, **escrita la B**
+—la que escribe y rota, en la rama `clave-de-contenido-b`— y **publicada la 2.60.0**. El detalle de cada
+pieza está en [`estado.md`](estado.md), que se escribió a la vez; aquí va lo que conviene no perder.
+
+- **Lo que cambió el diseño**: con solo la clave de contenido **no se corta a nadie de los de antes**, porque
+  una ranura de acceso anterior a la 0059 lleva dentro la clave de bóveda y con ella se desenvuelve la
+  cadena. **Comprobado en código antes de decidir nada** —leía una entrada creada después de rotar— y
+  elegido por el cliente entre tres opciones: rotar cambia **las dos** claves.
+- **Tres divergencias del espejo**, y la grave no la podía ver ninguna prueba: **no podía leer una bóveda
+  compartida del formato 2 en absoluto**, porque diez de sus métodos pedían la clave de bóveda como prueba de
+  estar abierta. Ninguna cruzada lo decía porque **el lado de Go nunca le había dado una**. De ahí la regla:
+  *una cruzada solo compara lo que el otro lado le llega a dar.* Y con ella salió que **el espejo no tenía la
+  regla de la lápida** de la ADR 0052: mes y medio fundiendo distinto que Go.
+- **El sello se armaba en dos sitios**, así que el campo nuevo entró en uno y no en el otro — y el síntoma en
+  el equipo que lo recibe es «alguien ha editado el fichero a mano».
+- **Dos cosas mías**: una prueba con **dos relojes** que puso `main` en rojo a partir de las nueve de la
+  mañana, y su arreglo puesto en la rama donde estaba trabajando en vez de donde vive lo que arregla.
+- **De la publicación**: las dos puertas en verde sobre el commit de la etiqueta, las dos extensiones
+  enviadas sin tener que cancelar ninguna revisión, **Firefox publicada el mismo día** y Chrome en revisión.
+- **Y una regla nueva que pidió el cliente**: *publicar no acaba en la etiqueta, el VPS también se
+  actualiza*. Los Mac se actualizan solos y éste no, y es titular de la bóveda de Tempero, así que una
+  versión vieja acabaría sin saber leer lo que el Mac escribió. Se comprueba **leyendo esa bóveda**, no con
+  `--version`, que solo dice que el fichero se copió.
+- **Y de paso**: `gofmt` entra en la puerta y para, y se saldó la deuda de «Sincronizar ahora», que fallaba
+  si se pulsaba justo al conmutar de bóveda.
+
+---
+
 ## 2026-11-09 (segunda parte) · La clave de contenido, empezada por su mitad delicada
 
 - **Se planificó la ADR 0059 en modo plan**, con tres exploraciones en paralelo y las cuatro decisiones

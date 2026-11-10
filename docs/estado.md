@@ -2,6 +2,44 @@
 
 Última actualización: **2026-11-10**
 
+## Publicada la 2.60.0, y esperando a que Chrome publique (2026-11-10)
+
+**Lo que falta es una espera, no un trabajo.** Y lo que espera es la publicación B de la clave de contenido,
+que está **escrita, probada y sin fusionar** en la rama `clave-de-contenido-b`.
+
+| | |
+|---|---|
+| **La 2.60.0** | Colgada, 28 ficheros, flujo `42813577646` en verde (18 min). Antes de la etiqueta, `COMPROBAR=0` y `make e2e` con 155 pruebas **sobre ese mismo commit** |
+| **Firefox** | **Publicada.** La API pública de AMO da `status: public` y `current_version` = 2.60.0 |
+| **Chrome** | **En revisión.** La ficha sigue enseñando la 2.59.3. Nadie tuvo que cancelar nada: no había revisión pendiente bloqueando el envío |
+| **Los dos Mac** | En la 2.60.0 |
+| **El VPS** | En la 2.60.0, con la 2.59.2 guardada al lado y **probado leyendo la bóveda de Tempero** |
+
+### Qué hay en la rama `clave-de-contenido-b`
+
+La publicación **B** de la [ADR 0059](adr/0059-la-clave-de-contenido.md): la que **escribe** el formato 2 y
+rota. Está entera —rotar, `QuitarAcceso` rotando, la pantalla, el espejo de la extensión, el paseo de dos
+cuentas, el vector congelado y la documentación—, con las tres puertas en verde y cada protección mutada.
+
+**No se fusiona hasta que Chrome publique**, y la razón no es de estilo: la primera versión que lleve la B
+dentro **ya escribe el formato 2**, y si eso llega antes de que la extensión de la A esté viva en las
+tiendas, una rotación deja al navegador de quien tiene acceso sin poder leer esa bóveda. La extensión no se
+puede forzar a actualizarse.
+
+### La secuencia que queda, cuando Chrome publique
+
+1. Fusionar `clave-de-contenido-b` en `main` (ya lleva `main` dentro; al fusionar habrá conflicto en
+   `estado.md` y `sesiones.md`, porque las dos ramas escribieron el cierre de hoy: **se quedan los dos
+   lados**).
+2. `make comprobar`, `make e2e` y el `pnpm run comprobar` de la extensión.
+3. Publicar la **2.61.0**.
+4. **Actualizar el VPS otra vez** — es regla escrita en `CLAUDE.md`, «Cómo se compila».
+5. Y entonces **la primera rotación la decide el cliente**: nada pasa al formato 2 por su cuenta.
+
+**Y un detalle del VPS para ese día**: con la A **lee** el formato 2 pero **no escribe**. Tras la primera
+rotación, `esfinge boveda ejecutar` sigue funcionando —es leer— pero un agente que intente `crear` o
+`editar` en esa bóveda se encontrará un «actualiza» hasta que el VPS tenga la B.
+
 ## Y `main` estuvo en rojo tres horas, por una prueba con dos relojes (2026-11-10)
 
 Lo encontró la puerta al correrla en `main` por otra cosa. Las tres pruebas de la fusión con dos épocas
