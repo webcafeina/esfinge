@@ -62,6 +62,12 @@ Plantilla al final.
   no acaba en la etiqueta**. Los Mac se actualizan solos y éste no, y es titular de la bóveda de Tempero, así
   que una versión vieja acabaría sin saber leer lo que el Mac escribió. Se comprueba **leyendo esa bóveda**,
   no con `--version`, que solo dice que el fichero se copió.
+- **Y de publicar la B, la 2.61.0**, por la tarde del mismo día: las tres puertas en verde sobre el `main`
+  fusionado —`make comprobar`, el navegador y `make e2e` 156 de 156—, los siete trabajos del flujo también,
+  28 adjuntos, y la extensión enviada a las dos tiendas, que la revisarán cuando les toque: **lo que hacía
+  falta aprobado ya estaba**, porque para leer el formato 2 basta la 2.60.0. El VPS, otra vez a mano y con la
+  regla recién escrita: suma comprobada, la 2.60.0 guardada al lado y **la bóveda de Tempero leída** para
+  decir que va.
 - **Y de paso**: `gofmt` entra en la puerta y **para**, y se saldó la deuda de «Sincronizar ahora», que
   fallaba si se pulsaba justo al conmutar de bóveda.
 - **Lo que queda no es trabajo: es la primera rotación, y la decide el cliente.** Nada pasa al formato 2 por

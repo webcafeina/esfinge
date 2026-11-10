@@ -4,18 +4,25 @@
 
 ## Las dos publicaciones de la clave de contenido, fuera (2026-11-10)
 
-**La 2.60.0 publicada y las dos tiendas al día** —Firefox `public 2.60.0`, y Chrome la publicó por la
-tarde—, los dos Mac y **el VPS** actualizados. Con eso se cumplieron las tres condiciones que esto
-necesitaba y **la publicación B se fusionó**: la 2.61.0 ya escribe el formato 2 y rota.
+**Las dos están publicadas.** La **2.60.0** —la A, que solo lee— salió por la mañana, y con Firefox
+(`public 2.60.0`) y Chrome al día por la tarde se cumplieron las tres condiciones, así que **la B se
+fusionó y salió en la 2.61.0**, que ya escribe el formato 2 y rota. Las dos puertas en verde sobre el
+commit de la etiqueta, los siete trabajos del flujo también y **28 adjuntos** en la publicación. La
+extensión está **enviada a las dos tiendas y esperando revisión** —Chrome dice `PENDING_REVIEW`, y aquí eso
+no es un problema: la 2.60.0 ya está aprobada, que es la que hacía falta para leer—.
+
+**El VPS ya tiene la 2.61.0**, con su suma comprobada, la 2.60.0 guardada al lado como
+`esfinge-ANTERIOR` y la comprobación que de verdad dice que va: `esfinge boveda listar --compartida Tempero`
+saca sus siete secretos.
 
 **Y lo que queda no es trabajo, es una decisión del cliente**: **la primera rotación**. Nada pasa al formato
 2 por su cuenta —no hay migración perezosa, y fue a propósito—, así que el estado de todas sus bóvedas
 sigue siendo el de antes hasta que pulse «Cambiar la clave de esta bóveda» o le quite el acceso a alguien.
 
-**El día que lo haga, dos cosas que ya están dichas y conviene recordarle**: cualquier equipo o extensión
-que siga en una versión anterior a la 2.60.0 **no podrá leer esa bóveda** —dice «actualiza»—, y el VPS, si
-no tuviera la 2.61.0, podría **leer** el formato 2 pero no escribir, así que un agente de allí que intente
-`crear` o `editar` en esa bóveda se encontraría un «actualiza».
+**El día que lo haga, una cosa que ya está dicha y conviene recordarle**: cualquier equipo o extensión que
+siga en una versión anterior a la 2.60.0 **no podrá leer esa bóveda** —dice «actualiza»—. Los dos Mac y el
+VPS están al día; lo que puede ir por detrás es **la extensión mientras la tienda revise**, y una extensión
+con la 2.60.0 lee el formato 2 sin problema.
 
 ## Lo que lleva dentro la publicación B (2026-11-10)
 

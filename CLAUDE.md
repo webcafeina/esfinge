@@ -246,8 +246,8 @@ No se cambian sin preguntar.
   formato no lo permite**, porque todas las ranuras envuelven esa misma clave. Se decidió el 2026-10-21
   arreglarlo con una **clave de contenido**, y hasta entonces lo que protege es el 403 del servidor y el
   borrado de la copia.
-  **Y ya tiene ficha, la ADR 0059**, con **las dos publicaciones dentro**: la A salió en la 2.60.0 y la B se
-  fusionó el 2026-11-10, cuando las dos tiendas tuvieron la A. Lo que hay que saber sin abrirla: el cuerpo se cifra con una **clave de
+  **Y ya tiene ficha, la ADR 0059**, publicada entera el 2026-11-10: la A en la **2.60.0** y la B en la
+  **2.61.0**, en cuanto las dos tiendas tuvieron la A. Lo que hay que saber sin abrirla: el cuerpo se cifra con una **clave de
   contenido** y la clave de bóveda envuelve **la cadena** de todas las que ha habido, así que rotar es clave
   nueva, recifrar y resellar solo para los que quedan. **El motivo que la 0052 daba era falso** —una bóveda de
   proyecto no tiene maestra ni clave de recuperación—: lo que lo bloqueaba es **la fusión**, y por eso se

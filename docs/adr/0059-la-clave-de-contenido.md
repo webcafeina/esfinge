@@ -1,6 +1,6 @@
 # 0059 · La clave de contenido: que quitar un acceso signifique algo
 
-**Fecha:** 2026-11-09 · **Estado:** aceptada · **las dos publicaciones hechas: la A en la 2.60.0 y la B fusionada el 2026-11-10**, cuando las dos tiendas tuvieron la A · **Arregla la [0052](0052-dar-acceso-a-un-proyecto.md) · Toca la [0038](0038-sincronizar-la-boveda.md), la [0040](0040-la-extension-cliente-de-la-cuenta.md), la [0050](0050-varias-bovedas.md), la [0053](0053-quitar-el-acceso-borra-la-copia.md) y la [0057](0057-la-boveda-en-un-servidor.md)**
+**Fecha:** 2026-11-09 · **Estado:** aceptada · **publicada entera el 2026-11-10: la A en la 2.60.0 y la B en la 2.61.0**, en cuanto las dos tiendas tuvieron la A · **Arregla la [0052](0052-dar-acceso-a-un-proyecto.md) · Toca la [0038](0038-sincronizar-la-boveda.md), la [0040](0040-la-extension-cliente-de-la-cuenta.md), la [0050](0050-varias-bovedas.md), la [0053](0053-quitar-el-acceso-borra-la-copia.md) y la [0057](0057-la-boveda-en-un-servidor.md)**
 
 ## Contexto
 
@@ -293,7 +293,7 @@ que sirva.
   esperó en una rama (`clave-de-contenido-b`) hasta que la A estuvo publicada **y la extensión aprobada en
   las dos tiendas**, porque la primera versión con la B dentro ya escribe el formato 2 y si hubiera llegado
   antes que la A, el otro Mac y la extensión se habrían encontrado una bóveda que no saben leer —y la
-  extensión no se puede forzar a actualizarse—. Se fusionó el 2026-11-10.
+  extensión no se puede forzar a actualizarse—. Se fusionó el 2026-11-10 y salió en la **2.61.0** el mismo día.
 - **Nadie lo ha visto con ojos en un Mac.** Lo que sí hay es prueba de interfaz del botón —que se encuentra
   donde está la persona, los dos toques, que dice que lo ha hecho y que después la bóveda se sigue usando—,
   por lo que esta casa ya pagó con la tarjeta de los agentes: una pantalla que existe y está donde no se
