@@ -2,8 +2,9 @@
 #
 # Go no está en el PATH del sistema: se instaló en ~/.local/go para no tocar
 # nada fuera del $HOME.
-GO   ?= $(HOME)/.local/go/bin/go
-PNPM ?= pnpm
+GO    ?= $(HOME)/.local/go/bin/go
+GOFMT ?= $(dir $(GO))gofmt
+PNPM  ?= pnpm
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
@@ -16,6 +17,23 @@ todo: comprobar esfinge
 ## comprobar: vet, los tests de Go y los tipos de la interfaz
 .PHONY: comprobar
 comprobar:
+	@# **Que esté formateado, y que pare.**
+	@#
+	@# Es lo único de esta lista que no se nota nunca solo: un bloque de campos
+	@# desalineado compila, pasa los tests y solo lo ve quien abra el fichero —
+	@# `internal/agente/protocolo.go` llevaba así quién sabe cuánto y lo encontró una
+	@# lectura por casualidad, y el 2026-11-10 volvió a pasar con un fichero de pruebas.
+	@# Va **primero** porque es la comprobación más rápida de todas, y **para**, que es la
+	@# lección de las seis versiones con los tests en rojo: un aviso que no detiene nada
+	@# deja de leerse.
+	@#
+	@# `gofmt -l` y no `go fmt`: el segundo **reescribe**, y una puerta informa, no toca.
+	@sin_formato=$$($(GOFMT) -l $$(git ls-files '*.go') 2>/dev/null); \
+	if [ -n "$$sin_formato" ]; then \
+		echo "Estos ficheros no están formateados (pásales '$(GOFMT) -w'):"; \
+		echo "$$sin_formato"; \
+		exit 1; \
+	fi
 	$(GO) vet ./...
 	$(GO) vet -tags dev ./...
 	@# **Y que compile para los seis objetivos, no solo para esta máquina.**
