@@ -71,7 +71,16 @@ import {
  * Los compara `TestCruzadaLosFormatosSonLosMismos`: desalineados no fallan solos.
  */
 export const FORMATO_QUE_SE_LEE = 2;
-export const FORMATO_QUE_SE_ESCRIBE = 1;
+export const FORMATO_QUE_SE_ESCRIBE = 2;
+
+/**
+ * Los formatos que existen, por lo que **son** y no por lo que esta versión haga con
+ * ellos (ADR 0059). El formato que un documento declara es el que describe su contenido,
+ * no el máximo que se sabe escribir: una bóveda nueva no usa claves de contenido, declara
+ * el 1 y la abre cualquier Esfinge anterior.
+ */
+export const FORMATO_BASE = 1;
+export const FORMATO_CON_CLAVES_DE_CONTENIDO = 2;
 
 /** soloSeLee dice si un documento de ese formato se abre **sin poder escribir**. */
 export function soloSeLee(formato: number, queSeEscribe: number): boolean {
@@ -418,6 +427,16 @@ export class Boveda {
     private llave: string | null,
     private claves: CadenaDeClaves | null,
     readonly soloLectura: boolean,
+    /**
+     * La clave de bóveda de la personal con la que se abrió este proyecto, y **solo la
+     * tiene una bóveda de proyecto del dueño** (ADR 0050).
+     *
+     * Está aquí desde que rotar cambia también la clave de bóveda (ADR 0059): la de cada
+     * documento sale **de ese documento**, por su ranura principal, y para abrirla hace
+     * falta ésta. Sin ella, un equipo que lleve tiempo sin abrir este proyecto no podría
+     * volver a fundir nunca.
+     */
+    private principal: string | null = null,
     /** Quién soy en esta bóveda cuando es de otra persona: su `acceso:<titular>`. */
     private titular: string = "",
   ) {}
@@ -435,7 +454,7 @@ export class Boveda {
     const doc: Documento = {
       esfinge: MARCA,
       aviso: AVISO,
-      formato: FORMATO_QUE_SE_ESCRIBE,
+      formato: FORMATO_BASE,
       id: azarHex(),
       serie: 0,
       cambiada: cuando,
@@ -468,7 +487,7 @@ export class Boveda {
     const doc: Documento = {
       esfinge: MARCA,
       aviso: AVISO,
-      formato: FORMATO_QUE_SE_ESCRIBE,
+      formato: FORMATO_BASE,
       id: azarHex(),
       serie: 0,
       cambiada: cuando,
@@ -535,7 +554,12 @@ export class Boveda {
       // otra. No es un fichero roto y no se dice que lo sea.
       throw new ErrorBoveda("sin-ranura");
     }
-    return Boveda.conLlave(doc, llave, {});
+    const b = await Boveda.conLlave(doc, llave, {});
+    // **Se queda con la clave de la personal**, que es lo que permite sacar la clave de
+    // bóveda de cualquier documento de este proyecto por su ranura principal. Hace falta
+    // desde que rotar cambia también la clave de bóveda (ADR 0059).
+    b.principal = llavePrincipal;
+    return b;
   }
 
   /**
@@ -584,7 +608,57 @@ export class Boveda {
       }
       return Boveda.conClaves(doc, claves, titular, {});
     }
-    return Boveda.conLlave(doc, claro, {});
+    // **Y quién soy aquí, también por este camino**: lo necesita `recogerCadenaDe`
+    // cuando el dueño rota, porque hay que encontrar *mi* ranura en el documento que
+    // acaba de bajar, y una bóveda abierta por la ranura de antes no sabría cuál es.
+    const b = await Boveda.conLlave(doc, claro, {});
+    b.titular = titular;
+    return b;
+  }
+
+  /**
+   * Toma la cadena de claves del documento que acaba de bajar, para cuando la de aquí ya
+   * no alcanza para leerlo (ADR 0059).
+   *
+   * Es lo que necesita **quien tiene acceso** después de que el dueño rote: su ranura va
+   * sellada hacia su identidad, y eso solo lo abre su bóveda personal, que la fusión no
+   * tiene delante. La cadena nueva **lleva todas las épocas**, así que con ella se siguen
+   * leyendo su fichero de aquí y el que acaba de bajar.
+   *
+   * **Volver a abrir no sirve**, y por eso hace falta esto: lo que se reabriría es el
+   * fichero de aquí, que es justo el que tiene la cadena de antes.
+   */
+  async recogerCadenaDe(datos: string, personal: Boveda): Promise<void> {
+    const doc = leerDocumento(datos);
+    if (!this.titular) throw new ErrorBoveda("cerrada");
+    if (doc.id !== this.doc.id) throw new ErrorBoveda("otra-boveda");
+    const sobre = doc.sobres.find((x) => x.tipo === tipoDeAcceso(this.titular));
+    if (!sobre || sobre.codificacion === CODIFICACION_RETIRADA) throw new ErrorBoveda("sin-acceso");
+    const semilla = personal.semillaGuardada();
+    if (semilla === null) throw new ErrorBoveda("sin-acceso");
+    let claro: string;
+    try {
+      claro = deUtf8.decode(await abrirSellado(sobre.contenedor, semilla));
+    } catch {
+      throw new ErrorBoveda("sin-acceso");
+    }
+    // Una ranura de las de antes lleva la clave de bóveda, no una cadena: entonces no hay
+    // nada que recoger y lo que pasa es otra cosa.
+    if (!esCadena(claro)) throw new ErrorBoveda("manipulada");
+    let claves: CadenaDeClaves;
+    try {
+      claves = leerCadena(claro);
+    } catch (e) {
+      comoErrorDeBoveda(e);
+    }
+    // Y tiene que servir **también para lo de aquí**, o esto no es la misma bóveda: la
+    // cadena de una rotación conserva todas las épocas, así que la de este fichero está
+    // dentro.
+    if (claveDe(claves, this.doc.epoca ?? "") === null) throw new ErrorBoveda("epoca-que-no-se-tiene");
+    this.claves = claves;
+    // Y deja de tener clave de bóveda, si la tenía: con una ranura de las nuevas, lo que
+    // tiene un titular es la cadena. La de antes ya no abre nada de esta bóveda.
+    this.llave = null;
   }
 
   /**
@@ -597,7 +671,7 @@ export class Boveda {
    * se rinde si no hay.
    */
   private semillaGuardada(): Uint8Array | null {
-    this.clave();
+    this.exigeAbierta();
     const guardada = this.cont.extra?.identidad as { semilla?: string } | undefined;
     if (!guardada?.semilla) return null;
     try {
@@ -685,6 +759,19 @@ export class Boveda {
   }
 
   /**
+   * Lo que hace falta para trabajar: **la cadena, no la clave de bóveda** (ADR 0059).
+   *
+   * Un titular abre una bóveda compartida con la cadena que le sellaron y la lee y la
+   * escribe igual; pidiéndole la clave de bóveda se le diría que está cerrada. Lo pedían
+   * así diez métodos —buscar, ver, poner, borrar, la papelera, los sitios excluidos— y
+   * con eso **el espejo no podía leer una bóveda compartida del formato 2**: lo encontró
+   * la cruzada de la rotación, la primera que le dio una.
+   */
+  private exigeAbierta(): void {
+    if (cadenaVacia(this.claves)) throw new ErrorBoveda("cerrada");
+  }
+
+  /**
    * La clave de bóveda, que es **lo que no tiene un titular**: la posesión, sellar un
    * secreto y la clave de la sesión la necesitan, y ahí se niegan con «cerrada».
    */
@@ -720,6 +807,7 @@ export class Boveda {
   cerrar(): void {
     this.llave = null;
     this.claves = null;
+    this.principal = null;
     this.cont = { entradas: [] };
   }
 
@@ -819,13 +907,13 @@ export class Boveda {
 
   /** Las que encajan, **sin secretos** y sin la papelera. */
   buscar(q: string): Entrada[] {
-    this.clave();
+    this.exigeAbierta();
     return this.cont.entradas.filter((e) => !e.papelera && coincide(e, q)).map(sinSecretos);
   }
 
   /** Una entrada entera, con sus secretos. */
   ver(id: string): Entrada | null {
-    this.clave();
+    this.exigeAbierta();
     const e = this.cont.entradas.find((x) => x.id === id);
     return e ? copiar(e) : null;
   }
@@ -836,7 +924,7 @@ export class Boveda {
   }
 
   private async ponerSinCola(nueva: Entrada): Promise<Entrada> {
-    this.clave();
+    this.exigeAbierta();
     const e = copiar(nueva);
     const cuando = rfc3339(new Date());
     if (!e.id) {
@@ -930,7 +1018,7 @@ export class Boveda {
   }
 
   private async borrarSinCola(id: string): Promise<void> {
-    this.clave();
+    this.exigeAbierta();
     const e = this.cont.entradas.find((x) => x.id === id && !x.papelera);
     if (!e) return;
     e.papelera = true;
@@ -947,7 +1035,7 @@ export class Boveda {
   }
 
   private async restaurarSinCola(id: string): Promise<void> {
-    this.clave();
+    this.exigeAbierta();
     const e = this.cont.entradas.find((x) => x.id === id && x.papelera);
     if (!e) throw new Error("Esa entrada ya no está en la papelera");
     delete e.papelera;
@@ -964,7 +1052,7 @@ export class Boveda {
   }
 
   private async borrarDelTodoSinCola(id: string): Promise<void> {
-    this.clave();
+    this.exigeAbierta();
     const i = this.cont.entradas.findIndex((x) => x.id === id && x.papelera);
     if (i < 0) throw new ErrorBoveda("papelera");
     this.cont.entradas.splice(i, 1);
@@ -974,7 +1062,7 @@ export class Boveda {
   }
 
   papelera(): Entrada[] {
-    this.clave();
+    this.exigeAbierta();
     return this.cont.entradas
       .filter((e) => e.papelera)
       .map(sinSecretos)
@@ -1024,7 +1112,7 @@ export class Boveda {
   }
 
   private async excluirSinCola(dominio: string): Promise<void> {
-    this.clave();
+    this.exigeAbierta();
     const d = dominio.trim().toLowerCase();
     if (!d) throw new Error("Hace falta un sitio que excluir");
     const l = this.cont.sitiosExcluidos ?? [];
@@ -1039,7 +1127,7 @@ export class Boveda {
   }
 
   private async quitarExclusionSinCola(dominio: string): Promise<void> {
-    this.clave();
+    this.exigeAbierta();
     const d = dominio.trim().toLowerCase();
     const l = this.cont.sitiosExcluidos ?? [];
     const quedan = l.filter((x) => x !== d);
@@ -1114,7 +1202,10 @@ export class Boveda {
   /** @internal Lo que usa `fundir.ts`. */
   get _estado() {
     if (this.claves === null) throw new ErrorBoveda("cerrada");
-    return { doc: this.doc, cont: this.cont, llave: this.llave, claves: this.claves, titular: this.titular };
+    return {
+      doc: this.doc, cont: this.cont, llave: this.llave, claves: this.claves,
+      titular: this.titular, principal: this.principal,
+    };
   }
 
   /** @internal */
@@ -1133,10 +1224,18 @@ export class Boveda {
    * abrirse y un mensaje que manda a mirar donde no hay nada. Por eso las dos cosas no se
    * pueden poner por separado — igual que `ponerEpoca` en Go.
    */
-  _ponerEpoca(claves: CadenaDeClaves, epoca: string): void {
+  _ponerEpoca(claves: CadenaDeClaves, epoca: string, llave: string | null = null): void {
     if (claveDe(claves, epoca) === null) throw new ErrorBoveda("manipulada");
     this.claves = claves;
-    this.doc = { ...this.doc, ...(epoca ? { epoca } : {}) };
+    // Y la clave de bóveda de ese lado, que es la que envuelven las ranuras que acaban de
+    // entrar: dejando la de antes, la siguiente ranura que se envolviera abriría una
+    // bóveda que ya no es ésta.
+    if (llave !== null) this.llave = llave;
+    // Y el formato, que es **una consecuencia de esto** y no una cosa aparte: declarar
+    // una época y seguir diciendo que el documento es del formato de siempre haría que
+    // una Esfinge anterior lo abriera y se encontrara un cuerpo que no descifra.
+    const formato = epoca ? FORMATO_CON_CLAVES_DE_CONTENIDO : FORMATO_BASE;
+    this.doc = { ...this.doc, formato, ...(epoca ? { epoca } : {}) };
     if (!epoca) delete this.doc.epoca;
   }
 }

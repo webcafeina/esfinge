@@ -15,70 +15,9 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/webcafeina/esfinge/internal/cripto"
 )
 
 const idDeAna = "1111222233334444"
-
-// rotarAMano hace lo que hará `RotarClaveDeContenido` en la publicación B: una clave
-// nueva en la cadena, el cuerpo recifrado con ella, el sobre `contenido` resellado con la
-// clave de bóveda y cada ranura de acceso **viva** resellada hacia su identidad.
-//
-// Está aquí porque hasta esa publicación **no hay otra forma de tener dos épocas**, y las
-// dos épocas son justo lo que hay que probar: nada escribe todavía el formato 2. Cuando
-// exista la de verdad, esto se tira y se llama a aquélla — un ayudante que hace lo que
-// hace producción no prueba producción, y esa trampa aquí ya ha costado.
-func rotarAMano(t *testing.T, b *Boveda, para map[string]Identidad) cadenaDeClaves {
-	t.Helper()
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	c := b.claves
-	if err := c.poner(PorRevocacion); err != nil {
-		t.Fatal(err)
-	}
-	crudo, err := c.bytes()
-	if err != nil {
-		t.Fatal(err)
-	}
-	sobreContenido, err := cripto.SellarTexto(crudo, b.llave, cripto.PerfilLlave)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cuando := ahora().UTC().Format(time.RFC3339)
-
-	nuevo := sobre{Tipo: RanuraDeContenido, Creado: cuando, Contenedor: sobreContenido}
-	if i := b.ranura(RanuraDeContenido); i >= 0 {
-		b.doc.Sobres[i] = nuevo
-	} else {
-		b.doc.Sobres = append(b.doc.Sobres, nuevo)
-	}
-	for i, s := range b.doc.Sobres {
-		id := IDDeAcceso(s.Tipo)
-		if id == "" || esRetirada(s) {
-			continue
-		}
-		quien, hay := para[id]
-		if !hay {
-			t.Fatalf("para rotar hace falta la identidad de %q, y no se le ha dado", id)
-		}
-		sellada, err := SellarHaciaIdentidad(crudo, quien)
-		if err != nil {
-			t.Fatal(err)
-		}
-		b.doc.Sobres[i] = sobre{Tipo: s.Tipo, Creado: cuando,
-			Contenedor: sellada, Codificacion: CodificacionSellada}
-	}
-	if err := b.ponerEpoca(c, c.Actual); err != nil {
-		t.Fatal(err)
-	}
-	b.cuerpoSucio = true
-	if err := b.guardar(); err != nil {
-		t.Fatal(err)
-	}
-	return c
-}
 
 // copiaDelFichero es el otro equipo: el mismo fichero en otra ruta.
 func copiaDelFichero(t *testing.T, de string) string {
@@ -96,22 +35,22 @@ func copiaDelFichero(t *testing.T, de string) string {
 
 // unProyectoConCadenaYUnTitular deja una bóveda de proyecto del formato 2 —cadena de
 // claves, época declarada— con una entrada y con Ana dentro.
+//
+// **Lo migra rotando de verdad**, no con un ayudante. Mientras la publicación que escribe
+// no existía había uno que hacía lo que ella iba a hacer, y eso es la trampa de siempre:
+// un ayudante que repite producción no prueba producción. Ahora existe, así que el
+// ayudante se fue.
 func unProyectoConCadenaYUnTitular(t *testing.T) (ruta string, llave []byte, ana *Boveda, idAna Identidad) {
 	t.Helper()
-	_, ruta, llave = personalYProyecto(t)
-	ana, idAna = unaPersonal(t, "ana")
+	ruta, llave, ana, idAna, _ = unProyectoCompartido(t)
 	p, err := AbrirProyecto(ruta, llave)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := p.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Cloudflare", Secreto: "el testigo"}); err != nil {
+	defer p.Cerrar()
+	if err := p.RotarLasClaves(map[string]Identidad{idDeAna: idAna}, PorMigracion); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.PonerAcceso(idDeAna, idAna); err != nil {
-		t.Fatal(err)
-	}
-	conClavesDeContenido(t, p, idDeAna, idAna)
-	p.Cerrar()
 	return ruta, llave, ana, idAna
 }
 
@@ -143,7 +82,12 @@ func TestFundirConDosEpocasSeQuedaConLaClaveQueGana(t *testing.T) {
 			t.Fatal(err)
 		}
 		reloj = reloj.Add(10 * time.Second)
-		c = rotarAMano(t, otro, map[string]Identidad{idDeAna: idAna})
+		if err := otro.RotarLasClaves(map[string]Identidad{idDeAna: idAna}, PorRevocacion); err != nil {
+			t.Fatal(err)
+		}
+		otro.mu.Lock()
+		c = otro.claves
+		otro.mu.Unlock()
 		remoto, _, err = otro.PrepararSubida(1)
 		if err != nil {
 			t.Fatal(err)
@@ -215,7 +159,9 @@ func TestAlFundirDosEpocasLasRanurasDeAccesoVanConLaClave(t *testing.T) {
 		}
 		// Allí se rota, resellando la ranura de Ana con la cadena nueva.
 		reloj = reloj.Add(10 * time.Second)
-		rotarAMano(t, otro, map[string]Identidad{idDeAna: idAna})
+		if err := otro.RotarLasClaves(map[string]Identidad{idDeAna: idAna}, PorRevocacion); err != nil {
+			t.Fatal(err)
+		}
 		remoto, _, err := otro.PrepararSubida(1)
 		if err != nil {
 			t.Fatal(err)
@@ -269,7 +215,9 @@ func TestAlFundirDosEpocasUnaLapidaNoRevive(t *testing.T) {
 			t.Fatal(err)
 		}
 		reloj = reloj.Add(10 * time.Second)
-		rotarAMano(t, otro, map[string]Identidad{idDeAna: idAna})
+		if err := otro.RotarLasClaves(map[string]Identidad{idDeAna: idAna}, PorRevocacion); err != nil {
+			t.Fatal(err)
+		}
 		remoto, _, err := otro.PrepararSubida(1)
 		if err != nil {
 			t.Fatal(err)
@@ -315,7 +263,9 @@ func TestUnTitularSinLaEpocaNuevaNoDiceQueLaBovedaEsteRota(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rotarAMano(t, otro, map[string]Identidad{idDeAna: idAna})
+	if err := otro.RotarLasClaves(map[string]Identidad{idDeAna: idAna}, PorRevocacion); err != nil {
+		t.Fatal(err)
+	}
 	remoto, _, err := otro.PrepararSubida(1)
 	if err != nil {
 		t.Fatal(err)

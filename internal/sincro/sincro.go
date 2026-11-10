@@ -89,6 +89,18 @@ type Sincronizador struct {
 	Memoria  Memoria
 	// Token da la sesión de ahora; puede cambiar entre pasadas.
 	Token func() string
+	// RecogerLaCadena se llama cuando lo que baja está cifrado con una clave que esta
+	// bóveda no tiene, o sea cuando **el dueño ha rotado** (ADR 0059).
+	//
+	// Le pasa a quien tiene acceso compartido: su ranura va sellada hacia su identidad, y
+	// eso solo lo abre su bóveda personal, que aquí no está. Así que esto lo pone quien la
+	// tiene —`internal/app`— y la pasada **lo intenta una vez y vuelve a fundir**. Sin
+	// esto, una rotación dejaría su sincronización parada para siempre: reabrir no sirve,
+	// porque lo que reabre es su fichero de aquí, que es el que tiene la cadena de antes.
+	//
+	// Nil es «no hay de dónde recogerla», que es el caso del dueño: a él no le pasa,
+	// porque la clave de bóveda de cada documento sale de ese documento.
+	RecogerLaCadena func(datos []byte) error
 	// aunqueBorre vale para **una sola pasada** y se consume al usarla: es lo que
 	// pone el botón de «Juntar igual» cuando la fusión se paró porque se llevaba
 	// media bóveda (revisión del 2026-09-23). Se guarda aquí y no en un campo
@@ -187,9 +199,22 @@ func (s *Sincronizador) pasada(ctx context.Context) (Resultado, error) {
 			if version < recuerdo.Version {
 				return r, fmt.Errorf("%w (aquí se vio la %d y allí dice la %d)", ErrRetroceso, recuerdo.Version, version)
 			}
+			aunqueBorre := s.aunqueBorre.Swap(false)
 			f, err := s.Boveda.Fundir(datos, version, base, boveda.OpcionesDeFusion{
-				AunqueBorreMucho: s.aunqueBorre.Swap(false),
+				AunqueBorreMucho: aunqueBorre,
 			})
+			// **Una rotación no puede dejar a nadie parado para siempre** (ADR 0059): si
+			// lo que baja va cifrado con una clave que aquí no hay, se recoge la cadena
+			// nueva por donde se puede y se vuelve a fundir. Una vez: si tampoco con ella,
+			// lo que falla es otra cosa y se dice.
+			if errors.Is(err, boveda.ErrEpocaQueNoSeTiene) && s.RecogerLaCadena != nil {
+				if err2 := s.RecogerLaCadena(datos); err2 != nil {
+					return r, err2
+				}
+				f, err = s.Boveda.Fundir(datos, version, base, boveda.OpcionesDeFusion{
+					AunqueBorreMucho: aunqueBorre,
+				})
+			}
 			r.Fusion = f
 			if err != nil {
 				return r, err

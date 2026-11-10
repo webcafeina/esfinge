@@ -321,6 +321,10 @@ func CrearProyecto(ruta string, llavePrincipal []byte) (*Boveda, error) {
 		return nil, err
 	}
 	b.doc.Sobres = append(b.doc.Sobres, s)
+	// **Se queda con la clave de la personal**, igual que al abrir (ADR 0059): sin ella,
+	// una bóveda recién creada no podría rotar su clave hasta cerrarla y volver a abrirla,
+	// y nadie entendería por qué.
+	b.principal = append([]byte(nil), llavePrincipal...)
 	if ruta == "" {
 		return b, nil
 	}
@@ -377,7 +381,15 @@ func abrirProyectoBytes(ruta string, datos, llavePrincipal []byte) (*Boveda, err
 		// bóveda personal. No es un fichero roto y no se dice que lo sea.
 		return nil, ErrSinRanuraPrincipal
 	}
-	return conLlave(ruta, doc, llave, true)
+	b, err := conLlave(ruta, doc, llave, true)
+	if err != nil {
+		return nil, err
+	}
+	// **Se queda con la clave de la personal**, que es lo que permite sacar la clave de
+	// bóveda de cualquier documento de este proyecto por su ranura principal. Hace falta
+	// desde que rotar cambia también la clave de bóveda (ADR 0059).
+	b.principal = append([]byte(nil), llavePrincipal...)
+	return b, nil
 }
 
 // PonerRanuraPrincipal deja que esa personal abra esta bóveda, y reemplaza la

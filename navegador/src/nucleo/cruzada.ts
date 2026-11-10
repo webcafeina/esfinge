@@ -27,6 +27,7 @@ import {
 } from "./afirmacion";
 import { canonEntrada, entradaDesde, sinSecretos, CAMPOS } from "./entrada";
 import { fundir, fundirPiezas } from "./fundir";
+import { ErrorBoveda } from "./boveda";
 import { abrirSellado } from "./compartida";
 
 const hex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
@@ -205,6 +206,43 @@ export async function ejecutar(p: { orden: string } & Record<string, unknown>): 
       const mia = await Boveda.abrir(p.personal as string, p.maestra as string);
       const c = await Boveda.abrirCompartida(p.texto as string, p.titular as string, mia);
       return resumen(c);
+    }
+
+    // **Go rota y la extensión se rehace**, que es el camino de la publicación B visto
+    // desde el navegador: la ventana cambia las dos claves de la bóveda y aquí, con la
+    // cadena de antes, lo que baja ya no se puede leer. Se recoge la nueva por la bóveda
+    // personal y se funde. Si esto se desvía, **una rotación deja la extensión de quien
+    // tiene acceso parada para siempre y nada más se pone rojo**.
+    case "compartidaRecoger": {
+      const mia = await Boveda.abrir(p.personal as string, p.maestra as string);
+      const c = await Boveda.abrirCompartida(p.antes as string, p.titular as string, mia);
+      let dijo = "";
+      try {
+        await fundir(c, p.remoto as string, p.version as number, null);
+      } catch (e) {
+        dijo = e instanceof ErrorBoveda ? e.codigo : String(e);
+      }
+      await c.recogerCadenaDe(p.remoto as string, mia);
+      await fundir(c, p.remoto as string, p.version as number, null);
+      // **Sin la posesión**, que es lo único del resumen de siempre que pide la clave de
+      // bóveda: un titular no la tiene, y que no la tenga es justo lo que se busca.
+      const entradas = [];
+      for (const e of c.buscar("")) entradas.push(canonEntrada(c.ver(e.id)!));
+      for (const e of c.papelera()) entradas.push(canonEntrada(c.ver(e.id)!));
+      return { dijo, id: c.id, serie: c.serie, entradas, excluidos: c.excluidos() };
+    }
+
+    // **Y el otro camino: el dueño de un proyecto en la extensión.** Su fichero lleva la
+    // clave de antes y la del que baja solo está dentro del que baja, así que la saca de su
+    // ranura principal con la clave de la personal. Si esto se desvía, un equipo suyo que
+    // venga por detrás **no puede volver a fundir nunca** y reabrir no lo arregla.
+    case "proyectoFundir": {
+      const b = await Boveda.abrirProyecto(p.antes as string, p.principal as string);
+      await fundir(b, p.remoto as string, p.version as number, null);
+      const entradas = [];
+      for (const e of b.buscar("")) entradas.push(canonEntrada(b.ver(e.id)!));
+      for (const e of b.papelera()) entradas.push(canonEntrada(b.ver(e.id)!));
+      return { id: b.id, serie: b.serie, entradas, excluidos: b.excluidos() };
     }
 
     case "acceso":

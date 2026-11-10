@@ -246,16 +246,29 @@ No se cambian sin preguntar.
   formato no lo permite**, porque todas las ranuras envuelven esa misma clave. Se decidió el 2026-10-21
   arreglarlo con una **clave de contenido**, y hasta entonces lo que protege es el 403 del servidor y el
   borrado de la copia.
-  **Y ya tiene ficha, la ADR 0059, con la publicación A hecha el 2026-11-09.** Lo que hay que saber sin
-  abrirla: el cuerpo se cifra con una **clave de contenido** y la clave de bóveda envuelve **la cadena** de
-  todas las que ha habido, así que rotar es clave nueva, recifrar y resellar solo para los que quedan. **El
-  motivo que esta ficha daba era falso** —una bóveda de proyecto no tiene maestra ni clave de recuperación—:
-  lo que lo bloqueaba es **la fusión**, y por eso se guardan **todas** las claves y no solo la última, o un
-  equipo que vuelve de estar desconectado no puede descifrar su propio fichero. **Solo bóvedas de proyecto**,
-  **dos publicaciones** —leer y luego escribir, con dos constantes de formato— y **rotar al revocar y a
-  mano**, que el botón manual es lo que migra los accesos ya dados. De paso, **quien recibe un acceso deja de
-  llevarse la clave de bóveda** y **quien puede editar puede dar acceso a otros**, que la 0052 decía y el
-  código no permitía. **Rotar todavía no existe**: es la publicación B, así que la deuda sigue abierta.
+  **Y ya tiene ficha, la ADR 0059**, con **las dos publicaciones dentro**: la A salió en la 2.60.0 y la B se
+  fusionó el 2026-11-10, cuando las dos tiendas tuvieron la A. Lo que hay que saber sin abrirla: el cuerpo se cifra con una **clave de
+  contenido** y la clave de bóveda envuelve **la cadena** de todas las que ha habido, así que rotar es clave
+  nueva, recifrar y resellar solo para los que quedan. **El motivo que la 0052 daba era falso** —una bóveda de
+  proyecto no tiene maestra ni clave de recuperación—: lo que lo bloqueaba es **la fusión**, y por eso se
+  guardan **todas** las claves y no solo la última, o un equipo que vuelve de estar desconectado no puede
+  descifrar su propio fichero. **Solo bóvedas de proyecto**, **dos publicaciones** —leer y luego escribir, con
+  dos constantes de formato— y **rotar al revocar y a mano**, que el botón manual es lo que migra los accesos
+  ya dados.
+  **Y rotar cambia las dos claves, la de contenido y la de bóveda** (2026-11-10). Con solo la primera **no se
+  corta a nadie de los de antes**: su ranura lleva dentro la clave de bóveda y con ella se desenvuelve la
+  cadena; comprobado en código —leía una entrada creada después de rotar— y elegido por el cliente entre tres
+  opciones. De ahí tres cosas que no se tocan a ciegas: **una bóveda de proyecto se queda con la clave de la
+  personal**, porque la clave de bóveda de cada documento sale **de ese documento** y sin eso un equipo que
+  venga por detrás no podría fundir nunca más; **quien tiene acceso recoge la cadena por su bóveda personal**
+  en su propia sincronización, o una rotación le dejaría parado para siempre; y **al fundir con dos épocas
+  salen de un solo lado todas las ranuras**, no solo las que llevan la cadena. De paso, **quien recibe un
+  acceso deja de llevarse la clave de bóveda** y **quien puede editar puede dar acceso a otros**, que la 0052
+  decía y el código no permitía.
+  **La B esperó a que la A estuviera publicada y la extensión aprobada en las tiendas**, y la regla sigue
+  valiendo para lo que venga: la primera versión con la B dentro ya escribe el formato 2, y si hubiera
+  llegado antes que la A, el otro Mac y la extensión se habrían encontrado una bóveda que no saben leer.
+  **Y nada pasa al formato 2 por su cuenta**: lo dispara una persona rotando.
   Lo que **no** se hace: borrar en remoto lo que ya se bajó —no se puede prometer— ni
   dejar que quien recibe borre la bóveda para todos.
   **Y tres cosas técnicas que cuestan caro si se tocan a ciegas.** La ranura de cada titular va **sellada
@@ -506,6 +519,15 @@ No se cambian sin preguntar.
   hace la tarjeta de dentro, que es la única de las dos pantallas que sigue ahí para decir que ha fallado.
 
 ## Trampas que ya costaron encontrarse
+
+**Una prueba que fabrica el escenario con el reloj de verdad y lo ejercita con el de mentira depende de la
+hora del día.** Las pruebas de la fusión con dos épocas montaban el proyecto fuera de `conReloj` —o sea con
+la hora real— y rotaban dentro, a las 09:00:10 de mentira. Quién gana la época lo decide la fecha del sobre
+`contenido`, así que **pasaban por la mañana y fallaban a media mañana**: a las 08:39 el sobre de verdad era
+más viejo que el de mentira y a las 09:05 ya no. Y mientras pasaban, dos de las tres lo hacían **por el
+motivo equivocado** —ganaba el lado de aquí, que es el caso que no se quería probar—, así que su mutación
+tampoco valía. El escenario entero va con el mismo reloj. Es la familia de «un dato congelado leído con el
+reloj de verdad caduca solo», con la diferencia de que esto **no** falla siempre: falla a unas horas.
 
 **Una regla cuyo caso límite todavía no existe se escribe al revés y nadie se entera.** `soloLectura` se
 calculaba `doc.Formato < Formato` en los tres sitios —los dos núcleos—, al revés de lo que dicen sus

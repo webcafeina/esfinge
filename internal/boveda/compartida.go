@@ -334,7 +334,15 @@ func AbrirCompartidaBytes(ruta string, datos []byte, id string, personal *Boveda
 		}
 		return conClaves(ruta, doc, claves, id, true)
 	}
-	return conLlave(ruta, doc, claro, true)
+	b, err := conLlave(ruta, doc, claro, true)
+	if err != nil {
+		return nil, err
+	}
+	// **Y quién soy aquí, también por este camino.** Lo necesita `RecogerCadenaDe` cuando
+	// el dueño rota: hay que encontrar *mi* ranura en el documento que acaba de bajar, y
+	// una bóveda abierta por la ranura de antes no sabría cuál es la mía.
+	b.titular = id
+	return b, nil
 }
 
 // indiceDeRanura es `(*Boveda).ranura` sobre un documento suelto: hace falta antes de
@@ -833,4 +841,74 @@ func PorQueNoSeEscribe(b *Boveda, dueno, permiso string) string {
 		return "Solo puedes ver esta bóveda compartida: lo que escribieras aquí no llegaría a nadie más"
 	}
 	return ""
+}
+
+// RecogerCadenaDe toma la cadena de claves del documento que acaba de bajar, para cuando
+// la de aquí ya no alcanza para leerlo (ADR 0059).
+//
+// Es lo que necesita **quien tiene acceso** después de que el dueño rote: su ranura va
+// sellada hacia su identidad, y la fusión no tiene esa identidad delante. Así que la
+// cadena nueva tiene que entrar por quien sí la tiene, su bóveda personal. Y entra
+// entera: **lleva todas las épocas**, así que con ella se siguen leyendo su fichero de
+// aquí y el que acaba de bajar.
+//
+// **Reabrir no sirve para esto, y por eso hace falta un método**: lo que reabre es el
+// fichero de aquí, que es justo el que tiene la cadena de antes. El dueño no lo necesita,
+// porque la clave de bóveda de cada documento sale de ese documento
+// (`llavesQueAbrenUnDocumento`).
+func (b *Boveda) RecogerCadenaDe(datos []byte, personal *Boveda) error {
+	if personal == nil {
+		return ErrCerrada
+	}
+	doc, err := leerDocumento(datos)
+	if err != nil {
+		return err
+	}
+
+	b.mu.Lock()
+	titular, mio := b.titular, b.doc.ID
+	epoca := b.doc.Epoca
+	b.mu.Unlock()
+
+	if titular == "" {
+		return ErrSoloElDueno
+	}
+	if doc.ID != mio {
+		return ErrOtraBoveda
+	}
+	i := indiceDeRanura(doc, TipoDeAcceso(titular))
+	if i < 0 || doc.Sobres[i].Codificacion == CodificacionRetirada {
+		return ErrSinAcceso
+	}
+	// **Fuera del cerrojo de aquí**: abrir el sobre pide el de la bóveda personal, y dos
+	// cerrojos cogidos en distinto orden es como se cuelga un programa.
+	claro, err := personal.AbrirSellado(doc.Sobres[i].Contenedor)
+	if err != nil {
+		return err
+	}
+	defer cripto.Borrar(claro)
+	if !esCadena(claro) {
+		// Una ranura de las de antes lleva la clave de bóveda, no una cadena: entonces no
+		// hay nada que recoger y lo que pasa es otra cosa.
+		return ErrManipulada
+	}
+	claves, err := leerCadena(claro)
+	if err != nil {
+		return err
+	}
+	// Y tiene que servir **también para lo de aquí**, o esto no es la misma bóveda: la
+	// cadena de una rotación conserva todas las épocas, así que la de este fichero está
+	// dentro.
+	if _, hay := claves.clave(epoca); !hay {
+		return ErrEpocaQueNoSeTiene
+	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.claves = claves
+	// Y deja de tener clave de bóveda, si la tenía: con una ranura de las nuevas, lo que
+	// tiene un titular es la cadena. La de antes ya no abre nada de esta bóveda.
+	cripto.Borrar(b.llave)
+	b.llave = nil
+	return nil
 }

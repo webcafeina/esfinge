@@ -859,6 +859,11 @@ function ElAcceso({
   const [huella, setHuella] = useState("");
   const [trabajando, setTrabajando] = useState(false);
   const [quitando, setQuitando] = useState("");
+  // Cambiar la clave es de dos toques, como quitar un acceso: no es un clic cualquiera.
+  const [cambiando, setCambiando] = useState(false);
+  // Y cuando se cambia **no se ve nada**, porque por dentro no cambia nada que se mire:
+  // sin esta línea, el botón parecería no haber hecho nada.
+  const [cambiada, setCambiada] = useState(false);
   // El correo del servidor de esta casa, si hay uno (ADR 0057). Vacío, **no se
   // menciona nada**: un interruptor para un servidor que no existe es ruido.
   const [servidor, setServidor] = useState("");
@@ -1085,11 +1090,45 @@ function ElAcceso({
 
       {quitando !== "" && (
         <p className="aviso">
-          Dejará de recibir cambios, y la bóveda <strong>se borrará de su ordenador</strong> la próxima vez
-          que abra Esfinge. <strong>Si no lo abre, no se borra</strong>, y esto tampoco protege de quien
-          haya querido guardarse una copia a mano: si lo de dentro no puede estar en sus manos, lo que hay
-          que cambiar son las contraseñas, no esta bóveda.
+          Dejará de recibir cambios, la bóveda <strong>se borrará de su ordenador</strong> la próxima vez
+          que abra Esfinge —si no lo abre, no se borra— y <strong>la clave de esta bóveda cambia</strong>,
+          así que lo que escribas a partir de ahora no lo abre. Lo que vio o se copió mientras tenía
+          acceso, eso sigue en sus manos.
         </p>
+      )}
+
+      {gente !== null && (
+        <div className="cambiar-la-clave">
+          <button
+            className={cambiando ? "principal" : "discreto"}
+            disabled={trabajando}
+            onClick={async () => {
+              if (!cambiando) {
+                setCambiando(true);
+                return;
+              }
+              setTrabajando(true);
+              setCambiada(false);
+              try {
+                await esfinge.rotarLaClave();
+                setCambiando(false);
+                setCambiada(true);
+                await recargar();
+              } catch (e) {
+                alFallar(mensaje(e));
+              } finally {
+                setTrabajando(false);
+              }
+            }}
+          >
+            {cambiando ? "Sí, cambiar la clave" : "Cambiar la clave de esta bóveda"}
+          </button>
+          <p className="nota">
+            {cambiada
+              ? "Clave cambiada. Quien tuvo acceso antes no puede abrir lo que escribas a partir de ahora."
+              : "Vuelve a cifrarla con una clave nueva y la deja abierta solo para quien tiene acceso ahora mismo."}
+          </p>
+        </div>
       )}
 
       <div>

@@ -294,6 +294,15 @@ func (b *Boveda) ponerEpoca(claves cadenaDeClaves, epoca string) error {
 		return fmt.Errorf("%w (la época %q no tiene su clave en la cadena)", ErrManipulada, epoca)
 	}
 	b.claves, b.doc.Epoca = claves, epoca
+	// **Y el formato, que es una consecuencia de esto y no una cosa aparte.** Declarar
+	// una época y seguir diciendo que el documento es del formato de siempre haría que
+	// una Esfinge anterior lo abriera, no supiera de la época y se encontrara un cuerpo
+	// que no descifra. Puesto aquí no hay dónde olvidarlo.
+	if epoca == "" {
+		b.doc.Formato = FormatoBase
+	} else {
+		b.doc.Formato = FormatoConClavesDeContenido
+	}
 	return nil
 }
 
@@ -305,21 +314,51 @@ func (b *Boveda) ponerEpoca(claves cadenaDeClaves, epoca string) error {
 // hacia su identidad, y para recoger la nueva hace falta su bóveda personal, que al
 // fundir no está delante. A él se le dice que cierre y vuelva a abrir, que es por donde
 // pasa su identidad.
-func (b *Boveda) clavesQueAbren(doc documento) (cadenaDeClaves, error) {
+// Devuelve también **con qué clave de bóveda se ha abierto ese documento**, que puede no
+// ser la de aquí: quien se queda con lo de ese lado al fundir tiene que quedarse con las
+// dos cosas, o `b.llave` pasa a mentir y la siguiente ranura que se envuelva abriría una
+// bóveda que ya no es ésta.
+func (b *Boveda) clavesQueAbren(doc documento) (cadenaDeClaves, []byte, error) {
 	if _, hay := b.claves.clave(doc.Epoca); hay {
-		return b.claves, nil
+		return b.claves, b.llave, nil
 	}
-	if b.sinClaveDeBoveda() {
-		return cadenaDeClaves{}, ErrEpocaQueNoSeTiene
+	for _, llave := range b.llavesQueAbrenUnDocumento(doc) {
+		claves, err := laCadenaDe(doc, llave)
+		if err != nil {
+			continue
+		}
+		if _, hay := claves.clave(doc.Epoca); hay {
+			return claves, llave, nil
+		}
 	}
-	claves, err := laCadenaDe(doc, b.llave)
-	if err != nil {
-		return cadenaDeClaves{}, err
+	return cadenaDeClaves{}, nil, ErrEpocaQueNoSeTiene
+}
+
+// llavesQueAbrenUnDocumento son las claves de bóveda con las que se puede intentar
+// desenvolver la cadena de **ese** documento, en orden.
+//
+// La de aquí primero, que es el caso normal. Y después **la que el propio documento
+// declara en su ranura principal**, que hace falta desde que rotar cambia también la clave
+// de bóveda: un equipo del dueño que lleve tiempo sin abrir este proyecto tiene en su
+// fichero la clave de antes, y la del documento que acaba de bajar **solo está dentro de
+// ese documento**. Sin esto no podría volver a fundir nunca: reabrir no ayuda, porque lo
+// que reabre es su fichero viejo.
+//
+// Un titular no tiene ninguna de las dos cosas —ni la clave de bóveda ni la de la
+// personal—, así que para él esto devuelve nada y lo que hay es `RecogerCadenaDe`.
+func (b *Boveda) llavesQueAbrenUnDocumento(doc documento) [][]byte {
+	var out [][]byte
+	if b.llave != nil {
+		out = append(out, b.llave)
 	}
-	if _, hay := claves.clave(doc.Epoca); !hay {
-		return cadenaDeClaves{}, ErrEpocaQueNoSeTiene
+	if len(b.principal) > 0 {
+		if i := indiceDeRanura(doc, RanuraPrincipal); i >= 0 {
+			if llave, err := cripto.AbrirTexto(doc.Sobres[i].Contenedor, b.principal); err == nil {
+				out = append(out, llave)
+			}
+		}
 	}
-	return claves, nil
+	return out
 }
 
 // ladoDeLasClaves dice de qué lado de una fusión salen los sobres que llevan claves.
@@ -333,16 +372,6 @@ const (
 	clavesDeAqui
 	clavesDeAlla
 )
-
-// llevaClaves dice si ese tipo de ranura lleva dentro con qué descifrar el cuerpo.
-//
-// Son dos: el sobre `contenido`, que es la cadena, y las de acceso, que llevan la cadena
-// sellada hacia cada titular. Las demás —la maestra, la de recuperación, la del sistema,
-// `boveda-principal`— envuelven la **clave de bóveda**, que no cambia nunca, así que una
-// rotación no las toca y la fusión tampoco tiene que tratarlas distinto.
-func llevaClaves(tipo string) bool {
-	return tipo == RanuraDeContenido || IDDeAcceso(tipo) != ""
-}
 
 // ladoDeLaFusion es el lado de una fusión entera: «los dos» mientras las épocas sean la
 // misma, que es el caso normal y el único que existe en el formato 1.

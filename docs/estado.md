@@ -2,44 +2,91 @@
 
 Última actualización: **2026-11-10**
 
-## Publicada la 2.60.0, y esperando a que Chrome publique (2026-11-10)
+## Las dos publicaciones de la clave de contenido, fuera (2026-11-10)
 
-**Lo que falta es una espera, no un trabajo.** Y lo que espera es la publicación B de la clave de contenido,
-que está **escrita, probada y sin fusionar** en la rama `clave-de-contenido-b`.
+**La 2.60.0 publicada y las dos tiendas al día** —Firefox `public 2.60.0`, y Chrome la publicó por la
+tarde—, los dos Mac y **el VPS** actualizados. Con eso se cumplieron las tres condiciones que esto
+necesitaba y **la publicación B se fusionó**: la 2.61.0 ya escribe el formato 2 y rota.
+
+**Y lo que queda no es trabajo, es una decisión del cliente**: **la primera rotación**. Nada pasa al formato
+2 por su cuenta —no hay migración perezosa, y fue a propósito—, así que el estado de todas sus bóvedas
+sigue siendo el de antes hasta que pulse «Cambiar la clave de esta bóveda» o le quite el acceso a alguien.
+
+**El día que lo haga, dos cosas que ya están dichas y conviene recordarle**: cualquier equipo o extensión
+que siga en una versión anterior a la 2.60.0 **no podrá leer esa bóveda** —dice «actualiza»—, y el VPS, si
+no tuviera la 2.61.0, podría **leer** el formato 2 pero no escribir, así que un agente de allí que intente
+`crear` o `editar` en esa bóveda se encontraría un «actualiza».
+
+## Lo que lleva dentro la publicación B (2026-11-10)
+
+**Vivió en la rama `clave-de-contenido-b` hasta el 2026-11-10**, y el porqué de esperar sigue siendo la
+regla: la primera versión con la B dentro ya escribe el formato 2, y si hubiera llegado antes que la A, el
+otro Mac y la extensión se habrían encontrado una bóveda que no saben leer —y la extensión no se puede
+forzar a actualizarse—. Se fusionó cuando se cumplieron las tres: la A publicada, Firefox y Chrome al día.
+
+### Lo que cambió el diseño: rotar cambia las dos claves
+
+Al ir a escribir la B se vio que **con solo la clave de contenido no se corta a nadie de los de antes**: una
+ranura de acceso anterior a la 0059 lleva dentro la **clave de bóveda**, y con ella se desenvuelve el sobre
+`contenido`, o sea la cadena, o sea todas las claves que vengan después. Comprobado en código —leía una
+entrada creada después de rotar, con su secreto— y **elegido por el cliente entre tres opciones**: las dos
+claves siempre, las dos solo al migrar, o solo la de contenido diciéndolo. Eligió **las dos siempre**, que es
+una regla sola y sin casos especiales.
+
+De ahí tres cosas que no se tocan a ciegas, y están en la ficha:
+
+1. **Una bóveda de proyecto se queda con la clave de la personal**, porque la clave de bóveda de cada
+   documento sale **de ese documento** (su ranura principal). Sin eso, un equipo que venga por detrás no
+   podría fundir nunca más: reabrir no ayuda, porque lo que reabre es su fichero viejo.
+2. **Quien tiene acceso recoge la cadena por su bóveda personal**, y lo hace su propia sincronización
+   (`RecogerLaCadena` en el `Sincronizador`). Sin eso, una rotación le deja parado para siempre.
+3. **Al fundir con dos épocas salen de un solo lado todas las ranuras**, no solo las que llevan la cadena.
+
+### Hecho
 
 | | |
 |---|---|
-| **La 2.60.0** | Colgada, 28 ficheros, flujo `42813577646` en verde (18 min). Antes de la etiqueta, `COMPROBAR=0` y `make e2e` con 155 pruebas **sobre ese mismo commit** |
-| **Firefox** | **Publicada.** La API pública de AMO da `status: public` y `current_version` = 2.60.0 |
-| **Chrome** | **En revisión.** La ficha sigue enseñando la 2.59.3. Nadie tuvo que cancelar nada: no había revisión pendiente bloqueando el envío |
-| **Los dos Mac** | En la 2.60.0 |
-| **El VPS** | En la 2.60.0, con la 2.59.2 guardada al lado y **probado leyendo la bóveda de Tempero** |
+| **B1** · `bb47d31` | `internal/boveda/rotar.go`, las dos claves, la cadena que hereda, el formato como consecuencia de la época, y dos fallos de la A1 que esto destapó: `Abierta()` preguntaba por la clave de bóveda y un titular abierto por el camino viejo no sabía quién era |
+| **B2** | `App.RotarLaClave`, `QuitarAcceso` rotando al final —si rotar falla, **el acceso sigue quitado**— y el método en el puente |
+| **B3** | El botón de dos toques en `ElAcceso`, con su línea, y el aviso de quitar el acceso **sin la frase que ha dejado de ser verdad** |
+| **B4** | El paseo de dos cuentas contra el servidor de verdad, con dos pasos nuevos: Ana rota con Beto dentro y **a Beto le sigue llegando**, y al quitarle el acceso lo que se llevó ya no abre |
+| **B5** | La ficha corregida —decía que la clave de bóveda no cambia nunca—, `seguridad.md`, `formato-boveda.md`, `decisiones.md`, `CLAUDE.md` y la deuda tachada |
 
-### Qué hay en la rama `clave-de-contenido-b`
+### Y las tres cosas que quedaban, hechas
 
-La publicación **B** de la [ADR 0059](adr/0059-la-clave-de-contenido.md): la que **escribe** el formato 2 y
-rota. Está entera —rotar, `QuitarAcceso` rotando, la pantalla, el espejo de la extensión, el paseo de dos
-cuentas, el vector congelado y la documentación—, con las tres puertas en verde y cada protección mutada.
+- **El botón ya tiene prueba de interfaz** (`cuentas.spec.ts`): que se encuentra donde está la persona, que
+  hace falta pulsar dos veces, que **dice que lo ha hecho** —por dentro no cambia nada que se vea— y que
+  después la bóveda se sigue leyendo y escribiendo. Mutada quitando la confirmación.
+- **El vector congelado está grabado**: `internal/boveda/testdata/proyecto-formato2.esfinge`, con dos épocas,
+  una ranura de acceso viva, la lápida de uno al que se le quitó y el cuerpo cifrado con la clave de ahora.
+  Se lee **con el reloj de su época** y afirma, entre otras cosas, que **la clave de bóveda de antes de
+  migrar no abre nada**: la deuda congelada en bytes. El generador se borró, como manda la ADR 0022.
+- **Y los dos ayudantes que repetían producción se fueron.** Las pruebas de la A rotan con `RotarLasClaves`:
+  **136 líneas menos y 52 más**. De paso apareció otro hueco: `CrearProyecto` no se quedaba con la clave de
+  la personal, así que una bóveda recién creada no podía rotar hasta cerrarla y volver a abrirla.
 
-**No se fusiona hasta que Chrome publique**, y la razón no es de estilo: la primera versión que lleve la B
-dentro **ya escribe el formato 2**, y si eso llega antes de que la extensión de la A esté viva en las
-tiendas, una rotación deja al navegador de quien tiene acceso sin poder leer esa bóveda. La extensión no se
-puede forzar a actualizarse.
+### Y la mitad de la B que estaba sin hacer: la extensión
 
-### La secuencia que queda, cuando Chrome publique
+Al cruzar la rotación contra el espejo salieron **tres divergencias**, y la primera es la grave:
 
-1. Fusionar `clave-de-contenido-b` en `main` (ya lleva `main` dentro; al fusionar habrá conflicto en
-   `estado.md` y `sesiones.md`, porque las dos ramas escribieron el cierre de hoy: **se quedan los dos
-   lados**).
-2. `make comprobar`, `make e2e` y el `pnpm run comprobar` de la extensión.
-3. Publicar la **2.61.0**.
-4. **Actualizar el VPS otra vez** — es regla escrita en `CLAUDE.md`, «Cómo se compila».
-5. Y entonces **la primera rotación la decide el cliente**: nada pasa al formato 2 por su cuenta.
+1. **El espejo no podía leer una bóveda compartida del formato 2 en absoluto.** Diez de sus métodos
+   —`buscar`, `ver`, `poner`, `borrar`, la papelera, los sitios excluidos— pedían **la clave de bóveda** como
+   prueba de que la bóveda está abierta, y un titular del formato nuevo no la tiene. Ninguna cruzada lo
+   decía porque **el lado de Go nunca le había dado una**: solo producía compartidas del formato 1.
+2. **No tenía recogida de cadena**, así que tras una rotación la extensión de quien tiene acceso se quedaba
+   parada para siempre, igual que se quedaba la ventana antes de arreglarlo.
+3. **Y `clavesQueAbren` propagaba el error** en vez de seguir probando, así que contestaba «la bóveda no
+   cuadra por dentro» cuando lo que había que decir es «ciérrala y vuelve a abrirla».
 
-**Y un detalle del VPS para ese día**: con la A **lee** el formato 2 pero **no escribe**. Tras la primera
-rotación, `esfinge boveda ejecutar` sigue funcionando —es leer— pero un agente que intente `crear` o
-`editar` en esa bóveda se encontrará un «actualiza» hasta que el VPS tenga la B.
+Más una que me pillé a mí mismo: un atajo pasándole **la clave de la personal** a `laCadenaDe`, cuando el
+sobre `contenido` va envuelto con la **de bóveda**. Son dos pasos, como en Go.
 
+Lo cubren **dos cruzadas nuevas** —`compartidaRecoger` y `proyectoFundir`—, una por camino, las dos mutadas.
+
+Así que **la B está lista para fusionar** en cuanto la A esté publicada y la extensión aprobada en las
+tiendas. Lo único que no se puede comprobar desde aquí sigue siendo la flota mezclada de verdad.
+||||||| 71222ea
+||||||| 7d4d634
 ## Y `main` estuvo en rojo tres horas, por una prueba con dos relojes (2026-11-10)
 
 Lo encontró la puerta al correrla en `main` por otra cosa. Las tres pruebas de la fusión con dos épocas

@@ -888,6 +888,7 @@ export const esfinge = {
    * desde aquí no hay forma de borrarlo. La pantalla lo dice con esas palabras.
    */
   quitarAcceso: (titular: string) => llamar<void>("QuitarAcceso", titular),
+  rotarLaClave: () => llamar<void>("RotarLaClave"),
   /**
    * Le sube o le baja el permiso a quien ya tiene acceso (ADR 0058).
    *

@@ -8,8 +8,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/webcafeina/esfinge/internal/cripto"
 )
 
 // relojQueAvanza para el reloj de la bóveda donde se diga y devuelve con qué
@@ -448,63 +446,6 @@ func TestEntregarNoSeLlevaLoQueMeHanCompartido(t *testing.T) {
 	}
 }
 
-// conClavesDeContenido le pone a una bóveda de proyecto ya abierta su cadena de claves,
-// cifra el cuerpo con la de ahora y deja la ranura de ese titular llevando **la cadena**
-// en vez de la clave de bóveda (ADR 0059).
-//
-// Es un **fixture**, no una copia de producción: lo que escribe el formato 2 de verdad es
-// `RotarClaveDeContenido`, que llega con la publicación que empieza a escribir. Aquí hace
-// falta antes, porque la publicación que solo aprende a leer tiene que poder probar que
-// lee — y si no se pudiera montar el documento, la prueba tendría que esperar a después
-// de haberlo publicado. Usa solo primitivas que ya existen y no decide nada por su
-// cuenta.
-//
-// **No sube el número de formato**, y eso es deliberado: `FormatoQueSeLee` vale 1 hasta
-// que el espejo de TypeScript entienda la cadena, porque subirlo antes sería declarar que
-// se entiende un documento que el espejo aceptaría y después no sabría descifrar. Lo que
-// esta prueba ejercita es el **mecanismo** —la cadena desde la ranura, el cuerpo por
-// época, el titular sin clave de bóveda—, no la puerta de la versión, que ya tiene la
-// suya en `TestLaReglaDeLosDosFormatos`.
-func conClavesDeContenido(t *testing.T, p *Boveda, titular string, para Identidad) cadenaDeClaves {
-	t.Helper()
-	c, err := nuevaCadena(PorMigracion)
-	if err != nil {
-		t.Fatal(err)
-	}
-	crudo, err := c.bytes()
-	if err != nil {
-		t.Fatal(err)
-	}
-	sobreContenido, err := cripto.SellarTexto(crudo, p.llave, cripto.PerfilLlave)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sellada, err := SellarHaciaIdentidad(crudo, para)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cuando := ahora().UTC().Format(time.RFC3339)
-
-	p.mu.Lock()
-	p.doc.Epoca = c.Actual
-	p.claves = c
-	p.doc.Sobres = append(p.doc.Sobres,
-		sobre{Tipo: RanuraDeContenido, Creado: cuando, Contenedor: sobreContenido})
-	for i := range p.doc.Sobres {
-		if p.doc.Sobres[i].Tipo == TipoDeAcceso(titular) {
-			p.doc.Sobres[i] = sobre{Tipo: TipoDeAcceso(titular), Creado: cuando,
-				Contenedor: sellada, Codificacion: CodificacionSellada}
-		}
-	}
-	p.cuerpoSucio = true
-	err = p.guardar()
-	p.mu.Unlock()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return c
-}
-
 // **Un titular con ranura nueva abre la bóveda y no se lleva la clave de bóveda.**
 //
 // Es el objetivo entero de la ADR 0059, y hasta ahora era lo contrario: dar acceso
@@ -521,10 +462,17 @@ func TestElTitularDeUnaRanuraNuevaNoSeLlevaLaClaveDeBoveda(t *testing.T) {
 	if err := p.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Cloudflare", Secreto: "el testigo"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.PonerAcceso("1111222233334444", idAna); err != nil {
+	if err := darAccesoCompleto(t, p, "1111222233334444", idAna); err != nil {
 		t.Fatal(err)
 	}
-	c := conClavesDeContenido(t, p, "1111222233334444", idAna)
+	// **Se migra rotando de verdad**, que es lo que hace la ventana: la primera rotación
+	// es la que crea la cadena y resella la ranura que ya estaba.
+	if err := p.RotarLasClaves(map[string]Identidad{"1111222233334444": idAna}, PorMigracion); err != nil {
+		t.Fatal(err)
+	}
+	p.mu.Lock()
+	c := p.claves
+	p.mu.Unlock()
 	p.Cerrar()
 
 	deAna, err := AbrirCompartida(ruta, "1111222233334444", ana)
@@ -595,10 +543,12 @@ func TestDarAccesoEnElFormato2SellaLaCadena(t *testing.T) {
 	if err := p.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Cloudflare", Secreto: "el testigo"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.PonerAcceso("1111222233334444", idAna); err != nil {
+	if err := darAccesoCompleto(t, p, "1111222233334444", idAna); err != nil {
 		t.Fatal(err)
 	}
-	conClavesDeContenido(t, p, "1111222233334444", idAna)
+	if err := p.RotarLasClaves(map[string]Identidad{"1111222233334444": idAna}, PorMigracion); err != nil {
+		t.Fatal(err)
+	}
 
 	// El dueño da acceso a Berto **ya en el formato 2**.
 	if err := p.PonerAcceso("5555666677778888", idBerto); err != nil {
@@ -640,4 +590,20 @@ func TestDarAccesoEnElFormato2SellaLaCadena(t *testing.T) {
 	if deCarla.LlaveParaProyectos() != nil {
 		t.Error("el acceso que da un titular entrega una clave de bóveda que él no tiene")
 	}
+}
+
+// darAccesoCompleto hace las dos cosas que hace la ventana al dar un acceso: la ranura y
+// **el nombre de quién es**, con su huella. Hacen falta las dos para poder rotar después:
+// sin el nombre, la rotación no sabe de quién es esa ranura ni contra qué comparar las
+// llaves que dé el servidor, y se niega.
+func darAccesoCompleto(t *testing.T, p *Boveda, id string, quien Identidad) error {
+	t.Helper()
+	if err := p.PonerAcceso(id, quien); err != nil {
+		return err
+	}
+	return p.PonerTitular(Titular{
+		ID: id, Correo: id + "@ejemplo.com", Permiso: "editar",
+		Huella: HuellaDeIdentidad(quien.Suite, quien.Cifrado, quien.Firma),
+		Desde:  ahora().UTC().Format(time.RFC3339),
+	})
 }

@@ -160,16 +160,6 @@ export async function laCadenaDe(sobres: Sobre[], llave: string): Promise<Cadena
 /** De qué lado de una fusión salen los sobres que llevan claves. */
 export type LadoDeLasClaves = "los-dos" | "aqui" | "alla";
 
-/**
- * Dice si ese tipo de ranura lleva dentro con qué descifrar el cuerpo.
- *
- * Son dos: el sobre `contenido`, que es la cadena, y las de acceso, que la llevan sellada
- * hacia cada titular. Las demás envuelven **la clave de bóveda**, que no cambia nunca.
- */
-export function llevaClaves(tipo: string): boolean {
-  return tipo === RANURA_DE_CONTENIDO || esDeAcceso(tipo);
-}
-
 /** Si ese tipo es la ranura de alguien con acceso. Lo mismo que `IDDeAcceso(tipo) != ""`. */
 export function esDeAcceso(tipo: string): boolean {
   return tipo.startsWith("acceso:");

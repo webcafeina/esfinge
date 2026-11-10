@@ -259,9 +259,66 @@ func TestPaseoDeUnAccesoEntreDosCuentas(t *testing.T) {
 	// había vuelto a mirar. Es el mismo error que esperar a un estado en vez de al hecho.
 	esperarA(t, ana.a, "Correo de Zeri")
 
-	paso(t, 9, "Ana le quita el acceso")
+	// Lo que Beto tiene en la mano mientras su ranura es de las de antes de la 0059: **la
+	// clave de bóveda**. Se apunta aquí, antes de la primera rotación, porque es justo lo
+	// que rotar tiene que dejar inservible — y porque después ya no la tendrá, que es la
+	// otra mitad de la 0059.
+	betoDentro := beto.a.boveda()
+	if betoDentro == nil {
+		t.Fatal("Beto no tiene la bóveda compartida abierta")
+	}
+	laQueBetoTiene := betoDentro.LlaveParaProyectos()
+	if len(laQueBetoTiene) == 0 {
+		t.Fatal("Beto no tiene clave de bóveda, así que los pasos de abajo no comprueban lo que dicen")
+	}
+
+	paso(t, 9, "Ana cambia la clave de la bóveda y a Beto le sigue llegando")
+	// **Rotar no puede dejar parado a quien sigue teniendo acceso** (ADR 0059). Su cadena
+	// se queda corta en el acto, y la nueva solo la abre su identidad: si su pasada no
+	// supiera recogerla por su bóveda personal, aquí dejaría de llegarle **todo, para
+	// siempre**, y reabrir no lo arreglaría. Es lo que esto comprueba.
+	ana.usar(t)
+	if err := ana.a.RotarLaClave(); err != nil {
+		t.Fatalf("Ana no ha podido cambiar la clave de su proyecto: %v", err)
+	}
+	if err := ana.a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Después de cambiar la clave", Secreto: "y",
+	}); err != nil {
+		t.Fatalf("Ana no puede escribir tras cambiar la clave: %v", err)
+	}
+	alDia(t, ana.a, time.Now())
+
+	beto.usar(t)
+	esperarA(t, beto.a, "Después de cambiar la clave")
+	// **Y a partir de aquí Beto ya no tiene la clave de bóveda**, porque su ranura se
+	// reselló con la cadena: es el otro medio objetivo de la 0059, y sin esto rotar no le
+	// cortaría nunca a quien tuvo acceso.
+	if dentro := beto.a.boveda(); dentro == nil {
+		t.Fatal("Beto se ha quedado sin la bóveda compartida abierta tras la rotación")
+	} else if dentro.LlaveParaProyectos() != nil {
+		t.Error("tras la rotación, quien tiene acceso sigue llevándose la clave de bóveda")
+	}
+	// Y lo que él escriba sigue subiendo, que es la otra mitad de seguir dentro.
+	if err := beto.a.GuardarEnBoveda(boveda.Entrada{
+		Tipo: boveda.TipoCredencial, Titulo: "Beto tras la clave nueva", Secreto: "z",
+	}); err != nil {
+		t.Fatalf("Beto no puede escribir tras la rotación: %v", err)
+	}
+	alDia(t, beto.a, time.Now())
+	ana.usar(t)
+	esperarA(t, ana.a, "Beto tras la clave nueva")
+
+	paso(t, 10, "Ana le quita el acceso, que **vuelve a rotar la clave**")
+	ana.usar(t)
 	if err := ana.a.QuitarAcceso(titular); err != nil {
 		t.Fatalf("Ana no ha podido quitar el acceso: %v", err)
+	}
+	// **Y la bóveda ya no se abre con lo que Beto se llevó** (ADR 0059). Es lo que esta
+	// deuda prometía desde la 0052 y no hacía: hasta hoy, quien tuvo acceso conservaba la
+	// clave y abría también lo que se escribiera después.
+	if otra, err := boveda.AbrirConLaClave(rutaDeProyecto(ref), laQueBetoTiene); err == nil {
+		otra.Cerrar()
+		t.Fatal("la bóveda se sigue abriendo con la clave que tenía Beto: quitar el acceso no ha rotado nada")
 	}
 	quien, err = ana.a.QuienTiene()
 	if err != nil {
@@ -278,7 +335,7 @@ func TestPaseoDeUnAccesoEntreDosCuentas(t *testing.T) {
 	}
 	alDia(t, ana.a, time.Now())
 
-	paso(t, 10, "y Beto se queda fuera: se entera, sale y la bóveda se va de su equipo")
+	paso(t, 11, "y Beto se queda fuera: se entera, sale y la bóveda se va de su equipo")
 	beto.usar(t)
 	// **Se espera al hecho, no al estado** — y aquí eso no es una preferencia de estilo:
 	// desde la ADR 0053, `sin-acceso` es **transitorio**. Beto se entera, sale a su

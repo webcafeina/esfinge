@@ -172,7 +172,7 @@ var loQuePuedeCruzarElPuente = []string{
 	// ajena. Dar y quitar el acceso llegarán con su propia entrega, y entonces habrá
 	// que volver a pensar esta línea, no ampliarla de paso.
 	"AbrirCompartida", "BajarCompartida",
-	"DarAcceso", "QuitarAcceso", "QuienTiene", "AceptarAcceso",
+	"DarAcceso", "QuitarAcceso", "RotarLaClave", "QuienTiene", "AceptarAcceso",
 	"Compartidas", "DejarDeVerCompartida",
 
 	// El servidor de esta casa (ADR 0057 y 0058). Los dos se han pensado y no se han

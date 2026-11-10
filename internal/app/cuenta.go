@@ -907,6 +907,18 @@ func (a *App) nuevoSincronizador(b *boveda.Boveda) *sincro.Sincronizador {
 			defer a.cu.mu.Unlock()
 			return a.cu.sesion
 		},
+		// **Solo en una bóveda de otra persona** (ADR 0059): si el dueño rota, lo que
+		// baja va cifrado con una clave que ésta no tiene, y la cadena nueva solo la abre
+		// la identidad de quien tiene el acceso, o sea su bóveda personal. En la propia no
+		// hace falta: la clave de bóveda de cada documento sale de ese documento.
+		RecogerLaCadena: func(datos []byte) error {
+			if dueno == "" {
+				return nil
+			}
+			return a.conLaPersonal(func(mia *boveda.Boveda) error {
+				return b.RecogerCadenaDe(datos, mia)
+			})
+		},
 	}
 }
 

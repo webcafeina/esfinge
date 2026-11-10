@@ -5,33 +5,67 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
-## 2026-11-10 · La clave de contenido entera, y publicada la A
+## 2026-11-10 · La clave de contenido entera: las dos publicaciones
 
-La sesión larga de la ADR 0059: **acabada la publicación A** —la que solo aprende a leer—, **escrita la B**
-—la que escribe y rota, en la rama `clave-de-contenido-b`— y **publicada la 2.60.0**. El detalle de cada
-pieza está en [`estado.md`](estado.md), que se escribió a la vez; aquí va lo que conviene no perder.
-
-- **Lo que cambió el diseño**: con solo la clave de contenido **no se corta a nadie de los de antes**, porque
-  una ranura de acceso anterior a la 0059 lleva dentro la clave de bóveda y con ella se desenvuelve la
-  cadena. **Comprobado en código antes de decidir nada** —leía una entrada creada después de rotar— y
-  elegido por el cliente entre tres opciones: rotar cambia **las dos** claves.
-- **Tres divergencias del espejo**, y la grave no la podía ver ninguna prueba: **no podía leer una bóveda
-  compartida del formato 2 en absoluto**, porque diez de sus métodos pedían la clave de bóveda como prueba de
-  estar abierta. Ninguna cruzada lo decía porque **el lado de Go nunca le había dado una**. De ahí la regla:
-  *una cruzada solo compara lo que el otro lado le llega a dar.* Y con ella salió que **el espejo no tenía la
-  regla de la lápida** de la ADR 0052: mes y medio fundiendo distinto que Go.
-- **El sello se armaba en dos sitios**, así que el campo nuevo entró en uno y no en el otro — y el síntoma en
-  el equipo que lo recibe es «alguien ha editado el fichero a mano».
-- **Dos cosas mías**: una prueba con **dos relojes** que puso `main` en rojo a partir de las nueve de la
-  mañana, y su arreglo puesto en la rama donde estaba trabajando en vez de donde vive lo que arregla.
-- **De la publicación**: las dos puertas en verde sobre el commit de la etiqueta, las dos extensiones
-  enviadas sin tener que cancelar ninguna revisión, **Firefox publicada el mismo día** y Chrome en revisión.
-- **Y una regla nueva que pidió el cliente**: *publicar no acaba en la etiqueta, el VPS también se
-  actualiza*. Los Mac se actualizan solos y éste no, y es titular de la bóveda de Tempero, así que una
-  versión vieja acabaría sin saber leer lo que el Mac escribió. Se comprueba **leyendo esa bóveda**, no con
-  `--version`, que solo dice que el fichero se copió.
-- **Y de paso**: `gofmt` entra en la puerta y para, y se saldó la deuda de «Sincronizar ahora», que fallaba
-  si se pulsaba justo al conmutar de bóveda.
+- **Acabada la A** —la que solo aprende a leer— y **escrita la B** —la que escribe y rota—, con las tres
+  puertas en verde en cada paso: `make comprobar`, las 200 pruebas de la extensión y `make e2e`.
+- **La A1**: una ranura de acceso lleva dentro **la cadena**, así que **un titular que puede editar ya puede
+  dar acceso a otros** —lo decía la ADR 0052 y el código no lo permitía, porque `PonerAcceso` exigía la clave
+  de bóveda—; y la **fusión con dos épocas**, con los sobres que llevan claves resueltos en bloque.
+- **Y un fallo de verdad que destapó**: el sello se armaba **en dos sitios** —al guardar y al preparar la
+  subida—, así que el campo nuevo entró en uno y no en el otro: el documento declaraba una época y su sello
+  llevaba otra, que en el equipo que lo recibe es «alguien ha editado el fichero a mano». Y al lado, la
+  subida sellándose con la clave de bóveda, **que un titular no tiene**. Ahora hay un solo sitio.
+- **La A2, el espejo**, y con los dos núcleos de acuerdo `FormatoQueSeLee` pasó a 2. Eso hizo posibles **las
+  dos pruebas que la fase 0 no podía escribir**, porque el caso asimétrico no existía.
+- **Y una divergencia que llevaba mes y medio dentro**: Go decidía «del mismo segundo, gana la retirada»
+  (ADR 0052) y **el espejo no tenía esa regla**. Los dos núcleos fundían distinto ese caso —se pasarían la
+  bóveda sin fin, y la extensión le devolvería el acceso a quien lo había perdido— y la cruzada no lo decía
+  porque **su generador no hacía ni una ranura de acceso ni una lápida**. Ampliado, quitarle al espejo esa
+  regla pone en rojo 33 de 401 casos; quitarle el bloque, 121.
+- **La A4**: la ficha, y la **causa corregida en la 0052** — daba por imposible rotar por la maestra y la de
+  recuperación, y una bóveda de proyecto no tiene ninguna de las dos: lo que lo bloqueaba era la fusión.
+- **Y lo más importante del día, que cambió el diseño**: al ir a escribir la B se vio que **con solo la clave
+  de contenido no se corta a nadie de los de antes**. Una ranura anterior a la 0059 lleva dentro la clave de
+  bóveda, y con ella se desenvuelve el sobre que lleva la cadena. **Comprobado en código antes de decidir
+  nada** —leía una entrada creada después de rotar, con su secreto— y llevado al cliente con tres opciones.
+  Eligió **rotar las dos claves, siempre**.
+- De ahí tres piezas que no existirían si no: la bóveda de proyecto **se queda con la clave de la personal**
+  —la clave de bóveda de cada documento sale de ese documento—, **quien tiene acceso recoge la cadena** por su
+  bóveda personal en su propia sincronización, y al fundir con dos épocas **salen de un solo lado todas las
+  ranuras**.
+- **La B entera**: rotar, `QuitarAcceso` rotando al final —si rotar falla, el acceso sigue quitado—, el botón
+  de dos toques, el paseo de dos cuentas contra el servidor de verdad, y la documentación.
+- **Y las tres cosas que quedaban, cerradas el mismo día**: prueba de interfaz del botón, el vector congelado
+  del formato 2 con la deuda grabada en bytes, y **fuera los dos ayudantes que repetían producción** —136
+  líneas menos—. De paso: `CrearProyecto` no se quedaba con la clave de la personal.
+- **Dos fallos de la A1 que la B destapó**, invisibles mientras nada escribía el formato 2: `Abierta()`
+  preguntaba por la clave de bóveda —con una compartida nueva abierta, la ventana se habría comportado como
+  si estuviera cerrada— y un titular abierto por el camino viejo no sabía quién era.
+- **Y tres de método.** Una mutación puede ponerse roja **y verde** por el motivo equivocado: la del test que
+  paga la deuda pasaba porque no desactivaba la rotación, solo el apunte en memoria. Una prueba con **dos
+  relojes** falla a unas horas y no a otras —las de las épocas pasaban por la mañana y fallaban a las nueve—
+  y, mientras pasaban, dos lo hacían ejercitando el caso que no se quería probar. Y los selectores de una
+  prueba de interfaz **no se adivinan**: me inventé «Añadir» y `#entrada-titulo`.
+- **Y la mitad de la B que faltaba: la extensión.** Al cruzar la rotación contra el espejo salieron tres
+  divergencias, y la grave es que **el espejo no podía leer una bóveda compartida del formato 2 en
+  absoluto** —diez de sus métodos pedían la clave de bóveda como prueba de estar abierta—. No lo decía
+  ninguna cruzada porque **el lado de Go nunca le había dado una**. Con ella: la recogida de cadena en la
+  extensión, el error que manda a reabrir en vez de a buscar un fichero roto, y dos cruzadas nuevas, una por
+  camino. **La regla que deja: una cruzada solo compara lo que el otro lado le llega a dar.**
+- **De publicar la A, la 2.60.0**: las dos puertas en verde **sobre el commit de la etiqueta** —y ahí
+  apareció que `main` llevaba tres horas en rojo por una prueba con dos relojes cuyo arreglo se había quedado
+  en la rama de la B: *un arreglo se pone donde está lo que arregla*—. Las dos extensiones se enviaron sin
+  tener que cancelar ninguna revisión, **Firefox la publicó el mismo día** y **Chrome por la tarde**; con eso
+  se cumplieron las tres condiciones y **la B se fusionó**.
+- **El VPS también se actualizó**, y de ahí una regla que pidió el cliente y está en `CLAUDE.md`: **publicar
+  no acaba en la etiqueta**. Los Mac se actualizan solos y éste no, y es titular de la bóveda de Tempero, así
+  que una versión vieja acabaría sin saber leer lo que el Mac escribió. Se comprueba **leyendo esa bóveda**,
+  no con `--version`, que solo dice que el fichero se copió.
+- **Y de paso**: `gofmt` entra en la puerta y **para**, y se saldó la deuda de «Sincronizar ahora», que
+  fallaba si se pulsaba justo al conmutar de bóveda.
+- **Lo que queda no es trabajo: es la primera rotación, y la decide el cliente.** Nada pasa al formato 2 por
+  su cuenta. Y lo único no comprobable desde aquí sigue siendo la flota mezclada de verdad.
 
 ---
 
