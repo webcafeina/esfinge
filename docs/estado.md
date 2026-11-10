@@ -71,6 +71,24 @@ Lo cubren **dos cruzadas nuevas** —`compartidaRecoger` y `proyectoFundir`—, 
 Así que **la B está lista para fusionar** en cuanto la A esté publicada y la extensión aprobada en las
 tiendas. Lo único que no se puede comprobar desde aquí sigue siendo la flota mezclada de verdad.
 ||||||| 71222ea
+||||||| 7d4d634
+## Y `main` estuvo en rojo tres horas, por una prueba con dos relojes (2026-11-10)
+
+Lo encontró la puerta al correrla en `main` por otra cosa. Las tres pruebas de la fusión con dos épocas
+—que llegaron con la A1— **montaban el escenario con el reloj de verdad y lo ejercitaban con uno de
+mentira** puesto a las 09:00: lo que se compara es la fecha del sobre `contenido`, así que **a las 08:39
+pasaban y a las 09:05 no**. Se arreglaron por la mañana… **en la rama de la B**, y esa prueba es de la A: en
+`main` siguió rota hasta ahora.
+
+Dos cosas que deja, y la segunda es la que importa:
+
+- **El escenario entero va con el mismo reloj**, y si una prueba compara fechas que ella misma fabrica, hay
+  que preguntarse de qué reloj sale cada una. Es la familia de «un dato congelado leído con el reloj de
+  verdad caduca solo», con la diferencia de que esto **no falla siempre**: falla a unas horas.
+- **Un arreglo se pone donde está lo que arregla.** Éste tocaba una prueba de la A y se quedó en la rama de
+  la B porque era donde yo estaba trabajando; la puerta de la publicación lo habría parado, que es su
+  trabajo, pero tres horas más tarde y con la etiqueta ya empujada.
+
 ## `gofmt` entra en la puerta (2026-11-10)
 
 Era lo único de `make comprobar` que faltaba y lo que menos se nota solo: un bloque de campos desalineado

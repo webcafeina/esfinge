@@ -1292,3 +1292,41 @@ func TestUnProyectoLlegaAlOtroEquipo(t *testing.T) {
 		t.Fatalf("la bóveda personal del primer equipo tiene %q", got)
 	}
 }
+
+// **El botón de sincronizar espera a que haya sincronización** (deuda del 2026-10-07).
+//
+// Entre que se para la de una bóveda y arranca la de la otra hay un instante sin ninguna,
+// y ahí este botón contestaba «aquí no se está sincronizando»: un error que no significa
+// nada y que se arregla volviendo a pulsar. Pasa al entrar o salir de un proyecto y, desde
+// la ADR 0053, **al enterarse de que te han quitado un acceso** — que es justo cuando
+// alguien va a pulsarlo.
+func TestSincronizarAhoraEsperaAQueArranque(t *testing.T) {
+	a := Nueva("prueba", &sistemaFalso{})
+	a.cu.mu.Lock()
+	a.cu.sesion = "una sesión"
+	a.cu.mu.Unlock()
+
+	// Arranca 200 ms después, como cuando se conmuta de bóveda.
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		a.cu.mu.Lock()
+		a.cu.marcha = &sincroEnMarcha{}
+		a.cu.mu.Unlock()
+	}()
+	if _, err := a.laSincronizacion(); err != nil {
+		t.Fatalf("no ha esperado a que arrancara la sincronización: %v", err)
+	}
+}
+
+// Y **sin cuenta abierta no espera**: no va a arrancar ninguna, y tardar un segundo y
+// medio para decir lo mismo haría que el botón pareciera roto.
+func TestSincronizarAhoraSinCuentaNoEspera(t *testing.T) {
+	a := Nueva("prueba", &sistemaFalso{})
+	antes := time.Now()
+	if _, err := a.laSincronizacion(); err == nil {
+		t.Fatal("dice que se está sincronizando sin cuenta abierta")
+	}
+	if d := time.Since(antes); d > 300*time.Millisecond {
+		t.Errorf("ha tardado %v en decir que no hay cuenta", d)
+	}
+}

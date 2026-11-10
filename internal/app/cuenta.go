@@ -285,14 +285,48 @@ func (a *App) olvidarLaCuentaAqui() error {
 
 // SincronizarAhora pide una pasada sin esperar al reloj.
 func (a *App) SincronizarAhora() error {
-	a.cu.mu.Lock()
-	m := a.cu.marcha
-	a.cu.mu.Unlock()
-	if m == nil {
-		return errors.New("Aquí no se está sincronizando: abre la bóveda de la cuenta")
+	m, err := a.laSincronizacion()
+	if err != nil {
+		return err
 	}
 	m.vig.Ya()
 	return nil
+}
+
+// laSincronizacion devuelve la que hay, **esperando un momento si está arrancando**.
+//
+// Entre que se para la sincronización de una bóveda y arranca la de la otra hay un
+// instante sin ninguna, y ahí este botón contestaba «aquí no se está sincronizando», que
+// es un error que no significa nada y que se arregla volviendo a pulsar. Pasa al entrar o
+// salir de un proyecto y, desde la ADR 0053, **al enterarse de que te han quitado un
+// acceso**, que es justo cuando alguien va a pulsar. Lo destapó el paseo entre dos
+// cuentas, que moría de forma intermitente **por haber funcionado**.
+//
+// Un segundo y medio, en pasos cortos: es un hueco de milisegundos, así que esperar es
+// casi siempre no esperar, y si de verdad no hay cuenta abierta la frase sigue saliendo.
+func (a *App) laSincronizacion() (*sincroEnMarcha, error) {
+	for i := 0; i < 15; i++ {
+		a.cu.mu.Lock()
+		m := a.cu.marcha
+		a.cu.mu.Unlock()
+		if m != nil {
+			return m, nil
+		}
+		if i == 0 && !a.hayCuentaAbierta() {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return nil, errors.New("Aquí no se está sincronizando: abre la bóveda de la cuenta")
+}
+
+// hayCuentaAbierta dice si tiene sentido esperar a que arranque una sincronización: sin
+// sesión no va a arrancar ninguna, y esperar un segundo y medio para decir lo mismo haría
+// que el botón pareciera roto.
+func (a *App) hayCuentaAbierta() bool {
+	a.cu.mu.Lock()
+	defer a.cu.mu.Unlock()
+	return a.cu.sesion != ""
 }
 
 // SincronizarAunqueBorre repite la pasada aceptando una fusión que se lleve más de
@@ -300,11 +334,9 @@ func (a *App) SincronizarAhora() error {
 // borrarían media bóveda», que hasta la revisión del 2026-09-23 no tenía ninguna.
 // Vale para **una sola pasada**.
 func (a *App) SincronizarAunqueBorre() error {
-	a.cu.mu.Lock()
-	m := a.cu.marcha
-	a.cu.mu.Unlock()
-	if m == nil {
-		return errors.New("Aquí no se está sincronizando: abre la bóveda de la cuenta")
+	m, err := a.laSincronizacion()
+	if err != nil {
+		return err
 	}
 	m.s.UnaVezAunqueBorre()
 	m.vig.Ya()
