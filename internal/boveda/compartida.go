@@ -179,19 +179,28 @@ func (b *Boveda) AbrirSellado(sellado string) ([]byte, error) {
 
 // PonerAcceso le da acceso a una identidad, o se lo renueva.
 //
-// Renovar es lo que haría rotar la clave: el mismo miembro, el mismo tipo de ranura y
-// un contenedor nuevo con la clave nueva dentro. **Hoy nadie rota** —ver la cabecera
-// de este fichero—, así que renovar solo se usa cuando se vuelve a dar un acceso.
+// Renovar es lo que hace rotar la clave: el mismo miembro, el mismo tipo de ranura y
+// un contenedor nuevo con la cadena nueva dentro.
+//
+// **No pide la clave de bóveda** (ADR 0059): lo que hace falta para dar acceso es lo
+// mismo que hace falta para leer el cuerpo, y desde la 0059 no son la misma cosa. Un
+// titular con permiso de editar puede dar acceso a otros, que es lo que dice la ADR
+// 0052, y lo hace sellando la cadena que a él le sellaron.
 func (b *Boveda) PonerAcceso(id string, para Identidad) error {
 	if id == "" {
 		return errors.New("Falta decir a quién se le da el acceso")
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
-	sellado, err := SellarHaciaIdentidad(b.llave, para)
+	secreto, err := b.loQueAbreUnaRanuraDeAcceso()
+	if err != nil {
+		return err
+	}
+	defer cripto.Borrar(secreto)
+	sellado, err := SellarHaciaIdentidad(secreto, para)
 	if err != nil {
 		return err
 	}

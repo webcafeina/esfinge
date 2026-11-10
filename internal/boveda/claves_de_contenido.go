@@ -245,3 +245,38 @@ func laCadenaDe(doc documento, llave []byte) (cadenaDeClaves, error) {
 	defer cripto.Borrar(claro)
 	return leerCadena(claro)
 }
+
+// tieneCadenaPropia dice si la cadena de esta bóveda es de verdad —vive en su sobre
+// `contenido`— y no la degenerada del formato 1, cuya única clave es la de bóveda.
+//
+// Es la pregunta que decide **qué se sella dentro de una ranura de acceso**, y está
+// escrita una sola vez a propósito: la misma pregunta repartida por el código es el
+// patrón que este proyecto ya ha pagado tres veces.
+func (b *Boveda) tieneCadenaPropia() bool { return b.ranura(RanuraDeContenido) >= 0 }
+
+// loQueAbreUnaRanuraDeAcceso es el secreto que se sella hacia la identidad de quien
+// recibe el acceso: **la cadena entera** si esta bóveda la tiene, y la clave de bóveda
+// si todavía es del formato 1 (ADR 0059).
+//
+// La cadena entera, y no solo la época de ahora, porque al fundir hace falta poder
+// descifrar el propio fichero local, que puede haberse quedado en una época anterior.
+// Lo dice la cabecera de este fichero y es la razón de que esto sea una cadena.
+//
+// Las dos formas conviven: migrar no toca las ranuras que ya estaban, y una que lleva la
+// clave de bóveda desenvuelve la cadena igual. Quien decide cuál es, al abrir, es **el
+// claro** (ver `AbrirCompartidaBytes`), nunca el `codificacion` del JSON de fuera.
+func (b *Boveda) loQueAbreUnaRanuraDeAcceso() ([]byte, error) {
+	if b.tieneCadenaPropia() {
+		return b.claves.bytes()
+	}
+	// En el formato 1 la cadena es la degenerada, así que su única clave ya es la de
+	// bóveda: no hace falta mirar `b.llave` ni distinguir al dueño del titular.
+	k, hay := b.claves.clave(b.doc.Epoca)
+	if !hay {
+		// La época declarada sin su clave es el estado que no debería existir; se
+		// contesta como `guardar`, con la misma frase, en vez de sellar un secreto
+		// vacío que nadie podría usar.
+		return nil, ErrCerrada
+	}
+	return append([]byte(nil), k...), nil
+}

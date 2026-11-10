@@ -570,3 +570,74 @@ func TestElTitularDeUnaRanuraNuevaNoSeLlevaLaClaveDeBoveda(t *testing.T) {
 		t.Error("lo que Ana guardó no está")
 	}
 }
+
+// **Dar acceso en una bóveda del formato 2 sella la cadena, no la clave de bóveda**
+// (ADR 0059).
+//
+// Es la otra mitad de la prueba de arriba: ahí la ranura del titular la escribía el
+// fixture a mano, así que lo que quedaba sin comprobar era justo el camino de verdad —el
+// que recorre quien da el acceso—. Sin esto, migrar una bóveda arreglaría las ranuras
+// que ya estaban y el siguiente acceso volvería a regalar la clave de bóveda.
+//
+// Y con ello lo que la ADR 0052 dice y hasta hoy el código no permitía: **un titular con
+// permiso de editar puede dar acceso a otra persona**. Antes `PonerAcceso` exigía la
+// clave de bóveda, que es precisamente lo que un titular no tiene.
+func TestDarAccesoEnElFormato2SellaLaCadena(t *testing.T) {
+	_, ruta, llave := personalYProyecto(t)
+	ana, idAna := unaPersonal(t, "ana")
+	berto, idBerto := unaPersonal(t, "berto")
+	carla, idCarla := unaPersonal(t, "carla")
+
+	p, err := AbrirProyecto(ruta, llave)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Poner(Entrada{Tipo: TipoCredencial, Titulo: "Cloudflare", Secreto: "el testigo"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.PonerAcceso("1111222233334444", idAna); err != nil {
+		t.Fatal(err)
+	}
+	conClavesDeContenido(t, p, "1111222233334444", idAna)
+
+	// El dueño da acceso a Berto **ya en el formato 2**.
+	if err := p.PonerAcceso("5555666677778888", idBerto); err != nil {
+		t.Fatal(err)
+	}
+	p.Cerrar()
+
+	deBerto, err := AbrirCompartida(ruta, "5555666677778888", berto)
+	if err != nil {
+		t.Fatalf("Berto no abre con la ranura que le acaban de dar: %v", err)
+	}
+	defer deBerto.Cerrar()
+	if e := deBerto.Buscar("Cloudflare"); len(e) != 1 {
+		t.Fatalf("Berto abre y no ve las entradas: %d", len(e))
+	}
+	if deBerto.LlaveParaProyectos() != nil {
+		t.Error("dar acceso en el formato 2 sigue entregando la clave de bóveda")
+	}
+
+	// **Y un titular da acceso a otro.** Ana no tiene la clave de bóveda y aun así puede,
+	// que es lo que dice la ADR 0052 de quien puede editar.
+	deAna, err := AbrirCompartida(ruta, "1111222233334444", ana)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer deAna.Cerrar()
+	if err := deAna.PonerAcceso("9999aaaabbbbcccc", idCarla); err != nil {
+		t.Fatalf("un titular que puede editar no puede dar acceso a otra persona: %v", err)
+	}
+
+	deCarla, err := AbrirCompartida(ruta, "9999aaaabbbbcccc", carla)
+	if err != nil {
+		t.Fatalf("Carla no abre con la ranura que le dio Ana: %v", err)
+	}
+	defer deCarla.Cerrar()
+	if e := deCarla.Buscar("Cloudflare"); len(e) != 1 {
+		t.Fatalf("Carla abre y no ve las entradas: %d", len(e))
+	}
+	if deCarla.LlaveParaProyectos() != nil {
+		t.Error("el acceso que da un titular entrega una clave de bóveda que él no tiene")
+	}
+}
