@@ -226,9 +226,19 @@ No se cambian sin preguntar.
   el servidor deja de servir la bóveda y la copia de quien lo pierde se borra** (ADR 0053).
   **Ojo con lo que esa ficha dice y no se hizo**: decía que al revocar **se rota la clave de bóveda**, y eso
   no existe —`RetirarAcceso` solo pone la lápida, y `b.llave` no cambia nunca—. No fue un descuido: **el
-  formato no lo permite**, porque todas las ranuras envuelven esa misma clave y reenvolver la maestra y la de
-  recuperación exigiría tenerlas delante. Se decidió el 2026-10-21 arreglarlo con una **clave de contenido**,
-  y hasta entonces lo que protege es el 403 del servidor y el borrado de la copia.
+  formato no lo permite**, porque todas las ranuras envuelven esa misma clave. Se decidió el 2026-10-21
+  arreglarlo con una **clave de contenido**, y hasta entonces lo que protege es el 403 del servidor y el
+  borrado de la copia.
+  **Y ya tiene ficha, la ADR 0059, con la publicación A hecha el 2026-11-09.** Lo que hay que saber sin
+  abrirla: el cuerpo se cifra con una **clave de contenido** y la clave de bóveda envuelve **la cadena** de
+  todas las que ha habido, así que rotar es clave nueva, recifrar y resellar solo para los que quedan. **El
+  motivo que esta ficha daba era falso** —una bóveda de proyecto no tiene maestra ni clave de recuperación—:
+  lo que lo bloqueaba es **la fusión**, y por eso se guardan **todas** las claves y no solo la última, o un
+  equipo que vuelve de estar desconectado no puede descifrar su propio fichero. **Solo bóvedas de proyecto**,
+  **dos publicaciones** —leer y luego escribir, con dos constantes de formato— y **rotar al revocar y a
+  mano**, que el botón manual es lo que migra los accesos ya dados. De paso, **quien recibe un acceso deja de
+  llevarse la clave de bóveda** y **quien puede editar puede dar acceso a otros**, que la 0052 decía y el
+  código no permitía. **Rotar todavía no existe**: es la publicación B, así que la deuda sigue abierta.
   Lo que **no** se hace: borrar en remoto lo que ya se bajó —no se puede prometer— ni
   dejar que quien recibe borre la bóveda para todos.
   **Y tres cosas técnicas que cuestan caro si se tocan a ciegas.** La ranura de cada titular va **sellada

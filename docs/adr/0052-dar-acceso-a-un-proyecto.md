@@ -285,6 +285,14 @@ la que hará que rotar sea barato; lo que no se vio es que la maestra y la recup
 borra** de su equipo en la siguiente pasada (ADR 0053). Lo que no protege: quien tuvo acceso se llevó la
 clave de bóveda y la conserva, así que una copia del fichero que consiga por otro camino la abre.
 
+**Y ya tiene su ficha: la [0059](0059-la-clave-de-contenido.md)**, con la publicación A hecha el 2026-11-09.
+Al escribirla salió que **el párrafo de arriba se equivoca en la causa**: la maestra y la de recuperación no
+bloquean nada aquí, porque **una bóveda de proyecto no tiene ninguna de las dos** —su única ranura propia es
+la que abre la personal de su dueño (0050)— y el acceso compartido solo existe en ellas. Lo que lo bloqueaba
+de verdad es **la fusión**, y de ahí sale que haya que guardar **todas** las claves y no solo la última. La
+mitad que esta ficha acertó sigue acertada: la ranura sellada hacia la identidad pública es lo que hace que
+rotar sea barato.
+
 **Y se decidió arreglarlo** el 2026-10-21, con el cliente y con el coste delante: el cuerpo pasará a
 cifrarse con una **clave de contenido** envuelta aparte —bajo la clave de bóveda y bajo la identidad de cada
 titular—, y entonces rotar es clave de contenido nueva, recifrar el cuerpo y volver a sellar solo para los

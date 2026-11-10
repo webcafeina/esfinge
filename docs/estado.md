@@ -41,14 +41,25 @@ una lápida** —solo `maestra`, `recuperacion` y `pin`—. Ahora las hace en su
 épocas, y quitarle al espejo esa regla pone en rojo **33 de 401 casos**; quitarle la resolución en bloque,
 **121 de 401**.
 
-### Lo siguiente: la A3 y la A4
+### Hecha la A4: la ficha
 
-- **A4 · la ADR 0059 y `docs/decisiones.md`.** `docs/formato-boveda.md` ya está al día —el formato 2, la
-  cadena, la época y las dos reglas nuevas de la fusión—, y de paso llevaba **la misma regla de la lápida
-  sin escribir**: era el tercer sitio desalineado.
+[`docs/adr/0059-la-clave-de-contenido.md`](adr/0059-la-clave-de-contenido.md), con su línea en
+`decisiones.md`, el puntero desde la 0052 —y **la corrección de su causa**: no eran la maestra y la de
+recuperación, era la fusión— y el párrafo de `CLAUDE.md` con lo que hay que saber sin abrirla. Su sección de
+«Verificación» dice lo que se comprobó y **lo que no**, que es lo que hay que leer antes de la B.
+
+`docs/formato-boveda.md` ya estaba al día del paso anterior —el formato 2, la cadena, la época y las dos
+reglas nuevas de la fusión—, y de paso llevaba **la regla de la lápida sin escribir**: era el tercer sitio
+desalineado.
+
+### Lo que queda de la publicación A: nada que se pueda hacer hoy
+
 - **A3 · el vector congelado** de una bóveda de proyecto del formato 2, con dos épocas y un titular. **No se
   puede grabar todavía**: nada escribe el formato 2 hasta la publicación B, así que se graba allí con el
   código que lo escribe y se congela entonces.
+
+Así que **la A está lista para publicar** cuando el cliente quiera: se lee el formato 2, no se escribe, y
+nada de lo que hay crea una bóveda de ese formato.
 
 **Y una cosa de la B que no se puede probar hasta la B**, apuntada para no perderla: **`Fundir` tiene que
 adoptar el formato del remoto cuando sea mayor**. El documento que queda tras fundir lleva la época y el
