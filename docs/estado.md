@@ -70,6 +70,17 @@ Lo cubren **dos cruzadas nuevas** —`compartidaRecoger` y `proyectoFundir`—, 
 
 Así que **la B está lista para fusionar** en cuanto la A esté publicada y la extensión aprobada en las
 tiendas. Lo único que no se puede comprobar desde aquí sigue siendo la flota mezclada de verdad.
+||||||| 71222ea
+## `gofmt` entra en la puerta (2026-11-10)
+
+Era lo único de `make comprobar` que faltaba y lo que menos se nota solo: un bloque de campos desalineado
+compila, pasa los tests y solo lo ve quien abra el fichero. `internal/agente/protocolo.go` llevaba así quién
+sabe cuánto y lo encontró una lectura por casualidad; el mismo 2026-11-10 volvió a pasar con un fichero de
+pruebas.
+
+Va **primero** —es la comprobación más rápida— y **para**, que es la lección de las seis versiones con los
+tests en rojo: un aviso que no detiene nada deja de leerse. Y con `gofmt -l`, no con `go fmt`: el segundo
+**reescribe**, y una puerta informa, no toca.
 
 ## La clave de contenido: hecha la A1 entera, ADR 0059 (2026-11-09 y 10)
 
