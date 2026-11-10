@@ -572,7 +572,12 @@ func TestCruzadaFusionAlAzar(t *testing.T) {
 			b = &x
 		}
 		cont := fundirContenido(l, r, b, ahoraT, &f)
-		sobres := fundirSobres(c.SobresL, c.SobresR, c.SobresB, c.B != nil)
+		// `clavesDeLosDos` porque es lo que vale en el formato 1 —los dos lados en la
+		// misma época— y es lo único que el espejo sabe hacer todavía: su `fundirSobres`
+		// no tiene ese parámetro hasta la A2 de la ADR 0059. **Cuando lo tenga, aquí hay
+		// que generar casos con las dos épocas**, o esta cruzada dirá que los dos lados
+		// funden igual sin haber tocado el caso que importa.
+		sobres := fundirSobres(c.SobresL, c.SobresR, c.SobresB, c.B != nil, clavesDeLosDos)
 		quiero := resultadoDeFusion{canonDeContenido(t, cont), canonDeSobres(t, sobres), f.Traidas, f.Conflictos}
 		if suyos[i] != quiero {
 			fallos++

@@ -280,3 +280,96 @@ func (b *Boveda) loQueAbreUnaRanuraDeAcceso() ([]byte, error) {
 	}
 	return append([]byte(nil), k...), nil
 }
+
+// ponerEpoca deja la cadena y la época declarada **a la vez**, y se niega si esa cadena
+// no lleva esa clave.
+//
+// **Es el riesgo número uno de la ADR 0059.** Una época declarada sin la clave con la que
+// se va a cifrar el cuerpo no da un error al escribir: da un fichero que no vuelve a
+// abrirse nunca, y con un mensaje —«alguien ha editado el fichero a mano»— que manda a
+// mirar donde no hay nada. Por eso las dos cosas no se pueden poner por separado, y por
+// eso esto es una función y no dos asignaciones en cada sitio que las necesite.
+func (b *Boveda) ponerEpoca(claves cadenaDeClaves, epoca string) error {
+	if _, hay := claves.clave(epoca); !hay {
+		return fmt.Errorf("%w (la época %q no tiene su clave en la cadena)", ErrManipulada, epoca)
+	}
+	b.claves, b.doc.Epoca = claves, epoca
+	return nil
+}
+
+// clavesQueAbren devuelve una cadena con la que se puede descifrar ese documento, que
+// puede no ser la de aquí: al fundir, el otro lado pudo volver a cifrar la bóveda.
+//
+// El dueño la saca **del propio documento**, porque el sobre `contenido` va envuelto con
+// la clave de bóveda y ésa no cambia nunca. Un titular no puede: la suya se la sellaron
+// hacia su identidad, y para recoger la nueva hace falta su bóveda personal, que al
+// fundir no está delante. A él se le dice que cierre y vuelva a abrir, que es por donde
+// pasa su identidad.
+func (b *Boveda) clavesQueAbren(doc documento) (cadenaDeClaves, error) {
+	if _, hay := b.claves.clave(doc.Epoca); hay {
+		return b.claves, nil
+	}
+	if b.sinClaveDeBoveda() {
+		return cadenaDeClaves{}, ErrEpocaQueNoSeTiene
+	}
+	claves, err := laCadenaDe(doc, b.llave)
+	if err != nil {
+		return cadenaDeClaves{}, err
+	}
+	if _, hay := claves.clave(doc.Epoca); !hay {
+		return cadenaDeClaves{}, ErrEpocaQueNoSeTiene
+	}
+	return claves, nil
+}
+
+// ladoDeLasClaves dice de qué lado de una fusión salen los sobres que llevan claves.
+type ladoDeLasClaves int
+
+const (
+	// clavesDeLosDos es que los dos lados están en la misma época y no hay nada que
+	// forzar: cada sobre se decide por su cuenta, como siempre. Es el caso normal y el
+	// único que existe en el formato 1.
+	clavesDeLosDos ladoDeLasClaves = iota
+	clavesDeAqui
+	clavesDeAlla
+)
+
+// llevaClaves dice si ese tipo de ranura lleva dentro con qué descifrar el cuerpo.
+//
+// Son dos: el sobre `contenido`, que es la cadena, y las de acceso, que llevan la cadena
+// sellada hacia cada titular. Las demás —la maestra, la de recuperación, la del sistema,
+// `boveda-principal`— envuelven la **clave de bóveda**, que no cambia nunca, así que una
+// rotación no las toca y la fusión tampoco tiene que tratarlas distinto.
+func llevaClaves(tipo string) bool {
+	return tipo == RanuraDeContenido || IDDeAcceso(tipo) != ""
+}
+
+// ladoQueGanaLaEpoca dice con qué clave queda cifrado el cuerpo cuando los dos lados
+// están en épocas distintas, o sea cuando uno de los dos ha rotado.
+//
+// Lo decide **el sobre `contenido`**, que es quien lleva la cadena, y con las dos reglas
+// del final de `fundirSobres`: el más reciente, y a igualdad de fecha el contenedor
+// mayor. **Sin base, a propósito**: una rotación siempre escribe un `contenido` nuevo, así
+// que «el más reciente» y «el que cambió respecto de la base» dicen aquí lo mismo, y
+// pedir la base obligaría a descifrarla antes de saber con qué clave se descifra.
+//
+// Y es **el único sitio** donde se decide: los sobres con claves no vuelven a pasar por
+// las reglas de las ranuras. La misma regla escrita dos veces se desalinea sola, y aquí
+// desalinearse significa un cuerpo cifrado con una clave que la ranura de alguien no
+// lleva dentro.
+func ladoQueGanaLaEpoca(l, r []sobre) ladoDeLasClaves {
+	il, ir := indiceEnSobres(l, RanuraDeContenido), indiceEnSobres(r, RanuraDeContenido)
+	switch {
+	case il < 0 && ir < 0:
+		return clavesDeLosDos
+	case ir < 0:
+		return clavesDeAqui
+	case il < 0:
+		return clavesDeAlla
+	}
+	sl, sr := l[il], r[ir]
+	if sr.Creado > sl.Creado || (sr.Creado == sl.Creado && sr.Contenedor > sl.Contenedor) {
+		return clavesDeAlla
+	}
+	return clavesDeAqui
+}

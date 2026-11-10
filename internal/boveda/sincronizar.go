@@ -53,6 +53,17 @@ var (
 	// devuelve una más vieja que la que ya se vio. Puede ser un fallo del servidor
 	// o alguien sirviendo una copia vieja; en los dos casos no se funde.
 	ErrRetroceso = errors.New("El servidor ha devuelto una versión de la bóveda que no cuadra")
+
+	// ErrEpocaQueNoSeTiene es que el otro lado ha vuelto a cifrar la bóveda con una
+	// clave que aquí no está (ADR 0059).
+	//
+	// Le pasa a un **titular**: su cadena se la sellaron hacia su identidad, y recoger la
+	// nueva pasa por su bóveda personal, que al fundir no está delante. Al dueño no le
+	// pasa, porque la saca del propio documento con la clave de bóveda.
+	//
+	// **No es `ErrManipulada` a propósito.** Lo que hay que hacer es cerrar y volver a
+	// abrir; «alguien ha editado el fichero a mano» manda a mirar donde no hay nada.
+	ErrEpocaQueNoSeTiene = errors.New("Esta bóveda se ha vuelto a cifrar; ciérrala y vuelve a abrirla para seguir")
 	// ErrMuchosBorrados: la fusión se llevaría más de la mitad de las entradas.
 	ErrMuchosBorrados = errors.New("Juntar los cambios de otro equipo borraría más de la mitad de la bóveda")
 )
@@ -239,10 +250,6 @@ func (b *Boveda) prepararSubida(version int64, cambio *sobre) ([]byte, int64, er
 	}
 	doc := b.doc
 	doc.Sobres = nil
-	sel := sello{
-		ID: doc.ID, Serie: doc.Serie, Sincro: version, Cuerpo: huellaDe(doc.Cuerpo),
-		Huellas: map[string]string{}, Sobres: map[string]string{},
-	}
 	puesto := false
 	for _, s := range b.doc.Sobres {
 		if ranurasLocales[s.Tipo] {
@@ -252,19 +259,19 @@ func (b *Boveda) prepararSubida(version int64, cambio *sobre) ([]byte, int64, er
 			s, puesto = *cambio, true
 		}
 		doc.Sobres = append(doc.Sobres, s)
-		sel.Huellas[s.Tipo] = huellaDe(s.Contenedor)
-		sel.Sobres[s.Tipo] = huellaDeSobre(s)
 	}
 	if cambio != nil && !puesto {
 		doc.Sobres = append(doc.Sobres, *cambio)
-		sel.Huellas[cambio.Tipo] = huellaDe(cambio.Contenedor)
-		sel.Sobres[cambio.Tipo] = huellaDeSobre(*cambio)
 	}
+	sel := sello{Sincro: version}
+	sel.ponerLoQueSella(doc, doc.Sobres)
 	crudo, err := json.Marshal(sel)
 	if err != nil {
 		return nil, 0, err
 	}
-	doc.Sello, err = cripto.SellarTexto(crudo, b.llave, cripto.PerfilLlave)
+	// **Con la clave de la época, no con la de bóveda** (ADR 0059): es la que tiene al
+	// otro lado quien va a abrir esto, y es la única que tiene un titular.
+	doc.Sello, err = cripto.SellarTexto(crudo, b.claveActual(), cripto.PerfilLlave)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -410,7 +417,18 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	if docR.ID != b.doc.ID {
 		return Fusion{}, ErrOtraBoveda
 	}
-	selR, contR, err := desempaquetar(docR, b.claves)
+	// **Las dos épocas** (ADR 0059). Mientras los dos lados estén en la misma clave de
+	// contenido esto no hace nada, que es el caso normal y el único que existe en el
+	// formato 1: `clavesQueAbren` devuelve la de aquí y el lado es «los dos».
+	clavesR, err := b.clavesQueAbren(docR)
+	if err != nil {
+		return Fusion{}, err
+	}
+	lado := clavesDeLosDos
+	if docR.Epoca != b.doc.Epoca {
+		lado = ladoQueGanaLaEpoca(b.doc.Sobres, docR.Sobres)
+	}
+	selR, contR, err := desempaquetar(docR, clavesR)
 	if err != nil {
 		return Fusion{}, err
 	}
@@ -423,9 +441,13 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	var sobresB []sobre
 	if len(base) > 0 {
 		if docB, err := leerDocumento(base); err == nil && docB.ID == b.doc.ID {
-			if _, c, err := desempaquetar(docB, b.claves); err == nil {
-				contB = &c
-				sobresB = docB.Sobres
+			// La base puede ser de una tercera época: la de antes de que alguien
+			// rotara. Se abre con lo que la abra, y si no se abre se funde sin ella.
+			if clavesB, err := b.clavesQueAbren(docB); err == nil {
+				if _, c, err := desempaquetar(docB, clavesB); err == nil {
+					contB = &c
+					sobresB = docB.Sobres
+				}
 			}
 		}
 	}
@@ -433,7 +455,7 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	ahoraT := ahora().UTC()
 	var f Fusion
 	cont := fundirContenido(b.cont, contR, contB, ahoraT, &f)
-	sobres := fundirSobres(b.doc.Sobres, docR.Sobres, sobresB, contB != nil)
+	sobres := fundirSobres(b.doc.Sobres, docR.Sobres, sobresB, contB != nil, lado)
 
 	f.Cambio = !igualJSON(normal(cont), normal(b.cont)) || !mismasRanuras(sobres, b.doc.Sobres)
 	f.Subir = !igualJSON(normal(cont), normal(contR)) || !mismasRanuras(sinLocales(sobres), sinLocales(docR.Sobres))
@@ -479,12 +501,20 @@ func (b *Boveda) Fundir(remoto []byte, version int64, base []byte, o OpcionesDeF
 	// siguiente guardado —cambiar cualquier cosa— la escribiría sin que nadie
 	// hubiera decidido eso. Con el error, quien llama vuelve a sincronizar, que es
 	// justo lo que hay que hacer.
-	contAntes, sobresAntes, sucioAntes := b.cont, b.doc.Sobres, b.cuerpoSucio
+	antes := b.apuntarComoEsta()
 	b.cont = cont
 	b.doc.Sobres = sobres
 	b.cuerpoSucio = true
+	// Y si la época que gana es la de allí, el cuerpo se vuelve a cifrar con **su**
+	// clave: la cadena y la época declarada se ponen a la vez (ver `ponerEpoca`).
+	if lado == clavesDeAlla {
+		if err := b.ponerEpoca(clavesR, docR.Epoca); err != nil {
+			b.reponer(antes)
+			return f, err
+		}
+	}
 	if err := b.guardar(); err != nil {
-		b.cont, b.doc.Sobres, b.cuerpoSucio = contAntes, sobresAntes, sucioAntes
+		b.reponer(antes)
 		f.Cambio, f.Subir = false, false
 		return f, err
 	}
@@ -596,7 +626,7 @@ func canon(e Entrada) string {
 // esRetirada dice si ese sobre es la lápida de una ranura que se quitó (ADR 0052).
 func esRetirada(s sobre) bool { return s.Codificacion == CodificacionRetirada }
 
-func fundirSobres(l, r, b []sobre, hayBase bool) []sobre {
+func fundirSobres(l, r, b []sobre, hayBase bool, lado ladoDeLasClaves) []sobre {
 	porTipo := func(ss []sobre) map[string]sobre {
 		m := map[string]sobre{}
 		for _, s := range ss {
@@ -619,40 +649,93 @@ func fundirSobres(l, r, b []sobre, hayBase bool) []sobre {
 		sl, enL := mL[tipo]
 		sr, enR := mR[tipo]
 		sb, enB := mB[tipo]
-		switch {
-		case ranurasLocales[tipo] || !enR:
-			out = append(out, sl)
-		case !enL:
-			out = append(out, sr)
-		case sl == sr:
-			out = append(out, sl)
-		case hayBase && enB && sl == sb:
-			out = append(out, sr)
-		case hayBase && enB && sr == sb:
-			out = append(out, sl)
-		// **Del mismo segundo, gana la retirada** (ADR 0052). Quitarle el acceso a
-		// alguien deja una lápida en su ranura, y la regla de abajo —a igualdad de
-		// fecha, el contenedor mayor— se la llevaría por delante, porque una lápida
-		// tiene el contenedor vacío y eso ordena el último. Las fechas van a
-		// segundos: dar acceso y quitarlo en el mismo no es raro al probarlo, y
-		// decidirlo por la cadena sería decidirlo a cara o cruz.
-		//
-		// Volver a dar el acceso después **sí** gana, porque entonces la viva es de
-		// un segundo posterior y manda la regla de abajo. Por eso esto es un empate
-		// y no «la retirada gana siempre».
-		case sr.Creado == sl.Creado && esRetirada(sr) != esRetirada(sl):
-			if esRetirada(sr) {
-				out = append(out, sr)
-			} else {
-				out = append(out, sl)
+		// **Los sobres que llevan claves salen de un solo lado, y todos del mismo**
+		// (ADR 0059). Resolviéndolos uno por uno, el cuerpo puede quedar cifrado con la
+		// clave de un lado y la ranura de un titular llevar dentro la del otro: esa
+		// persona abre su sobre, saca una cadena que no tiene la época del cuerpo y
+		// **no abre su propia bóveda**. Por eso esto no es una optimización ni un
+		// detalle de orden: es la diferencia entre fundir y perder una bóveda.
+		if lado != clavesDeLosDos && llevaClaves(tipo) {
+			if s, queda := deUnSoloLado(tipo, sl, sr, enL, enR, lado,
+				elQueGana(tipo, sl, sr, sb, enL, enR, enB, hayBase)); queda {
+				out = append(out, s)
 			}
-		case sr.Creado > sl.Creado || (sr.Creado == sl.Creado && sr.Contenedor > sl.Contenedor):
-			out = append(out, sr)
-		default:
-			out = append(out, sl)
+			continue
 		}
+		out = append(out, elQueGana(tipo, sl, sr, sb, enL, enR, enB, hayBase))
 	}
 	return out
+}
+
+// deUnSoloLado resuelve un sobre que lleva claves, cuando los dos lados están en épocas
+// distintas. `gana` es lo que dirían las reglas de siempre, que aquí sirve para una sola
+// cosa y no para elegir el contenedor: decir si esa ranura sigue viva.
+func deUnSoloLado(tipo string, sl, sr sobre, enL, enR bool, lado ladoDeLasClaves, gana sobre) (sobre, bool) {
+	delLado, hay := sl, enL
+	if lado == clavesDeAlla {
+		delLado, hay = sr, enR
+	}
+	// El sobre `contenido` **es** la cadena: sale del lado que gana la época y no se
+	// mira nada más. Volver a decidirlo con las reglas de las ranuras sería tener la
+	// misma regla en dos sitios, y ya se sabe lo que hacen esas.
+	if tipo == RanuraDeContenido {
+		return delLado, hay
+	}
+	// Una ranura de acceso tiene **dos cosas que decidir y no son la misma**. Si sigue
+	// viva lo dicen las reglas de siempre, porque una lápida no se resucita ni por el
+	// lado que pone la época —si no, quitarle el acceso a alguien y rotar en otro equipo
+	// se lo devolvería—. Qué lleva dentro lo dice la época, porque con la cadena del
+	// otro lado esa persona no abriría.
+	if esRetirada(gana) {
+		return gana, true
+	}
+	// Y si el lado que pone la época no tiene ranura viva para esa persona —se le dio el
+	// acceso aquí mientras allí se rotaba—, la ranura **se cae**: lo del otro lado lleva
+	// una clave con la que el cuerpo no se abre, y aquí no se puede sellar la buena,
+	// porque hace falta la identidad de esa persona y **una fusión elige contenedores,
+	// nunca fabrica cifrado**. El acceso se vuelve a dar, que es un clic, y mientras no
+	// se dé la lista de quién tiene acceso dice la verdad.
+	if !hay || esRetirada(delLado) {
+		return sobre{}, false
+	}
+	return delLado, true
+}
+
+// elQueGana son las reglas de siempre: a tres bandas con la base, y si no, el más
+// reciente.
+func elQueGana(tipo string, sl, sr, sb sobre, enL, enR, enB, hayBase bool) sobre {
+	switch {
+	case ranurasLocales[tipo] || !enR:
+		return sl
+	case !enL:
+		return sr
+	case sl == sr:
+		return sl
+	case hayBase && enB && sl == sb:
+		return sr
+	case hayBase && enB && sr == sb:
+		return sl
+
+	// **Del mismo segundo, gana la retirada** (ADR 0052). Quitarle el acceso a
+	// alguien deja una lápida en su ranura, y la regla de abajo —a igualdad de
+	// fecha, el contenedor mayor— se la llevaría por delante, porque una lápida
+	// tiene el contenedor vacío y eso ordena el último. Las fechas van a
+	// segundos: dar acceso y quitarlo en el mismo no es raro al probarlo, y
+	// decidirlo por la cadena sería decidirlo a cara o cruz.
+	//
+	// Volver a dar el acceso después **sí** gana, porque entonces la viva es de
+	// un segundo posterior y manda la regla de abajo. Por eso esto es un empate
+	// y no «la retirada gana siempre».
+	case sr.Creado == sl.Creado && esRetirada(sr) != esRetirada(sl):
+		if esRetirada(sr) {
+			return sr
+		}
+		return sl
+	case sr.Creado > sl.Creado || (sr.Creado == sl.Creado && sr.Contenedor > sl.Contenedor):
+		return sr
+	default:
+		return sl
+	}
 }
 
 func fundirContenido(l, r contenido, b *contenido, ahora time.Time, f *Fusion) contenido {
@@ -1041,4 +1124,32 @@ func fundirSecciones(l, r, b map[string]json.RawMessage) map[string]json.RawMess
 		return nil
 	}
 	return out
+}
+
+// comoEstaba es lo que la fusión cambia en memoria, para reponerlo si el guardado falla.
+//
+// **Es una estructura y no cinco variables sueltas** porque esto ya ha crecido una vez
+// —la época y la cadena, ADR 0059— y lo que se escribe por separado se olvida por
+// separado: dejar puesta la fusión con el guardado fallido hace que la ventana enseñe una
+// bóveda que no está en ninguna parte, y que el cambio siguiente la escriba sin que nadie
+// lo haya decidido.
+type comoEstaba struct {
+	cont    contenido
+	sobres  []sobre
+	sucio   bool
+	claves  cadenaDeClaves
+	epoca   string
+	formato int
+}
+
+func (b *Boveda) apuntarComoEsta() comoEstaba {
+	return comoEstaba{
+		cont: b.cont, sobres: b.doc.Sobres, sucio: b.cuerpoSucio,
+		claves: b.claves, epoca: b.doc.Epoca, formato: b.doc.Formato,
+	}
+}
+
+func (b *Boveda) reponer(x comoEstaba) {
+	b.cont, b.doc.Sobres, b.cuerpoSucio = x.cont, x.sobres, x.sucio
+	b.claves, b.doc.Epoca, b.doc.Formato = x.claves, x.epoca, x.formato
 }

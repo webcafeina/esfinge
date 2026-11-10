@@ -871,16 +871,7 @@ func (b *Boveda) guardar() error {
 		b.doc.Cuerpo = cuerpo
 	}
 
-	b.sel.ID = b.doc.ID
-	b.sel.Serie = b.doc.Serie
-	b.sel.Epoca = b.doc.Epoca
-	b.sel.Cuerpo = huellaDe(b.doc.Cuerpo)
-	b.sel.Huellas = map[string]string{}
-	b.sel.Sobres = map[string]string{}
-	for _, s := range b.doc.Sobres {
-		b.sel.Huellas[s.Tipo] = huellaDe(s.Contenedor)
-		b.sel.Sobres[s.Tipo] = huellaDeSobre(s)
-	}
+	b.sel.ponerLoQueSella(b.doc, b.doc.Sobres)
 	crudoSello, err := json.Marshal(b.sel)
 	if err != nil {
 		b.doc.Serie--
@@ -1034,6 +1025,27 @@ func (b *Boveda) cerrada() bool { return b.claves.vacia() }
 // bóveda abierta trae las dos—, y dejan de valerlo en cuanto un titular abra con su
 // cadena y sin la clave de bóveda.
 func (b *Boveda) sinClaveDeBoveda() bool { return b.llave == nil }
+
+// ponerLoQueSella deja en el sello lo que describe al documento: su serie, su época, la
+// huella del cuerpo y la de cada sobre.
+//
+// **Un solo sitio, y no es cosmética.** Esto hace falta al guardar y al preparar una
+// subida, y escrito dos veces ya se desalineó: la época de la ADR 0059 se añadió al
+// guardar y no al subir, así que el documento que salía declaraba una época y su sello
+// llevaba otra — y eso en el equipo que lo recibe es `ErrManipulada`, o sea «alguien ha
+// editado el fichero a mano» por una línea que faltaba aquí.
+func (sel *sello) ponerLoQueSella(doc documento, sobres []sobre) {
+	sel.ID = doc.ID
+	sel.Serie = doc.Serie
+	sel.Epoca = doc.Epoca
+	sel.Cuerpo = huellaDe(doc.Cuerpo)
+	sel.Huellas = map[string]string{}
+	sel.Sobres = map[string]string{}
+	for _, s := range sobres {
+		sel.Huellas[s.Tipo] = huellaDe(s.Contenedor)
+		sel.Sobres[s.Tipo] = huellaDeSobre(s)
+	}
+}
 
 // claveActual es la clave con la que se cifra el cuerpo ahora mismo.
 //

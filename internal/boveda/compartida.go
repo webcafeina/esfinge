@@ -340,7 +340,13 @@ func AbrirCompartidaBytes(ruta string, datos []byte, id string, personal *Boveda
 // indiceDeRanura es `(*Boveda).ranura` sobre un documento suelto: hace falta antes de
 // tener la bóveda, que es el caso de abrir.
 func indiceDeRanura(doc documento, tipo string) int {
-	for i, s := range doc.Sobres {
+	return indiceEnSobres(doc.Sobres, tipo)
+}
+
+// indiceEnSobres es lo mismo sobre una lista de sobres suelta, que es lo que tiene
+// delante la fusión: ahí los dos lados son listas y todavía no hay documento de salida.
+func indiceEnSobres(ss []sobre, tipo string) int {
+	for i, s := range ss {
 		if s.Tipo == tipo {
 			return i
 		}
