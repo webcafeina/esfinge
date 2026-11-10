@@ -21,30 +21,39 @@ de que **el formato 1 sigue saliendo byte a byte igual**, porque el espejo de Ty
 | **Dar acceso** · `3d9e102` | Una ranura de acceso lleva dentro **la cadena**, y por eso **un titular que puede editar puede dar acceso a otros** — `PonerAcceso` exigía la clave de bóveda, que es justo lo que no tiene |
 | **La fusión** · `3cbc517` | Dos épocas, con los sobres que llevan claves resueltos **en bloque** |
 
-### Lo siguiente: la A2, el espejo de TypeScript
+### Hecha también la A2: el espejo, y el formato 2 ya se lee
 
-Sigue a Go línea a línea: `navegador/src/nucleo/claves.ts` *(nuevo)* · `boveda.ts` · `compartida.ts` ·
-`fundir.ts`. Y **solo cuando esté, los dos formatos suben a 2, los dos a la vez**.
+`57dbb5e`. El espejo de TypeScript hace lo mismo que Go —`navegador/src/nucleo/claves.ts` *(nuevo)*,
+`boveda.ts`, `fundir.ts`, `cruzada.ts`—, y con los dos núcleos de acuerdo **`FormatoQueSeLee` vale 2 y
+`FormatoQueSeEscribe` sigue en 1**: una bóveda con claves de contenido se abre entera, se dice que no se
+puede escribir con la frase que ya existe, y **nada la crea todavía**.
 
-**Cinco cosas que la A2 tiene que llevar dentro**, y las tres últimas son deuda que se ha dejado a
-propósito porque **hoy no se puede probar**:
+Con eso se han podido escribir **las dos pruebas que la fase 0 no podía**, porque el caso asimétrico no
+existía: una bóveda de un formato que solo se lee se abre, se lee y no se guarda, y **fundir se niega con un
+remoto de ese formato** —sin esa guarda, fundir, que acaba guardando, escribiría un fichero declarando el
+formato de aquí con la época del otro lado dentro—. Las dos, mutadas.
 
-1. **`leerDocumento` del espejo reconstruye el objeto campo a campo**, así que sin añadir `epoca` ahí un
-   documento del formato 2 **la pierde al guardarse**. Es la trampa de `Extra` con otra cara.
-2. **El sello del espejo también lleva `epoca`**, y se escribe al guardar **y al preparar la subida**. En Go
-   eso costó un fallo hoy mismo: estaba en un sitio y no en el otro, y el síntoma en el equipo que recibe es
-   «alguien ha editado el fichero a mano».
-3. **`fundirSobres` gana el parámetro del lado**, y entonces **`TestCruzadaFusionAlAzar` tiene que generar
-   casos con dos épocas** (hay un comentario en `cruzada_test.go` diciéndolo). Sin eso la cruzada dirá que
-   los dos núcleos funden igual sin haber tocado el caso que importa.
-4. **`Fundir` tiene que negarse con un remoto de un formato que se sabe leer y no escribir**, que es
-   exactamente lo que va a existir en la publicación A: `FormatoQueSeLee = 2` y `FormatoQueSeEscribe = 1`.
-   Hoy `leerDocumento` rechaza antes cualquier formato 2, así que esa guarda **no se puede probar** y no se
-   ha escrito: escribirla ahora sería dejarla sin prueba hasta después de publicarla, que es el error que la
-   fase 0 vino a arreglar.
-5. **Y adoptar el formato del remoto cuando sea mayor** (`b.doc.Formato`), por lo mismo: el documento que
-   queda tras fundir lleva la época y el sobre `contenido` del otro lado, o sea que **es** del formato 2 y
-   tiene que declararlo. Misma razón para no haberlo escrito hoy.
+**Y una divergencia de verdad que llevaba mes y medio dentro**: Go decide «del mismo segundo, gana la
+retirada» (ADR 0052) y el espejo **no tenía esa regla**. Una lápida contra una ranura viva del mismo segundo
+se fundía distinto en los dos núcleos: se pasarían la bóveda sin fin, y la extensión le devolvería el acceso
+a quien lo había perdido. No lo decía la cruzada porque **su generador no hacía ni una ranura de acceso ni
+una lápida** —solo `maestra`, `recuperacion` y `pin`—. Ahora las hace en sus tres estados y con las dos
+épocas, y quitarle al espejo esa regla pone en rojo **33 de 401 casos**; quitarle la resolución en bloque,
+**121 de 401**.
+
+### Lo siguiente: la A3 y la A4
+
+- **A4 · la ADR 0059 y `docs/decisiones.md`.** `docs/formato-boveda.md` ya está al día —el formato 2, la
+  cadena, la época y las dos reglas nuevas de la fusión—, y de paso llevaba **la misma regla de la lápida
+  sin escribir**: era el tercer sitio desalineado.
+- **A3 · el vector congelado** de una bóveda de proyecto del formato 2, con dos épocas y un titular. **No se
+  puede grabar todavía**: nada escribe el formato 2 hasta la publicación B, así que se graba allí con el
+  código que lo escribe y se congela entonces.
+
+**Y una cosa de la B que no se puede probar hasta la B**, apuntada para no perderla: **`Fundir` tiene que
+adoptar el formato del remoto cuando sea mayor**. El documento que queda tras fundir lleva la época y el
+sobre `contenido` del otro lado, o sea que **es** del formato 2 y tiene que declararlo. Hoy no hace falta
+porque un remoto de formato 2 se rechaza; en la B, con `FormatoQueSeEscribe = 2`, deja de rechazarse.
 
 ### Cuatro cosas que cuestan de volver a averiguar
 

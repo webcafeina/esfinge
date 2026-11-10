@@ -13,13 +13,14 @@ congelado con vectores fijos (ADR 0022), y la versión de TypeScript se prueba c
 
 ## El fichero
 
-JSON en claro, `formato: 1`. Los campos criptográficos son líneas `ESF1.…` corrientes.
+JSON en claro. Los campos criptográficos son líneas `ESF1.…` corrientes.
 
 ```json
 {
   "esfinge": "bóveda",
   "aviso": "Bóveda de Esfinge. …",
   "formato": 1,
+  "epoca": "solo en el formato 2: con qué clave de contenido está cifrado el cuerpo",
   "id": "32 cifras hexadecimales, al azar al crearla; el mismo en todos sus equipos",
   "serie": 42,
   "cambiada": "RFC3339",
@@ -42,7 +43,13 @@ JSON en claro, `formato: 1`. Los campos criptográficos son líneas `ESF1.…` c
   revés —«uno menor se abre solo para leer»— y el código hacía eso mismo: el día que se
   hubiera publicado un formato 2, todas las bóvedas existentes se habrían vuelto de solo
   lectura. Los dos números tienen que valer lo mismo en los dos núcleos, y los compara
-  `TestLosFormatosSonLosMismos`.
+  `TestLosFormatosSonLosMismos`. **Hoy son `FormatoQueSeLee = 2` y
+  `FormatoQueSeEscribe = 1`**: el formato 2 —el de las claves de contenido— se abre entero
+  y no se escribe, y nada lo crea todavía.
+- **`epoca`** solo está en el formato 2, y va **en claro a propósito**: hay que elegir la
+  clave antes de poder descifrar nada. **No es una autoridad**: el sello lleva la misma
+  dentro, y si no cuadran es «la bóveda no cuadra por dentro». Lo que filtra es cuántas
+  veces se ha vuelto a cifrar esta bóveda.
 
 ## Las claves
 
@@ -60,6 +67,33 @@ JSON en claro, `formato: 1`. Los campos criptográficos son líneas `ESF1.…` c
   al contrario que las dos de arriba: es lo único que permite que otro equipo abra el proyecto. Una bóveda
   de proyecto **no tiene ranura maestra ni de recuperación**: la contraseña maestra no la abre.
 
+### La cadena de claves de contenido (formato 2)
+
+Desde la [ADR 0059](adr/0059-la-clave-de-contenido.md), el cuerpo **no se cifra con la
+clave de bóveda** sino con una **clave de contenido**, y la clave de bóveda pasa a envolver
+la cadena de todas las que ha habido. Así rotar es una clave nueva, recifrar el cuerpo y
+volver a sellar la cadena solo para los que quedan — sin tocar la maestra ni la de
+recuperación.
+
+```json
+{ "esfinge": "claves-de-contenido", "version": 1, "actual": "9f3c…",
+  "claves": [ { "id": "a1b2…", "n": 1, "clave": "43 caracteres base64url",
+                "creada": "RFC3339", "porque": "migracion" } ] }
+```
+
+- Vive en el sobre **`contenido`**, envuelto con la clave de bóveda, y **se sube**: sin él,
+  el segundo equipo del dueño abriría la bóveda y no sabría con qué descifrar el cuerpo.
+- Las ranuras **`acceso:<titular>`** del formato 2 llevan dentro **esta cadena** en vez de
+  la clave de bóveda, sellada hacia la identidad de cada titular. Es lo que hace que quien
+  recibe un acceso no se lleve la clave que protege la contraseña maestra. Las de antes
+  siguen valiendo: llevan la clave de bóveda, con la que se desenvuelve la cadena igual, y
+  **quién es cuál lo dice el claro** —no el `codificacion` de fuera—.
+- **Es una cadena y no una clave** porque la fusión lo exige: un equipo que estuvo
+  desconectado tiene su fichero cifrado con la época anterior, y sin esa clave no podría
+  descifrar su propio lado. Rotar **no quita ninguna**.
+- El `id` son 8 bytes al azar y **no un contador**: dos equipos del dueño rotando a la vez
+  desde la misma época crearían los dos «la 3» con claves distintas. `n` solo ordena.
+
 ## El sello
 
 `sello` es, cifrado con la clave de bóveda:
@@ -69,7 +103,7 @@ JSON en claro, `formato: 1`. Los campos criptográficos son líneas `ESF1.…` c
   "id": "…", "serie": 42,
   "huellas": { "maestra": "…", "recuperacion": "…" },
   "sobres":  { "maestra": "…", "recuperacion": "…" },
-  "sincro": 17, "cuerpo": "…"
+  "sincro": 17, "epoca": "solo en el formato 2", "cuerpo": "…"
 }
 ```
 
@@ -283,8 +317,20 @@ perder una nota entregada o conservarla de más cuesta lo mismo, que esa copia l
 por `ref`.
 
 **Sobres**, por tipo: los de un solo equipo, los de aquí. Si el tipo solo está en un lado, ése. Iguales →
-ése. Con B: L igual a B → R; R igual a B → L. Si no, el de `creado` mayor, y si empatan, el de
+ése. Con B: L igual a B → R; R igual a B → L. Si no: **del mismo `creado`, gana la lápida** —una lápida
+tiene el contenedor vacío, así que la regla siguiente se la llevaría por delante, y las fechas van a
+segundos, así que dar un acceso y quitarlo en el mismo no es raro; volver a darlo después sí gana, porque
+entonces la viva es de un segundo posterior—; y si no, el de `creado` mayor, y si empatan, el de
 `contenedor` mayor.
+
+**Y si los dos lados declaran `epoca` distinta** (formato 2), los sobres que llevan claves —`contenido` y
+todas las `acceso:*`— **salen de un solo lado y todos del mismo**: el que gane su sobre `contenido` por las
+dos últimas reglas de arriba, que es también la época con la que queda cifrado el cuerpo. Resolviéndolos uno
+por uno, el cuerpo puede quedar cifrado con la clave de un lado y la ranura de un titular llevar dentro la
+del otro, y entonces **esa persona no abre su propia bóveda**. De una `acceso:*`, lo que dicen las reglas de
+siempre es solo **si sigue viva** —una lápida no se resucita ni por el lado que pone la época—; y si el lado
+que pone la época no tiene ranura viva para esa persona, la ranura **se cae**, porque una fusión elige
+contenedores y **nunca fabrica cifrado**.
 
 **Después**:
 
