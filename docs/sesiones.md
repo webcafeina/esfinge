@@ -5,6 +5,35 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-12 (tarde) · Los seis objetivos: el catálogo, y las cinco patas
+
+- **Planteado entero lo último grande del proyecto** —ARM, Fedora, Arch, AppImage y los canales de
+  distribución, como Apolo— con tres exploradores y un agente de diseño, y **seis decisiones del cliente**
+  tomadas con el coste delante. El plan vive en `~/.claude/plans/`.
+- **El hallazgo que vale la fase entera, y lo encontró el diseño, no el código**: `on: release: published`
+  **no se dispara** cuando la publicación la crea `GITHUB_TOKEN`. Apolo puede colgar sus canales de ahí
+  porque su Release sale como borrador y la publica una persona; copiar sus flujos tal cual habría dado
+  **cuatro workflows que nunca se ejecutan, en silencio**, con el tap de Homebrew sirviendo una versión de
+  hace meses y ningún correo rojo.
+- **Fase 0, publicada en la 2.62.0**: el catálogo de adjuntos, del que preguntan las dos tablas, la puerta
+  de la publicación y el que elige la descarga. Y con él, el fallo que esperaba al primer `.rpm`.
+  **Comprobado contra la publicación real**: los 28 nombres del catálogo son los 28 adjuntos. En producción
+  la puerta dijo `✓ 28 adjuntos, los del catálogo y ninguno más`.
+- **Fase 1, cometida y corriendo**: las cinco patas en «Compilar», sin publicar nada, que es lo que pedía
+  `siguiente.md` desde septiembre.
+- **Y cuatro errores míos cazados antes de que costaran algo**, que es lo que más me llevo del rato: fijé una
+  versión de `nfpm` **que no existe**; el trabajo que publica **no tenía Go** y mi puerta habría fallado en
+  la primera etiqueta; el `postinstall.sh` leía una variable de entorno que solo existe en la máquina que
+  arma el paquete, así que el `.rpm` habría escrito «deb» igual; y el paso de dependencias de Linux
+  preguntaba por el **nombre de la imagen**, así que la pata de ARM se habría quedado sin webkit con un
+  error que suena a «webkit no existe en ARM».
+- **Y tres pruebas mías que no vigilaban lo que decían.** «La tabla filtra los arm64» pasaba en verde
+  —porque hoy no hay ningún arm64 publicado—, el vigilante de `macos-latest` saltaba con los comentarios
+  que explican por qué no se usa, y la prueba de la matriz contaba plataformas sin exigir máquina. Las tres
+  las encontró **mutarlas**.
+
+---
+
 ## 2026-11-12 · La primera rotación, y el sitio donde el gancho no estaba
 
 - **Las dos tiendas ya sirven la 2.61.0** —Firefox por su API, Chrome en su ficha—, así que la flota

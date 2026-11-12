@@ -2,6 +2,50 @@
 
 Última actualización: **2026-11-12**
 
+## Lo último grande: Esfinge en los seis objetivos y en los canales (2026-11-12, tarde)
+
+**Empezado, con el plan escrito y las dos primeras fases hechas.** Cierra
+[`siguiente.md`](siguiente.md) y es lo último grande del proyecto: la aplicación con ventana fuera de
+amd64, los paquetes de Fedora y Arch, la AppImage, y los canales (APT, RPM, AUR, Homebrew, Chocolatey)
+como los tiene Apolo. **El plan entero, con sus seis fases y sus riesgos, está en
+`~/.claude/plans/vamos-a-realizar-un-precious-adleman.md`.**
+
+**Lo que el cliente decidió**, y no se vuelve a discutir: alcance máximo —matriz **y** canales—; los dos
+instaladores de Windows **se renombran** aceptando que las instalaciones anteriores pierdan la
+autoactualización una vez; los repos en **`esfinge.webcafeina.com`**; **clave GPG propia de Esfinge**,
+guardada como las de Apolo; una línea en el `LICENSE` que permita los canales de la casa; y **AppImage
+autosuficiente, arreglando además la ruta del MCP** —que en Apolo es deuda abierta—.
+
+### Fase 0, publicada en la 2.62.0
+
+**El catálogo de adjuntos** (`internal/adjuntos`), que es el único sitio donde se dice cómo se llama cada
+fichero que se publica. Vivían en siete sitios, y la publicación va a pasar de 28 a 37. En Go por la
+lección de `zip`: es lo único que seguro está en las cinco máquinas que publicarán.
+
+**Y con él, el fallo que esperaba al primer `.rpm`**: `instaladoConPaquete()` preguntaba «¿vengo de un
+paquete?» cuando hace falta saber **de cuál** —el binario de un `.deb` y el de un `.rpm` viven los dos en
+`/usr/bin`—, así que a una Fedora se le habría ofrecido un `.deb`. Ahora cada paquete deja escrito su
+gestor en `/usr/share/esfinge/gestor`, y a cada equipo se le ofrece lo suyo y nada más.
+
+Comprobado: **los 28 nombres del catálogo son los 28 adjuntos reales**, uno a uno; los **24 casos** de
+seis objetivos por cuatro gestores, desde este VPS; y en producción la puerta nueva dijo
+`✓ 28 adjuntos, los del catálogo y ninguno más`. **Ocho mutaciones, ocho rojas** — y una de ellas no se
+podía ver hasta cambiar el diseño, que es la lección de `soloLectura` otra vez.
+
+### Fase 1, cometida y **corriendo ahora mismo**
+
+«Compilar» pasa de tres patas a cinco: macOS universal, Windows amd64 y **arm64**, Linux amd64 y
+**arm64**, con runners nativos y `fail-fast` apagado. **No publica nada**: existe para contestar las tres
+preguntas que pueden reordenar el plan —si Wails sabe hacer `windows/arm64`, si las imágenes ARM traen
+`webkit2gtk-4.1`, y qué herramientas hay en esas dos máquinas que nadie de esta casa ha visto por dentro—.
+
+**Al retomar, lo primero es leer ese flujo**: `gh run view 43227916711` (o
+`gh run list --workflow=compilar.yml -L 3`), y el registro del vigilante quedó en
+`…/scratchpad/flujo-compilar.log` si la sesión aún lo tiene. **Si las cinco patas salen verdes, la fase 2
+es mecánica**; si una falla, lo que haya fallado decide por dónde sigue. El paso «Qué trae esta máquina»
+dice si hay `makensis`, `7z`, `nfpm` y `rpmbuild` en cada imagen, que es la otra mitad de lo que esta fase
+viene a averiguar.
+
 ## La primera rotación, hecha, y el fallo que destapó (2026-11-12)
 
 **El cliente rotó la bóveda de proyecto de Tempero**, que es la primera rotación de verdad del proyecto, y
