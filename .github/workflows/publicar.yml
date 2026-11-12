@@ -589,6 +589,27 @@ jobs:
           nombre="$(go run ./herramientas/catalogo nombre "mcpb-linux-${{ matrix.arq }}" "${{ steps.v.outputs.n }}")"
           go run ./herramientas/armar-mcpb "${{ steps.v.outputs.n }}" esfinge-mcp "$PWD/$nombre"
 
+      # **La AppImage, con la receta que también se puede lanzar en un portátil** — por lo
+      # mismo que `armar-dmg.sh`: un camino que solo existe en CI es el que nadie prueba. El
+      # guion trae sus tres herramientas del origen, con versión fija y con su suma, y lleva
+      # WebKitGTK dentro para que sirva en una distribución que no lo empaquete.
+      - name: Armar la AppImage
+        run: |
+          # La arquitectura de una AppImage se nombra como la nombra la herramienta, no como
+          # la nombramos nosotros: x86_64 y aarch64 (la regla del vocabulario de la ADR 0060).
+          case "${{ matrix.arq }}" in
+            amd64) arqai=x86_64 ;;
+            arm64) arqai=aarch64 ;;
+          esac
+          # El nombre, del catálogo, como el .deb y el .rpm: el guion lo sabe sacar solo
+          # —para poder lanzarlo en un portátil— y aquí se le pasa para que el único sitio
+          # donde se nombran los adjuntos se vea también en el flujo.
+          ai="$(go run ./herramientas/catalogo nombre "appimage-${{ matrix.arq }}" "${{ steps.v.outputs.n }}")"
+          # El guion mira dentro de lo que ha armado —los auxiliares de WebKit, el gancho
+          # que los nombra, los cuatro binarios— y falla si falta algo, así que aquí no hay
+          # que repetirlo: lo mismo escrito en dos sitios se desalinea solo.
+          empaquetado/linux/armar-appimage.sh "${{ steps.v.outputs.n }}" "$arqai" "$ai"
+
       - uses: actions/upload-artifact@v4
         with:
           name: linux-${{ matrix.arq }}
@@ -597,6 +618,7 @@ jobs:
             *.rpm
             *.mcpb
             *.tar.gz
+            *.AppImage
 
   # **Que los paquetes instalen de verdad, en la distribución a la que van.**
   #
@@ -651,6 +673,44 @@ jobs:
             echo "✓ el .rpm instala, resuelve sus bibliotecas y se declara como rpm"
           '
           echo "::endgroup::"
+
+      # **Y la AppImage, en la máquina pelada y sin WebKitGTK instalado**, que es lo único
+      # que de verdad dice si es autosuficiente.
+      #
+      # El corredor de GitHub no tiene libwebkit2gtk —no se instala en este trabajo a
+      # propósito—, así que un `ldd` de la ventana con las bibliotecas de dentro resuelve
+      # todo o deja al descubierto lo que falta. Esto es lo que el guion no puede comprobar:
+      # él arma en una máquina que **sí** tiene WebKit, y ahí todo parece estar.
+      #
+      # Lo que queda fuera a propósito es el driver gráfico —libEGL y compañía—: ésas tienen
+      # que ser las del equipo que la ejecute o no habla con su tarjeta, y por eso
+      # `linuxdeploy` las excluye. Meterlas dentro «para que no falten» rompería en los
+      # equipos con otro driver.
+      - name: La AppImage se sostiene sola
+        run: |
+          set -euo pipefail
+          ai="$(ls paquetes/*.AppImage)"
+          chmod +x "$ai"
+          APPIMAGE_EXTRACT_AND_RUN=1 "$ai" --appimage-extract >/dev/null
+          cd squashfs-root
+          # La línea de comandos de dentro arranca —eso sí se puede ejecutar sin pantalla—.
+          usr/bin/esfinge --version
+          # Y a la ventana no le falta nada salvo el driver gráfico.
+          #
+          # **Sin `LD_LIBRARY_PATH`, a propósito**: lo que hace que las encuentre es el
+          # RUNPATH que `linuxdeploy` le escribe —`$ORIGIN/../lib`—, no una variable de
+          # aquí. La primera versión la ponía, y con ella la comprobación parecía más fuerte
+          # de lo que era: apartando la biblioteca de WebKit de dentro seguía en verde la
+          # parte de la variable, porque el RUNPATH manda. Comprobado apartándola: dice
+          # «libwebkit2gtk-4.1.so.0».
+          falta="$(ldd usr/bin/esfinge-gui \
+            | grep "not found" | awk '{print $1}' \
+            | grep -vE '^lib(EGL|GL|GLX|OpenGL|GLdispatch|drm)\.so' || true)"
+          if [ -n "$falta" ]; then
+            echo "::error::La AppImage no es autosuficiente; en una máquina sin WebKitGTK le falta: $falta"
+            exit 1
+          fi
+          echo "✓ la AppImage lleva dentro todo lo que la ventana necesita"
 
       - name: Debian instala el .deb
         run: |

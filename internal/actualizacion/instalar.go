@@ -20,6 +20,15 @@ const (
 	// vive la aplicación pide permisos que este proceso no tiene. Es el caso del
 	// .deb, que instala como root, y el de una copia en una carpeta ajena.
 	ModoInstalador Modo = "instalador"
+	// ModoAMano: lo descargado **no lo instala nadie**, lo pone en su sitio una persona.
+	//
+	// Es el caso de la AppImage, y hace falta decirlo aparte porque las palabras del
+	// instalador son falsas ahí: lo que se baja es la aplicación entera, no un
+	// instalador, así que «abrir el instalador» abriría una segunda Esfinge —o se lo
+	// daría a un gestor de archivos— y la que se está usando seguiría siendo la vieja.
+	//
+	// Lo honrado es enseñar dónde ha quedado y decir que reemplace con ella la que usa.
+	ModoAMano Modo = "a mano"
 )
 
 // ComoSeInstala mira si esta copia puede reemplazarse sola.
@@ -43,9 +52,21 @@ func ComoSeInstala() Modo {
 		// es que no esté la aplicación en medio, y de eso se encarga el guion.
 		return ModoSolo
 	default:
+		// **Una AppImage no la instala nadie.** Y ojo con el porqué, que está escrito al
+		// revés en más de un sitio: lo que lo impide **no** es que el montaje sea de solo
+		// lectura —el fichero de la AppImage es un fichero normal del usuario, y
+		// renombrar encima de él funciona incluso mientras corre—, es que aquí se ha
+		// elegido no reemplazarse sola. Queda apuntado en deuda.md con lo que costaría.
+		if enUnaAppImage() {
+			return ModoAMano
+		}
 		return ModoInstalador
 	}
 }
+
+// enUnaAppImage dice si esta copia se está ejecutando desde una AppImage, que se anuncia
+// ella misma por el entorno. Es la misma pregunta que decide qué paquete ofrecer.
+func enUnaAppImage() bool { return os.Getenv("APPIMAGE") != "" }
 
 // Instalar pone la versión descargada en su sitio.
 //
@@ -60,16 +81,31 @@ func Instalar(ruta string) error {
 		return fmt.Errorf("No está el fichero descargado: %w", err)
 	}
 
-	if ComoSeInstala() == ModoSolo {
+	switch ComoSeInstala() {
+	case ModoSolo:
 		switch runtime.GOOS {
 		case "darwin":
 			return reemplazarseEnMac(ruta)
 		case "windows":
 			return reemplazarseEnWindows(ruta)
 		}
+	case ModoAMano:
+		// **La carpeta, no el fichero.** Abrir el fichero sería arrancar una segunda
+		// Esfinge; lo que hace falta es ver dónde ha quedado para ponerlo en el sitio
+		// del que se usa.
+		return abrir(filepath.Dir(ruta))
 	}
-	return abrirConElSistema(ruta)
+	return abrir(ruta)
 }
+
+// abrir es `abrirConElSistema`, en una variable **para que una prueba pueda decir qué se
+// abre**.
+//
+// Hace falta porque lo que se abre no es siempre el fichero descargado: desde una AppImage
+// es su carpeta, y la diferencia entre las dos cosas es «mira dónde ha quedado» o «arranca
+// una segunda Esfinge y sigue usando la vieja». Sin costura, eso solo lo vería una persona
+// con una AppImage delante.
+var abrir = abrirConElSistema
 
 // abrirConElSistema es lo de siempre: se lo damos al escritorio y que lo abra
 // quien sepa. En Linux lo recoge el instalador de paquetes.

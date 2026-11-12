@@ -177,12 +177,14 @@ func Catalogo() []Ficha {
 		{
 			Clave: "appimage-amd64", Sistema: "linux", Arq: "amd64", Clase: ClasePaquete,
 			Gestor: GestorAppImage, Plantilla: "Esfinge-{v}-x86_64.AppImage",
-			Rotulo: "Linux · cualquiera (AppImage)", Nota: "Se ejecuta sin instalar nada",
+			Publicado: true,
+			Rotulo:    "Linux · cualquiera (AppImage)", Nota: "Se ejecuta sin instalar nada",
 		},
 		{
 			Clave: "appimage-arm64", Sistema: "linux", Arq: "arm64", Clase: ClasePaquete,
 			Gestor: GestorAppImage, Plantilla: "Esfinge-{v}-aarch64.AppImage",
-			Rotulo: "Linux · cualquiera (AppImage, ARM)", Nota: "Se ejecuta sin instalar nada",
+			Publicado: true,
+			Rotulo:    "Linux · cualquiera (AppImage, ARM)", Nota: "Se ejecuta sin instalar nada",
 		},
 		{
 			Clave: "tar-amd64", Sistema: "linux", Arq: "amd64", Clase: ClasePaquete,

@@ -1223,6 +1223,11 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
 
   return (
     <div className="conectar">
+      {/* Antes de las recetas, porque afecta a las cuatro: la ruta que llevan dentro no se
+          ha podido dejar en un sitio fijo, así que lo que se pegue dejará de valer. Va
+          arriba y no al lado de una de ellas por lo de siempre: esto es estado, no
+          configuración, y escondido en una pestaña no lo lee quien está en otra. */}
+      {elAgente.rutaProblema && <p className="aviso">{elAgente.rutaProblema}</p>}
       <Segmentado
         opciones={[
           { valor: "desktop", etiqueta: "Claude Desktop" },

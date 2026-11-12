@@ -495,7 +495,18 @@ type EstadoDelAgente struct {
 	VSCode string `json:"vscode"`
 	// Ruta es dónde está el servidor MCP, suelta, para quien tenga que escribirla a
 	// mano en un cliente que no sea ninguno de los de la lista.
+	//
+	// **Y es la ruta que va dentro de los tres bloques de arriba**, así que tiene que
+	// seguir valiendo mañana: corriendo desde una AppImage, el binario vive en un montaje
+	// de /tmp que cambia en cada arranque, y lo que se deja escrito en la configuración de
+	// otro programa es una copia estable. Lo decide `rutaUsableDelServidorMCP`.
 	Ruta string `json:"ruta"`
+	// RutaProblema es lo que hay que contarle a quien mira cuando esa ruta **no** se ha
+	// podido dejar en un sitio estable.
+	//
+	// Va aquí y no callado: una ruta que deja de valer al cerrar Esfinge da un fallo mudo
+	// en el programa de al lado —«el servidor no arranca»— que nadie relaciona con esto.
+	RutaProblema string `json:"rutaProblema,omitempty"`
 	// Quiere es lo que un agente está pidiendo y hay que contestar, nulo si nada.
 	//
 	// **Lleva el título de la entrada**, y tiene que llevarlo: «un agente quiere una
@@ -531,6 +542,7 @@ func (a *App) EstadoDelAgente() EstadoDelAgente {
 	fallo := a.agentesFallo
 	a.mu.Unlock()
 
+	laRuta, problema := rutaUsableDelServidorMCP()
 	e := EstadoDelAgente{
 		Encendido:     a.ajustes.Ver().CanalDeAgentes,
 		Escuchando:    srv != nil,
@@ -540,7 +552,8 @@ func (a *App) EstadoDelAgente() EstadoDelAgente {
 		Configuracion: ConfiguracionParaElCliente(),
 		Orden:         OrdenParaClaudeCode(),
 		VSCode:        ConfiguracionParaVSCode(),
-		Ruta:          rutaDelServidorMCPOEsfingeMCP(),
+		Ruta:          laRuta,
+		RutaProblema:  problema,
 		Quiere:        a.permisos.loPendiente(),
 		Valvula:       a.permisos.comoVa(time.Now()),
 		Siempre:       a.ajustes.Ver().SiempreAlAgente,
@@ -1700,10 +1713,13 @@ func ConfiguracionParaVSCode() string {
 
 // rutaDelServidorMCPOEsfingeMCP es la ruta, o el nombre a secas si no se sabe dónde
 // está — que es lo que hacía cada sitio por su cuenta hasta que fueron cuatro.
+// rutaDelServidorMCPOEsfingeMCP es la ruta que va dentro de los bloques que se pegan.
+//
+// **Es la estable, no la de al lado**: los tres bloques y la orden de Claude Code se
+// escriben una vez en la configuración de otro programa, así que una ruta dentro del
+// montaje de una AppImage los deja apuntando a algo que desaparece al cerrar Esfinge. El
+// aviso de cuando no se ha podido viaja aparte, en el estado.
 func rutaDelServidorMCPOEsfingeMCP() string {
-	ruta, err := rutaDelServidorMCP()
-	if err != nil || ruta == "" {
-		return "esfinge-mcp"
-	}
+	ruta, _ := rutaUsableDelServidorMCP()
 	return ruta
 }

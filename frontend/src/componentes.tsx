@@ -919,6 +919,10 @@ export function BandaNovedad({
   // Donde Esfinge puede reemplazarse sola no hay nada que arrastrar, y el botón
   // no puede prometer lo contrario.
   const sola = novedad.comoSeInstala === "sola";
+  // Y donde no la instala nadie —la AppImage— las palabras del instalador son falsas:
+  // lo que se baja **es la aplicación**, así que «abrir el instalador» abriría una
+  // segunda Esfinge y la que se está usando seguiría siendo la vieja.
+  const aMano = novedad.comoSeInstala === "a mano";
 
   return (
     <div className="novedad" role="status">
@@ -931,7 +935,9 @@ export function BandaNovedad({
           <span>
             {sola
               ? `Esfinge ${novedad.version} está lista. Se instalará y volverá a abrirse.`
-              : `Esfinge ${novedad.version} está lista para instalarse.`}
+              : aMano
+                ? `Esfinge ${novedad.version} está descargada. Reemplaza con ella la AppImage que usas.`
+                : `Esfinge ${novedad.version} está lista para instalarse.`}
           </span>
         ) : bajando ? (
           <span>
@@ -954,7 +960,7 @@ export function BandaNovedad({
       <div className="botones">
         {instalando ? null : lista ? (
           <button className="principal" onClick={alInstalar}>
-            {sola ? "Instalar y reiniciar" : "Abrir el instalador"}
+            {sola ? "Instalar y reiniciar" : aMano ? "Abrir la carpeta" : "Abrir el instalador"}
           </button>
         ) : (
           !bajando && (

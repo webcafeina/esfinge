@@ -62,8 +62,12 @@ export type Novedad = {
   /** El fichero que le toca a este sistema. Vacío si no hay ninguno. */
   fichero: string;
   bytes: number;
-  /** «sola» si se reemplaza y reinicia; «instalador» si hace falta el del sistema. */
-  comoSeInstala: "sola" | "instalador" | "";
+  /**
+   * «sola» si se reemplaza y reinicia; «instalador» si hace falta el del sistema;
+   * **«a mano» si no lo instala nadie**, que es el caso de la AppImage: lo que se baja es
+   * la aplicación entera, así que lo único que se puede hacer es enseñar dónde ha quedado.
+   */
+  comoSeInstala: "sola" | "instalador" | "a mano" | "";
 };
 
 /** Cómo va la descarga de la actualización. */
@@ -326,6 +330,15 @@ export type EstadoDelAgente = {
   vscode: string;
   /** Dónde está el servidor MCP, suelta, para quien tenga que escribirla a mano. */
   ruta: string;
+  /**
+   * Lo que hay que contar cuando esa ruta **no** se ha podido dejar en un sitio estable.
+   *
+   * Pasa corriendo desde una AppImage: el binario vive en un montaje de /tmp que cambia en
+   * cada arranque, así que Esfinge deja una copia en ~/.local/bin y da ésa. Si no ha
+   * podido, lo que se pegue en el otro programa deja de valer al cerrar Esfinge y el fallo
+   * de allí no se parece a la causa.
+   */
+  rutaProblema?: string;
   /** Está puesto el permiso que no caduca, y a quién se le dio. */
   siempre: boolean;
   siempreQuien?: string;
