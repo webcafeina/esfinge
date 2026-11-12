@@ -232,3 +232,52 @@ func TestLaApiFalsaDelE2eUsaNombresDelCatalogo(t *testing.T) {
 		}
 	}
 }
+
+// TestLosTresBinariosSeIgnoran compara la lista de `.gitignore` con la del catálogo.
+//
+// # Por qué existe
+//
+// `.gitignore` nombraba **dos** de los tres binarios que se compilan en la raíz:
+// `esfinge-mcp` faltaba. Mientras nada los dejara escritos ahí eso no se notaba, y el día
+// que un contenedor de pruebas con el repositorio montado con escritura los dejó, un
+// `git add -A` **se llevó `esfinge-mcp` al repositorio** — y la compilación de la
+// publicación murió con «build output "esfinge-mcp" already exists and is not an object
+// file», tirando la 2.65.0 con todo lo demás en verde.
+//
+// Es la familia de siempre en esta casa: **una regla escrita en dos listas se desalinea
+// sola**, y ya ha costado cinco fallos. Lo que la cierra cuando las dos listas no se pueden
+// juntar —un `.gitignore` no puede preguntarle nada a Go— es **una prueba que las compara
+// entre sí**, que es lo mismo que se hizo con los botones de la tarjeta y con los dos
+// `postinstall`.
+//
+// Y pide **las dos formas**: sin `.exe`, lo que compila `make publicar` para Windows en la
+// raíz tampoco se ignoraría.
+func TestLosTresBinariosSeIgnoran(t *testing.T) {
+	crudo, err := os.ReadFile("../../.gitignore")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var reglas []string
+	for _, l := range strings.Split(string(crudo), "\n") {
+		reglas = append(reglas, strings.TrimSpace(l))
+	}
+	tiene := func(r string) bool {
+		for _, l := range reglas {
+			if l == r {
+				return true
+			}
+		}
+		return false
+	}
+
+	if len(losBinarios) == 0 {
+		t.Fatal("el catálogo no dice qué binarios hay, así que esto no comprueba nada")
+	}
+	for _, b := range losBinarios {
+		for _, quiero := range []string{"/" + b, "/" + b + ".exe"} {
+			if !tiene(quiero) {
+				t.Errorf("«%s» no está en .gitignore: el día que algo lo deje escrito en la raíz, un «git add -A» se lo lleva al repositorio y la compilación de la publicación se cae", quiero)
+			}
+		}
+	}
+}

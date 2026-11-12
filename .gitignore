@@ -1,8 +1,17 @@
 # Binarios
+#
+# **Son tres, y aquí había dos.** `esfinge-mcp` faltaba, así que el día que algo lo dejó
+# escrito en la raíz —un contenedor de pruebas con el repositorio montado con escritura— un
+# `git add -A` **se lo llevó al repositorio**, y la compilación de la publicación murió con
+# «build output "esfinge-mcp" already exists and is not an object file». Tiró la 2.65.0 con
+# todo lo demás en verde. Lo vigila `TestLosTresBinariosSeIgnoran`, que compara esta lista
+# con la de `internal/adjuntos`, que es la que dice cuáles son.
 /esfinge
 /esfinge.exe
 /esfinge-puente
 /esfinge-puente.exe
+/esfinge-mcp
+/esfinge-mcp.exe
 /dist/
 
 # Ficheros cifrados y temporales de la propia herramienta

@@ -5,6 +5,56 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-12 (noche) · Las fases 3 y 4: el `.rpm`, el gestor y la AppImage
+
+- **Fase 3, publicada en la 2.64.0**: el `.rpm` de los dos arcos, con `overrides: rpm:` para lo único que
+  cambia —`webkit2gtk4.1` y `gtk3`, sin el guion de Debian, **copiados de la ADR 0030 de Apolo, que los
+  midió**— y **su propio `postinstall`**, porque ese guion corre en la máquina de quien instala y leer el
+  gestor de una variable de entorno habría dejado el `.rpm` diciendo «deb». Dos ficheros que solo se
+  diferencian en esa palabra, con una prueba que los compara línea a línea. 35 adjuntos.
+- **Y un trabajo de humo antes de publicar**: Fedora 41 instala el `.rpm` y Debian 13 el `.deb`, en los dos
+  arcos, sin bibliotecas sin resolver y comprobando el gestor escrito. `publicar` lo espera, así que un
+  paquete que no instala no llega a la página de descargas. Las dos patas pasaron: **la primera vez que un
+  paquete de esta casa se instala en un Linux ARM**.
+- **Fase 4, en la 2.65.0** (publicándose al cerrar la sesión): la **AppImage autosuficiente**, con
+  WebKitGTK dentro. Lo caro no eran las bibliotecas: **los procesos auxiliares de WebKit no son dependencias
+  dinámicas de nadie**, así que no los copia ninguna herramienta, y sin ellos la ventana **abre en blanco**.
+  Van a mano con su `WEBKIT_EXEC_PATH`, y dónde viven **está medido** en un contenedor de Ubuntu 24.04.
+- **Y la ruta del servidor MCP**, que en Apolo es deuda abierta: en una AppImage el binario vive en un
+  montaje de `/tmp` que cambia en cada arranque, así que lo que se pega en Claude Desktop caducaba al cerrar
+  Esfinge, **con un fallo mudo al otro lado**. Ahora deja una copia en `~/.local/bin` y da ésa — **y ese
+  sitio lo dijo el código, no el plan**: `mcpb.DondeBuscarElServidor` ya busca ahí.
+- **Verificado aquí, no solo compilado**: los dos `.rpm` armados en local y el de amd64 **instalado en una
+  Fedora 41 de verdad** (`dnf` resolviendo las dos bibliotecas, `esfinge --version`, el fichero del gestor
+  diciendo `rpm`); y la AppImage armada y abierta en un Ubuntu 24.04 con un programa enlazado contra
+  WebKitGTK haciendo de ventana —73 MiB, 157 bibliotecas, los auxiliares en su sitio—, con un `ldd` en esta
+  máquina sin WebKitGTK donde lo único sin resolver es `libEGL`, la que tiene que ser del equipo.
+- **Nueve mutaciones en total, nueve rojas** — pero **tres fueron malas a la primera** y las tres por
+  causas ya escritas en `CLAUDE.md`: una prueba que mi propio filtro `-run` **no ejecutaba**; otra cuyo caso
+  límite **no puede ocurrir donde corre** (sin `APPIMAGE` las dos ramas dan lo mismo: la familia de
+  `soloLectura`); y una **mutación que no mutaba nada**, un `replace` sin `assert` que no se aplicó y
+  pareció una protección sobreviviendo. La segunda se reescribió **leyendo el fuente**.
+- **Dos fallos del propio trabajo, encontrados ejecutándolo y no leyéndolo**: el guion del VPS daba por
+  hecho el PATH y murió con «go: command not found» justo después de una publicación en verde —ahora hay un
+  solo sitio que busca Go, `herramientas/go.sh`—, y el guion de la AppImage **se creía una herramienta en
+  caché sin comprobar que fuera ejecutable**, que es el mismo fallo que el bit del zip de los `.mcpb`.
+- **Y la 2.65.0 se cayó al publicar, por un fichero de más.** `go build -o esfinge-mcp` murió con «build
+  output "esfinge-mcp" already exists and is not an object file»: probando el guion de la AppImage, el primer
+  contenedor tenía el repositorio montado **con escritura** y dejó tres binarios de mentira en la raíz, como
+  root — y **`.gitignore` nombraba dos de los tres**, así que `git add -A` se llevó `esfinge-mcp` al
+  repositorio. Las tres puertas estaban en verde con él dentro, y no podían verlo: miran el código, no lo que
+  haya suelto en la raíz. **No salió nada**, que es la puerta de la publicación haciendo su trabajo.
+  Arreglado con los tres nombres y sus dos formas, más `TestLosTresBinariosSeIgnoran`, que compara esa lista
+  con la de `internal/adjuntos`; mutado y rojo. **Y la de método**: un contenedor con el repositorio montado
+  con escritura puede dejarte ficheros dentro, como root y sin avisar.
+- **Queda abierto**: **volver a etiquetar la 2.65.0** sobre el commit del arreglo —la etiqueta vieja apunta
+  al commit malo y no tiene publicación detrás, así que se mueve sin romper nada—, **actualizar el VPS**
+  —sigue en la 2.64.0— y las fases **5** (los canales) y **6** (la ADR 0061 y los tachados). Y en
+  `deuda.md`, con el motivo corregido, que **una AppImage sí podría reemplazarse sola**: el plan decía que no
+  por el montaje de solo lectura y eso es falso.
+
+---
+
 ## 2026-11-12 (tarde) · Los seis objetivos: el catálogo, y las cinco patas
 
 - **Planteado entero lo último grande del proyecto** —ARM, Fedora, Arch, AppImage y los canales de
