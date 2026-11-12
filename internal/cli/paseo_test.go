@@ -20,6 +20,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -295,7 +296,87 @@ func TestPaseoDeUnProyectoHastaUnServidor(t *testing.T) {
 	ventana.usar(t)
 	esperarEnLaVentana(t, a, "Lo que el servidor ya puede guardar")
 
-	elPaso(t, 10, "y al quitarle el acceso, el servidor se va y borra su copia")
+	elPaso(t, 10, "la ventana cambia la clave de la bóveda y el servidor sigue trabajando")
+	// **Esto es la ADR 0059 en la cabeza que no tiene pantalla, y es lo que faltaba.**
+	// Rotar deja la cadena de un titular corta en el acto, y la nueva solo la abre la
+	// identidad hacia la que se selló su ranura, que vive en su bóveda personal. La
+	// ventana y la extensión recogen esa cadena en su pasada; **la línea de comandos no lo
+	// hacía**, así que el VPS se quedó sordo con la primera rotación de verdad
+	// (2026-11-12): sincronizaba, decía «esto puede estar viejo» y servía la copia de
+	// antes, para siempre.
+	//
+	// Y la razón de que esto vaya **aquí** y no en una prueba de `internal/boveda`: el
+	// fallo solo existe cuando el servidor **ya tiene una copia anterior a la rotación**,
+	// que es lo que los nueve pasos de arriba han construido. Bajando la bóveda por
+	// primera vez después de rotar no hay nada que recoger y todo funciona — que es
+	// exactamente por lo que la prueba de la ventana (`acceso_entre_cuentas_test.go`,
+	// paso 9) pasaba en verde con este agujero dentro.
+	ventana.usar(t)
+	if err := a.RotarLaClave(); err != nil {
+		t.Fatalf("la ventana no ha podido cambiar la clave de su proyecto: %v", err)
+	}
+	// Y se cambia el secreto **después** de rotar: así lo que el servidor tiene que
+	// entregar solo se puede leer con la clave nueva, y servir la copia de antes deja de
+	// ser un aviso para convertirse en una respuesta equivocada.
+	entradas = buscarEnLaVentana(t, a, "Cloudflare")
+	if len(entradas) != 1 {
+		t.Fatalf("en el proyecto hay %d entradas", len(entradas))
+	}
+	entrada = entradas[0]
+	entrada.Secreto = "el-testigo-de-despues-de-la-clave-nueva"
+	if err := a.GuardarEnBoveda(entrada); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.SincronizarAhora(); err != nil {
+		t.Fatal(err)
+	}
+
+	servidor.usar(t)
+	if codigo := conArgv(t, "esfinge", "boveda", "ejecutar",
+		"--compartida", "Zeri's",
+		"--var", "CF_TOKEN=Cloudflare de Zeri",
+		"--", "sh", "-c", `printf '%s' "$CF_TOKEN" > "$DONDE"`); codigo != SalidaOK {
+		t.Fatalf("«ejecutar» ha salido con %d tras la rotación", codigo)
+	}
+	visto, err = os.ReadFile(donde)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(visto) != "el-testigo-de-despues-de-la-clave-nueva" {
+		t.Fatalf("tras cambiar la clave, al programa le ha llegado %q: la rotación no ha llegado a este equipo", visto)
+	}
+	// Y el fichero de aquí **ha pasado de época**, que es lo que dice que ha recogido la
+	// cadena y no que haya acertado por casualidad. Se mira la cabecera en claro, que va
+	// fuera del cifrado justamente para poder elegir la clave antes de descifrar.
+	laCabecera := struct {
+		Formato int    `json:"formato"`
+		Epoca   string `json:"epoca"`
+	}{}
+	crudo, err := os.ReadFile(rutas.Compartida(comp.Dueno, comp.Ref))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(crudo, &laCabecera); err != nil {
+		t.Fatal(err)
+	}
+	if laCabecera.Formato != boveda.FormatoConClavesDeContenido || laCabecera.Epoca == "" {
+		t.Errorf("la copia del servidor sigue en formato %d con época %q", laCabecera.Formato, laCabecera.Epoca)
+	}
+	// Y **sigue pudiendo escribir**, que es la otra mitad de seguir dentro: su ranura se
+	// reselló con la cadena nueva, así que el permiso de editar no se lo lleva la rotación.
+	t.Setenv("EL_TESTIGO_DE_DESPUES", "lo-que-el-servidor-guarda-tras-la-clave-nueva")
+	if codigo := conArgv(t, "esfinge", "boveda", "crear",
+		"--compartida", "Zeri's",
+		"--titulo", "Lo que el servidor guarda tras la clave nueva",
+		"--secreto-env", "EL_TESTIGO_DE_DESPUES",
+		"--quien", "Serafin",
+		"-q"); codigo != SalidaOK {
+		t.Fatal("tras la rotación, el servidor no ha podido crear una entrada")
+	}
+	ventana.usar(t)
+	esperarEnLaVentana(t, a, "Lo que el servidor guarda tras la clave nueva")
+
+	elPaso(t, 11, "y al quitarle el acceso, el servidor se va y borra su copia")
 	// **Esto es lo único que llega al disco del servidor.** El 403 corta lo que baja
 	// y la rotación de la clave que la ADR 0052 prometía **no existe** (ver su
 	// apartado del 2026-10-21), así que sin este borrado la bóveda de un cliente con

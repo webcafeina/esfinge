@@ -244,8 +244,9 @@ que sirva.
   antes el código no permitía.
 - **La fusión con dos épocas**, con cuatro pruebas: el cuerpo se queda con la clave que gana y **el fichero
   se vuelve a abrir**; las ranuras de acceso salen del lado de la época aunque la de aquí sea más nueva; una
-  lápida no revive; y a un titular sin la clave nueva se le dice que cierre y vuelva a abrir. Las cuatro
-  mutaciones caen cada una en su aserción.
+  lápida no revive; y a un titular sin la clave nueva **se le dice lo que ha pasado**. Las cuatro
+  mutaciones caen cada una en su aserción. (Esa frase decía «ciérrala y vuelve a abrirla»; **se corrigió el
+  2026-11-12**, porque reabrir lee el fichero de aquí, que es el de la cadena vieja.)
 - **Las dos pruebas del formato asimétrico**, que son las que la fase 0 no podía escribir: una bóveda de un
   formato que solo se lee se abre, se lee y **no se guarda**; y fundir se niega con un remoto de ese formato
   —también en el espejo, comprobando **el motivo** y no solo que falle—.
@@ -289,7 +290,8 @@ que sirva.
 
 **Lo que no se ha comprobado, y hay que decirlo:**
 
-- **Nadie ha rotado todavía**, y eso lo decide el cliente: nada pasa al formato 2 por su cuenta. La B
+- ~~**Nadie ha rotado todavía**~~ — **rotada de verdad el 2026-11-12**, por el cliente, en la bóveda de
+  proyecto de Tempero y con el VPS como titular. Lo que salió de ahí está abajo. La B
   esperó en una rama (`clave-de-contenido-b`) hasta que la A estuvo publicada **y la extensión aprobada en
   las dos tiendas**, porque la primera versión con la B dentro ya escribe el formato 2 y si hubiera llegado
   antes que la A, el otro Mac y la extensión se habrían encontrado una bóveda que no saben leer —y la
@@ -300,6 +302,28 @@ que sirva.
   mira.
 - **Una flota mezclada de verdad** —un Mac con la A y otro sin ella—. Eso solo lo dice el cliente, y es lo
   único que queda sin comprobar de toda la ficha.
+
+## La primera rotación de verdad (2026-11-12), y lo que encontró
+
+El cliente rotó la bóveda de proyecto de **Tempero**, cuyo titular es el VPS. **Lo que funcionó**: la
+rotación entera —pedir las llaves del titular al servidor, comparar su huella, recifrar, resellar y
+subir—, y los siete secretos siguieron siendo **byte a byte los mismos** (comprobado por las ocho cifras
+del SHA-256 de los siete contra el `.env` de origen, sin que ninguno se viera). Rotar cambia el cifrado,
+no los valores, y eso dejó de ser una frase.
+
+**Lo que no funcionó, y es el fallo que esta ficha no vio venir**: la pasada de una bóveda compartida se
+construye en **tres** sitios, y el gancho `RecogerLaCadena` estaba en dos —la ventana y la extensión—. En
+`internal/cli` no, así que **un titular sin pantalla se quedaba en la época anterior para siempre**:
+bajaba el documento nuevo, no sabía abrirlo, servía su copia de antes con un aviso, y ni recibía lo que el
+dueño escribiera ni podía subir lo suyo. Arreglado el mismo día, en la **2.61.1**, con la prueba que este
+plan pedía por su nombre y no se había escrito (`internal/cli/paseo_test.go`, paso 10).
+
+**Y la lección de verificación, que es la que vale para la próxima ficha**: lo que había era la misma
+escena **con la ventana a los dos lados** (`acceso_entre_cuentas_test.go`, paso 9), y pasa en verde con el
+agujero dentro. Esta casa ya tiene esa frase escrita tres veces —`vaciarLoSensible`,
+`enConfiguracionDePruebas`, `PasaPorLaValvula`—: cuando una regla vive en N sitios, probarla en uno no dice
+nada de los otros **y el comentario que nombra solo uno de ellos es parte del fallo**, no documentación
+suelta. El del sincronizador decía «esto lo pone `internal/app`».
 
 ## Anotado y no construido
 

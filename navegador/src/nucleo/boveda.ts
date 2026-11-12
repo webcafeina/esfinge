@@ -142,7 +142,7 @@ const MENSAJES: Record<CodigoDeError, string> = {
   papelera: "Esa entrada no está en la papelera",
   "sin-acceso": ERR_SIN_ACCESO,
   "cadena-nueva": ERR_CADENA_NUEVA,
-  "epoca-que-no-se-tiene": "Esta bóveda se ha vuelto a cifrar; ciérrala y vuelve a abrirla para seguir",
+  "epoca-que-no-se-tiene": "Esta bóveda se ha vuelto a cifrar y la clave nueva no ha llegado a este equipo",
 };
 
 /**

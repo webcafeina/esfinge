@@ -61,9 +61,16 @@ var (
 	// nueva pasa por su bóveda personal, que al fundir no está delante. Al dueño no le
 	// pasa, porque la saca del propio documento con la clave de bóveda.
 	//
-	// **No es `ErrManipulada` a propósito.** Lo que hay que hacer es cerrar y volver a
-	// abrir; «alguien ha editado el fichero a mano» manda a mirar donde no hay nada.
-	ErrEpocaQueNoSeTiene = errors.New("Esta bóveda se ha vuelto a cifrar; ciérrala y vuelve a abrirla para seguir")
+	// **No es `ErrManipulada` a propósito**: «alguien ha editado el fichero a mano» manda a
+	// mirar donde no hay nada.
+	//
+	// **Y no dice «ciérrala y vuelve a abrirla», que es lo que decía hasta el 2026-11-12 y
+	// era falso.** Reabrir lee el fichero de aquí, que es justo el de la cadena vieja; lo
+	// único que la recoge es `RecogerCadenaDe`, y eso lo hace la pasada. Así que esta
+	// frase ya no la ve nadie en el camino normal —la ventana, la extensión y la línea de
+	// comandos ponen el gancho—, y cuando se vea significa que la cadena que se pudo
+	// recoger tampoco abre este fichero: entonces lo que toca es mirar, no reabrir.
+	ErrEpocaQueNoSeTiene = errors.New("Esta bóveda se ha vuelto a cifrar y la clave nueva no ha llegado a este equipo")
 	// ErrMuchosBorrados: la fusión se llevaría más de la mitad de las entradas.
 	ErrMuchosBorrados = errors.New("Juntar los cambios de otro equipo borraría más de la mitad de la bóveda")
 )

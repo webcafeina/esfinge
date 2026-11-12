@@ -373,6 +373,20 @@ func unaPasadaDeLaCompartida(mia, b *boveda.Boveda, comp boveda.Compartida) erro
 			Boveda:   b,
 			Memoria:  sincro.JuntoALaBoveda{Ruta: b.Ruta()},
 			Token:    func() string { return token },
+			// **Y aquí también hace falta** (ADR 0059): esto es una bóveda de otra
+			// persona, así que el día que su dueño rote, lo que baja viene cifrado con
+			// una clave que no está en este fichero. La nueva solo la abre la identidad
+			// hacia la que se selló la ranura, que vive en `mia`.
+			//
+			// **Sin esto, un servidor se queda sordo para siempre**, y no es una
+			// suposición: pasó en el VPS con la primera rotación de verdad (2026-11-12).
+			// El mensaje que sale manda a cerrar y volver a abrir, que es un gesto de la
+			// ventana y que además no arregla nada —lo que reabre es el fichero de aquí,
+			// el de la cadena vieja—. Aquí no hay ventana ni bóveda abierta entre
+			// órdenes: lo único que puede recogerla es la pasada.
+			RecogerLaCadena: func(datos []byte) error {
+				return b.RecogerCadenaDe(datos, mia)
+			},
 		}
 		_, err := sin.Sincronizar(ctx)
 		return err

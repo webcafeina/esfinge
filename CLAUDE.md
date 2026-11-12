@@ -268,7 +268,10 @@ No se cambian sin preguntar.
   **La B esperó a que la A estuviera publicada y la extensión aprobada en las tiendas**, y la regla sigue
   valiendo para lo que venga: la primera versión con la B dentro ya escribe el formato 2, y si hubiera
   llegado antes que la A, el otro Mac y la extensión se habrían encontrado una bóveda que no saben leer.
-  **Y nada pasa al formato 2 por su cuenta**: lo dispara una persona rotando.
+  **Y nada pasa al formato 2 por su cuenta**: lo dispara una persona rotando. **La primera rotación de verdad
+  fue el 2026-11-12**, en Tempero: la rotación funcionó entera y los secretos salieron byte a byte iguales
+  —rotar cambia el cifrado, no los valores—, y de paso destapó que la línea de comandos no recogía la cadena
+  (arreglado en la **2.61.1**; ver la trampa de las tres pasadas).
   Lo que **no** se hace: borrar en remoto lo que ya se bajó —no se puede prometer— ni
   dejar que quien recibe borre la bóveda para todos.
   **Y tres cosas técnicas que cuestan caro si se tocan a ciegas.** La ranura de cada titular va **sellada
@@ -540,6 +543,22 @@ puede construir con las constantes puestas y la prueba habría tenido que espera
 observable, o sea a después de publicarlo. **La regla general: si una guarda tiene un caso que hoy no puede
 ocurrir, ese caso no lo prueba nadie** — y una prueba que no puede nacer hasta después de la publicación no
 es una prueba, es una esperanza.
+
+**La misma pasada se construye en tres sitios, y el gancho que la salva estaba en dos.** Al rotar una bóveda
+de proyecto (ADR 0059), quien tiene acceso necesita `RecogerLaCadena` en su sincronización: su ranura va
+sellada hacia su identidad y eso solo lo abre su bóveda personal. Lo ponían la ventana
+(`internal/app/cuenta.go`) y la extensión (`navegador/src/concuenta.ts`); **`internal/cli` no**, y `mia` —la
+personal— era el primer parámetro de la función. Resultado: **el VPS se quedó sordo con la primera rotación
+de verdad** (2026-11-12), sirviendo su copia de antes con un aviso, sin recibir nada y sin poder subir lo
+suyo, para siempre. Tres cosas que deja. **La prueba que lo habría cazado estaba pedida por su nombre en el
+plan y no se escribió**; lo que había era la misma escena **con la ventana a los dos lados**, que pasa en
+verde con el agujero dentro — y el fallo solo existe **si ya hay una copia anterior a la rotación**, porque
+bajando la bóveda por primera vez después de rotar no hay nada que recoger. **El mensaje decía «ciérrala y
+vuelve a abrirla»** cuando el comentario de `RecogerCadenaDe` ya decía que reabrir no sirve —lee el fichero
+de aquí, el de la cadena vieja—: un consejo falso manda a mirar donde no hay nada, igual que un error
+impreciso. Y **el comentario del campo decía «esto lo pone `internal/app`»**, que es la frase que dejó el
+tercer sitio fuera: cuando algo hay que ponerlo en N sitios, el comentario que nombra uno **es parte del
+fallo**.
 
 **Y el truco que evita diez condicionales nuevos: que el caso de siempre sea el degenerado del nuevo.** Al
 añadir las claves de contenido (ADR 0059), la bóveda de formato 1 pasa a tener **una cadena de una sola

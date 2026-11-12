@@ -84,7 +84,8 @@ Al cruzar la rotación contra el espejo salieron **tres divergencias**, y la pri
 2. **No tenía recogida de cadena**, así que tras una rotación la extensión de quien tiene acceso se quedaba
    parada para siempre, igual que se quedaba la ventana antes de arreglarlo.
 3. **Y `clavesQueAbren` propagaba el error** en vez de seguir probando, así que contestaba «la bóveda no
-   cuadra por dentro» cuando lo que había que decir es «ciérrala y vuelve a abrirla».
+   cuadra por dentro» cuando lo que había que decir es que se ha vuelto a cifrar. (Aquella frase decía
+   «ciérrala y vuelve a abrirla», y **también era falsa**: se corrigió el 2026-11-12.)
 
 Más una que me pillé a mí mismo: un atajo pasándole **la clave de la personal** a `laCadenaDe`, cuando el
 sobre `contenido` va envuelto con la **de bóveda**. Son dos pasos, como en Go.

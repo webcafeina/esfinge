@@ -94,7 +94,9 @@ type Sincronizador struct {
 	//
 	// Le pasa a quien tiene acceso compartido: su ranura va sellada hacia su identidad, y
 	// eso solo lo abre su bóveda personal, que aquí no está. Así que esto lo pone quien la
-	// tiene —`internal/app`— y la pasada **lo intenta una vez y vuelve a fundir**. Sin
+	// tiene —`internal/app`, `internal/cli` y la extensión: **los tres**, y que uno se
+	// quedara sin ponerlo costó que el VPS se quedara sordo— y la pasada **lo intenta una
+	// vez y vuelve a fundir**. Sin
 	// esto, una rotación dejaría su sincronización parada para siempre: reabrir no sirve,
 	// porque lo que reabre es su fichero de aquí, que es el que tiene la cadena de antes.
 	//
