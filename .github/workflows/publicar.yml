@@ -551,17 +551,38 @@ jobs:
           export ARQUITECTURA="${{ matrix.arq }}"
           deb="$(go run ./herramientas/catalogo nombre "deb-${{ matrix.arq }}" "$VERSION")"
           nfpm package -f empaquetado/linux/nfpm.yaml -p deb -t "$deb"
+          # **Y el .rpm, del mismo fichero** (fase 3): nfpm lo escribe él, sin rpmbuild, y
+          # traduce la arquitectura —amd64 a x86_64, arm64 a aarch64—. Lo que cambia son
+          # los nombres de las bibliotecas, que van en `overrides`.
+          rpm="$(go run ./herramientas/catalogo nombre "rpm-${{ matrix.arq }}" "$VERSION")"
+          nfpm package -f empaquetado/linux/nfpm.yaml -p rpm -t "$rpm"
           tgz="$(go run ./herramientas/catalogo nombre "tar-${{ matrix.arq }}" "$VERSION")"
           tar -czf "$tgz" \
             -C build/bin Esfinge \
             -C "$GITHUB_WORKSPACE" esfinge esfinge-puente esfinge-mcp LICENSE
-          ls -lh *.deb *.tar.gz
+          ls -lh *.deb *.rpm *.tar.gz
           # Y que el paquete declare la arquitectura que es: un .deb de amd64 en una
           # máquina ARM lo rechaza dpkg, y eso es lo que había que arreglar.
           dpkg-deb -f "$deb" Architecture | grep -qx "${{ matrix.arq }}" || {
             echo "::error::El .deb no declara la arquitectura ${{ matrix.arq }}"
             exit 1
           }
+          # Y lo mismo con el rpm, que nombra las arquitecturas de otra forma.
+          #
+          # `rpm` está en las dos imágenes de Linux —4.18.2, lo dice su propia lista de
+          # software—, y la fase 1 vio `rpmbuild` en las dos. **No es lo mismo que haberlo
+          # ejecutado ahí**: si algún día falta, este paso dirá «command not found» y
+          # tirará la publicación. La alternativa era mirarlo solo dentro del contenedor de
+          # Fedora, donde el `rpm` lo pone la imagen, y se ha preferido fallar aquí, que es
+          # donde se fabrica el paquete.
+          esperada="${{ matrix.arq }}"
+          [ "$esperada" = amd64 ] && esperada=x86_64
+          [ "$esperada" = arm64 ] && esperada=aarch64
+          rpm -qp --queryformat '%{ARCH}\n' "$rpm" | grep -qx "$esperada" || {
+            echo "::error::El .rpm no declara la arquitectura $esperada"
+            exit 1
+          }
+          rpm -qp --requires "$rpm" | sort | sed 's/^/  pide: /'
 
       - name: Armar el paquete de Claude Desktop
         run: |
@@ -573,8 +594,81 @@ jobs:
           name: linux-${{ matrix.arq }}
           path: |
             *.deb
+            *.rpm
             *.mcpb
             *.tar.gz
+
+  # **Que los paquetes instalen de verdad, en la distribución a la que van.**
+  #
+  # Hasta aquí lo que había era que nfpm los escribiera y que declararan la arquitectura
+  # que toca. Eso no dice que `dnf` los acepte: los nombres de las bibliotecas **cambian
+  # por distribución** —en Fedora son `webkit2gtk4.1` y `gtk3`, sin el guion de Debian— y
+  # un `depends` equivocado se empaqueta igual de bien y falla en el equipo de quien
+  # instala. Es el mismo trato que `esfinge boveda listar` en el VPS: no basta con que el
+  # fichero exista, tiene que hacer su trabajo.
+  #
+  # Va **antes** de publicar, con `publicar` esperándolo: un paquete que no instala no
+  # debería llegar a la página de descargas.
+  #
+  # Y comprueba una cosa más que no se puede ver desde Go: que el `postinstall` **corre de
+  # verdad** y deja escrito el gestor. De ese fichero depende que a una Fedora no se le
+  # ofrezca un `.deb` al actualizarse (ADR 0060).
+  humo:
+    name: Humo · paquetes · ${{ matrix.arq }}
+    needs: linux
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arq: amd64
+            os: ubuntu-latest
+          - arq: arm64
+            os: ubuntu-24.04-arm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: "linux-${{ matrix.arq }}", path: paquetes }
+
+      - name: Fedora instala el .rpm
+        run: |
+          set -euo pipefail
+          rpm="$(ls paquetes/*.rpm)"
+          echo "::group::$rpm"
+          docker run --rm -v "$PWD/paquetes:/p:ro" fedora:41 bash -euo pipefail -c '
+            rpm -qpi /p/*.rpm
+            echo "— lo que pide —"; rpm -qp --requires /p/*.rpm
+            dnf install -y /p/*.rpm
+            # Ninguna biblioteca sin resolver: es lo que de verdad dice que el «depends»
+            # era el bueno. `ldd` marca lo que falta con «not found».
+            ldd /usr/bin/esfinge-gui | grep -i "not found" && { echo "::error::Faltan bibliotecas"; exit 1; } || true
+            esfinge --version
+            # Y el gestor que dejó el postinstall, que es de lo que depende que a esta
+            # máquina no se le ofrezca un .deb.
+            test "$(cat /usr/share/esfinge/gestor)" = rpm || {
+              echo "::error::El postinstall del rpm no ha dejado «rpm» en /usr/share/esfinge/gestor"
+              exit 1
+            }
+            echo "✓ el .rpm instala, resuelve sus bibliotecas y se declara como rpm"
+          '
+          echo "::endgroup::"
+
+      - name: Debian instala el .deb
+        run: |
+          set -euo pipefail
+          echo "::group::$(ls paquetes/*.deb)"
+          docker run --rm -v "$PWD/paquetes:/p:ro" debian:13 bash -euo pipefail -c '
+            dpkg -I /p/*.deb | sed -n "1,12p"
+            apt-get update -qq
+            apt-get install -y /p/*.deb
+            ldd /usr/bin/esfinge-gui | grep -i "not found" && { echo "::error::Faltan bibliotecas"; exit 1; } || true
+            esfinge --version
+            test "$(cat /usr/share/esfinge/gestor)" = deb || {
+              echo "::error::El postinstall del deb no ha dejado «deb» en /usr/share/esfinge/gestor"
+              exit 1
+            }
+            echo "✓ el .deb instala, resuelve sus bibliotecas y se declara como deb"
+          '
+          echo "::endgroup::"
 
   linea-de-comandos:
     name: Línea de comandos
@@ -633,7 +727,7 @@ jobs:
 
   publicar:
     name: Publicar
-    needs: [macos, windows, linux, linea-de-comandos]
+    needs: [macos, windows, linux, linea-de-comandos, humo]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:

@@ -196,7 +196,7 @@ jobs:
         shell: bash
         run: |
           echo "runner: ${{ runner.os }} / ${{ runner.arch }} · imagen: ${{ matrix.os }}"
-          for h in makensis 7z curl sha256sum unzip python3 nfpm dpkg-deb rpmbuild; do
+          for h in makensis 7z curl sha256sum unzip python3 nfpm dpkg-deb rpm rpmbuild docker; do
             printf '  %-12s %s\n' "$h" "$(command -v "$h" || echo '— no está en el PATH')"
           done
           # **`command -v` contesta «¿está en el PATH?», no «¿está en esta máquina?»**, y la

@@ -87,3 +87,23 @@ depends:
 
 scripts:
   postinstall: empaquetado/linux/postinstall.sh
+
+# **Lo que cambia por empaquetador, y es poco pero no se puede adivinar.**
+#
+# Las mismas bibliotecas se llaman distinto en cada distribución: en Debian y Ubuntu son
+# `libwebkit2gtk-4.1-0` y `libgtk-3-0`, y en Fedora **`webkit2gtk4.1` y `gtk3`** —sin el
+# guion antes del 4.1, al contrario que en Arch, que usa `webkit2gtk-4.1`—. No están
+# adivinados: salen de la ficha 0030 de Apolo, que los midió instalando de verdad en un
+# contenedor de Fedora, y aquí los vuelve a comprobar `humo.yml`.
+#
+# Y cada uno lleva **su propio guion de postinstalación**, porque lo único que cambia es
+# qué gestor deja escrito en /usr/share/esfinge/gestor y ese fichero se ejecuta en el
+# equipo de quien instala: una variable de aquí no llegaría allí. Que los dos no se
+# separen lo vigila una prueba que los compara línea a línea.
+overrides:
+  rpm:
+    depends:
+      - webkit2gtk4.1
+      - gtk3
+    scripts:
+      postinstall: empaquetado/linux/postinstall-rpm.sh

@@ -193,3 +193,47 @@ func TestLasDosMatricesFijanSuImagen(t *testing.T) {
 		}
 	}
 }
+
+// TestLosDosPostinstallSoloSeDiferencianEnElGestor.
+//
+// Cada empaquetador lleva su propio guion de postinstalación porque ese fichero se copia
+// dentro del paquete y se ejecuta **en el equipo de quien instala**: una variable de la
+// máquina que lo arma no llegaría allí, y adivinar el gestor en el equipo del cliente
+// —mirando si hay `rpm` o `dpkg`— es la suposición que todo esto vino a quitar.
+//
+// El precio es **dos ficheros casi iguales**, y en esta casa eso ya ha costado cinco
+// fallos: el día que alguien añada un paso al de Debian, el de Fedora se queda sin él y
+// nadie se entera. No se pueden juntar —el fichero compartido no estaría instalado—, así
+// que toca lo que manda aquí cuando dos listas no se pueden juntar: **compararlas**, y
+// exigir que la única diferencia sea la línea del gestor.
+func TestLosDosPostinstallSoloSeDiferencianEnElGestor(t *testing.T) {
+	deb := strings.Split(leer(t, "../../empaquetado/linux/postinstall.sh"), "\n")
+	rpm := strings.Split(leer(t, "../../empaquetado/linux/postinstall-rpm.sh"), "\n")
+	if len(deb) != len(rpm) {
+		t.Fatalf("los dos guiones no tienen el mismo número de líneas (%d y %d): alguien añadió "+
+			"un paso a uno y no al otro", len(deb), len(rpm))
+	}
+	distintas := 0
+	for i := range deb {
+		if deb[i] == rpm[i] {
+			continue
+		}
+		distintas++
+		// La única diferencia que vale es cuál gestor se escribe.
+		if !strings.Contains(deb[i], "/usr/share/esfinge/gestor") ||
+			!strings.Contains(rpm[i], "/usr/share/esfinge/gestor") {
+			t.Errorf("línea %d: los dos guiones se diferencian en algo que no es el gestor.\n"+
+				"  deb: %s\n  rpm: %s", i+1, deb[i], rpm[i])
+		}
+	}
+	if distintas != 1 {
+		t.Errorf("se diferencian en %d líneas y tiene que ser exactamente una: la del gestor", distintas)
+	}
+	// Y que cada uno escriba el suyo, que es lo único que los distingue.
+	if !strings.Contains(strings.Join(deb, "\n"), "printf 'deb\\n'") {
+		t.Error("el postinstall del .deb no deja escrito «deb»")
+	}
+	if !strings.Contains(strings.Join(rpm, "\n"), "printf 'rpm\\n'") {
+		t.Error("el postinstall del .rpm no deja escrito «rpm»")
+	}
+}

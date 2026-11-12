@@ -166,12 +166,12 @@ func Catalogo() []Ficha {
 		},
 		{
 			Clave: "rpm-amd64", Sistema: "linux", Arq: "amd64", Clase: ClasePaquete,
-			Gestor: GestorRPM, Plantilla: "esfinge-{v}-1.x86_64.rpm",
+			Gestor: GestorRPM, Plantilla: "esfinge-{v}-1.x86_64.rpm", Publicado: true,
 			Rotulo: "Linux · Fedora y RHEL", Nota: "Aplicación y línea de comandos",
 		},
 		{
 			Clave: "rpm-arm64", Sistema: "linux", Arq: "arm64", Clase: ClasePaquete,
-			Gestor: GestorRPM, Plantilla: "esfinge-{v}-1.aarch64.rpm",
+			Gestor: GestorRPM, Plantilla: "esfinge-{v}-1.aarch64.rpm", Publicado: true,
 			Rotulo: "Linux · Fedora y RHEL (ARM)", Nota: "Aplicación y línea de comandos",
 		},
 		{
