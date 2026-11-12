@@ -101,20 +101,44 @@ jobs:
       matrix:
         include:
           - nombre: macOS
-            os: macos-latest
+            # Fijada y no «macos-latest»: a Apolo le retiraron macos-14 con
+            # apagones programados de por medio, y un runner móvil es una
+            # dependencia que cambia sola.
+            os: macos-15
             # Universal cubre Apple Silicon e Intel en un solo paquete.
             plataforma: darwin/universal
             artefacto: Esfinge-macOS
-          - nombre: Windows
+          - nombre: Windows · amd64
             os: windows-latest
             plataforma: windows/amd64
-            artefacto: Esfinge-Windows
-          - nombre: Linux
+            artefacto: Esfinge-Windows-amd64
+          # **Windows ARM, en una máquina ARM de verdad.**
+          #
+          # No cruza desde x86: la aplicación usa cgo por el webview, así que
+          # cada arquitectura necesita la suya. GitHub da estas máquinas gratis a
+          # los repositorios públicos, y éste lo es.
+          #
+          # Y aquí es donde se prueba primero, **sin publicar nada**: es lo que
+          # pedía docs/siguiente.md, porque no se sabía si Wails sabe hacerlo.
+          - nombre: Windows · arm64
+            os: windows-11-arm
+            plataforma: windows/arm64
+            artefacto: Esfinge-Windows-arm64
+          - nombre: Linux · amd64
             os: ubuntu-latest
             plataforma: linux/amd64
-            artefacto: Esfinge-Linux
+            artefacto: Esfinge-Linux-amd64
             # Ubuntu reciente ya no trae webkit2gtk-4.0, que es lo que Wails
             # busca de serie. La 4.1 se pide con su etiqueta.
+            etiquetas: webkit2_41
+          # **Linux ARM.** Se usa la imagen de 24.04, la misma que «ubuntu-latest»,
+          # a propósito: así las dos patas llevan el mismo WebKit y el mismo suelo
+          # de glibc, y una diferencia entre ellas no puede ser de la distribución.
+          # Bajar las dos a 22.04 ganaría Debian 12 y es otra decisión, de otro día.
+          - nombre: Linux · arm64
+            os: ubuntu-24.04-arm
+            plataforma: linux/arm64
+            artefacto: Esfinge-Linux-arm64
             etiquetas: webkit2_41
 
     runs-on: ${{ matrix.os }}
@@ -136,8 +160,13 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
 
       # El webview de Linux no viene en el runner.
+      #
+      # **Se pregunta por el sistema y no por el nombre de la imagen.** Decía
+      # `matrix.os == 'ubuntu-latest'`, así que al añadir la pata de ARM se habría
+      # quedado sin webkit y el fallo no habría dicho eso: habría dicho que Wails
+      # no encuentra webkit2gtk, que suena a que no existe en ARM.
       - name: Dependencias de Linux
-        if: matrix.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: |
           # **Fuera los repositorios de terceros antes de mirar.**
           #
@@ -155,6 +184,21 @@ jobs:
           sudo sed -i '/dl\.google\.com/d;/packages\.microsoft\.com/d' /etc/apt/sources.list
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      # **Qué trae esta máquina.**
+      #
+      # Suena a paso tonto y es la tercera vez que esta casa paga no saberlo: `zip`
+      # no existe en la Windows de GitHub y se llevó un trabajo entero por delante.
+      # De las dos imágenes ARM nadie de aquí ha visto nada, y lo que hace falta
+      # saber **antes** de empaquetar en ellas es si traen `makensis` y `7z`. No
+      # falla si falta algo: lo dice, que es para lo que existe esta fase.
+      - name: Qué trae esta máquina
+        shell: bash
+        run: |
+          echo "runner: ${{ runner.os }} / ${{ runner.arch }} · imagen: ${{ matrix.os }}"
+          for h in makensis 7z curl sha256sum unzip python3 nfpm dpkg-deb rpmbuild; do
+            printf '  %-12s %s\n' "$h" "$(command -v "$h" || echo '— no está')"
+          done
 
       - name: Instalar wails
         run: bash herramientas/reintentar.sh go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
