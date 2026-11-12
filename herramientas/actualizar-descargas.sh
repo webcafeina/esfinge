@@ -17,35 +17,17 @@ set -euo pipefail
 version="${1:?Falta la versión, por ejemplo 2.0.3}"
 raiz="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readme="$raiz/README.md"
-base="https://github.com/webcafeina/esfinge/releases/download/v${version}"
 
-nueva=$(cat <<TABLA
-<!-- descargas:inicio · las escribe herramientas/actualizar-descargas.sh -->
-
-| Sistema | Descarga | Notas |
-|---|---|---|
-| **macOS** | [Esfinge-${version}.dmg](${base}/Esfinge-${version}.dmg) | Universal: Apple Silicon e Intel |
-| **Windows** | [Esfinge-${version}-windows-instalador.exe](${base}/Esfinge-${version}-windows-instalador.exe) | Asistente de instalación |
-| **Linux · Debian y Ubuntu** | [esfinge_${version}_amd64.deb](${base}/esfinge_${version}_amd64.deb) | Aplicación y línea de comandos |
-| **Linux · cualquiera** | [esfinge-${version}-linux-amd64.tar.gz](${base}/esfinge-${version}-linux-amd64.tar.gz) | Los binarios sueltos |
-| **Línea de comandos** | [todos los sistemas](https://github.com/webcafeina/esfinge/releases/latest) | Seis objetivos, con sus SHA256 |
-
-**Y para usar la bóveda desde un agente de IA** (Claude Desktop y compañía), el paquete de su sistema. Se
-instala arrastrándolo a la ventana del agente, y necesita Esfinge abierta:
-
-| | |
-|---|---|
-| **macOS** | [Esfinge-${version}-macos.mcpb](${base}/Esfinge-${version}-macos.mcpb) |
-| **Windows** | [Esfinge-${version}-windows.mcpb](${base}/Esfinge-${version}-windows.mcpb) |
-| **Linux** | [Esfinge-${version}-linux.mcpb](${base}/Esfinge-${version}-linux.mcpb) |
-
-En **Claude Code** no hace falta: Ajustes da la orden escrita, con la ruta de tu equipo.
-
-Versión **${version}**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
-
-<!-- descargas:fin -->
-TABLA
-)
+# **La tabla sale del catálogo** (`internal/adjuntos`), no de un heredoc.
+#
+# Estaba escrita a mano aquí, con `amd64` cableado, y había **otra igual** en el cuerpo de
+# la publicación (`publicar.yml`): la misma lista en dos ficheros distintos, que es como se
+# desalinea. Y una tabla desalineada no da error: da un enlace que contesta 404, y lo
+# descubre quien va a descargar.
+#
+# En Go por la lección de `zip`: es lo único que seguro está en las cinco máquinas que
+# publican.
+nueva=$(cd "$raiz" && go run ./herramientas/catalogo tabla-readme "$version")
 
 python3 - "$readme" "$nueva" <<'PY'
 import re, sys

@@ -147,7 +147,10 @@ jobs:
   macos:
     name: macOS · imagen de disco
     needs: comprobar
-    runs-on: macos-latest
+    # **Fijado a propósito, no «macos-latest»** (2026-11-12): a Apolo le retiraron
+    # `macos-14` con apagones programados de por medio, y una etiqueta empujada esas horas
+    # se habría quedado sin el Mac. Un runner móvil es una dependencia que cambia sola.
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -458,10 +461,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
 
+      # **nfpm con versión fija, no «@latest»** (2026-11-12). Una dependencia de la
+      # compilación no puede colgar de un blanco móvil: ya ha costado tres publicaciones
+      # en este proyecto. Y no la última: la v2.49.0 salió el mismo día que esto se
+      # escribió, y aquí se fijan versiones con al menos una semana — la misma regla que
+      # el freno de pnpm, por lo mismo.
       - name: Instalar wails y nfpm
         run: |
           bash herramientas/reintentar.sh go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
-          bash herramientas/reintentar.sh go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          bash herramientas/reintentar.sh go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.48.0
 
       - name: Construir la interfaz
         working-directory: frontend
@@ -575,6 +583,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # **Go aquí también**, que este trabajo no compilaba nada y ahora le pregunta al
+      # catálogo: la puerta de abajo y el cuerpo de la publicación salen de él.
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.27", cache-dependency-path: go.sum }
       - uses: actions/download-artifact@v4
         with: { path: adjuntos, merge-multiple: true }
 
@@ -598,30 +610,54 @@ jobs:
           cat SHA256SUMS
           sha256sum -c SHA256SUMS
 
+      # **La puerta: lo que hay contra lo que el catálogo dice que tiene que haber, en
+      # los dos sentidos.** Que no falte ninguno y que no sobre ninguno.
+      #
+      # El segundo sentido es el que nadie pone y el que de verdad hace falta: un adjunto
+      # que se cuela con el nombre mal escrito no lo ve nadie —la publicación sale
+      # entera— hasta que alguien pulsa un enlace de la tabla y recibe un 404. Y un
+      # adjunto que falta porque una pata de la matriz se cayó deja la publicación a
+      # medias con todo lo demás en verde, que es como se ha caído esto antes.
+      #
+      # El catálogo vive en Go (internal/adjuntos) porque es lo único que seguro está en
+      # las cinco máquinas que compilan: la lección de «zip».
+      - name: La publicación lleva exactamente lo que dice el catálogo
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          go run ./herramientas/catalogo lista "$version" | sort > /tmp/esperados.txt
+          (cd adjuntos && ls -1) | sort > /tmp/hay.txt
+          if ! diff -u /tmp/esperados.txt /tmp/hay.txt; then
+            echo "::error::Lo publicado no es lo que dice el catálogo. Las líneas con «-» faltan y las con «+» sobran."
+            exit 1
+          fi
+          echo "✓ $(wc -l < /tmp/hay.txt) adjuntos, los del catálogo y ninguno más"
+
       - name: Qué se va a publicar
         run: ls -lhR adjuntos
+
+      # **El cuerpo sale del catálogo**, no de una tabla escrita aquí. Era la segunda
+      # copia de la misma lista —la otra es la del README— con `amd64` cableado en las
+      # dos, y dos copias de una lista se desalinean solas.
+      - name: Escribir el cuerpo de la publicación
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          go run ./herramientas/catalogo cuerpo-release "$version" > /tmp/cuerpo.md
+          cat >> /tmp/cuerpo.md <<'FIN'
+
+          **La primera vez el sistema avisará de que Esfinge no está firmada.** Es cierto:
+          firmar cuesta 99 $ al año y se decidió no hacerlo. En macOS, si el aviso no te
+          deja abrirla, ve a Ajustes del Sistema → Privacidad y seguridad y pulsa «Abrir de
+          todos modos».
+
+          **Sin la clave no hay forma de recuperar nada.** Guárdala antes de cifrar.
+          FIN
+          cat /tmp/cuerpo.md
 
       - uses: softprops/action-gh-release@v2
         with:
           files: adjuntos/*
           generate_release_notes: true
-          body: |
-            ## Descargar
-
-            | Sistema | Fichero |
-            |---|---|
-            | macOS (Apple Silicon e Intel) | `Esfinge-*.dmg` |
-            | Windows | `Esfinge-*-windows-instalador.exe` |
-            | Linux (Debian, Ubuntu) | `esfinge_*.deb` |
-            | Linux (cualquiera) | `esfinge-*-linux-amd64.tar.gz` |
-            | Línea de comandos | `esfinge-*-<sistema>-<arquitectura>` |
-
-            **La primera vez el sistema avisará de que Esfinge no está firmada.** Es cierto:
-            firmar cuesta 99 $ al año y se decidió no hacerlo. En macOS, si el aviso no te
-            deja abrirla, ve a Ajustes del Sistema → Privacidad y seguridad y pulsa «Abrir de
-            todos modos».
-
-            **Sin la clave no hay forma de recuperar nada.** Guárdala antes de cifrar.
+          body_path: /tmp/cuerpo.md
 
       # La tabla del README enlaza los ficheros de esta versión, que llevan el
       # número en el nombre. Se reescribe aquí para que no se quede vieja: a mano

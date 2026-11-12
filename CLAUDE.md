@@ -66,16 +66,20 @@ Linux Esfinge no se reemplaza a sí misma porque el `.deb` instala como root (AD
 comandos vive en `~/.local/bin/esfinge`, puesta a mano. Dejarla atrás no es cosmético: el VPS es **titular de
 la bóveda de proyecto de Tempero** (ADR 0057), así que una versión vieja puede acabar sin saber leer lo que
 el Mac acaba de escribir —el día que se rote una bóveda, el formato cambia— y **el despliegue se queda sin
-sus secretos**. Se hace así, y el último paso no se salta:
+sus secretos**. Se hace con una orden:
 
 ```sh
-gh release download vX.Y.Z -R webcafeina/esfinge -p 'esfinge-X.Y.Z-linux-amd64' -p 'SHA256SUMS'
-sha256sum -c --ignore-missing SHA256SUMS          # la suma, siempre
-cp ~/.local/bin/esfinge ~/.local/bin/esfinge-ANTERIOR
-install -m 755 esfinge-X.Y.Z-linux-amd64 ~/.local/bin/esfinge
-esfinge --version                                  # «version» no es un comando: es `--version`
-esfinge boveda listar --compartida Tempero         # **y que haga su trabajo**, que es lo que de verdad dice que va
+herramientas/actualizar-vps.sh 2.61.3
 ```
+
+Lo hace entero y **sin ningún paso que se pueda saltar**: baja el binario de su arquitectura —el nombre lo
+dice el catálogo (`internal/adjuntos`), no se compone a mano—, **comprueba la suma**, guarda el anterior
+como `esfinge-ANTERIOR`, instala, y al final **prueba que hace su trabajo** leyendo la bóveda compartida,
+porque `--version` solo dice que el fichero arranca. Y mira que la primera línea de esa salida **no** sea
+«no he podido poner al día… esto puede estar viejo», que sale con el listado completo debajo y es
+exactamente cómo se vio el fallo del 2026-11-12: es fácil leer el listado y no el aviso.
+
+Ojo: `esfinge version` no existe, es `--version`.
 
 **Y la tabla de descargas del README la reescribe el propio flujo**, que la comprometa él
 (`github-actions[bot]`). `make descargas` existe para arreglarla a mano si hace falta, **no es un paso de

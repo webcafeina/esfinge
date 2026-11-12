@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/webcafeina/esfinge/internal/adjuntos"
 )
 
 // APIPorDefecto es la de GitHub. Se puede cambiar al construir el comprobador,
@@ -155,28 +157,31 @@ func (c *Comprobador) ultima() (publicacion, error) {
 // Se busca por sufijo dentro de lo que devuelve la API en vez de componer el
 // nombre a mano: si algún día cambia cómo se llaman los ficheros, las versiones
 // ya instaladas seguirán encontrando la suya.
-func ParaEsteSistema(adjuntos []Adjunto) (Adjunto, bool) {
-	var sufijos []string
-	switch runtime.GOOS {
-	case "darwin":
-		// Una sola imagen, universal para Intel y Apple Silicon.
-		sufijos = []string{".dmg"}
-	case "windows":
-		sufijos = []string{"-windows-instalador.exe"}
-	case "linux":
-		// Quien lo instaló con el paquete recibe un paquete; quien se bajó el
-		// tar.gz y lo puso a mano no quiere que le metan un .deb por la puerta.
-		if instaladoConPaquete() {
-			sufijos = []string{"_" + runtime.GOARCH + ".deb", ".deb"}
-		}
-		sufijos = append(sufijos, "-linux-"+runtime.GOARCH+".tar.gz")
-	default:
-		return Adjunto{}, false
-	}
+func ParaEsteSistema(lista []Adjunto) (Adjunto, bool) {
+	return elDeEsteEquipo(lista, runtime.GOOS, runtime.GOARCH, gestorQueLoInstalo())
+}
 
-	for _, sufijo := range sufijos {
-		for _, a := range adjuntos {
-			if strings.HasSuffix(a.Nombre, sufijo) {
+// elDeEsteEquipo es ParaEsteSistema con el equipo por parámetro, **que es lo que la hace
+// comprobable**.
+//
+// La de antes leía `runtime.GOOS` y `runtime.GOARCH` por dentro, así que su prueba solo
+// podía comprobar la máquina donde corría —lo decía su propio comentario— y por eso nadie
+// vio que el día del primer `.rpm` una Fedora iba a recibir un `.deb`. Con los tres datos
+// por parámetro, los seis objetivos y los cuatro gestores se comprueban desde aquí.
+//
+// **Sigue buscando por sufijo**, que es la garantía de la versión anterior: una copia ya
+// instalada encuentra su fichero aunque el nombre cambie de versión. Lo que cambia es de
+// dónde sale el sufijo — del catálogo (`internal/adjuntos`), no de una lista escrita aquí
+// — y que ya no hay ningún sufijo genérico: el `".deb"` a secas casaba el paquete de
+// amd64 en una máquina ARM.
+func elDeEsteEquipo(lista []Adjunto, sistema, arq, gestor string) (Adjunto, bool) {
+	for _, clave := range adjuntos.ParaSistema(sistema, arq, gestor) {
+		f, hay := adjuntos.Por(clave)
+		if !hay {
+			continue
+		}
+		for _, a := range lista {
+			if strings.HasSuffix(a.Nombre, f.Sufijo()) {
 				return a, true
 			}
 		}

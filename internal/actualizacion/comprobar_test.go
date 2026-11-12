@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/webcafeina/esfinge/internal/adjuntos"
 )
 
 func TestCompararVersiones(t *testing.T) {
@@ -63,34 +66,99 @@ func TestBuscarElResumenEnLasSumas(t *testing.T) {
 }
 
 func TestElegirElFicheroDeCadaSistema(t *testing.T) {
-	adjuntos := []Adjunto{
-		{Nombre: "Esfinge-2.1.0.dmg"},
-		{Nombre: "Esfinge-2.1.0-windows-instalador.exe"},
-		{Nombre: "esfinge_2.1.0_amd64.deb"},
-		{Nombre: "esfinge-2.1.0-linux-amd64.tar.gz"},
-		{Nombre: "esfinge-2.1.0-windows-amd64.exe"}, // la línea de comandos, que no es
-		{Nombre: "SHA256SUMS"},
+	// **Los seis objetivos y los cuatro gestores, desde una sola máquina.**
+	//
+	// La prueba de antes decía en su propio comentario que «solo se puede comprobar el
+	// sistema en el que corren los tests», porque la función leía `runtime` por dentro.
+	// Eso es lo que hizo que nadie viera el fallo que esperaba al primer `.rpm`: a una
+	// Fedora se le iba a ofrecer un `.deb`. Con el equipo por parámetro, aquí se
+	// comprueban los veinticuatro casos.
+	const v = "2.1.0"
+	todos := func() []Adjunto {
+		var out []Adjunto
+		for _, n := range adjuntos.De(v) {
+			out = append(out, Adjunto{Nombre: n})
+		}
+		return out
+	}
+	publicadosHoy := func() []Adjunto {
+		var out []Adjunto
+		for _, n := range adjuntos.Publicados(v) {
+			out = append(out, Adjunto{Nombre: n})
+		}
+		return out
 	}
 
-	// ParaEsteSistema mira runtime.GOOS, así que aquí solo se puede comprobar el
-	// sistema en el que corren los tests. Lo que importa: que elige uno de los
-	// buenos y nunca el binario suelto de la línea de comandos.
-	a, vale := ParaEsteSistema(adjuntos)
-	if !vale {
-		t.Fatal("no ha elegido nada para este sistema")
+	// Con todo publicado —el mundo de después de la última fase—, cada equipo se lleva
+	// el suyo y nada más.
+	casos := []struct {
+		sistema, arq, gestor, quiere string
+	}{
+		{"darwin", "arm64", "", "Esfinge-2.1.0.dmg"},
+		{"darwin", "amd64", "", "Esfinge-2.1.0.dmg"},
+
+		{"windows", "amd64", "", "Esfinge-2.1.0-windows-amd64-instalador.exe"},
+		{"windows", "arm64", "", "Esfinge-2.1.0-windows-arm64-instalador.exe"},
+
+		{"linux", "amd64", adjuntos.GestorDeb, "esfinge_2.1.0_amd64.deb"},
+		{"linux", "arm64", adjuntos.GestorDeb, "esfinge_2.1.0_arm64.deb"},
+		{"linux", "amd64", adjuntos.GestorRPM, "esfinge-2.1.0-1.x86_64.rpm"},
+		{"linux", "arm64", adjuntos.GestorRPM, "esfinge-2.1.0-1.aarch64.rpm"},
+		{"linux", "amd64", adjuntos.GestorAppImage, "Esfinge-2.1.0-x86_64.AppImage"},
+		{"linux", "arm64", adjuntos.GestorAppImage, "Esfinge-2.1.0-aarch64.AppImage"},
+		{"linux", "amd64", adjuntos.SinGestor, "esfinge-2.1.0-linux-amd64.tar.gz"},
+		{"linux", "arm64", adjuntos.SinGestor, "esfinge-2.1.0-linux-arm64.tar.gz"},
 	}
-	buenos := map[string]bool{
-		"Esfinge-2.1.0.dmg":                    true,
-		"Esfinge-2.1.0-windows-instalador.exe": true,
-		"esfinge_2.1.0_amd64.deb":              true,
-		"esfinge-2.1.0-linux-amd64.tar.gz":     true,
-	}
-	if !buenos[a.Nombre] {
-		t.Errorf("ha elegido %q, que no es un instalador", a.Nombre)
+	for _, c := range casos {
+		a, vale := elDeEsteEquipo(todos(), c.sistema, c.arq, c.gestor)
+		if !vale {
+			t.Errorf("%s/%s con gestor %q: no ha elegido nada", c.sistema, c.arq, c.gestor)
+			continue
+		}
+		if a.Nombre != c.quiere {
+			t.Errorf("%s/%s con gestor %q: ha elegido %q y le toca %q",
+				c.sistema, c.arq, c.gestor, a.Nombre, c.quiere)
+		}
 	}
 
-	if _, vale := ParaEsteSistema(nil); vale {
+	// **En Arch no se descarga nada**: lo actualiza `pacman`, y ofrecerle un fichero
+	// que su gestor no conoce es peor que no ofrecerle ninguno.
+	for _, arq := range []string{"amd64", "arm64"} {
+		if a, vale := elDeEsteEquipo(todos(), "linux", arq, adjuntos.GestorPacman); vale {
+			t.Errorf("a una máquina de pacman se le ofrece %q", a.Nombre)
+		}
+	}
+
+	// **Y el mundo de hoy**, con solo lo que el flujo fabrica ya: amd64 encuentra el
+	// nombre viejo del instalador —que es lo que hace que esta versión sobreviva al
+	// renombrado— y arm64 **no encuentra nada**, que es correcto y es el camino que
+	// manda a la página.
+	if a, vale := elDeEsteEquipo(publicadosHoy(), "windows", "amd64", ""); !vale {
+		t.Error("en el mundo de hoy, un Windows amd64 se queda sin instalador")
+	} else if a.Nombre != "Esfinge-2.1.0-windows-instalador.exe" {
+		t.Errorf("en el mundo de hoy ha elegido %q", a.Nombre)
+	}
+	if a, vale := elDeEsteEquipo(publicadosHoy(), "windows", "arm64", ""); vale {
+		t.Errorf("en el mundo de hoy, a un Windows ARM se le ofrece %q", a.Nombre)
+	}
+	if a, vale := elDeEsteEquipo(publicadosHoy(), "linux", "arm64", adjuntos.GestorDeb); vale {
+		t.Errorf("a un Linux ARM se le ofrece %q, que dpkg rechazaría", a.Nombre)
+	}
+
+	// Y nunca, en ningún caso, un binario suelto de la línea de comandos ni las sumas.
+	for _, c := range casos {
+		a, _ := elDeEsteEquipo(todos(), c.sistema, c.arq, c.gestor)
+		if a.Nombre == "SHA256SUMS" || strings.HasPrefix(a.Nombre, "esfinge-mcp-") ||
+			strings.HasPrefix(a.Nombre, "esfinge-puente-") {
+			t.Errorf("%s/%s: ha elegido %q, que no es un instalador", c.sistema, c.arq, a.Nombre)
+		}
+	}
+
+	if _, vale := elDeEsteEquipo(nil, "darwin", "arm64", ""); vale {
 		t.Error("sin adjuntos no puede elegir nada, y dice que sí")
+	}
+	if _, vale := elDeEsteEquipo(todos(), "plan9", "amd64", ""); vale {
+		t.Error("para un sistema que no existe ha elegido algo")
 	}
 }
 
