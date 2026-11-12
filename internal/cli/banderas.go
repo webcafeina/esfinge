@@ -32,6 +32,12 @@ const exigeValorAnotacion = "esfinge-exige-valor"
 
 // exigeValor marca una bandera como de las que no admiten el vacío. Se llama justo
 // después de declararla.
+// **Y es solo para las que eligen dónde o de dónde.** El mensaje de
+// `vigilarLasQueExigenValor` dice que, tal cual, «Esfinge trabajaría con otra bóveda sin
+// avisar»: eso es cierto de `--boveda`, `--compartida` y las de la clave, y **falso de
+// cualquier otra**. Marcar aquí una bandera de contenido —se intentó con `--ssid` el
+// 2026-11-12— deja al usuario leyendo una frase que no tiene nada que ver con su error.
+// Lo que falta en un campo de contenido lo dice quien sabe qué hace falta.
 func exigeValor(f *pflag.FlagSet, nombres ...string) {
 	for _, n := range nombres {
 		if err := f.SetAnnotation(n, exigeValorAnotacion, []string{"sí"}); err != nil {

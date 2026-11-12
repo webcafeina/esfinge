@@ -184,7 +184,13 @@ No se cambian sin preguntar.
 - **Y guarda redes wifi** (ADR 0049), que es la séptima clase. Lo que hay que saber sin abrir la ficha:
   **lo que la hace útil es el código QR** —un invitado apunta el móvil y se conecta sin que nadie dicte la
   clave—, el generador **está escrito aquí** (`internal/qr`) y no es una dependencia, por lo de siempre y
-  porque además **recibe la contraseña en claro**; **el código se enseña a la vista**, que es la primera vez
+  porque además **recibe la contraseña en claro**; **una red se crea también desde la línea de comandos**
+  desde el 2026-11-12 —`--ssid`, `--seguridad` y `--oculta`—, y eso lo decidió el cliente contra la
+  recomendación de aquí: parecía que un servidor no se conecta a ningún wifi, y lo que importa es que **una
+  bóveda de proyecto se gestiona donde se gestione el proyecto** —y eso puede ser el VPS— mientras el QR se
+  enseña en el equipo de quien lo necesita. **Sin SSID no se guarda** —una red sin nombre se guardaba igual
+  de bien y el QR no se podía dibujar, que es la lección de `ExportarLlaves` una clase más arriba— y **la
+  seguridad se deduce de si hay contraseña**, no de lo que diga nadie; **el código se enseña a la vista**, que es la primera vez
   que Esfinge enseña un secreto sin que nadie lo pida y por eso la ficha lo dice con todas las letras; y
   **la contraseña en texto sigue oculta con su ojo** —el código lo lee una cámara apuntada a propósito y el
   texto lo lee quien pase por detrás—. Los colores del código **no salen de la paleta**: negro sobre blanco
@@ -560,6 +566,19 @@ impreciso. Y **el comentario del campo decía «esto lo pone `internal/app`»**,
 tercer sitio fuera: cuando algo hay que ponerlo en N sitios, el comentario que nombra uno **es parte del
 fallo**.
 
+**Y el mismo día, dos veces más, con la forma más barata de todas: la pregunta parecida.** `Exportar`,
+`ExportarLlaves`, `Importar`, `Repetidas` y `QuitarRepetidas` usaban `b.llave == nil` como «¿está abierta?»,
+y eso dejó de significar lo mismo en cuanto un titular pudo abrir **sin** clave de bóveda: cinco métodos
+contestando «La bóveda está cerrada» con la bóveda abierta y sus entradas legibles de una en una. Las dos
+preguntas se parecen y son distintas —`cerrada()` es «no se puede leer el cuerpo» y `sinClaveDeBoveda()` es
+«esto es cosa del dueño»— y la segunda se escribió **el mismo día** que la primera dejó de valer. Y
+`MinimoDeCaracteres` le preguntaba a `BytesParaCaracteres` —«cuántos bytes hay que sortear», que redondea
+hacia arriba— cuando lo que quería saber es «cuántos bits lleva el resultado»: solo coinciden sin redondeo,
+así que en hexadecimal el mínimo era 15 —60 bits— y **la prueba que lo vigilaba comprobaba la misma pregunta
+equivocada**, con su propio comentario diciendo 16 al lado. **La regla: una función cuyo nombre contesta
+*casi* lo que quieres es más peligrosa que no tener ninguna**, y una prueba escrita con ella hereda el
+error. Las dos salieron de **probar a mano**, no de leer.
+
 **Y el truco que evita diez condicionales nuevos: que el caso de siempre sea el degenerado del nuevo.** Al
 añadir las claves de contenido (ADR 0059), la bóveda de formato 1 pasa a tener **una cadena de una sola
 clave, y esa clave es la de bóveda**. Así no hay diez sitios preguntando «¿esta bóveda tiene claves de
@@ -872,6 +891,17 @@ entrada no está» de una que sí está, en otra bóveda— y **con una escritur
 a impedir**, guardar en la bóveda de un cliente sin que nadie lo haya pedido. Ahora cualquier llamada que no
 nombre bóveda **deshace el respiro antes de hacer nada**, así que «sin nombrar» vuelve a significar siempre
 lo mismo.
+
+**Y van cinco, y esta vez se midió en vez de razonarse** (2026-11-12). Un agente que trabajaba en una bóveda
+de pruebas se topó con `La bóveda ha cambiado en otro sitio desde que se abrió aquí (serie 77 en disco, 75
+aquí)` —cierto, y resuelto por su propio reintento, que es el camino de la serie optimista funcionando— y lo
+atribuyó a **un servidor de desarrollo** que vio corriendo contra ese `-config`, «escribiendo cada ~26
+segundos». Se comprobó con el experimento que eso pedía: copia de la bóveda, servidor aparte con la bóveda
+**confirmada abierta** y nadie tocándola. La serie no se movió en dos minutos. Los que escribían eran **sus
+dos agentes hermanos** —cada `ejecutar` apunta en el registro—. Y una lección del propio experimento: el
+primer intento **no valía y había que decirlo**, porque el servidor no arrancó por un puerto ocupado y
+entonces la serie quieta no prueba nada. **Un experimento que no comprueba que su montaje funcionó está
+midiendo otra cosa.**
 
 **Y van tres: el agente da el síntoma bien y la causa mal.** La tercera fue el 2026-10-19 — vio que mover
 cambiaba la fecha, que es cierto, y dedujo que eso engañaría a `esfinge_higiene` haciendo pasar una

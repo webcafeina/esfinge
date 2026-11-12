@@ -37,6 +37,42 @@ Plantilla al final.
   el gancho «lo pone `internal/app`».
 - Las tres puertas en verde sobre lo publicado: `comprobar: 0`, **200** pruebas de la extensión y **156**
   del e2e en los dos temas.
+- **Y por la tarde, una batería de capacidades en el VPS, que encontró tres más.** Probar a mano lo que ya
+  estaba publicado: `exportar` contestaba **«La bóveda está cerrada» con la bóveda abierta** —cinco métodos
+  usaban la clave de bóveda como prueba de «abierta», y un titular del formato 2 no la tiene—; `boveda
+  exportar -o` **no existía** y lo prometía su propio ejemplo; y el mínimo de `--generar` en hexadecimal eran
+  **15 caracteres, o sea 60 bits**, con tres documentos diciendo 16. Las tres en la **2.61.2** y la **2.61.3**,
+  con vigilantes que leen el fuente: uno se pone rojo si alguien vuelve a preguntar `b.llave == nil` a mano y
+  otro recorre el árbol de comandos exigiendo que **cada bandera nombrada en la ayuda exista**.
+- **Y una decisión del cliente contra mi recomendación**, que conviene no perder: una red wifi **sí** se crea
+  desde la línea de comandos (`--ssid`, `--seguridad`, `--oculta`). Yo propuse negarse —«un servidor no se
+  conecta a ningún wifi»— y él señaló el caso que lo tira: **una bóveda de proyecto se gestiona donde se
+  gestione el proyecto**, y eso puede ser el VPS, mientras el QR se enseña en el equipo de quien lo necesita.
+  Pregunté quién *se conecta* cuando la pregunta era quién *gestiona el dato*.
+- **Y el agente que llegue al VPS ahora sabe que Esfinge existe.** No lo sabía: `~/.claude/CLAUDE.md` tenía
+  **cero** menciones y `Tempero/CLAUDE.md` también, así que solo se enteraba quien abriera el guion de
+  despliegue. Peor: el `CLAUDE.md` de **coach** decía «Esfinge aún no se usa… sugiérele **Dashlane**», falso
+  desde hoy. Corregido el hecho y **intacta la decisión de Álvaro** sobre adaptar Kairós. *MCP empuja; una
+  línea de comandos hay que encontrarla, y el `CLAUDE.md` es su `tools/list`.*
+- **Y una batería con agentes de verdad, cuatro encargos realistas en una bóveda de pruebas**: desplegar,
+  rotar un secreto dado en el texto, crear uno nuevo y hacer un inventario para una auditoría. **Cuatro de
+  cuatro acertaron**: `ejecutar`, `editar --secreto-stdin`, `crear --generar` y —en el inventario, que era la
+  trampa— un proceso hijo que imprime **solo longitudes** en vez del `exportar` que parecía el atajo. Ningún
+  secreto pasó por ninguna conversación. **El bloque que se escribió esta mañana en `~/.claude/CLAUDE.md` se
+  usó**: uno eligió hexadecimal citando la regla de las URL, y los cuatro pusieron `ESFINGE_SIN_RED=1` por su
+  cuenta. Tres cosas suyas mejores que las mías: tomar línea base antes de rotar —sin ella, la huella nueva no
+  distingue «lo cambié yo» de «ya estaba»—, desconfiar de la propia medición contrastándola con controles, y
+  uno de ellos **avisó de una suciedad mía**: dos exportaciones en claro que dejé tiradas en la caja, borradas
+  con `shred -u`.
+- **De ahí salió F6** —`--ayuda` no existía, y dos de los cuatro gastaron turnos en ella— y **la quinta vez del
+  patrón «síntoma bien, causa mal»**, ésta medida con un experimento en vez de razonada: un servidor de
+  desarrollo con la bóveda abierta **no escribe nada**, así que los choques de serie eran de los agentes
+  hermanos. El primer intento del experimento **no valía y se dijo**: su servidor no arrancó.
+- **Lo que no se hizo, y por qué**: vaciar los `.env` de Tempero. Su propia fila de deuda dice que rompería
+  las copias —Compose interpola el fichero en **cualquier** subcomando— y al ir a comprobar ese paso salió
+  que **la copia de Tempero no se ha ejecutado nunca**: un volcado a mano del 9 de septiembre, sin `copia.log`
+  y sin línea en cron, mientras los otros cinco proyectos del VPS sí la tienen. No se vacía el `.env` de un
+  sistema cuya copia no se hace.
 
 ---
 

@@ -1,6 +1,9 @@
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+)
 
 // castellanizar sustituye los rótulos que cobra trae en inglés y quita el
 // comando «completion», que aparece solo y desentona en una ayuda en español.
@@ -28,6 +31,23 @@ func castellanizar(raiz *cobra.Command) {
 	})
 
 	raiz.PersistentFlags().BoolP("help", "h", false, "Muestra esta ayuda")
+
+	// **Y `--ayuda` vale en todo el árbol** (2026-11-12). Había un subcomando `ayuda` y la
+	// bandera era solo `--help`, en un programa donde **todas las demás frases están en
+	// español**: una asimetría que no se adivina. La encontraron dos de cuatro agentes
+	// probando el VPS, gastando turnos en `--ayuda`, `boveda ayuda listar` y
+	// `boveda ayuda ejecutar`, que no existen.
+	//
+	// Se hace normalizando el **nombre** de la bandera y no declarando una segunda: con dos
+	// banderas habría dos verdades que mantener —y la ayuda las enseñaría las dos—, mientras
+	// que normalizar las junta en una antes de buscarla. Y va en la raíz porque cobra la
+	// propaga a todos los hijos, que es justo lo que faltaba.
+	raiz.SetGlobalNormalizationFunc(func(_ *pflag.FlagSet, nombre string) pflag.NormalizedName {
+		if nombre == "ayuda" {
+			return "help"
+		}
+		return pflag.NormalizedName(nombre)
+	})
 
 	// Cobra crea el flag de versión al vuelo con su propio texto en inglés;
 	// forzando su creación aquí se puede reescribir antes de que nadie lo lea.

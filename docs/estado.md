@@ -40,6 +40,33 @@ mismas ocho cifras de antes. La 2.61.0 queda al lado como `esfinge-ANTERIOR`.
 puede rotar cuando el cliente quiera —ahora sin la arista—. Y las dos tiendas sirven la 2.61.0 desde hoy,
 así que la flota está entera al día.
 
+### Y una batería de capacidades en el VPS, que encontró tres fallos más (2026-11-12, tarde)
+
+Probar a mano lo que ya estaba publicado. **`exportar` decía «La bóveda está cerrada» con la bóveda
+abierta** —cinco métodos usaban la clave de bóveda como prueba de «abierta» y un titular del formato 2 no la
+tiene—, **`boveda exportar -o` no existía** aunque lo prometía su propio ejemplo, y **el mínimo de
+`--generar` en hexadecimal eran 15 caracteres, o sea 60 bits**, con el comentario de la función, `CLAUDE.md`
+y su fila de deuda diciendo 16. Las tres saldadas en la **2.61.2** y la **2.61.3**.
+
+**Lo que deja, que vale más que los arreglos:** dos vigilantes que **leen el fuente** —uno se pone rojo si
+alguien vuelve a preguntar `b.llave == nil` a mano, otro recorre el árbol de comandos y exige que cada
+bandera nombrada en la ayuda exista, que es lo que habría cazado también el `-q` de la vez anterior—, y
+**una sola tabla** para los campos que `crear` y `editar` saben poner, donde antes había tres listas.
+
+**Y una red wifi se crea ya desde la línea de comandos** (`--ssid`, `--seguridad`, `--oculta`), que es una
+decisión del cliente contra la recomendación de aquí: una bóveda de proyecto **se gestiona donde se gestione
+el proyecto** —y eso puede ser el VPS— mientras el QR se enseña en el equipo de quien lo necesita.
+
+**Y una batería con agentes de verdad** (cuatro encargos en una bóveda de pruebas: desplegar, rotar, crear,
+inventariar) **la pasaron los cuatro**: ninguno usó `ver` ni `exportar`, y ningún secreto pasó por ninguna
+conversación. De ahí salió **F6**: `--ayuda` no existía —`--help` era la única, en un programa que habla
+español— y dos de los cuatro gastaron turnos en ella. Arreglada en la **2.61.3**, normalizando el nombre en
+la raíz, con una prueba que recorre el árbol entero.
+
+**Lo que sigue sin poder probarse desde aquí**: que un QR lo lea **un móvil** de verdad, y el código de un
+solo uso, porque la semilla no se puede escribir desde la línea de comandos **a propósito** (cualquier cadena
+de letras es base32 válida y una mal copiada deja la cuenta sin segundo factor sin que nada avise).
+
 ## Las dos publicaciones de la clave de contenido, fuera (2026-11-10)
 
 **Las dos están publicadas.** La **2.60.0** —la A, que solo lee— salió por la mañana, y con Firefox

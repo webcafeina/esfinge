@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // porElArbol ejecuta la línea de comandos **como lo hace el programa**: por la raíz
@@ -210,6 +211,57 @@ func TestLoQueLaAyudaPrometeExiste(t *testing.T) {
 			if !hayCorta(cmd, letra) {
 				quejarse(cmd, "-", letra)
 			}
+		}
+		for _, hijo := range cmd.Commands() {
+			recorrer(hijo)
+		}
+	}
+	recorrer(raiz)
+}
+
+// TestLaAyudaTambienSeLlamaAyuda comprueba que `--ayuda` vale en todo el árbol.
+//
+// La bandera era solo `--help` en un programa donde **todas las demás frases están en
+// español** y donde hay un subcomando `ayuda`: una asimetría que no se adivina. La
+// encontraron **dos de cuatro agentes** probando el VPS, gastando turnos en `--ayuda` y en
+// `boveda ayuda <verbo>`.
+//
+// Se recorre el árbol entero y no un par de comandos a mano: lo que se arregló es una
+// normalización de la raíz que cobra propaga a los hijos, así que lo que hay que vigilar
+// es precisamente que **llegue a todos** — incluidos los que se añadan mañana.
+func TestLaAyudaTambienSeLlamaAyuda(t *testing.T) {
+	var o opciones
+	raiz := laRaiz(&o, "pruebas")
+
+	// **En un hijo hay que mirar también las heredadas**, y esto costó una pasada en rojo:
+	// `--help` lo declara la raíz como persistente, y `cmd.Flags()` de un hijo no las trae
+	// hasta que cobra las funde al ejecutar. El binario funcionaba y la prueba decía que
+	// «boveda ha perdido --help». Es la segunda vez el mismo día que los conjuntos de
+	// banderas de cobra engañan al mirarlos antes de `Execute`.
+	busca := func(cmd *cobra.Command, nombre string) *pflag.Flag {
+		for _, f := range []*pflag.Flag{
+			cmd.Flags().Lookup(nombre),
+			cmd.PersistentFlags().Lookup(nombre),
+			cmd.InheritedFlags().Lookup(nombre),
+		} {
+			if f != nil {
+				return f
+			}
+		}
+		return nil
+	}
+
+	var recorrer func(cmd *cobra.Command)
+	recorrer = func(cmd *cobra.Command) {
+		// `--ayuda` se normaliza a `help`, así que lo que se busca es que **la encuentre**.
+		if f := busca(cmd, "ayuda"); f == nil {
+			t.Errorf("«%s» no entiende --ayuda", cmd.CommandPath())
+		} else if f.Name != "help" {
+			t.Errorf("«%s»: --ayuda apunta a --%s y no a --help", cmd.CommandPath(), f.Name)
+		}
+		// Y la canónica sigue siendo la de siempre, que es la que sale en la ayuda.
+		if busca(cmd, "help") == nil {
+			t.Errorf("«%s» ha perdido --help", cmd.CommandPath())
 		}
 		for _, hijo := range cmd.Commands() {
 			recorrer(hijo)

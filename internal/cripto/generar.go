@@ -131,11 +131,27 @@ func Generar(a Alfabeto, bytes int) (string, error) {
 // símbolos están bien.
 func MinimoDeCaracteres(a Alfabeto) int {
 	for n := 1; n <= 64; n++ {
-		if BytesParaCaracteres(a, n) >= 8 {
+		if bitsDe(a, n) >= 64 {
 			return n
 		}
 	}
 	return 64
+}
+
+// bitsDe es la entropía que llevan esos caracteres de ese alfabeto.
+//
+// **Y no es lo mismo que `BytesParaCaracteres`**, que contesta cuántos bytes hay que
+// sortear para producirlos — y redondea hacia arriba, porque sobrar es gratis y faltar
+// no. Preguntarle a ésa por la entropía es un error que solo se ve cuando hay redondeo:
+// hasta el 2026-11-12, `MinimoDeCaracteres` lo hacía y en hexadecimal daba **15**, o sea
+// 60 bits, cuando el suelo de esta casa son 64 y el comentario de arriba dice 16. En los
+// otros dos alfabetos acertaba por cómo trunca el otro camino, que es la peor forma de
+// acertar. Lo encontró probar los bordes a mano, no leer.
+func bitsDe(a Alfabeto, caracteres int) float64 {
+	if a.Runas == "" {
+		return float64(caracteres) * 4 // hexadecimal: media docena de nada, 4 bits por carácter
+	}
+	return float64(caracteres) * math.Log2(float64(len([]rune(a.Runas))))
 }
 
 // MaximoDeCaracteres es el mayor largo que se acepta, por el mismo tope de 256 bytes que

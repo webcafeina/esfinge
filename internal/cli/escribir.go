@@ -50,6 +50,7 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/cripto"
+	"github.com/webcafeina/esfinge/internal/wifi"
 )
 
 // elSecretoDeFabrica son los bytes de entropía de `--generar` cuando nadie dice un
@@ -161,18 +162,136 @@ func (s origenDelSecreto) leer() (string, *comoEsLoGenerado, error) {
 // lista en dos sitios se desalinea sola: en este proyecto ya ha costado tres fallos.
 type losCampos struct {
 	titulo, usuario, notas, carpeta, tipo string
+	ssid, seguridad                       string
+	oculta                                bool
 	sitios, etiquetas                     []string
 }
 
+// campoDeEntrada es un campo que estos dos verbos saben poner: su bandera, de qué clase
+// es, cómo se declara y cómo se aplica a la entrada.
+type campoDeEntrada struct {
+	bandera string
+	// soloTipo es la clase a la que pertenece ese campo; vacío, vale para todas. Puesto
+	// en la tabla y no en un `if` suelto, es lo que hace que **negarse a poner `--ssid`
+	// en una tarjeta** no sea una cuarta lista de nombres.
+	soloTipo boveda.Tipo
+	declarar func(cmd *cobra.Command, c *losCampos)
+	aplicar  func(e *boveda.Entrada, c *losCampos)
+}
+
+// losCamposQueSePueden es **la única lista** de lo que `crear` y `editar` saben poner.
+//
+// Estaba escrita tres veces —las banderas, el «qué se nombró» y el `switch` que parchea
+// la entrada—, y eso en esta casa ya ha costado cuatro fallos: `vaciarLoSensible`,
+// `enConfiguracionDePruebas` —que tiró una publicación—, `PasaPorLaValvula` y el gancho de
+// la cadena de hoy. Se juntó al añadir los campos de la red wifi (2026-11-12), que son
+// justo el caso en que olvidar uno no da error: la bandera se declara, nadie la aplica y
+// `editar --ssid` contesta «no has dicho qué cambiar».
+var losCamposQueSePueden = []campoDeEntrada{
+	{bandera: "titulo",
+		declarar: func(cmd *cobra.Command, c *losCampos) {
+			cmd.Flags().StringVar(&c.titulo, "titulo", "", "Cómo se llama la entrada")
+		},
+		aplicar: func(e *boveda.Entrada, c *losCampos) { e.Titulo = c.titulo }},
+	{bandera: "usuario",
+		declarar: func(cmd *cobra.Command, c *losCampos) {
+			cmd.Flags().StringVar(&c.usuario, "usuario", "", "El usuario o el correo con el que se entra")
+		},
+		aplicar: func(e *boveda.Entrada, c *losCampos) { e.Usuario = c.usuario }},
+	{bandera: "notas",
+		declarar: func(cmd *cobra.Command, c *losCampos) {
+			cmd.Flags().StringVar(&c.notas, "notas", "", "Notas, que van cifradas como todo lo demás")
+		},
+		aplicar: func(e *boveda.Entrada, c *losCampos) { e.Notas = c.notas }},
+	{bandera: "carpeta",
+		declarar: func(cmd *cobra.Command, c *losCampos) {
+			cmd.Flags().StringVar(&c.carpeta, "carpeta", "", "La carpeta donde ponerla")
+		},
+		aplicar: func(e *boveda.Entrada, c *losCampos) { e.Carpeta = c.carpeta }},
+	{bandera: "sitio",
+		declarar: func(cmd *cobra.Command, c *losCampos) {
+			cmd.Flags().StringArrayVar(&c.sitios, "sitio", nil,
+				"Un dominio donde vale esta credencial; se puede repetir")
+		},
+		aplicar: func(e *boveda.Entrada, c *losCampos) { e.Sitios = c.sitios }},
+	{bandera: "etiqueta",
+		declarar: func(cmd *cobra.Command, c *losCampos) {
+			cmd.Flags().StringArrayVar(&c.etiquetas, "etiqueta", nil, "Una etiqueta; se puede repetir")
+		},
+		aplicar: func(e *boveda.Entrada, c *losCampos) { e.Etiquetas = c.etiquetas }},
+
+	// **Los de la red wifi** (ADR 0049). Van aquí porque una bóveda de proyecto se
+	// gestiona donde se gestione el proyecto —y eso puede ser este servidor—, mientras
+	// que **el código QR se enseña en el equipo de quien lo necesita**: el que crea la
+	// red y el que la usa no tienen por qué ser el mismo. Sin estas tres banderas, una
+	// red creada desde aquí nacía sin nombre y el único verbo que la consume la
+	// rechazaba, sin que nada lo dijera al crearla.
+	{bandera: "ssid", soloTipo: boveda.TipoWifi,
+		declarar: func(cmd *cobra.Command, c *losCampos) {
+			// **Sin `exigeValor`, y a propósito**: su frase dice que «Esfinge trabajaría
+			// con otra bóveda sin avisar», que es cierta para las banderas que eligen
+			// bóveda y **falsa para un SSID**. Puesta y vacía la caza `loQuePideSuClase`,
+			// con el mensaje que sí explica qué falta.
+			cmd.Flags().StringVar(&c.ssid, "ssid", "",
+				"El nombre que emite el router, que no es el título")
+		},
+		aplicar: func(e *boveda.Entrada, c *losCampos) { e.SSID = c.ssid }},
+	{bandera: "seguridad", soloTipo: boveda.TipoWifi,
+		declarar: func(cmd *cobra.Command, c *losCampos) {
+			cmd.Flags().StringVar(&c.seguridad, "seguridad", "",
+				"wpa, wep o abierta; por defecto se deduce de si hay contraseña")
+		},
+		aplicar: func(e *boveda.Entrada, c *losCampos) { e.Seguridad = c.seguridad }},
+	{bandera: "oculta", soloTipo: boveda.TipoWifi,
+		declarar: func(cmd *cobra.Command, c *losCampos) {
+			cmd.Flags().BoolVar(&c.oculta, "oculta", false,
+				"La red no anuncia su nombre, y el código tiene que decirle al móvil que la busque")
+		},
+		aplicar: func(e *boveda.Entrada, c *losCampos) { e.Oculta = c.oculta }},
+}
+
 func banderasDeLosCampos(cmd *cobra.Command, c *losCampos) {
-	f := cmd.Flags()
-	f.StringVar(&c.titulo, "titulo", "", "Cómo se llama la entrada")
-	f.StringVar(&c.usuario, "usuario", "", "El usuario o el correo con el que se entra")
-	f.StringVar(&c.notas, "notas", "", "Notas, que van cifradas como todo lo demás")
-	f.StringVar(&c.carpeta, "carpeta", "", "La carpeta donde ponerla")
-	f.StringArrayVar(&c.sitios, "sitio", nil,
-		"Un dominio donde vale esta credencial; se puede repetir")
-	f.StringArrayVar(&c.etiquetas, "etiqueta", nil, "Una etiqueta; se puede repetir")
+	for _, campo := range losCamposQueSePueden {
+		campo.declarar(cmd, c)
+	}
+}
+
+// loQueNoEsDeSuClase se niega a poner un campo de una clase en una entrada de otra.
+//
+// Sin esto, `crear --tipo credencial --ssid casa` guardaba el SSID en una credencial: un
+// campo que ahí no se lee y que nadie va a ver nunca. Es la mitad barata de la regla de
+// abajo, y sale de la misma tabla.
+func loQueNoEsDeSuClase(cmd *cobra.Command, tipo boveda.Tipo) error {
+	for _, campo := range losCamposQueSePueden {
+		if campo.soloTipo == "" || campo.soloTipo == tipo || !cmd.Flags().Changed(campo.bandera) {
+			continue
+		}
+		return errUso{fmt.Errorf("--%s es de una red wifi, y esta entrada es %s", campo.bandera, tipo)}
+	}
+	return nil
+}
+
+// loQuePideSuClase comprueba que la entrada tenga lo que su clase necesita **antes de
+// guardarla**, y normaliza lo que no se puede copiar de nadie.
+//
+// Es la lección de `ExportarLlaves` otra vez: lo que hace falta para que algo sirva se
+// mira antes, no cuando alguien va a usarlo. Una red sin SSID se guarda igual de bien y
+// el QR no se puede dibujar — y quien se entera es el invitado con el móvil en la mano.
+//
+// **La seguridad se deduce de si hay contraseña y no de lo que diga nadie** (ADR 0049):
+// el `wifi.csv` de Dashlane dice `unsecured` en redes que la tienen, y creyéndole el
+// código sale marcado como red abierta y el móvil no se conecta.
+func loQuePideSuClase(e *boveda.Entrada) error {
+	if e.Tipo != boveda.TipoWifi {
+		return nil
+	}
+	if strings.TrimSpace(e.SSID) == "" {
+		return errUso{errors.New(
+			"Una red wifi necesita el nombre que emite el router: ponlo con --ssid. " +
+				"No es el título: el título es cómo la buscas tú y el SSID es lo que el móvil tiene que encontrar")}
+	}
+	e.Seguridad = wifi.Normalizar(e.Seguridad, e.Secreto != "")
+	return nil
 }
 
 // ------------------------------------------------------------------ crear
@@ -203,16 +322,23 @@ func comandoBovedaCrear(o *opciones, ob *opcionesBoveda) *cobra.Command {
 			"guardado y sube igual; lo que no se entera es la pantalla.",
 		Example: "  printf '%s' \"$TOKEN\" | esfinge boveda crear --compartida Tempero \\\n" +
 			"      --titulo \"Cloudflare API\" --usuario zeri --sitio dash.cloudflare.com --secreto-stdin\n" +
-			"  esfinge boveda crear --titulo Resend --generar --alfabeto alnum --caracteres 40",
+			"  esfinge boveda crear --titulo Resend --generar --alfabeto alnum --caracteres 40\n" +
+			"  esfinge boveda crear --tipo wifi --titulo \"La oficina\" --ssid ZeriGuest --generar",
 		Args:          cobra.NoArgs,
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if strings.TrimSpace(c.titulo) == "" {
 				return errUso{errors.New("Hace falta un título, con --titulo")}
 			}
 			tipo, err := elTipoQueSePide(c.tipo)
 			if err != nil {
+				return err
+			}
+			// **Las dos comprobaciones de la clase van antes de abrir la bóveda**, que es
+			// lo que hace falta para decidir; enterarse al final es haberla abierto para
+			// nada y, en el caso de la red, haber guardado algo que no sirve.
+			if err := loQueNoEsDeSuClase(cmd, tipo); err != nil {
 				return err
 			}
 			secreto, comoEs, err := s.leer()
@@ -229,11 +355,12 @@ func comandoBovedaCrear(o *opciones, ob *opcionesBoveda) *cobra.Command {
 				return errors.New(porque)
 			}
 
-			e := boveda.Entrada{
-				Tipo: tipo, Titulo: c.titulo, Usuario: c.usuario,
-				Notas: c.notas, Carpeta: c.carpeta,
-				Sitios: c.sitios, Etiquetas: c.etiquetas,
-				Secreto: secreto,
+			e := boveda.Entrada{Tipo: tipo, Secreto: secreto}
+			for _, campo := range losCamposQueSePueden {
+				campo.aplicar(&e, &c)
+			}
+			if err := loQuePideSuClase(&e); err != nil {
+				return err
 			}
 			if err := d.b.Poner(e); err != nil {
 				return err
@@ -329,25 +456,30 @@ func comandoBovedaEditar(o *opciones, ob *opcionesBoveda) *cobra.Command {
 				return err
 			}
 
-			// **El parche, campo a campo sobre lo que ya hay.**
-			for _, campo := range cambiados {
-				switch campo {
-				case "titulo":
-					e.Titulo = c.titulo
-				case "usuario":
-					e.Usuario = c.usuario
-				case "notas":
-					e.Notas = c.notas
-				case "carpeta":
-					e.Carpeta = c.carpeta
-				case "sitio":
-					e.Sitios = c.sitios
-				case "etiqueta":
-					e.Etiquetas = c.etiquetas
-				case "secreto":
+			// **Y aquí la clase la dice la entrada que ya existe**, no una bandera: `editar`
+			// no cambia de clase, así que poner `--ssid` en una tarjeta es el mismo error
+			// que al crear y se dice igual.
+			if err := loQueNoEsDeSuClase(cmd, e.Tipo); err != nil {
+				return err
+			}
+
+			// **El parche, campo a campo sobre lo que ya hay**, y los campos salen de la
+			// tabla: escrito como un `switch` aparte, un campo nuevo se declara, no se
+			// aplica y `editar` contesta «no has dicho qué cambiar».
+			for _, nombre := range cambiados {
+				if nombre == "secreto" {
 					// Por el camino de siempre, para que el anterior caiga al historial.
 					e.CambiarSecreto(secreto, time.Now())
+					continue
 				}
+				for _, campo := range losCamposQueSePueden {
+					if campo.bandera == nombre {
+						campo.aplicar(&e, &c)
+					}
+				}
+			}
+			if err := loQuePideSuClase(&e); err != nil {
+				return err
 			}
 			if err := d.b.Poner(e); err != nil {
 				return err
@@ -376,9 +508,9 @@ func comandoBovedaEditar(o *opciones, ob *opcionesBoveda) *cobra.Command {
 // decir `--notas` es «déjalas». Con el valor vacío las dos cosas se ven igual.
 func loQueSeNombro(cmd *cobra.Command, hayUnSecreto bool) []string {
 	var out []string
-	for _, n := range []string{"titulo", "usuario", "notas", "carpeta", "sitio", "etiqueta"} {
-		if cmd.Flags().Changed(n) {
-			out = append(out, n)
+	for _, campo := range losCamposQueSePueden {
+		if cmd.Flags().Changed(campo.bandera) {
+			out = append(out, campo.bandera)
 		}
 	}
 	if hayUnSecreto {

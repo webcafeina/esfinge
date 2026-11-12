@@ -10,6 +10,7 @@ import (
 
 	"github.com/webcafeina/esfinge/internal/boveda"
 	"github.com/webcafeina/esfinge/internal/rutas"
+	"github.com/webcafeina/esfinge/internal/wifi"
 )
 
 const laMaestraDePrueba = "una contraseña maestra bien larga"
@@ -621,5 +622,145 @@ func TestLaBovedaAceptaSilencio(t *testing.T) {
 		if hijo.InheritedFlags().Lookup("silencio") == nil {
 			t.Errorf("«boveda %s» no hereda --silencio", hijo.Name())
 		}
+	}
+}
+
+// TestUnaRedWifiSeCreaEnteraONoSeCrea cubre los tres campos de la red (ADR 0049), que
+// hasta el 2026-11-12 no se podían poner desde aquí.
+//
+// # Por qué existen en la línea de comandos
+//
+// Parecía que no hacían falta —un servidor no se conecta a ningún wifi— y el cliente
+// señaló el caso que lo tira: **una bóveda de proyecto se gestiona donde se gestione el
+// proyecto**, y eso puede ser el VPS, mientras el código QR se enseña en el equipo de
+// quien lo necesita. El que crea la red y el que la usa no son el mismo.
+//
+// Y lo que de verdad se arregla no es que faltaran banderas: es que **sin ellas se podía
+// crear una red que no sirve** —sin SSID no hay QR— y nada lo decía al crearla. Es la
+// lección de `ExportarLlaves`.
+func TestUnaRedWifiSeCreaEnteraONoSeCrea(t *testing.T) {
+	o, ob, ruta := lasOpciones(t)
+
+	// **Sin SSID no se guarda nada**, y el mensaje dice qué falta y por qué no es el título.
+	err := correr(t, comandoBovedaCrear(o, ob), map[string]string{
+		"tipo": "wifi", "titulo": "Sin nombre", "generar": "true",
+	})
+	if err == nil {
+		t.Fatal("una red sin SSID se ha guardado: el QR no se podría dibujar nunca")
+	}
+	if !strings.Contains(err.Error(), "--ssid") {
+		t.Errorf("el error no dice qué falta: %v", err)
+	}
+
+	// Con SSID, la red queda **entera**: su nombre, y la seguridad deducida de que hay
+	// contraseña —no de lo que diga nadie, que es la regla de la 0049—.
+	if err := correr(t, comandoBovedaCrear(o, ob), map[string]string{
+		"tipo": "wifi", "titulo": "La oficina", "ssid": "ZeriGuest", "generar": "true",
+	}); err != nil {
+		t.Fatalf("no se ha podido crear la red: %v", err)
+	}
+	red := laEntradaGuardada(t, ruta, "La oficina")
+	if red.Tipo != boveda.TipoWifi {
+		t.Errorf("la entrada es %s", red.Tipo)
+	}
+	if red.SSID != "ZeriGuest" {
+		t.Errorf("el SSID es %q", red.SSID)
+	}
+	if red.Seguridad != "wpa" {
+		t.Errorf("con contraseña, la seguridad tiene que ser wpa y es %q", red.Seguridad)
+	}
+	if red.Secreto == "" {
+		t.Error("la red se ha guardado sin contraseña")
+	}
+
+	// **Y el QR se puede dibujar**, que es lo único que prueba que la red sirve: el
+	// comando que la consume es el que antes la rechazaba.
+	if _, err := wifi.Enlace(red.SSID, red.Secreto, red.Seguridad, red.Oculta); err != nil {
+		t.Errorf("la red creada aquí no se puede poner en un código: %v", err)
+	}
+
+	// **Un campo de una clase no entra en otra.** Sin esto, el SSID se guardaba en una
+	// credencial, donde no se lee y nadie lo vería nunca.
+	err = correr(t, comandoBovedaCrear(o, ob), map[string]string{
+		"titulo": "Una credencial", "ssid": "loquesea", "generar": "true",
+	})
+	if err == nil || !strings.Contains(err.Error(), "red wifi") {
+		t.Errorf("el SSID en una credencial contesta %v", err)
+	}
+}
+
+// TestLosCamposQueSePuedenSeAplicanTodos recorre la tabla de campos y **ejercita cada
+// uno por `editar`**, comparándola con una lista de casos escrita aquí.
+//
+// # Por qué se compara contra otra lista
+//
+// La tabla nació juntando tres —las banderas, el «qué se nombró» y el `switch` que
+// parcheaba la entrada—, porque olvidar uno de los tres **no da error**: la bandera se
+// declara, nadie la aplica y `editar --ssid` contesta «no has dicho qué cambiar». Con una
+// sola lista eso ya no puede pasar por descuido, pero sí puede pasar que alguien añada un
+// campo y nadie lo pruebe. Esto se pone rojo entonces: es la regla de la casa de comparar
+// las dos listas entre sí, no cada una contra lo que parezca correcto.
+func TestLosCamposQueSePuedenSeAplicanTodos(t *testing.T) {
+	casos := map[string]struct {
+		valor  string
+		tipo   boveda.Tipo
+		puesto func(boveda.Entrada) bool
+	}{
+		"titulo":    {"Otro título", "", func(e boveda.Entrada) bool { return e.Titulo == "Otro título" }},
+		"usuario":   {"alguien@ejemplo.com", "", func(e boveda.Entrada) bool { return e.Usuario == "alguien@ejemplo.com" }},
+		"notas":     {"unas notas", "", func(e boveda.Entrada) bool { return e.Notas == "unas notas" }},
+		"carpeta":   {"Clientes", "", func(e boveda.Entrada) bool { return e.Carpeta == "Clientes" }},
+		"sitio":     {"ejemplo.com", "", func(e boveda.Entrada) bool { return len(e.Sitios) == 1 && e.Sitios[0] == "ejemplo.com" }},
+		"etiqueta":  {"una", "", func(e boveda.Entrada) bool { return len(e.Etiquetas) == 1 && e.Etiquetas[0] == "una" }},
+		"ssid":      {"OtraRed", boveda.TipoWifi, func(e boveda.Entrada) bool { return e.SSID == "OtraRed" }},
+		"seguridad": {"wep", boveda.TipoWifi, func(e boveda.Entrada) bool { return e.Seguridad == "wep" }},
+		"oculta":    {"true", boveda.TipoWifi, func(e boveda.Entrada) bool { return e.Oculta }},
+	}
+
+	// Las dos listas, una contra otra y en los dos sentidos.
+	for _, campo := range losCamposQueSePueden {
+		if _, hay := casos[campo.bandera]; !hay {
+			t.Errorf("el campo --%s está en la tabla y no lo prueba nadie", campo.bandera)
+		}
+	}
+	for bandera := range casos {
+		visto := false
+		for _, campo := range losCamposQueSePueden {
+			if campo.bandera == bandera {
+				visto = true
+			}
+		}
+		if !visto {
+			t.Errorf("se prueba --%s y ya no está en la tabla", bandera)
+		}
+	}
+
+	for _, campo := range losCamposQueSePueden {
+		caso, hay := casos[campo.bandera]
+		if !hay {
+			continue
+		}
+		t.Run(campo.bandera, func(t *testing.T) {
+			o, ob, ruta := lasOpciones(t)
+			titulo := "Para " + campo.bandera
+			nace := map[string]string{"titulo": titulo, "generar": "true"}
+			if caso.tipo == boveda.TipoWifi {
+				nace["tipo"] = "wifi"
+				nace["ssid"] = "LaDeAntes"
+			}
+			if err := correr(t, comandoBovedaCrear(o, ob), nace); err != nil {
+				t.Fatalf("crear: %v", err)
+			}
+			if err := correr(t, comandoBovedaEditar(o, ob), map[string]string{campo.bandera: caso.valor}, titulo); err != nil {
+				t.Fatalf("editar --%s: %v", campo.bandera, err)
+			}
+			buscar := titulo
+			if campo.bandera == "titulo" {
+				buscar = caso.valor
+			}
+			if e := laEntradaGuardada(t, ruta, buscar); !caso.puesto(e) {
+				t.Errorf("--%s se declara y no se aplica: la entrada guardada no lo lleva", campo.bandera)
+			}
+		})
 	}
 }
