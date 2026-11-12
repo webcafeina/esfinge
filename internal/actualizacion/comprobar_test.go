@@ -129,20 +129,54 @@ func TestElegirElFicheroDeCadaSistema(t *testing.T) {
 		}
 	}
 
-	// **Y el mundo de hoy**, con solo lo que el flujo fabrica ya: amd64 encuentra el
-	// nombre viejo del instalador —que es lo que hace que esta versión sobreviva al
-	// renombrado— y arm64 **no encuentra nada**, que es correcto y es el camino que
-	// manda a la página.
-	if a, vale := elDeEsteEquipo(publicadosHoy(), "windows", "amd64", ""); !vale {
-		t.Error("en el mundo de hoy, un Windows amd64 se queda sin instalador")
+	// **El mundo de antes de la fase 2**, escrito a mano y no leído del catálogo.
+	//
+	// Aquí se afirma la propiedad que hace que el renombrado del instalador de Windows
+	// cueste **una vez y no dos**: una copia instalada cuando solo existía el nombre viejo
+	// lo encuentra igual, y una máquina ARM —para la que entonces no había nada— no se
+	// lleva el binario de la otra arquitectura, sino nada, que es el camino que manda a la
+	// página.
+	//
+	// **Y va escrito y no leído a propósito.** La primera versión preguntaba por
+	// `adjuntos.Publicados`, o sea «lo que se fabrica hoy», y el día que la fase 2 marcó
+	// los adjuntos de ARM como publicados estas tres afirmaciones se cayeron —con razón:
+	// el mundo había cambiado—. Una prueba que dice «hoy» envejece sola; lo que no
+	// envejece es «en un mundo donde solo existía esto». Es la lección de `soloLectura`.
+	antesDeLaFase2 := []Adjunto{
+		{Nombre: "Esfinge-2.1.0.dmg"},
+		{Nombre: "Esfinge-2.1.0-windows-instalador.exe"},
+		{Nombre: "esfinge_2.1.0_amd64.deb"},
+		{Nombre: "esfinge-2.1.0-linux-amd64.tar.gz"},
+		{Nombre: "SHA256SUMS"},
+	}
+	if a, vale := elDeEsteEquipo(antesDeLaFase2, "windows", "amd64", ""); !vale {
+		t.Error("con solo el nombre viejo, un Windows amd64 se queda sin instalador")
 	} else if a.Nombre != "Esfinge-2.1.0-windows-instalador.exe" {
-		t.Errorf("en el mundo de hoy ha elegido %q", a.Nombre)
+		t.Errorf("con solo el nombre viejo ha elegido %q", a.Nombre)
 	}
-	if a, vale := elDeEsteEquipo(publicadosHoy(), "windows", "arm64", ""); vale {
-		t.Errorf("en el mundo de hoy, a un Windows ARM se le ofrece %q", a.Nombre)
+	if a, vale := elDeEsteEquipo(antesDeLaFase2, "windows", "arm64", ""); vale {
+		t.Errorf("sin instalador de ARM se le ofrece %q, que es el de la otra arquitectura", a.Nombre)
 	}
-	if a, vale := elDeEsteEquipo(publicadosHoy(), "linux", "arm64", adjuntos.GestorDeb); vale {
-		t.Errorf("a un Linux ARM se le ofrece %q, que dpkg rechazaría", a.Nombre)
+	if a, vale := elDeEsteEquipo(antesDeLaFase2, "linux", "arm64", adjuntos.GestorDeb); vale {
+		t.Errorf("sin .deb de ARM se le ofrece %q, que dpkg rechazaría", a.Nombre)
+	}
+
+	// **Y el mundo de ahora**, el que de verdad se fabrica: cada arquitectura se lleva el
+	// suyo, y el de Windows amd64 es ya **el nombre nuevo** y no el viejo.
+	if a, vale := elDeEsteEquipo(publicadosHoy(), "windows", "amd64", ""); !vale {
+		t.Error("un Windows amd64 se queda sin instalador")
+	} else if a.Nombre != "Esfinge-2.1.0-windows-amd64-instalador.exe" {
+		t.Errorf("un Windows amd64 se lleva %q y le toca el nombre nuevo", a.Nombre)
+	}
+	if a, vale := elDeEsteEquipo(publicadosHoy(), "windows", "arm64", ""); !vale {
+		t.Error("un Windows ARM se queda sin instalador, y ya se publica el suyo")
+	} else if a.Nombre != "Esfinge-2.1.0-windows-arm64-instalador.exe" {
+		t.Errorf("un Windows ARM se lleva %q", a.Nombre)
+	}
+	if a, vale := elDeEsteEquipo(publicadosHoy(), "linux", "arm64", adjuntos.GestorDeb); !vale {
+		t.Error("un Linux ARM con .deb se queda sin paquete, y ya se publica el suyo")
+	} else if a.Nombre != "esfinge_2.1.0_arm64.deb" {
+		t.Errorf("un Linux ARM se lleva %q", a.Nombre)
 	}
 
 	// Y nunca, en ningún caso, un binario suelto de la línea de comandos ni las sumas.

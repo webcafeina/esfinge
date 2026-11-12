@@ -78,21 +78,34 @@ func TestCadaFichaEstaEnteraYEsUnica(t *testing.T) {
 	}
 }
 
-// TestLaTablaDelLeemeSaleDelCatalogo compara el README con lo que genera el catálogo.
+// TestLaTablaDelLeemeNoInventaNingunNombre comprueba cada enlace del README contra el
+// catálogo: su nombre, y que la dirección sea la de esa versión.
 //
-// Las dos tablas de descargas —la del README y la del cuerpo de la publicación— estaban
-// escritas a mano, en dos ficheros distintos, con `amd64` cableado en las dos. Una tabla
-// desalineada **no da error**: da un enlace que contesta 404, y lo descubre quien va a
-// descargar.
-func TestLaTablaDelLeemeSaleDelCatalogo(t *testing.T) {
+// # Por qué no compara la tabla entera
+//
+// La primera versión de esto exigía que el bloque del README fuera **exactamente** lo que
+// genera el catálogo para la versión que el propio README nombra. Suena más fuerte y es
+// **falso por diseño**: el README describe la última versión **publicada** y el catálogo
+// dice lo que se fabrica **ahora**, así que entre marcar un adjunto como publicado y
+// publicarlo de verdad los dos difieren a propósito — y con la prueba fuerte eso bloquea
+// la publicación que arreglaría la diferencia.
+//
+// Lo que sí es cierto siempre, y es lo que se afirma aquí: **ningún enlace de esa tabla
+// puede nombrar algo que el catálogo no conozca**, ni apuntar a otra versión, ni a un
+// adjunto que no sale en tablas. Eso caza lo que de verdad puede pasar: que alguien edite
+// la tabla a mano, o que un nombre cambie en el catálogo y el README se quede con el viejo.
+//
+// Lo que esto **no** caza: que un adjunto nuevo tarde en aparecer en la tabla. De eso se
+// encarga el propio flujo, que la reescribe en cada publicación con el único generador que
+// hay. Está anotado en deuda.md: con una versión «desde» en cada ficha se podría volver a
+// la comparación completa.
+func TestLaTablaDelLeemeNoInventaNingunNombre(t *testing.T) {
 	crudo, err := os.ReadFile("../../README.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	leeme := string(crudo)
 
-	// La versión se saca del propio README: la escribe el flujo al publicar, así que es
-	// la única que puede estar ahí.
 	m := regexp.MustCompile(`Versión \*\*([0-9]+\.[0-9]+\.[0-9]+)\*\*`).FindStringSubmatch(leeme)
 	if m == nil {
 		t.Fatal("el README no dice de qué versión es su tabla")
@@ -100,16 +113,45 @@ func TestLaTablaDelLeemeSaleDelCatalogo(t *testing.T) {
 	version := m[1]
 
 	entre := regexp.MustCompile(`(?s)<!-- descargas:inicio.*?<!-- descargas:fin -->`)
-	hay := entre.FindString(leeme)
-	if hay == "" {
+	bloque := entre.FindString(leeme)
+	if bloque == "" {
 		t.Fatal("el README no tiene las marcas de la tabla")
 	}
-	quiere := strings.TrimSpace(TablaDelLeeme(version))
-	if strings.TrimSpace(hay) != quiere {
-		t.Errorf("la tabla del README no es la que sale del catálogo para la %s.\n"+
-			"Si el cambio es a propósito, se cambia el catálogo y se corre "+
-			"«herramientas/actualizar-descargas.sh %s».\n\n--- el README dice ---\n%s\n"+
-			"\n--- el catálogo dice ---\n%s", version, version, hay, quiere)
+
+	// Lo que el catálogo sabe nombrar para esa versión, y con qué rótulo.
+	buenos := map[string]Ficha{}
+	for _, f := range Catalogo() {
+		buenos[f.Nombre(version)] = f
+	}
+
+	enlaces := regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`).FindAllStringSubmatch(bloque, -1)
+	if len(enlaces) == 0 {
+		t.Fatal("la tabla del README no tiene ni un enlace")
+	}
+	vistos := 0
+	for _, e := range enlaces {
+		nombre, url := e[1], e[2]
+		f, esAdjunto := buenos[nombre]
+		if !esAdjunto {
+			// Los enlaces que no son ficheros —la página de publicaciones— se saltan.
+			if strings.Contains(url, "/releases/latest") || strings.HasSuffix(url, "/releases") {
+				continue
+			}
+			t.Errorf("la tabla enlaza «%s», que no es ningún adjunto del catálogo para la %s",
+				nombre, version)
+			continue
+		}
+		vistos++
+		quiere := base(version) + "/" + nombre
+		if url != quiere {
+			t.Errorf("«%s» apunta a %s y le toca %s", nombre, url, quiere)
+		}
+		if f.Rotulo == "" {
+			t.Errorf("la tabla enlaza «%s», que es un adjunto que no sale en tablas", nombre)
+		}
+	}
+	if vistos == 0 {
+		t.Error("ningún enlace de la tabla era un adjunto: la prueba no está mirando lo que cree")
 	}
 }
 

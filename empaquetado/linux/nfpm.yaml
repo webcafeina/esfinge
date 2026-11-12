@@ -3,7 +3,11 @@
 # Lleva la aplicación con ventana, la línea de comandos, el lanzador para el menú
 # de aplicaciones y la declaración de qué es un fichero .esf.
 name: esfinge
-arch: amd64
+# **La arquitectura es una variable, como la versión.** Estaba a fuego en `amd64`, y eso
+# es lo que hacía que un `.deb` instalado en una máquina ARM lo rechazara `dpkg`: el
+# paquete declaraba una arquitectura que no era la de la máquina. nfpm expande el entorno
+# igual que con ${VERSION}, así que el mecanismo ya estaba probado.
+arch: ${ARQUITECTURA}
 platform: linux
 version: ${VERSION}
 section: utils

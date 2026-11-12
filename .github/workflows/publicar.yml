@@ -232,8 +232,8 @@ jobs:
       - name: Armar el paquete de Claude Desktop
         run: |
           lipo -create -output esfinge-mcp-universal esfinge-mcp-amd64 esfinge-mcp-arm64
-          go run ./herramientas/armar-mcpb "${{ steps.v.outputs.n }}" esfinge-mcp-universal \
-            "$PWD/Esfinge-${{ steps.v.outputs.n }}-macos.mcpb"
+          nombre="$(go run ./herramientas/catalogo nombre mcpb-darwin "${{ steps.v.outputs.n }}")"
+          go run ./herramientas/armar-mcpb "${{ steps.v.outputs.n }}" esfinge-mcp-universal "$PWD/$nombre"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -243,9 +243,24 @@ jobs:
             *.mcpb
 
   windows:
-    name: Windows · instalador
+    name: Windows · instalador · ${{ matrix.arq }}
     needs: comprobar
-    runs-on: windows-latest
+    strategy:
+      # **Sin fail-fast**: si una arquitectura se cae, la otra tiene que llegar hasta el
+      # final para que se vea si el problema es de esa máquina o de las dos. Y la puerta
+      # de la publicación para igual, así que no sale nada a medias.
+      fail-fast: false
+      matrix:
+        include:
+          - arq: amd64
+            os: windows-latest
+          # Probada antes en «Compilar», sin publicar nada (fase 1): esa máquina compila
+          # `windows/arm64` **y trae NSIS en `/c/Program Files (x86)/NSIS`**, que es justo
+          # donde el paso de abajo lo busca. La de x64, medido en tres publicaciones, no lo
+          # trae y se lo baja.
+          - arq: arm64
+            os: windows-11-arm
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -281,12 +296,18 @@ jobs:
       # sale con código cero, dejando el trabajo en verde y sin instalador.
       # **NSIS, el de la máquina si lo trae.**
       #
-      # La imagen de Windows de GitHub ya lo incluye, así que bajarlo de
-      # Chocolatey era pedirle a un tercero algo que ya estaba aquí — y ese
-      # tercero devolvió 503 durante media hora y dejó sin publicar la 2.17.6.
-      # Es el mismo error que ya costó la 2.14.0 con un repositorio de apt: esta
-      # compilación solo debería necesitar lo que la máquina trae. Se instala
-      # solo si de verdad no está.
+      # Antes se bajaba de Chocolatey, y ese tercero devolvió 503 durante media hora y dejó
+      # sin publicar la 2.17.6 — el mismo error que ya costó la 2.14.0 con un repositorio de
+      # apt. Así que primero se mira si la máquina lo trae y, si no, se baja **del origen y
+      # con su suma**.
+      #
+      # **Y aquí había una frase que medimos falsa el 2026-11-12.** Decía que «la imagen de
+      # Windows de GitHub ya lo incluye», y el registro de las tres últimas publicaciones
+      # dice lo contrario: en `windows-latest` sale «NSIS no viene con la máquina» las tres
+      # veces, así que se baja en cada publicación. Donde **sí** viene es en
+      # `windows-11-arm`, que lo trae en `/c/Program Files (x86)/NSIS` — justo donde
+      # `buscar()` mira. O sea al revés de lo que estaba escrito. El código hacía lo
+      # correcto; lo que caducó fue el porqué de al lado.
       - name: Instalar wails y NSIS
         shell: bash
         run: |
@@ -366,12 +387,12 @@ jobs:
       - name: Compilar el puente del navegador
         shell: bash
         run: |
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build \
+          CGO_ENABLED=0 GOOS=windows GOARCH=${{ matrix.arq }} go build \
             -ldflags "-s -w -H windowsgui -X main.version=${{ steps.v.outputs.n }}" \
             -o build/windows/installer/esfinge-puente.exe ./cmd/esfinge-puente
           # Y el servidor MCP, con el mismo subsistema gráfico y por lo mismo: lo lanza
           # otro programa y la salida estándar *es* el protocolo (ADR 0054).
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build \
+          CGO_ENABLED=0 GOOS=windows GOARCH=${{ matrix.arq }} go build \
             -ldflags "-s -w -H windowsgui -X main.version=${{ steps.v.outputs.n }}" \
             -o build/windows/installer/esfinge-mcp.exe ./cmd/esfinge-mcp
           ls -lh build/windows/installer/esfinge-puente.exe build/windows/installer/esfinge-mcp.exe
@@ -379,14 +400,21 @@ jobs:
       - name: Compilar la aplicación y su instalador
         shell: bash
         run: |
-          wails build -platform windows/amd64 -clean -nsis \
+          wails build -platform windows/${{ matrix.arq }} -clean -nsis \
             -ldflags "-X main.version=${{ steps.v.outputs.n }}"
           ls -lh build/bin/
           if ! ls build/bin/*installer*.exe >/dev/null 2>&1; then
             echo "::error::wails no ha producido el instalador NSIS"
             exit 1
           fi
-          nombre="Esfinge-${{ steps.v.outputs.n }}-windows-instalador.exe"
+          # **El nombre lo dice el catálogo**, no se compone aquí: es el único sitio donde
+          # viven los nombres de los adjuntos, y de él salen también las dos tablas de
+          # descargas y la puerta de la publicación (ADR 0060).
+          #
+          # El glob de `mv` sigue valiendo con dos arquitecturas, al contrario de lo que
+          # parecía: cada pata de la matriz es un trabajo con su propio espacio de trabajo,
+          # así que ahí dentro hay **un** instalador y no dos.
+          nombre="$(go run ./herramientas/catalogo nombre "app-windows-${{ matrix.arq }}" "${{ steps.v.outputs.n }}")"
           mv build/bin/*installer*.exe "$nombre"
           ls -lh "$nombre"
           # Y que de verdad lleve el puente: un instalador sin él se compila igual
@@ -406,20 +434,36 @@ jobs:
       - name: Armar el paquete de Claude Desktop
         shell: bash
         run: |
+          nombre="$(go run ./herramientas/catalogo nombre "mcpb-windows-${{ matrix.arq }}" "${{ steps.v.outputs.n }}")"
           go run ./herramientas/armar-mcpb "${{ steps.v.outputs.n }}" \
-            build/windows/installer/esfinge-mcp.exe "$PWD/Esfinge-${{ steps.v.outputs.n }}-windows.mcpb"
+            build/windows/installer/esfinge-mcp.exe "$PWD/$nombre"
 
+      # El nombre lleva la arquitectura: dos patas subiendo un artefacto llamado igual
+      # se pisan, y el que llegue segundo falla o sobrescribe.
       - uses: actions/upload-artifact@v4
         with:
-          name: windows
+          name: windows-${{ matrix.arq }}
           path: |
-            *-windows-instalador.exe
+            *instalador.exe
             *.mcpb
 
   linux:
-    name: Linux · paquete
+    name: Linux · paquete · ${{ matrix.arq }}
     needs: comprobar
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arq: amd64
+            os: ubuntu-latest
+          # **La misma distribución que la otra pata, a propósito** (24.04): así las dos
+          # llevan el mismo WebKit y el mismo suelo de glibc, y una diferencia entre ellas
+          # no puede ser de la distribución. Probada en «Compilar» antes de que ninguna
+          # etiqueta dependiera de ella. Bajar las dos a 22.04 ganaría Debian 12 y es otra
+          # decisión.
+          - arq: arm64
+            os: ubuntu-24.04-arm
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -486,7 +530,7 @@ jobs:
       # serie. La 4.1 se pide con su etiqueta.
       - name: Compilar la aplicación
         run: |
-          wails build -platform linux/amd64 -clean -tags webkit2_41 \
+          wails build -platform linux/${{ matrix.arq }} -clean -tags webkit2_41 \
             -ldflags "-X main.version=${{ steps.v.outputs.n }}"
 
       # El paquete lleva las dos caras: la ventana y la línea de comandos.
@@ -502,20 +546,31 @@ jobs:
       - name: Armar el .deb y el .tar.gz
         run: |
           export VERSION="${{ steps.v.outputs.n }}"
-          nfpm package -f empaquetado/linux/nfpm.yaml -p deb -t .
-          tar -czf "esfinge-${VERSION}-linux-amd64.tar.gz" \
+          # **La arquitectura se la dice nfpm por el entorno y el nombre lo dice el
+          # catálogo**: ni una cosa ni la otra se componen aquí (ADR 0060).
+          export ARQUITECTURA="${{ matrix.arq }}"
+          deb="$(go run ./herramientas/catalogo nombre "deb-${{ matrix.arq }}" "$VERSION")"
+          nfpm package -f empaquetado/linux/nfpm.yaml -p deb -t "$deb"
+          tgz="$(go run ./herramientas/catalogo nombre "tar-${{ matrix.arq }}" "$VERSION")"
+          tar -czf "$tgz" \
             -C build/bin Esfinge \
             -C "$GITHUB_WORKSPACE" esfinge esfinge-puente esfinge-mcp LICENSE
           ls -lh *.deb *.tar.gz
+          # Y que el paquete declare la arquitectura que es: un .deb de amd64 en una
+          # máquina ARM lo rechaza dpkg, y eso es lo que había que arreglar.
+          dpkg-deb -f "$deb" Architecture | grep -qx "${{ matrix.arq }}" || {
+            echo "::error::El .deb no declara la arquitectura ${{ matrix.arq }}"
+            exit 1
+          }
 
       - name: Armar el paquete de Claude Desktop
         run: |
-          go run ./herramientas/armar-mcpb "${{ steps.v.outputs.n }}" esfinge-mcp \
-            "$PWD/Esfinge-${{ steps.v.outputs.n }}-linux.mcpb"
+          nombre="$(go run ./herramientas/catalogo nombre "mcpb-linux-${{ matrix.arq }}" "${{ steps.v.outputs.n }}")"
+          go run ./herramientas/armar-mcpb "${{ steps.v.outputs.n }}" esfinge-mcp "$PWD/$nombre"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: linux
+          name: linux-${{ matrix.arq }}
           path: |
             *.deb
             *.mcpb

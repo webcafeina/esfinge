@@ -83,36 +83,95 @@ func TestCompilarPruebaTodoLoQueElCatalogoNombra(t *testing.T) {
 	}
 }
 
-// TestPublicarHaceExactamenteLoQueEstaPublicado, en los dos sentidos.
+// TestCadaAdjuntoPublicadoTieneQuienLoFabrique: para cada ficha marcada como publicada,
+// **su clave aparece en el flujo**.
 //
-// Si publica una plataforma que el catálogo no da por publicada, la puerta de la
-// publicación rechazará el adjunto que salga de ahí —sobra— y la etiqueta se cae con todo
-// compilado. Y si **no** compila una que sí está marcada, se cae por lo otro: falta.
+// # Por qué la clave y no la plataforma
 //
-// Las dos mitades importan, y la segunda es la que hace que flipear `Publicado` sin
-// escribir el trabajo que lo fabrica se vea **aquí** y no en GitHub veinte minutos después.
-func TestPublicarHaceExactamenteLoQueEstaPublicado(t *testing.T) {
+// La primera versión de esto comparaba las **plataformas** que compila `wails build` con
+// las que el catálogo implica, y tenía dos agujeros que encontró mutarla, no leerla:
+//
+//   - marcar el `.rpm` como publicado **pasaba en verde**, porque un `.rpm` de amd64 vive
+//     en una plataforma que ya se compilaba. Plataforma cubierta no es adjunto fabricado.
+//   - y quitar la pata de Windows ARM de la matriz **también pasaba**, porque las
+//     arquitecturas se recogían del fichero entero y la matriz de Linux declara las mismas.
+//
+// Desde la fase 2 el flujo **le pregunta el nombre al catálogo por su clave**
+// (`catalogo nombre deb-${{ matrix.arq }}`), así que la clave es lo que de verdad dice que
+// alguien lo fabrica. Y las arquitecturas se leen **por trabajo**.
+func TestCadaAdjuntoPublicadoTieneQuienLoFabrique(t *testing.T) {
 	yaml := leer(t, "../../.github/workflows/publicar.yml")
-	hay := map[string]bool{}
-	for _, m := range regexp.MustCompile(`wails build -platform (\S+)`).FindAllStringSubmatch(yaml, -1) {
-		hay[m[1]] = true
+	normal := strings.ReplaceAll(yaml, "${{ matrix.arq }}", "ARQ")
+
+	// Lo que nombra otro sitio, con su razón. La lista es corta a propósito: cada
+	// excepción es un adjunto cuyo nombre no sale del catálogo, y eso es deuda.
+	fuera := map[string]string{
+		"app-darwin": "lo nombra empaquetado/macos/armar-dmg.sh, que es quien arma la imagen",
 	}
-	if len(hay) == 0 {
-		t.Fatal("no se encuentra ningún «wails build -platform» en publicar.yml")
+
+	for _, f := range Catalogo() {
+		if !f.Publicado {
+			continue
+		}
+		switch f.Clase {
+		case ClaseApp, ClasePaquete, ClaseMCPB:
+		default:
+			// La línea de comandos sale del Makefile, y la extensión y las sumas se
+			// nombran en su propio paso: no pasan por clave.
+			continue
+		}
+		if _, hay := fuera[f.Clave]; hay {
+			continue
+		}
+		conArq := f.Clave
+		if f.Arq != "" {
+			conArq = strings.ReplaceAll(f.Clave, f.Arq, "ARQ")
+		}
+		if strings.Contains(normal, f.Clave) || strings.Contains(normal, conArq) {
+			continue
+		}
+		t.Errorf("«%s» está marcado como publicado y el flujo no lo nombra: nadie lo fabrica, "+
+			"así que la publicación saldría sin él y la puerta la pararía", f.Clave)
 	}
-	quiere := map[string]bool{}
-	for _, p := range plataformasDeLaApp(true) {
-		quiere[p] = true
-		if !hay[p] {
-			t.Errorf("el catálogo da por publicados adjuntos de %s y «Publicar» no compila esa "+
-				"plataforma: la publicación saldría sin ellos y la puerta la pararía", p)
+}
+
+// TestLasArquitecturasDeCadaTrabajoCubrenSuPlataforma comprueba, **trabajo por trabajo**,
+// que la matriz declara las arquitecturas que ese trabajo compila.
+//
+// Leer las `arq:` del fichero entero no vale: la matriz de Linux declara las mismas que la
+// de Windows, así que quitarle una pata a una quedaba tapado por la otra. Lo dijo mutarla.
+func TestLasArquitecturasDeCadaTrabajoCubrenSuPlataforma(t *testing.T) {
+	yaml := leer(t, "../../.github/workflows/publicar.yml")
+
+	// Los trabajos empiezan con dos espacios y acaban donde empieza el siguiente.
+	cabecera := regexp.MustCompile(`(?m)^  ([a-z-]+):$`)
+	sitios := cabecera.FindAllStringSubmatchIndex(yaml, -1)
+	vistos := 0
+	for i, s := range sitios {
+		nombre := yaml[s[2]:s[3]]
+		fin := len(yaml)
+		if i+1 < len(sitios) {
+			fin = sitios[i+1][0]
+		}
+		trozo := yaml[s[0]:fin]
+		plats := regexp.MustCompile(`wails build -platform (\S+)`).FindAllStringSubmatch(trozo, -1)
+		if len(plats) == 0 {
+			continue
+		}
+		for _, pl := range plats {
+			if !strings.Contains(pl[1], "matrix.arq") && !strings.Contains(pl[1], "${{") {
+				continue // una plataforma fija, como darwin/universal
+			}
+			arqs := regexp.MustCompile(`(?m)^\s*-?\s*arq:\s*(\S+)`).FindAllStringSubmatch(trozo, -1)
+			if len(arqs) < 2 {
+				t.Errorf("el trabajo «%s» compila una plataforma de la matriz y declara %d "+
+					"arquitecturas: le falta alguna pata", nombre, len(arqs))
+			}
+			vistos++
 		}
 	}
-	for p := range hay {
-		if !quiere[p] {
-			t.Errorf("«Publicar» compila %s y el catálogo no tiene ningún adjunto publicado de ahí: "+
-				"lo que salga sobrará y la puerta parará la publicación", p)
-		}
+	if vistos == 0 {
+		t.Fatal("ningún trabajo compila por matriz: la prueba no está mirando lo que cree")
 	}
 }
 

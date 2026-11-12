@@ -23,7 +23,11 @@ icon.png               la marca, 512×512
 server/esfinge-mcp     el binario, el de esa plataforma
 ```
 
-**Uno por plataforma**, porque el binario lo es: `esfinge-2.44.0-macos.mcpb`, `-windows.mcpb`, `-linux.mcpb`.
+**Uno por objetivo**, porque el binario lo es: `Esfinge-<v>-macos.mcpb` —universal, con las dos
+arquitecturas unidas con `lipo`—, `-windows-amd64`, `-windows-arm64`, `-linux-amd64` y `-linux-arm64`.
+Hasta la 2.62.0 eran **tres**, uno por plataforma, y los de Windows y Linux llevaban solo amd64: quien
+tuviera una máquina ARM se instalaba el binario de la otra arquitectura. Los nombres **los dice el
+catálogo** (`internal/adjuntos`), que es el único sitio donde viven.
 Lo arma **`internal/mcpb`**, y ahí viven también el manifiesto y el icono: `go:embed` no puede salir del
 directorio de su paquete y **la ventana arma el paquete igual que la publicación**, con el botón de Ajustes,
 porque el servidor MCP ya está dentro de la aplicación. Mandar a alguien a la página de descargas a por un

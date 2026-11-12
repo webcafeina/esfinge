@@ -123,7 +123,7 @@ func Catalogo() []Ficha {
 		// `-windows-instalador.exe` el catálogo tiene que saber qué es eso.
 		{
 			Clave: "app-windows-amd64-viejo", Sistema: "windows", Arq: "amd64", Clase: ClaseApp,
-			Plantilla: "Esfinge-{v}-windows-instalador.exe", Publicado: true,
+			Plantilla: "Esfinge-{v}-windows-instalador.exe",
 			// Lleva rótulo porque **hoy es el que sale en la tabla**. Al flipear
 			// `Publicado` en la fase 2, las filas se cambian solas: la tabla filtra por
 			// lo que de verdad está publicado, así que nunca enseña un enlace que no
@@ -132,25 +132,25 @@ func Catalogo() []Ficha {
 		},
 		{
 			Clave: "app-windows-amd64", Sistema: "windows", Arq: "amd64", Clase: ClaseApp,
-			Plantilla: "Esfinge-{v}-windows-amd64-instalador.exe",
-			Rotulo:    "Windows · Intel y AMD", Nota: "Asistente de instalación",
+			Plantilla: "Esfinge-{v}-windows-amd64-instalador.exe", Publicado: true,
+			Rotulo: "Windows · Intel y AMD", Nota: "Asistente de instalación",
 		},
 		{
 			Clave: "app-windows-arm64", Sistema: "windows", Arq: "arm64", Clase: ClaseApp,
-			Plantilla: "Esfinge-{v}-windows-arm64-instalador.exe",
-			Rotulo:    "Windows · ARM", Nota: "Asistente de instalación",
+			Plantilla: "Esfinge-{v}-windows-arm64-instalador.exe", Publicado: true,
+			Rotulo: "Windows · ARM", Nota: "Asistente de instalación",
 		},
 		{
 			Clave: "mcpb-windows-viejo", Sistema: "windows", Arq: "amd64", Clase: ClaseMCPB,
-			Plantilla: "Esfinge-{v}-windows.mcpb", Publicado: true, Rotulo: "Windows",
+			Plantilla: "Esfinge-{v}-windows.mcpb", Rotulo: "Windows",
 		},
 		{
 			Clave: "mcpb-windows-amd64", Sistema: "windows", Arq: "amd64", Clase: ClaseMCPB,
-			Plantilla: "Esfinge-{v}-windows-amd64.mcpb",
+			Plantilla: "Esfinge-{v}-windows-amd64.mcpb", Publicado: true, Rotulo: "Windows · Intel y AMD",
 		},
 		{
 			Clave: "mcpb-windows-arm64", Sistema: "windows", Arq: "arm64", Clase: ClaseMCPB,
-			Plantilla: "Esfinge-{v}-windows-arm64.mcpb",
+			Plantilla: "Esfinge-{v}-windows-arm64.mcpb", Publicado: true, Rotulo: "Windows · ARM",
 		},
 
 		// ---------------------------------------------------------------- Linux
@@ -161,7 +161,7 @@ func Catalogo() []Ficha {
 		},
 		{
 			Clave: "deb-arm64", Sistema: "linux", Arq: "arm64", Clase: ClasePaquete,
-			Gestor: GestorDeb, Plantilla: "esfinge_{v}_arm64.deb",
+			Gestor: GestorDeb, Plantilla: "esfinge_{v}_arm64.deb", Publicado: true,
 			Rotulo: "Linux · Debian y Ubuntu (ARM)", Nota: "Aplicación y línea de comandos",
 		},
 		{
@@ -194,20 +194,20 @@ func Catalogo() []Ficha {
 		},
 		{
 			Clave: "tar-arm64", Sistema: "linux", Arq: "arm64", Clase: ClasePaquete,
-			Plantilla: "esfinge-{v}-linux-arm64.tar.gz",
-			Rotulo:    "Linux · cualquiera (ARM)", Nota: "Los binarios sueltos",
+			Plantilla: "esfinge-{v}-linux-arm64.tar.gz", Publicado: true,
+			Rotulo: "Linux · cualquiera (ARM)", Nota: "Los binarios sueltos",
 		},
 		{
 			Clave: "mcpb-linux-viejo", Sistema: "linux", Arq: "amd64", Clase: ClaseMCPB,
-			Plantilla: "Esfinge-{v}-linux.mcpb", Publicado: true, Rotulo: "Linux",
+			Plantilla: "Esfinge-{v}-linux.mcpb", Rotulo: "Linux",
 		},
 		{
 			Clave: "mcpb-linux-amd64", Sistema: "linux", Arq: "amd64", Clase: ClaseMCPB,
-			Plantilla: "Esfinge-{v}-linux-amd64.mcpb",
+			Plantilla: "Esfinge-{v}-linux-amd64.mcpb", Publicado: true, Rotulo: "Linux · Intel y AMD",
 		},
 		{
 			Clave: "mcpb-linux-arm64", Sistema: "linux", Arq: "arm64", Clase: ClaseMCPB,
-			Plantilla: "Esfinge-{v}-linux-arm64.mcpb",
+			Plantilla: "Esfinge-{v}-linux-arm64.mcpb", Publicado: true, Rotulo: "Linux · ARM",
 		},
 
 		// ------------------------------------------------------------ extensión
