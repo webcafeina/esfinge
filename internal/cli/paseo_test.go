@@ -373,6 +373,23 @@ func TestPaseoDeUnProyectoHastaUnServidor(t *testing.T) {
 		"-q"); codigo != SalidaOK {
 		t.Fatal("tras la rotación, el servidor no ha podido crear una entrada")
 	}
+	// **Y lee el cuerpo entero, que es lo que destapó probar las capacidades a mano**
+	// (2026-11-12). `exportar` preguntaba `b.llave == nil` para saber si la bóveda estaba
+	// abierta, y un titular del formato 2 **no tiene esa clave**: contestaba «La bóveda
+	// está cerrada» con la bóveda abierta y los siete secretos legibles de uno en uno.
+	// Va aquí y no solo en `internal/boveda` porque esto es el camino por el que se vio:
+	// la línea de comandos, sobre una bóveda que acaba de rotar.
+	elCSV := filepath.Join(t.TempDir(), "copia.csv")
+	if codigo := conArgv(t, "esfinge", "boveda", "exportar",
+		"--compartida", "Zeri's", "-o", elCSV, "-q"); codigo != SalidaOK {
+		t.Fatal("tras la rotación, el servidor no ha podido exportar la bóveda")
+	}
+	if csv, err := os.ReadFile(elCSV); err != nil {
+		t.Fatal(err)
+	} else if !strings.Contains(string(csv), "Cloudflare de Zeri") {
+		t.Error("el CSV sale sin las entradas")
+	}
+
 	ventana.usar(t)
 	esperarEnLaVentana(t, a, "Lo que el servidor guarda tras la clave nueva")
 

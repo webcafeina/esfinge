@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -125,4 +126,94 @@ func TestLasBanderasDeContenidoSiAdmitenElVacio(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestLoQueLaAyudaPrometeExiste recorre el árbol de comandos y exige que **cada bandera
+// que se nombra en la ayuda esté declarada** en ese comando o heredada de su padre.
+//
+// # Por qué existe
+//
+// Es la hermana de `TestLoQueElNucleoAplicaEstaEnElEsquema`, una planta más abajo: allí
+// lo que no está declarado no existe para el modelo, y aquí lo que la ayuda promete y no
+// existe **es un ejemplo que no se puede copiar**. Ha costado dos veces. `-q` en la raíz
+// de «boveda», que fallaba con «unknown flag» justo en el programa que más se mete en un
+// guion. Y `-o` en «boveda exportar» (2026-11-12), cuyo `Example` dice literalmente
+// «esfinge boveda exportar -o copia.csv» y contestaba «unknown shorthand flag: 'o'».
+//
+// Las dos se encontraron **usándolas**, no leyendo. Y el `Example` es el peor sitio donde
+// tener una mentira, porque es lo que la gente pega.
+func TestLoQueLaAyudaPrometeExiste(t *testing.T) {
+	var o opciones
+	raiz := laRaiz(&o, "pruebas")
+
+	// Lo que se busca son banderas escritas como se escriben: `--larga` o `-c` suelta.
+	larga := regexp.MustCompile(`--[a-záéíóúñ][a-záéíóúñ0-9-]+`)
+	corta := regexp.MustCompile(`(^|[\s"'(])-([a-zA-Z])($|[\s"'),.])`)
+
+	// hay dice si esa bandera está declarada aquí, heredada o puesta como persistente por
+	// este mismo comando. **Las tres cuentan**: `cmd.Flags()` no siempre trae las
+	// persistentes del propio comando, y mirar solo ahí daba por ausente la `--clave-env`
+	// de «boveda», que la declara él.
+	hay := func(cmd *cobra.Command, nombre string) bool {
+		return cmd.Flags().Lookup(nombre) != nil ||
+			cmd.PersistentFlags().Lookup(nombre) != nil ||
+			cmd.InheritedFlags().Lookup(nombre) != nil
+	}
+	hayCorta := func(cmd *cobra.Command, letra string) bool {
+		return cmd.Flags().ShorthandLookup(letra) != nil ||
+			cmd.PersistentFlags().ShorthandLookup(letra) != nil ||
+			cmd.InheritedFlags().ShorthandLookup(letra) != nil
+	}
+
+	// deEsfinge deja de cada ejemplo **solo los trozos que invocan a Esfinge**. Sin esto,
+	// `echo -n 'secreto' | esfinge cifrar` hacía reclamar una `-n` que es de `echo`: en un
+	// ejemplo con tubería hay más de un programa, y las banderas de los demás no son
+	// promesas nuestras.
+	deEsfinge := func(ejemplo string) string {
+		var vale []string
+		for _, linea := range strings.Split(ejemplo, "\n") {
+			for _, trozo := range strings.Split(linea, "|") {
+				if strings.Contains(trozo, "esfinge") {
+					vale = append(vale, trozo)
+				}
+			}
+		}
+		return strings.Join(vale, "\n")
+	}
+
+	// Y **una queja por bandera y comando**, no una por sitio donde se nombre: el mismo
+	// `-o` sale en el `Long` y en el `Example`, y repetir el aviso es como se consigue que
+	// deje de leerse.
+	dicho := map[string]bool{}
+	quejarse := func(cmd *cobra.Command, guion, nombre string) {
+		clave := cmd.CommandPath() + " " + guion + nombre
+		if dicho[clave] {
+			return
+		}
+		dicho[clave] = true
+		t.Errorf("«%s» promete %s%s en su ayuda y esa bandera no existe", cmd.CommandPath(), guion, nombre)
+	}
+
+	var recorrer func(cmd *cobra.Command)
+	recorrer = func(cmd *cobra.Command) {
+		// **El `Long` y el `Example` juntos**: el ejemplo es lo que se copia y el texto es
+		// lo que se cree. Las dos cosas son promesas.
+		texto := cmd.Long + "\n" + deEsfinge(cmd.Example)
+		for _, m := range larga.FindAllString(texto, -1) {
+			nombre := strings.TrimPrefix(m, "--")
+			if !hay(cmd, nombre) {
+				quejarse(cmd, "--", nombre)
+			}
+		}
+		for _, m := range corta.FindAllStringSubmatch(texto, -1) {
+			letra := m[2]
+			if !hayCorta(cmd, letra) {
+				quejarse(cmd, "-", letra)
+			}
+		}
+		for _, hijo := range cmd.Commands() {
+			recorrer(hijo)
+		}
+	}
+	recorrer(raiz)
 }

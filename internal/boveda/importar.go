@@ -819,7 +819,7 @@ func separadorDe(texto string) rune {
 func (b *Boveda) Importar(entradas []Entrada, deDonde string) (r Resumen, err error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return Resumen{}, ErrCerrada
 	}
 	carpeta := fmt.Sprintf("Importado de %s · %s", deDonde, time.Now().Format("2006-01-02"))
@@ -1001,7 +1001,7 @@ func (b *Boveda) CuantasLlaves() int {
 func (b *Boveda) ExportarLlaves(w io.Writer, clave string) (int, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return 0, ErrCerrada
 	}
 	if clave == "" {
@@ -1058,7 +1058,7 @@ func soloCifras(s string) string {
 func (b *Boveda) Exportar(w io.Writer) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return ErrCerrada
 	}
 	c := csv.NewWriter(w)

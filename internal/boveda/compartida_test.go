@@ -1,7 +1,9 @@
 package boveda
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -516,6 +518,79 @@ func TestElTitularDeUnaRanuraNuevaNoSeLlevaLaClaveDeBoveda(t *testing.T) {
 	}
 	if e := deAna.Buscar("Lo que Ana guarda"); len(e) != 1 {
 		t.Error("lo que Ana guardó no está")
+	}
+
+	// **Y lo que es leer el cuerpo entero, también** (2026-11-12). Cinco métodos usaban
+	// `b.llave == nil` como prueba de «está abierta» —`Exportar`, `ExportarLlaves`,
+	// `Importar`, `Repetidas` y `QuitarRepetidas`—, y eso dejó de significar lo mismo en
+	// cuanto un titular abre con su cadena: contestaban **«La bóveda está cerrada»**
+	// estando abierta, o sea una frase falsa que manda a mirar donde no hay nada. Ninguno
+	// de los cinco necesita esa clave: solo tocan el cuerpo.
+	//
+	// **No es una frontera que se abra**: un titular ya puede leerlas una a una con
+	// `Buscar` y `Ver`, así que negarle el CSV no protegía nada — solo hacía que la
+	// bóveda se portara distinto según cómo se pidiera lo mismo. Lo que **sí** es
+	// frontera sigue negándose arriba, con `sinClaveDeBoveda`.
+	var csv bytes.Buffer
+	if err := deAna.Exportar(&csv); err != nil {
+		t.Errorf("un titular no puede exportar la bóveda que le han compartido: %v", err)
+	} else if !bytes.Contains(csv.Bytes(), []byte("Cloudflare")) {
+		t.Error("el CSV del titular sale sin las entradas")
+	}
+	// En las llaves de acceso lo que se afirma es **que la puerta ya no miente**: esta
+	// bóveda no tiene ninguna, así que lo correcto es que diga eso y no «cerrada».
+	if _, err := deAna.ExportarLlaves(io.Discard, "una clave para el fichero"); errors.Is(err, ErrCerrada) {
+		t.Error("exportar las llaves le dice a un titular que la bóveda está cerrada")
+	}
+	if _, err := deAna.Repetidas(); err != nil {
+		t.Errorf("un titular no puede mirar las repetidas: %v", err)
+	}
+	if _, err := deAna.Importar([]Entrada{{
+		Tipo: TipoCredencial, Titulo: "Lo que Ana importa", Secreto: "x",
+	}}, "una prueba"); err != nil {
+		t.Errorf("un titular con permiso de editar no puede importar: %v", err)
+	}
+	if _, err := deAna.QuitarRepetidas(); err != nil {
+		t.Errorf("un titular no puede quitar las repetidas: %v", err)
+	}
+}
+
+// TestLaClaveDeBovedaNoSeUsaComoPruebaDeQueEstaAbierta lee el fuente del paquete y exige
+// que `b.llave == nil` **viva en un solo sitio**.
+//
+// Es la cuarta vez que esta casa paga lo mismo —`vaciarLoSensible`,
+// `enConfiguracionDePruebas`, `PasaPorLaValvula`—: una pregunta contestada en N sitios se
+// desalinea en cuanto uno de los N cambia de significado. Aquí cambió el 2026-11-10, el
+// día que un titular pudo abrir **sin** clave de bóveda, y cinco métodos se quedaron
+// diciendo «cerrada» a una bóveda abierta.
+//
+// Hay dos preguntas y se parecen: `cerrada()` es «no se puede leer el cuerpo» y
+// `sinClaveDeBoveda()` es «esto es cosa del dueño». Lo que no vale es preguntarlo a mano.
+func TestLaClaveDeBovedaNoSeUsaComoPruebaDeQueEstaAbierta(t *testing.T) {
+	ficheros, err := filepath.Glob("*.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range ficheros {
+		if strings.HasSuffix(f, "_test.go") {
+			continue
+		}
+		datos, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, linea := range strings.Split(string(datos), "\n") {
+			if !strings.Contains(linea, "b.llave == nil") {
+				continue
+			}
+			// El único sitio donde esa comparación es la definición y no una copia.
+			if strings.Contains(linea, "func (b *Boveda) sinClaveDeBoveda()") {
+				continue
+			}
+			t.Errorf("%s:%d pregunta «b.llave == nil» a mano: usa cerrada() si lo que quieres es "+
+				"saber si se puede leer el cuerpo, o sinClaveDeBoveda() si de verdad hace falta la "+
+				"clave de bóveda. Un titular del formato 2 abre sin ella.", f, i+1)
+		}
 	}
 }
 

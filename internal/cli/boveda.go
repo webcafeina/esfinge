@@ -353,7 +353,7 @@ func unaSola(b *boveda.Boveda, q string) (boveda.Entrada, error) {
 }
 
 func comandoBovedaExportar(o *opciones, ob *opcionesBoveda) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "exportar",
 		Short: "Saca la bóveda entera en CSV, sin cifrar",
 		Long: "Escribe todas las entradas en CSV **sin cifrar**, por la salida\n" +
@@ -380,6 +380,17 @@ func comandoBovedaExportar(o *opciones, ob *opcionesBoveda) *cobra.Command {
 			return conSalida(e, o, o.salida, b.Exportar)
 		},
 	}
+	// **`-o` lo prometía su ayuda y no existía** (2026-11-12): su propio ejemplo dice
+	// «esfinge boveda exportar -o copia.csv» y eso contestaba «unknown shorthand flag».
+	// `conSalida` ya mira `o.salida`, así que lo único que faltaba era declararla — y con
+	// ella `--forzar`, porque sin eso no hay forma de escribir encima de un fichero que ya
+	// está y `conSalida` se niega. Es el mismo descuido que el `-q` de la raíz de «boveda»,
+	// que ya costó un «unknown flag» en el programa que más se mete en un guion.
+	f := cmd.Flags()
+	f.StringVarP(&o.salida, "salida", "o", "", "Fichero de salida (por defecto, la salida estándar)")
+	f.BoolVar(&o.forzar, "forzar", false, "Sobrescribir el fichero de salida si ya existe")
+	exigeValor(f, "salida")
+	return cmd
 }
 
 // abrirBoveda pide la clave y desbloquea. Vale tanto la contraseña maestra como

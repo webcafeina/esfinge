@@ -196,7 +196,7 @@ func (b *Boveda) limpieza() (sobran map[string]bool, quedan map[string]Entrada) 
 func (b *Boveda) Repetidas() (int, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return 0, ErrCerrada
 	}
 	sobran, _ := b.limpieza()
@@ -209,7 +209,7 @@ func (b *Boveda) Repetidas() (int, error) {
 func (b *Boveda) QuitarRepetidas() (int, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.llave == nil {
+	if b.cerrada() {
 		return 0, ErrCerrada
 	}
 	sobran, quedan := b.limpieza()
