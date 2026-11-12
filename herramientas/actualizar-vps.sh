@@ -34,7 +34,23 @@ esac
 
 # El nombre no se compone aquí: lo dice el catálogo, que es el único sitio donde viven los
 # nombres de los adjuntos (internal/adjuntos).
-fichero="$(cd "$raiz" && go run ./herramientas/catalogo nombre "cli-linux-$arq" "$version")"
+#
+# Y **Go no está en el PATH del sistema** en esta máquina —vive en ~/.local/go porque se
+# instaló sin sudo—, así que este guion lo busca igual que el Makefile en vez de dar por
+# hecho el PATH de quien lo llame. La primera versión no lo hacía y murió con «go: command
+# not found» justo después de una publicación en verde: un guion que existe para que no
+# haya pasos que saltarse no puede depender de cómo venga el shell.
+GO="${GO:-}"
+if [ -z "$GO" ]; then
+  if command -v go >/dev/null 2>&1; then GO=go
+  elif [ -x "$HOME/.local/go/bin/go" ]; then GO="$HOME/.local/go/bin/go"
+  else
+    echo "✕ No encuentro Go, y el nombre del fichero lo dice el catálogo. Pon GO=/ruta/a/go." >&2
+    exit 1
+  fi
+fi
+
+fichero="$(cd "$raiz" && "$GO" run ./herramientas/catalogo nombre "cli-linux-$arq" "$version")"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
