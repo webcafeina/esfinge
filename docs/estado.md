@@ -2,6 +2,44 @@
 
 Última actualización: **2026-11-12**
 
+## La primera rotación, hecha, y el fallo que destapó (2026-11-12)
+
+**El cliente rotó la bóveda de proyecto de Tempero**, que es la primera rotación de verdad del proyecto, y
+**funcionó entera**: pedir las llaves del titular al servidor, comparar su huella, recifrar el cuerpo,
+resellar solo las ranuras vivas y subir. Los siete secretos siguen siendo **byte a byte los mismos**
+—comprobado por las ocho cifras del SHA-256 de los siete contra el `.env` de origen, sin que ninguno se
+viera—. *Rotar cambia el cifrado, no los valores* ya no es una frase: está medido.
+
+**Y a los minutos destapó un fallo de severidad Alta, que es lo que esta rotación ha valido de verdad.** La
+pasada de una bóveda compartida se construye en **tres** sitios y el gancho `RecogerLaCadena` —lo que recoge
+la cadena nueva por la bóveda personal, la única que abre la ranura sellada hacia su identidad— estaba en
+**dos**: la ventana y la extensión. En `internal/cli` no, y la bóveda personal que hacía falta era el primer
+parámetro de esa misma función. Resultado: **el VPS se quedó sordo**. Bajaba el documento nuevo, no sabía
+abrirlo, **servía su copia de antes con un aviso** y ni recibía lo que se escribiera ni podía subir lo suyo.
+Para siempre, no hasta el reintento siguiente.
+
+**Arreglado el mismo día y publicado en la 2.61.1**, con las tres puertas en verde —`comprobar: 0`, 200 de
+la extensión, 156 del e2e— y **el VPS ya al día**: `formato = 2`, época `34a7ed5e66ad4…`, serie 40, el sobre
+`contenido` dentro, **el aviso desaparecido** y los siete secretos saliendo al entorno de un proceso con las
+mismas ocho cifras de antes. La 2.61.0 queda al lado como `esfinge-ANTERIOR`.
+
+**Tres cosas que deja escritas**, y son más valiosas que el arreglo:
+
+1. **La prueba que lo caza estaba pedida por su nombre en el plan** —«`paseo_test.go`: la ventana rota y el
+   servidor sigue sacando el secreto»— **y no se escribió**. Lo que sí había era la misma escena **con la
+   ventana a los dos lados** (`acceso_entre_cuentas_test.go`, paso 9), que pasa en verde con el agujero
+   dentro. Ahora es el **paso 10** del paseo, mutado y rojo.
+2. **El fallo solo existe si ya hay una copia anterior a la rotación.** Bajando la bóveda por primera vez
+   después de rotar no hay nada que recoger y todo funciona — que es exactamente por lo que parecía cubierto.
+3. **Dos frases eran parte del fallo**: el error decía «ciérrala y vuelve a abrirla para seguir» cuando el
+   comentario de `RecogerCadenaDe` ya decía que **reabrir no sirve**, y el comentario del campo del
+   sincronizador decía que el gancho «lo pone `internal/app`». Cuando algo hay que ponerlo en N sitios, el
+   comentario que nombra uno **es parte del fallo**.
+
+**Lo que queda de esto**: «Zeri's Coffee», la otra bóveda compartida con el VPS, **sigue en formato 1** y se
+puede rotar cuando el cliente quiera —ahora sin la arista—. Y las dos tiendas sirven la 2.61.0 desde hoy,
+así que la flota está entera al día.
+
 ## Las dos publicaciones de la clave de contenido, fuera (2026-11-10)
 
 **Las dos están publicadas.** La **2.60.0** —la A, que solo lee— salió por la mañana, y con Firefox

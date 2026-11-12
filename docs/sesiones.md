@@ -5,6 +5,41 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-12 · La primera rotación, y el sitio donde el gancho no estaba
+
+- **Las dos tiendas ya sirven la 2.61.0** —Firefox por su API, Chrome en su ficha—, así que la flota
+  quedó entera al día y rotar dejó de tener aristas. Apuntado y empujado antes de tocar nada.
+- **El cliente rotó la bóveda de proyecto de Tempero**, guiado paso a paso: entrar en el proyecto,
+  «Quién tiene acceso…», y los dos toques de «Cambiar la clave de esta bóveda». **Parada en el paso 5**
+  para leer la lista de quién tiene acceso antes de tocar la clave: lo que esté ahí es lo único para lo
+  que la bóveda queda abierta después, y ésa es la última ocasión de ver algo raro.
+- **La rotación funcionó entera** —pedir las llaves del titular, comparar la huella, recifrar, resellar y
+  subir— y **los siete secretos siguieron siendo byte a byte los mismos**, comprobado por las ocho cifras
+  del SHA-256 de los siete contra el `.env` de origen, sin que ninguno se viera. *Rotar cambia el
+  cifrado, no los valores* dejó de ser una frase.
+- **Y a los minutos destapó un fallo nuestro de severidad Alta**: el VPS se quedó sordo. La pasada de una
+  bóveda compartida se construye en **tres** sitios y el gancho `RecogerLaCadena` estaba en **dos** —la
+  ventana y la extensión—; en `internal/cli` no, y la bóveda personal que hacía falta era el primer
+  parámetro de esa misma función. Un titular sin pantalla bajaba el documento nuevo, no sabía abrirlo y
+  **servía su copia de antes con un aviso, para siempre**.
+- **Lo que hay que aprenderse de cómo se encontró**: no lo encontró una prueba, lo encontró *medir después
+  de un cambio en producción*. El aviso estaba en la primera línea de la salida —«esto puede estar
+  viejo»— y el listado salía completo debajo: quedarse en «sale la lista, va bien» era lo fácil.
+- **Y de por qué estaba en verde**: la prueba que lo caza **estaba pedida por su nombre en el plan del
+  domingo** —«`paseo_test.go`: la ventana rota y el servidor sigue sacando el secreto»— y no se escribió.
+  Lo que sí había era la misma escena **con la ventana a los dos lados**, que pasa en verde con el agujero
+  dentro. Es la cuarta vez en este proyecto que una regla en N sitios se prueba en uno.
+- **Arreglado el mismo día, en la 2.61.1**: el gancho donde faltaba, el **paso 10** del paseo —rota,
+  cambia el secreto *después* de rotar, y el servidor tiene que entregar el nuevo, haber pasado a formato
+  2 con época y seguir pudiendo escribir—, **mutado y rojo** con el síntoma clavado («al programa le ha
+  llegado el testigo de antes»). Más dos frases que eran parte del fallo: el mensaje que mandaba a
+  «cerrar y volver a abrir» —gesto que el propio código sabía que no sirve— y el comentario que decía que
+  el gancho «lo pone `internal/app`».
+- Las tres puertas en verde sobre lo publicado: `comprobar: 0`, **200** pruebas de la extensión y **156**
+  del e2e en los dos temas.
+
+---
+
 ## 2026-11-10 · La clave de contenido entera: las dos publicaciones
 
 - **Acabada la A** —la que solo aprende a leer— y **escrita la B** —la que escribe y rota—, con las tres
