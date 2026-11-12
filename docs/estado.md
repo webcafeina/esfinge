@@ -1,15 +1,16 @@
 # Estado
 
-Última actualización: **2026-11-10**
+Última actualización: **2026-11-12**
 
 ## Las dos publicaciones de la clave de contenido, fuera (2026-11-10)
 
 **Las dos están publicadas.** La **2.60.0** —la A, que solo lee— salió por la mañana, y con Firefox
 (`public 2.60.0`) y Chrome al día por la tarde se cumplieron las tres condiciones, así que **la B se
 fusionó y salió en la 2.61.0**, que ya escribe el formato 2 y rota. Las dos puertas en verde sobre el
-commit de la etiqueta, los siete trabajos del flujo también y **28 adjuntos** en la publicación. La
-extensión está **enviada a las dos tiendas y esperando revisión** —Chrome dice `PENDING_REVIEW`, y aquí eso
-no es un problema: la 2.60.0 ya está aprobada, que es la que hacía falta para leer—.
+commit de la etiqueta, los siete trabajos del flujo también y **28 adjuntos** en la publicación. Y **la
+extensión de la 2.61.0 está aprobada y publicada en las dos tiendas** desde el 2026-11-12 —comprobado:
+Firefox sirve `2.61.0` por su API y la ficha de Chrome también la enseña—, así que **la flota entera está
+al día y no hay nada esperando a nadie**.
 
 **El VPS ya tiene la 2.61.0**, con su suma comprobada, la 2.60.0 guardada al lado como
 `esfinge-ANTERIOR` y la comprobación que de verdad dice que va: `esfinge boveda listar --compartida Tempero`
@@ -21,8 +22,8 @@ sigue siendo el de antes hasta que pulse «Cambiar la clave de esta bóveda» o 
 
 **El día que lo haga, una cosa que ya está dicha y conviene recordarle**: cualquier equipo o extensión que
 siga en una versión anterior a la 2.60.0 **no podrá leer esa bóveda** —dice «actualiza»—. Los dos Mac y el
-VPS están al día; lo que puede ir por detrás es **la extensión mientras la tienda revise**, y una extensión
-con la 2.60.0 lee el formato 2 sin problema.
+VPS están al día, y **la extensión también en las dos tiendas desde el 2026-11-12**; aun así la regla
+sigue valiendo para la próxima vez, y una extensión con la 2.60.0 lee el formato 2 sin problema.
 
 ## Lo que lleva dentro la publicación B (2026-11-10)
 
