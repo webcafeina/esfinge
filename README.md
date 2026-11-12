@@ -23,13 +23,15 @@ En tu ordenador, sin cuentas ni servidores; o en todos tus equipos, con una cuen
 
 | Sistema | Descarga | Notas |
 |---|---|---|
-| **macOS** | [Esfinge-2.63.0.dmg](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/Esfinge-2.63.0.dmg) | Universal: Apple Silicon e Intel |
-| **Windows · Intel y AMD** | [Esfinge-2.63.0-windows-amd64-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/Esfinge-2.63.0-windows-amd64-instalador.exe) | Asistente de instalación |
-| **Windows · ARM** | [Esfinge-2.63.0-windows-arm64-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/Esfinge-2.63.0-windows-arm64-instalador.exe) | Asistente de instalación |
-| **Linux · Debian y Ubuntu** | [esfinge_2.63.0_amd64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/esfinge_2.63.0_amd64.deb) | Aplicación y línea de comandos |
-| **Linux · Debian y Ubuntu (ARM)** | [esfinge_2.63.0_arm64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/esfinge_2.63.0_arm64.deb) | Aplicación y línea de comandos |
-| **Linux · cualquiera** | [esfinge-2.63.0-linux-amd64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/esfinge-2.63.0-linux-amd64.tar.gz) | Los binarios sueltos |
-| **Linux · cualquiera (ARM)** | [esfinge-2.63.0-linux-arm64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/esfinge-2.63.0-linux-arm64.tar.gz) | Los binarios sueltos |
+| **macOS** | [Esfinge-2.64.0.dmg](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/Esfinge-2.64.0.dmg) | Universal: Apple Silicon e Intel |
+| **Windows · Intel y AMD** | [Esfinge-2.64.0-windows-amd64-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/Esfinge-2.64.0-windows-amd64-instalador.exe) | Asistente de instalación |
+| **Windows · ARM** | [Esfinge-2.64.0-windows-arm64-instalador.exe](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/Esfinge-2.64.0-windows-arm64-instalador.exe) | Asistente de instalación |
+| **Linux · Debian y Ubuntu** | [esfinge_2.64.0_amd64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/esfinge_2.64.0_amd64.deb) | Aplicación y línea de comandos |
+| **Linux · Debian y Ubuntu (ARM)** | [esfinge_2.64.0_arm64.deb](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/esfinge_2.64.0_arm64.deb) | Aplicación y línea de comandos |
+| **Linux · Fedora y RHEL** | [esfinge-2.64.0-1.x86_64.rpm](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/esfinge-2.64.0-1.x86_64.rpm) | Aplicación y línea de comandos |
+| **Linux · Fedora y RHEL (ARM)** | [esfinge-2.64.0-1.aarch64.rpm](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/esfinge-2.64.0-1.aarch64.rpm) | Aplicación y línea de comandos |
+| **Linux · cualquiera** | [esfinge-2.64.0-linux-amd64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/esfinge-2.64.0-linux-amd64.tar.gz) | Los binarios sueltos |
+| **Linux · cualquiera (ARM)** | [esfinge-2.64.0-linux-arm64.tar.gz](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/esfinge-2.64.0-linux-arm64.tar.gz) | Los binarios sueltos |
 | **Línea de comandos** | [todos los sistemas](https://github.com/webcafeina/esfinge/releases/latest) | Seis objetivos, con sus SHA256 |
 
 **Y para usar la bóveda desde un agente de IA** (Claude Desktop y compañía), el paquete de su sistema. Se
@@ -37,15 +39,15 @@ instala arrastrándolo a la ventana del agente, y necesita Esfinge abierta:
 
 | | |
 |---|---|
-| **macOS** | [Esfinge-2.63.0-macos.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/Esfinge-2.63.0-macos.mcpb) |
-| **Windows · Intel y AMD** | [Esfinge-2.63.0-windows-amd64.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/Esfinge-2.63.0-windows-amd64.mcpb) |
-| **Windows · ARM** | [Esfinge-2.63.0-windows-arm64.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/Esfinge-2.63.0-windows-arm64.mcpb) |
-| **Linux · Intel y AMD** | [Esfinge-2.63.0-linux-amd64.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/Esfinge-2.63.0-linux-amd64.mcpb) |
-| **Linux · ARM** | [Esfinge-2.63.0-linux-arm64.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.63.0/Esfinge-2.63.0-linux-arm64.mcpb) |
+| **macOS** | [Esfinge-2.64.0-macos.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/Esfinge-2.64.0-macos.mcpb) |
+| **Windows · Intel y AMD** | [Esfinge-2.64.0-windows-amd64.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/Esfinge-2.64.0-windows-amd64.mcpb) |
+| **Windows · ARM** | [Esfinge-2.64.0-windows-arm64.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/Esfinge-2.64.0-windows-arm64.mcpb) |
+| **Linux · Intel y AMD** | [Esfinge-2.64.0-linux-amd64.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/Esfinge-2.64.0-linux-amd64.mcpb) |
+| **Linux · ARM** | [Esfinge-2.64.0-linux-arm64.mcpb](https://github.com/webcafeina/esfinge/releases/download/v2.64.0/Esfinge-2.64.0-linux-arm64.mcpb) |
 
 En **Claude Code** no hace falta: Ajustes da la orden escrita, con la ruta de tu equipo.
 
-Versión **2.63.0**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
+Versión **2.64.0**. Las anteriores, en [publicaciones](https://github.com/webcafeina/esfinge/releases).
 
 <!-- descargas:fin -->
 
