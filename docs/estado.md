@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-11-12**
+Última actualización: **2026-11-13**
 
 ## Lo último grande: Esfinge en los seis objetivos y en los canales (2026-11-12)
 
@@ -10,67 +10,53 @@ riesgos, está en `~/.claude/plans/vamos-a-realizar-un-precious-adleman.md`.**
 
 ### Lo primero al retomar
 
-**La fase 4 va por la 2.65.2**, después de que la 2.65.0 y la 2.65.1 se cayeran al publicar — las dos con
-`publicar` sin llegar a correr, así que **no salió nada ninguna de las dos veces**: la puerta es todo o nada.
-Las dos causas están abajo, arregladas y con lo que dejan escrito.
+**Las fases 0 a 4 están publicadas y el VPS al día.** La fase 4 salió en la **2.65.3**, con los 37
+adjuntos, y lo que queda son las fases **5** (los canales) y **6** (la ADR 0061 y los tachados).
 
-1. **Cuando salga, tiene que tener 37 adjuntos**: `go run ./herramientas/catalogo lista 2.65.2 | wc -l`, y
-   la puerta de la publicación lo compara en los dos sentidos.
-2. **Y entonces el VPS**, que sigue en la **2.64.0**: `herramientas/actualizar-vps.sh 2.65.2`. No es
-   cosmético —este equipo es titular de la bóveda de proyecto de Tempero (ADR 0057)— y el guion lo hace
-   entero: baja, comprueba la suma, guarda el anterior, instala y **prueba que hace su trabajo** leyendo la
-   bóveda compartida.
-3. **Lo que queda son las fases 5 y 6**: los canales y la documentación.
+**La fase 4 costó cuatro intentos de publicar**, y los tres primeros se cayeron por tres causas
+distintas —abajo, cada una con lo que deja escrito—. Las tres veces `publicar` no llegó a correr, así que
+**no salió nada a medias** ninguna de ellas: la puerta es todo o nada. Quedan **tres etiquetas huérfanas**
+en GitHub —`v2.65.0`, `v2.65.1` y `v2.65.2`—, sin publicación detrás; se pueden borrar cuando se quiera
+(`git tag -d vX && git push origin :refs/tags/vX`) y se dejaron porque borrar una etiqueta remota es
+destructivo y lo decide una persona.
 
-**Y dos etiquetas huérfanas en GitHub**, `v2.65.0` y `v2.65.1`, que apuntan a commits que no publicaron
-nada. Se pueden borrar cuando se quiera —`git tag -d vX && git push origin :refs/tags/vX`—; se dejaron
-porque borrar una etiqueta remota es destructivo y lo decide una persona.
+**Lo que la fase 4 dejó comprobado en producción**: las dos AppImage —87 y 81 MiB, el orden de la de Apolo—
+y el humo diciendo en **las dos arquitecturas** que en una máquina sin WebKitGTK instalado no le falta nada
+a la ventana salvo el driver gráfico. Y el VPS en la 2.65.3, leyendo «Tempero» con las siete huellas
+iguales que antes.
 
-### Lo que tiró la 2.65.1: mi propia comprobación, probada por el camino fácil
+### Las tres causas de las tres caídas, que es lo que de verdad hay que leer
 
-La AppImage **se armó bien** —`Success` en el registro— y lo que falló fue el paso de **mirar qué lleva
-dentro**: resolvía la ruta absoluta del fichero **dentro del subshell, después del `cd`**, así que con un
-`$salida` relativo —que es lo que pasa la publicación— `dirname` daba «.», que ya era el directorio
-temporal. Buscaba la AppImage donde no estaba y moría con «No such file or directory» después de haberla
-hecho.
+**1 · Un fichero de más en la raíz** (`v2.65.0`). `go build -o esfinge-mcp` murió con «already exists and
+is not an object file»: probando el guion de la AppImage, un contenedor tenía el repositorio montado **con
+escritura** y dejó tres binarios de mentira, como root — y `.gitignore` nombraba **dos de los tres**, así
+que `git add -A` se llevó uno. Cerrado con los tres nombres y sus dos formas, y
+`TestLosTresBinariosSeIgnoran`, que compara esa lista con la de `internal/adjuntos`.
 
-**Aquí se había probado con una ruta absoluta**, que es el único caso que no tiene el fallo. Es la familia de
-«probar el camino fácil» con una vuelta de tuerca: no es que la prueba fuera floja, es que **el argumento
-que le pasé no era el que pasa producción**. Ahora el guion se prueba con un nombre relativo, lanzado desde
-la raíz del repositorio, que es exactamente como lo llama el flujo.
+**2 · Mi propia comprobación, probada con el argumento que no usa producción** (`v2.65.1`). La AppImage se
+armó bien y murió el paso de mirar qué lleva dentro: resolvía la ruta absoluta **dentro del subshell,
+después del `cd`**, así que con un `$salida` relativo —lo que pasa el flujo— `dirname` daba «.», que ya era
+el directorio temporal. Aquí se había probado **con una ruta absoluta**, el único caso que no falla. Ahora
+se prueba con nombre relativo desde la raíz, como lo llama el flujo. **Y del mismo registro salió lo que no
+se estaba mirando**: `appimagetool` se bajaba el `runtime` él solo, de una etiqueta rodante y sin comprobar
+nada — y es **lo primero que se ejecuta** en el equipo de quien abre la AppImage. Ahora va con su suma como
+las otras tres piezas y armar ya no toca la red.
 
-**Y de ese mismo registro salió algo que no se estaba mirando**: `appimagetool` **se bajaba el `runtime`
-él solo**, de una etiqueta rodante y **sin comprobar nada**. Eso no es un detalle —el runtime es lo primero
-que se ejecuta en el equipo de quien abre la AppImage—, así que ahora va fijado con su suma como las otras
-tres piezas y se le pasa con `--runtime-file`; armar **ya no toca la red**. El precio, aceptado y escrito: el
-día que reconstruyan `continuous` esto se pondrá rojo, porque `type2-runtime` no publica etiquetas con
-fecha. Un cambio silencioso en el cargador de la aplicación es peor que una compilación en rojo.
+**3 · Y una prueba de interfaz que destapó un fallo de producto** (`v2.65.2`). **La banda de «hay versión
+nueva» se reabría sola después de cerrarla.** Entra por tres caminos y dos son pasivos —el aviso de la
+comprobación de fondo y la pregunta de «¿hay algo pendiente?» al montar—, así que una respuesta pedida
+**antes** del clic puede llegar **después** y volver a abrir lo que la persona acababa de cerrar. Aquí no se
+veía nunca, porque todo llega antes del clic; en la máquina de la publicación, cargada, llega después. Es la
+familia de las preferencias —«una respuesta que llega tarde deshace lo que ya se decidió»—, cerrada igual:
+lo descartado se recuerda, **en un solo sitio** del que preguntan los dos caminos pasivos, y **en una `ref`
+y no en un estado**, porque el oyente se registra al montar y un estado quedaría capturado en su valor
+inicial. Pedirlo a mano sí la vuelve a enseñar.
 
-### El fichero que tiró la 2.65.0 (2026-11-12, noche)
-
-`go build -o esfinge-mcp ./cmd/esfinge-mcp` falló con **«build output "esfinge-mcp" already exists and is
-not an object file»**: había un fichero `esfinge-mcp` **comprometido en el repositorio**.
-
-Cómo llegó ahí: probando el guion de la AppImage, el primer contenedor tenía el repositorio montado **con
-escritura**, y su guion escribió tres binarios de mentira en la raíz —como root—. Los contenedores
-siguientes ya iban sobre una copia, pero el fichero se quedó. Y entonces:
-
-- **`.gitignore` nombraba dos de los tres binarios.** `/esfinge` y `/esfinge-puente` sí; **`esfinge-mcp`
-  no**. Así que de los tres que ese contenedor dejó escritos, git solo vio uno — y `git add -A` se lo llevó.
-- **Ninguna de las tres puertas lo vio**, y no podían: miran el código, no lo que haya suelto en la raíz. En
-  verde con el fichero dentro.
-
-Lo que lo cierra: los tres nombres en `.gitignore` **con sus dos formas** —sin `.exe`, lo que compila `make
-publicar` para Windows tampoco se ignoraría— y **`TestLosTresBinariosSeIgnoran`**, que compara esa lista con
-`losBinarios` de `internal/adjuntos`, que es la que dice cuáles son. Mutado: quitar una línea lo pone rojo.
-
-Es la familia de siempre —**una regla escrita en dos listas se desalinea sola**, y van seis— con la variante
-de que aquí las dos listas no se pueden juntar: un `.gitignore` no puede preguntarle nada a Go, así que lo
-que queda es una prueba que las compare. Igual que los botones de la tarjeta y los dos `postinstall`.
-
-**Y la de método, que es la que vale**: un contenedor con el repositorio montado con escritura **puede
-dejarte ficheros dentro del árbol de trabajo**, como root y sin que nadie lo diga. Se monta `:ro`, o se
-trabaja sobre una copia —que es lo que acabé haciendo, después del destrozo—.
+Y lo de método, que es lo que vale de las tres: **las tres se cayeron en sitios que ninguna de las tres
+puertas de aquí mira** —lo que haya suelto en la raíz, el argumento que pasa el flujo, y una carrera que
+solo pierde una máquina cargada—. La tercera ya no depende de la suerte: la prueba **provoca el aviso
+tardío** con un `_novedad` que solo existe tras la etiqueta `dev`, con el mismo argumento que `_llavero` y
+`_excluir`.
 
 ### Lo que el cliente decidió, y no se vuelve a discutir
 
