@@ -156,13 +156,54 @@ montaje es de solo lectura, pero el fichero `.AppImage` es un fichero normal del
 funciona incluso mientras corre, que es lo que hace Apolo—. El plan decía lo contrario y era falso. Está en
 [`deuda.md`](deuda.md) con lo que costaría; **se decide con el cliente**.
 
-### Fase 5, lo siguiente · los canales
+### Fase 5, lo siguiente · los canales (nada empezado; el lunes se sigue por aquí)
 
-Lo que más puede torcerse. En orden: **el `LICENSE` primero** —el permiso expreso, sin eso no se empieza—;
-la clave GPG propia, generada y guardada como las de Apolo; `web.yml` con `/apt` y `/rpm`; el PKGBUILD del
-AUR, el tap de Homebrew y Chocolatey, los tres leyendo `catalogo json`.
+Lo que más puede torcerse, y **lo único del proyecto que depende de cosas que no están en este equipo.**
 
-**Y el riesgo que el diseño ya cazó y hay que no olvidar**: `on: release: published` **no se dispara si la
+**Lo primero es el `LICENSE`**, porque sin eso el AUR y Chocolatey contradicen la propia licencia. El texto
+**está redactado y pendiente de que el cliente lo apruebe** —se le enseñó el 2026-11-13 y la sesión se cerró
+antes de su respuesta—. Dice así, para añadir antes de la línea de contacto:
+
+```
+Y una excepción expresa, para que Esfinge se pueda instalar como se instala
+cualquier otro programa (2026-11-13):
+
+  - Webcafeína distribuye Esfinge sin modificar por sus propios canales
+    —su publicación de GitHub, esfinge.webcafeina.com y las tiendas de
+    extensiones—, incluidos los índices de paquetes que firma y publica.
+
+  - Y se permite publicar y usar RECETAS que bajen el programa de la publicación
+    oficial de Webcafeína y lo instalen SIN MODIFICARLO: un PKGBUILD del AUR, una
+    fórmula de Homebrew, un paquete de Chocolatey o lo equivalente en otro gestor.
+    Lo que la receta instale tiene que ser el fichero oficial, con su suma
+    comprobada; y la receta no puede cambiar el programa, ni quitarle avisos, ni
+    dar a entender que lo publica otro.
+
+    Rehacer el paquete en el equipo de quien instala —lo que hace «makepkg» con un
+    .deb nuestro— entra en esta excepción. Modificar el programa, no.
+```
+
+**No amplía nada más**: sigue sin poderse usar el código en otro programa, ni publicar obras derivadas, ni
+explotarlo comercialmente. Solo el camino «bájalo de donde lo publicamos e instálalo tal cual».
+
+**Y cuatro cosas que no están en mi mano**, que es lo que hay que resolver con el cliente antes de que la
+fase pueda salir entera:
+
+| Qué | Estado |
+|---|---|
+| **Clave GPG propia de Esfinge** | Se puede generar aquí, con contraseña **hexadecimal** guardada en la bóveda, y meter la privada y la frase en los secretos de GitHub **sin que el valor pase por ninguna conversación**. Pero crear una clave de firma de paquetes la aprueba el cliente, y hay que decidir **dónde va la copia de fuera del equipo** —las de Apolo están en `~/.config/apolo/claves/`— |
+| **DNS** | El CNAME de `esfinge.webcafeina.com`, en Cloudflare. Es del cliente |
+| **AUR** | Una clave SSH y la cuenta, que ya existe porque hay `apolo-bin` |
+| **Homebrew y Chocolatey** | El repositorio `webcafeina/homebrew-esfinge` y una clave de API de Chocolatey |
+
+**Lo que se puede escribir sin nada de eso** —y es la mitad de la fase—: el `LICENSE`, el PKGBUILD, la
+fórmula, el paquete de Chocolatey, los pasos de `web.yml` para `/apt` (`apt-ftparchive`,
+`Architectures=amd64 arm64`, `InRelease` y `Release.gpg`, `esfinge.sources` en deb822) y `/rpm`
+(`createrepo_c`, `repomd.xml.asc`, `esfinge.repo` con `gpgcheck` y `repo_gpgcheck`), el enganche con
+`needs:` dentro de `publicar.yml` y el paso final que comprueba los canales. Los tres paquetes leen
+`catalogo json`.
+
+**El riesgo que el diseño ya cazó y hay que no olvidar**: `on: release: published` **no se dispara si la
 publicación la crea `GITHUB_TOKEN`** —regla de GitHub, sin excepciones—. Apolo cuelga sus canales de ese
 evento porque su Release sale como borrador y la publica una persona; Esfinge la crea ya publicada. Copiar
 sus flujos tal cual daría **cuatro workflows que nunca se ejecutan, en silencio**, con el tap sirviendo una

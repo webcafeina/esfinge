@@ -5,6 +5,41 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-13 · La fase 4 fuera, a la cuarta, y tres causas distintas
+
+- **Publicada la 2.65.3** con los **37 adjuntos**, y el VPS al día: las dos AppImage —87 y 81 MiB, el orden
+  de la de Apolo— y el humo diciendo en **las dos arquitecturas** que en una máquina sin WebKitGTK instalado
+  a la ventana no le falta nada salvo el driver gráfico. `esfinge boveda listar --compartida Tempero` con
+  las **siete huellas iguales** que el día anterior.
+- **Costó cuatro intentos, y los tres primeros se cayeron por tres causas distintas** —todas en sitios que
+  ninguna de las tres puertas de aquí mira, y las tres veces sin que saliera nada a medias porque `publicar`
+  no llegó a correr—. Están en `CLAUDE.md` y en `estado.md`, y la resumida: **un fichero de más en la raíz**
+  que `.gitignore` no nombraba (de un contenedor montado con escritura); **mi propia comprobación de la
+  AppImage** resolviendo la ruta después del `cd`, probada aquí con el único argumento que no falla; y
+  **la banda de versión nueva reabriéndose sola** después de cerrarla.
+- **La tercera era un fallo de producto y es la que valió la pena.** La novedad entra por tres caminos y
+  dos son pasivos, así que una respuesta pedida **antes** del clic llegaba **después** y volvía a abrir lo
+  que la persona acababa de cerrar. Aquí no se veía nunca —todo llega antes del clic— y fallaba solo en la
+  máquina de la publicación. Cerrado como las preferencias: lo descartado **se recuerda**, en un solo sitio,
+  **en una `ref` y no en un estado** porque el oyente se registra al montar. Y la prueba **provoca el aviso
+  tardío** con un `/api/_novedad` que solo existe tras la etiqueta `dev`, en vez de esperar a tener suerte.
+  Mutada, roja en los dos temas.
+- **De paso, lo que nadie estaba mirando**: `appimagetool` **se bajaba el `runtime` él solo**, de una
+  etiqueta rodante y sin comprobar nada — y es lo primero que se ejecuta en el equipo de quien abre la
+  AppImage. Ahora va con su suma como las otras tres piezas y armar **ya no toca la red**.
+- **Liberados unos 5 GB** (20 → 25 GB libres): `dist/`, los restos de las tandas de pruebas y mi borrador,
+  que tenía una copia del repositorio y dos AppImages. **No se tocó** `referencias/`, `.git`, los
+  `node_modules` ni `cartero/.env`. Y se dejó dicho que lo gordo está fuera: **53,6 GB de volúmenes de
+  Docker sin usar**, que no se tocan sin ir volumen por volumen —hay 552, y detrás están Tempero, Cronos,
+  Hermes, Kairos y varias bases de datos—.
+- **Queda abierto**: la **fase 5** (los canales), con el texto del `LICENSE` **redactado y esperando que el
+  cliente lo apruebe** —está entero en `estado.md`— y cuatro cosas que no están en este equipo: la clave
+  GPG, el DNS, el AUR y las cuentas de Homebrew y Chocolatey. Y la **fase 6**. Más tres **etiquetas
+  huérfanas** en GitHub —`v2.65.0`, `v2.65.1`, `v2.65.2`— sin publicación detrás, que se pueden borrar
+  cuando se quiera.
+
+---
+
 ## 2026-11-12 (noche) · Las fases 3 y 4: el `.rpm`, el gestor y la AppImage
 
 - **Fase 3, publicada en la 2.64.0**: el `.rpm` de los dos arcos, con `overrides: rpm:` para lo único que

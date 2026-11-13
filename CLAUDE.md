@@ -2282,6 +2282,46 @@ al escribirlas:
 - **La hoja de estilos viste los campos por su tipo** (`text`, `email`, `password`): uno sin `type`, o de
   un tipo que no esté en la lista, sale con el aspecto del navegador.
 
+**Tres publicaciones seguidas se cayeron en sitios que ninguna de las tres puertas mira, y eso es lo
+que hay que aprenderse de la fase 4** (2026-11-13). Las tres con todo lo demás en verde, y las tres veces
+`publicar` no llegó a correr — la puerta es todo o nada, así que no salió nada a medias ninguna vez.
+
+**Una.** `go build -o esfinge-mcp` murió con «build output already exists and is not an object file»:
+había un fichero `esfinge-mcp` **comprometido en el repositorio**. Lo dejó un contenedor de pruebas con el
+repositorio montado **con escritura** —escribe como root, y lo que deja no se borra luego con `rm` desde la
+sesión normal— y `.gitignore` nombraba **dos de los tres** binarios que se compilan en la raíz. `git add -A`
+se llevó el tercero. **Un contenedor que no tenga que escribir se monta `:ro`, o se trabaja sobre una
+copia**; y si un proyecto compila varios binarios en la raíz, que la lista los nombre **todos y con sus dos
+formas** —con y sin `.exe`—, con una prueba que la compare con la que el código tiene
+(`TestLosTresBinariosSeIgnoran`). Van **seis** veces que una regla en dos listas cuesta algo aquí.
+
+**Dos.** El paso que mira qué lleva dentro la AppImage resolvía la ruta absoluta **dentro del subshell,
+después del `cd`**, así que con un `$salida` relativo —que es lo que pasa el flujo— `dirname` daba «.», que
+ya era el directorio temporal. Aquí se había probado **con una ruta absoluta**, el único caso que no tiene
+el fallo. No es que la prueba fuera floja: **el argumento que se le pasó no era el que pasa producción**, que
+es la versión sutil de probar el camino fácil. Y del registro de esa caída salió lo que nadie estaba
+mirando: **`appimagetool` se bajaba el `runtime` él solo**, de una etiqueta rodante y sin comprobar nada — y
+es **lo primero que se ejecuta** en el equipo de quien abre la AppImage. El comentario decía «son tres
+piezas y las tres fijadas» y eran cuatro.
+
+**Tres, y es la que valía la pena: una prueba de interfaz destapó un fallo de producto.** **La banda de
+«hay versión nueva» se reabría sola después de cerrarla.** La novedad entra por tres caminos y **dos son
+pasivos** —el aviso que manda la comprobación de fondo y la pregunta de «¿hay algo pendiente?» al montar—,
+así que una respuesta pedida **antes** del clic puede llegar **después** y volver a abrir lo que la persona
+acababa de cerrar, sin que haya tocado nada. Es la familia de las preferencias —«una respuesta que llega
+tarde deshace lo que ya se decidió»— y se cierra igual: lo descartado **se recuerda**, en un solo sitio del
+que preguntan los dos caminos pasivos; pedirlo a mano sí lo vuelve a enseñar. **Va en una `ref` y no en un
+estado**, y eso no es indiferente: el oyente se registra en el efecto de montar, así que un estado quedaría
+capturado en su valor inicial y la guarda no haría nada.
+
+Y la mitad de método, que vale para cualquier carrera: **aquí no se veía nunca** —todo llega antes del
+clic— y solo fallaba en la máquina de la publicación, cargada. Así que la prueba **provoca el aviso
+tardío** en vez de esperar a tener suerte: hay un `/api/_novedad` que lo manda cuando se le pide y **solo
+existe tras la etiqueta `dev`**, con el mismo argumento que `_llavero` y `_excluir` —monta un estado que una
+prueba no puede crear de otra forma y no existe en el binario del cliente—. En producción ese aviso lo manda
+`mirarSiToca`, que es de minúscula a propósito y además sale una vez cada 24 horas: sin esa costura, la
+prueba seguiría dependiendo de qué máquina la corre. **Mutada, roja en los dos temas.**
+
 ## Lo que nunca se ha probado
 
 Y ojo con qué se ha comprobado de verdad: **el diálogo de abrir no**, porque en macOS los ficheros se
