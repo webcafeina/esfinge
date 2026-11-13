@@ -10,25 +10,41 @@ riesgos, está en `~/.claude/plans/vamos-a-realizar-un-precious-adleman.md`.**
 
 ### Lo primero al retomar
 
-**La 2.65.0 está cometida y arreglada, pero NO publicada: su primer intento se cayó.** El flujo
-`43293187743` murió en los dos trabajos de Linux, el humo quedó saltado y `publicar` no llegó a correr, así
-que **no salió nada** — la puerta hizo su trabajo: o sale entera o no sale.
+**La fase 4 va por la 2.65.2**, después de que la 2.65.0 y la 2.65.1 se cayeran al publicar — las dos con
+`publicar` sin llegar a correr, así que **no salió nada ninguna de las dos veces**: la puerta es todo o nada.
+Las dos causas están abajo, arregladas y con lo que dejan escrito.
 
-**La causa, y la lección, están abajo** («El fichero que tiró la 2.65.0»). Ya está arreglado y con su
-vigilante.
-
-1. **Volver a etiquetar**: `git tag -d v2.65.0 && git push origin :refs/tags/v2.65.0`, y etiquetar de nuevo
-   sobre el commit del arreglo. La etiqueta vieja apunta al commit malo y **no tiene publicación detrás**,
-   así que moverla no rompe nada. Antes, las tres puertas —`make comprobar`, `cd navegador && pnpm run
-   comprobar`, `make e2e`— que la última vez estaban en verde con el fichero de más dentro, porque **ninguna
-   de las tres mira lo que hay comprometido en la raíz**.
-2. **Cuando salga, tiene que tener 37 adjuntos**: `go run ./herramientas/catalogo lista 2.65.0 | wc -l`, y
+1. **Cuando salga, tiene que tener 37 adjuntos**: `go run ./herramientas/catalogo lista 2.65.2 | wc -l`, y
    la puerta de la publicación lo compara en los dos sentidos.
-3. **Y entonces el VPS**, que sigue en la **2.64.0**: `herramientas/actualizar-vps.sh 2.65.0`. No es
+2. **Y entonces el VPS**, que sigue en la **2.64.0**: `herramientas/actualizar-vps.sh 2.65.2`. No es
    cosmético —este equipo es titular de la bóveda de proyecto de Tempero (ADR 0057)— y el guion lo hace
    entero: baja, comprueba la suma, guarda el anterior, instala y **prueba que hace su trabajo** leyendo la
    bóveda compartida.
-4. **Lo que queda son las fases 5 y 6**: los canales y la documentación.
+3. **Lo que queda son las fases 5 y 6**: los canales y la documentación.
+
+**Y dos etiquetas huérfanas en GitHub**, `v2.65.0` y `v2.65.1`, que apuntan a commits que no publicaron
+nada. Se pueden borrar cuando se quiera —`git tag -d vX && git push origin :refs/tags/vX`—; se dejaron
+porque borrar una etiqueta remota es destructivo y lo decide una persona.
+
+### Lo que tiró la 2.65.1: mi propia comprobación, probada por el camino fácil
+
+La AppImage **se armó bien** —`Success` en el registro— y lo que falló fue el paso de **mirar qué lleva
+dentro**: resolvía la ruta absoluta del fichero **dentro del subshell, después del `cd`**, así que con un
+`$salida` relativo —que es lo que pasa la publicación— `dirname` daba «.», que ya era el directorio
+temporal. Buscaba la AppImage donde no estaba y moría con «No such file or directory» después de haberla
+hecho.
+
+**Aquí se había probado con una ruta absoluta**, que es el único caso que no tiene el fallo. Es la familia de
+«probar el camino fácil» con una vuelta de tuerca: no es que la prueba fuera floja, es que **el argumento
+que le pasé no era el que pasa producción**. Ahora el guion se prueba con un nombre relativo, lanzado desde
+la raíz del repositorio, que es exactamente como lo llama el flujo.
+
+**Y de ese mismo registro salió algo que no se estaba mirando**: `appimagetool` **se bajaba el `runtime`
+él solo**, de una etiqueta rodante y **sin comprobar nada**. Eso no es un detalle —el runtime es lo primero
+que se ejecuta en el equipo de quien abre la AppImage—, así que ahora va fijado con su suma como las otras
+tres piezas y se le pasa con `--runtime-file`; armar **ya no toca la red**. El precio, aceptado y escrito: el
+día que reconstruyan `continuous` esto se pondrá rojo, porque `type2-runtime` no publica etiquetas con
+fecha. Un cambio silencioso en el cargador de la aplicación es peor que una compilación en rojo.
 
 ### El fichero que tiró la 2.65.0 (2026-11-12, noche)
 

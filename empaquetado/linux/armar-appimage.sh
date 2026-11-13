@@ -25,11 +25,22 @@
 #
 # # Las herramientas: del origen, con su suma, y fijadas
 #
-# Son tres y las tres se pueden fijar, que no era obvio: `appimagetool` y `linuxdeploy`
+# Son **cuatro** piezas, no tres, y conviene saber por qué. `appimagetool` y `linuxdeploy`
 # publican una etiqueta rodante «continuous» —cuyo contenido cambia cuando les parece, o
 # sea una dependencia que puede tirar una publicación cualquier martes— **pero las dos
-# tienen además etiquetas con fecha**, inmutables. Y el plugin de GTK no publica nada: se
-# coge por su URL cruda **en un commit concreto**, que es inmutable por construcción.
+# tienen además etiquetas con fecha**, inmutables. El plugin de GTK no publica nada: se coge
+# por su URL cruda **en un commit concreto**, inmutable por construcción.
+#
+# **Y la cuarta es el `runtime`, que al principio se me escapó.** `appimagetool` se lo baja
+# él solo al armar, de `type2-runtime/releases/continuous` y **sin comprobar nada** — se vio
+# en el registro de una publicación, no leyendo. Eso no es un detalle: el runtime es **lo
+# primero que se ejecuta** en el equipo de quien abre la AppImage, así que va fijado como los
+# otros tres y se le pasa con `--runtime-file`. De paso, armar deja de tocar la red.
+#
+# Ese sí cuelga de una etiqueta rodante, porque `type2-runtime` **no publica otra cosa**. El
+# precio es que el día que la reconstruyan esto se pondrá rojo; es a propósito. Un cambio
+# silencioso en el cargador de la aplicación es peor que una compilación en rojo que alguien
+# tiene que mirar.
 #
 # Las sumas están escritas abajo y se comprueban siempre. Si alguna no cuadra, esto para:
 # una descarga sin comprobar es peor que la dependencia que sustituye.
@@ -84,6 +95,8 @@ suma_appimagetool_aarch64=f0837e7448a0c1e4e650a93bb3e85802546e60654ef287576f46c7
 suma_linuxdeploy_x86_64=c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d
 suma_linuxdeploy_aarch64=620095110d693282b8ebeb244a95b5e911cf8f65f76c88b4b47d16ae6346fcff
 suma_plugin_gtk=b0f4cbc684a0103a9651f0955b635eaea0096b3a66c0f5a2c2aa337960375171
+suma_runtime_x86_64=617aa77314d57c8b8e4fae9c3f0b35af7b30d5529cb69e98f64f92510ed98a46
+suma_runtime_aarch64=9a72a744d221576c9347ec074243acc5c3c7568896b12714e0e82e9f0bf47900
 
 herr="${ESFINGE_HERRAMIENTAS:-$HOME/.cache/esfinge/appimage}"
 mkdir -p "$herr"
@@ -130,6 +143,9 @@ traer "$herr/linuxdeploy-$arq" \
   "https://github.com/linuxdeploy/linuxdeploy/releases/download/$LINUXDEPLOY/linuxdeploy-$arq.AppImage" "$suma_ld"
 traer "$herr/linuxdeploy-plugin-gtk.sh" \
   "https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/$PLUGIN_GTK/linuxdeploy-plugin-gtk.sh" "$suma_plugin_gtk"
+eval "suma_rt=\$suma_runtime_$arq"
+traer "$herr/runtime-$arq" \
+  "https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-$arq" "$suma_rt"
 
 # **Las tres herramientas son AppImages, y en CI no hay FUSE**: sin esto se quedan en
 # «Cannot mount AppImage, please check your FUSE setup».
@@ -225,7 +241,9 @@ echo "· linuxdeploy, con el plugin de GTK"
 # dentro «para que no falte», lo que consigue es que falle en los equipos con otro driver.
 
 echo "· appimagetool"
-ARCH="$arq" "$herr/appimagetool-$arq" "$appdir" "$salida"
+# Con `--runtime-file`, appimagetool **no sale a la red**: usa el runtime que ya está
+# comprobado aquí arriba en vez de bajarse uno sin mirar.
+ARCH="$arq" "$herr/appimagetool-$arq" --runtime-file "$herr/runtime-$arq" "$appdir" "$salida"
 
 # ---------------------------------------------------------------- y mirar dentro
 
@@ -237,8 +255,15 @@ ARCH="$arq" "$herr/appimagetool-$arq" "$appdir" "$salida"
 # Va aquí dentro y no en el flujo de publicar a propósito: lo mismo escrito en dos sitios se
 # desalinea solo, y así lo comprueba también quien lo arme en un portátil.
 echo "· mirando qué lleva dentro"
+# **La ruta absoluta se resuelve aquí, antes de movernos.** La primera versión la resolvía
+# dentro del subshell —después del `cd`—, así que con un `$salida` relativo, que es lo que
+# pasa la publicación, `dirname` daba «.» y eso ya era el directorio temporal: buscaba la
+# AppImage donde no estaba y el paso moría con «No such file or directory» **después** de
+# haberla armado bien. Pasó en la 2.65.1. Aquí se probó con una ruta absoluta, que es el
+# único caso que no tiene el fallo.
+hecha="$(cd "$(dirname "$salida")" && pwd)/$(basename "$salida")"
 revisar="$(mktemp -d)"
-( cd "$revisar" && APPIMAGE_EXTRACT_AND_RUN=1 "$(cd "$(dirname "$salida")" && pwd)/$(basename "$salida")" --appimage-extract >/dev/null )
+( cd "$revisar" && APPIMAGE_EXTRACT_AND_RUN=1 "$hecha" --appimage-extract >/dev/null )
 dentro="$revisar/squashfs-root"
 falta=()
 for q in \
