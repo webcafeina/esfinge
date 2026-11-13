@@ -176,6 +176,30 @@ func Servir(a *App, s *SistemaDeDesarrollo, direccion string) error {
 		_, _ = fmt.Fprintf(w, `{"excluido":%q}`, dominio)
 	})
 
+	// Manda el aviso de versión nueva **ahora**, con lo que la última comprobación
+	// encontró.
+	//
+	// Está aquí por lo mismo que `_llavero` y `_excluir`: sirve para montar un estado que
+	// una prueba no puede crear de otra forma, y **no existe fuera de la etiqueta `dev`**.
+	//
+	// El estado en cuestión es «un aviso pasivo llega **después** de que la persona haya
+	// cerrado la banda». En producción eso lo manda `mirarSiToca`, que es de minúscula a
+	// propósito —no es algo que la ventana deba poder pedir— y además solo sale una vez cada
+	// 24 horas, así que desde una prueba no hay forma de provocarlo. Y es justo el caso que
+	// se escapó: la banda volvía a abrirse sola y tiró dos intentos de publicar la 2.65.
+	mux.HandleFunc("/api/_novedad", func(w http.ResponseWriter, _ *http.Request) {
+		a.act.mu.Lock()
+		n := a.act.encontrada
+		a.act.mu.Unlock()
+		if !n.Hay {
+			http.Error(w, "Todavía no se ha encontrado ninguna versión nueva", http.StatusConflict)
+			return
+		}
+		a.sistema.Avisar(EventoNovedad, deNovedad(n))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"avisado":%q}`, n.Version)
+	})
+
 	mux.HandleFunc("/api/eventos", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")

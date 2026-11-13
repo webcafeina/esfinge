@@ -255,6 +255,29 @@ test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page 
   await banda.getByRole("button", { name: "Ahora no" }).click();
   await expect(banda).toHaveCount(0);
 
+  // **Y lo que se ha quitado de en medio no vuelve solo.**
+  //
+  // La novedad entra por tres caminos y dos son pasivos: el aviso que manda la comprobación
+  // de fondo y la pregunta de «¿hay algo pendiente?» al montar. Una respuesta pedida
+  // **antes** del clic puede llegar **después**, y entonces la banda se reabre sola: la
+  // persona la cierra y reaparece sin que haya tocado nada.
+  //
+  // Esto no era teórico. Pasaba **solo en la máquina de la publicación** —aquí todo llega
+  // antes del clic— y tiró dos intentos de publicar la 2.65 con el resto en verde. Así que
+  // la prueba **provoca el aviso tardío** en vez de esperar a tener suerte: `_novedad` lo
+  // manda cuando se le pide, y solo existe tras la etiqueta `dev`.
+  const avisado = await page.request.post("/api/_novedad");
+  expect(avisado.ok(), await avisado.text()).toBe(true);
+  // Un momento para que el aviso cruce el flujo de eventos: si la guarda no estuviera, la
+  // banda ya estaría abierta otra vez.
+  await page.waitForTimeout(500);
+  await expect(banda).toHaveCount(0);
+
+  // Pero pedirlo a mano **sí** la vuelve a enseñar: un gesto de la persona no es un aviso
+  // que llega tarde, y lo contrario sería esconderle lo que acaba de pedir.
+  await page.getByRole("button", { name: "Buscar ahora" }).click();
+  await expect(banda).toBeVisible({ timeout: 20_000 });
+
   expect(errores, errores.join(' | ')).toEqual([]);
 });
 

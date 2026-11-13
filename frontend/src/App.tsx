@@ -192,6 +192,46 @@ export default function App() {
 
 
   const [novedad, setNovedad] = useState<Novedad | null>(null);
+  /**
+   * La versión que la persona ha quitado de en medio con «Ahora no».
+   *
+   * **Existe porque un aviso que llega tarde deshacía lo que ya se había decidido.** La
+   * novedad entra por tres caminos —el evento que manda la comprobación de fondo, la
+   * pregunta de «¿hay algo pendiente?» al montar, y el botón «Buscar ahora»—, y los dos
+   * primeros son pasivos: una respuesta pedida **antes** del clic puede llegar **después**
+   * y volver a abrir la banda que acababa de cerrarse. Es la misma familia que las
+   * preferencias, donde una lectura en vuelo borraba el cambio que se acababa de hacer.
+   *
+   * Lo vio una prueba de interfaz en la máquina de la publicación —aquí pasaba, porque todo
+   * llega antes del clic— y tiró dos intentos de publicar la 2.65.
+   *
+   * **Va en una `ref` y no en un estado**, y eso no es indiferente: el oyente del evento se
+   * registra en el efecto de montar, así que una variable de estado quedaría **capturada en
+   * su valor inicial** y la guarda no haría nada. Es el mismo cuidado que `cambiosHechos`.
+   */
+  const descartada = useRef("");
+
+  /**
+   * mostrarNovedad abre la banda porque **alguien lo ha pedido**: el botón «Buscar ahora» o
+   * la orden del menú. Un gesto de la persona borra el «ahora no» de antes, que para eso lo
+   * ha pedido.
+   */
+  const mostrarNovedad = useCallback((n: Novedad) => {
+    if (!n.hay) return;
+    descartada.current = "";
+    setNovedad(n);
+  }, []);
+
+  /**
+   * siNoLaHaQuitado abre la banda por los caminos **pasivos** —el evento de la comprobación
+   * de fondo y la pregunta al montar—, y es el único sitio donde se mira si esa versión ya
+   * se quitó de en medio. Uno solo, porque la misma regla escrita en dos sitios se desalinea
+   * sola y aquí ya ha costado seis veces.
+   */
+  const siNoLaHaQuitado = useCallback((n: Novedad) => {
+    if (!n.hay || n.version === descartada.current) return;
+    setNovedad(n);
+  }, []);
   const [avance, setAvance] = useState<Avance | undefined>();
   const [falloAlBajar, setFalloAlBajar] = useState("");
   const [instalando, setInstalando] = useState(false);
@@ -225,7 +265,7 @@ export default function App() {
     // gorrutina, y puede contestar segundos después de abrirse la ventana. Por
     // eso se escucha el evento y además se pregunta: quien llega tarde al primero
     // se entera por lo segundo.
-    const dejarDeEscuchar = alHaberNovedad((n) => n.hay && setNovedad(n));
+    const dejarDeEscuchar = alHaberNovedad(siNoLaHaQuitado);
 
     // Lo que se pide desde el menú del sistema. Las órdenes de edición las
     // resuelve ordenes.ts, que es quien sabe mirar el campo con el foco; aquí
@@ -240,13 +280,13 @@ export default function App() {
         setTarea("ajustes");
         esfinge
           .comprobarActualizacion()
-          .then((n) => n.hay && setNovedad(n))
+          .then(mostrarNovedad)
           .catch(() => {});
       }
     });
     esfinge
       .novedadPendiente()
-      .then((n) => n.hay && setNovedad(n))
+      .then(siNoLaHaQuitado)
       .catch(() => {});
 
     // Doble clic en un .esf: la aplicación se abre directamente en descifrar,
@@ -389,7 +429,12 @@ export default function App() {
                 setFalloAlBajar(mensaje(e));
               });
             }}
-            alCerrar={() => setNovedad(null)}
+            alCerrar={() => {
+              // Lo que se quita de en medio **se recuerda**, o un aviso pasivo que venga
+              // detrás la vuelve a abrir.
+              descartada.current = novedad.version;
+              setNovedad(null);
+            }}
           />
         )}
 
@@ -489,7 +534,7 @@ export default function App() {
               navegador={navegador}
               leerNavegador={leerNavegador}
               version={version}
-              alEncontrar={setNovedad}
+              alEncontrar={mostrarNovedad}
               alCrearCuenta={() => abrirAsistente({ que: "crear" })}
               alEntrar={(correo, deNuevo) => abrirAsistente({ que: "entrar", correo, deNuevo })}
             />
