@@ -25,4 +25,21 @@ Y una advertencia que no es legal, es práctica: si pierdes la clave con la que
 ciframos algo, ese contenido se ha perdido. No hay recuperación posible, ni
 siquiera por nuestra parte.
 
+Y una excepción expresa, para que Esfinge se pueda instalar como se instala
+cualquier otro programa (2026-11-16):
+
+  - Webcafeína distribuye Esfinge sin modificar por sus propios canales
+    —su publicación de GitHub, esfinge.webcafeina.com y las tiendas de
+    extensiones—, incluidos los índices de paquetes que firma y publica.
+
+  - Y se permite publicar y usar RECETAS que bajen el programa de la publicación
+    oficial de Webcafeína y lo instalen SIN MODIFICARLO: un PKGBUILD del AUR, una
+    fórmula de Homebrew, un paquete de Chocolatey o lo equivalente en otro gestor.
+    Lo que la receta instale tiene que ser el fichero oficial, con su suma
+    comprobada; y la receta no puede cambiar el programa, ni quitarle avisos, ni
+    dar a entender que lo publica otro.
+
+    Rehacer el paquete en el equipo de quien instala —lo que hace «makepkg» con un
+    .deb nuestro— entra en esta excepción. Modificar el programa, no.
+
 Para pedir permiso: info@webcafeina.com

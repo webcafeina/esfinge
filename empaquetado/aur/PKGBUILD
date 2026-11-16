@@ -1,0 +1,46 @@
+# Plantilla del paquete «esfinge-bin» del AUR. La rellena `herramientas/rellenar` con la versión y
+# las sumas de la publicación, y la sube `canales.yml`. Lo de antes de la primera línea en blanco
+# no llega al AUR.
+#
+# Es el `.deb` tal cual, extraído: el binario es el mismo y del sistema solo usa WebKitGTK 4.1 y
+# GTK3. Por eso no hay nada que compilar y el paquete es «-bin».
+#
+# Y deja escrito `pacman` en /usr/share/esfinge/gestor, que es lo que lee `gestorQueLoInstalo`
+# (ADR 0060): sin eso, Esfinge le ofrecería un `.deb` a quien instaló por `pacman` —y ese paquete
+# no se instala con `pacman -U`—. Con `pacman` escrito ahí, la ventana no ofrece descarga: lo
+# actualiza su gestor.
+
+# Maintainer: Webcafeína <info@webcafeina.com>
+pkgname=esfinge-bin
+pkgver={{VERSION}}
+pkgrel=1
+pkgdesc="Cifra y descifra contraseñas y ficheros con una clave, con ventana propia y línea de comandos"
+arch=('x86_64' 'aarch64')
+url="https://esfinge.webcafeina.com"
+# **Propietaria, y por eso hace falta la excepción del LICENSE**: sin ella este PKGBUILD
+# contradiría la licencia del programa que instala. El fichero se instala donde Arch lo espera.
+license=('LicenseRef-Esfinge')
+depends=('webkit2gtk-4.1' 'gtk3' 'hicolor-icon-theme')
+provides=('esfinge')
+conflicts=('esfinge')
+# Los binarios vienen compilados y ya están reducidos: dejar que makepkg los toque solo puede
+# romperlos, y el `.deb` del que salen es el que se publica.
+options=('!strip' '!debug')
+source_x86_64=("https://github.com/webcafeina/esfinge/releases/download/v${pkgver}/{{NOMBRE:deb-amd64}}")
+source_aarch64=("https://github.com/webcafeina/esfinge/releases/download/v${pkgver}/{{NOMBRE:deb-arm64}}")
+sha256sums_x86_64=('{{SHA:deb-amd64}}')
+sha256sums_aarch64=('{{SHA:deb-arm64}}')
+
+package() {
+  bsdtar -xf data.tar.* -C "$pkgdir"
+
+  # De qué gestor viene esta copia. Lo pone el paquete y no el programa, porque es lo único que
+  # sabe cómo se instaló (ADR 0060).
+  install -d "$pkgdir/usr/share/esfinge"
+  printf 'pacman\n' > "$pkgdir/usr/share/esfinge/gestor"
+
+  # El `.deb` deja la licencia en /usr/share/doc/esfinge/copyright; en Arch va además donde la
+  # busca `pacman` y donde la enseña la web del AUR.
+  install -Dm644 "$pkgdir/usr/share/doc/esfinge/copyright" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

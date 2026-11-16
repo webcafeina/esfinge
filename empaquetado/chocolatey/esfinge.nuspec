@@ -1,0 +1,50 @@
+<!-- Plantilla del paquete «esfinge» de Chocolatey. La rellena `herramientas/rellenar`; las sumas y
+     la elección de arquitectura van en tools/chocolateyinstall.ps1. Lo de antes de la primera línea
+     en blanco no llega al paquete. -->
+
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>esfinge</id>
+    <version>{{VERSION}}</version>
+    <packageSourceUrl>https://github.com/webcafeina/esfinge/tree/main/empaquetado/chocolatey</packageSourceUrl>
+    <owners>webcafeina</owners>
+    <title>Esfinge</title>
+    <authors>Webcafeína</authors>
+    <projectUrl>https://esfinge.webcafeina.com/</projectUrl>
+    <iconUrl>https://esfinge.webcafeina.com/icono.png</iconUrl>
+    <copyright>© 2026 Webcafeína</copyright>
+    <licenseUrl>https://github.com/webcafeina/esfinge/blob/main/LICENSE</licenseUrl>
+    <!-- **A false, y conviene saber por qué con una licencia propietaria.** Lo que el LICENSE
+         restringe es reutilizar el código y redistribuirlo; usar el programa no pide permiso, y
+         desde el 2026-11-16 hay una excepción expresa para que recetas como ésta puedan bajar el
+         fichero oficial e instalarlo sin modificarlo. Ponerlo a true obligaría a leer y aceptar
+         una licencia que no limita el uso, lo que cansa sin proteger nada. -->
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/webcafeina/esfinge</projectSourceUrl>
+    <bugTrackerUrl>https://github.com/webcafeina/esfinge/issues</bugTrackerUrl>
+    <tags>password-manager passwords encryption totp passkeys wifi-qr vault cross-platform</tags>
+    <summary>Cifra y descifra contraseñas y ficheros con una clave, con ventana propia y línea de comandos.</summary>
+    <description><![CDATA[Esfinge cifra y descifra contraseñas y ficheros con una clave, en tu propio ordenador.
+
+Lleva una bóveda de contraseñas local y cifrada, con clave de recuperación: credenciales, notas seguras, tarjetas, documentos, datos personales, llaves de acceso y redes wifi. Calcula también los códigos de un solo uso, así que hace de autenticador, y enseña la clave de una red wifi como código QR para que un invitado apunte el móvil.
+
+## Qué trae el paquete
+
+- La aplicación con ventana y la línea de comandos `esfinge`, sobre el mismo núcleo y el mismo formato: lo que cifra una lo abre la otra.
+- El puente para la extensión de navegador, que rellena formularios y guarda lo que escribes.
+- El servidor para agentes de IA por MCP, que actúa **sin ver** los secretos: cada uso se aprueba en la ventana y queda apuntado.
+
+## Notas del paquete
+
+- Instala el instalador oficial de la publicación de GitHub, en silencio, para x64 o ARM64 según la máquina.
+- **Es una instalación por máquina**: va a `Program Files` y pide administrador, que es lo que `choco` ya tiene.
+- Esfinge comprueba sola si hay versión nueva y se actualiza desde dentro, así que el paquete puede quedarse atrás hasta que se apruebe la versión siguiente aquí.
+- Necesita Windows 10 u 11 y el Microsoft Edge WebView2 Runtime (el instalador lo descarga si falta).
+- Nada sale de tu ordenador salvo dos cosas, que se cuentan y se apagan en Ajustes: mirar si hay versión nueva, y el icono de cada sitio guardado, pedido al propio sitio.]]></description>
+    <releaseNotes>https://github.com/webcafeina/esfinge/releases/tag/v{{VERSION}}</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
