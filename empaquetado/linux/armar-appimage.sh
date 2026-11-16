@@ -19,9 +19,17 @@
 # imágenes. **Lo que ninguno de los dos puede saber es que WebKitGTK arranca procesos
 # auxiliares** —`WebKitWebProcess`, `WebKitNetworkProcess`, `WebKitGPUProcess`— que no son
 # dependencias dinámicas de nadie: no aparecen en un `ldd`, así que no se copian solos. Sin
-# ellos la ventana abre y se queda en blanco. Van a mano, con su `WEBKIT_EXEC_PATH`, y eso
-# está **medido** en un contenedor de Ubuntu 24.04 y no supuesto: en Debian y Ubuntu viven
-# en /usr/lib/<triplete>/webkit2gtk-4.1/, no en /usr/libexec como en otras distribuciones.
+# ellos la ventana abre y se queda en blanco. Van a mano, y dónde viven está **medido** en un
+# contenedor de Ubuntu 24.04 y no supuesto: en Debian y Ubuntu, en /usr/lib/<triplete>/webkit2gtk-4.1/
+# y no en /usr/libexec como en otras distribuciones.
+#
+# **Y copiarlos dentro no basta, que es lo que costó la 2.67.0.** La ruta de esos programas va
+# compilada a fuego dentro de libwebkit, así que WebKit arranca los **del sistema de quien la
+# ejecuta** aunque los nuestros estén al lado. Aquí se exportaba `WEBKIT_EXEC_PATH` para
+# redirigirlo y **esa variable no existe**: sólo la mira WebKit en compilaciones de desarrollo, y
+# en la que empaquetan las distribuciones ni siquiera está la cadena dentro de la biblioteca. Lo
+# que lo resuelve es `webkit-de-dentro.c`, que se interpone en la llamada que los lanza; su
+# cabecera cuenta los dos fallos que daba, que no se parecen y son el mismo.
 #
 # # Las herramientas: del origen, con su suma, y fijadas
 #
@@ -205,6 +213,23 @@ if [ -d "$libexec/injected-bundle" ]; then
   cp "$libexec/injected-bundle/"*.so "$destino_libexec/injected-bundle/"
 fi
 
+# **Y la pieza que hace que WebKit use ésos y no los del sistema.**
+#
+# Copiarlos dentro no es suficiente: la ruta va compilada dentro de libwebkit, así que sin esto
+# se arrancan los de /usr del equipo de quien la ejecuta — y si no están, la ventana no llega a
+# pintarse; y si están pero son de otra versión, el proceso aborta con «Received invalid
+# message». El porqué entero está en la cabecera de `webkit-de-dentro.c`.
+#
+# Se compila aquí, en la máquina que arma, porque tiene que ser de la misma arquitectura que todo
+# lo demás. Es lo mismo que decidió que el `.mcpb` lo armara un programa de Go: un compilador de C
+# sí está garantizado en las dos patas de Linux, porque las dos compilan Esfinge con cgo.
+cc="${CC:-cc}"
+command -v "$cc" >/dev/null || { echo "✕ Hace falta un compilador de C ($cc) para armar la AppImage." >&2; exit 1; }
+"$cc" -shared -fPIC -O2 -Wall -Wextra \
+  -o "$appdir/usr/lib/esfinge-webkit-de-dentro.so" \
+  "$(dirname "$0")/webkit-de-dentro.c" -ldl
+echo "· la interposición de las rutas de WebKit, compilada"
+
 # ---------------------------------------------------------------- los módulos de gio
 
 # **Y los módulos de gio dentro, con su variable.**
@@ -242,11 +267,15 @@ HOOK
 # Y el gancho que le dice a WebKit dónde han quedado. Va en `apprun-hooks/`, que es lo que
 # el AppRun de linuxdeploy ejecuta antes de arrancar; el plugin de GTK pone otro al lado.
 cat > "$appdir/apprun-hooks/esfinge-webkit.sh" <<HOOK
-# WebKitGTK arranca procesos auxiliares que no son dependencias dinámicas de nadie, así que
-# hay que decirle dónde están los de dentro de la AppImage. Sin esto busca los del sistema
-# —que en la distribución de quien la ejecuta pueden no existir— y la ventana sale en blanco.
-export WEBKIT_EXEC_PATH="\$APPDIR${libexec}"
+# WebKitGTK arranca procesos auxiliares que no son dependencias dinámicas de nadie. Los de dentro
+# están copiados al lado de la biblioteca, pero **la ruta va compilada dentro de libwebkit**, así
+# que sin lo de abajo se lanzan los del sistema de quien ejecuta la AppImage.
+#
+# Aquí hubo un \`WEBKIT_EXEC_PATH\` que no hacía nada: esa variable sólo la mira WebKit en
+# compilaciones de desarrollo y ni siquiera está en la biblioteca que empaquetan las
+# distribuciones. La que sí existe es la del paquete inyectado, y se queda.
 export WEBKIT_INJECTED_BUNDLE_PATH="\$APPDIR${libexec}/injected-bundle"
+export LD_PRELOAD="\$APPDIR/usr/lib/esfinge-webkit-de-dentro.so\${LD_PRELOAD:+:\$LD_PRELOAD}"
 HOOK
 
 # ---------------------------------------------------------------- empaquetar
@@ -305,11 +334,19 @@ for q in \
   apprun-hooks/esfinge-gio.sh \
   apprun-hooks/linuxdeploy-plugin-gtk.sh \
   usr/bin/esfinge-gui usr/bin/esfinge usr/bin/esfinge-puente usr/bin/esfinge-mcp \
+  usr/lib/esfinge-webkit-de-dentro.so \
   usr/share/glib-2.0/schemas/gschemas.compiled; do
   [ -e "$dentro/$q" ] || falta+=("$q")
 done
 ls "$dentro"/usr/lib/*/webkit2gtk-4.1/WebKitWebProcess >/dev/null 2>&1 || falta+=("los procesos auxiliares de WebKitGTK")
 ls "$dentro"/usr/lib/libwebkit2gtk-4.1.so.* >/dev/null 2>&1 || falta+=("libwebkit2gtk, que es lo que la hace autosuficiente")
+# **Que esté no basta: tiene que cargarse.** El AppRun de linuxdeploy nombra los ganchos uno a uno
+# en vez de recorrer la carpeta, así que un gancho que no acabe nombrado ahí se queda dentro sin
+# ejecutarse nunca — y esto, sin ejecutarse, es un fichero de 16 KiB que no hace nada.
+grep -q "esfinge-webkit-de-dentro.so" "$dentro/apprun-hooks/esfinge-webkit.sh" 2>/dev/null \
+  || falta+=("el LD_PRELOAD de la interposición en apprun-hooks/esfinge-webkit.sh")
+grep -q "esfinge-webkit.sh" "$dentro/AppRun" 2>/dev/null \
+  || falta+=("que el AppRun cargue apprun-hooks/esfinge-webkit.sh")
 rm -rf "$revisar"
 if [ ${#falta[@]} -gt 0 ]; then
   echo "✕ La AppImage está armada pero no lleva dentro:" >&2

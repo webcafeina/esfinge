@@ -2352,6 +2352,35 @@ que afirma lo mínimo: que **no es un color plano**. No dice que el dibujo sea e
 un dibujo. Al lado, la que impide que el icono del tipo de fichero vuelva a ser el de la aplicación,
 que es un error que este proyecto ya cometió **dos veces**.
 
+**Copiar un programa dentro no hace que se use: su ruta puede ir compilada.** La AppImage lleva
+WebKitGTK dentro, y WebKit arranca sus procesos auxiliares —`WebKitWebProcess`,
+`WebKitNetworkProcess`— por una **ruta absoluta compilada en libwebkit**
+(`/usr/lib/<triplete>/webkit2gtk-4.1/`), así que los de dentro estaban ahí sin usarse. Eso da **dos
+fallos que no se parecen y son el mismo**: en un equipo sin WebKit instalado, `ENOENT` y la ventana
+no llega a pintarse; en uno que lo tenga **de otra versión** —el caso normal, porque nuestro propio
+`.deb` lo instala—, los auxiliares del sistema hablan con nuestra biblioteca y sale «Received
+invalid message: 'WebPage_SetActivityStateReply'» y un SIGABRT. **En la máquina que la arma las dos
+versiones coinciden, así que ahí no se ve nunca**, y por eso cruzó dos publicaciones. Y la variable
+que parecía resolverlo, `WEBKIT_EXEC_PATH`, **no existe**: sólo la mira WebKit en compilaciones de
+desarrollo y la cadena ni siquiera está dentro de la biblioteca que empaquetan las distribuciones
+—se vio con `strings`, donde sí aparecen `WEBKIT_INJECTED_BUNDLE_PATH` y las `WEBKIT_SKIA_*`—, de
+modo que **el comentario que decía que redirigía era parte del fallo**. Lo cierra
+`empaquetado/linux/webkit-de-dentro.c`, que se interpone en la llamada que lanza el programa.
+
+Y tres cosas de método. **Las dos comprobaciones que había pasaban en verde con el fallo dentro**:
+una mira qué ficheros van dentro de la AppImage y la otra qué bibliotecas resuelve un `ldd`, y esto
+no es ni un fichero que falte ni una dependencia dinámica — la que lo caza **arranca la ventana y
+mira de dónde sale cada auxiliar**, y puesta a correr contra la AppImage ya publicada se pone roja.
+**La causa salió de medir** —`strace` sobre la AppImage y `strings` sobre la biblioteca— después de
+dos hipótesis mías falsas, el aislamiento de WebKit y una mezcla de harfbuzz: van tres veces que
+aquí el síntoma llega bien y la causa deducida mal. Y **lo que separó las dos familias posibles fue
+una comparación, no un razonamiento**: en la misma máquina, el `esfinge-gui` del `.deb` abría bien y
+la AppImage no, lo que descarta de un tiro que fuera cosa de la VM.
+
+Un detalle del empaquetado que viene de ahí: **el AppRun de linuxdeploy nombra los ganchos uno a
+uno**, no recorre la carpeta, así que un gancho nuevo que no acabe escrito ahí se queda dentro sin
+ejecutarse nunca y sin que nada avise.
+
 ## Lo que nunca se ha probado
 
 Y ojo con qué se ha comprobado de verdad: **el diálogo de abrir no**, porque en macOS los ficheros se

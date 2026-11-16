@@ -774,6 +774,50 @@ jobs:
           fi
           echo "✓ la AppImage lleva dentro todo lo que la ventana necesita"
 
+      # **Y que use el WebKit de dentro, que es otra cosa y no la ve ningún `ldd`.**
+      #
+      # Los procesos auxiliares de WebKit no son dependencias dinámicas: la ruta de esos
+      # programas va compilada dentro de libwebkit, así que la AppImage puede llevarlos dentro
+      # y arrancar igualmente los **del sistema de quien la ejecuta**. Los dos pasos de arriba
+      # pasaban en verde con eso dentro —uno mira qué ficheros hay y el otro qué bibliotecas
+      # resuelve—, y el fallo sólo se ve **arrancando la ventana**: en un equipo sin WebKit da
+      # «Unable to spawn a new child process», y en uno que lo tenga de otra versión —el caso
+      # normal, porque nuestro propio .deb lo instala— aborta con «Received invalid message».
+      # Lo vio el cliente en una Ubuntu 26.10 con la 2.67.0.
+      #
+      # Así que esto arranca la aplicación de verdad y mira **de dónde sale cada auxiliar**. No
+      # hace falta tarjeta gráfica: el arranque de esos procesos pasa antes de que nada pinte.
+      - name: La AppImage arranca su propio WebKit, no el del sistema
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq strace xvfb libegl1 libgl1 >/dev/null
+          ai="$(ls paquetes/*.AppImage)"
+          chmod +x "$ai"
+          # Se ejecuta **la AppImage**, no el AppDir extraído: así se comprueba de paso que su
+          # runtime exporta el APPDIR del que depende todo esto.
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          timeout 120 xvfb-run -a strace -f -e trace=execve -o exec.log "$ai" > ventana.txt 2>&1 || true
+          rutas="$(grep -oE 'execve\("[^"]*WebKit(Web|Network|GPU)Process"' exec.log \
+            | sed 's/execve("//; s/"$//' | sort -u || true)"
+          if [ -z "$rutas" ]; then
+            echo "::error::La ventana no ha llegado a arrancar ningún proceso auxiliar de WebKit; esto es lo que dijo:"
+            tail -25 ventana.txt
+            exit 1
+          fi
+          echo "— los auxiliares que ha lanzado —"; printf '    %s\n' $rutas
+          delSistema="$(printf '%s\n' $rutas | grep -E '^/usr/' || true)"
+          if [ -n "$delSistema" ]; then
+            echo "::error::La AppImage está arrancando el WebKit del sistema y no el suyo: $delSistema"
+            exit 1
+          fi
+          if grep -qE "Unable to spawn|Received invalid message" ventana.txt; then
+            echo "::error::La ventana se ha quejado al arrancar WebKit:"
+            grep -nE "Unable to spawn|Received invalid message" ventana.txt | head -5
+            exit 1
+          fi
+          echo "✓ la AppImage arranca los auxiliares de WebKit que lleva dentro"
+
       - name: Debian instala el .deb
         run: |
           set -euo pipefail
