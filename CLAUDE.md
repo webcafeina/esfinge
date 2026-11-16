@@ -2322,6 +2322,36 @@ prueba no puede crear de otra forma y no existe en el binario del cliente—. En
 `mirarSiToca`, que es de minúscula a propósito y además sale una vez cada 24 horas: sin esa costura, la
 prueba seguiría dependiendo de qué máquina la corre. **Mutada, roja en los dos temas.**
 
+**`ubuntu-latest` se mueve debajo de los pies, y lo que se empaqueta ahí se lleva su glibc.**
+(2026-11-16.) Hoy es **Ubuntu 26.04**, no 24.04: la AppImage de amd64 salía pidiendo **GLIBC_2.43**
+—o sea que solo servía en 26.04, justo lo contrario de para lo que existe— y nadie lo vio porque el
+humo comprueba bibliotecas que faltan, no versiones de símbolos. Peor: **no hay
+`ubuntu-latest-arm`**, así que la pata de ARM ya corría en `ubuntu-24.04-arm` y **las dos
+arquitecturas se empaquetaban en Ubuntu distintos**, con glib distinta dentro. El cliente lo destapó
+en su VM de 26.04: la AppImage de ARM —con glib 2.80— cargaba el `gvfs` **de su sistema** y reventaba
+con «undefined symbol: g_variant_builder_init_static». Las dos patas van **fijadas a `ubuntu-24.04`**,
+que es la más vieja que queda, y la AppImage lleva dentro sus **módulos de gio** con `GIO_MODULE_DIR`
+apuntando a ellos. **La regla: en lo que se publica, la imagen del corredor se fija y no se deja en
+`latest`** — y si una arquitectura no tiene su `latest`, la otra tampoco debe usarlo, o se publican
+dos cosas distintas con el mismo número.
+
+Y el dato que de verdad hay que tener a mano antes de preocuparse: **nuestros binarios no son el
+problema**. `esfinge-gui` pide `GLIBC_2.34` y los tres de la línea de comandos son estáticos, medido
+con `objdump -T` sobre lo publicado, así que el `.deb` y el `.rpm` nunca tuvieron este suelo. Lo que
+arrastra la glibc del corredor es **lo que se empaqueta dentro**: WebKit, glib y compañía en la
+AppImage.
+
+**Un contenedor con el repositorio montado con escritura pisa lo que ya está seguido, y en un
+binario eso no se ve.** El viernes dejó un `esfinge-mcp` suelto en la raíz; el mismo guion había
+escrito además **ocho PNG de relleno encima de los iconos de verdad**, y `git add -A` se los llevó:
+**Esfinge salió dos versiones con un cuadrado mostaza por icono** en el menú de aplicaciones de Linux,
+y lo vio el cliente. En un `git status` eso es una línea que dice «Bin 2713 -> 209 bytes», que no
+parece nada; con binarios, **lo único que habla es `git diff --stat`**. El contenedor se monta `:ro`,
+o se trabaja sobre una copia. Y para lo que ninguna prueba mira —un icono, una imagen— hay ahora una
+que afirma lo mínimo: que **no es un color plano**. No dice que el dibujo sea el bueno; dice que hay
+un dibujo. Al lado, la que impide que el icono del tipo de fichero vuelva a ser el de la aplicación,
+que es un error que este proyecto ya cometió **dos veces**.
+
 ## Lo que nunca se ha probado
 
 Y ojo con qué se ha comprobado de verdad: **el diálogo de abrir no**, porque en macOS los ficheros se

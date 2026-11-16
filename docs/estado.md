@@ -13,20 +13,35 @@ y el catálogo de nombres que lo hizo posible la [0060](adr/0060-un-nombre-por-a
 
 ### Lo primero al retomar
 
-**Lo que queda es de máquinas de verdad, y es del cliente.** Todo lo de aquí está comprobado en
-contenedores amd64 y en los corredores de GitHub; **nadie ha instalado desde un canal en un equipo
-físico**. En sus cuatro VM y su Mac:
+**El cliente prueba los cinco sistemas esta tarde**, en su Mac y en las VM que tiene ahí —y la de
+Ubuntu ARM **montada de nuevo**—. Lo que hay que saber para acompañarle:
 
-| Dónde | Qué |
+1. **Que pruebe la 2.67.0 o posterior.** La 2.66.3 lleva los iconos mal.
+2. **Mirar cómo acabó `gh run view 43873510726`**, que es la publicación de la 2.67.0 y se quedó en
+   vuelo al cerrar.
+3. **Y la versión de Ubuntu que monte decide qué demuestra la prueba**: su VM que falló era **26.04**
+   y el fallo era que nuestra AppImage se empaqueta con lo de 24.04. Con 24.04 LTS todo coincide por
+   construcción y la AppImage irá, pero **no habrá probado el arreglo**.
+
+La lista, con las órdenes exactas, está en la entrada del 2026-11-16 de [`sesiones.md`](sesiones.md).
+
+### Lo que dio la primera prueba en su Ubuntu ARM (2026-11-16, con la 2.66.3)
+
+| Qué | Veredicto |
 |---|---|
-| Ubuntu ARM | `apt install esfinge` desde el repositorio, y la AppImage |
-| Fedora ARM | `dnf install esfinge` desde el repositorio |
-| Arch ARM | `makepkg -si` con el PKGBUILD de `esfinge.webcafeina.com/aur/PKGBUILD` |
-| Windows 11 ARM | El instalador de arm64, `choco install esfinge` cuando lo aprueben, y **el icono de los `.esf`** |
-| Su Mac | El DMG universal y `brew install webcafeina/esfinge/esfinge` (y `--cask`) |
+| `apt install` desde el repositorio | **Funciona** |
+| El icono de los `.esf` | **Bien** — cierra media verificación pendiente desde hace meses |
+| El icono de la aplicación | **Roto**: un cuadrado mostaza en el menú. Arreglado en la 2.67.0 |
+| La AppImage | **Ventana en blanco.** Dos causas arregladas; **la pantalla en blanco sigue abierta** y está en [`deuda.md`](deuda.md) |
 
-**Y el icono de los `.esf` sigue siendo lo único sin verificar de todo el proyecto**, en Windows y en
-Linux.
+**Lo que esa prueba destapó y nadie habría visto de otra forma**: que `ubuntu-latest` **ya es Ubuntu
+26.04** —con lo que la AppImage de amd64 pedía `GLIBC_2.43` y solo servía ahí— y que **las dos
+arquitecturas se empaquetaban en Ubuntu distintos**. Las dos cosas están en `CLAUDE.md`.
+
+**Y lo que no hay que hacer con la pantalla en blanco: lanzar una tercera hipótesis.** Se gastaron
+dos —que los ganchos del AppRun no se ejecutaban, y el aislamiento de WebKit— y las dos eran falsas;
+la que acertó salió del registro que mandó el cliente. Lo siguiente es una **AppImage con el
+inspector dentro**, como se hizo con el vidrio de macOS.
 
 ### Las cinco claves, y lo que pasa si se pierden
 

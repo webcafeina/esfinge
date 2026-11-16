@@ -33,9 +33,33 @@ Plantilla al final.
 - **Lo que el cliente decidió por el camino**: no acometer ahora la estrategia de SEO y seguridad que
   tiene la web de Apolo —va en otro plan—, y poner él mismo la regla `tag: v*` del entorno, que yo no
   debo relajar.
-- **Queda abierto**: instalar desde los canales **en máquinas de verdad** —sus cuatro VM ARM y su
-  Mac—, el icono de los `.esf` en Windows y Linux, y que Chocolatey apruebe el paquete, que es de su
-  moderación. Y el AUR, cuando abran su registro.
+- **Y por la tarde, la primera prueba en una máquina de verdad: su Ubuntu ARM.** Dio tres cosas.
+  `apt install` desde el repositorio **funciona**; **el icono de los `.esf` está bien** —cierra media
+  verificación pendiente desde hace meses—; **el icono de la aplicación era un cuadrado mostaza**,
+  que es mío: el contenedor de pruebas del viernes pisó los ocho PNG y `git add -A` se los llevó, así
+  que salió así en la 2.65.x y la 2.66.x. Restaurados, con dos pruebas —que ningún icono empaquetado
+  sea un color plano, y que el del tipo de fichero no sea el de la aplicación—.
+- **Y la AppImage abre la ventana en blanco.** Su registro destapó dos cosas que nadie habría visto
+  de otra forma: **`ubuntu-latest` ya es Ubuntu 26.04**, así que la AppImage de amd64 pedía
+  `GLIBC_2.43` y solo servía ahí; y como no hay `ubuntu-latest-arm`, **las dos arquitecturas se
+  empaquetaban en Ubuntu distintos**, con glib distinta dentro. Las dos patas van fijadas a
+  `ubuntu-24.04` y la AppImage lleva ya sus módulos de gio con `GIO_MODULE_DIR`. **La pantalla en
+  blanco no se ha reproducido** —en un contenedor de 26.04 arranca sin un error— y queda en
+  `deuda.md` con lo que se sabe y con lo que **no** hay que hacer: una tercera hipótesis. Se gastaron
+  dos y las dos eran falsas.
+- **Publicada la 2.67.0** con los tres arreglos; su flujo (`43873510726`) quedó en vuelo al cerrar.
+- **La lista de esta tarde**, que el cliente hará en su Mac y en sus VM —la de Ubuntu ARM montada de
+  nuevo, y mejor **26.04**, que con 24.04 todo coincide por construcción y no probaría el arreglo—:
+  **Ubuntu** `apt install esfinge` tras poner la clave en `/etc/apt/keyrings/esfinge.asc` y el
+  `esfinge.sources`, más la AppImage de aarch64 **desde la terminal**; **Fedora** el `esfinge.repo` y
+  `dnf install esfinge`, que pedirá importar la clave que acaba en `1C89D952`; **Arch** `makepkg -si`
+  con el PKGBUILD de `esfinge.webcafeina.com/aur/PKGBUILD`, y que la banda diga **«la instala tu
+  gestor»**; **Windows 11 ARM** el instalador de arm64, el **icono de los `.esf`** y el marco de
+  Fluent —`choco install` fallará, está en moderación—; y **el Mac** al final, con `brew install` y
+  `brew install --cask` —que se quejará si ya hay Esfinge en Aplicaciones— y lo que importa: **que
+  abra sin que macOS la bloquee**.
+- **Queda abierto**: esa lista entera, la pantalla en blanco de la AppImage, que Chocolatey apruebe
+  el paquete y el AUR cuando abran su registro.
 
 ---
 
