@@ -192,6 +192,7 @@ jobs:
         shell: pwsh
         env:
           CLAVE: ${{ secrets.CHOCOLATEY_API_KEY }}
+          VERSION_QUE_SUBE: ${{ inputs.version }}
         run: |
           $ErrorActionPreference = 'Stop'
           if (-not $env:CLAVE) {
@@ -213,11 +214,29 @@ jobs:
             if ($salida -match 'already exists|version .* has already') {
               Write-Host "· esa versión ya estaba subida; nada que hacer"
             } else {
-              Write-Host "::error::choco push no la ha aceptado"
-              exit 1
+              # **Una subida rechazada no tumba la publicación de Esfinge**, y esto no es
+              # relajar la guardia: es que **Chocolatey no acepta otra versión mientras tiene
+              # una en revisión**. Visto el 2026-11-16: la 2.66.1 entró, su página quedó en
+              # «Pending automated review», y la 2.66.3 recibió un 403 cuarenta minutos después.
+              # Mientras eso dure, fallar aquí dejaría en rojo **todas** las publicaciones por
+              # algo que no está en nuestra mano — y la moderación de ese paquete puede tardar
+              # días.
+              #
+              # Lo que sí es nuestro está arriba y sigue parando: que falte la clave.
+              #
+              # Y el .nupkg queda colgado de este trabajo, así que subirlo a mano cuando se
+              # apruebe la anterior es bajarlo y un `choco push`.
+              Write-Host "::warning::Chocolatey no ha aceptado la $env:VERSION_QUE_SUBE (lo de arriba es su respuesta). Lo normal es que sea porque tiene otra versión en revisión: https://community.chocolatey.org/packages/esfinge"
+              Write-Host "· el paquete queda como artefacto de este trabajo para subirlo a mano"
+              exit 0
             }
           }
           Write-Host "✓ subida; la aprobación es de su moderación y puede tardar días"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chocolatey-nupkg
+          path: recetas/choco/*.nupkg
 
   # **Y lo que de verdad cierra la fase: preguntarle a cada canal qué sirve.**
   #
