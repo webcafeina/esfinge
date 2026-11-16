@@ -1,0 +1,249 @@
+# Los canales de distribución: el AUR, el tap de Homebrew y Chocolatey.
+#
+# Los repositorios APT y RPM **no están aquí**: van con la web (`web.yml`), porque se sirven desde
+# el mismo GitHub Pages y se rehacen en cada despliegue.
+#
+# # Cómo se dispara, y por qué no de la forma obvia
+#
+# Lo llama `publicar.yml` con `needs:`, cuando la versión ha salido entera. **No con
+# `on: release: published`**, que es lo que hace Apolo y lo que parece natural: ese evento **no se
+# dispara cuando la publicación la crea `GITHUB_TOKEN`** —regla de GitHub, sin excepciones—. Apolo
+# puede porque su publicación sale como borrador y la publica una persona; la de Esfinge sale ya
+# publicada. Copiarlo tal cual daría tres flujos que **no se ejecutan nunca, en silencio**, con el
+# tap sirviendo una versión de hace meses y nadie enterándose.
+#
+# # Y lo que este flujo comprueba al final
+#
+# Que los canales **sirven de verdad la versión que se acaba de publicar**, y si no, falla. Apolo
+# aquí sale con `exit 0` cuando el tap ya estaba en esa versión, y eso tapa el caso que importa:
+# «se quedó atrás y nadie se enteró». Un canal que miente es peor que un canal que no existe.
+#
+# **Chocolatey queda fuera de esa comprobación**, y no por descuido: su tienda **modera cada
+# versión** —la 1.0.0 de Apolo la aprobó un moderador días después—, así que lo único que depende de
+# nosotros es que la subida se acepte. Eso sí se comprueba; que esté publicada, no se puede.
+name: Canales
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: La versión que se acaba de publicar, sin la «v»
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: La versión que ya está publicada, sin la «v»
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canales-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  recetas:
+    name: Rellenar las recetas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.27", cache-dependency-path: go.sum }
+
+      # Las sumas salen del SHA256SUMS **de la publicación**, no de los ficheros locales: lo que
+      # las recetas prometen es lo que está colgado ahí, y es lo que quien instala va a bajar.
+      - name: Las sumas de la publicación
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "v${{ inputs.version }}" -p SHA256SUMS -D "$RUNNER_TEMP"
+
+      - name: Rellenar
+        run: |
+          set -euo pipefail
+          mkdir -p recetas/Formula recetas/Casks recetas/aur recetas/choco/tools
+          v="${{ inputs.version }}"
+          s="$RUNNER_TEMP/SHA256SUMS"
+          go run ./herramientas/rellenar "$v" empaquetado/homebrew/esfinge.rb      "$s" > recetas/Formula/esfinge.rb
+          go run ./herramientas/rellenar "$v" empaquetado/homebrew/esfinge-cask.rb "$s" > recetas/Casks/esfinge.rb
+          go run ./herramientas/rellenar "$v" empaquetado/aur/PKGBUILD            "$s" > recetas/aur/PKGBUILD
+          go run ./herramientas/rellenar "$v" empaquetado/chocolatey/esfinge.nuspec "$s" > recetas/choco/esfinge.nuspec
+          go run ./herramientas/rellenar "$v" empaquetado/chocolatey/tools/chocolateyinstall.ps1 "$s" > recetas/choco/tools/chocolateyinstall.ps1
+          cp empaquetado/chocolatey/tools/chocolateyuninstall.ps1 recetas/choco/tools/
+          # **Lo de antes de la primera línea en blanco no llega al canal**: son notas para quien
+          # mantiene la plantilla, y en un PKGBUILD del AUR o en una ficha de Chocolatey saldrían
+          # publicadas. Es lo que hace Apolo, y por eso cada plantilla empieza con su comentario y
+          # una línea vacía.
+          for f in recetas/aur/PKGBUILD recetas/choco/esfinge.nuspec recetas/choco/tools/*.ps1; do
+            awk 'quitando && NF==0 { quitando=0; next } !quitando { print }' quitando=1 "$f" > "$f.limpio"
+            mv "$f.limpio" "$f"
+          done
+          head -4 recetas/aur/PKGBUILD
+      - uses: actions/upload-artifact@v4
+        with: { name: recetas, path: recetas }
+
+  homebrew:
+    name: El tap de Homebrew
+    needs: recetas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: recetas, path: recetas }
+      - name: Empujar la fórmula y el cask
+        env:
+          CLAVE: ${{ secrets.HOMEBREW_TAP_CLAVE }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$CLAVE" > ~/.ssh/tap
+          chmod 600 ~/.ssh/tap
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/tap -o IdentitiesOnly=yes"
+          git clone --depth 1 git@github.com:webcafeina/homebrew-esfinge.git tap
+          mkdir -p tap/Formula tap/Casks
+          cp recetas/Formula/esfinge.rb tap/Formula/esfinge.rb
+          cp recetas/Casks/esfinge.rb tap/Casks/esfinge.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/esfinge.rb Casks/esfinge.rb
+          # **Si no hay cambios, esto no es un éxito: es que algo no se ha rellenado.** La versión
+          # viaja en las dos recetas, así que dos publicaciones seguidas no pueden dar el mismo
+          # fichero. Apolo sale con `exit 0` aquí y eso tapa justo el caso que importa.
+          if git diff --cached --quiet; then
+            echo "::error::Las recetas de la ${{ inputs.version }} son idénticas a las que ya había en el tap"
+            exit 1
+          fi
+          git commit -q -m "Esfinge ${{ inputs.version }}"
+          git push -q
+          echo "✓ el tap, en la ${{ inputs.version }}"
+
+  aur:
+    name: El AUR
+    needs: recetas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: recetas, path: recetas }
+      - name: Empujar el PKGBUILD
+        env:
+          CLAVE: ${{ secrets.AUR_CLAVE }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$CLAVE" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o IdentitiesOnly=yes"
+          git clone ssh://aur@aur.archlinux.org/esfinge-bin.git aur || {
+            # La primera vez el repositorio no existe: se crea empujando.
+            mkdir aur && git -C aur init -q -b master
+            git -C aur remote add origin ssh://aur@aur.archlinux.org/esfinge-bin.git
+          }
+          cp recetas/aur/PKGBUILD aur/PKGBUILD
+          cd aur
+          # **El .SRCINFO es obligatorio y lo genera `makepkg`**, no se escribe a mano: el AUR
+          # rechaza un empujón sin él, y si no cuadra con el PKGBUILD la web del AUR enseña una
+          # versión y `makepkg` instala otra.
+          docker run --rm -v "$PWD:/pkg" -w /pkg archlinux:base-devel bash -c '
+            useradd -m c && chown -R c /pkg && su c -c "makepkg --printsrcinfo > .SRCINFO"'
+          git config user.name "Webcafeína"
+          git config user.email "info@webcafeina.com"
+          git add PKGBUILD .SRCINFO
+          if git diff --cached --quiet; then
+            echo "::error::El PKGBUILD de la ${{ inputs.version }} es idéntico al que ya había"
+            exit 1
+          fi
+          git commit -q -m "esfinge-bin ${{ inputs.version }}"
+          git push -q origin HEAD:master
+          echo "✓ el AUR, en la ${{ inputs.version }}"
+
+  chocolatey:
+    name: Chocolatey
+    needs: recetas
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: recetas, path: recetas }
+      - name: Armar y subir el paquete
+        shell: pwsh
+        env:
+          CLAVE: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:CLAVE) {
+            Write-Host "::error::Falta CHOCOLATEY_API_KEY"
+            exit 1
+          }
+          Set-Location recetas/choco
+          choco pack
+          $nupkg = (Get-ChildItem *.nupkg | Select-Object -First 1).Name
+          Write-Host "· $nupkg"
+          # **La clave va por la entrada del propio `choco`, no en la línea de órdenes**: un
+          # argumento queda en el registro del flujo y en el historial de la máquina.
+          choco apikey --source https://push.chocolatey.org/ --key "$env:CLAVE" --limit-output | Out-Null
+          # Dos salidas buenas: aceptada, o «ya existe esa versión» —que pasa si se relanza el
+          # flujo— y no es un fallo. Cualquier otra cosa sí.
+          $salida = choco push $nupkg --source https://push.chocolatey.org/ 2>&1 | Out-String
+          Write-Host $salida
+          if ($LASTEXITCODE -ne 0) {
+            if ($salida -match 'already exists|version .* has already') {
+              Write-Host "· esa versión ya estaba subida; nada que hacer"
+            } else {
+              Write-Host "::error::choco push no la ha aceptado"
+              exit 1
+            }
+          }
+          Write-Host "✓ subida; la aprobación es de su moderación y puede tardar días"
+
+  # **Y lo que de verdad cierra la fase: preguntarle a cada canal qué sirve.**
+  #
+  # No «¿hemos empujado?», que es lo que dicen los trabajos de arriba, sino «¿qué contesta el canal
+  # a quien lo use?». Son dos preguntas distintas y solo la segunda es la que le importa a quien
+  # instala.
+  comprobar:
+    name: Los canales sirven la versión
+    needs: [homebrew, aur, chocolatey]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preguntarles
+        run: |
+          set -uo pipefail
+          v="${{ inputs.version }}"
+          mal=0
+          # Lo que se le pega a la URL para saltarse cualquier caché intermedia.
+          sep_anticache="sincache=$(date +%s)"
+          #
+          # **Y una cosa que hay que saber si esto falla el primer día**: las dos últimas preguntas
+          # van a esfinge.webcafeina.com, que necesita su CNAME puesto y el dominio activado en
+          # Pages. Mientras no lo esté, estas dos fallan **a propósito**: las recetas que se acaban
+          # de empujar nombran ese dominio, así que si no resuelve, lo que se ha publicado no vale.
+          # **Con anticaché y con reintentos.** Lo de delante de /apt es Cloudflare y lo de detrás
+          # acaba de desplegarse: preguntar sin más puede traer el índice de la versión anterior y
+          # decir que el canal miente cuando lo que miente es la caché. Y al revés también importa:
+          # si Cloudflare llegara a cachear esos ficheros de verdad, quien tenga el repositorio
+          # puesto vería un índice viejo — está apuntado en deuda.md, junto a lo de la web.
+          mira() {
+            local que="$1" url="$2" patron="$3"
+            local cuerpo sep="?"
+            case "$url" in *\?*) sep="&" ;; esac
+            cuerpo="$(curl -fsSL --retry 5 --retry-delay 10 -H 'Cache-Control: no-cache' \
+              -H 'Pragma: no-cache' "$url$sep_anticache" 2>/dev/null || true)"
+            [ -n "$cuerpo" ] || cuerpo="$(curl -fsSL --retry 3 --retry-delay 10 "$url" 2>/dev/null || true)"
+            if [ -z "$cuerpo" ]; then
+              echo "  ✕ $que: no contesta ($url)"; mal=1; return
+            fi
+            if printf '%s' "$cuerpo" | grep -q "$patron"; then
+              echo "  ✓ $que sirve la $v"
+            else
+              echo "  ✕ $que NO sirve la $v"; mal=1
+            fi
+          }
+          mira "el tap (fórmula)" "https://raw.githubusercontent.com/webcafeina/homebrew-esfinge/main/Formula/esfinge.rb" "$v"
+          mira "el tap (cask)"    "https://raw.githubusercontent.com/webcafeina/homebrew-esfinge/main/Casks/esfinge.rb" "$v"
+          mira "el AUR"           "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=esfinge-bin" "pkgver=$v"
+          mira "el repositorio APT" "https://esfinge.webcafeina.com/apt/dists/stable/main/binary-amd64/Packages" "Version: $v"
+          mira "el repositorio RPM" "https://esfinge.webcafeina.com/rpm/repodata/repomd.xml" "primary"
+          [ $mal -eq 0 ] || { echo "::error::Hay canales que no sirven la $v"; exit 1; }

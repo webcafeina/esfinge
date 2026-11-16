@@ -2,6 +2,7 @@ package adjuntos
 
 import (
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -235,5 +236,61 @@ func TestLosDosPostinstallSoloSeDiferencianEnElGestor(t *testing.T) {
 	}
 	if !strings.Contains(strings.Join(rpm, "\n"), "printf 'rpm\\n'") {
 		t.Error("el postinstall del .rpm no deja escrito «rpm»")
+	}
+}
+
+// TestLosCanalesCuelganDeLaPublicacionYNoDelEvento vigila la trampa que el diseño de la fase 5 cazó
+// antes de escribir una línea, y que es de las que se desandan solas.
+//
+// **`on: release: published` no se dispara cuando la publicación la crea `GITHUB_TOKEN`.** Es regla
+// de GitHub, sin excepciones. Apolo cuelga sus canales de ese evento y le funciona porque su
+// publicación sale **como borrador** y la publica una persona; la de Esfinge la crea
+// `softprops/action-gh-release` ya publicada. Copiar sus flujos tal cual —que es lo natural, están
+// al lado y funcionan allí— daría flujos que **no se ejecutan nunca, en silencio**, con el tap y el
+// AUR sirviendo una versión de hace meses y ningún correo rojo que lo diga.
+//
+// Así que aquí se afirman dos cosas: que **ningún** flujo cuelga de ese evento, y que los dos que
+// publican hacia fuera —la web con sus repositorios, y los canales— **los llama `publicar.yml`**.
+// La segunda mitad es la del método del puente que no llama nadie: un flujo con `workflow_call` y
+// sin quien lo llame parece terminado y no se ejecuta jamás.
+func TestLosCanalesCuelganDeLaPublicacionYNoDelEvento(t *testing.T) {
+	flujos, err := filepath.Glob("../../.github/workflows/*.yml")
+	if err != nil || len(flujos) == 0 {
+		t.Fatalf("no encuentro los flujos: %v", err)
+	}
+
+	for _, f := range flujos {
+		crudo, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		texto := string(crudo)
+		// Se busca la línea del disparador, no la palabra: los comentarios de estos ficheros
+		// explican precisamente por qué **no** se usa, y señalar eso haría que el aviso se dejara
+		// de leer —que es como se pierde un vigilante—.
+		for _, l := range strings.Split(texto, "\n") {
+			limpia := strings.TrimSpace(l)
+			if strings.HasPrefix(limpia, "#") {
+				continue
+			}
+			if limpia == "release:" {
+				t.Errorf("%s cuelga de «on: release», que no se dispara cuando la publicación la crea GITHUB_TOKEN: eso deja el canal sin actualizarse y sin decirlo", filepath.Base(f))
+			}
+		}
+	}
+
+	publicar, err := os.ReadFile("../../.github/workflows/publicar.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, quien := range []string{"./.github/workflows/web.yml", "./.github/workflows/canales.yml"} {
+		if !strings.Contains(string(publicar), "uses: "+quien) {
+			t.Errorf("publicar.yml no llama a %s: un flujo con «workflow_call» y sin quien lo llame no se ejecuta nunca", quien)
+		}
+	}
+	// Y que lo llame **después** de publicar, no a la vez: los paquetes los baja de la
+	// publicación, así que antes no existen.
+	if !strings.Contains(string(publicar), "needs: publicar") {
+		t.Error("publicar.yml llama a los flujos de fuera sin esperar a que la publicación exista")
 	}
 }

@@ -819,6 +819,11 @@ jobs:
     needs: [macos, windows, linux, linea-de-comandos, humo]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    # La versión, para los dos trabajos que vienen detrás. **Se pasa, no se recompone**: las
+    # expresiones de GitHub no tienen con qué quitarle la «v» a una etiqueta, y hacerlo a mano en
+    # cada sitio es otra lista que se desalinea.
+    outputs:
+      version: ${{ steps.v.outputs.n }}
     steps:
       - uses: actions/checkout@v4
       # **Go aquí también**, que este trabajo no compilaba nada y ahora le pregunta al
@@ -998,3 +1003,25 @@ jobs:
             exit 0
           fi
           node herramientas/tienda-chrome.mjs "adjuntos/esfinge-extension-${{ steps.v.outputs.n }}-chrome-tienda.zip"
+
+  # **La web, con los repositorios APT y RPM dentro** (`web.yml`). Va después de publicar porque
+  # los paquetes los baja de la publicación: antes no existirían.
+  web:
+    name: La web y los repositorios
+    needs: publicar
+    uses: ./.github/workflows/web.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    secrets: inherit
+
+  # Y los canales. **Después de la web**, porque el último paso les pregunta a /apt y /rpm qué
+  # sirven, y eso no puede contestar antes de que la web esté desplegada.
+  canales:
+    name: Los canales
+    needs: [publicar, web]
+    uses: ./.github/workflows/canales.yml
+    with:
+      version: ${{ needs.publicar.outputs.version }}
+    secrets: inherit
