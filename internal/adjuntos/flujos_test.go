@@ -392,3 +392,52 @@ func enTrabajos(texto string) []trabajoDelFlujo {
 	}
 	return out
 }
+
+// TestCadaPasoQueUnTrabajoNombraExiste, que nace de la publicación 2.66.2.
+//
+// **En GitHub, una expresión que nombra algo que no existe no da error: vale cadena vacía.** La
+// salida del trabajo que publica se escribió como `${{ steps.v.outputs.n }}`, copiando la expresión
+// de los otros trabajos, y ahí **no había ningún paso con `id: v`**. Nada se puso rojo: los canales
+// recibieron una versión vacía y se cayeron al pedirle a la publicación la etiqueta «v», que es un
+// error que no habla de lo que pasa.
+//
+// Es la familia de «comparar las dos puntas no prueba que estén unidas», con la vuelta de que aquí
+// una punta puede no existir y el lenguaje se calla. Así que esto afirma lo único que lo cierra: si
+// un trabajo nombra `steps.X`, **ese paso tiene que estar en ese trabajo**.
+func TestCadaPasoQueUnTrabajoNombraExiste(t *testing.T) {
+	nombrado := regexp.MustCompile(`steps\.([A-Za-z0-9_-]+)\.`)
+
+	flujos, err := filepath.Glob("../../.github/workflows/*.yml")
+	if err != nil || len(flujos) == 0 {
+		t.Fatalf("no encuentro los flujos: %v", err)
+	}
+	mirados := 0
+	for _, f := range flujos {
+		crudo, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, bloque := range enTrabajos(string(crudo)) {
+			// Los `id:` que ese trabajo declara.
+			hay := map[string]bool{}
+			for _, m := range regexp.MustCompile(`(?m)^\s*-?\s*id:\s*([A-Za-z0-9_-]+)\s*$`).FindAllStringSubmatch(bloque.pasos, -1) {
+				hay[m[1]] = true
+			}
+			for _, l := range strings.Split(bloque.pasos, "\n") {
+				if strings.HasPrefix(strings.TrimSpace(l), "#") {
+					continue
+				}
+				for _, m := range nombrado.FindAllStringSubmatch(l, -1) {
+					mirados++
+					if !hay[m[1]] {
+						t.Errorf("%s · el trabajo «%s» nombra «steps.%s» y no tiene ningún paso con ese id: en GitHub eso no falla, vale cadena vacía",
+							filepath.Base(f), bloque.nombre, m[1])
+					}
+				}
+			}
+		}
+	}
+	if mirados == 0 {
+		t.Fatal("no he encontrado ninguna referencia a «steps.»: esta prueba no está comprobando nada")
+	}
+}

@@ -837,6 +837,20 @@ jobs:
       version: ${{ steps.v.outputs.n }}
     steps:
       - uses: actions/checkout@v4
+      # La versión, con el mismo paso que los demás trabajos.
+      #
+      # **Hacía falta, y su ausencia no daba error**: la salida de arriba se escribió copiando la
+      # expresión de los otros trabajos y aquí no había ningún paso con `id: v`. En GitHub una
+      # expresión que nombra algo que no existe **no falla: vale cadena vacía**, así que los canales
+      # recibieron una versión vacía y se cayeron al pedirle a la publicación la etiqueta «v». Tiró
+      # la 2.66.2. Lo vigila una prueba que exige que cada `steps.X` que un trabajo nombra tenga su
+      # paso en ese mismo trabajo.
+      - id: v
+        shell: bash
+        run: |
+          n="${{ github.event.inputs.version }}"
+          [ -n "$n" ] || n="${GITHUB_REF_NAME#v}"
+          echo "n=$n" >> "$GITHUB_OUTPUT"
       # **Go aquí también**, que este trabajo no compilaba nada y ahora le pregunta al
       # catálogo: la puerta de abajo y el cuerpo de la publicación salen de él.
       - uses: actions/setup-go@v5
