@@ -109,11 +109,26 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Formula/esfinge.rb Casks/esfinge.rb
-          # **Si no hay cambios, esto no es un éxito: es que algo no se ha rellenado.** La versión
-          # viaja en las dos recetas, así que dos publicaciones seguidas no pueden dar el mismo
-          # fichero. Apolo sale con `exit 0` aquí y eso tapa justo el caso que importa.
+          # **«Sin cambios» no es un fallo si lo que hay es la versión que se quería.**
+          #
+          # La primera versión de esto fallaba siempre que el diff saliera vacío, con el argumento
+          # de que la versión viaja en las recetas y dos publicaciones no pueden dar el mismo
+          # fichero. Cierto — y **relanzar la misma versión sí**, que es una operación normal y
+          # para la que existe el disparador manual. Se cayó relanzando la 2.66.3 sobre un tap que
+          # ya la tenía.
+          #
+          # Lo que de verdad hay que separar son dos cosas que se ven iguales en el diff: que el
+          # tap **ya esté** en esa versión —y entonces no hay nada que hacer— y que no se haya
+          # rellenado nada, que es el fallo que esto vino a cazar. Lo distingue mirar **qué dice el
+          # fichero**, no si ha cambiado. Es más estricto que el `exit 0` de Apolo, que da por
+          # bueno cualquier diff vacío y tapa el caso de «se quedó atrás y nadie se enteró».
           if git diff --cached --quiet; then
-            echo "::error::Las recetas de la ${{ inputs.version }} son idénticas a las que ya había en el tap"
+            if grep -q 'version "${{ inputs.version }}"' Formula/esfinge.rb && \
+               grep -q 'version "${{ inputs.version }}"' Casks/esfinge.rb; then
+              echo "· el tap ya estaba en la ${{ inputs.version }}: nada que empujar"
+              exit 0
+            fi
+            echo "::error::Las recetas no han cambiado y el tap tampoco está en la ${{ inputs.version }}: algo no se ha rellenado"
             exit 1
           fi
           git commit -q -m "Esfinge ${{ inputs.version }}"
@@ -173,8 +188,14 @@ jobs:
           git config user.name "Webcafeína"
           git config user.email "info@webcafeina.com"
           git add PKGBUILD .SRCINFO
+          # Lo mismo que en el tap: relanzar la misma versión no es un fallo, y lo que lo
+          # distingue es qué dice el fichero.
           if git diff --cached --quiet; then
-            echo "::error::El PKGBUILD de la ${{ inputs.version }} es idéntico al que ya había"
+            if grep -q "^pkgver=${{ inputs.version }}$" PKGBUILD; then
+              echo "· el AUR ya estaba en la ${{ inputs.version }}: nada que empujar"
+              exit 0
+            fi
+            echo "::error::El PKGBUILD no ha cambiado y tampoco está en la ${{ inputs.version }}: algo no se ha rellenado"
             exit 1
           fi
           git commit -q -m "esfinge-bin ${{ inputs.version }}"
