@@ -3,6 +3,15 @@
 # **Las dos tiendas enlazan su política de privacidad**, así que se publica cada vez
 # que cambia algo de lo que la forma, no a mano. Necesita GitHub Pages activado una
 # vez en el repositorio, con «GitHub Actions» como origen.
+#
+# **Y con la web van los repositorios APT y RPM de Linux**, en /apt y /rpm, firmados con la clave de
+# paquetes de Esfinge; y en /aur el PKGBUILD relleno, para quien quiera `makepkg` sin pasar por el
+# AUR. Los paquetes **no se guardan en git**: se bajan de la publicación cada vez que se despliega.
+#
+# Eso último tiene una consecuencia que conviene entender: **cada despliegue rehace los
+# repositorios desde la última versión publicada**, pase lo que pase. Un cambio de la portada que
+# no los montara publicaría un sitio **sin** /apt, y eso no es «no actualizar los repositorios», es
+# borrárselos a quien los tenga puestos.
 name: Web
 
 on:
@@ -15,6 +24,13 @@ on:
       - "herramientas/armar-web.sh"
       - ".github/workflows/web.yml"
   workflow_dispatch:
+  # Lo llama `publicar.yml` cuando una versión ha salido entera, para que /apt y /rpm sirvan la
+  # nueva. **Con `needs:` y no con `on: release: published`**, que es el camino que parece natural y
+  # **no se dispara cuando la publicación la crea `GITHUB_TOKEN`** —regla de GitHub, sin
+  # excepciones—: Apolo puede colgar sus canales de ese evento porque su publicación sale como
+  # borrador y la publica una persona, y aquí sale ya publicada. Copiarlo tal cual daría un flujo
+  # que no se ejecuta nunca, en silencio, con los repositorios sirviendo una versión de hace meses.
+  workflow_call:
 
 permissions:
   contents: read
@@ -29,8 +45,117 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.27", cache-dependency-path: go.sum }
       - name: Armar
         run: bash herramientas/armar-web.sh _site
+
+      # **Los nombres de los paquetes los dice el catálogo**, no un glob (ADR 0060). Con un
+      # `*.deb` entraría cualquier cosa que la publicación llevara con esa extensión, y el
+      # repositorio ofrecería dos veces el mismo paquete con dos nombres.
+      - name: Los paquetes de la última versión
+        id: paquetes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          etiqueta="$(gh release view --json tagName -q .tagName 2>/dev/null || true)"
+          if [ -z "$etiqueta" ]; then
+            echo "::warning::Todavía no hay ninguna versión publicada: la web sale sin /apt ni /rpm"
+            echo "hay=no" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          v="${etiqueta#v}"
+          echo "· repositorios de la $v"
+          mkdir -p _site/apt/pool/main _site/rpm _site/aur
+          for clave in deb-amd64 deb-arm64; do
+            gh release download "$etiqueta" -p "$(go run ./herramientas/catalogo nombre "$clave" "$v")" -D _site/apt/pool/main
+          done
+          for clave in rpm-amd64 rpm-arm64; do
+            gh release download "$etiqueta" -p "$(go run ./herramientas/catalogo nombre "$clave" "$v")" -D _site/rpm
+          done
+          gh release download "$etiqueta" -p SHA256SUMS -D "$RUNNER_TEMP"
+          go run ./herramientas/rellenar "$v" empaquetado/aur/PKGBUILD "$RUNNER_TEMP/SHA256SUMS" > _site/aur/PKGBUILD
+          cp empaquetado/linux/esfinge.asc _site/esfinge.asc
+          echo "hay=si" >> "$GITHUB_OUTPUT"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          ls -la _site/apt/pool/main _site/rpm
+
+      # **Sin la clave, esto para.** Y no es rigidez: el paso de arriba ya ha dejado los paquetes
+      # en `_site`, así que seguir publicaría /apt y /rpm **sin firmar**, y `apt` los rechazaría
+      # con un error de clave que no dice nada de nosotros. Fallar aquí es lo honrado; en una
+      # bifurcación sin secretos, lo que se desactiva es el flujo entero.
+      - name: La clave de los paquetes
+        if: steps.paquetes.outputs.hay == 'si'
+        env:
+          CLAVE: ${{ secrets.PAQUETES_GPG_CLAVE }}
+          FRASE: ${{ secrets.PAQUETES_GPG_FRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CLAVE" ] || [ -z "$FRASE" ]; then
+            echo "::error::Faltan PAQUETES_GPG_CLAVE o PAQUETES_GPG_FRASE: los repositorios irían sin firma"
+            exit 1
+          fi
+          export GNUPGHOME="$RUNNER_TEMP/gpg"
+          install -m 700 -d "$GNUPGHOME"
+          printf '%s\n' "$CLAVE" | gpg --batch --import 2>/dev/null
+          printf '%s' "$FRASE" > "$RUNNER_TEMP/frase"
+          echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
+
+      - name: El repositorio APT
+        if: steps.paquetes.outputs.hay == 'si'
+        run: |
+          set -euo pipefail
+          sudo apt-get update >/dev/null
+          sudo apt-get install -y apt-utils createrepo-c >/dev/null
+          firmar() { gpg --batch --yes --pinentry-mode loopback --passphrase-file "$RUNNER_TEMP/frase" "$@"; }
+          cd _site/apt
+          for a in amd64 arm64; do
+            mkdir -p "dists/stable/main/binary-$a"
+            apt-ftparchive --arch "$a" packages pool > "dists/stable/main/binary-$a/Packages"
+            gzip -k9n "dists/stable/main/binary-$a/Packages"
+          done
+          apt-ftparchive \
+            -o APT::FTPArchive::Release::Origin=Esfinge \
+            -o APT::FTPArchive::Release::Label=Esfinge \
+            -o APT::FTPArchive::Release::Suite=stable \
+            -o APT::FTPArchive::Release::Codename=stable \
+            -o "APT::FTPArchive::Release::Architectures=amd64 arm64" \
+            -o APT::FTPArchive::Release::Components=main \
+            -o "APT::FTPArchive::Release::Description=Esfinge, de Webcafeína" \
+            release dists/stable > dists/stable/Release
+          firmar --clearsign -o dists/stable/InRelease dists/stable/Release
+          firmar --armor --detach-sign -o dists/stable/Release.gpg dists/stable/Release
+          # El fichero que se copia en /etc/apt/sources.list.d/. En deb822, que es el formato de
+          # hoy y el único que sabe decir **con qué clave** se firma esto: `Signed-By` acota la
+          # confianza a este repositorio, al contrario que meter la clave en el llavero general.
+          printf '%s\n' \
+            "Types: deb" \
+            "URIs: https://esfinge.webcafeina.com/apt" \
+            "Suites: stable" \
+            "Components: main" \
+            "Architectures: amd64 arm64" \
+            "Signed-By: /etc/apt/keyrings/esfinge.asc" > esfinge.sources
+
+      - name: El repositorio RPM
+        if: steps.paquetes.outputs.hay == 'si'
+        run: |
+          set -euo pipefail
+          cd _site/rpm
+          createrepo_c --quiet .
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file "$RUNNER_TEMP/frase" \
+            --armor --detach-sign -o repodata/repomd.xml.asc repodata/repomd.xml
+          # `gpgcheck` comprueba cada paquete y `repo_gpgcheck` el índice: con solo el primero,
+          # alguien que pudiera cambiar el índice decidiría qué paquetes existen.
+          printf '%s\n' \
+            "[esfinge]" \
+            "name=Esfinge, de Webcafeína" \
+            "baseurl=https://esfinge.webcafeina.com/rpm" \
+            "enabled=1" \
+            "gpgcheck=1" \
+            "repo_gpgcheck=1" \
+            "gpgkey=https://esfinge.webcafeina.com/esfinge.asc" > esfinge.repo
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

@@ -107,3 +107,22 @@ overrides:
       - gtk3
     scripts:
       postinstall: empaquetado/linux/postinstall-rpm.sh
+
+# **Y el .rpm va firmado**, con la misma clave que firma los repositorios APT y RPM de
+# esfinge.webcafeina.com (`web.yml`).
+#
+# No es un adorno: el `esfinge.repo` que se publica lleva `gpgcheck=1`, así que **dnf rechaza un
+# paquete sin firmar** — y el error que sale entonces habla de claves y no dice nada de nosotros. El
+# `.deb` no se firma, y eso es lo normal: en Debian lo que se firma es el índice del repositorio
+# (`InRelease`) y no cada paquete.
+#
+# Va aquí y no en `overrides`, que es donde lo puse primero: `signature` no es un campo que se pueda
+# sobreescribir por empaquetador, y nfpm lo dice claro —«field signature not found in type
+# nfpm.Overridables»—. Cada empaquetador tiene su propia sección.
+#
+# La clave sale de un fichero que escribe el flujo desde el secreto y la frase va por el entorno
+# (`NFPM_RPM_PASSPHRASE`): **nunca como argumento**, que es la regla de la casa. Y con la variable
+# vacía nfpm no firma, que es lo que permite armar un .rpm de prueba en un portátil.
+rpm:
+  signature:
+    key_file: ${CLAVE_DE_PAQUETES}

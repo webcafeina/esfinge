@@ -543,7 +543,29 @@ jobs:
           CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${{ steps.v.outputs.n }}" \
             -o esfinge-mcp ./cmd/esfinge-mcp
 
-      - name: Armar el .deb y el .tar.gz
+      # La clave con la que se firma el .rpm, en un fichero: nfpm la lee de ahí y la frase por el
+      # entorno. **Nunca como argumento** —lo que se escribe en la línea queda en el historial y lo
+      # lee un `ps`—, que es la regla de la casa para cualquier secreto.
+      #
+      # Es la misma clave que firma los repositorios APT y RPM de la web, y hace falta porque el
+      # `esfinge.repo` que se publica lleva `gpgcheck=1`: **dnf rechaza un paquete sin firmar**.
+      - name: La clave de los paquetes
+        env:
+          CLAVE: ${{ secrets.PAQUETES_GPG_CLAVE }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CLAVE" ]; then
+            echo "::error::Falta PAQUETES_GPG_CLAVE: el .rpm saldría sin firmar y dnf lo rechazaría"
+            exit 1
+          fi
+          umask 077
+          printf '%s\n' "$CLAVE" > "$RUNNER_TEMP/paquetes.key.asc"
+          echo "CLAVE_DE_PAQUETES=$RUNNER_TEMP/paquetes.key.asc" >> "$GITHUB_ENV"
+
+      - name: Armar el .deb, el .rpm y el .tar.gz
+        env:
+          # La frase de la clave, para que nfpm pueda firmar el .rpm.
+          NFPM_RPM_PASSPHRASE: ${{ secrets.PAQUETES_GPG_FRASE }}
         run: |
           export VERSION="${{ steps.v.outputs.n }}"
           # **La arquitectura se la dice nfpm por el entorno y el nombre lo dice el
@@ -656,10 +678,17 @@ jobs:
           set -euo pipefail
           rpm="$(ls paquetes/*.rpm)"
           echo "::group::$rpm"
-          docker run --rm -v "$PWD/paquetes:/p:ro" fedora:41 bash -euo pipefail -c '
+          docker run --rm -v "$PWD/paquetes:/p:ro" -v "$PWD/empaquetado/linux/esfinge.asc:/esfinge.asc:ro" fedora:41 bash -euo pipefail -c '
             rpm -qpi /p/*.rpm
             echo "— lo que pide —"; rpm -qp --requires /p/*.rpm
-            dnf install -y /p/*.rpm
+            # **La firma, antes de instalar.** El repositorio que se publica lleva «gpgcheck=1», así
+            # que un .rpm sin firmar se instala desde un fichero y **se rechaza desde el
+            # repositorio**: el fallo saldría en el equipo de quien lo pone, no aquí. Sin la clave
+            # importada, `rpm` dice «digests SIGNATURES NOT OK»; con ella, «digests signatures OK».
+            rpm --import /esfinge.asc
+            rpm --checksig /p/*.rpm | tee /tmp/firma
+            grep -q "signatures OK" /tmp/firma || { echo "::error::El .rpm no está firmado con la clave de Esfinge"; exit 1; }
+            dnf install -y --setopt=localpkg_gpgcheck=1 /p/*.rpm
             # Ninguna biblioteca sin resolver: es lo que de verdad dice que el «depends»
             # era el bueno. `ldd` marca lo que falta con «not found».
             ldd /usr/bin/esfinge-gui | grep -i "not found" && { echo "::error::Faltan bibliotecas"; exit 1; } || true
