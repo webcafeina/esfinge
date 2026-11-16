@@ -45,6 +45,11 @@ type Novedad struct {
 	Pagina  string `json:"pagina"`
 	Fichero string `json:"fichero"`
 	Bytes   int64  `json:"bytes"`
+	// Gestor es de qué gestor de paquetes viene esta copia, si viene de uno. Lo que la
+	// ventana hace con él es una frase: a quien instaló con `pacman` **no se le ofrece
+	// descarga**, porque el `.deb` que hay publicado no se instala con `pacman -U`, y lo
+	// honrado es decirle que lo actualiza su gestor.
+	Gestor string `json:"gestor"`
 	// ComoSeInstala vale «sola» cuando Esfinge puede reemplazarse y reiniciarse
 	// sin que nadie arrastre nada, e «instalador» cuando hace falta el del
 	// sistema. El botón dice una cosa u otra según esto.
@@ -234,6 +239,7 @@ func deNovedad(n actualizacion.Novedad) Novedad {
 		Pagina:        n.Pagina,
 		Fichero:       n.Fichero,
 		Bytes:         n.Bytes,
+		Gestor:        n.Gestor,
 		ComoSeInstala: string(actualizacion.ComoSeInstala()),
 	}
 }

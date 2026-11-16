@@ -63,6 +63,16 @@ export type Novedad = {
   fichero: string;
   bytes: number;
   /**
+   * De qué gestor de paquetes viene esta copia: `deb`, `rpm`, `pacman`, `appimage`, o vacío si
+   * se puso a mano.
+   *
+   * Sirve para una sola cosa, y es una frase: con `pacman` **no hay fichero que ofrecer** —el
+   * `.deb` publicado no se instala con `pacman -U`—, y sin este dato la banda no distinguiría
+   * «no hay nada para tu sistema», que parece un fallo nuestro, de «lo actualiza tu gestor»,
+   * que es la verdad.
+   */
+  gestor: string;
+  /**
    * «sola» si se reemplaza y reinicia; «instalador» si hace falta el del sistema;
    * **«a mano» si no lo instala nadie**, que es el caso de la AppImage: lo que se baja es
    * la aplicación entera, así que lo único que se puede hacer es enseñar dónde ha quedado.

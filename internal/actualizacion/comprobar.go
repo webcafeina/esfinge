@@ -86,6 +86,15 @@ type Novedad struct {
 	Bytes   int64  `json:"bytes"`
 	// Resumen es la línea del SHA256SUMS publicado que corresponde al fichero.
 	Resumen string `json:"-"`
+	// Gestor es de qué gestor de paquetes viene esta copia, cuando viene de uno
+	// (`deb`, `rpm`, `pacman`, `appimage`; vacío si se puso a mano).
+	//
+	// **Hace falta para no mentirle a quien instaló con `pacman`.** A esa copia no se le
+	// ofrece ningún fichero —`ParaSistema` no devuelve ninguno a propósito, porque el `.deb`
+	// no se instala con `pacman -U`—, y sin este dato la ventana no puede distinguir «no hay
+	// nada para tu sistema» de «lo actualiza tu gestor», que son dos frases muy distintas: la
+	// primera parece un fallo nuestro y la segunda es la verdad.
+	Gestor string `json:"gestor"`
 }
 
 // Mirar consulta la última publicación y dice si hay algo más nuevo.
@@ -103,7 +112,7 @@ func (c *Comprobador) Mirar() (Novedad, error) {
 		return Novedad{}, nil
 	}
 
-	n := Novedad{Hay: true, Version: publicada, Pagina: pub.Pagina}
+	n := Novedad{Hay: true, Version: publicada, Pagina: pub.Pagina, Gestor: gestorQueLoInstalo()}
 	if a, vale := ParaEsteSistema(pub.Adjuntos); vale {
 		n.Fichero, n.URL, n.Bytes = a.Nombre, a.URL, a.Bytes
 		n.Resumen = c.resumenDe(pub.Adjuntos, a.Nombre)

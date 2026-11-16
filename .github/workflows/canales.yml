@@ -137,6 +137,27 @@ jobs:
           chmod 600 ~/.ssh/aur
           ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts 2>/dev/null
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur -o IdentitiesOnly=yes"
+
+          # **El registro de usuarios del AUR está cerrado** (2026-11-16, y ya lo estaba cuando se
+          # publicó Apolo), así que todavía no hay cuenta y esta clave no está registrada en
+          # ninguna. Mientras sea así, esto **avisa y sale bien**: una publicación de Esfinge no
+          # puede quedarse en rojo por algo que no está en nuestra mano, y Arch no se queda sin
+          # nada — la web sirve el PKGBUILD relleno en /aur, que se instala con `makepkg -si`, y
+          # eso es lo que el último trabajo comprueba.
+          #
+          # **Solo se perdona ese error y ninguno más.** «Permission denied (publickey)» es «esta
+          # clave no está en ninguna cuenta»; cualquier otra cosa —el AUR caído, el repositorio
+          # rechazando el empujón, el .SRCINFO mal— es un fallo de verdad y para. El día que abran
+          # el registro, esto empieza a funcionar sin tocar una línea: lo único que cambia es que
+          # el `ssh` deja de contestar eso.
+          if ! ssh -o BatchMode=yes -o ConnectTimeout=20 aur@aur.archlinux.org help 2>&1 | tee /tmp/aur.txt; then
+            if grep -q "Permission denied (publickey)" /tmp/aur.txt; then
+              echo "::notice::El AUR no admite cuentas nuevas todavía, así que esta clave no está registrada: Arch se sirve del PKGBUILD de https://esfinge.webcafeina.com/aur/PKGBUILD (makepkg -si)"
+              exit 0
+            fi
+            echo "::error::El AUR no contesta lo que debería; esto no es «no hay cuenta»"
+            exit 1
+          fi
           git clone ssh://aur@aur.archlinux.org/esfinge-bin.git aur || {
             # La primera vez el repositorio no existe: se crea empujando.
             mkdir aur && git -C aur init -q -b master
@@ -243,7 +264,17 @@ jobs:
           }
           mira "el tap (fórmula)" "https://raw.githubusercontent.com/webcafeina/homebrew-esfinge/main/Formula/esfinge.rb" "$v"
           mira "el tap (cask)"    "https://raw.githubusercontent.com/webcafeina/homebrew-esfinge/main/Casks/esfinge.rb" "$v"
-          mira "el AUR"           "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=esfinge-bin" "pkgver=$v"
+          # **Arch, por donde hoy se instala de verdad.** El paquete del AUR todavía no existe
+          # —su registro de usuarios está cerrado—, así que el canal de Arch es el PKGBUILD que
+          # sirve la web, y eso **sí** se exige: es lo que alguien va a usar con `makepkg -si`.
+          mira "el PKGBUILD de la web" "https://esfinge.webcafeina.com/aur/PKGBUILD" "pkgver=$v"
+          # Y el del AUR solo cuando exista, para que el día que abran el registro esto empiece a
+          # mirarlo sin que nadie se acuerde de venir a quitar un «si».
+          if curl -fsI --retry 2 "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=esfinge-bin" >/dev/null 2>&1; then
+            mira "el AUR" "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=esfinge-bin" "pkgver=$v"
+          else
+            echo "  · el AUR todavía no tiene el paquete (su registro está cerrado): no se le pregunta"
+          fi
           mira "el repositorio APT" "https://esfinge.webcafeina.com/apt/dists/stable/main/binary-amd64/Packages" "Version: $v"
           mira "el repositorio RPM" "https://esfinge.webcafeina.com/rpm/repodata/repomd.xml" "primary"
           [ $mal -eq 0 ] || { echo "::error::Hay canales que no sirven la $v"; exit 1; }

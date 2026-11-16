@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -279,5 +282,81 @@ func TestUnaPublicacionEnBorradorNoCuenta(t *testing.T) {
 
 	if _, err := c.Mirar(); err == nil {
 		t.Error("una versión previa no es para el cliente, y la ha dado por buena")
+	}
+}
+
+// A quien instaló con su gestor de paquetes no se le ofrece ningún fichero, y la ventana tiene que
+// poder decir **por qué**.
+//
+// `ParaSistema` no devuelve nada para `pacman` a propósito: el `.deb` que se publica no se instala
+// con `pacman -U`, y ofrecerlo sería mandar a alguien a pelearse con un fichero que su sistema
+// rechaza. Pero «no hay fichero» a secas se lee como un fallo nuestro, así que la novedad lleva de
+// qué gestor viene y la banda dice «la instala tu gestor de paquetes».
+//
+// Es la misma idea que el nombre que miente: lo que la pantalla enseña tiene que ser verdad, y aquí
+// la verdad depende de un dato que hay que llevar hasta ella.
+func TestConPacmanNoSeOfreceFicheroYSeDiceDeDondeViene(t *testing.T) {
+	publicados := []Adjunto{
+		{Nombre: "esfinge_9.9.9_amd64.deb", URL: "https://x/deb"},
+		{Nombre: "esfinge-9.9.9-1.x86_64.rpm", URL: "https://x/rpm"},
+		{Nombre: "esfinge-9.9.9-linux-amd64", URL: "https://x/cli"},
+	}
+
+	// Con pacman: ninguno de los tres le vale.
+	if a, vale := elDeEsteEquipo(publicados, "linux", "amd64", "pacman"); vale {
+		t.Errorf("a una copia de pacman se le ha ofrecido «%s», y eso no se instala con pacman -U", a.Nombre)
+	}
+	// Y con los otros dos gestores sí hay fichero, que es lo que hace que la comprobación de
+	// arriba signifique algo: si no hubiera ninguno para nadie, pasaría igual estando roto.
+	for gestor, quiero := range map[string]string{
+		"deb": "esfinge_9.9.9_amd64.deb",
+		"rpm": "esfinge-9.9.9-1.x86_64.rpm",
+	} {
+		a, vale := elDeEsteEquipo(publicados, "linux", "amd64", gestor)
+		if !vale || a.Nombre != quiero {
+			t.Errorf("con «%s» esperaba %s y he recibido «%s» (vale=%v)", gestor, quiero, a.Nombre, vale)
+		}
+	}
+}
+
+// Y que el gestor llegue hasta la novedad, que es lo que la ventana lee.
+//
+// Sin esto, el campo existiría y viajaría siempre vacío: la banda no podría distinguir «no hay
+// nada para tu sistema» de «lo actualiza tu gestor» y volvería a decir la frase equivocada, con
+// todo en verde.
+func TestLaNovedadDiceDeQueGestorVieneLaCopia(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("el fichero del gestor solo lo escriben los paquetes de Linux")
+	}
+	carpeta := t.TempDir()
+	if err := os.WriteFile(filepath.Join(carpeta, "gestor"), []byte("pacman\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	antes := carpetaDeEsfinge
+	carpetaDeEsfinge = carpeta
+	t.Cleanup(func() { carpetaDeEsfinge = antes })
+	t.Setenv("APPIMAGE", "")
+
+	srv := servidorFalso(t, map[string]any{
+		"tag_name": "v9.9.9",
+		"html_url": "https://x",
+		"assets": []map[string]any{
+			{"name": "esfinge_9.9.9_amd64.deb", "browser_download_url": "https://x/deb", "size": 1},
+		},
+	})
+	c := &Comprobador{Version: "1.0.0", API: srv.URL, Cliente: srv.Client()}
+
+	n, err := c.Mirar()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !n.Hay {
+		t.Fatal("no ha visto la versión nueva")
+	}
+	if n.Gestor != "pacman" {
+		t.Errorf("la novedad dice que el gestor es «%s» y este equipo tiene escrito «pacman»", n.Gestor)
+	}
+	if n.Fichero != "" {
+		t.Errorf("y no debería ofrecer nada, pero ofrece «%s»", n.Fichero)
 	}
 }

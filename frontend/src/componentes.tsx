@@ -923,6 +923,9 @@ export function BandaNovedad({
   // lo que se baja **es la aplicación**, así que «abrir el instalador» abriría una
   // segunda Esfinge y la que se está usando seguiría siendo la vieja.
   const aMano = novedad.comoSeInstala === "a mano";
+  // Y a quien lo instaló con su gestor de paquetes no se le ofrece nada que bajar: el `.deb`
+  // publicado no se instala con `pacman -U`, así que la banda informa y se calla.
+  const loActualizaSuGestor = !novedad.fichero && novedad.gestor === "pacman";
 
   return (
     <div className="novedad" role="status">
@@ -943,6 +946,11 @@ export function BandaNovedad({
           <span>
             Descargando Esfinge {novedad.version}
             {avance.total > 0 && ` · ${Math.round((avance.bytes / avance.total) * 100)} %`}
+          </span>
+        ) : loActualizaSuGestor ? (
+          <span>
+            Hay una versión nueva, <strong>Esfinge {novedad.version}</strong>: la instala tu gestor
+            de paquetes.
           </span>
         ) : (
           <span>
@@ -969,6 +977,10 @@ export function BandaNovedad({
                 <button className="principal" onClick={alDescargar}>
                   Descargar
                 </button>
+              ) : loActualizaSuGestor ? (
+                // Nada que pulsar: ni descarga —no hay fichero— ni «ver la publicación», que
+                // mandaría a una página llena de ficheros que no debe instalar.
+                null
               ) : (
                 <a className="discreto" href={novedad.pagina} target="_blank" rel="noreferrer">
                   Ver la publicación
