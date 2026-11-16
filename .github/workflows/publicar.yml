@@ -791,7 +791,12 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y -qq strace xvfb libegl1 libgl1 >/dev/null
+          # **`libgles2` hace falta y no la lleva la AppImage a propósito**: es parte del driver
+          # gráfico, igual que libEGL, así que va fuera. Sin ella WebKit aborta al crear el
+          # webview —«Couldn't open libGLESv2.so.2» y un SIGABRT— **antes** de arrancar ningún
+          # auxiliar, o sea que este paso fallaba por el entorno y no por el producto. Pasó en la
+          # 2.67.1, y se vio reproduciendo este mismo entorno en un contenedor, no en el corredor.
+          sudo apt-get install -y -qq strace xvfb libegl1 libgl1 libgles2 >/dev/null
           ai="$(ls paquetes/*.AppImage)"
           chmod +x "$ai"
           # Se ejecuta **la AppImage**, no el AppDir extraído: así se comprueba de paso que su
@@ -802,7 +807,13 @@ jobs:
             | sed 's/execve("//; s/"$//' | sort -u || true)"
           if [ -z "$rutas" ]; then
             echo "::error::La ventana no ha llegado a arrancar ningún proceso auxiliar de WebKit; esto es lo que dijo:"
-            tail -25 ventana.txt
+            # **Las primeras líneas, no las últimas.** Cuando esto falla, lo que muere es el hilo
+            # de GTK y Go escupe un volcado de pila y de registros de cien líneas: con un `tail`
+            # se lee el valor de `r15` y no la causa, que es lo que se imprimió **antes**. Costó
+            # una publicación leer eso.
+            head -25 ventana.txt
+            echo "    … y acabó así:"
+            tail -5 ventana.txt
             exit 1
           fi
           echo "— los auxiliares que ha lanzado —"; printf '    %s\n' $rutas
