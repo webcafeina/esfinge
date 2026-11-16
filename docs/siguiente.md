@@ -47,17 +47,22 @@ Firefox, y la llave sirve desde su otro Mac.
 
 - **Traducción al inglés.** Hoy está todo en español, a propósito. Solo hace falta si el programa
   sale de la casa.
-- **Empaquetar para Homebrew** (`brew install --cask esfinge`), que exige una URL estable y firma.
-- **Compilar la aplicación para ARM64 en Windows y en Linux.** Hoy la ventana sale solo `amd64` en esos dos
-  —`darwin/universal` en macOS, así que el Mac ya va nativo—, mientras que **la línea de comandos sí cruza a
-  los seis objetivos**. Lo pidió el cliente el 2026-09-30 pensando en máquinas virtuales: en un M1 las VM
-  nativas son ARM64, y ahí **el `.deb` no instala** —declara `arch: amd64` y `dpkg` lo rechaza— aunque el
-  instalador de Windows x64 debería funcionar emulado, que Windows 11 on ARM lo hace. **No es urgente**: lo
-  eligió así, y para lo que queda por ver —el marco de Fluent, la cabecera de GNOME, el icono de los `.esf`—
-  la emulación no falsea el aspecto. Lo que costaría: **Linux ARM64** necesita un runner ARM, porque la app
-  usa cgo por WebKit y no cruza desde x86, más un `.deb` con `arch: arm64`; **Windows ARM64** hay que
-  **probarlo en el flujo de «Compilar» primero**, porque si Wails cruza a arm64 desde x64 no lo sé y es
-  justo la clase de cosa que aquí solo se descubre compilando de verdad.
+- ~~**Empaquetar para Homebrew** (`brew install --cask esfinge`), que exige una URL estable y firma.~~
+  **Hecho el 2026-11-16** (ADR 0061), y con cuatro canales más: APT y RPM propios en
+  `esfinge.webcafeina.com`, el tap con la fórmula y el cask, Chocolatey y el PKGBUILD de Arch. Lo de
+  «exige firma» era verdad a medias: el cask **le quita la cuarentena** al instalar, que es lo que
+  hace que una aplicación sin firmar abra en macOS.
+- ~~**Compilar la aplicación para ARM64 en Windows y en Linux.**~~ **Hecho entre el 2026-11-12 y el
+  2026-11-16** (ADR 0061), y con ello todo lo que arrastraba. Lo que decía esta entrada se cumplió
+  casi palabra por palabra: **Linux ARM64 necesitaba un runner ARM** —los hay, gratis para
+  repositorios públicos— y **el `.deb` con `arch: arm64`**, que era lo que `dpkg` rechazaba; y
+  **Windows ARM64 había que probarlo en «Compilar» primero**, que es lo que se hizo en la fase 1
+  antes de publicar nada, y contestó las tres preguntas que podían reordenar el plan: Wails **sí**
+  compila `windows/arm64`, las imágenes ARM traen `webkit2gtk-4.1`, y la máquina de Windows ARM
+  **trae NSIS** mientras la de x64 no. De 28 adjuntos a 37.
+
+  Y lo que esta entrada **no** veía: que el día del primer `.rpm` a una Fedora se le habría ofrecido
+  un `.deb`, porque la pregunta que había era «¿vengo de un paquete?» y no «¿de cuál?» (ADR 0060).
 
 ## Cerrado
 

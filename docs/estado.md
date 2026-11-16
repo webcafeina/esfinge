@@ -1,232 +1,70 @@
 # Estado
 
-Última actualización: **2026-11-13**
+Última actualización: **2026-11-16**
 
-## Lo último grande: Esfinge en los seis objetivos y en los canales (2026-11-12)
+## Lo último grande, hecho: los seis objetivos y los canales (2026-11-16)
 
-**Cinco de las siete fases hechas, y la 2.65.0 publicándose ahora mismo.** Cierra
-[`siguiente.md`](siguiente.md) y es lo último grande del proyecto. **El plan entero, con sus fases y sus
-riesgos, está en `~/.claude/plans/vamos-a-realizar-un-precious-adleman.md`.**
+**Las seis fases publicadas, de la 2.62.0 a la 2.66.1.** Es lo último grande del proyecto y cierra
+[`siguiente.md`](siguiente.md). La ficha entera es la [ADR 0061](adr/0061-las-arquitecturas-y-los-canales.md),
+y el catálogo de nombres que lo hizo posible la [0060](adr/0060-un-nombre-por-adjunto-y-un-solo-sitio.md).
+
+**De 28 adjuntos a 37, y de ningún canal a cinco.** Hoy Esfinge se instala con `apt`, con `dnf`, con
+`brew`, con `choco` y con `makepkg`, además de bajando un fichero.
 
 ### Lo primero al retomar
 
-**Las fases 0 a 4 están publicadas y el VPS al día.** La fase 4 salió en la **2.65.3**, con los 37
-adjuntos, y lo que queda son las fases **5** (los canales) y **6** (la ADR 0061 y los tachados).
+**Lo que queda es de máquinas de verdad, y es del cliente.** Todo lo de aquí está comprobado en
+contenedores amd64 y en los corredores de GitHub; **nadie ha instalado desde un canal en un equipo
+físico**. En sus cuatro VM y su Mac:
 
-**La fase 4 costó cuatro intentos de publicar**, y los tres primeros se cayeron por tres causas
-distintas —abajo, cada una con lo que deja escrito—. Las tres veces `publicar` no llegó a correr, así que
-**no salió nada a medias** ninguna de ellas: la puerta es todo o nada. Quedan **tres etiquetas huérfanas**
-en GitHub —`v2.65.0`, `v2.65.1` y `v2.65.2`—, sin publicación detrás; se pueden borrar cuando se quiera
-(`git tag -d vX && git push origin :refs/tags/vX`) y se dejaron porque borrar una etiqueta remota es
-destructivo y lo decide una persona.
-
-**Lo que la fase 4 dejó comprobado en producción**: las dos AppImage —87 y 81 MiB, el orden de la de Apolo—
-y el humo diciendo en **las dos arquitecturas** que en una máquina sin WebKitGTK instalado no le falta nada
-a la ventana salvo el driver gráfico. Y el VPS en la 2.65.3, leyendo «Tempero» con las siete huellas
-iguales que antes.
-
-### Las tres causas de las tres caídas, que es lo que de verdad hay que leer
-
-**1 · Un fichero de más en la raíz** (`v2.65.0`). `go build -o esfinge-mcp` murió con «already exists and
-is not an object file»: probando el guion de la AppImage, un contenedor tenía el repositorio montado **con
-escritura** y dejó tres binarios de mentira, como root — y `.gitignore` nombraba **dos de los tres**, así
-que `git add -A` se llevó uno. Cerrado con los tres nombres y sus dos formas, y
-`TestLosTresBinariosSeIgnoran`, que compara esa lista con la de `internal/adjuntos`.
-
-**2 · Mi propia comprobación, probada con el argumento que no usa producción** (`v2.65.1`). La AppImage se
-armó bien y murió el paso de mirar qué lleva dentro: resolvía la ruta absoluta **dentro del subshell,
-después del `cd`**, así que con un `$salida` relativo —lo que pasa el flujo— `dirname` daba «.», que ya era
-el directorio temporal. Aquí se había probado **con una ruta absoluta**, el único caso que no falla. Ahora
-se prueba con nombre relativo desde la raíz, como lo llama el flujo. **Y del mismo registro salió lo que no
-se estaba mirando**: `appimagetool` se bajaba el `runtime` él solo, de una etiqueta rodante y sin comprobar
-nada — y es **lo primero que se ejecuta** en el equipo de quien abre la AppImage. Ahora va con su suma como
-las otras tres piezas y armar ya no toca la red.
-
-**3 · Y una prueba de interfaz que destapó un fallo de producto** (`v2.65.2`). **La banda de «hay versión
-nueva» se reabría sola después de cerrarla.** Entra por tres caminos y dos son pasivos —el aviso de la
-comprobación de fondo y la pregunta de «¿hay algo pendiente?» al montar—, así que una respuesta pedida
-**antes** del clic puede llegar **después** y volver a abrir lo que la persona acababa de cerrar. Aquí no se
-veía nunca, porque todo llega antes del clic; en la máquina de la publicación, cargada, llega después. Es la
-familia de las preferencias —«una respuesta que llega tarde deshace lo que ya se decidió»—, cerrada igual:
-lo descartado se recuerda, **en un solo sitio** del que preguntan los dos caminos pasivos, y **en una `ref`
-y no en un estado**, porque el oyente se registra al montar y un estado quedaría capturado en su valor
-inicial. Pedirlo a mano sí la vuelve a enseñar.
-
-Y lo de método, que es lo que vale de las tres: **las tres se cayeron en sitios que ninguna de las tres
-puertas de aquí mira** —lo que haya suelto en la raíz, el argumento que pasa el flujo, y una carrera que
-solo pierde una máquina cargada—. La tercera ya no depende de la suerte: la prueba **provoca el aviso
-tardío** con un `_novedad` que solo existe tras la etiqueta `dev`, con el mismo argumento que `_llavero` y
-`_excluir`.
-
-### Lo que el cliente decidió, y no se vuelve a discutir
-
-Alcance máximo —matriz **y** canales—; los dos instaladores de Windows **se renombran** aceptando que las
-instalaciones anteriores pierdan la autoactualización una vez; los repos en **`esfinge.webcafeina.com`**;
-**clave GPG propia de Esfinge**, guardada como las de Apolo; una línea en el `LICENSE` que permita los
-canales de la casa; y **AppImage autosuficiente, arreglando además la ruta del MCP** —que en Apolo es deuda
-abierta—.
-
-### Fase 0 (2.62.0) · el catálogo, y el que elige
-
-**El catálogo de adjuntos** (`internal/adjuntos`), único sitio donde se dice cómo se llama cada fichero que
-se publica. Vivían en siete sitios. En Go por la lección de `zip`: es lo único que seguro está en las cinco
-máquinas que publican.
-
-**Y con él, el fallo que esperaba al primer `.rpm`**: `instaladoConPaquete()` preguntaba «¿vengo de un
-paquete?» cuando hace falta saber **de cuál** —los binarios del `.deb` y del `.rpm` viven los dos en
-`/usr/bin`—, así que a una Fedora se le habría ofrecido un `.deb`. Ahora cada paquete deja escrito su gestor
-en `/usr/share/esfinge/gestor`. **Ocho mutaciones, ocho rojas.**
-
-### Fase 1 · compilar los cinco, sin publicar nada
-
-«Compilar» pasó de tres patas a cinco, con runners nativos. Las cinco en verde
-(`gh run view 43227916711`), y contestó lo que venía a contestar: **Wails compila `windows/arm64`**, las
-imágenes ARM traen `webkit2gtk-4.1`, y **la máquina de Windows ARM trae NSIS** en
-`/c/Program Files (x86)/NSIS` —la de x64 no, y se lo baja—. De ahí salió una regla: **`command -v` contesta
-«¿está en el PATH?», no «¿está en esta máquina?»**.
-
-### Fase 2 (2.63.0) · los dos Windows y los dos Linux
-
-Los trabajos `windows` y `linux` pasan a matriz de dos, con `fail-fast` apagado. Instalador de Windows
-arm64, `.deb` de arm64 —`nfpm.yaml` llevaba `arch: amd64` a fuego, así que `dpkg` lo rechazaba en una
-máquina ARM—, `tar.gz` y `.mcpb` por objetivo. **Los dos instaladores renombrados** con su arquitectura
-dentro, gastando a propósito la garantía del buscar por sufijo. 33 adjuntos.
-
-El `.deb` de arm64 **disecado en esta máquina**: `Architecture: arm64`, los cuatro binarios ELF aarch64 y
-el `postinst` dejando escrito `deb`.
-
-### Fase 3 (2.64.0) · el `.rpm`, y con él el gestor
-
-`nfpm` escribe el `.rpm` del mismo fichero, con `overrides: rpm:` para lo único que cambia: `webkit2gtk4.1`
-y `gtk3`, sin el guion de Debian. **Copiados de la ADR 0030 de Apolo, que los midió.** Y su propio
-`postinstall`, porque ese guion corre en la máquina de quien instala: leer el gestor de una variable de
-entorno habría dejado el `.rpm` diciendo «deb». Dos ficheros que solo se diferencian en esa palabra, con una
-prueba que los compara línea a línea. 35 adjuntos.
-
-**Y un trabajo de humo antes de publicar**, que es lo que de verdad dice que el `depends` era el bueno:
-Fedora 41 instala el `.rpm` y Debian 13 el `.deb`, **en los dos arcos**, sin ninguna biblioteca sin resolver
-y comprobando el gestor escrito. Un paquete que no instala no llega a la página de descargas. Las dos patas
-pasaron en la publicación: **la primera vez que un paquete de esta casa se instala en un Linux ARM.**
-
-### Fase 4 (2.65.0, publicándose) · AppImage autosuficiente y la ruta del MCP
-
-**La AppImage lleva WebKitGTK dentro**, que es lo que la hace servir en una distribución que no lo
-empaquete: unos 70 MiB más, el orden de la de Apolo —98 frente a 26 de su `.deb`—, y lo eligió el cliente
-con eso delante. La arma `empaquetado/linux/armar-appimage.sh`, que se lanza igual aquí y en la publicación,
-como `armar-dmg.sh`.
-
-**Lo que costó, y hay que no olvidar**: las bibliotecas no eran la parte difícil. **WebKitGTK arranca
-procesos auxiliares que no son dependencias dinámicas de nadie** —`WebKitWebProcess`,
-`WebKitNetworkProcess`, `WebKitGPUProcess`: no salen en ningún `ldd`, así que ni `linuxdeploy` ni su plugin
-los copian— y sin ellos **la ventana abre en blanco**, que es el fallo que más se parece a «el programa está
-roto». Van a mano con su `WEBKIT_EXEC_PATH`, y **dónde viven está medido** en un contenedor de Ubuntu 24.04:
-en Debian y Ubuntu es `/usr/lib/<triplete>/webkit2gtk-4.1/`, no `/usr/libexec` como dicen las guías.
-
-**Las tres herramientas se pueden fijar**, que no era obvio: `appimagetool` y `linuxdeploy` publican una
-etiqueta rodante «continuous» —una dependencia que puede tirar una publicación cualquier martes— **pero las
-dos tienen además etiquetas con fecha**, inmutables (`1.9.1` y `1-alpha-20251107-1`), y el plugin de GTK va
-por su commit, inmutable por construcción. Del origen, con su suma y por `reintentar.sh`.
-
-**Y la ruta del servidor MCP, que era deuda abierta de Apolo.** En una AppImage el binario vive en un
-montaje de `/tmp` con otro nombre en cada arranque, así que lo que se pega en Claude Desktop **caduca al
-cerrar Esfinge** y el fallo es mudo: allí dice «el servidor no arranca» y nadie lo relaciona con esto. Ahora
-se deja una copia en `~/.local/bin` y se da ésa. **Y ese sitio lo dice el código, no el plan**:
-`mcpb.DondeBuscarElServidor` ya busca ahí, así que dejarla en nuestra carpeta de configuración —que fue la
-primera idea— habría dejado al relevo del `.mcpb` sin encontrar nunca a quien use la AppImage. Si no se
-puede copiar, **se dice en la pantalla**: dar una ruta que va a dejar de valer es peor que no dar ninguna.
-
-**Y un tercer modo de instalación, «a mano»** (`ModoAMano`). Para una AppImage el botón decía «Abrir el
-instalador» y hacía `xdg-open` **del propio fichero**: eso arranca una segunda Esfinge y la que se está
-usando sigue siendo la vieja. Ahora abre la carpeta y dice que reemplace con ella la que usa.
-
-**Comprobado aquí, no solo compilado**: la AppImage armada y abierta en un Ubuntu 24.04 de verdad, con un
-programa enlazado contra WebKitGTK haciendo de ventana —73 MiB, 157 bibliotecas dentro, los auxiliares en su
-sitio con su gancho— y un `ldd` en esta máquina, que **no tiene WebKitGTK**, donde lo único sin resolver es
-`libEGL`: la que tiene que ser del equipo que la ejecuta. Eso último lo vuelve a comprobar el humo en el
-corredor pelado, y el cheque **se mutó apartando la biblioteca de dentro**.
-
-**Seis protecciones nuevas, seis mutaciones rojas.** Dos se quedaron en verde a la primera, y las dos por
-causas que ya están escritas en este proyecto: una prueba que **mi propio filtro `-run` no ejecutaba** —una
-búsqueda truncada no es una ausencia— y otra cuyo caso límite **no puede ocurrir donde corre**, porque sin
-`APPIMAGE` las dos ramas dan lo mismo: la familia de `soloLectura`. Esa segunda **lee el fuente** y exige que
-la ruta de los cuatro bloques salga de un solo sitio.
-
-**Lo que se decidió no hacer, con el motivo corregido**: una AppImage **sí puede** reemplazarse sola —el
-montaje es de solo lectura, pero el fichero `.AppImage` es un fichero normal del usuario y renombrar encima
-funciona incluso mientras corre, que es lo que hace Apolo—. El plan decía lo contrario y era falso. Está en
-[`deuda.md`](deuda.md) con lo que costaría; **se decide con el cliente**.
-
-### Fase 5, lo siguiente · los canales (nada empezado; el lunes se sigue por aquí)
-
-Lo que más puede torcerse, y **lo único del proyecto que depende de cosas que no están en este equipo.**
-
-**Lo primero es el `LICENSE`**, porque sin eso el AUR y Chocolatey contradicen la propia licencia. El texto
-**está redactado y pendiente de que el cliente lo apruebe** —se le enseñó el 2026-11-13 y la sesión se cerró
-antes de su respuesta—. Dice así, para añadir antes de la línea de contacto:
-
-```
-Y una excepción expresa, para que Esfinge se pueda instalar como se instala
-cualquier otro programa (2026-11-13):
-
-  - Webcafeína distribuye Esfinge sin modificar por sus propios canales
-    —su publicación de GitHub, esfinge.webcafeina.com y las tiendas de
-    extensiones—, incluidos los índices de paquetes que firma y publica.
-
-  - Y se permite publicar y usar RECETAS que bajen el programa de la publicación
-    oficial de Webcafeína y lo instalen SIN MODIFICARLO: un PKGBUILD del AUR, una
-    fórmula de Homebrew, un paquete de Chocolatey o lo equivalente en otro gestor.
-    Lo que la receta instale tiene que ser el fichero oficial, con su suma
-    comprobada; y la receta no puede cambiar el programa, ni quitarle avisos, ni
-    dar a entender que lo publica otro.
-
-    Rehacer el paquete en el equipo de quien instala —lo que hace «makepkg» con un
-    .deb nuestro— entra en esta excepción. Modificar el programa, no.
-```
-
-**No amplía nada más**: sigue sin poderse usar el código en otro programa, ni publicar obras derivadas, ni
-explotarlo comercialmente. Solo el camino «bájalo de donde lo publicamos e instálalo tal cual».
-
-**Y cuatro cosas que no están en mi mano**, que es lo que hay que resolver con el cliente antes de que la
-fase pueda salir entera:
-
-| Qué | Estado |
+| Dónde | Qué |
 |---|---|
-| **Clave GPG propia de Esfinge** | Se puede generar aquí, con contraseña **hexadecimal** guardada en la bóveda, y meter la privada y la frase en los secretos de GitHub **sin que el valor pase por ninguna conversación**. Pero crear una clave de firma de paquetes la aprueba el cliente, y hay que decidir **dónde va la copia de fuera del equipo** —las de Apolo están en `~/.config/apolo/claves/`— |
-| **DNS** | El CNAME de `esfinge.webcafeina.com`, en Cloudflare. Es del cliente |
-| **AUR** | Una clave SSH y la cuenta, que ya existe porque hay `apolo-bin` |
-| **Homebrew y Chocolatey** | El repositorio `webcafeina/homebrew-esfinge` y una clave de API de Chocolatey |
+| Ubuntu ARM | `apt install esfinge` desde el repositorio, y la AppImage |
+| Fedora ARM | `dnf install esfinge` desde el repositorio |
+| Arch ARM | `makepkg -si` con el PKGBUILD de `esfinge.webcafeina.com/aur/PKGBUILD` |
+| Windows 11 ARM | El instalador de arm64, `choco install esfinge` cuando lo aprueben, y **el icono de los `.esf`** |
+| Su Mac | El DMG universal y `brew install webcafeina/esfinge/esfinge` (y `--cask`) |
 
-**Lo que se puede escribir sin nada de eso** —y es la mitad de la fase—: el `LICENSE`, el PKGBUILD, la
-fórmula, el paquete de Chocolatey, los pasos de `web.yml` para `/apt` (`apt-ftparchive`,
-`Architectures=amd64 arm64`, `InRelease` y `Release.gpg`, `esfinge.sources` en deb822) y `/rpm`
-(`createrepo_c`, `repomd.xml.asc`, `esfinge.repo` con `gpgcheck` y `repo_gpgcheck`), el enganche con
-`needs:` dentro de `publicar.yml` y el paso final que comprueba los canales. Los tres paquetes leen
-`catalogo json`.
+**Y el icono de los `.esf` sigue siendo lo único sin verificar de todo el proyecto**, en Windows y en
+Linux.
 
-**El riesgo que el diseño ya cazó y hay que no olvidar**: `on: release: published` **no se dispara si la
-publicación la crea `GITHUB_TOKEN`** —regla de GitHub, sin excepciones—. Apolo cuelga sus canales de ese
-evento porque su Release sale como borrador y la publica una persona; Esfinge la crea ya publicada. Copiar
-sus flujos tal cual daría **cuatro workflows que nunca se ejecutan, en silencio**, con el tap sirviendo una
-versión de hace meses. Aquí van con `needs:` dentro de `publicar.yml`. Y **lo que Apolo hace mal y aquí no
-se copia**: su `homebrew.yml` sale con `exit 0` cuando el tap ya estaba en la versión, lo que tapa el caso
-«se quedó atrás y nadie se enteró»; aquí el trabajo **comprueba al final que los cuatro canales sirven la
-versión que se acaba de publicar, y falla si no**.
+### Las cinco claves, y lo que pasa si se pierden
 
-### Fase 6 · lo que queda escrito
+En `~/.config/esfinge-paquetes/claves/`, con permisos 600, y **el cliente tiene una copia fuera del
+equipo**: la GPG de los paquetes con su frase (hexadecimal), la del AUR, la del tap y la de
+Chocolatey. La carpeta está **aparte de la de la bóveda a propósito**: en un Mac `~/.config/esfinge`
+y `~/.config/Esfinge` son la misma, y la bóveda vive ahí.
 
-ADR 0061 (las arquitecturas y los canales), filas en `decisiones.md`, tachar lo que cierra de
-`siguiente.md:50-59` y la entrada de `sesiones.md`. **Hoy no hay ninguna ADR sobre arquitecturas**: el tema
-solo vive en `siguiente.md`. La 0060 (el catálogo) ya está escrita.
+**Si se pierde la GPG**, quien tenga los repositorios puestos tiene que importar la clave nueva. La
+huella de la de hoy es `A5EB6616 98A76995 110854ED E041AEF6 1C89D952`, y su pública está en el
+repositorio (`empaquetado/linux/esfinge.asc`) y en `esfinge.webcafeina.com/esfinge.asc`.
 
-### Y lo que solo puede probar el cliente, al acabar
+### Tres cosas que no se cambian sin preguntar
 
-En su Mac: el DMG universal, `brew install` y la banda tras el renombrado. **En Windows 11 ARM**: el
-instalador de arm64, el **icono de los `.esf`** —lo único sin verificar de todo el proyecto—, `choco
-install` y la pérdida de autoactualización una vez. **En Ubuntu ARM**: el `.deb`, el camino de confianza de
-APT, la cabecera de GNOME y **la AppImage**. **En Fedora ARM**: el `.rpm` y `dnf install` desde el repo. **En
-Arch ARM**: `makepkg -si`, y que la banda diga «se actualiza con tu gestor» en vez de ofrecer una descarga.
-Y nadie, dicho en voz alta: **un Windows amd64 nativo** — su instalador lo ejercita solo la máquina de
-GitHub.
+1. **Los canales cuelgan de `publicar.yml` con `needs:`**, nunca de `on: release: published`: ese
+   evento **no se dispara** cuando la publicación la crea `GITHUB_TOKEN`, así que copiar los flujos
+   de Apolo daría canales que no se actualizan nunca y en silencio. Lo vigila una prueba.
+2. **El `.rpm` va firmado**, porque su repositorio lleva `gpgcheck=1`. Sin firma, `dnf` lo rechaza —
+   pasó con el de la 2.65.3 y es lo que destapó el agujero.
+3. **El `zap` de Homebrew no se lleva la bóveda.** Son las contraseñas de alguien.
+
+### Lo que el AUR tiene pendiente, y no es nuestro
+
+**Su registro de usuarios sigue cerrado** —lo estaba ya cuando se publicó Apolo—, así que no hay
+cuenta y la clave no está registrada en ninguna. El trabajo del AUR **avisa y sale bien** mientras
+sea así, perdonando ese error y **ninguno más**, y Arch se sirve del PKGBUILD que publica la web. El
+día que abran, empieza a funcionar sin tocar una línea.
+
+### Y lo que costó, que es la mitad del valor de estas fases
+
+**Seis intentos de publicar se cayeron**, todos con el resto en verde y ninguno dejando una
+publicación a medias —la puerta es todo o nada—. Las causas están en `CLAUDE.md`, y las tres de la
+fase 4 y las tres de hoy tienen la misma forma: **cada una falló en un sitio que ninguna de las tres
+puertas de aquí mira**. Un fichero suelto en la raíz que `.gitignore` no nombraba; un guion probado
+con el único argumento que no falla; una carrera que solo pierde una máquina cargada; un trabajo que
+leía un fichero del repositorio **sin hacer `checkout`** —y Docker, cuando la ruta no existe, monta
+un directorio vacío sin decir nada—; y un entorno de despliegue que solo admitía la rama `main`
+cuando una publicación viene de una etiqueta. De las cinco, cuatro dejaron una prueba que las caza.
 
 ## La primera rotación, hecha, y el fallo que destapó (2026-11-12)
 

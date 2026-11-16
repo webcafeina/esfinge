@@ -5,6 +5,40 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-16 · Los canales, y con ellos lo último grande cerrado
+
+- **Publicadas las fases 5 y 6 en la 2.66.1**, y con ellas la ADR 0061: Esfinge se instala ya con
+  `apt`, `dnf`, `brew`, `choco` y `makepkg`. De 28 adjuntos a 37 y de ningún canal a cinco.
+- **El `LICENSE` primero**, aprobado por el cliente: permite los canales de la casa y las recetas
+  que bajen el fichero oficial y lo instalen **sin modificar**, y nada más — no amplía nada sobre
+  reutilizar el código ni redistribuir con cambios.
+- **Cinco claves nuevas**, generadas aquí y con sus secretos puestos sin que ningún valor pasara por
+  la conversación: la GPG de paquetes (RSA 4096, frase hexadecimal), la del AUR, la del tap y la de
+  Chocolatey — **que ya estaba en esta máquina** desde que se publicó Apolo, con la cuenta escrita
+  en su `lanzamiento.md`. Viven en `~/.config/esfinge-paquetes/claves/`, aparte de la carpeta de la
+  bóveda porque en un Mac `esfinge` y `Esfinge` son la misma.
+- **Y un hueco que habría salido en el primer `dnf install`**: el repositorio lleva `gpgcheck=1` y el
+  `.rpm` salía sin firmar. Lo vi probando el repositorio de verdad —`dnf` dijo «The package is not
+  signed»— y se arregló antes de que lo viera nadie.
+- **Comprobado de verdad, no por lo que diga el flujo**: `apt install` y `dnf install` **desde los
+  repositorios**, con la firma verificada y la clave importada de `gpgkey=`; el tap sirviendo la
+  fórmula y el cask de la 2.66.1; el PKGBUILD construido con `makepkg` e instalado con `pacman` en un
+  contenedor de Arch; la subida a Chocolatey aceptada; y la cadena de la firma GPG recorrida como la
+  recorre CI, verificando **con la pública sola** como hace `apt`.
+- **Tres intentos caídos, y los tres por cosas que ninguna puerta de aquí mira.** Un trabajo que leía
+  un fichero del repositorio **sin hacer `checkout`** —y Docker, cuando la ruta no existe, **monta un
+  directorio vacío** y no se queja—; el entorno `github-pages` admitiendo solo la rama `main` cuando
+  una publicación viene de una etiqueta, que falla **antes de que el trabajo empiece** y por eso no
+  deja ni registro; y el `.rpm` sin firmar de la versión anterior. Los dos primeros dejaron prueba.
+- **Lo que el cliente decidió por el camino**: no acometer ahora la estrategia de SEO y seguridad que
+  tiene la web de Apolo —va en otro plan—, y poner él mismo la regla `tag: v*` del entorno, que yo no
+  debo relajar.
+- **Queda abierto**: instalar desde los canales **en máquinas de verdad** —sus cuatro VM ARM y su
+  Mac—, el icono de los `.esf` en Windows y Linux, y que Chocolatey apruebe el paquete, que es de su
+  moderación. Y el AUR, cuando abran su registro.
+
+---
+
 ## 2026-11-13 · La fase 4 fuera, a la cuarta, y tres causas distintas
 
 - **Publicada la 2.65.3** con los **37 adjuntos**, y el VPS al día: las dos AppImage —87 y 81 MiB, el orden
