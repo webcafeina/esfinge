@@ -17,8 +17,9 @@ const (
 	// ModoSolo: Esfinge se sustituye y se reinicia. No hay nada que hacer.
 	ModoSolo Modo = "sola"
 	// ModoInstalador: hace falta el instalador del sistema, porque escribir donde
-	// vive la aplicación pide permisos que este proceso no tiene. Es el caso del
-	// .deb, que instala como root, y el de una copia en una carpeta ajena.
+	// vive la aplicación pide permisos que este proceso no tiene **y no hay forma de
+	// pedirlos**. Es el caso de una copia en una carpeta ajena, y el de un Linux sin
+	// `pkexec`; con él, un paquete se instala solo (ADR 0062).
 	ModoInstalador Modo = "instalador"
 	// ModoAMano: lo descargado **no lo instala nadie**, lo pone en su sitio una persona.
 	//
@@ -60,6 +61,14 @@ func ComoSeInstala() Modo {
 		if enUnaAppImage() {
 			return ModoAMano
 		}
+		// **Y un paquete sí se instala solo, desde la 2.68.0** (ADR 0062): `pkexec` pide
+		// la autorización al escritorio y el gestor de paquetes hace el resto, así que
+		// aquí la banda puede decir «Instalar y reiniciar» y que sea verdad. Si falta
+		// `pkexec` o el gestor no se reconoce, se cae a lo de siempre: bajar el paquete y
+		// dárselo al sistema.
+		if sePuedeInstalarSola() {
+			return ModoSolo
+		}
 		return ModoInstalador
 	}
 }
@@ -88,6 +97,8 @@ func Instalar(ruta string) error {
 			return reemplazarseEnMac(ruta)
 		case "windows":
 			return reemplazarseEnWindows(ruta)
+		default:
+			return instalarPaqueteDeLinux(ruta)
 		}
 	case ModoAMano:
 		// **La carpeta, no el fichero.** Abrir el fichero sería arrancar una segunda

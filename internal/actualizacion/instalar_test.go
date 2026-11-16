@@ -43,15 +43,22 @@ func TestSinPaqueteNoHayNadaQueReemplazar(t *testing.T) {
 	}
 }
 
-// En Linux se instala con el gestor de paquetes: pedir escribir en /usr/bin
-// desde la aplicación sería pedir la contraseña de root para algo que el sistema
-// ya sabe hacer.
-func TestEnLinuxSeUsaElInstaladorDelSistema(t *testing.T) {
+// Quien no viene de un paquete —el tar.gz puesto a mano en una carpeta— pasa por el
+// instalador del sistema, aunque la máquina tenga pkexec y apt: no hay nada que un gestor
+// de paquetes pueda actualizar ahí.
+//
+// Esta prueba **fija lo que hay en la máquina** en vez de mirarlo. Antes decía «en Linux se
+// usa el instalador» y pasaba en verde en este VPS por una casualidad: aquí no hay pkexec.
+// El día que lo hubiera, habría seguido en verde o se habría caído sin que su texto
+// explicara nada.
+func TestSinVenirDeUnPaqueteSeUsaElInstaladorDelSistema(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("solo en Linux")
 	}
-	if ComoSeInstala() != ModoInstalador {
-		t.Error("en Linux la actualización pasa por el instalador del sistema")
+	conGestor(t, "")
+	conProgramas(t, "pkexec", "apt-get", "dpkg")
+	if m := ComoSeInstala(); m != ModoInstalador {
+		t.Errorf("sin paquete detrás el modo es «%s» y tenía que ser «%s»", m, ModoInstalador)
 	}
 }
 
@@ -68,16 +75,18 @@ func TestDesdeUnaAppImageLaActualizacionSePoneAMano(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("solo en Linux")
 	}
+	conGestor(t, "deb")
+	conProgramas(t, "pkexec", "apt-get")
 	t.Setenv("APPIMAGE", "/home/quien-sea/Aplicaciones/Esfinge-2.65.0-x86_64.AppImage")
 	if m := ComoSeInstala(); m != ModoAMano {
 		t.Errorf("desde una AppImage el modo es «%s» y tiene que ser «%s»", m, ModoAMano)
 	}
 
-	// Y sin esa variable vuelve a ser el del gestor de paquetes: lo que distingue los dos
-	// casos es de dónde viene la copia, no el sistema.
+	// Y sin esa variable, la misma máquina se instala sola: lo que distingue los dos casos
+	// es de dónde viene la copia, no el sistema.
 	t.Setenv("APPIMAGE", "")
-	if m := ComoSeInstala(); m != ModoInstalador {
-		t.Errorf("sin AppImage el modo es «%s» y tiene que ser «%s»", m, ModoInstalador)
+	if m := ComoSeInstala(); m != ModoSolo {
+		t.Errorf("sin AppImage el modo es «%s» y tiene que ser «%s»", m, ModoSolo)
 	}
 }
 

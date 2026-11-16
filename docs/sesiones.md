@@ -61,6 +61,27 @@ Plantilla al final.
 - **Queda abierto**: esa lista entera, la pantalla en blanco de la AppImage, que Chocolatey apruebe
   el paquete y el AUR cuando abran su registro.
 
+**Y por la tarde se cerró la pantalla en blanco, que era lo único abierto.** Se vio en su VM —ya
+**26.10**, más nueva aún que la 26.04 donde falló la primera vez— con un síntoma nuevo y mejor: el
+`WebKitWebProcess` **abortando**. Lo que separó las dos familias posibles no fue razonar sino
+comparar: en la misma máquina, el `esfinge-gui` del `.deb` abría bien y la AppImage no, así que no
+era cosa de la VM. La causa salió de **medir** —`strace` sobre la AppImage y `strings` sobre la
+biblioteca—, después de dos hipótesis mías falsas: **WebKit arranca sus auxiliares por una ruta
+absoluta compilada dentro de libwebkit**, así que los de dentro estaban sin usarse, y
+`WEBKIT_EXEC_PATH`, que el gancho exportaba para redirigirlo, **no existe** en la biblioteca que
+empaquetan las distribuciones. Lo cierra `empaquetado/linux/webkit-de-dentro.c`. **2.67.1 y 2.67.2**:
+la primera se cayó por dos fallos míos en la comprobación nueva —le faltaba `libgles2`, que va fuera
+de la AppImage a propósito, y el diagnóstico imprimía las últimas líneas, que con un pánico de Go son
+el volcado de registros—, y en vez de adivinar con otra publicación **se reprodujo el entorno del
+corredor en un contenedor**. La 2.67.2 salió entera y el cliente confirmó la ventana en su VM.
+
+**Y de ahí salió la decisión del día, que es lo que queda a medias.** Al preguntar si Esfinge se
+actualiza sola desde la ventana como Apolo, la respuesta era que no —y **la razón escrita en la ADR
+0016 no se sostenía**—. Lo eligió con las opciones delante: *«Quiero que haga lo mismo que Apolo»*.
+Está la [ADR 0062](adr/0062-actualizarse-sola-en-linux.md), el Go hecho, probado por tabla y mutado,
+y **sin publicar**: falta mirar la banda en la ventana, la puerta entera y la etiqueta. Lo que la
+hace de verdad es verla funcionar en una máquina, que está en `deuda.md`.
+
 ---
 
 ## 2026-11-13 · La fase 4 fuera, a la cuarta, y tres causas distintas

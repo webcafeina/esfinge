@@ -475,6 +475,15 @@ No se cambian sin preguntar.
   proceso muera. En Linux no: el `.deb` instala como root (ADR 0016). Firmar con Apple no tiene nada
   que ver con esto —evita el aviso de Gatekeeper, no habilita el reemplazo—, y darlo por hecho fue
   el error de la 0014.
+- **Y desde la 2.68.0 también en Linux, si vino de un paquete** (ADR 0062, pedido por el cliente el
+  2026-11-16 comparando con Apolo). La razón que la 0016 daba —«el paquete instala como root»— **no
+  se sostenía**: para eso está `pkexec`, que pide la autorización al escritorio. Lo que no se cambia
+  sin preguntar: **la orden sale por tabla** del gestor y de lo que haya instalado, con `apt-get` y
+  `dnf` por delante del instalador crudo porque una versión nueva puede traer una dependencia nueva;
+  **se instala con la ventana abierta**, para que el diálogo de contraseña no quede huérfano;
+  **cancelar se dice con palabras** y no como «exit status 126»; y **sin `pkexec` se cae a lo de
+  antes**. Da igual que se instalara con el paquete suelto o desde el repositorio. **La AppImage
+  sigue sin reemplazarse sola** y en Arch no se toca nada.
 
 - **Y va a haber cuentas** (ADR 0035, plan en `docs/cuentas.md`): la bóveda en todos los equipos con un
   servidor nuestro en **Cloudflare UE que no puede leer nada**, compartir **copias sin permisos** con otras
