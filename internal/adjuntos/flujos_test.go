@@ -294,3 +294,101 @@ func TestLosCanalesCuelganDeLaPublicacionYNoDelEvento(t *testing.T) {
 		t.Error("publicar.yml llama a los flujos de fuera sin esperar a que la publicación exista")
 	}
 }
+
+// TestTodoTrabajoQueLeeDelRepositorioHaceCheckout, que es de las que nacen de una publicación
+// caída.
+//
+// Al trabajo de humo se le añadió el cheque de la firma del `.rpm`, que monta en el contenedor la
+// clave pública del repositorio — y **ese trabajo no hacía `checkout`**: solo bajaba artefactos, y
+// nunca le había hecho falta. **Docker no avisa de eso**: cuando la ruta del anfitrión no existe,
+// crea un directorio vacío y lo monta igual, así que dentro había una carpeta donde se esperaba una
+// clave y lo que salió fue «import read failed(1)», que no se parece a la causa. Tiró la 2.66.0.
+//
+// Así que aquí se afirma lo que se puede afirmar leyendo los flujos: **si un trabajo nombra un
+// fichero del repositorio, tiene que traerse el repositorio**.
+func TestTodoTrabajoQueLeeDelRepositorioHaceCheckout(t *testing.T) {
+	// Las carpetas del repositorio que un paso puede querer leer. No se buscan rutas en general
+	// —«paquetes/» o «_site/» las crea el propio flujo—, solo lo que existe en git.
+	carpetas := regexp.MustCompile(`(?:\./)?(empaquetado|herramientas|internal|build|frontend|navegador|web|cmd|docs)/[A-Za-z0-9._/-]+`)
+
+	flujos, err := filepath.Glob("../../.github/workflows/*.yml")
+	if err != nil || len(flujos) == 0 {
+		t.Fatalf("no encuentro los flujos: %v", err)
+	}
+	mirados := 0
+	for _, f := range flujos {
+		crudo, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Se parte por trabajo con el propio texto: los flujos llevan comentarios largos entre
+		// medias y lo que importa es qué nombra cada bloque.
+		for _, bloque := range enTrabajos(string(crudo)) {
+			if bloque.pasos == "" {
+				continue
+			}
+			nombradas := map[string]bool{}
+			for _, l := range strings.Split(bloque.pasos, "\n") {
+				limpia := strings.TrimSpace(l)
+				if strings.HasPrefix(limpia, "#") {
+					continue
+				}
+				for _, m := range carpetas.FindAllString(limpia, -1) {
+					nombradas[m] = true
+				}
+			}
+			if len(nombradas) == 0 {
+				continue
+			}
+			mirados++
+			if !strings.Contains(bloque.pasos, "actions/checkout") && !strings.Contains(bloque.pasos, "uses: ./") {
+				var cuales []string
+				for n := range nombradas {
+					cuales = append(cuales, n)
+				}
+				sort.Strings(cuales)
+				t.Errorf("%s · el trabajo «%s» nombra %v y no hace checkout: Docker montaría un directorio vacío ahí sin decir nada", filepath.Base(f), bloque.nombre, cuales)
+			}
+		}
+	}
+	if mirados == 0 {
+		t.Fatal("no he encontrado ningún trabajo que lea del repositorio: esta prueba no está comprobando nada")
+	}
+}
+
+type trabajoDelFlujo struct {
+	nombre string
+	pasos  string
+}
+
+// enTrabajos parte un flujo en sus trabajos por la sangría, que es lo único que los separa sin
+// interpretar el YAML entero —y hace falta el texto crudo, porque los comentarios cuentan—.
+func enTrabajos(texto string) []trabajoDelFlujo {
+	var out []trabajoDelFlujo
+	dentro := false
+	actual := trabajoDelFlujo{}
+	for _, l := range strings.Split(texto, "\n") {
+		if strings.HasPrefix(l, "jobs:") {
+			dentro = true
+			continue
+		}
+		if !dentro {
+			continue
+		}
+		// Un trabajo empieza con exactamente dos espacios y acaba en «:».
+		if m := regexp.MustCompile(`^  ([a-zA-Z0-9_-]+):\s*$`).FindStringSubmatch(l); m != nil {
+			if actual.nombre != "" {
+				out = append(out, actual)
+			}
+			actual = trabajoDelFlujo{nombre: m[1]}
+			continue
+		}
+		if actual.nombre != "" {
+			actual.pasos += l + "\n"
+		}
+	}
+	if actual.nombre != "" {
+		out = append(out, actual)
+	}
+	return out
+}

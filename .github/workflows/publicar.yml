@@ -670,6 +670,17 @@ jobs:
             os: ubuntu-24.04-arm
     runs-on: ${{ matrix.os }}
     steps:
+      # **El repositorio, porque este trabajo lee un fichero de él**: la clave pública con la que
+      # se comprueba la firma del .rpm.
+      #
+      # Costó una publicación. Este trabajo no hacía `checkout` —no le hacía falta, solo bajaba
+      # artefactos—, y al añadir el cheque de la firma le puse un `-v .../esfinge.asc:/esfinge.asc`
+      # dando por hecho que el fichero estaba. **Docker no se queja de eso**: cuando la ruta del
+      # anfitrión no existe, **crea un directorio vacío** y lo monta, así que dentro había una
+      # carpeta donde se esperaba una clave y `rpm` dijo «import read failed(1)», que no se parece
+      # a la causa. Lo vigila una prueba que recorre los flujos y exige `checkout` a todo trabajo
+      # que nombre un fichero del repositorio.
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { name: "linux-${{ matrix.arq }}", path: paquetes }
 
