@@ -455,7 +455,18 @@ jobs:
       matrix:
         include:
           - arq: amd64
-            os: ubuntu-latest
+            # **Fijada, y a la más vieja que hay.** `ubuntu-latest` ya es **26.04**, y eso no es un
+            # detalle: todo lo que se empaqueta aquí se enlaza contra las bibliotecas de esta
+            # máquina, así que la AppImage salía pidiendo **GLIBC_2.43** y solo servía en Ubuntu
+            # 26.04 — justo lo contrario de para lo que existe—. Y peor: la pata de ARM corre en
+            # `ubuntu-24.04-arm` porque no hay `ubuntu-latest-arm`, así que **las dos
+            # arquitecturas se empaquetaban en Ubuntu distintos** y llevaban dentro glib distinta.
+            # Lo vio el cliente en su VM: la de ARM cargaba su `gvfs` de 26.04 dentro de nuestra
+            # glib de 24.04 y reventaba con un símbolo que no existe.
+            #
+            # 22.04 ya no está —GitHub la retiró—, así que 24.04 es el suelo disponible: glibc
+            # 2.39, que cubre Debian 13, Ubuntu 24.04 y Fedora 40 en adelante.
+            os: ubuntu-24.04
           # **La misma distribución que la otra pata, a propósito** (24.04): así las dos
           # llevan el mismo WebKit y el mismo suelo de glibc, y una diferencia entre ellas
           # no puede ser de la distribución. Probada en «Compilar» antes de que ninguna
@@ -665,7 +676,18 @@ jobs:
       matrix:
         include:
           - arq: amd64
-            os: ubuntu-latest
+            # **Fijada, y a la más vieja que hay.** `ubuntu-latest` ya es **26.04**, y eso no es un
+            # detalle: todo lo que se empaqueta aquí se enlaza contra las bibliotecas de esta
+            # máquina, así que la AppImage salía pidiendo **GLIBC_2.43** y solo servía en Ubuntu
+            # 26.04 — justo lo contrario de para lo que existe—. Y peor: la pata de ARM corre en
+            # `ubuntu-24.04-arm` porque no hay `ubuntu-latest-arm`, así que **las dos
+            # arquitecturas se empaquetaban en Ubuntu distintos** y llevaban dentro glib distinta.
+            # Lo vio el cliente en su VM: la de ARM cargaba su `gvfs` de 26.04 dentro de nuestra
+            # glib de 24.04 y reventaba con un símbolo que no existe.
+            #
+            # 22.04 ya no está —GitHub la retiró—, así que 24.04 es el suelo disponible: glibc
+            # 2.39, que cubre Debian 13, Ubuntu 24.04 y Fedora 40 en adelante.
+            os: ubuntu-24.04
           - arq: arm64
             os: ubuntu-24.04-arm
     runs-on: ${{ matrix.os }}

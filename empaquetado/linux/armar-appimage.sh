@@ -205,6 +205,40 @@ if [ -d "$libexec/injected-bundle" ]; then
   cp "$libexec/injected-bundle/"*.so "$destino_libexec/injected-bundle/"
 fi
 
+# ---------------------------------------------------------------- los módulos de gio
+
+# **Y los módulos de gio dentro, con su variable.**
+#
+# Sin esto, glib carga los **del sistema de quien la ejecuta** dentro de **nuestra glib**, y si su
+# sistema es más nuevo revienta: lo vio el cliente en una Ubuntu 26.04 con la AppImage de ARM
+# —empaquetada en 24.04—, con un «libgvfscommon.so: undefined symbol:
+# g_variant_builder_init_static», que es un símbolo que su glib tiene y la nuestra no.
+#
+# Así que se copian los nuestros y se apunta GIO_MODULE_DIR ahí. Y si no hubiera ninguno, la
+# variable se pone igual **a una carpeta vacía**: lo que hace falta es que glib **no** vaya a
+# buscarlos a /usr. Lo que se pierde con ello es gvfs, que sirve para montar sistemas de ficheros
+# remotos en los diálogos; Esfinge abre y guarda ficheros locales, así que no lo usa.
+giomod=""
+for d in /usr/lib/*/gio/modules; do
+  [ -d "$d" ] && { giomod="$d"; break; }
+done
+if [ -n "$giomod" ]; then
+  mkdir -p "$appdir$giomod"
+  cp -a "$giomod/." "$appdir$giomod/" 2>/dev/null || true
+  echo "· módulos de gio: $(ls -1 "$appdir$giomod" | wc -l) ficheros"
+else
+  giomod="/usr/lib/gio/modules"
+  mkdir -p "$appdir$giomod"
+  echo "· este equipo no tiene módulos de gio; la variable apuntará a una carpeta vacía"
+fi
+
+cat > "$appdir/apprun-hooks/esfinge-gio.sh" <<HOOK
+# Los módulos de gio, los nuestros. Sin esta variable, glib carga los del sistema de quien ejecuta
+# la AppImage dentro de nuestra glib, y con un sistema más nuevo que el que la empaquetó eso falla
+# con un «undefined symbol» que no habla de nosotros.
+export GIO_MODULE_DIR="\$APPDIR${giomod}"
+HOOK
+
 # Y el gancho que le dice a WebKit dónde han quedado. Va en `apprun-hooks/`, que es lo que
 # el AppRun de linuxdeploy ejecuta antes de arrancar; el plugin de GTK pone otro al lado.
 cat > "$appdir/apprun-hooks/esfinge-webkit.sh" <<HOOK
@@ -268,6 +302,7 @@ dentro="$revisar/squashfs-root"
 falta=()
 for q in \
   apprun-hooks/esfinge-webkit.sh \
+  apprun-hooks/esfinge-gio.sh \
   apprun-hooks/linuxdeploy-plugin-gtk.sh \
   usr/bin/esfinge-gui usr/bin/esfinge usr/bin/esfinge-puente usr/bin/esfinge-mcp \
   usr/share/glib-2.0/schemas/gschemas.compiled; do

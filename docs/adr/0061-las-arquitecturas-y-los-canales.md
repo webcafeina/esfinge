@@ -72,8 +72,21 @@ habría ofrecido un `.deb`**.
   acepte, y lo que lo rechazaba cuando no lo estaba.
 - **Cada paquete deja escrito su gestor** en `/usr/share/esfinge/gestor`, y con `pacman` la banda
   dice «la instala tu gestor de paquetes» en vez de ofrecer un `.deb` que ese sistema rechaza.
-- **El suelo de glibc es el de `ubuntu-latest`** (24.04, glibc 2.39): Debian 13 y Fedora 40 en
-  adelante, no Debian 12. GitHub retiró las imágenes de 22.04, así que no había elección.
+- **El suelo de glibc es el de `ubuntu-24.04`** (glibc 2.39): Debian 13, Ubuntu 24.04 y Fedora 40
+  en adelante, no Debian 12. GitHub retiró las de 22.04, así que no había elección.
+
+  **Y esto estaba escrito mal el 2026-11-16 por la mañana**, con las dos mitades falsas: decía «el
+  de `ubuntu-latest` (24.04)», y `ubuntu-latest` **ya es 26.04** —glibc 2.43—. Lo destapó el
+  cliente probando la AppImage en su VM. De ahí salieron dos cosas: que **la AppImage de amd64
+  pedía GLIBC_2.43**, o sea que solo servía en Ubuntu 26.04 —justo lo contrario de para lo que
+  existe—, y que **las dos arquitecturas se empaquetaban en Ubuntu distintos**, porque no hay
+  `ubuntu-latest-arm` y la pata de ARM ya corría en 24.04: llevaban dentro glib distinta, y la de
+  ARM cargaba el `gvfs` de su sistema de 26.04 en nuestra glib de 24.04 y reventaba con un símbolo
+  que no existe. **Las dos patas van fijadas a 24.04 desde la 2.67.0.**
+
+  Lo que **no** cambia: nuestros propios binarios piden `GLIBC_2.34` el de la ventana y nada los
+  tres de la línea de comandos, que son estáticos. El `.deb` y el `.rpm` nunca tuvieron este
+  problema, y se comprobó mirando los símbolos de lo publicado.
 - **El AUR sigue sin cuenta**, porque su registro de usuarios está cerrado. Arch se sirve del
   PKGBUILD que publica la web, con `makepkg -si`, y el trabajo del AUR **avisa y sale bien** mientras
   sea así —perdonando ese error y ninguno más—.
