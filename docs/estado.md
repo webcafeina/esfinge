@@ -11,26 +11,34 @@ y el catálogo de nombres que lo hizo posible la [0060](adr/0060-un-nombre-por-a
 **De 28 adjuntos a 37, y de ningún canal a cinco.** Hoy Esfinge se instala con `apt`, con `dnf`, con
 `brew`, con `choco` y con `makepkg`, además de bajando un fichero.
 
-### Lo primero al retomar (2026-11-17)
+### Dónde está la verificación por sistemas (2026-11-17)
 
-**Hay trabajo escrito y comprometido que todavía no se ha publicado**, y es lo primero:
+| Sistema | Qué se ha visto |
+|---|---|
+| **Ubuntu 26.10 ARM** | `apt install` desde el repositorio, los dos iconos, la ventana, **la AppImage arreglada** y `apt upgrade` a la 2.68.0 |
+| **Fedora ARM** | `dnf install` desde el repositorio, **la clave comprobada** —huella completa, la nuestra—, el icono, la ventana y **la cabecera de GNOME** |
+| **Windows 11 ARM** | El instalador de arm64, **el marco de Fluent**, **el icono de los `.esf`** y que una instalación a mano **no deja marca de gestor** |
+| **Arch ARM** | **Pendiente**: hay que montar la VM |
+| **macOS** | **Pendiente**, lo dejó para el final |
 
-1. **Terminar y publicar la 2.68.0, que es la [ADR 0062](adr/0062-actualizarse-sola-en-linux.md)**:
-   en Linux, una copia instalada con un paquete **se actualiza sola desde la banda**, con `pkexec`,
-   como hace Apolo. Lo pidió el cliente anoche. El Go está hecho, probado por tabla y **mutado**;
-   lo que falta antes de la etiqueta es: **mirar los textos de la banda en la ventana** —ahora cae
-   en el camino de «Instalar y reiniciar», que es el de macOS, y hay que verlo con una captura—,
-   `make comprobar` y `make e2e` enteros, y publicar.
-2. **Y que el cliente lo pruebe en su VM de Ubuntu y en la de Fedora**: actualizar **desde la banda**
-   de la 2.67.2 a la 2.68.0. Hasta entonces es una pieza que pasa sus pruebas y no una funcionalidad
-   vista; está en [`deuda.md`](deuda.md) con esas palabras.
-3. **Seguir con la lista por sistemas**, que ayer se quedó en Ubuntu: **Fedora**, **Arch**,
-   **Windows 11 ARM** y **el Mac al final**, que lo dejó él para el último. Las órdenes exactas están
-   en la entrada del 2026-11-16 de [`sesiones.md`](sesiones.md).
+**Con esto, el proyecto se queda sin nada sin ver en una máquina** salvo lo que depende de
+terceros. Lo que queda abierto está en [`deuda.md`](deuda.md) y es: que `choco` o `winget` dejen la
+marca de gestor —hace falta que aprueben una versión— y **la actualización sola de Linux** (ADR
+0062), que necesita una versión **posterior a la 2.68.0** para poder ofrecerse.
 
-**Lo que ya está comprobado en su Ubuntu 26.10 ARM** (ayer, con la 2.67.2): `apt install` desde el
-repositorio, el icono de la aplicación, el icono de los `.esf`, la ventana abriendo bien y
-**la AppImage arreglada** —la que salía en blanco—.
+**Y lo visual no se toca**: lo dijo el cliente el 2026-11-17 —«todo esto de lo visual lo tocaremos
+en otra fase posterior»—. Lo que se vea raro se apunta.
+
+### Lo primero al retomar
+
+1. **Arch**, en cuanto esté la VM: `makepkg -si` con el PKGBUILD de la web, y que la banda diga
+   **«la instala tu gestor de paquetes»** sin ofrecer descarga.
+2. **El Mac**, que lo dejó para el final: `brew install webcafeina/esfinge/esfinge` y
+   `brew install --cask esfinge`.
+3. **Y la próxima versión que se publique sirve para dos cosas**: que él vea la actualización sola
+   en Ubuntu y Fedora (ADR 0062), y mandar winget otra vez — el PR de la 2.68.0 es
+   [microsoft/winget-pkgs#482164](https://github.com/microsoft/winget-pkgs/pull/482164) y lo que
+   falta es su moderación.
 
 ### Lo que dio la primera prueba en su Ubuntu ARM (2026-11-16, con la 2.66.3)
 

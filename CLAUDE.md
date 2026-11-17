@@ -2472,6 +2472,17 @@ fallos que solo salen usándolo** salieron de ahí, con la 2.59.2: un campo que 
 error que se dibujaba en otra pestaña, un botón ofrecido cuando no podía funcionar, y el registro
 reeleyéndose sólo cuando hablaba un agente.
 
-Sin verificar todavía, y es lo único que queda en todo el proyecto: **cómo quedan las estructuras de
-Windows y de GNOME** en máquinas de verdad, y ahí mismo el icono de los `.esf`, que en Windows lo
-pone el instalador y en Linux el `.deb`.
+Y el 2026-11-17 se cerró **lo último que quedaba sin ver en una máquina de verdad**, que llevaba
+meses abierto: **la cabecera de GNOME** en la Fedora ARM del cliente, **el marco de Windows** —el
+panel de Fluent con su barra de acento y su propia barra de título— en su Windows 11 ARM, y **el
+icono de los `.esf` en los tres sistemas**, que en Windows lo registra el instalador y en Linux el
+`.deb`. De paso se vio que una instalación hecha a mano **no deja marca de gestor** (ADR 0063), que
+es la mitad de esa ficha que se puede comprobar sin Chocolatey.
+
+Lo que sigue sin verse en una máquina, y no depende de nosotros: **que `choco` o `winget` dejen esa
+marca** —hace falta que sus tiendas aprueben una versión— y **la actualización sola de Linux** (ADR
+0062), que necesita una versión posterior a la 2.68.0 para poder ofrecerse.
+
+**Y lo visual no se toca por ahora**: el cliente lo dejó dicho el 2026-11-17 —«todo esto de lo
+visual lo tocaremos en otra fase posterior»—, así que lo que se vea raro se apunta y no se arregla
+sobre la marcha.
