@@ -310,7 +310,22 @@ jobs:
 
           # `submit` valida los manifiestos y abre el PR. Si falla, **esto sí para**: a
           # diferencia de Chocolatey, aquí no hay una cola ajena que lo explique.
-          .\wingetcreate.exe submit --token $env:TOKEN recetas\winget
+          #
+          # **El testigo va por el entorno y no como argumento**, que es la regla de siempre
+          # aquí: lo que se escribe en la línea queda en el registro del flujo. Y lo avisa el
+          # propio `wingetcreate` —«using the --token argument may result in the token being
+          # logged»—, que es como se vio.
+          $env:WINGET_CREATE_GITHUB_TOKEN = $env:TOKEN
+          .\wingetcreate.exe submit recetas\winget
+          # **Y mirar el código de salida, que PowerShell no para por él.** `$ErrorActionPreference`
+          # solo cubre los cmdlets: un `.exe` que devuelve 1 sigue adelante como si nada. La
+          # primera versión de esto imprimió «✓ manifiestos mandados» **sobre un envío que había
+          # fallado** —el fork estaba sin sincronizar—, que es un mensaje mintiendo en el único
+          # sitio donde se iba a leer.
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::wingetcreate no ha podido mandar los manifiestos (lo de arriba es su respuesta). Si habla de sincronizar el fork: gh repo sync webcafeina/winget-pkgs"
+            exit 1
+          }
           Write-Host "✓ manifiestos mandados; el PR lo revisa Microsoft"
 
       - uses: actions/upload-artifact@v4
