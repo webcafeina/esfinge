@@ -281,6 +281,45 @@ test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page 
   expect(errores, errores.join(' | ')).toEqual([]);
 });
 
+// **Y en Linux, la banda avisa del diálogo de la contraseña antes de que salga** (ADR 0062).
+//
+// Desde que una copia instalada con un paquete se actualiza sola, instalar saca el diálogo de
+// `pkexec`. Decirlo después no sirve de nada: lo sensato al ver un diálogo de contraseña que
+// nadie ha anunciado es cancelarlo, y cancelarlo deja la actualización sin hacer — es la misma
+// regla que el aviso del llavero en macOS.
+//
+// Esta máquina no tiene `pkexec` ni viene de ningún paquete, así que el estado lo monta
+// `_novedad?autorizacion=si`, que solo existe tras la etiqueta `dev`. Sin esa costura esta
+// frase no la miraría nadie hasta verla —o no verla— en una máquina de verdad, que es como
+// estaba apuntado en deuda.md.
+test("en Linux la banda avisa de que pedirá la contraseña", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // Primero que haya algo que anunciar, por el camino de siempre.
+  await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Actualizaciones" }).click();
+  await page.getByRole("button", { name: "Buscar ahora" }).click();
+  const banda = page.locator(".novedad");
+  await expect(banda).toBeVisible({ timeout: 20_000 });
+
+  // Y ahora, la misma novedad como si esta copia viniera de un paquete.
+  const avisado = await page.request.post("/api/_novedad?autorizacion=si");
+  expect(avisado.ok(), await avisado.text()).toBe(true);
+
+  // El botón promete instalar y reiniciar...
+  await expect(banda.getByRole("button", { name: "Descargar" })).toBeVisible();
+  await banda.getByRole("button", { name: "Descargar" }).click();
+  await expect(banda.getByRole("button", { name: "Instalar y reiniciar" })).toBeVisible({
+    timeout: 60_000,
+  });
+
+  // ...y el texto dice lo que va a pasar antes de que pase.
+  await expect(banda.locator(".dice")).toContainText("te pedirá la contraseña");
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 test("el interruptor de Ajustes se queda como se deja", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");

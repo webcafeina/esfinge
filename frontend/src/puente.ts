@@ -78,6 +78,8 @@ export type Novedad = {
    * la aplicación entera, así que lo único que se puede hacer es enseñar dónde ha quedado.
    */
   comoSeInstala: "sola" | "instalador" | "a mano" | "";
+  /** Al instalar saldrá el diálogo de la contraseña del sistema (Linux, ADR 0062). */
+  pideAutorizacion: boolean;
 };
 
 /** Cómo va la descarga de la actualización. */

@@ -926,6 +926,10 @@ export function BandaNovedad({
   // Y a quien lo instaló con su gestor de paquetes no se le ofrece nada que bajar: el `.deb`
   // publicado no se instala con `pacman -U`, así que la banda informa y se calla.
   const loActualizaSuGestor = !novedad.fichero && novedad.gestor === "pacman";
+  // Y en Linux, instalarla **saca el diálogo de la contraseña del sistema**. Se dice antes de
+  // que aparezca, que es la misma regla del llavero en macOS: un diálogo que pide la
+  // contraseña sin avisar invita a cancelarlo, y cancelarlo deja la actualización sin hacer.
+  const pedira = novedad.pideAutorizacion;
 
   return (
     <div className="novedad" role="status">
@@ -933,11 +937,17 @@ export function BandaNovedad({
         {error ? (
           <span className="error">{error}</span>
         ) : instalando ? (
-          <span>Instalando Esfinge {novedad.version}. La ventana se cerrará y volverá a abrirse…</span>
+          <span>
+            Instalando Esfinge {novedad.version}.{" "}
+            {pedira && "Tu sistema te pedirá la contraseña. "}
+            La ventana se cerrará y volverá a abrirse…
+          </span>
         ) : lista ? (
           <span>
             {sola
-              ? `Esfinge ${novedad.version} está lista. Se instalará y volverá a abrirse.`
+              ? pedira
+                ? `Esfinge ${novedad.version} está lista. Tu sistema te pedirá la contraseña para instalarla, y después la ventana volverá a abrirse.`
+                : `Esfinge ${novedad.version} está lista. Se instalará y volverá a abrirse.`
               : aMano
                 ? `Esfinge ${novedad.version} está descargada. Reemplaza con ella la AppImage que usas.`
                 : `Esfinge ${novedad.version} está lista para instalarse.`}

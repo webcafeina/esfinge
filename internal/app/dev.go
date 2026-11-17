@@ -28,6 +28,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/webcafeina/esfinge/internal/actualizacion"
 	"github.com/webcafeina/esfinge/internal/llavero"
 )
 
@@ -187,7 +188,7 @@ func Servir(a *App, s *SistemaDeDesarrollo, direccion string) error {
 	// propósito —no es algo que la ventana deba poder pedir— y además solo sale una vez cada
 	// 24 horas, así que desde una prueba no hay forma de provocarlo. Y es justo el caso que
 	// se escapó: la banda volvía a abrirse sola y tiró dos intentos de publicar la 2.65.
-	mux.HandleFunc("/api/_novedad", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/api/_novedad", func(w http.ResponseWriter, r *http.Request) {
 		a.act.mu.Lock()
 		n := a.act.encontrada
 		a.act.mu.Unlock()
@@ -195,7 +196,17 @@ func Servir(a *App, s *SistemaDeDesarrollo, direccion string) error {
 			http.Error(w, "Todavía no se ha encontrado ninguna versión nueva", http.StatusConflict)
 			return
 		}
-		a.sistema.Avisar(EventoNovedad, deNovedad(n))
+		aviso := deNovedad(n)
+		// **Y con `?autorizacion=si`, como si esta copia viniera de un paquete** (ADR 0062).
+		// Aquí no hay `pkexec` ni un `/usr/share/esfinge/gestor`, así que la frase que avisa
+		// del diálogo de la contraseña no se podría ver de otra forma — y es justo la que no
+		// puede faltar, porque sin ella lo sensato al ver ese diálogo es cancelarlo. Monta un
+		// estado que una prueba no puede crear de otra manera, igual que `_llavero`.
+		if r.URL.Query().Get("autorizacion") == "si" {
+			aviso.ComoSeInstala = string(actualizacion.ModoSolo)
+			aviso.PideAutorizacion = true
+		}
+		a.sistema.Avisar(EventoNovedad, aviso)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = fmt.Fprintf(w, `{"avisado":%q}`, n.Version)
 	})

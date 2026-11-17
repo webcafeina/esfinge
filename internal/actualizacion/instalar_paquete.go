@@ -78,6 +78,15 @@ var hayPrograma = func(programa string) bool {
 	return err == nil
 }
 
+// PideAutorizacion dice si instalar la actualización **va a sacar un diálogo del sistema
+// pidiendo la contraseña**, para que la ventana pueda avisarlo antes de que aparezca.
+//
+// Es la misma regla que ya se aplica al llavero en macOS: un diálogo del sistema que pide una
+// contraseña sin avisar es lo que un gestor de contraseñas enseña a desconfiar, y lo sensato
+// por parte de quien lo ve es cancelar. En macOS y en Windows la actualización no pide nada;
+// aquí la pide `pkexec`, y por eso esto cuelga del modo y no del sistema.
+func PideAutorizacion() bool { return ComoSeInstala() == ModoSolo && sePuedeInstalarSola() }
+
 // sePuedeInstalarSola dice si en esta máquina la banda puede terminar el trabajo.
 func sePuedeInstalarSola() bool {
 	return ordenParaInstalar(gestorQueLoInstalo(), "paquete", hayPrograma) != nil

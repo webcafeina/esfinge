@@ -44,6 +44,12 @@ del escritorio, el gestor de paquetes instala y Esfinge se vuelve a abrir.
 - **Cancelar no es un fallo del programa y se dice con palabras**: `pkexec` devuelve 126 cuando
   nadie autoriza y 127 cuando no ha podido ni preguntar, y «exit status 126» no le dice nada a
   nadie.
+- **Y la banda avisa del diálogo antes de que salga**: «Tu sistema te pedirá la contraseña para
+  instalarla, y después la ventana volverá a abrirse». Es la misma regla escrita para el llavero
+  de macOS y no es cosmética — lo sensato al ver un diálogo de contraseña que nadie ha anunciado
+  es cancelarlo, y cancelarlo deja la actualización sin hacer. Lo dice Go con un campo propio
+  (`pideAutorizacion`) y no la pantalla mirando el sistema, porque quien sabe si va a hacer falta
+  es quien arma la orden.
 - **Sin `pkexec`, o sin herramienta que reconozcamos, se cae a lo de siempre** —bajar el
   paquete y dárselo al sistema—, que es lo que había hasta hoy y sigue funcionando.
 
@@ -85,6 +91,12 @@ AppImage, Arch, sin `pkexec` o sin paquete detrás → como antes—, que `Insta
 **con el fichero recién descargado** y pide el relevo después, y que una autorización denegada
 da un error con palabras y **no reabre nada**. Las dos mutaciones que importan —no exigir
 `pkexec`, e instalar sin reabrir— ponen rojas esas pruebas.
+
+**Y la pantalla**: que con un paquete detrás la banda dice que pedirá la contraseña, con una
+prueba de interfaz que recorre descargar e instalar y **se pone roja** si esa frase desaparece. El
+estado lo monta `_novedad?autorizacion=si`, que solo existe tras la etiqueta `dev`: aquí no hay
+`pkexec` ni paquete, así que sin esa costura la frase no la miraría nadie hasta verla —o no verla—
+en una máquina de verdad.
 
 **No comprobado todavía, y es lo que hay que mirar en una máquina**: que el diálogo de `pkexec`
 salga de verdad sobre la ventana, que el gestor instale sin pedir nada más, y que Esfinge se
