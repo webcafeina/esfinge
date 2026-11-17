@@ -29,6 +29,12 @@ marca de gestor —hace falta que aprueben una versión— y **la actualización
 **Y lo visual no se toca**: lo dijo el cliente el 2026-11-17 —«todo esto de lo visual lo tocaremos
 en otra fase posterior»—. Lo que se vea raro se apunta.
 
+**Y dónde está cada máquina del cliente** (2026-11-17, porque no saberlo costó media mañana): las
+VM de **Ubuntu 26.10 ARM**, **Fedora ARM** y **Windows 11 ARM** están en el Mac con el que trabaja; y
+hay una de **Arch Linux ARM** —de verdad, con `pacman` 7.1.0— **en su otro Mac**. Si hace falta Arch,
+**es ésa**: montar uno nuevo no es una opción razonable hoy —Arch ARM no publica ISO instalable, con
+`archboot` la VM se quedó sin arrancar, y las derivadas vivas (Manjaro ARM) no arrancan por UEFI—.
+
 **Y una cosa que vive fuera de este repositorio**: en `~/proyectos/apolo/docs/siguiente.md` hay
 **un cambio escrito y sin comprometer** (2026-11-17) con lo que Esfinge tiene del plan de canales y
 Apolo no — winget y Chocolatey sin automatizar, la marca de gestor en Windows, y su comprobación
