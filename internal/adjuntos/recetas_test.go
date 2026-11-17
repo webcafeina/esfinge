@@ -30,6 +30,9 @@ func TestLasRecetasDeLosCanalesNombranAdjuntosQueExisten(t *testing.T) {
 		"../../empaquetado/homebrew/esfinge-cask.rb",
 		"../../empaquetado/chocolatey/esfinge.nuspec",
 		"../../empaquetado/chocolatey/tools/chocolateyinstall.ps1",
+		"../../empaquetado/winget/Webcafeina.Esfinge.yaml",
+		"../../empaquetado/winget/Webcafeina.Esfinge.locale.es-ES.yaml",
+		"../../empaquetado/winget/Webcafeina.Esfinge.installer.yaml",
 	}
 
 	// **Y que no haya una receta que esta prueba no mire.** Añadir un fichero a `empaquetado/` y
@@ -39,7 +42,7 @@ func TestLasRecetasDeLosCanalesNombranAdjuntosQueExisten(t *testing.T) {
 	for _, r := range recetas {
 		vistas[filepath.Clean(r)] = true
 	}
-	for _, dir := range []string{"../../empaquetado/aur", "../../empaquetado/homebrew", "../../empaquetado/chocolatey", "../../empaquetado/chocolatey/tools"} {
+	for _, dir := range []string{"../../empaquetado/aur", "../../empaquetado/homebrew", "../../empaquetado/chocolatey", "../../empaquetado/chocolatey/tools", "../../empaquetado/winget"} {
 		entradas, err := os.ReadDir(dir)
 		if err != nil {
 			t.Fatalf("no encuentro %s: %v", dir, err)

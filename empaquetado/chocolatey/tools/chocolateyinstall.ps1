@@ -21,13 +21,17 @@ if ($arm64) {
 # `/S` es lo que entiende el instalador de NSIS, y es **lo mismo que usa Esfinge para actualizarse
 # a sí misma** (`reemplazarseEnWindows`): una bandera distinta aquí sería un segundo camino que
 # nadie prueba.
+#
+# Y `/GESTOR=chocolatey` es lo que hace que Esfinge sepa de dónde viene (ADR 0063): el instalador
+# lo deja escrito a su lado y, con eso, la banda dice «la instala tu gestor de paquetes» en vez de
+# ofrecer una actualización que dejaría a `choco` viendo una versión vieja.
 $packageArgs = @{
   packageName    = $env:ChocolateyPackageName
   fileType       = 'exe'
   url64bit       = $url
   checksum64     = $checksum
   checksumType64 = 'sha256'
-  silentArgs     = '/S'
+  silentArgs     = '/S /GESTOR=chocolatey'
   validExitCodes = @(0)
   softwareName   = 'Esfinge*'
 }

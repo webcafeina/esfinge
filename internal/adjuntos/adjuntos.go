@@ -50,6 +50,12 @@ const (
 	GestorRPM      = "rpm"
 	GestorPacman   = "pacman"
 	GestorAppImage = "appimage"
+	// Y los dos de Windows (ADR 0063). No salen de un adjunto —los dos instalan el mismo
+	// `.exe` que se baja a mano— sino de que el paquete se lo diga al instalador, que lo
+	// deja escrito al lado del programa. Sin eso, a quien instaló con un gestor se le
+	// ofrecía actualizarse por su cuenta y el gestor se quedaba viendo una versión vieja.
+	GestorChocolatey = "chocolatey"
+	GestorWinget     = "winget"
 	// SinGestor es quien se bajó el tar.gz y lo puso a mano.
 	SinGestor = ""
 )

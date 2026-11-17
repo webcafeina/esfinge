@@ -80,6 +80,8 @@ export type Novedad = {
   comoSeInstala: "sola" | "instalador" | "a mano" | "";
   /** Al instalar saldrá el diálogo de la contraseña del sistema (Linux, ADR 0062). */
   pideAutorizacion: boolean;
+  /** Lo pone al día su gestor —pacman, Chocolatey, winget— y aquí no se ofrece nada (ADR 0063). */
+  loActualizaSuGestor: boolean;
 };
 
 /** Cómo va la descarga de la actualización. */

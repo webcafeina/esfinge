@@ -43,22 +43,23 @@ func TestSinPaqueteNoHayNadaQueReemplazar(t *testing.T) {
 	}
 }
 
-// Quien no viene de un paquete —el tar.gz puesto a mano en una carpeta— pasa por el
-// instalador del sistema, aunque la máquina tenga pkexec y apt: no hay nada que un gestor
-// de paquetes pueda actualizar ahí.
+// Quien no viene de un paquete —el `.tar.gz` puesto a mano en una carpeta— recibe lo mismo que
+// la AppImage: **dónde ha quedado lo descargado**, y lo pone en su sitio él.
 //
-// Esta prueba **fija lo que hay en la máquina** en vez de mirarlo. Antes decía «en Linux se
-// usa el instalador» y pasaba en verde en este VPS por una casualidad: aquí no hay pkexec.
-// El día que lo hubiera, habría seguido en verde o se habría caído sin que su texto
-// explicara nada.
-func TestSinVenirDeUnPaqueteSeUsaElInstaladorDelSistema(t *testing.T) {
+// Lo que había antes era «Abrir el instalador», y ahí no hay ningún instalador: lo descargado es
+// un comprimido, así que ese botón abría el gestor de archivos y la copia que se estaba usando
+// seguía siendo la vieja. Es exactamente el caso que la banda tiene escrito que no se ofrece.
+//
+// Y esta prueba **fija lo que hay en la máquina** en vez de mirarlo: con `pkexec` y `apt-get`
+// puestos, lo que decide no es lo que haya instalado sino de dónde viene esta copia.
+func TestSinVenirDeUnPaqueteSeEnsenaDondeHaQuedado(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("solo en Linux")
 	}
 	conGestor(t, "")
 	conProgramas(t, "pkexec", "apt-get", "dpkg")
-	if m := ComoSeInstala(); m != ModoInstalador {
-		t.Errorf("sin paquete detrás el modo es «%s» y tenía que ser «%s»", m, ModoInstalador)
+	if m := ComoSeInstala(); m != ModoAMano {
+		t.Errorf("sin paquete detrás el modo es «%s» y tenía que ser «%s»", m, ModoAMano)
 	}
 }
 

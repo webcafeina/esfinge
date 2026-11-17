@@ -1,0 +1,8 @@
+# Plantilla: `herramientas/rellenar` pone la versión. Lo de antes de la primera línea en blanco
+# no llega al manifiesto.
+
+PackageIdentifier: Webcafeina.Esfinge
+PackageVersion: "{{VERSION}}"
+DefaultLocale: es-ES
+ManifestType: version
+ManifestVersion: 1.6.0

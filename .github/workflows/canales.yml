@@ -72,6 +72,13 @@ jobs:
           go run ./herramientas/rellenar "$v" empaquetado/chocolatey/esfinge.nuspec "$s" > recetas/choco/esfinge.nuspec
           go run ./herramientas/rellenar "$v" empaquetado/chocolatey/tools/chocolateyinstall.ps1 "$s" > recetas/choco/tools/chocolateyinstall.ps1
           cp empaquetado/chocolatey/tools/chocolateyuninstall.ps1 recetas/choco/tools/
+          # **winget quiere los tres manifiestos en una carpeta** (ADR 0063): la versión, el
+          # idioma por defecto y los instaladores. Los nombres de fichero no son libres: los
+          # exige el repositorio de Microsoft, con el identificador del paquete delante.
+          mkdir -p recetas/winget
+          for m in Webcafeina.Esfinge.yaml Webcafeina.Esfinge.locale.es-ES.yaml Webcafeina.Esfinge.installer.yaml; do
+            go run ./herramientas/rellenar "$v" "empaquetado/winget/$m" "$s" > "recetas/winget/$m"
+          done
           # **Lo de antes de la primera línea en blanco no llega al canal**: son notas para quien
           # mantiene la plantilla, y en un PKGBUILD del AUR o en una ficha de Chocolatey saldrían
           # publicadas. Es lo que hace Apolo, y por eso cada plantilla empieza con su comentario y
@@ -258,6 +265,58 @@ jobs:
         with:
           name: chocolatey-nupkg
           path: recetas/choco/*.nupkg
+
+  winget:
+    name: winget
+    needs: recetas
+    runs-on: windows-latest
+    steps:
+      # El repositorio, porque de él sale `herramientas/reintentar.sh`.
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: recetas, path: recetas }
+
+      # **El envío es un PR al repositorio de Microsoft**, no una subida a un servidor nuestro:
+      # `microsoft/winget-pkgs` es un repositorio de manifiestos, así que publicar ahí es abrir
+      # un PR desde un fork de la cuenta de Webcafeína y esperar a su validación.
+      #
+      # Lo hace `wingetcreate`, **del origen y con su suma**, como NSIS: `aka.ms/wingetcreate/latest`
+      # es una etiqueta rodante y eso ya costó dos publicaciones aquí con otra herramienta.
+      - name: Mandar los manifiestos
+        shell: pwsh
+        env:
+          TOKEN: ${{ secrets.WINGET_TOKEN }}
+          VERSION_QUE_SUBE: ${{ inputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:TOKEN) {
+            # **Sin testigo no se falla**, por lo mismo que Chocolatey: esto depende de que una
+            # persona haya firmado la CLA de Microsoft y creado su fork, y hasta entonces no
+            # tiene sentido dejar en rojo todas las publicaciones. Los manifiestos quedan
+            # colgados de este trabajo y se pueden mandar a mano.
+            Write-Host "::warning::Falta WINGET_TOKEN: los manifiestos quedan como artefacto y no se manda nada. Hace falta la CLA de Microsoft firmada y un fork de microsoft/winget-pkgs en la cuenta."
+            exit 0
+          }
+
+          $version = "1.28.1.0"
+          $suma = "63d980ba79e97042395bd6eb5992c2db9e01e9e7a8a22958a95c288f27310413"
+          $url = "https://github.com/microsoft/winget-create/releases/download/v$version/wingetcreate.exe"
+          bash herramientas/reintentar.sh curl -fsSL -o wingetcreate.exe "$url"
+          $vista = (Get-FileHash wingetcreate.exe -Algorithm SHA256).Hash.ToLower()
+          if ($vista -ne $suma) {
+            Write-Host "::error::La suma de wingetcreate no es la que debería: esperaba $suma y he visto $vista"
+            exit 1
+          }
+
+          # `submit` valida los manifiestos y abre el PR. Si falla, **esto sí para**: a
+          # diferencia de Chocolatey, aquí no hay una cola ajena que lo explique.
+          .\wingetcreate.exe submit --token $env:TOKEN recetas\winget
+          Write-Host "✓ manifiestos mandados; el PR lo revisa Microsoft"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: winget-manifiestos
+          path: recetas/winget/*.yaml
 
   # **Y lo que de verdad cierra la fase: preguntarle a cada canal qué sirve.**
   #

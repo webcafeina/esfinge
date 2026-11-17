@@ -923,9 +923,16 @@ export function BandaNovedad({
   // lo que se baja **es la aplicación**, así que «abrir el instalador» abriría una
   // segunda Esfinge y la que se está usando seguiría siendo la vieja.
   const aMano = novedad.comoSeInstala === "a mano";
-  // Y a quien lo instaló con su gestor de paquetes no se le ofrece nada que bajar: el `.deb`
-  // publicado no se instala con `pacman -U`, así que la banda informa y se calla.
-  const loActualizaSuGestor = !novedad.fichero && novedad.gestor === "pacman";
+  // Y a quien lo instaló con su gestor de paquetes no se le ofrece nada que bajar: en Arch
+  // porque el `.deb` publicado no se instala con `pacman -U`, y en Chocolatey y winget porque
+  // el paquete **es** este mismo instalador y adelantarnos dejaría al gestor viendo una
+  // versión vieja. La banda informa y se calla.
+  //
+  // **Lo decide Go**, que es quien sabe de qué gestor viene esta copia. Antes se deducía aquí
+  // —«no hay fichero y el gestor es pacman»— y eso es la misma regla escrita en dos sitios,
+  // que en este proyecto ya ha costado seis fallos: el día que apareció un gestor con fichero
+  // publicado, esta copia habría contestado que no.
+  const loActualizaSuGestor = novedad.loActualizaSuGestor;
   // Y en Linux, instalarla **saca el diálogo de la contraseña del sistema**. Se dice antes de
   // que aparezca, que es la misma regla del llavero en macOS: un diálogo que pide la
   // contraseña sin avisar invita a cancelarlo, y cancelarlo deja la actualización sin hacer.
@@ -949,7 +956,7 @@ export function BandaNovedad({
                 ? `Esfinge ${novedad.version} está lista. Tu sistema te pedirá la contraseña para instalarla, y después la ventana volverá a abrirse.`
                 : `Esfinge ${novedad.version} está lista. Se instalará y volverá a abrirse.`
               : aMano
-                ? `Esfinge ${novedad.version} está descargada. Reemplaza con ella la AppImage que usas.`
+                ? `Esfinge ${novedad.version} está descargada. Reemplaza con ella la copia que usas.`
                 : `Esfinge ${novedad.version} está lista para instalarse.`}
           </span>
         ) : bajando ? (

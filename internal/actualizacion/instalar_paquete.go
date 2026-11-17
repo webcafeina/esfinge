@@ -78,6 +78,25 @@ var hayPrograma = func(programa string) bool {
 	return err == nil
 }
 
+// LoActualizaSuGestor dice que esta copia **la pone al día su gestor de paquetes**, y que por
+// eso aquí no se ofrece ni descarga ni instalación.
+//
+// Son los gestores a los que no les podemos dar nada que instalar: Arch, porque no publicamos
+// un paquete para `pacman`; y Chocolatey y winget, porque allí el paquete **es** el instalador
+// que ya hay publicado y adelantarnos dejaría al gestor viendo una versión vieja para siempre
+// — eso era deuda desde que existe el paquete de Chocolatey y se cerró con la ADR 0063.
+//
+// Vive aquí y no en la ventana a propósito: la condición estaba escrita en TypeScript
+// (`!novedad.fichero && gestor === "pacman"`), que es una regla en dos sitios de las que aquí
+// ya han costado seis fallos. Ahora la pantalla pregunta.
+func LoActualizaSuGestor() bool {
+	switch gestorQueLoInstalo() {
+	case adjuntos.GestorPacman, adjuntos.GestorChocolatey, adjuntos.GestorWinget:
+		return true
+	}
+	return false
+}
+
 // PideAutorizacion dice si instalar la actualización **va a sacar un diálogo del sistema
 // pidiendo la contraseña**, para que la ventana pueda avisarlo antes de que aparezca.
 //

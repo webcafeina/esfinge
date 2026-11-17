@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/webcafeina/esfinge/internal/adjuntos"
 )
 
 // Modo dice cómo se puede instalar la actualización en esta máquina, que es lo
@@ -59,6 +61,15 @@ func ComoSeInstala() Modo {
 		// renombrar encima de él funciona incluso mientras corre—, es que aquí se ha
 		// elegido no reemplazarse sola. Queda apuntado en deuda.md con lo que costaría.
 		if enUnaAppImage() {
+			return ModoAMano
+		}
+		// **Y lo mismo para quien se bajó el `.tar.gz` y lo puso en su carpeta** (2026-11-17):
+		// ahí no hay instalador que abrir. Lo que se descarga es un comprimido, así que
+		// «Abrir el instalador» abriría el gestor de archivos y la copia que se está usando
+		// seguiría siendo la vieja — un botón que no hace lo que dice, que es lo que este
+		// proyecto tiene escrito que no se ofrece. Se le enseña dónde ha quedado, como a la
+		// AppImage.
+		if gestorQueLoInstalo() == adjuntos.SinGestor {
 			return ModoAMano
 		}
 		// **Y un paquete sí se instala solo, desde la 2.68.0** (ADR 0062): `pkexec` pide

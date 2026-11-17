@@ -93,6 +93,8 @@ OutFile "..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the inst
 !endif # Default installing folder ($PROGRAMFILES is Program Files folder).
 ShowInstDetails show # This will always show the installation details.
 
+!include "FileFunc.nsh"
+
 Function .onInit
    !insertmacro wails.checkArchitecture
 FunctionEnd
@@ -113,6 +115,23 @@ Section
     # Esfinge por lo mismo: la configuración que Ajustes enseña apunta aquí con la
     # ruta entera.
     File "esfinge-mcp.exe"
+
+    # **De qué gestor viene esta copia** (ADR 0063).
+    #
+    # En Linux lo deja el `postinstall` del paquete en /usr/share/esfinge/gestor; en Windows
+    # no hay un sitio compartido, así que lo escribe el instalador **al lado del programa** y
+    # sólo cuando quien lo lanza se lo pide con `/GESTOR=`. Un doble clic no pasa nada y no
+    # deja fichero, que es justo lo que lo distingue.
+    #
+    # Sin esto, a quien instaló con `choco` o con `winget` se le ofrecía actualizarse por su
+    # cuenta y el gestor se quedaba viendo una versión vieja para siempre.
+    ${GetParameters} $R0
+    ${GetOptions} $R0 "/GESTOR=" $R1
+    ${If} $R1 != ""
+        FileOpen $R2 "$INSTDIR\gestor" w
+        FileWrite $R2 "$R1"
+        FileClose $R2
+    ${EndIf}
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"

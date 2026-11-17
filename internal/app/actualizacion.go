@@ -59,6 +59,9 @@ type Novedad struct {
 	// un diálogo que pide la contraseña sin avisar invita a cancelarlo, y cancelarlo deja la
 	// actualización sin hacer.
 	PideAutorizacion bool `json:"pideAutorizacion"`
+	// LoActualizaSuGestor es que aquí no se ofrece nada: lo pone al día `pacman`, Chocolatey
+	// o winget (ADR 0063). La ventana lo dice y se calla.
+	LoActualizaSuGestor bool `json:"loActualizaSuGestor"`
 }
 
 // actualizador reúne el estado de la comprobación, que vive aparte del resto.
@@ -239,13 +242,14 @@ func (a *App) GuardarPreferencias(p Preferencias) error {
 // ventana. El resumen SHA256 no cruza el puente: no es asunto de la interfaz.
 func deNovedad(n actualizacion.Novedad) Novedad {
 	return Novedad{
-		Hay:              n.Hay,
-		Version:          n.Version,
-		Pagina:           n.Pagina,
-		Fichero:          n.Fichero,
-		Bytes:            n.Bytes,
-		Gestor:           n.Gestor,
-		ComoSeInstala:    string(actualizacion.ComoSeInstala()),
-		PideAutorizacion: actualizacion.PideAutorizacion(),
+		Hay:                 n.Hay,
+		Version:             n.Version,
+		Pagina:              n.Pagina,
+		Fichero:             n.Fichero,
+		Bytes:               n.Bytes,
+		Gestor:              n.Gestor,
+		ComoSeInstala:       string(actualizacion.ComoSeInstala()),
+		PideAutorizacion:    actualizacion.PideAutorizacion(),
+		LoActualizaSuGestor: actualizacion.LoActualizaSuGestor(),
 	}
 }
