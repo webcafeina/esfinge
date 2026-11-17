@@ -29,6 +29,12 @@ marca de gestor —hace falta que aprueben una versión— y **la actualización
 **Y lo visual no se toca**: lo dijo el cliente el 2026-11-17 —«todo esto de lo visual lo tocaremos
 en otra fase posterior»—. Lo que se vea raro se apunta.
 
+**Y una cosa que vive fuera de este repositorio**: en `~/proyectos/apolo/docs/siguiente.md` hay
+**un cambio escrito y sin comprometer** (2026-11-17) con lo que Esfinge tiene del plan de canales y
+Apolo no — winget y Chocolatey sin automatizar, la marca de gestor en Windows, y su comprobación
+final saliendo con `exit 0`. Lo comprometerá el cliente al abrir la sesión de Apolo. Si al llegar
+ahí ya no está, es que lo hizo.
+
 ### Lo primero al retomar
 
 1. **Arch**, en cuanto esté la VM: `makepkg -si` con el PKGBUILD de la web, y que la banda diga
