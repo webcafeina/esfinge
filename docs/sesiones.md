@@ -47,6 +47,22 @@ Plantilla al final.
 - **Queda para esta tarde**: el Mac, en una VM de VMPal —la fórmula y el cask—. Y fuera de nuestra
   mano: que Chocolatey y winget aprueben una versión, y openSUSE (`zypper`), que no tiene máquina.
 - **Lo visual no se toca** hasta su fase, dicho por el cliente.
+- **Y por la tarde, espacio en el VPS**, que estaba al **97 %** con 7,6 GB libres. Del proyecto se
+  liberaron **4,4 GB** sin tocar nada suyo: la carpeta temporal de la sesión, los navegadores de
+  Playwright de versiones que **ninguna** usa —se le preguntó a `playwright install --dry-run` cuáles
+  necesita, en vez de suponerlo— y la caché de compilación de Go. **Ni `referencias/`, ni `.git`, ni
+  los `node_modules`, ni nada del cartero** — que además corre **dentro de un contenedor** (`/app`) y
+  no desde este árbol, así que lo de aquí es sólo fuente.
+- **Lo gordo era Docker, y no es de Esfinge**: 536 volúmenes huérfanos, ~55 GB. **Se miraron los 536**
+  antes de proponer nada, montando `/var/lib/docker/volumes` en sólo lectura dentro de un contenedor:
+  430 PostgreSQL **completamente vacíos** —sin una sola base propia—, 102 MariaDB con una base
+  `ensayo`, 2 PostgreSQL con una base **`cronos`**, un Redis y `buscador-productos_pgdata`, que pese a
+  ser el único con nombre propio **estaba vacío**. El cliente autorizó borrar **los 430 vacíos y el de
+  buscador-productos**: el disco pasó del **97 % al 77 %** (46 GB libres). **`cronos` no se toca** —es
+  real y está en uso, lo dijo él— y **los 102 de `ensayo` (16 GB) quedan para la próxima vez**.
+- **Y queda dicho de dónde sale el problema**: 430 Postgres vacíos en dos meses es algo que levanta un
+  contenedor de base de datos por ejecución y no lo limpia. Mientras eso no se arregle —no es de
+  Esfinge—, el disco se volverá a llenar solo.
 
 ---
 

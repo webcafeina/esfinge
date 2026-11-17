@@ -64,9 +64,17 @@ ahí ya no está, es que lo hizo.
      Command Line Tools para tener `brew`.
 2. **Lo que no depende de nosotros**: que **Chocolatey** apruebe —sigue sirviendo la 2.66.1 y
    rechaza versiones nuevas mientras tanto— y que un moderador voluntario mire
-   [el PR de winget](https://github.com/microsoft/winget-pkgs/pull/482164). Cuando Chocolatey entre,
-   queda ver la otra mitad de la ADR 0063: que `choco install` deje la marca del gestor.
-3. **Lo que no tiene máquina y se dice en voz alta**: openSUSE con `zypper`.
+   [el PR de winget](https://github.com/microsoft/winget-pkgs/pull/482164), que el 2026-11-17 por la
+   tarde ya tenía **`Azure-Pipeline-Passed` y `Validation-Completed`**: su validación automática
+   está pasada y sólo falta la moderación. Cuando Chocolatey entre, queda ver la otra mitad de la
+   ADR 0063: que `choco install` deje la marca del gestor.
+3. **El disco del VPS**, por si vuelve a apretar: el 2026-11-17 estaba al **97 %** y se dejó al
+   **77 %** (46 GB libres). Lo que queda disponible sin tocar nada vivo son **los 102 volúmenes de
+   Docker con la base `ensayo`, unos 16 GB** — el cliente los dejó «para la próxima». **Lo que no se
+   toca**: los dos volúmenes con la base `cronos` («es real y está en uso», dijo él) y los tres que
+   usan contenedores vivos. Y la causa de fondo, que **no es de Esfinge**: algo levanta un contenedor
+   de base de datos por ejecución y no lo limpia — en dos meses dejó 430 Postgres vacíos.
+4. **Lo que no tiene máquina y se dice en voz alta**: openSUSE con `zypper`.
 
 ### Lo que dio la primera prueba en su Ubuntu ARM (2026-11-16, con la 2.66.3)
 
