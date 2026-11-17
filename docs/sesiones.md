@@ -5,6 +5,51 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-17 · Actualizarse sola, winget, y las máquinas de verdad
+
+- **Publicadas la 2.68.0 y la 2.69.0.** La primera lleva la [ADR 0062](adr/0062-actualizarse-sola-en-linux.md)
+  —en Linux, una copia instalada con un paquete **se actualiza sola desde la banda**, con `pkexec`—
+  y la segunda la [0063](adr/0063-de-que-gestor-viene-en-windows-y-winget.md). Las dos **ya vistas
+  funcionando en máquinas del cliente**, que es lo que las separa de estar sólo escritas.
+- **Y al mirar la pantalla salió lo que faltaba de la 0062**: la banda decía «Se instalará y volverá
+  a abrirse» y en Linux lo siguiente es el diálogo de `pkexec`. Se avisa **antes**, que es la regla
+  del llavero de macOS — un diálogo de contraseña que nadie ha anunciado invita a cancelarlo, y
+  cancelarlo deja la actualización sin hacer. Con prueba de interfaz, que es lo que `deuda.md` pedía
+  para las frases que dependen de cómo se instaló Esfinge: el estado lo monta
+  `_novedad?autorizacion=si`, sólo tras la etiqueta `dev`.
+- **La 0063 salió de una pregunta suya** —«¿está contemplado winget?»— y destapó un agujero que ya
+  teníamos: **en Windows no había marca de gestor**, así que a quien instalaba con `choco` se le
+  ofrecía actualizarse por su cuenta y el gestor quedaba viendo una versión vieja. Ahora el
+  instalador acepta `/GESTOR=` y la deja **al lado del programa**; Chocolatey y winget la pasan.
+  **Y la regla se movió a Go**: estaba en TypeScript como «no hay fichero y el gestor es pacman», o
+  sea la misma regla en dos sitios, y el día que apareció un gestor con fichero publicado habría
+  contestado que no.
+- **winget es el sexto canal.** Manifiestos en `empaquetado/winget/`, mandados con `wingetcreate`
+  fijado y con su suma. PR abierto:
+  [winget-pkgs#482164](https://github.com/microsoft/winget-pkgs/pull/482164), con la CLA resuelta
+  —el bot la pide **por PR**, no una vez por cuenta—. Dos fallos míos por el camino: el fork llevaba
+  sin sincronizar desde octubre, y **el paso imprimió «✓ manifiestos mandados» sobre un envío que
+  había fallado**, porque PowerShell no para por el código de salida de un `.exe` (está en
+  `CLAUDE.md`).
+- **Cuatro sistemas verificados**, y con ellos **lo último que llevaba meses sin verse**: el marco de
+  Fluent en Windows 11 ARM, la cabecera de GNOME en Fedora, y **el icono de los `.esf` en los tres
+  sistemas**. Más `apt`/`dnf` desde los repositorios con la clave comprobada por su huella completa,
+  la actualización sola de la 2.68.0 a la 2.69.0 en Ubuntu, y en **Arch Linux ARM** `makepkg -si` y
+  la banda diciendo «la instala tu gestor de paquetes» con un solo botón.
+- **Lo que no se hizo, y por qué**: montar una VM de Arch con `archboot` se abandonó tras acabar en
+  una máquina que no arrancaba — Arch ARM no publica ISO instalable y las derivadas vivas no arrancan
+  por UEFI. **No hacía falta**: el cliente ya tenía una Arch Linux ARM en su otro Mac, que es donde se
+  probó. Está apuntado en `estado.md` para no repetirlo.
+- **Y del repaso que pidió** —instalar por un camino y actualizar por otro, en los cinco sistemas—
+  salió un fallo real: al `.tar.gz` se le ofrecía «Abrir el instalador» y lo que se abre es un
+  comprimido; ahora va por «a mano», como la AppImage. Y **una sospecha mía que era falsa**: el cask
+  de Homebrew está bien, declara `auto_updates` y Homebrew no toca la aplicación. La afirmé sin leerlo.
+- **Queda para esta tarde**: el Mac, en una VM de VMPal —la fórmula y el cask—. Y fuera de nuestra
+  mano: que Chocolatey y winget aprueben una versión, y openSUSE (`zypper`), que no tiene máquina.
+- **Lo visual no se toca** hasta su fase, dicho por el cliente.
+
+---
+
 ## 2026-11-16 · Los canales, y con ellos lo último grande cerrado
 
 - **Publicadas las fases 5 y 6 en la 2.66.1**, y con ellas la ADR 0061: Esfinge se instala ya con

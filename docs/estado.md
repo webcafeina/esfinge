@@ -1,6 +1,13 @@
 # Estado
 
-Última actualización: **2026-11-16**
+Última actualización: **2026-11-17**
+
+**Lo de esta sesión**: Linux se actualiza solo desde la banda ([ADR 0062](adr/0062-actualizarse-sola-en-linux.md)),
+Windows sabe de qué gestor viene y **winget es el sexto canal**
+([ADR 0063](adr/0063-de-que-gestor-viene-en-windows-y-winget.md)). Publicadas la **2.68.0** y la
+**2.69.0**, y las dos fichas **vistas funcionando** en las máquinas del cliente — con ellas cayó
+también lo último que llevaba meses sin verse: el marco de Windows, la cabecera de GNOME y el icono
+de los `.esf`.
 
 ## Lo último grande, hecho: los seis objetivos y los canales (2026-11-16)
 
@@ -41,16 +48,25 @@ Apolo no — winget y Chocolatey sin automatizar, la marca de gestor en Windows,
 final saliendo con `exit 0`. Lo comprometerá el cliente al abrir la sesión de Apolo. Si al llegar
 ahí ya no está, es que lo hizo.
 
-### Lo primero al retomar
+### Lo primero al retomar (tarde del 2026-11-17 o siguiente sesión)
 
-1. **Arch**, en cuanto esté la VM: `makepkg -si` con el PKGBUILD de la web, y que la banda diga
-   **«la instala tu gestor de paquetes»** sin ofrecer descarga.
-2. **El Mac**, que lo dejó para el final: `brew install webcafeina/esfinge/esfinge` y
-   `brew install --cask esfinge`.
-3. **Y la próxima versión que se publique sirve para dos cosas**: que él vea la actualización sola
-   en Ubuntu y Fedora (ADR 0062), y mandar winget otra vez — el PR de la 2.68.0 es
-   [microsoft/winget-pkgs#482164](https://github.com/microsoft/winget-pkgs/pull/482164) y lo que
-   falta es su moderación.
+1. **El Mac, en una VM de VMPal** — lo único que queda de la verificación por sistemas. Son dos
+   cosas distintas y sólo una es invasiva:
+   - `brew install webcafeina/esfinge/esfinge` (la línea de comandos) **se puede probar en su Mac
+     sin riesgo**: instala el binario en el prefijo de Homebrew y no toca ni la aplicación ni la
+     bóveda.
+   - `brew install --cask webcafeina/esfinge/esfinge` **es el que conviene aislar**, porque pone
+     `Esfinge.app` en `/Aplicaciones` y él ya tiene una del DMG. Ahí se mira: que instale, que
+     **abra sin que macOS la bloquee** —el cask le quita la cuarentena, que es lo que sustituye a la
+     firma que no se paga— y que **`brew upgrade` no intente actualizarla**, porque el cask declara
+     `auto_updates`.
+   - Avisos de coste: la VM necesita una imagen de restauración de macOS (~15 GB) y, dentro,
+     Command Line Tools para tener `brew`.
+2. **Lo que no depende de nosotros**: que **Chocolatey** apruebe —sigue sirviendo la 2.66.1 y
+   rechaza versiones nuevas mientras tanto— y que un moderador voluntario mire
+   [el PR de winget](https://github.com/microsoft/winget-pkgs/pull/482164). Cuando Chocolatey entre,
+   queda ver la otra mitad de la ADR 0063: que `choco install` deje la marca del gestor.
+3. **Lo que no tiene máquina y se dice en voz alta**: openSUSE con `zypper`.
 
 ### Lo que dio la primera prueba en su Ubuntu ARM (2026-11-16, con la 2.66.3)
 

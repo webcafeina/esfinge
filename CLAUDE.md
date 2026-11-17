@@ -2390,6 +2390,18 @@ Un detalle del empaquetado que viene de ahí: **el AppRun de linuxdeploy nombra 
 uno**, no recorre la carpeta, así que un gancho nuevo que no acabe escrito ahí se queda dentro sin
 ejecutarse nunca y sin que nada avise.
 
+**PowerShell no para por el código de salida de un programa, y un paso puede decir que fue bien
+habiendo fallado.** `$ErrorActionPreference = 'Stop'` cubre **sus propios comandos**, no un `.exe`:
+el envío de los manifiestos a winget devolvió 1 —el fork estaba sin sincronizar— y el paso siguió
+hasta imprimir «✓ manifiestos mandados» y salir en verde. Un mensaje mintiendo **en el único sitio
+donde alguien iba a leer si funcionó**. Se mira `$LASTEXITCODE` después de cada programa, y el error
+dice qué hacer (aquí, `gh repo sync`). Es la misma familia que `make comprobar | tail`, que tampoco
+dice si `make` ha fallado.
+
+Y al lado, lo que avisó la propia herramienta y no se leyó: `wingetcreate` escribe «using the
+--token argument may result in the token being logged». **El secreto nunca como argumento** —es la
+regla de la casa desde que existe la bóveda—, así que va por el entorno.
+
 ## Lo que nunca se ha probado
 
 Y ojo con qué se ha comprobado de verdad: **el diálogo de abrir no**, porque en macOS los ficheros se
