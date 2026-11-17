@@ -2479,9 +2479,15 @@ icono de los `.esf` en los tres sistemas**, que en Windows lo registra el instal
 `.deb`. De paso se vio que una instalación hecha a mano **no deja marca de gestor** (ADR 0063), que
 es la mitad de esa ficha que se puede comprobar sin Chocolatey.
 
+Y el mismo día, con la **2.69.0** recién publicada, **la actualización sola de Linux** (ADR 0062):
+el cliente pasó de la 2.68.0 a la 2.69.0 **desde la banda** en su Ubuntu 26.10 ARM —con su aviso de
+la contraseña, el diálogo de `pkexec` y la vuelta sola ya actualizada—, y en su **Arch Linux ARM** la
+banda dice «la instala tu gestor de paquetes» **con un solo botón, «Ahora no»**. Con eso, el
+`PKGBUILD` también quedó construido con `makepkg` en ARM de verdad.
+
 Lo que sigue sin verse en una máquina, y no depende de nosotros: **que `choco` o `winget` dejen esa
-marca** —hace falta que sus tiendas aprueben una versión— y **la actualización sola de Linux** (ADR
-0062), que necesita una versión posterior a la 2.68.0 para poder ofrecerse.
+marca** —hace falta que sus tiendas aprueben una versión—, el camino de **openSUSE** (`zypper`), que
+no tiene máquina, y **el Mac**, que el cliente dejó para el final.
 
 **Y lo visual no se toca por ahora**: el cliente lo dejó dicho el 2026-11-17 —«todo esto de lo
 visual lo tocaremos en otra fase posterior»—, así que lo que se vea raro se apunta y no se arregla

@@ -18,8 +18,8 @@ y el catálogo de nombres que lo hizo posible la [0060](adr/0060-un-nombre-por-a
 | **Ubuntu 26.10 ARM** | `apt install` desde el repositorio, los dos iconos, la ventana, **la AppImage arreglada** y `apt upgrade` a la 2.68.0 |
 | **Fedora ARM** | `dnf install` desde el repositorio, **la clave comprobada** —huella completa, la nuestra—, el icono, la ventana y **la cabecera de GNOME** |
 | **Windows 11 ARM** | El instalador de arm64, **el marco de Fluent**, **el icono de los `.esf`** y que una instalación a mano **no deja marca de gestor** |
-| **Arch ARM** | **Pendiente**: hay que montar la VM |
-| **macOS** | **Pendiente**, lo dejó para el final |
+| **Arch Linux ARM** (en su otro Mac) | `makepkg -si` construyendo e instalando el PKGBUILD, el fichero del gestor diciendo `pacman`, y **la banda diciendo «la instala tu gestor de paquetes» con un solo botón** |
+| **macOS** | **Pendiente**, lo dejó para el final: `brew install` de la fórmula y del cask |
 
 **Con esto, el proyecto se queda sin nada sin ver en una máquina** salvo lo que depende de
 terceros. Lo que queda abierto está en [`deuda.md`](deuda.md) y es: que `choco` o `winget` dejen la
