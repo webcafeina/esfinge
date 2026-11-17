@@ -12,6 +12,11 @@
 /esfinge-puente.exe
 /esfinge-mcp
 /esfinge-mcp.exe
+# Y el de la ventana, que **no es uno de los tres que cruzan objetivos** y por eso no lo cubre
+# `TestLosTresBinariosSeIgnoran`: entró al repositorio el 2026-09-07 con un `git add -A` y pasó
+# dos meses y medio ahí, 6,6 MB sin servir para nada. Nadie lo compila en esta carpeta hoy.
+/esfinge-gui
+/esfinge-gui.exe
 /dist/
 
 # Ficheros cifrados y temporales de la propia herramienta
