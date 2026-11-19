@@ -12,6 +12,12 @@
 
 @import "./tokens.css";
 
+/* Y la hoja de cada sistema, que refina lo de aquí. Van **después** de los
+ * tokens porque leen sus variables, y cada una cuelga de `data-sistema`, que pesa
+ * más que un selector sin atributo: así manda en su sistema sin depender del
+ * orden. La de KDE irá al final de todas, porque refina a la de Linux. */
+@import "./sistema-windows.css";
+
 * {
   box-sizing: border-box;
 }
@@ -221,8 +227,12 @@ body {
  * en vez de romper la pantalla. Los selectores de contexto de abajo son más
  * específicos y siguen mandando donde ya decían algo. */
 .icono {
-  width: 16px;
-  height: 16px;
+  /* Por variable para que una hoja de sistema pueda subirlo —los de Fluent van a
+   * 20 dentro de una tarjeta de ajuste— **sin perder la reserva**: si alguien
+   * borra la variable, esto sigue midiendo 16 y lo peor que pasa es que un icono
+   * salga pequeño. Lo que no puede volver a pasar es el icono de 200 px. */
+  width: var(--icono, 16px);
+  height: var(--icono, 16px);
   flex-shrink: 0;
 }
 
@@ -758,10 +768,14 @@ button {
   font: inherit;
   font-size: var(--texto);
   font-weight: 500;
-  height: 28px;
+  /* Por variable y no a pelo: las hojas de cada sistema cambian la altura de sus
+   * controles —32 en Fluent, 24 en macOS, 34 en libadwaita— y así lo hacen en un
+   * sitio. Ojo, que esto no quita la trampa de siempre: dentro de un botón alto,
+   * lo que lleva dentro se encoge a cero sin «height: auto». */
+  height: var(--alto-control);
   padding: 0 var(--espacio-4);
   border-radius: var(--radio);
-  border: 0.5px solid var(--filete-fuerte);
+  border: var(--linea) solid var(--filete-fuerte);
   background: var(--boton);
   color: var(--tinta);
   cursor: default;
@@ -2160,80 +2174,19 @@ select {
 /* Sin semáforos que esquivar, el lockup queda pegado al marco del sistema. Se le
  * da aire para que no lo toque: en Windows y en GNOME la barra de título la
  * dibuja el sistema y el nombre de la aplicación va justo debajo. */
-:root[data-sistema="windows"] .lateral .marca,
 :root[data-sistema="linux"] .lateral .marca {
   padding-top: var(--espacio-2);
 }
 
-:root[data-sistema="windows"] .lateral .semaforos,
 :root[data-sistema="linux"] .lateral .semaforos {
   height: var(--espacio-3);
 }
 
 /* Y con marco del sistema no hay que declarar zonas de arrastre: la ventana ya
  * tiene de dónde agarrarse. */
-:root[data-sistema="windows"] .lateral,
 :root[data-sistema="linux"] .lateral,
-:root[data-sistema="windows"] .herramientas,
 :root[data-sistema="linux"] .herramientas {
   --wails-draggable: no-drag;
-}
-
-/* ------------------------------------------------------------------ Windows */
-
-/* El panel de navegación de Windows 11. Lo que lo distingue de una barra lateral
- * cualquiera es la **barra de acento a la izquierda** de la fila activa: en
- * Fluent el relleno es tenue y quien dice «estás aquí» es esa marca. */
-:root[data-sistema="windows"] .lateral nav button {
-  height: 40px;
-  border-radius: 4px;
-  position: relative;
-}
-
-/* **Teñida del acento, no gris.** Aquí ponía «--elevada», que es un gris neutro,
- * y el resultado era que en Windows la barra lateral se quedaba **sin una gota de
- * la marca**: la fila activa gris y la barra de acento en piedra, porque el oro a
- * 3 px sobre un fondo claro no se ve. Fluent tiñe la selección con el color de
- * acento muy diluido y deja que la barra de al lado diga «estás aquí», que es
- * justo lo que hace falta: el oro aparece como relleno —su papel— y la señal la
- * sigue dando algo que se ve. */
-:root[data-sistema="windows"] .lateral nav button[aria-current="page"] {
-  background: var(--relleno-tenue);
-  color: var(--tinta);
-  font-weight: 600;
-}
-
-:root[data-sistema="windows"] .lateral nav button[aria-current="page"] .icono {
-  color: var(--acento);
-}
-
-:root[data-sistema="windows"] .lateral nav button[aria-current="page"]::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 16px;
-  border-radius: 2px;
-  /* En Fluent el fondo de la selección es tenue y **quien dice «estás aquí» es
-   * esta barra**: si no se ve, la fila activa deja de distinguirse. Sobre
-   * «--elevada» el oro da 1,37:1, así que aquí manda la piedra.
-   *
-   * Es la consecuencia de respetar la casa de cada sistema: en macOS la fila
-   * activa se rellena de oro y en Windows no, porque ahí la convención es otra. */
-  background: var(--acento);
-}
-
-/* Fluent redondea menos que macOS: 4 px en los controles, 8 en las tarjetas. */
-:root[data-sistema="windows"] .grupo {
-  border-radius: 8px;
-}
-
-:root[data-sistema="windows"] button,
-:root[data-sistema="windows"] input,
-:root[data-sistema="windows"] textarea {
-  border-radius: 4px;
 }
 
 /* -------------------------------------------------------------------- GNOME */

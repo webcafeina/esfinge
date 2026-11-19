@@ -141,8 +141,18 @@ func parejasDe(t Tema) []pareja {
 	return p
 }
 
-func TestContrasteDeLosDosTemas(t *testing.T) {
-	for _, tema := range []Tema{TemaOscuro, TemaClaro} {
+// Y se miden **todas las paletas**, no las dos del tema base.
+//
+// La lista de parejas es una sola —`parejasDe` la devuelve para el tema que se
+// le dé— y por eso esto no se vuelve inmantenible al añadir sistemas: cada juego
+// de neutros nuevo son las mismas parejas medidas otra vez, no una lista nueva
+// que alguien tenga que acordarse de ampliar. Con Windows dentro son el doble de
+// medidas; cuando estén los cuatro sistemas, cinco veces.
+//
+// El nombre del tema entra en el mensaje de error a propósito: un fallo tiene
+// que decir **en qué sistema** se queda corto un color.
+func TestContrasteDeTodosLosTemas(t *testing.T) {
+	for _, tema := range Temas() {
 		t.Run(tema.Nombre, func(t *testing.T) {
 			for _, p := range parejasDe(tema) {
 				ratio := Contraste(p.frente, p.fondo)
@@ -164,7 +174,7 @@ func TestContrasteDeLosDosTemas(t *testing.T) {
 // de acción, porque es lo que hacen todos los botones de acción del mundo y es lo
 // que hacía éste hasta la 2.11.0. Sobre el oro, el blanco da **1,68:1**.
 func TestSobreElOroEscribeLaPiedra(t *testing.T) {
-	for _, tm := range []Tema{TemaClaro, TemaOscuro} {
+	for _, tm := range Temas() {
 		if r := Contraste(tm.SobreAcento, tm.Relleno); r < AANormal {
 			t.Errorf("tema %s: el texto del botón de acción da %.2f:1", tm.Nombre, r)
 		}

@@ -14,14 +14,18 @@ import (
 // pintando los colores de ayer, y encima los tests de contraste seguirían en
 // verde porque miden el tema, no el fichero. Aquí es donde se nota.
 func TestLosTokensEstanAlDia(t *testing.T) {
-	ruta := filepath.Join("..", "..", "frontend", "src", "tokens.css")
-
-	enDisco, err := os.ReadFile(ruta)
-	if err != nil {
-		t.Skipf("todavía no hay interfaz que consuma los tokens: %v", err)
+	if len(Ficheros) == 0 {
+		t.Fatal("no hay ningún fichero de tokens declarado, así que esto no comprueba nada")
 	}
-	if string(enDisco) != GenerarCSS() {
-		t.Errorf("%s no coincide con lo que genera Go. Ejecuta «make tokens».", ruta)
+	for _, f := range Ficheros {
+		ruta := filepath.Join("..", "..", filepath.FromSlash(f.Ruta))
+		enDisco, err := os.ReadFile(ruta)
+		if err != nil {
+			t.Skipf("todavía no hay quien consuma %s: %v", f.Ruta, err)
+		}
+		if string(enDisco) != f.CSS() {
+			t.Errorf("%s no coincide con lo que genera Go. Ejecuta «make tokens».", f.Ruta)
+		}
 	}
 }
 

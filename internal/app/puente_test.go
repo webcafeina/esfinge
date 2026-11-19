@@ -405,3 +405,69 @@ func TestLosEstadosDeLaSincroLosEnsenaLaVentana(t *testing.T) {
 			"el mensaje de Go llega y no se enseña. Cada estado va con su `case`, aunque la frase se repita.", sinFrase)
 	}
 }
+
+// **El aspecto de cada sistema se decide en el CSS, nunca en el marcado.**
+//
+// Es lo que hace que mantener cuatro aspectos siga siendo cambiar hojas de
+// estilo. El día que aparezca un `{esWindows() && <div/>}`, dejan de ser cuatro
+// hojas y pasan a ser cuatro interfaces: cada pantalla nueva habría que
+// escribirla cuatro veces, y cada arreglo, repetirlo cuatro veces.
+//
+// # Por qué se lee el fuente y no se mira la pantalla
+//
+// Porque ya se intentó mirar la pantalla: una prueba de interfaz comparaba el
+// árbol del DOM con el aspecto de Windows y con el de la base. Pasaba sola y
+// caía en la tanda completa, y la causa es que **comparar dos cargas es comparar
+// dos momentos** — entre una y otra habían aparecido la banda de versión nueva y
+// el candado de la bóveda, que son estado y no sistema. Aquí no hay momentos.
+//
+// La excepción está nombrada: `Icono` **sí** mira el sistema, porque cada
+// escritorio tiene su juego de iconos y eso no se puede hacer con CSS. Es una y
+// se ve.
+func TestElAspectoNoSeDecideEnElMarcado(t *testing.T) {
+	raiz := raizDelRepo(t)
+	src := filepath.Join(raiz, "frontend", "src")
+
+	// Quien puede preguntar por el sistema, y con qué derecho.
+	permitido := map[string]string{
+		"plataforma.ts":   "es quien lo resuelve y lo publica",
+		"componentes.tsx": "ahí vive `Icono`, y los juegos de iconos no son CSS",
+	}
+
+	preguntan := regexp.MustCompile(`\bes(Windows|Mac|Linux|Kde)\(\)`)
+	entradas, err := os.ReadDir(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mirados := 0
+	for _, e := range entradas {
+		if e.IsDir() || (!strings.HasSuffix(e.Name(), ".ts") && !strings.HasSuffix(e.Name(), ".tsx")) {
+			continue
+		}
+		mirados++
+		if _, vale := permitido[e.Name()]; vale {
+			continue
+		}
+		crudo, err := os.ReadFile(filepath.Join(src, e.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if m := preguntan.FindString(string(crudo)); m != "" {
+			t.Errorf("%s pregunta por el sistema con «%s»: el aspecto de cada escritorio "+
+				"va en su hoja de CSS, no en el marcado. Si de verdad hace falta aquí, "+
+				"esto se amplía **con su razón escrita**, como las dos que ya hay", e.Name(), m)
+		}
+	}
+
+	if mirados == 0 {
+		t.Fatal("no he mirado ningún fichero de la interfaz: esta prueba no comprueba nada")
+	}
+	// Y que las excepciones no se queden nombrando ficheros que ya no existen: un
+	// nombre muerto ahí es por donde mañana entra lo que esto viene a impedir.
+	for nombre := range permitido {
+		if _, err := os.Stat(filepath.Join(src, nombre)); err != nil {
+			t.Errorf("la lista de excepciones nombra «%s», que ya no está", nombre)
+		}
+	}
+}

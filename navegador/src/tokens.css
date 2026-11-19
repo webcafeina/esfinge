@@ -1,0 +1,130 @@
+/* Generado por internal/tema. No se edita a mano:
+   cámbialo en Go y ejecuta «make tokens», que además mide el
+   contraste de cada pareja y falla si una no cumple AA. */
+
+:root {
+  --lienzo: #ffffff;
+  --suave: #f7f7f9;
+  --tarjeta: #f2f2f7;
+  --elevada: #e8e8ed;
+  --filete: #d8d8de;
+  --filete-fuerte: #8e8e93;
+  --tinta: #1c1c1e;
+  --cuerpo: #3c3c43;
+  --apagado: #6c6c72;
+  --relleno: #f2c14e;
+  --relleno-vivo: #cea442;
+  --sobre-acento: #2b2b31;
+  --acento: #2b2b31;
+  --exito: #1d6f31;
+  --aviso: #8f5300;
+  --error: #b72a22;
+  --barra: #f6f6f8;
+  --barra-encima: #e7e7e9;
+  --campo: #ffffff;
+  --boton: #ffffff;
+  --boton-encima: #f2f2f5;
+  --tinta-icono: #2b2b31;
+  --tinte-icono-1: #d6e2f0;
+  --tinte-icono-2: #d3e8e2;
+  --tinte-icono-3: #dde8d2;
+  --tinte-icono-4: #f0e6cf;
+  --tinte-icono-5: #f2ddd4;
+  --tinte-icono-6: #f0dae2;
+  --tinte-icono-7: #e4dcf0;
+  --tinte-icono-8: #d3e4ec;
+  --anillo: rgb(242 193 78 / 0.35);
+  --relleno-tenue: rgb(242 193 78 / 0.18);
+
+  --alto-control: 28px;
+  --alto-fila: 38px;
+  --barra-lateral: 225px;
+  --espacio-1: 4px;
+  --espacio-2: 8px;
+  --espacio-3: 12px;
+  --espacio-4: 16px;
+  --espacio-5: 24px;
+  --espacio-6: 32px;
+  --fuente: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --fuente-mono: ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --hueco-semaforos: 52px;
+  --radio: 9px;
+  --radio-chico: 6px;
+  --radio-grande: 14px;
+  --texto: 13px;
+  --texto-chico: 12px;
+  --texto-grande: 15px;
+  --titulo: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --lienzo: #1e1e1e;
+    --suave: #252527;
+    --tarjeta: #2c2c2e;
+    --elevada: #3a3a3c;
+    --filete: #3f3f42;
+    --filete-fuerte: #5a5a5f;
+    --tinta: #ffffff;
+    --cuerpo: #e3e3e6;
+    --apagado: #a1a1a8;
+    --relleno: #f2c14e;
+    --relleno-vivo: #cea442;
+    --sobre-acento: #2b2b31;
+    --acento: #ffffff;
+    --exito: #34c759;
+    --aviso: #ff9500;
+    --error: #ff7d77;
+    --barra: #242426;
+    --barra-encima: #19191b;
+    --campo: #1a1a1c;
+    --boton: #3a3a3c;
+    --boton-encima: #48484a;
+    --tinta-icono: #ebebf0;
+    --tinte-icono-1: #2d3b4d;
+    --tinte-icono-2: #2a423b;
+    --tinte-icono-3: #38442e;
+    --tinte-icono-4: #493d2b;
+    --tinte-icono-5: #4a342b;
+    --tinte-icono-6: #48303c;
+    --tinte-icono-7: #3a3350;
+    --tinte-icono-8: #2b4149;
+    --anillo: rgb(242 193 78 / 0.45);
+    --relleno-tenue: rgb(242 193 78 / 0.22);
+  }
+}
+
+:root[data-tema="oscuro"] {
+  --lienzo: #1e1e1e;
+  --suave: #252527;
+  --tarjeta: #2c2c2e;
+  --elevada: #3a3a3c;
+  --filete: #3f3f42;
+  --filete-fuerte: #5a5a5f;
+  --tinta: #ffffff;
+  --cuerpo: #e3e3e6;
+  --apagado: #a1a1a8;
+  --relleno: #f2c14e;
+  --relleno-vivo: #cea442;
+  --sobre-acento: #2b2b31;
+  --acento: #ffffff;
+  --exito: #34c759;
+  --aviso: #ff9500;
+  --error: #ff7d77;
+  --barra: #242426;
+  --barra-encima: #19191b;
+  --campo: #1a1a1c;
+  --boton: #3a3a3c;
+  --boton-encima: #48484a;
+  --tinta-icono: #ebebf0;
+  --tinte-icono-1: #2d3b4d;
+  --tinte-icono-2: #2a423b;
+  --tinte-icono-3: #38442e;
+  --tinte-icono-4: #493d2b;
+  --tinte-icono-5: #4a342b;
+  --tinte-icono-6: #48303c;
+  --tinte-icono-7: #3a3350;
+  --tinte-icono-8: #2b4149;
+  --anillo: rgb(242 193 78 / 0.45);
+  --relleno-tenue: rgb(242 193 78 / 0.22);
+}

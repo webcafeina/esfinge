@@ -122,6 +122,20 @@ var (
 	rojoSistema  = MustParseHex("#ff3b30")
 )
 
+// Y los de Fluent, que no son los mismos (ADR 0064). Microsoft los publica ya
+// pensados para leerse como texto —de ahí que el verde sea un verde oscuro y no
+// el verde manzana de Apple—, así que al pasarlos por AcentoLegible casi no se
+// mueven. Los de oscuro son sus propias variantes, no éstos aclarados.
+var (
+	verdeWindows = MustParseHex("#0f7b0f")
+	ambarWindows = MustParseHex("#9d5d00")
+	rojoWindows  = MustParseHex("#c42b1c")
+
+	verdeWindowsOscuro = MustParseHex("#6ccb5f")
+	ambarWindowsOscuro = MustParseHex("#fce100")
+	rojoWindowsOscuro  = MustParseHex("#ff99a4")
+)
+
 // Los ocho tintes de los cuadros de la bóveda, recorriendo el círculo de color a
 // saltos parejos para que dos cualesquiera se distingan.
 //
@@ -240,3 +254,114 @@ var TemaOscuro = func() Tema {
 		TintaDeIcono:  MustParseHex("#ebebf0"),
 	}
 }()
+
+// WindowsClaro es el modo claro en Windows: los neutros de WinUI 3 (ADR 0064).
+//
+// # De dónde salen
+//
+// De la paleta de Fluent 2 —`SolidBackgroundFillColorBase` y familia— aplanada
+// sobre el gris de Mica, que es lo que se ve de verdad detrás de una ventana de
+// Windows 11. **No son éstos retocados a ojo**: son los mismos que Apolo usa
+// desde su v0.13.0, ya derivados y vistos en una máquina.
+//
+// Lo que no cambia del tema base es el oro: el acento es nuestro en los cuatro
+// sistemas (ADR 0021), y la piedra es lo que escribe encima.
+var WindowsClaro = func() Tema {
+	lienzo := MustParseHex("#f9f9f9")
+	tarjeta := MustParseHex("#ffffff")
+	// La superficie de menos contraste, contra la que se derivan los textos. En
+	// Fluent no es el lienzo: es la fila con el puntero encima, que es donde un
+	// texto apagado se queda corto antes que en ningún otro sitio.
+	peor := MustParseHex("#ebebeb")
+	relleno := RellenoLegible(oroMarca, piedra, AANormal)
+
+	return Tema{
+		Nombre:  "windows-claro",
+		Lienzo:  lienzo,
+		Suave:   MustParseHex("#f3f3f3"),
+		Tarjeta: tarjeta,
+		Elevada: peor,
+		// **Derivado, no copiado, y aquí se vio por qué.** El divisor de Fluent
+		// —negro al 8 % sobre la superficie, o sea este #e5e5e5— da **1,1996:1**
+		// sobre su lienzo, y el suelo de esta casa para una línea de separación es
+		// 1,2:1. Son cuatro diezmilésimas, y da igual: lo que no se baja es el
+		// umbral. Así que se parte del color de Fluent y se oscurece hasta el
+		// suelo, que es lo mismo que se hace con los textos y con los estados.
+		Filete:       AcentoLegible(MustParseHex("#e5e5e5"), lienzo, 1.2),
+		FileteFuerte: AcentoLegible(MustParseHex("#8a8a8a"), peor, AAGrande),
+		Tinta:        MustParseHex("#1b1b1b"),
+		Cuerpo:       MustParseHex("#3d3d3d"),
+		Apagado:      AcentoLegible(MustParseHex("#616161"), peor, AANormal),
+		Relleno:      relleno,
+		// Más suave que en el tema base (0,85): el estado pulsado de Fluent apenas
+		// se mueve, y un salto grande ahí se lee como otro color.
+		RellenoVivo: Oscurecer(relleno, 0.92),
+		SobreAcento: piedra,
+		Acento:      piedra,
+		Barra:       MustParseHex("#f3f3f3"),
+		BarraEncima: MustParseHex("#eaeaea"),
+		Campo:       tarjeta,
+		Boton:       MustParseHex("#fbfbfb"),
+		BotonEncima: MustParseHex("#f6f6f6"),
+		Exito:       AcentoLegible(verdeWindows, peor, AANormal),
+		Aviso:       AcentoLegible(ambarWindows, peor, AANormal),
+		Error:       AcentoLegible(rojoWindows, peor, AANormal),
+		// Los ocho cuadros de la bóveda no cambian de sistema: el tinte lo elige el
+		// dominio y tiene que dar lo mismo en todas partes, que es lo que lo hace
+		// servir de ancla. Lo que cambia es la superficie contra la que se miden.
+		TintesDeIcono: tintesClaros,
+		TintaDeIcono:  piedra,
+	}
+}()
+
+// WindowsOscuro es el modo oscuro en Windows: los neutros de WinUI 3 (ADR 0064).
+//
+// **Y aquí la fila de la barra lateral aclara al pasar por encima**, al
+// contrario que en el tema base. No es un descuido: la regla de la casa —«la
+// barra lateral se hunde, no se levanta»— se escribió mirando macOS, y su razón
+// era «es lo que hacen las aplicaciones del sistema». En Fluent lo que hace el
+// sistema es lo contrario, porque su estado sutil es blanco al 6 %. Se sigue la
+// razón, no la letra; en claro las dos coinciden y la fila se oscurece igual.
+var WindowsOscuro = func() Tema {
+	// La superficie más clara del tema, que es el botón con el puntero encima.
+	peor := MustParseHex("#3a3a3a")
+	relleno := RellenoLegible(oroMarca, piedra, AANormal)
+
+	return Tema{
+		Nombre:        "windows-oscuro",
+		Oscuro:        true,
+		Lienzo:        MustParseHex("#272727"),
+		Suave:         MustParseHex("#1c1c1c"),
+		Tarjeta:       MustParseHex("#2b2b2b"),
+		Elevada:       MustParseHex("#383838"),
+		Filete:        MustParseHex("#3a3a3a"),
+		FileteFuerte:  AcentoLegible(MustParseHex("#9a9a9a"), peor, AAGrande),
+		Tinta:         MustParseHex("#ffffff"),
+		Cuerpo:        MustParseHex("#e4e4e4"),
+		Apagado:       AcentoLegible(MustParseHex("#9d9d9d"), peor, AANormal),
+		Relleno:       relleno,
+		RellenoVivo:   Oscurecer(relleno, 0.92),
+		SobreAcento:   piedra,
+		Acento:        blanco,
+		Barra:         MustParseHex("#202020"),
+		BarraEncima:   MustParseHex("#2d2d2d"),
+		Campo:         MustParseHex("#1e1e1e"),
+		Boton:         MustParseHex("#2d2d2d"),
+		BotonEncima:   MustParseHex("#323232"),
+		Exito:         AcentoLegible(verdeWindowsOscuro, peor, AANormal),
+		Aviso:         AcentoLegible(ambarWindowsOscuro, peor, AANormal),
+		Error:         AcentoLegible(rojoWindowsOscuro, peor, AANormal),
+		TintesDeIcono: tintesOscuros,
+		TintaDeIcono:  MustParseHex("#ebebf0"),
+	}
+}()
+
+// Temas son todas las paletas que se publican, para medirlas todas.
+//
+// Es la lista que recorre el test de contraste: una paleta que no esté aquí no
+// la mide nadie, y una paleta sin medir es justo lo que este proyecto no puede
+// permitirse —el oro no vale como línea en ningún sitio, y eso hay que
+// comprobarlo en cada juego de neutros, no en uno—.
+func Temas() []Tema {
+	return []Tema{TemaClaro, TemaOscuro, WindowsClaro, WindowsOscuro}
+}

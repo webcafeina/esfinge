@@ -8,19 +8,50 @@ import { test } from "@playwright/test";
  * Vive aquí y no en un script suelto para aprovechar que la configuración ya
  * levanta el Go de verdad y Vite: así las capturas salen de la aplicación
  * funcionando, no de una maqueta.
+ *
+ * # El aspecto de cada sistema (ADR 0064)
+ *
+ * Con `CAPTURAS_SISTEMA=windows` el recorrido entero se hace **con el aspecto de
+ * ese sistema**, pidiéndoselo por la URL (ver `frontend/src/plataforma.ts`), y las
+ * capturas van a su propia carpeta. Eso es lo único que permite mirar Windows,
+ * GNOME y KDE desde un servidor sin pantalla, que es donde se escribe esto, y es
+ * sobre lo que el cliente elige: en Apolo las decisiones de aspecto se tomaron
+ * así, generando **las dos opciones** y mirándolas.
+ *
+ * Y los dos temas salen gratis: son los dos proyectos de Playwright.
  */
+const SISTEMA = process.env.CAPTURAS_SISTEMA ?? "";
+const ESCRITORIO = process.env.CAPTURAS_ESCRITORIO ?? "";
+const VIDRIO = process.env.CAPTURAS_VIDRIO === "si";
+
+/** La carpeta: `capturas/windows-vidrio`, `capturas/linux-kde`, `capturas`… */
+const CARPETA =
+  process.env.CAPTURAS_EN ??
+  (SISTEMA
+    ? `capturas/${SISTEMA}${ESCRITORIO ? `-${ESCRITORIO}` : ""}${VIDRIO ? "-vidrio" : ""}`
+    : "capturas");
+
+/** La raíz con lo que se le pide a la interfaz, para que `goto` sea siempre igual. */
+function raiz(extra = ""): string {
+  const q = new URLSearchParams(extra);
+  if (SISTEMA) q.set("sistema", SISTEMA);
+  if (ESCRITORIO) q.set("escritorio", ESCRITORIO);
+  if (VIDRIO) q.set("vidrio", "si");
+  const cola = q.toString();
+  return cola ? `/?${cola}` : "/";
+}
 test.describe("Capturas", () => {
   test.skip(!process.env.CAPTURAS, "Solo cuando se piden con CAPTURAS=1");
 
   test("recorrido", async ({ page }, info) => {
     const tema = info.project.name;
-    const donde = process.env.CAPTURAS_EN ?? "capturas";
+    const donde = CARPETA;
     const clave = (p: typeof page) => p.locator("input[type=password]:visible");
 
     const foto = (n: string) => page.screenshot({ path: `${donde}/${n}-${tema}.png` });
 
     await page.setViewportSize({ width: 980, height: 680 });
-    await page.goto("/");
+    await page.goto(raiz());
 
     // Con el servidor de desarrollo recién arrancado, lo primero es la bienvenida
     // de la cuenta. Se retrata y se elige «En este ordenador», que es lo que
@@ -79,14 +110,14 @@ test.describe("Capturas", () => {
    */
   test("desbloquear con la huella", async ({ page }, info) => {
     const tema = info.project.name;
-    const donde = process.env.CAPTURAS_EN ?? "capturas";
+    const donde = CARPETA;
     const foto = (n: string) => page.screenshot({ path: `${donde}/${n}-${tema}.png` });
     const maestra = "caballo grapa batería correcto";
     const dentro = page.locator(".contenido");
     const boton = (n: string) => dentro.getByRole("button", { name: n, exact: true });
 
     await page.setViewportSize({ width: 980, height: 680 });
-    await page.goto("/");
+    await page.goto(raiz());
 
     const bienvenida = page.getByRole("button", { name: "Usar en este ordenador" });
     await bienvenida.or(page.getByLabel("Qué quieres cifrar")).first().waitFor();
@@ -201,13 +232,13 @@ test.describe("Capturas", () => {
    */
   test("un dato personal", async ({ page }, info) => {
     const tema = info.project.name;
-    const donde = process.env.CAPTURAS_EN ?? "capturas";
+    const donde = CARPETA;
     const foto = (n: string) => page.screenshot({ path: `${donde}/${n}-${tema}.png` });
     const maestra = "caballo grapa batería correcto";
     const dentro = page.locator(".contenido");
     const boton = (n: string) => dentro.getByRole("button", { name: n, exact: true });
     await page.setViewportSize({ width: 980, height: 680 });
-    await page.goto("/");
+    await page.goto(raiz());
     const bienvenida = page.getByRole("button", { name: "Usar en este ordenador" });
     await bienvenida.or(page.getByLabel("Qué quieres cifrar")).first().waitFor();
     if (await bienvenida.count()) await bienvenida.click();

@@ -1,0 +1,222 @@
+/* Windows 11, con el lenguaje de Fluent 2 / WinUI 3 (ADR 0064).
+ *
+ * # De dónde salen las medidas
+ *
+ * De la escala de tipos de Fluent —Caption 12, Body 14/20, Body Strong 14,
+ * Subtitle 20— y de los controles de WinUI 3: alto 32, radios 4 y 8, líneas de
+ * 1 px. No son aproximaciones a ojo: son las mismas que Apolo usa desde su
+ * v0.13.0, vistas en una máquina de verdad.
+ *
+ * Los colores **no están aquí**: los genera Go (`internal/tema`) y llegan por
+ * `:root[data-sistema="windows"]` en `tokens.css`, con sus 66 parejas medidas.
+ * Aquí van las formas y las densidades, que es lo que no se puede medir en
+ * contraste y lo que viene en familia con el relleno que lo acompaña.
+ *
+ * # Y lo que esta hoja no hace
+ *
+ * **Nada de aquí cambia lo que hace la ventana.** El marcado es el mismo en los
+ * cuatro sistemas a propósito: lo único que cambia es cómo se ve. Si alguna vez
+ * hace falta un `<div>` que solo exista en un sistema, eso es una señal de que la
+ * estructura está mal, no de que falte un div. */
+
+:root[data-sistema="windows"] {
+  /* **La letra del sistema, que es la mitad de parecer nativo.** Segoe UI
+   * Variable es la de Windows 11 y tiene dos familias ópticas: Text para leer y
+   * Display para los títulos. Ninguna viaja dentro de Esfinge —no se envía
+   * ninguna tipografía, que es lo que la regla de la casa protege—: si no está,
+   * se cae a Segoe UI y después a la del sistema. */
+  --fuente: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --fuente-titulos: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", system-ui,
+    sans-serif;
+
+  /* La escala de Fluent. El cuerpo es 14 y no 13: en Windows el texto de
+   * interfaz es un punto más grande que en macOS, y con 13 la ventana se lee
+   * apretada al lado de cualquier aplicación del sistema. */
+  --texto-chico: 12px;
+  --texto: 14px;
+  /* Body Strong, que en Fluent es el mismo tamaño con más peso: entre Body (14) y
+   * Subtitle (20) su escala no tiene nada, así que inventar un 16 aquí sería
+   * salirse de la escala para no admitir que la diferencia la hace el peso. */
+  --texto-grande: 14px;
+  --titulo: 20px;
+
+  /* Fluent redondea menos que macOS: 4 en los controles, 8 en las tarjetas. */
+  --radio-chico: 4px;
+  --radio: 4px;
+  --radio-grande: 8px;
+
+  /* Y los controles son más altos: 32 contra los 28 de la base. */
+  --alto-control: 32px;
+  --alto-fila: 40px;
+
+  /* El NavigationView abierto de WinUI. La base mide 225, que salió de medir
+   * capturas de macOS con los semáforos como regla; aquí la referencia es otra. */
+  --barra-lateral: 240px;
+
+  /* Las líneas son de 1 px enteros: Windows no dibuja a media resolución como
+   * hace macOS, y un filete de 0,5 px acaba siendo 1 px mal repartido. */
+  --linea: 1px;
+
+  /* El relieve de Fluent: un control lleva su borde y, **debajo, uno más
+   * marcado**, que es lo que le da el apoyo. Es translúcido para que valga sobre
+   * cualquier superficie, igual que el anillo de foco. */
+  --borde-bajo: rgb(0 0 0 / 0.1);
+}
+
+:root[data-sistema="windows"]:not([data-tema="claro"]) {
+  --borde-bajo: rgb(255 255 255 / 0.09);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-sistema="windows"]:not([data-tema="claro"]) {
+    --borde-bajo: rgb(255 255 255 / 0.09);
+  }
+}
+
+/* Body 14/20: el interlineado de Fluent es un número de píxeles, no un factor. */
+:root[data-sistema="windows"] body {
+  line-height: 20px;
+}
+
+/* Los títulos, con la familia óptica que les toca. */
+:root[data-sistema="windows"] h1,
+:root[data-sistema="windows"] h2 {
+  font-family: var(--fuente-titulos);
+}
+
+/* ------------------------------------------------ el marco lo pone el sistema */
+
+/* El hueco de los semáforos es de macOS: aquí la ventana tiene su barra de
+ * título del sistema, así que arriba de la barra lateral no hay nada que
+ * esquivar. Se le da aire para que el lockup no toque el marco. */
+:root[data-sistema="windows"] .lateral .marca {
+  padding-top: var(--espacio-2);
+}
+
+:root[data-sistema="windows"] .lateral .semaforos {
+  height: var(--espacio-3);
+}
+
+/* Y con marco del sistema no hay que declarar zonas de arrastre: la ventana ya
+ * tiene de dónde agarrarse. **Esto cambia en cuanto la barra sea nuestra** (ADR
+ * 0065), y por eso vive en la hoja de Windows y no compartido con Linux: un
+ * selector de dos sistemas en la hoja de uno deja de ser cierto para uno de los
+ * dos sin que nadie se entere. */
+:root[data-sistema="windows"] .lateral,
+:root[data-sistema="windows"] .herramientas {
+  --wails-draggable: no-drag;
+}
+
+/* ------------------------------------------------------------ la navegación */
+
+/* El panel de navegación de Windows 11. Lo que lo distingue de una barra lateral
+ * cualquiera es la **barra de acento a la izquierda** de la fila activa: en
+ * Fluent el relleno es tenue y quien dice «estás aquí» es esa marca. */
+:root[data-sistema="windows"] .lateral nav button {
+  height: var(--alto-fila);
+  border-radius: var(--radio);
+  position: relative;
+  /* En WinUI las filas no llevan borde ni sombra: son superficie y texto. */
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* **Teñida del acento, no gris.** Aquí ponía «--elevada», que es un gris neutro,
+ * y el resultado era que en Windows la barra lateral se quedaba **sin una gota de
+ * la marca**: la fila activa gris y la barra de acento en piedra, porque el oro a
+ * 3 px sobre un fondo claro no se ve. Fluent tiñe la selección con el color de
+ * acento muy diluido y deja que la barra de al lado diga «estás aquí», que es
+ * justo lo que hace falta: el oro aparece como relleno —su papel— y la señal la
+ * sigue dando algo que se ve. */
+:root[data-sistema="windows"] .lateral nav button[aria-current="page"] {
+  background: var(--relleno-tenue);
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+:root[data-sistema="windows"] .lateral nav button[aria-current="page"] .icono {
+  color: var(--acento);
+}
+
+:root[data-sistema="windows"] .lateral nav button[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  /* En Fluent el fondo de la selección es tenue y **quien dice «estás aquí» es
+   * esta barra**: si no se ve, la fila activa deja de distinguirse. Sobre
+   * «--elevada» el oro da 1,37:1, así que aquí manda la piedra.
+   *
+   * Es la consecuencia de respetar la casa de cada sistema: en macOS la fila
+   * activa se rellena de oro y en Windows no, porque ahí la convención es otra. */
+  background: var(--acento);
+}
+
+/* ---------------------------------------------------------------- controles */
+
+/* El botón de Fluent es plano, con su borde de 1 px y el de abajo más marcado.
+ * Sin sombra: lo que levanta el control es ese borde, no una penumbra. */
+:root[data-sistema="windows"] button {
+  border-color: var(--filete);
+  border-bottom-color: var(--borde-bajo);
+  box-shadow: none;
+}
+
+:root[data-sistema="windows"] button:hover:not(:disabled) {
+  background: var(--boton-encima);
+}
+
+/* Y al pulsar se **apaga** en vez de hundirse: el estado pulsado de Fluent baja
+ * el contraste del control y pierde el borde de abajo. */
+:root[data-sistema="windows"] button:active:not(:disabled) {
+  background: var(--barra-encima);
+  border-bottom-color: var(--filete);
+  color: var(--cuerpo);
+}
+
+/* Los campos de Fluent llevan la línea de abajo más marcada, y **al enfocarse
+ * esa línea se vuelve del acento y crece**. Es lo más reconocible de un campo de
+ * Windows 11, y es lo que aquí sustituye al anillo de macOS. */
+:root[data-sistema="windows"] input,
+:root[data-sistema="windows"] textarea {
+  border-color: var(--filete);
+  border-bottom: 2px solid var(--borde-bajo);
+}
+
+:root[data-sistema="windows"] input:focus-visible,
+:root[data-sistema="windows"] textarea:focus-visible {
+  border-color: var(--filete);
+  border-bottom-color: var(--acento);
+  /* Sin el halo de la base: en Fluent el campo enfocado no lleva aura. */
+  box-shadow: none;
+  outline: none;
+}
+
+/* Lo demás que se enfoca lleva el anillo de Fluent, que es un filete fuera del
+ * control y no un halo difuso. */
+:root[data-sistema="windows"] button:focus-visible,
+:root[data-sistema="windows"] select:focus-visible,
+:root[data-sistema="windows"] summary:focus-visible,
+:root[data-sistema="windows"] [role="switch"]:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+/* Las tarjetas de Fluent: radio 8 y un borde de 1 px, sin sombra. */
+:root[data-sistema="windows"] .grupo {
+  border-radius: var(--radio-grande);
+  border-width: var(--linea);
+}
+
+/* Y las barras de desplazamiento finas de Windows 11, que es lo único que Fluent
+ * pide del motor y no se puede pedir con una variable. */
+:root[data-sistema="windows"] * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--apagado) 55%, transparent) transparent;
+}

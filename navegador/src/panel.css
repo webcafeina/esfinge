@@ -19,7 +19,7 @@
  * en la ventana (ADR 0021). El oro, solo como relleno de «Rellenar», con la piedra
  * encima: sobre el oro, el blanco da 1,68:1.
  */
-@import "../../frontend/src/tokens.css";
+@import "./tokens.css";
 
 :root {
   font-family: var(--fuente);

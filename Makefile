@@ -89,7 +89,7 @@ servidor:
 ## contraste: mide las parejas de color de los dos temas y las lista
 .PHONY: contraste
 contraste:
-	$(GO) test ./internal/tema/ -run TestContrasteDeLosDosTemas -v
+	$(GO) test ./internal/tema/ -run TestContrasteDeTodosLosTemas -v
 
 ## tokens: regenera los colores y medidas que consume la interfaz
 .PHONY: tokens
@@ -120,6 +120,18 @@ dmg: app
 .PHONY: e2e
 e2e:
 	cd $(FRONT) && $(PNPM) exec playwright test
+
+## capturas-windows: retrata la interfaz con el aspecto de Windows, en los dos temas
+##
+## Lo único con lo que se puede mirar Windows desde aquí (ADR 0064). Se borra la
+## carpeta antes a propósito: la captura que se mira tiene que ser la que se acaba
+## de sacar, y un fichero viejo que se queda ahí ya costó una vuelta entera.
+.PHONY: capturas-windows
+capturas-windows:
+	@rm -rf $(FRONT)/capturas/windows $(FRONT)/capturas/windows-vidrio
+	cd $(FRONT) && CAPTURAS=1 CAPTURAS_SISTEMA=windows $(PNPM) exec playwright test capturas
+	cd $(FRONT) && CAPTURAS=1 CAPTURAS_SISTEMA=windows CAPTURAS_VIDRIO=si $(PNPM) exec playwright test capturas
+	@echo "En $(FRONT)/capturas/windows y windows-vidrio"
 
 ## frontend: construye la interfaz y la deja donde la aplicación la embebe
 .PHONY: frontend

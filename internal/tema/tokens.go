@@ -102,66 +102,119 @@ func tintesDe(t Tema) string {
 	return b.String()
 }
 
-// GenerarCSS escribe los tokens que consume la interfaz.
+// juego son las dos paletas de un sistema y el selector del que cuelgan.
+//
+// El de la base va **vacío**: es `:root` a secas, y es lo que ven el panel de la
+// extensión y los escritorios que no tienen hoja propia. Los demás refinan con
+// un atributo, que pesa más que `:root` solo, así que mandan en su sistema sin
+// que haya que ordenar nada a mano.
+type juego struct {
+	selector      string
+	claro, oscuro Tema
+}
+
+func juegos() []juego {
+	return []juego{
+		{"", TemaClaro, TemaOscuro},
+		{`[data-sistema="windows"]`, WindowsClaro, WindowsOscuro},
+	}
+}
+
+// Ficheros son los sitios donde se escriben los tokens, y **son dos**.
+//
+// La extensión importa estos mismos tokens en su panel, y allí `data-sistema` no
+// existe ni puede existir: un navegador no es una ventana de Windows. Mandarle
+// el fichero entero sería mandarle bloques que nunca puede activar, crecientes
+// con cada sistema que se añada. Así que recibe solo la base, que es justo lo que
+// usa. Es el mismo reparto que hace Apolo con su web.
+var Ficheros = []struct {
+	Ruta string
+	CSS  func() string
+}{
+	{"frontend/src/tokens.css", GenerarCSS},
+	{"navegador/src/tokens.css", GenerarCSSBase},
+}
+
+// GenerarCSS escribe los tokens que consume la ventana: la base y un bloque por
+// sistema.
 //
 // El tema claro va en :root y el oscuro se aplica de dos maneras: por la
 // preferencia del sistema y por un atributo, para que se pueda forzar uno u otro
 // sin depender de los ajustes del escritorio. Ningún color se define solo dentro
 // de la consulta de medios: si lo estuviera, un navegador sin soporte se
 // quedaría sin él.
-func GenerarCSS() string {
+func GenerarCSS() string { return generar(juegos()) }
+
+// GenerarCSSBase escribe solo la base, para el panel de la extensión. Ver
+// Ficheros.
+func GenerarCSSBase() string { return generar(juegos()[:1]) }
+
+func generar(js []juego) string {
 	var b strings.Builder
 
 	b.WriteString("/* Generado por internal/tema. No se edita a mano:\n")
 	b.WriteString("   cámbialo en Go y ejecuta «make tokens», que además mide el\n")
 	b.WriteString("   contraste de cada pareja y falla si una no cumple AA. */\n\n")
 
-	b.WriteString(":root {\n")
-	for _, c := range campos {
-		fmt.Fprintf(&b, "  --%s: %s;\n", c.nombre, c.de(TemaClaro).Hex())
+	for i, j := range js {
+		// Las medidas van **una sola vez**, con la base. Lo que cada sistema cambia
+		// de medidas lo cambia su hoja (`sistema-windows.css` y compañía), que es
+		// donde una altura vive al lado del relleno y del interlineado que la
+		// acompañan: partir eso en dos ficheros es partir una decisión en dos.
+		b.WriteString(colores(":root"+j.selector, j.claro, i == 0))
+		b.WriteString("\n")
+
+		b.WriteString("@media (prefers-color-scheme: dark) {\n")
+		for _, linea := range strings.Split(colores(":root"+j.selector+`:not([data-tema="claro"])`, j.oscuro, false), "\n") {
+			if linea == "" {
+				continue
+			}
+			b.WriteString("  " + linea + "\n")
+		}
+		b.WriteString("}\n\n")
+
+		b.WriteString(colores(":root"+j.selector+`[data-tema="oscuro"]`, j.oscuro, false))
+		if i+1 < len(js) {
+			b.WriteString("\n")
+		}
 	}
-	b.WriteString(tintesDe(TemaClaro))
+
+	return b.String()
+}
+
+// colores escribe el bloque de un tema, con sus medidas si se le piden.
+func colores(selector string, t Tema, conMedidas bool) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s {\n", selector)
+	for _, c := range campos {
+		fmt.Fprintf(&b, "  --%s: %s;\n", c.nombre, c.de(t).Hex())
+	}
+	b.WriteString(tintesDe(t))
+
 	// El anillo de foco es el color de acción a media tinta: así se ve sobre
-	// cualquier superficie sin tener que inventar un color por cada una.
-	fmt.Fprintf(&b, "  --anillo: %s;\n", conAlfa(TemaClaro.Relleno, 0.35))
+	// cualquier superficie sin tener que inventar un color por cada una. En
+	// oscuro hace falta más alfa para que se llegue a ver.
+	anillo, tenue := 0.35, 0.18
+	if t.Oscuro {
+		anillo, tenue = 0.45, 0.22
+	}
+	fmt.Fprintf(&b, "  --anillo: %s;\n", conAlfa(t.Relleno, anillo))
 	// El acento muy diluido, para la selección de Fluent: en Windows la fila
 	// activa no se rellena, se tiñe, y quien dice «estás aquí» es la barra de al
 	// lado. Va translúcido a propósito, para que sirva sobre cualquier superficie.
-	fmt.Fprintf(&b, "  --relleno-tenue: %s;\n", conAlfa(TemaClaro.Relleno, 0.18))
-	b.WriteString("\n")
+	fmt.Fprintf(&b, "  --relleno-tenue: %s;\n", conAlfa(t.Relleno, tenue))
 
-	claves := make([]string, 0, len(Medidas))
-	for k := range Medidas {
-		claves = append(claves, k)
-	}
-	sort.Strings(claves)
-	for _, k := range claves {
-		fmt.Fprintf(&b, "  --%s: %s;\n", k, Medidas[k])
-	}
-	b.WriteString("}\n\n")
-
-	oscuro := func(selector string) string {
-		var s strings.Builder
-		fmt.Fprintf(&s, "%s {\n", selector)
-		for _, c := range campos {
-			fmt.Fprintf(&s, "  --%s: %s;\n", c.nombre, c.de(TemaOscuro).Hex())
+	if conMedidas {
+		b.WriteString("\n")
+		claves := make([]string, 0, len(Medidas))
+		for k := range Medidas {
+			claves = append(claves, k)
 		}
-		s.WriteString(tintesDe(TemaOscuro))
-		fmt.Fprintf(&s, "  --anillo: %s;\n", conAlfa(TemaOscuro.Relleno, 0.45))
-		fmt.Fprintf(&s, "  --relleno-tenue: %s;\n", conAlfa(TemaOscuro.Relleno, 0.22))
-		s.WriteString("}\n")
-		return s.String()
-	}
-
-	b.WriteString("@media (prefers-color-scheme: dark) {\n")
-	for _, linea := range strings.Split(oscuro(`:root:not([data-tema="claro"])`), "\n") {
-		if linea == "" {
-			continue
+		sort.Strings(claves)
+		for _, k := range claves {
+			fmt.Fprintf(&b, "  --%s: %s;\n", k, Medidas[k])
 		}
-		b.WriteString("  " + linea + "\n")
 	}
-	b.WriteString("}\n\n")
-	b.WriteString(oscuro(`:root[data-tema="oscuro"]`))
-
+	b.WriteString("}\n")
 	return b.String()
 }
