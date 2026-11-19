@@ -268,6 +268,48 @@ type Plataforma struct {
 	// compositor la transparencia de GTK enseña el escritorio a pelo. Eso no es
 	// vibrancia: es un agujero.
 	Vidrio bool `json:"vidrio"`
+
+	// Marco: quién dibuja la barra de título de esta ventana. Ver MarcoDe.
+	Marco Marco `json:"marco"`
+}
+
+// Marco dice quién dibuja la barra de título y, si la dibuja Esfinge, con qué
+// medidas.
+//
+// **Las medidas viven aquí y no en el CSS**, que es lo que las hace una sola: la
+// ventana las necesita para colocar la barra y el sistema para reservarle el
+// sitio, y escritas en dos lados se desalinean solas. Viajan a la interfaz
+// dentro de `Plataforma` y entran como propiedades personalizadas de CSS.
+type Marco struct {
+	// Propia: la barra de título la dibuja Esfinge, no el sistema.
+	Propia bool `json:"propia"`
+
+	// Alto de esa barra, en píxeles. 32 es el de Windows 11.
+	Alto int `json:"alto"`
+
+	// AnchoBoton es lo que mide cada botón de ventana. 46 × 32 es la caja de
+	// Windows 11, y no se redondea: son zonas de clic del sistema y la del cierre
+	// tiene que llegar al borde de la pantalla para que valga el gesto de tirar el
+	// ratón a la esquina.
+	AnchoBoton int `json:"anchoBoton"`
+}
+
+// MarcoDe es **el único sitio** donde se decide quién dibuja la barra de título.
+//
+// Lo lee `main.go` para poner `Frameless` —que es una opción de arranque, así
+// que esto se sabe antes de crear la ventana— y lo lee la interfaz por
+// `Plataforma`. Con la regla escrita dos veces, el día que cambie una ventana se
+// quedaría sin barra o con dos.
+//
+// **Solo Windows** (ADR 0066). En macOS la barra ya está escondida con
+// `TitleBarHidden` y los semáforos los sigue dibujando el sistema; en Linux,
+// GTK3 sin decoraciones no dibuja marco —ni sombra, ni esquinas, ni borde de
+// redimensionado— y Wails no expone con qué volver a decorarla.
+func MarcoDe(sistema string) Marco {
+	if sistema == "windows" {
+		return Marco{Propia: true, Alto: 32, AnchoBoton: 46}
+	}
+	return Marco{}
 }
 
 // Plataforma la consulta la interfaz **antes de montarse**. Ver el tipo.
@@ -276,6 +318,7 @@ func (a *App) Plataforma() Plataforma {
 		Sistema:    runtime.GOOS,
 		Escritorio: a.escritorio,
 		Vidrio:     a.vidrio,
+		Marco:      MarcoDe(runtime.GOOS),
 	}
 }
 

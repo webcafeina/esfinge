@@ -71,6 +71,17 @@ func main() {
 	err := wails.Run(&options.App{
 		Title: "Esfinge",
 
+		// **Sin marco donde la barra de título la dibujamos nosotros** (ADR 0066),
+		// que hoy es solo Windows. Es una opción de arranque y no se puede cambiar
+		// después, por eso la regla está en Go y se lee aquí.
+		//
+		// Wails no deja a la ventana desnuda: con `Frameless` llama a
+		// `ExtendFrameIntoClientArea`, así que la **sombra y las esquinas de
+		// Windows 11 siguen siendo las del sistema**, y conserva el redimensionado
+		// por los bordes. Lo que no da es el menú de Snap al pasar por Maximizar;
+		// eso va aparte.
+		Frameless: app.MarcoDe(runtime.GOOS).Propia,
+
 		// La barra de menús, en español. Ver menu.go: los roles de Wails traen
 		// los rótulos en inglés escritos a fuego, así que se construye entera.
 		Menu: menuEnEspanol(func() context.Context { return ctx }, aplicacion),

@@ -65,7 +65,19 @@ body {
 .ventana {
   display: grid;
   grid-template-columns: var(--barra-lateral) 1fr;
+  /* Dos filas: la barra de título y todo lo demás. Donde la barra la dibuja el
+   * sistema, la primera fila mide cero y no se nota que está. */
+  grid-template-rows: auto 1fr;
   height: 100%;
+}
+
+/* La barra de título **solo se ve donde la dibuja Esfinge** (ADR 0066). Aquí no:
+ * en macOS la ventana trae sus semáforos y en Linux la cabecera la pone el
+ * escritorio. Está en el marcado de los cuatro a propósito —ver el componente—,
+ * y escondida así no entra en el árbol de accesibilidad ni en la tabulación. */
+.barra-titulo {
+  display: none;
+  grid-column: 1 / -1;
 }
 
 /* -------------------------------------------------------------- barra lateral */

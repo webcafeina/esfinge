@@ -34,6 +34,7 @@ import {
 } from "./puente";
 import {
   BandaNovedad,
+  BarraDeTitulo,
   BarraLateral,
   CampoClave,
   Firma,
@@ -346,6 +347,10 @@ export default function App() {
 
   return (
     <div className="ventana">
+      {/* La barra de título, que solo se ve donde la dibuja Esfinge (ADR 0066).
+          Va siempre en el marcado: ver el componente. */}
+      <BarraDeTitulo />
+
       <BarraLateral
         valor={tarea}
         alCambiar={setTarea}

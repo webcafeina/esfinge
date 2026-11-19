@@ -126,7 +126,18 @@ No se cambian sin preguntar.
   se queda**: es lo primero que se pregunta cuando algo va raro y en Ajustes hay que ir a buscarla. La
   marca sigue en el icono, en las portadas, en el historial vacío y en Ajustes.
 - **Y estructura del sistema**: barra lateral a la izquierda, título en la barra de herramientas y
-  formularios en tarjetas, sin barra de título propia (ADR 0019). Las medidas salen de capturas de
+  formularios en tarjetas, sin barra de título propia (ADR 0019).
+  **Salvo en Windows desde el 2026-11-19** (ADR 0066), donde la barra de título **la dibuja Esfinge**:
+  banda de 32, el nombre a la izquierda y los tres botones del sistema a la derecha, sobre
+  `window.runtime` —ningún método nuevo en el puente—. Wails conserva la sombra y las esquinas de
+  Windows 11; **el doble clic para maximizar no lo trae y lo ponemos nosotros**, y falta el menú de
+  Snap. Las medidas y la regla de quién dibuja viven en `app.MarcoDe` **y solo ahí**, porque `Frameless`
+  es una opción de arranque que lee `main.go` y la interfaz las necesita para colocar la barra.
+  **La barra va en el marcado de los cuatro sistemas y la esconde el CSS**: montarla solo donde se usa
+  rompería que el marcado sea el mismo (ADR 0064) y la simulación por URL, que cambia de aspecto sin
+  recargar. Y en Windows **un ajuste es una tarjeta de WinUI** —texto a la izquierda, control a la
+  derecha— con `TarjetaAjuste`, que **no es para cualquier casilla**: una casilla dentro de un
+  formulario sigue siendo una casilla en los cuatro. Las medidas salen de capturas de
   macOS 26 que están en `referencias/` —carpeta ignorada por git—, usando los semáforos como regla:
   miden 12 pt clavados y con eso se saca la escala de cualquier captura.
 - **Cada sistema, con su forma y con su marco** (ADR 0020): la estructura de fondo es la misma en los

@@ -816,6 +816,22 @@ test("la barra lateral lleva la versión al pie y nada más", async ({ page }) =
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+test("donde la barra de título la dibuja el sistema, la nuestra no existe", async ({ page }) => {
+  const errores = vigilarConsola(page);
+  await page.goto("/");
+
+  // Aquí el aspecto es el de esta máquina —Linux—, donde la cabecera la pone el
+  // escritorio. La barra está **en el marcado** de los cuatro sistemas a
+  // propósito (ADR 0066), y lo que hay que comprobar es que escondida no está
+  // por ninguna parte: un botón de cerrar la ventana que no cierra nada sería
+  // peor que no tenerlo, y con `display: none` no entra ni en el árbol de
+  // accesibilidad ni en la tabulación.
+  await expect(page.locator(".barra-titulo")).toBeHidden();
+  await expect(page.getByRole("button", { name: /la ventana$/ })).toHaveCount(0);
+
+  expect(errores, errores.join(" | ")).toEqual([]);
+});
+
 test("la versión va al fondo, debajo de Ajustes", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");

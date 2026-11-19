@@ -17,10 +17,36 @@
 // toca, qué dice una nota de Ajustes— y preguntarlo otra vez sería otra promesa
 // y otro estado nulo que gestionar. Se resuelve una vez, se guarda, y quien lo
 // necesite lo lee de corrido.
-import { esfinge, type Plataforma } from "./puente";
+import { esfinge, type Marco, type Plataforma } from "./puente";
+
+/** Sin marco propio: lo normal, y lo que vale mientras Go no haya contestado. */
+const DEL_SISTEMA: Marco = { propia: false, alto: 0, anchoBoton: 0 };
+
+/**
+ * Lo mismo que `app.MarcoDe` en Go, **y solo para la simulación por URL**.
+ *
+ * La regla de verdad vive en Go, que es quien tiene que saberla antes de crear
+ * la ventana. Aquí hace falta una copia porque pedir el aspecto de Windows desde
+ * una máquina Linux tiene que traer también **su marco**: sin esto, la barra de
+ * título no saldría en ninguna captura y es justo lo que hay que mirar.
+ *
+ * Que las dos no se separen lo vigila `TestElMarcoEsElMismoEnLosDosLados`, que
+ * lee este fichero. Es la salida de siempre cuando una regla no se puede juntar
+ * porque está escrita en dos idiomas: una prueba que compara las dos listas.
+ */
+const MARCOS: Record<string, Marco> = {
+  darwin: DEL_SISTEMA,
+  windows: { propia: true, alto: 32, anchoBoton: 46 },
+  linux: DEL_SISTEMA,
+};
 
 /** Lo que se sabe de la plataforma antes de preguntar, que es la base neutra. */
-const SIN_RESPUESTA: Plataforma = { sistema: "", escritorio: "", vidrio: false };
+const SIN_RESPUESTA: Plataforma = {
+  sistema: "",
+  escritorio: "",
+  vidrio: false,
+  marco: DEL_SISTEMA,
+};
 
 /**
  * El valor que busca `herramientas/sin-simulacion.mjs` en lo construido.
@@ -88,7 +114,12 @@ function conLaURL(real: Plataforma): Plataforma {
   // Los nombres son los de Go —«darwin», no «macos»— para que lo que se pide en
   // la URL sea exactamente lo que la ventana recibe de verdad. Un alias aquí
   // sería un segundo vocabulario que mantener.
-  if (sistema === "darwin" || sistema === "windows" || sistema === "linux") p.sistema = sistema;
+  if (sistema === "darwin" || sistema === "windows" || sistema === "linux") {
+    p.sistema = sistema;
+    // Y con el sistema viaja su marco: pedir Windows sin su barra de título
+    // sería retratar media decisión.
+    p.marco = MARCOS[sistema];
+  }
   if (escritorio === "gnome" || escritorio === "kde" || escritorio === "otro") p.escritorio = escritorio;
   if (vidrio) p.vidrio = vidrio === "si";
   document.documentElement.dataset.simulado = MARCA_DE_SIMULACION;
@@ -107,4 +138,18 @@ function ponerEnLaRaiz(p: Plataforma): void {
 
   if (p.vidrio) raiz.dataset.vidrio = "si";
   else delete raiz.dataset.vidrio;
+
+  // **El marco, con sus medidas puestas como propiedades de CSS.** Las decide Go
+  // (ver `app.MarcoDe`) y entran aquí para que la hoja de cada sistema no tenga
+  // que repetirlas: escritas en los dos sitios, el día que Windows cambie el alto
+  // de su barra habría que acordarse de dos.
+  if (p.marco.propia) {
+    raiz.dataset.barra = "propia";
+    raiz.style.setProperty("--alto-barra-titulo", `${p.marco.alto}px`);
+    raiz.style.setProperty("--ancho-boton-ventana", `${p.marco.anchoBoton}px`);
+  } else {
+    delete raiz.dataset.barra;
+    raiz.style.removeProperty("--alto-barra-titulo");
+    raiz.style.removeProperty("--ancho-boton-ventana");
+  }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { esfinge, type Avance, type Fuerza, type Novedad } from "./puente";
+import { esfinge, ventana, type Avance, type Fuerza, type Novedad } from "./puente";
 import { ICONOS_FLUENT } from "./iconos-fluent";
 import { esWindows } from "./plataforma";
 
@@ -1155,6 +1155,88 @@ export function TarjetaAjuste({
         <Interruptor id={id} puesto={puesto ?? false} trabajando={trabajando} alCambiar={alCambiar ?? (() => {})} />
       )}
       {nota ? <p className={avisa ? "aviso" : "nota"}>{nota}</p> : null}
+    </div>
+  );
+}
+
+/**
+ * La barra de título de la ventana, cuando la dibuja Esfinge (ADR 0066).
+ *
+ * # Por qué está siempre en el marcado
+ *
+ * Se dibuja en los cuatro sistemas y **la esconde el CSS** donde la barra la
+ * pinta el sistema. Lo contrario —montarla solo si el marco es nuestro— parece
+ * lo evidente y rompe dos cosas: la regla de la ADR 0064 de que el marcado es el
+ * mismo en todos los sistemas, y, más caro en el día a día, **la simulación por
+ * URL**, que cambia de aspecto sin recargar nada. Escondida con `display: none`
+ * no está en el árbol de accesibilidad, no entra en el orden de tabulación y
+ * ninguna prueba la encuentra, así que donde no se usa no existe.
+ *
+ * # Y por qué el doble clic va a mano
+ *
+ * Wails no lo trae: no hay un solo `dblclick` ni en su runtime ni en su capa de
+ * Windows —mirado en el fuente, no deducido—. Lo que sí hace es **no empezar a
+ * arrastrar cuando hay más de un clic** (`e.detail !== 1`), que es justo el
+ * hueco por donde esto cabe.
+ */
+export function BarraDeTitulo() {
+  const [maximizada, setMaximizada] = useState(false);
+
+  // Se le pregunta a la ventana en vez de llevar la cuenta: maximizar también se
+  // hace arrastrando a la parte de arriba y con el teclado, y una cuenta propia
+  // se desalinearía con el sistema sin que nada avisara.
+  const mirar = () => void ventana.estaMaximizada().then(setMaximizada);
+  useEffect(() => {
+    mirar();
+    window.addEventListener("resize", mirar);
+    return () => window.removeEventListener("resize", mirar);
+  }, []);
+
+  const alternar = () => {
+    ventana.alternarMaximizada();
+    mirar();
+  };
+
+  return (
+    <div className="barra-titulo" onDoubleClick={alternar}>
+      {/* El nombre de la ventana, que es lo que dibujaría el sistema si no lo
+          dibujáramos nosotros. No es la marca volviendo al cromo (ADR 0065): es
+          el título de la ventana, y en Windows lo lleva cualquier aplicación. */}
+      <span className="titulo-ventana">Esfinge</span>
+
+      <div className="botones-ventana">
+        <button type="button" aria-label="Minimizar la ventana" onClick={ventana.minimizar}>
+          <svg viewBox="0 0 10 10" aria-hidden="true">
+            <path d="M0 5h10" stroke="currentColor" fill="none" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          aria-label={maximizada ? "Restaurar la ventana" : "Maximizar la ventana"}
+          onClick={alternar}
+        >
+          {/* Restaurar lleva dos marcos escalonados, como en Windows: el de
+              detrás abierto por abajo, que es lo que lo distingue del cuadrado
+              de maximizar a este tamaño. */}
+          <svg viewBox="0 0 10 10" aria-hidden="true">
+            {maximizada ? (
+              <path d="M2.5 2.5V0.5h7v7h-2M0.5 2.5h7v7h-7z" stroke="currentColor" fill="none" />
+            ) : (
+              <path d="M0.5 0.5h9v9h-9z" stroke="currentColor" fill="none" />
+            )}
+          </svg>
+        </button>
+        <button
+          type="button"
+          className="cerrar"
+          aria-label="Cerrar la ventana"
+          onClick={ventana.cerrar}
+        >
+          <svg viewBox="0 0 10 10" aria-hidden="true">
+            <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" stroke="currentColor" fill="none" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }

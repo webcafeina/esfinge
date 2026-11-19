@@ -17,6 +17,16 @@
  * espera de más antes del primer pintado. Quien la resuelve y la guarda es
  * `plataforma.ts`; aquí solo viaja.
  */
+/** Quién dibuja la barra de título, y con qué medidas. Ver `app.MarcoDe` en Go. */
+export type Marco = {
+  /** La dibuja Esfinge, no el sistema. */
+  propia: boolean;
+  /** Lo que mide esa barra de alto. */
+  alto: number;
+  /** Lo que mide cada botón de ventana de ancho. */
+  anchoBoton: number;
+};
+
 export type Plataforma = {
   /** «darwin», «windows» o «linux»: lo que devuelve Go. */
   sistema: string;
@@ -28,6 +38,8 @@ export type Plataforma = {
   escritorio: string;
   /** Si el sistema ha puesto una ventana translúcida detrás. */
   vidrio: boolean;
+  /** Quién dibuja la barra de título de esta ventana. */
+  marco: Marco;
 };
 
 export type Resultado = {
@@ -644,9 +656,32 @@ declare global {
     go?: { app?: { App?: MetodosGo } };
     runtime?: {
       EventsOn: (evento: string, cb: (...datos: unknown[]) => void) => void;
+      WindowMinimise?: () => void;
+      WindowToggleMaximise?: () => void;
+      WindowIsMaximised?: () => Promise<boolean>;
+      Quit?: () => void;
     };
   }
 }
+
+/**
+ * Lo que se le pide a la ventana desde su propia barra de título (ADR 0066).
+ *
+ * **No pasa por Go ni por la lista blanca del puente**: las cuatro las exporta
+ * ya el runtime de Wails, así que dibujar nuestra barra no abre ninguna puerta
+ * nueva entre la interfaz y la aplicación.
+ *
+ * En el navegador de desarrollo no existe ese runtime, así que no hacen nada:
+ * ahí la barra se puede ver y retratar, pero no mueve ninguna ventana. Lo que sí
+ * se puede probar es que cada botón llama a lo suyo, poniendo un runtime de
+ * mentira antes de cargar la página.
+ */
+export const ventana = {
+  minimizar: () => window.runtime?.WindowMinimise?.(),
+  alternarMaximizada: () => window.runtime?.WindowToggleMaximise?.(),
+  estaMaximizada: async () => (await window.runtime?.WindowIsMaximised?.()) ?? false,
+  cerrar: () => window.runtime?.Quit?.(),
+};
 
 /** Dice si estamos dentro de la aplicación de verdad o en el navegador. */
 export function enWails(): boolean {

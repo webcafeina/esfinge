@@ -366,3 +366,81 @@
 :root[data-sistema="windows"] .ajuste > select {
   max-width: 250px;
 }
+
+/* ------------------------------------------------------ la barra de título
+ *
+ * La dibuja Esfinge (ADR 0066). Wails deja la ventana sin marco y **conserva la
+ * sombra, las esquinas y el redimensionado de Windows 11** por la vía de
+ * `ExtendFrameIntoClientArea`, así que lo que falta es exactamente esto: una
+ * banda de 32, el nombre de la ventana a la izquierda y los tres botones del
+ * sistema a la derecha.
+ *
+ * **El alto y el ancho de los botones los dice Go** y entran como propiedades
+ * personalizadas (ver `app.MarcoDe`): escritos también aquí serían la misma
+ * medida en dos sitios. */
+:root[data-barra="propia"] .barra-titulo {
+  display: flex;
+  align-items: center;
+  height: var(--alto-barra-titulo);
+  background: var(--barra);
+
+  /* Toda la banda agarra la ventana. La propiedad **se hereda**, así que lo que
+   * caiga dentro arrastra también mientras no se desmarque: por eso los botones
+   * llevan `no-drag` ahí abajo y no al revés. */
+  --wails-draggable: drag;
+}
+
+/* El nombre de la ventana: 12 px, apagado y pegado a la izquierda, que es lo que
+ * dibuja Windows cuando la barra es suya. */
+:root[data-barra="propia"] .titulo-ventana {
+  padding-left: var(--espacio-4);
+  font-size: var(--texto-chico);
+  color: var(--cuerpo);
+}
+
+:root[data-barra="propia"] .botones-ventana {
+  display: flex;
+  margin-left: auto;
+  height: 100%;
+}
+
+/* 46 × 32 y **sin radio ni margen**: son zonas de clic del sistema y la del
+ * cierre tiene que llegar hasta la esquina de la pantalla, o se pierde el gesto
+ * de tirar el ratón arriba a la derecha. Por eso también `height: 100%`, contra
+ * la regla general que da 28 px a todos los botones. */
+:root[data-barra="propia"] .botones-ventana button {
+  width: var(--ancho-boton-ventana);
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--cuerpo);
+  --wails-draggable: no-drag;
+}
+
+:root[data-barra="propia"] .botones-ventana svg {
+  width: 10px;
+  height: 10px;
+  stroke-width: 1;
+}
+
+:root[data-barra="propia"] .botones-ventana button:hover {
+  background: var(--boton-encima);
+}
+
+/* **El cierre se pone rojo, y ese rojo no sale de la paleta**: es el
+ * `#c42b1c` del sistema, el mismo en los dos temas, y el blanco encima da
+ * 5,7:1. Es la única pieza de la ventana que no es nuestra ni se deriva, y lo
+ * es porque ese color **significa** algo que la gente ya sabe leer. */
+:root[data-barra="propia"] .botones-ventana button.cerrar:hover {
+  background: #c42b1c;
+  color: #ffffff;
+}
+
+/* Con barra propia, el hueco de los semáforos no pinta nada: la barra lateral
+ * empieza debajo de la de título. */
+:root[data-barra="propia"] .lateral .semaforos {
+  height: 0;
+}

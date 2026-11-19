@@ -246,3 +246,94 @@ test("el interruptor es la píldora de Fluent, y lo que se mueve es el pomo", as
     await variable(page, "--sobre-acento"),
   );
 });
+
+/**
+ * Pone un runtime de Wails de mentira **antes de que cargue la página**.
+ *
+ * Apunta cuántas veces se llama a cada cosa, y eso es lo que se mira: un doble
+ * que solo guardara el argumento no distinguiría «no me han llamado» de «me han
+ * llamado». Y **no trae `EventsOn`** a propósito, porque el puente elige el canal
+ * de eventos por esa propiedad: poniéndola, la ventana se quedaría esperando
+ * avisos que nadie manda.
+ */
+async function conVentanaDeMentira(page: Page, maximizada = false) {
+  await page.addInitScript((max) => {
+    const llamadas: Record<string, number> = {
+      WindowMinimise: 0,
+      WindowToggleMaximise: 0,
+      Quit: 0,
+    };
+    (window as unknown as { __llamadas: typeof llamadas }).__llamadas = llamadas;
+    window.runtime = {
+      WindowMinimise: () => void llamadas.WindowMinimise++,
+      WindowToggleMaximise: () => void llamadas.WindowToggleMaximise++,
+      WindowIsMaximised: () => Promise.resolve(max),
+      Quit: () => void llamadas.Quit++,
+    } as Window["runtime"];
+  }, maximizada);
+}
+
+const llamadas = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __llamadas: Record<string, number> }).__llamadas);
+
+test("la ventana lleva su propia barra de título, con los tres botones del sistema", async ({
+  page,
+}) => {
+  await enWindows(page);
+
+  const barra = page.locator(".barra-titulo");
+  await expect(barra).toBeVisible();
+  // 32, que es el alto de la barra de Windows 11. **Lo dice Go** y llega como
+  // propiedad de CSS: si alguien lo escribiera también aquí, serían dos.
+  expect(await alto(barra)).toBe(32);
+
+  // Los tres, con su nombre y a la derecha del título de la ventana.
+  const cerrar = page.getByRole("button", { name: "Cerrar la ventana" });
+  for (const nombre of ["Minimizar la ventana", "Maximizar la ventana", "Cerrar la ventana"]) {
+    const b = page.getByRole("button", { name: nombre });
+    await expect(b).toBeVisible();
+    expect(await ancho(b)).toBe(46);
+    expect(await alto(b)).toBe(32);
+  }
+  const titulo = (await barra.locator(".titulo-ventana").boundingBox())!;
+  expect((await cerrar.boundingBox())!.x).toBeGreaterThan(titulo.x + titulo.width);
+
+  // **Y por dónde se agarra la ventana**, que sin esto se queda clavada en la
+  // pantalla. La propiedad se hereda, así que lo que hay que comprobar es que los
+  // botones estén desmarcados: si no, pulsar «Cerrar» arrastraría.
+  const agarre = (l: Locator) =>
+    l.evaluate((e) => getComputedStyle(e).getPropertyValue("--wails-draggable").trim());
+  expect(await agarre(barra)).toBe("drag");
+  expect(await agarre(cerrar)).toBe("no-drag");
+});
+
+test("cada botón de la ventana llama a lo suyo, y el doble clic maximiza", async ({ page }) => {
+  await conVentanaDeMentira(page);
+  await enWindows(page);
+
+  await page.getByRole("button", { name: "Minimizar la ventana" }).click();
+  expect((await llamadas(page)).WindowMinimise).toBe(1);
+
+  await page.getByRole("button", { name: "Maximizar la ventana" }).click();
+  expect((await llamadas(page)).WindowToggleMaximise).toBe(1);
+
+  // **El doble clic lo ponemos nosotros**: Wails no lo trae —no hay un `dblclick`
+  // en todo su runtime— y es la mitad de lo que la gente hace con una barra de
+  // título. Se hace sobre el título, que es banda de arrastre y no un botón.
+  await page.locator(".barra-titulo .titulo-ventana").dblclick();
+  expect((await llamadas(page)).WindowToggleMaximise).toBe(2);
+
+  await page.getByRole("button", { name: "Cerrar la ventana" }).click();
+  expect((await llamadas(page)).Quit).toBe(1);
+});
+
+test("maximizada, el botón de en medio ofrece restaurar", async ({ page }) => {
+  // Lo que dice si está maximizada es la ventana, no una cuenta nuestra: también
+  // se maximiza arrastrando arriba y con el teclado, y llevando la cuenta aquí el
+  // botón acabaría ofreciendo lo contrario de lo que hace.
+  await conVentanaDeMentira(page, true);
+  await enWindows(page);
+
+  await expect(page.getByRole("button", { name: "Restaurar la ventana" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Maximizar la ventana" })).toHaveCount(0);
+});

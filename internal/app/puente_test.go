@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -468,6 +469,68 @@ func TestElAspectoNoSeDecideEnElMarcado(t *testing.T) {
 	for nombre := range permitido {
 		if _, err := os.Stat(filepath.Join(src, nombre)); err != nil {
 			t.Errorf("la lista de excepciones nombra «%s», que ya no está", nombre)
+		}
+	}
+}
+
+// TestElMarcoEsElMismoEnLosDosLados compara la tabla de `plataforma.ts` con
+// `MarcoDe`.
+//
+// La regla de quién dibuja la barra de título vive en Go, que es quien tiene que
+// saberla **antes** de crear la ventana. Pero la simulación por URL necesita una
+// copia: pedir el aspecto de Windows desde esta máquina tiene que traer también
+// su marco, o la barra no saldría en ninguna captura y es justo lo que hay que
+// mirar.
+//
+// Dos listas se desalinean solas —aquí ya ha costado seis veces—, y cuando no se
+// pueden juntar porque están en dos idiomas, lo que cierra la familia es una
+// prueba que las compare entre sí.
+func TestElMarcoEsElMismoEnLosDosLados(t *testing.T) {
+	fuente, err := os.ReadFile(filepath.Join("..", "..", "frontend", "src", "plataforma.ts"))
+	if err != nil {
+		t.Fatalf("no se pudo leer plataforma.ts: %v", err)
+	}
+
+	// La tabla se lee entera y **se exige que estén los tres**: con una búsqueda
+	// por sistema, borrar una entrada dejaría la prueba en verde encontrando las
+	// otras dos.
+	encontrados := map[string]Marco{}
+	for _, m := range regexp.MustCompile(
+		`(?m)^\s*(darwin|windows|linux):\s*(DEL_SISTEMA|\{[^}]*\}),`,
+	).FindAllStringSubmatch(string(fuente), -1) {
+		sistema, cuerpo := m[1], m[2]
+		if cuerpo == "DEL_SISTEMA" {
+			encontrados[sistema] = Marco{}
+			continue
+		}
+		var marco Marco
+		marco.Propia = strings.Contains(cuerpo, "propia: true")
+		for campo, destino := range map[string]*int{"alto": &marco.Alto, "anchoBoton": &marco.AnchoBoton} {
+			c := regexp.MustCompile(campo + `:\s*(\d+)`).FindStringSubmatch(cuerpo)
+			if c == nil {
+				t.Fatalf("en plataforma.ts, %q no dice %q", sistema, campo)
+			}
+			n, err := strconv.Atoi(c[1])
+			if err != nil {
+				t.Fatalf("en plataforma.ts, %q tiene un %q que no es un número: %v", sistema, campo, err)
+			}
+			*destino = n
+		}
+		encontrados[sistema] = marco
+	}
+
+	for _, sistema := range []string{"darwin", "windows", "linux"} {
+		leido, hay := encontrados[sistema]
+		if !hay {
+			t.Fatalf("plataforma.ts no dice qué marco lleva %q.\n"+
+				"La tabla MARCOS tiene que tener los tres: si falta uno, pedir ese aspecto\n"+
+				"por la URL traería el marco de esta máquina y la captura mentiría.", sistema)
+		}
+		if quiere := MarcoDe(sistema); leido != quiere {
+			t.Errorf("el marco de %q no es el mismo en los dos lados:\n"+
+				"  Go (app.MarcoDe):   %+v\n"+
+				"  plataforma.ts:      %+v\n"+
+				"Manda Go, que es quien lo decide antes de crear la ventana.", sistema, quiere, leido)
 		}
 	}
 }
