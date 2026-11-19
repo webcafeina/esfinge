@@ -2481,6 +2481,23 @@ mutarla— y **nada afirmaba que el tap pasara por la puerta**, de modo que quit
 —una línea que no se nota, con la puerta corriendo al lado en vez de delante— también se quedaba en
 verde.
 
+**Una mutación puede no mutar nada, y entonces el verde que deja vale lo mismo que no haberla
+hecho.** Para ver roja la prueba de la anatomía de WinUI se cambió `grid-template-columns` de
+`1fr auto` a `auto 1fr` y **siguió en verde**: las tres piezas de esa tarjeta van con su `grid-area`
+escrita, así que mover el ancho de las columnas no mueve ninguna —la primera se encoge, la segunda
+se estira, y el control sigue a la derecha del rótulo—. Lo que la prueba afirma es **la colocación**,
+y mutando eso se puso roja a la primera. La regla: **mutar la línea que se cambió no basta; hay que
+mutar la regla que la prueba dice vigilar**, y si no se sabe cuál es, la prueba tampoco lo sabe.
+
+**Y antes de recortar píxeles, preguntar qué falta por nativizar.** Las cinco pestañas de Ajustes con
+su icono pedían **570** y la columna está topada en 560. La salida barata era apretar el relleno del
+control segmentado **de todos los sistemas**, que es tocar cuatro aspectos para arreglar uno. La causa
+real era que ese control **nunca se había adaptado a Windows**: seguía siendo la píldora de macOS
+—carril gris y la activa flotando en blanco—, que allí no existe. Dándole su gramática, la SelectorBar
+de Fluent —sin carril y con relleno de 10—, sobraron 24 px. **El síntoma era de medidas y la causa, de
+anatomía**, y eso vale para las tres fases que quedan: cuando algo no cabe en un sistema, mirar primero
+si ese trozo sigue vestido del sistema de al lado.
+
 ## Lo que nunca se ha probado
 
 Y ojo con qué se ha comprobado de verdad: **el diálogo de abrir no**, porque en macOS los ficheros se

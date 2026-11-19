@@ -5,6 +5,54 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-19 (tarde) · Windows entero: la estructura, el marco y la 2.70.0
+
+- **La marca sale de la barra lateral** ([ADR 0065](adr/0065-la-marca-sale-de-la-barra-lateral.md)).
+  El cliente eligió sobre cuatro tratamientos en capturas: **arriba nada y al pie sólo el número de
+  versión**, en los cuatro sistemas. Deroga esa parte de la [0021](adr/0021-la-marca-en-la-interfaz.md),
+  que lleva el aviso en su cabecera. Se eligió frente a lo que hace Apolo —quitar las dos cosas—
+  porque **la versión es lo primero que se pregunta cuando algo va raro** y en Ajustes hay que ir a
+  buscarla. Y se decidió **antes** de tocar el marco, porque la barra de título propia ocupa justo
+  esa esquina.
+- **La anatomía, que es lo que contestaba a su pega de la mañana** ([ADR 0066](adr/0066-el-marco-en-windows.md)).
+  Los colores y los iconos ya eran de Fluent; lo que seguía siendo de macOS era **cómo se construye
+  un ajuste**. Nace `TarjetaAjuste` + `Interruptor`: **el mismo marcado en los cuatro sistemas y una
+  gramática por sistema en el CSS**. En Windows, la SettingsCard —texto a un lado, control al otro,
+  68 de alto, borde de 1 px— con el bloque aplanado para que no haya tarjetas dentro de una tarjeta,
+  y la píldora de 40 × 20, **de oro con la piedra encima**. Diez sitios migrados; las tres casillas
+  de `boveda.tsx` se quedan como estaban, porque una casilla dentro de un formulario sigue siendo una
+  casilla en los cuatro sistemas.
+- **Y el marco.** `Frameless` sólo en Windows, con la regla y las medidas en `app.MarcoDe` **y sólo
+  ahí** —la lee `main.go`, porque es opción de arranque, y la interfaz por `Plataforma`—. La barra va
+  **en el marcado de los cuatro** y la esconde el CSS: montarla sólo donde se usa rompería que el
+  marcado sea el mismo (0064) y, más caro en el día a día, la simulación por URL. Tres cosas leídas
+  en el fuente de Wails y no deducidas: `Frameless` llama a `ExtendFrameIntoClientArea` —o sea que
+  **la sombra y las esquinas siguen siendo del sistema**—, el arrastre cuelga de `--wails-draggable`
+  y **se hereda**, y **no hay ni un `dblclick` en todo su runtime**, así que el doble clic para
+  maximizar lo ponemos nosotros. Los cuatro verbos de ventana los exporta ya ese runtime: **ningún
+  método nuevo en la lista blanca del puente**.
+- **Las pestañas de Ajustes, con su glifo**, pedido por él al dar el visto bueno. Había un motivo
+  escrito para que no lo llevaran, y era cierto. Medido: en Windows pedían **570** y la columna está
+  topada en 560. Los 24 px salieron de arreglar lo que de verdad estaba mal —ese control **nunca se
+  había nativizado** y seguía siendo la píldora de macOS—, dándole la SelectorBar de Fluent.
+- **Y lo que dejó dicho, que es más grande que esta versión**: la anatomía vale **para los cuatro
+  sistemas, el Mac incluido**. Como el marcado ya es el mismo, cada fase siguiente es escribir una
+  hoja sin tocar `App.tsx`.
+- **Verificado**: `make comprobar`, `navegador` (200) y `make e2e` (186) en verde tras cada pieza, y
+  **cada protección nueva mutada**. Dos capturas miradas de verdad antes de dar nada por bueno, que
+  es lo que destapó las tarjetas dentro de una tarjeta y el desplegable estrujando su descripción.
+- **Publicada la 2.70.0**: verde en los seis objetivos, 37 artefactos. **Chrome la aceptó** y está en
+  revisión —no había ninguna atascada, así que no hubo que cancelar nada—; Firefox enviada;
+  **Chocolatey la rebotó**, porque sigue moderando la 2.66.1. **El VPS, actualizado** y comprobado
+  leyendo la bóveda de Tempero.
+- **Queda abierto**: que el cliente mire la 2.70.0 en su Windows 11 ARM —tipografía, Mica, arrastre,
+  redimensionado y sombra, que es lo único que desde aquí no se juzga—, **reempujar Chocolatey**
+  cuando se desatasque (`gh workflow run canales.yml -f version=2.70.0 -f canal=chocolatey`), el
+  **menú de Snap** en un paso aparte, y después **macOS**, cuya fase empieza volcando de una pasada
+  el kit de Apple en Figma.
+
+---
+
 ## 2026-11-19 · El Mac, y a nativizar la interfaz
 
 - **Chocolatey devolvió el paquete, y no por el paquete.** Su moderador pidió la ficha en inglés
