@@ -132,10 +132,70 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: recetas, path: recetas }
 
+  # **La puerta que faltaba: cargar las recetas antes de empujarlas.**
+  #
+  # El 2026-11-19 dos fallos distintos del cask llegaron hasta el Mac del cliente —un `depends_on`
+  # desactivado y un `#{appdir}` que ese DSL no tiene—, y los dos pasaron todas las puertas: aquí
+  # nadie evaluaba el cask nunca. La comprobación de abajo sólo mira que el fichero contenga el
+  # número de versión, que es cierto también en un cask que Homebrew se niega a cargar. Y como
+  # cargar el tap evalúa **las dos** recetas, un cask roto tumba además `brew install` de la
+  # fórmula: el fallo no se queda en lo suyo.
+  #
+  # Hace falta un macOS de verdad: `brew info --cask` no se puede contestar en Linux.
+  #
+  # Y se mira también lo que Homebrew **avisa** sin fallar: su `depends_on` de cadena estuvo meses
+  # en «deprecated» antes de pasar a desactivado, así que esperar al error es esperar a que lo
+  # descubra quien instala.
+  cargan:
+    name: Las recetas cargan en un Mac
+    needs: recetas
+    if: inputs.canal == 'todos' || inputs.canal == 'homebrew'
+    runs-on: macos-15
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: recetas, path: recetas }
+      - name: Cargarlas en un tap de mentira
+        run: |
+          set -euo pipefail
+          # Un tap es un repositorio git, así que se le da uno. El nombre no es el de verdad a
+          # propósito: así esto no puede confundirse con el tap publicado ni tocarlo.
+          tap="$RUNNER_TEMP/puerta"
+          mkdir -p "$tap/Formula" "$tap/Casks"
+          cp recetas/Formula/esfinge.rb "$tap/Formula/"
+          cp recetas/Casks/esfinge.rb   "$tap/Casks/"
+          git -C "$tap" init -q
+          git -C "$tap" add -A
+          git -C "$tap" -c user.email=puerta@local -c user.name=puerta commit -qm puerta
+          brew tap webcafeina/puerta "$tap"
+          # **El modelo de confianza de taps de terceros**, que estrenó Homebrew y con el que se
+          # topó el cliente: sin esto, `brew info --cask` se niega a cargarlo y diría que la receta
+          # está mal cuando lo que falta es el permiso.
+          brew trust webcafeina/puerta
+
+          mal=0
+          for que in "--cask webcafeina/puerta/esfinge" "webcafeina/puerta/esfinge"; do
+            echo "· brew info $que"
+            if ! salida="$(brew info $que 2>&1)"; then
+              echo "$salida"
+              echo "::error::Homebrew no puede cargar «$que». Así se publicó el cask del 2026-11-16, y un cask que no carga tumba también la fórmula."
+              mal=1
+              continue
+            fi
+            printf '%s\n' "$salida" | sed -n '1,6p'
+            # Un aviso de hoy es el error de dentro de tres meses.
+            if printf '%s' "$salida" | grep -qiE "deprecat|disabled|unreadable"; then
+              printf '%s\n' "$salida" | grep -iE "deprecat|disabled|unreadable"
+              echo "::error::«$que» usa algo que Homebrew está retirando. Hoy avisa; el día que lo desactive, la receta deja de cargar y lo descubre quien instala."
+              mal=1
+            fi
+          done
+          [ $mal -eq 0 ] || exit 1
+          echo "✓ las dos recetas cargan, y sin avisos de retirada"
+
   homebrew:
     name: El tap de Homebrew
     if: inputs.canal == 'todos' || inputs.canal == 'homebrew'
-    needs: recetas
+    needs: [recetas, cargan]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

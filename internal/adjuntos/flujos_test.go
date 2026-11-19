@@ -474,10 +474,22 @@ func TestLosCanalesQueSePuedenElegirSonLosQueMiranLaEleccion(t *testing.T) {
 		t.Fatal("la lista de canales que se pueden elegir está vacía: esta prueba no comprueba nada")
 	}
 
+	// Lo que cuelga de las recetas **y no publica**, con su razón. La lista es corta a propósito:
+	// cada excepción es un trabajo que podría estar publicando sin que esto lo mirara.
+	noPublican := map[string]string{
+		"cargan": "es la puerta que carga las dos recetas en un Mac antes de empujarlas; " +
+			"no escribe en ningún sitio",
+	}
+
 	// Los trabajos y su cuerpo, para preguntarle a cada uno por lo suyo.
 	cabecera := regexp.MustCompile(`(?m)^  ([a-z-]+):$`)
+	// Colgar de las recetas se escribe de dos formas —`needs: recetas` y `needs: [recetas, …]`—, y
+	// la primera versión de esto sólo veía la primera: el día que al tap se le añadió una puerta
+	// delante, dejó de contar como canal y la prueba lo dijo por el otro lado.
+	deLasRecetas := regexp.MustCompile(`needs:\s*(recetas\b|\[[^\]]*\brecetas\b)`)
 	sitios := cabecera.FindAllStringSubmatchIndex(yaml, -1)
 	canales := map[string]bool{}
+	hay := map[string]bool{}
 	for i, s := range sitios {
 		nombre := yaml[s[2]:s[3]]
 		fin := len(yaml)
@@ -485,10 +497,12 @@ func TestLosCanalesQueSePuedenElegirSonLosQueMiranLaEleccion(t *testing.T) {
 			fin = sitios[i+1][0]
 		}
 		cuerpo := yaml[s[0]:fin]
+		hay[nombre] = true
 
-		// Un canal es un trabajo que cuelga de las recetas: eso es lo que distingue a los cuatro
-		// que publican de `recetas` y de `comprobar`.
-		if !strings.Contains(cuerpo, "needs: recetas") {
+		if !deLasRecetas.MatchString(cuerpo) {
+			continue
+		}
+		if _, exento := noPublican[nombre]; exento {
 			continue
 		}
 		canales[nombre] = true
@@ -508,5 +522,54 @@ func TestLosCanalesQueSePuedenElegirSonLosQueMiranLaEleccion(t *testing.T) {
 			t.Errorf("se puede elegir el canal «%s» y no hay ningún trabajo que lo publique: "+
 				"elegirlo no haría nada y parecería que sí", c)
 		}
+	}
+	for n := range noPublican {
+		if !hay[n] {
+			t.Errorf("la lista de exentos nombra «%s», que ya no es un trabajo: un nombre muerto "+
+				"ahí es donde mañana se esconde un canal de verdad", n)
+		}
+	}
+}
+
+// **El tap no se empuja sin que las dos recetas carguen en un Mac.**
+//
+// La puerta existe porque el 2026-11-19 dos fallos del cask llegaron hasta el Mac del cliente —un
+// `depends_on` que Homebrew ha desactivado y un `#{appdir}` que ese DSL no tiene—, y los dos
+// pasaron por aquí en verde: nadie evaluaba el cask nunca. Una puerta que corre **al lado** del
+// empujón en vez de delante no protege nada, y quitarle la dependencia es una línea que no se nota
+// — se comprobó, y sin esta prueba se quedaba en verde.
+func TestElTapNoSeEmpujaSinQueLasRecetasCarguen(t *testing.T) {
+	yaml := leer(t, "../../.github/workflows/canales.yml")
+
+	cabecera := regexp.MustCompile(`(?m)^  ([a-z-]+):$`)
+	sitios := cabecera.FindAllStringSubmatchIndex(yaml, -1)
+	cuerpos := map[string]string{}
+	for i, s := range sitios {
+		fin := len(yaml)
+		if i+1 < len(sitios) {
+			fin = sitios[i+1][0]
+		}
+		cuerpos[yaml[s[2]:s[3]]] = yaml[s[0]:fin]
+	}
+
+	puerta, hay := cuerpos["cargan"]
+	if !hay {
+		t.Fatal("ya no hay trabajo «cargan» en canales.yml: si la puerta se ha quitado o se llama " +
+			"de otra forma, esta prueba y su razón hay que mirarlas a mano, no borrarlas")
+	}
+	// Que de verdad cargue las recetas, y no sea un trabajo vacío con ese nombre.
+	if !strings.Contains(puerta, "brew info") {
+		t.Error("el trabajo «cargan» no llama a «brew info»: entonces no está cargando nada")
+	}
+	if !strings.Contains(puerta, "macos") {
+		t.Error("el trabajo «cargan» no corre en un macOS, y «brew info --cask» no se puede " +
+			"contestar en Linux")
+	}
+
+	tap := cuerpos["homebrew"]
+	if !regexp.MustCompile(`needs:\s*\[[^\]]*\bcargan\b`).MatchString(tap) {
+		t.Error("el trabajo que empuja el tap no depende de «cargan», así que las recetas se " +
+			"publican mientras se comprueban: un cask que no carga llegaría al tap igual, y ahí " +
+			"tumba también la fórmula")
 	}
 }
