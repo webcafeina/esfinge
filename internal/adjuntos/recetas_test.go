@@ -91,3 +91,64 @@ func TestLasRecetasDeLosCanalesNombranAdjuntosQueExisten(t *testing.T) {
 		t.Fatal("no he encontrado ningún marcador: o las recetas han cambiado de forma o esta prueba no comprueba nada")
 	}
 }
+
+// La ficha de Chocolatey va **en inglés primero y en español detrás**, y eso no es una preferencia
+// nuestra: lo pidió su moderación el 2026-11-18 —«the description is only in Spanish… it should be
+// written in English, and you can keep the Spanish after it»— y mientras no se corrigió, el paquete
+// se quedó esperando sin que nada aquí lo dijera.
+//
+// # Por qué hace falta una prueba para esto
+//
+// Porque en este proyecto **todo se escribe en español**, así que lo natural al tocar esta ficha es
+// volver a escribirla en español, y el aviso llega **días después** y por correo: el paquete entra,
+// pasa las comprobaciones automáticas, y se para en «Waiting for Maintainer». Eso cuesta una ronda
+// de moderación entera, que son días, y no lo caza ninguna otra puerta.
+//
+// Lo que se mira es **sólo lo que llega a la tienda** —el resumen y la descripción—, no los
+// comentarios del fichero, que son nuestros y van en español a propósito. Y winget no entra aquí:
+// allí la ficha va por idioma (`locale.es-ES`), así que el español es lo correcto.
+func TestLaFichaDeChocolateyEmpiezaEnIngles(t *testing.T) {
+	const ficha = "../../empaquetado/chocolatey/esfinge.nuspec"
+	crudo, err := os.ReadFile(ficha)
+	if err != nil {
+		t.Fatalf("no encuentro la ficha: %v", err)
+	}
+
+	saca := func(patron string) string {
+		m := regexp.MustCompile(`(?s)` + patron).FindStringSubmatch(string(crudo))
+		if m == nil {
+			t.Fatalf("%s: no encuentro %s; la ficha ha cambiado de forma y esta prueba no comprueba nada", ficha, patron)
+		}
+		return m[1]
+	}
+	resumen := saca(`<summary>(.*?)</summary>`)
+	descripcion := saca(`<!\[CDATA\[(.*?)\]\]>`)
+
+	// El título de la parte en español es lo que marca dónde acaba el inglés, así que si
+	// desaparece, esta prueba no sabría dónde mirar: antes que dar un verde que no significa
+	// nada, se dice.
+	const enEspanol = "## En español"
+	corte := strings.Index(descripcion, enEspanol)
+	if corte < 0 {
+		t.Fatalf("%s: la descripción no lleva «%s», que es lo que separa los dos idiomas", ficha, enEspanol)
+	}
+
+	// Lo que delata que un trozo está en español sin tener que saber inglés: lo que el inglés no
+	// escribe nunca.
+	deEspanol := "áéíóúüñÁÉÍÓÚÜÑ¿¡«»"
+	mira := func(que, texto string) {
+		for i, r := range texto {
+			if strings.ContainsRune(deEspanol, r) {
+				desde := i - 60
+				if desde < 0 {
+					desde = 0
+				}
+				t.Errorf("%s: %s lleva «%c», o sea que está en español, y la moderación de Chocolatey lo quiere en inglés (el español va detrás de «%s»). Dice: …%s…",
+					ficha, que, r, enEspanol, texto[desde:i+1])
+				return
+			}
+		}
+	}
+	mira("el resumen", resumen)
+	mira("la descripción, antes de la parte en español", descripcion[:corte])
+}

@@ -30,12 +30,28 @@ on:
         description: La versión que se acaba de publicar, sin la «v»
         required: true
         type: string
+      canal:
+        description: Qué canal se toca. Publicando, todos.
+        required: false
+        default: todos
+        type: string
   workflow_dispatch:
     inputs:
       version:
         description: La versión que ya está publicada, sin la «v»
         required: true
         type: string
+      # **Un canal suelto existe porque hay uno que modera**: cuando Chocolatey manda corregir la
+      # ficha, pide volver a empujar **esa misma versión** —«repush with the exact same version»—, y
+      # eso con «todos» significaría devolver el tap, el AUR y winget a una versión vieja. Hasta hoy
+      # la única salida era bajar el `.nupkg` del artefacto y empujarlo a mano desde un Windows con
+      # la clave delante; la clave vive aquí, así que eso era pedirle a alguien que se la llevara.
+      canal:
+        description: Uno suelto, para reempujar una versión que su tienda ha devuelto
+        required: false
+        default: todos
+        type: choice
+        options: [todos, homebrew, aur, chocolatey, winget]
 
 permissions:
   contents: read
@@ -52,6 +68,31 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: "1.27", cache-dependency-path: go.sum }
+
+      # **Con «todos», sólo la última publicada.** Una versión vieja con «todos» rehace las cinco
+      # recetas apuntando a ella: el tap, el PKGBUILD y winget **retrocederían**, y el trabajo de
+      # abajo diría que todo va bien, porque lo que comprueba es que los canales sirven la versión
+      # *que se le ha dado*. O sea el peor fallo posible aquí: en verde y hacia atrás.
+      #
+      # Falla sólo si existe una **más nueva** que la pedida, no si no es «la última» a secas:
+      # publicando, esto corre a los segundos de crear la publicación y GitHub puede tardar en
+      # marcarla como la última. Comparando así, ese retraso da un «no hay nada más nuevo» y deja
+      # pasar, que es lo correcto; lo que se quiere cazar es el otro sentido.
+      - name: Con «todos», que no haya una más nueva
+        if: inputs.canal == 'todos'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          pedida="${{ inputs.version }}"
+          ultima="$(gh release list --limit 30 --json tagName -q '.[].tagName' \
+            | sed 's/^v//' | sort -V | tail -1)"
+          if [ "$ultima" != "$pedida" ] \
+            && [ "$(printf '%s\n%s\n' "$ultima" "$pedida" | sort -V | tail -1)" = "$ultima" ]; then
+            echo "::error::Se ha pedido la $pedida con «todos» y ya está publicada la $ultima: eso dejaría los canales atrás. Para reempujar una versión que su tienda ha devuelto, elige ese canal suelto."
+            exit 1
+          fi
+          echo "· la $pedida es la última publicada ($ultima): se tocan los cinco canales"
 
       # Las sumas salen del SHA256SUMS **de la publicación**, no de los ficheros locales: lo que
       # las recetas prometen es lo que está colgado ahí, y es lo que quien instala va a bajar.
@@ -93,6 +134,7 @@ jobs:
 
   homebrew:
     name: El tap de Homebrew
+    if: inputs.canal == 'todos' || inputs.canal == 'homebrew'
     needs: recetas
     runs-on: ubuntu-latest
     steps:
@@ -144,6 +186,7 @@ jobs:
 
   aur:
     name: El AUR
+    if: inputs.canal == 'todos' || inputs.canal == 'aur'
     needs: recetas
     runs-on: ubuntu-latest
     steps:
@@ -211,6 +254,7 @@ jobs:
 
   chocolatey:
     name: Chocolatey
+    if: inputs.canal == 'todos' || inputs.canal == 'chocolatey'
     needs: recetas
     runs-on: windows-latest
     steps:
@@ -255,7 +299,11 @@ jobs:
               # Y el .nupkg queda colgado de este trabajo, así que subirlo a mano cuando se
               # apruebe la anterior es bajarlo y un `choco push`.
               Write-Host "::warning::Chocolatey no ha aceptado la $env:VERSION_QUE_SUBE (lo de arriba es su respuesta). Lo normal es que sea porque tiene otra versión en revisión: https://community.chocolatey.org/packages/esfinge"
-              Write-Host "· el paquete queda como artefacto de este trabajo para subirlo a mano"
+              # **Y lo que hay que hacer con esto, dicho aquí.** Un aviso que no dice el siguiente
+              # paso se lee y no se actúa: entre el 2026-11-16 y el 18 pasaron tres publicaciones
+              # por aquí avisando, y la tienda se quedó en la 2.66.1 sin que nadie lo mirara.
+              Write-Host "· la tienda se queda en la versión anterior. Cuando se apruebe o la devuelvan, se reempuja con este canal suelto: gh workflow run canales.yml -f version=<la que toque> -f canal=chocolatey"
+              Write-Host "· y el paquete queda como artefacto de este trabajo, por si hay que subirlo a mano"
               exit 0
             }
           }
@@ -268,6 +316,7 @@ jobs:
 
   winget:
     name: winget
+    if: inputs.canal == 'todos' || inputs.canal == 'winget'
     needs: recetas
     runs-on: windows-latest
     steps:
@@ -341,6 +390,7 @@ jobs:
   comprobar:
     name: Los canales sirven la versión
     needs: [homebrew, aur, chocolatey]
+    if: inputs.canal == 'todos'
     runs-on: ubuntu-latest
     steps:
       - name: Preguntarles

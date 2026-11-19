@@ -35,6 +35,7 @@ habría ofrecido un `.deb`**.
 | Licencia | Una **excepción expresa** en el `LICENSE` para los canales de la casa y para recetas que bajen el fichero oficial y lo instalen sin modificar. Sin eso, el AUR y Chocolatey contradecían la licencia |
 | AppImage | **Autosuficiente** (WebKitGTK dentro, ~87 MiB) y **con la ruta del MCP arreglada**, que en Apolo es deuda abierta |
 | Vocabulario | `amd64`/`arm64` en todo, como el `Makefile`. `x86_64`/`aarch64` solo donde lo nombra la herramienta |
+| La ficha de Chocolatey (2026-11-18) | **En inglés primero y en español detrás**, que es lo que pidió su moderación al devolver el paquete. No es una excepción a la regla de la casa: el programa sigue estando en español, y **la ficha lo dice con todas las letras** para que nadie lo instale creyendo otra cosa. winget no lo necesita, porque allí la ficha va por idioma |
 
 ## Alternativas descartadas
 
@@ -111,15 +112,21 @@ Lo que **está comprobado**, y con qué:
 - **La cadena de la firma GPG**: importar desde el secreto, firmar y verificar **con la pública
   sola**, como hace `apt`.
 
+- **Y en máquinas de verdad, el 2026-11-17**, que es lo que el 16 faltaba: `apt install` desde el
+  repositorio en su Ubuntu ARM, `dnf install` en su Fedora ARM —con la clave nuestra importada, vista
+  con `rpm -q gpg-pubkey`—, el PKGBUILD de la web en su Arch ARM, y el instalador en su Windows 11
+  ARM, **con el icono de los `.esf` puesto en los tres sistemas**, que era lo último sin verificar de
+  todo el proyecto.
+
 Lo que **no** está comprobado, y hay que decirlo:
 
-- **Nadie ha instalado desde un canal en una máquina de verdad.** Todo lo de arriba es contenedores
-  en amd64 y el corredor de GitHub. Falta lo que solo puede hacer el cliente: `apt install` en su
-  Ubuntu ARM, `dnf install` en su Fedora ARM, `makepkg -si` en su Arch ARM, `choco install` en su
-  Windows 11 ARM y `brew install` en su Mac.
-- **El icono de los `.esf` en Windows y en Linux**, que sigue siendo lo único sin verificar de todo
-  el proyecto.
-- **Que Chocolatey apruebe el paquete**, que es de su moderación.
+- **El Mac**: `brew install` de la fórmula y del cask. Es lo único que queda de la verificación por
+  sistemas.
+- **Que Chocolatey apruebe el paquete**, que es de su moderación, y ahí hay algo aprendido: el
+  2026-11-18 **lo devolvió**, y no por el paquete sino **por el idioma de la ficha** —«the
+  description is only in Spanish»—, con las dos sumas ya comprobadas por su moderador. Corregida y
+  reempujada **la misma versión**, que es lo que piden; `choco install` sigue sin poderse probar
+  hasta que se apruebe.
 - **Un Windows amd64 nativo**: nadie de la casa tiene uno. Su instalador lo ejercita solo la máquina
   de GitHub.
 - **Si Cloudflare cachea los índices de /apt**, que está en `deuda.md`: por los nombres sin extensión

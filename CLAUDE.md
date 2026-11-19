@@ -2402,6 +2402,26 @@ Y al lado, lo que avisó la propia herramienta y no se leyó: `wingetcreate` esc
 --token argument may result in the token being logged». **El secreto nunca como argumento** —es la
 regla de la casa desde que existe la bóveda—, así que va por el entorno.
 
+**Una tienda con moderación humana puede devolver el paquete por el idioma de la ficha, y eso no lo
+caza ninguna puerta de aquí.** La ficha de Chocolatey estaba entera en español —lo natural en este
+proyecto— y su moderador la devolvió el 2026-11-18: «the description is only in Spanish… it should be
+written in English, and you can keep the Spanish after it», con las dos sumas ya comprobadas. Va en
+inglés delante y en español detrás, **y dice que el programa está en español**, que es lo que un
+lector inglés necesita saber antes de instalarlo. Tres cosas que deja. **La regla de la casa es del
+producto, no de las tiendas**: la de Apolo ya estaba en inglés, así que esto era un agujero nuestro y
+no un moderador con el día torcido; y **winget no lo tiene**, porque allí la ficha va **por idioma**
+—una comparación que ahorra entender el fallo al revés—. Lo vigila una prueba que mira **sólo lo que
+llega a la tienda** —el resumen y la descripción, no los comentarios— y busca lo que el inglés no
+escribe nunca: una vocal con tilde, una eñe, un signo de apertura. Y la tercera, que **ya es la
+segunda vez que cuesta lo mismo**: el trabajo de Chocolatey avisa y sale en verde cuando le rechazan
+la subida —a propósito, porque su tienda no acepta otra versión mientras modera una—, así que **tres
+publicaciones seguidas pasaron por ahí avisando** y la tienda se quedó en la 2.66.1 sin que nadie lo
+mirara. Un aviso que no dice el siguiente paso deja de leerse, así que ahora lo dice: la orden exacta
+para reempujar **ese canal suelto**. Que exista un canal suelto es la otra mitad — reempujar «la
+misma versión», que es lo que pide la moderación, con «todos» significaría devolver el tap, el AUR y
+winget a una versión vieja, **y la comprobación final diría que todo va bien**, porque mira que los
+canales sirvan la versión *que se le ha dado*.
+
 ## Lo que nunca se ha probado
 
 Y ojo con qué se ha comprobado de verdad: **el diálogo de abrir no**, porque en macOS los ficheros se

@@ -441,3 +441,72 @@ func TestCadaPasoQueUnTrabajoNombraExiste(t *testing.T) {
 		t.Fatal("no he encontrado ninguna referencia a «steps.»: esta prueba no está comprobando nada")
 	}
 }
+
+// Los canales se pueden tocar **de uno en uno**, y la lista de los que se pueden elegir tiene que
+// ser exactamente la de los que miran esa elección.
+//
+// # Qué pasa si se desalinean
+//
+// Las dos mitades fallan calladas y en direcciones contrarias. Un canal **que no mira el
+// selector** se publica cuando se ha pedido otro: reempujar la ficha de Chocolatey devolvería el
+// tap de Homebrew a esa versión vieja, que es justo lo que el selector viene a impedir. Y un canal
+// **que no está en la lista** no se puede reempujar nunca: el día que su tienda devuelva algo, hay
+// que bajar el paquete y empujarlo a mano desde otra máquina con la clave delante.
+//
+// Es la sexta vez en este proyecto que una regla vive en dos listas, así que van comparadas: la
+// lista es la del `options:` y los canales son los trabajos que cuelgan de `recetas`, no una
+// tercera lista escrita aquí que habría que acordarse de ampliar.
+func TestLosCanalesQueSePuedenElegirSonLosQueMiranLaEleccion(t *testing.T) {
+	yaml := leer(t, "../../.github/workflows/canales.yml")
+
+	m := regexp.MustCompile(`options:\s*\[([^\]]+)\]`).FindStringSubmatch(yaml)
+	if m == nil {
+		t.Fatal("no encuentro el «options:» del canal en canales.yml, o cambió cómo se declara")
+	}
+	sePuedenElegir := map[string]bool{}
+	for _, c := range strings.Split(m[1], ",") {
+		c = strings.TrimSpace(c)
+		if c != "" && c != "todos" {
+			sePuedenElegir[c] = true
+		}
+	}
+	if len(sePuedenElegir) == 0 {
+		t.Fatal("la lista de canales que se pueden elegir está vacía: esta prueba no comprueba nada")
+	}
+
+	// Los trabajos y su cuerpo, para preguntarle a cada uno por lo suyo.
+	cabecera := regexp.MustCompile(`(?m)^  ([a-z-]+):$`)
+	sitios := cabecera.FindAllStringSubmatchIndex(yaml, -1)
+	canales := map[string]bool{}
+	for i, s := range sitios {
+		nombre := yaml[s[2]:s[3]]
+		fin := len(yaml)
+		if i+1 < len(sitios) {
+			fin = sitios[i+1][0]
+		}
+		cuerpo := yaml[s[0]:fin]
+
+		// Un canal es un trabajo que cuelga de las recetas: eso es lo que distingue a los cuatro
+		// que publican de `recetas` y de `comprobar`.
+		if !strings.Contains(cuerpo, "needs: recetas") {
+			continue
+		}
+		canales[nombre] = true
+		if !strings.Contains(cuerpo, "inputs.canal == '"+nombre+"'") {
+			t.Errorf("el trabajo «%s» publica en un canal y no mira cuál se ha pedido: "+
+				"reempujar otro canal lo publicaría también, con la versión que se esté "+
+				"reempujando", nombre)
+		}
+		if !sePuedenElegir[nombre] {
+			t.Errorf("el trabajo «%s» publica en un canal y no está en el «options:», "+
+				"así que no se puede reempujar sin bajar el paquete y hacerlo a mano", nombre)
+		}
+	}
+
+	for c := range sePuedenElegir {
+		if !canales[c] {
+			t.Errorf("se puede elegir el canal «%s» y no hay ningún trabajo que lo publique: "+
+				"elegirlo no haría nada y parecería que sí", c)
+		}
+	}
+}

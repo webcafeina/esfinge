@@ -24,18 +24,48 @@
     <projectSourceUrl>https://github.com/webcafeina/esfinge</projectSourceUrl>
     <bugTrackerUrl>https://github.com/webcafeina/esfinge/issues</bugTrackerUrl>
     <tags>password-manager passwords encryption totp passkeys wifi-qr vault cross-platform</tags>
-    <summary>Cifra y descifra contraseñas y ficheros con una clave, con ventana propia y línea de comandos.</summary>
-    <description><![CDATA[Esfinge cifra y descifra contraseñas y ficheros con una clave, en tu propio ordenador.
+    <summary>Encrypt and decrypt passwords and files with a key, with its own window and a command line.</summary>
+    <!-- **La ficha va en inglés primero y en español detrás, y eso lo pide su moderación**
+         (2026-11-18): «the description is only in Spanish… it should be written in English, and
+         you can keep the Spanish after it». No contradice la regla de la casa —el programa sigue
+         estando en español, y eso se dice aquí con todas las letras—: lo que está en inglés es la
+         ficha de una tienda cuyo idioma es el inglés. Lo vigila
+         `TestLaFichaDeChocolateyEmpiezaEnIngles`, porque esto se vuelve a escribir en español sin
+         querer y se descubre días después, con el paquete parado en moderación. Ojo: winget **no**
+         tiene este problema, porque allí la ficha va por idioma (`locale.es-ES`). -->
+    <description><![CDATA[Esfinge encrypts and decrypts passwords and files with a key, on your own computer.
+
+It keeps a local, encrypted password vault with a recovery key: logins, secure notes, cards, documents, personal data, passkeys and Wi-Fi networks. It also computes one-time codes, so it doubles as an authenticator, and it shows a Wi-Fi password as a QR code so a guest can just point their phone at it.
+
+**The program itself is in Spanish.** This description is in English because that is the language of this gallery.
+
+## What the package installs
+
+- The desktop application and the `esfinge` command line, on the same core and the same container format: what one encrypts, the other opens.
+- The bridge for the browser extension, which fills in forms and offers to save what you type.
+- The MCP server for AI agents, which works **without seeing** the secrets: every use is approved in the window and written down.
+
+## Package notes
+
+- It installs the official installer from the GitHub release, silently, for x64 or ARM64 depending on the machine.
+- **It is a per-machine install**: it goes to `Program Files` and asks for administrator, which `choco` already has.
+- Esfinge checks for new versions by itself and updates from inside the window, so this package may lag behind until the next version is approved here.
+- It needs Windows 10 or 11 and the Microsoft Edge WebView2 Runtime (the installer downloads it if it is missing).
+- Nothing leaves your computer except two things, both counted and switchable in Settings: looking for a new version, and the icon of each saved site, requested from the site itself.
+
+## En español
+
+Esfinge cifra y descifra contraseñas y ficheros con una clave, en tu propio ordenador.
 
 Lleva una bóveda de contraseñas local y cifrada, con clave de recuperación: credenciales, notas seguras, tarjetas, documentos, datos personales, llaves de acceso y redes wifi. Calcula también los códigos de un solo uso, así que hace de autenticador, y enseña la clave de una red wifi como código QR para que un invitado apunte el móvil.
 
-## Qué trae el paquete
+### Qué trae el paquete
 
 - La aplicación con ventana y la línea de comandos `esfinge`, sobre el mismo núcleo y el mismo formato: lo que cifra una lo abre la otra.
 - El puente para la extensión de navegador, que rellena formularios y guarda lo que escribes.
 - El servidor para agentes de IA por MCP, que actúa **sin ver** los secretos: cada uso se aprueba en la ventana y queda apuntado.
 
-## Notas del paquete
+### Notas del paquete
 
 - Instala el instalador oficial de la publicación de GitHub, en silencio, para x64 o ARM64 según la máquina.
 - **Es una instalación por máquina**: va a `Program Files` y pide administrador, que es lo que `choco` ya tiene.
