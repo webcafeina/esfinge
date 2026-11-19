@@ -38,11 +38,13 @@ import {
   CampoClave,
   Firma,
   Icono,
+  Interruptor,
   Marca,
   nombreDe,
   PanelResultado,
   Progreso,
   Segmentado,
+  TarjetaAjuste,
   ZonaFicheros,
 } from "./componentes";
 import { avisoDelSistemaAlGuardar, Boveda } from "./boveda";
@@ -1103,16 +1105,13 @@ function DesbloqueoDelSistema() {
 
   return (
     <>
-      <label className="fila-ajuste">
-        <input
-          id="desbloqueo-del-sistema"
-          type="checkbox"
-          checked={estado.puesto}
-          disabled={trabajando}
-          onChange={(e) => cambiar(e.target.checked)}
-        />
-        <span>Abrir la bóveda con {estado.nombre}</span>
-      </label>
+      <TarjetaAjuste
+        id="desbloqueo-del-sistema"
+        titulo={`Abrir la bóveda con ${estado.nombre}`}
+        puesto={estado.puesto}
+        trabajando={trabajando}
+        alCambiar={cambiar}
+      />
 
       {error && <p className="error">{error}</p>}
 
@@ -2181,9 +2180,11 @@ function Ajustes({
               </p>
             </div>
           </header>
-          <div>
-            <label htmlFor="bloqueo">Cerrar la bóveda sola</label>
-            <select
+          <TarjetaAjuste
+            id="bloqueo"
+            titulo="Cerrar la bóveda sola"
+            control={
+              <select
               id="bloqueo"
               disabled={cargando}
               value={prefs?.minutosParaBloquear ?? 15}
@@ -2194,33 +2195,27 @@ function Ajustes({
                   {m === NUNCA ? "Nunca" : `Tras ${m} ${m === 1 ? "minuto" : "minutos"} sin tocar nada`}
                 </option>
               ))}
-            </select>
-            <p className="nota">
-              Cerrarla obliga a escribir otra vez la contraseña maestra. Con «nunca» se queda
-              abierta hasta que la cierres.
-            </p>
-          </div>
+              </select>
+            }
+            nota="Cerrarla obliga a escribir otra vez la contraseña maestra. Con «nunca» se queda abierta hasta que la cierres."
+          />
 
           <DesbloqueoDelSistema />
 
-          <label className="fila-ajuste">
-            <input
-              type="checkbox"
-              checked={prefs?.descargarIconos ?? true}
-              disabled={cargando}
-              onChange={(e) => cambiar({ descargarIconos: e.target.checked, iconosAvisados: true })}
-            />
-            <span>Descargar el icono de cada sitio de la bóveda</span>
-          </label>
+          <TarjetaAjuste
+            id="descargar-iconos"
+            titulo="Descargar el icono de cada sitio de la bóveda"
+            nota="Pide el icono a cada sitio de tu bóveda y lo guarda cifrado. Quien mire tu red verá a qué sitios pregunta."
+            puesto={prefs?.descargarIconos ?? true}
+            trabajando={cargando}
+            alCambiar={(v) => cambiar({ descargarIconos: v, iconosAvisados: true })}
+          />
 
-          <p className="nota">
-            Pide el icono a cada sitio de tu bóveda y lo guarda cifrado. Quien mire tu red verá
-            a qué sitios pregunta.
-          </p>
-
-          <div>
-            <label htmlFor="portapapeles">Borrar del portapapeles lo que se copie</label>
-            <select
+          <TarjetaAjuste
+            id="portapapeles"
+            titulo="Borrar del portapapeles lo que se copie"
+            control={
+              <select
               id="portapapeles"
               disabled={cargando}
               value={prefs?.segundosDePortapapeles ?? 30}
@@ -2231,12 +2226,10 @@ function Ajustes({
                   {s === NUNCA ? "Nunca" : `A los ${s} segundos`}
                 </option>
               ))}
-            </select>
-            <p className="nota">
-              Vale para las de la bóveda y para las que generes aquí. Nunca se pisa lo que
-              copies tú.
-            </p>
-          </div>
+              </select>
+            }
+            nota="Vale para las de la bóveda y para las que generes aquí. Nunca se pisa lo que copies tú."
+          />
         </section>
       )}
 
@@ -2253,15 +2246,12 @@ function Ajustes({
                 sin respuesta única a quien la busque por su nombre. El rótulo se
                 conserva tal cual en `aria-label`: es como la localizan las pruebas y
                 quien usa un lector de pantalla. */}
-            <label className="interruptor">
-              <input
-                type="checkbox"
-                checked={prefs?.puenteDelNavegador ?? false}
-                disabled={cargando}
-                onChange={(e) => cambiar({ puenteDelNavegador: e.target.checked })}
-                aria-label="Dejar que la extensión del navegador consulte la bóveda"
-              />
-            </label>
+            <Interruptor
+              puesto={prefs?.puenteDelNavegador ?? false}
+              trabajando={cargando}
+              alCambiar={(v) => cambiar({ puenteDelNavegador: v })}
+              rotulo="Dejar que la extensión del navegador consulte la bóveda"
+            />
           </header>
 
           <p className="nota">
@@ -2310,20 +2300,14 @@ function Ajustes({
               publicarlo, y existe porque hay código de Esfinge dentro de cada página
               `https`: si un sitio cambia y deja de entrar, esto se apaga y se sigue
               trabajando sin esperar a una versión. */}
-          <label className="fila-ajuste">
-            <input
-              type="checkbox"
-              checked={prefs?.llavesDeAccesoEnElNavegador ?? true}
-              disabled={cargando}
-              onChange={(e) => cambiar({ llavesDeAccesoEnElNavegador: e.target.checked })}
-            />
-            <span>Usar tus llaves de acceso en el navegador</span>
-          </label>
-
-          <p className="nota">
-            Cuando un sitio pida una llave de acceso, Esfinge ofrecerá la tuya. Apágalo si algún
-            sitio deja de dejarte entrar.
-          </p>
+          <TarjetaAjuste
+            id="llaves-en-el-navegador"
+            titulo="Usar tus llaves de acceso en el navegador"
+            nota="Cuando un sitio pida una llave de acceso, Esfinge ofrecerá la tuya. Apágalo si algún sitio deja de dejarte entrar."
+            puesto={prefs?.llavesDeAccesoEnElNavegador ?? true}
+            trabajando={cargando}
+            alCambiar={(v) => cambiar({ llavesDeAccesoEnElNavegador: v })}
+          />
 
 
           {navegador && navegador.permitidos?.length > 0 && (
@@ -2389,15 +2373,12 @@ function Ajustes({
                 Claude, Cursor y los demás, por el protocolo MCP.
               </p>
             </div>
-            <label className="interruptor">
-              <input
-                type="checkbox"
-                checked={prefs?.canalDeAgentes ?? false}
-                disabled={cargando}
-                onChange={(e) => cambiar({ canalDeAgentes: e.target.checked })}
-                aria-label="Dejar que un agente de IA consulte la bóveda"
-              />
-            </label>
+            <Interruptor
+              puesto={prefs?.canalDeAgentes ?? false}
+              trabajando={cargando}
+              alCambiar={(v) => cambiar({ canalDeAgentes: v })}
+              rotulo="Dejar que un agente de IA consulte la bóveda"
+            />
           </header>
 
         
@@ -2534,19 +2515,14 @@ function Ajustes({
               <p className="nota">Una de las dos salidas a internet, con la de los iconos.</p>
             </div>
           </header>
-          <label className="fila-ajuste">
-            <input
-              type="checkbox"
-              checked={prefs?.buscarActualizaciones ?? true}
-              disabled={cargando}
-              onChange={(e) => cambiar({ buscarActualizaciones: e.target.checked })}
-            />
-            <span>Avisarme cuando haya una versión nueva</span>
-          </label>
-
-          <p className="nota">
-            Una vez al día mira si hay versión nueva. No se manda nada de tu bóveda.
-          </p>
+          <TarjetaAjuste
+            id="buscar-actualizaciones"
+            titulo="Avisarme cuando haya una versión nueva"
+            nota="Una vez al día mira si hay versión nueva. No se manda nada de tu bóveda."
+            puesto={prefs?.buscarActualizaciones ?? true}
+            trabajando={cargando}
+            alCambiar={(v) => cambiar({ buscarActualizaciones: v })}
+          />
 
           {prefs?.ultimaComprobacion && (
             <p className="nota">Se miró por última vez el {fecha(prefs.ultimaComprobacion)}.</p>

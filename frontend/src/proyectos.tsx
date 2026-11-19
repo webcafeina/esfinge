@@ -26,7 +26,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { esfinge, type CompartidaEnLaLista, type Proyecto, type QuienTieneAcceso } from "./puente";
-import { Icono } from "./componentes";
+import { Icono, TarjetaAjuste } from "./componentes";
 import { Ceremonia } from "./boveda";
 
 export function Proyectos({
@@ -987,17 +987,15 @@ function ElAcceso({
       )}
       {servidor !== "" && huellaDelServidor !== "" && gente !== null && (
         <>
-          <label className="fila-ajuste">
-            <input
-              type="checkbox"
-              checked={elDelServidor !== undefined}
-              disabled={trabajando}
-              onChange={(e) => void alternarElServidor(e.target.checked)}
-            />
-            <span>Trabajar con esta bóveda en el servidor</span>
-          </label>
-          <p className={elDelServidor !== undefined ? "aviso" : "nota"}>
-            {elDelServidor !== undefined ? (
+          <TarjetaAjuste
+            id="boveda-en-el-servidor"
+            titulo="Trabajar con esta bóveda en el servidor"
+            puesto={elDelServidor !== undefined}
+            trabajando={trabajando}
+            alCambiar={(v) => void alternarElServidor(v)}
+            avisa={elDelServidor !== undefined}
+            nota={
+              elDelServidor !== undefined ? (
               <>
                 Su llave está en un fichero de ese equipo, así que{" "}
                 <strong>quien entre en él abre esto</strong>. Al quitarlo,{" "}
@@ -1008,25 +1006,25 @@ function ElAcceso({
                 Le dará acceso de <strong>solo ver</strong> a <strong>{servidor}</strong>: podrá usar
                 estas contraseñas, no cambiarlas.
               </>
-            )}
-          </p>
+              )
+            }
+          />
 
           {/* **Y el segundo, debajo y solo si el primero está puesto** (ADR 0058).
               Debajo porque es lo que es: una cosa más sobre un acceso que ya existe, no
               otra forma de darlo. Lo pidió así el cliente. */}
           {elDelServidor !== undefined && (
             <>
-              <label className="fila-ajuste sangrada">
-                <input
-                  type="checkbox"
-                  checked={elDelServidor.permiso === "editar"}
-                  disabled={trabajando}
-                  onChange={(e) => void alternarLaEscritura(e.target.checked)}
-                />
-                <span>y puede escribir en ella</span>
-              </label>
-              <p className={elDelServidor.permiso === "editar" ? "aviso" : "nota"}>
-                {elDelServidor.permiso === "editar" ? (
+              <TarjetaAjuste
+                id="boveda-en-el-servidor-escribe"
+                titulo="y puede escribir en ella"
+                sangrada
+                puesto={elDelServidor.permiso === "editar"}
+                trabajando={trabajando}
+                alCambiar={(v) => void alternarLaEscritura(v)}
+                avisa={elDelServidor.permiso === "editar"}
+                nota={
+                  elDelServidor.permiso === "editar" ? (
                   <>
                     Puede <strong>crear y cambiar</strong> credenciales de esta bóveda{" "}
                     <strong>sin que nadie lo apruebe</strong>, y queda apuntado. Quien entre en ese
@@ -1038,8 +1036,9 @@ function ElAcceso({
                     Hoy solo lee. Marcándolo podrá <strong>guardar y rotar</strong> contraseñas de esta
                     bóveda por su cuenta, sin que nadie lo apruebe.
                   </>
-                )}
-              </p>
+                  )
+                }
+              />
             </>
           )}
         </>

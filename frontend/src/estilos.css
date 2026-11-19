@@ -1269,6 +1269,71 @@ p {
   cursor: pointer;
 }
 
+/* Una tarjeta de ajuste (ADR 0066): el rótulo, lo que cuesta y el control.
+ *
+ * **Una rejilla y no una fila**, porque los cuatro sistemas colocan las mismas
+ * tres piezas en sitios distintos y lo único que cambia entre ellos es dónde cae
+ * cada una. Aquí, en la base, se ve exactamente como se veía la fila de antes:
+ * el control delante, el rótulo al lado y la nota debajo empezando por la
+ * izquierda. En Windows el texto se va a la izquierda, el control a la derecha y
+ * todo ello dentro de una tarjeta con su borde.
+ *
+ * `grid-area` con la fila y la columna escritas, en vez de dejar que el flujo
+ * coloque: así cada hoja mueve una pieza sin tocar el orden del marcado, que es
+ * el que decide el orden de tabulación y el que leen los lectores de pantalla. */
+.ajuste {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: var(--espacio-3);
+}
+
+.ajuste > .interruptor {
+  grid-area: 1 / 1;
+}
+
+.ajuste > label {
+  grid-area: 1 / 2;
+  cursor: pointer;
+}
+
+/* De lado a lado, que es donde estaba cuando era hermana de la fila. Y el aviso
+ * va aquí también: es la misma nota cuando lo que cuenta ya está pasando. */
+.ajuste > .nota,
+.ajuste > .aviso {
+  grid-column: 1 / -1;
+}
+
+/* **Con un desplegable, la base lo pone debajo del rótulo**, que es donde estaba
+ * antes de que esto fuera un componente y lo que hace macOS: ahí un ajuste con
+ * desplegable es una etiqueta y su control, no una fila con dos extremos. En
+ * bloque, las `grid-area` de los hijos no se aplican y no hay que deshacerlas.
+ *
+ * La forma la dice el componente con una clase y **no se pregunta con `:has()`**:
+ * eso haría que la base dependiera de un selector que el WebKit de un macOS
+ * anterior al 12.3 no entiende, y la base es justo la que no puede. */
+.ajuste.con-control {
+  display: block;
+}
+
+/* Lo mismo que `.fila-ajuste.sangrada`, y por la misma razón. */
+.ajuste.sangrada {
+  margin-left: var(--espacio-5);
+}
+
+/* El interruptor es la casilla y el pomo que se mueve dentro de ella. Aquí el
+ * pomo no existe: la base dibuja una casilla cuadrada con su tic, y una bolita
+ * encima sería un dibujo de más. Lo enciende la hoja de Windows. */
+.interruptor {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.pomo {
+  display: none;
+}
+
 /* Una casilla que cuelga de la de arriba: el segundo interruptor del servidor, que
  * es una cosa más sobre un acceso que ya existe y no otra forma de darlo (ADR 0058).
  * La sangría es lo que lo dice sin una palabra; sin ella, las dos se leen como dos

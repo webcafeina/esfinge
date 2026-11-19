@@ -28,6 +28,16 @@ test.beforeEach(async ({ request }) => {
   expect(r.ok(), await r.text()).toBe(true);
 });
 
+/**
+ * La sección, acotada a la barra lateral por lo de siempre: «Cifrar» nombra a la
+ * vez una sección y el botón que cifra. Está copiada de `esfinge.spec.ts`, que
+ * la tiene privada; son dos líneas y compartirlas obligaría a un módulo de
+ * ayudantes que hoy no hace falta.
+ */
+function seccion(page: Page, nombre: string) {
+  return page.locator(".lateral").getByRole("button", { name: nombre, exact: true });
+}
+
 const alto = (l: Locator) => l.evaluate((e) => e.getBoundingClientRect().height);
 const ancho = (l: Locator) => l.evaluate((e) => e.getBoundingClientRect().width);
 
@@ -171,3 +181,68 @@ test("la marca sigue siendo nuestra: el botón de acción es oro con piedra enci
 // `TestElAspectoNoSeDecideEnElMarcado` (internal/app/puente_test.go). Lo que hay
 // que impedir es un `{esWindows() && <div/>}` en el marcado, y eso se ve mejor en
 // el código que en una pantalla.
+
+test("un ajuste es una tarjeta: el texto a la izquierda y el control a la derecha", async ({
+  page,
+}) => {
+  await enWindows(page);
+  await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Bóveda" }).click();
+
+  const tarjeta = page.locator(".ajuste:visible").first();
+  const rotulo = tarjeta.locator("label");
+  const control = tarjeta.locator(".interruptor, select").first();
+
+  // La SettingsCard de WinUI: 68 de alto mínimo, radio 4 y su borde de 1 px.
+  const caja = await tarjeta.evaluate((t) => {
+    const s = getComputedStyle(t);
+    return { alto: t.getBoundingClientRect().height, radio: s.borderRadius, borde: s.borderTopWidth };
+  });
+  expect(caja.alto).toBeGreaterThanOrEqual(68);
+  expect(caja.radio).toBe("4px");
+  expect(caja.borde).toBe("1px");
+
+  // **Y la anatomía, que es lo que se estaba cambiando**: en la base el control
+  // va delante del rótulo —es la casilla de macOS— y aquí va al otro extremo. Se
+  // compara dónde acaba uno y dónde empieza el otro, que es lo único que
+  // distingue las dos gramáticas: el marcado es el mismo en los dos sistemas.
+  const dondeElRotulo = (await rotulo.boundingBox())!;
+  const dondeElControl = (await control.boundingBox())!;
+  expect(dondeElControl.x).toBeGreaterThan(dondeElRotulo.x + dondeElRotulo.width);
+});
+
+test("el interruptor es la píldora de Fluent, y lo que se mueve es el pomo", async ({ page }) => {
+  await enWindows(page);
+  await seccion(page, "Ajustes").click();
+  await page.getByRole("tab", { name: "Navegador" }).click();
+
+  const casilla = page.getByRole("checkbox", { name: /llaves de acceso en el navegador/ });
+  const pomo = page.locator(".ajuste:visible .pomo").first();
+
+  // 40 × 20, que es la del ToggleSwitch. En la base son 18 × 18.
+  const caja = await casilla.evaluate((c) => c.getBoundingClientRect());
+  expect(caja.width).toBe(40);
+  expect(caja.height).toBe(20);
+
+  // **El pomo existe y es un hermano**: puesto como `::before` del `<input>`, en
+  // la ventana de macOS no se pintaría y aquí sí, que es el fallo que solo se ve
+  // en la máquina del cliente.
+  await expect(pomo).toBeVisible();
+
+  // Y se mueve de un extremo al otro, que es lo único que dice si está puesto.
+  const izquierda = (await pomo.boundingBox())!.x;
+  await casilla.click();
+  await expect(casilla).not.toBeChecked();
+  const derecha = (await pomo.boundingBox())!.x;
+  expect(izquierda).not.toBe(derecha);
+
+  // Encendido, el oro con la piedra encima (ADR 0021), no el azul del sistema.
+  await casilla.click();
+  await expect(casilla).toBeChecked();
+  expect(await casilla.evaluate((c) => getComputedStyle(c).backgroundColor)).toBe(
+    await variable(page, "--relleno"),
+  );
+  expect(await pomo.evaluate((p) => getComputedStyle(p).backgroundColor)).toBe(
+    await variable(page, "--sobre-acento"),
+  );
+});

@@ -293,6 +293,13 @@ test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page 
 // frase no la miraría nadie hasta verla —o no verla— en una máquina de verdad, que es como
 // estaba apuntado en deuda.md.
 test("en Linux la banda avisa de que pedirá la contraseña", async ({ page }) => {
+  // **Esta prueba descarga de GitHub de verdad**, y por eso pide su propio plazo:
+  // el `timeout: 60_000` de abajo no podía cumplirse nunca con el presupuesto de
+  // 30 s de la tanda, así que lo que fallaba era el reloj de la prueba y no la
+  // espera que alguien escribió a propósito. Cayó así el 2026-11-19 en el tema
+  // oscuro de la tanda completa —1,6 s corriéndola sola, más de 28 ahí—, y lo que
+  // de verdad lo cierra está en `deuda.md`: que descargar no dependa de la red.
+  test.setTimeout(120_000);
   const errores = vigilarConsola(page);
   await page.goto("/");
 

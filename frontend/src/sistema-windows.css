@@ -216,3 +216,153 @@
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--apagado) 55%, transparent) transparent;
 }
+
+/* --------------------------------------------------- la tarjeta de ajuste
+ *
+ * **La SettingsCard de WinUI** (ADR 0066): el texto a la izquierda, el control a
+ * la derecha y todo dentro de una tarjeta con su borde de 1 px. Es el cambio que
+ * más se nota de esta fase, y es el que contesta a lo que dijo el cliente al ver
+ * la galería —«los elementos se siguen pareciendo mucho a la versión actual»—:
+ * los colores y los radios ya eran de Fluent, pero la **anatomía** seguía siendo
+ * la de macOS, con la casilla delante del rótulo.
+ *
+ * El marcado es el mismo que en la base. Lo único que cambia es dónde cae cada
+ * pieza, y por eso las tres van con su `grid-area` escrita.
+ *
+ * Medidas de la SettingsCard: alto mínimo 68, relleno 16 a los lados, radio 4 y
+ * el borde de `CardStrokeColorDefault`. La descripción va al tamaño Caption. */
+:root[data-sistema="windows"] .ajuste,
+:root[data-sistema="windows"] .ajuste.con-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: var(--espacio-4);
+  row-gap: 2px;
+  min-height: 68px;
+  padding: 12px 16px;
+  border: 1px solid var(--filete);
+  border-radius: var(--radio);
+  background: var(--tarjeta);
+}
+
+:root[data-sistema="windows"] .ajuste > label {
+  grid-area: 1 / 1;
+  justify-self: start;
+}
+
+:root[data-sistema="windows"] .ajuste > .nota,
+:root[data-sistema="windows"] .ajuste > .aviso {
+  grid-area: 2 / 1;
+  margin: 0;
+  font-size: var(--texto-chico);
+}
+
+/* El control manda a la derecha y **centrado sobre las dos filas**: con el
+ * rótulo solo o con rótulo y descripción, cae siempre a la misma altura. */
+:root[data-sistema="windows"] .ajuste > .interruptor,
+:root[data-sistema="windows"] .ajuste > select {
+  grid-area: 1 / 2 / 3 / 3;
+  align-self: center;
+  justify-self: end;
+}
+
+/* La sangrada no se separa con un margen: en Windows es una tarjeta más, metida
+ * hacia dentro para decir que cuelga de la de arriba. */
+:root[data-sistema="windows"] .ajuste.sangrada {
+  margin-left: var(--espacio-4);
+}
+
+/* ------------------------------------------------------------ el ToggleSwitch
+ *
+ * La píldora de Fluent: 40 × 20, el pomo de 12 y 5 px de aire a cada lado. Lo
+ * que se mueve es el pomo, no el fondo, así que la transición va en él.
+ *
+ * **Encendida es del oro y el pomo de piedra** (ADR 0021): en Fluent sería el
+ * acento del sistema con el pomo blanco, y blanco sobre el oro da 1,68:1. Es la
+ * misma regla que decide el tic de la casilla. */
+:root[data-sistema="windows"] .interruptor input[type="checkbox"] {
+  width: 40px;
+  height: 20px;
+  border-radius: 10px;
+  border: 1px solid var(--filete-fuerte);
+  background: var(--campo);
+}
+
+/* El `background` de una sola pieza es lo que borra el tic de la casilla de la
+ * base, que viene como imagen de fondo en el atajo. */
+:root[data-sistema="windows"] .interruptor input[type="checkbox"]:checked {
+  background: var(--relleno);
+  border-color: transparent;
+}
+
+:root[data-sistema="windows"] .pomo {
+  display: block;
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--cuerpo);
+  pointer-events: none;
+  transition: transform 0.1s, background 0.1s;
+}
+
+:root[data-sistema="windows"] .interruptor input[type="checkbox"]:checked + .pomo {
+  transform: translateX(20px);
+  background: var(--sobre-acento);
+}
+
+/* Apagado, el control entero se apaga: sin esto el pomo sigue en su color y el
+ * interruptor parece puesto a medias. */
+:root[data-sistema="windows"] .interruptor input[type="checkbox"]:disabled + .pomo {
+  opacity: 0.4;
+}
+
+/* ------------------------------------------------------- el bloque, aplanado
+ *
+ * En la base un bloque **es** la tarjeta y los ajustes van dentro de ella. En
+ * Windows la tarjeta es cada ajuste, así que el bloque deja de dibujarse: lo que
+ * queda es lo que hace la página de Configuración —un título de sección con su
+ * glifo y debajo una pila de tarjetas pegadas—. Sin esto se ven tarjetas dentro
+ * de una tarjeta, que es lo que salió en la primera captura.
+ *
+ * La separación es de 4 px, no de 16: en Fluent las tarjetas de una sección van
+ * casi tocándose, y ése es buena parte del aire que distingue una lista de
+ * ajustes de Windows de una de macOS. */
+:root[data-sistema="windows"] .bloque {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  gap: 4px;
+}
+
+/* La cabecera de la sección es texto, no una tarjeta: el título y su glifo
+ * quedan por encima de la pila, con aire debajo. */
+:root[data-sistema="windows"] .bloque-cabecera {
+  padding: 0 2px;
+  margin-bottom: var(--espacio-2);
+}
+
+/* **Salvo cuando lleva el interruptor de la sección**, que entonces sí es una
+ * tarjeta: es lo que Configuración pone arriba de una página —«Bluetooth» con su
+ * interruptor— y es lo que más se busca de ese bloque. `:has()` se puede usar
+ * aquí y no en la base: esta hoja solo la activa Windows, y allí el motor es
+ * WebView2. */
+:root[data-sistema="windows"] .bloque-cabecera:has(> .interruptor) {
+  align-items: center;
+  min-height: 68px;
+  padding: 12px 16px;
+  margin-bottom: 0;
+  border: 1px solid var(--filete);
+  border-radius: var(--radio);
+  background: var(--tarjeta);
+}
+
+/* El desplegable de una tarjeta no se queda con todo el ancho que pida su opción
+ * más larga: estrujaba la descripción hasta las cuatro líneas. */
+:root[data-sistema="windows"] .ajuste > select {
+  max-width: 250px;
+}

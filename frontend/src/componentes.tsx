@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { esfinge, type Avance, type Fuerza, type Novedad } from "./puente";
 import { ICONOS_FLUENT } from "./iconos-fluent";
 import { esWindows } from "./plataforma";
@@ -1055,4 +1055,106 @@ export function BandaNovedad({
 function anchoDe(a: Avance): string {
   if (a.total <= 0) return "100%";
   return `${Math.min(100, (a.bytes / a.total) * 100)}%`;
+}
+
+/**
+ * Un interruptor: el control de un ajuste, dibujado entero.
+ *
+ * **El pomo es un hermano y no un `::before`.** En WebKit un `<input>` no pinta
+ * pseudoelementos, así que ahí el interruptor saldría sin la bolita **en la
+ * ventana de macOS** mientras aquí, en Chromium, se vería perfecto: o sea el
+ * fallo que solo aparece en la máquina del cliente. Lleva `aria-hidden` porque
+ * no es información, es la pieza que se mueve.
+ *
+ * **El marcado es el mismo en los cuatro sistemas y lo que cambia es el CSS**:
+ * la casilla cuadrada de 18 px en la base y la píldora de 40 × 20 de Fluent en
+ * Windows. Y **sigue siendo una casilla**, no un `role="switch"`: cambiarlo
+ * renombraría el control para quien usa un lector de pantalla y para las
+ * pruebas, que lo buscan por `getByRole("checkbox")`.
+ */
+export function Interruptor({
+  id,
+  puesto,
+  trabajando,
+  alCambiar,
+  rotulo,
+}: {
+  id?: string;
+  puesto: boolean;
+  trabajando?: boolean;
+  alCambiar: (v: boolean) => void;
+  /** Para los que no tienen rótulo al lado porque lo dice el título del bloque. */
+  rotulo?: string;
+}) {
+  return (
+    <span className="interruptor">
+      <input
+        type="checkbox"
+        id={id}
+        checked={puesto}
+        disabled={trabajando}
+        onChange={(e) => alCambiar(e.target.checked)}
+        aria-label={rotulo}
+      />
+      <span className="pomo" aria-hidden="true" />
+    </span>
+  );
+}
+
+/**
+ * Una tarjeta de ajuste: qué se decide, qué cuesta y con qué se cambia.
+ *
+ * Es la anatomía de la SettingsCard de WinUI (ADR 0066) y de la fila agrupada de
+ * los Ajustes del Sistema de macOS: **el texto a un lado y el control al otro**.
+ * Aquí hay una sola forma en el marcado y una gramática por sistema en el CSS,
+ * que es lo que impide que mantener cuatro aspectos sea mantener cuatro
+ * interfaces.
+ *
+ * **La nota va fuera del `label`**, y eso no es cosmético: el nombre accesible
+ * del control es lo que dice el rótulo y nada más. Metiéndola dentro, el control
+ * pasaría a llamarse «Descargar el icono de cada sitio de la bóveda Una de las
+ * dos salidas a internet…» y dejarían de encontrarlo tanto las pruebas como
+ * quien lo busca con un lector de pantalla.
+ *
+ * **No es para cualquier casilla**: una casilla dentro de un formulario —«La he
+ * apuntado en un sitio seguro»— sigue siendo una casilla en los cuatro sistemas,
+ * y ésas se quedan en `.fila-ajuste`.
+ */
+export function TarjetaAjuste({
+  id,
+  titulo,
+  nota,
+  puesto,
+  trabajando,
+  alCambiar,
+  control,
+  sangrada,
+  avisa,
+}: {
+  id: string;
+  titulo: ReactNode;
+  nota?: ReactNode;
+  puesto?: boolean;
+  trabajando?: boolean;
+  alCambiar?: (v: boolean) => void;
+  /** Cuando lo que cambia el ajuste no es un interruptor, sino un desplegable. */
+  control?: ReactNode;
+  /** Cuelga de la de arriba: es una cosa más sobre algo que ya está decidido. */
+  sangrada?: boolean;
+  /** La nota cuenta un riesgo que ya está corriendo, no lo que pasaría. */
+  avisa?: boolean;
+}) {
+  return (
+    <div
+      className={["ajuste", control ? "con-control" : "", sangrada ? "sangrada" : ""]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <label htmlFor={id}>{titulo}</label>
+      {control ?? (
+        <Interruptor id={id} puesto={puesto ?? false} trabajando={trabajando} alCambiar={alCambiar ?? (() => {})} />
+      )}
+      {nota ? <p className={avisa ? "aviso" : "nota"}>{nota}</p> : null}
+    </div>
+  );
 }

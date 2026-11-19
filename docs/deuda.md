@@ -356,3 +356,20 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 | ~~Medir el vidrio sin romper la aplicación~~ | Alta | El diagnóstico de la 2.9.1 dejaba la aplicación cerrándose sola al arrancar. Tres cosas de ese Objective-C pueden reventar y ninguna avisa al compilar: devolver el `UTF8String` de una cadena autoliberada, que `alphaComponent` lanza excepción sobre un color de patrón, y que `valueForKey:@"drawsBackground"` puede no existir para lectura. Revertido en la 2.9.2 | **Saldada en la 2.10.0, y no midiendo sino leyendo**: el código de Wails está en el caché de módulos de esta máquina, y ahí se ve que nunca le pone material al `NSVisualEffectView`. No hacía falta instrumentar la aplicación del cliente para averiguarlo (2026-09-07) |
 
 | ~~Adivinar en macOS sale caro y no hay banco de pruebas~~ | Media | Tres versiones seguidas —2.5.1, 2.9.0 y 2.9.1— salieron con un cambio de macOS que no se podía probar aquí, y las tres fallaron: dos no hicieron nada visible y la tercera cerró la aplicación, dejando al cliente sin herramienta hasta la 2.9.2. El ciclo «publicar para ver qué pasa» lo sufre él, no yo | **Saldada (2026-09-08)**: `compilar.yml` acepta `inspector` en su disparador manual y compila con `wails build -devtools`, que deja el Web Inspector en el paquete. Cada hipótesis pasa a costar una línea en una consola en vez de una versión publicada. Marcada por tres sitios para que no se confunda con una compilación normal: nombre del artefacto, retención y sufijo en la versión |
+
+### La prueba de la banda de actualización descarga de GitHub de verdad
+
+**Severidad:** media · **Apuntada:** 2026-11-19
+
+`en Linux la banda avisa de que pedirá la contraseña` pulsa «Descargar» y eso llama a
+`DescargarActualizacion`, que **se trae el instalador de la publicación de GitHub**. O sea que una
+puerta de aquí depende de la red y del humor de GitHub: el 2026-11-19 cayó en el tema oscuro de la
+tanda completa tardando **más de 28 segundos** en un paso que, corriendo la prueba sola, tarda 1,6 —y
+pasó en claro en esa misma tanda—. De momento lleva su propio plazo de 120 s, que es lo que el
+`timeout: 60_000` escrito dentro ya daba por hecho y el presupuesto de 30 s de la tanda hacía
+imposible.
+
+**Lo que lo cierra de verdad** es una costura en `dev.go` que le dé a `Descargar` un fichero local
+—como `_novedad` monta el aviso— para que la prueba ejercite **la pantalla**, que es lo que quiere
+mirar, y no la descarga. Mientras tanto, si vuelve a caer, **no se vuelve a correr hasta que salga
+verde**: se mira cuánto tardó.
