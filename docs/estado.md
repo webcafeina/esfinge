@@ -62,12 +62,21 @@ ahí ya no está, es que lo hizo.
      `auto_updates`.
    - Avisos de coste: la VM necesita una imagen de restauración de macOS (~15 GB) y, dentro,
      Command Line Tools para tener `brew`.
-2. **Lo que no depende de nosotros**: que **Chocolatey** apruebe —sigue sirviendo la 2.66.1 y
-   rechaza versiones nuevas mientras tanto— y que un moderador voluntario mire
+2. **Lo que no depende de nosotros**: que **Chocolatey** apruebe y que un moderador voluntario mire
    [el PR de winget](https://github.com/microsoft/winget-pkgs/pull/482164), que el 2026-11-17 por la
    tarde ya tenía **`Azure-Pipeline-Passed` y `Validation-Completed`**: su validación automática
    está pasada y sólo falta la moderación. Cuando Chocolatey entre, queda ver la otra mitad de la
    ADR 0063: que `choco install` deje la marca del gestor.
+   **2026-11-19**: su moderador **devolvió el paquete el 18** y no por el paquete —las dos sumas le
+   cuadraban— sino **por el idioma de la ficha**: la quiere en inglés, con el español detrás si se
+   quiere. Corregida y **reempujada esa misma versión** (que es lo que piden) con el canal suelto
+   nuevo, `gh workflow run canales.yml -f version=2.66.1 -f canal=chocolatey`. Su página dice ya
+   «**Maintainer updated, waiting for Reviewer**» con los tres chequeos automáticos en marcha, así
+   que **no hace falta escribir nada en su cuadro de comentarios**: el reempuje es la respuesta. Lo
+   que hay que mirar cuando aprueben: **subir la 2.69.0 con ese mismo canal suelto** —la tienda no
+   vio la 2.67, la 2.68 ni la 2.69, porque rechaza versiones mientras modera una— y entonces sí,
+   `choco install` y la otra mitad de la ADR 0063.
+
 3. **El disco del VPS**, por si vuelve a apretar: el 2026-11-17 estaba al **97 %** y se dejó al
    **77 %** (46 GB libres). Lo que queda disponible sin tocar nada vivo son **los 102 volúmenes de
    Docker con la base `ensayo`, unos 16 GB** — el cliente los dejó «para la próxima». **Lo que no se
