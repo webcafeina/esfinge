@@ -29,6 +29,16 @@ sistemas no cambia nada.
 | El bloque | **Deja de dibujarse**: si no, salen tarjetas dentro de una tarjeta. Su cabecera **sí** es una tarjeta cuando lleva el interruptor de la sección, que es lo que Configuración pone arriba de cada página |
 | El interruptor | La píldora de **40 × 20** con el pomo de 12. **Encendida, el oro con la piedra encima** (ADR 0021), no el acento del sistema |
 | Qué **no** entra | Una casilla dentro de un formulario —«La he apuntado en un sitio seguro», la red oculta— sigue siendo una casilla en los cuatro sistemas |
+| Las pestañas de Ajustes | **Con su glifo al lado del nombre**, y el de cada sistema (pedido el 2026-11-19 al dar el visto bueno) |
+| El control segmentado | En Windows deja de ser la píldora de macOS y pasa a ser **la SelectorBar de Fluent**: sin carril, la activa teñida y con su barra de acento debajo |
+
+**Y la anatomía vale para los cuatro sistemas, no solo para Windows** (dicho por el cliente el
+2026-11-19: *«hay que tener en cuenta de adaptar esta anatomía/estructura también en todos los
+sistemas y entornos, incluido Mac»*). Eso es exactamente lo que `TarjetaAjuste` hace posible y lo que
+convierte cada fase siguiente en escribir una hoja: **el marcado ya es el mismo**, así que macOS
+tendrá su fila agrupada de los Ajustes del Sistema, GNOME su lista en tarjeta y KDE su FormLayout sin
+tocar una línea de `App.tsx`. Mientras no llegue su fase, los tres se quedan con la gramática base,
+que es la de hoy.
 
 ### El marco
 
@@ -101,6 +111,13 @@ es porque **ese color significa algo que la gente ya sabe leer**. El blanco enci
   vuelve a la izquierda), apagar el pomo, cambiar el alto del marco en un solo lado y borrar una
   entrada de la tabla. La primera que escribí **no valía** —cambiaba el ancho de las columnas, y las
   piezas van con su `grid-area` escrita, así que no movía nada—.
+
+- **Las cinco pestañas de Ajustes caben en una fila con sus iconos**, medido **en Windows**, que es
+  el caso que aprieta: su cuerpo es de 14 y el de la base de 13, y la columna está topada en 560 sin
+  crecer con la ventana. Antes pedían 570. Los 24 px salieron de darle a Windows su propio control
+  segmentado —quitar el carril y apretar el relleno de 12 a 10—, no de recortar el de todos: **se
+  midió antes y después**, y de paso lo que estaba mal era que ese control siguiera siendo una
+  píldora de macOS.
 
 **No comprobado, y hace falta su Windows 11 ARM**: la tipografía, que es la mitad de parecer nativo;
 Mica detrás; que la ventana arrastre, se redimensione por los bordes y conserve la sombra; y si la

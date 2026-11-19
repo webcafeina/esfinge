@@ -444,3 +444,49 @@
 :root[data-barra="propia"] .lateral .semaforos {
   height: 0;
 }
+
+/* --------------------------------------------------- el control segmentado
+ *
+ * **Hasta hoy llevaba la píldora de macOS**: un carril gris con la opción activa
+ * en blanco y flotando. En Windows eso no existe; lo que hay es la SelectorBar
+ * —la de la aplicación Fotos—, que es una fila sin carril donde la activa se
+ * tiñe del acento y lleva **su barra debajo**, el mismo idioma que la fila activa
+ * del panel de navegación.
+ *
+ * Y de aquí salen los píxeles que faltaban para que las cinco pestañas de
+ * Ajustes quepan en una fila con sus iconos (pedido el 2026-11-19): quitar el
+ * carril y apretar el relleno de 12 a 10 son 24 px, y con la letra de 14 que usa
+ * Windows sobraban 10. Medido, no estimado. */
+:root[data-sistema="windows"] .segmentado {
+  padding: 0;
+  gap: 4px;
+  background: none;
+  border-radius: 0;
+}
+
+:root[data-sistema="windows"] .segmentado button {
+  position: relative;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radio);
+}
+
+/* Teñida, no rellena, como la fila activa del panel: en Fluent quien dice «estás
+ * aquí» es la barra, y el tinte solo acompaña. */
+:root[data-sistema="windows"] .segmentado button[aria-selected="true"] {
+  background: var(--relleno-tenue);
+  color: var(--tinta);
+  box-shadow: none;
+}
+
+:root[data-sistema="windows"] .segmentado button[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 16px;
+  height: 3px;
+  margin-left: -8px;
+  border-radius: 2px;
+  background: var(--acento);
+}

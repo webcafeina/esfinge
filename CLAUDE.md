@@ -137,7 +137,14 @@ No se cambian sin preguntar.
   rompería que el marcado sea el mismo (ADR 0064) y la simulación por URL, que cambia de aspecto sin
   recargar. Y en Windows **un ajuste es una tarjeta de WinUI** —texto a la izquierda, control a la
   derecha— con `TarjetaAjuste`, que **no es para cualquier casilla**: una casilla dentro de un
-  formulario sigue siendo una casilla en los cuatro. Las medidas salen de capturas de
+  formulario sigue siendo una casilla en los cuatro.
+  **Y esa anatomía es para los cuatro sistemas**, lo dijo él al dar el visto bueno a Windows: cada uno
+  tendrá su gramática en su fase —la fila agrupada de macOS, la lista en tarjeta de GNOME, el
+  FormLayout de KDE— y, como el marcado ya es el mismo, **eso es escribir una hoja y no tocar
+  `App.tsx`**. También pidió que **las pestañas de Ajustes lleven su glifo**, con el juego de cada
+  sistema; para que las cinco quepan en una fila con la letra de 14 de Windows, el control segmentado
+  deja allí de ser la píldora de macOS y pasa a ser la **SelectorBar** de Fluent —sin carril, la
+  activa teñida y con su barra de acento debajo—. Las medidas salen de capturas de
   macOS 26 que están en `referencias/` —carpeta ignorada por git—, usando los semáforos como regla:
   miden 12 pt clavados y con eso se saca la escala de cualquier captura.
 - **Cada sistema, con su forma y con su marco** (ADR 0020): la estructura de fondo es la misma en los

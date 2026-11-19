@@ -337,3 +337,31 @@ test("maximizada, el botón de en medio ofrece restaurar", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Restaurar la ventana" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Maximizar la ventana" })).toHaveCount(0);
 });
+
+test("las cinco pestañas de Ajustes caben en una fila, con sus iconos de Fluent", async ({
+  page,
+}) => {
+  await enWindows(page);
+  await seccion(page, "Ajustes").click();
+
+  // **Windows es el caso que aprieta**: su cuerpo es de 14 y el de la base de 13,
+  // así que una barra que cabe aquí cabe en los cuatro. La columna está topada en
+  // 560 y no crece con la ventana, que es la razón de que estas pestañas
+  // estuvieran un tiempo sin iconos.
+  const filas = await page
+    .locator(".panel:visible .segmentado")
+    .first()
+    .evaluate((barra) =>
+      [...barra.querySelectorAll('[role="tab"]')].map((t) =>
+        Math.round(t.getBoundingClientRect().y),
+      ),
+    );
+  expect(filas).toHaveLength(5);
+  expect(new Set(filas).size, `las pestañas caen a alturas distintas: ${filas}`).toBe(1);
+
+  // Y el glifo es el de Fluent, no el dibujado de la casa: es lo que el cliente
+  // pidió —«con los correspondientes de cada sistema, claro»—.
+  const boveda = page.getByRole("tab", { name: "Bóveda", exact: true }).locator("svg path");
+  const esperado = ICONOS_FLUENT.boveda["16"] ?? ICONOS_FLUENT.boveda["20"];
+  await expect(boveda.first()).toHaveAttribute("d", esperado[0]);
+});

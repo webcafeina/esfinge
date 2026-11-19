@@ -499,10 +499,15 @@ body {
 }
 
 /* Con iconos, cada opción es un glifo y su rótulo en fila. */
+/* **Cuatro píxeles entre el glifo y su rótulo, no ocho.** Es lo que ponen tanto
+ * Fluent como macOS: en un control segmentado el glifo y el rótulo son una sola
+ * cosa, y con ocho se leen como dos. Y de paso es lo que hace que las cinco
+ * pestañas de Ajustes quepan en una fila con sus iconos: la columna está topada
+ * en 560 y por eso estuvieron un tiempo sin ellos. */
 .segmentado.con-iconos button {
   display: inline-flex;
   align-items: center;
-  gap: var(--espacio-2);
+  gap: var(--espacio-1);
 }
 
 .segmentado .icono {

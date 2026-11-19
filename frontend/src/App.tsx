@@ -1963,21 +1963,26 @@ function Ajustes({
           a su altura: ya no hay a dónde saltar, se abre su pestaña y ya está. */}
       <Segmentado
         opciones={[
-          // **Sin iconos, y eso lo decidió la regla.** La columna está topada en
-          // 560 px y no crece con la ventana; con los glifos puestos, las cinco
-          // pestañas pedían 566 en cuanto «Versión» pasó a llamarse
-          // «Actualizaciones». De las tres salidas posibles —quitar los iconos,
-          // dejar el rótulo solo en la activa o abreviar otro nombre— esta es la
-          // única que no quita información: **el rótulo es lo que dice qué hay
-          // dentro y el glifo era decoración**. Lo mide una prueba a tres anchos.
-          { valor: "cuenta", etiqueta: "Cuenta" },
-          { valor: "boveda", etiqueta: "Bóveda" },
-          { valor: "navegador", etiqueta: "Navegador" },
-          { valor: "agentes", etiqueta: "Agentes" },
-          { valor: "acerca", etiqueta: "Actualizaciones" },
+          // **Con su glifo, y es el mismo que lleva la cabecera de cada sección**
+          // (pedido el 2026-11-19). Aquí estuvieron sin iconos un tiempo, porque
+          // con ellos las cinco pestañas pedían 566 px y la columna está topada en
+          // 560: de las tres salidas que se miraron entonces —quitarlos, dejar el
+          // rótulo solo en la activa o abreviar un nombre— se eligió quitarlos.
+          //
+          // Lo que lo resuelve ahora sin perder ninguna de las dos cosas es
+          // `envuelve`: antes que tirar un rótulo o un glifo, **la fila se parte en
+          // dos**. El rótulo dice qué hay dentro y el glifo es lo que se reconoce
+          // de un vistazo; partir una fila no quita nada. Lo mide una prueba a
+          // tres anchos.
+          { valor: "cuenta", etiqueta: "Cuenta", icono: "personal" },
+          { valor: "boveda", etiqueta: "Bóveda", icono: "boveda" },
+          { valor: "navegador", etiqueta: "Navegador", icono: "navegador" },
+          { valor: "agentes", etiqueta: "Agentes", icono: "mcp" },
+          { valor: "acerca", etiqueta: "Actualizaciones", icono: "descargar" },
         ]}
         valor={seccion}
         alCambiar={setSeccion}
+        conIconos
         envuelve
       />
 
