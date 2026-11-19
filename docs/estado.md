@@ -3,9 +3,15 @@
 Última actualización: **2026-11-19**
 
 **Lo de esta sesión**: cerrada la verificación por sistemas con **el Mac** (`brew`, fórmula y cask),
-y empezada **la última fase grande: nativizar la interfaz** para macOS, Windows, GNOME y KDE. Van la
-costura y Windows con Fluent, y una revisión de textos que pidió el cliente al verlo. Sin publicar
-todavía.
+y empezada **la última fase grande: nativizar la interfaz** para macOS, Windows, GNOME y KDE.
+**Windows está terminado y publicado en la 2.70.0**: la costura, Fluent, la estructura —los ajustes
+como tarjetas de WinUI— y el marco propio, más la marca fuera de la barra lateral y una revisión de
+67 textos.
+
+**La siguiente acción concreta**: que el cliente abra la 2.70.0 en su Windows 11 ARM y mire **lo que
+desde aquí no se puede juzgar** —la tipografía, Mica y que la ventana arrastre, se redimensione y
+conserve la sombra—. Lo que vea se apunta antes de pasar a **macOS**, que es la fase siguiente; antes
+de empezarla hay que volcar en una pasada el kit de Apple en Figma (`uCn3dR3MxX8byi1d2oFmJD`).
 
 ## Nativizar la interfaz (empezada el 2026-11-19)
 
@@ -27,6 +33,27 @@ tomadas sobre galerías de capturas**. Orden: **Windows → macOS → GNOME → 
   WinUI, `sistema-windows.css` con la escala de Fluent, los **iconos de Fluent** cosechados por
   `herramientas/iconos/fluent.py` y seis pruebas que miden. El contraste pasó de 132 medidas a **264**.
 - **Los textos, mucho más cortos** (`b532f8e`). 67 reescritos; fuera GitHub de la ventana.
+- **La marca sale de la barra lateral** ([ADR 0065](adr/0065-la-marca-sale-de-la-barra-lateral.md),
+  `71de316`+). El cliente eligió sobre cuatro tratamientos en capturas: **arriba nada y al pie el
+  número de versión**, en los cuatro sistemas. Deroga esa parte de la 0021.
+- **F2 · la estructura y el marco** ([ADR 0066](adr/0066-el-marco-en-windows.md), `7efc870`,
+  `7dccb50`, `9db2510`). Nace `TarjetaAjuste` —la SettingsCard de WinUI, **mismo marcado en los
+  cuatro sistemas y una gramática por sistema**— con `Interruptor`, su píldora de Fluent; la barra de
+  título la dibuja Esfinge, con sus tres botones sobre `window.runtime` y **el doble clic, que Wails
+  no trae**; y las pestañas de Ajustes llevan su glifo, para lo que Windows estrena su propio control
+  segmentado —la SelectorBar— en vez de la píldora de macOS.
+- **Publicado en la 2.70.0** el 2026-11-19, en verde en los seis objetivos. Chrome la aceptó y está
+  en revisión; **Chocolatey la rebotó** porque sigue moderando la 2.66.1 —se reempuja con
+  `gh workflow run canales.yml -f version=2.70.0 -f canal=chocolatey` cuando se desatasque—. El VPS,
+  actualizado y comprobado leyendo la bóveda de Tempero.
+
+### Lo que queda de la fase de Windows
+
+- **El menú de Snap** al pasar por Maximizar: ~150 líneas de Win32 en un `marco_windows.go`. Va en un
+  paso publicable aparte, a propósito, para que no retrasara esta versión.
+- **Y la anatomía es un compromiso para los cuatro sistemas**, dicho por el cliente al dar el visto
+  bueno: *«hay que tener en cuenta de adaptar esta anatomía/estructura también en todos los sistemas
+  y entornos, incluido Mac»*. Como el marcado ya es el mismo, cada fase es escribir una hoja.
 
 ### Lo primero al retomar
 
