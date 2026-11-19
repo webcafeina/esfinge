@@ -778,34 +778,38 @@ test("el historial se refresca al volver a entrar, no solo la primera vez", asyn
   expect(errores, errores.join(' | ')).toEqual([]);
 });
 
-// ------------------------------------------------------------ la marca (0021)
+// ------------------------------------------------- la marca (0021, y 0065)
 
-test("la marca está en la barra lateral y no estorba a la navegación", async ({ page }) => {
+test("la barra lateral lleva la versión al pie y nada más", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
 
-  // Arriba, el producto.
-  const marca = page.locator(".lateral .marca");
-  await expect(marca).toContainText("Esfinge");
-  await expect(marca.locator("svg")).toBeVisible();
+  // **Arriba no hay nada** (ADR 0065): aquí vivían el lockup de Esfinge y la
+  // firma «Webcafeína ▍ versión», y el cliente los quitó de los cuatro sistemas
+  // el 2026-11-19. Se comprueba que no han vuelto, porque lo que se quita de una
+  // pantalla vuelve solo en cuanto alguien echa de menos la marca.
+  await expect(page.locator(".lateral .marca")).toHaveCount(0);
+  await expect(page.locator(".lateral .firma")).toHaveCount(0);
+  await expect(page.locator(".lateral")).not.toContainText("Webcafeína");
 
-  // Abajo, la casa y la versión. Que la versión esté aquí y no solo en Ajustes
-  // es lo que evita tener que ir a buscarla cuando algo va raro.
-  const firma = page.locator(".lateral .firma");
-  await expect(firma).toContainText("Webcafeína");
-  await expect(firma).toContainText(/\d+\.\d+\.\d+/);
+  // Y al pie, el número y nada más. Que esté aquí y no solo en Ajustes es lo
+  // que evita tener que ir a buscarlo cuando algo va raro: es lo único de aquel
+  // pie que servía para algo, y es la razón de que se eligiera esto y no
+  // quitarlo todo.
+  const version = page.locator(".lateral .version");
+  await expect(version).toHaveText(/^\d+\.\d+\.\d+$/);
 
   // **Y son ocho botones** —cinco hasta la bóveda, seis hasta las bóvedas de
   // proyecto (ADR 0050), siete hasta «MCP» (ADR 0054)—. Todo el fichero de pruebas
-  // localiza las secciones con «.lateral + getByRole("button")»: si el lockup o la
-  // firma fueran interactivos, entrarían en ese localizador y romperían de golpe
-  // media suite. Por eso son texto, y por eso esto se cuenta.
+  // localiza las secciones con «.lateral + getByRole("button")»: si la versión
+  // fuera interactiva entraría en ese localizador y rompería de golpe media
+  // suite. Por eso es texto, y por eso esto se cuenta.
   await expect(page.locator(".lateral").getByRole("button")).toHaveCount(8);
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
-test("la firma de la casa va al fondo, debajo de Ajustes", async ({ page }) => {
+test("la versión va al fondo, debajo de Ajustes", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
 
@@ -813,8 +817,8 @@ test("la firma de la casa va al fondo, debajo de Ajustes", async ({ page }) => {
   // posiciones es la única forma de comprobar que sigue haciendo su trabajo:
   // el orden en el DOM no dice dónde acaba pintado.
   const ajustes = await seccion(page, "Ajustes").boundingBox();
-  const firma = await page.locator(".lateral .firma").boundingBox();
-  expect(firma!.y).toBeGreaterThan(ajustes!.y);
+  const version = await page.locator(".lateral .version").boundingBox();
+  expect(version!.y).toBeGreaterThan(ajustes!.y);
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });

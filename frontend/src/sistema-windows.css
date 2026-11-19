@@ -88,11 +88,7 @@
 
 /* El hueco de los semáforos es de macOS: aquí la ventana tiene su barra de
  * título del sistema, así que arriba de la barra lateral no hay nada que
- * esquivar. Se le da aire para que el lockup no toque el marco. */
-:root[data-sistema="windows"] .lateral .marca {
-  padding-top: var(--espacio-2);
-}
-
+ * esquivar. Queda el aire justo para que la primera fila no toque el marco. */
 :root[data-sistema="windows"] .lateral .semaforos {
   height: var(--espacio-3);
 }

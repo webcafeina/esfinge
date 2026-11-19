@@ -3,6 +3,11 @@
 **Fecha:** 2026-09-09 · **Estado:** aceptada · **Matiza la [0007](0007-aspecto-del-sistema.md)** ·
 **Revisar si** el cliente pide separar la identidad del producto de la de la casa
 
+> **Derogada en parte el 2026-11-19 por la [ADR 0065](0065-la-marca-sale-de-la-barra-lateral.md):**
+> el lockup de arriba y la firma del pie **ya no están en la barra lateral** —al pie queda sólo el
+> número de versión—. Todo lo demás de esta ficha sigue en pie: el oro como acento, la piedra
+> encima, la esfinge del historial vacío y que en las pantallas de trabajo no hay marca.
+
 ## Contexto
 
 Hasta la 2.10.4, la ventana **no tenía una sola marca en ningún píxel**: ni logotipo, ni nombre de

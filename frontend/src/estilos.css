@@ -102,56 +102,19 @@ body {
   height: 100%;
 }
 
-/* El lockup: la esfinge y el nombre, debajo del hueco de los semáforos.
+/* Al pie de la barra lateral, el número de versión y nada más (ADR 0065). El
+ * «margin-top: auto» de «.abajo» empuja el bloque de Ajustes hacia abajo y esto
+ * queda debajo de él.
  *
- * **No lleva «no-drag» a propósito.** El resto de la barra lateral sí, porque
- * son botones; esto es texto, y en macOS cae justo debajo de los semáforos, que
- * es donde la mano va a agarrar la ventana. Marcarlo sería quitar agarre.
- *
- * La sangría de 10 px es la misma que llevan las filas, para que la esfinge y
- * los iconos de navegación caigan en la misma columna. Si se cambia una hay que
- * cambiar la otra: es lo único que las alinea. */
-.lateral .marca {
-  display: flex;
-  align-items: center;
-  gap: var(--espacio-2);
-  padding: 0 10px;
-  margin-bottom: var(--espacio-5);
-  color: var(--tinta);
-  flex-shrink: 0;
-}
-
-/* **Tiene que leerse como un título, no como una fila más.** Al principio iba a
- * «--texto-grande», que es *exactamente* el tamaño de las filas de navegación:
- * cambiaba solo el peso y el nombre parecía una sección más. Ahora va al tamaño
- * de título, con la esfinge más grande y más aire debajo, que son las tres cosas
- * que lo separan del menú. */
-.lateral .marca span {
-  font-size: var(--titulo);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-/* La firma de la casa, al fondo del todo. El «margin-top: auto» de «.abajo»
- * empuja el bloque de Ajustes hacia abajo y esto queda debajo de él. */
-.lateral .firma {
-  display: flex;
-  align-items: center;
-  gap: var(--espacio-1);
+ * La sangría de 10 px es la misma que llevan las filas, para que caiga en su
+ * misma columna. Si se cambia una hay que cambiar la otra. */
+.lateral .version {
   margin: var(--espacio-3) 0 0;
   padding: 0 10px;
   font-size: var(--texto-chico);
   color: var(--apagado);
   flex-shrink: 0;
-}
-
-/* El glifo va del color de la tinta y no del oro: sobre la barra lateral clara
- * el oro da 1,55:1 y no se vería. Lo mismo que el filete de foco. */
-.lateral .firma .barra {
-  color: var(--acento);
-  /* La tinta del glifo de bloque va pegada a la izquierda de su caja, así que
-   * con el mismo hueco a los dos lados se ve pegado al nombre. Se compensa. */
-  margin-left: var(--espacio-1);
+  font-variant-numeric: tabular-nums;
 }
 
 .lateral nav {
@@ -2174,10 +2137,6 @@ select {
 /* Sin semáforos que esquivar, el lockup queda pegado al marco del sistema. Se le
  * da aire para que no lo toque: en Windows y en GNOME la barra de título la
  * dibuja el sistema y el nombre de la aplicación va justo debajo. */
-:root[data-sistema="linux"] .lateral .marca {
-  padding-top: var(--espacio-2);
-}
-
 :root[data-sistema="linux"] .lateral .semaforos {
   height: var(--espacio-3);
 }

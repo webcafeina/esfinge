@@ -128,11 +128,6 @@ export function BarraLateral<T extends string>({
     <aside className="lateral">
       <div className="semaforos" />
 
-      <div className="marca">
-        <Marca lado={26} />
-        <span>Esfinge</span>
-      </div>
-
       <nav aria-label="Secciones">
         {fila("cifrar", "Cifrar")}
         {fila("descifrar", "Descifrar")}
@@ -153,7 +148,14 @@ export function BarraLateral<T extends string>({
         {fila("ajustes", "Ajustes")}
       </nav>
 
-      <Firma version={version} />
+      {/* **Al pie va el número de versión y nada más** (ADR 0065). Aquí estaban el
+          lockup de Esfinge arriba y la firma «Webcafeína ▍ versión» abajo; el cliente
+          los vio en la galería del 2026-11-19 y los quitó de los cuatro sistemas. Lo
+          que se queda es lo único de ese pie que sirve para algo: **la versión es lo
+          primero que se pregunta cuando algo va raro**, y en Ajustes hay que ir a
+          buscarla. La marca sigue en el icono de la ventana, en las portadas y en el
+          historial vacío. */}
+      <p className="version">{version || "…"}</p>
     </aside>
   );
 }

@@ -117,9 +117,14 @@ No se cambian sin preguntar.
 - **Aspecto de aplicación del sistema**: tipografía, controles y formas de macOS y de Windows, sin
   identidad ajena (ADR 0007). La tipografía no se toca nunca.
 - **Pero el acento sí es nuestro, y la marca está dentro de la ventana** (ADR 0021): el oro del
-  tocado en vez del azul del sistema, el lockup de Esfinge arriba en la barra lateral, la firma
-  `▍ webcafeína` abajo y la esfinge grande y tenue en el historial vacío. **Nunca en las pantallas de
-  trabajo**: ahí se trabaja.
+  tocado en vez del azul del sistema y la esfinge grande y tenue en el historial vacío. **Nunca en las
+  pantallas de trabajo**: ahí se trabaja.
+  **Y desde el 2026-11-19 tampoco en la barra lateral** (ADR 0065, que deroga esa parte de la 0021):
+  el lockup de arriba y la firma `▍ webcafeína` del pie **se fueron de los cuatro sistemas** —los vio en
+  la galería de Windows y los llamó feos—, y al pie **queda sólo el número de versión**. Eligió entre
+  cuatro tratamientos en capturas; la diferencia con el de Apolo, que quita los dos, es **que la versión
+  se queda**: es lo primero que se pregunta cuando algo va raro y en Ajustes hay que ir a buscarla. La
+  marca sigue en el icono, en las portadas, en el historial vacío y en Ajustes.
 - **Y estructura del sistema**: barra lateral a la izquierda, título en la barra de herramientas y
   formularios en tarjetas, sin barra de título propia (ADR 0019). Las medidas salen de capturas de
   macOS 26 que están en `referencias/` —carpeta ignorada por git—, usando los semáforos como regla:

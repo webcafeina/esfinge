@@ -34,7 +34,7 @@ la fase de macOS.
 | Iconos | **Fluent System Icons** (MIT), cosechados de un commit fijado, **sin juntar ni reescalar los trazados** |
 | Navegación | El NavigationView: 240 de ancho, filas de 40, la activa **teñida** del acento con su **barra de 3 × 16** al lado |
 | Campos | La línea de abajo marcada, que **al enfocar se vuelve del acento**: es lo más reconocible de un campo de Windows 11, y aquí sustituye al anillo de macOS |
-| El marco | **No entra aquí.** Lo decide la [ADR 0065](0065-el-marco-en-windows.md) sobre capturas de las dos opciones |
+| El marco | **No entra aquí.** Lo decide la [ADR 0066](0066-el-marco-en-windows.md) sobre capturas de las dos opciones |
 
 Y tres cosas de método que valen para las tres fases que vienen:
 
