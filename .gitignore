@@ -17,6 +17,11 @@
 # dos meses y medio ahí, 6,6 MB sin servir para nada. Nadie lo compila en esta carpeta hoy.
 /esfinge-gui
 /esfinge-gui.exe
+# Y el del servidor de desarrollo: `go build ./cmd/dev/` sin `-o` deja un «dev» de 16 MB aquí.
+# Pasó el 2026-11-19 comprobando que compilaba, o sea por el mismo camino por el que entró el de
+# arriba. Lo normal es `go build -o /dev/null`, pero acordarse no es defensa.
+/dev
+/dev.exe
 /dist/
 
 # Ficheros cifrados y temporales de la propia herramienta

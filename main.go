@@ -26,6 +26,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
 	"github.com/webcafeina/esfinge/internal/app"
+	"github.com/webcafeina/esfinge/internal/entorno"
 	"github.com/webcafeina/esfinge/internal/interfaz"
 )
 
@@ -59,6 +60,13 @@ func main() {
 	// con Vidrio(): sin él dejaría la ventana vacía justo donde no hay efecto.
 	vidrio := runtime.GOOS == "darwin" || runtime.GOOS == "windows"
 	app.MarcarVidrio(aplicacion, vidrio)
+
+	// Y en qué escritorio, que en Linux no lo dice el sistema: GNOME y KDE
+	// organizan su ventana de forma distinta y hasta ahora Plasma veía la de
+	// GNOME. Se lee **aquí y una vez**, antes de crear la ventana: de esto
+	// dependen cosas que se deciden al arrancar, y `XDG_CURRENT_DESKTOP` es de la
+	// sesión que lanzó el proceso, así que no cambia en vida.
+	app.MarcarEscritorio(aplicacion, entorno.DeAqui())
 
 	err := wails.Run(&options.App{
 		Title: "Esfinge",

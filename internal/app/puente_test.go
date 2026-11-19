@@ -24,7 +24,7 @@ import (
 // efecto colateral de haber puesto una mayúscula.
 var loQuePuedeCruzarElPuente = []string{
 	// Lo que la ventana necesita saber de sí misma.
-	"Plataforma", "Version", "Vidrio", "Arrancar",
+	"Plataforma", "Version", "Arrancar",
 
 	// Cifrar y descifrar.
 	"CifrarTexto", "DescifrarTexto", "CifrarFicheros", "DescifrarFicheros",

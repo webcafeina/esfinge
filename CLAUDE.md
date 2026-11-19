@@ -1055,6 +1055,15 @@ topan con esto. Hace falta `addInitScript` cuando lo que se prueba es que algo l
 página** —el guion del mundo principal—, y entonces el global se asigna a mano (`codigo + "\nwindow.X = X;"`).
 El síntoma es `undefined` y una prueba que dice que no se instaló nada por el motivo equivocado.
 
+**Y dentro de un `addInitScript` todavía no hay `document.documentElement`.** Un vigilante puesto ahí
+con `observador.observe(document.documentElement, …)` lanza «parameter 1 is not of type 'Node'», nadie
+recoge esa excepción y **la prueba pasa en verde sin haber vigilado nada**: pasó el 2026-11-19 con la
+prueba de que la plataforma se resuelve antes del primer pintado, que daba por bueno justo el fallo que
+se le puso a mano para comprobarla. Se observa `document`, que siempre existe. Y la otra mitad, que es
+la que de verdad lo cierra y es la regla del doble que cuenta las llamadas: **el guion apunta que se ha
+instalado y la prueba se lo pregunta antes de afirmar nada**. Sin eso, lo único que dice un verde es que
+no se instaló nada.
+
 **Y un doble no engaña a `Function.prototype.toString.call`.** Poner un `toString` propio en una función no
 sirve: `call` va al del prototipo y devuelve el fuente de verdad. Para que un doble parezca nativo hay que
 sustituir `Function.prototype.toString`, que además es lo que haría otro gestor de verdad.

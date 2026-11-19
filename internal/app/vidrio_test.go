@@ -8,12 +8,12 @@ import "testing"
 func TestSinVidrioLaVentanaSePintaComoSiempre(t *testing.T) {
 	a, _ := nuevaDePrueba(t)
 
-	if a.Vidrio() {
+	if a.Plataforma().Vidrio {
 		t.Error("de fábrica no hay vidrio, y dice que sí")
 	}
 
 	MarcarVidrio(a, true)
-	if !a.Vidrio() {
+	if !a.Plataforma().Vidrio {
 		t.Error("se ha marcado el vidrio y sigue diciendo que no")
 	}
 }

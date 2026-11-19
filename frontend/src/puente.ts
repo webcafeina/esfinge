@@ -10,6 +10,26 @@
 // Eso es lo que permite probar la interfaz entera de verdad, con un navegador,
 // sin compilar la aplicación.
 
+/**
+ * Lo que la ventana necesita saber de sí misma **antes de pintar nada**.
+ *
+ * Va en una sola respuesta y no en tres llamadas: cada pregunta de más es una
+ * espera de más antes del primer pintado. Quien la resuelve y la guarda es
+ * `plataforma.ts`; aquí solo viaja.
+ */
+export type Plataforma = {
+  /** «darwin», «windows» o «linux»: lo que devuelve Go. */
+  sistema: string;
+  /**
+   * Solo en Linux: «gnome», «kde» u «otro», que se ve como GNOME a propósito.
+   * **Vacío en macOS y en Windows**, donde el sistema ya dice cómo se organiza
+   * una ventana suya.
+   */
+  escritorio: string;
+  /** Si el sistema ha puesto una ventana translúcida detrás. */
+  vidrio: boolean;
+};
+
 export type Resultado = {
   texto: string;
   aviso: string;
@@ -695,11 +715,8 @@ export const esfinge = {
 
   version: () => llamar<string>("Version"),
 
-  /** Si el sistema ha puesto una ventana translúcida detrás. */
-  vidrio: () => llamar<boolean>("Vidrio"),
-
-  /** «darwin», «windows» o «linux»: lo que devuelve Go. */
-  plataforma: () => llamar<string>("Plataforma"),
+  /** Dónde corre la ventana y con qué marco. Lo resuelve `plataforma.ts`. */
+  plataforma: () => llamar<Plataforma>("Plataforma"),
 
   aperturaDeArranque: () => llamar<Apertura>("AperturaDeArranque"),
 

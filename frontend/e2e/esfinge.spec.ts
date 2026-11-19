@@ -3958,3 +3958,94 @@ test("el registro se vuelve a leer al abrir la bóveda, no solo cuando habla un 
 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
+
+/**
+ * **El sistema está escrito en la raíz antes del primer pintado**, no después.
+ *
+ * De `data-sistema` y `data-escritorio` cuelga todo el CSS de cada escritorio.
+ * Hasta la 2.69.0 los ponía un efecto de `App.tsx`, o sea después de montar: eso
+ * es un parpadeo —se ve un instante la base y luego el sistema— y es la carrera
+ * que obligó a escribir que una prueba que fuerce ese atributo tiene que esperar
+ * a que la aplicación fije el suyo.
+ *
+ * Lo que se vigila es **un invariante y no un instante**: nunca puede haber nada
+ * dibujado dentro de `#raiz` mientras la raíz del documento no diga dónde
+ * estamos. Escrito así, el fallo se caza siempre; comprobando el atributo
+ * después de cargar, se cazaría sólo cuando la promesa pierda la carrera —y en
+ * esta máquina no la pierde nunca, que es exactamente cómo este fallo lleva
+ * meses sin que nadie lo vea.
+ */
+test("el sistema está puesto antes de pintar nada", async ({ page }) => {
+  type Vigilante = { __vigilado?: string; __pintadoSinSistema?: string | null };
+  await page.addInitScript(() => {
+    const w = window as unknown as Vigilante;
+    w.__pintadoSinSistema = null;
+    const mirar = () => {
+      const raiz = document.getElementById("raiz");
+      if (!raiz || raiz.childElementCount === 0) return;
+      if (!document.documentElement.dataset.sistema) {
+        w.__pintadoSinSistema = raiz.innerHTML.slice(0, 120);
+        observador.disconnect();
+      }
+    };
+    const observador = new MutationObserver(mirar);
+    // **Se observa `document` y no `document.documentElement`**: cuando este
+    // guion corre, la raíz todavía no existe —se comprobó, y `observe()` lanza
+    // «parameter 1 is not of type 'Node'»—, así que el vigilante se quedaba sin
+    // instalar **en silencio** y la prueba pasaba en verde con el fallo dentro.
+    // Por eso debajo se le pregunta además si se instaló: un doble que no puede
+    // decir que le han llamado no prueba nada.
+    observador.observe(document, { childList: true, subtree: true, attributes: true });
+    w.__vigilado = "si";
+  });
+
+  await page.goto("/");
+  await expect(page.locator(".lateral")).toBeVisible();
+
+  const vigilado = await page.evaluate(
+    () => (window as unknown as Vigilante).__vigilado ?? "no",
+  );
+  expect(vigilado, "el vigilante no se ha instalado, así que esta prueba no comprueba nada").toBe(
+    "si",
+  );
+
+  const pintado = await page.evaluate(
+    () => (window as unknown as Vigilante).__pintadoSinSistema ?? null,
+  );
+  expect(
+    pintado,
+    "se ha pintado interfaz antes de saber el sistema, así que lo primero que se ve lleva el aspecto equivocado",
+  ).toBeNull();
+
+  // Y lo que tiene que haber: en esta máquina, Linux y un escritorio de los tres.
+  await expect(page.locator("html")).toHaveAttribute("data-sistema", "linux");
+  await expect(page.locator("html")).toHaveAttribute("data-escritorio", /^(gnome|kde|otro)$/);
+});
+
+/**
+ * El aspecto de otro sistema se puede pedir en la URL, y **eso es lo que
+ * sustituye a tener las cuatro máquinas**: es lo único que permite mirar y
+ * retratar Windows, GNOME y KDE desde un servidor sin pantalla.
+ *
+ * Que no exista en la ventana de nadie lo vigila aparte
+ * `frontend/herramientas/sin-simulacion.mjs`, leyendo lo construido.
+ */
+test("en desarrollo se puede pedir el aspecto de otro sistema por la URL", async ({ page }) => {
+  await page.goto("/?sistema=windows");
+  await expect(page.locator("html")).toHaveAttribute("data-sistema", "windows");
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-simulado",
+    "esfinge:plataforma-simulada",
+  );
+
+  await page.goto("/?sistema=linux&escritorio=kde&vidrio=si");
+  await expect(page.locator("html")).toHaveAttribute("data-escritorio", "kde");
+  await expect(page.locator("html")).toHaveAttribute("data-vidrio", "si");
+
+  // **Y lo que no se pide no se toca**: sin parámetros, lo que contesta Go. Si
+  // la simulación partiera de valores inventados en vez de la respuesta de
+  // verdad, el servidor de desarrollo dejaría de enseñar lo de esta máquina.
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-sistema", "linux");
+  expect(await page.locator("html").getAttribute("data-simulado")).toBeNull();
+});

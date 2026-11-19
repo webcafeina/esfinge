@@ -478,6 +478,7 @@ func TestLoQueCruzaElPuenteEsSerializable(t *testing.T) {
 		"Preferencias": a.VerPreferencias(),
 		"Orden":        Orden{Que: OrdenIrAAjustes},
 		"Apertura":     Apertura{Modo: "texto", Texto: "ESF1.x"},
+		"Plataforma":   a.Plataforma(),
 	} {
 		if _, err := json.Marshal(v); err != nil {
 			t.Errorf("%s no se puede serializar: %v", nombre, err)

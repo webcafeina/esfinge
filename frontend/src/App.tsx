@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { obedecerEdicion } from "./ordenes";
+import { laPlataforma } from "./plataforma";
 import {
   alAbrirFichero,
   alDescargar,
@@ -239,27 +240,10 @@ export default function App() {
   useEffect(() => {
     esfinge.version().then(setVersion).catch(() => setVersion("?"));
 
-    // En qué sistema estamos. La estructura de fondo es la misma en los tres
-    // —barra lateral y contenido— y lo que cambia son las formas y las
-    // densidades, que en cada escritorio son las suyas. Como con el vidrio, va
-    // en un atributo de la raíz y el CSS cuelga de él.
-    esfinge
-      .plataforma()
-      .then((s) => {
-        document.documentElement.dataset.sistema = s;
-      })
-      .catch(() => {});
-
-    // El vidrio del sistema. Cuando lo hay, la ventana es transparente y el
-    // fondo lo pinta el CSS; cuando no —una versión de Windows sin Mica—, todo
-    // se queda como siempre. De ahí que sea un atributo y no un estilo suelto:
-    // el CSS entero del vidrio cuelga de él.
-    esfinge
-      .vidrio()
-      .then((hay) => {
-        if (hay) document.documentElement.dataset.vidrio = "si";
-      })
-      .catch(() => {});
+    // El sistema, el escritorio y el vidrio **no se piden aquí**: los resuelve
+    // `main.tsx` antes del primer pintado y los deja en la raíz del documento
+    // (ver `plataforma.ts`). Pedirlos en un efecto era pedirlos después de
+    // pintar, y de ellos cuelga todo el CSS de cada escritorio.
 
     // La comprobación de versiones sale a la red desde Go, en su propia
     // gorrutina, y puede contestar segundos después de abrirse la ventana. Por
@@ -1776,7 +1760,9 @@ function Ajustes({
 }) {
   const [cuenta] = usaCuenta();
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
-  const [vidrio, setVidrio] = useState<boolean | null>(null);
+  // Ya resuelto antes del primer pintado, así que se lee de corrido: ni estado,
+  // ni promesa, ni un «todavía no se sabe» que haya que dibujar.
+  const vidrio = laPlataforma().vidrio;
   const [buscando, setBuscando] = useState(false);
   const [dicho, setDicho] = useState("");
   const [error, setError] = useState("");
@@ -1858,7 +1844,6 @@ function Ajustes({
 
   useEffect(() => {
     leerPreferencias();
-    esfinge.vidrio().then(setVidrio).catch(() => {});
     // **Lo que llega de fuera lo escucha la ventana**, no esta pantalla: un navegador
     // o un agente que piden permiso se contestan arriba y en cualquier sección, así que
     // montados aquí no se escuchaban siquiera hasta que alguien entrara en Ajustes.
@@ -2600,13 +2585,11 @@ function Ajustes({
         </section>
 
 
-        {vidrio !== null && (
-          <p className="nota">
-            {vidrio
-              ? "Esta ventana usa el vidrio del sistema: la barra y el pie dejan ver lo que hay detrás."
-              : "Esta ventana es opaca: tu sistema no ofrece el vidrio, o esta versión no lo trae."}
-          </p>
-        )}
+        <p className="nota">
+          {vidrio
+            ? "Esta ventana usa el vidrio del sistema: la barra y el pie dejan ver lo que hay detrás."
+            : "Esta ventana es opaca: tu sistema no ofrece el vidrio, o esta versión no lo trae."}
+        </p>
 
         <p className="nota">
           Al actualizar no hay que desinstalar nada: en macOS se arrastra encima de la anterior,

@@ -125,6 +125,7 @@ e2e:
 .PHONY: frontend
 frontend: tokens
 	cd $(FRONT) && $(PNPM) install --frozen-lockfile && $(PNPM) run build
+	@node $(FRONT)/herramientas/sin-simulacion.mjs
 	@rm -rf internal/interfaz/dist && mkdir -p internal/interfaz/dist
 	@cp -r $(FRONT)/dist/. internal/interfaz/dist/
 

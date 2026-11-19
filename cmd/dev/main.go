@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 
 	"github.com/webcafeina/esfinge/internal/app"
+	"github.com/webcafeina/esfinge/internal/entorno"
 	"github.com/webcafeina/esfinge/internal/llavero"
 	"github.com/webcafeina/esfinge/internal/rutas"
 )
@@ -26,6 +27,11 @@ func main() {
 	config := flag.String("config", "", "Carpeta de configuración; vacío, una temporal recién hecha")
 	cuentas := flag.String("cuentas", "", "Servidor de cuentas, normalmente el local de make servidor (http://127.0.0.1:8790)")
 	sinLlavero := flag.Bool("sin-llavero", false, "Simula un equipo sin Touch ID ni Windows Hello")
+	// El aspecto de cada escritorio se pide normalmente en la URL —es por página y
+	// sobrevive a recargar, que es lo que necesitan las pruebas y las capturas—. Esto
+	// es para el otro lado: ejercitar lo que contesta Go, que es lo que de verdad
+	// pasa en la máquina de alguien.
+	escritorioFalso := flag.String("escritorio", "", "Finge un escritorio de Linux: gnome, kde u otro")
 	flag.Parse()
 
 	// **La configuración se aísla, y con la bóveda dentro deja de ser un detalle.**
@@ -90,6 +96,11 @@ func main() {
 	// ver para comprobar que entonces **no se ofrece nada** en vez de dejar un
 	// botón muerto.
 	app.ApuntarLlaveroA(aplicacion, &llavero.DeMentira{ComoSeLlama: "Touch ID", NoHay: *sinLlavero})
+	if *escritorioFalso != "" {
+		app.MarcarEscritorio(aplicacion, entorno.Cual(*escritorioFalso))
+	} else {
+		app.MarcarEscritorio(aplicacion, entorno.DeAqui())
+	}
 
 	log.Fatal(app.Servir(aplicacion, sistema, *direccion))
 }

@@ -52,6 +52,11 @@ type App struct {
 	// vidrio dice si el sistema ha puesto una ventana translúcida detrás.
 	vidrio bool
 
+	// escritorio es, **solo en Linux**, cuál de ellos: «gnome», «kde» u «otro».
+	// Lo pone el arranque, que es quien lo ha leído del entorno antes de crear la
+	// ventana (ver `internal/entorno`). Vacío en macOS y en Windows.
+	escritorio string
+
 	// llavero es lo que guarda el secreto del desbloqueo del sistema —Touch ID,
 	// Windows Hello— fuera de Esfinge (fase C). Se rellena sola la primera vez
 	// que se pregunta; las pruebas y el servidor de desarrollo ponen la suya.
@@ -213,6 +218,14 @@ func ApuntarAAPI(a *App, raiz string) { a.act.comprobador.API = raiz }
 // una decisión de arranque, no algo que la ventana deba poder cambiar.
 func MarcarVidrio(a *App, si bool) { a.vidrio = si }
 
+// MarcarEscritorio deja constancia de en qué escritorio de Linux se abrió.
+//
+// La llama main.go **antes de crear la ventana**, porque de eso dependen cosas
+// que se deciden al arrancar y no se pueden cambiar después. Función y no
+// método, como las de arriba: la ventana tiene que poder preguntar en qué
+// escritorio está, no decidirlo.
+func MarcarEscritorio(a *App, cual string) { a.escritorio = cual }
+
 // ApuntarLlaveroA cambia dónde se guarda el secreto del desbloqueo del sistema.
 //
 // **Lo usa el servidor de desarrollo**, que corre en una máquina sin Touch ID ni
@@ -221,26 +234,50 @@ func MarcarVidrio(a *App, si bool) { a.vidrio = si }
 // guarda la llave de la bóveda, que es exactamente lo que no puede poder hacer.
 func ApuntarLlaveroA(a *App, l llavero.Llavero) { a.llavero = l }
 
-// Plataforma dice en qué sistema corre, para que la interfaz se organice como
-// se organizan las aplicaciones de ese sistema.
+// Plataforma es lo que la ventana necesita saber de sí misma **antes de pintar
+// nada**: dónde corre y con qué marco, para organizarse como se organizan las
+// aplicaciones de ese escritorio.
 //
-// Devuelve lo que devuelve Go: «darwin», «windows» o «linux». La estructura de
-// fondo es la misma en los tres —barra lateral y contenido— y lo que cambia son
-// las formas, las densidades y el marco: cada escritorio tiene sus costumbres y
-// una ventana que no las sigue se nota enseguida.
-func (a *App) Plataforma() string { return runtime.GOOS }
+// # Por qué va en una sola respuesta
+//
+// Porque con esto la interfaz pone los atributos de la raíz antes del primer
+// pintado, y de ellos cuelga todo el CSS de cada sistema. Cada pregunta de más
+// es una espera de más y una oportunidad de que lo primero que se pinte no sea
+// lo que toca: eso ya pasó —`data-sistema` se ponía en un efecto, después de
+// pintar— y obligó a escribir que una prueba que fuerce ese atributo tiene que
+// esperar a que la aplicación fije el suyo.
+type Plataforma struct {
+	// Sistema es lo que devuelve Go: «darwin», «windows» o «linux». La estructura
+	// de fondo es la misma en los tres —barra lateral y contenido— y lo que cambia
+	// son las formas, las densidades y el marco.
+	Sistema string `json:"sistema"`
 
-// Vidrio lo consulta la interfaz al montarse.
-//
-// Sin vidrio, el fondo lo pinta el CSS de siempre. Con vidrio, el fondo de la
-// ventana es transparente y la interfaz deja pasar el material por la barra
-// lateral, pero **no** por la zona de trabajo, que es donde se lee.
-//
-// En Linux no se pide, y no porque Wails no lo ofrezca —sí lo hace, con
-// linux.Options.WindowIsTranslucent— sino porque sin desenfoque del compositor
-// la transparencia de GTK enseña el escritorio a pelo. Eso no es vibrancia: es
-// un agujero.
-func (a *App) Vidrio() bool { return a.vidrio }
+	// Escritorio es, **solo en Linux**, cuál: «gnome», «kde» u «otro», que se ve
+	// como GNOME. Vacío en los demás, donde el sistema ya dice cómo se organiza
+	// una ventana suya y no hay nada que preguntar.
+	Escritorio string `json:"escritorio"`
+
+	// Vidrio: si el sistema ha puesto una ventana translúcida detrás.
+	//
+	// Sin vidrio, el fondo lo pinta el CSS de siempre. Con vidrio, el fondo de la
+	// ventana es transparente y la interfaz deja pasar el material por la barra
+	// lateral, pero **no** por la zona de trabajo, que es donde se lee.
+	//
+	// En Linux no se pide, y no porque Wails no lo ofrezca —sí lo hace, con
+	// linux.Options.WindowIsTranslucent— sino porque sin desenfoque del
+	// compositor la transparencia de GTK enseña el escritorio a pelo. Eso no es
+	// vibrancia: es un agujero.
+	Vidrio bool `json:"vidrio"`
+}
+
+// Plataforma la consulta la interfaz **antes de montarse**. Ver el tipo.
+func (a *App) Plataforma() Plataforma {
+	return Plataforma{
+		Sistema:    runtime.GOOS,
+		Escritorio: a.escritorio,
+		Vidrio:     a.vidrio,
+	}
+}
 
 // boveda devuelve la bóveda **si está abierta**, y nil si no hay o está cerrada.
 //
