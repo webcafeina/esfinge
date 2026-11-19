@@ -23,10 +23,14 @@ cask "esfinge" do
   # Esfinge se actualiza sola en macOS, con su banda de aviso (ADR 0014): Homebrew no tiene que
   # hacerlo por ella, y si lo intentara se pisarían.
   auto_updates true
-  # **El mínimo es el que declara la propia aplicación**, no uno elegido aquí: 10.13 está en
-  # `LSMinimumSystemVersion` de `build/darwin/Info.plist`. Poner uno más alto dejaría fuera a
-  # equipos donde Esfinge funciona, y Homebrew lo haría sin explicar por qué.
-  depends_on macos: ">= :high_sierra"
+  # **Sin mínimo, y eso es decir lo mismo que antes.** La intención era no dejar fuera a nadie: el
+  # `LSMinimumSystemVersion` de `build/darwin/Info.plist` pone 10.13, y Homebrew no corre en nada
+  # anterior a **Big Sur**, así que cualquier mínimo que declaremos por debajo de eso es redundante
+  # — y **declararlo rompe el cask entero**: la forma de cadena (`">= :high_sierra"`) está en
+  # retirada y el símbolo de una versión anterior a Big Sur está **desactivado**, «there is no
+  # replacement». `depends_on :macos` es la forma documentada de decir «sólo macOS, sin mínimo»; el
+  # día que haga falta uno de verdad, va como símbolo (`depends_on macos: :monterey`).
+  depends_on :macos
 
   app "Esfinge.app"
 
