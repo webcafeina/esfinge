@@ -5,6 +5,43 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-19 · El Mac, y a nativizar la interfaz
+
+- **Chocolatey devolvió el paquete, y no por el paquete.** Su moderador pidió la ficha en inglés
+  —«the description is only in Spanish»— con las dos sumas ya comprobadas. Corregida (inglés delante,
+  español detrás, y diciendo que el programa está en español) y **reempujada la misma versión**, que
+  es lo que piden. Para poder hacerlo sin devolver el tap, el AUR y winget a una versión vieja,
+  `canales.yml` gana un **canal suelto**; con «todos» hay una guarda que falla si existe una más
+  nueva. Medido de paso: con una versión en moderación, la tienda **rechaza las demás con un 403**.
+- **El Mac, en una VM de VMPal**: `brew install` de la fórmula (arm64 nativo) y del cask, abriendo
+  sin que macOS la bloquee y sin que `brew` intente actualizarla. **Con eso no queda ningún sistema
+  sin ver.** Dos fallos del cask salieron ahí y habían pasado todas las puertas —`depends_on` con un
+  mínimo que Homebrew ha desactivado, y `#{appdir}`, que en `postflight_steps` no existe—: ahora un
+  macOS de la publicación **carga las dos recetas antes de empujarlas**, y falla también si Homebrew
+  sólo avisa.
+- **Empieza la nativización de la interfaz** (plan aprobado, siete decisiones del cliente). F0, la
+  costura: `internal/entorno`, `Plataforma()` como estructura y `plataforma.ts` resolviendo **antes
+  del primer pintado**, que es lo que permite pedir el aspecto de otro sistema por la URL y
+  retratarlo desde aquí. F1, **Windows con Fluent** (ADR 0064): paletas de WinUI, su escala, sus
+  iconos y seis pruebas que miden; el contraste pasa de 132 medidas a 264.
+- **Lo que dijo el cliente al ver la galería**, y es lo que marca lo siguiente: «los elementos se
+  siguen pareciendo mucho a la versión actual» —las mismas palabras que en Apolo tras la primera
+  vuelta—, que la cabecera y el pie de la barra lateral son feos **en los cuatro sistemas**, y que
+  los textos tenían «mucho párrafo grande que parece AI text slop».
+- **Los textos: 67 reescritos** en las cinco pantallas, una o dos frases cada uno, respetando las
+  frases que las fichas obligan a decir con esas palabras. Fuera GitHub de la ventana. Siete pruebas
+  de interfaz buscaban el texto viejo.
+- **Verificado**: `make comprobar`, `navegador` (200) y `make e2e` (172) en verde después de cada
+  pieza; cada protección nueva mutada. Dos pruebas mías nacieron mintiendo y lo dijo mutarlas: la del
+  primer pintado —dentro de un `addInitScript` no existe todavía `document.documentElement`, así que
+  el vigilante no se instalaba— y la que comparaba el árbol del DOM entre dos cargas, que es comparar
+  dos momentos.
+- **Queda abierto**: que el cliente elija el tratamiento de la marca (cuatro en una galería, lo
+  decide esta tarde) y, con eso, la estructura entera de Windows —anatomía y marco— antes de publicar
+  la 2.70.0.
+
+---
+
 ## 2026-11-17 · Actualizarse sola, winget, y las máquinas de verdad
 
 - **Publicadas la 2.68.0 y la 2.69.0.** La primera lleva la [ADR 0062](adr/0062-actualizarse-sola-en-linux.md)

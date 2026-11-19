@@ -1,13 +1,56 @@
 # Estado
 
-Última actualización: **2026-11-17**
+Última actualización: **2026-11-19**
 
-**Lo de esta sesión**: Linux se actualiza solo desde la banda ([ADR 0062](adr/0062-actualizarse-sola-en-linux.md)),
-Windows sabe de qué gestor viene y **winget es el sexto canal**
-([ADR 0063](adr/0063-de-que-gestor-viene-en-windows-y-winget.md)). Publicadas la **2.68.0** y la
-**2.69.0**, y las dos fichas **vistas funcionando** en las máquinas del cliente — con ellas cayó
-también lo último que llevaba meses sin verse: el marco de Windows, la cabecera de GNOME y el icono
-de los `.esf`.
+**Lo de esta sesión**: cerrada la verificación por sistemas con **el Mac** (`brew`, fórmula y cask),
+y empezada **la última fase grande: nativizar la interfaz** para macOS, Windows, GNOME y KDE. Van la
+costura y Windows con Fluent, y una revisión de textos que pidió el cliente al verlo. Sin publicar
+todavía.
+
+## Nativizar la interfaz (empezada el 2026-11-19)
+
+El plan entero, con las siete decisiones del cliente, está en
+`~/.claude/plans/vamos-a-realizar-un-precious-adleman.md`. El método se copia de **Apolo**, donde
+esto se hizo entero en octubre: una fase por sistema, con su ficha y su versión, **y las decisiones
+tomadas sobre galerías de capturas**. Orden: **Windows → macOS → GNOME → KDE**.
+
+### Hecho y comprometido
+
+- **F0 · la costura** (`918cdc2`). `internal/entorno` contesta en qué escritorio corre —lee
+  `XDG_CURRENT_DESKTOP`, que es una lista— y `Plataforma()` devuelve sistema, escritorio y vidrio de
+  una vez. `frontend/src/plataforma.ts` lo resuelve **antes del primer pintado** y deja los atributos
+  en la raíz, así que el aspecto de otro sistema se puede pedir por la URL (`?sistema=windows`,
+  `?escritorio=kde`) — **que es lo único que permite mirar los cuatro desde este VPS**. Que eso no
+  entre en el binario del cliente lo vigila `frontend/herramientas/sin-simulacion.mjs`, que lee lo
+  construido.
+- **F1 · Windows con Fluent** ([ADR 0064](adr/0064-windows-con-fluent.md), `9d2595a`). Dos paletas de
+  WinUI, `sistema-windows.css` con la escala de Fluent, los **iconos de Fluent** cosechados por
+  `herramientas/iconos/fluent.py` y seis pruebas que miden. El contraste pasó de 132 medidas a **264**.
+- **Los textos, mucho más cortos** (`b532f8e`). 67 reescritos; fuera GitHub de la ventana.
+
+### Lo primero al retomar
+
+1. **La cabecera y el pie de la barra lateral.** El cliente dijo que son feos y que hay que
+   cambiarlos **en los cuatro sistemas**, y eligió decidirlo sobre capturas. Hay cuatro tratamientos
+   preparados —A: lo de hoy · B: fuera los dos, como Apolo · C: sólo el símbolo · D: sólo la
+   versión— en **https://claude.ai/artifact/5rehtmSLifP9MkG9gtdaPn**. **Lo decide él esta tarde**
+   (2026-11-19). Mi recomendación es la D: la versión está ahí porque es lo primero que se pregunta
+   cuando algo va raro. Lo que salga **deroga la parte de la [ADR 0021](adr/0021-la-marca-en-la-interfaz.md)**
+   que puso la marca en la barra lateral, y hay que escribirlo.
+
+2. **La estructura de Windows, las dos piezas y antes de publicar.** Viendo la galería de F1 dijo
+   que «los elementos se siguen pareciendo mucho a la versión actual» — que es **con las mismas
+   palabras lo que pasó en Apolo** tras su primera vuelta. Falta: la **anatomía** (SettingsCards de
+   WinUI, cada ajuste en su tarjeta) y el **marco** (barra de título propia con ☰ y los tres
+   botones). Decidido: **las dos juntas**, y no se publica la 2.70.0 hasta que la ventana se vea de
+   verdad como una de WinUI. El marco en Wails está estudiado en el plan: en Windows sale barato
+   —Wails da sombra, esquinas, arrastre y las órdenes de ventana—, y lo único que falta es el menú de
+   Snap, que son ~150 líneas de Win32 y va en un paso aparte.
+
+3. **Las galerías de esta sesión**, por si hacen falta: la de
+   [Windows con Fluent](https://claude.ai/artifact/JGkyouZ7FXGjFjVURh2exw) y la de los
+   [textos](https://claude.ai/artifact/Ra2UmdGE3ri5JiupSG4d6C).
+
 
 ## Lo último grande, hecho: los seis objetivos y los canales (2026-11-16)
 
