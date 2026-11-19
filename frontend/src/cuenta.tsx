@@ -296,8 +296,8 @@ function CrearCuenta({
           {floja && (
             <>
               <p className="aviso">
-                Tu contraseña de ahora no llega a «Buena», y con cuenta hace falta. Pon una nueva: a
-                partir de ahora abrirá tu bóveda y tu cuenta. La de recuperación sigue valiendo.
+                Tu contraseña no llega a «Buena» y con cuenta hace falta. La nueva abrirá tu
+                bóveda y tu cuenta.
               </p>
               <CampoClave
                 id="cuenta-maestra-nueva"
@@ -338,9 +338,8 @@ function CrearCuenta({
 
       {paso !== "correo" && (
         <p className="aviso">
-          Con cuenta, la contraseña maestra tiene que ser <strong>al menos «Buena»</strong>: tu
-          bóveda cifrada vive también en el servidor, y es lo único que la protege. Nadie —tampoco
-          nosotros— puede recuperarla.
+          Con cuenta, la maestra tiene que ser <strong>al menos «Buena»</strong>: tu bóveda
+          cifrada vive también en el servidor y es lo único que la protege.
         </p>
       )}
 
@@ -707,8 +706,8 @@ function RecuperarCuenta({
       )}
       {paso === "datos" && (
         <p className="aviso">
-          La contraseña nueva tiene que ser <strong>al menos «Buena»</strong>. Tus otros equipos te la
-          pedirán al volver a entrar, y lo que tuvieran sin subir no se pierde.
+          Tiene que ser <strong>al menos «Buena»</strong>. Tus otros equipos la pedirán al volver
+          a entrar.
         </p>
       )}
       {error && <p className="error">{error}</p>}
@@ -1020,8 +1019,8 @@ export function GrupoCuenta({
       <div className="grupo">
         <h2>Cuenta y sincronización</h2>
         <p className="nota">
-          Tu bóveda está solo en este ordenador. Con una cuenta, la tendrías también en tus otros
-          equipos, cifrada antes de salir de aquí.
+          Tu bóveda está solo en este ordenador. Con cuenta estaría en todos, cifrada antes de
+          salir de aquí.
         </p>
         <div className="botones">
           <button onClick={alCrearCuenta}>Crear una cuenta</button>
@@ -1069,8 +1068,7 @@ export function GrupoCuenta({
       {saliendo ? (
         <>
           <p className="nota">
-            Tu bóveda se queda en este ordenador tal como está y deja de sincronizarse. La cuenta
-            sigue en el servidor, y tus otros equipos no cambian.
+            Tu bóveda se queda aquí tal como está y deja de sincronizarse.
           </p>
           <CampoClave
             id="salir-maestra"
@@ -1156,8 +1154,8 @@ function EquiposDeLaCuenta() {
         </ul>
       )}
       <p className="nota">
-        Olvidar un equipo —uno perdido, uno que ya no usas— le cierra la sesión: tendrá que volver a
-        entrar con tu contraseña y un código. Lo que tenga en su disco se queda allí, cifrado.
+        Olvidar un equipo le cierra la sesión: tendrá que entrar otra vez con tu contraseña y un
+        código. Lo que tenga en su disco se queda allí, cifrado.
       </p>
       {error && <p className="error">{error}</p>}
     </div>
@@ -1189,8 +1187,7 @@ function BorrarLaCuenta({ alBorrar, conSesion }: { alBorrar: () => void; conSesi
     <div className="grupo peligro">
       <h2>Tus datos en el servidor</h2>
       <p className="nota">
-        Puedes llevarte lo que tenemos de tu cuenta —el correo, los equipos, los avisos y tu bóveda tal
-        como está allí: cifrada— o borrarla del servidor.
+        Puedes llevarte lo que tenemos de tu cuenta, o borrarla del servidor.
       </p>
       <div className="botones">
         <button
@@ -1230,9 +1227,8 @@ function BorrarLaCuenta({ alBorrar, conSesion }: { alBorrar: () => void; conSesi
       ) : (
         <>
           <p className="aviso">
-            <strong>No tiene vuelta atrás.</strong> Se borran del servidor tu bóveda, sus versiones,
-            tus equipos y tu correo. La bóveda de este ordenador —y la de tus otros equipos— se queda
-            donde está, y deja de sincronizarse.
+            <strong>No tiene vuelta atrás.</strong> Se borra del servidor todo lo tuyo. La bóveda
+            de tus equipos se queda donde está, sin sincronizarse.
           </p>
           <div>
             <label htmlFor="borrar-codigo">Código que te ha llegado al correo</label>

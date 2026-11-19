@@ -282,8 +282,8 @@ export function Proyectos({
 
       {lista != null && vivos.length === 0 && !creando && (
         <p className="nota">
-          Todavía no tienes ninguna. Una bóveda de proyecto guarda lo mismo que la tuya —cuentas, notas,
-          tarjetas, llaves de acceso, redes— y se puede entregar entera el día que el proyecto acabe.
+          Todavía no tienes ninguna. Guardan lo mismo que la tuya y se entregan enteras el día que
+          el proyecto acabe.
         </p>
       )}
 
@@ -640,8 +640,7 @@ function AlAcabarElProyecto({
       <div className="al-acabar">
         <h3>Entregar «{proyecto.nombre}»</h3>
         <p className="nota">
-          Se guarda una copia con la contraseña que le pongas aquí. A partir de ahí es suya: no se
-          sincroniza con la tuya ni la puedes abrir.
+          Se guarda una copia con la contraseña que le pongas. A partir de ahí es suya.
         </p>
         <label htmlFor={`entregar-${proyecto.ref}`}>Contraseña para quien la reciba</label>
         <input
@@ -654,8 +653,7 @@ function AlAcabarElProyecto({
         />
         {clave !== "" && clave.length < MINIMO && <p className="nota">Al menos {MINIMO} caracteres</p>}
         <p className="aviso">
-          <strong>Dísela por otro camino</strong>, no en el mismo correo que el fichero. Y verás una vez su
-          clave de recuperación: va para quien la reciba.
+          <strong>Dísela por otro camino</strong>, no en el mismo correo que el fichero.
         </p>
         <div className="botones">
           <button className="principal" onClick={entregar} disabled={clave.length < MINIMO || trabajando}>
@@ -677,8 +675,8 @@ function AlAcabarElProyecto({
             antes de pedir nada: no va a la papelera, no está en otro equipo y no se
             puede recuperar con la clave de recuperación. */}
         <p className="aviso">
-          <strong>Esto no se puede deshacer.</strong> Se borra de este ordenador, de tus otros equipos y del
-          servidor, con todo lo que tenga dentro. Si quieres conservarla, entrégala antes.
+          <strong>Esto no se puede deshacer.</strong> Se borra de todas partes, con lo que tenga
+          dentro. Si quieres conservarla, entrégala antes.
         </p>
         <label htmlFor={`borrar-${proyecto.ref}`}>Tu contraseña maestra</label>
         <input
@@ -817,8 +815,8 @@ function CompartidasConmigo({
         ))}
       </ul>
       <p className="nota">
-        Estas bóvedas son de otras personas. <strong>Dejar de verlas no se las quita a nadie</strong>: solo
-        las saca de tu lista y borra la copia de este equipo.
+        Son de otras personas. <strong>Dejar de verlas no se las quita a nadie</strong>: salen de
+        tu lista y se borra la copia de aquí.
       </p>
     </div>
   );
@@ -1090,10 +1088,9 @@ function ElAcceso({
 
       {quitando !== "" && (
         <p className="aviso">
-          Dejará de recibir cambios, la bóveda <strong>se borrará de su ordenador</strong> la próxima vez
-          que abra Esfinge —si no lo abre, no se borra— y <strong>la clave de esta bóveda cambia</strong>,
-          así que lo que escribas a partir de ahora no lo abre. Lo que vio o se copió mientras tenía
-          acceso, eso sigue en sus manos.
+          Dejará de recibir cambios, la bóveda <strong>se borrará de su ordenador</strong> y{" "}
+          <strong>la clave cambia</strong>, así que lo que escribas ya no lo abre. Lo que se copió
+          mientras tenía acceso sigue en sus manos.
         </p>
       )}
 
@@ -1155,9 +1152,8 @@ function ElAcceso({
       {huella !== "" && (
         <>
           <p className="nota">
-            Su huella es <code className="huella">{huella}</code>. Compárala con esa persona por otro
-            camino —una llamada— antes de darle acceso: es lo único que prueba que las contraseñas van a
-            quien crees.
+            Su huella es <code className="huella">{huella}</code>. Compárala con esa persona por
+            otro camino antes de darle acceso: es lo único que prueba a quién van las contraseñas.
           </p>
           <div>
             <label htmlFor="acceso-permiso">Qué puede hacer</label>
@@ -1173,9 +1169,8 @@ function ElAcceso({
           <p className="nota">
             {permiso === "ver" ? (
               <>
-                <strong>«Solo ver» lo decide el servidor, no el cifrado.</strong> Quien pueda ver esta
-                bóveda tiene con qué descifrarla, así que puede escribir en la copia de su equipo. Lo que
-                no puede es subirla: el servidor la rechaza, y por eso nadie más verá lo que escriba.
+                <strong>«Solo ver» lo decide el servidor, no el cifrado.</strong> Puede escribir en
+                su copia; lo que no puede es subirla, así que nadie más lo verá.
               </>
             ) : (
               <>

@@ -98,6 +98,22 @@ test.describe("Capturas", () => {
     await page.locator(".lateral").getByRole("button", { name: "Historial", exact: true }).click();
     await page.waitForTimeout(500);
     await foto("5-historial");
+
+    // **Y Ajustes, pestaña a pestaña.** Es donde vive la mitad de los textos de la
+    // aplicación y donde van a caer las tarjetas de ajuste de cada sistema, así que
+    // sin esto la galería no enseña justo lo que hay que mirar. Hasta hoy el
+    // recorrido se paraba en el historial.
+    await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
+    await page.waitForTimeout(400);
+    for (const pestana of ["Cuenta", "Bóveda", "Navegador", "Agentes", "Actualizaciones"]) {
+      // Las pestañas son `role="tab"`, no botones: pedirlas como botones no
+      // encuentra ninguna y el bucle se saltaba Ajustes entero, en silencio.
+      const boton = page.locator(".contenido").getByRole("tab", { name: pestana, exact: true });
+      if (!(await boton.count())) continue;
+      await boton.first().click();
+      await page.waitForTimeout(350);
+      await foto(`6-ajustes-${pestana.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`);
+    }
   });
 
   /**

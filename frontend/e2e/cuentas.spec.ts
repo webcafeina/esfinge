@@ -369,7 +369,7 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await expect(b.locator("#cuenta-codigo")).toBeVisible({ timeout: 20_000 });
   await b.locator("#cuenta-codigo").fill(await codigo(request, otroCorreo));
   await b.locator("#cuenta-maestra").fill(FLOJA);
-  await expect(b.getByText("Tu contraseña de ahora no llega a «Buena»")).toBeVisible();
+  await expect(b.getByText("no llega a «Buena»")).toBeVisible();
   await expect(accion(b, "Crear la cuenta")).toBeDisabled();
   await b.locator("#cuenta-maestra-nueva").fill(MAESTRA + " nueva");
   await b.locator("#cuenta-maestra-nueva-2").fill(MAESTRA + " nueva");
@@ -677,7 +677,7 @@ test("el servidor de un proyecto: la huella, el acceso y que además escriba", a
   await expect(laHuella).toBeVisible({ timeout: 20_000 });
   // **Se enseña antes de dejar confirmar**: es lo único que protege del servidor de
   // cuentas, y una huella que no se ve no protege nada.
-  await expect(page.getByText("Compárala con lo que diga ese equipo", { exact: false })).toBeVisible();
+  await expect(page.getByText("Compárala con la que diga ese equipo", { exact: false })).toBeVisible();
   const huella = ((await laHuella.textContent()) ?? "").trim();
   expect(huella, "la huella del servidor sale vacía").not.toEqual("");
   await accion(page, "Coincide, es mi servidor").click();

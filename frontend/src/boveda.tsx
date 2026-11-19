@@ -230,12 +230,11 @@ function Crear({ alCrear }: { alCrear: (recuperacion: string) => void }) {
       </div>
 
       <p className="aviso">
-        Esta contraseña abre todo lo que guardes aquí. No se guarda en ninguna parte, así que
-        nadie —tampoco nosotros— puede recuperarla.
+        Abre todo lo que guardes aquí y no se guarda en ninguna parte: nadie puede recuperarla.
       </p>
       <p className="nota">
-        Por eso, al crearla, verás <strong>una vez</strong> una clave de recuperación para
-        apuntar en papel. Es la única segunda puerta que vas a tener.
+        Al crearla verás <strong>una vez</strong> una clave de recuperación. Apúntala en papel:
+        es la única segunda puerta.
       </p>
 
       {error && <p className="error">{error}</p>}
@@ -307,8 +306,7 @@ export function Ceremonia({
       {error && <p className="error">{error}</p>}
 
       <p className="aviso">
-        Guárdala en otro sitio distinto de donde guardes la maestra. Quien la tenga entra en la
-        bóveda: es una segunda llave, no una copia de seguridad.
+        Guárdala en otro sitio que la maestra. Quien la tenga entra en la bóveda.
       </p>
       {!nueva && <p className="nota">La clave anterior ya no vale.</p>}
 
@@ -510,8 +508,8 @@ function SugerirDesbloqueo({ activarYa }: { activarYa: boolean }) {
               maestra cada vez. Se activa aquí y se quita cuando quieras, en Ajustes.
             </p>
             <p className="nota">
-              Protege de quien se siente delante de tu ordenador desbloqueado, no de un programa que
-              corra en él. La contraseña maestra y la clave de recuperación siguen haciendo falta.
+              Protege de quien se siente delante de tu ordenador desbloqueado, no de un programa
+              que corra en él.
             </p>
             {/* **Un diálogo del sistema que pide una contraseña sin avisar es lo
                 que un gestor de contraseñas enseña a desconfiar.** macOS lo saca
@@ -691,9 +689,9 @@ function Cerrada({
         <p className="entradilla">Es la contraseña nueva de tu cuenta.</p>
         <div className="grupo">
           <p className="nota">
-            Como este equipo tiene que confirmarlo, te hemos mandado un código a{" "}
+            Te hemos mandado un código a{" "}
             <span className="seleccionable">{cuenta?.correo}</span>. Al escribirlo, la bóveda de
-            aquí se pone al día con la contraseña nueva, sin perder nada.
+            aquí se pone al día.
           </p>
           <div>
             <label htmlFor="abrir-codigo">Código</label>
@@ -844,10 +842,9 @@ function Cerrada({
 
       {cuenta?.modo !== "cuenta" && ayudaOlvidada && (
         <p className="nota">
-          <strong>Escribe arriba tu clave de recuperación</strong>, la que se te enseñó una sola vez al
-          crear la bóveda. Abre igual que la contraseña maestra, y luego puedes poner una contraseña
-          nueva en Ajustes. Si tampoco la tienes, <strong>no hay forma de abrir esta bóveda</strong>: ni
-          nosotros podemos. Lo que queda es empezar una nueva desde Ajustes, y lo de dentro se pierde.
+          <strong>Escribe arriba tu clave de recuperación</strong>, la que se te enseñó al crear la
+          bóveda. Si tampoco la tienes, <strong>esta bóveda no se abre</strong>: tampoco nosotros
+          podemos.
         </p>
       )}
 
@@ -1243,8 +1240,7 @@ function Dentro({
             {repetidas === 1
               ? "Hay una cuenta repetida: mismo título, usuario y contraseña que otra."
               : `Hay ${repetidas} cuentas repetidas: mismo título, usuario y contraseña que otra.`}{" "}
-            Se queda una de cada, con lo que tuviera de más la otra —notas, webs, etiquetas—, y las
-            repetidas van a la papelera, de donde se pueden recuperar.
+            Se queda una de cada y el resto va a la papelera, de donde se pueden recuperar.
           </p>
           <div className="botones">
             <button onClick={quitarRepetidas}>Quitar las repetidas</button>
@@ -1557,8 +1553,8 @@ function CodigoDeRed({ id }: { id: string }) {
           vez que Esfinge enseña un secreto sin que nadie lo pida, y quien lo ve tiene
           que saber qué está mirando. */}
       <p className="nota">
-        <strong>Este dibujo es la contraseña.</strong> Apunta con la cámara del móvil y se conecta solo. Quien
-        lo fotografíe entra en la red igual que tú.
+        <strong>Este dibujo es la contraseña.</strong> Apunta con la cámara y se conecta solo;
+        quien lo fotografíe, también.
       </p>
     </div>
   );
@@ -1844,9 +1840,8 @@ function Detalle({
                     usada antes de que esto se apuntara: el cliente la vio en una llave con la que
                     había entrado el día anterior, rematada con que quizá no servía para nada.
                     Asustar con una suposición es peor que no decir nada. */}
-                <strong>Esfinge no ha apuntado ningún uso de esta llave.</strong> Puede que no hayas entrado
-                aún con ella, o que lo hicieras antes de que Esfinge empezara a apuntarlo. Si entras ahora y
-                esto sigue igual, puede que el sitio no llegara a registrarla.
+                <strong>Esfinge no ha apuntado ningún uso de esta llave.</strong> Puede que no hayas
+                entrado aún, o que fuera antes de que esto se apuntara.
               </p>
             )}
             <p className="nota">
@@ -2509,9 +2504,8 @@ function Traer({ llaves, alTraer }: { llaves: number; alTraer: () => Promise<voi
           nada se lo diga. Pasó de verdad: 65 entradas importadas y más cosas en
           Dashlane, sin ningún error por medio. */}
       <p className="nota">
-        Algunos gestores exportan <strong>varios ficheros</strong>: Dashlane saca uno por clase de
-        cosa —credenciales, notas seguras, tarjetas y documentos—. Tráelos uno a uno con este mismo
-        botón, y cada uno se reconoce por sus columnas.
+        Algunos gestores exportan <strong>varios ficheros</strong>, uno por clase de cosa.
+        Tráelos uno a uno con este mismo botón.
       </p>
 
       <div className="botones">
@@ -2525,9 +2519,8 @@ function Traer({ llaves, alTraer }: { llaves: number; alTraer: () => Promise<voi
 
       {seguro && (
         <p className="aviso">
-          Lo que sale es una lista de contraseñas <strong>sin cifrar</strong>. Piensa dónde la
-          dejas y bórrala cuando termines. <strong>Las llaves de acceso no van ahí</strong>: salen
-          aparte y cifradas, con el botón de abajo.
+          Sale una lista de contraseñas <strong>sin cifrar</strong>: piensa dónde la dejas y
+          bórrala al terminar. Las llaves de acceso salen aparte, con el botón de abajo.
         </p>
       )}
 
@@ -2561,8 +2554,8 @@ function Traer({ llaves, alTraer }: { llaves: number; alTraer: () => Promise<voi
       {pidiendoLlaves && (
         <>
           <p className="nota">
-            Salen en un fichero <strong>cifrado</strong>, y solo las abre Esfinge. Ponle una clave
-            que no sea la maestra y guárdala aparte: sin ella, este fichero no sirve para nada.
+            Salen en un fichero <strong>cifrado</strong>. Ponle una clave que no sea la maestra:
+            sin ella, el fichero no sirve.
           </p>
           <Campo
             id="boveda-clave-llaves"
@@ -2611,8 +2604,8 @@ function Traer({ llaves, alTraer }: { llaves: number; alTraer: () => Promise<voi
               {resumen.conflictos === 1
                 ? "Una cuenta ya estaba con otra contraseña"
                 : `${resumen.conflictos} cuentas ya estaban con otra contraseña`}
-              . Se han metido igual y marcadas como «duplicada», porque una de las dos está mal y
-              eso no lo decide un importador: búscalas por esa palabra y quédate con la buena.
+              . Han entrado marcadas como «duplicada»: búscalas por esa palabra y quédate con la
+              buena.
             </p>
           )}
           {!borrado && (
@@ -2639,8 +2632,8 @@ function Traer({ llaves, alTraer }: { llaves: number; alTraer: () => Promise<voi
                 </button>
               </div>
               <p className="nota">
-                En un disco de estado sólido, borrar no lo elimina de verdad: deja de estar en el
-                índice, pero puede seguir en el disco un tiempo.
+                En un disco de estado sólido, borrar no lo elimina del todo: puede seguir ahí un
+                tiempo.
               </p>
             </>
           )}
@@ -2818,8 +2811,8 @@ function Borrar({ alBorrarse }: { alBorrarse: () => void }) {
     <div className="grupo peligro">
       <label>Borrar la bóveda</label>
       <p className="aviso">
-        Se borra el fichero entero, con todas las entradas. <strong>No hay vuelta atrás</strong>, y
-        la clave de recuperación tampoco sirve: lo que se borra es el fichero que ella abriría.
+        Se borra el fichero entero. <strong>No hay vuelta atrás</strong>, y la clave de
+        recuperación tampoco sirve.
       </p>
       <p className="nota">
         Si quieres quedarte con lo que hay, sácalo antes. Lo que salga estará <strong>sin

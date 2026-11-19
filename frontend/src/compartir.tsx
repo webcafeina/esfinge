@@ -99,8 +99,8 @@ export function Compartir({
 
       {/* Lo que hay que entender antes de pulsar, y no después. */}
       <p className="aviso">
-        Se manda <strong>una copia</strong>, cifrada para quien la recibe. Al llegar es suya: si
-        luego cambias la contraseña aquí, la suya se queda como está y hay que volver a mandarla.
+        Se manda <strong>una copia</strong>, cifrada para quien la recibe. Si luego la cambias
+        aquí, hay que volver a mandarla.
       </p>
 
       {/* **Una llave de acceso no es una contraseña, y compartirla no es lo mismo**
@@ -111,10 +111,9 @@ export function Compartir({
           después. */}
       {entrada.tipo === "llave" && (
         <p className="aviso">
-          Una llave de acceso es <strong>tu identidad en ese sitio</strong>. Quien la reciba podrá
-          entrar en esa cuenta, <strong>no se la puedes quitar desde aquí</strong> y el sitio no se
-          enterará de que ahora hay dos. Para dejar de compartirla hay que borrar la llave en el
-          sitio y crear otra.
+          Una llave de acceso es <strong>tu identidad en ese sitio</strong>, y{" "}
+          <strong>no se la puedes quitar desde aquí</strong>: habría que borrarla en el sitio y
+          crear otra.
         </p>
       )}
 
@@ -146,8 +145,7 @@ export function Compartir({
           </p>
           <p className="aviso">
             <strong>Compárala con quien va a recibirla</strong>, por teléfono o en persona. Si no
-            coincide, no la mandes: no sabrás quién está al otro lado. Esfinge no puede decirte si
-            esa dirección tiene cuenta.
+            coincide, no la mandes.
           </p>
         </>
       )}
@@ -177,9 +175,8 @@ export function Compartir({
         <>
           <h3>Esperando</h3>
           <p className="nota">
-            A estas direcciones se les mandó una invitación. La copia sale sola en cuanto creen su
-            cuenta, y Esfinge tiene que estar abierta en algún equipo tuyo para mandarla. Al mes se
-            deja de intentar.
+            Se les mandó una invitación. La copia sale sola en cuanto creen su cuenta, con Esfinge
+            abierta en algún equipo tuyo. Al mes se deja de intentar.
           </p>
           <ul className="lista-papelera">
             {esperando.map((e) => (
@@ -311,10 +308,9 @@ export function Buzon({
 
       {envios.length > 0 && (
         <p className="nota">
-          <strong>La dirección es la que dice quien te lo manda; la huella es lo que lo prueba.</strong>{" "}
-          Compárala con esa persona por otro camino —una llamada— antes de aceptar nada. Una copia entra
-          en tu bóveda como una entrada tuya; <strong>un acceso es una bóveda de otra persona</strong>,
-          que se queda viva y se actualiza en los dos sentidos.
+          <strong>La dirección la dice quien te lo manda; la huella es lo que lo prueba.</strong>{" "}
+          Compárala por otro camino antes de aceptar. Una copia entra en tu bóveda;{" "}
+          <strong>un acceso es una bóveda de otra persona</strong>, viva en los dos sentidos.
         </p>
       )}
     </div>

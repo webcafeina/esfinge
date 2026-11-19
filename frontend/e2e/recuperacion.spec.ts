@@ -93,7 +93,7 @@ test("la clave de recuperación abre la bóveda", async ({ page }) => {
   await accion(page, "¿Has olvidado la contraseña maestra?").click();
   const ayuda = page.locator(".contenido .nota", { hasText: "clave de recuperación" }).first();
   await expect(ayuda).toBeVisible();
-  await expect(ayuda).toContainText("no hay forma de abrir esta bóveda");
+  await expect(ayuda).toContainText("esta bóveda no se abre");
 
   await page.locator("#boveda-llave").fill(recuperacion);
   await accion(page, "Abrir la bóveda").click();

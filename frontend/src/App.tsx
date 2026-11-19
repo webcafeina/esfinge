@@ -1095,9 +1095,8 @@ function DesbloqueoDelSistema() {
   if (!estado.hay) {
     return (
       <p className="nota">
-        <strong>Este equipo no tiene desbloqueo del sistema.</strong> Donde lo hay —Touch ID en un
-        Mac, Windows Hello— la bóveda se puede abrir con la huella en vez de con la contraseña
-        maestra. Aquí siempre se escribe.
+        <strong>Este equipo no tiene desbloqueo del sistema.</strong> La bóveda se abre siempre
+        con la contraseña maestra.
       </p>
     );
   }
@@ -1124,14 +1123,12 @@ function DesbloqueoDelSistema() {
 
       <p className="nota">
         Para activarlo, la bóveda tiene que estar abierta. <strong>La contraseña maestra sigue
-        abriendo siempre</strong>, y la clave de recuperación también: esto se añade, no sustituye a
-        nada.
+        abriendo siempre.</strong>
       </p>
       <p className="aviso">
         <strong>Protege de quien se siente delante de tu ordenador desbloqueado, no de un programa
-        que corra en él.</strong> Esfinge no está firmada, así que {estado.nombre} guarda la llave
-        sin poder atarla solo a Esfinge. Si eso te importa, deja esto apagado y escribe la
-        contraseña.
+        que corra en él.</strong> Esfinge no está firmada, así que {estado.nombre} no puede atar la
+        llave solo a ella.
       </p>
     </>
   );
@@ -1272,8 +1269,7 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
         <div className="receta">
           <p className="nota">
             Un paquete que se instala abriéndolo. Lo arma Esfinge con{" "}
-            <strong>la versión que tienes puesta</strong>, así que no hay que acertar con
-            ninguna descarga.
+            <strong>la versión que tienes</strong>.
           </p>
           {/* **Lo que el paquete arrastra, y nadie lo adivina.**
 
@@ -1287,10 +1283,8 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
               el agente contestó que su versión no tenía ese campo. Tenía razón: era
               la de antes. */}
           <p className="aviso">
-            Al actualizar Esfinge, <strong>vuelve a guardarlo y a abrirlo</strong>. El servidor
-            va dentro del paquete, así que no se actualiza con la aplicación — y los agentes se
-            quedan con la lista de herramientas al arrancar. En Claude Code no hace falta: allí
-            la orden apunta a la Esfinge instalada.
+            Al actualizar Esfinge, <strong>vuelve a guardarlo y a abrirlo</strong>: el servidor
+            va dentro del paquete. En Claude Code no hace falta.
           </p>
           <div className="botones">
             <button className="principal" onClick={guardarElPaquete} disabled={guardando}>
@@ -1312,8 +1306,8 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
           <p className="nota">Pega esto en una terminal. No hay ningún fichero que tocar.</p>
           <ParaCopiar id="config-mcp-orden" valor={elAgente.orden} />
           <p className="nota">
-            <code>--scope user</code> es lo que hace que esté en todos tus proyectos. Sin eso
-            queda registrado solo en la carpeta desde donde lo ejecutes.
+            <code>--scope user</code> lo deja en todos tus proyectos. Sin eso, solo en la carpeta
+            desde donde lo ejecutes.
           </p>
           {/* **Y esto cubre también los IDE, que es lo que no se ve.** La extensión de
               Claude Code es el mismo Claude Code, y lee la misma configuración: con la
@@ -1321,9 +1315,8 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
               usa Claude dentro de Cursor se va a la pestaña de Cursor y acaba
               configurando **el agente de Cursor**, que es otro programa. */}
           <p className="nota">
-            <strong>Vale también dentro de tu editor</strong>: la extensión de Claude Code
-            para VS Code, Cursor o JetBrains es el mismo Claude Code y lee esta misma
-            configuración. Con la orden de arriba no hay nada más que hacer.
+            <strong>Vale también dentro de tu editor</strong>: la extensión de Claude Code lee
+            esta misma configuración.
           </p>
         </div>
       )}
@@ -1334,8 +1327,8 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
               dos agentes distintos en el mismo editor y cada uno lee su configuración;
               confundirlos es configurar el que no se está usando. */}
           <p className="nota">
-            Esto es para <strong>el agente propio de Cursor</strong>. Si lo que usas ahí es la
-            extensión de Claude Code, lo tuyo es la pestaña anterior.
+            Esto es para <strong>el agente propio de Cursor</strong>. Si usas la extensión de
+            Claude Code, es la pestaña anterior.
           </p>
           <p className="nota">
             Va en <code>~/.cursor/mcp.json</code>, o en <code>.cursor/mcp.json</code> si lo
@@ -1356,7 +1349,7 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
         <div className="receta">
           <p className="nota">
             Esto es para <strong>el agente propio de VS Code</strong>. Si ahí usas la extensión
-            de Claude Code, lo tuyo es la pestaña de Claude Code.
+            de Claude Code, es su pestaña.
           </p>
           <p className="nota">
             Va en <code>.vscode/mcp.json</code>, o en tu perfil con{" "}
@@ -1380,8 +1373,7 @@ function ComoConectarlo({ elAgente }: { elAgente: EstadoDelAgente }) {
       <details>
         <summary>En otro agente</summary>
         <p className="nota">
-          Casi todos esperan el bloque de arriba —el de Cursor— con la ruta entera. Si el
-          tuyo solo pide una orden, es ésta:
+          Casi todos esperan el bloque de arriba. Si el tuyo solo pide una orden, es ésta:
         </p>
         <ParaCopiar id="config-mcp-ruta" valor={elAgente.ruta} />
       </details>
@@ -1481,8 +1473,8 @@ function LoQueEsperaRespuesta({
         <div className="grupo peligro">
           <label>{navegador.pide} quiere consultar tu bóveda</label>
           <p className="aviso">
-            Si no has sido tú al abrir el navegador, <strong>di que no</strong>. Con permiso podrá
-            preguntar qué cuentas tienes de cada sitio que visites y pedir su contraseña.
+            Si no has sido tú al abrir el navegador, <strong>di que no</strong>. Podrá preguntar
+            qué cuentas tienes de cada sitio y pedir su contraseña.
           </p>
           <div className="botones">
             <button
@@ -1504,9 +1496,8 @@ function LoQueEsperaRespuesta({
         <div className="grupo peligro">
           <label>{elAgente.pide} quiere consultar tu bóveda</label>
           <p className="aviso">
-            Si no has sido tú al abrir ese programa, <strong>di que no</strong>. Con permiso podrá
-            ver qué cuentas tienes, de qué sitios y cuáles están mal; para usar una contraseña
-            tendrá que pedírtelo cada vez.
+            Si no has sido tú al abrir ese programa, <strong>di que no</strong>. Para usar una
+            contraseña tendrá que pedírtelo cada vez.
           </p>
           <div className="botones">
             <button
@@ -1552,21 +1543,18 @@ function LoQueEsperaRespuesta({
               el secreto pasa a verlo todo el que tenga acceso. */}
           {elAgente.quiere.que === "mover" ? (
             <p className="aviso">
-              Sale de {elAgente.quiere.boveda} y <strong>deja de estar ahí</strong>: no va a la
-              papelera, porque queda en {elAgente.quiere.destino}. Si esa bóveda está compartida,
-              lo que lleve dentro <strong>lo verá todo el que tenga acceso</strong>.
+              Sale de {elAgente.quiere.boveda} y <strong>deja de estar ahí</strong>. Si
+              {" "}{elAgente.quiere.destino} está compartida, lo verá quien tenga acceso.
             </p>
           ) : elAgente.quiere.que === "codigo" ? (
             <p className="aviso">
-              Esas seis cifras <strong>sí las verá</strong>, y se quedarán en la conversación de
-              su modelo. Caducan en medio minuto y no sirven sin la contraseña, pero si no le has
-              pedido nada que lo necesite, <strong>di que no</strong>.
+              Esas seis cifras <strong>sí las verá</strong>, y se quedan en la conversación de su
+              modelo. Si no le has pedido nada que lo necesite, <strong>di que no</strong>.
             </p>
           ) : (
             <p className="aviso">
-              Se copiará al portapapeles de este ordenador: <strong>el agente no la ve</strong>.
-              Si no le has pedido nada que la necesite, <strong>di que no</strong>: lo que un
-              agente lee por ahí puede decirle qué pedir.
+              Se copia al portapapeles: <strong>el agente no la ve</strong>. Si no le has pedido
+              nada que la necesite, <strong>di que no</strong>.
             </p>
           )}
           <div className="botones">
@@ -1676,10 +1664,8 @@ function LoQueEsperaRespuesta({
             {elAgente.siempreQuien || "Un agente"} puede usar tus contraseñas sin preguntarte
           </label>
           <p className="aviso">
-            Lo diste tú y <strong>no caduca</strong>. Sigue preguntando para el código de un
-            solo uso y para cambiar una contraseña, que son las dos cosas que no se deshacen.
-            Lo demás se lo lleva sin avisar —las contraseñas y mandar una entrada a la
-            papelera—, y lo único que queda es la lista de abajo.
+            Lo diste tú y <strong>no caduca</strong>. Sigue preguntando el código de un solo uso
+            y los cambios de contraseña; lo demás se lo lleva sin avisar.
           </p>
           <div className="botones">
             <button
@@ -1941,13 +1927,11 @@ function Ajustes({
         <div className="grupo peligro">
           <label>Esfinge va a pedir el icono de cada sitio de tu bóveda</label>
           <p className="aviso">
-            Se lo pide <strong>a cada sitio directamente</strong>, nunca a un intermediario. Aun
-            así, quien pueda mirar tu red verá <strong>a qué sitios pregunta</strong>: el nombre
-            viaja en claro antes de que empiece el cifrado.
+            Se lo pide <strong>a cada sitio directamente</strong>. Quien pueda mirar tu red verá
+            <strong> a qué sitios pregunta</strong>.
           </p>
           <p className="nota">
-            Va poco a poco y espaciado, no de golpe. Los iconos se guardan cifrados, junto a la
-            bóveda.
+            Va poco a poco, y se guardan cifrados junto a la bóveda.
           </p>
           <div className="botones">
             <button
@@ -2149,9 +2133,9 @@ function Ajustes({
                 ) : (
                   <>
                     <p className="nota">
-                      Su huella es <code className="huella">{huellaVista}</code>. Compárala con lo que
-                      diga ese equipo —<code>esfinge boveda servidor huella</code>—: es lo único que
-                      prueba que las contraseñas van a tu servidor y no a quien se haya puesto en medio.
+                      Su huella es <code className="huella">{huellaVista}</code>. Compárala con la
+                      que diga ese equipo (<code>esfinge boveda servidor huella</code>): es lo único
+                      que prueba que no hay nadie en medio.
                     </p>
                     <div className="botones">
                       <button
@@ -2192,7 +2176,9 @@ function Ajustes({
             <Icono nombre="boveda" />
             <div>
               <h3>La bóveda</h3>
-              <p className="nota">Cuándo se cierra sola, cómo se abre y qué se borra al copiar.</p>
+              <p className="nota">
+                Cuándo se cierra sola, cómo se abre y qué se borra al copiar.
+              </p>
             </div>
           </header>
           <div>
@@ -2210,8 +2196,8 @@ function Ajustes({
               ))}
             </select>
             <p className="nota">
-              Cerrarla obliga a volver a escribir la contraseña maestra. Con «nunca» se queda
-              abierta hasta que se cierre a mano o se cierre la aplicación.
+              Cerrarla obliga a escribir otra vez la contraseña maestra. Con «nunca» se queda
+              abierta hasta que la cierres.
             </p>
           </div>
 
@@ -2228,10 +2214,8 @@ function Ajustes({
           </label>
 
           <p className="nota">
-            Es la segunda cosa que Esfinge hace fuera de tu ordenador. Le pide el icono a cada sitio
-            de tu bóveda, directamente y nunca a un intermediario, y lo guarda cifrado junto a ella.
-            Quien pueda mirar tu red verá a qué sitios pregunta. Sin esto, cada entrada sale con un
-            cuadro de color y su inicial.
+            Pide el icono a cada sitio de tu bóveda y lo guarda cifrado. Quien mire tu red verá
+            a qué sitios pregunta.
           </p>
 
           <div>
@@ -2249,8 +2233,8 @@ function Ajustes({
               ))}
             </select>
             <p className="nota">
-              Vale para las contraseñas de la bóveda y para las que se generan aquí. Nunca se pisa
-              lo que hayas copiado tú después.
+              Vale para las de la bóveda y para las que generes aquí. Nunca se pisa lo que
+              copies tú.
             </p>
           </div>
         </section>
@@ -2281,9 +2265,9 @@ function Ajustes({
           </header>
 
           <p className="nota">
-            Abre un canal <strong>dentro de este ordenador</strong>, no en la red: no hay puerto al
-            que nadie pueda conectarse desde fuera. Por él salen las cuentas del sitio que estés
-            mirando y, cuando las pides, una contraseña cada vez. Nunca la contraseña maestra.
+            Abre un canal <strong>dentro de este ordenador</strong>, sin puerto al que nadie pueda
+            conectarse desde fuera. Por él sale una contraseña cada vez que la pides. Nunca la
+            maestra.
           </p>
 
           {/* **Con cuenta, este canal sobra, y hay que decirlo donde se ve.** Desde la
@@ -2295,9 +2279,8 @@ function Ajustes({
               se haya entrado con la cuenta, eso dejaría de rellenar sin avisar. */}
           {cuenta?.modo === "cuenta" && (
             <p className="nota">
-              <strong>Con cuenta no hace falta.</strong> Entra con tu cuenta en el panel de la
-              extensión y funcionará sola, también con Esfinge cerrada. Esto solo sirve si prefieres
-              que el navegador le pregunte a esta aplicación; si no lo usas, déjalo apagado.
+              <strong>Con cuenta no hace falta.</strong> El panel de la extensión funciona solo,
+              también con Esfinge cerrada.
             </p>
           )}
 
@@ -2313,8 +2296,8 @@ function Ajustes({
                 <p className="nota">Avisados: {navegador.avisados.join(", ")}.</p>
               ) : (
                 <p className="aviso">
-                  No se ha avisado a ningún navegador. Si tienes uno instalado,
-                  cuéntamelo: el canal está abierto pero ninguno sabe que existe.
+                  No se ha avisado a ningún navegador. El canal está abierto, pero ninguno sabe
+                  que existe.
                 </p>
               )}
             </>
@@ -2338,9 +2321,8 @@ function Ajustes({
           </label>
 
           <p className="nota">
-            Cuando un sitio pida una llave de acceso, Esfinge se ofrecerá a poner la tuya. Si lo
-            apagas, el navegador preguntará como si Esfinge no estuviera y tus llaves seguirán
-            guardadas aquí. Apágalo si algún sitio deja de dejarte entrar.
+            Cuando un sitio pida una llave de acceso, Esfinge ofrecerá la tuya. Apágalo si algún
+            sitio deja de dejarte entrar.
           </p>
 
 
@@ -2420,16 +2402,15 @@ function Ajustes({
 
         
           <p className="nota">
-            Abre otro canal <strong>dentro de este ordenador</strong>, para que programas como Claude
-            puedan buscar en tu bóveda y ayudarte a ordenarla. <strong>No les da tus contraseñas</strong>
-            : lo que se usa se copia al portapapeles, y cada uso se aprueba aquí.
+            Abre otro canal para que programas como Claude busquen en tu bóveda.{" "}
+            <strong>No les da tus contraseñas</strong>: se copian al portapapeles, y cada uso se
+            aprueba aquí.
           </p>
 
           <p className="aviso">
-            Lo que un agente lea <strong>acaba en la conversación de su modelo</strong>, con quien lo
-            sirva. Y si ese agente puede ejecutar órdenes en tu equipo —como el de una terminal—,
-            puede leer el portapapeles: ahí lo que te protege no es la copia,{" "}
-            <strong>es que cada uso te lo pregunte y quede apuntado</strong>.
+            Lo que un agente lea <strong>acaba en la conversación de su modelo</strong>. Y si
+            tiene terminal, puede leer el portapapeles: lo que protege es{" "}
+            <strong>que cada uso te lo pregunte y quede apuntado</strong>.
           </p>
 
           {elAgente?.error && <p className="error">{elAgente.error}</p>}
@@ -2550,7 +2531,7 @@ function Ajustes({
             <Icono nombre="descargar" />
             <div>
               <h3>Actualizaciones</h3>
-              <p className="nota">La única salida a internet que Esfinge hace por sí sola.</p>
+              <p className="nota">Una de las dos salidas a internet, con la de los iconos.</p>
             </div>
           </header>
           <label className="fila-ajuste">
@@ -2564,11 +2545,7 @@ function Ajustes({
           </label>
 
           <p className="nota">
-            Una de las dos cosas que Esfinge hace fuera de tu ordenador: una vez al día le pregunta
-            a GitHub cuál es la última versión publicada. No manda nada de lo que cifras, ni quién
-            eres, ni cuántas veces la usas. En la petición viaja el número de versión que tienes,
-            que es lo que se compara, y GitHub ve tu dirección IP, como cualquier página que
-            visites.
+            Una vez al día mira si hay versión nueva. No se manda nada de tu bóveda.
           </p>
 
           {prefs?.ultimaComprobacion && (
@@ -2592,9 +2569,8 @@ function Ajustes({
         </p>
 
         <p className="nota">
-          Al actualizar no hay que desinstalar nada: en macOS se arrastra encima de la anterior,
-          en Windows el asistente la sustituye y en Linux lo hace el paquete. Tu historial y estos
-          ajustes se quedan donde están.
+          Al actualizar no hay que desinstalar nada. Tu historial y estos ajustes se quedan como
+          están.
         </p>
 
         </>
