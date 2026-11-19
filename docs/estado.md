@@ -26,7 +26,7 @@ y el catálogo de nombres que lo hizo posible la [0060](adr/0060-un-nombre-por-a
 | **Fedora ARM** | `dnf install` desde el repositorio, **la clave comprobada** —huella completa, la nuestra—, el icono, la ventana y **la cabecera de GNOME** |
 | **Windows 11 ARM** | El instalador de arm64, **el marco de Fluent**, **el icono de los `.esf`** y que una instalación a mano **no deja marca de gestor** |
 | **Arch Linux ARM** (en su otro Mac) | `makepkg -si` construyendo e instalando el PKGBUILD, el fichero del gestor diciendo `pacman`, y **la banda diciendo «la instala tu gestor de paquetes» con un solo botón** |
-| **macOS** | **Pendiente**, lo dejó para el final: `brew install` de la fórmula y del cask |
+| **macOS** (VM de VMPal) | **2026-11-19**: `brew install` de la fórmula —`esfinge 2.69.0`, binario **arm64** nativo— y `brew install --cask`, con la aplicación abriéndose **sin que macOS la bloquee** —el `xattr` de la cuarentena contesta «No such xattr»— y `brew outdated --cask` **sin listarla**, que es lo que dice `auto_updates`. Y un dato para la web: **no hizo falta `brew trust`**, porque `brew install` confía en lo que se le pide explícitamente |
 
 **Con esto, el proyecto se queda sin nada sin ver en una máquina** salvo lo que depende de
 terceros. Lo que queda abierto está en [`deuda.md`](deuda.md) y es: que `choco` o `winget` dejen la
@@ -48,34 +48,25 @@ Apolo no — winget y Chocolatey sin automatizar, la marca de gestor en Windows,
 final saliendo con `exit 0`. Lo comprometerá el cliente al abrir la sesión de Apolo. Si al llegar
 ahí ya no está, es que lo hizo.
 
-### Lo primero al retomar (tarde del 2026-11-17 o siguiente sesión)
+### Lo primero al retomar (2026-11-19 o siguiente sesión)
 
-1. **El Mac, en una VM de VMPal** — lo único que queda de la verificación por sistemas. Son dos
-   cosas distintas y sólo una es invasiva:
-   - `brew install webcafeina/esfinge/esfinge` (la línea de comandos) **se puede probar en su Mac
-     sin riesgo**: instala el binario en el prefijo de Homebrew y no toca ni la aplicación ni la
-     bóveda.
-   - `brew install --cask webcafeina/esfinge/esfinge` **es el que conviene aislar**, porque pone
-     `Esfinge.app` en `/Aplicaciones` y él ya tiene una del DMG. Ahí se mira: que instale, que
-     **abra sin que macOS la bloquee** —el cask le quita la cuarentena, que es lo que sustituye a la
-     firma que no se paga— y que **`brew upgrade` no intente actualizarla**, porque el cask declara
-     `auto_updates`.
-   - Avisos de coste: la VM necesita una imagen de restauración de macOS (~15 GB) y, dentro,
-     Command Line Tools para tener `brew`.
+1. **La última milla de los canales, que es lo único nuestro que queda abierto**: seis canales
+   publicados y firmados y **ni el README ni la web los nombran** —ofrecen sólo ficheros sueltos—,
+   así que las órdenes de instalar desde un canal viven únicamente en `docs/` y en `CLAUDE.md`. Está
+   en [`deuda.md`](deuda.md) con lo que ya se sabe: la de Homebrew es **una sola línea**, sin
+   `brew trust`. Es escribir dos secciones, una en el README y otra en `web/index.html`.
+
 2. **Lo que no depende de nosotros**: que **Chocolatey** apruebe y que un moderador voluntario mire
-   [el PR de winget](https://github.com/microsoft/winget-pkgs/pull/482164), que el 2026-11-17 por la
-   tarde ya tenía **`Azure-Pipeline-Passed` y `Validation-Completed`**: su validación automática
-   está pasada y sólo falta la moderación. Cuando Chocolatey entre, queda ver la otra mitad de la
-   ADR 0063: que `choco install` deje la marca del gestor.
+   [el PR de winget](https://github.com/microsoft/winget-pkgs/pull/482164), que tiene la validación
+   automática pasada desde el 2026-11-17.
    **2026-11-19**: su moderador **devolvió el paquete el 18** y no por el paquete —las dos sumas le
    cuadraban— sino **por el idioma de la ficha**: la quiere en inglés, con el español detrás si se
-   quiere. Corregida y **reempujada esa misma versión** (que es lo que piden) con el canal suelto
-   nuevo, `gh workflow run canales.yml -f version=2.66.1 -f canal=chocolatey`. Su página dice ya
-   «**Maintainer updated, waiting for Reviewer**» con los tres chequeos automáticos en marcha, así
-   que **no hace falta escribir nada en su cuadro de comentarios**: el reempuje es la respuesta. Lo
-   que hay que mirar cuando aprueben: **subir la 2.69.0 con ese mismo canal suelto** —la tienda no
-   vio la 2.67, la 2.68 ni la 2.69, porque rechaza versiones mientras modera una— y entonces sí,
-   `choco install` y la otra mitad de la ADR 0063.
+   quiere. Corregida y **reempujada esa misma versión** con el canal suelto nuevo,
+   `gh workflow run canales.yml -f version=2.66.1 -f canal=chocolatey`. Su página dice ya
+   «**Maintainer updated, waiting for Reviewer**», así que **no hace falta escribir nada en su cuadro
+   de comentarios**: el reempuje es la respuesta. Y se midió que **mientras hay una en revisión no
+   entra otra** (la 2.69.0 recibió 403), así que el día que aprueben hay que **subir la 2.69.0 con
+   ese mismo canal suelto** — la tienda no vio la 2.67, la 2.68 ni la 2.69.
 
 3. **El disco del VPS**, por si vuelve a apretar: el 2026-11-17 estaba al **97 %** y se dejó al
    **77 %** (46 GB libres). Lo que queda disponible sin tocar nada vivo son **los 102 volúmenes de

@@ -118,10 +118,23 @@ Lo que **está comprobado**, y con qué:
   ARM, **con el icono de los `.esf` puesto en los tres sistemas**, que era lo último sin verificar de
   todo el proyecto.
 
-Lo que **no** está comprobado, y hay que decirlo:
+- **Y el Mac, el 2026-11-19**, con lo que cierra la verificación por sistemas entera: la fórmula
+  (`esfinge 2.69.0`, binario arm64 nativo) y el cask, con la aplicación abriéndose **sin que macOS la
+  bloquee** —el `xattr` de la cuarentena contesta «No such xattr», que es lo que sustituye a la firma
+  que no se paga— y `brew outdated --cask` **sin listarla**. No hizo falta `brew trust`: `brew
+  install` confía en lo que se le pide explícitamente.
 
-- **El Mac**: `brew install` de la fórmula y del cask. Es lo único que queda de la verificación por
-  sistemas.
+  **Y destapó dos fallos del cask que habían pasado todas las puertas**, los dos de la misma
+  familia: `depends_on macos: ">= :high_sierra"` —forma en retirada, y un mínimo por debajo de Big
+  Sur que Homebrew ha **desactivado**— y `#{appdir}` dentro de `postflight_steps`, donde ese método
+  no existe. Cualquiera de los dos deja el cask «unreadable», **y eso tumba también `brew install`
+  de la fórmula**, porque cargar el tap evalúa las dos recetas. El tap los sirvió desde el
+  2026-11-16. Lo que lo cierra es una puerta nueva: un trabajo en **macOS** monta un tap de mentira
+  y hace `brew info` de las dos recetas **antes** de empujarlas, y falla también si Homebrew sólo
+  **avisa** —su `depends_on` de cadena estuvo meses en «deprecated» antes de morir—. El tap depende
+  de esa puerta y lo afirma una prueba, porque quitar la dependencia es una línea que no se nota.
+
+Lo que **no** está comprobado, y hay que decirlo:
 - **Que Chocolatey apruebe el paquete**, que es de su moderación, y ahí hay algo aprendido: el
   2026-11-18 **lo devolvió**, y no por el paquete sino **por el idioma de la ficha** —«the
   description is only in Spanish»—, con las dos sumas ya comprobadas por su moderador. Corregida y

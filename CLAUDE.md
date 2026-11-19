@@ -2422,6 +2422,33 @@ misma versión», que es lo que pide la moderación, con «todos» significaría
 winget a una versión vieja, **y la comprobación final diría que todo va bien**, porque mira que los
 canales sirvan la versión *que se le ha dado*.
 
+**Una receta de Homebrew no la evalúa nadie hasta que alguien la instala, y un cask roto se lleva
+por delante la fórmula.** El 2026-11-19, estrenando la VM de macOS, `brew install` de la **fórmula**
+murió por el **cask**: Homebrew carga el tap entero, así que una receta que no se puede leer deja el
+tap inservible y el error señala a la que no es. Dos fallos distintos, los dos publicados desde el
+2026-11-16 y los dos en verde en todas las puertas. **Uno**: `depends_on macos: ">= :high_sierra"`
+—la forma de cadena está en retirada **y** un mínimo por debajo de Big Sur, que es lo más viejo
+donde corre Homebrew, está **desactivado**, «there is no replacement»—; lo que dice lo que ese
+comentario quería decir es `depends_on :macos`, sin mínimo. **Dos**: `#{appdir}` dentro de
+`postflight_steps`, que es interpolación de Ruby y **ahí no hay método `appdir`**; el DSL de los
+pasos tiene plantillas propias con llaves dobles que Homebrew sustituye en el equipo de quien
+instala. Las dos cosas se resolvieron **leyendo su fuente y su documentación**, no probando: la
+segunda tiene además una vuelta de tuerca, porque esas llaves dobles **son las nuestras**, así que
+`herramientas/rellenar` tomaba el marcador ajeno por uno nuestro mal escrito y paraba la
+publicación. Ahora tiene una lista de marcadores ajenos **nombrados uno a uno** —dejar pasar «lo que
+no conozco» es justo lo que esa herramienta existe para no hacer— y, lo que faltaba de verdad,
+**las ocho plantillas se rellenan en `make comprobar`**: `rellenar` no tenía ninguna prueba, y la
+primera que se escribió cazó un fallo en el acto. Lo que cierra la familia es una puerta en un
+**macOS** de la publicación que monta un tap de mentira y hace `brew info` de las dos recetas
+**antes** de empujarlas, y que falla también si Homebrew sólo **avisa**, porque ese `depends_on`
+estuvo meses en «deprecated» antes de morir: esperar al error es esperar a que lo descubra quien
+instala. Dos lecciones de método de ahí, las dos ya conocidas en esta casa y las dos repetidas:
+**la primera guarda que escribí era mala** —preguntaba si el marcador aparecía *en el fichero*, y
+aparece en el comentario que lo explica, así que pasaba en verde con el fallo dentro; lo dijo
+mutarla— y **nada afirmaba que el tap pasara por la puerta**, de modo que quitar esa dependencia
+—una línea que no se nota, con la puerta corriendo al lado en vez de delante— también se quedaba en
+verde.
+
 ## Lo que nunca se ha probado
 
 Y ojo con qué se ha comprobado de verdad: **el diálogo de abrir no**, porque en macOS los ficheros se
@@ -2517,9 +2544,16 @@ la contraseña, el diálogo de `pkexec` y la vuelta sola ya actualizada—, y en
 banda dice «la instala tu gestor de paquetes» **con un solo botón, «Ahora no»**. Con eso, el
 `PKGBUILD` también quedó construido con `makepkg` en ARM de verdad.
 
+Y el **2026-11-19 el Mac**, en una VM de VMPal, con lo que **no queda ningún sistema sin ver**: la
+fórmula de Homebrew (`esfinge 2.69.0`, binario arm64 nativo) y el cask, abriéndose **sin que macOS la
+bloquee** —el `xattr` de la cuarentena contesta «No such xattr», que es lo único que sustituye a la
+firma que no se paga— y `brew outdated --cask` sin listarla. **No hace falta `brew trust`**: `brew
+install` confía en lo que se le pide explícitamente, y el que se niega en un tap sin confiar es
+`brew info`.
+
 Lo que sigue sin verse en una máquina, y no depende de nosotros: **que `choco` o `winget` dejen esa
-marca** —hace falta que sus tiendas aprueben una versión—, el camino de **openSUSE** (`zypper`), que
-no tiene máquina, y **el Mac**, que el cliente dejó para el final.
+marca** —hace falta que sus tiendas aprueben una versión— y el camino de **openSUSE** (`zypper`), que
+no tiene máquina.
 
 **Y lo visual no se toca por ahora**: el cliente lo dejó dicho el 2026-11-17 —«todo esto de lo
 visual lo tocaremos en otra fase posterior»—, así que lo que se vea raro se apunta y no se arregla
