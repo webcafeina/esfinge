@@ -34,9 +34,18 @@ cask "esfinge" do
 
   app "Esfinge.app"
 
+  # **`{{appdir}}` es de Homebrew, no nuestro, y por eso va con llaves dobles aquí.** Dentro de
+  # este bloque no hay método `appdir` —el DSL de los pasos es otro, y pedirlo deja el cask
+  # «unreadable», que **tumba también la fórmula** porque cargar el tap evalúa las dos recetas—:
+  # lo que hay es un juego de plantillas —appdir, staged_path, version y unas cuantas más, todas
+  # con llaves dobles— que Homebrew sustituye en el equipo de quien instala. Leído en su fuente, no
+  # deducido. Y los otros nombres se escriben aquí **sin sus llaves a propósito**: con ellas,
+  # `rellenar` los toma por marcadores nuestros mal escritos y para la publicación, que es lo que
+  # esta prueba acaba de cazar.
+  # `herramientas/rellenar` lo deja pasar porque está en su lista de marcadores ajenos.
   postflight_steps do
     run "/usr/bin/xattr",
-        args:         ["-dr", "com.apple.quarantine", "#{appdir}/Esfinge.app"],
+        args:         ["-dr", "com.apple.quarantine", "{{appdir}}/Esfinge.app"],
         must_succeed: false
   end
 

@@ -69,6 +69,23 @@ func main() {
 // que poder nombrarlo en el error.
 var elMarcador = regexp.MustCompile(`\{\{([A-Za-z]+)(?::([a-z0-9-]+))?\}\}`)
 
+// deOtro son los marcadores que **no son nuestros y tienen que llegar intactos** al canal: los
+// escribe Homebrew en su bloque de pasos de instalación y los sustituye él al instalar, con la
+// ruta de ese equipo.
+//
+// # Por qué una lista y no «deja en paz lo que no conozcas»
+//
+// Porque lo segundo es exactamente lo que esta herramienta existe para no hacer: un `{{SHA:x}}`
+// mal escrito que pase de largo se publica, y `makepkg` se cae en el equipo de quien instala. Así
+// que los ajenos van **nombrados uno a uno**, y cualquier otro sigue parando la publicación.
+//
+// La colisión no es hipotética: `postflight_steps` necesita `{{appdir}}` —no hay método `appdir`
+// en ese DSL, se comprobó leyendo su fuente— y escribirlo aquí sin esta lista dejaba la receta
+// sin rellenar, o con las llaves escapadas de alguna forma que Homebrew no entiende.
+var deOtro = map[string]bool{
+	"appdir": true,
+}
+
 // Rellenar sustituye los marcadores y devuelve lo que no ha podido.
 //
 // `porFichero` son las sumas por nombre de fichero, que es como las escribe `sha256sum`.
@@ -109,17 +126,26 @@ func Rellenar(plantilla, version string, porFichero map[string]string) (string, 
 			}
 			return suma
 		default:
+			if deOtro[que] && clave == "" {
+				// De Homebrew; lo sustituye él. Aquí no se toca y no es un problema.
+				return m
+			}
 			problemas = append(problemas, m+": no sé qué es «"+que+"»")
 			return m
 		}
 	})
 	// Y lo que no casa ni el patrón: unas llaves mal cerradas no se sustituyen y tampoco se ven.
-	if i := strings.Index(salida, "{{"); i >= 0 {
+	// Los ajenos se apartan antes de mirar, porque llegar intactos es justamente lo suyo.
+	paraMirar := salida
+	for t := range deOtro {
+		paraMirar = strings.ReplaceAll(paraMirar, "{{"+t+"}}", "")
+	}
+	if i := strings.Index(paraMirar, "{{"); i >= 0 {
 		hasta := i + 40
-		if hasta > len(salida) {
-			hasta = len(salida)
+		if hasta > len(paraMirar) {
+			hasta = len(paraMirar)
 		}
-		problemas = append(problemas, "queda un marcador sin cerrar o mal escrito: "+salida[i:hasta])
+		problemas = append(problemas, "queda un marcador sin cerrar o mal escrito: "+paraMirar[i:hasta])
 	}
 	return salida, problemas
 }
