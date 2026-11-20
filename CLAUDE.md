@@ -2573,6 +2573,19 @@ de Fluent —sin carril y con relleno de 10—, sobraron 24 px. **El síntoma er
 anatomía**, y eso vale para las tres fases que quedan: cuando algo no cabe en un sistema, mirar primero
 si ese trozo sigue vestido del sistema de al lado.
 
+**Una guarda con media condición escrita en el comentario manda a probar lo imposible.** (2026-11-20.)
+La captura de la casilla «Abrir con Touch ID a partir de ahora» llevaba meses cayendo, y su propio
+comentario decía por qué creía que funcionaba: «la casilla solo sale si **no** está puesto». Eso es la
+mitad. `Sugerir` pide dos cosas —que no esté puesto **y** que nadie haya contestado, que es
+`DesbloqueoSugeridoPara` y va por bóveda— y **activar el desbloqueo desde Ajustes es contestar**:
+`ActivarDesbloqueo` llama a `noVolverAOfrecerA`. Así que la prueba activaba, quitaba, y se quedaba
+esperando una casilla que **no puede volver a salir nunca**: recuperaba la primera mitad de la
+condición y no la segunda. **Las dos pantallas no coexisten en el tiempo**, y la única forma de
+retratar las dos es la casilla primero. Dos reglas: cuando una prueba espera algo que depende de una
+guarda, **se lee la guarda y no el comentario de al lado** —el comentario envejece con la mitad que
+nadie volvió a mirar—; y si lo que se pide son dos estados excluyentes, no hay plazo que lo arregle,
+hay que reordenar.
+
 ## Lo que Windows deja escrito para macOS, GNOME y KDE
 
 La fase de Windows costó **tres rondas de correcciones suyas** y casi todo lo que salió **se va a
@@ -2592,6 +2605,20 @@ elemento en una hoja de sistema tiene que excluir sus variantes por nombre**, co
 escrito. Ni `:where()`, que la dejaría por debajo de cualquier `button {}` de la base —que se carga
 después del `@import`— y entonces ese sistema no vestiría nada. Esto no es de Windows: pasará con
 `button`, con `input`, con `select` y con cada elemento que una hoja vista.
+
+**Y el `:not()` no basta, que es lo que costó la tercera vez** (2026-11-20, escribiendo la hoja de
+macOS el mismo día que esto quedó apuntado). La fila elegida de la barra lateral perdió el oro: la
+regla de la base que la pinta es `.lateral nav button[aria-current="page"]`, o sea **(0,2,2)**, y la
+regla general de botón de la hoja es **(0,3,1)** — con tres clases contra dos gana la de la hoja
+aunque la otra tenga más tipos, así que la barra lateral salía entera gris y sin decir dónde estabas.
+Excluir `[aria-current="page"]` en la regla de al lado tampoco sirvió, porque quien pintaba era la
+general. **Lo que funciona es lo que ya hacía la hoja de Windows: que cada sistema declare su fila
+elegida en su hoja**, en vez de pelear con el peso. La regla general: cuando una pieza de la base
+pierde contra una hoja, **se redeclara en la hoja**; ir añadiendo `:not()` es perseguir el síntoma y
+hay que acordarse en cada regla nueva — que es la señal de que el arreglo está en el sitio
+equivocado. Lo vigila `la fila activa de la barra lateral lleva el oro en …`, que lo mide **en los
+cuatro sistemas** comparando contra el token y **sin mirar la opacidad**, porque en Fluent es el oro
+al 18 % y en macOS el oro entero.
 
 **Y la familia de errores que no se ve desde aquí: el token escrito a mano.** El color se genera desde
 Go, pero cada hoja escribe a mano lo que es medida y no paleta — y ahí es fácil copiar el selector del

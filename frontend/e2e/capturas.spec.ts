@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 /**
  * No comprueba nada: recorre la interfaz sacando capturas para poder mirarla
@@ -161,29 +161,72 @@ test.describe("Capturas", () => {
     }
     await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
 
-    // La bóveda lo ofrece sola la primera vez, y eso es lo primero que se ve.
+    // **La sugerencia se pide, no se espera: esta prueba se prepara su propio punto
+    // de partida.**
+    //
+    // «La bóveda lo ofrece sola la primera vez» es verdad **una vez por bóveda**: la
+    // marca es `DesbloqueoSugeridoPara`, va por bóveda y la pone cualquiera que
+    // conteste —activar desde Ajustes cuenta como contestar—. Y el Go es uno, con una
+    // sola bóveda y una sola carpeta de configuración para los dos temas, así que el
+    // tema claro contesta y **en oscuro la tarjeta no vuelve a salir**: fallaba
+    // siempre en el segundo, y nunca corriéndolo solo. Se borra la marca y se quita el
+    // desbloqueo, que son las dos mitades de lo que `Sugerir` pide. No hace falta
+    // ninguna costura nueva: las preferencias ya cruzan el puente enteras.
+    // **El orden importa: primero se quita el desbloqueo y después se borra la
+    // marca.** Al revés no sirve, porque quitarlo vuelve a apuntar que ya se
+    // contestó — y eso costó una pasada: con la marca borrada antes, la tarjeta
+    // seguía sin salir y parecía que el borrado no funcionaba.
+    const puesto = page.locator("#desbloqueo-del-sistema");
+    await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
+    await page.getByRole("tab", { name: "Bóveda" }).click();
+    await puesto.waitFor({ state: "visible", timeout: 20_000 });
+    if (await puesto.isChecked()) {
+      await puesto.click();
+      await page.waitForTimeout(1200);
+    }
+    // Por el mismo puente que usa la ventana, con los argumentos en una lista.
+    const antes = await (await page.request.post("/api/VerPreferencias", { data: [] })).json();
+    await page.request.post("/api/GuardarPreferencias", {
+      data: [{ ...antes, desbloqueoSugeridoPara: "" }],
+    });
+    // **Y se comprueba que la preparación ha funcionado, antes de esperar nada.**
+    // Sin esto, lo único que se ve cuando falla es «la tarjeta no sale», que es el
+    // síntoma y no dice cuál de las cuatro condiciones de `Sugerir` falta. Puesto
+    // aquí, dijo a la primera que la preparación estaba bien **y el fallo era otro**.
+    const desbloqueo = await (
+      await page.request.post("/api/EstadoDelDesbloqueo", { data: [] })
+    ).json();
+    expect(desbloqueo, JSON.stringify(desbloqueo)).toMatchObject({ sugerir: true });
+
+    // **Y hay que recargar, porque la tarjeta no vuelve a preguntar.** Se dibuja con
+    // lo que Go contestó **al montarse** y las secciones se esconden en vez de
+    // desmontarse, así que ir a Ajustes y volver no la hace preguntar de nuevo: con
+    // la marca ya borrada seguía creyendo que no había nada que ofrecer. La bóveda
+    // sigue abierta tras recargar —eso vive en Go—, así que no hay que teclear nada;
+    // lo que sí hay que hacer es **volver a entrar en Bóveda**, porque al recargar la
+    // aplicación abre en «Cifrar».
+    await page.reload();
+    await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
+    await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
+
     await page.locator("#sugerencia-activar").waitFor({ state: "visible", timeout: 20_000 });
     await page.waitForTimeout(400);
     await foto("6a-sugerencia");
     await page.locator("#sugerencia-activar").screenshot({ path: `${donde}/6b-sugerencia-cerca-${tema}.png`, scale: "css" });
     await page.locator(".sugerencia").screenshot({ path: `${donde}/6c-sugerencia-tarjeta-${tema}.png`, scale: "css" });
 
-    await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
-    const interruptor = page.locator("#desbloqueo-del-sistema");
-    await interruptor.waitFor({ state: "visible", timeout: 20_000 });
-    if (!(await interruptor.isChecked())) {
-      await interruptor.click();
-      await page.waitForTimeout(1200);
-    }
-    await foto("6-ajustes-desbloqueo");
-
-    // La casilla de la pantalla de desbloquear, la otra cara de la sugerencia.
-    // Hace falta quitarlo antes: la casilla solo sale si **no** está puesto, que
-    // es lo mismo que hace que exista.
-    if (await interruptor.isChecked()) {
-      await interruptor.click();
-      await page.waitForTimeout(1200);
-    }
+    // **La casilla de desbloquear va PRIMERO, y el orden no es un gusto: es el
+    // único que el producto permite.**
+    //
+    // Esto estaba escrito al revés —activar en Ajustes, quitarlo, y entonces
+    // retratar la casilla— con el argumento de que «la casilla solo sale si no está
+    // puesto». Eso es media condición. `Sugerir` pide dos cosas: que no esté puesto
+    // **y que nadie haya contestado todavía** —`DesbloqueoSugeridoPara`, por bóveda—,
+    // y **activarlo desde Ajustes es contestar**: `ActivarDesbloqueo` llama a
+    // `noVolverAOfrecerA`. Quitarlo después recupera la primera mitad y no la
+    // segunda, así que la casilla no volvía a salir nunca y el `waitFor` agotaba sus
+    // 20 s. Las dos pantallas **no pueden coexistir en el tiempo**, y por eso se
+    // retrata la de desbloquear antes de tocar el interruptor.
     await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
     await boton("Cerrar la bóveda").click();
     await page.locator("#boveda-activar-al-abrir").waitFor({ state: "visible", timeout: 20_000 });
@@ -192,10 +235,23 @@ test.describe("Capturas", () => {
     await page.locator("#boveda-llave").fill(maestra);
     await boton("Abrir la bóveda").click();
     await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
+
+    // Y ahora el interruptor de Ajustes, que es lo que deja el desbloqueo puesto
+    // para las capturas de abajo.
     await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
-    const i2 = page.locator("#desbloqueo-del-sistema");
-    await i2.waitFor({ state: "visible", timeout: 20_000 });
-    if (!(await i2.isChecked())) { await i2.click(); await page.waitForTimeout(1200); }
+    // **Y la pestaña, que es lo otro que faltaba.** Ajustes se recorre por pestañas
+    // desde la 2.46.0 y el interruptor del desbloqueo vive en «Bóveda», que no es la
+    // que abre por defecto: esperarlo sin abrirla agotaba los 20 s y dejaba este
+    // recorrido entero sin sacar ni una foto. Estaba apuntado en `deuda.md` como
+    // «probablemente se quedaron atrás cuando Ajustes pasó a pestañas», y era eso.
+    await page.getByRole("tab", { name: "Bóveda" }).click();
+    const interruptor = page.locator("#desbloqueo-del-sistema");
+    await interruptor.waitFor({ state: "visible", timeout: 20_000 });
+    if (!(await interruptor.isChecked())) {
+      await interruptor.click();
+      await page.waitForTimeout(1200);
+    }
+    await foto("6-ajustes-desbloqueo");
 
     // **En reposo**: el llavero dice que no, así que la pantalla se queda con la
     // huella quieta. Si dijera que sí abriría sola y no habría nada que retratar.
@@ -345,7 +401,14 @@ test.describe("Capturas", () => {
     await page.waitForTimeout(300);
     await foto("9a-proyectos-vacio");
     await boton("Nueva bóveda de proyecto").click();
-    await page.locator("#proyecto-nombre").fill("Acme");
+    // **El nombre lleva el tema dentro.** El Go es uno y los proyectos se quedan
+    // entre tandas y **entre temas**, así que con «Acme» a secas el segundo tema
+    // creaba un segundo proyecto con el mismo nombre y el clic de abajo fallaba por
+    // modo estricto —dos botones y ninguno elegible—. Es la misma familia que «una
+    // prueba que conmuta de bóveda tiene que dejar abierta la de siempre»: lo que el
+    // primer tema deja, el segundo se lo encuentra.
+    const proyecto = `Acme ${tema}`;
+    await page.locator("#proyecto-nombre").fill(proyecto);
     await foto("9b-proyectos-creando");
     await boton("Crear").click();
     await page.waitForTimeout(400);
@@ -373,7 +436,7 @@ test.describe("Capturas", () => {
     // otra acción del formulario. Nada de eso lo dice una aserción.
     await aLaLista();
     await page.locator(".lateral").getByRole("button", { name: "Proyectos", exact: true }).click();
-    await page.locator(".panel:visible .proyectos").getByRole("button", { name: /Acme/ }).click();
+    await page.locator(".panel:visible .proyectos").getByRole("button", { name: new RegExp(proyecto) }).click();
     await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
     await page.waitForTimeout(400);
     await foto("9g-dentro-del-proyecto");
@@ -404,9 +467,23 @@ test.describe("Capturas", () => {
     // deja a las pruebas siguientes mirando otra bóveda, y eso ya tiró una publicación.
     await page.locator(".herramientas .salir-proyecto").click();
     await page.locator(".lateral").getByRole("button", { name: "Bóveda", exact: true }).click();
-    await boton("Abrir la bóveda").waitFor({ timeout: 20_000 });
-    await page.locator("#boveda-llave").fill(maestra);
-    await boton("Abrir la bóveda").click();
-    await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
+    // **Salir devuelve tu bóveda abierta**, y aquí había escrito lo contrario.
+    //
+    // Hasta el 2026-10-05 salir de un proyecto pedía la contraseña maestra, y esto
+    // la tecleaba para dejar la bóveda abierta a las pruebas siguientes. Ese día se
+    // quitó —lo preguntó el cliente: «Salir del proyecto» y «Cerrar la bóveda»
+    // hacían lo mismo—, así que «Abrir la bóveda» **no vuelve a salir nunca** y el
+    // `waitFor` agotaba sus 20 s. Es la familia de «al cambiar una decisión, releer
+    // lo que la daba por supuesta»: la prueba seguía al día en todo menos en esto.
+    //
+    // Se espera al buscador, que es la señal de que la bóveda está abierta, y se
+    // deja el camino de abrirla por si alguna pasada la encontrara cerrada.
+    const abierta = page.locator("#boveda-buscar");
+    await abierta.or(boton("Abrir la bóveda")).first().waitFor({ timeout: 20_000 });
+    if (await boton("Abrir la bóveda").isVisible().catch(() => false)) {
+      await page.locator("#boveda-llave").fill(maestra);
+      await boton("Abrir la bóveda").click();
+    }
+    await abierta.waitFor({ timeout: 20_000 });
   });
 });

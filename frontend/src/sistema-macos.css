@@ -1,0 +1,520 @@
+/* Esfinge en macOS, con el lenguaje de macOS 27 Golden Gate.
+ *
+ * # De dónde salen las medidas, y por qué no se volvió a Figma
+ *
+ * Del kit de diseño de Apple para macOS 27 en Figma (`uCn3dR3MxX8byi1d2oFmJD`),
+ * **leído y volcado ya en Apolo** —su ADR 0028 las lista una por una— y, lo que
+ * más importa, **corregido allí sobre un Mac de verdad**: el oro de la barra
+ * lateral se eligió entre cuatro capturas y el vidrio de la ventana volvió al
+ * material de barra lateral después de compararlo con el Finder. Releer el kit
+ * desde aquí habría gastado el asiento de Figma en volver al punto de partida
+ * de esas correcciones.
+ *
+ * La escala, entonces: texto de 13/16 con la letra del sistema, controles de 24
+ * (el tamaño «medium»), radio 6, barra de herramientas unificada de 52 con sus
+ * cápsulas de 36, barra lateral de 240 de borde a borde con filas de 36 (el
+ * «large»: con el «medium» se veían pequeñas en el Mac) y los ajustes en filas
+ * agrupadas de 42, como Ajustes del Sistema.
+ *
+ * # Qué cambia respecto a lo que había
+ *
+ * Esfinge venía con la anatomía de macOS 26, medida sobre capturas con los
+ * semáforos como regla: controles de 28, radio 9, barra lateral de 225 y filas
+ * de 38. **Eso sigue siendo la base**, que es lo que ven el panel de la
+ * extensión y los escritorios sin hoja propia; aquí se refina a Golden Gate.
+ * Que la base deje de ser macOS y pase a ser un neutro es un paso aparte: mover
+ * medidas en la base mueve los cuatro sistemas a la vez.
+ *
+ * # Lo que NO cambia
+ *
+ * **La fila activa de la barra lateral sigue rellena de oro** (ADR 0021). En
+ * Apolo, Golden Gate se la llevó al gris y puso el oro en los iconos; aquí eso
+ * es una decisión de marca que no se toma en una hoja de estilos — va a la
+ * galería con las dos opciones. La tipografía no se toca nunca (ADR 0007), y el
+ * marcado es el mismo que en los otros tres: lo vigila
+ * `TestElAspectoNoSeDecideEnElMarcado`.
+ *
+ * Todo cuelga de `:root[data-sistema="darwin"]`, que pone `plataforma.ts` antes
+ * del primer pintado; desde el navegador se pide con `?sistema=macos`. */
+
+:root[data-sistema="darwin"] {
+  --radio-chico: 4px;
+  --radio: 6px;
+  --radio-grande: 10px;
+  --alto-control: 24px;
+  /* La fila de la barra lateral en el tamaño «large» del kit. */
+  --alto-fila: 36px;
+  --barra-lateral: 240px;
+  /* La barra de herramientas unificada, que es también el hueco que los
+     semáforos piden arriba de la barra lateral. */
+  --hueco-semaforos: 52px;
+  --texto-chico: 11px;
+  --texto: 13px;
+  /* En macOS 27 el cuerpo y el «grande» son el mismo 13: lo que sube no es el
+     tamaño, es el peso. Dejarlo en 15 es lo que hacía que una fila de la barra
+     lateral pesara como un título. */
+  --texto-grande: 13px;
+  --titulo: 15px;
+  /* Dónde empieza la barra de herramientas del contenido: después de los
+     semáforos, a 18 del borde como en el kit. */
+  --hueco-barra: 18px;
+  /* El vidrio de las cápsulas de la barra de herramientas: el lienzo casi
+     opaco, desenfocado, con un filo claro arriba y una sombra corta. Es lo que
+     imita el vidrio sin la refracción, que WebKit no deja hacer. */
+  --capsula: color-mix(in srgb, var(--lienzo) 72%, transparent);
+  --capsula-filo: color-mix(in srgb, var(--tinta) 9%, transparent);
+  --capsula-sombra:
+    inset 0 1px 0 rgb(255 255 255 / 0.8), inset 0 -1px 1px rgb(0 0 0 / 0.04),
+    0 1px 2px rgb(0 0 0 / 0.06), 0 3px 10px rgb(0 0 0 / 0.07);
+}
+
+:root[data-sistema="darwin"] body {
+  line-height: 16px;
+}
+
+/* En oscuro el vidrio brilla menos y la sombra pesa más. Los dos bloques son el
+ * mismo valor a propósito: uno para el tema del sistema y otro para cuando se
+ * fuerza, que es cómo reparte sus colores `internal/tema`. Escribir sólo el
+ * segundo selector **fuera** de la consulta es lo que dejó a Windows sin el
+ * borde de abajo durante una versión. */
+@media (prefers-color-scheme: dark) {
+  :root[data-sistema="darwin"]:not([data-tema="claro"]) {
+    --capsula-sombra:
+      inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 1px rgb(0 0 0 / 0.2),
+      0 1px 2px rgb(0 0 0 / 0.3), 0 3px 10px rgb(0 0 0 / 0.25);
+  }
+}
+
+:root[data-sistema="darwin"][data-tema="oscuro"] {
+  --capsula-sombra:
+    inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 1px rgb(0 0 0 / 0.2),
+    0 1px 2px rgb(0 0 0 / 0.3), 0 3px 10px rgb(0 0 0 / 0.25);
+}
+
+/* ------------------------------------------------------------------ el marco
+ *
+ * En macOS la barra de título no existe (ADR 0019) y los semáforos los coloca
+ * el sistema. La barra que Esfinge dibuja en Windows (ADR 0066) está en el
+ * marcado de los cuatro sistemas y **aquí se esconde**, que es la mitad del
+ * acuerdo: montarla sólo donde se usa rompería que el marcado sea el mismo y la
+ * simulación por URL, que cambia de aspecto sin recargar. */
+:root[data-sistema="darwin"] .barra-titulo {
+  display: none;
+}
+
+/* --------------------------------------------------------- la barra lateral
+ *
+ * De borde a borde y a toda la altura, con las filas en el «large» del kit: 36
+ * de alto, el icono de 20 y sin hueco entre una y otra —en macOS las filas de
+ * una barra lateral se tocan; el aire lo pone el relleno de la columna—. */
+:root[data-sistema="darwin"] .lateral nav {
+  gap: 0;
+  padding: 0 10px;
+}
+
+:root[data-sistema="darwin"] .lateral nav button {
+  /* **El alto se declara aquí**, aunque la base ya lo ponga: `.lateral button` pesa
+   * (0,1,1) y la regla general de botón de esta hoja (0,3,1), así que sin esto las
+   * filas salen de 24 —el alto de un control— en vez de las 36 del kit. Cuarta cara
+   * de la misma trampa en este fichero; ver la nota de la fila elegida. */
+  height: var(--alto-fila);
+  border-radius: 8px;
+  font-size: var(--texto);
+  font-weight: 400;
+}
+
+:root[data-sistema="darwin"] .lateral .icono {
+  width: 20px;
+  height: 20px;
+}
+
+/* En macOS una fila de barra lateral **no se resalta al pasar por encima** si no
+ * está elegida: lo que marca el estado es la selección, y un gris al pasar
+ * compite con ella. El selector lleva `nav` para desempatar con la regla general
+ * de `button:hover` de la base, que vive más abajo en su fichero. */
+:root[data-sistema="darwin"] .lateral nav button:hover:not([aria-current="page"]) {
+  background: transparent;
+}
+
+/* **Y la fila elegida se declara aquí, no se hereda.**
+ *
+ * La de la base —`.lateral nav button[aria-current="page"]`, (0,2,2)— pierde contra
+ * la regla general de botón de esta hoja, que es (0,3,1): con tres clases contra dos
+ * gana la de aquí aunque la otra tenga más tipos. Resultado medido en una captura:
+ * **la barra lateral entera gris, sin decir dónde estabas**. Es el mismo fallo que en
+ * Windows con `button.principal`, y la forma de no volver a pelear con el peso es la
+ * que usa esa hoja: **cada sistema declara su fila elegida**.
+ *
+ * Aquí es el oro relleno con la piedra encima (ADR 0021), que es lo que hay hoy. En
+ * el Golden Gate de Apolo la elegida es gris y el oro se va a los iconos; eso es una
+ * decisión de marca y está en la ADR 0068 esperando a que el cliente elija sobre
+ * capturas. */
+:root[data-sistema="darwin"] .lateral nav button[aria-current="page"] {
+  background: var(--relleno);
+  color: var(--sobre-acento);
+  font-weight: 500;
+}
+
+/* ------------------------------------------- la barra de herramientas unificada
+ *
+ * 52 de alto, el título en Headline 13 negrita y su antetítulo en 11. El hueco
+ * de la izquierda es el del kit: 18 desde el borde. */
+:root[data-sistema="darwin"] .herramientas {
+  padding: 0 var(--hueco-barra);
+  gap: 8px;
+}
+
+:root[data-sistema="darwin"] .herramientas h1 {
+  font-size: var(--titulo);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Las órdenes de la barra, en cápsulas de vidrio de 36: es lo que distingue una
+ * barra de macOS 27 de una fila de botones. */
+:root[data-sistema="darwin"] .herramientas .aparte > button,
+:root[data-sistema="darwin"] .herramientas .salir-proyecto {
+  height: 36px;
+  padding: 0 14px;
+  border: 0.5px solid var(--capsula-filo);
+  border-radius: 18px;
+  background: var(--capsula);
+  backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: var(--capsula-sombra);
+  transition:
+    transform 160ms cubic-bezier(0.3, 1.4, 0.5, 1),
+    background-color 120ms;
+}
+
+:root[data-sistema="darwin"] .herramientas .aparte > button:active:not(:disabled),
+:root[data-sistema="darwin"] .herramientas .salir-proyecto:active:not(:disabled) {
+  background: var(--elevada);
+  /* El vidrio interactivo de macOS 27 se abomba un poco al pulsarlo. */
+  transform: scale(1.05);
+}
+
+/* ---------------------------------------------------------------- controles
+ *
+ * El botón «con borde» de macOS 27: relleno gris **sin borde**, 24 de alto, 16 a
+ * los lados, radio 6. No cambia al pasar el puntero —eso es de Windows— y se
+ * oscurece al pulsar.
+ *
+ * **El `:not()` va escrito y no es cosmético**: esta regla pesa más que
+ * `button.principal` y `button.discreto` de la base, que ponen el borde
+ * transparente, así que sin excluirlas el botón de acción saldría con el relleno
+ * gris encima del oro. Pasó en Windows y costó dos de las correcciones del
+ * cliente. Y **no se arregla con `:where()`**, que bajaría el peso a cero y
+ * dejaría la regla por debajo de cualquier `button {}` de la base, que se carga
+ * después del `@import`: entonces macOS no vestiría ningún botón. */
+:root[data-sistema="darwin"] button:not(.principal, .discreto, .ojo, .boton-menu) {
+  height: var(--alto-control);
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radio);
+  background: var(--boton);
+  box-shadow: none;
+  font-weight: 400;
+}
+
+:root[data-sistema="darwin"] button:not(.principal, .discreto, .ojo, .boton-menu):hover:not(:disabled) {
+  background: var(--boton);
+}
+
+:root[data-sistema="darwin"] button:not(.principal, .discreto, .ojo, .boton-menu):active:not(:disabled) {
+  background: var(--boton-encima);
+}
+
+/* El principal es el oro, sin borde y sin cambiar al pasar. */
+:root[data-sistema="darwin"] button.principal,
+:root[data-sistema="darwin"] button.principal:hover:not(:disabled) {
+  height: var(--alto-control);
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radio);
+  background: var(--relleno);
+  color: var(--sobre-acento);
+}
+
+:root[data-sistema="darwin"] button.principal:active:not(:disabled) {
+  background: var(--relleno-vivo);
+}
+
+/* Y el discreto es texto. **Sin subrayado**: en la base va subrayado porque allí
+ * no hay color que gastar (ADR 0021), y en macOS un botón de texto se reconoce
+ * por su sitio y por el acento. Subrayarlo además sería decirlo dos veces, que
+ * es lo que el cliente señaló en Windows. */
+:root[data-sistema="darwin"] button.discreto,
+:root[data-sistema="darwin"] button.discreto:hover:not(:disabled) {
+  height: var(--alto-control);
+  border: 0;
+  background: transparent;
+  text-decoration: none;
+}
+
+:root[data-sistema="darwin"] button.discreto:active:not(:disabled) {
+  background: var(--elevada);
+}
+
+/* Las filas de la barra lateral y los segmentos no son botones con relleno, así
+ * que se les quita el que acaban de heredar. */
+/* **Y el `:not()` aquí es la segunda mitad de lo mismo, que costó una captura.**
+ * Sin él, esta regla —(0,4,1)— pesa más que `.lateral nav button[aria-current="page"]`
+ * de la base —(0,3,1)—, que es la que pinta la fila elegida de oro: la barra lateral
+ * salía entera gris y sin saber dónde estabas. Es el mismo fallo que en Windows,
+ * cometido otra vez en el mismo fichero y en la regla de al lado. */
+:root[data-sistema="darwin"] .lateral nav button:not([aria-current="page"]),
+:root[data-sistema="darwin"] .segmentado button:not([aria-checked="true"]) {
+  background: transparent;
+  padding: 0 var(--espacio-3);
+}
+
+/* Campo de texto: su filete de medio píxel, radio 6, 24 de alto. El medio
+ * píxel es de macOS y se ve: en una pantalla Retina es una línea fina de
+ * verdad, no un borde. */
+:root[data-sistema="darwin"] input[type="text"],
+:root[data-sistema="darwin"] input[type="password"],
+:root[data-sistema="darwin"] input[type="email"],
+:root[data-sistema="darwin"] input[type="number"],
+:root[data-sistema="darwin"] input[type="search"],
+:root[data-sistema="darwin"] input:not([type]) {
+  height: var(--alto-campo, var(--alto-control));
+  padding: 0 8px;
+  border: 0.5px solid var(--filete-fuerte);
+  border-radius: var(--radio);
+  background: var(--campo);
+}
+
+/* El desplegable es un botón con sus flechas a la derecha, no un campo. */
+:root[data-sistema="darwin"] select {
+  height: var(--alto-control);
+  padding: 0 26px 0 10px;
+  border: 0;
+  border-radius: var(--radio);
+  background-color: var(--boton);
+}
+
+/* La casilla, de 16 con radio 4; marcada, el oro con la marca en piedra —que es
+ * la regla de la casa: el oro rellena y la piedra escribe—.
+ *
+ * **Se excluye el interruptor por su envoltorio y no por un `role`**: el de Esfinge
+ * es una casilla a propósito —cambiarlo a `role="switch"` renombraría el control
+ * para quien usa un lector de pantalla—, así que `[role="switch"]` no casa con nada
+ * y lo que lo distingue es estar dentro de `.interruptor`. Escrito con el `role`,
+ * el interruptor salía como un cuadrado de 16 y el estilo de la píldora no se
+ * aplicaba a nadie: lo dijo la prueba, no la lectura. */
+:root[data-sistema="darwin"] .ajuste > :not(.interruptor) input[type="checkbox"],
+:root[data-sistema="darwin"] :not(.interruptor) > input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  border: 0.5px solid var(--filete-fuerte);
+  border-radius: 4px;
+  background-size: 11px 11px;
+}
+
+/* --------------------------------------------------------- el interruptor
+ *
+ * La píldora del kit en el tamaño «small», el de Ajustes del Sistema: pista de
+ * 44 × 20 y el pomo una píldora blanca de 26 × 16 **más ancha que alta**, que es
+ * lo que lo distingue del de Fluent (allí el pomo es un círculo de 12).
+ *
+ * Lo que se mueve es el pomo, que es un hermano del `<input>` y no un
+ * pseudoelemento: en WebKit un `<input>` no pinta `::before`, y ésa es
+ * exactamente la máquina en la que esto se va a ver. */
+:root[data-sistema="darwin"] .interruptor input[type="checkbox"] {
+  width: 44px;
+  height: 20px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--elevada);
+  box-shadow: inset 0 0 0 0.5px var(--filete-fuerte);
+  transition: background-color 150ms;
+}
+
+:root[data-sistema="darwin"] .interruptor input[type="checkbox"]:checked {
+  background-color: var(--relleno);
+  background-image: none;
+  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.1);
+}
+
+:root[data-sistema="darwin"] .interruptor > .pomo {
+  display: block;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 26px;
+  height: 16px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow:
+    0 0.5px 1.5px rgb(0 0 0 / 0.3),
+    0 0 0 0.5px rgb(0 0 0 / 0.06);
+  pointer-events: none;
+  transition:
+    transform 260ms cubic-bezier(0.3, 1.35, 0.5, 1),
+    background-color 140ms;
+}
+
+:root[data-sistema="darwin"] .interruptor > input:checked + .pomo {
+  transform: translateX(14px);
+}
+
+:root[data-sistema="darwin"] .interruptor > input:disabled + .pomo {
+  opacity: 0.6;
+}
+
+/* ---------------------------------------------------------- el deslizador
+ *
+ * Pista de 6 en cápsula, **lo recorrido en el oro** —que es lo único propio en
+ * una pantalla de trabajo— y el botón blanco en cápsula con su sombra. El
+ * recorrido lo pone la interfaz en `--recorrido`. */
+:root[data-sistema="darwin"] input[type="range"] {
+  height: 20px;
+}
+
+:root[data-sistema="darwin"] input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--relleno) var(--recorrido, 0%),
+    var(--elevada) var(--recorrido, 0%)
+  );
+  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.06);
+}
+
+:root[data-sistema="darwin"] input[type="range"]::-webkit-slider-thumb {
+  width: 22px;
+  height: 14px;
+  margin-top: -4px;
+  border: 0;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow:
+    0 0.5px 2px rgb(0 0 0 / 0.3),
+    0 0 0 0.5px rgb(0 0 0 / 0.08);
+}
+
+/* ----------------------------------------------------- el control segmentado
+ *
+ * Una cápsula gris con el elegido levantado en blanco, que es el segmentado de
+ * macOS. En Windows esto es la SelectorBar de Fluent —sin carril y con una barra
+ * de acento debajo—, y son dos cosas distintas a propósito: el carril **es** lo
+ * que lo hace de macOS. */
+:root[data-sistema="darwin"] .segmentado {
+  padding: 2px;
+  gap: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--elevada);
+}
+
+:root[data-sistema="darwin"] .segmentado button {
+  height: 20px;
+  border-radius: 10px;
+  color: var(--tinta);
+  font-weight: 400;
+}
+
+:root[data-sistema="darwin"] .segmentado button[aria-checked="true"] {
+  background: var(--lienzo);
+  box-shadow: 0 0.5px 2px rgb(0 0 0 / 0.18);
+}
+
+/* ------------------------------------------------- los ajustes, en filas agrupadas
+ *
+ * Como en Ajustes del Sistema: filas de 42 con 10 de relleno, el rótulo a la
+ * izquierda —y su nota debajo, en 11— y el control a la derecha. Las filas
+ * seguidas forman **un grupo**: radio 10 arriba y abajo del bloque, y un filete
+ * sangrado entre una y otra.
+ *
+ * El marcado es el mismo que en la base y en Windows. Lo único que cambia es
+ * dónde cae cada pieza, y por eso las tres van con su `grid-area` escrita. */
+:root[data-sistema="darwin"] .ajuste,
+:root[data-sistema="darwin"] .ajuste.con-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 2px;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 0;
+  background: var(--tarjeta);
+}
+
+:root[data-sistema="darwin"] .ajuste > label {
+  grid-area: 1 / 1;
+  justify-self: start;
+  font-size: var(--texto);
+}
+
+:root[data-sistema="darwin"] .ajuste > .nota,
+:root[data-sistema="darwin"] .ajuste > .aviso {
+  grid-area: 2 / 1;
+  margin: 0;
+  font-size: var(--texto-chico);
+  line-height: 14px;
+}
+
+/* El control manda a la derecha y **centrado sobre las dos filas**: con rótulo
+ * solo o con rótulo y nota, cae siempre a la misma altura. */
+:root[data-sistema="darwin"] .ajuste > .interruptor,
+:root[data-sistema="darwin"] .ajuste > select {
+  grid-area: 1 / 2 / 3 / 3;
+  align-self: center;
+  justify-self: end;
+}
+
+/* El grupo lo forman las filas seguidas: la primera redondea arriba, la última
+ * abajo, y las de en medio llevan el filete sangrado 10 a cada lado. Va de
+ * fondo y no de borde para que no sume alto. */
+:root[data-sistema="darwin"] .ajuste:not(.ajuste + .ajuste) {
+  border-top-left-radius: var(--radio-grande);
+  border-top-right-radius: var(--radio-grande);
+}
+
+:root[data-sistema="darwin"] .ajuste:not(:has(+ .ajuste)) {
+  border-bottom-left-radius: var(--radio-grande);
+  border-bottom-right-radius: var(--radio-grande);
+}
+
+:root[data-sistema="darwin"] .ajuste + .ajuste {
+  background-image: linear-gradient(var(--filete), var(--filete));
+  background-repeat: no-repeat;
+  background-size: calc(100% - 20px) 1px;
+  background-position: 10px 0;
+}
+
+/* La sangrada se mete hacia dentro para decir que cuelga de la de arriba, como
+ * en la base. */
+:root[data-sistema="darwin"] .ajuste.sangrada {
+  margin-left: var(--espacio-5);
+}
+
+/* ------------------------------------------------------------------ el grupo
+ *
+ * Lo que no es un ajuste —un bloque de contenido agrupado— es el mismo gris con
+ * radio 10 y **sin borde**: en macOS un grupo se separa por su superficie, no
+ * por una línea. */
+:root[data-sistema="darwin"] .grupo {
+  border: 0;
+  border-radius: var(--radio-grande);
+  padding: 12px 14px;
+}
+
+:root[data-sistema="darwin"] .grupo h2 {
+  font-size: var(--texto);
+  font-weight: 700;
+}
+
+/* **Y el bloque que las envuelve pierde su hueco**, que es lo que las convierte en
+ * un grupo. La base separa sus hijos 16 px, que es lo correcto cuando cada ajuste es
+ * una tarjeta suelta —Windows— y lo contrario de lo que hace Ajustes del Sistema,
+ * donde las filas se tocan y lo único que las separa es un filete sangrado. Lo dijo
+ * una medida: 16 px entre el fondo de una fila y el techo de la siguiente. */
+:root[data-sistema="darwin"] .bloque:has(> .ajuste),
+:root[data-sistema="darwin"] .grupo:has(> .ajuste) {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}

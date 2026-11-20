@@ -17,6 +17,7 @@
  * más que un selector sin atributo: así manda en su sistema sin depender del
  * orden. La de KDE irá al final de todas, porque refina a la de Linux. */
 @import "./sistema-windows.css";
+@import "./sistema-macos.css";
 
 * {
   box-sizing: border-box;

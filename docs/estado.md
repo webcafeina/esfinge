@@ -8,38 +8,33 @@
 ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)), **el repaso entero contra el estándar de
 Windows 11** y **el menú de Snap**. El VPS está en la 2.72.0.
 
-> ## ⚠ Lo primero al retomar: seguir con macOS, sin esperar a Windows
+> ## ⚠ Lo primero al retomar: la galería de macOS, para que elija
 >
-> La **2.72.0 está publicada entera** (2026-11-20, tarde) —los seis canales en verde— **y el VPS ya
-> está en ella**, instalada con su suma comprobada y leyendo la bóveda de Tempero. No queda nada
-> pendiente de publicar.
+> La **2.72.1 está publicada** (2026-11-20, noche) con **un arreglo y nada más**: desde la 2.70.0 la
+> barra lateral y el contenido **no llegaban al fondo de la ventana** en macOS y en Linux —513 de 680
+> en la base y en GNOME, 460 en macOS— porque la barra de título escondida sale del grid y arrastraba
+> con ella a sus hermanos. En Windows no pasaba, y por eso no se vio. **El VPS no necesita esta**: es
+> sólo interfaz, y allí la línea de comandos ya está en la 2.72.0.
 >
-> **Windows queda pendiente de probar en su máquina y eso NO bloquea nada**, decidido así el
-> 2026-11-20: se sigue con **macOS** y lo que él vea en Windows se arregla cuando lo diga. Lo que
-> tiene que mirar, cuando pueda, es lo que desde aquí no se puede: la tipografía, Mica, que el marco
-> arrastre y redimensione, **que salga el menú de Snap** al pasar por encima de Maximizar —su Win32
-> enlaza con Wails, comprobado en la tanda `44788742722`, pero que la ventana hija **conteste** no lo
-> dice ninguna compilación— y **el instalador nuevo** con el logo completo y el nombre.
+> **La fase de macOS está escrita y sin publicar, a propósito**: la hoja se aplica al Mac de verdad y
+> la [ADR 0068](adr/0068-macos-con-golden-gate.md) está en **propuesta** hasta que el cliente elija
+> sobre capturas. Lo que hay que hacer es **montarle la galería** con
+> `frontend/capturas/darwin` y `darwin-vidrio` (73 pantallas por carpeta, los dos temas), y en
+> particular preguntarle **lo único que es de marca y no de sistema**: si la fila elegida de la barra
+> lateral se queda **rellena de oro** (ADR 0021, lo que hay) o pasa al **gris con los iconos en oro**,
+> que es lo que eligió para Apolo en su Golden Gate.
 >
-> **La fase siguiente es macOS** (F3 del plan). Empieza por las dos cosas que ahorran rondas, y en
-> este orden:
+> Y **después de que elija**: publicar la fase, y **mirarla en su Mac**, que es la única máquina donde
+> se ven el material de la ventana y si el pomo del interruptor sale píldora o elipse.
 >
-> 1. **Comparar control por control con `~/proyectos/apolo/frontend/src/sistema-macos.css`**, que es
->    la especificación ya traducida y revisada. En Windows eso encontró ocho huecos de una vez,
->    después de que ir detrás de capturas los sacara de uno en uno.
-> 2. **Volcar el kit de Apple en Figma** (`uCn3dR3MxX8byi1d2oFmJD`) **en una sola pasada** —Forms,
->    Toggles, Buttons, Sidebars, Toolbars, Windows, Materials y Colors—, porque Figma corta a unas 20
->    consultas.
+> **Windows sigue pendiente de probar y no bloquea nada** (decidido el 2026-11-20): lo que hay que
+> mirar allí está en [`deuda.md`](deuda.md), y lo de más riesgo es **el menú de Snap**, porque una
+> compilación sólo dice que su Win32 enlaza, no que la ventana hija conteste.
 >
-> Y **lo que Windows dejó escrito para las tres hojas que quedan** está en `CLAUDE.md`, sección «Lo
-> que Windows deja escrito para macOS, GNOME y KDE»: se lee **al empezar la fase**, no al cerrarla.
->
-> **Y al abrir sesión, las tiendas** (ninguna es nuestra y ninguna avisa): Chocolatey sigue en la
-> **2.66.1** y rebotó la 2.72.0 con un 403 —tiene una versión en revisión y no acepta otra mientras
-> dure; se reempuja con `gh workflow run canales.yml -f version=<la que toque> -f canal=chocolatey`—.
-> En winget hay **cinco** PRs esperando moderador (`Validation-Completed` + `New-Package`), y el CLA
-> de todos está firmado, el de la 2.72.0 a mano porque el flujo firmaba **39 segundos antes** de que
-> el bot lo pidiera; arreglado el mismo día.
+> **Y al abrir sesión, las tiendas**: Chocolatey sigue en la **2.66.1** y rebota lo demás con un 403
+> mientras modera; en winget hay **cinco** PRs esperando moderador, con el CLA ya firmado en todos
+> —el de la 2.72.0 a mano, porque el flujo firmaba 39 segundos antes de que el bot lo pidiera, ya
+> arreglado—.
 
 ## Nativizar la interfaz (empezada el 2026-11-19)
 

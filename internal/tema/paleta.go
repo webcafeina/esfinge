@@ -356,6 +356,100 @@ var WindowsOscuro = func() Tema {
 	}
 }()
 
+// MacosClaro es el modo claro en macOS: los neutros de macOS 27 Golden Gate.
+//
+// # De dónde salen
+//
+// Del kit de diseño de Apple para macOS 27 en Figma —`Window Background`,
+// `Fills - Vibrant` y `Labels`—, y **no de ahí a pelo**: son los mismos que Apolo
+// publica desde su v0.14.0, o sea ya derivados, ya medidos y **ya vistos en un Mac
+// de verdad**, con las correcciones que salieron de mirarlos allí. Volver al kit a
+// leerlos otra vez habría sido gastar el asiento de Figma en releer lo que ya
+// estaba leído y corregido.
+//
+// El contenido va en blanco y los grupos, los botones y la barra lateral en los
+// rellenos grises del sistema — al contrario que en Fluent, donde el lienzo es
+// gris y la tarjeta blanca.
+//
+// Lo que no cambia es el oro: el acento es nuestro en los cuatro sistemas
+// (ADR 0021) y la piedra es lo que escribe encima.
+var MacosClaro = func() Tema {
+	lienzo := MustParseHex("#ffffff")
+	// La superficie de menos contraste, contra la que se derivan los textos. En
+	// macOS es **la fila elegida de la barra lateral**, que es el gris más oscuro
+	// de la ventana; un texto apagado se queda corto ahí antes que en el lienzo.
+	peor := MustParseHex("#d9d9d9")
+	relleno := RellenoLegible(oroMarca, piedra, AANormal)
+
+	return Tema{
+		Nombre:  "macos-claro",
+		Lienzo:  lienzo,
+		Suave:   MustParseHex("#f7f7f7"),
+		Tarjeta: MustParseHex("#f2f2f2"),
+		Elevada: MustParseHex("#e6e6e6"),
+		// Derivado y no copiado, por lo mismo que en Fluent: el separador del kit
+		// puede quedarse por debajo del suelo de 1,2:1 de esta casa, y lo que no se
+		// baja nunca es el umbral.
+		Filete:       AcentoLegible(MustParseHex("#e5e5e5"), lienzo, 1.2),
+		FileteFuerte: AcentoLegible(MustParseHex("#8c8c8c"), peor, AAGrande),
+		Tinta:        MustParseHex("#1a1a1a"),
+		Cuerpo:       MustParseHex("#3b3b3b"),
+		Apagado:      AcentoLegible(MustParseHex("#727272"), peor, AANormal),
+		Relleno:      relleno,
+		RellenoVivo:  Oscurecer(relleno, 0.92),
+		SobreAcento:  piedra,
+		Acento:       piedra,
+		Barra:        MustParseHex("#e6e6e6"),
+		BarraEncima:  peor,
+		Campo:        lienzo,
+		Boton:        MustParseHex("#ebebeb"),
+		BotonEncima:  MustParseHex("#e1e1e1"),
+		Exito:        AcentoLegible(verdeSistema, peor, AANormal),
+		Aviso:        AcentoLegible(ambarSistema, peor, AANormal),
+		Error:        AcentoLegible(rojoSistema, peor, AANormal),
+		// Los ocho cuadros de la bóveda no cambian de sistema: el tinte lo elige el
+		// dominio y tiene que dar lo mismo en todas partes. Lo que cambia es la
+		// superficie contra la que se miden.
+		TintesDeIcono: tintesClaros,
+		TintaDeIcono:  piedra,
+	}
+}()
+
+// MacosOscuro es el modo oscuro en macOS, con los neutros de macOS 27.
+var MacosOscuro = func() Tema {
+	// La superficie más clara del tema, que es el botón con el puntero encima.
+	peor := MustParseHex("#404040")
+	relleno := RellenoLegible(oroMarca, piedra, AANormal)
+
+	return Tema{
+		Nombre:        "macos-oscuro",
+		Oscuro:        true,
+		Lienzo:        MustParseHex("#1e1e1e"),
+		Suave:         MustParseHex("#191919"),
+		Tarjeta:       MustParseHex("#282828"),
+		Elevada:       MustParseHex("#323232"),
+		Filete:        AcentoLegible(MustParseHex("#363636"), MustParseHex("#1e1e1e"), 1.2),
+		FileteFuerte:  AcentoLegible(MustParseHex("#8a8a8a"), peor, AAGrande),
+		Tinta:         MustParseHex("#f5f5f5"),
+		Cuerpo:        MustParseHex("#dcdcdc"),
+		Apagado:       AcentoLegible(MustParseHex("#9a9a9a"), peor, AANormal),
+		Relleno:       relleno,
+		RellenoVivo:   Oscurecer(relleno, 0.92),
+		SobreAcento:   piedra,
+		Acento:        blanco,
+		Barra:         MustParseHex("#161616"),
+		BarraEncima:   MustParseHex("#2a2a2a"),
+		Campo:         MustParseHex("#262626"),
+		Boton:         MustParseHex("#383838"),
+		BotonEncima:   peor,
+		Exito:         AcentoLegible(verdeSistema, peor, AANormal),
+		Aviso:         AcentoLegible(ambarSistema, peor, AANormal),
+		Error:         AcentoLegible(rojoSistema, peor, AANormal),
+		TintesDeIcono: tintesOscuros,
+		TintaDeIcono:  MustParseHex("#ebebf0"),
+	}
+}()
+
 // Temas son todas las paletas que se publican, para medirlas todas.
 //
 // Es la lista que recorre el test de contraste: una paleta que no esté aquí no
@@ -363,5 +457,5 @@ var WindowsOscuro = func() Tema {
 // permitirse —el oro no vale como línea en ningún sitio, y eso hay que
 // comprobarlo en cada juego de neutros, no en uno—.
 func Temas() []Tema {
-	return []Tema{TemaClaro, TemaOscuro, WindowsClaro, WindowsOscuro}
+	return []Tema{TemaClaro, TemaOscuro, WindowsClaro, WindowsOscuro, MacosClaro, MacosOscuro}
 }

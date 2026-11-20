@@ -133,6 +133,19 @@ capturas-windows:
 	cd $(FRONT) && CAPTURAS=1 CAPTURAS_SISTEMA=windows CAPTURAS_VIDRIO=si $(PNPM) exec playwright test capturas
 	@echo "En $(FRONT)/capturas/windows y windows-vidrio"
 
+## capturas-macos: retrata la interfaz con el aspecto de macOS, en los dos temas
+##
+## Con vidrio y sin él: en macOS la ventana es translúcida siempre, pero el
+## material sólo se ve en un Mac, así que lo que se mira aquí es que el CSS pinte
+## el fondo donde no hay material (ADR 0017). Se borra la carpeta antes: la
+## captura que se mira tiene que ser la que se acaba de sacar.
+.PHONY: capturas-macos
+capturas-macos:
+	@rm -rf $(FRONT)/capturas/darwin $(FRONT)/capturas/darwin-vidrio
+	cd $(FRONT) && CAPTURAS=1 CAPTURAS_SISTEMA=darwin $(PNPM) exec playwright test capturas
+	cd $(FRONT) && CAPTURAS=1 CAPTURAS_SISTEMA=darwin CAPTURAS_VIDRIO=si $(PNPM) exec playwright test capturas
+	@echo "En $(FRONT)/capturas/darwin y darwin-vidrio"
+
 ## frontend: construye la interfaz y la deja donde la aplicación la embebe
 .PHONY: frontend
 frontend: tokens
