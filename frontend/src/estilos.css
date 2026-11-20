@@ -74,10 +74,28 @@ body {
 /* La barra de título **solo se ve donde la dibuja Esfinge** (ADR 0066). Aquí no:
  * en macOS la ventana trae sus semáforos y en Linux la cabecera la pone el
  * escritorio. Está en el marcado de los cuatro a propósito —ver el componente—,
- * y escondida así no entra en el árbol de accesibilidad ni en la tabulación. */
+ * y escondida así no entra en el árbol de accesibilidad ni en la tabulación.
+ *
+ * **Y por eso la fila va escrita en los tres, que es lo que costó tres versiones.**
+ * Un elemento con `display: none` **sale del grid**, así que donde la barra no se
+ * dibuja la barra lateral y el contenido dejaban de ser los hijos segundo y tercero
+ * y pasaban a caer en la fila `auto`: se quedaban **de la altura de su contenido** y
+ * la fila `1fr` se llevaba el resto de la ventana, vacía. Medido el 2026-11-20: la
+ * barra lateral llegaba a 513 de 680 en la base y en GNOME, y a 460 en macOS,
+ * mientras en Windows llegaba al fondo — porque su hoja ya les ponía la fila a mano,
+ * y eso tapó el fallo justo donde se estaba mirando.
+ *
+ * Está publicado en la 2.70.0, la 2.71.0 y la 2.72.0; no se vio porque desde
+ * entonces sólo se ha abierto la ventana en Windows. */
 .barra-titulo {
   display: none;
+  grid-row: 1;
   grid-column: 1 / -1;
+}
+
+.ventana > .lateral,
+.ventana > .zona {
+  grid-row: 2;
 }
 
 /* -------------------------------------------------------------- barra lateral */

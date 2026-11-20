@@ -866,6 +866,93 @@ test("sobre el oro de la fila activa escribe la piedra, no el blanco", async ({ 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+// **La ventana llega al fondo en los cuatro sistemas.**
+//
+// Esto no es cosmético y costó tres versiones publicadas. `.barra-titulo` va con
+// `display: none` donde la dibuja el sistema, y **un elemento con `display: none` sale
+// del grid**: la barra lateral y el contenido dejaban de ser los hijos segundo y
+// tercero y caían en la fila `auto`, o sea **de la altura de su contenido**, con la
+// fila `1fr` llevándose el resto de la ventana vacía. En la base y en GNOME la barra
+// lateral llegaba a 513 de 680; en macOS, a 460.
+//
+// **En Windows no pasaba**, porque su hoja ya les ponía `grid-row: 2` a mano — y eso
+// es lo que lo escondió: estaba mal justo donde nadie estaba mirando, y bien donde sí.
+// Salió al medir macOS el 2026-11-20, con la 2.70.0, la 2.71.0 y la 2.72.0 ya
+// publicadas.
+//
+// Se mide **el fondo de la barra lateral contra el de la ventana**, que es la pregunta
+// de verdad; mirar la altura de `.ventana` habría pasado en verde, porque ésa siempre
+// medía 680.
+for (const sistema of ["", "windows", "darwin", "linux"]) {
+  const nombre = sistema || "la base";
+  test(`la ventana llega al fondo en ${nombre}`, async ({ page }) => {
+    const errores = vigilarConsola(page);
+    await page.setViewportSize({ width: 980, height: 680 });
+    await page.goto(sistema ? `/?sistema=${sistema}` : "/");
+    await expect(page.locator(".lateral")).toBeVisible();
+
+    const medidas = await page.evaluate(() => {
+      const lateral = document.querySelector(".lateral")!.getBoundingClientRect();
+      const zona = document.querySelector(".zona")!.getBoundingClientRect();
+      const ventana = document.querySelector(".ventana")!.getBoundingClientRect();
+      return { lateral: lateral.bottom, zona: zona.bottom, ventana: ventana.bottom };
+    });
+    expect(
+      Math.round(medidas.lateral),
+      `en ${nombre} la barra lateral acaba en ${medidas.lateral} y la ventana en ${medidas.ventana}`,
+    ).toBe(Math.round(medidas.ventana));
+    expect(Math.round(medidas.zona)).toBe(Math.round(medidas.ventana));
+
+    expect(errores, errores.join(" | ")).toEqual([]);
+  });
+}
+
+// **Y lo mismo en los cuatro sistemas, que es lo que de verdad cierra esto.**
+//
+// La de arriba mide **la base**, y por eso no vio lo que pasó el 2026-11-20: la hoja
+// de macOS le quitaba el relleno a las filas de la barra lateral —para que no
+// heredaran el del botón— con una regla que pesa más que la de la base que pinta la
+// elegida, así que **la barra lateral salía entera gris y sin decir dónde estabas**.
+// Es exactamente el mismo fallo que en Windows con `button.principal`, cometido otra
+// vez y en el mismo fichero: una regla general de un sistema pisa a las variantes de
+// la base, y lo único que lo arregla es excluirlas por nombre.
+//
+// Lo vio una captura. Esto lo mide, y vale para las tres hojas que quedan.
+for (const sistema of ["", "windows", "darwin", "linux"]) {
+  const nombre = sistema || "la base";
+  test(`la fila activa de la barra lateral lleva el oro en ${nombre}`, async ({ page }) => {
+    const errores = vigilarConsola(page);
+    await page.goto(sistema ? `/?sistema=${sistema}` : "/");
+
+    const activa = page.locator('.lateral nav button[aria-current="page"]');
+    await expect(activa).toBeVisible();
+    const fondo = await activa.evaluate((el) => getComputedStyle(el).backgroundColor);
+    // **Contra el token y no contra un color escrito a mano**: el oro cambia de
+    // paleta en paleta y lo que se afirma es que ahí se pinta el relleno de la marca,
+    // no un hexadecimal concreto. Con un elemento de usar y tirar, que es la única
+    // forma de preguntarle al motor por el valor resuelto de una variable.
+    const relleno = await page.evaluate(() => {
+      const d = document.createElement("div");
+      d.style.backgroundColor = "var(--relleno)";
+      document.body.append(d);
+      const c = getComputedStyle(d).backgroundColor;
+      d.remove();
+      return c;
+    });
+    // **Se compara el color y no la opacidad**, porque cada sistema elige cuánto oro
+    // pone: en Fluent la fila elegida es el oro **al 18 %** con su barra de acento al
+    // lado, y en macOS es el oro entero. Exigir el token exacto diría que Windows
+    // está mal, que es falso; lo que no puede pasar es que ahí haya un gris.
+    const rgb = (c: string) => c.match(/\d+/g)!.slice(0, 3).join(",");
+    expect(
+      rgb(fondo),
+      `en ${nombre} la fila activa es ${fondo} y el relleno de la marca es ${relleno}`,
+    ).toBe(rgb(relleno));
+
+    expect(errores, errores.join(" | ")).toEqual([]);
+  });
+}
+
 test("el foco de un campo se sigue viendo con el acento dorado", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
