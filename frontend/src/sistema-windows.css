@@ -847,3 +847,54 @@
   outline-offset: 1px;
   box-shadow: none;
 }
+
+/* --------------------------------------------------- la banda, como InfoBar
+ *
+ * En Fluent un aviso así es una **InfoBar**: una tarjeta dentro del contenido,
+ * con su filete y su radio, no una banda de lado a lado pegada al marco. La de
+ * la base cruza la ventana entera porque ahí se lee como parte del cromo; aquí
+ * eso compite con la capa de contenido, que es la que dibuja el marco. */
+:root[data-sistema="windows"] .novedad {
+  margin: 12px 36px 0;
+  padding: 10px 10px 10px 16px;
+  border: 1px solid var(--filete);
+  border-bottom: 1px solid var(--filete);
+  border-radius: var(--radio);
+  background: var(--suave);
+}
+
+/* Y lo mismo para las tarjetas que piden permiso —un agente, un navegador—, que
+ * son InfoBar de severidad: el filete de color va **a la izquierda y entero**,
+ * no como un borde suelto, y el resto es una tarjeta normal. */
+:root[data-sistema="windows"] .grupo.peligro {
+  border: 1px solid var(--filete);
+  border-left: 4px solid var(--aviso);
+  border-radius: var(--radio);
+  padding-left: var(--espacio-4);
+}
+
+/* ------------------------------------------------- la cabecera de la página
+ *
+ * El Title de WinUI: 28/36 en la familia óptica Display, que es la que Windows
+ * usa a partir de 18 px. Y los márgenes de la Galería de WinUI, 36 a los lados,
+ * que arrastran también al contenido para que el título y lo que hay debajo
+ * caigan en la misma columna.
+ *
+ * **La columna sigue topada en 560** (`.panel`): eso es una decisión de lectura
+ * que ya estaba tomada y no se toca aquí. Lo que cambia es dónde empieza. */
+:root[data-sistema="windows"] .herramientas {
+  height: auto;
+  min-height: 0;
+  padding: 28px 36px 20px;
+}
+
+:root[data-sistema="windows"] .herramientas h1 {
+  font-family: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 600;
+}
+
+:root[data-sistema="windows"] .contenido {
+  padding: 0 36px var(--espacio-6);
+}
