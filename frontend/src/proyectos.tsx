@@ -470,7 +470,11 @@ function cuando(iso: string): string {
   if (dias <= 0) return "hoy";
   if (dias === 1) return "ayer";
   if (dias < 30) return `hace ${dias} días`;
-  return d.toLocaleDateString();
+  // **En español, no en el idioma del sistema.** Esfinge habla español y nada
+  // más, así que una fecha en formato de otro sitio —«11/20, 10:55 AM»— no es
+  // adaptarse a nadie: es una pantalla a medias. Lo mismo que ya hacía
+  // `compartir.tsx`, que era el único de los cinco que lo decía.
+  return d.toLocaleDateString("es-ES");
 }
 
 function mensaje(e: unknown): string {

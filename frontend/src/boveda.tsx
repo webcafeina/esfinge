@@ -2879,7 +2879,11 @@ function Borrar({ alBorrarse }: { alBorrarse: () => void }) {
 function fechaYHora(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString(undefined, {
+  // **En español, no en el idioma del sistema.** Esfinge habla español y nada
+  // más, así que una fecha en formato de otro sitio —«11/20, 10:55 AM»— no es
+  // adaptarse a nadie: es una pantalla a medias. Lo mismo que ya hacía
+  // `compartir.tsx`, que era el único de los cinco que lo decía.
+  return d.toLocaleString("es-ES", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -2892,7 +2896,11 @@ function fechaYHora(iso: string): string {
 function fecha(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString(undefined, {
+  // **En español, no en el idioma del sistema.** Esfinge habla español y nada
+  // más, así que una fecha en formato de otro sitio —«11/20, 10:55 AM»— no es
+  // adaptarse a nadie: es una pantalla a medias. Lo mismo que ya hacía
+  // `compartir.tsx`, que era el único de los cinco que lo decía.
+  return d.toLocaleString("es-ES", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

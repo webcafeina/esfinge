@@ -392,3 +392,17 @@ llega**— porque no cuesta nada y deja menos movimiento a la vez, pero **no se 
 **Si vuelve a caer**: lo que falta por descartar es qué deja distinto la tanda completa, y el camino
 es hacer que la prueba diga **qué rótulo había antes** y el ancho de cada botón, no volver a
 correrla hasta que salga verde.
+
+### Cuatro ayudantes de fecha casi iguales, en tres ficheros
+
+**Severidad:** baja · **Apuntada:** 2026-11-20
+
+`fecha` y `fechaYHora` están copiadas en `boveda.tsx` (dos), `App.tsx` y `proyectos.tsx`, cada una con
+su formato —con segundos, con hora, solo el día—, y una quinta distinta en `compartir.tsx`. El
+2026-11-20 se vio lo que eso cuesta: **cuatro seguían el idioma del sistema y la quinta forzaba
+español**, así que en un Windows en inglés las fechas salían «11/20, 10:55 AM» en una pantalla que
+está entera en castellano. Se igualaron a `es-ES`, que es lo que faltaba de verdad.
+
+Lo que queda: **siguen siendo cuatro sitios**, y es el patrón que en esta casa ya ha costado varias
+veces. Lo que lo cierra es una sola función con sus tres formatos, exportada de `componentes.tsx`.
+No se hizo a la vez para no mezclar un arreglo que se ve con una mudanza que toca tres ficheros.
