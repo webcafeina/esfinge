@@ -7,8 +7,7 @@ versiones publicadas**: la **2.71.0** —el marco y el panel plegable—, la **2
 Windows con el instalador de marca ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)), el repaso
 contra el estándar y el menú de Snap; la **2.72.1**, un arreglo solo —la ventana no llegaba al fondo
 en macOS y en Linux desde la 2.70.0—; y la **2.73.0**, con la fase de macOS
-([ADR 0068](adr/0068-macos-con-golden-gate.md)). El VPS está en la 2.72.0, que es la última que tocó
-la línea de comandos.
+([ADR 0068](adr/0068-macos-con-golden-gate.md)). El VPS está en la **2.73.0**.
 
 > ## ⚠ Lo primero al retomar (2026-11-21): macOS en su Mac, y lo de Pages
 >
