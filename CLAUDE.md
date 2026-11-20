@@ -2469,9 +2469,17 @@ winget a una versión vieja, **y la comprobación final diría que todo va bien*
 canales sirvan la versión *que se le ha dado*.
 
 **Y la misma forma otra vez en winget, con el CLA: tres PRs amontonados sin que nadie los mirara.**
-**Desde el 2026-11-20 lo firma el propio flujo**, justo después de abrir el PR, porque se comprobó
+**Desde el 2026-11-20 lo firma el propio flujo**, porque se comprobó
 que **no se queda registrado por cuenta**: firmado el 17 y el 19, el PR de la 2.71.0 volvió a salir
-con la etiqueta. Es una declaración a nombre del cliente que se publica sola en cada versión y la
+con la etiqueta.
+**Y firmarlo nada más abrir el PR no vale, que es la corrección del mismo día**: en el PR de la
+2.72.0 se firmó a las 18:46:19 y el bot puso `Needs-CLA` a las **18:46:58**, treinta y nueve segundos
+después — **una firma anterior a la pregunta no la responde**, y el paso decía «✓ CLA firmado» sin
+mirar la etiqueta, así que parecía funcionar. Que con la 2.71.0 saliera limpio fue suerte de
+cronometraje. Ahora el flujo **espera a ver la etiqueta, firma, y comprueba que se cae**; si sigue
+puesta a los cinco minutos, avisa con el enlace. Es la regla de
+«un éxito que no mira el código de salida» con otra cara: **lo que se afirma hay que mirarlo**, y lo
+que se sincroniza con otro hay que probarlo **en el orden malo** — aquí el orden malo es el normal. Es una declaración a nombre del cliente que se publica sola en cada versión y la
 autorizó él sabiéndolo; si eso cambia, lo que se quita es ese paso. Lo que sigue abajo es cómo se vio.
 (2026-11-20.) El 2026-11-17 se firmó el CLA de Microsoft con
 `@microsoft-github-policy-service agree company="Webcafeína"` y la etiqueta `Needs-CLA` cayó de aquel

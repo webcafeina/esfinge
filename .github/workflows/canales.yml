@@ -453,21 +453,52 @@ jobs:
           # registrada, y encaja con que la propia página del CLA diga que Microsoft
           # «no suele participar en acuerdos CLA corporativos».
           #
+          # **Y hay que esperar a que la pida.** La primera versión de esto firmaba
+          # nada más abrir el PR y **no servía**: en el PR de la 2.72.0 se firmó a las
+          # 18:46:19 y el bot puso `Needs-CLA` a las **18:46:58**, treinta y nueve
+          # segundos después — una firma anterior a la pregunta no la responde. Así que
+          # se espera a ver la etiqueta, se firma, y **se comprueba que se cae**: decir
+          # «✓ firmado» sin mirarlo es un mensaje mintiendo en el único sitio donde
+          # alguien iba a leer si funcionó, que es el fallo que ya costó los manifiestos.
+          #
           # Lo autorizó el cliente el 2026-11-20, sabiendo que es una declaración a
           # su nombre que se publica sola en cada versión. **Si eso cambia, lo que
           # se quita es este paso**, no el de arriba.
           $mio = gh pr list --repo microsoft/winget-pkgs --author webcafeina --state open `
             --search "Esfinge version $env:VERSION_QUE_SUBE in:title" --json number --jq '.[0].number'
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "::warning::No he podido buscar el PR para firmar el CLA. Se firma a mano: gh pr comment <n> --repo microsoft/winget-pkgs --body '@microsoft-github-policy-service agree'"
-          } elseif (-not $mio) {
-            Write-Host "::warning::No encuentro el PR de la $env:VERSION_QUE_SUBE para firmar el CLA. Se firma a mano con el comentario de arriba."
+          if ($LASTEXITCODE -ne 0 -or -not $mio) {
+            Write-Host "::warning::No encuentro el PR de la $env:VERSION_QUE_SUBE para firmar el CLA. Se firma a mano: gh pr comment <n> --repo microsoft/winget-pkgs --body '@microsoft-github-policy-service agree'"
           } else {
-            gh pr comment $mio --repo microsoft/winget-pkgs --body '@microsoft-github-policy-service agree'
-            if ($LASTEXITCODE -ne 0) {
-              Write-Host "::warning::El PR #$mio está abierto pero no he podido firmarle el CLA. Se firma a mano."
+            $pide = $false
+            foreach ($i in 1..20) {
+              $etiquetas = gh pr view $mio --repo microsoft/winget-pkgs --json labels --jq '[.labels[].name] | join(",")'
+              if ($etiquetas -match 'Needs-CLA') { $pide = $true; break }
+              Write-Host "· el bot todavía no ha pedido el CLA en el #$mio (intento $i)"
+              Start-Sleep -Seconds 30
+            }
+            if (-not $pide) {
+              # No es un fallo: puede que algún día deje de pedirlo. Se dice y se sigue.
+              Write-Host "· el bot no ha pedido el CLA en diez minutos; no se firma nada"
             } else {
-              Write-Host "✓ CLA firmado en el PR #$mio"
+              gh pr comment $mio --repo microsoft/winget-pkgs --body '@microsoft-github-policy-service agree'
+              if ($LASTEXITCODE -ne 0) {
+                Write-Host "::warning::El PR #$mio pide el CLA y no he podido firmarlo. Se firma a mano."
+              } else {
+                # **Y se comprueba que la etiqueta se cae.** Firmar y no mirar es lo que
+                # dejó creer que esto funcionaba. Cuando la firma vale, el bot la quita
+                # en menos de un minuto; se le dan cinco.
+                $limpio = $false
+                foreach ($i in 1..10) {
+                  Start-Sleep -Seconds 30
+                  $etiquetas = gh pr view $mio --repo microsoft/winget-pkgs --json labels --jq '[.labels[].name] | join(",")'
+                  if ($etiquetas -notmatch 'Needs-CLA') { $limpio = $true; break }
+                }
+                if ($limpio) {
+                  Write-Host "✓ CLA firmado en el PR #$mio y la etiqueta se ha caído"
+                } else {
+                  Write-Host "::warning::Firmado el CLA en el #$mio pero `Needs-CLA` sigue puesta cinco minutos después. Mirarlo: https://github.com/microsoft/winget-pkgs/pull/$mio"
+                }
+              }
             }
           }
 
