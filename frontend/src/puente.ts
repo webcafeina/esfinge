@@ -751,6 +751,15 @@ export const esfinge = {
   version: () => llamar<string>("Version"),
 
   /** Dónde corre la ventana y con qué marco. Lo resuelve `plataforma.ts`. */
+  /**
+   * Avisa de cómo está el botón de maximizar de la barra de título propia.
+   *
+   * Lo manda la ventana invisible del menú de Snap, que es la que tiene el
+   * ratón ahí: ver `BarraDeTitulo`. Fuera de Windows no llega nunca.
+   */
+  alCambiarElBotonDeMaximizar: (cb: (estado: "fuera" | "encima" | "pulsado") => void) =>
+    escuchar<"fuera" | "encima" | "pulsado">("ventana-maximizar", cb),
+
   plataforma: () => llamar<Plataforma>("Plataforma"),
 
   aperturaDeArranque: () => llamar<Apertura>("AperturaDeArranque"),

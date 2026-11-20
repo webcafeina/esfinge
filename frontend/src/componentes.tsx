@@ -1207,6 +1207,21 @@ export function BarraDeTitulo({
 }) {
   const [maximizada, setMaximizada] = useState(false);
 
+  /**
+   * Cómo está el botón de maximizar, **dicho desde fuera**.
+   *
+   * Sobre ese botón hay una ventana invisible de Windows, que es lo único que
+   * hace salir el menú de Snap (ADR 0066), y se queda con el ratón: desde que
+   * está ahí **la página no se entera de que alguien pasa por encima**, así que
+   * el `:hover` del CSS no se dispara nunca y el botón se quedaría muerto
+   * mientras los otros dos se iluminan. Lo dice Go, que es quien lo sabe.
+   *
+   * Fuera de Windows ese aviso no llega nunca y esto se queda en «fuera», que
+   * es lo correcto: allí manda el `:hover` de siempre.
+   */
+  const [elMaximizar, setElMaximizar] = useState<"fuera" | "encima" | "pulsado">("fuera");
+  useEffect(() => esfinge.alCambiarElBotonDeMaximizar(setElMaximizar), []);
+
   // Se le pregunta a la ventana en vez de llevar la cuenta: maximizar también se
   // hace arrastrando a la parte de arriba y con el teclado, y una cuenta propia
   // se desalinearía con el sistema sin que nada avisara.
@@ -1260,6 +1275,7 @@ export function BarraDeTitulo({
           type="button"
           aria-label={maximizada ? "Restaurar la ventana" : "Maximizar la ventana"}
           onClick={alternar}
+          data-estado={elMaximizar === "fuera" ? undefined : elMaximizar}
         >
           {/* Restaurar lleva dos marcos escalonados, como en Windows: el de
               detrás abierto por abajo, que es lo que lo distingue del cuadrado

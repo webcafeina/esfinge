@@ -28,6 +28,7 @@ import (
 	"github.com/webcafeina/esfinge/internal/app"
 	"github.com/webcafeina/esfinge/internal/entorno"
 	"github.com/webcafeina/esfinge/internal/interfaz"
+	"github.com/webcafeina/esfinge/internal/ventana"
 )
 
 // version la pone el enlazador al compilar.
@@ -119,6 +120,20 @@ func main() {
 			if vidrio {
 				ponerElVidrio()
 			}
+
+			// **El menú de Snap**, sobre el botón de maximizar que dibuja la
+			// página (ADR 0066). Aquí por lo mismo que el vidrio: hasta ahora no
+			// había ventana que encontrar. Fuera de Windows no hace nada.
+			//
+			// Las medidas salen de `app.MarcoDe`, que es el único sitio donde
+			// están: escritas también allí, el día que cambie una, la ventana
+			// invisible dejaría de caer sobre el botón. Y el nombre de la clase
+			// es el de abajo, que es lo único por lo que Wails deja encontrar su
+			// ventana: la v2 no da su identificador por ninguna parte.
+			marco := app.MarcoDe(runtime.GOOS)
+			ventana.Montar(claseDeLaVentana, marco.Alto, marco.AnchoBoton, func(estado string) {
+				escritorio.Avisar(app.EventoBotonMaximizar, estado)
+			})
 		},
 
 		Bind: []any{aplicacion},
@@ -156,6 +171,11 @@ func main() {
 			},
 		},
 		Windows: &windows.Options{
+			// **Con nombre propio**, que es lo único por lo que se puede volver a
+			// encontrar esta ventana desde fuera: hace falta para colgarle encima
+			// la del menú de Snap, y Wails v2 no expone su identificador.
+			WindowClassName: claseDeLaVentana,
+
 			// Mica es el equivalente en Windows 11: toma el fondo de escritorio,
 			// muy desenfocado y quieto. En Windows 10 no existe y la ventana se
 			// queda opaca, sin error y sin aviso, que es lo correcto.
@@ -174,6 +194,9 @@ func main() {
 // Devolver nil deja que Wails ponga el fondo de siempre, que es justo lo que
 // tiene que pasar en Linux: un fondo transparente sin vidrio detrás no enseña el
 // escritorio, enseña un agujero.
+// El nombre de clase de la ventana. Ver `WindowClassName` y `ventana.Montar`.
+const claseDeLaVentana = "EsfingeVentana"
+
 func fondoDeLaVentana(vidrio bool) *options.RGBA {
 	if !vidrio {
 		return nil

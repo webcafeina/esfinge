@@ -544,6 +544,14 @@ type Progreso struct {
 
 // Nombres de los eventos que viajan hasta la ventana.
 const (
+	// EventoBotonMaximizar dice en qué estado está el botón de maximizar de la
+	// barra de título propia: «encima», «pulsado» o «fuera».
+	//
+	// Lo manda la ventana invisible del menú de Snap (ver `internal/ventana`),
+	// que es la que tiene el ratón en ese recuadro: desde que está ahí, la
+	// página ya no se entera de que alguien pasa por encima de su botón.
+	EventoBotonMaximizar = "ventana-maximizar"
+
 	EventoProgreso = "progreso"
 	// EventoFicheroAbierto llega cuando el sistema manda un fichero con la
 	// ventana ya abierta: en macOS, doble clic en un .esf mientras Esfinge corre.

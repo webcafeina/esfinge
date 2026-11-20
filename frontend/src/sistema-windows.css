@@ -898,3 +898,16 @@
 :root[data-sistema="windows"] .contenido {
   padding: 0 36px var(--espacio-6);
 }
+
+/* El botón de maximizar no puede usar `:hover`: encima tiene la ventana
+ * invisible del menú de Snap, que se queda con el ratón (ADR 0066). Su estado
+ * lo dice Go, y entra por `data-estado`. Los otros dos siguen con el `:hover`
+ * de siempre, que ahí nadie se lo quita. */
+:root[data-barra="propia"] .botones-ventana button[data-estado="encima"] {
+  background: var(--boton-encima);
+}
+
+:root[data-barra="propia"] .botones-ventana button[data-estado="pulsado"] {
+  background: var(--barra-encima);
+  color: var(--apagado);
+}
