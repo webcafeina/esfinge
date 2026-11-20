@@ -2,45 +2,33 @@
 
 Última actualización: **2026-11-20**
 
-**Lo de esta sesión**: el cliente probó Windows en su máquina y de ahí salió todo. Se publicó la
-**2.71.0** —el marco, el panel plegable y el borde de abajo que faltaba—, y después se hizo el resto
-sin publicar: **el instalador con el logo y el nombre** ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)),
-**el repaso entero contra el estándar de Windows 11** y **el menú de Snap**.
+**Lo de esta sesión**: el cliente probó Windows en su máquina y de ahí salió todo. Se publicaron
+**dos versiones**: la **2.71.0** —el marco, el panel plegable y el borde de abajo que faltaba— y la
+**2.72.0**, que cierra la fase de Windows con **el instalador con el logo y el nombre**
+([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)), **el repaso entero contra el estándar de
+Windows 11** y **el menú de Snap**. El VPS está en la 2.72.0.
 
-> ## ⚠ Lo primero al retomar: terminar de publicar la 2.72.0
+> ## ⚠ Lo primero al retomar: lo suyo, en su Windows
 >
-> La **2.71.0 está publicada** y el VPS está en ella. La **2.72.0 no**: su contenido está entero en
-> `main` y **lo único que falta es etiquetar**.
+> La **2.72.0 está publicada** (2026-11-20, tarde) **y el VPS ya está en ella** —instalada con su suma
+> comprobada y leyendo la bóveda de Tempero, con la primera línea mirada—. No queda nada pendiente
+> de publicar.
 >
-> **Lo que ya está comprobado** (2026-11-20, tarde): la compilación `44786824114` salió **en verde en
-> los cinco sistemas**, así que **el Win32 del menú de Snap enlaza con Wails** — que era la pregunta
-> abierta, porque aquí sólo se puede compilar cruzado y pasar `vet`, y el enlazado sólo ocurre en el
-> runner.
+> **Lo que falta es mirarlo en su máquina**, que es lo único que desde aquí no se puede: instalar la
+> 2.72.0 en su Windows 11 ARM y ver la tipografía, Mica, que el marco arrastre y redimensione, **que
+> salga el menú de Snap** al pasar por encima de Maximizar, y **el instalador nuevo** con el logo
+> completo y el nombre. Lo que vea se apunta antes de pasar a lo siguiente.
 >
-> **Lo que falta mirar** es la tanda `44788742722`, que comprueba el instalador:
+> **Y después, macOS**, que es la fase siguiente del plan: empieza volcando el kit de Apple en Figma
+> (`uCn3dR3MxX8byi1d2oFmJD`) **en una sola pasada** —Forms, Toggles, Buttons, Sidebars, Toolbars,
+> Windows, Materials y Colors—, porque Figma corta a unas 20 consultas.
 >
-> ```sh
-> gh run view 44788742722
-> gh api repos/webcafeina/esfinge/actions/runs/44788742722/artifacts --jq '.artifacts[].name'
-> ```
->
-> Hace falta porque la verificación del instalador **era de adorno**: `compilar.yml` no instalaba
-> NSIS y wails, cuando no encuentra `makensis`, **avisa y devuelve `nil`** — el paso salía en verde y
-> el artefacto llevaba sólo `Esfinge.exe`. Arreglado en `9510dd7`. En verde, se etiqueta:
->
-> ```sh
-> git tag v2.72.0 && git push origin v2.72.0
-> ```
->
-> Y **después de publicar, el VPS**, que no se salta:
->
-> ```sh
-> herramientas/actualizar-vps.sh 2.72.0
-> ```
->
-> **Y luego lo suyo**: instalar la 2.72.0 en su Windows 11 ARM y mirar la tipografía, Mica, que el
-> marco arrastre y redimensione, **que salga el menú de Snap** al pasar por Maximizar, y el
-> instalador nuevo con el logo. Después, la fase de **macOS**.
+> **Y al abrir sesión, las tiendas** (ninguna es nuestra y ninguna avisa): Chocolatey sigue en la
+> **2.66.1** con un 403 en la última subida —tiene una versión en revisión y no acepta otra mientras
+> dure; se reempuja con `gh workflow run canales.yml -f version=<la que toque> -f canal=chocolatey`—,
+> y en winget los **cuatro** PRs (2.68.0 a 2.71.0) están en `Validation-Completed` + `New-Package`
+> esperando a un moderador. **El CLA ya no es el problema**: ninguno lleva `Needs-CLA`, el de la
+> 2.71.0 incluido, que fue el primero que firmó el flujo solo.
 
 ## Nativizar la interfaz (empezada el 2026-11-19)
 

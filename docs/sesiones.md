@@ -38,13 +38,41 @@ Plantilla al final.
   del programa**.
 - **El menú de Snap**, portado de Apolo a Go. Escrito entero en negativo: si algo falla se vuelve sin
   hacer nada, porque es Win32 y **aquí sólo se puede compilar, no ejecutar**.
-- **Se verificó** cada cosa donde se podía: el instalador **montado en un Windows de verdad** con
-  `compilar.yml` antes de publicarlo —paso que se añadió hoy, porque el guion de NSIS sólo se
-  ejecutaba al publicar—, las medidas con pruebas que miden, y el borde arreglado comprobado en los
-  dos temas.
-- **Queda abierto**: etiquetar la **2.72.0**, que está entera en `main` **y sólo después de mirar
-  `gh run view 44748247228`** —si el Win32 enlaza con Wails—, y el VPS detrás. Ver el aviso de
-  [`estado.md`](estado.md).
+- **Se verificó** cada cosa donde se podía: las medidas con pruebas que miden, y el borde arreglado
+  comprobado en los dos temas. Y se añadió a `compilar.yml` el armado del instalador, porque el guion
+  de NSIS **sólo se ejecutaba al publicar**, o sea que una errata suya se descubría con la etiqueta ya
+  empujada. **Por la tarde se vio que ese paso no comprobaba nada** — ver abajo.
+
+### Por la tarde: la 2.72.0 publicada, y dos comprobaciones que no comprobaban
+
+- **La compilación de verificación había caído**, y no en el Win32: cayó en la puerta, en la prueba de
+  la banda de actualización —la que ya estaba apuntada en [`deuda.md`](deuda.md) por **descargar de
+  GitHub de verdad**—. Así que el trabajo de Windows no llegó a arrancar. **No se reintentó**:
+  `/api/_novedad?local=si` planta la novedad apuntando a `/api/_descarga` del propio servidor de
+  desarrollo, que sirve 64 KiB con **su resumen de verdad** —`Descargar` lo comprueba mientras baja,
+  así que se ejercita el camino entero sin un segundo de red: de más de 28 s a 1,9—. Mutada, roja.
+- **Y quitarle la red destapó el fallo que la lentitud tapaba.** `?autorizacion=si` falseaba el modo de
+  instalación **en el aviso y no en el estado**, así que la banda salía bien y **la pregunta de al
+  montar la devolvía al modo de verdad**: cuatro lectores de `deNovedad` leyendo dos verdades. La
+  prueba tardaba tanto en llegar al momento crítico que la carrera ya había terminado; al ir rápido,
+  falló a la primera. `deNovedad` es ahora `actualizador.novedad`, con el falseo en un solo sitio.
+- **Y la segunda, que es la que hay que aprenderse: el paso del instalador salía en verde sin armar
+  ningún instalador.** Se vio **bajando el artefacto** —dentro iba sólo `Esfinge.exe`—. La causa,
+  leída en el fuente de wails y no deducida: cuando no encuentra `makensis`, **avisa y devuelve
+  `nil`**. Y `compilar.yml` no instalaba NSIS, porque eso lo hacía sólo `publicar.yml` — la misma
+  regla en dos listas, van ocho, y esta vez en su peor forma: la que no se pone roja. Ahora NSIS vive
+  en `herramientas/nsis.sh`, uno para los dos flujos, y **el paso afirma que el instalador está**.
+- **Se verificó, esta vez entero**: la tanda `44788742722` en verde en los cinco sistemas —o sea que
+  **el Win32 del menú de Snap enlaza con Wails**, que era la pregunta abierta— y el artefacto con
+  `Esfinge-amd64-installer.exe` dentro, 11 MB, NSIS, con la marca en su recurso de versión; los dos
+  bitmaps con dibujo de verdad —144 y 228 colores en la rejilla, no un plano— en 164×314 y 150×57, las
+  medidas que pide MUI. Las tres puertas de aquí en verde: 188 de interfaz, 200 del navegador y Go con
+  `-race`.
+- **Publicada la 2.72.0 y el VPS actualizado** con su suma comprobada, leyendo la bóveda de Tempero y
+  con la primera línea de esa salida mirada.
+- **Queda abierto**: lo suyo en su Windows —tipografía, Mica, arrastre, **que salga el menú de Snap**,
+  el instalador— y después **macOS**. Las dos tiendas siguen esperando moderación, y el CLA ya no es el
+  problema. Ver [`estado.md`](estado.md).
 
 ---
 
