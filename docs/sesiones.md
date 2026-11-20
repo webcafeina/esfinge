@@ -5,6 +5,49 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-20 · Windows probado en su máquina, el estándar y el instalador
+
+- **El CLA de winget, resuelto y automatizado.** Había **tres PRs amontonados** —2.68.0, 2.69.0 y
+  2.70.0— y dos con `Needs-CLA` desde el día 17. Se vio por qué: la firma del 17 llevaba
+  `company="Webcafeína"` y **limpió sólo su propio PR**; `@microsoft-github-policy-service agree` a
+  secas limpió los dos en sesenta segundos. Y se comprobó que **no se queda registrada por cuenta**,
+  porque el PR de la 2.71.0 volvió a salir con la etiqueta. Ahora **lo firma el flujo** al abrir el
+  PR. Es una declaración a nombre del cliente que sale sola en cada versión y la autorizó sabiéndolo.
+- **La 2.71.0**, con casi todo lo que el cliente vio probando la 2.70.0 en su Windows.
+- **Y el fallo que costó la mañana, que es el que hay que aprenderse.** Dijo «los inputs se pisan en
+  su parte inferior» en tres pantallas. **Aquí no se reproducía**: se midió qué recorta a sus hijos,
+  qué se sale de su caja y qué parejas se tocan, y **las tres medidas en verde**. Se persiguieron dos
+  hipótesis mías —la tipografía, la altura de los controles— antes de pedirle una captura. La captura
+  lo resolvió en dos minutos: `--borde-bajo` se escribió a mano copiando el selector del tema oscuro
+  **pero con el bloque fuera de su media query**, así que en claro valía **blanco al 9 % sobre fondo
+  blanco** y el borde **no se dibujaba**. Un borde invisible no recorta, no desborda y no toca nada,
+  que es exactamente por qué las tres medidas correctas no podían verlo. Lo vigila
+  `TestNingunValorOscuroSueltoEnLasHojas`, que lee las hojas contando llaves.
+- **El repaso contra el estándar de Windows 11**, que lo pidió él tras el tercer fallo del mismo tipo:
+  «revisa que todos los elementos vayan acorde al estándar más reciente». Se hizo **comparando
+  control por control con la hoja de Apolo**, que es la misma especificación ya traducida y revisada.
+  Ocho huecos de una vez, más la capa de contenido, la InfoBar, las tarjetas de severidad y la
+  cabecera con el Title de WinUI. **Eso es lo que hay que hacer en las tres fases que quedan**: la
+  comparación encuentra de golpe lo que ir detrás de capturas encuentra de uno en uno.
+- **El instalador** ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)). Era la plantilla de Wails
+  tal cual —en inglés, con la imagen azul de NSIS y el pie de Nullsoft—. Se le enseñaron cuatro
+  tratamientos y **los descartó los cuatro por la misma razón**: usaban la esfinge a trazo, que está
+  retirando. Pidió «el logo completo y con texto», y eso obligó a decidir **un lockup que no existía**
+  — hacerlo sólo para el instalador lo habría fijado en la pantalla que menos se ve. Eligió
+  **Space Grotesk** sobre cuatro direcciones; entra como fichero fijado con su OFL y **no viaja dentro
+  del programa**.
+- **El menú de Snap**, portado de Apolo a Go. Escrito entero en negativo: si algo falla se vuelve sin
+  hacer nada, porque es Win32 y **aquí sólo se puede compilar, no ejecutar**.
+- **Se verificó** cada cosa donde se podía: el instalador **montado en un Windows de verdad** con
+  `compilar.yml` antes de publicarlo —paso que se añadió hoy, porque el guion de NSIS sólo se
+  ejecutaba al publicar—, las medidas con pruebas que miden, y el borde arreglado comprobado en los
+  dos temas.
+- **Queda abierto**: etiquetar la **2.72.0**, que está entera en `main` **y sólo después de mirar
+  `gh run view 44748247228`** —si el Win32 enlaza con Wails—, y el VPS detrás. Ver el aviso de
+  [`estado.md`](estado.md).
+
+---
+
 ## 2026-11-19 (tarde) · Windows entero: la estructura, el marco y la 2.70.0
 
 - **La marca sale de la barra lateral** ([ADR 0065](adr/0065-la-marca-sale-de-la-barra-lateral.md)).

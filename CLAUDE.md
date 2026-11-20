@@ -2527,6 +2527,21 @@ llega: se pidió a la tercera y debió pedirse a la primera. Lo vigila ahora
 `TestNingunValorOscuroSueltoEnLasHojas`, que lee las hojas de sistema contando llaves —un
 `Contains` no distingue dentro de fuera— y señala fichero y línea.
 
+**La regla general de un sistema pisa a las variantes que se declaran sin borde.** (2026-11-20.)
+`:root[data-sistema="windows"] button` pesa más que `button.principal` y que `button.discreto`, que
+en la hoja base ponen `border-color: transparent`: el botón de acción salía **con el trazo gris de un
+botón normal** y el discreto —que es texto— salía con marco **y** con subrayado, que es decir dos
+veces lo mismo. Las dos cosas las vio el cliente en su Windows y parecían dos fallos distintos. Se
+arregla con un `:not(.principal, .discreto, …)` **escrito**, no con `:where()`: bajar el peso de la
+regla a cero la dejaría por debajo de cualquier `button {}` de la hoja base, que se carga después, y
+entonces ese sistema no vestiría ningún botón.
+
+**Y un campo con el borde de abajo de 2 px siempre no deja nada para decir cuál está enfocado.** En
+Fluent el campo en reposo lleva 1 px y lo que engorda a 2 es **el foco**, con la línea del acento. Con
+2 px siempre, un formulario se lee como una lista de cosas subrayadas. El segundo píxel va por
+`box-shadow: inset 0 -1px 0`, no engordando el borde: engordándolo, el campo cambia de alto al
+enfocarlo y la fila da un salto.
+
 **Y antes de recortar píxeles, preguntar qué falta por nativizar.** Las cinco pestañas de Ajustes con
 su icono pedían **570** y la columna está topada en 560. La salida barata era apretar el relleno del
 control segmentado **de todos los sistemas**, que es tocar cuatro aspectos para arreglar uno. La causa

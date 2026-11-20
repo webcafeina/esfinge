@@ -1,17 +1,32 @@
 # Estado
 
-Última actualización: **2026-11-19**
+Última actualización: **2026-11-20**
 
-**Lo de esta sesión**: cerrada la verificación por sistemas con **el Mac** (`brew`, fórmula y cask),
-y empezada **la última fase grande: nativizar la interfaz** para macOS, Windows, GNOME y KDE.
-**Windows está terminado y publicado en la 2.70.0**: la costura, Fluent, la estructura —los ajustes
-como tarjetas de WinUI— y el marco propio, más la marca fuera de la barra lateral y una revisión de
-67 textos.
+**Lo de esta sesión**: el cliente probó Windows en su máquina y de ahí salió todo. Se publicó la
+**2.71.0** —el marco, el panel plegable y el borde de abajo que faltaba—, y después se hizo el resto
+sin publicar: **el instalador con el logo y el nombre** ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)),
+**el repaso entero contra el estándar de Windows 11** y **el menú de Snap**.
 
-**La siguiente acción concreta**: que el cliente abra la 2.70.0 en su Windows 11 ARM y mire **lo que
-desde aquí no se puede juzgar** —la tipografía, Mica y que la ventana arrastre, se redimensione y
-conserve la sombra—. Lo que vea se apunta antes de pasar a **macOS**, que es la fase siguiente; antes
-de empezarla hay que volcar en una pasada el kit de Apple en Figma (`uCn3dR3MxX8byi1d2oFmJD`).
+> ## ⚠ Lo primero al retomar: terminar de publicar la 2.72.0
+>
+> La **2.71.0 está publicada** y el VPS está en ella. La **2.72.0 no**: su contenido está entero en
+> `main` y **lo único que falta es etiquetar**. Pero antes hay que mirar la compilación de Windows
+> que quedó corriendo:
+>
+> ```sh
+> gh run view 44748247228
+> ```
+>
+> Es la que dice si el **Win32 del menú de Snap enlaza de verdad con Wails**. Aquí sólo se pudo
+> compilar cruzado y pasar `vet`, **que no es lo mismo**: el enlazado con Wails sólo ocurre en el
+> runner. En verde, se etiqueta `v2.72.0`; en rojo, se arregla y se repite esa comprobación antes de
+> etiquetar nada.
+>
+> Y **después de publicar, el VPS**, que no se salta:
+>
+> ```sh
+> herramientas/actualizar-vps.sh 2.72.0
+> ```
 
 ## Nativizar la interfaz (empezada el 2026-11-19)
 
@@ -42,42 +57,57 @@ tomadas sobre galerías de capturas**. Orden: **Windows → macOS → GNOME → 
   título la dibuja Esfinge, con sus tres botones sobre `window.runtime` y **el doble clic, que Wails
   no trae**; y las pestañas de Ajustes llevan su glifo, para lo que Windows estrena su propio control
   segmentado —la SelectorBar— en vez de la píldora de macOS.
-- **Publicado en la 2.70.0** el 2026-11-19, en verde en los seis objetivos. Chrome la aceptó y está
-  en revisión; **winget tenía tres PRs parados** —2.68.0, 2.69.0 y 2.70.0— y dos de ellos con `Needs-CLA`, resuelto el 2026-11-20 firmando con la forma individual: los tres esperan ya sólo a un moderador. **Chocolatey la rebotó** porque sigue moderando la 2.66.1 —se reempuja con
-  `gh workflow run canales.yml -f version=2.70.0 -f canal=chocolatey` cuando se desatasque—. El VPS,
-  actualizado y comprobado leyendo la bóveda de Tempero.
+- **Publicado en la 2.70.0** el 2026-11-19 y en la **2.71.0** el 2026-11-20, las dos en verde en los
+  seis objetivos y con el VPS actualizado y comprobado leyendo la bóveda de Tempero.
+- **Y lo que el cliente vio probando la 2.70.0 en su Windows**, que es casi todo lo de la 2.71.0: el
+  borde de abajo de campos y botones, la llave dentro del campo de clave, «contraseña.txt» con eñe,
+  el orden de la bóveda fuera de la fila de clases y el rótulo de clase sin saltos.
+- **El repaso contra el estándar de Windows 11** (`d6bd8c3`, `9ec048a`), que pidió él para no ir
+  parcheando lo que se ve: comparado **control por control con la hoja de Apolo**, que es la misma
+  especificación ya traducida. Ocho huecos de una vez —barras de desplazamiento finas, relleno y peso
+  de los botones, el campo con un píxel en reposo y dos al enfocar, el galón del desplegable, la
+  casilla de 20, el foco de casilla y deslizador, el primario y el discreto— más la **capa de
+  contenido** con su filete y su esquina redondeada, la banda de versión como **InfoBar**, las
+  tarjetas de permiso como InfoBar de severidad, y la cabecera con el **Title de WinUI**.
+- **El menú de Snap** (`0062782`), portado de Apolo: ventana hija invisible sobre el botón de
+  maximizar que contesta `HTMAXBUTTON`, y que además avisa de cuándo está encima o pulsada porque
+  desde que está ahí la página ya no ve el ratón. **Escrito entero en negativo**: si algo falla se
+  vuelve sin hacer nada y Esfinge queda como estaba.
+- **El instalador** ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md), `a1af024`, `33070e3`): era
+  la plantilla de Wails tal cual —en inglés y con el pie de Nullsoft—. Ahora en español, con sus
+  textos, y con **el logo completo y el nombre en Space Grotesk**, que el cliente eligió sobre cuatro
+  direcciones tipográficas. **La esfinge a trazo se retira**; el único sitio que no sale solo es el
+  historial vacío, que está en `deuda.md`.
+- **El CLA de winget lo firma el flujo** (`f68ccb2`). Se comprobó que **no se queda registrado por
+  cuenta**: cada versión abre un PR que se queda con `Needs-CLA` sin avisar, y así se amontonaron
+  tres. **Chocolatey sigue rebotando** porque modera la 2.66.1 desde el 18 —se reempuja con
+  `gh workflow run canales.yml -f version=<la que toque> -f canal=chocolatey` cuando se desatasque—.
 
 ### Lo que queda de la fase de Windows
 
-- **El menú de Snap** al pasar por Maximizar: ~150 líneas de Win32 en un `marco_windows.go`. Va en un
-  paso publicable aparte, a propósito, para que no retrasara esta versión.
+- **Nada de código: está entero.** Lo único pendiente es publicar la 2.72.0 —ver el aviso de arriba—
+  y que el cliente mire en su máquina **lo que desde aquí no se puede juzgar**: la tipografía, Mica,
+  que la ventana arrastre y se redimensione, y **si el menú de Snap sale de verdad**, que ninguna
+  compilación dice.
 - **Y la anatomía es un compromiso para los cuatro sistemas**, dicho por el cliente al dar el visto
   bueno: *«hay que tener en cuenta de adaptar esta anatomía/estructura también en todos los sistemas
   y entornos, incluido Mac»*. Como el marcado ya es el mismo, cada fase es escribir una hoja.
 
-### Lo primero al retomar
+### Lo que el cliente dejó dicho y vale para lo que viene
 
-1. **La cabecera y el pie de la barra lateral.** El cliente dijo que son feos y que hay que
-   cambiarlos **en los cuatro sistemas**, y eligió decidirlo sobre capturas. Hay cuatro tratamientos
-   preparados —A: lo de hoy · B: fuera los dos, como Apolo · C: sólo el símbolo · D: sólo la
-   versión— en **https://claude.ai/artifact/5rehtmSLifP9MkG9gtdaPn**. **Lo decide él esta tarde**
-   (2026-11-19). Mi recomendación es la D: la versión está ahí porque es lo primero que se pregunta
-   cuando algo va raro. Lo que salga **deroga la parte de la [ADR 0021](adr/0021-la-marca-en-la-interfaz.md)**
-   que puso la marca en la barra lateral, y hay que escribirlo.
+- **La esfinge a trazo se retira de donde esté**, y la marca es el logo completo con el nombre
+  ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)). De los cinco sitios donde está, cuatro salen
+  solos; el historial vacío no, y está en `deuda.md`.
+- **La anatomía vale para los cuatro sistemas**, el Mac incluido. Como el marcado ya es el mismo,
+  cada fase es escribir una hoja.
+- **Y la referencia de cada sistema es la hoja de ese sistema en Apolo.** Compararla control por
+  control encontró ocho huecos de una vez; ir detrás de lo que se ve en una captura, de uno en uno.
 
-2. **La estructura de Windows, las dos piezas y antes de publicar.** Viendo la galería de F1 dijo
-   que «los elementos se siguen pareciendo mucho a la versión actual» — que es **con las mismas
-   palabras lo que pasó en Apolo** tras su primera vuelta. Falta: la **anatomía** (SettingsCards de
-   WinUI, cada ajuste en su tarjeta) y el **marco** (barra de título propia con ☰ y los tres
-   botones). Decidido: **las dos juntas**, y no se publica la 2.70.0 hasta que la ventana se vea de
-   verdad como una de WinUI. El marco en Wails está estudiado en el plan: en Windows sale barato
-   —Wails da sombra, esquinas, arrastre y las órdenes de ventana—, y lo único que falta es el menú de
-   Snap, que son ~150 líneas de Win32 y va en un paso aparte.
+### Y lo que viene después de Windows
 
-3. **Las galerías de esta sesión**, por si hacen falta: la de
-   [Windows con Fluent](https://claude.ai/artifact/JGkyouZ7FXGjFjVURh2exw) y la de los
-   [textos](https://claude.ai/artifact/Ra2UmdGE3ri5JiupSG4d6C).
-
+**macOS**, que es la fase siguiente. Antes de empezarla hay que volcar **en una sola pasada** el kit
+de Apple en Figma (`uCn3dR3MxX8byi1d2oFmJD`): Figma corta a unas veinte consultas, así que se va con
+la lista hecha —Forms, Toggles, Buttons, Sidebars, Toolbars, Windows, Materials y Colors—.
 
 ## Lo último grande, hecho: los seis objetivos y los canales (2026-11-16)
 
@@ -129,6 +159,9 @@ ahí ya no está, es que lo hizo.
 2. **Lo que no depende de nosotros**: que **Chocolatey** apruebe y que un moderador voluntario mire
    [el PR de winget](https://github.com/microsoft/winget-pkgs/pull/482164), que tiene la validación
    automática pasada desde el 2026-11-17.
+   **2026-11-20**: de winget se amontonaron **tres PRs** porque cada versión abre el suyo y dos se
+   quedaron con `Needs-CLA` sin que nadie lo mirara. **Eso ya no pasa**: el flujo firma el CLA al
+   abrir el PR (`f68ccb2`). Lo que queda de winget es sólo el moderador.
    **2026-11-19**: su moderador **devolvió el paquete el 18** y no por el paquete —las dos sumas le
    cuadraban— sino **por el idioma de la ficha**: la quiere en inglés, con el español detrás si se
    quiere. Corregida y **reempujada esa misma versión** con el canal suelto nuevo,
