@@ -64,3 +64,55 @@ func TestElTemaClaroEsLaBase(t *testing.T) {
 		}
 	}
 }
+
+// TestNingunValorOscuroSueltoEnLasHojas lee las hojas escritas a mano y exige
+// que un selector de tema oscuro viva dentro de su media query.
+//
+// El reparto correcto lo escribe `GenerarCSS` y son tres reglas: el valor claro
+// en `:root…`, el oscuro dentro de `@media (prefers-color-scheme: dark)` con
+// `:not([data-tema="claro"])`, y el oscuro otra vez en `[data-tema="oscuro"]`
+// para cuando se fuerza. Las hojas de cada sistema escriben alguna variable a
+// mano —las que son medida y no color de la paleta— y ahí es fácil copiar el
+// selector del segundo bloque **y olvidarse de la media query**.
+//
+// Eso fue exactamente la 2.70.0: `--borde-bajo` acabó valiendo blanco al 9 % en
+// tema claro, o sea invisible sobre fondo blanco, y los campos y los botones de
+// Windows se veían abiertos por abajo. **Lo encontró una captura del cliente**,
+// no una prueba: un borde invisible no recorta, no desborda y no toca nada, que
+// son las tres cosas que se midieron buscándolo.
+func TestNingunValorOscuroSueltoEnLasHojas(t *testing.T) {
+	hojas, err := filepath.Glob(filepath.Join("..", "..", "frontend", "src", "sistema-*.css"))
+	if err != nil || len(hojas) == 0 {
+		t.Fatalf("no se encontraron las hojas de sistema: %v", err)
+	}
+
+	for _, hoja := range hojas {
+		fuente, err := os.ReadFile(hoja)
+		if err != nil {
+			t.Fatalf("no se pudo leer %s: %v", hoja, err)
+		}
+
+		// Se recorre contando llaves, que es lo único que dice si una regla está
+		// dentro de una media query o al lado de ella. Un `strings.Contains` no
+		// distingue las dos, que es justo el fallo que esto vigila.
+		profundidadMedia := -1
+		nivel := 0
+		for n, linea := range strings.Split(string(fuente), "\n") {
+			limpia := strings.TrimSpace(linea)
+			if strings.HasPrefix(limpia, "@media") && strings.Contains(limpia, "prefers-color-scheme: dark") {
+				profundidadMedia = nivel
+			}
+			if strings.Contains(limpia, `:not([data-tema="claro"])`) && profundidadMedia < 0 {
+				t.Errorf("%s:%d · un selector de tema oscuro fuera de su media query:\n  %s\n"+
+					"Eso aplica el valor oscuro **también en claro**. El reparto es el de\n"+
+					"`GenerarCSS`: claro en «:root…», oscuro dentro de «@media (prefers-color-scheme:\n"+
+					"dark)» y oscuro otra vez en «[data-tema=\"oscuro\"]».",
+					filepath.Base(hoja), n+1, limpia)
+			}
+			nivel += strings.Count(linea, "{") - strings.Count(linea, "}")
+			if profundidadMedia >= 0 && nivel <= profundidadMedia {
+				profundidadMedia = -1
+			}
+		}
+	}
+}

@@ -2503,6 +2503,26 @@ se estira, y el control sigue a la derecha del rótulo—. Lo que la prueba afir
 y mutando eso se puso roja a la primera. La regla: **mutar la línea que se cambió no basta; hay que
 mutar la regla que la prueba dice vigilar**, y si no se sabe cuál es, la prueba tampoco lo sabe.
 
+**Un color escrito a mano con el selector del tema oscuro, pero fuera de su media query, se
+aplica en los dos temas — y si es translúcido, el fallo es invisible aquí.** (2026-11-20.) El
+reparto que escribe `GenerarCSS` son **tres reglas**: el valor claro en `:root…`, el oscuro dentro de
+`@media (prefers-color-scheme: dark)` con `:not([data-tema="claro"])`, y el oscuro otra vez en
+`[data-tema="oscuro"]` para cuando se fuerza. La hoja de un sistema escribe alguna variable a mano
+—las que son medida y no color de la paleta— y ahí es fácil copiar el selector del segundo bloque
+**y dejarlo suelto**. Eso le pasó a `--borde-bajo` en la 2.70.0: en tema claro valía **blanco al 9 %
+sobre fondo blanco**, así que **a todos los campos y botones de Windows les faltaba el borde de
+abajo** y se leían como abiertos. El cliente lo describió como «los inputs se pisan en su parte
+inferior», en tres pantallas distintas.
+
+**Y lo que de verdad hay que aprenderse es por qué no se encontró midiendo.** Se buscó qué recorta a
+sus hijos, qué se sale de su caja y qué parejas se tocan — las tres medidas correctas, las tres en
+verde, porque **un borde que no se dibuja no recorta, no desborda y no toca nada**. Dos hipótesis
+mías seguidas —la tipografía, la altura de los controles— y las dos falsas. Lo encontró **una
+captura suya**, que es la regla de «preguntar qué estás viendo» cuando el fallo está donde no se
+llega: se pidió a la tercera y debió pedirse a la primera. Lo vigila ahora
+`TestNingunValorOscuroSueltoEnLasHojas`, que lee las hojas de sistema contando llaves —un
+`Contains` no distingue dentro de fuera— y señala fichero y línea.
+
 **Y antes de recortar píxeles, preguntar qué falta por nativizar.** Las cinco pestañas de Ajustes con
 su icono pedían **570** y la columna está topada en 560. La salida barata era apretar el relleno del
 control segmentado **de todos los sistemas**, que es tocar cuatro aspectos para arreglar uno. La causa

@@ -62,18 +62,30 @@
 
   /* El relieve de Fluent: un control lleva su borde y, **debajo, uno más
    * marcado**, que es lo que le da el apoyo. Es translúcido para que valga sobre
-   * cualquier superficie, igual que el anillo de foco. */
+   * cualquier superficie, igual que el anillo de foco.
+   *
+   * **Las tres reglas que siguen van en este orden y ninguna suelta**, que es
+   * justo lo que costó la 2.70.0: aquí había un cuarto bloque con el valor
+   * oscuro **fuera de la media query**, así que en tema claro el borde de abajo
+   * valía blanco al 9 % sobre fondo blanco y **no se veía**. Los campos y los
+   * botones parecían abiertos por abajo —«se pisan en su parte inferior», lo vio
+   * el cliente en su Windows— y aquí no se notaba porque un borde invisible no
+   * recorta, no desborda y no toca nada: las tres cosas que se midieron
+   * buscándolo. Lo encontró mirar su captura.
+   *
+   * Es el mismo reparto que escribe Go en `tokens.css`, y la única razón de que
+   * esto esté a mano es que es una medida y no un color de la paleta. */
   --borde-bajo: rgb(0 0 0 / 0.1);
-}
-
-:root[data-sistema="windows"]:not([data-tema="claro"]) {
-  --borde-bajo: rgb(255 255 255 / 0.09);
 }
 
 @media (prefers-color-scheme: dark) {
   :root[data-sistema="windows"]:not([data-tema="claro"]) {
     --borde-bajo: rgb(255 255 255 / 0.09);
   }
+}
+
+:root[data-sistema="windows"][data-tema="oscuro"] {
+  --borde-bajo: rgb(255 255 255 / 0.09);
 }
 
 /* Body 14/20: el interlineado de Fluent es un número de píxeles, no un factor. */
