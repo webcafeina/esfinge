@@ -254,10 +254,23 @@ jobs:
           # **Y en Windows, también el instalador** (2026-11-20). Hasta hoy el
           # guion de NSIS —que es nuestro desde que el instalador dejó de ser el
           # genérico— **solo se ejecutaba al publicar**, o sea que una errata
-          # suya se descubría con la etiqueta ya empujada. Aquí no cuesta nada:
-          # la máquina es la misma y `makensis` ya está.
+          # suya se descubría con la etiqueta ya empujada.
+          #
+          # El guion mete dentro el puente del navegador y el servidor MCP, así
+          # que hay que compilarlos antes, como hace `publicar.yml`. Sin ellos
+          # `makensis` para con «no files found», que es exactamente como se vio
+          # al estrenar esto. Van a `build/windows/installer`, no a `build/bin`,
+          # que wails vacía con `-clean`.
           nsis=""
-          if [[ "${{ matrix.plataforma }}" == windows/* ]]; then nsis="-nsis"; fi
+          if [[ "${{ matrix.plataforma }}" == windows/* ]]; then
+            arq="${{ matrix.plataforma }}"; arq="${arq#windows/}"
+            for cual in puente mcp; do
+              CGO_ENABLED=0 GOOS=windows GOARCH="$arq" go build \
+                -ldflags "-s -w -H windowsgui -X main.version=$version" \
+                -o "build/windows/installer/esfinge-$cual.exe" "./cmd/esfinge-$cual"
+            done
+            nsis="-nsis"
+          fi
           wails build -platform ${{ matrix.plataforma }} -clean \
             ${etiquetas:+-tags "$etiquetas"} \
             $inspector $nsis \

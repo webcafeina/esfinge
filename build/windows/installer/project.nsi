@@ -88,6 +88,20 @@ ManifestDPIAware true
 
 BrandingText "Esfinge · Webcafeína"
 
+# Las cuatro frases que se leen enteras, dichas por nosotros en vez de por la
+# traducción genérica de NSIS. El resto —los botones, los avisos— lo pone el
+# idioma, que para eso está.
+#
+# **Por `MUI_*` y no por `LangString`**, que es la vía documentada para esto: con
+# `LangString` las mismas cadenas quedan puestas dos veces y `makensis` saca
+# cuatro avisos de «set multiple times, wasting space». Funcionaba, y un aviso
+# que nadie va a leer ya ha costado bastante en esta casa.
+!define MUI_WELCOMEPAGE_TITLE "Esfinge"
+!define MUI_WELCOMEPAGE_TEXT "Cifra y descifra contraseñas y ficheros con una clave.$\r$\n$\r$\nSe instalará en este equipo; tarda unos segundos.$\r$\n$\r$\nDe Webcafeína."
+!define MUI_FINISHPAGE_TITLE "Esfinge está lista"
+!define MUI_FINISHPAGE_TEXT "Ya puedes abrirla desde el menú de inicio.$\r$\n$\r$\nLo que cifres solo se abre con la clave que pongas: si la pierdes, se pierde el contenido."
+!define MUI_UNCONFIRMPAGE_TEXT_TOP "Se quitará Esfinge de este equipo. Tus ficheros cifrados y tu bóveda no se tocan: viven fuera de la carpeta del programa y siguen donde estén."
+
 !define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
 
@@ -109,24 +123,6 @@ BrandingText "Esfinge · Webcafeína"
 # NSIS; lo que hace falta es que el guion sea Unicode, y lo es (arriba).
 !insertmacro MUI_LANGUAGE "Spanish"
 
-# Y las cuatro frases que se leen enteras, dichas por nosotros en vez de por la
-# traducción genérica de NSIS. El resto —los botones, los avisos— lo pone el
-# idioma, que para eso está.
-LangString MUI_TEXT_WELCOME_INFO_TITLE ${LANG_SPANISH} "Esfinge"
-LangString MUI_TEXT_WELCOME_INFO_TEXT ${LANG_SPANISH} \
-  "Cifra y descifra contraseñas y ficheros con una clave.$\r$\n$\r$\n\
-   Se instalará $(^NameDA) en este equipo. Puedes seguir usando el ordenador \
-   mientras tanto; tarda unos segundos.$\r$\n$\r$\n\
-   De Webcafeína."
-LangString MUI_TEXT_FINISH_INFO_TITLE ${LANG_SPANISH} "Esfinge está lista"
-LangString MUI_TEXT_FINISH_INFO_TEXT ${LANG_SPANISH} \
-  "Ya puedes abrirla desde el menú de inicio.$\r$\n$\r$\n\
-   Lo que cifres solo se abre con la clave que pongas: si la pierdes, se pierde \
-   el contenido."
-LangString MUI_UNTEXT_WELCOME_INFO_TEXT ${LANG_SPANISH} \
-  "Se quitará $(^NameDA) de este equipo.$\r$\n$\r$\n\
-   Tus ficheros cifrados y tu bóveda no se tocan: viven fuera de la carpeta del \
-   programa y siguen donde estén."
 
 
 ## The following two statements can be used to sign the installer and the uninstaller. The path to the binaries are provided in %1
