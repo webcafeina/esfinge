@@ -90,6 +90,19 @@ type Tema struct {
 	// nombrar el color.
 	TintesDeIcono []RGB
 	TintaDeIcono  RGB
+
+	// OroLateral es el oro de los iconos de la barra lateral, y **sólo lo usa
+	// macOS** (ADR 0068): allí la fila elegida es gris —la gramática de macOS 27— y
+	// lo que lleva la marca son los iconos, como el acento del sistema en los suyos.
+	// En los demás sistemas la marca está en la fila, rellena de oro, y este color no
+	// lo pinta nadie.
+	//
+	// **No llega a 3:1 en claro, y es a propósito.** Cada icono lleva su nombre
+	// escrito al lado, así que no es él quien carga el significado; y el oro
+	// oscurecido hasta 3:1 **se vuelve verde oliva** y deja de parecer la marca. El
+	// cliente lo eligió así, sabiéndolo, primero en Apolo y aquí el 2026-11-20. La
+	// pareja se mide igual, con su umbral escrito, en `contraste_test.go`.
+	OroLateral RGB
 }
 
 // Los colores de la marca, sacados tal cual de build/icono.svg. No son
@@ -210,6 +223,7 @@ var TemaClaro = func() Tema {
 		// tinta oscura, y los cuadros no son una excepción.
 		TintesDeIcono: tintesClaros,
 		TintaDeIcono:  piedra,
+		OroLateral:    AcentoLegible(oroMarca, masOscura, AAGrande),
 	}
 }()
 
@@ -252,6 +266,7 @@ var TemaOscuro = func() Tema {
 		// ocho destellos en una lista que se recorre de arriba abajo.
 		TintesDeIcono: tintesOscuros,
 		TintaDeIcono:  MustParseHex("#ebebf0"),
+		OroLateral:    AcentoLegible(oroMarca, MustParseHex("#3a3a3c"), AAGrande),
 	}
 }()
 
@@ -311,6 +326,7 @@ var WindowsClaro = func() Tema {
 		// servir de ancla. Lo que cambia es la superficie contra la que se miden.
 		TintesDeIcono: tintesClaros,
 		TintaDeIcono:  piedra,
+		OroLateral:    AcentoLegible(oroMarca, peor, AAGrande),
 	}
 }()
 
@@ -353,6 +369,7 @@ var WindowsOscuro = func() Tema {
 		Error:         AcentoLegible(rojoWindowsOscuro, peor, AANormal),
 		TintesDeIcono: tintesOscuros,
 		TintaDeIcono:  MustParseHex("#ebebf0"),
+		OroLateral:    AcentoLegible(oroMarca, peor, AAGrande),
 	}
 }()
 
@@ -412,6 +429,7 @@ var MacosClaro = func() Tema {
 		// superficie contra la que se miden.
 		TintesDeIcono: tintesClaros,
 		TintaDeIcono:  piedra,
+		OroLateral:    MustParseHex("#d99a00"),
 	}
 }()
 
@@ -447,6 +465,7 @@ var MacosOscuro = func() Tema {
 		Error:         AcentoLegible(rojoSistema, peor, AANormal),
 		TintesDeIcono: tintesOscuros,
 		TintaDeIcono:  MustParseHex("#ebebf0"),
+		OroLateral:    AcentoLegible(oroMarca, peor, AAGrande),
 	}
 }()
 

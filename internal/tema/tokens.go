@@ -88,6 +88,7 @@ var campos = []struct {
 	{"boton", func(t Tema) RGB { return t.Boton }},
 	{"boton-encima", func(t Tema) RGB { return t.BotonEncima }},
 	{"tinta-icono", func(t Tema) RGB { return t.TintaDeIcono }},
+	{"oro-lateral", func(t Tema) RGB { return t.OroLateral }},
 }
 
 // Y los ocho tintes de los cuadros de la bóveda, que no caben en la tabla de

@@ -907,47 +907,73 @@ for (const sistema of ["", "windows", "darwin", "linux"]) {
   });
 }
 
-// **Y lo mismo en los cuatro sistemas, que es lo que de verdad cierra esto.**
+// **Y la marca en la barra lateral, en los cuatro sistemas.**
 //
 // La de arriba mide **la base**, y por eso no vio lo que pasó el 2026-11-20: la hoja
-// de macOS le quitaba el relleno a las filas de la barra lateral —para que no
-// heredaran el del botón— con una regla que pesa más que la de la base que pinta la
-// elegida, así que **la barra lateral salía entera gris y sin decir dónde estabas**.
-// Es exactamente el mismo fallo que en Windows con `button.principal`, cometido otra
-// vez y en el mismo fichero: una regla general de un sistema pisa a las variantes de
-// la base, y lo único que lo arregla es excluirlas por nombre.
+// de macOS le quitaba el relleno a las filas con una regla que pesa más que la de la
+// base que pinta la elegida, así que **la barra lateral salía entera gris y sin decir
+// dónde estabas**. Es el mismo fallo que en Windows con `button.principal`: una regla
+// general de un sistema pisa a las variantes de la base. Lo vio una captura; esto lo
+// mide, y vale para las dos hojas que quedan.
 //
-// Lo vio una captura. Esto lo mide, y vale para las tres hojas que quedan.
+// **Dónde va el oro no es igual en todas partes** (ADR 0068). En tres sistemas lo
+// lleva la fila elegida, rellena; en macOS la fila es gris y **lo llevan los iconos**,
+// que es la gramática de macOS 27 y lo que el cliente eligió sobre capturas. Así que
+// lo que se afirma es «la marca está en la barra lateral», mirando en cada sistema
+// donde le toca — y en macOS se comprueba además que la fila **no** es de oro, que es
+// la mitad que se podría perder sin que nadie se enterara.
 for (const sistema of ["", "windows", "darwin", "linux"]) {
   const nombre = sistema || "la base";
-  test(`la fila activa de la barra lateral lleva el oro en ${nombre}`, async ({ page }) => {
+  const enLosIconos = sistema === "darwin";
+
+  test(`la marca está en la barra lateral en ${nombre}`, async ({ page }) => {
     const errores = vigilarConsola(page);
     await page.goto(sistema ? `/?sistema=${sistema}` : "/");
 
     const activa = page.locator('.lateral nav button[aria-current="page"]');
     await expect(activa).toBeVisible();
-    const fondo = await activa.evaluate((el) => getComputedStyle(el).backgroundColor);
-    // **Contra el token y no contra un color escrito a mano**: el oro cambia de
-    // paleta en paleta y lo que se afirma es que ahí se pinta el relleno de la marca,
-    // no un hexadecimal concreto. Con un elemento de usar y tirar, que es la única
-    // forma de preguntarle al motor por el valor resuelto de una variable.
-    const relleno = await page.evaluate(() => {
-      const d = document.createElement("div");
-      d.style.backgroundColor = "var(--relleno)";
-      document.body.append(d);
-      const c = getComputedStyle(d).backgroundColor;
-      d.remove();
-      return c;
-    });
+
+    // **Contra el token y no contra un color escrito aquí**: el oro cambia de paleta
+    // en paleta y lo que se afirma es que ahí se pinta la marca, no un hexadecimal.
+    // Con un elemento de usar y tirar, que es la única forma de preguntarle al motor
+    // por el valor resuelto de una variable.
+    const token = (n: string) =>
+      page.evaluate((v) => {
+        const d = document.createElement("i");
+        d.style.backgroundColor = `var(${v})`;
+        document.body.append(d);
+        const c = getComputedStyle(d).backgroundColor;
+        d.remove();
+        return c;
+      }, n);
+
     // **Se compara el color y no la opacidad**, porque cada sistema elige cuánto oro
     // pone: en Fluent la fila elegida es el oro **al 18 %** con su barra de acento al
-    // lado, y en macOS es el oro entero. Exigir el token exacto diría que Windows
-    // está mal, que es falso; lo que no puede pasar es que ahí haya un gris.
+    // lado, y en la base es el oro entero.
     const rgb = (c: string) => c.match(/\d+/g)!.slice(0, 3).join(",");
-    expect(
-      rgb(fondo),
-      `en ${nombre} la fila activa es ${fondo} y el relleno de la marca es ${relleno}`,
-    ).toBe(rgb(relleno));
+
+    if (enLosIconos) {
+      const icono = await activa
+        .locator(".icono")
+        .evaluate((el) => getComputedStyle(el).color);
+      const oroLateral = await token("--oro-lateral");
+      expect(rgb(icono), `en ${nombre} el icono de la fila elegida es ${icono}`).toBe(
+        rgb(oroLateral),
+      );
+
+      // Y la otra mitad: la fila **no** lleva el relleno. Sin esto, devolver macOS al
+      // oro de la fila dejaría esta prueba en verde con el aspecto cambiado.
+      const fondo = await activa.evaluate((el) => getComputedStyle(el).backgroundColor);
+      const relleno = await token("--relleno");
+      expect(rgb(fondo), `en ${nombre} la fila elegida es ${fondo}`).not.toBe(rgb(relleno));
+    } else {
+      const fondo = await activa.evaluate((el) => getComputedStyle(el).backgroundColor);
+      const relleno = await token("--relleno");
+      expect(
+        rgb(fondo),
+        `en ${nombre} la fila elegida es ${fondo} y el relleno de la marca es ${relleno}`,
+      ).toBe(rgb(relleno));
+    }
 
     expect(errores, errores.join(" | ")).toEqual([]);
   });

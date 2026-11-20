@@ -1,8 +1,8 @@
 # ADR 0068 · macOS con el diseño de macOS 27 Golden Gate
 
-Fecha: 2026-11-20 · Estado: **propuesta** — falta que el cliente elija sobre capturas · Segunda fase
-de nativizar la interfaz; matiza la [ADR 0007](0007-aspecto-del-sistema.md) y la
-[0019](0019-estructura-del-sistema.md)
+Fecha: 2026-11-20 · Estado: **aceptada** · Segunda fase de nativizar la interfaz; matiza la
+[ADR 0007](0007-aspecto-del-sistema.md), la [0019](0019-estructura-del-sistema.md) y, en macOS, la
+[0021](0021-la-marca-en-la-interfaz.md)
 
 ## Contexto
 
@@ -47,13 +47,36 @@ de clases y el formulario de una entrada.
 | Paleta | `MacosClaro` y `MacosOscuro` en `internal/tema`, con los neutros del kit —`Window Background`, `Fills - Vibrant`, `Labels`— y **las 56 parejas medidas**: las seis paletas pasan AA |
 | El marco | **No cambia** (ADR 0019): en macOS la barra de título no existe y los semáforos los pone el sistema. La barra que Esfinge dibuja en Windows está en el marcado de los cuatro y aquí la esconde el CSS |
 
-### Lo que se lleva a la galería, porque es de marca y no de sistema
+### La barra lateral: el oro se va a los iconos
 
-**La fila activa de la barra lateral.** Hoy va **rellena de oro** ([ADR 0021](0021-la-marca-en-la-interfaz.md)).
-En el Golden Gate de Apolo la elegida es gris con radio 8 y **el oro se va a los iconos**, en un tono
-propio (`#d99a00`) que el cliente eligió entre cuatro capturas sabiendo que baja de 3:1. Son dos
-lecturas distintas de la misma regla —«el oro rellena»— y **la decide él**, no esta hoja. Mientras no
-elija, se queda como está.
+**Decidido por el cliente el 2026-11-20**, sobre una galería con las dos opciones delante y las dos
+en los dos temas. En macOS la fila elegida pasa a ser **gris** y **el oro lo llevan los iconos**, como
+el acento del sistema en los suyos. En los otros tres sistemas la fila sigue rellena de oro.
+
+Es la otra lectura de la misma regla de la [ADR 0021](0021-la-marca-en-la-interfaz.md) —«el oro
+rellena y la piedra escribe»—, y **matiza esa ficha en macOS y sólo en macOS**: la marca sigue en la
+barra lateral, repartida por ella en vez de concentrada en una fila. Es también lo que ya había
+elegido para Apolo, sobre cuatro capturas.
+
+**El oro de los iconos se genera y se mide**, como todo color de esta casa: es `OroLateral` en
+`internal/tema` y sale como `--oro-lateral`. Los números, de `make contraste`:
+
+| | sobre la fila elegida | sobre una fila cualquiera |
+|---|---|---|
+| **Claro** (`#d99a00`) | **1,74:1** | 1,96:1 |
+| **Oscuro** (el oro de la marca) | 8,55:1 | 10,78:1 |
+
+**En claro no llega a los 3:1 de un objeto gráfico, y es a propósito.** Dos razones, y la segunda es
+la que lo sostiene. Una: el oro oscurecido hasta 3:1 **se vuelve verde oliva** y deja de parecer la
+marca — el cliente lo descartó sobre capturas, primero en Apolo y aquí. Dos, y es la que importa:
+**cada icono lleva su nombre escrito al lado**, así que no es él quien carga el significado; si
+desapareciera, la fila se seguiría leyendo entera. Eso es lo que lo separa del foco de un campo o de
+la barra de acento de Windows, que **sí** son la única señal y por eso se miden a 3:1.
+
+El umbral que sí se le exige es **1,6**, y está escrito en `contraste_test.go` con este porqué al
+lado: lo que protege es que el oro no se diluya hasta no verse. **No se baja ningún umbral de los
+demás**; lo que se hace es declarar éste con su razón, como ya se hizo con la esfinge tenue del
+historial vacío.
 
 ## Alternativas descartadas
 
@@ -85,12 +108,19 @@ elija, se queda como está.
   `navegador/src/tokens.css` **no cambia**: la extensión sigue viendo sólo la base.
 - `make capturas-macos` retrata el recorrido entero en los dos temas, con vidrio y sin él.
 
-**Lo que falta, y se dice por su nombre:**
+- **`macos.spec.ts`** mide la anatomía en los dos temas: la escala 13/16, el control de 24 con radio
+  6, el grupo de 10 sin borde, la barra lateral de 240 con filas de 36, la barra unificada de 52 **con
+  el título a la izquierda** —que es lo que distingue una barra de macOS de la cabecera centrada de
+  GNOME, y lo que destapó que la hoja no se estaba aplicando—, el interruptor de 44 × 20 con el pomo
+  en píldora, las filas de ajuste de 42 que se tocan y el carril del segmentado.
+- **La marca en la barra lateral se mide en los cuatro sistemas**, mirando en cada uno donde le toca:
+  la fila en tres, el icono en macOS. Y en macOS se comprueba **además que la fila no es de oro**, que
+  es la mitad que se podría perder sin que nadie se enterara. Las dos mitades mutadas, rojas por
+  separado.
+- **El cliente eligió sobre capturas** (galería del 2026-11-20, con las dos opciones en los dos
+  temas), que es lo que esta ficha esperaba para pasar a aceptada.
 
-- **Que el cliente elija** sobre esas capturas, y en particular el tratamiento de la barra lateral.
-  Por eso esta ficha está en «propuesta» y no en «aceptada».
-- **`macos.spec.ts`**, que mida la anatomía —alto de control y de fila, radios, el ancho de la barra
-  lateral, la píldora del interruptor y la agrupación de las filas de ajuste— como `windows.spec.ts`
-  mide la de Fluent.
-- **Un Mac.** El material de la ventana, si el pomo del interruptor sale píldora o elipse, y si las
-  cápsulas de la barra se leen como vidrio o como botones grises. Nada de eso se ve desde este VPS.
+**Lo que falta, y se dice por su nombre: un Mac.** El material de la ventana, si el pomo del
+interruptor sale píldora o elipse, si las cápsulas de la barra se leen como vidrio o como botones
+grises, y **si el oro de los iconos se ve bien de verdad a 1,74:1 con la tipografía y la pantalla de
+allí**. Nada de eso se ve desde este VPS.

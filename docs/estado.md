@@ -8,33 +8,28 @@
 ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)), **el repaso entero contra el estándar de
 Windows 11** y **el menú de Snap**. El VPS está en la 2.72.0.
 
-> ## ⚠ Lo primero al retomar: la galería de macOS, para que elija
+> ## ⚠ Lo primero al retomar: macOS en su Mac, y después GNOME
 >
-> La **2.72.1 está publicada** (2026-11-20, noche) con **un arreglo y nada más**: desde la 2.70.0 la
-> barra lateral y el contenido **no llegaban al fondo de la ventana** en macOS y en Linux —513 de 680
-> en la base y en GNOME, 460 en macOS— porque la barra de título escondida sale del grid y arrastraba
-> con ella a sus hermanos. En Windows no pasaba, y por eso no se vio. **El VPS no necesita esta**: es
-> sólo interfaz, y allí la línea de comandos ya está en la 2.72.0.
+> La **2.73.0 está publicada** con la fase de macOS entera ([ADR 0068](adr/0068-macos-con-golden-gate.md),
+> **aceptada**): macOS 27 Golden Gate, y **el oro de la barra lateral se va a los iconos** con la fila
+> elegida en gris, elegido por el cliente sobre una galería con las dos opciones en los dos temas.
 >
-> **La fase de macOS está escrita y sin publicar, a propósito**: la hoja se aplica al Mac de verdad y
-> la [ADR 0068](adr/0068-macos-con-golden-gate.md) está en **propuesta** hasta que el cliente elija
-> sobre capturas. Lo que hay que hacer es **montarle la galería** con
-> `frontend/capturas/darwin` y `darwin-vidrio` (73 pantallas por carpeta, los dos temas), y en
-> particular preguntarle **lo único que es de marca y no de sistema**: si la fila elegida de la barra
-> lateral se queda **rellena de oro** (ADR 0021, lo que hay) o pasa al **gris con los iconos en oro**,
-> que es lo que eligió para Apolo en su Golden Gate.
+> **Lo que falta es un Mac**, y es lo único: el material de la ventana, si las cápsulas de la barra se
+> leen como vidrio o como botones grises, si el pomo del interruptor sale píldora o elipse, y **si el
+> oro de los iconos se ve bien a 1,74:1** con la tipografía y la pantalla de allí. Se actualiza solo
+> desde la banda.
 >
-> Y **después de que elija**: publicar la fase, y **mirarla en su Mac**, que es la única máquina donde
-> se ven el material de la ventana y si el pomo del interruptor sale píldora o elipse.
+> **La fase siguiente es GNOME** (F4 del plan), y empieza por lo que ahorró las rondas en Windows y en
+> macOS: **comparar control por control con `~/proyectos/apolo/frontend/src/sistema-linux.css`**, que
+> es la especificación ya traducida y revisada. Lo que Windows dejó escrito para las hojas que quedan
+> está en `CLAUDE.md`, sección «Lo que Windows deja escrito para macOS, GNOME y KDE», y **se lee al
+> empezar**.
 >
-> **Windows sigue pendiente de probar y no bloquea nada** (decidido el 2026-11-20): lo que hay que
-> mirar allí está en [`deuda.md`](deuda.md), y lo de más riesgo es **el menú de Snap**, porque una
-> compilación sólo dice que su Win32 enlaza, no que la ventana hija conteste.
+> **Windows sigue pendiente de probar y no bloquea nada**: lo que hay que mirar allí está en
+> [`deuda.md`](deuda.md), y lo de más riesgo es el menú de Snap.
 >
-> **Y al abrir sesión, las tiendas**: Chocolatey sigue en la **2.66.1** y rebota lo demás con un 403
-> mientras modera; en winget hay **cinco** PRs esperando moderador, con el CLA ya firmado en todos
-> —el de la 2.72.0 a mano, porque el flujo firmaba 39 segundos antes de que el bot lo pidiera, ya
-> arreglado—.
+> **Y al abrir sesión, las tiendas**: Chocolatey sigue en la **2.66.1** con un 403 mientras modera; en
+> winget hay varios PRs esperando moderador, con el CLA firmado en todos.
 
 ## Nativizar la interfaz (empezada el 2026-11-19)
 

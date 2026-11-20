@@ -116,6 +116,27 @@ func parejasDe(t Tema) []pareja {
 		{t.Filete, t.Lienzo, 1.2, "la esfinge tenue del historial vacío"},
 	}
 
+	// **El oro de los iconos de la barra lateral, que sólo existe en macOS**
+	// (ADR 0068). Allí la fila elegida es gris —la gramática de macOS 27— y lo que
+	// lleva la marca son los iconos. Se mide contra **la fila elegida**, que es el
+	// gris más oscuro de la barra y por tanto el peor fondo que le toca.
+	//
+	// **Y el umbral es 1,6 y no los 3:1 de un objeto gráfico, a propósito.** Dos
+	// razones, y la segunda es la que lo sostiene. Una: el oro oscurecido hasta 3:1
+	// **se vuelve verde oliva** y deja de parecer la marca —el cliente lo descartó
+	// sobre capturas, primero en Apolo y aquí el 2026-11-20—. Dos, y es la que
+	// importa: **cada icono lleva su nombre escrito al lado**, así que no es él quien
+	// carga el significado; si desapareciera, la fila se seguiría leyendo entera. Eso
+	// es lo que lo distingue del foco de un campo o de la barra de acento, que **sí**
+	// son la única señal y por eso están ahí arriba a 3:1.
+	//
+	// Lo que este umbral sí protege: que el oro no se diluya hasta no verse. Si
+	// alguien lo sube o lo baja, que sea mirando este comentario.
+	if t.Nombre == "macos-claro" || t.Nombre == "macos-oscuro" {
+		p = append(p, pareja{t.OroLateral, t.BarraEncima, 1.6, "el icono de la fila elegida en macOS"})
+		p = append(p, pareja{t.OroLateral, t.Barra, 1.6, "el icono de una fila cualquiera en macOS"})
+	}
+
 	// **Los ocho cuadros de la bóveda, uno a uno.**
 	//
 	// Es el único color propio que hay en una pantalla de trabajo, y entra con la

@@ -136,7 +136,7 @@
   background: transparent;
 }
 
-/* **Y la fila elegida se declara aquí, no se hereda.**
+/* **La fila elegida se declara aquí, no se hereda.**
  *
  * La de la base —`.lateral nav button[aria-current="page"]`, (0,2,2)— pierde contra
  * la regla general de botón de esta hoja, que es (0,3,1): con tres clases contra dos
@@ -145,14 +145,24 @@
  * Windows con `button.principal`, y la forma de no volver a pelear con el peso es la
  * que usa esa hoja: **cada sistema declara su fila elegida**.
  *
- * Aquí es el oro relleno con la piedra encima (ADR 0021), que es lo que hay hoy. En
- * el Golden Gate de Apolo la elegida es gris y el oro se va a los iconos; eso es una
- * decisión de marca y está en la ADR 0068 esperando a que el cliente elija sobre
- * capturas. */
+ * **Y aquí la elegida es gris y el oro se va a los iconos** (ADR 0068), que es la
+ * gramática de macOS 27 y lo que el cliente eligió sobre capturas el 2026-11-20,
+ * igual que había elegido para Apolo. Es la otra lectura de la regla de la ADR 0021:
+ * la marca sigue estando, repartida por la barra en vez de concentrada en una fila.
+ * En los otros tres sistemas la fila sigue rellena de oro. */
 :root[data-sistema="darwin"] .lateral nav button[aria-current="page"] {
-  background: var(--relleno);
-  color: var(--sobre-acento);
+  background: var(--barra-encima);
+  color: var(--tinta);
   font-weight: 500;
+}
+
+/* El oro de los iconos, **generado y medido** (`internal/tema`, campo `OroLateral`).
+ * No llega a 3:1 en claro —da 1,74:1 sobre la fila elegida— y es a propósito: cada
+ * icono lleva su nombre al lado, así que no es él quien carga el significado, y el
+ * oro oscurecido hasta 3:1 se vuelve verde oliva. Está escrito con todas las letras
+ * en `contraste_test.go`, que mide las dos parejas. */
+:root[data-sistema="darwin"] .lateral nav button .icono {
+  color: var(--oro-lateral);
 }
 
 /* ------------------------------------------- la barra de herramientas unificada
