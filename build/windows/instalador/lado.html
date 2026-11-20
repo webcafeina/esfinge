@@ -1,0 +1,22 @@
+<!--
+  La banda de la izquierda del instalador de Windows (164 × 314).
+
+  El lockup elegido el 2026-11-20: **el logo completo con el nombre debajo**, en
+  Space Grotesk. Nada de la versión a trazo, que el cliente está retirando.
+
+  Esto no es un fichero que se abra solo: lo monta `frontend/herramientas/bmp.mjs`,
+  que le pone la tipografía —que no está instalada en ninguna máquina de las
+  nuestras— y lo convierte al BMP que pide NSIS. El marcador del logo lo sustituye
+  por `build/icono.svg`.
+
+  **Aquí sí hay texto, y es una decisión con precio**: NSIS estira esta imagen
+  hasta llenar su hueco y el hueco crece con el DPI, así que a 200 % el nombre se
+  dibuja al doble. Lo pidió así el cliente —«el logo completo, y con texto»— y
+  por eso el nombre va grande: lo que se estira mal es lo fino.
+-->
+<div style="position:absolute;inset:0;background:linear-gradient(170deg,#3a3a44,#22212a 72%)"></div>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+  <div style="width:76px;height:76px">{{LOGO}}</div>
+  <div class="nombre" style="font-size:23px;line-height:1;color:#fff;letter-spacing:-0.01em">Esfinge</div>
+</div>
+<div class="nombre" style="position:absolute;left:0;right:0;bottom:16px;text-align:center;font-size:9px;font-weight:500;letter-spacing:0.14em;color:#a9a7b3;text-transform:uppercase">Webcafeína</div>
