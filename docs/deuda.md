@@ -357,6 +357,44 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 | ~~Adivinar en macOS sale caro y no hay banco de pruebas~~ | Media | Tres versiones seguidas —2.5.1, 2.9.0 y 2.9.1— salieron con un cambio de macOS que no se podía probar aquí, y las tres fallaron: dos no hicieron nada visible y la tercera cerró la aplicación, dejando al cliente sin herramienta hasta la 2.9.2. El ciclo «publicar para ver qué pasa» lo sufre él, no yo | **Saldada (2026-09-08)**: `compilar.yml` acepta `inspector` en su disparador manual y compila con `wails build -devtools`, que deja el Web Inspector en el paquete. Cada hipótesis pasa a costar una línea en una consola en vez de una versión publicada. Marcada por tres sitios para que no se confunda con una compilación normal: nombre del artefacto, retención y sufijo en la versión |
 
+### Un despliegue de Pages dijo «success» y siguió sirviendo el anterior
+
+**Severidad:** media · **Apuntada:** 2026-11-20
+
+Al publicar la **2.73.0**, la comprobación final —la que le pregunta a cada canal qué sirve— dijo que
+**APT y el PKGBUILD de Arch seguían en la 2.72.1**, y tenía razón. Lo que se midió, para que no haya
+que repetirlo:
+
+- **No era caché.** Pedido con `Cache-Control: no-cache` contestaba `x-cache: MISS` y seguía
+  devolviendo lo viejo. Y el `.deb` de la 2.73.0 daba **404** mientras el de la 2.72.1 daba **200**:
+  el origen tenía el despliegue anterior.
+- **No era que la web armara mal la versión.** Sus registros dicen «repositorios de la 2.73.0» y el
+  artefacto desplegado es el correcto, 20 KB más grande que el anterior.
+- **GitHub daba el despliegue nuevo por activo**: el de las 21:33 en `success` y el de las 21:12
+  marcado `inactive` a las 21:34.
+
+**Lo que lo arregló** fue volver a desplegar (`gh workflow run web.yml`), y a la primera.
+
+**La hipótesis, sin confirmar**: esa publicación hizo **dos despliegues de Pages** —uno al empujar a
+`main` y otro al etiquetar, con veinte minutos de diferencia— y se quedó con el primero. `web.yml` se
+dispara también con `push`, así que **cada publicación despliega dos veces**, y la primera va con la
+versión **anterior**, porque saca la etiqueta de `gh release view`, que contesta «la última» y en ese
+momento todavía lo es la de antes. Tiene `concurrency: web` con `cancel-in-progress: false`, así que
+no deberían solaparse — y aun así pasó.
+
+**Si vuelve a pasar**, lo que falta por descartar es si el despliegue del empujón se puede saltar
+durante una publicación, y si no, si conviene que la publicación **compruebe su propio despliegue** y
+lo repita una vez en vez de dejarlo en rojo. **No se arregló hoy** porque pasó una vez y lo que se
+sabe no alcanza para elegir entre esas dos; lo que sí se hizo es que el paso **diga el siguiente
+paso**.
+
+**Y de paso salió un fallo que llevaba ahí desde siempre**: en esa comprobación, el separador de la
+URL se calculaba y **no se usaba** (`"$url$sep_anticache"` en vez de `"$url$sep$sep_anticache"`), así
+que la petición con cabeceras de no-caché iba a `…/PKGBUILDsincache=176…` y daba **404 siempre**. Lo
+que contestaba era el camino de reserva, que iba **sin esas cabeceras**: o sea que el paso llevaba
+desde que existe midiendo lo que hubiera en la caché. Arreglado, y la reserva lleva ahora las
+cabeceras también. Se vio **probando la URL a mano**, no leyéndola.
+
 ### La base dice ser macOS y ya no lo es
 
 **Severidad:** baja · **Apuntada:** 2026-11-20

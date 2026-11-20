@@ -539,9 +539,16 @@ jobs:
             local que="$1" url="$2" patron="$3"
             local cuerpo sep="?"
             case "$url" in *\?*) sep="&" ;; esac
+            # **El separador se calculaba y no se usaba**, así que la URL salía pegada
+            # —`…/PKGBUILDsincache=1763…`— y daba **404 siempre**: la primera petición no
+            # ha funcionado nunca desde que existe, y lo que contestaba era el camino de
+            # reserva de abajo, que va **sin cabeceras de no-caché**. O sea que esto
+            # llevaba midiendo lo que hubiera en la caché. Se vio el 2026-11-20
+            # probando la URL a mano, no leyéndola.
             cuerpo="$(curl -fsSL --retry 5 --retry-delay 10 -H 'Cache-Control: no-cache' \
-              -H 'Pragma: no-cache' "$url$sep_anticache" 2>/dev/null || true)"
-            [ -n "$cuerpo" ] || cuerpo="$(curl -fsSL --retry 3 --retry-delay 10 "$url" 2>/dev/null || true)"
+              -H 'Pragma: no-cache' "$url$sep$sep_anticache" 2>/dev/null || true)"
+            [ -n "$cuerpo" ] || cuerpo="$(curl -fsSL --retry 3 --retry-delay 10 \
+              -H 'Cache-Control: no-cache' -H 'Pragma: no-cache' "$url" 2>/dev/null || true)"
             if [ -z "$cuerpo" ]; then
               echo "  ✕ $que: no contesta ($url)"; mal=1; return
             fi
@@ -566,4 +573,16 @@ jobs:
           fi
           mira "el repositorio APT" "https://esfinge.webcafeina.com/apt/dists/stable/main/binary-amd64/Packages" "Version: $v"
           mira "el repositorio RPM" "https://esfinge.webcafeina.com/rpm/repodata/repomd.xml" "primary"
-          [ $mal -eq 0 ] || { echo "::error::Hay canales que no sirven la $v"; exit 1; }
+          # **Y si falla, que diga el siguiente paso**, que es lo que separa un aviso que se
+          # lee de uno que no. Los de `esfinge.webcafeina.com` —APT, RPM y el PKGBUILD— los
+          # sirve GitHub Pages, y el 2026-11-20 pasó que **el despliegue dijo «success» y
+          # siguió sirviendo el anterior**: la publicación había desplegado dos veces —una
+          # al empujar a `main` y otra al etiquetar— y se quedó con la primera. Lo arregló
+          # volver a desplegar, y se comprobó con el `.deb` de la versión nueva, que daba
+          # 404 mientras el de la vieja daba 200.
+          [ $mal -eq 0 ] || {
+            echo "::error::Hay canales que no sirven la $v"
+            echo "· Si los que fallan son APT, RPM o el PKGBUILD, es la web: se vuelve a desplegar con «gh workflow run web.yml» y se comprueba pidiendo un fichero de la versión nueva, no la portada."
+            echo "· Si es el tap de Homebrew, mirar https://github.com/webcafeina/homebrew-esfinge"
+            exit 1
+          }
