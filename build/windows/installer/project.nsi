@@ -62,9 +62,39 @@ ManifestDPIAware true
 
 !define MUI_ICON "..\icon.ico"
 !define MUI_UNICON "..\icon.ico"
-# !define MUI_WELCOMEFINISHPAGE_BITMAP "resources\leftimage.bmp" #Include this to add a bitmap on the left side of the Welcome Page. Must be a size of 164x314
+
+# ── El instalador es de Esfinge, no el de nadie ──────────────────────────────
+#
+# Hasta la 2.70.0 esto era la plantilla de Wails tal cual: **en inglés**, con la
+# imagen azul de serie de NSIS y con «Nullsoft Install System» al pie, en un
+# producto que está entero en español. Lo vio el cliente instalándola.
+#
+# Las dos imágenes salen de `build/windows/instalador/*.svg` y las convierte a
+# BMP `frontend/herramientas/bmp.mjs`, con el mismo Chromium que rasteriza los
+# iconos. **Van sin una sola letra dentro**: NSIS las estira hasta llenar su
+# control y el control crece con el DPI, así que a 200 % se dibujan al doble sin
+# que la documentación diga con qué calidad. Lo que sí sale nítido son los
+# textos, que los pinta Windows —de ahí `ManifestDPIAware` de arriba—.
+#
+# Los tamaños son los que recomienda MUI2 (164×314 y 150×57) y **no hay forma
+# soportada de dar una versión al doble**: no existe ninguna macro que acepte un
+# segundo fichero por DPI. Comprobado en su documentación antes de dibujarlas.
+!define MUI_WELCOMEFINISHPAGE_BITMAP "..\instalador\lado.bmp"
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "..\instalador\lado.bmp"
+!define MUI_HEADERIMAGE
+!define MUI_HEADERIMAGE_RIGHT
+!define MUI_HEADERIMAGE_BITMAP "..\instalador\cabecera.bmp"
+!define MUI_HEADERIMAGE_UNBITMAP "..\instalador\cabecera.bmp"
+
+BrandingText "Esfinge · Webcafeína"
+
 !define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
+
+# Y al terminar, abrirla. Marcado de fábrica: quien acaba de instalar un
+# programa lo que quiere es verlo.
+!define MUI_FINISHPAGE_RUN "$INSTDIR\${PRODUCT_EXECUTABLE}"
+!define MUI_FINISHPAGE_RUN_TEXT "Abrir Esfinge"
 
 !insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
 # !insertmacro MUI_PAGE_LICENSE "resources\eula.txt" # Adds a EULA page to the installer
@@ -72,9 +102,32 @@ ManifestDPIAware true
 !insertmacro MUI_PAGE_INSTFILES # Installing page.
 !insertmacro MUI_PAGE_FINISH # Finished installation page.
 
+!insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES # Uinstalling page
 
-!insertmacro MUI_LANGUAGE "English" # Set the Language of the installer
+# **En español**, que es el idioma del producto. El fichero de idioma viene con
+# NSIS; lo que hace falta es que el guion sea Unicode, y lo es (arriba).
+!insertmacro MUI_LANGUAGE "Spanish"
+
+# Y las cuatro frases que se leen enteras, dichas por nosotros en vez de por la
+# traducción genérica de NSIS. El resto —los botones, los avisos— lo pone el
+# idioma, que para eso está.
+LangString MUI_TEXT_WELCOME_INFO_TITLE ${LANG_SPANISH} "Esfinge"
+LangString MUI_TEXT_WELCOME_INFO_TEXT ${LANG_SPANISH} \
+  "Cifra y descifra contraseñas y ficheros con una clave.$\r$\n$\r$\n\
+   Se instalará $(^NameDA) en este equipo. Puedes seguir usando el ordenador \
+   mientras tanto; tarda unos segundos.$\r$\n$\r$\n\
+   De Webcafeína."
+LangString MUI_TEXT_FINISH_INFO_TITLE ${LANG_SPANISH} "Esfinge está lista"
+LangString MUI_TEXT_FINISH_INFO_TEXT ${LANG_SPANISH} \
+  "Ya puedes abrirla desde el menú de inicio.$\r$\n$\r$\n\
+   Lo que cifres solo se abre con la clave que pongas: si la pierdes, se pierde \
+   el contenido."
+LangString MUI_UNTEXT_WELCOME_INFO_TEXT ${LANG_SPANISH} \
+  "Se quitará $(^NameDA) de este equipo.$\r$\n$\r$\n\
+   Tus ficheros cifrados y tu bóveda no se tocan: viven fuera de la carpeta del \
+   programa y siguen donde estén."
+
 
 ## The following two statements can be used to sign the installer and the uninstaller. The path to the binaries are provided in %1
 #!uninstfinalize 'signtool --file "%1"'

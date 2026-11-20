@@ -251,9 +251,16 @@ jobs:
             version="$version-inspector"
             echo "::warning::Compilación CON INSPECTOR ($version). Para diagnosticar, no para publicar."
           fi
+          # **Y en Windows, también el instalador** (2026-11-20). Hasta hoy el
+          # guion de NSIS —que es nuestro desde que el instalador dejó de ser el
+          # genérico— **solo se ejecutaba al publicar**, o sea que una errata
+          # suya se descubría con la etiqueta ya empujada. Aquí no cuesta nada:
+          # la máquina es la misma y `makensis` ya está.
+          nsis=""
+          if [[ "${{ matrix.plataforma }}" == windows/* ]]; then nsis="-nsis"; fi
           wails build -platform ${{ matrix.plataforma }} -clean \
             ${etiquetas:+-tags "$etiquetas"} \
-            $inspector \
+            $inspector $nsis \
             -ldflags "-X main.version=$version"
 
       # El nombre del artefacto lleva la marca, para que no haya forma de bajarse
