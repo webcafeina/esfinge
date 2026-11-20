@@ -172,10 +172,47 @@
 
 /* El botón de Fluent es plano, con su borde de 1 px y el de abajo más marcado.
  * Sin sombra: lo que levanta el control es ese borde, no una penumbra. */
-:root[data-sistema="windows"] button {
+/* **Y deja en paz a los que se declaran sin borde**, que es lo que costó dos
+ * cosas de la 2.71.0: esta regla pesa más que `button.principal` y que
+ * `button.discreto` —los dos ponen `border-color: transparent` en la base— así
+ * que **el botón de acción salía con el trazo gris de un botón normal** y el
+ * discreto, que es texto, salía con marco **y** con subrayado, que es decir dos
+ * veces lo mismo. Lo vio el cliente en su Windows.
+ *
+ * La lista va escrita y no con `:where()`: bajar el peso de esta regla a cero la
+ * dejaría por debajo de cualquier `button {}` de la hoja base, que se carga
+ * después, y entonces Windows no vestiría ningún botón. */
+:root[data-sistema="windows"] button:not(.principal, .discreto, .ojo, .boton-menu) {
   border-color: var(--filete);
   border-bottom-color: var(--borde-bajo);
   box-shadow: none;
+}
+
+/* El de acción **no lleva el trazo gris**, que es lo que el cliente vio: lleva el
+ * suyo, que en Fluent es un negro translúcido —más marcado abajo, que es el
+ * apoyo de todos los controles— y se lee como parte del relleno, no como un
+ * marco. Puesto a transparente del todo el botón pierde el canto y se aplana. */
+:root[data-sistema="windows"] button.principal {
+  border-color: rgb(0 0 0 / 0.08);
+  border-bottom-color: rgb(0 0 0 / 0.25);
+  box-shadow: none;
+}
+
+/* Y el discreto **no va subrayado aquí**: en Fluent es un botón sutil —sin
+ * borde, sin fondo— que se enciende al pasar por encima. El subrayado de la base
+ * existe porque allí no hay color que gastar en un botón de texto; aquí, con el
+ * fondo de Fluent, es decir dos veces lo mismo. Lo pidió el cliente al ver uno
+ * con marco **y** subrayado, que además era este mismo fallo de peso. */
+:root[data-sistema="windows"] button.discreto {
+  border-color: transparent;
+  background: transparent;
+  text-decoration: none;
+  padding: 0 12px;
+}
+
+:root[data-sistema="windows"] button.discreto:hover:not(:disabled) {
+  background: var(--barra-encima);
+  text-decoration: none;
 }
 
 :root[data-sistema="windows"] button:hover:not(:disabled) {
@@ -193,18 +230,23 @@
 /* Los campos de Fluent llevan la línea de abajo más marcada, y **al enfocarse
  * esa línea se vuelve del acento y crece**. Es lo más reconocible de un campo de
  * Windows 11, y es lo que aquí sustituye al anillo de macOS. */
+/* **Un píxel, con el de abajo más marcado**, y no dos. En Fluent el campo en
+ * reposo lleva su borde de 1 px y lo que engorda a 2 es **el foco**, con la
+ * línea del acento. Con 2 px siempre, un formulario parece una lista de cosas
+ * subrayadas y además no queda nada para decir cuál está activo. */
 :root[data-sistema="windows"] input,
 :root[data-sistema="windows"] textarea {
   border-color: var(--filete);
-  border-bottom: 2px solid var(--borde-bajo);
+  border-bottom-color: var(--borde-bajo);
 }
 
 :root[data-sistema="windows"] input:focus-visible,
 :root[data-sistema="windows"] textarea:focus-visible {
   border-color: var(--filete);
   border-bottom-color: var(--acento);
-  /* Sin el halo de la base: en Fluent el campo enfocado no lleva aura. */
-  box-shadow: none;
+  /* El segundo píxel de la línea de abajo, por dentro: así el campo no cambia
+   * de alto al enfocarlo, que es lo que pasaría engordando el borde. */
+  box-shadow: inset 0 -1px 0 var(--acento);
   outline: none;
 }
 
@@ -376,10 +418,12 @@
   background: var(--tarjeta);
 }
 
-/* El desplegable de una tarjeta no se queda con todo el ancho que pida su opción
- * más larga: estrujaba la descripción hasta las cuatro líneas. */
+/* El desplegable de una tarjeta lleva tope para no estrujar la descripción, pero
+ * **el tope no puede ser menor de lo que pide su opción más larga**: a 250 px
+ * «Tras 15 minutos sin tocar nada» salía cortado en «sin tocar nac», que es peor
+ * que una descripción de una línea más. Medido: pide 271. */
 :root[data-sistema="windows"] .ajuste > select {
-  max-width: 250px;
+  max-width: 280px;
 }
 
 /* ------------------------------------------------------ la barra de título
@@ -663,11 +707,22 @@
 :root[data-sistema="windows"] input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
+  /* **Lo recorrido va del oro de la marca** (pedido el 2026-11-20). Es el único
+   * sitio donde el oro hace de línea, y se sostiene porque no es un filete: son
+   * 4 px contra el gris del carril, no texto ni un borde de un píxel. La regla
+   * de la ADR 0021 —el oro rellena, la piedra escribe— se respeta: aquí rellena. */
   background: linear-gradient(
     to right,
-    var(--acento) 0 var(--recorrido, 0%),
+    var(--relleno) 0 var(--recorrido, 0%),
     var(--filete-fuerte) var(--recorrido, 0%) 100%
   );
+}
+
+/* **El deslizador y el medidor son dos rayas horizontales seguidas**, y pegadas
+ * se leen como una sola cosa de tres pisos —con el filete de la tarjeta, tres—.
+ * El deslizador se queda con su aire propio por debajo. Lo vio el cliente. */
+:root[data-sistema="windows"] input[type="range"] {
+  margin-bottom: var(--espacio-3);
 }
 
 :root[data-sistema="windows"] input[type="range"]::-webkit-slider-thumb {
@@ -679,16 +734,116 @@
    * borde, que es lo contrario: en Fluent el pulgar es un disco claro con un
    * punto de acento en medio, y lo que se mueve al pulsar es ese punto. De ahí
    * el degradado radial, que es lo único que centra un disco dentro de otro. */
-  background: radial-gradient(circle at center, var(--acento) 0 6px, var(--campo) 6px);
+  background: radial-gradient(circle at center, var(--relleno) 0 6px, var(--campo) 6px);
   box-shadow: 0 0 0 1px var(--filete-fuerte);
   transition: background 0.1s;
 }
 
 :root[data-sistema="windows"] input[type="range"]:hover::-webkit-slider-thumb {
-  background: radial-gradient(circle at center, var(--acento) 0 7px, var(--campo) 7px);
+  background: radial-gradient(circle at center, var(--relleno) 0 7px, var(--campo) 7px);
 }
 
 /* Al agarrarlo encoge, que es lo que lo hace sentirse agarrado. */
 :root[data-sistema="windows"] input[type="range"]:active::-webkit-slider-thumb {
-  background: radial-gradient(circle at center, var(--acento) 0 5px, var(--campo) 5px);
+  background: radial-gradient(circle at center, var(--relleno) 0 5px, var(--campo) 5px);
+}
+
+/* -------------------------------------------- la capa del contenido de WinUI
+ *
+ * En Windows 11 el contenido no empieza a ras: vive en **una capa con su filete
+ * arriba y a la izquierda, y la esquina de arriba a la izquierda redondeada**,
+ * que es lo que separa el trabajo del marco —el panel y la barra de título, que
+ * se quedan sobre Mica—. Sin eso, la ventana se lee como una sola superficie y
+ * el panel parece flotar sobre el contenido en vez de estar al lado.
+ *
+ * Lo pidió el cliente el 2026-11-20 comparándolo con Apolo, que lo tiene igual. */
+:root[data-sistema="windows"] .zona {
+  border-top: 1px solid var(--filete);
+  border-left: 1px solid var(--filete);
+  border-top-left-radius: var(--radio-grande);
+}
+
+/* Con Mica detrás, la capa es translúcida: deja pasar el fondo de pantalla muy
+ * apagado, que es lo que hace que se note que está encima de algo. Sin vidrio
+ * —Windows 10, o las transparencias apagadas— se queda con el lienzo de
+ * siempre, que es lo correcto: una capa transparente sin nada detrás no es una
+ * capa, es un agujero. */
+:root[data-sistema="windows"][data-vidrio="si"] .zona {
+  background: color-mix(in srgb, var(--lienzo) 72%, transparent);
+}
+
+/* ---------------------------------------------------- el aire de los bloques
+ *
+ * Las tarjetas de una sección van a 4 px, que es lo de Fluent. **El texto que
+ * va entre ellas, no**: una frase pegada a una tarjeta se lee como parte de la
+ * tarjeta de arriba. Lo vio el cliente en Ajustes.
+ *
+ * Se hace con un margen en el texto y no subiendo el `gap` del bloque, porque
+ * lo que tiene que seguir pegado son las tarjetas entre sí. */
+:root[data-sistema="windows"] .bloque > .nota,
+:root[data-sistema="windows"] .bloque > .aviso,
+:root[data-sistema="windows"] .bloque > p {
+  margin-block: var(--espacio-3) var(--espacio-2);
+}
+
+/* Y dentro de un grupo, lo mismo entre un rótulo y su campo: en Fluent el
+ * rótulo va a 8 px de lo que describe, no pegado. */
+:root[data-sistema="windows"] .grupo > label,
+:root[data-sistema="windows"] .panel label:not(.fila-ajuste):not(.interruptor) {
+  margin-bottom: var(--espacio-2);
+}
+
+/* ------------------------------------------ lo que faltaba de Windows 11
+ *
+ * Salió de comparar control por control con la hoja de Apolo, que es la misma
+ * especificación ya traducida (2026-11-20). Lo pidió el cliente después de tres
+ * fallos del mismo tipo: «revisa que todos los elementos vayan acorde al
+ * estándar más reciente de Windows 11». */
+
+/* **Las barras de desplazamiento, finas.** Es lo primero que delata a una
+ * ventana que no es de Windows 11: la de serie trae sus flechas y su carril
+ * ancho, que es la de siempre. */
+:root[data-sistema="windows"] * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--apagado) 55%, transparent) transparent;
+}
+
+/* Los botones de Fluent: relleno de 12, peso normal y una transición corta. El
+ * peso venía de la base, donde los botones van en 500 porque es lo de macOS. */
+:root[data-sistema="windows"] button {
+  padding: 0 12px;
+  font-weight: 400;
+  transition: background 0.08s;
+}
+
+/* **La casilla, de 20 y con el tic en la piedra.** La de la base mide 18, que es
+ * la de macOS. Y marcada se llena del oro, como todo lo que se elige aquí. */
+:root[data-sistema="windows"] input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radio);
+  background-size: 12px 12px;
+}
+
+/* **El desplegable lleva su flecha**, no la del navegador: la de serie es un
+ * triángulo relleno y la de Fluent es un galón fino. Va como imagen de fondo
+ * porque un `<select>` no deja dibujar dentro. */
+:root[data-sistema="windows"] select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23605e5c' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 12px 12px;
+  border-bottom-color: var(--borde-bajo);
+}
+
+/* Y el foco de lo que no es un campo de texto: el contorno de Fluent, separado
+ * un píxel del control. La casilla y el deslizador faltaban en la lista. */
+:root[data-sistema="windows"] input[type="checkbox"]:focus-visible,
+:root[data-sistema="windows"] input[type="range"]:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+  box-shadow: none;
 }
