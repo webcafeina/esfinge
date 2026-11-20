@@ -2455,6 +2455,10 @@ winget a una versión vieja, **y la comprobación final diría que todo va bien*
 canales sirvan la versión *que se le ha dado*.
 
 **Y la misma forma otra vez en winget, con el CLA: tres PRs amontonados sin que nadie los mirara.**
+**Desde el 2026-11-20 lo firma el propio flujo**, justo después de abrir el PR, porque se comprobó
+que **no se queda registrado por cuenta**: firmado el 17 y el 19, el PR de la 2.71.0 volvió a salir
+con la etiqueta. Es una declaración a nombre del cliente que se publica sola en cada versión y la
+autorizó él sabiéndolo; si eso cambia, lo que se quita es ese paso. Lo que sigue abajo es cómo se vio.
 (2026-11-20.) El 2026-11-17 se firmó el CLA de Microsoft con
 `@microsoft-github-policy-service agree company="Webcafeína"` y la etiqueta `Needs-CLA` cayó de aquel
 PR en tres minutos — **y sólo de aquél**: los de la 2.69.0 y la 2.70.0 se quedaron con ella puesta,

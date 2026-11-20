@@ -425,6 +425,9 @@ jobs:
           # propio `wingetcreate` —«using the --token argument may result in the token being
           # logged»—, que es como se vio.
           $env:WINGET_CREATE_GITHUB_TOKEN = $env:TOKEN
+          # El mismo testigo para `gh`, que es quien firma el CLA más abajo. Por el
+          # entorno y nunca como argumento, por lo de siempre.
+          $env:GH_TOKEN = $env:TOKEN
           .\wingetcreate.exe submit recetas\winget
           # **Y mirar el código de salida, que PowerShell no para por él.** `$ErrorActionPreference`
           # solo cubre los cmdlets: un `.exe` que devuelve 1 sigue adelante como si nada. La
@@ -436,6 +439,37 @@ jobs:
             exit 1
           }
           Write-Host "✓ manifiestos mandados; el PR lo revisa Microsoft"
+
+          # **Y firmar el CLA en el PR recién abierto** (2026-11-20).
+          #
+          # El bot de Microsoft le pone `Needs-CLA` a **cada PR nuevo** y hasta que
+          # no se le contesta no se puede fusionar. Se comprobó que la firma **no
+          # se queda registrada por cuenta**: se firmó el 17 y el 19, y el PR de la
+          # 2.71.0 volvió a salir con la etiqueta. Sin esto, cada versión abre un PR
+          # que se queda parado **sin avisar a nadie** — así se amontonaron tres, de
+          # la 2.68.0 a la 2.70.0.
+          #
+          # Va **a secas y no con `company=`**: esa forma es la que no se quedaba
+          # registrada, y encaja con que la propia página del CLA diga que Microsoft
+          # «no suele participar en acuerdos CLA corporativos».
+          #
+          # Lo autorizó el cliente el 2026-11-20, sabiendo que es una declaración a
+          # su nombre que se publica sola en cada versión. **Si eso cambia, lo que
+          # se quita es este paso**, no el de arriba.
+          $mio = gh pr list --repo microsoft/winget-pkgs --author webcafeina --state open `
+            --search "Esfinge version $env:VERSION_QUE_SUBE in:title" --json number --jq '.[0].number'
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::warning::No he podido buscar el PR para firmar el CLA. Se firma a mano: gh pr comment <n> --repo microsoft/winget-pkgs --body '@microsoft-github-policy-service agree'"
+          } elseif (-not $mio) {
+            Write-Host "::warning::No encuentro el PR de la $env:VERSION_QUE_SUBE para firmar el CLA. Se firma a mano con el comentario de arriba."
+          } else {
+            gh pr comment $mio --repo microsoft/winget-pkgs --body '@microsoft-github-policy-service agree'
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "::warning::El PR #$mio está abierto pero no he podido firmarle el CLA. Se firma a mano."
+            } else {
+              Write-Host "✓ CLA firmado en el PR #$mio"
+            }
+          }
 
       - uses: actions/upload-artifact@v4
         with:
