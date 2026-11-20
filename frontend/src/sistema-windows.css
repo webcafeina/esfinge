@@ -638,3 +638,45 @@
     width: var(--panel-compacto);
   }
 }
+
+/* ------------------------------------------------------------ el deslizador
+ *
+ * El de Fluent, que no se parece al de macOS: **la parte recorrida va del
+ * acento**, el pulgar es un anillo con su núcleo dentro —y no un botón blanco
+ * con sombra— y el núcleo encoge al pulsar, que es lo que da la sensación de
+ * que se agarra.
+ *
+ * Lo recorrido lo dice `--recorrido`, que pone quien dibuja el control: el
+ * trazado del carril no puede saber el valor. */
+:root[data-sistema="windows"] input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--acento) 0 var(--recorrido, 0%),
+    var(--filete-fuerte) var(--recorrido, 0%) 100%
+  );
+}
+
+:root[data-sistema="windows"] input[type="range"]::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 50%;
+  /* **El núcleo va dentro, no como anillo.** Con `inset` sale un aro pegado al
+   * borde, que es lo contrario: en Fluent el pulgar es un disco claro con un
+   * punto de acento en medio, y lo que se mueve al pulsar es ese punto. De ahí
+   * el degradado radial, que es lo único que centra un disco dentro de otro. */
+  background: radial-gradient(circle at center, var(--acento) 0 6px, var(--campo) 6px);
+  box-shadow: 0 0 0 1px var(--filete-fuerte);
+  transition: background 0.1s;
+}
+
+:root[data-sistema="windows"] input[type="range"]:hover::-webkit-slider-thumb {
+  background: radial-gradient(circle at center, var(--acento) 0 7px, var(--campo) 7px);
+}
+
+/* Al agarrarlo encoge, que es lo que lo hace sentirse agarrado. */
+:root[data-sistema="windows"] input[type="range"]:active::-webkit-slider-thumb {
+  background: radial-gradient(circle at center, var(--acento) 0 5px, var(--campo) 5px);
+}

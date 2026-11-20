@@ -1717,6 +1717,9 @@ test("las clases de la bóveda caben en su barra", async ({ page }) => {
     await page.setViewportSize({ width: ancho, height: 620 });
     for (const nombre of clases) {
       await page.getByRole("tab", { name: nombre, exact: true }).click();
+      // Se mide sin esperar. **Eso no caza el parpadeo de la transición**, y se
+      // comprobó: alargándola a 0,6 s sigue en verde. Está en `deuda.md` con los
+      // números de la única vez que se vio.
       const m = await page
         .locator(".segmentado.compacto")
         .evaluate((el) => ({

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { obedecerEdicion } from "./ordenes";
 import { laPlataforma } from "./plataforma";
 import {
@@ -1000,6 +1000,11 @@ function Generar({ alUsarComoClave }: { alUsarComoClave: (clave: string) => void
               {salen} caracteres · {bits} bits
             </span>
           </div>
+          {/* **Cuánto se lleva recorrido, como variable de CSS.** El deslizador de
+              Fluent pinta del acento la parte de la izquierda, y un
+              `::-webkit-slider-runnable-track` no puede saber el valor: solo lo
+              sabe quien lo dibuja. Es media línea y evita la alternativa, que
+              sería dibujar un deslizador entero a mano. */}
           <input
             id="largo"
             type="range"
@@ -1008,6 +1013,11 @@ function Generar({ alUsarComoClave }: { alUsarComoClave: (clave: string) => void
             step={2}
             value={caracteres}
             onChange={(e) => setCaracteres(Number(e.target.value))}
+            style={
+              {
+                "--recorrido": `${((caracteres - CARACTERES_MINIMO) / (CARACTERES_MAXIMO - CARACTERES_MINIMO)) * 100}%`,
+              } as CSSProperties
+            }
           />
           <div className="medidor" data-nivel={nivel} aria-hidden="true">
             <span />

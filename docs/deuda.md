@@ -373,3 +373,22 @@ imposible.
 —como `_novedad` monta el aviso— para que la prueba ejercite **la pantalla**, que es lo que quiere
 mirar, y no la descarga. Mientras tanto, si vuelve a caer, **no se vuelve a correr hasta que salga
 verde**: se mira cuánto tardó.
+
+### La barra de clases de la bóveda se pasó 5 px una vez, y no se ha podido reproducir
+
+**Severidad:** baja · **Apuntada:** 2026-11-20
+
+En una tanda completa, `las clases de la bóveda caben en su barra` cayó con **«Llaves de acceso»
+activa y la ventana a 700 px**: `{"necesita":432,"mide":432,"cabe":427}`. Corriéndola sola pasa, dos
+veces seguidas, y el resto de la tanda estaba en verde.
+
+**La hipótesis era la transición** del rótulo de la clase activa, que ese día se estrenó: mientras el
+que se va se cierra y el que llega se abre, los dos tienen ancho y la barra puede medir más que en
+los dos extremos. **No se ha podido probar**: alargando la transición a 0,6 s la prueba sigue en
+verde, y a 5 s lo que falla es el plazo de la prueba, no la aserción — o sea que ese experimento no
+medía lo que parecía. Se deja el cambio que la hipótesis pedía —**sólo se anima el rótulo que
+llega**— porque no cuesta nada y deja menos movimiento a la vez, pero **no se da por arreglado**.
+
+**Si vuelve a caer**: lo que falta por descartar es qué deja distinto la tanda completa, y el camino
+es hacer que la prueba diga **qué rótulo había antes** y el ancho de cada botón, no volver a
+correrla hasta que salga verde.

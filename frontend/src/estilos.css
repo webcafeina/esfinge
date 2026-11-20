@@ -610,13 +610,19 @@ body {
   overflow: hidden;
   white-space: nowrap;
   vertical-align: middle;
-  transition: max-width 0.18s ease, padding 0.18s ease, opacity 0.12s ease;
+  /* **El que se va se cierra de golpe; solo se anima el que llega.** Animando
+   * los dos, durante esos 180 ms hay dos rótulos con ancho a la vez y la barra
+   * puede ser más ancha que en los dos extremos. Que eso sea lo que tiró una
+   * tanda **no está probado** —ver `deuda.md`—, pero menos movimiento a la vez
+   * no cuesta nada y aquí hay 5 px de margen en una columna de 427. */
+  transition: none;
 }
 
 .segmentado.compacto button[aria-selected="true"] .rotulo {
   max-width: 12rem;
   padding-left: var(--espacio-1);
   opacity: 1;
+  transition: max-width 0.18s ease, padding 0.18s ease, opacity 0.12s ease;
 }
 
 /* Y el `gap` del botón sobra en el compacto: lo pone el rótulo cuando lo hay. */
