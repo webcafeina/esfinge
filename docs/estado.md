@@ -2,31 +2,45 @@
 
 Última actualización: **2026-11-20**
 
-**Lo de esta sesión**: el cliente probó Windows en su máquina y de ahí salió todo. Se publicaron
-**dos versiones**: la **2.71.0** —el marco, el panel plegable y el borde de abajo que faltaba— y la
-**2.72.0**, que cierra la fase de Windows con **el instalador con el logo y el nombre**
-([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)), **el repaso entero contra el estándar de
-Windows 11** y **el menú de Snap**. El VPS está en la 2.72.0.
+**Lo de esta sesión**: empezó con Windows probado en su máquina y acabó con macOS entero. **Cuatro
+versiones publicadas**: la **2.71.0** —el marco y el panel plegable—, la **2.72.0**, que cierra
+Windows con el instalador de marca ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)), el repaso
+contra el estándar y el menú de Snap; la **2.72.1**, un arreglo solo —la ventana no llegaba al fondo
+en macOS y en Linux desde la 2.70.0—; y la **2.73.0**, con la fase de macOS
+([ADR 0068](adr/0068-macos-con-golden-gate.md)). El VPS está en la 2.72.0, que es la última que tocó
+la línea de comandos.
 
-> ## ⚠ Lo primero al retomar: macOS en su Mac, y después GNOME
+> ## ⚠ Lo primero al retomar (2026-11-21): macOS en su Mac, y lo de Pages
 >
-> La **2.73.0 está publicada** con la fase de macOS entera ([ADR 0068](adr/0068-macos-con-golden-gate.md),
-> **aceptada**): macOS 27 Golden Gate, y **el oro de la barra lateral se va a los iconos** con la fila
-> elegida en gris, elegido por el cliente sobre una galería con las dos opciones en los dos temas.
+> **Nada está a medias y nada está sin publicar.** La **2.73.0** salió con la fase de macOS entera
+> ([ADR 0068](adr/0068-macos-con-golden-gate.md), **aceptada**) y **los cinco canales la sirven**,
+> comprobado uno a uno pidiendo sin caché. El árbol está limpio y empujado.
 >
-> **Lo que falta es un Mac**, y es lo único: el material de la ventana, si las cápsulas de la barra se
-> leen como vidrio o como botones grises, si el pomo del interruptor sale píldora o elipse, y **si el
-> oro de los iconos se ve bien a 1,74:1** con la tipografía y la pantalla de allí. Se actualiza solo
-> desde la banda.
+> **Dos cosas para mañana, en este orden:**
 >
-> **La fase siguiente es GNOME** (F4 del plan), y empieza por lo que ahorró las rondas en Windows y en
-> macOS: **comparar control por control con `~/proyectos/apolo/frontend/src/sistema-linux.css`**, que
-> es la especificación ya traducida y revisada. Lo que Windows dejó escrito para las hojas que quedan
-> está en `CLAUDE.md`, sección «Lo que Windows deja escrito para macOS, GNOME y KDE», y **se lee al
-> empezar**.
+> **1 · Que el cliente mire macOS en su Mac.** Se actualiza solo desde la banda. Lo que hay que mirar
+> allí es lo único que desde aquí no se puede: el material de la ventana, si las cápsulas de la barra
+> de herramientas se leen como **vidrio** o como botones grises, si el pomo del interruptor sale
+> **píldora o elipse**, y —la que más interesa— **si el oro de los iconos de la barra lateral se ve
+> bien de verdad a 1,74:1** con la tipografía y la pantalla de allí. Si se queda corto se sube: el
+> token está generado y medido en un solo sitio (`OroLateral`, en `internal/tema`).
+>
+> **2 · Lo de GitHub Pages**, que está en [`deuda.md`](deuda.md) con todo lo que se midió. Al publicar
+> la 2.73.0, el despliegue dijo «success» y **siguió sirviendo el anterior**; se arregló volviendo a
+> desplegar. **No se dio por arreglado**: la hipótesis —que cada publicación despliega **dos veces**,
+> una al empujar a `main` y otra al etiquetar, y se quedó con la primera— está escrita con lo que falta
+> por descartar. Lo que sí se arregló es el fallo que salió al mirarlo: el separador de la URL en la
+> comprobación de los canales se calculaba y **no se usaba**, así que esa petición daba 404 siempre y
+> contestaba el camino de reserva, **sin cabeceras de no-caché**.
+>
+> **Y después, GNOME** (F4 del plan). Empieza por lo que ahorró las rondas en Windows y en macOS:
+> **comparar control por control con `~/proyectos/apolo/frontend/src/sistema-linux.css`**. Lo que
+> Windows dejó escrito para las hojas que quedan está en `CLAUDE.md`, sección «Lo que Windows deja
+> escrito para macOS, GNOME y KDE», y **se lee al empezar**.
 >
 > **Windows sigue pendiente de probar y no bloquea nada**: lo que hay que mirar allí está en
-> [`deuda.md`](deuda.md), y lo de más riesgo es el menú de Snap.
+> `deuda.md`, y lo de más riesgo es el menú de Snap, porque una compilación sólo dice que su Win32
+> enlaza, no que la ventana hija conteste.
 >
 > **Y al abrir sesión, las tiendas**: Chocolatey sigue en la **2.66.1** con un 403 mientras modera; en
 > winget hay varios PRs esperando moderador, con el CLA firmado en todos.

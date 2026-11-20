@@ -71,8 +71,47 @@ Plantilla al final.
 - **Publicada la 2.72.0 y el VPS actualizado** con su suma comprobada, leyendo la bóveda de Tempero y
   con la primera línea de esa salida mirada.
 - **Queda abierto**: lo suyo en su Windows —tipografía, Mica, arrastre, **que salga el menú de Snap**,
-  el instalador— y después **macOS**. Las dos tiendas siguen esperando moderación, y el CLA ya no es el
-  problema. Ver [`estado.md`](estado.md).
+  el instalador—. Las dos tiendas siguen esperando moderación, y el CLA ya no es el problema.
+
+### Por la noche: macOS entero, y una regresión que llevaba tres versiones publicada
+
+- **Se encontró, midiendo macOS, que la ventana no llegaba al fondo** en macOS y en GNOME desde la
+  **2.70.0**: 513 de 680 en la base y en GNOME, 460 en macOS. `.barra-titulo` va con `display: none`
+  donde la dibuja el sistema, y **un elemento con `display: none` sale del grid**, así que la barra
+  lateral y el contenido caían en la fila `auto`. **En Windows no pasaba**, porque su hoja ya les
+  ponía la fila a mano — y eso es lo que lo escondió: estaba mal donde nadie miraba y bien donde sí.
+  Publicado como **2.72.1**, con la etiqueta en un commit que lleva **sólo el arreglo**: la fase de
+  macOS se aplica al Mac de verdad y su ficha estaba en propuesta.
+- **La fase de macOS** ([ADR 0068](adr/0068-macos-con-golden-gate.md)), publicada en la **2.73.0**:
+  las dos paletas con los neutros del kit —las seis miden AA—, la hoja con la anatomía de Golden Gate
+  y `macos.spec.ts`, 16 pruebas en los dos temas.
+- **Las medidas no se releyeron de Figma**, y conviene no volver a planteárselo: están volcadas una
+  por una en la ficha de Apolo, **cuyo punto de partida era exactamente esta anatomía**, y allí ya
+  pasaron por un Mac. Releerlas habría gastado el asiento de Figma en volver al punto de partida de
+  esas correcciones.
+- **El cliente eligió sobre una galería** con las dos opciones en los dos temas: en macOS la fila
+  elegida pasa a **gris** y **el oro se va a los iconos**, igual que eligió para Apolo. Eso matiza la
+  [ADR 0021](adr/0021-la-marca-en-la-interfaz.md) **en macOS y sólo ahí**. El oro **se genera y se
+  mide** (`OroLateral`): 1,74:1 sobre la fila elegida en claro, 8,55 en oscuro. **No llega a 3:1 a
+  propósito** y está escrito por qué — el oro a 3:1 se vuelve verde oliva, y sobre todo **cada icono
+  lleva su nombre al lado**, así que no es él quien carga el significado. **No se bajó ningún otro
+  umbral.**
+- **Y tres fallos míos que cazó medir, no mirar.** Uno: la hoja entera colgaba de
+  `[data-sistema="macos"]`, un valor que **no existe** —el sistema es `runtime.GOOS`, así que macOS es
+  `darwin`—, de modo que no se aplicaba a nadie y **las primeras 73 capturas eran de GNOME**. Dos: la
+  regla general de botón de la hoja pisaba a la fila elegida, y **el `:not()` no bastó**: lo que
+  funciona es que cada hoja declare la suya, como ya hacía Windows. Tres: el interruptor se vestía con
+  `[role="switch"]`, que **no lleva** —es una casilla a propósito—.
+- **Los tres recorridos de captura vuelven a pasar** en los dos temas, que no lo hacían desde antes de
+  la nativización. Cinco causas y ninguna de ella; la más instructiva, que pedían **dos pantallas que
+  no pueden coexistir**: activar el desbloqueo en Ajustes *es* contestar la sugerencia.
+- **Se verificó**: las tres puertas en verde con todo dentro —220 de interfaz, 200 del navegador y Go
+  con `-race`—, cada guarda nueva mutada y **roja por su propio motivo**, y los cinco canales
+  preguntados uno a uno pidiendo sin caché.
+- **Queda abierto**: **mirar macOS en su Mac** —el vidrio, el pomo del interruptor y si el oro de los
+  iconos se ve bien a 1,74:1— y **lo de GitHub Pages**, que dijo «success» y siguió sirviendo el
+  despliegue anterior; se arregló volviendo a desplegar y **no se dio por arreglado**. Ver
+  [`deuda.md`](deuda.md) y [`estado.md`](estado.md).
 
 ---
 
