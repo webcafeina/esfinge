@@ -70,6 +70,7 @@ export function BarraLateral<T extends string>({
   version,
   bovedaAbierta,
   nombreDelProyecto = "",
+  compacto = false,
 }: {
   valor: T;
   alCambiar: (v: T) => void;
@@ -78,6 +79,14 @@ export function BarraLateral<T extends string>({
   bovedaAbierta?: boolean | null;
   /** El proyecto abierto (ADR 0050); vacío es la bóveda personal. */
   nombreDelProyecto?: string;
+  /**
+   * El panel está plegado y de cada fila solo se ve su icono.
+   *
+   * Lo único que cambia aquí es que **el nombre pasa al `title`**: esconder el
+   * rótulo lo hace el CSS, que es quien sabe en qué sistema se pliega. Sin esto,
+   * una columna de ocho dibujos no dice adónde lleva ninguno.
+   */
+  compacto?: boolean;
 }) {
   const fila = (v: string, etiqueta: string) => {
     const candado = v === "boveda" && bovedaAbierta != null;
@@ -98,23 +107,23 @@ export function BarraLateral<T extends string>({
                 ? `La bóveda de «${nombreDelProyecto}» está abierta`
                 : "La bóveda está abierta"
               : "La bóveda está cerrada"
-            : undefined
+            : compacto
+              ? etiqueta
+              : undefined
         }
       >
         <Icono nombre={v} />
         {/* El rótulo y, debajo, el proyecto. **El nombre accesible del botón sigue
             siendo «Bóveda»** —de ahí el `aria-hidden`—: hay pruebas que localizan
             la sección por él, y el nombre del proyecto ya lo dice el `title`. */}
-        {proyecto ? (
-          <span className="rotulo">
-            {etiqueta}
+        <span className="rotulo">
+          {etiqueta}
+          {proyecto && (
             <span className="proyecto-activo" aria-hidden="true">
               {nombreDelProyecto}
             </span>
-          </span>
-        ) : (
-          etiqueta
-        )}
+          )}
+        </span>
         {candado && (
           <span className="estado-boveda" data-abierta={bovedaAbierta ? "si" : "no"} aria-hidden="true">
             <Icono nombre={bovedaAbierta ? "candado-abierto" : "candado-cerrado"} />
@@ -655,21 +664,16 @@ export function CampoClave({
 
   return (
     <div>
-      <div className="fila">
-        <label htmlFor={id} style={{ marginBottom: 0 }}>
-          {etiqueta}
-        </label>
-        {alGenerar && (
-          <button className="discreto" onClick={alGenerar}>
-            Generar una
-          </button>
-        )}
-      </div>
+      <label htmlFor={id}>{etiqueta}</label>
 
       {/* El ojo va **dentro del campo**, a la derecha, que es donde lo pone todo
           el mundo y donde se busca sin pensar. Fuera competía con «Generar una»
           por el mismo sitio y parecía otra acción del formulario, cuando no es
-          una acción: es una propiedad de lo que se está mirando. */}
+          una acción: es una propiedad de lo que se está mirando.
+          **Y desde el 2026-11-20 la llave está al lado, dentro también**, por lo
+          mismo y porque lo pidió el cliente: como botón de texto encima del campo
+          competía con el rótulo y pesaba más que la acción de la pantalla. Lleva
+          su nombre accesible, igual que el ojo: un dibujo solo no dice qué hace. */}
       <div className="campo-con-ojo">
         <input
           id={id}
@@ -687,6 +691,20 @@ export function CampoClave({
         />
         {/* Con nombre de verdad y no solo un dibujo: quien lea la pantalla en voz
             alta tiene que oír qué hace, y «botón» a secas no lo dice. */}
+        {alGenerar && (
+          <button
+            className="ojo llave"
+            onClick={alGenerar}
+            aria-label="Generar una clave"
+            title="Generar una clave"
+          >
+            {/* **`credencial` y no `llave`**: aquí la llave es la de una
+                contraseña —tumbada, con su ojo y su paletón— y `llave` es la de
+                acceso, que es otra cosa y otra clase de la bóveda. Lo dice el
+                comentario del propio catálogo. */}
+            <Icono nombre="credencial" />
+          </button>
+        )}
         <button
           className="ojo"
           onClick={() => setALaVista(!aLaVista)}
@@ -1179,7 +1197,14 @@ export function TarjetaAjuste({
  * arrastrar cuando hay más de un clic** (`e.detail !== 1`), que es justo el
  * hueco por donde esto cabe.
  */
-export function BarraDeTitulo() {
+export function BarraDeTitulo({
+  panelAbierto,
+  alMenu,
+}: {
+  /** Para decir en el botón si lo que va a hacer es abrir o cerrar el panel. */
+  panelAbierto?: boolean;
+  alMenu?: () => void;
+}) {
   const [maximizada, setMaximizada] = useState(false);
 
   // Se le pregunta a la ventana en vez de llevar la cuenta: maximizar también se
@@ -1199,6 +1224,27 @@ export function BarraDeTitulo() {
 
   return (
     <div className="barra-titulo" onDoubleClick={alternar}>
+      {/* **La hamburguesa va aquí y no encima del panel**, que es lo que une las
+          dos cosas: en una ventana con NavigationView, Windows pone la barra de
+          título alta —48 y no 32— y el botón que pliega el panel dentro de ella,
+          alineado con la columna de iconos. Con el botón encima del panel, la
+          barra y el panel se leen como dos piezas pegadas en vez de una.
+          Lleva `no-drag` como los de la derecha: si no, pulsarlo arrastraría. */}
+      {alMenu && (
+        <button
+          type="button"
+          className="boton-menu"
+          onClick={alMenu}
+          aria-expanded={panelAbierto ?? true}
+          aria-label={panelAbierto ? "Plegar el menú" : "Desplegar el menú"}
+          title={panelAbierto ? "Plegar el menú" : "Desplegar el menú"}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M1.5 4h13M1.5 8h13M1.5 12h13" stroke="currentColor" fill="none" />
+          </svg>
+        </button>
+      )}
+
       {/* El nombre de la ventana, que es lo que dibujaría el sistema si no lo
           dibujáramos nosotros. No es la marca volviendo al cromo (ADR 0065): es
           el título de la ventana, y en Windows lo lleva cualquier aplicación. */}
@@ -1239,4 +1285,28 @@ export function BarraDeTitulo() {
       </div>
     </div>
   );
+}
+
+/**
+ * Si la ventana da de sí para tener el panel de navegación abierto al lado.
+ *
+ * 860 px no es un número redondo: es **donde la columna de contenido deja de
+ * crecer**. Por debajo, abrir el panel le quita sitio a lo que se está
+ * haciendo; por encima, cabe de sobra. La misma medida que ya manda en el resto
+ * de la hoja.
+ *
+ * Se suscribe al medio y no se mira una vez: la ventana se redimensiona, y una
+ * lectura al montar deja el panel decidido con el tamaño de entonces.
+ */
+export function laVentanaEsAncha(): boolean {
+  const medio = "(min-width: 860px)";
+  const [ancha, setAncha] = useState(() => window.matchMedia(medio).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(medio);
+    const alCambiar = () => setAncha(mq.matches);
+    mq.addEventListener("change", alCambiar);
+    alCambiar();
+    return () => mq.removeEventListener("change", alCambiar);
+  }, []);
+  return ancha;
 }

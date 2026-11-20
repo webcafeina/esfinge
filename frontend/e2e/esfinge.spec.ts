@@ -1348,7 +1348,7 @@ test("la clave se puede destapar para leerla y volver a tapar", async ({ page })
   await page.goto("/");
 
   const campo = page.locator("#clave-cifrar");
-  await accion(page, "Generar una").click();
+  await page.getByRole("button", { name: "Generar una clave" }).click();
   await expect(campo).toHaveAttribute("type", "password");
   await expect(campo).not.toHaveValue("");
 
@@ -1384,7 +1384,7 @@ test("copiar la clave con el menú sale por Go, que es el único camino que func
   });
 
   await page.goto("/");
-  await accion(page, "Generar una").click();
+  await page.getByRole("button", { name: "Generar una clave" }).click();
   await expect(page.locator("#clave-cifrar")).not.toHaveValue("");
   const generada = await page.locator("#clave-cifrar").inputValue();
 

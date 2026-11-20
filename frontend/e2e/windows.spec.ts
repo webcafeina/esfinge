@@ -97,9 +97,11 @@ test("los controles y los radios son los de WinUI", async ({ page }) => {
   const grupo = page.locator(".contenido .grupo:visible").first();
   expect(await grupo.evaluate((g) => getComputedStyle(g).borderRadius)).toBe("8px");
 
-  // El NavigationView abierto: 240 de ancho y filas de 40.
+  // El NavigationView abierto: 240 de ancho y **filas de 36**, que es la medida
+  // de Fluent. Antes eran 40, de cuando la barra lateral de Windows era la de
+  // macOS con otros números.
   expect(await ancho(page.locator(".lateral"))).toBe(240);
-  expect(await alto(page.locator(".lateral nav button").first())).toBe(40);
+  expect(await alto(page.locator(".lateral nav button").first())).toBe(36);
 });
 
 test("la fila activa se tiñe del acento y lleva su barra al lado", async ({ page }) => {
@@ -283,9 +285,10 @@ test("la ventana lleva su propia barra de título, con los tres botones del sist
 
   const barra = page.locator(".barra-titulo");
   await expect(barra).toBeVisible();
-  // 32, que es el alto de la barra de Windows 11. **Lo dice Go** y llega como
+  // **48: la barra alta de WinUI**, que es la que lleva una ventana con panel de
+  // navegación —dentro va la hamburguesa que lo pliega—. Lo dice Go y llega como
   // propiedad de CSS: si alguien lo escribiera también aquí, serían dos.
-  expect(await alto(barra)).toBe(32);
+  expect(await alto(barra)).toBe(48);
 
   // Los tres, con su nombre y a la derecha del título de la ventana.
   const cerrar = page.getByRole("button", { name: "Cerrar la ventana" });
@@ -293,7 +296,7 @@ test("la ventana lleva su propia barra de título, con los tres botones del sist
     const b = page.getByRole("button", { name: nombre });
     await expect(b).toBeVisible();
     expect(await ancho(b)).toBe(46);
-    expect(await alto(b)).toBe(32);
+    expect(await alto(b)).toBe(48);
   }
   const titulo = (await barra.locator(".titulo-ventana").boundingBox())!;
   expect((await cerrar.boundingBox())!.x).toBeGreaterThan(titulo.x + titulo.width);
@@ -364,4 +367,50 @@ test("las cinco pestañas de Ajustes caben en una fila, con sus iconos de Fluent
   const boveda = page.getByRole("tab", { name: "Bóveda", exact: true }).locator("svg path");
   const esperado = ICONOS_FLUENT.boveda["16"] ?? ICONOS_FLUENT.boveda["20"];
   await expect(boveda.first()).toHaveAttribute("d", esperado[0]);
+});
+
+test("el panel se pliega, se despliega, y con la ventana estrecha sale encima", async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 720 });
+  await enWindows(page);
+  const ventana = page.locator(".ventana");
+  const panel = page.locator(".lateral");
+
+  // Abierto: el NavigationView al lado del contenido, con los nombres.
+  await expect(ventana).toHaveAttribute("data-panel", "abierto");
+  expect(await ancho(panel)).toBe(240);
+  await expect(panel.getByRole("button", { name: "Cifrar", exact: true })).toContainText("Cifrar");
+
+  // Plegado: **48 de ancho y solo los iconos**. Que la fila siga midiendo 36 es
+  // lo que dice que el icono no se ha movido al plegar: va en una caja de 40
+  // centrada, que es para lo que existe esa caja.
+  await page.getByRole("button", { name: "Plegar el menú" }).click();
+  await expect(ventana).toHaveAttribute("data-panel", "compacto");
+  expect(await ancho(panel)).toBe(48);
+  expect(await alto(page.locator(".lateral nav button").first())).toBe(36);
+  await expect(page.locator(".lateral .rotulo").first()).toBeHidden();
+
+  // Y el nombre no se pierde: pasa al `title`, que es lo único que queda para
+  // saber adónde lleva un dibujo.
+  await expect(panel.getByRole("button", { name: "Cifrar", exact: true })).toHaveAttribute(
+    "title",
+    "Cifrar",
+  );
+
+  // Estrecha: se queda compacto solo, porque abrirlo al lado dejaría al
+  // contenido sin sitio.
+  await page.setViewportSize({ width: 800, height: 720 });
+  await expect(ventana).toHaveAttribute("data-panel", "compacto");
+
+  // Y ahí desplegarlo lo pone **encima** del contenido, no al lado: se comprueba
+  // mirando que lo tapa, que es la diferencia entre los dos estados.
+  await page.getByRole("button", { name: "Desplegar el menú" }).click();
+  await expect(ventana).toHaveAttribute("data-panel", "encima");
+  const zona = (await page.locator(".zona").boundingBox())!;
+  const flotante = (await panel.boundingBox())!;
+  expect(flotante.width).toBe(240);
+  expect(flotante.x + flotante.width).toBeGreaterThan(zona.x);
+
+  // Y elegir algo lo cierra: dejarlo abierto escondería lo que se acaba de pedir.
+  await panel.getByRole("button", { name: "Generar", exact: true }).click();
+  await expect(ventana).toHaveAttribute("data-panel", "compacto");
 });

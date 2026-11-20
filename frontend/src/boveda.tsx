@@ -1189,6 +1189,28 @@ function Dentro({
           aria-label="Buscar en la bóveda"
           onChange={(e) => setQ(e.target.value)}
         />
+        {/* **El orden vive aquí y no con las pestañas** (2026-11-20). Estaba a la
+            derecha de las clases, y ahí los dos controles no caben: la barra de
+            pestañas mide entre 344 y 434 px según el rótulo de la clase activa, de
+            los 560 que hay, así que con cuatro de las ocho clases el desplegable
+            **caía a una segunda fila** y con las otras cuatro no. Medido, no
+            razonado, y es lo que el cliente vio como «salto de líneas».
+            Aquí no compite con nadie: el campo de buscar es elástico y cede. Y de
+            paso quedan juntas las tres cosas que dicen qué se ve —buscar, ordenar
+            y filtrar— en vez de repartidas en dos filas. */}
+        <label htmlFor="boveda-orden" className="solo-se-oye">
+          Ordenar por
+        </label>
+        <select
+          id="boveda-orden"
+          className="discreto"
+          value={orden}
+          onChange={(e) => setOrden(e.target.value as Orden)}
+        >
+          <option value="nombre">Por nombre</option>
+          <option value="cambiada">Cambiada la última</option>
+          <option value="carpeta">Por carpeta</option>
+        </select>
         {/* Lo nuevo se crea de la clase que se esté mirando: estando en Tarjetas,
             «Nueva» es una tarjeta. */}
         <button onClick={() => setEditando(entradaNueva(tipo))}>Nueva</button>
@@ -1270,24 +1292,6 @@ function Dentro({
             { valor: "wifi", etiqueta: "Wi-Fi", icono: "wifi" },
           ]}
         />
-        {/* A la derecha, porque son dos preguntas distintas: las pestañas dicen
-            qué se mira y esto en qué orden. Se aparta con «margin-left: auto» y
-            no con un separador elástico: cuando la fila se parte en dos, el
-            separador se queda arriba y esto caería a la izquierda de la segunda
-            línea, descolgado. */}
-        <label htmlFor="boveda-orden" className="solo-se-oye">
-          Ordenar por
-        </label>
-        <select
-          id="boveda-orden"
-          className="discreto"
-          value={orden}
-          onChange={(e) => setOrden(e.target.value as Orden)}
-        >
-          <option value="nombre">Por nombre</option>
-          <option value="cambiada">Cambiada la última</option>
-          <option value="carpeta">Por carpeta</option>
-        </select>
       </div>
 
       {error && <p className="error">{error}</p>}

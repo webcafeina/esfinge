@@ -36,6 +36,7 @@ import {
   BandaNovedad,
   BarraDeTitulo,
   BarraLateral,
+  laVentanaEsAncha,
   CampoClave,
   Firma,
   Icono,
@@ -70,6 +71,29 @@ type Modo = "texto" | "ficheros";
 
 export default function App() {
   const [tarea, setTarea] = useState<Tarea>("cifrar");
+
+  /**
+   * El panel de navegación, en los tres estados del NavigationView de WinUI.
+   *
+   * **Abierto** con la ventana ancha; **compacto** —solo los iconos— al plegarlo
+   * o cuando la ventana se estrecha; y **encima** del contenido cuando, estando
+   * estrecha, se pide desplegarlo. Ese tercero no es un adorno: en una ventana
+   * estrecha, empujar el contenido 240 px lo dejaría sin sitio para nada.
+   *
+   * El atributo se pone en los cuatro sistemas y **lo lee solo la hoja de
+   * Windows**, que es quien hoy pliega. Así esto no es una decisión de aspecto
+   * tomada en el marcado, que es lo que vigila `TestElAspectoNoSeDecideEnElMarcado`.
+   */
+  const [plegado, setPlegado] = useState(false);
+  const [encima, setEncima] = useState(false);
+  const ancha = laVentanaEsAncha();
+  const panel: "abierto" | "compacto" | "encima" = ancha
+    ? plegado
+      ? "compacto"
+      : "abierto"
+    : encima
+      ? "encima"
+      : "compacto";
   // Lo que se ha visitado alguna vez. Una sección se monta la primera vez que se
   // entra en ella y a partir de ahí se queda, solo que escondida.
   const [visitadas, setVisitadas] = useState<Set<Tarea>>(() => new Set<Tarea>(["cifrar"]));
@@ -346,17 +370,28 @@ export default function App() {
   }
 
   return (
-    <div className="ventana">
+    <div className="ventana" data-panel={panel}>
       {/* La barra de título, que solo se ve donde la dibuja Esfinge (ADR 0066).
           Va siempre en el marcado: ver el componente. */}
-      <BarraDeTitulo />
+      <BarraDeTitulo
+        panelAbierto={panel !== "compacto"}
+        alMenu={() => (ancha ? setPlegado(!plegado) : setEncima(!encima))}
+      />
 
       <BarraLateral
         valor={tarea}
-        alCambiar={setTarea}
+        alCambiar={(v) => {
+          setTarea(v);
+          // Elegir cierra el panel que está **encima** del contenido, que es lo
+          // que hace cualquier menú que tapa: dejarlo abierto esconde justo lo
+          // que se acaba de pedir. Plegado o abierto del todo no se toca, que
+          // ahí no tapa nada.
+          if (panel === "encima") setEncima(false);
+        }}
         version={version}
         bovedaAbierta={bovedaAbierta}
         nombreDelProyecto={nombreDelProyecto}
+        compacto={panel === "compacto"}
       />
 
       <div className="zona">
@@ -995,11 +1030,15 @@ function Generar({ alUsarComoClave }: { alUsarComoClave: (clave: string) => void
 
       {error && <p className="error">{error}</p>}
 
+      {/* **El nombre que propone el diálogo lleva su eñe.** Es texto que lee una
+          persona, y los tres sistemas guardan nombres en UTF-8 desde hace años:
+          escribirlo sin tilde era una precaución de otra época que se veía en la
+          pantalla. Lo pidió el cliente el 2026-11-20 viendo el diálogo de Windows. */}
       {contrasena && (
         <PanelResultado
           texto={contrasena}
           exito={guardadoEn ? `Guardado en ${guardadoEn}` : undefined}
-          nombreSugerido="contrasena.txt"
+          nombreSugerido="contraseña.txt"
           alGuardar={setGuardadoEn}
           extra={
             <>

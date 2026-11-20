@@ -44,6 +44,9 @@
   --radio-chico: 4px;
   --radio: 4px;
   --radio-grande: 8px;
+  /* El panel plegado: 48, que es lo que mide la caja del icono de una fila. */
+  --panel-compacto: 48px;
+  --ancho-panel: var(--barra-lateral);
 
   /* Y los controles son más altos: 32 contra los 28 de la base. */
   --alto-control: 32px;
@@ -382,7 +385,9 @@
   display: flex;
   align-items: center;
   height: var(--alto-barra-titulo);
-  background: var(--barra);
+  padding-left: 4px;
+  min-width: 0;
+  background: transparent;
 
   /* Toda la banda agarra la ventana. La propiedad **se hereda**, así que lo que
    * caiga dentro arrastra también mientras no se desmarque: por eso los botones
@@ -393,9 +398,40 @@
 /* El nombre de la ventana: 12 px, apagado y pegado a la izquierda, que es lo que
  * dibuja Windows cuando la barra es suya. */
 :root[data-barra="propia"] .titulo-ventana {
-  padding-left: var(--espacio-4);
+  margin-left: var(--espacio-4);
   font-size: var(--texto-chico);
+  line-height: 16px;
   color: var(--cuerpo);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* La hamburguesa, en la misma columna que los iconos del panel: 40 × 36, que es
+ * lo que deja el glifo de 16 centrado a 24 px del borde. Sin borde ni fondo,
+ * como todo lo que vive en una barra de título. */
+:root[data-barra="propia"] .boton-menu {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--tinta);
+  --wails-draggable: no-drag;
+}
+
+:root[data-barra="propia"] .boton-menu svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.1;
+}
+
+:root[data-barra="propia"] .boton-menu:hover:not(:disabled) {
+  background: var(--boton-encima);
 }
 
 :root[data-barra="propia"] .botones-ventana {
@@ -408,6 +444,11 @@
  * cierre tiene que llegar hasta la esquina de la pantalla, o se pierde el gesto
  * de tirar el ratón arriba a la derecha. Por eso también `height: 100%`, contra
  * la regla general que da 28 px a todos los botones. */
+:root[data-barra="propia"] .botones-ventana {
+  align-self: stretch;
+  flex: none;
+}
+
 :root[data-barra="propia"] .botones-ventana button {
   width: var(--ancho-boton-ventana);
   height: 100%;
@@ -489,4 +530,111 @@
   margin-left: -8px;
   border-radius: 2px;
   background: var(--acento);
+}
+
+/* ------------------------------------------- el panel de navegación de WinUI
+ *
+ * **La barra de título y el panel son una sola pieza**, que es lo que el
+ * cliente echaba en falta el 2026-11-20 comparándolo con Apolo: «no tiene ese
+ * diseño de menú vertical unido orgánicamente con la parte superior de la
+ * ventana». Lo que lo une no es un color: es la **rejilla**. La barra de título
+ * es la fila de arriba a todo lo ancho, el panel empieza debajo, y la
+ * hamburguesa que lo pliega vive dentro de la barra, alineada con la columna de
+ * iconos del panel. Por eso la barra es de 48 y no de 32: es la alta, la que
+ * WinUI usa cuando hay panel.
+ *
+ * Y por eso el panel **no se dibuja**: ni fondo ni borde. El marco de la ventana
+ * —Mica— es su fondo, igual que la barra lateral bajo el vidrio de macOS. */
+:root[data-sistema="windows"] .ventana {
+  position: relative;
+  grid-template-rows: var(--alto-barra-titulo) minmax(0, 1fr);
+}
+
+:root[data-sistema="windows"] .lateral {
+  grid-row: 2;
+  grid-column: 1;
+  background: transparent;
+  border-right: 0;
+  padding: 4px 0 var(--espacio-2);
+  overflow: hidden;
+}
+
+:root[data-sistema="windows"] .zona {
+  grid-row: 2;
+  grid-column: 2;
+}
+
+/* Las filas: 36 de alto, radio 4, el icono de 16 en una caja de 40 —que es lo
+ * que las deja centradas en el panel plegado, sin moverse ni un píxel al
+ * plegar— y el nombre a continuación. */
+:root[data-sistema="windows"] .lateral nav {
+  gap: 4px;
+  padding: 0 4px;
+}
+
+:root[data-sistema="windows"] .lateral nav button {
+  width: 100%;
+  height: 36px;
+  padding: 0;
+  gap: 0;
+  border-radius: var(--radio);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+:root[data-sistema="windows"] .lateral nav .icono {
+  margin: 0 12px;
+  flex: none;
+}
+
+:root[data-sistema="windows"] .lateral nav .rotulo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------ plegar y desplegar
+ *
+ * Tres estados, los del NavigationView: **abierto** al lado del contenido,
+ * **compacto** con solo los iconos, y **encima** cuando la ventana es estrecha
+ * y se pide ver los nombres — ahí empujar el contenido 240 px lo dejaría sin
+ * sitio, así que el panel flota sobre él y se va al elegir.
+ *
+ * Se anima el ancho de la columna, 200 ms con la curva de deceleración de
+ * Fluent. La regla global de `prefers-reduced-motion` la apaga entera. */
+:root[data-sistema="windows"] .ventana {
+  transition: grid-template-columns 200ms cubic-bezier(0, 0, 0, 1);
+}
+
+:root[data-sistema="windows"] .ventana:not([data-panel="abierto"]) {
+  grid-template-columns: var(--panel-compacto) minmax(0, 1fr);
+}
+
+:root[data-sistema="windows"] .ventana[data-panel="compacto"] .lateral .rotulo,
+:root[data-sistema="windows"] .ventana[data-panel="compacto"] .lateral .version {
+  display: none;
+}
+
+/* Encima: el panel flota con el acrílico y la sombra de un panel de Fluent, y
+ * sigue en su celda de la rejilla, que es desde donde cuentan `top` y `bottom`. */
+:root[data-sistema="windows"] .ventana[data-panel="encima"] .lateral {
+  position: absolute;
+  top: var(--alto-barra-titulo);
+  bottom: 0;
+  left: 0;
+  width: var(--ancho-panel);
+  z-index: 30;
+  background: color-mix(in srgb, var(--barra) 92%, transparent);
+  backdrop-filter: blur(30px) saturate(1.25);
+  border: 1px solid var(--filete);
+  border-left: 0;
+  border-radius: 0 var(--radio-grande) var(--radio-grande) 0;
+  box-shadow: 0 8px 16px rgb(0 0 0 / 0.14);
+  animation: abrir-panel 200ms cubic-bezier(0, 0, 0, 1);
+}
+
+@keyframes abrir-panel {
+  from {
+    width: var(--panel-compacto);
+  }
 }

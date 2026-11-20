@@ -523,8 +523,7 @@ body {
  * él lo que oye quien lee la pantalla en voz alta y lo que buscan las pruebas.
  * Esta técnica lo deja de un píxel y fuera de la vista, que es distinto de no
  * estar. */
-.solo-se-oye,
-.segmentado.compacto .rotulo {
+.solo-se-oye {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -589,13 +588,40 @@ body {
   padding: 0 var(--espacio-2);
 }
 
+/* **El rótulo de la activa no aparece de golpe: se abre** (2026-11-20).
+ *
+ * Antes se escondía recortándolo —la técnica de «solo para lectores»— y volvía de
+ * un salto, así que cambiar de clase movía las ocho pestañas a la vez y la fila
+ * daba un respingo. Lo que lo quita es que el hueco **se abra y se cierre**: el
+ * rótulo sigue en el flujo y lo que cambia es su ancho máximo, que es lo único
+ * que se puede animar sin que el navegador recalcule a saltos.
+ *
+ * Sigue leyéndose con un lector de pantalla, igual que antes: nada de
+ * `display: none`, que sí lo sacaría del árbol de accesibilidad.
+ *
+ * El relleno va aquí y no como `gap` del botón, porque un `gap` no se puede
+ * cerrar: con el rótulo a cero ancho dejaría cuatro píxeles de aire delante de
+ * nada. */
+.segmentado.compacto .rotulo {
+  display: inline-block;
+  max-width: 0;
+  padding-left: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: middle;
+  transition: max-width 0.18s ease, padding 0.18s ease, opacity 0.12s ease;
+}
+
 .segmentado.compacto button[aria-selected="true"] .rotulo {
-  position: static;
-  width: auto;
-  height: auto;
-  margin: 0;
-  overflow: visible;
-  clip-path: none;
+  max-width: 12rem;
+  padding-left: var(--espacio-1);
+  opacity: 1;
+}
+
+/* Y el `gap` del botón sobra en el compacto: lo pone el rótulo cuando lo hay. */
+.segmentado.compacto.con-iconos button {
+  gap: 0;
 }
 
 .segmentado button {
@@ -669,6 +695,23 @@ textarea {
 
 .campo-con-ojo input {
   padding-right: 34px;
+}
+
+/* Con la llave dentro hay dos botones, así que el texto se aparta de los dos. */
+.campo-con-ojo:has(.llave) input {
+  padding-right: 62px;
+}
+
+/* La llave va a la izquierda del ojo. Se coloca por su derecha y no con un
+ * contenedor flexible, que obligaría a cambiar cómo se posiciona el ojo —y el
+ * ojo lo usan campos que no tienen llave—.
+ *
+ * **Con las dos clases a propósito.** Escrito `.campo-con-ojo .llave` empata en
+ * peso con `.campo-con-ojo .ojo`, que vive más abajo en el fichero y por tanto
+ * gana: los dos botones salían uno encima del otro. Es el mismo empate que ya
+ * costó lo de la fila activa de la barra lateral. */
+.campo-con-ojo .ojo.llave {
+  right: 31px;
 }
 
 .campo-con-ojo .ojo {

@@ -284,10 +284,13 @@ type Marco struct {
 	// Propia: la barra de título la dibuja Esfinge, no el sistema.
 	Propia bool `json:"propia"`
 
-	// Alto de esa barra, en píxeles. 32 es el de Windows 11.
+	// Alto de esa barra, en píxeles. **48 es la barra alta de WinUI**, que es la
+	// que lleva una ventana con panel de navegación: ahí dentro va la hamburguesa
+	// que lo pliega, alineada con la columna de iconos del panel. La baja, de 32,
+	// es la de una ventana sin panel.
 	Alto int `json:"alto"`
 
-	// AnchoBoton es lo que mide cada botón de ventana. 46 × 32 es la caja de
+	// AnchoBoton es lo que mide cada botón de ventana. 46 × 48 es la caja de
 	// Windows 11, y no se redondea: son zonas de clic del sistema y la del cierre
 	// tiene que llegar al borde de la pantalla para que valga el gesto de tirar el
 	// ratón a la esquina.
@@ -307,7 +310,7 @@ type Marco struct {
 // redimensionado— y Wails no expone con qué volver a decorarla.
 func MarcoDe(sistema string) Marco {
 	if sistema == "windows" {
-		return Marco{Propia: true, Alto: 32, AnchoBoton: 46}
+		return Marco{Propia: true, Alto: 48, AnchoBoton: 46}
 	}
 	return Marco{}
 }
