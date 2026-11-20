@@ -293,32 +293,28 @@ test("avisa de la versión nueva, y se puede quitar de en medio", async ({ page 
 // frase no la miraría nadie hasta verla —o no verla— en una máquina de verdad, que es como
 // estaba apuntado en deuda.md.
 test("en Linux la banda avisa de que pedirá la contraseña", async ({ page }) => {
-  // **Esta prueba descarga de GitHub de verdad**, y por eso pide su propio plazo:
-  // el `timeout: 60_000` de abajo no podía cumplirse nunca con el presupuesto de
-  // 30 s de la tanda, así que lo que fallaba era el reloj de la prueba y no la
-  // espera que alguien escribió a propósito. Cayó así el 2026-11-19 en el tema
-  // oscuro de la tanda completa —1,6 s corriéndola sola, más de 28 ahí—, y lo que
-  // de verdad lo cierra está en `deuda.md`: que descargar no dependa de la red.
-  test.setTimeout(120_000);
   const errores = vigilarConsola(page);
   await page.goto("/");
 
-  // Primero que haya algo que anunciar, por el camino de siempre.
-  await seccion(page, "Ajustes").click();
-  await page.getByRole("tab", { name: "Actualizaciones" }).click();
-  await page.getByRole("button", { name: "Buscar ahora" }).click();
-  const banda = page.locator(".novedad");
-  await expect(banda).toBeVisible({ timeout: 20_000 });
-
-  // Y ahora, la misma novedad como si esta copia viniera de un paquete.
-  const avisado = await page.request.post("/api/_novedad?autorizacion=si");
+  // **Esta prueba ya no pasa por la red**, y conviene saber por qué estaba así.
+  // Antes montaba la novedad con «Buscar ahora» —o sea api.github.com— y descargaba
+  // **el adjunto de verdad de la última publicación**, unos cuantos megas por tema y
+  // por tanda. Pasaba casi siempre; falló el 2026-11-20 en el tema oscuro con la
+  // puerta de una publicación detrás, y un fallo de red no se arregla volviendo a
+  // correrlo. Con `?local=si` la novedad apunta a este mismo servidor, que sirve unos
+  // bytes con **su resumen de verdad**: `Descargar` lo comprueba mientras baja, así
+  // que lo que se ejercita sigue siendo el camino entero —pedir, contar el avance,
+  // comprobar la suma y renombrar—, sin un segundo de red.
+  const avisado = await page.request.post("/api/_novedad?local=si&autorizacion=si");
   expect(avisado.ok(), await avisado.text()).toBe(true);
+  const banda = page.locator(".novedad");
+  await expect(banda).toBeVisible();
 
   // El botón promete instalar y reiniciar...
   await expect(banda.getByRole("button", { name: "Descargar" })).toBeVisible();
   await banda.getByRole("button", { name: "Descargar" }).click();
   await expect(banda.getByRole("button", { name: "Instalar y reiniciar" })).toBeVisible({
-    timeout: 60_000,
+    timeout: 20_000,
   });
 
   // ...y el texto dice lo que va a pasar antes de que pase.

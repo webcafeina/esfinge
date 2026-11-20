@@ -357,22 +357,32 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 | ~~Adivinar en macOS sale caro y no hay banco de pruebas~~ | Media | Tres versiones seguidas —2.5.1, 2.9.0 y 2.9.1— salieron con un cambio de macOS que no se podía probar aquí, y las tres fallaron: dos no hicieron nada visible y la tercera cerró la aplicación, dejando al cliente sin herramienta hasta la 2.9.2. El ciclo «publicar para ver qué pasa» lo sufre él, no yo | **Saldada (2026-09-08)**: `compilar.yml` acepta `inspector` en su disparador manual y compila con `wails build -devtools`, que deja el Web Inspector en el paquete. Cada hipótesis pasa a costar una línea en una consola en vez de una versión publicada. Marcada por tres sitios para que no se confunda con una compilación normal: nombre del artefacto, retención y sufijo en la versión |
 
-### La prueba de la banda de actualización descarga de GitHub de verdad
+### ~~La prueba de la banda de actualización descarga de GitHub de verdad~~
 
-**Severidad:** media · **Apuntada:** 2026-11-19
+**Severidad:** media · **Apuntada:** 2026-11-19 · **Saldada:** 2026-11-20
 
-`en Linux la banda avisa de que pedirá la contraseña` pulsa «Descargar» y eso llama a
-`DescargarActualizacion`, que **se trae el instalador de la publicación de GitHub**. O sea que una
-puerta de aquí depende de la red y del humor de GitHub: el 2026-11-19 cayó en el tema oscuro de la
+`en Linux la banda avisa de que pedirá la contraseña` pulsaba «Descargar» y eso llamaba a
+`DescargarActualizacion`, que **se traía el instalador de la publicación de GitHub**. O sea que una
+puerta de aquí dependía de la red y del humor de GitHub: el 2026-11-19 cayó en el tema oscuro de la
 tanda completa tardando **más de 28 segundos** en un paso que, corriendo la prueba sola, tarda 1,6 —y
-pasó en claro en esa misma tanda—. De momento lleva su propio plazo de 120 s, que es lo que el
-`timeout: 60_000` escrito dentro ya daba por hecho y el presupuesto de 30 s de la tanda hacía
-imposible.
+pasó en claro en esa misma tanda—. **Y volvió a caer el 2026-11-20 con la puerta de una publicación
+detrás**, que es lo que obligó a cerrarlo: un fallo de red no se arregla volviendo a correrlo.
 
-**Lo que lo cierra de verdad** es una costura en `dev.go` que le dé a `Descargar` un fichero local
-—como `_novedad` monta el aviso— para que la prueba ejercite **la pantalla**, que es lo que quiere
-mirar, y no la descarga. Mientras tanto, si vuelve a caer, **no se vuelve a correr hasta que salga
-verde**: se mira cuánto tardó.
+**Saldada con la costura que esta fila pedía por su nombre**: `/api/_novedad?local=si` planta la
+novedad apuntando a `/api/_descarga`, del mismo servidor de desarrollo, que sirve 64 KiB con **su
+resumen de verdad**. `Descargar` lo comprueba mientras baja, así que lo que se ejercita sigue siendo
+el camino entero —pedir, contar el avance, comprobar la suma y renombrar— sin un segundo de red: de
+28 s a 1,9. Mutada la frase que vigila, roja en los dos temas.
+
+**Y por el camino salió un fallo de la costura anterior, que es lo que de verdad hay que aprenderse.**
+`?autorizacion=si` falseaba el modo de instalación **en el aviso y no en el estado**, así que la banda
+salía bien y **la pregunta de «¿hay algo pendiente?» al montar la devolvía al modo de verdad**: una
+respuesta que llega tarde deshaciendo lo que ya se había decidido, con los cuatro lectores de
+`deNovedad` leyendo dos verdades distintas. No se notaba porque la prueba tardaba tanto en llegar
+—navegar a Ajustes y pulsar «Buscar ahora»— que la pregunta del montaje ya había contestado. Al
+quitarle la red, la carrera se cerró y el fallo salió a la primera. Ahora `deNovedad` es
+`actualizador.novedad` y el falseo vive **en el actualizador**, que es el único sitio del que
+preguntan los cuatro. Es la regla de «una regla en dos listas», van siete.
 
 ### La barra de clases de la bóveda se pasó 5 px una vez, y no se ha podido reproducir
 

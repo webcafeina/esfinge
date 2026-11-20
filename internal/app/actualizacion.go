@@ -72,6 +72,17 @@ type actualizador struct {
 	// aunque llegue tarde al evento.
 	encontrada actualizacion.Novedad
 	descargado string
+	// comoSiFueraDeUnPaquete hace que `novedad` conteste como si esta copia se
+	// instalara sola y pidiera la contraseña del sistema (ADR 0062).
+	//
+	// **Lo escribe sólo la costura `/api/_novedad?autorizacion=si`, que no existe fuera
+	// de la etiqueta `dev`**, y está aquí y no allí por lo que costó el 2026-11-20: el
+	// falseo vivía en el aviso, así que la banda salía bien y **la pregunta de al montar
+	// la devolvía al modo de verdad** —una respuesta que llega tarde deshaciendo lo que ya
+	// se había decidido, con los cuatro lectores de `novedad` leyendo dos verdades
+	// distintas—. Es la misma regla escrita en dos sitios, que aquí ya ha costado seis
+	// veces: un sitio, y los demás preguntan.
+	comoSiFueraDeUnPaquete bool
 }
 
 // vigilar deja un reloj mirando si toca comprobar, mientras la ventana viva.
@@ -138,8 +149,9 @@ func (a *App) mirarSiToca() {
 		}
 		a.act.mu.Lock()
 		a.act.encontrada = n
+		aviso := a.act.novedad(n)
 		a.act.mu.Unlock()
-		a.sistema.Avisar(EventoNovedad, deNovedad(n))
+		a.sistema.Avisar(EventoNovedad, aviso)
 	}()
 }
 
@@ -157,8 +169,9 @@ func (a *App) ComprobarActualizacion() (Novedad, error) {
 
 	a.act.mu.Lock()
 	a.act.encontrada = n
+	aviso := a.act.novedad(n)
 	a.act.mu.Unlock()
-	return deNovedad(n), nil
+	return aviso, nil
 }
 
 // NovedadPendiente devuelve lo que encontró la comprobación del arranque, para
@@ -167,7 +180,7 @@ func (a *App) ComprobarActualizacion() (Novedad, error) {
 func (a *App) NovedadPendiente() Novedad {
 	a.act.mu.Lock()
 	defer a.act.mu.Unlock()
-	return deNovedad(a.act.encontrada)
+	return a.act.novedad(a.act.encontrada)
 }
 
 // DescargarActualizacion trae el fichero y devuelve dónde ha quedado. El avance
@@ -240,7 +253,24 @@ func (a *App) GuardarPreferencias(p Preferencias) error {
 
 // deNovedad recorta lo que sabe el paquete de actualización a lo que necesita la
 // ventana. El resumen SHA256 no cruza el puente: no es asunto de la interfaz.
-func deNovedad(n actualizacion.Novedad) Novedad {
+// novedad traduce lo que encontró el comprobador a lo que ve la ventana.
+//
+// Es método y no función porque el modo de instalación puede estar falseado por la
+// costura de desarrollo, y entonces **todos** los lectores tienen que ver lo mismo.
+// Se llama con `a.mu` tomado.
+func (a *actualizador) novedad(n actualizacion.Novedad) Novedad {
+	if a.comoSiFueraDeUnPaquete {
+		return Novedad{
+			Hay:              n.Hay,
+			Version:          n.Version,
+			Pagina:           n.Pagina,
+			Fichero:          n.Fichero,
+			Bytes:            n.Bytes,
+			Gestor:           n.Gestor,
+			ComoSeInstala:    string(actualizacion.ModoSolo),
+			PideAutorizacion: true,
+		}
+	}
 	return Novedad{
 		Hay:                 n.Hay,
 		Version:             n.Version,

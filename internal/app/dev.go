@@ -18,6 +18,8 @@
 package app
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -31,6 +33,20 @@ import (
 	"github.com/webcafeina/esfinge/internal/actualizacion"
 	"github.com/webcafeina/esfinge/internal/llavero"
 )
+
+// ficheroDeMentira es lo que sirve `/api/_descarga`: unos bytes con la forma de
+// un fichero descargable y nada dentro.
+//
+// Son 64 KiB para que el contador de avance tenga algo que contar —con cuatro
+// bytes, la descarga termina antes del primer aviso y el camino del progreso no
+// se ejercita— y lo bastante poco para que no se note.
+var ficheroDeMentira = func() []byte {
+	b := make([]byte, 64*1024)
+	for i := range b {
+		b[i] = byte(i)
+	}
+	return b
+}()
 
 // SistemaDeDesarrollo hace de escritorio cuando no hay escritorio.
 //
@@ -188,23 +204,61 @@ func Servir(a *App, s *SistemaDeDesarrollo, direccion string) error {
 	// propósito —no es algo que la ventana deba poder pedir— y además solo sale una vez cada
 	// 24 horas, así que desde una prueba no hay forma de provocarlo. Y es justo el caso que
 	// se escapó: la banda volvía a abrirse sola y tiró dos intentos de publicar la 2.65.
+	// Sirve el fichero que se descargaría, para que probar la descarga no dependa de
+	// la red.
+	//
+	// Está aquí por lo mismo que `_llavero`, `_excluir` y `_novedad`, y **no existe
+	// fuera de la etiqueta `dev`**.
+	mux.HandleFunc("/api/_descarga", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Content-Length", fmt.Sprint(len(ficheroDeMentira)))
+		_, _ = w.Write(ficheroDeMentira)
+	})
+
 	mux.HandleFunc("/api/_novedad", func(w http.ResponseWriter, r *http.Request) {
-		a.act.mu.Lock()
-		n := a.act.encontrada
-		a.act.mu.Unlock()
-		if !n.Hay {
-			http.Error(w, "Todavía no se ha encontrado ninguna versión nueva", http.StatusConflict)
-			return
+		// **Y con `?local=si`, una novedad que se baja de aquí mismo.**
+		//
+		// Sin esto, probar el botón de descargar **pasaba por api.github.com y por el
+		// adjunto de verdad de la última publicación**: unos cuantos megas por tanda y
+		// por tema, con el reloj de la prueba corriendo. Pasaba casi siempre y falló el
+		// 2026-11-20 en el tema oscuro, con la puerta de una publicación detrás — y lo
+		// que falla por la red no se arregla volviendo a correrlo. Así que la novedad se
+		// planta con la URL de este mismo servidor (`r.Host`), su tamaño y **su resumen
+		// de verdad**, que es lo único que no se puede falsear: `Descargar` lo comprueba
+		// mientras baja, así que el camino que se ejercita sigue siendo el entero.
+		if r.URL.Query().Get("local") == "si" {
+			suma := sha256.Sum256(ficheroDeMentira)
+			a.act.mu.Lock()
+			a.act.encontrada = actualizacion.Novedad{
+				Hay:     true,
+				Version: "99.0.0",
+				Pagina:  "https://github.com/webcafeina/esfinge/releases",
+				Fichero: "esfinge-de-mentira.bin",
+				URL:     "http://" + r.Host + "/api/_descarga",
+				Bytes:   int64(len(ficheroDeMentira)),
+				Resumen: hex.EncodeToString(suma[:]),
+			}
+			a.act.mu.Unlock()
 		}
-		aviso := deNovedad(n)
+
 		// **Y con `?autorizacion=si`, como si esta copia viniera de un paquete** (ADR 0062).
 		// Aquí no hay `pkexec` ni un `/usr/share/esfinge/gestor`, así que la frase que avisa
 		// del diálogo de la contraseña no se podría ver de otra forma — y es justo la que no
 		// puede faltar, porque sin ella lo sensato al ver ese diálogo es cancelarlo. Monta un
 		// estado que una prueba no puede crear de otra manera, igual que `_llavero`.
+		//
+		// Se apunta **en el actualizador y no en este aviso**: falseándolo sólo aquí, la
+		// pregunta de al montar devolvía la banda al modo de verdad.
+		a.act.mu.Lock()
 		if r.URL.Query().Get("autorizacion") == "si" {
-			aviso.ComoSeInstala = string(actualizacion.ModoSolo)
-			aviso.PideAutorizacion = true
+			a.act.comoSiFueraDeUnPaquete = true
+		}
+		n := a.act.encontrada
+		aviso := a.act.novedad(n)
+		a.act.mu.Unlock()
+		if !n.Hay {
+			http.Error(w, "Todavía no se ha encontrado ninguna versión nueva", http.StatusConflict)
+			return
 		}
 		a.sistema.Avisar(EventoNovedad, aviso)
 		w.Header().Set("Content-Type", "application/json")
