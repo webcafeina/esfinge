@@ -406,3 +406,18 @@ está entera en castellano. Se igualaron a `es-ES`, que es lo que faltaba de ver
 Lo que queda: **siguen siendo cuatro sitios**, y es el patrón que en esta casa ya ha costado varias
 veces. Lo que lo cierra es una sola función con sus tres formatos, exportada de `componentes.tsx`.
 No se hizo a la vez para no mezclar un arreglo que se ve con una mudanza que toca tres ficheros.
+
+### El historial vacío se queda con la esfinge a trazo
+
+**Severidad:** baja · **Apuntada:** 2026-11-20
+
+La [ADR 0067](adr/0067-la-marca-lleva-letra-propia.md) retira la esfinge a trazo, y de los cinco
+sitios donde está **cuatro salen solos**: el logo completo aguanta a 32 px y la marca nunca se usa
+por debajo de 30. El que no sale es **el historial vacío**, donde la esfinge no es un logo sino una
+**filigrana**: va a 112 px, teñida y muy apagada, detrás del texto que dice que no hay nada. El logo
+completo lleva su placa y sus colores dentro, así que **no se puede apagar**: puesto ahí sería un
+icono de aplicación gigante en medio de una pantalla vacía.
+
+**Lo que hay que decidir**, y es de producto y no de código: si esa filigrana desaparece —y la
+pantalla vacía se queda sólo con su frase—, si se queda con el trazo como excepción escrita, o si se
+dibuja algo para eso. Mientras tanto **sigue con el trazo**, que es lo único que hoy se puede teñir.
