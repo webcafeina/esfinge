@@ -2454,6 +2454,20 @@ misma versión», que es lo que pide la moderación, con «todos» significaría
 winget a una versión vieja, **y la comprobación final diría que todo va bien**, porque mira que los
 canales sirvan la versión *que se le ha dado*.
 
+**Y la misma forma otra vez en winget, con el CLA: tres PRs amontonados sin que nadie los mirara.**
+(2026-11-20.) El 2026-11-17 se firmó el CLA de Microsoft con
+`@microsoft-github-policy-service agree company="Webcafeína"` y la etiqueta `Needs-CLA` cayó de aquel
+PR en tres minutos — **y sólo de aquél**: los de la 2.69.0 y la 2.70.0 se quedaron con ella puesta,
+sin poder fusionarse y sin avisar a nadie, igual que Chocolatey. Lo que la quita es
+`@microsoft-github-policy-service agree` **a secas**, que las limpió las dos **en sesenta segundos**.
+Encaja con lo que dice la propia página del CLA —que Microsoft **«no suele participar en acuerdos CLA
+corporativos»**— y con que **la sintaxis de la forma de empresa no esté documentada en ninguna parte**:
+esa página dice que «hay una sintaxis distinta» para firmar por una empresa y no la escribe. Dos cosas
+más. **Lo que todavía no se sabe es si ahora queda registrado por cuenta**, y lo dirá el PR de la
+versión siguiente: por eso winget entra en lo que se mira al abrir sesión, al lado de Chocolatey. Y si
+alguna vez el CLA está firmado y la etiqueta se queda pegada, **eso lo arregla un moderador** con
+`[Policy] CLA Signed` (está en su `doc/Moderation.md`), no nosotros.
+
 **Una receta de Homebrew no la evalúa nadie hasta que alguien la instala, y un cask roto se lleva
 por delante la fórmula.** El 2026-11-19, estrenando la VM de macOS, `brew install` de la **fórmula**
 murió por el **cask**: Homebrew carga el tap entero, así que una receta que no se puede leer deja el

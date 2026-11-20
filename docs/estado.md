@@ -43,7 +43,7 @@ tomadas sobre galerías de capturas**. Orden: **Windows → macOS → GNOME → 
   no trae**; y las pestañas de Ajustes llevan su glifo, para lo que Windows estrena su propio control
   segmentado —la SelectorBar— en vez de la píldora de macOS.
 - **Publicado en la 2.70.0** el 2026-11-19, en verde en los seis objetivos. Chrome la aceptó y está
-  en revisión; **Chocolatey la rebotó** porque sigue moderando la 2.66.1 —se reempuja con
+  en revisión; **winget tenía tres PRs parados** —2.68.0, 2.69.0 y 2.70.0— y dos de ellos con `Needs-CLA`, resuelto el 2026-11-20 firmando con la forma individual: los tres esperan ya sólo a un moderador. **Chocolatey la rebotó** porque sigue moderando la 2.66.1 —se reempuja con
   `gh workflow run canales.yml -f version=2.70.0 -f canal=chocolatey` cuando se desatasque—. El VPS,
   actualizado y comprobado leyendo la bóveda de Tempero.
 
