@@ -702,6 +702,20 @@ forma en que esto vuelve. La lista vive ahora en `rutas.ApartarLaCarpeta`, que *
 recibe el `t.Setenv` que la aplica, y el vigilante **recorre el repositorio entero** en vez de un paquete: un
 paquete nuevo queda cubierto sin que nadie se acuerde de nada. La encontró el vigilante el día que se amplió.
 
+**Una comprobación nueva puede no comprobar nada, y `wails build -nsis` es el caso de manual.**
+(2026-11-20.) Se añadió a `compilar.yml` el armado del instalador para que una errata del guion NSIS
+no se descubriera con la etiqueta ya empujada — y **el paso salía en verde sin armar ningún
+instalador**, porque `compilar.yml` no instalaba NSIS: eso lo hacía sólo `publicar.yml`. Y lo que
+convierte un descuido en un agujero está leído en su fuente
+(`pkg/commands/build/nsis_installer.go`): cuando no encuentra `makensis`, wails **avisa y devuelve
+`nil`**. Así que la verificación existía, el artefacto llevaba sólo `Esfinge.exe`, y nada estaba
+rojo. Dos cosas lo cierran: **NSIS vive en `herramientas/nsis.sh`**, el mismo guion para los dos
+flujos —la octava vez que una regla en dos listas cuesta algo aquí—, y **el paso afirma que el
+instalador está**, porque un aviso que no para nada deja de leerse y éste no se llegó a leer ni una
+vez. **La regla general: al escribir una comprobación, preguntarse qué devuelve la herramienta
+cuando le falta lo que necesita** — si es cero, la comprobación es un adorno hasta que alguien
+afirme el resultado.
+
 **Y `zip` no existe en la máquina Windows de GitHub.** El guion que armaba el `.mcpb` murió ahí con `zip:
 command not found` y se llevó el trabajo entero con todo lo demás en verde. Lo arma ahora un programa de Go
 (`herramientas/armar-mcpb`), que es lo único garantizado en los tres trabajos porque los tres compilan

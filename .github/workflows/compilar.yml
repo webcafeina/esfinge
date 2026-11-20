@@ -211,6 +211,17 @@ jobs:
       - name: Instalar wails
         run: bash herramientas/reintentar.sh go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
 
+      # **Sin esto, el paso que arma el instalador salía en verde sin armarlo.**
+      # `wails build -nsis` avisa de que no encuentra `makensis` y **sale con código
+      # cero**, así que la verificación que se añadió el 2026-11-20 para que una errata
+      # del guion NSIS no llegara a una etiqueta no verificaba nada: ni un instalador en
+      # el artefacto, ni nada rojo. El guion es el mismo que usa `publicar.yml`, que es
+      # lo único que impide que las dos copias se separen otra vez.
+      - name: NSIS
+        if: startsWith(matrix.plataforma, 'windows/')
+        shell: bash
+        run: bash herramientas/nsis.sh
+
       - name: Construir la interfaz
         working-directory: frontend
         run: |
@@ -275,6 +286,19 @@ jobs:
             ${etiquetas:+-tags "$etiquetas"} \
             $inspector $nsis \
             -ldflags "-X main.version=$version"
+
+          # **Y se afirma que el instalador está.** `wails build -nsis` no falla cuando
+          # no encuentra `makensis`: avisa y sale con cero, que es exactamente cómo este
+          # paso pasó en verde sin armar ningún instalador. Un aviso que no para nada
+          # deja de leerse — y éste no se leyó ni una vez.
+          if [ -n "$nsis" ]; then
+            ls build/bin/*installer*.exe >/dev/null 2>&1 || {
+              echo "::error::wails no ha dejado ningún instalador en build/bin. Lo normal es que no haya encontrado makensis; mira el paso «NSIS»."
+              ls -la build/bin/ || true
+              exit 1
+            }
+            echo "✓ instalador armado: $(ls build/bin/*installer*.exe)"
+          fi
 
       # El nombre del artefacto lleva la marca, para que no haya forma de bajarse
       # uno de diagnóstico creyendo que es normal. Y dura menos: no tiene por qué

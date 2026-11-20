@@ -291,71 +291,14 @@ jobs:
         shell: bash
         run: go test ./internal/app/ -run 'Manifiest|Chromium|Perfil|Windows|Registro' -v
 
-      # Chocolatey instala NSIS pero no lo deja en el PATH, y wails no lo busca
-      # en ningún otro sitio: sin esto avisa de que no encuentra «makensis» y
-      # sale con código cero, dejando el trabajo en verde y sin instalador.
-      # **NSIS, el de la máquina si lo trae.**
-      #
-      # Antes se bajaba de Chocolatey, y ese tercero devolvió 503 durante media hora y dejó
-      # sin publicar la 2.17.6 — el mismo error que ya costó la 2.14.0 con un repositorio de
-      # apt. Así que primero se mira si la máquina lo trae y, si no, se baja **del origen y
-      # con su suma**.
-      #
-      # **Y aquí había una frase que medimos falsa el 2026-11-12.** Decía que «la imagen de
-      # Windows de GitHub ya lo incluye», y el registro de las tres últimas publicaciones
-      # dice lo contrario: en `windows-latest` sale «NSIS no viene con la máquina» las tres
-      # veces, así que se baja en cada publicación. Donde **sí** viene es en
-      # `windows-11-arm`, que lo trae en `/c/Program Files (x86)/NSIS` — justo donde
-      # `buscar()` mira. O sea al revés de lo que estaba escrito. El código hacía lo
-      # correcto; lo que caducó fue el porqué de al lado.
+      # **NSIS vive en `herramientas/nsis.sh`**, porque lo necesitan dos flujos: éste
+      # para armar el instalador y `compilar.yml` para que una errata del guion no se
+      # descubra con la etiqueta ya empujada. El porqué de cada paso está allí.
       - name: Instalar wails y NSIS
         shell: bash
         run: |
           bash herramientas/reintentar.sh go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
-
-          buscar() {
-            for d in "/c/Program Files (x86)/NSIS" "/c/Program Files/NSIS"; do
-              [ -x "$d/makensis.exe" ] && { echo "$d"; return 0; }
-            done
-            return 1
-          }
-
-          if nsis=$(buscar); then
-            echo "NSIS ya viene con la máquina: $nsis"
-          else
-            # **Del origen y con su suma, no de un intermediario.**
-            #
-            # Antes se bajaba de Chocolatey, y su servidor devolvió 503 durante
-            # media hora: dos publicaciones caídas en una tarde con todo lo demás
-            # en verde. Aquí se coge el zip que publica el propio proyecto NSIS,
-            # se comprueba la suma —una descarga sin comprobar es peor que una
-            # dependencia— y se descomprime. Sin instalador y sin gestor de
-            # paquetes por medio.
-            echo "NSIS no viene con la máquina; se baja del proyecto NSIS"
-            version=3.10
-            suma=fcdce3229717a2a148e7cda0ab5bdb667f39d8fb33ede1da8dabc336bd5ad110
-            curl -sSL --retry 3 --retry-delay 5 -o nsis.zip \
-              "https://downloads.sourceforge.net/project/nsis/NSIS%203/$version/nsis-$version.zip"
-            echo "$suma  nsis.zip" | sha256sum -c - || {
-              echo "::error::El zip de NSIS no es el que se esperaba"
-              exit 1
-            }
-            unzip -q nsis.zip -d /c/nsis
-            nsis="/c/nsis/nsis-$version"
-            # NSISDIR le dice al compilador dónde están sus cabeceras y sus
-            # plantillas. Con el zip no hay instalador que lo apunte en el
-            # registro, así que se dice a mano.
-            echo "NSISDIR=$(cygpath -w "$nsis")" >> "$GITHUB_ENV"
-            [ -x "$nsis/makensis.exe" ] || {
-              echo "::error::El zip de NSIS no trae makensis donde se esperaba"
-              exit 1
-            }
-          fi
-          # GITHUB_PATH quiere la ruta como la entiende Windows. Con la de Git
-          # bash —«/c/Program Files (x86)/NSIS»— el fichero está y el paso pasa,
-          # pero wails sigue sin encontrar makensis, que es lo que ocurrió en la
-          # 2.0.2.
-          cygpath -w "$nsis" >> "$GITHUB_PATH"
+          bash herramientas/nsis.sh
 
       # En PowerShell y no en bash: Git bash convierte los argumentos que empiezan
       # por «/» en rutas, y «/VERSION» le llega a makensis como
