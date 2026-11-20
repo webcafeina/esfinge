@@ -10,23 +10,37 @@ sin publicar: **el instalador con el logo y el nombre** ([ADR 0067](adr/0067-la-
 > ## ⚠ Lo primero al retomar: terminar de publicar la 2.72.0
 >
 > La **2.71.0 está publicada** y el VPS está en ella. La **2.72.0 no**: su contenido está entero en
-> `main` y **lo único que falta es etiquetar**. Pero antes hay que mirar la compilación de Windows
-> que quedó corriendo:
+> `main` y **lo único que falta es etiquetar**.
+>
+> **Lo que ya está comprobado** (2026-11-20, tarde): la compilación `44786824114` salió **en verde en
+> los cinco sistemas**, así que **el Win32 del menú de Snap enlaza con Wails** — que era la pregunta
+> abierta, porque aquí sólo se puede compilar cruzado y pasar `vet`, y el enlazado sólo ocurre en el
+> runner.
+>
+> **Lo que falta mirar** es la tanda `44788742722`, que comprueba el instalador:
 >
 > ```sh
-> gh run view 44748247228
+> gh run view 44788742722
+> gh api repos/webcafeina/esfinge/actions/runs/44788742722/artifacts --jq '.artifacts[].name'
 > ```
 >
-> Es la que dice si el **Win32 del menú de Snap enlaza de verdad con Wails**. Aquí sólo se pudo
-> compilar cruzado y pasar `vet`, **que no es lo mismo**: el enlazado con Wails sólo ocurre en el
-> runner. En verde, se etiqueta `v2.72.0`; en rojo, se arregla y se repite esa comprobación antes de
-> etiquetar nada.
+> Hace falta porque la verificación del instalador **era de adorno**: `compilar.yml` no instalaba
+> NSIS y wails, cuando no encuentra `makensis`, **avisa y devuelve `nil`** — el paso salía en verde y
+> el artefacto llevaba sólo `Esfinge.exe`. Arreglado en `9510dd7`. En verde, se etiqueta:
+>
+> ```sh
+> git tag v2.72.0 && git push origin v2.72.0
+> ```
 >
 > Y **después de publicar, el VPS**, que no se salta:
 >
 > ```sh
 > herramientas/actualizar-vps.sh 2.72.0
 > ```
+>
+> **Y luego lo suyo**: instalar la 2.72.0 en su Windows 11 ARM y mirar la tipografía, Mica, que el
+> marco arrastre y redimensione, **que salga el menú de Snap** al pasar por Maximizar, y el
+> instalador nuevo con el logo. Después, la fase de **macOS**.
 
 ## Nativizar la interfaz (empezada el 2026-11-19)
 
