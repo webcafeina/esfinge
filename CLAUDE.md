@@ -2573,6 +2573,72 @@ de Fluent —sin carril y con relleno de 10—, sobraron 24 px. **El síntoma er
 anatomía**, y eso vale para las tres fases que quedan: cuando algo no cabe en un sistema, mirar primero
 si ese trozo sigue vestido del sistema de al lado.
 
+## Lo que Windows deja escrito para macOS, GNOME y KDE
+
+La fase de Windows costó **tres rondas de correcciones suyas** y casi todo lo que salió **se va a
+repetir igual** en las tres hojas que quedan, porque no era de Fluent: era de cómo se escribe una hoja
+de sistema sobre una base que fue macOS. Esto se lee **al empezar cada fase**, no al cerrarla.
+
+**Lo primero, y lo que más ahorra: comparar control por control con la hoja de ese sistema en Apolo**
+(`~/proyectos/apolo/frontend/src/sistema-<sistema>.css`). Es la especificación ya traducida, ya
+revisada por él y con sus porqués al lado. En Windows eso encontró **ocho huecos de una vez** después
+de que ir detrás de lo que él veía en capturas los sacara de uno en uno. Lo pidió con esas palabras
+—«revisa que todos los elementos vayan acorde al estándar más reciente, para evitar más errores de
+este tipo»— y es lo que convierte tres rondas en una.
+
+**Y lo segundo: la regla general de la hoja pisa a las variantes de la base.**
+`:root[data-sistema="X"] button` pesa 0,3,1 y `button.principal` 0,1,1, así que **toda regla de
+elemento en una hoja de sistema tiene que excluir sus variantes por nombre**, con un `:not(...)`
+escrito. Ni `:where()`, que la dejaría por debajo de cualquier `button {}` de la base —que se carga
+después del `@import`— y entonces ese sistema no vestiría nada. Esto no es de Windows: pasará con
+`button`, con `input`, con `select` y con cada elemento que una hoja vista.
+
+**Y la familia de errores que no se ve desde aquí: el token escrito a mano.** El color se genera desde
+Go, pero cada hoja escribe a mano lo que es medida y no paleta — y ahí es fácil copiar el selector del
+bloque oscuro **dejándolo fuera de su media query**, que lo aplica en los dos temas. Si además el
+valor es translúcido, **el fallo es invisible**: `--borde-bajo` valía blanco al 9 % sobre fondo blanco
+y los campos de Windows salieron **sin borde de abajo** en tres pantallas. Lo vigila
+`TestNingunValorOscuroSueltoEnLasHojas`, que **ya recorre las cuatro hojas**, así que esto está
+cubierto para las tres fases — pero conviene saber por qué está, porque el día que alguien lo vea
+rojo va a querer quitarlo.
+
+**Y seis cosas de anatomía que en Windows se corrigieron una a una y en las otras tres se escriben de
+entrada:**
+
+- **El espaciado entre un rótulo y su control es anatomía, no un detalle**, y **Ajustes es donde se
+  ve**: ahí hay más texto pegado a más controles que en ninguna otra pantalla. Él lo pidió así —«hay
+  que mejorar los espaciados entre elementos, especialmente entre líneas de textos y elementos como
+  inputs, sobre todo en Ajustes»—. Cada sistema trae los suyos y van en la hoja con el `padding` que
+  los rodea, no sueltos.
+- **Una afordancia no se dice dos veces.** El botón discreto va subrayado **en la base** porque allí no
+  hay color que gastar (ADR 0021); en un sistema donde ese botón lleva marco, el subrayado es
+  redundante y él lo señaló: «si ya tiene la apariencia de trazo de botón, subrayarlo es redundante».
+  Al vestir los botones de un sistema, mirar qué dice ya la forma antes de añadir una segunda señal.
+- **Lo que marca el foco tiene que quedar libre.** Si el estado de reposo se queda con el recurso que
+  el sistema usa para enfocar —en Fluent, el segundo píxel del borde de abajo—, no queda nada que
+  decir cuál es el campo activo. Y el refuerzo va por `box-shadow: inset`, nunca engordando el borde:
+  engordándolo, la fila **da un salto** al enfocar.
+- **Un cambio de estado no salta.** Las pestañas de clase cambiaban de golpe —él: «pega saltos raros y
+  los estilos se aplican de salto»— y la primera transición se quedó **demasiado rápida**, que se lee
+  igual que un salto. La duración se juzga mirándola, y **se anima sólo el rótulo que llega**: con los
+  dos animándose, los dos tienen ancho a la vez y la barra mide más que en los dos extremos.
+- **La parte rellena de un deslizador es el oro** (`--relleno`), que es lo único propio en una pantalla
+  de trabajo; y un deslizador con un medidor debajo **necesita aire vertical**, o se leen tres líneas
+  horizontales apiladas.
+- **Una acción que compite con el formulario va dentro del campo.** «Generar una» era un botón más del
+  formulario y pidió que fuera **un icono de llave dentro del input, junto al del ojo** — que es donde
+  ya está la otra acción sobre ese mismo valor.
+
+**Y una que no es de CSS y se cuela igual: los nombres de fichero que se sugieren llevan acentos.** El
+diálogo de guardar proponía «contrasena». Cada sistema tiene su diálogo y su propio sitio donde se
+compone ese nombre.
+
+**Y la regla de método, que es la que de verdad cambia el coste de las tres fases:** cuando él
+describe algo visual que **aquí no se reproduce**, pedir la captura **antes de la segunda hipótesis**.
+En Windows se midió lo correcto tres veces, las tres en verde, y se gastaron dos hipótesis mías falsas
+antes de pedirla. Una medición limpia no dice que no haya fallo: puede decir que la pregunta no era
+ésa.
+
 ## Lo que nunca se ha probado
 
 Y ojo con qué se ha comprobado de verdad: **el diálogo de abrir no**, porque en macOS los ficheros se

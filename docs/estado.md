@@ -8,27 +8,38 @@
 ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)), **el repaso entero contra el estándar de
 Windows 11** y **el menú de Snap**. El VPS está en la 2.72.0.
 
-> ## ⚠ Lo primero al retomar: lo suyo, en su Windows
+> ## ⚠ Lo primero al retomar: seguir con macOS, sin esperar a Windows
 >
-> La **2.72.0 está publicada** (2026-11-20, tarde) **y el VPS ya está en ella** —instalada con su suma
-> comprobada y leyendo la bóveda de Tempero, con la primera línea mirada—. No queda nada pendiente
-> de publicar.
+> La **2.72.0 está publicada entera** (2026-11-20, tarde) —los seis canales en verde— **y el VPS ya
+> está en ella**, instalada con su suma comprobada y leyendo la bóveda de Tempero. No queda nada
+> pendiente de publicar.
 >
-> **Lo que falta es mirarlo en su máquina**, que es lo único que desde aquí no se puede: instalar la
-> 2.72.0 en su Windows 11 ARM y ver la tipografía, Mica, que el marco arrastre y redimensione, **que
-> salga el menú de Snap** al pasar por encima de Maximizar, y **el instalador nuevo** con el logo
-> completo y el nombre. Lo que vea se apunta antes de pasar a lo siguiente.
+> **Windows queda pendiente de probar en su máquina y eso NO bloquea nada**, decidido así el
+> 2026-11-20: se sigue con **macOS** y lo que él vea en Windows se arregla cuando lo diga. Lo que
+> tiene que mirar, cuando pueda, es lo que desde aquí no se puede: la tipografía, Mica, que el marco
+> arrastre y redimensione, **que salga el menú de Snap** al pasar por encima de Maximizar —su Win32
+> enlaza con Wails, comprobado en la tanda `44788742722`, pero que la ventana hija **conteste** no lo
+> dice ninguna compilación— y **el instalador nuevo** con el logo completo y el nombre.
 >
-> **Y después, macOS**, que es la fase siguiente del plan: empieza volcando el kit de Apple en Figma
-> (`uCn3dR3MxX8byi1d2oFmJD`) **en una sola pasada** —Forms, Toggles, Buttons, Sidebars, Toolbars,
-> Windows, Materials y Colors—, porque Figma corta a unas 20 consultas.
+> **La fase siguiente es macOS** (F3 del plan). Empieza por las dos cosas que ahorran rondas, y en
+> este orden:
+>
+> 1. **Comparar control por control con `~/proyectos/apolo/frontend/src/sistema-macos.css`**, que es
+>    la especificación ya traducida y revisada. En Windows eso encontró ocho huecos de una vez,
+>    después de que ir detrás de capturas los sacara de uno en uno.
+> 2. **Volcar el kit de Apple en Figma** (`uCn3dR3MxX8byi1d2oFmJD`) **en una sola pasada** —Forms,
+>    Toggles, Buttons, Sidebars, Toolbars, Windows, Materials y Colors—, porque Figma corta a unas 20
+>    consultas.
+>
+> Y **lo que Windows dejó escrito para las tres hojas que quedan** está en `CLAUDE.md`, sección «Lo
+> que Windows deja escrito para macOS, GNOME y KDE»: se lee **al empezar la fase**, no al cerrarla.
 >
 > **Y al abrir sesión, las tiendas** (ninguna es nuestra y ninguna avisa): Chocolatey sigue en la
-> **2.66.1** con un 403 en la última subida —tiene una versión en revisión y no acepta otra mientras
-> dure; se reempuja con `gh workflow run canales.yml -f version=<la que toque> -f canal=chocolatey`—,
-> y en winget los **cuatro** PRs (2.68.0 a 2.71.0) están en `Validation-Completed` + `New-Package`
-> esperando a un moderador. **El CLA ya no es el problema**: ninguno lleva `Needs-CLA`, el de la
-> 2.71.0 incluido, que fue el primero que firmó el flujo solo.
+> **2.66.1** y rebotó la 2.72.0 con un 403 —tiene una versión en revisión y no acepta otra mientras
+> dure; se reempuja con `gh workflow run canales.yml -f version=<la que toque> -f canal=chocolatey`—.
+> En winget hay **cinco** PRs esperando moderador (`Validation-Completed` + `New-Package`), y el CLA
+> de todos está firmado, el de la 2.72.0 a mano porque el flujo firmaba **39 segundos antes** de que
+> el bot lo pidiera; arreglado el mismo día.
 
 ## Nativizar la interfaz (empezada el 2026-11-19)
 

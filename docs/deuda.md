@@ -384,6 +384,32 @@ quitarle la red, la carrera se cerró y el fallo salió a la primera. Ahora `deN
 `actualizador.novedad` y el falseo vive **en el actualizador**, que es el único sitio del que
 preguntan los cuatro. Es la regla de «una regla en dos listas», van siete.
 
+### La fase de Windows no se ha visto en su máquina, y se sigue sin esperarla
+
+**Severidad:** media · **Apuntada:** 2026-11-20
+
+La **2.72.0** cierra la fase de Windows y **nadie la ha abierto en un Windows**. Lo decidido ese día
+es **no esperar**: se pasa a macOS y lo que él vea se arregla cuando lo diga. Queda apuntado porque
+una fase que se cierra sin que nadie la mire es exactamente como se acumularon las tres rondas de
+correcciones de esta misma fase.
+
+**Lo que hay que mirar, que es lo que desde aquí no se puede:**
+
+- **El menú de Snap.** Su Win32 **enlaza con Wails** —tanda `44788742722`, los cinco sistemas en
+  verde—, y eso es todo lo que una compilación puede decir: que la ventana hija invisible **conteste**
+  `HTMAXBUTTON` al pasar por encima de Maximizar no lo dice nada de aquí. Es la pieza con más riesgo
+  de la versión y la que está escrita entera en negativo: si falla, no hay menú y nada más.
+- **El marco**: que arrastre, que redimensione, que conserve la sombra y las esquinas de Windows 11, y
+  que **el doble clic maximice** —eso Wails no lo trae y lo ponemos nosotros—.
+- **La tipografía y Mica**, que aquí se simulan con una pila de fuentes que no están instaladas.
+- **El instalador nuevo**: las dos imágenes a su tamaño, el nombre en Space Grotesk y las páginas en
+  español. Compila y lleva los bitmaps dentro —verificado—, pero **cómo se ve no lo ha visto nadie**.
+- **Y lo que falta de la ADR 0063**: que `choco` o `winget` dejen la marca del gestor, que necesita que
+  una de las dos tiendas apruebe una versión.
+
+**Lo que cierra esta fila** es él abriendo la 2.72.0 en su Windows 11 ARM. Lo que vea se apunta antes
+de seguir, y **lo visual de los otros sistemas no espera a esto**.
+
 ### La barra de clases de la bóveda se pasó 5 px una vez, y no se ha podido reproducir
 
 **Severidad:** baja · **Apuntada:** 2026-11-20
