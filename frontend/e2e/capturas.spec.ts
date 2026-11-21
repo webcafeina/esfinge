@@ -341,6 +341,14 @@ test.describe("Capturas", () => {
     await page.getByRole("tab", { name: "Llaves de acceso", exact: true }).click();
     await page.locator(".boveda-barra").nth(1).screenshot({ path: `${donde}/8d-clases-llave-${tema}.png`, scale: "css" });
     await page.getByRole("tab", { name: "Todo", exact: true }).click();
+
+    // **Y la lista entera, que es la pantalla principal del producto y no se estaba
+    // retratando.** Se vio al auditar macOS: había capturas de la barra de clases de
+    // cerca, del formulario y de la ficha, pero **de la lista no**, que es donde se
+    // pasa el tiempo. Lo que no se mira no se mira.
+    await page.waitForTimeout(400);
+    await foto("8h-lista");
+
     await boton("Nueva").click();
     await dentro.getByRole("tab", { name: "Dato personal", exact: true }).click();
     await page.locator("#boveda-titulo").fill("Correo electrónico 1");
@@ -380,6 +388,13 @@ test.describe("Capturas", () => {
       await page.locator("#boveda-buscar").waitFor({ timeout: 20_000 });
     };
     await aLaLista();
+
+    // **Y la lista con una entrada dentro.** La de más arriba sale con la bóveda
+    // vacía, que es el estado de estreno; ésta es la pantalla de todos los días, y
+    // hasta hoy no la retrataba ninguna captura.
+    await page.waitForTimeout(400);
+    await foto("8i-lista-con-una");
+
     await boton("Nueva").click();
     await dentro.getByRole("tab", { name: "Wi-Fi", exact: true }).click();
     await page.locator("#boveda-titulo").fill("La oficina");

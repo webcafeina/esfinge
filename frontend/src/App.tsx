@@ -396,6 +396,29 @@ export default function App() {
 
       <div className="zona">
         <header className={enUnProyecto ? "herramientas en-proyecto" : "herramientas"}>
+          {/* **El botón que pliega la barra lateral, en los cuatro sistemas.**
+              En Windows el que lo hace es la hamburguesa de la barra de título, que
+              allí la dibuja Esfinge (ADR 0066); donde la barra la pone el sistema no
+              hay dónde ponerla, y en macOS 27 ese botón vive **al principio de la
+              barra de herramientas**, en una cápsula de vidrio. Va en el marcado de
+              los cuatro y **lo esconde la hoja de quien no lo use**, que es la regla
+              de la ADR 0064 y lo que hace que la simulación por URL cambie de aspecto
+              sin recargar. */}
+          <button
+            type="button"
+            className="boton-lateral"
+            onClick={() => (ancha ? setPlegado(!plegado) : setEncima(!encima))}
+            aria-expanded={panel !== "compacto"}
+            aria-label={panel !== "compacto" ? "Ocultar la barra lateral" : "Enseñar la barra lateral"}
+            title={panel !== "compacto" ? "Ocultar la barra lateral" : "Enseñar la barra lateral"}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              {/* El glifo de macOS: un rectángulo con su columna izquierda marcada. */}
+              <rect x="1.25" y="2.75" width="13.5" height="10.5" rx="2.25" fill="none" stroke="currentColor" />
+              <path d="M6 2.75v10.5" stroke="currentColor" fill="none" />
+            </svg>
+          </button>
+
           {/* **En qué bóveda se está trabajando.** Con varias, saber que la bóveda
               está abierta no basta: hay que saber cuál. Y el nombre **es el título**,
               no un rótulo al lado: puesto al lado, lo que más se leía seguía diciendo

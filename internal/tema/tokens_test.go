@@ -187,3 +187,103 @@ func TestLosSistemasDeLasHojasExisten(t *testing.T) {
 		}
 	}
 }
+
+// TestLasHojasNoInventanSelectores compara **los atributos que usan las hojas de
+// sistema con los que el marcado escribe de verdad**.
+//
+// # Por qué hace falta
+//
+// Las hojas se escriben mirando la de Apolo, que es la misma especificación ya
+// traducida — y **su marcado no es el nuestro**. Copiar un selector de allí no da
+// ningún error: `[aria-checked="true"]` es CSS perfectamente válido que **no casa
+// con nada**, así que la regla no se aplica, nada se pone rojo y lo que se ve es
+// un control que no reacciona.
+//
+// Van tres en dos días, todas en la hoja de macOS y todas invisibles para el
+// compilador:
+//
+//   - `[role="switch"]`, que aquí no existe: el interruptor es una casilla a
+//     propósito, para no renombrar el control a los lectores de pantalla. El
+//     estilo de la píldora no se aplicaba a nadie.
+//   - `[aria-checked="true"]` en el segmentado, que usa `role="tab"` con
+//     **`aria-selected`**: la opción elegida no se quedaba marcada en ninguna
+//     pantalla, y lo vio el cliente.
+//   - `[data-sistema="macos"]`, que vigila `TestLosSistemasDeLasHojasExisten`.
+//
+// Se comprueba el **par**: el nombre del atributo y su valor tienen que aparecer
+// los dos en `frontend/src/`. Con el nombre solo no bastaría —`role` aparece
+// siempre— y con el valor solo tampoco, que «true» está por todas partes.
+func TestLasHojasNoInventanSelectores(t *testing.T) {
+	hojas, err := filepath.Glob(filepath.Join("..", "..", "frontend", "src", "sistema-*.css"))
+	if err != nil || len(hojas) == 0 {
+		t.Fatalf("no se encontraron las hojas de sistema: %v", err)
+	}
+
+	// El marcado y lo que lo acompaña: los `.tsx` lo escriben y `plataforma.ts`
+	// pone los atributos de sistema antes del primer pintado.
+	var marcado strings.Builder
+	fuentes, err := filepath.Glob(filepath.Join("..", "..", "frontend", "src", "*.ts*"))
+	if err != nil || len(fuentes) == 0 {
+		t.Fatalf("no se encontró el marcado: %v", err)
+	}
+	for _, f := range fuentes {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatalf("no se pudo leer %s: %v", f, err)
+		}
+		marcado.Write(b)
+	}
+	todo := marcado.String()
+
+	// **`data-tema` se exime, y conviene decir por qué**: no lo escribe el marcado
+	// sino `GenerarCSS`, que reparte cada color en tres bloques y usa el tercero
+	// —`[data-tema="oscuro"]`— para cuando el tema se **fuerza**. Esfinge no ofrece
+	// ese interruptor todavía, así que hoy ese bloque no lo activa nadie: es una
+	// convención generada, no un selector inventado. Si algún día hay un selector de
+	// tema en Ajustes, esta excepción deja de hacer falta y nadie tiene que acordarse
+	// de nada.
+	generados := map[string]bool{"data-tema": true}
+
+	re := regexp.MustCompile(`\[((?:aria-|data-|role)[a-z-]*)="([^"]+)"\]`)
+	for _, hoja := range hojas {
+		fuente, err := os.ReadFile(hoja)
+		if err != nil {
+			t.Fatalf("no se pudo leer %s: %v", hoja, err)
+		}
+		for _, m := range re.FindAllStringSubmatch(string(fuente), -1) {
+			atributo, valor := m[1], m[2]
+			if generados[atributo] {
+				continue
+			}
+			// **Y en camello también cuenta.** `plataforma.ts` los pone con
+			// `dataset`, que escribe `data-barra` como `dataset.barra` y
+			// `data-mi-cosa` como `dataset.miCosa`: sin esto, todo lo que no venga
+			// de un `.tsx` saldría como inventado.
+			if !strings.Contains(todo, atributo) && !strings.Contains(todo, enCamello(atributo)) {
+				t.Errorf("%s usa [%s=%q] y **el marcado no escribe %s en ninguna parte**: "+
+					"esa regla no se aplica a nadie", filepath.Base(hoja), atributo, valor, atributo)
+				continue
+			}
+			if !strings.Contains(todo, valor) {
+				t.Errorf("%s usa [%s=%q] y **el marcado no escribe nunca %q**: "+
+					"esa regla no se aplica a nadie", filepath.Base(hoja), atributo, valor, valor)
+			}
+		}
+	}
+}
+
+// enCamello traduce `data-mi-cosa` a `dataset.miCosa`, que es como lo escribe
+// quien pone el atributo desde TypeScript.
+func enCamello(atributo string) string {
+	resto, hay := strings.CutPrefix(atributo, "data-")
+	if !hay {
+		return atributo
+	}
+	trozos := strings.Split(resto, "-")
+	for i := 1; i < len(trozos); i++ {
+		if trozos[i] != "" {
+			trozos[i] = strings.ToUpper(trozos[i][:1]) + trozos[i][1:]
+		}
+	}
+	return "dataset." + strings.Join(trozos, "")
+}

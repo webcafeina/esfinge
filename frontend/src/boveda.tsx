@@ -1915,7 +1915,7 @@ function Detalle({
 function Dato({ etiqueta, valor }: { etiqueta: string; valor?: string }) {
   if (!valor) return null;
   return (
-    <div>
+    <div className="dato-fila">
       <label>{etiqueta}</label>
       <p className="dato seleccionable">{valor}</p>
     </div>
@@ -1986,7 +1986,7 @@ function CodigoDeUnSoloUso({ id }: { id: string }) {
   }
 
   return (
-    <div>
+    <div className="dato-fila">
       <div className="fila">
         <label style={{ marginBottom: 0 }}>Código de un solo uso</label>
         {codigo && (
@@ -2072,7 +2072,7 @@ function Secreto({ etiqueta, valor }: { etiqueta: string; valor?: string }) {
   }
 
   return (
-    <div>
+    <div className="dato-fila">
       <div className="fila">
         <label style={{ marginBottom: 0 }}>{etiqueta}</label>
         <span>

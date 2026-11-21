@@ -209,14 +209,23 @@
  * los lados, radio 6. No cambia al pasar el puntero —eso es de Windows— y se
  * oscurece al pulsar.
  *
- * **El `:not()` va escrito y no es cosmético**: esta regla pesa más que
- * `button.principal` y `button.discreto` de la base, que ponen el borde
- * transparente, así que sin excluirlas el botón de acción saldría con el relleno
- * gris encima del oro. Pasó en Windows y costó dos de las correcciones del
- * cliente. Y **no se arregla con `:where()`**, que bajaría el peso a cero y
- * dejaría la regla por debajo de cualquier `button {}` de la base, que se carga
- * después del `@import`: entonces macOS no vestiría ningún botón. */
-:root[data-sistema="darwin"] button:not(.principal, .discreto, .ojo, .boton-menu) {
+ * **Y el peso está elegido, que es lo que costó la vuelta del 2026-11-21.**
+ *
+ * Escrita como `:root[data-sistema="darwin"] button` pesa (0,3,1) y **le gana a
+ * cualquier clase de la base**: no sólo a `.principal` y `.discreto` —que se pueden
+ * excluir con un `:not()`— sino a **todos los botones compuestos** que la base viste
+ * por clase, que son muchos y van apareciendo. Así salieron las filas de la lista de
+ * proyectos convertidas en píldoras grises de 24, y así salió **la propia cápsula de
+ * plegar de esta hoja**, que también perdía: con una lista de exclusiones habría
+ * tenido que excluirme a mí mismo, que es la señal de que el arreglo estaba en el
+ * sitio equivocado.
+ *
+ * Con `:where()` alrededor del ámbito y un tipo más, la regla pesa **(0,0,2)**:
+ * **más** que el `button` de la base —así que sí viste los botones normales, que es
+ * lo que la primera versión temía perder— y **menos que cualquier clase**, así que
+ * todo lo que la base o esta hoja vistan por clase sigue mandando. Comprobado en una
+ * página aparte con los tres casos antes de tocar la hoja. */
+:where(:root[data-sistema="darwin"]) body button {
   height: var(--alto-control);
   padding: 0 16px;
   border: 0;
@@ -226,11 +235,11 @@
   font-weight: 400;
 }
 
-:root[data-sistema="darwin"] button:not(.principal, .discreto, .ojo, .boton-menu):hover:not(:disabled) {
+:where(:root[data-sistema="darwin"]) body button:hover:not(:disabled) {
   background: var(--boton);
 }
 
-:root[data-sistema="darwin"] button:not(.principal, .discreto, .ojo, .boton-menu):active:not(:disabled) {
+:where(:root[data-sistema="darwin"]) body button:active:not(:disabled) {
   background: var(--boton-encima);
 }
 
@@ -249,15 +258,24 @@
   background: var(--relleno-vivo);
 }
 
-/* Y el discreto es texto. **Sin subrayado**: en la base va subrayado porque allí
- * no hay color que gastar (ADR 0021), y en macOS un botón de texto se reconoce
- * por su sitio y por el acento. Subrayarlo además sería decirlo dos veces, que
- * es lo que el cliente señaló en Windows. */
+/* Y el discreto es texto. **Y conserva el subrayado**, que es la corrección del
+ * 2026-11-21: se lo quité copiando el criterio de Windows y **allí el botón tiene
+ * marco**, así que el subrayado sobraba. Aquí no hay marco, así que quitarlo lo
+ * dejaba **sin ninguna señal de que se pulsa**: «Contraseña maestra y clave de
+ * recuperación» se leía como un título suelto colgando al final de la bóveda. Es el
+ * error contrario al de Windows, y la razón de la base sigue valiendo aquí — sobre el
+ * oro no hay color que gastar en un botón de texto (ADR 0021)—.
+ *
+ * En la barra de herramientas no, porque allí es una cápsula de vidrio y ésa sí dice
+ * que se pulsa. */
 :root[data-sistema="darwin"] button.discreto,
 :root[data-sistema="darwin"] button.discreto:hover:not(:disabled) {
   height: var(--alto-control);
   border: 0;
   background: transparent;
+}
+
+:root[data-sistema="darwin"] .herramientas button.discreto {
   text-decoration: none;
 }
 
@@ -273,7 +291,7 @@
  * salía entera gris y sin saber dónde estabas. Es el mismo fallo que en Windows,
  * cometido otra vez en el mismo fichero y en la regla de al lado. */
 :root[data-sistema="darwin"] .lateral nav button:not([aria-current="page"]),
-:root[data-sistema="darwin"] .segmentado button:not([aria-checked="true"]) {
+:root[data-sistema="darwin"] .segmentado button:not([aria-selected="true"]) {
   background: transparent;
   padding: 0 var(--espacio-3);
 }
@@ -281,12 +299,12 @@
 /* Campo de texto: su filete de medio píxel, radio 6, 24 de alto. El medio
  * píxel es de macOS y se ve: en una pantalla Retina es una línea fina de
  * verdad, no un borde. */
-:root[data-sistema="darwin"] input[type="text"],
-:root[data-sistema="darwin"] input[type="password"],
-:root[data-sistema="darwin"] input[type="email"],
-:root[data-sistema="darwin"] input[type="number"],
-:root[data-sistema="darwin"] input[type="search"],
-:root[data-sistema="darwin"] input:not([type]) {
+:where(:root[data-sistema="darwin"]) body input[type="text"],
+:where(:root[data-sistema="darwin"]) body input[type="password"],
+:where(:root[data-sistema="darwin"]) body input[type="email"],
+:where(:root[data-sistema="darwin"]) body input[type="number"],
+:where(:root[data-sistema="darwin"]) body input[type="search"],
+:where(:root[data-sistema="darwin"]) body input:not([type]) {
   height: var(--alto-campo, var(--alto-control));
   padding: 0 8px;
   border: 0.5px solid var(--filete-fuerte);
@@ -295,7 +313,7 @@
 }
 
 /* El desplegable es un botón con sus flechas a la derecha, no un campo. */
-:root[data-sistema="darwin"] select {
+:where(:root[data-sistema="darwin"]) body select {
   height: var(--alto-control);
   padding: 0 26px 0 10px;
   border: 0;
@@ -312,8 +330,7 @@
  * y lo que lo distingue es estar dentro de `.interruptor`. Escrito con el `role`,
  * el interruptor salía como un cuadrado de 16 y el estilo de la píldora no se
  * aplicaba a nadie: lo dijo la prueba, no la lectura. */
-:root[data-sistema="darwin"] .ajuste > :not(.interruptor) input[type="checkbox"],
-:root[data-sistema="darwin"] :not(.interruptor) > input[type="checkbox"] {
+:where(:root[data-sistema="darwin"]) body input[type="checkbox"] {
   width: 16px;
   height: 16px;
   border: 0.5px solid var(--filete-fuerte);
@@ -377,11 +394,11 @@
  * Pista de 6 en cápsula, **lo recorrido en el oro** —que es lo único propio en
  * una pantalla de trabajo— y el botón blanco en cápsula con su sombra. El
  * recorrido lo pone la interfaz en `--recorrido`. */
-:root[data-sistema="darwin"] input[type="range"] {
+:where(:root[data-sistema="darwin"]) body input[type="range"] {
   height: 20px;
 }
 
-:root[data-sistema="darwin"] input[type="range"]::-webkit-slider-runnable-track {
+:where(:root[data-sistema="darwin"]) body input[type="range"]::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
   background: linear-gradient(
@@ -392,7 +409,7 @@
   box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.06);
 }
 
-:root[data-sistema="darwin"] input[type="range"]::-webkit-slider-thumb {
+:where(:root[data-sistema="darwin"]) body input[type="range"]::-webkit-slider-thumb {
   width: 22px;
   height: 14px;
   margin-top: -4px;
@@ -425,7 +442,7 @@
   font-weight: 400;
 }
 
-:root[data-sistema="darwin"] .segmentado button[aria-checked="true"] {
+:root[data-sistema="darwin"] .segmentado button[aria-selected="true"] {
   background: var(--lienzo);
   box-shadow: 0 0.5px 2px rgb(0 0 0 / 0.18);
 }
@@ -517,14 +534,366 @@
   font-weight: 700;
 }
 
-/* **Y el bloque que las envuelve pierde su hueco**, que es lo que las convierte en
- * un grupo. La base separa sus hijos 16 px, que es lo correcto cuando cada ajuste es
- * una tarjeta suelta —Windows— y lo contrario de lo que hace Ajustes del Sistema,
- * donde las filas se tocan y lo único que las separa es un filete sangrado. Lo dijo
- * una medida: 16 px entre el fondo de una fila y el techo de la siguiente. */
-:root[data-sistema="darwin"] .bloque:has(> .ajuste),
-:root[data-sistema="darwin"] .grupo:has(> .ajuste) {
-  gap: 0;
+/* **Y las filas van a sangre dentro del bloque, sin quitarle su relleno.**
+ *
+ * La primera versión le ponía `padding: 0` al bloque entero, y eso **le quitaba el
+ * relleno también a lo que no es una fila**: las notas largas de Ajustes —las que
+ * explican Touch ID, por ejemplo— salían pegadas al borde izquierdo de la tarjeta.
+ * Lo vio el cliente como «no tienen apenas padding».
+ *
+ * Lo correcto es lo contrario: el bloque conserva su relleno para su prosa, y **las
+ * filas se salen de él** con un margen negativo. Así el filete sangrado y los radios
+ * caen donde deben y el texto sigue dentro. El número está escrito a propósito en vez
+ * de leerse de una variable: es el mismo relleno que la regla de abajo le da al
+ * bloque, y partirlo en dos sitios es lo que en esta casa ya ha costado ocho veces. */
+:root[data-sistema="darwin"] .bloque,
+:root[data-sistema="darwin"] .grupo {
+  padding: 12px 14px;
+  gap: 12px;
+}
+
+:root[data-sistema="darwin"] .bloque > .ajuste,
+:root[data-sistema="darwin"] .grupo > .ajuste {
+  margin-inline: -14px;
+}
+
+/* Entre dos filas seguidas no hay hueco: es lo que las convierte en un grupo, y el
+ * `gap` del bloque sigue valiendo para todo lo demás. */
+:root[data-sistema="darwin"] .ajuste + .ajuste {
+  margin-top: -12px;
+}
+
+/* La primera fila pegada a la cabecera del bloque y la última al borde de abajo: en
+ * Ajustes del Sistema el grupo empieza y acaba en sus filas. */
+:root[data-sistema="darwin"] .bloque > .ajuste:last-child,
+:root[data-sistema="darwin"] .grupo > .ajuste:last-child {
+  margin-bottom: -12px;
+}
+
+/* ------------------------------------------------- plegar la barra lateral
+ *
+ * En macOS 27 la barra lateral se esconde **entera**, con un botón en cápsula de
+ * vidrio al principio de la barra de herramientas. El mecanismo ya existía para
+ * Windows —`data-panel`, que se pone en los cuatro sistemas— y lo que faltaba aquí
+ * era quién lo acciona y qué hace: en Windows el panel se queda en una columna de
+ * iconos, y en macOS **desaparece**. */
+:root[data-sistema="darwin"] .boton-lateral {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
   padding: 0;
+  border: 0.5px solid var(--capsula-filo);
+  border-radius: 18px;
+  background: var(--capsula);
+  color: var(--cuerpo);
+  backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: var(--capsula-sombra);
+  --wails-draggable: no-drag;
+}
+
+:root[data-sistema="darwin"] .boton-lateral svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.25;
+}
+
+/* La barra lateral se va del todo, y el contenido ocupa la ventana entera. La
+ * transición va en las columnas del grid, que es lo único que se mueve. */
+:root[data-sistema="darwin"] .ventana {
+  transition: grid-template-columns 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root[data-sistema="darwin"] .ventana[data-panel="compacto"] {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+:root[data-sistema="darwin"] .ventana[data-panel="compacto"] .lateral {
   overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* **Y con ella escondida, la barra de herramientas deja sitio a los semáforos.**
+ * Sin esto el botón de plegar quedaría debajo de ellos y no se podría pulsar: los
+ * semáforos los dibuja el sistema encima de todo. La medida es la del kit — el
+ * primero a 26 del borde, tres de 14 con 23 entre centros. */
+:root[data-sistema="darwin"] .ventana[data-panel="compacto"] .herramientas {
+  padding-left: 88px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-sistema="darwin"] .ventana {
+    transition: none;
+  }
+}
+
+/* --------------------------------------------- el vidrio responde al pulsarlo
+ *
+ * Es lo que distingue macOS 27 de una interfaz plana, y lo que el cliente echó de
+ * menos: **las cosas se abomban o se hinchan al tocarlas**. Son tres gestos y cada
+ * uno es el suyo.
+ *
+ * El de las cápsulas de la barra ya está arriba (`scale(1.05)`). Aquí van los dos
+ * del formulario. */
+:root[data-sistema="darwin"] {
+  /* La burbuja de vidrio en que se convierte un botón al pulsarlo: más clara, con
+     filo arriba y una sombra larga que la despega de la pista. */
+  --burbuja: rgb(255 255 255 / 0.55);
+  --burbuja-sombra:
+    inset 0 1px 1px rgb(255 255 255 / 0.95), inset 0 -1px 3px rgb(0 0 0 / 0.08),
+    0 0 0 0.5px rgb(0 0 0 / 0.12), 0 4px 14px rgb(0 0 0 / 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-sistema="darwin"]:not([data-tema="claro"]) {
+    --burbuja: rgb(255 255 255 / 0.3);
+  }
+}
+
+:root[data-sistema="darwin"][data-tema="oscuro"] {
+  --burbuja: rgb(255 255 255 / 0.3);
+}
+
+/* **El pomo del interruptor se estira y se aclara**, y no puede salirse: la pista
+ * es su fondo. Se estira hacia donde no está —a la derecha si está apagado— que es
+ * lo que da la sensación de que va a moverse. */
+:root[data-sistema="darwin"] .interruptor > input:active:not(:disabled) + .pomo {
+  width: 30px;
+  background: var(--burbuja);
+  box-shadow: var(--burbuja-sombra);
+}
+
+:root[data-sistema="darwin"] .interruptor > input:checked:active:not(:disabled) + .pomo {
+  /* Encendido crece hacia la izquierda, que es de donde vino. */
+  transform: translateX(10px);
+}
+
+/* **Y el botón del deslizador se hincha en una burbuja que desborda la pista.**
+ * Ahí sí puede salirse, y es lo que se quiere: el dedo tapa el control y la burbuja
+ * asoma por encima. */
+:where(:root[data-sistema="darwin"]) body input[type="range"]:active:not(:disabled)::-webkit-slider-thumb {
+  width: 26px;
+  height: 18px;
+  margin-top: -6px;
+  border-radius: 9px;
+  background: var(--burbuja);
+  box-shadow: var(--burbuja-sombra);
+}
+
+:where(:root[data-sistema="darwin"]) body input[type="range"]::-webkit-slider-thumb {
+  transition:
+    width 140ms cubic-bezier(0.3, 1.3, 0.5, 1),
+    height 140ms cubic-bezier(0.3, 1.3, 0.5, 1),
+    background-color 140ms;
+}
+
+/* ------------------------------------------------------- lo que faltaba vestir
+ *
+ * Todo lo de abajo lo tiene la hoja de Apolo y aquí no estaba: son los controles
+ * que aparecen en una pantalla y no en otra, y por eso se escaparon de la primera
+ * pasada. La lección queda escrita: **el inventario se hace contra la hoja entera,
+ * no contra las pantallas que uno abre**. */
+
+/* El botón que borra algo: en macOS el peligro es el color del texto, no un marco
+ * rojo. */
+:root[data-sistema="darwin"] button.peligro {
+  border: 0;
+  background: var(--boton);
+  color: var(--error);
+}
+
+:root[data-sistema="darwin"] button.peligro:active:not(:disabled) {
+  background: var(--boton-encima);
+}
+
+/* La zona donde se sueltan ficheros, con el radio del grupo. */
+:root[data-sistema="darwin"] .zona-soltar {
+  border-radius: var(--radio-grande);
+}
+
+/* El antetítulo de la barra, en versalitas pequeñas como en el kit. */
+:root[data-sistema="darwin"] .herramientas .antetitulo {
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.4px;
+}
+
+/* Y el título con un proyecto abierto no crece: en macOS la barra unificada mide
+ * 52 pase lo que pase, y el antetítulo cabe dentro. */
+:root[data-sistema="darwin"] .herramientas.en-proyecto {
+  height: var(--hueco-semaforos);
+}
+
+/* ------------------------------------------- la barra, con el botón de plegar
+ *
+ * **El título se queda a la izquierda.** La barra es `space-between`, así que al
+ * meter el botón de plegar pasó a haber tres hijos y el título se fue al centro —que
+ * es la cabecera de GNOME, no la de macOS—. Lo resuelve un margen automático en el
+ * título, que se come el hueco libre: así el botón y el título quedan juntos a la
+ * izquierda y las órdenes a la derecha. Se vio en la captura. */
+:root[data-sistema="darwin"] .herramientas .titulo {
+  margin-right: auto;
+}
+
+/* Y la barra unificada lleva **su filete debajo**, que es lo que la separa del
+ * contenido en macOS. La base no lo pone —viene del App Store, que no lo tiene—. */
+:root[data-sistema="darwin"] .herramientas {
+  border-bottom: 0.5px solid var(--filete);
+}
+
+/* El antetítulo va **debajo** del nombre y en redonda, no en versalitas: en macOS 27
+ * lo que manda es el nombre y el antetítulo es su pie. */
+:root[data-sistema="darwin"] .herramientas .titulo {
+  display: flex;
+  flex-direction: column;
+}
+
+:root[data-sistema="darwin"] .herramientas .antetitulo {
+  order: 2;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ------------------------------------------------- la política de espaciado
+ *
+ * Lo que el cliente describió como «no hay una política de espaciado general»: la
+ * base deja el contenido pegado a la barra —`padding: 0 24 32`, sin nada arriba— y
+ * en macOS el contenido respira por los cuatro lados. Las medidas son las de Ajustes
+ * del Sistema. */
+:root[data-sistema="darwin"] .contenido {
+  padding: 20px 24px 32px;
+}
+
+/* Y los bloques de una pantalla se separan entre sí con el mismo aire que llevan
+ * por dentro, que es lo que hace que una pantalla se lea como una lista de grupos y
+ * no como una pila. */
+:root[data-sistema="darwin"] .panel {
+  gap: 20px;
+}
+
+/* La entradilla de cada pantalla, pegada a su título y no al borde. */
+:root[data-sistema="darwin"] .panel > .entradilla {
+  font-size: var(--texto);
+  line-height: 16px;
+  max-width: 62ch;
+}
+
+/* ------------------------------------------------------ las listas de filas
+ *
+ * La de proyectos y la de la bóveda son **filas agrupadas**, igual que los ajustes:
+ * la superficie de tarjeta, radio 10, sin borde y con el filete sangrado entre una y
+ * otra. La base las dibuja con un marco de medio píxel, que es lo de macOS 26.
+ *
+ * Esto es lo que el cliente vio como «artefactos»: antes de esto, la regla general de
+ * botón de esta hoja le ganaba a `.abrir-proyecto` y a `.lista-boveda button` y las
+ * convertía en píldoras grises de 24 con costura. Eso ya está arreglado por el peso;
+ * lo de aquí es darles la forma que les toca. */
+:root[data-sistema="darwin"] .proyectos,
+:root[data-sistema="darwin"] .lista-boveda {
+  border: 0;
+  border-radius: var(--radio-grande);
+  background: var(--tarjeta);
+}
+
+:root[data-sistema="darwin"] .proyectos li + li,
+:root[data-sistema="darwin"] .lista-boveda li + li {
+  border-top: 0;
+  background-image: linear-gradient(var(--filete), var(--filete));
+  background-repeat: no-repeat;
+  background-size: calc(100% - 20px) 1px;
+  background-position: 10px 0;
+}
+
+/* La fila tiene su aire y **el nombre manda**: lo que sigue se va a la derecha. */
+:root[data-sistema="darwin"] .proyectos li {
+  gap: 8px;
+  padding: 2px 10px 2px 0;
+}
+
+:root[data-sistema="darwin"] .abrir-proyecto {
+  padding: 8px 10px;
+  gap: 10px;
+}
+
+/* ------------------------------------------------- las pestañas de Ajustes
+ *
+ * En macOS un control segmentado **mide lo que mide su contenido y va centrado**;
+ * estirado a todo el ancho es la SelectorBar de Windows, que es otra cosa. La base
+ * lo estira porque allí las pestañas hacen de navegación. */
+:root[data-sistema="darwin"] .panel > .segmentado {
+  width: fit-content;
+  margin-inline: auto;
+}
+
+/* --------------------------------------------- el medidor de fortaleza, con aire
+ *
+ * Pegado al deslizador se leen **tres líneas horizontales apiladas** —la pista, el
+ * medidor y el texto—, que es exactamente lo que el cliente señaló en Windows. Son
+ * dos cosas distintas y necesitan separarse: una se arrastra y la otra informa. */
+:root[data-sistema="darwin"] .medidor {
+  margin-top: 16px;
+}
+
+:root[data-sistema="darwin"] .medidor + * {
+  margin-top: 8px;
+}
+
+/* --------------------------------------------- la fila de un proyecto que parte
+ *
+ * Con la bóveda abierta la fila lleva el nombre, el estado y tres botones, y salta
+ * de línea. Los botones se iban **a la derecha**, descolgados del nombre: en macOS
+ * lo que cuelga de una fila se alinea con ella. */
+:root[data-sistema="darwin"] .proyectos li > .al-acabar {
+  margin-left: 0;
+  justify-content: flex-start;
+}
+
+/* Y un discreto **deshabilitado no se subraya**: el subrayado dice «esto se pulsa» y
+ * ése no se puede pulsar. Se vio en la lista de la bóveda, con «Exportar las llaves
+ * de acceso…» apagado y subrayado a la vez. */
+:root[data-sistema="darwin"] button.discreto:disabled {
+  text-decoration: none;
+}
+
+/* ------------------------------------------- las filas de una ficha, agrupadas
+ *
+ * En macOS una lista de campos dentro de un grupo va **con su filete entre filas**,
+ * sangrado por los dos lados. Aquí no lo tenían: la ficha de una entrada era un
+ * bloque gris con los datos apilados y sin nada que los separara, que es lo que la
+ * auditoría del 2026-11-21 sacó mirando la pantalla.
+ *
+ * `dato-fila` nombra lo que es —una fila que **se lee**, no un campo que se edita— y
+ * la ponen los tres componentes que las dibujan: `Dato`, `Secreto` y el código de un
+ * solo uso. Va en el marcado de los cuatro sistemas y hoy sólo la usa esta hoja, que
+ * es lo de siempre: el marcado es el mismo y lo que cambia es el CSS. */
+:root[data-sistema="darwin"] .grupo > .dato-fila {
+  padding-block: 9px;
+}
+
+:root[data-sistema="darwin"] .grupo > .dato-fila:first-child {
+  padding-top: 0;
+}
+
+:root[data-sistema="darwin"] .grupo > .dato-fila:last-child {
+  padding-bottom: 0;
+}
+
+/* El filete va **de fondo y no de borde**, por lo mismo que en las filas de ajuste:
+ * así no suma alto y se puede sangrar sin tocar el relleno. */
+:root[data-sistema="darwin"] .grupo > .dato-fila + .dato-fila {
+  background-image: linear-gradient(var(--filete), var(--filete));
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  background-position: 0 0;
+}
+
+/* Y el grupo pierde el hueco entre hijos: lo que separa ahora es el filete. */
+:root[data-sistema="darwin"] .grupo:has(> .dato-fila) {
+  gap: 0;
 }

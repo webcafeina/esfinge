@@ -374,6 +374,15 @@ body {
   white-space: nowrap;
 }
 
+/* **El botón que pliega la barra lateral: escondido mientras nadie lo vista.**
+ *
+ * Está en el marcado de los cuatro sistemas (ADR 0064) y lo enseña la hoja de quien
+ * lo use — hoy, macOS, donde la barra de título la pone el sistema y no hay ninguna
+ * hamburguesa donde ponerlo. En Windows pliega la de su barra de título. */
+.boton-lateral {
+  display: none;
+}
+
 .herramientas .aparte {
   --wails-draggable: no-drag;
   color: var(--apagado);
@@ -716,6 +725,14 @@ textarea {
   border-left: 2px solid var(--aviso);
   padding-left: var(--espacio-4);
   margin-top: var(--espacio-5);
+}
+
+/* **Salvo cuando es lo primero**, que es lo que pasa en Ajustes con el aviso de los
+ * iconos: ese margen existe para separarlo de lo que tiene encima, y de primero no
+ * tiene nada — lo que deja es un hueco colgando debajo de la barra. Se vio midiendo
+ * la pantalla al auditarla, no leyendo el CSS. */
+.grupo.peligro:first-child {
+  margin-top: 0;
 }
 
 /* El campo de la clave, con su ojo dentro. El hueco de la derecha se reserva en

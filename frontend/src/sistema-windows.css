@@ -179,10 +179,20 @@
  * discreto, que es texto, salía con marco **y** con subrayado, que es decir dos
  * veces lo mismo. Lo vio el cliente en su Windows.
  *
- * La lista va escrita y no con `:where()`: bajar el peso de esta regla a cero la
- * dejaría por debajo de cualquier `button {}` de la hoja base, que se carga
- * después, y entonces Windows no vestiría ningún botón. */
-:root[data-sistema="windows"] button:not(.principal, .discreto, .ojo, .boton-menu) {
+ * **Y el peso está elegido, que es la corrección del 2026-11-21.** La lista de
+ * exclusiones no bastaba: escrita como `:root[data-sistema="windows"] button` la
+ * regla pesa (0,3,1) y **le gana a todos los botones compuestos que la base viste
+ * por clase** —`.abrir-proyecto`, `.lista-boveda button`, `.dactilar-boton`,
+ * `.boton-sincro`, `.renombrar`—, que no son variantes de botón sino filas y
+ * controles enteros. Con una lista habría que acordarse de cada uno que aparezca,
+ * que es la señal de que el arreglo está en el sitio equivocado.
+ *
+ * Con `:where()` alrededor del ámbito y un tipo más la regla pesa **(0,0,2)**: más
+ * que el `button` de la base —así que sigue vistiendo los botones normales— y menos
+ * que cualquier clase, así que todo lo compuesto manda sobre ella. Lo de arriba
+ * —`.principal` y `.discreto`— se sigue declarando aparte y por clase, que es lo que
+ * de verdad lo arregla. */
+:where(:root[data-sistema="windows"]) body button {
   border-color: var(--filete);
   border-bottom-color: var(--borde-bajo);
   box-shadow: none;
@@ -215,13 +225,13 @@
   text-decoration: none;
 }
 
-:root[data-sistema="windows"] button:hover:not(:disabled) {
+:where(:root[data-sistema="windows"]) body button:hover:not(:disabled) {
   background: var(--boton-encima);
 }
 
 /* Y al pulsar se **apaga** en vez de hundirse: el estado pulsado de Fluent baja
  * el contraste del control y pierde el borde de abajo. */
-:root[data-sistema="windows"] button:active:not(:disabled) {
+:where(:root[data-sistema="windows"]) body button:active:not(:disabled) {
   background: var(--barra-encima);
   border-bottom-color: var(--filete);
   color: var(--cuerpo);
@@ -234,8 +244,8 @@
  * reposo lleva su borde de 1 px y lo que engorda a 2 es **el foco**, con la
  * línea del acento. Con 2 px siempre, un formulario parece una lista de cosas
  * subrayadas y además no queda nada para decir cuál está activo. */
-:root[data-sistema="windows"] input,
-:root[data-sistema="windows"] textarea {
+:where(:root[data-sistema="windows"]) body input,
+:where(:root[data-sistema="windows"]) body textarea {
   border-color: var(--filete);
   border-bottom-color: var(--borde-bajo);
 }
@@ -721,7 +731,7 @@
 /* **El deslizador y el medidor son dos rayas horizontales seguidas**, y pegadas
  * se leen como una sola cosa de tres pisos —con el filete de la tarjeta, tres—.
  * El deslizador se queda con su aire propio por debajo. Lo vio el cliente. */
-:root[data-sistema="windows"] input[type="range"] {
+:where(:root[data-sistema="windows"]) body input[type="range"] {
   margin-bottom: var(--espacio-3);
 }
 
@@ -810,7 +820,7 @@
 
 /* Los botones de Fluent: relleno de 12, peso normal y una transición corta. El
  * peso venía de la base, donde los botones van en 500 porque es lo de macOS. */
-:root[data-sistema="windows"] button {
+:where(:root[data-sistema="windows"]) body button {
   padding: 0 12px;
   font-weight: 400;
   transition: background 0.08s;
@@ -818,7 +828,7 @@
 
 /* **La casilla, de 20 y con el tic en la piedra.** La de la base mide 18, que es
  * la de macOS. Y marcada se llena del oro, como todo lo que se elige aquí. */
-:root[data-sistema="windows"] input[type="checkbox"] {
+:where(:root[data-sistema="windows"]) body input[type="checkbox"] {
   width: 20px;
   height: 20px;
   border-radius: var(--radio);
@@ -828,7 +838,7 @@
 /* **El desplegable lleva su flecha**, no la del navegador: la de serie es un
  * triángulo relleno y la de Fluent es un galón fino. Va como imagen de fondo
  * porque un `<select>` no deja dibujar dentro. */
-:root[data-sistema="windows"] select {
+:where(:root[data-sistema="windows"]) body select {
   appearance: none;
   -webkit-appearance: none;
   padding-right: 32px;

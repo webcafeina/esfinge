@@ -91,17 +91,34 @@ test("la barra de herramientas unificada mide 52 y el título va a la izquierda"
   expect(await alto(barra)).toBe(52);
 
   // **A la izquierda, no centrado**: centrado es la cabecera de GNOME, y así es
-  // como se vio que la hoja no se estaba aplicando. Se compara el borde del
-  // título con el de la barra, que es lo que dice «empieza donde empieza ella»
-  // sin depender del ancho de la ventana.
-  const titulo = page.locator(".herramientas h1");
-  const [cajaBarra, cajaTitulo] = await Promise.all([
-    barra.evaluate((e) => e.getBoundingClientRect().x),
-    titulo.evaluate((e) => e.getBoundingClientRect().x),
-  ]);
-  // El hueco del kit son 18; se deja un píxel de margen por el redondeo.
-  expect(cajaTitulo - cajaBarra).toBeGreaterThan(14);
-  expect(cajaTitulo - cajaBarra).toBeLessThan(26);
+  // como se vio que la hoja no se estaba aplicando.
+  //
+  // **Y se afirma eso, no una distancia al borde.** La primera versión medía cuántos
+  // píxeles separaban el título del canto de la barra, lo que daba por hecho que el
+  // título era lo primero que hay dentro — y al entrar el botón de plegar dejó de
+  // serlo y la prueba se puso roja **sin que nada estuviera mal**. Lo que importa es
+  // que el título empiece en la mitad izquierda y acabe lejos del centro, que es lo
+  // que distingue esta barra de la de GNOME a cualquier ancho de ventana.
+  // **Lo que se afirma es que el título va pegado al botón de plegar**, no una
+  // distancia al canto de la barra ni «a la izquierda del centro».
+  //
+  // Las dos versiones anteriores fallaron, y las dos por lo mismo. La primera medía
+  // los píxeles hasta el borde de la barra, lo que daba por hecho que el título era
+  // lo primero: al entrar el botón de plegar se puso roja **sin que nada estuviera
+  // mal**. La segunda comprobaba que el título quedara a la izquierda del centro —y
+  // **al mutarla siguió en verde**, porque con `space-between` y un título corto
+  // como «Cifrar» el centro de la barra queda igualmente a su derecha—.
+  //
+  // Lo que distingue de verdad esta barra de la cabecera centrada de GNOME es que el
+  // título **no se despega de lo que tiene delante**. Con el margen automático
+  // quitado, el hueco pasa de unos pocos píxeles a más de doscientos.
+  const hueco = await barra.evaluate((e) => {
+    const b = e.querySelector(".boton-lateral")!.getBoundingClientRect();
+    const h = e.querySelector("h1")!.getBoundingClientRect();
+    return h.x - b.right;
+  });
+  expect(hueco, `el título está a ${Math.round(hueco)} px del botón de plegar`).toBeLessThan(24);
+  expect(hueco).toBeGreaterThan(0);
 });
 
 test("la fila elegida de la barra lateral no se resalta al pasar por encima", async ({ page }) => {
