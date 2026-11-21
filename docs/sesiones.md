@@ -5,6 +5,41 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-21 · macOS probado en su Mac, y lo que faltaba de Apolo
+
+- **Dos versiones.** La **2.74.0** cerró la auditoría visual de macOS que había quedado a medias; el
+  cliente la probó en su Mac el mismo día y **dio seis cosas**, y la **2.75.0** las lleva todas.
+- **Lo de la 2.74.0**, que salió de mirar las pantallas: el título se iba al centro al meter el botón
+  de plegar, las pestañas de Ajustes se estiraban a todo el ancho, el medidor iba pegado al
+  deslizador, un hueco colgaba bajo la barra —de la base, para los cuatro—, y **el botón de texto se
+  había quedado sin subrayado y sin marco**, o sea sin ninguna señal de que se pulsa. Y las **filas de
+  una ficha** pasaron a llevar su separador, con `dato-fila`, clase nueva en los cuatro sistemas.
+- **Lo que el cliente dio al probarlo**, y las tres primeras eran lo mismo: **no se había comparado
+  con Apolo control por control**, que es justo la regla que Windows dejó escrita. El botón de plegar
+  allí **no es un hijo de la barra de herramientas** —flota sobre la cabeza de la barra lateral y
+  viaja hasta los semáforos—; las burbujas **se hinchan con un `transform` y desbordan la pista**, no
+  creciendo de ancho; y la selección del segmentado **se desliza**, que lleva código porque el CSS no
+  sabe dónde está la elegida.
+- **Y un fallo de verdad**: «Salir del proyecto» **se estrechaba de 36 a 24 al pasar el puntero**. Es
+  la familia del peso otra vez — ese botón es cápsula y `.discreto` a la vez, y la regla del `:hover`
+  del segundo **repetía el alto**, así que pesaba más. Se midieron **todos los botones visibles de los
+  cuatro sistemas** y no pasaba en ninguno más.
+- **El selector de aspecto** (claro · oscuro · el del sistema), en Ajustes → Apariencia. Los tokens
+  traían sus tres bloques de color desde siempre y **nadie escribía `data-tema`**.
+- **Y con la sexta pestaña, en Windows ya no caben en una fila**: piden 674 y hay 560. Van en **dos
+  filas de tres**; el reparto que salía solo dejaba una huérfana abajo.
+- **Verificado**: las tres puertas en verde (**234** de interfaz, 200 del navegador, Go con `-race`),
+  **cada protección nueva mutada** —y dos de ellas **pasaron en verde a la primera mutación** y hubo
+  que reescribirlas—, los tres canales sirviendo la versión nueva sin caché, y **el VPS en la 2.75.0**
+  leyendo la bóveda de Tempero.
+- **Decidido**: el inglés, [ADR 0069](adr/0069-el-ingles.md) — los cinco sitios, idioma del sistema con
+  selector, **después de GNOME y de KDE**. Elegido por él con el recuento delante (~1.000 cadenas).
+- **Queda abierto**: que vea la 2.75.0 en su Mac —el vidrio, las burbujas moviéndose, el oro a
+  1,74:1 y las dos filas de Windows—, **GNOME** (F4), y lo de Pages, que **no se ha repetido en dos
+  publicaciones** pero sigue sin descartarse.
+
+---
+
 ## 2026-11-20 · Windows probado en su máquina, el estándar y el instalador
 
 - **El CLA de winget, resuelto y automatizado.** Había **tres PRs amontonados** —2.68.0, 2.69.0 y

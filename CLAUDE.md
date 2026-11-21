@@ -2586,11 +2586,52 @@ guarda, **se lee la guarda y no el comentario de al lado** —el comentario enve
 nadie volvió a mirar—; y si lo que se pide son dos estados excluyentes, no hay plazo que lo arregle,
 hay que reordenar.
 
+**Una regla de estado que repite una medida ya puesta pesa más que quien la puso.** (2026-11-21.)
+`button.discreto` y `button.discreto:hover` compartían declaración, así que el `:hover` llevaba el
+alto escrito — y con el `:hover` y el `:not()` esa regla pesa (0,5,1), más que la cápsula de la barra
+que viste al mismo botón con (0,4,0). Resultado: **«Salir del proyecto» se estrechaba de 36 a 24 al
+pasar el puntero**, porque ese botón es a la vez cápsula y botón de texto. Lo vio el cliente en su
+Mac. **Una regla de estado dice lo que cambia en ese estado y nada más**: repetir lo que ya está
+puesto no es redundancia inofensiva, es subirle el peso a una declaración que debía perder. Lo vigila
+«ningún botón cambia de tamaño al pasar el puntero», que **recorre todos los visibles** en los cuatro
+sistemas y mide alto y ancho, con un botón de usar y tirar que lleva las dos clases a la vez — porque
+el que falla es siempre el que nadie estaba mirando, y éste sólo existe dentro de un proyecto.
+
+**Y una aserción que mide algo que depende de lo que haya al lado se cae sola, o pasa en verde.**
+(2026-11-21.) «El título va a la izquierda» ha ido por tres formulaciones. La primera medía los
+píxeles hasta el canto de la barra **dando por hecho que el título era lo primero que hay dentro**:
+al entrar el botón de plegar se puso roja **sin que nada estuviera mal**. La segunda comprobaba que
+quedara a la izquierda del centro, y **al mutarla siguió en verde**, porque con un título corto como
+«Cifrar» el centro de la barra le queda a la derecha de todos modos. La tercera volvió a ser la
+primera en cuanto el botón salió de la barra. Lo mismo le pasó a la del segmentado: comparaba **sólo
+la horizontal**, y en cuanto la fila se partió en dos, la última pestaña cayó **debajo de la primera y
+en su misma x**, así que el fondo parecía no haberse movido. **La regla: una aserción nombra la
+relación que vigila —este elemento contra aquél— y no una coordenada**, y cuando algo puede moverse en
+dos ejes se miran los dos.
+
+**Y al añadir una opción a una fila, medir si todavía cabe.** (2026-11-21.) La sexta pestaña de
+Ajustes dejó a las seis pidiendo **674 px** con la columna topada en 560: faltaban 114, así que
+acortar un rótulo no lo arreglaba. La regla escrita es que **antes de tirar un rótulo o un glifo la
+fila se parte**, y eso se cumple solo; lo que no sale solo es **el reparto**, que dejaba cinco arriba
+y una huérfana debajo y se lee como un fallo. En Windows van en rejilla de `auto-fit` —dos filas de
+tres a 560— y la prueba exige que **ninguna fila quede coja**, que es lo que la mutación dice con esas
+palabras: «el reparto deja una fila coja: 5 + 1». En macOS las seis caben en una fila, así que esto
+**es de un sistema y vive en su hoja**.
+
 ## Lo que Windows deja escrito para macOS, GNOME y KDE
 
 La fase de Windows costó **tres rondas de correcciones suyas** y casi todo lo que salió **se va a
 repetir igual** en las tres hojas que quedan, porque no era de Fluent: era de cómo se escribe una hoja
 de sistema sobre una base que fue macOS. Esto se lee **al empezar cada fase**, no al cerrarla.
+
+**Y eso incluye lo que se mueve, no sólo lo que se ve quieto.** (2026-11-21.) macOS se dio por
+cerrado habiendo comparado medidas, colores y anatomía — y el cliente devolvió tres cosas que eran la
+misma: **el botón de plegar estaba en otro sitio** (allí no es un hijo de la barra de herramientas:
+flota sobre la cabeza de la barra lateral y viaja hasta los semáforos), **las burbujas crecían de
+ancho en vez de hincharse con un `transform`**, y **la selección del segmentado no se deslizaba**. Las
+tres están en su hoja, escritas y con su porqué al lado. Al comparar, mirar también los bloques de
+transición, los `:active` y lo que lleve código —el deslizamiento de la selección vive en un `.ts`, no
+en el CSS—.
 
 **Lo primero, y lo que más ahorra: comparar control por control con la hoja de ese sistema en Apolo**
 (`~/proyectos/apolo/frontend/src/sistema-<sistema>.css`). Es la especificación ya traducida, ya
