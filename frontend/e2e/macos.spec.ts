@@ -90,35 +90,26 @@ test("la barra de herramientas unificada mide 52 y el título va a la izquierda"
   const barra = page.locator(".herramientas");
   expect(await alto(barra)).toBe(52);
 
-  // **A la izquierda, no centrado**: centrado es la cabecera de GNOME, y así es
-  // como se vio que la hoja no se estaba aplicando.
+  // **A la izquierda, no centrado**: centrado es la cabecera de GNOME, y así es como
+  // se vio que la hoja no se estaba aplicando. Lo que se mide es **el hueco desde el
+  // canto de la barra**, que es exactamente lo que pone `--hueco-barra`.
   //
-  // **Y se afirma eso, no una distancia al borde.** La primera versión medía cuántos
-  // píxeles separaban el título del canto de la barra, lo que daba por hecho que el
-  // título era lo primero que hay dentro — y al entrar el botón de plegar dejó de
-  // serlo y la prueba se puso roja **sin que nada estuviera mal**. Lo que importa es
-  // que el título empiece en la mitad izquierda y acabe lejos del centro, que es lo
-  // que distingue esta barra de la de GNOME a cualquier ancho de ventana.
-  // **Lo que se afirma es que el título va pegado al botón de plegar**, no una
-  // distancia al canto de la barra ni «a la izquierda del centro».
-  //
-  // Las dos versiones anteriores fallaron, y las dos por lo mismo. La primera medía
-  // los píxeles hasta el borde de la barra, lo que daba por hecho que el título era
-  // lo primero: al entrar el botón de plegar se puso roja **sin que nada estuviera
-  // mal**. La segunda comprobaba que el título quedara a la izquierda del centro —y
-  // **al mutarla siguió en verde**, porque con `space-between` y un título corto
-  // como «Cifrar» el centro de la barra queda igualmente a su derecha—.
-  //
-  // Lo que distingue de verdad esta barra de la cabecera centrada de GNOME es que el
-  // título **no se despega de lo que tiene delante**. Con el margen automático
-  // quitado, el hueco pasa de unos pocos píxeles a más de doscientos.
-  const hueco = await barra.evaluate((e) => {
-    const b = e.querySelector(".boton-lateral")!.getBoundingClientRect();
-    const h = e.querySelector("h1")!.getBoundingClientRect();
-    return h.x - b.right;
+  // Van tres formulaciones y las dos anteriores fallaron por lo mismo: **medían algo
+  // que dependía de lo que hubiera al lado**. La primera daba por hecho que el título
+  // era lo primero dentro de la barra, y se puso roja sola al entrar el botón de
+  // plegar; la segunda comprobaba que quedara a la izquierda del centro, y **al
+  // mutarla siguió en verde**, porque con un título corto como «Cifrar» el centro de
+  // la barra queda igualmente a su derecha. La tercera —ésta— volvió a ser posible en
+  // cuanto el botón de plegar salió de la barra: ahora **nada le precede**, así que su
+  // hueco es el del kit y nada más.
+  const hueco = await page.locator(".herramientas").evaluate((e) => {
+    const b = e.getBoundingClientRect();
+    return e.querySelector("h1")!.getBoundingClientRect().x - b.x;
   });
-  expect(hueco, `el título está a ${Math.round(hueco)} px del botón de plegar`).toBeLessThan(24);
-  expect(hueco).toBeGreaterThan(0);
+  // El hueco del kit son 18; se deja margen por el redondeo y por si el `h1` trae lo
+  // suyo. Centrado pasa de los doscientos, así que la frontera no es delicada.
+  expect(hueco, `el título está a ${Math.round(hueco)} px del canto de la barra`).toBeLessThan(40);
+  expect(hueco).toBeGreaterThan(8);
 });
 
 test("la fila elegida de la barra lateral no se resalta al pasar por encima", async ({ page }) => {
@@ -216,4 +207,117 @@ test("en macOS la barra de título la dibuja el sistema", async ({ page }) => {
   // cuatro sistemas **y aquí la esconde el CSS**: montarla sólo donde se usa
   // rompería que el marcado sea el mismo y la simulación por URL.
   await expect(page.locator(".barra-titulo")).toBeHidden();
+});
+
+// **La selección del segmentado se desliza hasta la opción elegida.**
+//
+// Lo pidió el cliente comparando con Apolo: «cuando se cambia entre elementos de un
+// menú horizontal debe haber animaciones». El fondo de la elegida es un `::before`
+// del contenedor cuya posición escribe `segmentados.ts`, así que lo que se comprueba
+// es **que esas medidas sigan a la opción elegida** — que es lo que el CSS anima—.
+// Mirar la animación no se puede desde aquí; mirar que el fondo se muda, sí.
+test("la selección del segmentado se desliza hasta la opción elegida", async ({ page }) => {
+  await enMacos(page);
+  await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
+
+  const barra = page.locator(".panel:visible .segmentado").first();
+  await expect(barra).toBeVisible();
+
+  // Sin medir no hay fondo que deslizar, y entonces todo lo demás pasaría solo.
+  await expect(barra).toHaveAttribute("data-medido", "si");
+
+  const donde = () =>
+    barra.evaluate((s) => {
+      const b = s.querySelector<HTMLElement>('[aria-selected="true"]')!;
+      const e = getComputedStyle(s);
+      return {
+        fondoX: e.getPropertyValue("--sel-x").trim(),
+        fondoY: e.getPropertyValue("--sel-y").trim(),
+        fondoAncho: e.getPropertyValue("--sel-w").trim(),
+        botonX: `${b.offsetLeft}px`,
+        botonY: `${b.offsetTop}px`,
+        botonAncho: `${b.offsetWidth}px`,
+        rotulo: (b.textContent || "").trim(),
+      };
+    });
+
+  const antes = await donde();
+  expect(antes.fondoX, "el fondo no está sobre la opción elegida").toBe(antes.botonX);
+  expect(antes.fondoAncho).toBe(antes.botonAncho);
+
+  // Y a otra pestaña: el fondo tiene que haberse mudado con ella.
+  //
+  // **Se mira dónde cae en los dos ejes, no sólo a lo ancho.** Estas pestañas se
+  // parten en dos filas cuando no caben, así que la última puede quedar **debajo de
+  // la primera y en su misma x**: comparando sólo la horizontal, el fondo parecería no
+  // haberse movido. Pasó en cuanto entró la sexta pestaña.
+  const otras = barra.getByRole("tab");
+  const cuantas = await otras.count();
+  expect(cuantas, "hace falta más de una pestaña para que haya nada que deslizar").toBeGreaterThan(1);
+  await otras.nth(cuantas - 1).click();
+
+  const despues = await donde();
+  expect(despues.rotulo, "no se ha cambiado de pestaña").not.toBe(antes.rotulo);
+  expect(despues.fondoX, "el fondo se ha quedado en la pestaña de antes").toBe(despues.botonX);
+  expect(despues.fondoY).toBe(despues.botonY);
+  expect(
+    `${despues.fondoX},${despues.fondoY}`,
+    "el fondo no se ha movido de donde estaba",
+  ).not.toBe(`${antes.fondoX},${antes.fondoY}`);
+});
+
+// **La cápsula de plegar vive sobre la cabeza de la barra lateral, y viaja.**
+//
+// En macOS 27 ese botón no es un hijo de la barra de herramientas: flota pegado al
+// canto derecho de la barra lateral y, al plegarla, **se muda junto a los
+// semáforos**. El cliente lo dijo comparándolo con Apolo —«el botón de colapso no
+// está en el mismo sitio»—, y metido en la fila se parecía sin serlo.
+//
+// Se mide **dónde acaba**, no dónde empieza: lo que lo define es que esté pegado al
+// canto de la barra, y eso no cambia aunque un día la cápsula mida otra cosa.
+test("la cápsula de plegar va al canto de la barra lateral y se muda al plegarla", async ({
+  page,
+}) => {
+  await enMacos(page);
+
+  const capsula = page.locator(".boton-lateral");
+  const caja = () => capsula.evaluate((e) => e.getBoundingClientRect());
+  const anchoLateral = await page
+    .locator(".lateral")
+    .evaluate((e) => e.getBoundingClientRect().width);
+
+  const abierta = await caja();
+  expect(abierta.width, "la cápsula no mide los 36 del kit").toBe(36);
+  expect(abierta.height).toBe(36);
+  // Pegada al canto: su final queda a 8 px del borde de la barra lateral.
+  expect(
+    anchoLateral - abierta.right,
+    `la cápsula está a ${Math.round(anchoLateral - abierta.right)} px del canto de la barra`,
+  ).toBeLessThan(12);
+
+  // Y al plegar, se muda junto a los semáforos y el título le deja sitio.
+  //
+  // **El hueco se mide dentro de la barra, no en la pantalla.** Al plegar, la columna
+  // de la barra lateral se queda en cero y **la barra de herramientas entera se corre
+  // a la izquierda**, así que comparar posiciones absolutas dice lo contrario de lo
+  // que pasa: el título «retrocede» de 258 a 136 estando más adentro de su barra que
+  // antes. Lo descubrió esta misma prueba fallando por el motivo equivocado.
+  const hueco = async () =>
+    page.locator(".herramientas").evaluate((e) => {
+      const b = e.getBoundingClientRect();
+      return e.querySelector("h1")!.getBoundingClientRect().x - b.x;
+    });
+
+  const huecoAntes = await hueco();
+  await capsula.click();
+  await expect(page.locator(".ventana")).toHaveAttribute("data-panel", "compacto");
+  // La transición son 250 ms; se espera a que llegue en vez de dormir un rato.
+  await expect.poll(async () => Math.round((await caja()).x)).toBe(88);
+  await expect.poll(hueco).toBeGreaterThan(huecoAntes);
+
+  // Y lo que de verdad importa: que no se pisen. Los semáforos los dibuja el sistema
+  // encima de todo, así que el título tiene que empezar después de la cápsula.
+  const finCapsula = (await caja()).right;
+  const tituloX = await page.locator(".herramientas h1").evaluate((e) => e.getBoundingClientRect().x);
+  expect(tituloX, "el título se ha quedado encima de la cápsula").toBeGreaterThan(finCapsula);
 });

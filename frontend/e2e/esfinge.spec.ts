@@ -866,6 +866,70 @@ test("sobre el oro de la fila activa escribe la piedra, no el blanco", async ({ 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+// **Ningún botón cambia de tamaño al pasar el puntero.**
+//
+// Es una familia entera, no un caso: una hoja de sistema viste un botón por su clase
+// y otra regla de la misma hoja —la del estado -hover— repite una medida que ya
+// estaba puesta, con un peso mayor. Entonces el botón **se encoge al acercar el
+// ratón**, que es justo lo que el cliente vio en su Mac con «Salir del proyecto»:
+// 36 px en reposo y 24 al pasar por encima, porque ese botón es a la vez una cápsula
+// de la barra y un `.discreto`, y la regla de `:hover` del discreto pesa más.
+//
+// Se mide **cada botón visible de la pantalla**, no uno elegido a mano: lo que falla
+// aquí es siempre el que nadie estaba mirando. Y se mira el alto **y el ancho**,
+// porque un relleno repetido en el estado hace lo mismo a lo ancho.
+for (const sistema of ["", "windows", "darwin", "linux"]) {
+  const nombre = sistema || "la base";
+  test(`ningún botón cambia de tamaño al pasar el puntero en ${nombre}`, async ({ page }) => {
+    const errores = vigilarConsola(page);
+    await page.goto(sistema ? `/?sistema=${sistema}` : "/");
+    await expect(page.locator(".lateral")).toBeVisible();
+
+    // **Y uno de prueba en la barra**, con las dos clases que se dan a la vez en la
+    // barra de un proyecto: ahí es donde apareció, y montar un proyecto entero para
+    // comprobarlo costaría medio minuto por sistema. Es un elemento de usar y tirar,
+    // como el que se usa para preguntarle al motor por el valor de un token.
+    await page.evaluate(() => {
+      const barra = document.querySelector(".zona .herramientas");
+      if (!barra) return;
+      const b = document.createElement("button");
+      b.className = "discreto salir-proyecto";
+      b.textContent = "Salir del proyecto";
+      b.dataset.desechable = "si";
+      barra.append(b);
+    });
+
+    const botones = page.locator("button:visible");
+    const cuantos = await botones.count();
+    const malos: string[] = [];
+    for (let i = 0; i < cuantos; i++) {
+      const b = botones.nth(i);
+      const antes = await b.evaluate((e) => {
+        const r = e.getBoundingClientRect();
+        return { alto: r.height, ancho: r.width };
+      });
+      await b.hover({ force: true }).catch(() => {});
+      const despues = await b.evaluate((e) => {
+        const r = e.getBoundingClientRect();
+        return { alto: r.height, ancho: r.width };
+      });
+      if (Math.abs(antes.alto - despues.alto) > 0.5 || Math.abs(antes.ancho - despues.ancho) > 0.5) {
+        const quien = await b.evaluate(
+          (e) => `${e.className || e.tagName}«${(e.textContent || "").trim().slice(0, 20)}»`,
+        );
+        malos.push(
+          `${quien}: ${Math.round(antes.ancho)}×${Math.round(antes.alto)} → ` +
+            `${Math.round(despues.ancho)}×${Math.round(despues.alto)}`,
+        );
+      }
+    }
+    expect(malos, `en ${nombre} cambian de tamaño al pasar: ${malos.join(" | ")}`).toEqual([]);
+
+    await page.evaluate(() => document.querySelector("[data-desechable]")?.remove());
+    expect(errores, errores.join(" | ")).toEqual([]);
+  });
+}
+
 // **La ventana llega al fondo en los cuatro sistemas.**
 //
 // Esto no es cosmético y costó tres versiones publicadas. `.barra-titulo` va con
@@ -4187,4 +4251,57 @@ test("en desarrollo se puede pedir el aspecto de otro sistema por la URL", async
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-sistema", "linux");
   expect(await page.locator("html").getAttribute("data-simulado")).toBeNull();
+});
+
+// **El aspecto se elige, y manda sobre el del sistema.**
+//
+// Hasta la 2.74.0 los tokens traían sus tres bloques de color y **nadie escribía
+// `data-tema`**: el oscuro forzado no lo veía nadie y la ventana seguía al sistema sin
+// remedio. Lo pidió el cliente el 2026-11-21 para los cuatro sistemas.
+//
+// Lo que se comprueba es que el fondo cambia de verdad, no que el atributo esté
+// puesto: mirando sólo el atributo, la prueba pasaría en verde con los bloques de
+// color borrados.
+//
+// **Y los dos temas se comparan entre sí, no contra el del sistema.** La primera
+// versión exigía que «Oscuro» oscureciera lo que había, y eso sólo vale cuando el
+// equipo está en claro: en el proyecto `[oscuro]` el sistema ya es oscuro y elegir
+// oscuro no oscurece nada. Falló ahí, y lo que estaba mal era la aserción.
+test("el aspecto elegido manda sobre el del sistema", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".lateral")).toBeVisible();
+
+  const fondo = () => page.locator("body").evaluate((e) => getComputedStyle(e).backgroundColor);
+  const claridad = (c: string) => {
+    const [r, v, a] = c.match(/\d+/g)!.map(Number);
+    return 0.2126 * r + 0.7152 * v + 0.0722 * a;
+  };
+
+  await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
+  await page.locator(".panel:visible").getByRole("tab", { name: "Apariencia" }).click();
+
+  const delSistema = await fondo();
+
+  const elegir = (n: string) =>
+    page.locator(".panel:visible").getByRole("tab", { name: n, exact: true }).click();
+
+  await elegir("Oscuro");
+  await expect(page.locator("html")).toHaveAttribute("data-tema", "oscuro");
+  const oscuro = await fondo();
+
+  await elegir("Claro");
+  await expect(page.locator("html")).toHaveAttribute("data-tema", "claro");
+  const claro = await fondo();
+
+  expect(
+    claridad(claro),
+    `el tema elegido no cambia el color: claro ${claro} y oscuro ${oscuro}`,
+  ).toBeGreaterThan(claridad(oscuro));
+
+  // Y «el del sistema» **quita el atributo**, que es lo que deja mandar a la consulta
+  // del sistema: escribiendo uno, la ventana se quedaría clavada en ese aspecto
+  // aunque el equipo cambiara al suyo a mediodía.
+  await elegir("El del sistema");
+  await expect(page.locator("html")).not.toHaveAttribute("data-tema", /.*/);
+  expect(await fondo(), "volver al del sistema no ha devuelto su color").toBe(delSistema);
 });

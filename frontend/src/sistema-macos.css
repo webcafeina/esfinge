@@ -170,8 +170,11 @@
  * 52 de alto, el título en Headline 13 negrita y su antetítulo en 11. El hueco
  * de la izquierda es el del kit: 18 desde el borde. */
 :root[data-sistema="darwin"] .herramientas {
-  padding: 0 var(--hueco-barra);
+  padding: 0 8px 0 var(--hueco-barra);
   gap: 8px;
+  /* Se mueve a la vez que la cápsula, y con su misma curva: si una llega antes que
+   * la otra, el título da un empujón al pasar. */
+  transition: padding-left 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 :root[data-sistema="darwin"] .herramientas h1 {
@@ -268,10 +271,19 @@
  *
  * En la barra de herramientas no, porque allí es una cápsula de vidrio y ésa sí dice
  * que se pulsa. */
-:root[data-sistema="darwin"] button.discreto,
-:root[data-sistema="darwin"] button.discreto:hover:not(:disabled) {
+:root[data-sistema="darwin"] button.discreto {
   height: var(--alto-control);
   border: 0;
+  background: transparent;
+}
+
+/* **Y al pasar el puntero sólo cambia el fondo.** Repitiendo aquí el alto, esta
+ * regla —(0,5,1) con el `:hover` y el `:not()`— le ganaba a la cápsula de la barra
+ * —(0,4,0)— y **«Salir del proyecto» se estrechaba de 36 a 24 al pasar por encima**,
+ * porque ese botón es también un `.discreto`. Lo vio el cliente en su Mac y se
+ * reprodujo midiendo. Una regla de estado dice lo que cambia en ese estado y nada
+ * más: repetir lo que ya está puesto es lo que la convierte en una trampa de peso. */
+:root[data-sistema="darwin"] button.discreto:hover:not(:disabled) {
   background: transparent;
 }
 
@@ -577,21 +589,40 @@
  * Windows —`data-panel`, que se pone en los cuatro sistemas— y lo que faltaba aquí
  * era quién lo acciona y qué hace: en Windows el panel se queda en una columna de
  * iconos, y en macOS **desaparece**. */
+/* **La cápsula de plegar: sobre la cabeza de la barra lateral, y se desliza.**
+ *
+ * En macOS 27 este botón no es un hijo de la barra de herramientas: flota pegado al
+ * canto derecho de la barra lateral y, al plegarla, **viaja hasta los semáforos**.
+ * Por eso cuelga de la ventana y va colocado a mano; dentro de la fila se parecía
+ * sin serlo, y es lo que el cliente vio comparándolo con Apolo. Las medidas —36 de
+ * cápsula, 8 de arriba, 44 de retranqueo y los 88 de los semáforos— salen de su hoja,
+ * que es la que él ya revisó. */
 :root[data-sistema="darwin"] .boton-lateral {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
+  position: absolute;
+  z-index: 10;
+  top: 8px;
+  left: calc(var(--barra-lateral) - 44px);
   width: 36px;
   height: 36px;
   padding: 0;
   border: 0.5px solid var(--capsula-filo);
   border-radius: 18px;
   background: var(--capsula);
-  color: var(--cuerpo);
-  backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(14px) saturate(1.8);
   box-shadow: var(--capsula-sombra);
+  color: var(--cuerpo);
+  /* La barra entera arrastra la ventana; un botón dentro tiene que decir que no. */
   --wails-draggable: no-drag;
+  transition:
+    left 250ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 160ms cubic-bezier(0.3, 1.4, 0.5, 1),
+    background-color 120ms;
+}
+
+:root[data-sistema="darwin"] .boton-lateral:active:not(:disabled) {
+  background: var(--elevada);
+  transform: scale(1.05);
 }
 
 :root[data-sistema="darwin"] .boton-lateral svg {
@@ -603,6 +634,10 @@
 /* La barra lateral se va del todo, y el contenido ocupa la ventana entera. La
  * transición va en las columnas del grid, que es lo único que se mueve. */
 :root[data-sistema="darwin"] .ventana {
+  /* **Y es el ancla de la cápsula de plegar**, que va colocada a mano sobre la
+   * cabeza de la barra lateral. Sin esto se colocaría contra la ventana del
+   * navegador, que hoy coincide y el día que algo lleve un marco, no. */
+  position: relative;
   transition: grid-template-columns 220ms cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -616,15 +651,22 @@
   pointer-events: none;
 }
 
-/* **Y con ella escondida, la barra de herramientas deja sitio a los semáforos.**
- * Sin esto el botón de plegar quedaría debajo de ellos y no se podría pulsar: los
- * semáforos los dibuja el sistema encima de todo. La medida es la del kit — el
- * primero a 26 del borde, tres de 14 con 23 entre centros. */
-:root[data-sistema="darwin"] .ventana[data-panel="compacto"] .herramientas {
-  padding-left: 88px;
+/* **Y el título se aparta de lo que haya a su izquierda.** Con la barra lateral
+ * desplegada eso son 18 px de hueco; plegada, los semáforos **y** la cápsula, que se
+ * ha mudado junto a ellos: 136. Va en una variable y con su transición porque las dos
+ * cosas se mueven a la vez y tienen que llegar juntas. */
+:root[data-sistema="darwin"] .ventana[data-panel="compacto"] {
+  --hueco-barra: 136px;
+}
+
+:root[data-sistema="darwin"] .ventana[data-panel="compacto"] .boton-lateral {
+  left: 88px;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root[data-sistema="darwin"] .boton-lateral,
+  :root[data-sistema="darwin"] .herramientas,
+  :root[data-sistema="darwin"] .segmentado::before,
   :root[data-sistema="darwin"] .ventana {
     transition: none;
   }
@@ -657,37 +699,41 @@
   --burbuja: rgb(255 255 255 / 0.3);
 }
 
-/* **El pomo del interruptor se estira y se aclara**, y no puede salirse: la pista
- * es su fondo. Se estira hacia donde no está —a la derecha si está apagado— que es
- * lo que da la sensación de que va a moverse. */
+/* **El pomo del interruptor se hincha en una burbuja de vidrio que desborda la
+ * pista**, como en macOS 27.
+ *
+ * **Y se hincha con un `transform`, no cambiando el ancho.** Con el ancho, el pomo
+ * crece *dentro* de la pista y lo que se ve es una píldora que se ensancha; lo que
+ * hace la burbuja es precisamente **salirse**, y eso sólo se consigue escalando. La
+ * primera versión usaba el ancho y el cliente lo dijo comparándolo con Apolo: «no
+ * hacen el mismo efecto de burbuja». Las dos cifras —1,4 a lo ancho y 1,6 a lo
+ * alto— son las de su hoja, ya revisada por él. */
 :root[data-sistema="darwin"] .interruptor > input:active:not(:disabled) + .pomo {
-  width: 30px;
+  transform: scale(1.4, 1.6);
   background: var(--burbuja);
   box-shadow: var(--burbuja-sombra);
 }
 
+/* Encendido, el pomo ya está desplazado: la burbuja se hincha **sin volver atrás**,
+ * así que el desplazamiento se repite dentro del mismo `transform`. */
 :root[data-sistema="darwin"] .interruptor > input:checked:active:not(:disabled) + .pomo {
-  /* Encendido crece hacia la izquierda, que es de donde vino. */
-  transform: translateX(10px);
+  transform: translateX(14px) scale(1.4, 1.6);
 }
 
 /* **Y el botón del deslizador se hincha en una burbuja que desborda la pista.**
  * Ahí sí puede salirse, y es lo que se quiere: el dedo tapa el control y la burbuja
  * asoma por encima. */
 :where(:root[data-sistema="darwin"]) body input[type="range"]:active:not(:disabled)::-webkit-slider-thumb {
-  width: 26px;
-  height: 18px;
-  margin-top: -6px;
-  border-radius: 9px;
+  transform: scale(1.55, 1.6);
   background: var(--burbuja);
   box-shadow: var(--burbuja-sombra);
 }
 
 :where(:root[data-sistema="darwin"]) body input[type="range"]::-webkit-slider-thumb {
   transition:
-    width 140ms cubic-bezier(0.3, 1.3, 0.5, 1),
-    height 140ms cubic-bezier(0.3, 1.3, 0.5, 1),
-    background-color 140ms;
+    transform 180ms cubic-bezier(0.3, 1.5, 0.5, 1),
+    background-color 120ms,
+    box-shadow 120ms;
 }
 
 /* ------------------------------------------------------- lo que faltaba vestir
@@ -896,4 +942,43 @@
 /* Y el grupo pierde el hueco entre hijos: lo que separa ahora es el filete. */
 :root[data-sistema="darwin"] .grupo:has(> .dato-fila) {
   gap: 0;
+}
+
+/* ------------------------------------------ la selección que se desliza (macOS 27)
+ *
+ * Al elegir otra opción, el fondo de la elegida **viaja** hasta ella en vez de
+ * aparecer de golpe. Lo pidió el cliente comparándolo con Apolo, y es lo que hace
+ * macOS: el segmentado no se abomba entero —eso da un bote—, lo que se mueve es la
+ * selección.
+ *
+ * Las medidas las escribe `segmentados.ts`, porque el CSS no sabe dónde está la
+ * opción elegida. Mientras no estén —o en los otros tres sistemas, donde nadie las
+ * escribe— **no pasa nada**: el fondo sigue viviendo en el botón, que es como estaba
+ * hasta hoy. Por eso todo cuelga de `[data-medido]`. */
+:root[data-sistema="darwin"] .segmentado {
+  position: relative;
+  isolation: isolate;
+}
+
+:root[data-sistema="darwin"] .segmentado[data-medido]::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: var(--sel-x);
+  top: var(--sel-y);
+  width: var(--sel-w);
+  height: var(--sel-h);
+  border-radius: var(--sel-r);
+  background: var(--lienzo);
+  box-shadow: 0 0.5px 2px rgb(0 0 0 / 0.18);
+  transition:
+    left 320ms cubic-bezier(0.3, 1.25, 0.5, 1),
+    width 320ms cubic-bezier(0.3, 1.25, 0.5, 1);
+}
+
+/* Con el fondo deslizante, el botón elegido ya no lleva el suyo: llevándolo, se
+ * verían los dos y el que viaja llegaría a un sitio que ya estaba pintado. */
+:root[data-sistema="darwin"] .segmentado[data-medido] button[aria-selected="true"] {
+  background: transparent;
+  box-shadow: none;
 }

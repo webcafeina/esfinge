@@ -921,3 +921,30 @@
   background: var(--barra-encima);
   color: var(--apagado);
 }
+
+/* **Y cuando las pestañas no caben en una fila, se parten en dos iguales.**
+ *
+ * Con la sexta pestaña —Apariencia, la del aspecto— las seis piden 674 px y la
+ * columna está topada en 560: no caben, y acortar rótulos no lo arregla porque
+ * faltan 114. La regla de la casa dice que **antes de tirar un rótulo o un glifo la
+ * fila se parte**, y eso se cumple; lo que no se puede dejar es el reparto que sale
+ * solo, **cinco arriba y una huérfana debajo**, que se lee como un fallo.
+ *
+ * En rejilla se reparten a partes iguales y se ve deliberado. El `auto-fit` con un
+ * mínimo de 170 da tres columnas a 560 y cuatro si algún día la columna crece, así
+ * que esto no es un «3» escrito a mano que haya que revisar al añadir la séptima.
+ *
+ * **Sólo en Windows**: en macOS las seis caben en una fila y ahí no hay nada que
+ * partir. */
+:root[data-sistema="windows"] .segmentado.envuelve {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+/* Y el contenido va centrado en su celda. En una fila la SelectorBar de Fluent va
+ * pegada a la izquierda, que es lo correcto porque las pestañas se tocan entre sí;
+ * en rejilla cada celda es más ancha que su rótulo, y a la izquierda el texto baila
+ * dentro de una caja vacía y la barra de la activa parece suelta. */
+:root[data-sistema="windows"] .segmentado.envuelve > button {
+  justify-content: center;
+}

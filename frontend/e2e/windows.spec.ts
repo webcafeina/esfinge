@@ -341,16 +341,23 @@ test("maximizada, el botón de en medio ofrece restaurar", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Maximizar la ventana" })).toHaveCount(0);
 });
 
-test("las cinco pestañas de Ajustes caben en una fila, con sus iconos de Fluent", async ({
+test("las pestañas de Ajustes se reparten en filas iguales, con sus iconos de Fluent", async ({
   page,
 }) => {
   await enWindows(page);
   await seccion(page, "Ajustes").click();
 
-  // **Windows es el caso que aprieta**: su cuerpo es de 14 y el de la base de 13,
-  // así que una barra que cabe aquí cabe en los cuatro. La columna está topada en
-  // 560 y no crece con la ventana, que es la razón de que estas pestañas
-  // estuvieran un tiempo sin iconos.
+  // **Windows es el caso que aprieta**: su cuerpo es de 14 y el de la base de 13, así
+  // que lo que cabe aquí cabe en los cuatro. La columna está topada en 560 y no crece
+  // con la ventana, que es la razón de que estas pestañas estuvieran un tiempo sin
+  // iconos.
+  //
+  // **Hasta la sexta cabían en una fila y ya no.** Con «Apariencia» las seis piden
+  // 674 px: faltan 114, así que acortar un rótulo no lo arregla. La regla de la casa
+  // es que **antes de tirar un rótulo o un glifo la fila se parte**, y lo que no vale
+  // es el reparto que sale solo —cinco arriba y una huérfana debajo—, que se lee como
+  // un fallo. Lo que se afirma, entonces, no es que quepan en una fila: es que
+  // **estén repartidas a partes iguales y que no se haya caído ninguna**.
   const filas = await page
     .locator(".panel:visible .segmentado")
     .first()
@@ -359,8 +366,16 @@ test("las cinco pestañas de Ajustes caben en una fila, con sus iconos de Fluent
         Math.round(t.getBoundingClientRect().y),
       ),
     );
-  expect(filas).toHaveLength(5);
-  expect(new Set(filas).size, `las pestañas caen a alturas distintas: ${filas}`).toBe(1);
+  expect(filas, "falta alguna pestaña").toHaveLength(6);
+
+  const porFila = new Map<number, number>();
+  for (const y of filas) porFila.set(y, (porFila.get(y) ?? 0) + 1);
+  const reparto = [...porFila.values()];
+  expect(
+    Math.max(...reparto) - Math.min(...reparto),
+    `el reparto deja una fila coja: ${reparto.join(" + ")}`,
+  ).toBeLessThanOrEqual(1);
+  expect(porFila.size, `las pestañas caen en ${porFila.size} filas`).toBeLessThanOrEqual(2);
 
   // Y el glifo es el de Fluent, no el dibujado de la casa: es lo que el cliente
   // pidió —«con los correspondientes de cada sistema, claro»—.

@@ -442,6 +442,16 @@ export function Icono({ nombre }: { nombre: string }) {
         <circle cx="11.5" cy="12.5" r="1.8" />
       </>
     ),
+    // Un círculo con media cara en sombra: el glifo del aspecto, el mismo que usa
+    // Ajustes del Sistema para claro y oscuro. La media luna va rellena a propósito
+    // —es la única forma de que a 16 px se lea como una mitad y no como un gajo—
+    // aunque los demás glifos de la casa sean de trazo.
+    tema: (
+      <>
+        <circle cx="9" cy="9" r="6" />
+        <path d="M9 3a6 6 0 0 1 0 12z" fill="currentColor" stroke="none" />
+      </>
+    ),
     // Una flecha que baja a una bandeja: lo que llega de fuera.
     descargar: (
       <>

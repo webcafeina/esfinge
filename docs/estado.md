@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-11-20**
+Última actualización: **2026-11-21**
 
 **Lo de esta sesión**: empezó con Windows probado en su máquina y acabó con macOS entero. **Cuatro
 versiones publicadas**: la **2.71.0** —el marco y el panel plegable—, la **2.72.0**, que cierra
@@ -9,37 +9,50 @@ contra el estándar y el menú de Snap; la **2.72.1**, un arreglo solo —la ven
 en macOS y en Linux desde la 2.70.0—; y la **2.73.0**, con la fase de macOS
 ([ADR 0068](adr/0068-macos-con-golden-gate.md)). El VPS está en la **2.73.0**.
 
-> ## ⚠ Lo primero al retomar (2026-11-21): macOS en su Mac, y lo de Pages
+> ## ⚠ Lo primero al retomar (2026-11-22): macOS en su Mac, otra vez
 >
-> **Nada está a medias y nada está sin publicar.** La **2.73.0** salió con la fase de macOS entera
-> ([ADR 0068](adr/0068-macos-con-golden-gate.md), **aceptada**) y **los cinco canales la sirven**,
-> comprobado uno a uno pidiendo sin caché. El árbol está limpio y empujado.
+> **Nada está a medias.** La **2.74.0** salió con la fase de macOS, y el mismo día el cliente la
+> probó en su Mac y **dio seis cosas**. Las cuatro visuales están hechas y sin publicar; las dos que
+> eran funcionalidades, una hecha y otra decidida y sin empezar.
 >
-> **Dos cosas para mañana, en este orden:**
+> **Lo que hay que mirar en su Mac, y es lo único que desde aquí no se puede:**
 >
-> **1 · Que el cliente mire macOS en su Mac.** Se actualiza solo desde la banda. Lo que hay que mirar
-> allí es lo único que desde aquí no se puede: el material de la ventana, si las cápsulas de la barra
-> de herramientas se leen como **vidrio** o como botones grises, si el pomo del interruptor sale
-> **píldora o elipse**, y —la que más interesa— **si el oro de los iconos de la barra lateral se ve
-> bien de verdad a 1,74:1** con la tipografía y la pantalla de allí. Si se queda corto se sube: el
-> token está generado y medido en un solo sitio (`OroLateral`, en `internal/tema`).
+> **1 · Las tres que él señaló y aquí sólo se pueden medir.** La cápsula de plegar ahora **vive sobre
+> la cabeza de la barra lateral y viaja hasta los semáforos** al plegarla, como en Apolo. Las burbujas
+> del interruptor y del deslizador **se hinchan con un `transform` y desbordan la pista** —antes
+> crecían de ancho, que es lo que hacía que no se parecieran—. Y **la selección del segmentado se
+> desliza** de una opción a otra. Lo que se mide aquí es que las medidas sigan a la elegida; **que se
+> vea bien moviéndose sólo lo dice pulsarlo**.
 >
-> **2 · Lo de GitHub Pages**, que está en [`deuda.md`](deuda.md) con todo lo que se midió. Al publicar
-> la 2.73.0, el despliegue dijo «success» y **siguió sirviendo el anterior**; se arregló volviendo a
-> desplegar. **No se dio por arreglado**: la hipótesis —que cada publicación despliega **dos veces**,
-> una al empujar a `main` y otra al etiquetar, y se quedó con la primera— está escrita con lo que falta
-> por descartar. Lo que sí se arregló es el fallo que salió al mirarlo: el separador de la URL en la
-> comprobación de los canales se calculaba y **no se usaba**, así que esa petición daba 404 siempre y
-> contestaba el camino de reserva, **sin cabeceras de no-caché**.
+> **2 · El selector de aspecto** (claro · oscuro · el del sistema), en Ajustes → **Apariencia**, que
+> es una pestaña nueva. Los tokens traían sus tres bloques de color desde siempre y **nadie escribía
+> `data-tema`**: elegir no se podía.
 >
-> **Y después, GNOME** (F4 del plan). Empieza por lo que ahorró las rondas en Windows y en macOS:
-> **comparar control por control con `~/proyectos/apolo/frontend/src/sistema-linux.css`**. Lo que
-> Windows dejó escrito para las hojas que quedan está en `CLAUDE.md`, sección «Lo que Windows deja
-> escrito para macOS, GNOME y KDE», y **se lee al empezar**.
+> **3 · Y lo de antes, que sigue sin verse**: si las cápsulas de la barra se leen como **vidrio** o
+> como botones grises, y **si el oro de los iconos de la barra lateral se ve bien a 1,74:1** con la
+> tipografía y la pantalla de allí. Si se queda corto se sube: el token está generado y medido en un
+> solo sitio (`OroLateral`, en `internal/tema`).
+>
+> **Lo que queda abierto, por orden:**
+>
+> **· El inglés** ([ADR 0069](adr/0069-el-ingles.md), **aceptada y sin empezar**). Lo pidió el
+> 2026-11-21 y eligió el alcance con el recuento delante: **los cinco sitios** —la ventana, los
+> errores de Go, la extensión, la línea de comandos y los esquemas de MCP—, el idioma **del sistema
+> con selector**, y **después de GNOME y de KDE**. La ficha dice lo que cuesta antes de empezar.
+>
+> **· GNOME** (F4 del plan), que es lo siguiente que se toca. Empieza por lo que ahorró las rondas en
+> Windows y en macOS: **comparar control por control con
+> `~/proyectos/apolo/frontend/src/sistema-linux.css`**. Lo que Windows dejó escrito para las hojas que
+> quedan está en `CLAUDE.md`, sección «Lo que Windows deja escrito para macOS, GNOME y KDE», y **se
+> lee al empezar**.
+>
+> **· Lo de GitHub Pages**, en [`deuda.md`](deuda.md) con todo lo medido. **Ojo: al publicar la
+> 2.74.0 no se repitió** —los tres canales que se pueden preguntar sirvieron la versión nueva a la
+> primera—, así que hay una pasada buena que apuntar y la hipótesis sigue sin descartar.
 >
 > **Windows sigue pendiente de probar y no bloquea nada**: lo que hay que mirar allí está en
-> `deuda.md`, y lo de más riesgo es el menú de Snap, porque una compilación sólo dice que su Win32
-> enlaza, no que la ventana hija conteste.
+> `deuda.md`, y lo de más riesgo es el menú de Snap. **Y lleva dentro el mismo arreglo de peso que
+> macOS**, así que sus listas deberían estar mejor que cuando las probó.
 >
 > **Y al abrir sesión, las tiendas**: Chocolatey sigue en la **2.66.1** con un 403 mientras modera; en
 > winget hay varios PRs esperando moderador, con el CLA firmado en todos.

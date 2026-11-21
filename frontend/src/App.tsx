@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { obedecerEdicion } from "./ordenes";
+import { aplicarTema } from "./tema";
 import { laPlataforma } from "./plataforma";
 import {
   alAbrirFichero,
@@ -394,30 +395,36 @@ export default function App() {
         compacto={panel === "compacto"}
       />
 
+      {/* **El botón que pliega la barra lateral, en los cuatro sistemas.**
+          En Windows el que lo hace es la hamburguesa de la barra de título, que allí
+          la dibuja Esfinge (ADR 0066); donde la barra la pone el sistema no hay dónde
+          ponerla. Va en el marcado de los cuatro y **lo esconde la hoja de quien no lo
+          use**, que es la regla de la ADR 0064 y lo que hace que la simulación por URL
+          cambie de aspecto sin recargar.
+
+          **Y va aquí, colgando de la ventana, y no dentro de la barra de
+          herramientas.** En macOS 27 esa cápsula vive **sobre la cabeza de la barra
+          lateral** —pegada a su canto derecho— y **se desliza hasta los semáforos**
+          cuando la barra se pliega; dentro de la barra de herramientas no puede
+          hacerlo, porque allí es un hijo más de una fila. Metido en la fila se parecía
+          sin serlo, que fue lo que el cliente vio al comparar con Apolo. */}
+      <button
+        type="button"
+        className="boton-lateral"
+        onClick={() => (ancha ? setPlegado(!plegado) : setEncima(!encima))}
+        aria-expanded={panel !== "compacto"}
+        aria-label={panel !== "compacto" ? "Ocultar la barra lateral" : "Enseñar la barra lateral"}
+        title={panel !== "compacto" ? "Ocultar la barra lateral" : "Enseñar la barra lateral"}
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          {/* El glifo de macOS: un rectángulo con su columna izquierda marcada. */}
+          <rect x="1.25" y="2.75" width="13.5" height="10.5" rx="2.25" fill="none" stroke="currentColor" />
+          <path d="M6 2.75v10.5" stroke="currentColor" fill="none" />
+        </svg>
+      </button>
+
       <div className="zona">
         <header className={enUnProyecto ? "herramientas en-proyecto" : "herramientas"}>
-          {/* **El botón que pliega la barra lateral, en los cuatro sistemas.**
-              En Windows el que lo hace es la hamburguesa de la barra de título, que
-              allí la dibuja Esfinge (ADR 0066); donde la barra la pone el sistema no
-              hay dónde ponerla, y en macOS 27 ese botón vive **al principio de la
-              barra de herramientas**, en una cápsula de vidrio. Va en el marcado de
-              los cuatro y **lo esconde la hoja de quien no lo use**, que es la regla
-              de la ADR 0064 y lo que hace que la simulación por URL cambie de aspecto
-              sin recargar. */}
-          <button
-            type="button"
-            className="boton-lateral"
-            onClick={() => (ancha ? setPlegado(!plegado) : setEncima(!encima))}
-            aria-expanded={panel !== "compacto"}
-            aria-label={panel !== "compacto" ? "Ocultar la barra lateral" : "Enseñar la barra lateral"}
-            title={panel !== "compacto" ? "Ocultar la barra lateral" : "Enseñar la barra lateral"}
-          >
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              {/* El glifo de macOS: un rectángulo con su columna izquierda marcada. */}
-              <rect x="1.25" y="2.75" width="13.5" height="10.5" rx="2.25" fill="none" stroke="currentColor" />
-              <path d="M6 2.75v10.5" stroke="currentColor" fill="none" />
-            </svg>
-          </button>
 
           {/* **En qué bóveda se está trabajando.** Con varias, saber que la bóveda
               está abierta no basta: hay que saber cuál. Y el nombre **es el título**,
@@ -1964,7 +1971,7 @@ function Ajustes({
   // de alto mientras llegan las preferencias y la cuenta, y para cuando el salto
   // termina lo que buscabas ya se ha movido. Con una pestaña no hay nada que acertar.
   const [seccion, setSeccion] = useState<
-    "cuenta" | "boveda" | "navegador" | "agentes" | "acerca"
+    "cuenta" | "boveda" | "navegador" | "agentes" | "apariencia" | "acerca"
   >(porElBloqueMCP ? "agentes" : "cuenta");
   useEffect(() => {
     // Volver a pulsar «MCP» con Ajustes ya abierto tiene que llevar otra vez ahí: el
@@ -2050,6 +2057,7 @@ function Ajustes({
           { valor: "boveda", etiqueta: "Bóveda", icono: "boveda" },
           { valor: "navegador", etiqueta: "Navegador", icono: "navegador" },
           { valor: "agentes", etiqueta: "Agentes", icono: "mcp" },
+          { valor: "apariencia", etiqueta: "Apariencia", icono: "tema" },
           { valor: "acerca", etiqueta: "Actualizaciones", icono: "descargar" },
         ]}
         valor={seccion}
@@ -2584,6 +2592,46 @@ function Ajustes({
             </div>
           )}
 
+        </section>
+      )}
+
+      {/* **Con qué aspecto se pinta la ventana.** Los tokens traían sus tres bloques
+          de color desde siempre y **nadie escribía `data-tema`**, así que el oscuro
+          forzado no lo veía nadie: la ventana seguía al sistema y punto. Lo pidió el
+          cliente el 2026-11-21 para los cuatro sistemas.
+
+          Va en su pestaña y no dentro de otra porque no es de la bóveda, ni del
+          navegador, ni de los agentes: es de la ventana entera. Las pestañas se
+          parten en dos filas cuando no caben, así que una sexta no aprieta nada. */}
+      {seccion === "apariencia" && (
+        <section className="bloque">
+          <header className="bloque-cabecera">
+            <Icono nombre="tema" />
+            <div>
+              <h3>Aspecto</h3>
+              <p className="nota">Claro, oscuro, o el que tenga puesto el sistema.</p>
+            </div>
+          </header>
+          <Segmentado
+            opciones={[
+              { valor: "sistema", etiqueta: "El del sistema" },
+              { valor: "claro", etiqueta: "Claro" },
+              { valor: "oscuro", etiqueta: "Oscuro" },
+            ]}
+            valor={prefs?.tema || "sistema"}
+            alCambiar={(t) => {
+              // **Se aplica aquí mismo y no se espera a Go.** Lo que se elige se
+              // tiene que ver al soltar el ratón: esperar a que vuelva el guardado
+              // deja medio segundo en el que parece que el clic no ha hecho nada.
+              // Y si el guardado falla, el error sale arriba como cualquier otro;
+              // al volver a abrir mandará lo guardado, que es la verdad.
+              aplicarTema(t);
+              void cambiar({ tema: t });
+            }}
+          />
+          <p className="nota">
+            Con «el del sistema», la ventana cambia sola cuando lo hace el equipo.
+          </p>
         </section>
       )}
 

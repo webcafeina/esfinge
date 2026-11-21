@@ -158,6 +158,14 @@ export type Preferencias = {
   minutosParaBloquear: number;
   segundosDePortapapeles: number;
   /**
+   * Con qué aspecto se pinta la ventana: `"sistema"`, `"claro"` u `"oscuro"`.
+   *
+   * **La cadena vacía es «no lo he dicho»**, igual que el cero de los dos relojes de
+   * aquí arriba y por el mismo motivo. Lo que vale lo decide Go (`TemasQueHay`): lo
+   * que no entienda conserva lo que hubiera.
+   */
+  tema: string;
+  /**
    * Trae el icono de cada sitio de la bóveda, pidiéndoselo al propio sitio.
    * **Es la segunda salida a la red del programa.**
    */

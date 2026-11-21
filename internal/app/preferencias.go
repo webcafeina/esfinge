@@ -44,6 +44,20 @@ type Preferencias struct {
 	MinutosParaBloquear    int `json:"minutosParaBloquear"`
 	SegundosDePortapapeles int `json:"segundosDePortapapeles"`
 
+	// Tema dice con qué aspecto se pinta la ventana: "sistema", "claro" u "oscuro".
+	//
+	// Hasta ahora no se podía elegir: los tokens traían sus tres bloques —el claro,
+	// el oscuro de la consulta del sistema y el oscuro forzado por `data-tema`— y
+	// **nadie escribía ese atributo**, así que el oscuro forzado no lo veía nadie.
+	// Lo pidió el cliente el 2026-11-21, para los cuatro sistemas.
+	//
+	// **La cadena vacía es «no lo he dicho»**, que es la regla del cero de los dos
+	// relojes de más arriba y por el mismo motivo: `GuardarPreferencias` recibe el
+	// objeto entero, así que un guardado a medias —que lo hace una prueba a
+	// propósito— llegaría con el tema en blanco y **devolvería la ventana al aspecto
+	// del sistema sin que nadie lo haya pedido**. Lo conserva fundir.
+	Tema string `json:"tema"`
+
 	// DescargarIconos trae el icono de cada sitio de la bóveda, pidiéndoselo al
 	// propio sitio. **Es la segunda salida a la red del programa.**
 	//
@@ -229,7 +243,34 @@ func fundir(anterior, nuevo Preferencias) Preferencias {
 		0, minutosBloqueoMaximo)
 	nuevo.SegundosDePortapapeles = plazo(anterior.SegundosDePortapapeles, nuevo.SegundosDePortapapeles,
 		segundosPortapapelesMinimo, segundosPortapapelesMaximo)
+	nuevo.Tema = tema(anterior.Tema, nuevo.Tema)
 	return nuevo
+}
+
+// TemasQueHay son los tres valores que acepta Tema. El primero es el de fábrica.
+//
+// Están aquí y no en la pantalla porque **lo que vale lo decide Go**: la ventana
+// puede mandar cualquier cosa —una versión más nueva, una prueba, un agente— y lo
+// que no se entienda no puede dejar la ventana sin aspecto.
+var TemasQueHay = []string{"sistema", "claro", "oscuro"}
+
+// tema conserva lo que hubiera si llega en blanco o si llega algo que no existe.
+func tema(anterior, nuevo string) string {
+	if nuevo == "" {
+		if anterior == "" {
+			return TemasQueHay[0]
+		}
+		return anterior
+	}
+	for _, t := range TemasQueHay {
+		if nuevo == t {
+			return nuevo
+		}
+	}
+	if anterior == "" {
+		return TemasQueHay[0]
+	}
+	return anterior
 }
 
 func plazo(anterior, nuevo, minimo, maximo int) int {
@@ -267,6 +308,7 @@ func AbrirAjustes() *Ajustes {
 			SegundosDePortapapeles:      segundosPortapapelesPorDefecto,
 			DescargarIconos:             true,
 			LlavesDeAccesoEnElNavegador: true,
+			Tema:                        TemasQueHay[0],
 		},
 	}
 	if a.ruta == "" {
@@ -286,6 +328,7 @@ func AbrirAjustes() *Ajustes {
 	a.p = fundir(Preferencias{
 		MinutosParaBloquear:    minutosBloqueoPorDefecto,
 		SegundosDePortapapeles: segundosPortapapelesPorDefecto,
+		Tema:                   TemasQueHay[0],
 	}, a.p)
 	return a
 }
