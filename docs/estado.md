@@ -9,11 +9,12 @@ contra el estándar y el menú de Snap; la **2.72.1**, un arreglo solo —la ven
 en macOS y en Linux desde la 2.70.0—; y la **2.73.0**, con la fase de macOS
 ([ADR 0068](adr/0068-macos-con-golden-gate.md)). El VPS está en la **2.73.0**.
 
-> ## ⚠ Lo primero al retomar (2026-11-22): macOS en su Mac, otra vez
+> ## ⚠ Lo primero al retomar (2026-11-22): macOS en su Mac, con la 2.75.0
 >
-> **Nada está a medias.** La **2.74.0** salió con la fase de macOS, y el mismo día el cliente la
-> probó en su Mac y **dio seis cosas**. Las cuatro visuales están hechas y sin publicar; las dos que
-> eran funcionalidades, una hecha y otra decidida y sin empezar.
+> **Nada está a medias y nada está sin publicar.** La **2.74.0** salió con la fase de macOS; el mismo
+> día el cliente la probó en su Mac y **dio seis cosas**, y la **2.75.0** las lleva todas: las cuatro
+> visuales hechas, el selector de aspecto hecho, y el inglés decidido y escrito. **El VPS está en la
+> 2.75.0** y los tres canales que se pueden preguntar la sirven.
 >
 > **Lo que hay que mirar en su Mac, y es lo único que desde aquí no se puede:**
 >
@@ -46,9 +47,9 @@ en macOS y en Linux desde la 2.70.0—; y la **2.73.0**, con la fase de macOS
 > quedan está en `CLAUDE.md`, sección «Lo que Windows deja escrito para macOS, GNOME y KDE», y **se
 > lee al empezar**.
 >
-> **· Lo de GitHub Pages**, en [`deuda.md`](deuda.md) con todo lo medido. **Ojo: al publicar la
-> 2.74.0 no se repitió** —los tres canales que se pueden preguntar sirvieron la versión nueva a la
-> primera—, así que hay una pasada buena que apuntar y la hipótesis sigue sin descartar.
+> **· Lo de GitHub Pages**, en [`deuda.md`](deuda.md) con todo lo medido. **No se repitió ni en la
+> 2.74.0 ni en la 2.75.0**: van una vez mal y dos bien, así que no es determinista y la hipótesis
+> —una carrera entre los dos despliegues— sigue sin descartar.
 >
 > **Windows sigue pendiente de probar y no bloquea nada**: lo que hay que mirar allí está en
 > `deuda.md`, y lo de más riesgo es el menú de Snap. **Y lleva dentro el mismo arreglo de peso que

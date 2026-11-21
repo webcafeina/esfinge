@@ -382,6 +382,12 @@ versión **anterior**, porque saca la etiqueta de `gh release view`, que contest
 momento todavía lo es la de antes. Tiene `concurrency: web` con `cancel-in-progress: false`, así que
 no deberían solaparse — y aun así pasó.
 
+**Y no ha vuelto a pasar en dos publicaciones seguidas** (la 2.74.0 y la 2.75.0, las dos el
+2026-11-21): los tres canales que se pueden preguntar desde aquí sirvieron la versión nueva a la
+primera, comprobado pidiendo sin caché. Eso **no descarta la hipótesis** —lo que describe es una
+carrera entre dos despliegues, y una carrera que no se pierde dos veces sigue estando ahí— pero sí
+dice que no es determinista. Van **una vez mal y dos bien**.
+
 **Si vuelve a pasar**, lo que falta por descartar es si el despliegue del empujón se puede saltar
 durante una publicación, y si no, si conviene que la publicación **compruebe su propio despliegue** y
 lo repita una vez en vez de dejarlo en rojo. **No se arregló hoy** porque pasó una vez y lo que se
