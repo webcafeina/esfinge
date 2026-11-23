@@ -29,6 +29,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
+	ventanaWails "github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"github.com/webcafeina/esfinge/internal/app"
 	"github.com/webcafeina/esfinge/internal/entorno"
@@ -168,6 +169,27 @@ func main() {
 			}()
 
 			ctx = c
+
+			// **Y la ventana se enseña pase lo que pase.**
+			//
+			// Wails la muestra dentro de `navigationCompleted`, o sea **sólo si la
+			// página termina de cargar**. Eso ata que haya ventana a que no falle
+			// nada al cargar, y es una dependencia que no se sostiene: el 2026-11-23
+			// el cliente estuvo con Esfinge **corriendo sin ventana**, con el
+			// WebView2 arrancado y la interfaz ya hablando con Go —se la veía
+			// contestar `VerPreferencias` y `Plataforma` en el registro— y aun así
+			// nada en pantalla, ni en Alt+Tab, ni en la barra de tareas.
+			//
+			// Con esto, lo peor que puede pasar es una ventana en blanco: y una
+			// ventana en blanco se puede cerrar, se puede contar y se puede
+			// diagnosticar. Ninguna de las tres cosas se puede hacer con nada.
+			//
+			// Si Wails ya la ha enseñado, esto no hace nada.
+			go func() {
+				time.Sleep(3 * time.Second)
+				ventanaWails.WindowShow(c)
+			}()
+
 			escritorio.Arrancar(c)
 			aplicacion.Arrancar(c)
 
