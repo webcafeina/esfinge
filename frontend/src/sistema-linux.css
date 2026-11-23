@@ -1,0 +1,1077 @@
+/* GNOME, con el lenguaje de Ubuntu: libadwaita 1.10 con el tema Yaru (ADR 0070).
+ *
+ * # De dónde salen las medidas
+ *
+ * De la hoja de estilos de libadwaita, que es la que trae Ubuntu 26.10 —Ubuntu
+ * no cambia **ninguna** medida, sólo los colores—: letra de 11 pt, botones y
+ * campos de 34 con radio 9 y en negrita, filas de barra lateral de 36,
+ * interruptor de 46 × 26 con su pomo de 20, casilla de 20, deslizador con pista
+ * de 4, barra de cabecera de 46 y los ajustes en **listas en tarjeta** de radio
+ * 12, centradas y hasta 600 de ancho. No son aproximaciones a ojo: son las
+ * mismas que Apolo usa desde su v0.13.0, ya revisadas y vistas en una Ubuntu de
+ * verdad.
+ *
+ * Los colores **no están aquí**: los genera Go (`internal/tema`) y llegan por
+ * `:root[data-sistema="linux"]` en `tokens.css`, con sus parejas medidas. Aquí
+ * van las formas y las densidades, que es lo que no se puede medir en contraste
+ * y lo que viene en familia con el relleno que lo acompaña.
+ *
+ * # Por qué todo lleva su `:not(...)` escrito
+ *
+ * Porque `:root[data-sistema="linux"] button` pesa (0,3,1) y `button.principal`
+ * de la base pesa (0,1,1): la regla general de una hoja de sistema **pisa a las
+ * variantes de la base**. Y no se arregla con `:where()`, que la dejaría por
+ * debajo de cualquier `button {}` de la base —que se carga después del
+ * `@import`— y entonces este sistema no vestiría nada. Lo aprendió Windows a
+ * base de tres rondas de correcciones del cliente.
+ *
+ * Y cuando una pieza de la base pierde contra la regla general de aquí, **se
+ * redeclara aquí** en vez de pelear con el peso añadiendo `:not()`: ir
+ * añadiéndolos es perseguir el síntoma y hay que acordarse en cada regla nueva,
+ * que es la señal de que el arreglo está en el sitio equivocado.
+ *
+ * # Y lo que esta hoja no hace
+ *
+ * **Nada de aquí cambia lo que hace la ventana.** El marcado es el mismo en los
+ * cuatro sistemas a propósito: lo único que cambia es cómo se ve. Si alguna vez
+ * hace falta un `<div>` que sólo exista en un sistema, eso es una señal de que
+ * la estructura está mal, no de que falte un div.
+ *
+ * Esta hoja viste **GNOME y todo el Linux que no es KDE** —Xfce, Cinnamon,
+ * COSMIC—, que es lo que decidió el cliente: son escritorios de GTK y lo que se
+ * parece a una aplicación suya es libadwaita. KDE refina encima, en
+ * `sistema-kde.css`, que va la última en la cascada. */
+
+:root[data-sistema="linux"] {
+  /* **La letra del sistema, que es la mitad de parecer nativo.** Ubuntu Sans es
+   * la de Ubuntu 26.10 y Adwaita Sans la de GNOME a secas; Cantarell es la de
+   * siempre, para una instalación vieja. Ninguna viaja dentro de Esfinge —no se
+   * envía ninguna tipografía, que es lo que la regla de la casa protege—: si no
+   * está, se cae a la del sistema. */
+  --fuente:
+    "Ubuntu Sans", "Adwaita Sans", Cantarell, Ubuntu, system-ui, sans-serif;
+  --fuente-titulos: var(--fuente);
+
+  /* **La escala va en puntos, y es a propósito.** GNOME no mide la interfaz en
+   * píxeles: el tamaño de la letra lo pone el usuario en puntos y el escritorio
+   * lo escala. Puesto en píxeles, Esfinge sería la única ventana que no crece
+   * cuando alguien sube la letra del sistema.
+   *
+   * Lo que el navegador calcula de aquí son los `14.6667px` de 11 pt y los
+   * `12px` de 9 pt, y eso es lo que miden las pruebas: si alguien devuelve esto
+   * a píxeles, se ponen rojas. */
+  --texto-chico: 9pt;
+  --texto: 11pt;
+  /* En libadwaita no hay un tamaño entre el cuerpo y el título: lo que marca un
+   * «Heading» es **el peso**, no el cuerpo. Inventar aquí un 12 pt sería salirse
+   * de su escala para no admitirlo. */
+  --texto-grande: 11pt;
+  --titulo: 11pt;
+
+  /* libadwaita redondea más que Fluent y menos que macOS: 9 en los controles,
+   * 12 en las tarjetas. */
+  --radio-chico: 6px;
+  --radio: 9px;
+  --radio-grande: 12px;
+
+  /* Los controles de libadwaita son altos: 34 contra los 28 de la base. */
+  --alto-control: 34px;
+  --alto-fila: 36px;
+
+  /* El AdwNavigationSplitView de Ubuntu. La base mide 225, que salió de medir
+   * capturas de macOS con los semáforos como regla; aquí la referencia es otra. */
+  --barra-lateral: 220px;
+  --ancho-panel: var(--barra-lateral);
+  /* Plegado: la caja de un icono de fila con su aire, que es lo que deja GNOME
+   * cuando la barra se reduce a sus iconos. */
+  --panel-compacto: 46px;
+
+  /* La AdwHeaderBar. Es medida nuestra porque la barra de cabecera la dibuja la
+   * página aunque el marco lo ponga el sistema. */
+  --alto-barra: 46px;
+
+  /* Las líneas son de 1 px entero: el escritorio no dibuja a media resolución
+   * como hace macOS, y un filete de 0,5 px acaba siendo 1 px mal repartido. */
+  --linea: 1px;
+
+  /* **El hueco de arriba de la barra lateral, que aquí no es para los semáforos
+   * sino para su propia cabecera.** En un AdwNavigationSplitView la barra
+   * lateral tiene su AdwHeaderBar de 46 y va **a la misma altura** que la del
+   * contenido; ahí es donde vive el botón que la pliega.
+   *
+   * Con los 12 px que tenía antes el botón se montaba **encima de la primera
+   * fila** —se vio en la primera captura, tapando «Cifrar»—, que es la clase de
+   * cosa que ninguna prueba mira y una captura canta a la primera. */
+  --hueco-semaforos: var(--alto-barra);
+
+  /* Lo que se ilumina sobre algo que no tiene fondo, como en libadwaita: el
+   * texto al 7 % al pasar por encima y al 16 % al pulsar. Van en `color-mix`
+   * sobre `--cuerpo`, así que **cambian solos con el tema** y no necesitan el
+   * reparto de tres reglas. */
+  --sutil-encima: color-mix(in srgb, var(--cuerpo) 7%, transparent);
+  --sutil-pulsado: color-mix(in srgb, var(--cuerpo) 16%, transparent);
+
+  /* La sombra de una tarjeta de libadwaita, en tres capas.
+   *
+   * **Ésta sí lleva el reparto de tres reglas**, porque es un valor escrito a
+   * mano con color dentro: en modo oscuro una sombra negra no se ve y lo que
+   * libadwaita usa es un filete. Escribir aquí el selector del bloque oscuro
+   * **y dejarlo fuera de su media query** es exactamente lo que costó la
+   * 2.70.0 —un borde blanco al 9 % sobre fondo blanco, invisible, con los
+   * campos de Windows leyéndose abiertos por abajo—. Lo vigila
+   * `TestNingunValorOscuroSueltoEnLasHojas`. */
+  --sombra-tarjeta:
+    0 0 0 1px rgb(0 0 6 / 0.03), 0 1px 3px 1px rgb(0 0 6 / 0.07),
+    0 2px 6px 2px rgb(0 0 6 / 0.03);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-sistema="linux"]:not([data-tema="claro"]) {
+    --sombra-tarjeta: 0 0 0 1px rgb(0 0 6 / 0.36);
+  }
+}
+
+:root[data-sistema="linux"][data-tema="oscuro"] {
+  --sombra-tarjeta: 0 0 0 1px rgb(0 0 6 / 0.36);
+}
+
+/* En libadwaita el interlineado del cuerpo es 1,4 y los títulos no llevan
+ * espaciado entre letras: lo que los distingue es el peso. */
+:root[data-sistema="linux"] body {
+  line-height: 1.4;
+}
+
+:root[data-sistema="linux"] h1,
+:root[data-sistema="linux"] h2 {
+  letter-spacing: 0;
+}
+
+/* ------------------------------------------------------------- la ventana
+ *
+ * En GNOME el marco lo dibuja el sistema (ADR 0068): la barra de título, su
+ * sombra y sus esquinas son de GTK. La barra que Esfinge dibuja en Windows
+ * (ADR 0066) está en el marcado de los cuatro sistemas y **aquí se esconde**,
+ * que es la mitad del acuerdo: montarla sólo donde se usa rompería que el
+ * marcado sea el mismo y la simulación por URL, que cambia de aspecto sin
+ * recargar. */
+:root[data-sistema="linux"] .barra-titulo {
+  display: none;
+}
+
+/* Y con marco del sistema **no hay que declarar zonas de arrastre**: la ventana
+ * ya tiene de dónde agarrarse por su barra de título. */
+:root[data-sistema="linux"] .lateral,
+:root[data-sistema="linux"] .herramientas,
+:root[data-sistema="linux"] .portada {
+  --wails-draggable: no-drag;
+}
+
+/* --------------------------------------------------------- la barra lateral
+ *
+ * Como la de un AdwNavigationSplitView: 220 de ancho, su propia línea a la
+ * derecha y las filas de `.navigation-sidebar` —36 de alto, 6 de aire a los
+ * lados, 2 entre ellas, radio 9 y el icono simbólico de 16—. La elegida va en
+ * el gris del texto, no en el acento: en GNOME una barra lateral no se colorea.
+ *
+ * **La línea es un borde de 1 px y no el filete de medio píxel de la base**,
+ * por lo mismo que en Windows: el escritorio no dibuja a media resolución. */
+:root[data-sistema="linux"] .lateral {
+  background: var(--barra);
+  border-right: var(--linea) solid var(--filete);
+  padding-bottom: var(--espacio-2);
+}
+
+:root[data-sistema="linux"] .lateral nav {
+  gap: 2px;
+  padding: 0 6px;
+}
+
+:root[data-sistema="linux"] .lateral nav button {
+  height: var(--alto-fila);
+  padding: 0 10px;
+  gap: var(--espacio-3);
+  border: 0;
+  border-radius: var(--radio);
+  background: transparent;
+  box-shadow: none;
+  /* Las filas de una barra lateral de GNOME **no van en negrita**, al contrario
+   * que los botones: son navegación, no acciones. */
+  font-size: var(--texto);
+  font-weight: 400;
+  color: var(--tinta);
+}
+
+:root[data-sistema="linux"] .lateral nav button .icono {
+  /* **16, que es la medida de un simbólico de GNOME.** Se escribe el ancho y el
+   * alto y no sólo `--icono`, porque la base fija 18 px a pelo en
+   * `.lateral .icono` y eso le gana a la reserva del token. */
+  --icono: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--cuerpo);
+}
+
+:root[data-sistema="linux"] .lateral nav button:hover:not([aria-current="page"]) {
+  background: var(--sutil-encima);
+}
+
+:root[data-sistema="linux"] .lateral nav button:active:not(:disabled) {
+  background: var(--sutil-pulsado);
+}
+
+/* **La fila elegida se declara aquí, no se hereda de la base.**
+ *
+ * La de la base es `.lateral nav button[aria-current="page"]`, o sea (0,2,2), y
+ * la regla general de botón de esta hoja es (0,3,1): con tres clases contra dos
+ * gana la de la hoja aunque la otra tenga más tipos, así que la barra lateral
+ * saldría entera gris y sin decir dónde estás. Eso pasó escribiendo la hoja de
+ * macOS, y lo que lo cierra **no** es ir añadiendo `:not()` a la regla de al
+ * lado —porque quien pinta es la general— sino que cada sistema declare su fila
+ * elegida en su hoja.
+ *
+ * El oro va **en el icono** (`--oro-lateral`, medido en `contraste_test.go`) y
+ * el fondo en el gris de GNOME: ahí el acento de marca no pinta la fila entera,
+ * que sería de otro escritorio. */
+:root[data-sistema="linux"] .lateral nav button[aria-current="page"],
+:root[data-sistema="linux"] .lateral nav button[aria-current="page"]:hover {
+  background: var(--barra-encima);
+  color: var(--tinta);
+  font-weight: 400;
+}
+
+:root[data-sistema="linux"] .lateral nav button[aria-current="page"] .icono {
+  color: var(--oro-lateral);
+}
+
+/* El pie, que desde la ADR 0065 lleva sólo el número de versión. */
+:root[data-sistema="linux"] .lateral .version {
+  font-size: var(--texto-chico);
+}
+
+/* ------------------------------------- el botón que pliega la barra lateral
+ *
+ * En GNOME **esto es nativo**: el `sidebar-show` de libadwaita, un botón plano
+ * de 34 con radio 9 que vive al final de la cabecera de la barra lateral y, con
+ * ella oculta, al principio de la del contenido. No es la cápsula flotante de
+ * macOS ni la hamburguesa de la barra de título de Windows: en los tres el
+ * marcado es el mismo botón y lo que cambia es dónde cae y cómo se viste.
+ *
+ * Va colocado a mano porque cuelga de la ventana y no de la barra de
+ * herramientas (ver `App.tsx`): es lo que le permite viajar de una a otra. */
+:root[data-sistema="linux"] .boton-lateral {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  z-index: 10;
+  top: 6px;
+  left: calc(var(--barra-lateral) - 40px);
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radio);
+  background: transparent;
+  box-shadow: none;
+  color: var(--tinta);
+  transition: left 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+:root[data-sistema="linux"] .boton-lateral:hover:not(:disabled) {
+  background: var(--sutil-encima);
+}
+
+:root[data-sistema="linux"] .boton-lateral:active:not(:disabled) {
+  background: var(--sutil-pulsado);
+}
+
+:root[data-sistema="linux"] .boton-lateral svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.5;
+}
+
+/* Con la barra plegada, el botón se va al principio de la cabecera del
+ * contenido. No hay semáforos que esquivar, así que va pegado al canto. */
+:root[data-sistema="linux"] .ventana[data-panel="compacto"] .boton-lateral {
+  left: 6px;
+}
+
+/* ------------------------------------------- la barra de cabecera (HeaderBar)
+ *
+ * La AdwHeaderBar: 46 de alto, **el título centrado y en negrita** —que es lo
+ * primero que se reconoce de una aplicación de GNOME—, su antetítulo debajo más
+ * pequeño y atenuado, y las órdenes al final como botones planos. Deja sitio al
+ * botón de la barra lateral.
+ *
+ * Va en rejilla de tres columnas para que el título caiga en el centro **de la
+ * barra** y no en el centro de lo que queda libre: con las órdenes a un lado, un
+ * `justify-content: center` lo deja descentrado. */
+:root[data-sistema="linux"] .herramientas {
+  position: relative;
+  align-items: center;
+  gap: var(--espacio-2);
+  height: var(--alto-barra);
+  min-height: var(--alto-barra);
+  padding: 0 var(--espacio-2);
+  background: var(--lienzo);
+  border-bottom: var(--linea) solid var(--filete);
+}
+
+/* Con la barra lateral plegada, el botón de plegar se viene a esta cabecera y
+ * hay que dejarle sitio a la izquierda. Con la barra abierta está sobre ella y
+ * aquí no estorba. **No descentra el título**, por lo que dice la regla de
+ * abajo. */
+:root[data-sistema="linux"] .ventana[data-panel="compacto"] .herramientas {
+  padding-left: 46px;
+}
+
+/* **El título va centrado en la barra, no en lo que sobra**, que es lo primero
+ * que se reconoce de una aplicación de GNOME.
+ *
+ * Se hace sacándolo del flujo y no con una rejilla de tres columnas, **y ésa es
+ * la corrección que costó once pruebas**: dentro de un proyecto la cabecera
+ * lleva dos botones más —salir y quién tiene acceso— que **no tienen columna
+ * asignada**, así que la rejilla les creaba una segunda fila implícita; con el
+ * alto clavado en 46 se salían por debajo y **tapaban la banda de la versión
+ * nueva**, que a su vez se comía el clic de «Salir del proyecto». Fuera del
+ * flujo no hay fila que crear.
+ *
+ * Y **sin recoger clics**: así, aunque con una ventana estrecha el título llegue
+ * a pasar por encima de un botón, lo que se pulsa es el botón. Un rótulo no debe
+ * interceptar nada nunca.
+ *
+ * `left: 50%` se mide contra la **caja de relleno** del ancestro posicionado, no
+ * contra su contenido, así que el relleno de arriba —el que deja sitio al botón
+ * de plegar— no lo mueve. */
+:root[data-sistema="linux"] .titulo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  align-items: center;
+  text-align: center;
+  gap: 0;
+  max-width: 50%;
+}
+
+/* **Y dentro de un proyecto el título deja de estar centrado, a propósito.**
+ *
+ * Eso es la política `loose` de AdwHeaderBar, que es la de serie en GNOME:
+ * **centrar si cabe y, si no, ponerlo detrás de lo que hay al principio**. Aquí
+ * la cabecera de un proyecto lleva dos botones más —«Quién tiene acceso…» y
+ * «Salir del proyecto»—, y con ellos no cabe: en la captura el nombre del
+ * proyecto salía **escrito encima** de «Salir del proyecto».
+ *
+ * `max-width` no lo arregla —recortar el nombre del proyecto con «…» para que
+ * quepa centrado es peor que moverlo—, y la alternativa, encoger los botones,
+ * es la política `strict`, que GNOME reserva para cuando el título es lo único
+ * que hay. */
+:root[data-sistema="linux"] .herramientas.en-proyecto .titulo {
+  position: static;
+  transform: none;
+  max-width: none;
+  pointer-events: auto;
+  text-align: left;
+  align-items: flex-start;
+}
+
+:root[data-sistema="linux"] .titulo > * {
+  max-width: 100%;
+}
+
+:root[data-sistema="linux"] .herramientas h1 {
+  font-size: var(--titulo);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+/* En libadwaita el subtítulo va **debajo** del título, no encima: de ahí el
+ * `order`. Y sin versalitas ni espaciado, que eso es de otra casa. */
+:root[data-sistema="linux"] .antetitulo {
+  order: 2;
+  font-size: var(--texto-chico);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:root[data-sistema="linux"] .herramientas .aparte {
+  margin-left: auto;
+  gap: var(--espacio-2);
+}
+
+/* Las órdenes de la cabecera son planas: en GNOME un botón de la barra de
+ * título no lleva relleno hasta que se pasa por encima. */
+:root[data-sistema="linux"] .herramientas .aparte > button {
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-sistema="linux"] .herramientas .aparte > button:hover:not(:disabled) {
+  background: var(--sutil-encima);
+}
+
+:root[data-sistema="linux"] .herramientas .aparte > button:active:not(:disabled) {
+  background: var(--sutil-pulsado);
+}
+
+/* Con la línea de la cabecera, el contenido necesita separarse de ella. En
+ * macOS no hace falta porque la barra y el contenido son la misma superficie. */
+:root[data-sistema="linux"] .contenido {
+  padding: var(--espacio-5) var(--espacio-3);
+  /* Para poder preguntar **cuánto mide la zona de contenido**, que es lo que
+   * decide si las pestañas de Ajustes caben en un renglón. No se puede
+   * preguntar al `.panel`: está topado a 600 y contesta 600 siempre, aunque la
+   * ventana sea más estrecha. */
+  container-type: inline-size;
+}
+
+/* Como un AdwPreferencesPage con su AdwClamp: el contenido centrado y hasta 600
+ * de ancho, con 24 entre grupos. La base tiene la columna en 720. */
+:root[data-sistema="linux"] .panel {
+  max-width: 600px;
+  margin-inline: auto;
+  width: 100%;
+  gap: var(--espacio-5);
+}
+
+/* ------------------------------------------------------------------ botones
+ *
+ * El botón de libadwaita: 34 de alto, 10 a los lados, radio 9, **en negrita** y
+ * con el texto al 10 % de fondo. El principal es el `suggested-action`, que
+ * aquí va en oro porque el acento es nuestro en los cuatro sistemas (ADR 0021).
+ *
+ * El `:not(...)` escrito es lo que impide que esta regla general pise a las
+ * variantes de la base, que declaran `border-color: transparent`. Con `:where()`
+ * no vale: ver la cabecera. */
+/* **El peso está elegido, y es la lección que Windows pagó con tres rondas.**
+ * Escrita como `:root[data-sistema="linux"] button` la regla pesa (0,3,1) y
+ * **le gana a todos los botones compuestos que la base viste por clase** —
+ * `.abrir-proyecto`, `.lista-boveda button`, `.dactilar-boton`, `.renombrar`—,
+ * que no son variantes de botón sino filas y controles enteros. Se vio en la
+ * captura de Proyectos: la fila del proyecto salía corrida, con el nombre
+ * convertido en una pastilla gris. Y una lista de exclusiones no vale: habría
+ * que acordarse de cada uno que aparezca, que es la señal de que el arreglo está
+ * en el sitio equivocado.
+ *
+ * Con `:where()` alrededor del ámbito y un tipo más la regla pesa **(0,0,2)**:
+ * más que el `button` de la base —así que sigue vistiendo los botones normales—
+ * y menos que cualquier clase, así que todo lo compuesto manda sobre ella. Las
+ * variantes —`.principal`, `.discreto`, `.peligro`— se declaran aparte y por
+ * clase, que es lo que de verdad las arregla. */
+:where(:root[data-sistema="linux"]) body button {
+  height: var(--alto-control);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radio);
+  background: var(--boton);
+  box-shadow: none;
+  font-weight: 700;
+  transition: background-color 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+:where(:root[data-sistema="linux"]) body button:hover:not(:disabled) {
+  background: var(--boton-encima);
+}
+
+:where(:root[data-sistema="linux"]) body button:active:not(:disabled) {
+  background: color-mix(in srgb, var(--cuerpo) 30%, var(--lienzo));
+}
+
+:root[data-sistema="linux"] button:disabled {
+  opacity: 0.5;
+}
+
+:root[data-sistema="linux"] button.principal {
+  height: var(--alto-control);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radio);
+  background: var(--relleno);
+  color: var(--sobre-acento);
+  box-shadow: none;
+  font-weight: 700;
+}
+
+:root[data-sistema="linux"] button.principal:hover:not(:disabled) {
+  background: var(--relleno-vivo);
+}
+
+:root[data-sistema="linux"] button.principal:active:not(:disabled) {
+  background: color-mix(in srgb, var(--relleno-vivo) 85%, var(--sobre-acento));
+}
+
+/* El discreto es texto: plano, sin marco y **sin subrayado**.
+ *
+ * En la base va subrayado porque allí no hay color que gastar (ADR 0021) y algo
+ * tiene que decir que se pulsa. Aquí lo dice el relleno que sale al pasar por
+ * encima, que es lo que hace un botón plano de GNOME; dejar las dos cosas sería
+ * decirlo dos veces, y eso ya lo señaló el cliente en Windows.
+ *
+ * **Y la regla de `:hover` sólo dice lo que cambia en `:hover`.** Repetir aquí
+ * el alto le subiría el peso a (0,5,1) y pisaría a quien lo vista por otro lado:
+ * eso es lo que estrechaba «Salir del proyecto» de 36 a 24 al pasar el puntero,
+ * y lo vio el cliente en su Mac. */
+:root[data-sistema="linux"] button.discreto {
+  height: var(--alto-control);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radio);
+  background: transparent;
+  box-shadow: none;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+:root[data-sistema="linux"] button.discreto:hover:not(:disabled) {
+  background: var(--sutil-encima);
+  text-decoration: none;
+}
+
+:root[data-sistema="linux"] button.discreto:active:not(:disabled) {
+  background: var(--sutil-pulsado);
+}
+
+/* El destructivo de libadwaita: el texto en el rojo del tema, sin marco. */
+:root[data-sistema="linux"] button.peligro {
+  height: var(--alto-control);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radio);
+  background: transparent;
+  box-shadow: none;
+  font-weight: 700;
+  color: var(--error);
+}
+
+:root[data-sistema="linux"] button.peligro:hover:not(:disabled) {
+  background: var(--sutil-encima);
+}
+
+/* --------------------------------------------------------- campos y listas
+ *
+ * El campo de libadwaita: el gris de `view`, 34 de alto, 9 a los lados, radio 9
+ * y **sin borde** — lo que lo delimita es el relleno, no una línea. */
+:root[data-sistema="linux"] input[type="text"],
+:root[data-sistema="linux"] input[type="password"],
+:root[data-sistema="linux"] input[type="email"],
+:root[data-sistema="linux"] input[type="number"],
+:root[data-sistema="linux"] input[type="search"],
+:root[data-sistema="linux"] input:not([type]) {
+  height: var(--alto-control);
+  padding: 0 9px;
+  border: 0;
+  border-radius: var(--radio);
+  background: var(--campo);
+  box-shadow: none;
+}
+
+:root[data-sistema="linux"] textarea {
+  padding: 9px;
+  border: 0;
+  border-radius: var(--radio);
+  background: var(--campo);
+  box-shadow: none;
+}
+
+/* El desplegable es un botón con su flecha a la derecha. */
+:root[data-sistema="linux"] select {
+  height: var(--alto-control);
+  padding: 0 32px 0 10px;
+  border: 0;
+  border-radius: var(--radio);
+  background-color: var(--boton);
+  box-shadow: none;
+  font-weight: 700;
+}
+
+:root[data-sistema="linux"] select:hover:not(:disabled) {
+  background-color: var(--boton-encima);
+}
+
+/* El foco de libadwaita es **un contorno de 2 px**, pegado por dentro en los
+ * campos y por fuera en el resto. Va en `--acento` y no en el oro: el oro como
+ * línea sobre fondo claro da 1,37:1 y es invisible, que es la trampa que
+ * `make contraste` no caza porque mide parejas de tokens y no sitios. */
+:root[data-sistema="linux"] input[type="text"]:focus-visible,
+:root[data-sistema="linux"] input[type="password"]:focus-visible,
+:root[data-sistema="linux"] input[type="email"]:focus-visible,
+:root[data-sistema="linux"] input[type="number"]:focus-visible,
+:root[data-sistema="linux"] input[type="search"]:focus-visible,
+:root[data-sistema="linux"] input:not([type]):focus-visible,
+:root[data-sistema="linux"] textarea:focus-visible {
+  border: 0;
+  box-shadow: none;
+  outline: 2px solid color-mix(in srgb, var(--acento) 60%, transparent);
+  outline-offset: -2px;
+}
+
+:root[data-sistema="linux"] button:focus-visible,
+:root[data-sistema="linux"] select:focus-visible,
+:root[data-sistema="linux"] summary:focus-visible,
+:root[data-sistema="linux"] input[type="checkbox"]:focus-visible,
+:root[data-sistema="linux"] input[type="range"]:focus-visible {
+  border-color: transparent;
+  box-shadow: none;
+  outline: 2px solid color-mix(in srgb, var(--acento) 60%, transparent);
+  outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------- la casilla
+ *
+ * 20 de lado con radio 6: sin marcar, un trazo de 2 px; marcada, en oro con la
+ * marca en piedra —el oro rellena y la piedra escribe (ADR 0021)—.
+ *
+ * **Se excluye el interruptor por su clase y no por `role`**: en Esfinge el
+ * interruptor es una casilla normal dentro de `.interruptor`, sin
+ * `role="switch"`, así que el selector de libadwaita no casaría con nada. Es la
+ * clase de detalle que hace que copiar una hoja de otro proyecto salga mal. */
+:root[data-sistema="linux"] input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: transparent no-repeat center / 14px 14px;
+  box-shadow: inset 0 0 0 2px var(--filete-fuerte);
+}
+
+:root[data-sistema="linux"] input[type="checkbox"]:checked {
+  background-color: var(--relleno);
+  box-shadow: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3 7.2 5.8 10 11 4.4' fill='none' stroke='%232b2b31' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* ---------------------------------------------------------- el interruptor
+ *
+ * El de libadwaita: la pista de 46 × 26 con radio 13 —el texto al 15 % apagada,
+ * el oro encendida— y el pomo de 20 con 3 de aire a cada lado y su sombra. Lo
+ * que se mueve es el pomo, así que la transición va en él.
+ *
+ * El pomo es un `<span>` hermano y no un `::before` del `<input>`, y eso no es
+ * un capricho: **en WebKit un `<input>` no pinta pseudoelementos**. */
+:root[data-sistema="linux"] .interruptor input[type="checkbox"] {
+  width: 46px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--barra-encima);
+  background-image: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--filete-fuerte) 60%, transparent);
+  transition: background-color 200ms;
+}
+
+:root[data-sistema="linux"] .interruptor input[type="checkbox"]:checked {
+  background-color: var(--relleno);
+  background-image: none;
+  box-shadow: none;
+}
+
+:root[data-sistema="linux"] .interruptor .pomo {
+  /* **El pomo está a `display: none` en la base y lo enciende cada hoja.** Sin
+   * estas dos líneas el interruptor sale como una pastilla gris vacía, que es
+   * como se vio en la captura de Ajustes: la pista estaba bien y dentro no había
+   * nada. */
+  display: block;
+  position: absolute;
+  pointer-events: none;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, #ffffff 80%, var(--lienzo));
+  box-shadow: 0 2px 4px rgb(0 0 6 / 0.2);
+  transition: transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+:root[data-sistema="linux"] .interruptor input:hover:not(:disabled) + .pomo {
+  background: #ffffff;
+}
+
+:root[data-sistema="linux"] .interruptor input:checked + .pomo {
+  transform: translateX(20px);
+}
+
+:root[data-sistema="linux"] .interruptor input:disabled + .pomo {
+  opacity: 0.5;
+}
+
+/* ---------------------------------------------------------- el deslizador
+ *
+ * La pista de 4 —lo recorrido en oro, el resto en el gris— y el pomo redondo de
+ * 20, blanco, con su filo y su sombra. Y **aire vertical**: un deslizador con
+ * un medidor debajo sin él se lee como tres rayas apiladas. */
+:root[data-sistema="linux"] input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 20px;
+  margin: var(--espacio-1) 0;
+  background: transparent;
+}
+
+:root[data-sistema="linux"] input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--relleno) var(--lleno, 0%),
+    var(--barra-encima) var(--lleno, 0%)
+  );
+}
+
+:root[data-sistema="linux"] input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 1px rgb(0 0 6 / 0.1),
+    0 2px 4px rgb(0 0 6 / 0.2);
+}
+
+:root[data-sistema="linux"] input[type="range"]:disabled {
+  opacity: 0.5;
+}
+
+/* ----------------------------------------------------------- el segmentado
+ *
+ * Como un AdwToggleGroup: la caja en el gris de los botones con 3 de aire, y el
+ * elegido **levantado en blanco** con la sombra de una tarjeta. No es la
+ * píldora deslizante de macOS ni la SelectorBar de Fluent.
+ *
+ * **Va por `aria-selected` y no por `aria-checked`**: el segmentado de Esfinge
+ * es una `tablist` (ADR 0019). */
+:root[data-sistema="linux"] .segmentado {
+  padding: 3px;
+  gap: 3px;
+  border-radius: var(--radio);
+  background: var(--boton);
+  box-shadow: none;
+}
+
+:root[data-sistema="linux"] .segmentado button,
+:root[data-sistema="linux"] .segmentado button[aria-selected="false"] {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: transparent;
+  box-shadow: none;
+  color: var(--tinta);
+  font-weight: 700;
+  transition: background-color 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+:root[data-sistema="linux"] .segmentado button[aria-selected="false"]:hover:not(:disabled) {
+  background: var(--sutil-encima);
+}
+
+:root[data-sistema="linux"] .segmentado button[aria-selected="true"] {
+  background: var(--tarjeta);
+  box-shadow:
+    0 0 0 1px rgb(0 0 6 / 0.03),
+    0 1px 3px 1px rgb(0 0 6 / 0.07);
+}
+
+/* **Las pestañas de Ajustes llevan el glifo encima del rótulo.**
+ *
+ * Es la forma estrecha del AdwViewSwitcher, la que GNOME usa en la barra de
+ * abajo de sus ventanas: el icono arriba y la palabra debajo. No es un apaño
+ * nuestro.
+ *
+ * # Por qué, con los números delante
+ *
+ * Son seis pestañas y a 11 pt con su glifo al lado piden **749 px**; la columna
+ * de una página de preferencias son los **600** del AdwClamp, y con la ventana
+ * por defecto la zona de contenido da **736**. O sea que se quedaba a trece
+ * píxeles, y por eso salían **dos filas de tres**.
+ *
+ * Subiendo el glifo, cada pestaña mide lo que mide su palabra en vez de la
+ * palabra más el icono más su hueco, y **las seis caben en un renglón dentro de
+ * los 600**. Lo eligió el cliente sobre capturas, con las tres opciones
+ * delante: dos filas de tres, una fila saliéndose del ancho de la página, y
+ * ésta. Descartó ensanchar la ventana —cabría subiendo el ancho por defecto de
+ * 980 a 1000, pero para que fuese **siempre** un renglón habría que subir el
+ * mínimo a ~1000, y eso impide poner Esfinge en media pantalla de un monitor de
+ * 1920, que son 960 justos—.
+ *
+ * **Y sigue pudiendo partirse**, que es la red: con la ventana en su mínimo la
+ * columna da 516 y entonces la fila se parte. La regla de la casa sigue siendo
+ * que antes de tirar un rótulo o un glifo la fila se parte; lo que esto cambia
+ * es que el caso normal ya no la necesita. */
+:root[data-sistema="linux"] .segmentado.envuelve {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+:root[data-sistema="linux"] .segmentado.envuelve button {
+  flex-direction: column;
+  gap: 2px;
+  height: auto;
+  padding: 5px var(--espacio-2);
+  line-height: 1.2;
+  /* **Y sin negrita, que es lo que acaba de hacerlas caber.**
+   *
+   * No es un apaño para ganar píxeles: en libadwaita la negrita es de los
+   * botones, y un conmutador de vistas **no es un grupo de botones, es
+   * navegación** — como las filas de la barra lateral, que por lo mismo tampoco
+   * van en negrita. Los demás segmentados de Esfinge sí son grupos de botones
+   * (un AdwToggleGroup) y se quedan como están.
+   *
+   * Lo que da de sí: apiladas y en negrita pedían 613 contra los 600 de la
+   * columna —trece píxeles, otra vez—, y en redonda caben con holgura. */
+  font-weight: 400;
+}
+
+/* **Y cuando no caben, tres y tres.**
+ *
+ * Con la ventana en su mínimo —760— la columna da 516 y la fila se parte sola.
+ * Dejándola a su aire el reparto sale **5 + 1**, que es exactamente lo que el
+ * cliente no quería ver: se lee como un fallo, no como un diseño. Con tres
+ * columnas salen dos filas llenas, y a 516 cada una mide 172, que es más que
+ * los 145 de «Actualizaciones», así que nada se aprieta.
+ *
+ * El umbral son los 584 de la zona de contenido: la columna mide
+ * `min(600, contenido − 24)` y la fila pide unos 560. */
+@container (max-width: 584px) {
+  :root[data-sistema="linux"] .segmentado.envuelve {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ------------------------------------------------ el grupo de preferencias
+ *
+ * **En GNOME un grupo de ajustes no es una tarjeta.** Un AdwPreferencesGroup es
+ * un título, su explicación debajo y **la lista en tarjeta**; la tarjeta es la
+ * lista, no lo que la envuelve. Dejando `.bloque` como está, en la captura
+ * salía una tarjeta blanca dentro de otra tarjeta blanca y lo único que las
+ * distinguía era el hueco.
+ *
+ * Y el glifo de la cabecera se va: los grupos de Ajustes de Ubuntu no llevan
+ * icono. Es una decisión que se ve, así que va a la galería para que se pueda
+ * cambiar de idea. */
+:root[data-sistema="linux"] .bloque {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  /* **El hueco se quita y se repone pieza a pieza**, porque las filas seguidas
+   * tienen que tocarse: son una sola lista en tarjeta, y con los 12 px del hueco
+   * salían como dos tarjetas sueltas una debajo de otra —se vio en la captura—.
+   * Lo que separa es el margen, y entre dos `.ajuste` no hay ninguno. */
+  gap: 0;
+}
+
+:root[data-sistema="linux"] .bloque > * + * {
+  margin-top: var(--espacio-3);
+}
+
+:root[data-sistema="linux"] .bloque > .ajuste + .ajuste {
+  margin-top: 0;
+}
+
+:root[data-sistema="linux"] .bloque-cabecera > .icono {
+  display: none;
+}
+
+:root[data-sistema="linux"] .bloque-cabecera > div > h3 {
+  font-size: var(--texto-grande);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* ------------------------------------------------- la tarjeta de ajuste
+ *
+ * **La lista en tarjeta de Ubuntu** (`boxed list`), que es la gramática de
+ * Ajustes en GNOME: el texto a la izquierda, el control a la derecha y **las
+ * filas seguidas formando una sola tarjeta** —radio 12 arriba en la primera,
+ * abajo en la última, y un filete entre una y otra—. No son tarjetas sueltas
+ * con su borde, que es la SettingsCard de Windows.
+ *
+ * El marcado es el mismo que en la base; lo único que cambia es dónde cae cada
+ * pieza, y por eso las tres van con su `grid-area` escrita. */
+:root[data-sistema="linux"] .ajuste,
+:root[data-sistema="linux"] .ajuste.con-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: var(--espacio-3);
+  row-gap: 3px;
+  min-height: 50px;
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 0;
+  border-radius: 0;
+  background: var(--tarjeta);
+  box-shadow: var(--sombra-tarjeta);
+}
+
+/* Las esquinas sólo en los extremos de cada tanda de filas seguidas, que es lo
+ * que las hace parecer una tarjeta y no una pila. */
+:root[data-sistema="linux"] .ajuste:not(.ajuste + .ajuste) {
+  border-top-left-radius: var(--radio-grande);
+  border-top-right-radius: var(--radio-grande);
+}
+
+:root[data-sistema="linux"] .ajuste:not(:has(+ .ajuste)) {
+  border-bottom-left-radius: var(--radio-grande);
+  border-bottom-right-radius: var(--radio-grande);
+}
+
+:root[data-sistema="linux"] .ajuste + .ajuste {
+  border-top: var(--linea) solid var(--filete);
+}
+
+:root[data-sistema="linux"] .ajuste > label {
+  grid-area: 1 / 1;
+  justify-self: start;
+  color: var(--tinta);
+}
+
+:root[data-sistema="linux"] .ajuste > .nota,
+:root[data-sistema="linux"] .ajuste > .aviso {
+  grid-area: 2 / 1;
+  margin: 0;
+  font-size: var(--texto-chico);
+}
+
+/* El control a la derecha y **centrado sobre las dos filas**: con el rótulo solo
+ * o con rótulo y explicación, cae siempre a la misma altura. */
+:root[data-sistema="linux"] .ajuste > .interruptor,
+:root[data-sistema="linux"] .ajuste > select,
+:root[data-sistema="linux"] .ajuste > button {
+  grid-area: 1 / 2 / 3 / 3;
+  align-self: center;
+  justify-self: end;
+}
+
+/* **La sangrada se mete por dentro, no por fuera.** En Windows es una tarjeta
+ * más con un margen; aquí un margen la sacaría de la tarjeta y partiría la
+ * lista en dos, que es justo lo contrario de lo que dice: que cuelga de la de
+ * arriba. En libadwaita una fila dependiente va dentro de la lista, con su
+ * texto sangrado. */
+:root[data-sistema="linux"] .ajuste.sangrada {
+  margin-left: 0;
+  padding-left: var(--espacio-6);
+}
+
+/* **El aire entre un rótulo y su control es anatomía, no un detalle**, y es una
+ * de las cosas que Windows dejó escritas para esta fase: el cliente lo pidió con
+ * esas palabras —«hay que mejorar los espaciados entre elementos, especialmente
+ * entre líneas de textos y elementos como inputs»—. En libadwaita un rótulo va a
+ * 6 px de lo que describe, no pegado a ello. Y el medidor que cuelga de un campo
+ * necesita lo mismo por arriba, o se leen dos líneas horizontales pegadas. */
+:root[data-sistema="linux"] .grupo > label,
+:root[data-sistema="linux"] .panel label:not(.fila-ajuste):not(.interruptor) {
+  margin-bottom: 6px;
+}
+
+:root[data-sistema="linux"] .medidor {
+  margin-top: 6px;
+}
+
+/* ------------------------------------------------ las listas en tarjeta
+ *
+ * La de proyectos y la de la bóveda son **la misma lista en tarjeta** que los
+ * ajustes: la superficie de tarjeta, radio 12, sin borde y un filete entre una
+ * fila y otra. La base las dibuja con un marco de medio píxel, que es lo de
+ * macOS. */
+:root[data-sistema="linux"] .proyectos,
+:root[data-sistema="linux"] .lista-boveda {
+  border: 0;
+  border-radius: var(--radio-grande);
+  background: var(--tarjeta);
+  box-shadow: var(--sombra-tarjeta);
+}
+
+:root[data-sistema="linux"] .proyectos li + li,
+:root[data-sistema="linux"] .lista-boveda li + li {
+  border-top: var(--linea) solid var(--filete);
+}
+
+/* La fila tiene su aire y **el nombre manda**: lo que sigue se va a la derecha. */
+:root[data-sistema="linux"] .proyectos li {
+  gap: var(--espacio-2);
+  padding-right: var(--espacio-3);
+}
+
+:root[data-sistema="linux"] .abrir-proyecto {
+  padding: var(--espacio-2) var(--espacio-3);
+  gap: var(--espacio-3);
+  /* **Parte de su contenido, no de cero.** La base le pone `flex: 1`, o sea base
+   * cero, y entonces es lo primero que se encoge: aquí la letra es más grande y
+   * la columna más estrecha —11 pt dentro de los 600 del AdwClamp, contra 13 px
+   * dentro de 720—, así que el nombre salía «Acme cl…» y el estado se partía en
+   * dos renglones **dentro del botón**. Subir el suelo a mano tampoco valía: con
+   * 15rem seguía cortando, porque lo que falta depende de lo que midan las dos
+   * acciones de al lado.
+   *
+   * Con la base en `auto`, la fila se pasa de largo y **las acciones bajan
+   * enteras a la segunda línea**, que es justo lo que el `flex-wrap` del `li`
+   * está esperando; entonces el nombre se queda con el ancho entero. El suelo de
+   * la base sigue protegiendo el caso del nombre larguísimo, que se corta con
+   * «…» como siempre. */
+  flex: 1 1 auto;
+}
+
+/* Y el estado no se parte: es una frase corta que dice cuándo se usó, y partida
+ * en dos renglones dentro de un botón se lee como un error de maquetación. */
+:root[data-sistema="linux"] .abrir-proyecto .aparte {
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------- grupos y bloques
+ *
+ * Lo que no es un ajuste —lo que agrupa un formulario— es una tarjeta de
+ * libadwaita: radio 12, sin borde y con su sombra. El encabezado del grupo va
+ * en negrita al tamaño del cuerpo, que es lo que libadwaita llama «Heading». */
+:root[data-sistema="linux"] .grupo {
+  border: 0;
+  border-radius: var(--radio-grande);
+  padding: var(--espacio-3);
+  background: var(--tarjeta);
+  box-shadow: var(--sombra-tarjeta);
+}
+
+:root[data-sistema="linux"] .grupo > h2,
+:root[data-sistema="linux"] .bloque > h2 {
+  font-size: var(--texto-grande);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+:root[data-sistema="linux"] .zona-soltar {
+  border-radius: var(--radio-grande);
+  border-width: 2px;
+}
+
+/* ------------------------------------------- la versión nueva (AdwBanner)
+ *
+ * Debajo de la barra de cabecera y de lado a lado, en el gris de los avisos de
+ * libadwaita, con el texto centrado. */
+:root[data-sistema="linux"] .novedad {
+  justify-content: center;
+  min-height: 0;
+  padding: 6px var(--espacio-3);
+  border-bottom: 0;
+  background: color-mix(in srgb, #7d7d83 30%, var(--lienzo));
+}
+
+/* Con «reducir el movimiento», nada se anima. La base ya lo hace con lo suyo;
+ * esto cubre lo que esta hoja añade. */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-sistema="linux"] .boton-lateral,
+  :root[data-sistema="linux"] .interruptor .pomo,
+  :root[data-sistema="linux"] .segmentado button {
+    transition: none;
+  }
+}

@@ -2669,6 +2669,24 @@ function Ajustes({
             : "Esta ventana es opaca: tu sistema no ofrece el vidrio, o esta versión no lo trae."}
         </p>
 
+        {/* **La atribución de los iconos, dentro del programa** (ADR 0070).
+            El repositorio es público y `TERCEROS.md` lo cuenta entero, pero quien
+            recibe Esfinge no lee el repositorio — y Yaru es CC BY-SA, que pide
+            decir de quién es. Se dice aquí, en dos líneas, y no en una pantalla
+            propia: es lo que hay que poder encontrar, no lo que hay que leer. */}
+        <section className="bloque">
+          <header className="bloque-cabecera">
+            <Icono nombre="tema" />
+            <div>
+              <h3>Iconos</h3>
+            </div>
+          </header>
+          <p className="nota">
+            En Windows son los <strong>Fluent System Icons</strong> de Microsoft (MIT). En Linux,
+            los de <strong>Yaru</strong>, de Canonical (CC BY-SA 4.0). Se usan sin modificar.
+          </p>
+        </section>
+
         <p className="nota">
           No hay que desinstalar nada.
         </p>

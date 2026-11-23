@@ -146,6 +146,18 @@ capturas-macos:
 	cd $(FRONT) && CAPTURAS=1 CAPTURAS_SISTEMA=darwin CAPTURAS_VIDRIO=si $(PNPM) exec playwright test capturas
 	@echo "En $(FRONT)/capturas/darwin y darwin-vidrio"
 
+## capturas-gnome: retrata la interfaz con el aspecto de GNOME, en los dos temas
+##
+## Lo único con lo que se puede mirar GNOME desde aquí (ADR 0067). **Sin variante
+## de vidrio**: en GNOME la ventana es opaca y el marco lo dibuja GTK, así que no
+## hay material que enseñar. Se borra la carpeta antes a propósito: la captura
+## que se mira tiene que ser la que se acaba de sacar.
+.PHONY: capturas-gnome
+capturas-gnome:
+	@rm -rf $(FRONT)/capturas/linux-gnome
+	cd $(FRONT) && CAPTURAS=1 CAPTURAS_SISTEMA=linux CAPTURAS_ESCRITORIO=gnome $(PNPM) exec playwright test capturas
+	@echo "En $(FRONT)/capturas/linux-gnome"
+
 ## frontend: construye la interfaz y la deja donde la aplicación la embebe
 .PHONY: frontend
 frontend: tokens

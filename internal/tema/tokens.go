@@ -119,6 +119,7 @@ func juegos() []juego {
 		{"", TemaClaro, TemaOscuro},
 		{`[data-sistema="windows"]`, WindowsClaro, WindowsOscuro},
 		{`[data-sistema="darwin"]`, MacosClaro, MacosOscuro},
+		{`[data-sistema="linux"]`, LinuxClaro, LinuxOscuro},
 	}
 }
 

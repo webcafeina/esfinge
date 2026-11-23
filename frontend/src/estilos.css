@@ -18,6 +18,7 @@
  * orden. La de KDE irá al final de todas, porque refina a la de Linux. */
 @import "./sistema-windows.css";
 @import "./sistema-macos.css";
+@import "./sistema-linux.css";
 
 * {
   box-sizing: border-box;
@@ -2297,75 +2298,23 @@ select {
 
 /* ------------------------------------------------- cada sistema, a lo suyo */
 
-/* La estructura de fondo es la misma en los tres —barra lateral y contenido—
- * porque los tres escritorios modernos se organizan así. Lo que cambia son las
- * formas, las densidades y quién dibuja el marco, y eso sí es de cada casa.
+/* **Y aquí ya no queda nada, que es el cambio de significado de esta fase.**
  *
- * Lo de arriba es macOS, que es donde se juzga esto. Aquí van las diferencias.
- * El atributo lo pone la interfaz al arrancar, preguntándole a Go. */
+ * Hasta la 2.69.0 esto decía «lo de arriba es macOS, que es donde se juzga
+ * esto; aquí van las diferencias», y era verdad: los otros tres sistemas eran
+ * macOS con ~140 líneas de parches. Ahora cada uno tiene su hoja —se importan
+ * arriba, detrás de los tokens— y **lo de arriba es la base neutra**: la que ven
+ * el panel de la extensión y un escritorio que no reconocemos.
+ *
+ * La estructura de fondo sigue siendo la misma en los cuatro —barra lateral y
+ * contenido—, porque así se organizan los cuatro escritorios. Lo que cambia son
+ * las formas, las densidades y quién dibuja el marco, y eso es de cada casa.
+ *
+ * Lo compartido **se duplica en cada hoja** en vez de quedarse aquí con dos
+ * selectores: en cuanto uno de los dos sistemas cambia, un selector de dos es
+ * una bomba de relojería. El atributo lo resuelve la interfaz antes del primer
+ * pintado, preguntándole a Go. */
 
-/* El hueco de los semáforos es de macOS: en Windows y en GNOME la ventana tiene
- * su barra de título del sistema, así que arriba de la barra lateral no hay nada
- * que esquivar. */
-/* Sin semáforos que esquivar, el lockup queda pegado al marco del sistema. Se le
- * da aire para que no lo toque: en Windows y en GNOME la barra de título la
- * dibuja el sistema y el nombre de la aplicación va justo debajo. */
-:root[data-sistema="linux"] .lateral .semaforos {
-  height: var(--espacio-3);
-}
-
-/* Y con marco del sistema no hay que declarar zonas de arrastre: la ventana ya
- * tiene de dónde agarrarse. */
-:root[data-sistema="linux"] .lateral,
-:root[data-sistema="linux"] .herramientas {
-  --wails-draggable: no-drag;
-}
-
-/* -------------------------------------------------------------------- GNOME */
-
-/* La cabecera de GNOME: el título va centrado, en negrita y pequeño, con una
- * línea debajo que la separa del contenido. Es lo primero que se reconoce de una
- * aplicación de GNOME. */
-:root[data-sistema="linux"] .herramientas {
-  position: relative;
-  justify-content: center;
-  border-bottom: 1px solid var(--filete);
-}
-
-:root[data-sistema="linux"] .herramientas h1 {
-  font-size: var(--texto-grande);
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-:root[data-sistema="linux"] .herramientas .aparte {
-  position: absolute;
-  right: var(--espacio-5);
-}
-
-/* Con la línea de la cabecera, el contenido necesita separarse de ella. En macOS
- * no hace falta porque la barra de herramientas y el contenido son la misma
- * superficie. */
-:root[data-sistema="linux"] .contenido {
-  padding-top: var(--espacio-4);
-}
-
-/* La barra lateral de GNOME lleva su propia línea, no un filete de medio píxel:
- * el escritorio no dibuja a media resolución como hace macOS. */
-:root[data-sistema="linux"] .lateral {
-  border-right: 1px solid var(--filete);
-}
-
-:root[data-sistema="linux"] .lateral nav button {
-  border-radius: 6px;
-  height: 36px;
-}
-
-/* Y libadwaita redondea las tarjetas a 12. */
-:root[data-sistema="linux"] .grupo {
-  border-radius: 12px;
-  border-width: 1px;
-}
 
 /* Las secciones que no están a la vista se esconden en vez de desmontarse, para
  * que no se pierda lo escrito al cambiar de una a otra. La hoja del navegador ya
@@ -2409,8 +2358,7 @@ select {
   --wails-draggable: no-drag;
 }
 
-:root[data-sistema="windows"] .portada,
-:root[data-sistema="linux"] .portada {
+:root[data-sistema="windows"] .portada {
   --wails-draggable: no-drag;
 }
 

@@ -4915,6 +4915,29 @@ de ahí.
 
 ---
 
+## 2026-11-23 (tarde) · GNOME se ve como GNOME
+
+- **La fase F4 entera** ([ADR 0070](adr/0070-gnome-con-yaru.md)): paleta de Yaru, `sistema-linux.css`,
+  21 iconos cosechados, la anatomía de libadwaita y el reparto del bloque de Linux que quedaba en la
+  base — con lo que **la base deja de ser macOS** y pasa a ser la base neutra.
+- Lo de Windows se aparcó: lo pidió el cliente para cerrar antes los sistemas que quedaban.
+- **Verificado**: `make comprobar`, `make e2e`, once pruebas nuevas en `gnome.spec.ts` y una en Go.
+  **Ocho mutaciones**; siete rojas a la primera y **una verde**, que destapó que la prueba de los
+  iconos comparaba el módulo consigo mismo. De ahí salieron las dos correcciones que la hacen valer:
+  medir un icono **con grupo y transformación** —con uno de un solo trazado pasaba en verde aunque se
+  dejaran de pintar los hijos— y una prueba aparte contra **los SVG de origen guardados**, que es lo
+  que respalda la promesa de licencia.
+- **Y lo que no encontró ninguna prueba**: el botón de plegar montado encima de «Cifrar» comiéndose
+  sus clics, el interruptor sin pomo, la lista de ajustes partida en dos tarjetas, la fila del
+  proyecto corrida porque la regla general de botón pesaba más que `.abrir-proyecto`, el título
+  descentrado 19 px por un relleno asimétrico, y tres iconos que a 16 px parecían distintos y en una
+  rejilla a 48 eran la misma página. **Seis de siete arreglos salieron de mirar.**
+- **Queda abierto**: nada de esto se ha visto en una Ubuntu (→ `deuda.md`), el recorrido de capturas
+  se queda en la bienvenida a veces (→ `deuda.md`), y **lo de Windows sigue sin resolver y sin
+  publicar**.
+
+---
+
 ## Plantilla
 
 ```

@@ -469,6 +469,114 @@ var MacosOscuro = func() Tema {
 	}
 }()
 
+// Los colores con significado de Yaru, que son los de Ubuntu y no los de Apple.
+//
+// Van aparte igual que los de Fluent: un verde de éxito es parte de la identidad
+// del escritorio, y en Ubuntu es el verde de Canonical. Los de abajo son los
+// canónicos de Yaru en claro y los de la paleta de Ubuntu en oscuro, que es lo
+// que Apolo publica desde su v0.13.0; `AcentoLegible` los sube o los baja hasta
+// que cumplen contra la peor superficie de su paleta.
+var (
+	verdeYaru = MustParseHex("#219e34")
+	ambarYaru = MustParseHex("#c88800")
+	rojoYaru  = MustParseHex("#d3273b")
+
+	verdeYaruOscuro = MustParseHex("#0e8420")
+	ambarYaruOscuro = MustParseHex("#cd9309")
+	rojoYaruOscuro  = MustParseHex("#c7162b")
+)
+
+// LinuxClaro es el modo claro en GNOME: los neutros de Yaru (ADR 0070).
+//
+// # De dónde salen
+//
+// De libadwaita 1.10 con el tema Yaru, que es lo que trae Ubuntu 26.10 — Ubuntu
+// no cambia ninguna medida de libadwaita, sólo los colores—. **No son los de la
+// hoja de libadwaita a pelo**: son los mismos que Apolo usa desde su v0.13.0, o
+// sea ya derivados y **ya vistos en una Ubuntu de verdad**.
+//
+// Al contrario que en Fluent, aquí el lienzo es casi blanco y las tarjetas son
+// **blancas**: una `boxed list` de Ubuntu se levanta sobre el fondo de la
+// ventana, no se hunde en él.
+//
+// Lo que no cambia del tema base es el oro: el acento es nuestro en los cuatro
+// sistemas (ADR 0021), y la piedra es lo que escribe encima.
+var LinuxClaro = func() Tema {
+	lienzo := MustParseHex("#fafafa")
+	// La superficie de menos contraste, contra la que se derivan los textos. En
+	// GNOME es **la fila elegida de la barra lateral**, que es el gris más oscuro
+	// de la ventana: un texto apagado se queda corto ahí antes que en el lienzo.
+	peor := MustParseHex("#d8d8d8")
+	relleno := RellenoLegible(oroMarca, piedra, AANormal)
+
+	return Tema{
+		Nombre:  "linux-claro",
+		Lienzo:  lienzo,
+		Suave:   MustParseHex("#f0f0f0"),
+		Tarjeta: MustParseHex("#ffffff"),
+		Elevada: MustParseHex("#e7e7e7"),
+		// Derivado y no copiado, por lo mismo que en Fluent y en macOS: el divisor
+		// de libadwaita puede quedarse por debajo del suelo de 1,2:1 de esta casa,
+		// y lo que no se baja nunca es el umbral.
+		Filete:        AcentoLegible(MustParseHex("#e0e0e0"), lienzo, 1.2),
+		FileteFuerte:  AcentoLegible(MustParseHex("#8a8a8a"), peor, AAGrande),
+		Tinta:         MustParseHex("#303030"),
+		Cuerpo:        MustParseHex("#3d3d3d"),
+		Apagado:       AcentoLegible(MustParseHex("#737373"), peor, AANormal),
+		Relleno:       relleno,
+		RellenoVivo:   Oscurecer(relleno, 0.92),
+		SobreAcento:   piedra,
+		Acento:        piedra,
+		Barra:         MustParseHex("#ebebeb"),
+		BarraEncima:   peor,
+		Campo:         MustParseHex("#ebebeb"),
+		Boton:         MustParseHex("#e7e7e7"),
+		BotonEncima:   MustParseHex("#dedede"),
+		Exito:         AcentoLegible(verdeYaru, peor, AANormal),
+		Aviso:         AcentoLegible(ambarYaru, peor, AANormal),
+		Error:         AcentoLegible(rojoYaru, peor, AANormal),
+		TintesDeIcono: tintesClaros,
+		TintaDeIcono:  piedra,
+		OroLateral:    AcentoLegible(oroMarca, peor, AAGrande),
+	}
+}()
+
+// LinuxOscuro es el modo oscuro en GNOME, con los neutros de Yaru.
+var LinuxOscuro = func() Tema {
+	// La superficie más clara del tema, que es el botón con el puntero encima.
+	peor := MustParseHex("#4d4d4d")
+	relleno := RellenoLegible(oroMarca, piedra, AANormal)
+
+	return Tema{
+		Nombre:        "linux-oscuro",
+		Oscuro:        true,
+		Lienzo:        MustParseHex("#2c2c2c"),
+		Suave:         MustParseHex("#323232"),
+		Tarjeta:       MustParseHex("#3a3a3a"),
+		Elevada:       MustParseHex("#414141"),
+		Filete:        AcentoLegible(MustParseHex("#474747"), MustParseHex("#2c2c2c"), 1.2),
+		FileteFuerte:  AcentoLegible(MustParseHex("#8f8f8f"), peor, AAGrande),
+		Tinta:         MustParseHex("#f7f7f7"),
+		Cuerpo:        MustParseHex("#e4e4e4"),
+		Apagado:       AcentoLegible(MustParseHex("#a6a6a6"), peor, AANormal),
+		Relleno:       relleno,
+		RellenoVivo:   Oscurecer(relleno, 0.92),
+		SobreAcento:   piedra,
+		Acento:        blanco,
+		Barra:         MustParseHex("#393939"),
+		BarraEncima:   MustParseHex("#4a4a4a"),
+		Campo:         MustParseHex("#3e3e3e"),
+		Boton:         MustParseHex("#414141"),
+		BotonEncima:   peor,
+		Exito:         AcentoLegible(verdeYaruOscuro, peor, AANormal),
+		Aviso:         AcentoLegible(ambarYaruOscuro, peor, AANormal),
+		Error:         AcentoLegible(rojoYaruOscuro, peor, AANormal),
+		TintesDeIcono: tintesOscuros,
+		TintaDeIcono:  MustParseHex("#ebebf0"),
+		OroLateral:    AcentoLegible(oroMarca, peor, AAGrande),
+	}
+}()
+
 // Temas son todas las paletas que se publican, para medirlas todas.
 //
 // Es la lista que recorre el test de contraste: una paleta que no esté aquí no
@@ -476,5 +584,10 @@ var MacosOscuro = func() Tema {
 // permitirse —el oro no vale como línea en ningún sitio, y eso hay que
 // comprobarlo en cada juego de neutros, no en uno—.
 func Temas() []Tema {
-	return []Tema{TemaClaro, TemaOscuro, WindowsClaro, WindowsOscuro, MacosClaro, MacosOscuro}
+	return []Tema{
+		TemaClaro, TemaOscuro,
+		WindowsClaro, WindowsOscuro,
+		MacosClaro, MacosOscuro,
+		LinuxClaro, LinuxOscuro,
+	}
 }

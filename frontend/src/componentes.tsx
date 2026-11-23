@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
 import { esfinge, ventana, type Avance, type Fuerza, type Novedad } from "./puente";
 import { ICONOS_FLUENT } from "./iconos-fluent";
-import { esWindows } from "./plataforma";
+import { ICONOS_YARU, type NodoYaru } from "./iconos-yaru";
+import { esGnome, esWindows } from "./plataforma";
 
 // La marca se importa **en crudo desde build/**, donde vive el resto del dibujo
 // de la casa, y no se copia a frontend/: una segunda copia del logotipo es
@@ -206,6 +207,50 @@ export function Firma({ version }: { version: string }) {
  * está, y cuando no lo está salen cuadrados vacíos. Dibujarlos es lo único que
  * se ve igual en los tres sistemas.
  */
+/**
+ * Pinta un nodo de un icono nativo, con sus atributos y lo que lleve dentro.
+ *
+ * Genérica a propósito: lo que viene del escritorio son `<path>`, `<rect>` y
+ * `<g transform>` anidados, y escribir un caso por etiqueta sería la forma de
+ * que el día que Yaru use un `<circle>` se dibuje de menos sin que nada avise.
+ * El cosechador ya se niega a traer lo que no sabe tratar, así que aquí lo que
+ * llega se pinta.
+ */
+function pintarNodo(n: NodoYaru, i: number): ReactNode {
+  return createElement(
+    n.t,
+    { key: i, ...enReact(n.a) },
+    n.h ? n.h.map(pintarNodo) : undefined,
+  );
+}
+
+/**
+ * Los nombres de atributo como los quiere React: `fill-rule` pasa a `fillRule`.
+ *
+ * **Y la conversión va aquí y no en el fichero cosechado**, a propósito: lo que
+ * se guarda tiene que seguir siendo el árbol del SVG tal como vino —es lo que
+ * compara `TestLosIconosDeYaruNoSeHanAdaptado`, que es lo que respalda la
+ * licencia—, y que React escriba los atributos en camello es cosa de React.
+ *
+ * Sin esto no se rompe nada que se vea: React **avisa en la consola** —«Invalid
+ * DOM property `fill-rule`»— y pinta igual. Pero aquí la consola limpia es una
+ * aserción, así que eso son **ciento ocho pruebas en rojo** de golpe, casi todas
+ * sin relación aparente con los iconos. Lo cazó `make e2e`.
+ *
+ * La conversión es a ciegas de `kebab` a camello, y es seguro porque **el
+ * cosechador sólo deja pasar una lista cerrada de atributos** (ver `yaru.py`):
+ * ahí no hay ningún `data-` ni `aria-`, que son los que deben quedarse con su
+ * guion.
+ */
+function enReact(a: Record<string, string> | undefined): Record<string, string> {
+  if (!a) return {};
+  const salida: Record<string, string> = {};
+  for (const [nombre, valor] of Object.entries(a)) {
+    salida[nombre.replace(/-([a-z])/g, (_, l: string) => l.toUpperCase())] = valor;
+  }
+  return salida;
+}
+
 export function Icono({ nombre }: { nombre: string }) {
   // **El de MCP es el oficial, y es el único que no se dibuja aquí.** Lo pidió el
   // cliente tras ver el nuestro: un glifo inventado para un protocolo no lo reconoce
@@ -248,6 +293,25 @@ export function Icono({ nombre }: { nombre: string }) {
         {fluent[caja].map((d, i) => (
           <path key={i} d={d} />
         ))}
+      </svg>
+    );
+  }
+
+  // **Los de GNOME, que son los de Yaru** (ADR 0070). Mismo trato que los de
+  // Fluent: se pregunta el escritorio al dibujar y no al cargar el módulo, lo
+  // que es correcto porque `main.tsx` resuelve la plataforma antes del primer
+  // pintado.
+  //
+  // Van como **árbol** y no como lista de trazados, y eso no es un capricho: de
+  // los dieciocho, seis llevan un `transform` y dos dibujan con `<rect>`, así
+  // que quedarse con las `d` daría iconos fuera de su caja —la trampa de Yaru
+  // que en Apolo costó dos vueltas—. Se pintan tal cual vinieron, que es además
+  // lo que la licencia pide (ver `iconos-yaru.ts`).
+  const yaru = esGnome() ? ICONOS_YARU[nombre] : undefined;
+  if (yaru) {
+    return (
+      <svg className="icono" viewBox={yaru.caja} fill="currentColor" aria-hidden="true">
+        {yaru.nodos.map(pintarNodo)}
       </svg>
     );
   }

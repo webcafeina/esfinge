@@ -2669,7 +2669,7 @@ proyectos»— cuando lo que vigilan es que la pantalla **diga qué hacer**. Se 
 el significado**, que es lo que no cambia al acortar. Y el error de método fue anterior: se aplicaron
 los textos **sin pasar la tanda de interfaz antes de comprometer**.
 
-## Lo que Windows deja escrito para macOS, GNOME y KDE
+## Lo que Windows y GNOME dejan escrito para KDE
 
 La fase de Windows costó **tres rondas de correcciones suyas** y casi todo lo que salió **se va a
 repetir igual** en las tres hojas que quedan, porque no era de Fluent: era de cómo se escribe una hoja
@@ -2757,6 +2757,56 @@ describe algo visual que **aquí no se reproduce**, pedir la captura **antes de 
 En Windows se midió lo correcto tres veces, las tres en verde, y se gastaron dos hipótesis mías falsas
 antes de pedirla. Una medición limpia no dice que no haya fallo: puede decir que la pregunta no era
 ésa.
+
+**Y lo que añade GNOME, que son cuatro cosas y las cuatro vuelven en KDE** (2026-11-23):
+
+- **El `.pomo` del interruptor está a `display: none` en la base y lo enciende cada hoja.** Se le
+  pusieron el sitio, el tamaño y la transición y **no el `display`**, así que el interruptor salía
+  como una pastilla gris vacía: la pista bien y dentro nada. No lo vio ninguna prueba —lo vio la
+  captura de Ajustes—, y vale para cualquier pieza que la base deje apagada esperando a que la
+  encienda quien la use.
+- **Un relleno asimétrico descentra lo que dices centrar.** La cabecera llevaba 46 px a la izquierda
+  para dejarle sitio al botón de plegar, y eso mueve el centro de la caja de contenido **19 px** —la
+  mitad de la diferencia—, justo en lo que más se reconoce de GNOME. El sitio de un botón que flota
+  se reserva con el **suelo de una columna**, que no mueve el centro, y no con relleno.
+- **Un hueco en el contenedor rompe una lista en tarjeta.** Las filas seguidas de una `boxed list`
+  tienen que tocarse; con los 12 px del bloque salían como dos tarjetas sueltas. El hueco se quita y
+  se repone **pieza a pieza** (`> * + *`), excluyendo el caso que tiene que pegarse.
+- **Y la regla general de botón volvió a pisar a los compuestos**, que es la tercera vez. Está
+  escrito arriba y aun así se escribió primero con `:not(...)` y peso (0,2,2): `.abrir-proyecto` se
+  convirtió en una pastilla gris y la fila del proyecto salió corrida. **Lo que vale es el peso
+  `(0,0,2)` de `:where(:root[data-sistema="X"]) body button`**, no una lista de exclusiones — y lo
+  vigila ahora una prueba por sistema, con **un botón de usar y tirar**, porque la que miraba el
+  botón de la pantalla se saltaba sola cuando la bóveda no tenía proyectos.
+
+**Y una de pruebas que es general y no de CSS: una prueba que compara dos lados que salen del mismo
+fichero se compara consigo misma.** La de los iconos cotejaba **el DOM con el módulo** — y mutando un
+trazado del módulo seguía en verde, porque los dos lados venían de ahí. Son dos preguntas distintas y
+hacen falta las dos: **«¿se pinta lo que el módulo guarda?»**, que caza un `transform` perdido y vive
+en la prueba de interfaz, y **«¿el módulo es lo que publicó el origen?»**, que es la que respalda la
+licencia y vive en Go contra los SVG guardados en `internal/tema/testdata/yaru`.
+
+Y la segunda mitad de eso, que es la que cuesta ver: **el elemento que elige una prueba decide lo que
+la prueba puede ver**. La de los iconos medía `cifrar`, que es **un solo `<path>` sin grupo**, así que
+dejar de pintar los hijos no le cambiaba nada y la mutación pasaba en verde. Mide `ajustes`, que lleva
+grupo y transformación, y se cae a la primera. Al escribir una prueba sobre una estructura, **se elige
+el caso que tiene la estructura**, no el primero de la lista.
+
+**Y la trampa de Yaru, que no es la que se esperaba.** La de Apolo era juntar trazados; aquí lo caro
+fue otra cosa: **seis de los diecinueve iconos son enlaces simbólicos**, y por HTTP un enlace no es un
+SVG, es un fichero de texto de una línea con la ruta de destino —`network-wireless` apunta a
+`captive-portal`, que es un portal cautivo y no una red—. Y **seis llevan `transform`**: quedarse con
+la `d` no da un icono torcido, da **un icono fuera de su caja**. Por eso el cosechador guarda el árbol
+entero y **se niega** ante cualquier elemento o atributo que no sepa tratar, en vez de adivinar.
+
+**Y una prueba que mide un aspecto sin decir cuál mide el de esta máquina, que es GNOME.**
+(2026-11-23.) Cuatro pruebas decían medir «la base» con un `goto("/")` a secas, y `Plataforma()`
+contesta `linux` aquí: llevaban midiendo Linux **desde siempre**, y pasaban porque hasta esta fase
+Linux era la base con parches. El día que GNOME dejó de parecérsele cayeron las cuatro, una a una y
+en sitios que no tenían nada que ver entre sí. Ahora **la base se pide por su nombre**
+(`?sistema=base`), que además es un aspecto de verdad —es lo que se ve si Go no contesta y lo que
+importa el panel de la extensión—. **La regla: si una prueba afirma algo sobre cómo se ve, nombra el
+sistema**; si no lo nombra, está afirmando algo sobre el sistema de quien la corre.
 
 ## Lo que nunca se ha probado
 

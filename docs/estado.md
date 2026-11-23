@@ -1,13 +1,31 @@
 # Estado
 
-Última actualización: **2026-11-23**
+Última actualización: **2026-11-23** (segunda sesión del día)
 
-**Lo de esta sesión**: empezó con Windows probado en su máquina y acabó con macOS entero. **Cuatro
-versiones publicadas**: la **2.71.0** —el marco y el panel plegable—, la **2.72.0**, que cierra
-Windows con el instalador de marca ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)), el repaso
-contra el estándar y el menú de Snap; la **2.72.1**, un arreglo solo —la ventana no llegaba al fondo
-en macOS y en Linux desde la 2.70.0—; y la **2.73.0**, con la fase de macOS
-([ADR 0068](adr/0068-macos-con-golden-gate.md)). El VPS está en la **2.73.0**.
+**Lo de esta sesión (2026-11-23, tarde)**: **la fase de GNOME, entera**
+([ADR 0070](adr/0070-gnome-con-yaru.md)). Lo de Windows se aparcó a petición del cliente —«vamos a
+dejar Windows para mañana, vamos a cerrar los sistemas que quedan antes»— y **sigue siendo lo primero
+al retomar**, abajo. Sin publicar: van ya **siete commits** esperando.
+
+Lo que entró con GNOME: la paleta de Yaru (dos temas más, medidos), `sistema-linux.css`, **21 iconos
+de Yaru** con su cosechador, la anatomía de Ubuntu —lista en tarjeta, AdwHeaderBar con el título
+centrado, AdwToggleGroup, AdwClamp de 600—, once pruebas que miden, una prueba en Go que respalda la
+licencia contra los SVG de origen, `TERCEROS.md` y la atribución dentro de Ajustes. Y de paso,
+**Fluent y Yaru tienen ya los mismos 21 nombres**: `texto`, `ficheros` y `tema` no estaban en
+ninguno de los dos, así que en Windows esas filas mezclaban dos juegos.
+
+**Y lo que hay que saber de cómo se hizo, porque vale para KDE**: de los siete arreglos de la fase,
+**seis los encontró mirar una captura y no una prueba**. La lista está en la ADR. La segunda vuelta
+—comparar control por control con la hoja de Apolo antes de escribir— ahorró la mitad; la otra mitad
+salió de sacar la captura y mirarla.
+
+**Falta verlo en una Ubuntu**: ahí no se ha visto nada de esto. Está en [`deuda.md`](deuda.md) con lo
+que hay que mirar.
+
+**Lo anterior**: cuatro versiones publicadas —la **2.71.0**, la **2.72.0**, que cierra Windows con el
+instalador de marca ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)); la **2.72.1**; y la
+**2.73.0**, con la fase de macOS ([ADR 0068](adr/0068-macos-con-golden-gate.md))—. El VPS está en la
+**2.73.0**.
 
 > ## ⚠ Lo primero al retomar (2026-11-24): Esfinge no abre en Windows
 >
@@ -33,7 +51,7 @@ en macOS y en Linux desde la 2.70.0—; y la **2.73.0**, con la fase de macOS
 > El que haga salir la ventana es el culpable. Y con `ESFINGE_DIAGNOSTICO=1` Wails escribe lo que hace
 > en `%APPDATA%\Esfinge\diagnostico.log`, que es lo que ha permitido llegar hasta aquí.
 >
-> **Hay seis commits sin publicar** (de `56cb777` a `ebc246d`), y **no se publica hasta resolver esto**
+> **Hay siete commits sin publicar** (de `56cb777` en adelante, y el de GNOME encima), y **no se publica hasta resolver esto**
 > —sacar una versión que no abre en Windows sería la tercera seguida—. Lo que llevan dentro:
 >
 > - **El arreglo de `comctl32`**, que es un defecto real aunque no fuera la causa: `NewLazySystemDLL`

@@ -73,6 +73,15 @@ export const esLinux = () => actual.sistema === "linux";
 export const esKde = () => esLinux() && actual.escritorio === "kde";
 
 /**
+ * GNOME, y con él todo el Linux que no es KDE.
+ *
+ * **Xfce, Cinnamon y COSMIC entran aquí a propósito** (`escritorio=otro`): son
+ * escritorios de GTK y lo que se parece a una aplicación suya es libadwaita, no
+ * Kirigami. Lo decidió el cliente al abrir la fase de nativizar.
+ */
+export const esGnome = () => esLinux() && !esKde();
+
+/**
  * Pregunta a Go dónde está y lo deja escrito en la raíz del documento.
  *
  * Si no contesta —no debería, pero el puente puede fallar— se pinta con la base
@@ -114,6 +123,17 @@ function conLaURL(real: Plataforma): Plataforma {
   // Los nombres son los de Go —«darwin», no «macos»— para que lo que se pide en
   // la URL sea exactamente lo que la ventana recibe de verdad. Un alias aquí
   // sería un segundo vocabulario que mantener.
+  // **`base` pide la base neutra**, que no es ningún sistema y sí es un aspecto
+  // de verdad: es lo que se ve si Go no contesta, y es el que importa el panel
+  // de la extensión. Sin esto no se puede mirar desde aquí —`Plataforma()`
+  // contesta `linux` en esta máquina—, así que las pruebas que decían medir «la
+  // base» llevaban midiendo GNOME, y sólo se vio el día que GNOME dejó de
+  // parecerse a ella.
+  if (sistema === "base") {
+    p.sistema = "";
+    p.escritorio = "";
+    p.marco = DEL_SISTEMA;
+  }
   if (sistema === "darwin" || sistema === "windows" || sistema === "linux") {
     p.sistema = sistema;
     // Y con el sistema viaja su marco: pedir Windows sin su barra de título

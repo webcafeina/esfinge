@@ -351,3 +351,113 @@
   --anillo: rgb(242 193 78 / 0.45);
   --relleno-tenue: rgb(242 193 78 / 0.22);
 }
+
+:root[data-sistema="linux"] {
+  --lienzo: #fafafa;
+  --suave: #f0f0f0;
+  --tarjeta: #ffffff;
+  --elevada: #e7e7e7;
+  --filete: #e0e0e0;
+  --filete-fuerte: #757575;
+  --tinta: #303030;
+  --cuerpo: #3d3d3d;
+  --apagado: #5a5a5a;
+  --relleno: #f2c14e;
+  --relleno-vivo: #dfb248;
+  --sobre-acento: #2b2b31;
+  --acento: #2b2b31;
+  --exito: #166722;
+  --aviso: #795300;
+  --error: #b22132;
+  --barra: #ebebeb;
+  --barra-encima: #d8d8d8;
+  --campo: #ebebeb;
+  --boton: #e7e7e7;
+  --boton-encima: #dedede;
+  --tinta-icono: #2b2b31;
+  --oro-lateral: #937630;
+  --tinte-icono-1: #d6e2f0;
+  --tinte-icono-2: #d3e8e2;
+  --tinte-icono-3: #dde8d2;
+  --tinte-icono-4: #f0e6cf;
+  --tinte-icono-5: #f2ddd4;
+  --tinte-icono-6: #f0dae2;
+  --tinte-icono-7: #e4dcf0;
+  --tinte-icono-8: #d3e4ec;
+  --anillo: rgb(242 193 78 / 0.35);
+  --relleno-tenue: rgb(242 193 78 / 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-sistema="linux"]:not([data-tema="claro"]) {
+    --lienzo: #2c2c2c;
+    --suave: #323232;
+    --tarjeta: #3a3a3a;
+    --elevada: #414141;
+    --filete: #474747;
+    --filete-fuerte: #a0a0a0;
+    --tinta: #f7f7f7;
+    --cuerpo: #e4e4e4;
+    --apagado: #c0c0c0;
+    --relleno: #f2c14e;
+    --relleno-vivo: #dfb248;
+    --sobre-acento: #2b2b31;
+    --acento: #ffffff;
+    --exito: #97ca9e;
+    --aviso: #e1be6a;
+    --error: #ecb0b7;
+    --barra: #393939;
+    --barra-encima: #4a4a4a;
+    --campo: #3e3e3e;
+    --boton: #414141;
+    --boton-encima: #4d4d4d;
+    --tinta-icono: #ebebf0;
+    --oro-lateral: #f2c14e;
+    --tinte-icono-1: #2d3b4d;
+    --tinte-icono-2: #2a423b;
+    --tinte-icono-3: #38442e;
+    --tinte-icono-4: #493d2b;
+    --tinte-icono-5: #4a342b;
+    --tinte-icono-6: #48303c;
+    --tinte-icono-7: #3a3350;
+    --tinte-icono-8: #2b4149;
+    --anillo: rgb(242 193 78 / 0.45);
+    --relleno-tenue: rgb(242 193 78 / 0.22);
+  }
+}
+
+:root[data-sistema="linux"][data-tema="oscuro"] {
+  --lienzo: #2c2c2c;
+  --suave: #323232;
+  --tarjeta: #3a3a3a;
+  --elevada: #414141;
+  --filete: #474747;
+  --filete-fuerte: #a0a0a0;
+  --tinta: #f7f7f7;
+  --cuerpo: #e4e4e4;
+  --apagado: #c0c0c0;
+  --relleno: #f2c14e;
+  --relleno-vivo: #dfb248;
+  --sobre-acento: #2b2b31;
+  --acento: #ffffff;
+  --exito: #97ca9e;
+  --aviso: #e1be6a;
+  --error: #ecb0b7;
+  --barra: #393939;
+  --barra-encima: #4a4a4a;
+  --campo: #3e3e3e;
+  --boton: #414141;
+  --boton-encima: #4d4d4d;
+  --tinta-icono: #ebebf0;
+  --oro-lateral: #f2c14e;
+  --tinte-icono-1: #2d3b4d;
+  --tinte-icono-2: #2a423b;
+  --tinte-icono-3: #38442e;
+  --tinte-icono-4: #493d2b;
+  --tinte-icono-5: #4a342b;
+  --tinte-icono-6: #48303c;
+  --tinte-icono-7: #3a3350;
+  --tinte-icono-8: #2b4149;
+  --anillo: rgb(242 193 78 / 0.45);
+  --relleno-tenue: rgb(242 193 78 / 0.22);
+}

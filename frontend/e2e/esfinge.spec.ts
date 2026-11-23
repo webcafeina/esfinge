@@ -844,7 +844,11 @@ test("la versión va al fondo, debajo de Ajustes", async ({ page }) => {
 
 test("sobre el oro de la fila activa escribe la piedra, no el blanco", async ({ page }) => {
   const errores = vigilarConsola(page);
-  await page.goto("/");
+  // **La base, por su nombre.** Lo que se mide es la regla de la ADR 0021 —oro
+  // de relleno y piedra encima—, y eso es de la base y de Windows; en macOS y en
+  // GNOME la fila es gris y el oro va en el icono. Sin pedirla, esto medía lo
+  // que contestara Go, que en esta máquina es GNOME.
+  await page.goto("/?sistema=base");
 
   // El instinto de cualquiera que toque esto es poner texto blanco encima, que
   // es lo que hacía cuando el acento era el azul del sistema. Sobre el oro, el
@@ -866,6 +870,15 @@ test("sobre el oro de la fila activa escribe la piedra, no el blanco", async ({ 
   expect(errores, errores.join(" | ")).toEqual([]);
 });
 
+// **«La base» se pide por su nombre** (`?sistema=base`), y eso es nuevo.
+//
+// Antes era la cadena vacía, o sea «no pidas nada» — y en esta máquina
+// `Plataforma()` contesta `linux`, así que **ese caso llevaba midiendo GNOME** y
+// nadie lo sabía. Sólo se vio el día que GNOME dejó de parecerse a la base: falló
+// «la base» enseñando un gris de Yaru. La base es un aspecto de verdad —es lo que
+// se ve si Go no contesta, y lo que importa el panel de la extensión—, así que lo
+// que faltaba era poder pedirla.
+//
 // **Ningún botón cambia de tamaño al pasar el puntero.**
 //
 // Es una familia entera, no un caso: una hoja de sistema viste un botón por su clase
@@ -878,11 +891,11 @@ test("sobre el oro de la fila activa escribe la piedra, no el blanco", async ({ 
 // Se mide **cada botón visible de la pantalla**, no uno elegido a mano: lo que falla
 // aquí es siempre el que nadie estaba mirando. Y se mira el alto **y el ancho**,
 // porque un relleno repetido en el estado hace lo mismo a lo ancho.
-for (const sistema of ["", "windows", "darwin", "linux"]) {
-  const nombre = sistema || "la base";
+for (const sistema of ["base", "windows", "darwin", "linux"]) {
+  const nombre = sistema === "base" ? "la base" : sistema;
   test(`ningún botón cambia de tamaño al pasar el puntero en ${nombre}`, async ({ page }) => {
     const errores = vigilarConsola(page);
-    await page.goto(sistema ? `/?sistema=${sistema}` : "/");
+    await page.goto(`/?sistema=${sistema}`);
     await expect(page.locator(".lateral")).toBeVisible();
 
     // **Y uno de prueba en la barra**, con las dos clases que se dan a la vez en la
@@ -947,12 +960,12 @@ for (const sistema of ["", "windows", "darwin", "linux"]) {
 // Se mide **el fondo de la barra lateral contra el de la ventana**, que es la pregunta
 // de verdad; mirar la altura de `.ventana` habría pasado en verde, porque ésa siempre
 // medía 680.
-for (const sistema of ["", "windows", "darwin", "linux"]) {
-  const nombre = sistema || "la base";
+for (const sistema of ["base", "windows", "darwin", "linux"]) {
+  const nombre = sistema === "base" ? "la base" : sistema;
   test(`la ventana llega al fondo en ${nombre}`, async ({ page }) => {
     const errores = vigilarConsola(page);
     await page.setViewportSize({ width: 980, height: 680 });
-    await page.goto(sistema ? `/?sistema=${sistema}` : "/");
+    await page.goto(`/?sistema=${sistema}`);
     await expect(page.locator(".lateral")).toBeVisible();
 
     const medidas = await page.evaluate(() => {
@@ -986,13 +999,16 @@ for (const sistema of ["", "windows", "darwin", "linux"]) {
 // lo que se afirma es «la marca está en la barra lateral», mirando en cada sistema
 // donde le toca — y en macOS se comprueba además que la fila **no** es de oro, que es
 // la mitad que se podría perder sin que nadie se enterara.
-for (const sistema of ["", "windows", "darwin", "linux"]) {
-  const nombre = sistema || "la base";
-  const enLosIconos = sistema === "darwin";
+for (const sistema of ["base", "windows", "darwin", "linux"]) {
+  const nombre = sistema === "base" ? "la base" : sistema;
+  // **En macOS y en GNOME el oro va en los iconos y la fila es gris**: en macOS
+  // es la gramática de macOS 27 (ADR 0068) y en GNOME, que una barra lateral de
+  // libadwaita no se colorea (ADR 0070). En Windows y en la base, la fila.
+  const enLosIconos = sistema === "darwin" || sistema === "linux";
 
   test(`la marca está en la barra lateral en ${nombre}`, async ({ page }) => {
     const errores = vigilarConsola(page);
-    await page.goto(sistema ? `/?sistema=${sistema}` : "/");
+    await page.goto(`/?sistema=${sistema}`);
 
     const activa = page.locator('.lateral nav button[aria-current="page"]');
     await expect(activa).toBeVisible();
@@ -1045,7 +1061,11 @@ for (const sistema of ["", "windows", "darwin", "linux"]) {
 
 test("el foco de un campo se sigue viendo con el acento dorado", async ({ page }) => {
   const errores = vigilarConsola(page);
-  await page.goto("/");
+  // **La base, pedida por su nombre.** Lo que se mide aquí es el filete con halo
+  // de la base (ADR 0021); cada sistema marca el foco a su manera —en GNOME es un
+  // contorno de 2 px—, y sin pedirla esto medía lo que contestara Go, que en esta
+  // máquina es GNOME.
+  await page.goto("/?sistema=base");
 
   // **Esta prueba existe por un fallo que casi se cuela.** «make contraste» mide
   // parejas de tokens, no sitios: con el filete de foco pintado del oro habría

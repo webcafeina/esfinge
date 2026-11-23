@@ -71,6 +71,14 @@ CUALES = {
     "descargar": "arrow_download",
     "navegador": "globe",
     "servidor": "server",
+    # Los tres de abajo nacieron después de esta fase —las dos pestañas de
+    # Cifrar y la de Apariencia— y se quedaron fuera, así que en Windows esas
+    # filas enseñaban unos iconos de Fluent y otros dibujados a mano. Se vio al
+    # cosechar los de Yaru, comparando los nombres que usa la interfaz con los
+    # dos juegos.
+    "texto": "text_description",
+    "ficheros": "document_multiple",
+    "tema": "dark_theme",
 }
 
 # Los dos tamaños de Fluent que se usan: 16 en las filas y 20 en las tarjetas.
