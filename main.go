@@ -19,10 +19,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 
 	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
@@ -38,6 +40,25 @@ import (
 var version = "dev"
 
 func main() {
+	// **Y si algo entra en pánico aquí, que al menos lo diga.**
+	//
+	// Una aplicación con ventana no tiene consola: en Windows, lo que Go escribe al
+	// morir **no lo lee nadie**, así que un pánico se ve como medio segundo de cursor
+	// y nada más. Le pasó al cliente de la 2.72.0 a la 2.76.0 y costó dos días
+	// acotarlo, porque ni siquiera el Visor de eventos apunta nada —un pánico de Go
+	// no es un fallo de aplicación de Windows—.
+	//
+	// Esto no arregla el pánico: lo **deja escrito**, con su pila, al lado de las
+	// preferencias. No cubre a quien entre en pánico en otra gorutina —eso no se
+	// puede recoger desde aquí— pero sí todo lo que pase en el camino de arranque,
+	// que es donde duele.
+	defer func() {
+		if r := recover(); r != nil {
+			apuntarElArranqueFallido(fmt.Errorf("pánico: %v\n%s", r, debug.Stack()))
+			panic(r)
+		}
+	}()
+
 	escritorio := app.NuevoEscritorio()
 	aplicacion := app.Nueva(version, escritorio)
 
@@ -100,6 +121,17 @@ func main() {
 
 		AssetServer: &assetserver.Options{Assets: interfaz.Recursos},
 
+		// **Y con `ESFINGE_DIAGNOSTICO` puesto, Wails cuenta lo que hace.**
+		//
+		// No está encendido nunca de serie: escribe mucho y no le importa a nadie
+		// que no esté arreglando algo. Existe porque hubo un arranque que no se
+		// podía mirar desde aquí —la ventana no aparecía, el proceso seguía vivo y
+		// no había ni error ni pánico— y lo único que faltaba era saber **por dónde
+		// se quedaba**. Es la regla de siempre: antes de razonar sobre la causa,
+		// ponerle voz al tramo.
+		Logger:   registroDeDiagnostico(),
+		LogLevel: nivelDeDiagnostico(),
+
 		// Transparente para que se vea el vidrio de detrás. Donde no hay vidrio
 		// esto no se llega a poner: ver más abajo.
 		BackgroundColour: fondoDeLaVentana(vidrio),
@@ -113,6 +145,21 @@ func main() {
 		},
 
 		OnStartup: func(c context.Context) {
+			// **Y esto tampoco puede tumbar la ventana en silencio.**
+			//
+			// Wails llama aquí sin red: lo que entre en pánico dentro mata el
+			// proceso, y como una aplicación con ventana no tiene consola, lo que
+			// se ve es medio segundo de cursor y nada. Dos días costó acotar uno
+			// así. No se recoge para seguir como si nada —lo que falle, falla— sino
+			// para **dejarlo escrito** con su pila y que la ventana llegue a
+			// abrirse: con la ventana delante se puede contar lo que pasa; sin
+			// ella no se puede contar nada.
+			defer func() {
+				if r := recover(); r != nil {
+					apuntarElArranqueFallido(fmt.Errorf("pánico al arrancar: %v\n%s", r, debug.Stack()))
+				}
+			}()
+
 			ctx = c
 			escritorio.Arrancar(c)
 			aplicacion.Arrancar(c)
@@ -237,4 +284,31 @@ func fondoDeLaVentana(vidrio bool) *options.RGBA {
 		return nil
 	}
 	return options.NewRGBA(0, 0, 0, 0)
+}
+
+// registroDeDiagnostico devuelve a dónde escribe Wails lo que hace.
+//
+// Sin la variable puesta, al sitio de siempre —que en una aplicación con ventana
+// es ninguna parte—. Con ella, a un fichero al lado de las preferencias, que es
+// donde ya mira quien arregla.
+func registroDeDiagnostico() logger.Logger {
+	if os.Getenv("ESFINGE_DIAGNOSTICO") == "" {
+		return nil
+	}
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return nil
+	}
+	carpeta := filepath.Join(dir, "Esfinge")
+	if err := os.MkdirAll(carpeta, 0o700); err != nil {
+		return nil
+	}
+	return logger.NewFileLogger(filepath.Join(carpeta, "diagnostico.log"))
+}
+
+func nivelDeDiagnostico() logger.LogLevel {
+	if os.Getenv("ESFINGE_DIAGNOSTICO") == "" {
+		return 0
+	}
+	return logger.TRACE
 }
