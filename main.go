@@ -85,6 +85,15 @@ func main() {
 	// luz el color lo tiene que poner el CSS. Eso es lo que la interfaz consulta
 	// con Vidrio(): sin él dejaría la ventana vacía justo donde no hay efecto.
 	vidrio := runtime.GOOS == "darwin" || runtime.GOOS == "windows"
+	// **Y con `ESFINGE_SIN_VIDRIO` puesto, la ventana se pide opaca.**
+	//
+	// No es sólo para diagnosticar: una ventana translúcida la compone el sistema,
+	// y donde eso no funcione —una máquina virtual sin aceleración, un controlador
+	// raro— lo que queda es una ventana que no se ve. Poder pedirla opaca es la
+	// salida, y no tenerla deja a alguien sin programa y sin nada que probar.
+	if os.Getenv("ESFINGE_SIN_VIDRIO") != "" {
+		vidrio = false
+	}
 	app.MarcarVidrio(aplicacion, vidrio)
 
 	// Y en qué escritorio, que en Linux no lo dice el sistema: GNOME y KDE
@@ -209,10 +218,15 @@ func main() {
 			// invisible dejaría de caer sobre el botón. Y el nombre de la clase
 			// es el de abajo, que es lo único por lo que Wails deja encontrar su
 			// ventana: la v2 no da su identificador por ninguna parte.
-			marco := app.MarcoDe(runtime.GOOS)
-			ventana.Montar(claseDeLaVentana, marco.Alto, marco.AnchoBoton, func(estado string) {
-				escritorio.Avisar(app.EventoBotonMaximizar, estado)
-			})
+			// Con `ESFINGE_SIN_SNAP` no se monta: es Win32 por nombre, y aquí no
+			// hay ningún Windows donde ejecutarlo, así que tiene que poder
+			// descartarse desde fuera sin recompilar.
+			if os.Getenv("ESFINGE_SIN_SNAP") == "" {
+				marco := app.MarcoDe(runtime.GOOS)
+				ventana.Montar(claseDeLaVentana, marco.Alto, marco.AnchoBoton, func(estado string) {
+					escritorio.Avisar(app.EventoBotonMaximizar, estado)
+				})
+			}
 		},
 
 		Bind: []any{aplicacion},
@@ -253,7 +267,7 @@ func main() {
 			// **Con nombre propio**, que es lo único por lo que se puede volver a
 			// encontrar esta ventana desde fuera: hace falta para colgarle encima
 			// la del menú de Snap, y Wails v2 no expone su identificador.
-			WindowClassName: claseDeLaVentana,
+			WindowClassName: claseDeLaVentanaSegunElEntorno(),
 
 			// Mica es el equivalente en Windows 11: toma el fondo de escritorio,
 			// muy desenfocado y quieto. En Windows 10 no existe y la ventana se
@@ -348,4 +362,16 @@ func nivelDeDiagnostico() logger.LogLevel {
 		return 0
 	}
 	return logger.TRACE
+}
+
+// claseDeLaVentanaSegunElEntorno deja quitar el nombre propio de la clase.
+//
+// Con `ESFINGE_SIN_CLASE` puesto, Wails usa el suyo de siempre. Sólo sirve para
+// descartar: sin nombre propio no se puede encontrar la ventana desde fuera y el
+// menú de Snap deja de funcionar.
+func claseDeLaVentanaSegunElEntorno() string {
+	if os.Getenv("ESFINGE_SIN_CLASE") != "" {
+		return ""
+	}
+	return claseDeLaVentana
 }
