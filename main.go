@@ -129,8 +129,15 @@ func main() {
 		// no había ni error ni pánico— y lo único que faltaba era saber **por dónde
 		// se quedaba**. Es la regla de siempre: antes de razonar sobre la causa,
 		// ponerle voz al tramo.
-		Logger:   registroDeDiagnostico(),
-		LogLevel: nivelDeDiagnostico(),
+		// **Las dos perillas, y no una.** En una compilación de producción Wails
+		// no mira `LogLevel` sino `LogLevelProduction`, que de serie son sólo
+		// errores — así que poner la primera dejaba el registro mudo y el fichero
+		// sin crear. Se escribió así la primera vez y el diagnóstico no diagnosticó
+		// nada: la herramienta de medir también necesita que alguien compruebe que
+		// mide.
+		Logger:             registroDeDiagnostico(),
+		LogLevel:           nivelDeDiagnostico(),
+		LogLevelProduction: nivelDeDiagnostico(),
 
 		// Transparente para que se vea el vidrio de detrás. Donde no hay vidrio
 		// esto no se llega a poner: ver más abajo.
@@ -303,7 +310,15 @@ func registroDeDiagnostico() logger.Logger {
 	if err := os.MkdirAll(carpeta, 0o700); err != nil {
 		return nil
 	}
-	return logger.NewFileLogger(filepath.Join(carpeta, "diagnostico.log"))
+	l := logger.NewFileLogger(filepath.Join(carpeta, "diagnostico.log"))
+
+	// **Y se escribe una línea aquí mismo, antes de nada.**
+	//
+	// Para que «no hay fichero» signifique una sola cosa. Sin ella significa dos
+	// —o el programa no llegó aquí, o llegó y no tenía nada que contar— y se tarda
+	// una vuelta entera en saber cuál, que es lo que acaba de pasar.
+	l.Info("Esfinge " + version + " · arrancando · " + runtime.GOOS + "/" + runtime.GOARCH)
+	return l
 }
 
 func nivelDeDiagnostico() logger.LogLevel {
