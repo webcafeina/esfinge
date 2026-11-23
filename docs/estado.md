@@ -20,6 +20,17 @@ ninguno de los dos, así que en Windows esas filas mezclaban dos juegos.
 —comparar control por control con la hoja de Apolo antes de escribir— ahorró la mitad; la otra mitad
 salió de sacar la captura y mirarla.
 
+**Y la barra de menús se fue de GNOME** ([ADR 0071](adr/0071-el-menu-en-gnome.md)), que es lo que
+el cliente vio al probar la 2.77.0 en su Ubuntu. En su sitio, un botón en la cabecera con los dos
+enlaces de ayuda —lo único que no estaba en ninguna otra parte—, y los atajos de Ctrl+1 a Ctrl+6
+repuestos por la ventana. **Windows queda abierto a propósito**: allí el menú es nativo de Win32 y la
+ventana es `Frameless`, así que no se sabe si llega a dibujarse.
+
+**Y de paso, la puerta cazó una carrera de datos de verdad**, que no era de esto: el cerrojo de
+`llavePrincipal` protegía el campo y no los bytes, así que copiar la clave de la bóveda personal
+mientras otra goroutine la borraba se llevaba **media clave a ceros**. Arreglada, con una prueba que
+mira la consecuencia y no la bandera del detector —no se reproduce a voluntad—.
+
 **Y tres cosas las eligió el cliente sobre capturas**: las pestañas de Ajustes **en una fila con el
 glifo encima** —descartó ensanchar la ventana—, `star-new` para «Generar» y los grupos de Ajustes sin
 glifo. Están en la ADR 0070.

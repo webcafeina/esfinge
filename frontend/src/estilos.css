@@ -2296,6 +2296,102 @@ select {
   background: var(--lienzo);
 }
 
+/* ------------------------------------------- el menú de la ventana (ADR 0071)
+ *
+ * **Sólo se ve donde el sistema no pone barra de menús.** Quién la pone lo
+ * decide Go (`app.MenuDelSistema`) y llega como `data-menu` en la raíz; aquí
+ * sólo se obedece. Va en el marcado de los cuatro sistemas por lo mismo que la
+ * barra de título: montarlo sólo donde se usa rompería que el marcado sea el
+ * mismo y la simulación por URL, que cambia de aspecto sin recargar.
+ *
+ * Escondido con `display: none` no está en el árbol de accesibilidad, no entra
+ * en el orden de tabulación y ninguna prueba lo encuentra: donde no se usa, no
+ * existe. */
+:root[data-menu="sistema"] .menu-principal {
+  display: none;
+}
+
+.menu-principal {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+/* **Plano**, como cualquier orden de una barra de herramientas: el relleno sale
+ * al pasar por encima y no antes. Hay que decirlo porque la regla general de
+ * `button` le pone fondo a todo lo que no lo declare. */
+.boton-menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--cuerpo);
+}
+
+.boton-menu:hover:not(:disabled),
+.boton-menu[aria-expanded="true"] {
+  background: var(--barra-encima);
+  color: var(--tinta);
+}
+
+.boton-menu svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* El emergente cuelga del botón y se pinta por encima de todo lo de la pantalla;
+ * **con fondo propio**, que bajo el vidrio del sistema lo que no declara fondo
+ * enseña el escritorio. */
+.emergente-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  min-width: 232px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--espacio-1);
+  border-radius: var(--radio);
+  background: var(--tarjeta);
+  box-shadow: 0 1px 5px 1px rgb(0 0 0 / 0.18), 0 0 0 1px var(--filete);
+}
+
+/* Las entradas son botones y enlaces, y tienen que verse iguales: la diferencia
+ * —que uno sale al navegador— la dice el rótulo, no la forma. */
+.emergente-menu button,
+.emergente-menu a {
+  height: auto;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--radio-chico);
+  background: transparent;
+  box-shadow: none;
+  color: var(--tinta);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.emergente-menu button:hover:not(:disabled),
+.emergente-menu a:hover {
+  background: var(--barra-encima);
+}
+
+.emergente-menu hr {
+  border: 0;
+  border-top: var(--linea, 1px) solid var(--filete);
+  margin: var(--espacio-1) 6px;
+}
+
 /* ------------------------------------------------- cada sistema, a lo suyo */
 
 /* **Y aquí ya no queda nada, que es el cambio de significado de esta fase.**

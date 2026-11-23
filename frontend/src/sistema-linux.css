@@ -420,6 +420,42 @@
   background: var(--sutil-pulsado);
 }
 
+/* **El botón del menú principal** (ADR 0071): plano y de 34, como las demás
+ * órdenes de una AdwHeaderBar, y el emergente con el radio y la sombra de un
+ * GtkPopover. En GNOME este botón es lo que sustituye a la barra de menús, que
+ * allí no lleva ninguna aplicación. */
+:root[data-sistema="linux"] .boton-menu {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radio);
+  color: var(--tinta);
+}
+
+:root[data-sistema="linux"] .boton-menu:hover:not(:disabled),
+:root[data-sistema="linux"] .boton-menu[aria-expanded="true"] {
+  background: var(--sutil-encima);
+}
+
+:root[data-sistema="linux"] .boton-menu:active:not(:disabled) {
+  background: var(--sutil-pulsado);
+}
+
+:root[data-sistema="linux"] .emergente-menu {
+  padding: 6px;
+  border-radius: var(--radio-grande);
+  background: var(--lienzo);
+  box-shadow:
+    0 1px 5px 1px rgb(0 0 0 / 0.09),
+    0 2px 14px 3px rgb(0 0 0 / 0.05),
+    0 0 0 1px var(--filete);
+}
+
+:root[data-sistema="linux"] .emergente-menu button,
+:root[data-sistema="linux"] .emergente-menu a {
+  border-radius: 6px;
+  font-weight: 400;
+}
+
 /* Con la línea de la cabecera, el contenido necesita separarse de ella. En
  * macOS no hace falta porque la barra y el contenido son la misma superficie. */
 :root[data-sistema="linux"] .contenido {

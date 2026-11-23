@@ -534,3 +534,51 @@ func TestElMarcoEsElMismoEnLosDosLados(t *testing.T) {
 		}
 	}
 }
+
+// TestElMenuEsElMismoEnLosDosLados compara la tabla MENUS de `plataforma.ts` con
+// `MenuDelSistema`.
+//
+// Es la hermana de la de arriba y está por lo mismo: la regla vive en Go, que la
+// necesita antes de crear la ventana, y la simulación por URL necesita una copia
+// para que pedir el aspecto de GNOME traiga también **su botón de menú**. Con las
+// dos separadas, lo que pasa no es que falle nada: pasa que una ventana sale con
+// dos menús —el del sistema y el de la cabecera— o sin ninguno, y las capturas
+// sobre las que se decide el aspecto enseñan lo que no es.
+func TestElMenuEsElMismoEnLosDosLados(t *testing.T) {
+	fuente, err := os.ReadFile(filepath.Join("..", "..", "frontend", "src", "plataforma.ts"))
+	if err != nil {
+		t.Fatalf("no se pudo leer plataforma.ts: %v", err)
+	}
+
+	// La tabla, entera: se acota al bloque de MENUS para no confundirla con
+	// ninguna otra, y **se exigen los tres**, que es lo que impide que borrar una
+	// entrada deje la prueba en verde con las otras dos.
+	bloque := regexp.MustCompile(`(?s)const MENUS: Record<string, boolean> = \{(.*?)\};`).
+		FindStringSubmatch(string(fuente))
+	if bloque == nil {
+		t.Fatal("plataforma.ts ya no declara la tabla MENUS como se espera.\n" +
+			"Si se ha renombrado, esta prueba tiene que seguirla: sin ella, las dos\n" +
+			"reglas se separan sin que nadie se entere.")
+	}
+
+	encontrados := map[string]bool{}
+	for _, m := range regexp.MustCompile(`(?m)^\s*(darwin|windows|linux):\s*(true|false),`).
+		FindAllStringSubmatch(bloque[1], -1) {
+		encontrados[m[1]] = m[2] == "true"
+	}
+
+	for _, sistema := range []string{"darwin", "windows", "linux"} {
+		leido, hay := encontrados[sistema]
+		if !hay {
+			t.Fatalf("plataforma.ts no dice si %q lleva barra de menús.\n"+
+				"La tabla MENUS tiene que tener los tres: si falta uno, pedir ese aspecto\n"+
+				"por la URL traería el de esta máquina y la captura mentiría.", sistema)
+		}
+		if quiere := MenuDelSistema(sistema); leido != quiere {
+			t.Errorf("si %q lleva barra de menús no es lo mismo en los dos lados:\n"+
+				"  Go (app.MenuDelSistema): %v\n"+
+				"  plataforma.ts (MENUS):   %v\n"+
+				"Manda Go, que es quien se lo pasa a Wails al arrancar.", sistema, quiere, leido)
+		}
+	}
+}

@@ -40,10 +40,28 @@ const MARCOS: Record<string, Marco> = {
   linux: DEL_SISTEMA,
 };
 
+/**
+ * Lo mismo que `app.MenuDelSistema` en Go, **y solo para la simulación por URL**.
+ *
+ * Mismo trato que `MARCOS`: la regla vive en Go, que la necesita antes de crear
+ * la ventana, y aquí hace falta una copia para que pedir el aspecto de otro
+ * sistema traiga también si lleva barra de menús —si no, el botón de la cabecera
+ * saldría en todas las capturas o en ninguna—. Lo vigila
+ * `TestElMarcoEsElMismoEnLosDosLados`, que lee este fichero.
+ */
+const MENUS: Record<string, boolean> = {
+  darwin: true,
+  windows: true,
+  linux: false,
+};
+
 /** Lo que se sabe de la plataforma antes de preguntar, que es la base neutra. */
 const SIN_RESPUESTA: Plataforma = {
   sistema: "",
   escritorio: "",
+  // Sin respuesta no hay barra de menús, así que la ventana se dibuja el botón:
+  // más vale que esté de sobra a que no haya forma de llegar a la ayuda.
+  menuDelSistema: false,
   vidrio: false,
   marco: DEL_SISTEMA,
 };
@@ -133,12 +151,16 @@ function conLaURL(real: Plataforma): Plataforma {
     p.sistema = "";
     p.escritorio = "";
     p.marco = DEL_SISTEMA;
+    p.menuDelSistema = false;
   }
   if (sistema === "darwin" || sistema === "windows" || sistema === "linux") {
     p.sistema = sistema;
     // Y con el sistema viaja su marco: pedir Windows sin su barra de título
     // sería retratar media decisión.
     p.marco = MARCOS[sistema];
+    // Y con el sistema viaja también si lleva barra de menús: pedir GNOME sin
+    // su botón de cabecera sería retratar media decisión, igual que el marco.
+    p.menuDelSistema = MENUS[sistema];
   }
   if (escritorio === "gnome" || escritorio === "kde" || escritorio === "otro") p.escritorio = escritorio;
   if (vidrio) p.vidrio = vidrio === "si";
@@ -158,6 +180,12 @@ function ponerEnLaRaiz(p: Plataforma): void {
 
   if (p.vidrio) raiz.dataset.vidrio = "si";
   else delete raiz.dataset.vidrio;
+
+  // **Quién lleva el menú**, que lo decide Go (ver `app.MenuDelSistema`). De
+  // esto cuelga que el botón de la cabecera se vea o no, así que va como
+  // atributo y no como una pregunta suelta: la hoja de cada sistema lo esconde
+  // sin saber nada más, y la simulación por URL cambia de aspecto sin recargar.
+  raiz.dataset.menu = p.menuDelSistema ? "sistema" : "propio";
 
   // **El marco, con sus medidas puestas como propiedades de CSS.** Las decide Go
   // (ver `app.MarcoDe`) y entran aquí para que la hoja de cada sistema no tenga

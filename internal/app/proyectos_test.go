@@ -1,10 +1,12 @@
 package app
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -871,5 +873,69 @@ func TestLaIdentidadParaCompartirEsSiempreLaDeLaPersonal(t *testing.T) {
 	}
 	if deVuelta.Huella != mia.Huella {
 		t.Fatalf("al volver, la huella de la cuenta ha cambiado a %s", deVuelta.Huella)
+	}
+}
+
+// TestLaClaveDeLaPersonalNoSeCopiaMientrasSeBorra fuerza la carrera que el
+// detector cazó en el paseo de un acceso entre dos cuentas.
+//
+// # Qué pasaba
+//
+// `llaveDeLaPrincipal` sacaba **la referencia** al búfer con el cerrojo puesto y
+// lo copiaba después, ya sin él; `ponerActivaDe` y `olvidarLaPrincipal` hacían lo
+// contrario —se quedaban la vieja dentro y la ponían a ceros fuera—. Entre las
+// dos cosas cabe la otra goroutine, y lo que se lleva quien copia es **media
+// clave a ceros**. Pasa de verdad: la sincronización retira una compartida y
+// vuelve a la personal mientras la ventana está haciendo lo mismo (`compartida.go`).
+//
+// # Por qué esta prueba mira los bytes y no sólo el detector
+//
+// Porque con `-race` la carrera es **rarísima**: saltó una vez en una tanda
+// entera y no se reprodujo en doce pasadas seguidas, ni con el arreglo ni sin
+// él. Una prueba que dependa de que el detector se despierte no prueba nada.
+// Ésta mira **la consecuencia**: la clave es toda `0xAB`, así que un cero en una
+// copia no vacía es una clave rota, y eso se ve con o sin detector.
+func TestLaClaveDeLaPersonalNoSeCopiaMientrasSeBorra(t *testing.T) {
+	a := &App{}
+	llave := bytes.Repeat([]byte{0xAB}, 43)
+
+	var g sync.WaitGroup
+	roto := make(chan int, 1)
+	for i := 0; i < 8; i++ {
+		g.Add(2)
+		// Quien conmuta: entra en un proyecto y vuelve, que es lo que borra la
+		// clave vieja.
+		go func() {
+			defer g.Done()
+			for j := 0; j < 400; j++ {
+				a.ponerActiva("proyecto", "Uno", llave)
+				a.ponerActiva("", "", nil)
+			}
+		}()
+		// Quien la copia para conmutar a otra bóveda.
+		go func() {
+			defer g.Done()
+			for j := 0; j < 400; j++ {
+				copia := a.llaveDeLaPrincipal()
+				for _, b := range copia {
+					if b == 0 {
+						select {
+						case roto <- j:
+						default:
+						}
+						return
+					}
+				}
+			}
+		}()
+	}
+	g.Wait()
+
+	select {
+	case <-roto:
+		t.Error("una copia de la clave de la personal salió con bytes a cero.\n" +
+			"Eso es otra goroutine sobrescribiendo el mismo búfer mientras se copiaba:\n" +
+			"la copia y el borrado tienen que hacerse **con el cerrojo puesto**, no después.")
+	default:
 	}
 }

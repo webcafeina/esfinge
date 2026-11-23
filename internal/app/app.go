@@ -271,6 +271,11 @@ type Plataforma struct {
 
 	// Marco: quién dibuja la barra de título de esta ventana. Ver MarcoDe.
 	Marco Marco `json:"marco"`
+
+	// MenuDelSistema: si esta ventana lleva barra de menús. Donde no la lleva, la
+	// interfaz pone el botón de menú en su cabecera y se queda con los atajos de
+	// Ctrl+1 a Ctrl+6, que colgaban de él. Ver MenuDelSistema.
+	MenuDelSistema bool `json:"menuDelSistema"`
 }
 
 // Marco dice quién dibuja la barra de título y, si la dibuja Esfinge, con qué
@@ -315,13 +320,37 @@ func MarcoDe(sistema string) Marco {
 	return Marco{}
 }
 
+// MenuDelSistema es **el único sitio** donde se decide si este sistema lleva una
+// barra de menús de aplicación.
+//
+// Lo lee `main.go` para pasarle —o no— el menú a Wails, que es una opción de
+// arranque, y lo lee la interfaz por `Plataforma` para saber si tiene que
+// dibujar el botón de menú y quedarse con los atajos de Ctrl+1 a Ctrl+6. Con la
+// regla escrita dos veces, una ventana acabaría con dos menús o sin ninguno.
+//
+// **En GNOME no, desde la ADR 0071.** Allí ninguna aplicación lleva barra de
+// menús: lo que hay es un botón en la cabecera, y la barra se reconocía como la
+// de una aplicación de GTK2. La ADR 0015 la montaba en los tres sistemas, y de
+// eso sólo se sostiene la mitad: el porqué —que los roles de Wails traen los
+// rótulos en inglés escritos a fuego— vale para macOS, que es donde el sistema
+// exige un menú, y no para decidir que los otros tengan uno.
+//
+// **Windows sigue teniéndola de momento**, y no por convicción: desde la ADR
+// 0066 su ventana es `Frameless` y el menú que pone Wails es nativo de Win32, así
+// que **no se sabe si llega a dibujarse**. Eso sólo se ve en un Windows, y se
+// decide cuando se pueda mirar.
+func MenuDelSistema(sistema string) bool {
+	return sistema != "linux"
+}
+
 // Plataforma la consulta la interfaz **antes de montarse**. Ver el tipo.
 func (a *App) Plataforma() Plataforma {
 	return Plataforma{
-		Sistema:    runtime.GOOS,
-		Escritorio: a.escritorio,
-		Vidrio:     a.vidrio,
-		Marco:      MarcoDe(runtime.GOOS),
+		Sistema:        runtime.GOOS,
+		Escritorio:     a.escritorio,
+		Vidrio:         a.vidrio,
+		Marco:          MarcoDe(runtime.GOOS),
+		MenuDelSistema: MenuDelSistema(runtime.GOOS),
 	}
 }
 

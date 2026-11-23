@@ -4932,6 +4932,16 @@ de ahí.
   proyecto corrida porque la regla general de botón pesaba más que `.abrir-proyecto`, el título
   descentrado 19 px por un relleno asimétrico, y tres iconos que a 16 px parecían distintos y en una
   rejilla a 48 eran la misma página. **Seis de siete arreglos salieron de mirar.**
+- **Y después de publicar la 2.77.0**, al probarla en su Ubuntu: **fuera la barra de menús**
+  ([ADR 0071](adr/0071-el-menu-en-gnome.md), que deroga media 0015). En su sitio, un botón en la
+  cabecera con los dos enlaces de ayuda —lo único que no estaba en ninguna otra parte— y los atajos
+  de Ctrl+1 a Ctrl+6 repuestos por la ventana. Elegido sobre capturas entre tres opciones. Windows
+  queda abierto a propósito: allí el menú es nativo de Win32 y la ventana es `Frameless`.
+- **La puerta cazó una carrera de datos** que no venía de ahí: el cerrojo de `llavePrincipal`
+  protegía el campo y no los bytes, y copiar la clave mientras otra goroutine la borraba se llevaba
+  **media clave a ceros**. Lo que costó fue probarlo: **no se reproduce a voluntad** —saltó una vez y
+  no volvió en doce pasadas, ni con el arreglo ni sin él—, así que la prueba mira **la consecuencia**
+  (la clave es toda `0xAB`; un cero es una clave rota) y no la bandera del detector.
 - **Queda abierto**: nada de esto se ha visto en una Ubuntu (→ `deuda.md`), el recorrido de capturas
   se queda en la bienvenida a veces (→ `deuda.md`), y **lo de Windows sigue sin resolver y sin
   publicar**.

@@ -13,7 +13,20 @@ import (
 	"github.com/webcafeina/esfinge/internal/app"
 )
 
-// menuEnEspanol arma la barra de menús de los tres sistemas.
+// laBarraDeMenus devuelve el menú **si este sistema lleva uno**, y nil si no.
+//
+// Wails acepta `Menu: nil` y entonces no dibuja ninguna barra. Quién la lleva lo
+// decide `app.MenuDelSistema`, que es el mismo sitio del que lo aprende la
+// interfaz: con la regla escrita dos veces, una ventana acabaría con dos menús
+// —el del sistema y el botón de la cabecera— o sin ninguno.
+func laBarraDeMenus(ctx func() context.Context, aplicacion *app.App) *menu.Menu {
+	if !app.MenuDelSistema(runtime.GOOS) {
+		return nil
+	}
+	return menuEnEspanol(ctx, aplicacion)
+}
+
+// menuEnEspanol arma la barra de menús de los sistemas que llevan una.
 //
 // **Por qué está escrito a mano y no se usan los roles de Wails.** Wails trae
 // roles —AppMenu, EditMenu, WindowMenu— que producen los menús de siempre, pero

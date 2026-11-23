@@ -1,5 +1,12 @@
 import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
-import { esfinge, ventana, type Avance, type Fuerza, type Novedad } from "./puente";
+import {
+  esfinge,
+  ventana,
+  type Avance,
+  type Fuerza,
+  type Novedad,
+  type Orden,
+} from "./puente";
 import { ICONOS_FLUENT } from "./iconos-fluent";
 import { ICONOS_YARU, type NodoYaru } from "./iconos-yaru";
 import { esGnome, esWindows } from "./plataforma";
@@ -1285,6 +1292,114 @@ export function TarjetaAjuste({
  * arrastrar cuando hay más de un clic** (`e.detail !== 1`), que es justo el
  * hueco por donde esto cabe.
  */
+/**
+ * El menú principal de la ventana, en un botón de la cabecera (ADR 0071).
+ *
+ * # Dónde se ve
+ *
+ * **Donde este sistema no lleva barra de menús**, que hoy es GNOME. Lo decide Go
+ * —`app.MenuDelSistema`— y llega como `data-menu` en la raíz; el CSS lo esconde
+ * donde sobra. Va en el marcado de los cuatro sistemas por lo mismo que la barra
+ * de título: montarlo sólo donde se usa rompe que el marcado sea el mismo
+ * (ADR 0064) y la simulación por URL, que cambia de aspecto sin recargar.
+ *
+ * # Qué lleva dentro, y qué no
+ *
+ * Lo que la barra de menús tenía **y no está en ninguna otra parte**: los dos
+ * enlaces de ayuda. Y dos que sí están en Ajustes —buscar actualizaciones y
+ * Acerca de—, porque un menú principal de GNOME los lleva siempre y quien lo
+ * abre los busca ahí.
+ *
+ * **No lleva «Ver»**: esas seis entradas son la barra lateral, y repetirlas en un
+ * menú es decir dos veces lo mismo. Lo que sí había que reponer son sus atajos,
+ * y eso lo hace `App.tsx` con el teclado, no este menú.
+ *
+ * **Ni «Edición» ni «Ventana»**: en Linux los atajos de edición los resuelve el
+ * propio webview, y minimizar o ir a pantalla completa los tiene el gestor de
+ * ventanas.
+ */
+export function MenuPrincipal({ obedecer }: { obedecer: (o: Orden) => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const caja = useRef<HTMLDivElement>(null);
+
+  // Se cierra al pulsar fuera y con Escape, que es lo que hace cualquier menú.
+  // **El `pointerdown` va en captura**: con `click` normal, pulsar el propio
+  // botón cerraría y volvería a abrir en el mismo gesto.
+  useEffect(() => {
+    if (!abierto) return;
+    const fuera = (e: PointerEvent) => {
+      if (!caja.current?.contains(e.target as Node)) setAbierto(false);
+    };
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAbierto(false);
+    };
+    document.addEventListener("pointerdown", fuera, true);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", fuera, true);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [abierto]);
+
+  const hacer = (que: string) => () => {
+    setAbierto(false);
+    obedecer({ que, texto: "" });
+  };
+
+  return (
+    <div className="menu-principal" ref={caja}>
+      <button
+        type="button"
+        className="boton-menu"
+        aria-haspopup="menu"
+        aria-expanded={abierto}
+        aria-label="Menú principal"
+        title="Menú principal"
+        onClick={() => setAbierto((a) => !a)}
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="2" y="3.25" width="12" height="1.5" rx=".75" />
+          <rect x="2" y="7.25" width="12" height="1.5" rx=".75" />
+          <rect x="2" y="11.25" width="12" height="1.5" rx=".75" />
+        </svg>
+      </button>
+
+      {abierto && (
+        <div className="emergente-menu" role="menu">
+          <button type="button" role="menuitem" onClick={hacer("actualizar:buscar")}>
+            Buscar actualizaciones…
+          </button>
+          <button type="button" role="menuitem" onClick={hacer("ir:ajustes")}>
+            Acerca de Esfinge
+          </button>
+          <hr />
+          {/* Los enlaces salen al navegador del sistema: Wails intercepta un
+              «target=_blank» y lo abre fuera, que es lo que ya hacen los de la
+              bienvenida y el de la banda de versión nueva. */}
+          <a
+            role="menuitem"
+            href="https://github.com/webcafeina/esfinge"
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => setAbierto(false)}
+          >
+            Documentación de Esfinge
+          </a>
+          <a
+            role="menuitem"
+            href="https://github.com/webcafeina/esfinge/blob/main/docs/seguridad.md"
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => setAbierto(false)}
+          >
+            Qué protege y qué no
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BarraDeTitulo({
   panelAbierto,
   alMenu,

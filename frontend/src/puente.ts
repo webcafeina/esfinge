@@ -40,6 +40,9 @@ export type Plataforma = {
   vidrio: boolean;
   /** Quién dibuja la barra de título de esta ventana. */
   marco: Marco;
+
+  /** Si esta ventana lleva barra de menús. Lo decide Go: ver `app.MenuDelSistema`. */
+  menuDelSistema: boolean;
 };
 
 export type Resultado = {

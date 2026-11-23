@@ -152,19 +152,27 @@ func olvidarLaBovedaDelRegistro(ref string) error {
 // sigue significando lo que dice.
 func (a *App) llaveDeLaPrincipal() []byte {
 	a.mu.Lock()
-	activa, guardada := a.activa, a.llavePrincipal
+	activa := a.activa
+	// **La copia se hace aquí dentro, con el cerrojo en la mano.** Sacando fuera
+	// la referencia y copiándola después, entre las dos cosas cabe el
+	// `cripto.Borrar` de otra goroutine y lo que se lleva uno es **media clave a
+	// ceros**. No es teoría: lo cazó `go test -race` en el paseo de un acceso
+	// entre dos cuentas, con la sincronización retirando una compartida mientras
+	// la ventana volvía a la personal.
+	var copia []byte
+	if len(a.llavePrincipal) > 0 {
+		copia = append([]byte(nil), a.llavePrincipal...)
+	}
 	a.mu.Unlock()
 	if activa == "" {
-		// La personal está abierta: se le pide a ella, que es la fuente.
+		// La personal está abierta: se le pide a ella, que es la fuente. Y se pide
+		// **fuera del cerrojo**, que `boveda()` lo vuelve a tomar.
 		if b := a.boveda(); b != nil {
 			return b.LlaveParaProyectos()
 		}
 		return nil
 	}
-	if len(guardada) == 0 {
-		return nil
-	}
-	return append([]byte(nil), guardada...)
+	return copia
 }
 
 // ponerActiva apunta cuál es la bóveda abierta y, si es un proyecto, se queda la
@@ -192,10 +200,14 @@ func (a *App) ponerActivaDe(dueno, ref, nombre, permiso string, llavePrincipal [
 	} else {
 		a.llavePrincipal = append([]byte(nil), llavePrincipal...)
 	}
-	a.mu.Unlock()
+	// **Y se borra aquí dentro, no después.** Fuera del cerrojo, estos bytes son
+	// los mismos que otra goroutine puede estar copiando en `llaveDeLaPrincipal`:
+	// sobrescribirlos entonces le entrega media clave a ceros. Son 43 bytes, así
+	// que tener el cerrojo mientras se ponen a cero no cuesta nada.
 	if vieja != nil {
 		cripto.Borrar(vieja)
 	}
+	a.mu.Unlock()
 }
 
 // olvidarLaPrincipal borra la clave en memoria. La llaman el vigilante al bloquear
@@ -206,10 +218,14 @@ func (a *App) olvidarLaPrincipal() {
 	vieja := a.llavePrincipal
 	a.llavePrincipal, a.activa, a.nombreActivo = nil, "", ""
 	a.duenoActivo, a.permisoActivo = "", ""
-	a.mu.Unlock()
+	// **Y se borra aquí dentro, no después.** Fuera del cerrojo, estos bytes son
+	// los mismos que otra goroutine puede estar copiando en `llaveDeLaPrincipal`:
+	// sobrescribirlos entonces le entrega media clave a ceros. Son 43 bytes, así
+	// que tener el cerrojo mientras se ponen a cero no cuesta nada.
 	if vieja != nil {
 		cripto.Borrar(vieja)
 	}
+	a.mu.Unlock()
 }
 
 // nombreDeLaActiva es cómo se llama la bóveda de proyecto abierta, o vacío.

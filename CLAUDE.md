@@ -2669,6 +2669,20 @@ proyectos»— cuando lo que vigilan es que la pantalla **diga qué hacer**. Se 
 el significado**, que es lo que no cambia al acortar. Y el error de método fue anterior: se aplicaron
 los textos **sin pasar la tanda de interfaz antes de comprometer**.
 
+**Sacar una referencia con el cerrojo puesto y usarla después no es tener el cerrojo.** (2026-11-23.)
+`llaveDeLaPrincipal` se quedaba `a.llavePrincipal` dentro de `mu`, soltaba, y **copiaba fuera**;
+`ponerActivaDe` y `olvidarLaPrincipal` hacían lo simétrico —se quedaban la vieja dentro y la ponían a
+ceros fuera—. El cerrojo protegía **el campo** y lo que hay que proteger son **los bytes**: entre
+soltar y copiar cabe el `cripto.Borrar` de otra goroutine, y lo que se lleva quien copia es **media
+clave de bóveda a ceros**. Pasa de verdad —la sincronización retira una compartida y vuelve a la
+personal mientras la ventana hace lo mismo— y lo cazó `go test -race` en una tanda de la puerta.
+
+Dos cosas de método. **No se reproduce a voluntad**: saltó una vez y no volvió en doce pasadas
+seguidas, ni con el arreglo ni sin él, así que «lo he corrido seis veces y no sale» no dice nada —es
+«pasó tres veces no es funciona» con el signo cambiado—. Y lo que sí lo cierra es una prueba que
+**mira la consecuencia y no la bandera del detector**: con la clave puesta a `0xAB`, un cero en una
+copia no vacía es una clave rota, y eso se ve con o sin `-race`. Mutada, salta a la primera.
+
 ## Lo que Windows y GNOME dejan escrito para KDE
 
 La fase de Windows costó **tres rondas de correcciones suyas** y casi todo lo que salió **se va a

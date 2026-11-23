@@ -23,6 +23,7 @@ import {
   type EstadoDelNavegador,
   type EstadoDesbloqueo,
   type Medida,
+  type Orden,
   type Novedad,
   type Preferencias,
   type Progreso as TipoProgreso,
@@ -49,6 +50,7 @@ import {
   Segmentado,
   TarjetaAjuste,
   ZonaFicheros,
+  MenuPrincipal,
 } from "./componentes";
 import { avisoDelSistemaAlGuardar, Boveda } from "./boveda";
 import { Proyectos } from "./proyectos";
@@ -265,6 +267,32 @@ export default function App() {
   const [falloAlBajar, setFalloAlBajar] = useState("");
   const [instalando, setInstalando] = useState(false);
 
+  /**
+   * obedecer hace lo que se pide, **venga del menú del sistema o del de la ventana**.
+   *
+   * Es una sola función a propósito: donde no hay barra de menús la cabecera lleva su
+   * botón (ADR 0071), y los dos tienen que hacer exactamente lo mismo. Escritos por
+   * separado se desalinean solos, que es el patrón que en este proyecto ya ha costado
+   * varios fallos.
+   */
+  const obedecer = useCallback(
+    (o: Orden) => {
+      if (obedecerEdicion(o)) return;
+      if (o.que.startsWith("ir:")) {
+        setTarea(o.que.slice("ir:".length) as Tarea);
+        return;
+      }
+      if (o.que === "actualizar:buscar") {
+        setTarea("ajustes");
+        esfinge
+          .comprobarActualizacion()
+          .then(mostrarNovedad)
+          .catch(() => {});
+      }
+    },
+    [mostrarNovedad],
+  );
+
   useEffect(() => {
     esfinge.version().then(setVersion).catch(() => setVersion("?"));
 
@@ -282,20 +310,24 @@ export default function App() {
     // Lo que se pide desde el menú del sistema. Las órdenes de edición las
     // resuelve ordenes.ts, que es quien sabe mirar el campo con el foco; aquí
     // quedan las que cambian de pantalla.
-    const dejarDeObedecer = alOrdenar((o) => {
-      if (obedecerEdicion(o)) return;
-      if (o.que.startsWith("ir:")) {
-        setTarea(o.que.slice("ir:".length) as Tarea);
-        return;
-      }
-      if (o.que === "actualizar:buscar") {
-        setTarea("ajustes");
-        esfinge
-          .comprobarActualizacion()
-          .then(mostrarNovedad)
-          .catch(() => {});
-      }
-    });
+    const dejarDeObedecer = alOrdenar(obedecer);
+
+    // **Los atajos de las secciones, donde no hay barra de menús que los lleve**
+    // (ADR 0071). Colgaban del menú «Ver», así que al quitarlo en GNOME se
+    // habrían perdido; aquí se reponen contra el mismo `obedecer`, que es lo que
+    // garantiza que hagan lo mismo que hacían.
+    //
+    // **Y sólo donde no hay menú**, porque donde lo hay ya los tiene él y
+    // escucharlos aquí además sería contestar dos veces a la misma tecla.
+    const SECCIONES = ["cifrar", "descifrar", "generar", "boveda", "historial", "ajustes"];
+    const atajos = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+      const n = Number(e.key);
+      if (!Number.isInteger(n) || n < 1 || n > SECCIONES.length) return;
+      e.preventDefault();
+      obedecer({ que: `ir:${SECCIONES[n - 1]}`, texto: "" });
+    };
+    if (!laPlataforma().menuDelSistema) document.addEventListener("keydown", atajos);
     esfinge
       .novedadPendiente()
       .then(siNoLaHaQuitado)
@@ -321,11 +353,15 @@ export default function App() {
     esfinge.aperturaDeArranque().then(abrir).catch(() => {});
 
     return () => {
+      if (!laPlataforma().menuDelSistema) document.removeEventListener("keydown", atajos);
       dejarDeEscuchar();
       dejarDeObedecer();
       dejarDeAbrir();
     };
-  }, []);
+  // **`obedecer` entra en las dependencias aunque no cambie nunca.** Es un
+  // `useCallback` estable, así que el efecto sigue corriendo una sola vez al
+  // montar; ponerlo es decir de dónde sale, no invitar a que se repita.
+  }, [obedecer]);
 
   async function descargar() {
     setFalloAlBajar("");
@@ -469,6 +505,11 @@ export default function App() {
             />
           )}
           {!enWails() && <span className="aparte">Modo desarrollo</span>}
+
+          {/* **El menú de la ventana, donde el sistema no pone barra de menús**
+              (ADR 0071). Va en el marcado de los cuatro y lo esconde el CSS de
+              quien no lo use, como la barra de título. */}
+          <MenuPrincipal obedecer={obedecer} />
         </header>
 
         {novedad && (

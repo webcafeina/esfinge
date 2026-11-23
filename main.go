@@ -117,9 +117,11 @@ func main() {
 		// eso va aparte.
 		Frameless: app.MarcoDe(runtime.GOOS).Propia,
 
-		// La barra de menús, en español. Ver menu.go: los roles de Wails traen
-		// los rótulos en inglés escritos a fuego, así que se construye entera.
-		Menu: menuEnEspanol(func() context.Context { return ctx }, aplicacion),
+		// La barra de menús, en español, **donde este sistema lleve una**. Ver
+		// menu.go: los roles de Wails traen los rótulos en inglés escritos a fuego,
+		// así que se construye entera; y `app.MenuDelSistema` es el único sitio
+		// donde se decide quién la lleva —en GNOME no, ADR 0071—.
+		Menu: laBarraDeMenus(func() context.Context { return ctx }, aplicacion),
 
 		// Con barra lateral la ventana ya no puede encogerse tanto: 225 px se los
 		// lleva la navegación, y al contenido hay que dejarle sitio para el panel

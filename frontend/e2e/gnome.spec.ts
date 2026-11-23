@@ -373,6 +373,66 @@ test("y si la ventana se estrecha se parten sin dejar una fila coja", async ({ p
   ).toBeLessThanOrEqual(1);
 });
 
+test("el menú de la ventana está en la cabecera y lleva lo que no está en otro sitio", async ({
+  page,
+}) => {
+  await enGnome(page);
+
+  // En GNOME ninguna aplicación lleva barra de menús (ADR 0071): lo que hay es
+  // este botón. Quién lo lleva lo decide Go y llega como `data-menu`.
+  await expect(page.locator("html")).toHaveAttribute("data-menu", "propio");
+  const boton = page.getByRole("button", { name: "Menú principal" });
+  await expect(boton).toBeVisible();
+  await expect(boton).toHaveAttribute("aria-expanded", "false");
+
+  // Dentro va lo que la barra tenía **y no está en ninguna otra parte**: los dos
+  // enlaces de ayuda. Sin ellos, quitar la barra habría dejado la documentación
+  // sin forma de llegar.
+  await boton.click();
+  await expect(boton).toHaveAttribute("aria-expanded", "true");
+  const menu = page.getByRole("menu");
+  await expect(menu.getByRole("menuitem", { name: "Documentación de Esfinge" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Qué protege y qué no" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Buscar actualizaciones…" })).toBeVisible();
+
+  // Y los enlaces salen fuera, al navegador del sistema.
+  await expect(menu.getByRole("menuitem", { name: "Qué protege y qué no" })).toHaveAttribute(
+    "target",
+    "_blank",
+  );
+
+  // Se cierra con Escape, como cualquier menú.
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(boton).toHaveAttribute("aria-expanded", "false");
+});
+
+test("donde el sistema pone su barra de menús, el botón no existe", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/?sistema=darwin");
+  await expect(page.locator("html")).toHaveAttribute("data-menu", "sistema");
+
+  // **Y no existe, no es que esté apagado**: escondido con `display: none` se
+  // queda fuera del árbol de accesibilidad y del orden de tabulación, que es lo
+  // que hace que donde no se usa no estorbe. Si saliera, macOS tendría dos menús.
+  await expect(page.getByRole("button", { name: "Menú principal" })).toHaveCount(0);
+});
+
+test("los atajos de las secciones siguen funcionando sin barra de menús", async ({ page }) => {
+  await enGnome(page);
+
+  // Ctrl+1 … Ctrl+6 colgaban del menú «Ver». Al quitar la barra en GNOME se
+  // habrían perdido sin que nada se pusiera rojo: la pantalla sigue ahí, sólo
+  // que no se llega con el teclado. Van contra el mismo `obedecer` que el menú.
+  await expect(seccion(page, "Cifrar")).toHaveAttribute("aria-current", "page");
+
+  await page.keyboard.press("Control+3");
+  await expect(seccion(page, "Generar")).toHaveAttribute("aria-current", "page");
+
+  await page.keyboard.press("Control+1");
+  await expect(seccion(page, "Cifrar")).toHaveAttribute("aria-current", "page");
+});
+
 test("la regla general de botón no pisa a los botones compuestos", async ({ page }) => {
   await enGnome(page);
 
