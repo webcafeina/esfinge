@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-11-21**
+Última actualización: **2026-11-23**
 
 **Lo de esta sesión**: empezó con Windows probado en su máquina y acabó con macOS entero. **Cuatro
 versiones publicadas**: la **2.71.0** —el marco y el panel plegable—, la **2.72.0**, que cierra
@@ -9,54 +9,54 @@ contra el estándar y el menú de Snap; la **2.72.1**, un arreglo solo —la ven
 en macOS y en Linux desde la 2.70.0—; y la **2.73.0**, con la fase de macOS
 ([ADR 0068](adr/0068-macos-con-golden-gate.md)). El VPS está en la **2.73.0**.
 
-> ## ⚠ Lo primero al retomar (2026-11-22): macOS en su Mac, con la 2.75.0
+> ## ⚠ Lo primero al retomar (2026-11-24): Esfinge no abre en Windows
 >
-> **Nada está a medias y nada está sin publicar.** La **2.74.0** salió con la fase de macOS; el mismo
-> día el cliente la probó en su Mac y **dio seis cosas**, y la **2.75.0** las lleva todas: las cuatro
-> visuales hechas, el selector de aspecto hecho, y el inglés decidido y escrito. **El VPS está en la
-> 2.75.0** y los tres canales que se pueden preguntar la sirven.
+> **Es lo único que importa y está sin resolver.** La ficha entera, con todo lo medido y todo lo
+> descartado, está en [`deuda.md`](deuda.md) — **se lee antes de tocar nada**, que ahí está la mitad
+> del trabajo de ayer.
 >
-> **Lo que hay que mirar en su Mac, y es lo único que desde aquí no se puede:**
+> **En una línea**: la 2.71.0 abre y la 2.74.0 no. El proceso **vive**, el WebView2 **arranca** y
+> sirve la página, la interfaz **habla con Go** —contesta `Plataforma` y `VerPreferencias` en el
+> registro— y **la ventana no se enseña jamás**, ni forzándola a los tres segundos.
 >
-> **1 · Las tres que él señaló y aquí sólo se pueden medir.** La cápsula de plegar ahora **vive sobre
-> la cabeza de la barra lateral y viaja hasta los semáforos** al plegarla, como en Apolo. Las burbujas
-> del interruptor y del deslizador **se hinchan con un `transform` y desbordan la pista** —antes
-> crecían de ancho, que es lo que hacía que no se parecieran—. Y **la selección del segmentado se
-> desliza** de una opción a otra. Lo que se mide aquí es que las medidas sigan a la elegida; **que se
-> vea bien moviéndose sólo lo dice pulsarlo**.
+> **El siguiente paso está compilado y esperando**: `ebc246d` trae tres interruptores para acotarlo
+> en tres arranques. El artefacto es `Esfinge-Windows-arm64` de
+> https://github.com/webcafeina/esfinge/actions/runs/45182350930 y se prueba así, de uno en uno y
+> matando `Esfinge` y `msedgewebview2` entre pruebas:
 >
-> **2 · El selector de aspecto** (claro · oscuro · el del sistema), en Ajustes → **Apariencia**, que
-> es una pestaña nueva. Los tokens traían sus tres bloques de color desde siempre y **nadie escribía
-> `data-tema`**: elegir no se podía.
+> ```powershell
+> $env:ESFINGE_SIN_VIDRIO = "1" ; .\Esfinge.exe
+> $env:ESFINGE_SIN_SNAP   = "1" ; .\Esfinge.exe
+> $env:ESFINGE_SIN_CLASE  = "1" ; .\Esfinge.exe
+> ```
 >
-> **3 · Y lo de antes, que sigue sin verse**: si las cápsulas de la barra se leen como **vidrio** o
-> como botones grises, y **si el oro de los iconos de la barra lateral se ve bien a 1,74:1** con la
-> tipografía y la pantalla de allí. Si se queda corto se sube: el token está generado y medido en un
-> solo sitio (`OroLateral`, en `internal/tema`).
+> El que haga salir la ventana es el culpable. Y con `ESFINGE_DIAGNOSTICO=1` Wails escribe lo que hace
+> en `%APPDATA%\Esfinge\diagnostico.log`, que es lo que ha permitido llegar hasta aquí.
 >
-> **Lo que queda abierto, por orden:**
+> **Hay seis commits sin publicar** (de `56cb777` a `ebc246d`), y **no se publica hasta resolver esto**
+> —sacar una versión que no abre en Windows sería la tercera seguida—. Lo que llevan dentro:
 >
-> **· El inglés** ([ADR 0069](adr/0069-el-ingles.md), **aceptada y sin empezar**). Lo pidió el
-> 2026-11-21 y eligió el alcance con el recuento delante: **los cinco sitios** —la ventana, los
-> errores de Go, la extensión, la línea de comandos y los esquemas de MCP—, el idioma **del sistema
-> con selector**, y **después de GNOME y de KDE**. La ficha dice lo que cuesta antes de empezar.
+> - **El arreglo de `comctl32`**, que es un defecto real aunque no fuera la causa: `NewLazySystemDLL`
+>   se salta el contexto de activación y trae la 5.82, donde `SetWindowSubclass` sólo existe por
+>   número. Con redes en el menú de Snap, en `OnStartup` y en `main`, y pruebas que leen el fuente.
+> - **La auditoría de textos aprobada**: 4 fuera, 47 apretados, 18 intactos. De 9.953 a 8.529
+>   caracteres, y los de más de 70 **de 37 a 14**.
+> - **El instalador**: el guion de NSIS ya lleva BOM —sin ella `makensis` lo lee en la codificación del
+>   sistema y se come las tildes— y la carpeta pasa a ser `Webcafeina` sin tilde. Lo de la tilde está
+>   **comprobado por el cliente**: instalando en `C:\Esfinge` sí instala.
+> - **La barra lateral en macOS con un tema forzado**: bajo vidrio no lleva fondo propio y el material
+>   lo elige macOS por la apariencia del equipo, así que al elegir el tema contrario se quedaba del
+>   otro color. Ahora recupera su fondo cuando no cuadran.
+> - **Y el registro de arranque**: `%APPDATA%\Esfinge\arranque.log`, para que un fallo así deje de
+>   ser mudo.
 >
-> **· GNOME** (F4 del plan), que es lo siguiente que se toca. Empieza por lo que ahorró las rondas en
-> Windows y en macOS: **comparar control por control con
-> `~/proyectos/apolo/frontend/src/sistema-linux.css`**. Lo que Windows dejó escrito para las hojas que
-> quedan está en `CLAUDE.md`, sección «Lo que Windows deja escrito para macOS, GNOME y KDE», y **se
-> lee al empezar**.
+> **Lo que sigue abierto por detrás**, cuando Windows se resuelva: **GNOME** (F4), luego **KDE**, y
+> después **el inglés** ([ADR 0069](adr/0069-el-ingles.md), decidido y sin empezar). La auditoría de
+> textos de la ventana está hecha; **la extensión, la línea de comandos y los correos esperan al
+> inglés**, decidido así con el cliente para no hacer el trabajo dos veces.
 >
-> **· Lo de GitHub Pages**, en [`deuda.md`](deuda.md) con todo lo medido. **No se repitió ni en la
-> 2.74.0 ni en la 2.75.0**: van una vez mal y dos bien, así que no es determinista y la hipótesis
-> —una carrera entre los dos despliegues— sigue sin descartar.
->
-> **Windows sigue pendiente de probar y no bloquea nada**: lo que hay que mirar allí está en
-> `deuda.md`, y lo de más riesgo es el menú de Snap. **Y lleva dentro el mismo arreglo de peso que
-> macOS**, así que sus listas deberían estar mejor que cuando las probó.
->
-> **Y al abrir sesión, las tiendas**: Chocolatey sigue en la **2.66.1** con un 403 mientras modera; en
-> winget hay varios PRs esperando moderador, con el CLA firmado en todos.
+> **Y al abrir sesión, las tiendas**: en winget hay **nueve PRs** esperando moderador —ninguno
+> bloqueado ya por el CLA, que el flujo firma cuando el bot lo pide—; Chocolatey sigue en la 2.66.1.
 
 ## Nativizar la interfaz (empezada el 2026-11-19)
 

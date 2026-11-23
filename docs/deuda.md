@@ -357,6 +357,47 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 | ~~Adivinar en macOS sale caro y no hay banco de pruebas~~ | Media | Tres versiones seguidas —2.5.1, 2.9.0 y 2.9.1— salieron con un cambio de macOS que no se podía probar aquí, y las tres fallaron: dos no hicieron nada visible y la tercera cerró la aplicación, dejando al cliente sin herramienta hasta la 2.9.2. El ciclo «publicar para ver qué pasa» lo sufre él, no yo | **Saldada (2026-09-08)**: `compilar.yml` acepta `inspector` en su disparador manual y compila con `wails build -devtools`, que deja el Web Inspector en el paquete. Cada hipótesis pasa a costar una línea en una consola en vez de una versión publicada. Marcada por tres sitios para que no se confunda con una compilación normal: nombre del artefacto, retención y sufijo en la versión |
 
+### Esfinge no abre en Windows desde la 2.72.0 — SIN RESOLVER
+
+**Severidad: crítica** · **el producto no arranca en Windows** · 2026-11-23
+
+La **2.71.0 abre y la 2.74.0 no**, lo acotó el cliente instalando las dos. Y lo que se ve desde fuera
+es lo peor posible: **medio segundo de cursor y nada** — ni ventana, ni Alt+Tab, ni barra de tareas, y
+**ninguna entrada en el Visor de eventos**.
+
+**Lo que está medido** (no deducido), con el registro de diagnóstico en su máquina:
+
+- El proceso **no muere**: se queda vivo, con `MainWindowHandle` a cero.
+- El **WebView2 arranca** —157.0.4341.60— y sirve la página, el CSS y el JS.
+- **La interfaz habla con Go**: en el registro se la ve contestar `Plataforma` y `VerPreferencias`.
+- Y ahí se acaba el registro. **La ventana no se enseña nunca**, ni forzándola con `WindowShow` a los
+  tres segundos.
+
+**Por qué no basta con que cargue**: Wails enseña la ventana **dentro de `navigationCompleted`**, o
+sea sólo si la navegación termina. Eso ata que exista ventana a que no falle nada al cargar, y esa
+dependencia no se sostiene — está puesta la red de los tres segundos, y **aun así no aparece**, que es
+lo que más desconcierta y lo que hay que entender mañana.
+
+**Lo descartado, y cómo**:
+
+- **No es un pánico**: hay `recover` en el menú de Snap, en `OnStartup` y en `main`, los tres
+  escribiendo en `arranque.log`, y ese fichero **no se crea**.
+- **No es la comprobación de versión**: va en una gorutina y con plazo de diez segundos (leído).
+- **No es `comctl32` por sí sola**: aquel pánico habría dejado el proceso **muerto**, y está vivo. El
+  arreglo se queda igual, porque el defecto era real: `NewLazySystemDLL` se salta el contexto de
+  activación y trae la 5.82, donde `SetWindowSubclass` sólo existe por número.
+- **No es la translucidez por sí sola**: está desde la 2.10.0 y la 2.71.0 abre.
+
+**Lo siguiente, y ya está compilado**: la compilación `ebc246d` trae **tres interruptores** para
+acotarlo en tres arranques — `ESFINGE_SIN_VIDRIO`, `ESFINGE_SIN_SNAP` y `ESFINGE_SIN_CLASE`—. Lo que
+entró entre la 2.71.0 y la 2.72.0 es el menú de Snap y el nombre de clase propio; el vidrio entra en
+la lista porque su Windows **puede ser una máquina virtual** y una ventana translúcida la compone el
+sistema.
+
+**Y una sospecha sin comprobar**: su Windows acumuló procesos colgados de `msedgewebview2` en los
+primeros intentos, y ésos **se quedan el bloqueo de la carpeta de datos del motor**. Conviene matarlos
+antes de cada prueba, que si no se mide otra cosa.
+
 ### La prueba del desbloqueo con el sistema pasa por accidente
 
 **Severidad: media** · de las pruebas, no del producto · visto el 2026-11-23

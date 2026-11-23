@@ -2621,6 +2621,54 @@ tres a 560— y la prueba exige que **ninguna fila quede coja**, que es lo que l
 palabras: «el reparto deja una fila coja: 5 + 1». En macOS las seis caben en una fila, así que esto
 **es de un sistema y vive en su hoja**.
 
+**Una biblioteca del sistema cargada «de forma segura» puede ser la versión que no sirve.**
+(2026-11-23.) `SetWindowSubclass` y `DefSubclassProc` sólo se exportan **por su nombre** en la versión
+6 de `comctl32`; en la 5.82 están únicamente por número. La 6 la trae el **contexto de activación**
+gracias al manifiesto, y esa redirección se resuelve **al cargar la biblioteca por su nombre** — pero
+`NewLazySystemDLL` carga con `LOAD_LIBRARY_SEARCH_SYSTEM32`, que **se salta ese contexto** y trae la
+5.82 de `System32`. Entonces el `.Call()` no encuentra la función y **entra en pánico**. La regla:
+`NewLazySystemDLL` es lo correcto para lo que está en todas las versiones, y **lo contrario de lo
+correcto para lo que depende del manifiesto**. Lo vigila `TestComctl32NoSeCargaDeSystem32`, que lee el
+fuente porque aquí no hay ningún Windows.
+
+**Y una comodidad no puede tener la capacidad de impedir que el programa arranque.** El menú de Snap
+son llamadas a Win32 por nombre dentro de `OnStartup`, y Wails llama ahí **sin ninguna red**: lo que
+entre en pánico mata el proceso. Como una aplicación con ventana no tiene consola, eso se ve como
+medio segundo de cursor y nada — ni error, ni ventana, ni entrada en el Visor de eventos, porque un
+pánico de Go **no es un fallo de aplicación de Windows**. Ahora hay `recover` en tres sitios —el menú,
+el `OnStartup` entero y el `main`— y los tres **dejan la pila escrita** en `arranque.log`. No se
+recoge para seguir como si nada: se recoge para que la ventana llegue a abrirse, porque **con la
+ventana delante se puede contar lo que pasa y sin ella no se puede contar nada**.
+
+**Y Wails enseña la ventana dentro de `navigationCompleted`**, o sea **sólo si la navegación
+termina**. Eso ata que exista ventana a que no falle nada al cargar, y por eso hay una red que la
+enseña a los tres segundos pase lo que pase: lo peor posible pasa a ser **una ventana en blanco**, que
+se puede cerrar, contar y diagnosticar.
+
+**El diagnóstico también necesita que alguien compruebe que diagnostica.** (2026-11-23.) Para mirar un
+arranque que no se puede reproducir aquí se le pidió a Wails que escribiera lo que hace… poniendo
+`LogLevel`. En una compilación de producción Wails **no mira ésa, mira `LogLevelProduction`**, que de
+serie son sólo errores: el registro quedó mudo y **el fichero ni se creó**. Y «no se ha creado nada»
+es exactamente lo que se ve cuando el programa no arranca, así que una respuesta que no distinguía dos
+cosas costó una vuelta entera. Dos reglas: **las dos perillas**, y **se escribe una línea al abrir el
+registro**, para que la ausencia del fichero signifique una sola cosa. Es la trampa de «una
+comprobación nueva puede no comprobar nada» en el sitio donde más cara sale.
+
+**Un guion de NSIS con `Unicode true` y sin BOM se lee en la codificación del sistema.** (2026-11-23.)
+`makensis` sólo sabe que el fichero es UTF-8 **si lleva marca de orden de bytes**; sin ella se come las
+tildes, la eñe, las comillas angulares y el «©» **dentro del instalador que ve el cliente**. Y no es
+cosmético: `INFO_COMPANYNAME` sale del fichero que **genera Wails** —también sin BOM— y de ahí sale
+`InstallDir`, o sea **la carpeta donde se instala**. El cliente se encontró «Error abriendo archivo
+para la escritura» y **sí instalaba eligiendo otra carpeta**. Los nombres con acento se definen ahora
+en `project.nsi` —que sí lleva BOM— **antes del `!include`**, que es lo que hace que Wails no los
+toque; y la carpeta va **sin tilde**, porque depende de que toda la cadena la trate igual.
+
+**Y una prueba que fija una frase entera se cae con cada retoque de copia.** (2026-11-23.) Al aplicar
+la auditoría de textos se cayeron cuatro que citaban la frase completa —«Abre tu bóveda para ver tus
+proyectos»— cuando lo que vigilan es que la pantalla **diga qué hacer**. Se cita **el trozo que lleva
+el significado**, que es lo que no cambia al acortar. Y el error de método fue anterior: se aplicaron
+los textos **sin pasar la tanda de interfaz antes de comprometer**.
+
 ## Lo que Windows deja escrito para macOS, GNOME y KDE
 
 La fase de Windows costó **tres rondas de correcciones suyas** y casi todo lo que salió **se va a

@@ -5,6 +5,39 @@ dejó aunque se pierda la conversación.
 
 Plantilla al final.
 
+## 2026-11-23 · Windows no abre, y la auditoría de textos
+
+- **La 2.76.0 publicada** con el arreglo de la actualización de Windows —el guion filtraba `tasklist`
+  con `find` a secas y en un Windows con Git gana el de GNU, que no filtra: instalaba con Esfinge viva
+  y no volvía a abrirse—, las tres cosas de macOS que vio el cliente y la columna a 720.
+- **Y entonces salió lo gordo: Esfinge no abre en Windows desde la 2.72.0.** Sin resolver, con ficha
+  entera en [deuda.md](deuda.md). Medido: el proceso vive, el WebView2 arranca y sirve la página, la
+  interfaz habla con Go, y la ventana no se enseña nunca. Descartados por lectura o por medida el
+  pánico, la comprobación de versión, `comctl32` y la translucidez por sí sola.
+- **De paso se arreglaron dos defectos reales** que no eran la causa: `comctl32` cargado con
+  `NewLazySystemDLL` —que se salta el contexto de activación y trae la 5.82, sin `SetWindowSubclass`
+  por nombre— y el guion de NSIS **sin BOM**, que le comía las tildes. Lo de la carpeta con tilde lo
+  confirmó el cliente: instalando en `C:\Esfinge` sí instala.
+- **La auditoría de textos, aprobada y aplicada**: 69 fichas revisadas, 4 fuera, 47 apretadas, 18
+  intactas. La ventana baja de 9.953 a 8.529 caracteres y los textos de más de 70 **de 37 a 14**. Con
+  una regla propia para los errores: dicen qué ha pasado y qué hacer, así que se aprieta la
+  explicación y la salida no se toca.
+- **Tres instrumentos nuevos**, porque el fallo era mudo del todo: redes con `recover` en el menú de
+  Snap, en `OnStartup` y en `main`, todas escribiendo en `arranque.log`; el registro de Wails con
+  `ESFINGE_DIAGNOSTICO`; y la ventana enseñándose a los tres segundos pase lo que pase.
+- **Verificado**: `make comprobar`, el navegador y 236 de interfaz en verde, cada protección nueva
+  mutada. Dos caídas fueron de carga de la máquina —load 13, `ERR_NETWORK_CHANGED`— y se comprobaron
+  repitiéndolas; una era real y salió de no tragarse la primera explicación.
+- **Lo de método que más costó**: **el diagnóstico no diagnosticaba**. En producción Wails no mira
+  `LogLevel` sino `LogLevelProduction`, así que el registro quedó mudo y el fichero sin crear — y «no
+  se ha creado nada» es también lo que se ve cuando el programa no arranca. Dos cosas distintas con
+  la misma cara, y una vuelta entera perdida. Ahora se escribe una línea al abrir el registro, para
+  que «no hay fichero» signifique una sola cosa.
+- **Queda abierto**: acotar lo de Windows con los tres interruptores ya compilados, publicar los seis
+  commits que esperan, y luego GNOME, KDE y el inglés.
+
+---
+
 ## 2026-11-21 · macOS probado en su Mac, y lo que faltaba de Apolo
 
 - **Dos versiones.** La **2.74.0** cerró la auditoría visual de macOS que había quedado a medias; el
