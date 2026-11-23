@@ -2043,6 +2043,21 @@ test("la barra lateral dice si la bóveda está abierta o cerrada", async ({ pag
  */
 test("la bóveda se abre con el sistema, y la maestra sigue abriendo", async ({ page }) => {
   const errores = vigilarConsola(page);
+
+  // **Primero se olvida que ya se ofreció, y antes de cargar la página.**
+  //
+  // Esta prueba **contesta** a la tarjeta —pulsa «Ahora no»— y esa respuesta va por
+  // bóveda; como los dos temas comparten este Go y esta bóveda, en cuanto `claro` la
+  // ejecuta, `oscuro` no puede volver a verla. Estuvo pasando igual **por
+  // accidente**: cualquier guardado a medias de preferencias borra esa marca, y
+  // alguna prueba de más arriba lo hacía. O sea que el verde no decía lo que parecía
+  // decir, y el día que el orden cambiara se caería sin que nadie entendiera por qué
+  // — que es lo que pasó el 2026-11-23.
+  //
+  // Y va **antes del `goto`** porque la pantalla lee ese estado una sola vez, al
+  // montarse: reponerlo con la ventana ya pintada no cambiaría nada.
+  await page.request.get("/api/_sugerencia");
+
   await page.goto("/");
   await conLaBovedaAbierta(page);
 
@@ -4304,4 +4319,31 @@ test("el aspecto elegido manda sobre el del sistema", async ({ page }) => {
   await elegir("El del sistema");
   await expect(page.locator("html")).not.toHaveAttribute("data-tema", /.*/);
   expect(await fondo(), "volver al del sistema no ha devuelto su color").toBe(delSistema);
+});
+
+// **La ventana se pinta aunque las preferencias no contesten nunca.**
+//
+// Desde que el aspecto se elige, el primer pintado espera **dos** respuestas y no
+// una: la plataforma —de la que cuelga todo el CSS— y el tema. Encadenarlas sería
+// peor, pero esperar las dos abre un final que antes no existía: si una se queda
+// colgada, lo que ve alguien no es un tema equivocado, es **una ventana que no
+// aparece**. En un gestor de contraseñas eso es lo peor que puede pasar.
+//
+// Aquí no se espera a tener suerte: **se provoca**. La petición del tema se deja sin
+// contestar con `route`, que es la forma de montar un caso que en esta máquina no
+// ocurre jamás — las dos contestan siempre en milisegundos.
+test("la ventana se pinta aunque las preferencias no contesten", async ({ page }) => {
+  // Ni contesta ni falla: se queda. Un error lo recogería el `catch` y no probaría
+  // nada; lo que hay que ejercitar es el plazo.
+  await page.route("**/VerPreferencias", () => {});
+
+  await page.goto("/?sistema=darwin");
+
+  // El plazo es de 1,2 s; se le da margen de sobra y aun así muy por debajo de lo
+  // que tardaría si no hubiera ninguno, que es no aparecer nunca.
+  await expect(page.locator(".lateral")).toBeVisible({ timeout: 8000 });
+  await expect(page.locator(".herramientas h1")).toBeVisible();
+
+  // Y sin tema forzado, que es lo correcto: nadie ha podido decir cuál quería.
+  await expect(page.locator("html")).not.toHaveAttribute("data-tema", /.*/);
 });

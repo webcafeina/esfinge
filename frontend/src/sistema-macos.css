@@ -599,6 +599,11 @@
  * que es la que él ya revisó. */
 :root[data-sistema="darwin"] .boton-lateral {
   display: inline-flex;
+  /* **Y el glifo, centrado.** Sin esto el `inline-flex` lo deja pegado arriba a la
+   * izquierda —a un píxel del borde, con diecinueve de hueco al otro lado— y la
+   * cápsula se lee torcida. Lo vio el cliente en su Mac. */
+  align-items: center;
+  justify-content: center;
   position: absolute;
   z-index: 10;
   top: 8px;
@@ -981,4 +986,34 @@
 :root[data-sistema="darwin"] .segmentado[data-medido] button[aria-selected="true"] {
   background: transparent;
   box-shadow: none;
+}
+
+/* ------------------------------------------- los menús horizontales, a lo ancho
+ *
+ * **Cuando un control segmentado ocupa el ancho de su contenedor, sus segmentos lo
+ * reparten a partes iguales.** Es lo que hace macOS, y lo contrario de lo que se
+ * veía: los botones salían pegados a la izquierda y el carril seguía hasta el final,
+ * con cuatrocientos píxeles de vacío a la derecha. Lo dijo el cliente viendo
+ * «Texto / Ficheros» en Cifrar — «queda feo que estén a la izquierda cuando el
+ * contenedor de sombra ocupa todo el ancho»— y pidió que valiera **para todos los
+ * menús horizontales**, no sólo para ése.
+ *
+ * Va con `flex: 1 1 0`, que reparte el espacio **ignorando lo que mide cada rótulo**:
+ * con `1 1 auto` los segmentos quedarían proporcionales a su texto, que es repartir
+ * mal con más pasos. El `min-width: 0` es lo que permite que un rótulo largo se
+ * apriete en vez de desbordar su segmento.
+ *
+ * **Salvo el que se declara del ancho de su contenido** —las pestañas de Ajustes van
+ * centradas y midiendo lo suyo—, que ya tiene su regla más arriba. */
+:root[data-sistema="darwin"] .segmentado > button {
+  flex: 1 1 0;
+  min-width: 0;
+  /* Y el rótulo, **centrado en su segmento**. Repartir el ancho y dejar el texto
+   * pegado a la izquierda es cambiar un vacío por otro: se ve el hueco dentro de
+   * cada mitad en vez de al final del carril. */
+  justify-content: center;
+}
+
+:root[data-sistema="darwin"] .panel > .segmentado > button {
+  flex: 0 0 auto;
 }

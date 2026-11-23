@@ -833,9 +833,14 @@ function Trabajo({
             limpiar();
           }}
           opciones={[
-            { valor: "texto", etiqueta: "Texto" },
-            { valor: "ficheros", etiqueta: "Ficheros" },
+            // Con su glifo, como las pestañas de Ajustes y las clases de la bóveda:
+            // lo pidió el cliente el 2026-11-23 viendo macOS. Los renglones son lo
+            // que se teclea y las hojas lo que se arrastra, que es exactamente la
+            // diferencia entre las dos pantallas.
+            { valor: "texto", etiqueta: "Texto", icono: "texto" },
+            { valor: "ficheros", etiqueta: "Ficheros", icono: "ficheros" },
           ]}
+          conIconos
         />
 
         {modo === "texto" ? (

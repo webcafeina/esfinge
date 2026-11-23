@@ -2489,8 +2489,11 @@ sin poder fusionarse y sin avisar a nadie, igual que Chocolatey. Lo que la quita
 Encaja con lo que dice la propia página del CLA —que Microsoft **«no suele participar en acuerdos CLA
 corporativos»**— y con que **la sintaxis de la forma de empresa no esté documentada en ninguna parte**:
 esa página dice que «hay una sintaxis distinta» para firmar por una empresa y no la escribe. Dos cosas
-más. **Lo que todavía no se sabe es si ahora queda registrado por cuenta**, y lo dirá el PR de la
-versión siguiente: por eso winget entra en lo que se mira al abrir sesión, al lado de Chocolatey. Y si
+más. **Y ya se sabe que no queda registrado por cuenta** (comprobado el 2026-11-23): el bot volvió a
+pedirlo en los PRs de la 2.74.0 y de la 2.75.0, y en los dos **el paso del flujo lo firmó y la
+etiqueta cayó** —en la 2.75.0, a las 20:40 del día que se publicó—. O sea que firmar en cada PR no es
+un apaño temporal: es lo que hay, y el paso se queda. winget sigue en lo que se mira al abrir sesión,
+pero ya sólo por los moderadores. Y si
 alguna vez el CLA está firmado y la etiqueta se queda pegada, **eso lo arregla un moderador** con
 `[Policy] CLA Signed` (está en su `doc/Moderation.md`), no nosotros.
 

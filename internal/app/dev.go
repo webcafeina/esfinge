@@ -166,6 +166,37 @@ func Servir(a *App, s *SistemaDeDesarrollo, direccion string) error {
 		_, _ = fmt.Fprintf(w, `{"diceQueNo":%t}`, dice)
 	})
 
+	// Olvida que ya se ofreció desbloquear con el sistema en la bóveda abierta.
+	//
+	// **Existe porque una prueba estaba pasando por accidente.** La tarjeta que
+	// ofrece Touch ID sólo sale si nadie ha contestado —`DesbloqueoSugeridoPara`, que
+	// va por bóveda—, y la prueba que la comprueba **contesta**. Como los dos temas
+	// comparten este Go y esta bóveda, en cuanto `claro` la ejecutaba, `oscuro` no
+	// podía verla nunca más: lo que la salvaba era que **otra prueba le borraba la
+	// marca sin querer** —cualquier guardado a medias de preferencias lo hace—. O sea
+	// que el verde no decía lo que parecía decir.
+	//
+	// Lo mismo que `_llavero` y `_excluir`: monta un estado que la prueba no puede
+	// crear de otra forma, y **no existe en el binario del cliente**, que es lo que
+	// impide que esto sea una puerta nueva a la bóveda.
+	// **No pide bóveda abierta a propósito**: la pantalla lee ese estado **una sola
+	// vez, al montarse**, así que reponerlo con la bóveda ya abierta no sirve de
+	// nada —la tarjeta ya se decidió—. Hay que poder llamarlo **antes** de cargar la
+	// página, y entonces no hay ninguna bóveda que nombrar. Borrar la marca sin
+	// mirar qué bóveda es no pierde nada: sólo hay una, y lo peor que puede pasar es
+	// que se vuelva a ofrecer algo que se ofrece una vez.
+	mux.HandleFunc("/api/_sugerencia", func(w http.ResponseWriter, r *http.Request) {
+		p := a.ajustes.Ver()
+		antes := p.DesbloqueoSugeridoPara
+		p.DesbloqueoSugeridoPara = ""
+		if err := a.ajustes.Guardar(p); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"olvidada":%q}`, antes)
+	})
+
 	// Siembra un sitio excluido en la bóveda abierta, para poder probar la lista de
 	// Ajustes.
 	//

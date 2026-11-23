@@ -357,6 +357,31 @@ Lo más caro de esta lista no es lo que está mal, es lo que no sabemos si lo es
 
 | ~~Adivinar en macOS sale caro y no hay banco de pruebas~~ | Media | Tres versiones seguidas —2.5.1, 2.9.0 y 2.9.1— salieron con un cambio de macOS que no se podía probar aquí, y las tres fallaron: dos no hicieron nada visible y la tercera cerró la aplicación, dejando al cliente sin herramienta hasta la 2.9.2. El ciclo «publicar para ver qué pasa» lo sufre él, no yo | **Saldada (2026-09-08)**: `compilar.yml` acepta `inspector` en su disparador manual y compila con `wails build -devtools`, que deja el Web Inspector en el paquete. Cada hipótesis pasa a costar una línea en una consola en vez de una versión publicada. Marcada por tres sitios para que no se confunda con una compilación normal: nombre del artefacto, retención y sufijo en la versión |
 
+### La prueba del desbloqueo con el sistema pasa por accidente
+
+**Severidad: media** · de las pruebas, no del producto · visto el 2026-11-23
+
+`la bóveda se abre con el sistema, y la maestra sigue abriendo` espera que salga la tarjeta que
+ofrece Touch ID, y esa tarjeta sólo sale **si nadie ha contestado** —`DesbloqueoSugeridoPara`, que va
+por bóveda—. Pero la prueba **contesta** («Ahora no»), y los dos temas comparten el mismo Go y la
+misma bóveda (`baseURL` es el 5173 para los dos proyectos). O sea que en cuanto `claro` la ejecuta,
+`oscuro` no puede verla nunca más.
+
+**Pasa porque otra prueba le borra la marca sin querer.** `GuardarPreferencias` recibe el objeto
+entero y `fundir` sólo protege los dos plazos y el tema, así que cualquier guardado a medias —como el
+que hace a propósito la prueba del interruptor de Ajustes, para ejercitar la regla del cero— deja
+`DesbloqueoSugeridoPara` en blanco y la tarjeta vuelve. Es decir: **la prueba verde no demuestra lo
+que dice**, y depende de que otra corra antes y la limpie.
+
+Medido así, que es lo que lo cierra: seleccionando **sólo esa prueba**, `claro` pasa y `oscuro` falla,
+siempre. En la tanda entera pasa o no según qué haya corrido antes — y el 2026-11-23 cayó dos veces.
+
+**~~Lo que lo arreglaría es una costura de desarrollo que reponga la marca~~ — hecho el mismo día**
+(`/api/_sugerencia`, como `_llavero` y `_excluir`): la prueba la repone y deja de depender de un
+accidente. Dos cosas que costó al escribirla, y las dos son la misma: **la pantalla lee ese estado
+una sola vez, al montarse**, así que reponerlo después no cambia nada — la costura se llama **antes
+del `goto`**, y por eso **no pide bóveda abierta**, que con la página sin cargar no la hay.
+
 ### Un despliegue de Pages dijo «success» y siguió sirviendo el anterior
 
 **Severidad:** media · **Apuntada:** 2026-11-20

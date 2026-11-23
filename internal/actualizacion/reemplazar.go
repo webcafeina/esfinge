@@ -97,9 +97,40 @@ func reemplazarseEnWindows(instalador string) error {
 		return err
 	}
 
-	guion, err := escribirGuion("actualizar-*.cmd", fmt.Sprintf(`@echo off
+	guion, err := escribirGuion("actualizar-*.cmd", GuionDeWindows(instalador, yo, os.Getpid()))
+	if err != nil {
+		return err
+	}
+	return lanzarSuelto("cmd", "/c", guion)
+}
+
+// GuionDeWindows escribe el guion que espera, instala y vuelve a abrir.
+//
+// Está separado de quien lo lanza **para poder leerlo desde aquí**: en esta
+// máquina no hay ningún Windows donde ejecutarlo, así que lo único que se puede
+// comprobar es lo que dice. Y hacía falta — ver lo del PATH justo debajo.
+func GuionDeWindows(instalador, aplicacion string, pid int) string {
+	return fmt.Sprintf(`@echo off
 rem Cambia Esfinge por la versión recién descargada. Lo escribe Esfinge al
 rem actualizarse y se borra solo al terminar.
+
+rem **El PATH se fija al del sistema, y no es una precaución de más.**
+rem
+rem Este guion llama a «tasklist», a «find» y a «timeout» por su nombre, y en un
+rem Windows con Git instalado —o con MSYS, o con coreutils— los tres pueden
+rem resolverse a sus homónimos de Unix, que están antes en el PATH. Con el «find»
+rem de GNU, «find "1234"» no filtra nada: busca un directorio llamado 1234, falla,
+rem y el «||» de abajo salta a instalar **en la primera vuelta**, o sea con Esfinge
+rem todavía viva y sus ficheros bloqueados. El resultado es el peor posible:
+rem la ventana se cierra, el instalador no puede reemplazar nada y la aplicación
+rem no vuelve. Lo vio el cliente actualizando a la 2.75.0 en su Windows, con una
+rem consola abierta cuyo título era «find: '1234'» — el error de GNU find, que es
+rem lo que lo delató.
+rem
+rem Se fija el PATH entero en vez de poner la ruta absoluta en cada llamada:
+rem así queda cubierto también lo que se añada después, que es justo lo que
+rem nadie se acuerda de revisar.
+set "PATH=%%SystemRoot%%\System32;%%SystemRoot%%;%%SystemRoot%%\System32\Wbem"
 
 rem Esperar a que la ventana se cierre: mientras corre, sus ficheros están
 rem bloqueados y el instalador no podría reemplazarlos.
@@ -110,13 +141,14 @@ for /l %%%%i in (1,1,50) do (
 
 :instalar
 "%[1]s" /S
+
+rem Y se vuelve a abrir pase lo que pase: si el instalador no ha podido —porque
+rem hiciera falta permiso de administrador y nadie lo diera—, lo que hay en disco
+rem sigue siendo la versión de antes, que funciona. Quedarse sin aplicación es lo
+rem único que este guion no puede hacer.
 start "" "%[2]s"
 del "%%~f0"
-`, instalador, yo, os.Getpid()))
-	if err != nil {
-		return err
-	}
-	return lanzarSuelto("cmd", "/c", guion)
+`, instalador, aplicacion, pid)
 }
 
 // escribirGuion deja el guion en un fichero temporal, ejecutable y solo para su

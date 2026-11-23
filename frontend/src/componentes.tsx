@@ -442,6 +442,20 @@ export function Icono({ nombre }: { nombre: string }) {
         <circle cx="11.5" cy="12.5" r="1.8" />
       </>
     ),
+    // Renglones de texto: lo que se escribe a mano, frente a lo que se arrastra.
+    texto: (
+      <>
+        <path d="M3.5 4.5h11M3.5 8h11M3.5 11.5h7" />
+      </>
+    ),
+    // Dos hojas, una detrás de otra: una tanda de ficheros.
+    ficheros: (
+      <>
+        <path d="M5.5 2.5h4l3 3v8a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z" />
+        <path d="M9.5 2.5v3h3" />
+        <path d="M3.5 5v8.5a2 2 0 0 0 2 2h5" />
+      </>
+    ),
     // Un círculo con media cara en sombra: el glifo del aspecto, el mismo que usa
     // Ajustes del Sistema para claro y oscuro. La media luna va rellena a propósito
     // —es la única forma de que a 16 px se lea como una mitad y no como un gajo—

@@ -25,11 +25,25 @@ export function aplicarTema(t: string | undefined): void {
   else delete raiz.dataset.tema;
 }
 
-/** Lo pregunta y lo aplica. Sin respuesta, el del sistema. */
+/**
+ * Lo pregunta y lo aplica. Sin respuesta, el del sistema.
+ *
+ * **Y con un plazo, porque esto bloquea el primer pintado.** La plataforma tiene que
+ * llegar antes de pintar —de `data-sistema` cuelga todo el CSS— y el tema se pide a
+ * la vez para no encadenar dos viajes; el precio es que ahora son **dos** respuestas
+ * las que hacen falta para que haya ventana. Si una se queda colgada, lo que ve
+ * alguien no es un tema equivocado: es **una ventana que no aparece**, que en un
+ * gestor de contraseñas es el peor final posible.
+ *
+ * Con el plazo, lo peor que puede pasar es un fogonazo del tema del sistema en quien
+ * haya elegido otro, y la respuesta que llegue tarde se aplica igual: `aplicarTema`
+ * no sabe ni le importa si alguien estaba esperándola.
+ */
 export async function resolverTema(): Promise<void> {
-  try {
-    aplicarTema((await esfinge.verPreferencias()).tema);
-  } catch {
-    aplicarTema(undefined);
-  }
+  const plazo = new Promise<void>((listo) => setTimeout(listo, 1200));
+  const preguntar = esfinge
+    .verPreferencias()
+    .then((p) => aplicarTema(p.tema))
+    .catch(() => aplicarTema(undefined));
+  await Promise.race([preguntar, plazo]);
 }
