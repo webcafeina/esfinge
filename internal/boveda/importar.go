@@ -336,7 +336,7 @@ var alias = map[string]string{
 }
 
 // ErrSinColumnas dice que el fichero no tiene ninguna columna reconocible.
-var ErrSinColumnas = errors.New("Este fichero no parece una exportación de contraseñas: no reconozco ninguna columna")
+var ErrSinColumnas = errors.New("No parece una exportación de contraseñas: no reconozco ninguna columna.")
 
 // Leer analiza un CSV y devuelve las entradas junto con la correspondencia que
 // ha adivinado, para poder enseñarla y corregirla antes de meter nada.

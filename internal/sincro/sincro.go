@@ -51,7 +51,7 @@ var (
 	// ErrRetroceso: el servidor ha vuelto atrás —una versión más vieja que la ya
 	// vista, o ninguna bóveda después de haberla tenido—. No se funde ni se sube
 	// encima: se para y se dice.
-	ErrRetroceso = errors.New("El servidor tiene una bóveda más vieja que la que ya se vio aquí; no se sincroniza hasta mirarlo")
+	ErrRetroceso = errors.New("El servidor tiene una bóveda más vieja que la de aquí: no se sincroniza hasta mirarlo.")
 	// ErrOcupado: ya hay una pasada en marcha. La que está en marcha hará otra al
 	// terminar, así que no se pierde nada.
 	ErrOcupado = errors.New("Ya se está sincronizando")

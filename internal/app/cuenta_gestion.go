@@ -71,7 +71,7 @@ func (a *App) cambiarMaestraEnLaCuenta(b *boveda.Boveda, nueva string) error {
 	memoria := sincro.JuntoALaBoveda{Ruta: b.Ruta()}
 	for intento := 0; intento < 3; intento++ {
 		if _, err := s.Sincronizar(ctx); err != nil {
-			return fmt.Errorf("Hace falta conexión con el servidor para cambiar la contraseña de la cuenta: %w", err)
+			return fmt.Errorf("Hace falta conexión para cambiar la contraseña de la cuenta: %w", err)
 		}
 		recuerdo, _, err := memoria.Cargar()
 		if err != nil {
@@ -109,7 +109,7 @@ func (a *App) cambiarMaestraEnLaCuenta(b *boveda.Boveda, nueva string) error {
 		}
 		return memoria.Guardar(sincro.Recuerdo{Version: version, Serie: serie}, datos)
 	}
-	return errors.New("Otros equipos están cambiando la bóveda a la vez; prueba otra vez en un momento")
+	return errors.New("Otro equipo está cambiando la bóveda: prueba otra vez en un momento.")
 }
 
 // ------------------------------------------------------------------ recuperar

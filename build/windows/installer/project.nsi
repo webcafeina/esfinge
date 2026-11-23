@@ -1,4 +1,4 @@
-# El instalador de Esfinge para Windows.
+﻿# El instalador de Esfinge para Windows.
 #
 # **Es la plantilla de Wails v2.15.0 con una sola diferencia: lleva el puente del
 # navegador** (`esfinge-puente.exe`) junto a Esfinge. Sin él la extensión no puede
@@ -9,6 +9,17 @@
 # llamar a Wails, que es desde donde `makensis` resuelve la ruta relativa.
 #
 Unicode true
+
+# **Y el fichero va con marca de orden de bytes (BOM), que no es un adorno.**
+#
+# Con `Unicode true`, `makensis` sólo sabe que esto es UTF-8 **si lleva BOM**; sin
+# ella lo lee en la codificación del sistema, y entonces las tildes, la eñe, las
+# comillas angulares y el «©» salen convertidos en basura **dentro del instalador
+# que ve el cliente**. Lo vio él con la 2.76.0 —«muestra caracteres raros»— y aquí
+# no se puede comprobar, porque `makensis` sólo corre en la máquina que publica.
+#
+# Ojo con editar este fichero: hay editores que quitan el BOM al guardar. Lo vigila
+# `TestElGuionDelInstaladorLlevaBOM`.
 
 ####
 ## Please note: Template replacements don't work in this file. They are provided with default defines like
@@ -42,6 +53,28 @@ Unicode true
 ####
 ## Include the wails tools
 ####
+
+# **Los dos nombres con acento se definen aquí, antes de incluir el fichero de
+# Wails, y es a propósito.**
+#
+# `wails_tools.nsh` lo **genera Wails** en cada compilación a partir de
+# `wails.json`, y lo escribe en UTF-8 **sin BOM**: `makensis` lo lee entonces en la
+# codificación del sistema y «Webcafeína» se convierte en otra cosa. Eso no es
+# cosmético: de ahí sale `InstallDir`, o sea **la carpeta donde se instala**.
+#
+# La plantilla de Wails dice que lo que se defina antes del `!include` él no lo
+# toca, así que definiéndolo aquí —en un fichero que sí lleva BOM— el nombre llega
+# entero. Lo demás que genera es ASCII y no corre peligro.
+#
+# **Y «Webcafeina» va sin tilde a propósito**, que es lo otro que costó: una carpeta
+# con tilde en `Program Files` depende de que toda la cadena —makensis, el
+# instalador, el desinstalador y el registro— la trate igual, y con la 2.76.0 eso
+# falló al instalar («Error abriendo archivo para la escritura»). El nombre con
+# tilde se sigue viendo donde se lee: en la ventana, en Acerca de y en el recurso de
+# versión del ejecutable, que es donde importa.
+!define INFO_COMPANYNAME "Webcafeina"
+!define INFO_COPYRIGHT   "(c) Webcafeina"
+
 !include "wails_tools.nsh"
 
 # The version information for this two must consist of 4 parts

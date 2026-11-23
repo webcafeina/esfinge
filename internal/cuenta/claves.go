@@ -107,7 +107,7 @@ func NormalizarCorreo(c string) (string, error) {
 // en que se copió.
 func MaestraSirve(maestra string) error {
 	if cripto.Evaluar(maestra).Nivel < 3 {
-		return errors.New("Con cuenta, la contraseña maestra tiene que ser al menos «Buena»: alárgala o usa varias palabras sin relación")
+		return errors.New("Con cuenta la maestra tiene que llegar a «Buena». Prueba con varias palabras sin relación.")
 	}
 	return nil
 }

@@ -296,8 +296,7 @@ function CrearCuenta({
           {floja && (
             <>
               <p className="aviso">
-                Tu contraseña no llega a «Buena» y con cuenta hace falta. La nueva abrirá tu
-                bóveda y tu cuenta.
+                Con cuenta hace falta que llegue a «Buena». La nueva abrirá las dos.
               </p>
               <CampoClave
                 id="cuenta-maestra-nueva"
@@ -463,7 +462,7 @@ function EntrarEnCuenta({
           {juntar ? (
             <>
               <p className="nota">
-                Lo que tiene la de este ordenador pasa a la cuenta, y lo verás en todos tus equipos.
+                Lo de este ordenador pasa a la cuenta y lo verás en todos.
               </p>
               <CampoClave
                 id="cuenta-maestra-local"
@@ -537,8 +536,7 @@ function EntrarEnCuenta({
               onKeyDown={(e) => e.key === "Enter" && codigo.length === 6 && confirmar()}
             />
             <p className="nota">
-              Solo la primera vez en cada equipo. Caduca en diez minutos; si no lo ves, mira en el
-              correo no deseado.
+              Caduca en diez minutos. Si no lo ves, mira en el correo no deseado.
             </p>
           </div>
         </div>
@@ -687,7 +685,7 @@ function RecuperarCuenta({
               value={clave}
               onChange={(e) => setClave(e.target.value)}
             />
-            <p className="nota">La que apuntaste al crear la bóveda. Da igual en mayúsculas o minúsculas.</p>
+            <p className="nota">La que apuntaste al crear la bóveda.</p>
           </div>
           <CampoClave id="recuperar-nueva" etiqueta="Contraseña maestra nueva" valor={nueva} alCambiar={setNueva} />
           <div>
@@ -1019,8 +1017,7 @@ export function GrupoCuenta({
       <div className="grupo">
         <h2>Cuenta y sincronización</h2>
         <p className="nota">
-          Tu bóveda está solo en este ordenador. Con cuenta estaría en todos, cifrada antes de
-          salir de aquí.
+          Con cuenta estaría en todos tus equipos, cifrada antes de salir de aquí.
         </p>
         <div className="botones">
           <button onClick={alCrearCuenta}>Crear una cuenta</button>
@@ -1154,8 +1151,7 @@ function EquiposDeLaCuenta() {
         </ul>
       )}
       <p className="nota">
-        Olvidar un equipo le cierra la sesión: tendrá que entrar otra vez con tu contraseña y un
-        código. Lo que tenga en su disco se queda allí, cifrado.
+        Tendrá que volver a entrar. Lo que ya tenga en su disco se queda allí, cifrado.
       </p>
       {error && <p className="error">{error}</p>}
     </div>
@@ -1204,7 +1200,7 @@ function BorrarLaCuenta({ alBorrar, conSesion }: { alBorrar: () => void; conSesi
       </div>
       {!conSesion && (
         <p className="nota">
-          Para exportar o borrar la cuenta, abre la bóveda y, si lo pide, vuelve a entrar en la cuenta.
+          Para exportar o borrar la cuenta, abre antes la bóveda.
         </p>
       )}
       {exportado && <p className="exito seleccionable">Guardado en {exportado}</p>}

@@ -23,6 +23,37 @@ export function aplicarTema(t: string | undefined): void {
   const raiz = document.documentElement;
   if (t === "claro" || t === "oscuro") raiz.dataset.tema = t;
   else delete raiz.dataset.tema;
+  marcarSiElMaterialNoCuadra();
+}
+
+/**
+ * **Dice si el material del sistema se ha quedado del otro tema.**
+ *
+ * Bajo vidrio, la barra lateral **no lleva fondo propio**: el material del sistema
+ * *es* el fondo (ADR 0017). Y ese material lo elige macOS por la apariencia de la
+ * ventana, que sigue a la del equipo y **no sabe nada de este atributo**: Wails sólo
+ * deja elegirla al arrancar (`options.Mac.Appearance`), así que al forzar un tema
+ * distinto del que tiene el Mac, todo se pinta oscuro y **la barra lateral se queda
+ * clara**. Lo vio el cliente con la 2.76.0.
+ *
+ * Cuando eso pasa se marca aquí, y la hoja de macOS **le devuelve su fondo** a la
+ * barra: deja de ser vidrio, que es lo honesto —el material de debajo es el que no
+ * toca— y se ve de una pieza. Cuando el tema elegido coincide con el del equipo, el
+ * vidrio se queda como siempre.
+ *
+ * `matchMedia` contesta por **el equipo**, no por lo que digamos nosotros, que es
+ * justo lo que hace falta para poder compararlos.
+ */
+function marcarSiElMaterialNoCuadra(): void {
+  const raiz = document.documentElement;
+  const elegido = raiz.dataset.tema;
+  if (!elegido) {
+    delete raiz.dataset.material;
+    return;
+  }
+  const delEquipo = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "oscuro" : "claro";
+  if (elegido === delEquipo) delete raiz.dataset.material;
+  else raiz.dataset.material = "ajeno";
 }
 
 /**

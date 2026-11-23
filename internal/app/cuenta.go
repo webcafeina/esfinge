@@ -407,7 +407,7 @@ func (a *App) TerminarRegistro(correo, codigo, maestra, nueva string) (string, e
 			efectiva = nueva
 		} else if err := maestraSirveParaCuenta(maestra); err != nil {
 			abierta.Cerrar()
-			return "", errors.New("Tu contraseña maestra de ahora no llega a «Buena», y con cuenta hace falta: pon una nueva")
+			return "", errors.New("Tu maestra no llega a «Buena», y con cuenta hace falta: pon una nueva.")
 		}
 		if b = a.boveda(); b == nil {
 			b = abierta
@@ -560,7 +560,7 @@ func (a *App) terminarEntrada(p *entradaPendiente, s cuenta.Sesion) (ResultadoEn
 	if errLocal != nil {
 		// Nada en este equipo: la bóveda de la cuenta es la de aquí.
 		if remota == nil {
-			return ResultadoEntrada{}, errors.New("Esta cuenta todavía no tiene bóveda, y en este equipo tampoco hay ninguna")
+			return ResultadoEntrada{}, errors.New("Esta cuenta no tiene bóveda, y en este equipo tampoco.")
 		}
 		if err := remota.GuardarEn(ruta); err != nil {
 			return ResultadoEntrada{}, err
@@ -751,7 +751,7 @@ func confianzaDe(d datosCuenta, b *boveda.Boveda) string {
 // ErrFaltaElCodigo: la contraseña es la nueva de la cuenta, y este equipo tiene que
 // confirmarlo con el código que ha llegado al correo. La ventana lo sabe por
 // EstadoDeCuenta().CodigoPendiente, no por la frase.
-var ErrFaltaElCodigo = errors.New("Es la contraseña nueva de tu cuenta: escribe el código que te acaba de llegar al correo")
+var ErrFaltaElCodigo = errors.New("Para la contraseña nueva, escribe el código que te acaba de llegar al correo.")
 
 // abrirConLaCuenta es lo que hace AbrirBoveda cuando la contraseña no abre la
 // copia de este equipo y el equipo está en una cuenta: puede ser **la nueva**,
@@ -773,7 +773,7 @@ func (a *App) abrirConLaCuenta(llave string, original error) error {
 	ctx := a.ctxCuenta()
 	pre, err := a.cliente().Prelogin(ctx, d.Correo)
 	if err != nil {
-		return errors.New("Esa contraseña no abre la copia de este equipo. Si la cambiaste en otro, hace falta conexión para ponerla al día")
+		return errors.New("Esa contraseña no abre la copia de este equipo. Si la cambiaste en otro, hace falta conexión.")
 	}
 	clave, err := cuenta.DerivarAcceso(llave, pre.Sal, pre.Argon2)
 	if err != nil {

@@ -136,7 +136,7 @@ export function Proyectos({
     return (
       <div className="panel">
         <p className="aviso">
-          Abre tu bóveda para ver tus proyectos. Sus nombres viven dentro de ella, cifrados.
+          Abre tu bóveda: sus nombres viven dentro, cifrados.
         </p>
       </div>
     );
@@ -214,8 +214,7 @@ export function Proyectos({
   return (
     <div className="panel">
       <p className="entradilla">
-        Una bóveda por proyecto o por cliente, con lo mismo que la tuya dentro. Se abren con tu misma
-        contraseña maestra y <strong>solo una está abierta a la vez</strong>.
+        Una por proyecto o por cliente, con lo mismo dentro y tu misma maestra. <strong>solo una está abierta a la vez</strong>.
       </p>
 
       {error && <p className="error">{error}</p>}
@@ -282,8 +281,7 @@ export function Proyectos({
 
       {lista != null && vivos.length === 0 && !creando && (
         <p className="nota">
-          Todavía no tienes ninguna. Guardan lo mismo que la tuya y se entregan enteras el día que
-          el proyecto acabe.
+          Guardan lo mismo que la tuya y se entregan enteras al acabar.
         </p>
       )}
 
@@ -553,15 +551,14 @@ export function LlevarEntrada({
 
       <h2>Llevar «{titulo}» a otra bóveda</h2>
       <p className="nota">
-        Al moverla, aquí queda en la papelera durante 30 días. La contraseña no sale de Esfinge en ningún
-        momento.
+        Aquí queda en la papelera 30 días. La contraseña no sale de Esfinge.
       </p>
 
       {error && <p className="error">{error}</p>}
 
       {lista != null && destinos.length === 0 && (
         <p className="nota">
-          No hay ninguna otra bóveda en este ordenador. Crea una en «Proyectos», o baja una que esté dormida.
+          No hay otra bóveda aquí. Crea una en «Proyectos» o baja una dormida.
         </p>
       )}
 
@@ -644,7 +641,7 @@ function AlAcabarElProyecto({
       <div className="al-acabar">
         <h3>Entregar «{proyecto.nombre}»</h3>
         <p className="nota">
-          Se guarda una copia con la contraseña que le pongas. A partir de ahí es suya.
+          Una copia con la contraseña que le pongas. A partir de ahí es suya.
         </p>
         <label htmlFor={`entregar-${proyecto.ref}`}>Contraseña para quien la reciba</label>
         <input
@@ -1172,8 +1169,7 @@ function ElAcceso({
           <p className="nota">
             {permiso === "ver" ? (
               <>
-                <strong>«Solo ver» lo decide el servidor, no el cifrado.</strong> Puede escribir en
-                su copia; lo que no puede es subirla, así que nadie más lo verá.
+                <strong>«Solo ver» lo decide el servidor, no el cifrado.</strong> Puede escribir en su copia, pero no subirla: nadie más lo verá.
               </>
             ) : (
               <>

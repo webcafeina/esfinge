@@ -1017,3 +1017,18 @@
 :root[data-sistema="darwin"] .panel > .segmentado > button {
   flex: 0 0 auto;
 }
+
+/* ----------------------------------- cuando el material del sistema no cuadra
+ *
+ * Bajo vidrio la barra lateral no lleva fondo propio: el material **es** el fondo.
+ * Pero ese material lo elige macOS por la apariencia de la ventana, que sigue a la
+ * del equipo — y Wails sólo deja elegirla al arrancar. Así que al elegir aquí un
+ * tema distinto del que tiene el Mac, el contenido se pinta del tema elegido y **la
+ * barra lateral se queda del otro**, que es lo que el cliente vio con la 2.76.0.
+ *
+ * Entonces se le devuelve su fondo. Deja de verse el vidrio en esa franja, y es lo
+ * honesto: el material de debajo es justo el que no toca. Lo marca `tema.ts`, que es
+ * quien puede comparar el tema elegido con el del equipo. */
+:root[data-sistema="darwin"][data-material="ajeno"] .lateral {
+  background: var(--barra);
+}

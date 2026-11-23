@@ -387,7 +387,7 @@ func (a *Ajustes) PonerHuellaDelServidor(huella, correo string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if a.p.CorreoDelServidor != correo {
-		return errors.New("El correo del servidor ha cambiado mientras mirabas la huella; vuelve a pedirla")
+		return errors.New("El correo ha cambiado mientras mirabas la huella: vuelve a pedirla.")
 	}
 	a.p.HuellaDelServidor = huella
 	return a.guardar()

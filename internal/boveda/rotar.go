@@ -37,7 +37,7 @@ var ErrSoloElDueno = errors.New("Rotar la clave de esta bóveda lo hace quien te
 // Pasa con una abierta desde la línea de comandos con su clave suelta: ahí no hay con qué
 // reenvolver la ranura principal, y hacerlo sin ella dejaría la bóveda **sin forma de
 // abrirse desde la ventana**, que es justo lo contrario de lo que se quiere.
-var ErrSinLaPersonal = errors.New("Esta bóveda hay que abrirla desde tu bóveda personal para poder rotar su clave")
+var ErrSinLaPersonal = errors.New("Para rotar su clave, ábrela desde tu bóveda personal.")
 
 // RotarLasClaves vuelve a cifrar la bóveda con claves nuevas y la deja abierta solo para
 // quien tiene acceso ahora mismo. `para` son las identidades de esos titulares, que no
@@ -181,7 +181,7 @@ func (b *Boveda) mismaHuellaQueCuandoSeLeDio(id string, quien Identidad) error {
 			continue
 		}
 		if t.Huella == "" {
-			return fmt.Errorf("De %s no hay huella apuntada, así que no puedo saber si sus llaves son las de entonces: quítale el acceso y vuelve a dárselo", t.Correo)
+			return fmt.Errorf("No hay huella apuntada de %s: no sé si sus llaves son las de entonces. Quítale el acceso y vuelve a dárselo.", t.Correo)
 		}
 		ahora := HuellaDeIdentidad(quien.Suite, quien.Cifrado, quien.Firma)
 		if ahora != t.Huella {
@@ -189,5 +189,5 @@ func (b *Boveda) mismaHuellaQueCuandoSeLeDio(id string, quien Identidad) error {
 		}
 		return nil
 	}
-	return fmt.Errorf("Hay una ranura de acceso (%s) que no sé de quién es, así que no puedo volver a sellarla", id)
+	return fmt.Errorf("Hay una ranura de acceso (%s) que no sé de quién es: no puedo volver a sellarla.", id)
 }

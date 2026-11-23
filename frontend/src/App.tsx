@@ -2019,7 +2019,7 @@ function Ajustes({
             <strong> a qué sitios pregunta</strong>.
           </p>
           <p className="nota">
-            Va poco a poco, y se guardan cifrados junto a la bóveda.
+            Poco a poco, y cifrados junto a la bóveda.
           </p>
           <div className="botones">
             <button
@@ -2270,9 +2270,6 @@ function Ajustes({
             <Icono nombre="boveda" />
             <div>
               <h3>La bóveda</h3>
-              <p className="nota">
-                Cuándo se cierra sola, cómo se abre y qué se borra al copiar.
-              </p>
             </div>
           </header>
           <TarjetaAjuste
@@ -2292,7 +2289,7 @@ function Ajustes({
               ))}
               </select>
             }
-            nota="Cerrarla obliga a escribir otra vez la contraseña maestra. Con «nunca» se queda abierta hasta que la cierres."
+            nota="Después vuelve a pedir la maestra."
           />
 
           <DesbloqueoDelSistema />
@@ -2300,7 +2297,7 @@ function Ajustes({
           <TarjetaAjuste
             id="descargar-iconos"
             titulo="Descargar el icono de cada sitio de la bóveda"
-            nota="Pide el icono a cada sitio de tu bóveda y lo guarda cifrado. Quien mire tu red verá a qué sitios pregunta."
+            nota="Se lo pide a cada sitio, así que quien mire tu red verá a cuáles."
             puesto={prefs?.descargarIconos ?? true}
             trabajando={cargando}
             alCambiar={(v) => cambiar({ descargarIconos: v, iconosAvisados: true })}
@@ -2323,7 +2320,7 @@ function Ajustes({
               ))}
               </select>
             }
-            nota="Vale para las de la bóveda y para las que generes aquí. Nunca se pisa lo que copies tú."
+            nota="También las que generes aquí. Nunca pisa lo que copies tú."
           />
         </section>
       )}
@@ -2334,7 +2331,7 @@ function Ajustes({
             <Icono nombre="navegador" />
             <div>
               <h3>El navegador</h3>
-              <p className="nota">La extensión de Esfinge: rellenar, guardar y los códigos.</p>
+              <p className="nota">Rellenar, guardar y los códigos.</p>
             </div>
             {/* **El interruptor de la sección vive en su cabecera**, y solo ahí. Dejar
                 también la casilla de antes sería preguntar dos veces lo mismo y dejar
@@ -2364,8 +2361,7 @@ function Ajustes({
               se haya entrado con la cuenta, eso dejaría de rellenar sin avisar. */}
           {cuenta?.modo === "cuenta" && (
             <p className="nota">
-              <strong>Con cuenta no hace falta.</strong> El panel de la extensión funciona solo,
-              también con Esfinge cerrada.
+              <strong>Con cuenta no hace falta.</strong> Su panel funciona también con Esfinge cerrada.
             </p>
           )}
 
@@ -2381,8 +2377,7 @@ function Ajustes({
                 <p className="nota">Avisados: {navegador.avisados.join(", ")}.</p>
               ) : (
                 <p className="aviso">
-                  No se ha avisado a ningún navegador. El canal está abierto, pero ninguno sabe
-                  que existe.
+                  El canal está abierto y ningún navegador lo sabe todavía.
                 </p>
               )}
             </>
@@ -2398,7 +2393,7 @@ function Ajustes({
           <TarjetaAjuste
             id="llaves-en-el-navegador"
             titulo="Usar tus llaves de acceso en el navegador"
-            nota="Cuando un sitio pida una llave de acceso, Esfinge ofrecerá la tuya. Apágalo si algún sitio deja de dejarte entrar."
+            nota="Esfinge las ofrece cuando un sitio las pide. Apágalo si alguno falla."
             puesto={prefs?.llavesDeAccesoEnElNavegador ?? true}
             trabajando={cargando}
             alCambiar={(v) => cambiar({ llavesDeAccesoEnElNavegador: v })}
@@ -2614,7 +2609,6 @@ function Ajustes({
             <Icono nombre="tema" />
             <div>
               <h3>Aspecto</h3>
-              <p className="nota">Claro, oscuro, o el que tenga puesto el sistema.</p>
             </div>
           </header>
           <Segmentado
@@ -2634,9 +2628,6 @@ function Ajustes({
               void cambiar({ tema: t });
             }}
           />
-          <p className="nota">
-            Con «el del sistema», la ventana cambia sola cuando lo hace el equipo.
-          </p>
         </section>
       )}
 
@@ -2647,13 +2638,12 @@ function Ajustes({
             <Icono nombre="descargar" />
             <div>
               <h3>Actualizaciones</h3>
-              <p className="nota">Una de las dos salidas a internet, con la de los iconos.</p>
             </div>
           </header>
           <TarjetaAjuste
             id="buscar-actualizaciones"
             titulo="Avisarme cuando haya una versión nueva"
-            nota="Una vez al día mira si hay versión nueva. No se manda nada de tu bóveda."
+            nota="Mira una vez al día. No sale nada de tu bóveda."
             puesto={prefs?.buscarActualizaciones ?? true}
             trabajando={cargando}
             alCambiar={(v) => cambiar({ buscarActualizaciones: v })}
@@ -2680,8 +2670,7 @@ function Ajustes({
         </p>
 
         <p className="nota">
-          Al actualizar no hay que desinstalar nada. Tu historial y estos ajustes se quedan como
-          están.
+          No hay que desinstalar nada.
         </p>
 
         </>
@@ -2715,7 +2704,7 @@ function Historial({ recargar: aLaVista }: { recargar: boolean }) {
   return (
     <div className="panel">
       <p className="entradilla">
-        Solo qué fichero y cuándo. Nunca el contenido, ni la clave, ni el texto cifrado.
+        Qué fichero y cuándo. Nunca el contenido ni la clave.
       </p>
 
       {entradas.length === 0 ? (

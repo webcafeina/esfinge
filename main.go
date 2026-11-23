@@ -14,10 +14,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -185,8 +188,40 @@ func main() {
 		},
 	})
 	if err != nil {
+		apuntarElArranqueFallido(err)
 		log.Fatal(err)
 	}
+}
+
+// apuntarElArranqueFallido deja por escrito por qué no se ha podido abrir.
+//
+// **Un fallo mudo no se depura, y éste era mudo del todo.** Una aplicación con
+// ventana no tiene consola: en Windows, `log.Fatal` escribe en una salida de error
+// que no lee nadie, así que si `wails.Run` falla lo que se ve es **el cursor de
+// espera medio segundo y nada más**. Le pasó al cliente con la 2.76.0 y desde aquí
+// no hay forma de saber qué dijo, porque esta parte sólo corre en su máquina.
+//
+// Se escribe al lado de las preferencias, que es donde ya mira quien arregla, y se
+// **añade** en vez de pisar: dos arranques fallidos seguidos dicen más que uno.
+// Nada de lo que va aquí es secreto —es el error de la ventana, no de la bóveda— y
+// si no se puede escribir, se calla: lo último que debe hacer un fallo de arranque
+// es provocar otro.
+func apuntarElArranqueFallido(err error) {
+	dir, e := os.UserConfigDir()
+	if e != nil {
+		return
+	}
+	carpeta := filepath.Join(dir, "Esfinge")
+	if e := os.MkdirAll(carpeta, 0o700); e != nil {
+		return
+	}
+	f, e := os.OpenFile(filepath.Join(carpeta, "arranque.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if e != nil {
+		return
+	}
+	defer f.Close()
+	fmt.Fprintf(f, "%s · Esfinge %s · %s/%s · no se ha podido abrir la ventana: %v\n",
+		time.Now().Format(time.RFC3339), version, runtime.GOOS, runtime.GOARCH, err)
 }
 
 // fondoDeLaVentana es transparente cuando hay vidrio y nada cuando no lo hay.

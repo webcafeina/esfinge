@@ -200,8 +200,7 @@ function Crear({ alCrear }: { alCrear: (recuperacion: string) => void }) {
   return (
     <div className="panel">
       <p className="entradilla">
-        Un sitio cifrado donde guardar contraseñas, notas, tarjetas y documentos. Vive en este
-        ordenador y no sale de aquí.
+        Contraseñas, notas, tarjetas y documentos, cifrados en este ordenador.
       </p>
 
       <div className="grupo">
@@ -1700,8 +1699,7 @@ function Papelera({
           {/* Se dice el plazo, y se dice que lo de aquí dentro **sigue siendo
               secreto**: es lo que se compra a cambio de poder recuperarlo. */}
           <p className="nota">
-            Lo borrado se guarda entero, con su contraseña, y se va solo a los 30
-            días de haberlo borrado.
+            Se guarda entero, con su contraseña, y se va solo a los 30 días.
           </p>
         </>
       )}
@@ -1844,12 +1842,11 @@ function Detalle({
                     usada antes de que esto se apuntara: el cliente la vio en una llave con la que
                     había entrado el día anterior, rematada con que quizá no servía para nada.
                     Asustar con una suposición es peor que no decir nada. */}
-                <strong>Esfinge no ha apuntado ningún uso de esta llave.</strong> Puede que no hayas
-                entrado aún, o que fuera antes de que esto se apuntara.
+                <strong>Esfinge no ha apuntado ningún uso de esta llave.</strong> Puede que no hayas entrado aún.
               </p>
             )}
             <p className="nota">
-              Una llave de acceso no se puede ver ni copiar: se usa firmando, y la firma la hace Esfinge.
+              No se puede ver ni copiar: se usa firmando, y firma Esfinge.
             </p>
           </>
         )}
@@ -2550,8 +2547,7 @@ function Traer({ llaves, alTraer }: { llaves: number; alTraer: () => Promise<voi
 
       {llaves === 0 && (
         <p className="nota">
-          Todavía no hay ninguna llave de acceso. Las guarda el navegador cuando un sitio te la
-          pide; no se pueden crear a mano.
+          Las guarda el navegador cuando un sitio te la pide; no se crean a mano.
         </p>
       )}
 

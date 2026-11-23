@@ -175,8 +175,8 @@ export function Compartir({
         <>
           <h3>Esperando</h3>
           <p className="nota">
-            Se les mandó una invitación. La copia sale sola en cuanto creen su cuenta, con Esfinge
-            abierta en algún equipo tuyo. Al mes se deja de intentar.
+            La copia sale sola en cuanto creen su cuenta, con Esfinge abierta. Al mes se deja de
+            intentar.
           </p>
           <ul className="lista-papelera">
             {esperando.map((e) => (

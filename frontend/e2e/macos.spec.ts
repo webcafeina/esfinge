@@ -321,3 +321,48 @@ test("la cápsula de plegar va al canto de la barra lateral y se muda al plegarl
   const tituloX = await page.locator(".herramientas h1").evaluate((e) => e.getBoundingClientRect().x);
   expect(tituloX, "el título se ha quedado encima de la cápsula").toBeGreaterThan(finCapsula);
 });
+
+// **Con vidrio, elegir un tema distinto del que tiene el Mac le devuelve el fondo a
+// la barra lateral.**
+//
+// Bajo vidrio la barra lateral no lleva fondo propio: el material del sistema **es**
+// el fondo (ADR 0017). Pero ese material lo elige macOS por la apariencia de la
+// ventana, que sigue a la del equipo, y Wails sólo deja elegirla **al arrancar**. Así
+// que al elegir aquí un tema distinto del que tiene el Mac, el contenido se pinta del
+// elegido y la barra lateral se queda del otro. Lo vio el cliente con la 2.76.0: «el
+// modo oscuro no coge la parte de la barra lateral izquierda».
+//
+// Se ejercita **por la pantalla**, eligiendo en Ajustes como se elige de verdad: la
+// regla de cuándo el material no cuadra vive en `tema.ts`, y una prueba que la
+// repitiera aquí estaría comprobándose a sí misma.
+test("con vidrio, un tema distinto del equipo le devuelve el fondo a la barra lateral", async ({
+  page,
+}, info) => {
+  await page.goto("/?sistema=darwin&vidrio=si");
+  await expect(page.locator(".lateral")).toBeVisible();
+
+  const delEquipo = info.project.name === "oscuro" ? "Oscuro" : "Claro";
+  const elOtro = info.project.name === "oscuro" ? "Claro" : "Oscuro";
+  const fondo = () =>
+    page.locator(".lateral").evaluate((e) => getComputedStyle(e).backgroundColor);
+  const elegir = (n: string) =>
+    page.locator(".panel:visible").getByRole("tab", { name: n, exact: true }).click();
+
+  await page.locator(".lateral").getByRole("button", { name: "Ajustes", exact: true }).click();
+  await page.locator(".panel:visible").getByRole("tab", { name: "Apariencia" }).click();
+
+  // El del equipo: el material sí cuadra, así que la barra sigue siendo vidrio.
+  await elegir(delEquipo);
+  await expect(page.locator("html")).not.toHaveAttribute("data-material", /.*/);
+  expect(await fondo(), "con el tema del equipo la barra lateral tapa el material").toBe(
+    "rgba(0, 0, 0, 0)",
+  );
+
+  // Y el otro: el material se queda del revés, así que la barra recupera su fondo.
+  await elegir(elOtro);
+  await expect(page.locator("html")).toHaveAttribute("data-material", "ajeno");
+  expect(
+    await fondo(),
+    "con un tema distinto del equipo la barra lateral se queda enseñando el material",
+  ).not.toBe("rgba(0, 0, 0, 0)");
+});

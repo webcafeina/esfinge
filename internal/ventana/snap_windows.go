@@ -5,6 +5,7 @@
 package ventana
 
 import (
+	"log"
 	"sync/atomic"
 	"unsafe"
 
@@ -69,7 +70,26 @@ const (
 var (
 	user32   = windows.NewLazySystemDLL("user32.dll")
 	gdi32    = windows.NewLazySystemDLL("gdi32.dll")
-	comctl32 = windows.NewLazySystemDLL("comctl32.dll")
+	// **`comctl32` va por `NewLazyDLL` y no por `NewLazySystemDLL`, y en esa
+	// palabra se fue una versión entera.**
+	//
+	// `SetWindowSubclass` y `DefSubclassProc` **sólo se exportan por su nombre en
+	// la versión 6** de esa biblioteca; en la 5.82 están únicamente por número. La
+	// versión 6 se consigue por el manifiesto —Wails pide los controles comunes— y
+	// esa redirección la resuelve el contexto de activación **al cargar por
+	// nombre**. `NewLazySystemDLL` carga con `LOAD_LIBRARY_SEARCH_SYSTEM32`, que
+	// **se salta ese contexto** y trae la 5.82 de `System32`; entonces el `.Call()`
+	// no encuentra la función y **entra en pánico**.
+	//
+	// Lo que se ve desde fuera es lo peor: la aplicación no abre, no sale ninguna
+	// ventana y **el Visor de eventos no apunta nada**, porque un pánico de Go no
+	// es un fallo de aplicación de Windows. Medio segundo de cursor y nada. Así
+	// estuvo de la 2.72.0 a la 2.76.0, en todos los Windows: aquí no se puede
+	// ejecutar ninguno y las puertas sólo dicen que enlaza.
+	//
+	// Las otras tres sí van por `System32` a propósito: lo que se pide de ellas
+	// está en todas las versiones y cargarlas de ahí es lo seguro.
+	comctl32 = windows.NewLazyDLL("comctl32.dll")
 	kernel32 = windows.NewLazySystemDLL("kernel32.dll")
 
 	findWindowW       = user32.NewProc("FindWindowW")
@@ -134,6 +154,19 @@ var (
 // `alAvisar` recibe «encima», «pulsado» o «fuera» para que la interfaz ilumine
 // el botón, porque desde que hay una ventana encima la página ya no ve el ratón.
 func Montar(clase string, alto, ancho int, alAvisar func(string)) {
+	// **Y pase lo que pase aquí dentro, la ventana se abre.**
+	//
+	// Esto es una comodidad: el menú de Snap al pasar por encima de «Maximizar».
+	// Lo que hay debajo son llamadas a Win32 por nombre, y una función que no esté
+	// **entra en pánico** — que es exactamente lo que dejó a Esfinge sin abrirse
+	// durante cinco versiones. Una conveniencia no puede tener la capacidad de
+	// impedir que el programa arranque, y menos una que aquí no se puede ejecutar.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("esfinge: el menú de Snap no se ha podido montar: %v", r)
+		}
+	}()
+
 	if clase == "" || alto <= 0 || ancho <= 0 || alAvisar == nil {
 		return
 	}

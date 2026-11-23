@@ -148,7 +148,7 @@ var (
 	// nueva. Se puede leer si el formato lo permite, pero **no se guarda encima**:
 	// escribir sobre algo que no se entiende del todo es borrar lo que no se
 	// entiende.
-	ErrFormatoNuevo = errors.New("Esta bóveda la escribió una versión de Esfinge más nueva; actualiza antes de tocarla")
+	ErrFormatoNuevo = errors.New("La escribió una versión más nueva de Esfinge: actualiza antes de tocarla.")
 	ErrManipulada   = errors.New("La bóveda no cuadra por dentro: alguien ha editado el fichero a mano o está a medias")
 	ErrCambiada     = errors.New("La bóveda ha cambiado en otro sitio desde que se abrió aquí")
 	ErrSinRanura    = errors.New("Esa llave no abre esta bóveda")

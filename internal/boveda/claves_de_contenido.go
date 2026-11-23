@@ -69,7 +69,7 @@ const (
 const RanuraDeContenido = "contenido"
 
 // ErrCadenaNueva es una cadena de una versión que este código no entiende.
-var ErrCadenaNueva = errors.New("Las claves de esta bóveda las escribió una versión de Esfinge más nueva; actualiza antes de tocarla")
+var ErrCadenaNueva = errors.New("Sus claves las escribió una versión más nueva de Esfinge: actualiza antes de tocarla.")
 
 // ClaveDeContenido es una clave con la que se ha cifrado el cuerpo alguna vez.
 type ClaveDeContenido struct {

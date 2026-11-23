@@ -42,7 +42,7 @@ const (
 
 // ErrChecksum dice que lo tecleado no es una clave de recuperación de Esfinge, o
 // que se ha copiado mal. Es un error distinto de «no abre» a propósito.
-var ErrChecksum = errors.New("Esa no parece una clave de recuperación de Esfinge: revísala, puede que falte o sobre un carácter")
+var ErrChecksum = errors.New("Eso no parece una clave de recuperación: puede que falte o sobre un carácter.")
 
 // NuevaRecuperacion genera una clave nueva y la devuelve ya presentada, lista
 // para enseñarla y apuntarla.
