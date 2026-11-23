@@ -68,8 +68,8 @@ const (
 )
 
 var (
-	user32   = windows.NewLazySystemDLL("user32.dll")
-	gdi32    = windows.NewLazySystemDLL("gdi32.dll")
+	user32 = windows.NewLazySystemDLL("user32.dll")
+	gdi32  = windows.NewLazySystemDLL("gdi32.dll")
 	// **`comctl32` va por `NewLazyDLL` y no por `NewLazySystemDLL`, y en esa
 	// palabra se fue una versión entera.**
 	//

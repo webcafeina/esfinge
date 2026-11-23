@@ -113,7 +113,7 @@ test("una clave de recuperación con una errata se distingue de una que no abre"
   // «has perdido la bóveda», y se ve antes de gastar medio segundo derivando.
   await page.locator("#boveda-llave").fill("ESF-ABCD-EFGH-JKMN-PQRS-TVWX-YZ01-2345-6789");
   await accion(page, "Abrir la bóveda").click();
-  await expect(page.locator(".error:visible")).toContainText("revísala");
+  await expect(page.locator(".error:visible")).toContainText("falte o sobre un carácter");
 
   await page.locator("#boveda-llave").fill("esta no es la contraseña");
   await accion(page, "Abrir la bóveda").click();

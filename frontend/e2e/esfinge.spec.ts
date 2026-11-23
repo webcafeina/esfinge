@@ -2818,7 +2818,10 @@ test("con la bóveda cerrada, Proyectos dice qué hacer y no enseña ningún nom
 
   await seccion(page, "Proyectos").click();
   const panel = page.locator(".panel:visible");
-  await expect(panel.getByText("Abre tu bóveda para ver tus proyectos", { exact: false })).toBeVisible({
+  // Se cita **el trozo que lleva el significado**, no la frase entera: lo que esta
+  // prueba vigila es que se diga qué hacer, y pinchando toda la frase se cae con
+  // cada retoque de los textos — pasó con la auditoría del 2026-11-23.
+  await expect(panel.getByText("Abre tu bóveda", { exact: false })).toBeVisible({
     timeout: 20_000,
   });
   // Y no hay lista: no es que esté vacía, es que no se puede leer.

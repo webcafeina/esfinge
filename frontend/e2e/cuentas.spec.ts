@@ -353,7 +353,7 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await retratar(b, "ajustes-salir");
   await accion(b, "Dejar la cuenta en este equipo").click();
   await expect(accion(b, "Crear una cuenta")).toBeVisible();
-  await expect(b.getByText("Tu bóveda está solo en este ordenador.")).toBeVisible();
+  await expect(b.getByText("Con cuenta estaría en todos", { exact: false })).toBeVisible();
   expect(erroresB, erroresB.join(" | ")).toEqual([]);
 
   // ---------------------------------------------------------------- una maestra floja
@@ -369,7 +369,8 @@ test("de la bienvenida de un equipo a la bóveda del otro", async ({ browser, re
   await expect(b.locator("#cuenta-codigo")).toBeVisible({ timeout: 20_000 });
   await b.locator("#cuenta-codigo").fill(await codigo(request, otroCorreo));
   await b.locator("#cuenta-maestra").fill(FLOJA);
-  await expect(b.getByText("no llega a «Buena»")).toBeVisible();
+  // Lo que importa es que nombre el listón, no cómo lo diga.
+  await expect(b.getByText("«Buena»", { exact: false })).toBeVisible();
   await expect(accion(b, "Crear la cuenta")).toBeDisabled();
   await b.locator("#cuenta-maestra-nueva").fill(MAESTRA + " nueva");
   await b.locator("#cuenta-maestra-nueva-2").fill(MAESTRA + " nueva");
