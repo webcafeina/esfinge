@@ -2,7 +2,27 @@
 
 Última actualización: **2026-11-23** (segunda sesión del día)
 
-**Lo de esta sesión (2026-11-23, tarde)**: **la fase de GNOME, entera**
+**Lo de esta sesión (2026-11-23, tarde)**: GNOME entero, **dos versiones publicadas** y lo de
+Windows sin tocar, que se aparcó a petición del cliente.
+
+- **2.77.0** · la fase de GNOME ([ADR 0070](adr/0070-gnome-con-yaru.md)).
+- **2.78.0** · fuera la barra de menús en GNOME ([ADR 0071](adr/0071-el-menu-en-gnome.md)), que lo
+  vio él probando la 2.77.0 en su Ubuntu. Y con ella, una **carrera de datos** que cazó la puerta y
+  no venía de ahí: el cerrojo de `llavePrincipal` protegía el campo y no los bytes, así que copiar la
+  clave de la personal mientras otra goroutine la borraba se llevaba **media clave a ceros**.
+- **El VPS está en la 2.78.0**, con su suma comprobada y leyendo la bóveda de Tempero.
+
+**Lo que hay que mirar al retomar, además de Windows:**
+
+- **Homebrew**: el paso que comprueba las recetas en un Mac **se quedó sin máquina** al publicar la
+  2.78.0 —quince minutos en cola y GitHub lo canceló sin asignarle runner—, y con él se quedó sin
+  hacer el empujón al tap. Se relanzó a mano con `gh run rerun 45267484205 --failed`. **Comprobar que
+  el tap sirve 2.78.0**; si no, se reempuja ese canal suelto.
+- **winget acumula cuatro PRs** sin fusionar: 2.75.0, 2.76.0, 2.77.0 y 2.78.0. Son moderadores
+  humanos y el CLA lo firma el flujo, pero cuatro es más cola de la que había.
+- **Chocolatey sigue en 2.66.1**, como desde hace varias versiones.
+
+**Lo de GNOME, en detalle**: **la fase entera**
 ([ADR 0070](adr/0070-gnome-con-yaru.md)). Lo de Windows se aparcó a petición del cliente —«vamos a
 dejar Windows para mañana, vamos a cerrar los sistemas que quedan antes»— y **sigue siendo lo primero
 al retomar**, abajo. **Todo está comprometido y empujado** —el último es `bf4da89`—; lo que no ha

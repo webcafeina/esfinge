@@ -4942,6 +4942,9 @@ de ahí.
   **media clave a ceros**. Lo que costó fue probarlo: **no se reproduce a voluntad** —saltó una vez y
   no volvió en doce pasadas, ni con el arreglo ni sin él—, así que la prueba mira **la consecuencia**
   (la clave es toda `0xAB`; un cero es una clave rota) y no la bandera del detector.
+- **Publicadas la 2.77.0 y la 2.78.0**, con el VPS al día en las dos. En la segunda, el paso que
+  comprueba las recetas de Homebrew en un Mac **se quedó sin máquina** y GitHub lo canceló: el tap no
+  se empujó y se relanzó a mano. Hay que comprobar que sirve 2.78.0.
 - **Queda abierto**: nada de esto se ha visto en una Ubuntu (→ `deuda.md`), el recorrido de capturas
   se queda en la bienvenida a veces (→ `deuda.md`), y **lo de Windows sigue sin resolver y sin
   publicar**.
