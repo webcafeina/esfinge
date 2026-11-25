@@ -4949,6 +4949,50 @@ de ahí.
   se queda en la bienvenida a veces (→ `deuda.md`), y **lo de Windows sigue sin resolver y sin
   publicar**.
 
+## 2026-11-25 · La ficha del paquete, y el instalador que se come los acentos
+
+- **Orientación tras el incidente del VPS**: repositorio limpio y sincronizado, la línea de comandos
+  leyendo la bóveda de Tempero sin el aviso de «esto puede estar viejo», Go y node en su sitio. **No
+  se perdió nada.** Y lo que quedó a medias el día 23 estaba resuelto: el tap de Homebrew ya servía
+  la 2.78.0.
+- **Se revisó por primera vez el camino de instalar con interfaz gráfica**, que es lo que el cliente
+  quería ver. De ahí salió la [ADR 0072](adr/0072-la-ficha-del-paquete.md): el paquete **no llevaba
+  ficha de AppStream** —la que lee un centro de software— y **la ventana del doble clic convierte la
+  descripción a ASCII**, así que él leyó «contrase?as» en la primera línea de un gestor de
+  contraseñas.
+- **Lo nuestro era correcto y se midió**: los bytes del `.deb` publicado son UTF-8 en los tres
+  ficheros, la política pide exactamente eso (5.1), y le pasa igual a **23 de los 966 paquetes
+  instalados** aquí, `gh` entre ellos. La firma del fallo es `iconv -f UTF-8 -t ASCII//TRANSLIT`, que
+  da «contrase?as» clavado. Mitigado y no arreglado: la primera línea va en inglés y en ASCII.
+- **Publicadas la 2.79.0 y la 2.79.1**, las dos con el VPS al día y con la **ficha verificada dentro
+  del paquete publicado**, bajándolo y validándola con `appstreamcli`, no suponiendo que `nfpm` la
+  metiera. El control que genera `nfpm` también se comprobó **construyendo el paquete aquí**.
+- **La primera 2.79.0 se cayó en la puerta**, y fue una prueba de la víspera: `count()` de Playwright
+  **no espera**, así que la guarda de las pestañas de GNOME contaba cero en la máquina de la
+  publicación. La guarda existía para que la prueba no midiera nada sin enterarse y **se cayó ella
+  misma por prematura**. Arreglado en el ayudante, no donde se vio.
+- **Seis pruebas nuevas** en `internal/adjuntos/`, todas mutadas en rojo, **y una nació en verde**:
+  preguntaba si el nombre del fichero *aparecía en* el guion de la AppImage, y aparece también en el
+  comentario que lo explica. Es la trampa del tap de Homebrew otra vez, el mismo día.
+- **Tres cosas que se dijeron mal y quedan corregidas**: la política de Debian **no** exige la
+  descripción en inglés (leídas 5.6.13 y 3.4), **no** hay regla sobre el punto final del resumen, y
+  `gh run watch --exit-status` **sí** devolvió 1 con el flujo en fallo — el cero era de un `echo` al
+  final de mi propia orden, que es la trampa de `make comprobar | tail` con otra cara.
+- **winget: siete PRs y ahora se sabe por qué.** Ninguno bloqueado por el CLA, los siete validados y
+  los siete con `New-Package`: **Esfinge no ha entrado nunca**, así que cada versión espera revisión
+  humana. Y su fork estaba 901 commits por detrás, lo que tiró el canal en la 2.79.0; sincronizado y
+  reempujado suelto.
+- **Queda abierto**: probar la **2.79.1** de cero en su Ubuntu 26.10 ARM —se paró por el límite de
+  créditos—, con la receta de borrado completo y estos cinco puntos: que **no haya barra de menús** y
+  esté el **☰ en la cabecera**, la letra y el marco de GTK, los **iconos de Yaru a 16 px**, Ajustes
+  con las seis pestañas en un renglón y la lista en tarjeta, y **Ctrl+1 a Ctrl+6**. Más la
+  **bienvenida** y la **ceremonia de la clave de recuperación**, que casi nunca se ven. El `.deb` es
+  `https://github.com/webcafeina/esfinge/releases/download/v2.79.1/esfinge_2.79.1_arm64.deb`, y el
+  borrado: `sudo apt purge -y esfinge`, `rm -rf ~/.config/Esfinge`, `rm -f ~/.esfinge-servidor` y los
+  manifiestos `com.webcafeina.esfinge.json` de `~/.mozilla/native-messaging-hosts/` y de los seis
+  `~/.config/<navegador>/NativeMessagingHosts/`.
+- **Y lo de Windows sigue sin tocar**, que es lo primero al retomar.
+
 ---
 
 ## Plantilla

@@ -2683,6 +2683,22 @@ seguidas, ni con el arreglo ni sin él, así que «lo he corrido seis veces y no
 **mira la consecuencia y no la bandera del detector**: con la clave puesta a `0xAB`, un cero en una
 copia no vacía es una clave rota, y eso se ve con o sin `-race`. Mutada, salta a la primera.
 
+**`Locator.count()` no espera, y una guarda escrita con él se cae ella misma.** (2026-11-25.) El
+auto-waiting de Playwright vive en los matchers de `expect(locator)`; `count()` es **una foto
+instantánea**. La guarda de las pestañas de Ajustes en GNOME contaba justo después de pulsar
+«Ajustes» —y ese panel lo monta React—, así que en la máquina de la publicación contaba **cero** y
+**tiró la 2.79.0** con todo lo demás en verde, pasando aquí siempre y en las ocho pasadas del día
+anterior. Lo irónico es de quién era la guarda: existe para que la prueba **no mida nada sin
+enterarse**, y se cayó por prematura — «cero pestañas» no es «no caben en una fila», es «he mirado
+antes de que la pantalla existiera». Dos cosas más. El arreglo va **en el ayudante que mide**, que es
+de donde beben las dos pruebas, y no donde se vio; y de paso cayó el **`waitForTimeout(150)`** de la
+prueba vecina, que estaba puesto por el cambio de tamaño de la ventana y **tapaba esta misma
+carrera**, o sea que esa pasaba por el motivo equivocado. **La regla general: si una prueba cuenta
+elementos que aparecen por un render, espera a que exista el primero; y un `waitForTimeout` puesto
+por una razón tapa las demás.** Y el corolario de método, que esta vez no se pudo cumplir: quitar el
+arreglo **no pone roja ninguna prueba en esta máquina**, porque es el caso que aquí no ocurre, así
+que la pasada que lo dice es la de la publicación.
+
 ## Lo que Windows y GNOME dejan escrito para KDE
 
 La fase de Windows costó **tres rondas de correcciones suyas** y casi todo lo que salió **se va a

@@ -1,26 +1,50 @@
 # Estado
 
-Última actualización: **2026-11-23** (segunda sesión del día)
+Última actualización: **2026-11-25**
 
-**Lo de esta sesión (2026-11-23, tarde)**: GNOME entero, **dos versiones publicadas** y lo de
-Windows sin tocar, que se aparcó a petición del cliente.
+**Lo de esta sesión (2026-11-25)**: el camino de **instalar en Linux con la interfaz gráfica**, que
+nadie había revisado nunca. Salieron dos cosas y las dos están cerradas
+([ADR 0072](adr/0072-la-ficha-del-paquete.md)):
 
-- **2.77.0** · la fase de GNOME ([ADR 0070](adr/0070-gnome-con-yaru.md)).
-- **2.78.0** · fuera la barra de menús en GNOME ([ADR 0071](adr/0071-el-menu-en-gnome.md)), que lo
-  vio él probando la 2.77.0 en su Ubuntu. Y con ella, una **carrera de datos** que cazó la puerta y
-  no venía de ahí: el cerrojo de `llavePrincipal` protegía el campo y no los bytes, así que copiar la
-  clave de la personal mientras otra goroutine la borraba se llevaba **media clave a ceros**.
-- **El VPS está en la 2.78.0**, con su suma comprobada y leyendo la bóveda de Tempero.
+- **El paquete no llevaba ficha de AppStream**, que es lo que lee un centro de software. Sin ella,
+  Esfinge sale ahí como una entrada pelada y, ya instalada, **no aparece como aplicación instalada**.
+  Ahora la llevan los tres empaquetados, bilingüe, con el identificador del puente del navegador y
+  atada al lanzador por `<launchable>` para no renombrar nada.
+- **La ventana del doble clic convierte la descripción a ASCII** y el cliente leyó **«contrase?as» en
+  la primera línea de un gestor de contraseñas**. No es nuestro —los bytes del paquete son UTF-8
+  correcto, que es lo que pide la política, y le pasa igual a 23 de los 966 paquetes de este
+  servidor— pero esa línea es lo primero que se lee: ahora va **en inglés y en ASCII**, con el
+  español entero debajo, y es **la misma frase** que el `<summary>` de la ficha.
+
+**Publicadas la 2.79.0 y la 2.79.1**, y **el VPS está en la 2.79.1**, con su suma comprobada y
+leyendo la bóveda de Tempero.
+
+**Y la primera 2.79.0 se cayó en la puerta**, por una prueba de ayer: la guarda de las pestañas de
+Ajustes en GNOME contaba con `count()`, que **es una foto instantánea y no espera a nada**, así que
+en la máquina de la publicación miraba antes de que React montara el panel y contaba cero. Aquí pasa
+siempre. Arreglada en `filasDe`, que es de donde beben las dos pruebas que miden, y de paso cayó un
+`waitForTimeout(150)` de la vecina que **tapaba esta misma carrera**. La etiqueta se movió al commit
+arreglado, que se pudo porque la primera no publicó ni un fichero.
 
 **Lo que hay que mirar al retomar, además de Windows:**
 
-- **Homebrew**: el paso que comprueba las recetas en un Mac **se quedó sin máquina** al publicar la
-  2.78.0 —quince minutos en cola y GitHub lo canceló sin asignarle runner—, y con él se quedó sin
-  hacer el empujón al tap. Se relanzó a mano con `gh run rerun 45267484205 --failed`. **Comprobar que
-  el tap sirve 2.78.0**; si no, se reempuja ese canal suelto.
-- **winget acumula cuatro PRs** sin fusionar: 2.75.0, 2.76.0, 2.77.0 y 2.78.0. Son moderadores
-  humanos y el CLA lo firma el flujo, pero cuatro es más cola de la que había.
+- **Probar la 2.79.1 en su Ubuntu 26.10 ARM**, que es donde se quedó: lo iba a instalar de cero
+  —borrando `~/.config/Esfinge` y los manifiestos del navegador— y **se paró por el límite de
+  créditos**. La receta completa de borrado y el enlace del `.deb` están en
+  [`sesiones.md`](sesiones.md).
+- **Nada de GNOME se ha visto en una máquina**, ni la fase ni el menú en la cabecera. Sigue en
+  [`deuda.md`](deuda.md) con la lista de lo que hay que mirar.
+- **winget acumula siete PRs** sin fusionar (2.73.0 a 2.79.1) y ahora se sabe **por qué**: ninguno
+  está bloqueado por el CLA, los siete pasan las validaciones y los siete llevan la etiqueta
+  `New-Package` — **Esfinge no ha entrado nunca en winget**, así que cada versión espera revisión
+  humana de un paquete nuevo. Comprobado: cero PRs fusionados y `manifests/w/Webcafeina` no existe.
+- **Su fork de winget estaba sin sincronizar** y eso tiró el canal en la 2.79.0: 901 commits por
+  detrás y cero por delante, o sea un avance limpio. Sincronizado con `gh repo sync
+  webcafeina/winget-pkgs` y reempujado el canal suelto. **Si vuelve a fallar por eso, es lo primero
+  que hay que mirar.**
 - **Chocolatey sigue en 2.66.1**, como desde hace varias versiones.
+- **Homebrew ya sirve la 2.79.1** — lo que quedó a medias el día 23 se resolvió: el relanzamiento a
+  mano acabó en verde.
 
 **Lo de GNOME, en detalle**: **la fase entera**
 ([ADR 0070](adr/0070-gnome-con-yaru.md)). Lo de Windows se aparcó a petición del cliente —«vamos a
@@ -89,7 +113,10 @@ instalador de marca ([ADR 0067](adr/0067-la-marca-lleva-letra-propia.md)); la **
 > El que haga salir la ventana es el culpable. Y con `ESFINGE_DIAGNOSTICO=1` Wails escribe lo que hace
 > en `%APPDATA%\Esfinge\diagnostico.log`, que es lo que ha permitido llegar hasta aquí.
 >
-> **Hay siete commits sin sacar en una versión** (de `56cb777` a `bf4da89`; están todos en `origin`), y **no se publica hasta resolver esto**
+> **Y se publica igual, que lo decidió el cliente** (2026-11-23, «prefiero sacar la versión»): de la
+> 2.77.0 en adelante han salido cinco versiones con Windows roto. No es un descuido ni una excepción
+> de un día: es su decisión con el coste delante, y se repite hasta que diga otra cosa. **Lo que no
+> cambia es que esto sigue siendo lo primero al retomar.**
 > —sacar una versión que no abre en Windows sería la tercera seguida—. Lo que llevan dentro:
 >
 > - **El arreglo de `comctl32`**, que es un defecto real aunque no fuera la causa: `NewLazySystemDLL`
