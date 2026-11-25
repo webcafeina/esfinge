@@ -13,10 +13,33 @@ version: ${VERSION}
 section: utils
 priority: optional
 maintainer: Webcafeína <info@webcafeina.com>
+# **El inglés delante y el español detrás, y la primera línea en ASCII puro.**
+#
+# Es la misma regla que el listado de Chocolatey y que la ficha de AppStream, y aquí tiene
+# además una razón mecánica: **la ventana que abre un doble clic sobre el `.deb` convierte
+# este texto a ASCII y pone «?» donde hay acentos**. Lo vio el cliente el 2026-11-25
+# leyendo «contrase?as» en la primera línea de un gestor de contraseñas.
+#
+# Lo nuestro es correcto —la política pide los ficheros de control en UTF-8 (5.1) y eso es
+# lo que llevamos, y le pasa igual a 23 de los 966 paquetes de este servidor, `gh` entre
+# ellos—, así que esto no arregla el fallo: lo que hace es que **lo primero que se lee no
+# dependa de quien lo enseña**. Elegido por el cliente entre tres opciones con las tres
+# pantallas delante.
+#
+# La primera línea es el resumen y en muchos sitios es lo único que se ve (política 3.4.1):
+# menos de 80 caracteres y sin repetir el nombre del paquete. Es **la misma frase** que el
+# `<summary>` por omisión de la ficha de AppStream, y hay una prueba que las compara.
+#
+# El ` .` separa los dos párrafos, que es como se hace en un fichero de control. En el `.rpm`
+# —que comparte esta descripción— sale como una línea con un punto suelto: es la única pega y
+# se acepta, porque el `.deb` es el que instala un cliente a mano.
 description: |
-  Cifra y descifra contraseñas y ficheros con una clave.
-  Con ventana propia y con línea de comandos, sobre el mismo núcleo.
-  Nada sale de la máquina.
+  Encrypt passwords and files with one key (app in Spanish)
+  Esfinge encrypts and decrypts passwords and files with a single key, and keeps a
+  local password vault. Its interface and documentation are in Spanish only.
+  .
+  Cifra y descifra contraseñas y ficheros con una clave. Con ventana propia y con
+  línea de comandos, sobre el mismo núcleo. Nada sale de la máquina.
 vendor: Webcafeína
 homepage: https://github.com/webcafeina/esfinge
 license: Propietaria

@@ -248,3 +248,55 @@ func TestLaFichaDeAppStreamHablaLosDosIdiomas(t *testing.T) {
 		t.Errorf("el resumen en inglés no dice que el programa está en español, y es lo primero que necesita saber quien lo lee: %q", pordefecto)
 	}
 }
+
+// **El resumen del paquete es la misma frase que el de la ficha, y va sin acentos.**
+//
+// # Por qué sin acentos, siendo nuestro texto el correcto
+//
+// La ventana que abre un doble clic sobre el `.deb` **convierte esta línea a ASCII y pone «?»
+// donde hay un acento**: el cliente leyó «contrase?as» en la primera línea de un gestor de
+// contraseñas (2026-11-25). El fallo es de quien lo enseña —la política pide los ficheros de
+// control en UTF-8 (5.1) y eso es lo que llevamos, y le pasa igual a `gh` y a otros 22 paquetes de
+// este servidor—, así que esto no lo arregla: hace que **lo primero que se lee no dependa de él**.
+//
+// Y por eso el resumen es **la misma frase** que el `<summary>` por omisión de la ficha: son dos
+// sitios diciendo lo mismo, o sea la séptima vez que una regla en dos listas se puede desalinear
+// aquí. Se comparan.
+func TestElResumenDelPaqueteEsElDeLaFicha(t *testing.T) {
+	nfpm, err := os.ReadFile("../../empaquetado/linux/nfpm.yaml")
+	if err != nil {
+		t.Fatalf("no he podido leer nfpm.yaml: %v", err)
+	}
+	m := regexp.MustCompile(`(?m)^description: \|\n {2}(.+)$`).FindSubmatch(nfpm)
+	if m == nil {
+		t.Fatal("no encuentro el bloque «description» de nfpm.yaml: o ha cambiado de forma o esta prueba no comprueba nada")
+	}
+	resumen := strings.TrimSpace(string(m[1]))
+
+	// Pura ASCII: es lo que sobrevive a la conversión del instalador.
+	for _, r := range resumen {
+		if r > 127 {
+			t.Errorf("el resumen del paquete lleva %q, y la ventana del instalador lo convierte en «?»: %q", r, resumen)
+			break
+		}
+	}
+
+	// La misma frase que la ficha.
+	var deLaFicha string
+	for _, r := range laFicha(t).Resumenes {
+		if r.Idioma == "" {
+			deLaFicha = strings.TrimSpace(r.Texto)
+		}
+	}
+	if resumen != deLaFicha {
+		t.Errorf("el paquete dice %q y la ficha de AppStream %q: son dos sitios diciendo lo mismo y se han desalineado", resumen, deLaFicha)
+	}
+
+	// Y lo que pide la política de Debian de esa línea (3.4.1): breve y sin el nombre del paquete.
+	if len(resumen) >= 80 {
+		t.Errorf("el resumen mide %d caracteres y la política pide menos de 80, que es lo que se ve solo: %q", len(resumen), resumen)
+	}
+	if strings.Contains(strings.ToLower(resumen), "esfinge") {
+		t.Errorf("el resumen repite el nombre del paquete, que la política dice que no vaya ahí: %q", resumen)
+	}
+}
