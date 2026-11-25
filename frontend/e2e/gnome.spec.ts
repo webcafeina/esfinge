@@ -320,8 +320,18 @@ test("el segmentado es un AdwToggleGroup: el elegido se levanta en blanco", asyn
   expect(await alto(elegido)).toBe(28);
 });
 
-/** En cuántas filas cae una tira de pestañas, y cuántas hay en cada una. */
+/**
+ * En cuántas filas cae una tira de pestañas, y cuántas hay en cada una.
+ *
+ * **Espera antes de contar, y eso no es una precaución: es el arreglo.**
+ * `Locator.count()` es una foto instantánea y **no espera a nada** —el
+ * auto-waiting de Playwright vive en los matchers de `expect(locator)`, no en
+ * `count()`—. Al pulsar «Ajustes» el panel lo monta React, así que contar justo
+ * después devuelve **cero** en una máquina más lenta que ésta: tiró la
+ * publicación de la 2.79.0 con todo lo demás en verde, pasando aquí siempre.
+ */
 async function filasDe(pestanas: Locator): Promise<number[]> {
+  await pestanas.first().waitFor({ state: "visible" });
   const total = await pestanas.count();
   const filas = new Map<number, number>();
   for (let i = 0; i < total; i++) {
@@ -336,6 +346,9 @@ test("las pestañas de Ajustes caben en una fila, con el glifo encima", async ({
   await seccion(page, "Ajustes").click();
 
   const pestanas = page.locator(".contenido .segmentado.envuelve:visible button");
+  // La guarda **también** espera, porque es la que se cayó: cero pestañas no es
+  // «no caben en una fila», es «he mirado antes de que la pantalla existiera».
+  await expect(pestanas.first()).toBeVisible();
   expect(await pestanas.count()).toBeGreaterThan(1);
 
   // **Una sola fila.** Lo eligió el cliente sobre capturas: a 11 pt con el glifo
@@ -361,10 +374,17 @@ test("y si la ventana se estrecha se parten sin dejar una fila coja", async ({ p
   // da 516 contra los 600 de siempre. La regla de la casa es que antes de tirar
   // un rótulo o un glifo la fila se parte —«Cuenta» y «Bóveda» sin su nombre no
   // las distingue nadie—; lo que no sale solo es el reparto.
-  await page.setViewportSize({ width: 760, height: 680 });
-  await page.waitForTimeout(150);
-
   const pestanas = page.locator(".contenido .segmentado.envuelve:visible button");
+  await expect(pestanas.first()).toBeVisible();
+  await page.setViewportSize({ width: 760, height: 680 });
+
+  // **Se espera a que la tira se haya repartido, no un rato.** El
+  // `waitForTimeout(150)` que había aquí tapaba además la carrera de arriba, así
+  // que esta prueba pasaba por el motivo equivocado.
+  await expect
+    .poll(async () => (await filasDe(pestanas)).length, { timeout: 5000 })
+    .toBeGreaterThan(1);
+
   const filas = await filasDe(pestanas);
   expect(filas.length, "a 760 de ventana deberían partirse").toBeGreaterThan(1);
   expect(
