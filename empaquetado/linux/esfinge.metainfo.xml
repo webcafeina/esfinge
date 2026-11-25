@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Metadatos de AppStream: lo que lee un centro de software.
+
+  Sin este fichero, Esfinge sale en el App Center de Ubuntu, en GNOME Software y
+  en Discover como una entrada pelada —sin nombre bonito, sin descripción, sin
+  icono— y, ya instalada, **no aparece como aplicación instalada**. El `.desktop`
+  no sirve para eso: ése lo lee el menú de aplicaciones, no la tienda.
+
+  # Por qué el inglés va primero y el español es la traducción
+
+  Esfinge está en español y sólo en español, y aun así el texto sin `xml:lang` es
+  el que ve quien no tiene el sistema en español. Es la lección que nos dejó el
+  moderador de Chocolatey en noviembre del 2026: la ficha estaba entera en
+  español y la devolvió. Y lo que de verdad hay que decirle a quien lo lee en
+  inglés es **que el programa está en español**, antes de que lo instale. Eso va
+  escrito en el resumen y en el primer párrafo, no en una nota al pie.
+
+  # Por qué el identificador no obliga a renombrar nada
+
+  El identificador es de DNS invertido —lo que pide la especificación para una
+  aplicación— y es **el mismo nombre que ya usa el puente con el navegador**
+  (`com.webcafeina.esfinge`, en `internal/app/manifiestos.go`). Lo que lo ata al
+  lanzador es `<launchable>`, que existe justo para eso, así que `esfinge.desktop`
+  y los iconos **se quedan como están**: renombrarlos arrastraría el `Icon=`, las
+  ocho rutas de `hicolor` y el `StartupWMClass`, y en esta casa los iconos ya se
+  han confundido dos veces.
+
+  # Lo que falta a propósito
+
+  **Capturas.** AppStream las quiere como URL absoluta, así que harían falta
+  imágenes publicadas y mantenidas a cada fase de la nativización. No hay
+  ninguna, y referenciar enlaces que no existen deja la ficha peor que sin ellas.
+  Está en `docs/deuda.md`.
+
+  **Historial de versiones.** `<releases>` tendría que llevar la versión dentro,
+  y nfpm expande el entorno en su YAML pero **no dentro de los ficheros que
+  empaqueta**: haría falta un paso de sustitución más en el flujo de publicar, que
+  es justo donde este proyecto se ha caído tres veces seguidas. La versión que la
+  tienda enseña sale igual del propio paquete.
+-->
+<component type="desktop-application">
+  <id>com.webcafeina.esfinge</id>
+
+  <!-- La del texto de este fichero; la del programa es otra cosa. -->
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+
+  <name>Esfinge</name>
+  <name xml:lang="es">Esfinge</name>
+
+  <summary>Encrypt passwords and files with one key (app in Spanish)</summary>
+  <summary xml:lang="es">Cifra y descifra contraseñas y ficheros con una clave</summary>
+
+  <developer id="com.webcafeina">
+    <name>Webcafeína</name>
+  </developer>
+
+  <description>
+    <p>
+      Esfinge encrypts and decrypts passwords and files with a single key, and
+      keeps a local password vault. Its interface and documentation are in
+      Spanish only.
+    </p>
+    <p>
+      One window and one command line over the same core: what one encrypts, the
+      other opens. Nothing is sent anywhere — the only connection it makes is to
+      check for updates, and that can be turned off.
+    </p>
+    <p xml:lang="es">
+      Esfinge cifra y descifra contraseñas y ficheros con una sola clave, y
+      guarda una bóveda de contraseñas en el propio equipo.
+    </p>
+    <p xml:lang="es">
+      Una ventana y una línea de comandos sobre el mismo núcleo: lo que cifra una
+      lo abre la otra. Nada sale de la máquina — la única conexión que hace es
+      para mirar si hay versión nueva, y se puede apagar.
+    </p>
+  </description>
+
+  <!-- Lo que ata esta ficha al lanzador que instala el paquete. -->
+  <launchable type="desktop-id">esfinge.desktop</launchable>
+  <icon type="stock">esfinge</icon>
+
+  <categories>
+    <category>Utility</category>
+    <category>Security</category>
+  </categories>
+
+  <keywords>
+    <keyword>encrypt</keyword>
+    <keyword>decrypt</keyword>
+    <keyword>password</keyword>
+    <keyword>vault</keyword>
+    <keyword xml:lang="es">cifrar</keyword>
+    <keyword xml:lang="es">descifrar</keyword>
+    <keyword xml:lang="es">contraseña</keyword>
+    <keyword xml:lang="es">bóveda</keyword>
+  </keywords>
+
+  <provides>
+    <binary>esfinge</binary>
+    <binary>esfinge-gui</binary>
+  </provides>
+
+  <url type="homepage">https://github.com/webcafeina/esfinge</url>
+  <url type="bugtracker">https://github.com/webcafeina/esfinge/issues</url>
+  <url type="help">https://github.com/webcafeina/esfinge/blob/main/docs/seguridad.md</url>
+  <url type="vcs-browser">https://github.com/webcafeina/esfinge</url>
+
+  <!--
+    Vacío significa «sin nada que avisar», que es lo que hace que GNOME Software
+    no la marque como «sin clasificar». No es un adorno: sin esta etiqueta la
+    ficha sale con un aviso de contenido.
+  -->
+  <content_rating type="oars-1.1" />
+</component>

@@ -80,6 +80,7 @@ salida="${3:-$("$GO" run ./herramientas/catalogo nombre "appimage-$arqgo" "$vers
 falta=()
 for f in build/bin/Esfinge esfinge esfinge-puente esfinge-mcp \
          empaquetado/linux/esfinge.desktop empaquetado/linux/esfinge-mime.xml \
+         empaquetado/linux/esfinge.metainfo.xml \
          build/linux/hicolor/256x256.png; do
   [ -e "$f" ] || falta+=("$f")
 done
@@ -166,7 +167,8 @@ ln -sf "$herr/linuxdeploy-plugin-gtk.sh" "$herr/linuxdeploy-plugin-gtk"
 
 appdir="$(mktemp -d)/AppDir"
 trap 'rm -rf "$(dirname "$appdir")"' EXIT
-mkdir -p "$appdir/usr/bin" "$appdir/usr/share/applications" "$appdir/usr/share/mime/packages" "$appdir/apprun-hooks"
+mkdir -p "$appdir/usr/bin" "$appdir/usr/share/applications" "$appdir/usr/share/mime/packages" \
+         "$appdir/usr/share/metainfo" "$appdir/apprun-hooks"
 
 cp build/bin/Esfinge "$appdir/usr/bin/esfinge-gui"
 # Los tres de siempre, por lo mismo que en el paquete: el puente del navegador, la línea de
@@ -181,6 +183,12 @@ chmod +x "$appdir/usr/bin/"*
 sed 's|^Exec=.*|Exec=esfinge-gui %f|' empaquetado/linux/esfinge.desktop \
   > "$appdir/usr/share/applications/esfinge.desktop"
 cp empaquetado/linux/esfinge-mime.xml "$appdir/usr/share/mime/packages/esfinge.xml"
+
+# Y los metadatos de AppStream, por lo mismo: una AppImage también se cataloga —los
+# índices de AppImage leen esto— y así la ficha vive en un solo sitio para los tres
+# empaquetados.
+cp empaquetado/linux/esfinge.metainfo.xml \
+  "$appdir/usr/share/metainfo/com.webcafeina.esfinge.metainfo.xml"
 
 for t in 16 24 32 48 64 128 256 512; do
   mkdir -p "$appdir/usr/share/icons/hicolor/${t}x${t}/apps"

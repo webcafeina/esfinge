@@ -38,6 +38,12 @@ contents:
     dst: /usr/share/applications/esfinge.desktop
   - src: empaquetado/linux/esfinge-mime.xml
     dst: /usr/share/mime/packages/esfinge.xml
+  # Los metadatos que lee un centro de software. Sin ellos, Esfinge sale en el
+  # App Center, en GNOME Software y en Discover como una entrada pelada, y ya
+  # instalada no aparece como aplicación instalada: el `.desktop` lo lee el menú
+  # de aplicaciones, no la tienda. Los porqués están dentro del fichero.
+  - src: empaquetado/linux/esfinge.metainfo.xml
+    dst: /usr/share/metainfo/com.webcafeina.esfinge.metainfo.xml
   # Todos los tamaños del tema, no solo el grande: con uno solo cada entorno se
   # lo reescala como puede, y en el menú de aplicaciones se nota.
   - src: build/linux/hicolor/16x16.png
