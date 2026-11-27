@@ -174,9 +174,15 @@ test("el botón de plegar vive en la cabecera y no se monta sobre la primera fil
   const b = await caja(boton);
   // El `sidebar-show` de libadwaita: 34 de lado, dentro de la banda de 46 de la
   // cabecera.
+  //
+  // **Medido desde el canto de la ventana y no desde el del viewport**, que es
+  // justo lo que avisa el comentario de abajo y aquí se había quedado sin
+  // aplicar: desde que la ventana lleva el margen de la sombra (ADR 0073) ya no
+  // empieza en cero, y esta línea —un `<= 46` a pelo— se cayó sola con 52.
   expect(b.height).toBe(34);
   expect(b.width).toBe(34);
-  expect(b.bottom).toBeLessThanOrEqual(46);
+  const ventana = await caja(page.locator(".ventana"));
+  expect(b.bottom - ventana.top).toBeLessThanOrEqual(46);
 
   // **Y no toca la primera fila**, que es el fallo que se vio en la primera
   // captura: con 12 px de hueco arriba, el botón caía encima de «Cifrar» y se

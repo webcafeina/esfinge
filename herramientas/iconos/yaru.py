@@ -139,6 +139,20 @@ CUALES = {
     "ficheros": "actions/edit-copy-symbolic.svg",
     "tema": "categories/preferences-desktop-appearance-symbolic.svg",
     "servidor": "places/network-server-symbolic.svg",
+    # **Los tres botones de la ventana, y el cuarto que hace falta.** Desde la
+    # ADR 0073 el marco de GNOME lo dibuja Esfinge, así que esos glifos dejan de
+    # ser del escritorio: los dibujaba el componente a mano y el cliente los vio
+    # como lo que eran, «propios, no los nativos». Son los mismos cuatro que ya
+    # eligió para Apolo.
+    #
+    # **Van en `ui/`**, que es la única carpeta de Yaru donde están: se probó
+    # `actions/` y `status/` y las dos dan 404. Y el de restaurar no es un
+    # capricho: el botón de maximizar cambia de dibujo cuando la ventana ya lo
+    # está.
+    "ventana-cerrar": "ui/window-close-symbolic.svg",
+    "ventana-minimizar": "ui/window-minimize-symbolic.svg",
+    "ventana-maximizar": "ui/window-maximize-symbolic.svg",
+    "ventana-restaurar": "ui/window-restore-symbolic.svg",
 }
 
 SVG = "http://www.w3.org/2000/svg"

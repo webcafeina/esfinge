@@ -577,6 +577,25 @@ test("un .esf que lleva un texto abre descifrar en modo texto, con la línea pue
   expect(errores, errores.join(' | ')).toEqual([]);
 });
 
+/**
+ * El fondo que pinta la ventana.
+ *
+ * Normalmente lo pinta el `body`. **Donde el marco lo dibuja Esfinge va
+ * transparente a propósito** —es lo que permite que el CSS redondee las
+ * esquinas, ADR 0073— y quien pinta es `.ventana`. La regla que se vigila no
+ * cambia: **la ventana pinta su fondo y por debajo del contenido no se ve nunca
+ * el escritorio**; lo que cambia es qué pieza lo hace.
+ */
+async function fondoDeLaVentana(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const opaco = (c: string | undefined) =>
+      !!c && c !== "transparent" && !c.endsWith(", 0)");
+    const v = document.querySelector(".ventana");
+    const deLaVentana = v ? getComputedStyle(v).backgroundColor : undefined;
+    return opaco(deLaVentana) ? deLaVentana! : getComputedStyle(document.body).backgroundColor;
+  });
+}
+
 test("sin el vidrio del sistema la ventana se pinta como siempre", async ({ page }) => {
   const errores = vigilarConsola(page);
   await page.goto("/");
@@ -587,7 +606,7 @@ test("sin el vidrio del sistema la ventana se pinta como siempre", async ({ page
   await expect(page.locator(".lateral")).toBeVisible();
   await expect(page.locator("html")).not.toHaveAttribute("data-vidrio", "si");
 
-  const fondo = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const fondo = await fondoDeLaVentana(page);
   expect(fondo).not.toBe("rgba(0, 0, 0, 0)");
   expect(fondo).not.toBe("transparent");
 
@@ -4315,7 +4334,7 @@ test("el aspecto elegido manda sobre el del sistema", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".lateral")).toBeVisible();
 
-  const fondo = () => page.locator("body").evaluate((e) => getComputedStyle(e).backgroundColor);
+  const fondo = () => fondoDeLaVentana(page);
   const claridad = (c: string) => {
     const [r, v, a] = c.match(/\d+/g)!.map(Number);
     return 0.2126 * r + 0.7152 * v + 0.0722 * a;

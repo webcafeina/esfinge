@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { obedecerEdicion } from "./ordenes";
 import { aplicarTema } from "./tema";
-import { laPlataforma } from "./plataforma";
+import { esGnome, laPlataforma } from "./plataforma";
 import {
   alAbrirFichero,
   alDescargar,
@@ -14,6 +14,7 @@ import {
   alProgresar,
   alSoltarFicheros,
   enWails,
+  ventana,
   esfinge,
   type Alfabeto,
   type Apertura,
@@ -460,7 +461,22 @@ export default function App() {
       </button>
 
       <div className="zona">
-        <header className={enUnProyecto ? "herramientas en-proyecto" : "herramientas"}>
+        {/* **El doble clic maximiza, donde la cabecera es la barra de título.**
+            En GNOME lo es desde la ADR 0073, y ese gesto lo traía la barra de
+            GTK: al dejar de ponerla el escritorio se perdió, y el cliente lo
+            echó en falta con la 2.80.0. El manejador existía —en
+            `BarraDeTitulo`— pero vive en la capa que va con
+            `pointer-events: none` para no tapar la cabeza de la lateral, así
+            que **no recibe clics**. Va aquí, que es la pieza que sí los recibe.
+
+            Sólo en GNOME: en Windows la barra de título es su propia banda y ya
+            lo hace, y en macOS la cabecera **no** es la barra del sistema, así
+            que ponerlo allí sería inventar un gesto que ese escritorio no
+            tiene. */}
+        <header
+          className={enUnProyecto ? "herramientas en-proyecto" : "herramientas"}
+          onDoubleClick={esGnome() ? () => ventana.alternarMaximizada() : undefined}
+        >
 
           {/* **En qué bóveda se está trabajando.** Con varias, saber que la bóveda
               está abierta no basta: hay que saber cuál. Y el nombre **es el título**,

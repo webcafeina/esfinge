@@ -1333,3 +1333,52 @@
 :root[data-sistema="linux"][data-barra="propia"] .herramientas {
   padding-right: calc(3 * var(--ancho-boton-ventana) + 3 * var(--espacio-2));
 }
+
+/* ---------------------------------------- las esquinas y la sombra de la ventana
+ *
+ * **GTK, sin decorar, no pone ninguna de las dos** (ADR 0073), así que las pinta
+ * el CSS. Para eso la ventana se pide transparente —`WindowIsTranslucent` en
+ * `main.go`, y sólo cuando el marco es nuestro— y el documento deja un margen
+ * alrededor donde cae la sombra.
+ *
+ * Ese margen es también por donde se redimensiona: Wails mide su borde de 6 px
+ * contra el canto de la ventana, que ahora queda **por fuera de lo que se ve**.
+ * No es un efecto secundario que haya que corregir — es exactamente cómo
+ * funciona una ventana con decoración de cliente en GTK, donde la zona de agarre
+ * vive en la sombra.
+ *
+ * Y el fondo lo pinta `.ventana`, no `body`: con el `body` transparente, lo que
+ * no declare fondo enseña el escritorio. */
+:root[data-sistema="linux"][data-barra="propia"] body {
+  background: transparent;
+  padding: 12px;
+}
+
+:root[data-sistema="linux"][data-barra="propia"] .ventana {
+  /* **Y es el bloque que contiene la capa de la barra de título**, que va
+   * absoluta. Sin esto la capa se alinea con el viewport y, con el margen de la
+   * sombra puesto, queda 12 px a la izquierda de la ventana: el nombre dejaba de
+   * estar centrado sobre la barra lateral y los botones se salían del canto. Lo
+   * dijo la prueba que mide esa barra. */
+  position: relative;
+  background: var(--lienzo);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgb(0 0 6 / 0.12),
+    0 12px 28px rgb(0 0 6 / 0.28),
+    0 4px 10px rgb(0 0 6 / 0.18);
+}
+
+/* **Maximizada, ni esquinas ni margen.** Una ventana maximizada ocupa la
+ * pantalla entera: redondeada se le ven cuatro muescas del escritorio, y con el
+ * margen queda un hueco contra el borde. Lo dice `data-maximizada`, que pone la
+ * barra de título porque esto cambia mientras la ventana vive. */
+:root[data-sistema="linux"][data-barra="propia"][data-maximizada="si"] body {
+  padding: 0;
+}
+
+:root[data-sistema="linux"][data-barra="propia"][data-maximizada="si"] .ventana {
+  border-radius: 0;
+  box-shadow: none;
+}

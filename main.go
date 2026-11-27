@@ -27,6 +27,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 	ventanaWails "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -147,13 +148,22 @@ func main() {
 		// sin crear. Se escribió así la primera vez y el diagnóstico no diagnosticó
 		// nada: la herramienta de medir también necesita que alguien compruebe que
 		// mide.
+		// **La ventana transparente en Linux, y sólo si dibujamos su marco**
+		// (ADR 0073). Es lo que permite que las esquinas redondeadas y la sombra
+		// las pinte el CSS: GTK, sin decorar, no las pone por su cuenta. Con el
+		// marco del escritorio esto no se pide — allí una ventana transparente no
+		// enseña vibrancia, enseña un agujero.
+		Linux: &linux.Options{WindowIsTranslucent: marcoPropioEnLinux()},
+
 		Logger:             registroDeDiagnostico(),
 		LogLevel:           nivelDeDiagnostico(),
 		LogLevelProduction: nivelDeDiagnostico(),
 
-		// Transparente para que se vea el vidrio de detrás. Donde no hay vidrio
-		// esto no se llega a poner: ver más abajo.
-		BackgroundColour: fondoDeLaVentana(vidrio),
+		// Transparente para que se vea el vidrio de detrás —y, donde el marco lo
+		// dibujamos nosotros, para que el CSS pueda redondear las esquinas—. Donde
+		// no hace falta ninguna de las dos cosas esto no se llega a poner: ver
+		// más abajo.
+		BackgroundColour: fondoDeLaVentana(vidrio || marcoPropioEnLinux()),
 
 		// EnableFileDrop entrega las rutas absolutas de lo que se suelte, que es
 		// lo único que sirve: el arrastrar y soltar del navegador da un objeto sin
@@ -323,6 +333,13 @@ func apuntarElArranqueFallido(err error) {
 // escritorio, enseña un agujero.
 // El nombre de clase de la ventana. Ver `WindowClassName` y `ventana.Montar`.
 const claseDeLaVentana = "EsfingeVentana"
+
+// marcoPropioEnLinux: si esta ventana es de Linux y la barra de título la dibuja
+// Esfinge. Se pregunta dos veces —la transparencia y el fondo— y por eso tiene
+// nombre: escrito dos veces, un día una diría que sí y la otra que no.
+func marcoPropioEnLinux() bool {
+	return runtime.GOOS == "linux" && app.MarcoDe(runtime.GOOS).Propia
+}
 
 func fondoDeLaVentana(vidrio bool) *options.RGBA {
 	if !vidrio {

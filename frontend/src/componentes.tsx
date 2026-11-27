@@ -1407,6 +1407,30 @@ export function MenuPrincipal({ obedecer }: { obedecer: (o: Orden) => void }) {
   );
 }
 
+/**
+ * El glifo de un botón de ventana.
+ *
+ * **En GNOME son los de Yaru** y no los nuestros: desde que Esfinge dibuja el
+ * marco (ADR 0073) esos tres botones son suyos, y el cliente los vio por lo que
+ * eran — «propios, no los nativos». Son los mismos cuatro que ya eligió para
+ * Apolo, cosechados aquí con nuestro guion desde el commit fijado.
+ *
+ * **Se elige aquí y no pasando los tres por `Icono` a secas**, que sería lo
+ * bonito: `Icono` cae al juego dibujado cuando un nombre no está en el del
+ * sistema, y los de ventana **no existen en el de Fluent**, así que hacerlo
+ * así le cambiaría los glifos a Windows — que hoy funcionan y están revisados.
+ * Lo que cambia aquí es el dibujo, no dónde cae nada, así que el marcado sigue
+ * siendo el mismo en los cuatro sistemas (ADR 0064).
+ */
+function GlifoDeVentana({ nombre, children }: { nombre: string; children: ReactNode }) {
+  if (esGnome()) return <Icono nombre={nombre} />;
+  return (
+    <svg viewBox="0 0 10 10" aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
+
 export function BarraDeTitulo({
   panelAbierto,
   alMenu,
@@ -1447,6 +1471,19 @@ export function BarraDeTitulo({
     mirar();
   };
 
+  // **Que esté maximizada se dice en la raíz**, donde ya viven `data-sistema`,
+  // `data-barra` y los demás. Lo necesita el CSS de GNOME: ahí la ventana lleva
+  // esquinas redondeadas y un margen para la sombra (ADR 0073), y maximizada hay
+  // que quitarle las dos — si no, se ven esquinas redondeadas y un hueco contra
+  // el borde de la pantalla.
+  //
+  // Lo pone este componente y no `ponerEnLaRaiz`, que es quien pone los demás,
+  // porque esto **cambia mientras la ventana vive** y aquél resuelve la
+  // plataforma una vez, antes del primer pintado.
+  useEffect(() => {
+    document.documentElement.dataset.maximizada = maximizada ? "si" : "no";
+  }, [maximizada]);
+
   return (
     <div className="barra-titulo" onDoubleClick={alternar}>
       {/* **La hamburguesa va aquí y no encima del panel**, que es lo que une las
@@ -1477,9 +1514,9 @@ export function BarraDeTitulo({
 
       <div className="botones-ventana">
         <button type="button" aria-label="Minimizar la ventana" onClick={ventana.minimizar}>
-          <svg viewBox="0 0 10 10" aria-hidden="true">
+          <GlifoDeVentana nombre="ventana-minimizar">
             <path d="M0 5h10" stroke="currentColor" fill="none" />
-          </svg>
+          </GlifoDeVentana>
         </button>
         <button
           type="button"
@@ -1490,13 +1527,13 @@ export function BarraDeTitulo({
           {/* Restaurar lleva dos marcos escalonados, como en Windows: el de
               detrás abierto por abajo, que es lo que lo distingue del cuadrado
               de maximizar a este tamaño. */}
-          <svg viewBox="0 0 10 10" aria-hidden="true">
+          <GlifoDeVentana nombre={maximizada ? "ventana-restaurar" : "ventana-maximizar"}>
             {maximizada ? (
               <path d="M2.5 2.5V0.5h7v7h-2M0.5 2.5h7v7h-7z" stroke="currentColor" fill="none" />
             ) : (
               <path d="M0.5 0.5h9v9h-9z" stroke="currentColor" fill="none" />
             )}
-          </svg>
+          </GlifoDeVentana>
         </button>
         <button
           type="button"
@@ -1504,9 +1541,9 @@ export function BarraDeTitulo({
           aria-label="Cerrar la ventana"
           onClick={ventana.cerrar}
         >
-          <svg viewBox="0 0 10 10" aria-hidden="true">
+          <GlifoDeVentana nombre="ventana-cerrar">
             <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" stroke="currentColor" fill="none" />
-          </svg>
+          </GlifoDeVentana>
         </button>
       </div>
     </div>
