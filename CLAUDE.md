@@ -2699,6 +2699,46 @@ por una razón tapa las demás.** Y el corolario de método, que esta vez no se 
 arreglo **no pone roja ninguna prueba en esta máquina**, porque es el caso que aquí no ocurre, así
 que la pasada que lo dice es la de la publicación.
 
+**Una hoja copiada de Apolo lee variables que aquí no escribe nadie, y un `var()` con reserva no
+falla nunca.** (2026-11-27.) La hoja de GNOME pintaba lo recorrido del deslizador con
+`var(--lleno, 0%)`: así se llama en Apolo, y aquí la variable es **`--recorrido`**. El tope del
+degradado era siempre la reserva, así que **la pista salía entera gris** y el control perdía el oro,
+que es el único color propio en una pantalla de trabajo. No lo cazaba nada —un `var()` con reserva
+pinta la reserva y sigue, y el color calculado es válido—, y comparar las hojas entre sí tampoco
+habría servido: Windows y macOS leen la buena, la que se desalineó fue la tercera. Lo vigila
+`TestLasHojasNoLeenVariablesQueNadieEscribe`, **que horas después cazó un `--sutil` recién inventado
+en esa misma hoja**. La regla general: **al copiar CSS de otro proyecto, los nombres de sus variables
+son suyos.**
+
+**Y una regla que cuelga de una bandera sin nombrar su sistema es una regla ofrecida a los otros
+tres.** Catorce de la hoja de Windows colgaban de `[data-barra="propia"]` a secas, lo cual era cierto
+mientras Windows fuera el único con barra propia — o sea mientras la bandera y el sistema
+significaran lo mismo. Al ir a dársela a GNOME se le habrían aplicado la banda de Windows y sus
+botones cuadrados con el rojo de cerrar. Lo vigila `TestCadaReglaDeUnaHojaNombraSuSistema`, **medido
+antes de escribirlo** —cero incumplimientos en las tres hojas— para no inventar un invariante que no
+se sostenga.
+
+**Lo que decide si una ventana se puede mover es qué contesta la pieza donde se pulsa, no dónde está
+la barra.** (2026-11-27.) Al pasar GNOME a marco propio, el cliente no podía mover la ventana. Y el
+fallo no era que faltara declarar las zonas: **estaban declaradas al revés**, con la razón de la
+víspera todavía escrita al lado —«con marco del sistema no hay que declarar zonas de arrastre»—. La
+otra mitad no se habría visto razonando: **la capa de la barra de título sí decía `drag`**, pero va
+con `pointer-events: none` para no tapar la cabeza de la lateral, así que **nunca es el elemento
+donde se pulsa**, y Wails mira exactamente eso (`getComputedStyle(e.target)` en su runtime). Lo dijo
+medirlo: una prueba que lee `--wails-draggable` en las cinco piezas de la cabecera. **La regla:
+cuando algo depende del elemento bajo el puntero, una capa con `pointer-events: none` no cuenta,
+por mucho que lleve la propiedad puesta.**
+
+**Y la que más se repite: la regla correcta escrita al lado y aplicada a medias.** (2026-11-27.) Tres
+pruebas se cayeron al poner el marco, y las tres tenían la respuesta en su propio bloque. La del
+botón de plegar comprobaba dos cosas —una relación entre cajas, bien, y **un `<= 46` a pelo**— con un
+comentario tres líneas más abajo diciendo que «una aserción que mida píxeles hasta un canto se cae
+sola en cuanto algo al lado se mueve»; se cayó con 52, que son los 12 del margen nuevo. Las otras dos
+vigilaban que **el `body`** pinte el fondo, cuando la regla de verdad es que **la ventana** lo pinte
+—el `body` va transparente a propósito, que es lo que permite redondear las esquinas—. En los tres
+casos el arreglo fue **preguntarle a la pieza correcta**, no relajar la prueba. Al tocar algo
+estructural, releer las aserciones del bloque entero: la mitad que no se aplicó está ahí al lado.
+
 ## Lo que Windows y GNOME dejan escrito para KDE
 
 La fase de Windows costó **tres rondas de correcciones suyas** y casi todo lo que salió **se va a

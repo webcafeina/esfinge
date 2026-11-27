@@ -2,61 +2,44 @@
 
 Última actualización: **2026-11-27**
 
-**Lo de esta sesión (2026-11-25)**: el camino de **instalar en Linux con la interfaz gráfica**, que
-nadie había revisado nunca. Salieron dos cosas y las dos están cerradas
-([ADR 0072](adr/0072-la-ficha-del-paquete.md)):
+**Lo de esta sesión (2026-11-27)**: **GNOME visto en una máquina por primera vez**, y de ahí la
+fase del marco. El cliente instaló la 2.79.1 de cero en su Ubuntu 26.10 ARM y mandó capturas.
 
-- **El paquete no llevaba ficha de AppStream**, que es lo que lee un centro de software. Sin ella,
-  Esfinge sale ahí como una entrada pelada y, ya instalada, **no aparece como aplicación instalada**.
-  Ahora la llevan los tres empaquetados, bilingüe, con el identificador del puente del navegador y
-  atada al lanzador por `<launchable>` para no renombrar nada.
-- **La ventana del doble clic convierte la descripción a ASCII** y el cliente leyó **«contrase?as» en
-  la primera línea de un gestor de contraseñas**. No es nuestro —los bytes del paquete son UTF-8
-  correcto, que es lo que pide la política, y le pasa igual a 23 de los 966 paquetes de este
-  servidor— pero esa línea es lo primero que se lee: ahora va **en inglés y en ASCII**, con el
-  español entero debajo, y es **la misma frase** que el `<summary>` de la ficha.
+**Tres fallos que sólo vio una captura** y que ninguna prueba cazaba: el deslizador sin su oro —la
+hoja leía `--lleno`, que es como se llama en Apolo, y aquí la variable es `--recorrido`—, el menú de
+la hamburguesa abriendo contra la barra lateral, y plegar que no plegaba.
 
-**Publicadas la 2.79.0 y la 2.79.1**, y **el VPS está en la 2.79.1**, con su suma comprobada y
-leyendo la bóveda de Tempero.
+**Y el marco** ([ADR 0073](adr/0073-el-marco-de-gnome.md)), que **reabre la ADR 0020**: con el de GTK,
+Esfinge enseñaba **dos barras apiladas** y ninguna aplicación de GNOME tiene dos. Lo vio comparando
+con Apolo. De los tres costes que la 0020 daba para no hacerlo, **dos eran falsos** —medido en el
+fuente de Wails: el redimensionado lo trae su runtime hecho y la transparencia de ventana está
+expuesta—. Ahora es una sola barra: el nombre sobre la lateral, el título de la sección sobre el
+contenido y los tres botones al final, **con los glifos de Yaru**. Con esquinas, sombra y doble clic
+para maximizar.
 
-**Y la primera 2.79.0 se cayó en la puerta**, por una prueba de ayer: la guarda de las pestañas de
-Ajustes en GNOME contaba con `count()`, que **es una foto instantánea y no espera a nada**, así que
-en la máquina de la publicación miraba antes de que React montara el panel y contaba cero. Aquí pasa
-siempre. Arreglada en `filasDe`, que es de donde beben las dos pruebas que miden, y de paso cayó un
-`waitForTimeout(150)` de la vecina que **tapaba esta misma carrera**. La etiqueta se movió al commit
-arreglado, que se pudo porque la primera no publicó ni un fichero.
+**Publicadas la 2.80.0 y la 2.80.1**, y **la 2.80.2 se quedó publicándose al cerrar**.
+
+**Lo que hay que hacer nada más volver:**
+
+- **Comprobar que la 2.80.2 publicó** (flujo `46002132188`) y, si sí, **actualizar el VPS**:
+  `herramientas/actualizar-vps.sh 2.80.2`. **El VPS se quedó en la 2.80.1.**
+- Y **traerse el commit de la tabla de descargas** que comete el propio flujo, o el empujón siguiente
+  se rechaza.
+- **Que el cliente pruebe la 2.80.2**, que es la que lleva las cinco cosas de su revisión. Lo que
+  queda por ver en su máquina está en la ADR 0073: que GTK esconda la barra de verdad, el arrastre y
+  el redimensionado, y **si al redimensionar se agarra «en el aire»** — el margen de la sombra deja la
+  zona sensible de Wails por fuera del canto visible, que es como funciona una ventana con decoración
+  de cliente en GTK, pero hay que verlo.
 
 **Lo que hay que mirar al retomar, además de Windows:**
 
-- **Probar la 2.79.1 en su Ubuntu 26.10 ARM**, que es donde se quedó: lo iba a instalar de cero
-  —borrando `~/.config/Esfinge` y los manifiestos del navegador— y **se paró por el límite de
-  créditos**. La receta completa de borrado y el enlace del `.deb` están en
-  [`sesiones.md`](sesiones.md).
-- **Nada de GNOME se ha visto en una máquina**, ni la fase ni el menú en la cabecera. Sigue en
-  [`deuda.md`](deuda.md) con la lista de lo que hay que mirar.
-- **winget: eran quince PRs, no siete, y ahora queda uno** (2026-11-27). Las dos cifras anteriores
-  que había escritas aquí —cuatro y luego siete— **eran mías y estaban mal, por un `--limit` que
-  truncaba la lista**: la regla de «una búsqueda truncada no es una ausencia» aplicada a mí mismo. Lo
-  real eran **catorce de Esfinge** —desde la 2.68.0 del 17 de noviembre— **más uno de Apolo abierto el
-  27 de octubre**, o sea más de un mes sin que entre nada de esta cuenta. Se cuenta así, sin tope:
-  `gh pr list --repo microsoft/winget-pkgs --author webcafeina --state open --limit 100`.
-- **Por qué no se mueve**: ninguno está bloqueado por el CLA —está firmado y la etiqueta cayó—, todos
-  pasan las validaciones, y todos llevan **`New-Package`**. El propio bot lo dice en el de Apolo: «the
-  check-in policies require a moderator to approve PRs from the community». **Esfinge no ha entrado
-  nunca**: cero fusionados y `manifests/w/Webcafeina` no existe.
-- **Cerrados los trece superados**, por decisión del cliente, dejando sólo el de la **2.79.1**
-  (#489160), cada uno con su motivo escrito y una línea en el que queda. **El de Apolo no se tocó**:
-  es otro proyecto. **Y queda una decisión**: el flujo abre un PR nuevo en cada versión, así que la
-  pila se rehace sola en la siguiente publicación.
-- **Su fork de winget estaba sin sincronizar** y eso tiró el canal en la 2.79.0: 901 commits por
-  detrás y cero por delante, o sea un avance limpio. Sincronizado con `gh repo sync
-  webcafeina/winget-pkgs` y reempujado el canal suelto. **Si vuelve a fallar por eso, es lo primero
-  que hay que mirar.**
-- **Chocolatey se ha desatascado y sirve la 2.79.1** (visto el 2026-11-27). Llevaba desde el
-  2026-11-16 clavada en la 2.66.1 por la moderación de la ficha en inglés; eso se puede dar por
-  cerrado. Homebrew también en 2.79.1.
-- **Homebrew ya sirve la 2.79.1** — lo que quedó a medias el día 23 se resolvió: el relanzamiento a
-  mano acabó en verde.
+- **winget: de quince PRs a uno.** Las cifras que había aquí —cuatro y luego siete— **eran mías y
+  estaban mal, por un `--limit` que truncaba**. Lo real eran catorce de Esfinge más uno de Apolo del
+  27 de octubre. Cerrados los trece superados por decisión del cliente; queda el de la última
+  versión. **Y el flujo abre uno nuevo en cada versión**, así que la pila se rehace sola: eso se
+  decide, no se deja correr.
+- **Chocolatey se desatascó** y sirve la 2.79.1.
+- **Nada de GNOME se ha visto todavía con el marco propio.**
 
 **Lo de GNOME, en detalle**: **la fase entera**
 ([ADR 0070](adr/0070-gnome-con-yaru.md)). Lo de Windows se aparcó a petición del cliente —«vamos a

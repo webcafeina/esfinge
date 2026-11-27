@@ -4993,6 +4993,35 @@ de ahí.
   `~/.config/<navegador>/NativeMessagingHosts/`.
 - **Y lo de Windows sigue sin tocar**, que es lo primero al retomar.
 
+## 2026-11-27 · GNOME en una máquina, y el marco
+
+- **El cliente instaló la 2.79.1 de cero en su Ubuntu** y mandó capturas. De lo que señaló, **tres
+  eran fallos y ninguno lo cazaba una prueba**: el deslizador sin oro (la hoja leía `--lleno`, el
+  nombre que tiene en Apolo, y aquí es `--recorrido`), la hamburguesa abriendo contra la barra
+  lateral —el título va absoluto, así que el menú era hijo único de una barra `space-between` y caía
+  a la izquierda— y plegar que sólo movía el botón.
+- **Tres guardianes nuevos en Go**, los tres mutados: que **toda variable que lee una hoja la escriba
+  alguien** —un `var()` con reserva no falla nunca; cazó otro caso solo, y horas después cazó un
+  `--sutil` que me acababa de inventar—, que **cada regla de una hoja nombre su sistema** —catorce de
+  la hoja de Windows colgaban de `[data-barra="propia"]` a secas y se le habrían aplicado a GNOME— y
+  los dos de interfaz del menú y el plegado.
+- **La fase del marco** ([ADR 0073](adr/0073-el-marco-de-gnome.md)), que reabre la 0020: **dos tercios
+  de la razón que daba para no hacerlo eran falsos**, medido en el fuente de Wails y no razonado.
+  Una sola barra, glifos de Yaru —cosechados los cuatro de `ui/`, con restaurar—, doble clic,
+  esquinas y sombra.
+- **Y lo que más enseña del día: tres pruebas que se cayeron tenían la regla correcta escrita al lado
+  y aplicada a medias.** Una medía una coordenada absoluta con su propio comentario tres líneas más
+  abajo diciendo que eso se cae solo; dos vigilaban que el `body` pinte el fondo cuando lo que hay
+  que vigilar es que **la ventana** lo pinte. En los tres el arreglo fue preguntarle a la pieza
+  correcta, no relajar la prueba.
+- **Y una mía de método, dos veces el mismo día**: conté PRs de winget con `--limit` y di dos cifras
+  falsas; y busqué `lleno(` sólo en la raíz de `frontend/src` y le atribuí a Apolo un fallo que no
+  tiene. **Una búsqueda truncada no es una ausencia**, y lo tenía escrito.
+- **Publicadas la 2.80.0 y la 2.80.1**; la **2.80.2** se quedó publicándose al cerrar (flujo
+  `46002132188`), con **el VPS en la 2.80.1**.
+- **Queda abierto**: lo de Windows, que sigue sin tocarse; que el cliente pruebe la 2.80.2; y la
+  decisión de qué hacer con los PRs de winget, que el flujo vuelve a apilar en cada versión.
+
 ---
 
 ## Plantilla
