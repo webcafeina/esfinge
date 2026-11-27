@@ -37,7 +37,7 @@ const DEL_SISTEMA: Marco = { propia: false, alto: 0, anchoBoton: 0 };
 const MARCOS: Record<string, Marco> = {
   darwin: DEL_SISTEMA,
   windows: { propia: true, alto: 48, anchoBoton: 46 },
-  linux: DEL_SISTEMA,
+  linux: { propia: true, alto: 46, anchoBoton: 34 },
 };
 
 /**

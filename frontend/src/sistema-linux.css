@@ -110,6 +110,10 @@
    * reparto de tres reglas. */
   --sutil-encima: color-mix(in srgb, var(--cuerpo) 7%, transparent);
   --sutil-pulsado: color-mix(in srgb, var(--cuerpo) 16%, transparent);
+  /* Y el de reposo, que sí tiene fondo: los botones de ventana de Yaru son
+   * círculos grises desde el principio, no sólo al pasar por encima. Al 4 %, la
+   * mitad de lo que se ilumina al tocarlos, para que el gesto siga notándose. */
+  --sutil: color-mix(in srgb, var(--cuerpo) 4%, transparent);
 
   /* La sombra de una tarjeta de libadwaita, en tres capas.
    *
@@ -1176,4 +1180,110 @@
   :root[data-sistema="linux"] .segmentado button {
     transition: none;
   }
+}
+
+/* ===================================================== el marco, que lo dibuja Esfinge
+ *
+ * **En GNOME no hay dos barras: hay una** (ADR 0073). Hasta la 2.79.1 el marco lo
+ * ponía GTK, así que la ventana enseñaba la barra del sistema con «Esfinge» y,
+ * debajo, la nuestra con el título de la sección. Ninguna aplicación de GNOME
+ * tiene dos, y Apolo —que es la referencia de esta casa— dibuja una sola: el
+ * nombre sobre la barra lateral, el título de la sección sobre el contenido y los
+ * botones de ventana al final.
+ *
+ * La barra de título **no es una banda más**: es una capa transparente sobre la
+ * fila de arriba, que ya existe —la cabeza de la lateral y la cabecera del
+ * contenido miden las dos `--alto-barra`—. Así el marcado sigue siendo el mismo
+ * en los cuatro sistemas (ADR 0064) y lo único que cambia es dónde cae cada
+ * pieza. Sacada del flujo, la primera fila de la rejilla mide cero.
+ *
+ * **No se come los clics**: la capa va con `pointer-events: none` y sólo los
+ * botones los recuperan. Sin eso taparía la cabeza de la barra lateral entera,
+ * incluido el botón de plegar. */
+:root[data-sistema="linux"][data-barra="propia"] .barra-titulo {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--alto-barra-titulo);
+  z-index: 20;
+  pointer-events: none;
+  --wails-draggable: drag;
+}
+
+/* El nombre va sobre la barra lateral, centrado y en negrita: es la mitad
+ * izquierda de la cabecera. Con la barra plegada no hay sobre qué ponerlo. */
+:root[data-sistema="linux"][data-barra="propia"] .titulo-ventana {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--barra-lateral);
+  height: var(--alto-barra-titulo);
+  font-size: var(--texto);
+  font-weight: 700;
+  color: var(--tinta);
+}
+
+:root[data-sistema="linux"][data-barra="propia"] .ventana[data-panel="compacto"] .titulo-ventana {
+  display: none;
+}
+
+/* **El botón de plegar de la barra de título no sale**: en GNOME ese botón ya
+ * existe y flota sobre la cabeza de la barra lateral, que es de donde viaja a la
+ * cabecera al plegarse. Dos serían dos. */
+:root[data-sistema="linux"][data-barra="propia"] .barra-titulo .boton-menu {
+  display: none;
+}
+
+/* Los botones de ventana, al final de la cabecera: **círculos**, que es lo que
+ * son en Yaru, y no las zonas de clic cuadradas de Windows. Recuperan el puntero
+ * y no arrastran la ventana. */
+:root[data-sistema="linux"][data-barra="propia"] .botones-ventana {
+  position: absolute;
+  top: 50%;
+  right: var(--espacio-2);
+  transform: translateY(-50%);
+  display: flex;
+  gap: var(--espacio-1);
+  pointer-events: auto;
+  --wails-draggable: no-drag;
+}
+
+:root[data-sistema="linux"][data-barra="propia"] .botones-ventana button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ancho-boton-ventana);
+  height: var(--ancho-boton-ventana);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sutil);
+  box-shadow: none;
+  color: var(--tinta);
+}
+
+:root[data-sistema="linux"][data-barra="propia"] .botones-ventana button:hover:not(:disabled) {
+  background: var(--sutil-encima);
+}
+
+:root[data-sistema="linux"][data-barra="propia"] .botones-ventana button:active:not(:disabled) {
+  background: var(--sutil-pulsado);
+}
+
+/* **Y el cierre no se pinta de rojo**, que es de Windows: en GNOME los tres
+ * botones son iguales y lo que los distingue es su glifo. */
+:root[data-sistema="linux"][data-barra="propia"] .botones-ventana svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* La cabecera del contenido deja sitio a los tres botones, o el menú principal
+ * —que va al final— se les monta encima. */
+:root[data-sistema="linux"][data-barra="propia"] .herramientas {
+  padding-right: calc(3 * var(--ancho-boton-ventana) + 3 * var(--espacio-2));
 }

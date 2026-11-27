@@ -365,3 +365,66 @@ func TestLasHojasNoLeenVariablesQueNadieEscribe(t *testing.T) {
 		t.Log("todas las variables que leen las hojas las escribe alguien")
 	}
 }
+
+// Cada regla de una hoja de sistema nombra su sistema.
+//
+// # Qué pasó
+//
+// Catorce reglas de la hoja de Windows colgaban de `[data-barra="propia"]` **a secas**, sin decir
+// que eran de Windows. Era cierto mientras Windows fuera el único con barra de título propia, o sea
+// mientras la bandera y el sistema significaran lo mismo. Al ir a dársela a GNOME —que es lo que
+// pide una ventana de libadwaita— esas catorce se le habrían aplicado: la banda de Windows, sus
+// botones cuadrados y el rojo de cerrar, dentro de una ventana de GNOME.
+//
+// No llegó a pasar porque se vio **antes** de escribir la hoja, y esta prueba es lo que hace que no
+// dependa de que alguien se acuerde. Las hojas se cargan todas a la vez —son un solo paquete—, así
+// que una regla que no nombra su sistema es una regla ofrecida a los otros tres.
+//
+// Qué se salta: los comentarios, las at-rules (`@media`, `@container`, `@keyframes`) y los pasos de
+// una animación, que no son selectores.
+func TestCadaReglaDeUnaHojaNombraSuSistema(t *testing.T) {
+	// Cómo se llama cada hoja y qué valor de `data-sistema` le toca. macOS es **darwin**, que es lo
+	// que devuelve `runtime.GOOS` y lo que ya costó 73 capturas en verde de otro sistema.
+	sistemas := map[string]string{"linux": "linux", "macos": "darwin", "windows": "windows", "kde": "kde"}
+
+	hojas, err := filepath.Glob(filepath.Join("..", "..", "frontend", "src", "sistema-*.css"))
+	if err != nil || len(hojas) == 0 {
+		t.Fatalf("no se encontraron las hojas de sistema: %v", err)
+	}
+
+	comentarios := regexp.MustCompile(`(?s)/\*.*?\*/`)
+	selectores := regexp.MustCompile(`([^{}]+)\{`)
+	pasos := regexp.MustCompile(`^(from|to|[\d.]+%)(\s*,\s*(from|to|[\d.]+%))*$`)
+	espacios := regexp.MustCompile(`\s+`)
+
+	for _, hoja := range hojas {
+		nombre := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(hoja), "sistema-"), ".css")
+		quiere, hay := sistemas[nombre]
+		if !hay {
+			t.Errorf("hay una hoja de un sistema que esta prueba no conoce (%s): añádelo a la tabla o no se vigila", filepath.Base(hoja))
+			continue
+		}
+
+		b, err := os.ReadFile(hoja)
+		if err != nil {
+			t.Fatalf("no se pudo leer %s: %v", hoja, err)
+		}
+		texto := comentarios.ReplaceAllString(string(b), "")
+
+		vistos := 0
+		for _, m := range selectores.FindAllStringSubmatch(texto, -1) {
+			sel := strings.TrimSpace(espacios.ReplaceAllString(m[1], " "))
+			if sel == "" || strings.HasPrefix(sel, "@") || pasos.MatchString(sel) {
+				continue
+			}
+			vistos++
+			if !strings.Contains(sel, `data-sistema="`+quiere+`"`) {
+				t.Errorf("%s: la regla «%s» no dice que es de %s, así que se la lleva también cualquier otro sistema",
+					filepath.Base(hoja), sel, quiere)
+			}
+		}
+		if vistos < 20 {
+			t.Errorf("sólo he leído %d selectores de %s: o la hoja ha cambiado de forma o esta prueba no comprueba nada", vistos, filepath.Base(hoja))
+		}
+	}
+}

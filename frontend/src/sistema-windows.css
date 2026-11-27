@@ -446,8 +446,15 @@
  *
  * **El alto y el ancho de los botones los dice Go** y entran como propiedades
  * personalizadas (ver `app.MarcoDe`): escritos también aquí serían la misma
- * medida en dos sitios. */
-:root[data-barra="propia"] .barra-titulo {
+ * medida en dos sitios.
+ *
+ * **Y cada regla nombra su sistema, no sólo `data-barra`.** Estas catorce
+ * colgaban de `[data-barra="propia"]` a secas, que era cierto mientras Windows
+ * fuera el único con barra propia — o sea mientras la bandera y el sistema
+ * significaran lo mismo. En cuanto otro la enciende, a ese otro se le aplican la
+ * banda de Windows y sus botones cuadrados con el rojo de cerrar. Se vio al ir a
+ * dárselo a GNOME, antes de escribir una línea de su hoja. */
+:root[data-sistema="windows"][data-barra="propia"] .barra-titulo {
   display: flex;
   align-items: center;
   height: var(--alto-barra-titulo);
@@ -463,7 +470,7 @@
 
 /* El nombre de la ventana: 12 px, apagado y pegado a la izquierda, que es lo que
  * dibuja Windows cuando la barra es suya. */
-:root[data-barra="propia"] .titulo-ventana {
+:root[data-sistema="windows"][data-barra="propia"] .titulo-ventana {
   margin-left: var(--espacio-4);
   font-size: var(--texto-chico);
   line-height: 16px;
@@ -476,7 +483,7 @@
 /* La hamburguesa, en la misma columna que los iconos del panel: 40 × 36, que es
  * lo que deja el glifo de 16 centrado a 24 px del borde. Sin borde ni fondo,
  * como todo lo que vive en una barra de título. */
-:root[data-barra="propia"] .boton-menu {
+:root[data-sistema="windows"][data-barra="propia"] .boton-menu {
   display: grid;
   place-items: center;
   flex: none;
@@ -490,17 +497,17 @@
   --wails-draggable: no-drag;
 }
 
-:root[data-barra="propia"] .boton-menu svg {
+:root[data-sistema="windows"][data-barra="propia"] .boton-menu svg {
   width: 16px;
   height: 16px;
   stroke-width: 1.1;
 }
 
-:root[data-barra="propia"] .boton-menu:hover:not(:disabled) {
+:root[data-sistema="windows"][data-barra="propia"] .boton-menu:hover:not(:disabled) {
   background: var(--boton-encima);
 }
 
-:root[data-barra="propia"] .botones-ventana {
+:root[data-sistema="windows"][data-barra="propia"] .botones-ventana {
   display: flex;
   margin-left: auto;
   height: 100%;
@@ -510,12 +517,12 @@
  * cierre tiene que llegar hasta la esquina de la pantalla, o se pierde el gesto
  * de tirar el ratón arriba a la derecha. Por eso también `height: 100%`, contra
  * la regla general que da 28 px a todos los botones. */
-:root[data-barra="propia"] .botones-ventana {
+:root[data-sistema="windows"][data-barra="propia"] .botones-ventana {
   align-self: stretch;
   flex: none;
 }
 
-:root[data-barra="propia"] .botones-ventana button {
+:root[data-sistema="windows"][data-barra="propia"] .botones-ventana button {
   width: var(--ancho-boton-ventana);
   height: 100%;
   padding: 0;
@@ -527,13 +534,13 @@
   --wails-draggable: no-drag;
 }
 
-:root[data-barra="propia"] .botones-ventana svg {
+:root[data-sistema="windows"][data-barra="propia"] .botones-ventana svg {
   width: 10px;
   height: 10px;
   stroke-width: 1;
 }
 
-:root[data-barra="propia"] .botones-ventana button:hover {
+:root[data-sistema="windows"][data-barra="propia"] .botones-ventana button:hover {
   background: var(--boton-encima);
 }
 
@@ -541,14 +548,14 @@
  * `#c42b1c` del sistema, el mismo en los dos temas, y el blanco encima da
  * 5,7:1. Es la única pieza de la ventana que no es nuestra ni se deriva, y lo
  * es porque ese color **significa** algo que la gente ya sabe leer. */
-:root[data-barra="propia"] .botones-ventana button.cerrar:hover {
+:root[data-sistema="windows"][data-barra="propia"] .botones-ventana button.cerrar:hover {
   background: #c42b1c;
   color: #ffffff;
 }
 
 /* Con barra propia, el hueco de los semáforos no pinta nada: la barra lateral
  * empieza debajo de la de título. */
-:root[data-barra="propia"] .lateral .semaforos {
+:root[data-sistema="windows"][data-barra="propia"] .lateral .semaforos {
   height: 0;
 }
 
@@ -913,11 +920,11 @@
  * invisible del menú de Snap, que se queda con el ratón (ADR 0066). Su estado
  * lo dice Go, y entra por `data-estado`. Los otros dos siguen con el `:hover`
  * de siempre, que ahí nadie se lo quita. */
-:root[data-barra="propia"] .botones-ventana button[data-estado="encima"] {
+:root[data-sistema="windows"][data-barra="propia"] .botones-ventana button[data-estado="encima"] {
   background: var(--boton-encima);
 }
 
-:root[data-barra="propia"] .botones-ventana button[data-estado="pulsado"] {
+:root[data-sistema="windows"][data-barra="propia"] .botones-ventana button[data-estado="pulsado"] {
   background: var(--barra-encima);
   color: var(--apagado);
 }

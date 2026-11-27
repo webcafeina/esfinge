@@ -309,13 +309,35 @@ type Marco struct {
 // `Plataforma`. Con la regla escrita dos veces, el día que cambie una ventana se
 // quedaría sin barra o con dos.
 //
-// **Solo Windows** (ADR 0066). En macOS la barra ya está escondida con
-// `TitleBarHidden` y los semáforos los sigue dibujando el sistema; en Linux,
-// GTK3 sin decoraciones no dibuja marco —ni sombra, ni esquinas, ni borde de
-// redimensionado— y Wails no expone con qué volver a decorarla.
+// **Windows y GNOME** (ADR 0066 y 0073). En macOS no: allí la barra ya está
+// escondida con `TitleBarHidden` y los semáforos los sigue dibujando el sistema.
+//
+// # Por qué Linux cambió de bando
+//
+// Hasta la 2.79.1 aquí ponía que en Linux «GTK3 sin decoraciones no dibuja marco
+// —ni sombra, ni esquinas, ni borde de redimensionado— y Wails no expone con qué
+// volver a decorarla». **Dos tercios de esa frase eran falsos**, y se vio al
+// medirlo en el fuente de Wails 2.15.0 en vez de razonarlo:
+//
+//   - El redimensionado **lo trae Wails hecho**: en `linux/frontend.go` enciende
+//     `window.wails.flags.enableResize` cuando la ventana es `Frameless`, y su
+//     runtime hace los cuatro cantos y las cuatro esquinas con un borde de 6 px.
+//   - Las esquinas y la sombra **las puede dibujar el CSS**, porque Wails expone
+//     `linux.Options.WindowIsTranslucent`, que pone la ventana transparente.
+//
+// Lo que quedaba en pie era que con la barra de GTK encima **Esfinge enseñaba dos
+// barras** —la del sistema con «Esfinge» y la nuestra con el título de la
+// sección—, y eso no lo hace ninguna aplicación de GNOME. Lo vio el cliente
+// comparando con Apolo, que dibuja una sola.
 func MarcoDe(sistema string) Marco {
-	if sistema == "windows" {
+	switch sistema {
+	case "windows":
 		return Marco{Propia: true, Alto: 48, AnchoBoton: 46}
+	case "linux":
+		// 46 es la AdwHeaderBar, la misma medida que `--alto-barra` en su hoja; y
+		// 34 el botón de ventana de Yaru, que es un círculo y no una zona de clic
+		// del sistema como la de Windows.
+		return Marco{Propia: true, Alto: 46, AnchoBoton: 34}
 	}
 	return Marco{}
 }

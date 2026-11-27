@@ -452,10 +452,20 @@ test("el menú va al final de la cabecera y abre dentro del contenido", async ({
 
   const barra = await caja(page.locator(".herramientas"));
   const b = await caja(boton);
+
+  // **Pegado a los botones de ventana, no al canto.** Desde que Esfinge dibuja
+  // el marco (ADR 0073), al final de la cabecera están los tres botones y el
+  // menú va justo a su izquierda, que es el orden de GNOME. La cabecera les
+  // reserva el sitio con relleno, así que medir contra el canto da 126 px y no
+  // dice nada: lo que vigila esto es **la relación entre las dos piezas**.
+  const ventana = await caja(page.locator(".botones-ventana"));
   expect(
-    barra.right - b.right,
-    `el botón del menú está a ${Math.round(b.left - barra.left)} px del principio de la barra`,
+    ventana.left - b.right,
+    `el menú está a ${Math.round(ventana.left - b.right)} px de los botones de ventana`,
   ).toBeLessThan(24);
+  expect(b.left, "el menú se ha quedado en la mitad izquierda de la barra").toBeGreaterThan(
+    barra.left + barra.width / 2,
+  );
 
   // Y el emergente **cae dentro de la zona de contenido**. Con el botón a la
   // izquierda abría hacia la izquierda —cuelga con `right: 0`— y se metía debajo
@@ -499,6 +509,53 @@ test("plegar esconde la barra lateral, que es lo que hace GNOME", async ({ page 
   // Y vuelve.
   await page.getByRole("button", { name: /barra lateral|plegar|panel/i }).first().click();
   await expect(lateral).toBeVisible();
+});
+
+test("la barra de título es una sola: el nombre sobre la lateral y los botones al final", async ({
+  page,
+}) => {
+  await enGnome(page);
+
+  // **Una sola barra** (ADR 0073). Hasta la 2.79.1 el marco lo ponía GTK y la
+  // ventana enseñaba dos: la del sistema con «Esfinge» y la nuestra con el
+  // título de la sección. Ninguna aplicación de GNOME tiene dos.
+  await expect(page.locator("html")).toHaveAttribute("data-barra", "propia");
+
+  // El nombre va **sobre la barra lateral**, no sobre el contenido.
+  const nombre = page.locator(".titulo-ventana");
+  await expect(nombre).toHaveText("Esfinge");
+  const n = await caja(nombre);
+  const lateral = await caja(page.locator(".lateral"));
+  expect(Math.abs(n.left + n.width / 2 - (lateral.left + lateral.width / 2))).toBeLessThan(2);
+  expect(n.bottom).toBeLessThanOrEqual(lateral.top + 46 + 1);
+
+  // Y los tres botones de ventana, al final de la cabecera y **todos iguales**:
+  // en Yaru son círculos del mismo tamaño y lo que los distingue es su glifo, no
+  // el color —el rojo de cerrar es de Windows—.
+  const botones = page.locator(".botones-ventana button");
+  await expect(botones).toHaveCount(3);
+  const medidas = await botones.evaluateAll((bs) =>
+    bs.map((b) => {
+      const r = b.getBoundingClientRect();
+      const e = getComputedStyle(b);
+      return { w: r.width, h: r.height, radio: e.borderRadius, fondo: e.backgroundColor, x: r.left };
+    }),
+  );
+  for (const m of medidas) {
+    expect(m.w, `un botón de ventana mide ${m.w} y otro ${medidas[0].w}`).toBeCloseTo(medidas[0].w, 0);
+    expect(m.h).toBeCloseTo(m.w, 0);
+    expect(m.fondo, "un botón de ventana se ha quedado sin su círculo").not.toBe("rgba(0, 0, 0, 0)");
+  }
+  // Van en orden y pegados al canto derecho.
+  expect(medidas[0].x).toBeLessThan(medidas[1].x);
+  expect(medidas[1].x).toBeLessThan(medidas[2].x);
+  const barra = await caja(page.locator(".barra-titulo"));
+  expect(barra.right - (medidas[2].x + medidas[2].w)).toBeLessThan(16);
+
+  // **Y no se come los clics de lo que hay debajo**: la capa va con
+  // `pointer-events: none` y sólo los botones lo recuperan. Sin eso taparía la
+  // cabeza de la barra lateral entera, incluido el botón de plegar.
+  await expect(page.locator(".barra-titulo")).toHaveCSS("pointer-events", "none");
 });
 
 test("donde el sistema pone su barra de menús, el botón no existe", async ({ page }) => {

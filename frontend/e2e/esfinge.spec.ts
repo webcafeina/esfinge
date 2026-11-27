@@ -814,10 +814,16 @@ test("la barra lateral lleva la versión al pie y nada más", async ({ page }) =
 
 test("donde la barra de título la dibuja el sistema, la nuestra no existe", async ({ page }) => {
   const errores = vigilarConsola(page);
-  await page.goto("/");
 
-  // Aquí el aspecto es el de esta máquina —Linux—, donde la cabecera la pone el
-  // escritorio. La barra está **en el marcado** de los cuatro sistemas a
+  // **Se pide macOS por su nombre**, que desde la ADR 0073 es el único sistema
+  // donde la barra la sigue dibujando el sistema. Esta prueba hacía `goto("/")`
+  // y decía en su comentario «aquí el aspecto es el de esta máquina —Linux—,
+  // donde la cabecera la pone el escritorio»: era cierto hasta que GNOME pasó a
+  // dibujar la suya, y entonces se cayó. Es la regla de siempre —si una prueba
+  // afirma algo sobre cómo se ve, nombra el sistema—, que esta se saltaba.
+  await page.goto("/?sistema=darwin");
+
+  // La barra está **en el marcado** de los cuatro sistemas a
   // propósito (ADR 0066), y lo que hay que comprobar es que escondida no está
   // por ninguna parte: un botón de cerrar la ventana que no cierra nada sería
   // peor que no tenerlo, y con `display: none` no entra ni en el árbol de
