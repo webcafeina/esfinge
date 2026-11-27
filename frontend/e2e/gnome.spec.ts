@@ -366,27 +366,33 @@ test("las pestañas de Ajustes caben en una fila, con el glifo encima", async ({
   expect(icono.bottom).toBeLessThanOrEqual(rotulo.top + 1);
 });
 
-test("y si la ventana se estrecha se parten sin dejar una fila coja", async ({ page }) => {
+test("al mínimo de la ventana las pestañas siguen sin dejar una fila coja", async ({ page }) => {
   await enGnome(page);
   await seccion(page, "Ajustes").click();
 
-  // **El mínimo de la ventana**, que es donde la fila ya no cabe: ahí la columna
-  // da 516 contra los 600 de siempre. La regla de la casa es que antes de tirar
-  // un rótulo o un glifo la fila se parte —«Cuenta» y «Bóveda» sin su nombre no
-  // las distingue nadie—; lo que no sale solo es el reparto.
   const pestanas = page.locator(".contenido .segmentado.envuelve:visible button");
   await expect(pestanas.first()).toBeVisible();
+
+  // **El mínimo de la ventana.** Esta prueba decía que ahí la fila **se parte**,
+  // y dejó de ser verdad el día que plegar empezó a esconder la barra lateral:
+  // con la ventana estrecha el panel es «compacto», la barra se va y **el
+  // contenido se queda con los 600 del AdwClamp** en vez de con los 516 que le
+  // sobraban antes. O sea que ahora caben las seis en un renglón, que es mejor
+  // de lo que había — pero la prueba afirmaba lo contrario y se puso roja.
+  //
+  // Lo que se vigila sigue siendo lo mismo y por eso el nombre cambia poco:
+  // **nunca una fila coja**. Con una fila se cumple sola; el día que una
+  // traducción ensanche los rótulos —el inglés de la ADR 0069— volverá a
+  // partirse, y entonces esta aserción es la que dice que el reparto es parejo,
+  // porque bajo 584 la hoja pasa a una rejilla de tres columnas.
   await page.setViewportSize({ width: 760, height: 680 });
 
-  // **Se espera a que la tira se haya repartido, no un rato.** El
-  // `waitForTimeout(150)` que había aquí tapaba además la carrera de arriba, así
-  // que esta prueba pasaba por el motivo equivocado.
-  await expect
-    .poll(async () => (await filasDe(pestanas)).length, { timeout: 5000 })
-    .toBeGreaterThan(1);
+  // Se espera **al reparto**, no un rato: el `waitForTimeout` que hubo aquí
+  // tapaba la carrera de la prueba de al lado.
+  await expect.poll(async () => (await filasDe(pestanas)).length, { timeout: 5000 }).toBeGreaterThan(0);
 
   const filas = await filasDe(pestanas);
-  expect(filas.length, "a 760 de ventana deberían partirse").toBeGreaterThan(1);
+  expect(filas.reduce((a, b) => a + b, 0), "no están las seis pestañas").toBe(6);
   expect(
     Math.max(...filas) - Math.min(...filas),
     `el reparto deja una fila coja: ${filas.join(" + ")}`,
@@ -425,6 +431,74 @@ test("el menú de la ventana está en la cabecera y lleva lo que no está en otr
   await page.keyboard.press("Escape");
   await expect(menu).toHaveCount(0);
   await expect(boton).toHaveAttribute("aria-expanded", "false");
+});
+
+test("el menú va al final de la cabecera y abre dentro del contenido", async ({ page }) => {
+  await enGnome(page);
+
+  // **El menú primario de una AdwHeaderBar va al extremo**, nunca al principio.
+  // Y aquí no basta con el orden del marcado: el título va absoluto para quedar
+  // centrado, así que en una pantalla sin más órdenes el menú se quedaba como
+  // único hijo en flujo y caía a la izquierda del todo.
+  const boton = page.getByRole("button", { name: "Menú principal" });
+  await expect(boton).toBeVisible();
+
+  // **Fuera el «Modo desarrollo», que en la aplicación de verdad no existe.**
+  // La barra es `space-between`: con ese rótulo dentro son dos hijos y el menú
+  // se va al extremo **solo**, sin que ninguna regla lo mande. O sea que esta
+  // prueba, tal cual, pasaba en verde con el fallo dentro —comprobado quitando
+  // el margen—. En Wails el menú es hijo único y cae al principio.
+  await page.locator(".herramientas .aparte").evaluate((e) => e.remove());
+
+  const barra = await caja(page.locator(".herramientas"));
+  const b = await caja(boton);
+  expect(
+    barra.right - b.right,
+    `el botón del menú está a ${Math.round(b.left - barra.left)} px del principio de la barra`,
+  ).toBeLessThan(24);
+
+  // Y el emergente **cae dentro de la zona de contenido**. Con el botón a la
+  // izquierda abría hacia la izquierda —cuelga con `right: 0`— y se metía debajo
+  // de la barra lateral: se veía una esquirla de panel blanco y nada más. Lo vio
+  // el cliente en su Ubuntu con la 2.79.1.
+  await boton.click();
+  const emergente = await caja(page.locator(".emergente-menu"));
+  const contenido = await caja(page.locator(".contenido"));
+  expect(
+    emergente.left,
+    `el menú abre en ${Math.round(emergente.left)} y el contenido empieza en ${Math.round(contenido.left)}`,
+  ).toBeGreaterThanOrEqual(contenido.left);
+  expect(emergente.right).toBeLessThanOrEqual(contenido.right + 1);
+});
+
+test("plegar esconde la barra lateral, que es lo que hace GNOME", async ({ page }) => {
+  await enGnome(page);
+
+  const lateral = page.locator(".lateral");
+  await expect(lateral).toBeVisible();
+
+  // **Plegar en GNOME es esconderla, no encogerla a un carril de iconos**: eso es
+  // el NavigationView de WinUI. Hasta la 2.79.1 esta hoja leía `data-panel` sólo
+  // para mover el botón de plegar, así que al pulsarlo **se movía el botón y la
+  // barra se quedaba donde estaba**: un control que no hace lo que dice.
+  await page.getByRole("button", { name: /barra lateral|plegar|panel/i }).first().click();
+  await expect(page.locator(".ventana")).toHaveAttribute("data-panel", "compacto");
+  await expect(lateral).toBeHidden();
+
+  // **Y el contenido ocupa la ventana.** Sacar la barra de la rejilla con
+  // `display: none` hace que la zona de contenido se auto-coloque en la primera
+  // columna, que al plegar mide cero: la ventana se queda en blanco y todo cae
+  // fuera del viewport. Pasó, y no en una ventana ancha —ahí el panel está
+  // abierto— sino al estrecharla.
+  const zona = await caja(page.locator(".zona"));
+  const ventana = page.viewportSize();
+  expect(zona.width, "la zona de contenido se ha quedado sin ancho al plegar").toBeGreaterThan(
+    (ventana?.width ?? 0) * 0.9,
+  );
+
+  // Y vuelve.
+  await page.getByRole("button", { name: /barra lateral|plegar|panel/i }).first().click();
+  await expect(lateral).toBeVisible();
 });
 
 test("donde el sistema pone su barra de menús, el botón no existe", async ({ page }) => {

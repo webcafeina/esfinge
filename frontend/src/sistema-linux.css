@@ -297,6 +297,51 @@
   left: 6px;
 }
 
+/* ------------------------------------------------------ plegar y desplegar
+ *
+ * **En GNOME plegar es esconder la barra lateral entera**, no encogerla a un
+ * carril de iconos: eso es el NavigationView de WinUI y vive en la hoja de
+ * Windows. Un AdwOverlaySplitView la retira y el contenido ocupa la ventana.
+ *
+ * Hasta la 2.79.1 esta hoja leía `data-panel` **sólo para mover el botón de
+ * plegar y el relleno de la cabecera**, así que al pulsarlo se movía el botón y
+ * la barra se quedaba donde estaba: el control existía y no hacía lo que dice.
+ * Lo vio el cliente en su Ubuntu.
+ *
+ * Y hay que cubrir los dos estados, no sólo el que se vio: con la ventana
+ * estrecha el panel es «compacto» sin que nadie lo haya pedido, así que
+ * escondiendo sólo ése la barra desaparecería al estrechar y el ☰ llevaría a
+ * «encima», que si no se viste se quedaría empujando el contenido. */
+:root[data-sistema="linux"] .ventana[data-panel="compacto"] {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+:root[data-sistema="linux"] .ventana[data-panel="compacto"] .lateral {
+  display: none;
+}
+
+/* **Y el contenido se queda en su columna.** Sin esto, al sacar la barra lateral
+ * de la rejilla con `display: none` la zona de contenido **se auto-coloca en la
+ * primera columna**, que mide cero: la ventana se queda en blanco y todo lo que
+ * hay dentro cae fuera del viewport. No se ve en una ventana ancha —ahí el panel
+ * está abierto— sino al estrecharla, y así cayeron tres pruebas de la tanda. */
+:root[data-sistema="linux"] .ventana[data-panel="compacto"] .zona {
+  grid-column: 2;
+}
+
+/* Encima: con la ventana estrecha la barra flota sobre el contenido, con la
+ * sombra de un panel de GNOME, y sigue en su celda de la rejilla —que es desde
+ * donde cuentan `top` y `bottom`—. */
+:root[data-sistema="linux"] .ventana[data-panel="encima"] .lateral {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--barra-lateral);
+  z-index: 30;
+  box-shadow: 0 4px 12px rgb(0 0 6 / 0.2);
+}
+
 /* ------------------------------------------- la barra de cabecera (HeaderBar)
  *
  * La AdwHeaderBar: 46 de alto, **el título centrado y en negrita** —que es lo
@@ -424,6 +469,20 @@
  * órdenes de una AdwHeaderBar, y el emergente con el radio y la sombra de un
  * GtkPopover. En GNOME este botón es lo que sustituye a la barra de menús, que
  * allí no lleva ninguna aplicación. */
+/* **Y va al final de la cabecera**, que es donde lo pone GNOME: el menú primario
+ * de una AdwHeaderBar vive al extremo, nunca al principio.
+ *
+ * Hace falta decirlo con un margen automático y no con el orden del marcado,
+ * porque aquí **el título va absoluto** para quedar centrado, o sea fuera del
+ * flujo: en una pantalla sin más órdenes —Cifrar, por ejemplo— el menú se
+ * quedaba como único hijo en flujo y caía a la izquierda del todo. Y entonces el
+ * emergente, que cuelga con `right: 0`, **abría hacia la izquierda contra la
+ * barra lateral**: se veía una esquirla de panel blanco y el resto tapado. Lo vio
+ * el cliente en su Ubuntu con la 2.79.1. */
+:root[data-sistema="linux"] .menu-principal {
+  margin-inline-start: auto;
+}
+
 :root[data-sistema="linux"] .boton-menu {
   width: 34px;
   height: 34px;
@@ -742,7 +801,14 @@
  *
  * La pista de 4 —lo recorrido en oro, el resto en el gris— y el pomo redondo de
  * 20, blanco, con su filo y su sombra. Y **aire vertical**: un deslizador con
- * un medidor debajo sin él se lee como tres rayas apiladas. */
+ * un medidor debajo sin él se lee como tres rayas apiladas.
+ *
+ * **Lo recorrido lo dice `--recorrido`**, que pone quien dibuja el control
+ * (`App.tsx`), porque un `::-webkit-slider-runnable-track` no puede saber el
+ * valor. Esta hoja leía **`--lleno`**, que es como se llama en Apolo: se copió
+ * de allí el CSS sin mirar cómo se llama aquí, así que el tope del degradado
+ * era siempre el 0 % de la reserva y **la pista salía entera gris**. Lo vio el
+ * cliente en su Ubuntu con la 2.79.1; aquí ninguna prueba lo miraba. */
 :root[data-sistema="linux"] input[type="range"] {
   appearance: none;
   -webkit-appearance: none;
@@ -756,8 +822,8 @@
   border-radius: 2px;
   background: linear-gradient(
     to right,
-    var(--relleno) var(--lleno, 0%),
-    var(--barra-encima) var(--lleno, 0%)
+    var(--relleno) var(--recorrido, 0%),
+    var(--barra-encima) var(--recorrido, 0%)
   );
 }
 

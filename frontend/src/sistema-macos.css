@@ -317,7 +317,7 @@
 :where(:root[data-sistema="darwin"]) body input[type="number"],
 :where(:root[data-sistema="darwin"]) body input[type="search"],
 :where(:root[data-sistema="darwin"]) body input:not([type]) {
-  height: var(--alto-campo, var(--alto-control));
+  height: var(--alto-control);
   padding: 0 8px;
   border: 0.5px solid var(--filete-fuerte);
   border-radius: var(--radio);

@@ -287,3 +287,81 @@ func enCamello(atributo string) string {
 	}
 	return "dataset." + strings.Join(trozos, "")
 }
+
+// Ninguna hoja lee una variable que no escriba nadie.
+//
+// # Qué pasó
+//
+// La hoja de GNOME pintaba lo recorrido del deslizador con `var(--lleno, 0%)`, y
+// **`--lleno` no lo escribe nadie en este proyecto**: así se llama en Apolo, de donde se copió el
+// CSS. El tope del degradado era siempre el 0 % de la reserva, así que **la pista salía entera
+// gris** — el deslizador perdía el oro, que es el único color propio en una pantalla de trabajo
+// (ADR 0021). Lo vio el cliente en su Ubuntu con la 2.79.1.
+//
+// # Por qué no lo cazó nada
+//
+// Un `var()` con reserva **no falla**: pinta la reserva y sigue. Las pruebas de interfaz miden
+// medidas y colores calculados, y aquí el color calculado del degradado era válido. Y las dos
+// hojas que sí funcionan —Windows y macOS— leen `--recorrido`, así que compararlas entre ellas
+// tampoco habría dicho nada: la que se desalineó fue la tercera.
+//
+// Es la regla de la casa de «una regla en dos listas», con el agravante de que **la segunda lista
+// vive en otro proyecto**: al escribir la hoja de KDE se va a copiar de la misma fuente.
+func TestLasHojasNoLeenVariablesQueNadieEscribe(t *testing.T) {
+	raiz := filepath.Join("..", "..", "frontend", "src")
+
+	hojas, err := filepath.Glob(filepath.Join(raiz, "sistema-*.css"))
+	if err != nil || len(hojas) == 0 {
+		t.Fatalf("no se encontraron las hojas de sistema: %v", err)
+	}
+
+	// Dónde se puede escribir una variable: en cualquier CSS de la interfaz —incluidos los
+	// tokens que genera Go y la propia hoja— y en el marcado, que las pone como estilo en
+	// línea (`"--recorrido": …`) o con `setProperty`.
+	escritas := map[string]bool{}
+	patrones := []string{filepath.Join(raiz, "*.css"), filepath.Join(raiz, "*.ts"), filepath.Join(raiz, "*.tsx")}
+	declara := regexp.MustCompile(`--([a-z0-9-]+)\s*"?\s*[:,]`)
+	for _, patron := range patrones {
+		ficheros, err := filepath.Glob(patron)
+		if err != nil {
+			t.Fatalf("no se pudo listar %s: %v", patron, err)
+		}
+		for _, f := range ficheros {
+			b, err := os.ReadFile(f)
+			if err != nil {
+				t.Fatalf("no se pudo leer %s: %v", f, err)
+			}
+			// Lo que está **dentro** de un `var(...)` es una lectura, no una escritura.
+			sinLecturas := regexp.MustCompile(`var\(\s*--[a-z0-9-]+`).ReplaceAllString(string(b), "var(")
+			for _, m := range declara.FindAllStringSubmatch(sinLecturas, -1) {
+				escritas[m[1]] = true
+			}
+		}
+	}
+	if len(escritas) < 20 {
+		t.Fatalf("sólo he encontrado %d variables escritas: o la interfaz ha cambiado de forma o esta prueba no comprueba nada", len(escritas))
+	}
+
+	lee := regexp.MustCompile(`var\(\s*--([a-z0-9-]+)`)
+	fallos := 0
+	for _, hoja := range hojas {
+		b, err := os.ReadFile(hoja)
+		if err != nil {
+			t.Fatalf("no se pudo leer %s: %v", hoja, err)
+		}
+		vistas := map[string]bool{}
+		for _, m := range lee.FindAllStringSubmatch(string(b), -1) {
+			nombre := m[1]
+			if escritas[nombre] || vistas[nombre] {
+				continue
+			}
+			vistas[nombre] = true
+			fallos++
+			t.Errorf("%s lee «--%s» y no la escribe nadie: con reserva no falla, pinta la reserva y el control se queda sin su valor",
+				filepath.Base(hoja), nombre)
+		}
+	}
+	if fallos == 0 {
+		t.Log("todas las variables que leen las hojas las escribe alguien")
+	}
+}
