@@ -1,6 +1,6 @@
 # Estado
 
-Última actualización: **2026-11-25**
+Última actualización: **2026-11-27**
 
 **Lo de esta sesión (2026-11-25)**: el camino de **instalar en Linux con la interfaz gráfica**, que
 nadie había revisado nunca. Salieron dos cosas y las dos están cerradas
@@ -34,15 +34,27 @@ arreglado, que se pudo porque la primera no publicó ni un fichero.
   [`sesiones.md`](sesiones.md).
 - **Nada de GNOME se ha visto en una máquina**, ni la fase ni el menú en la cabecera. Sigue en
   [`deuda.md`](deuda.md) con la lista de lo que hay que mirar.
-- **winget acumula siete PRs** sin fusionar (2.73.0 a 2.79.1) y ahora se sabe **por qué**: ninguno
-  está bloqueado por el CLA, los siete pasan las validaciones y los siete llevan la etiqueta
-  `New-Package` — **Esfinge no ha entrado nunca en winget**, así que cada versión espera revisión
-  humana de un paquete nuevo. Comprobado: cero PRs fusionados y `manifests/w/Webcafeina` no existe.
+- **winget: eran quince PRs, no siete, y ahora queda uno** (2026-11-27). Las dos cifras anteriores
+  que había escritas aquí —cuatro y luego siete— **eran mías y estaban mal, por un `--limit` que
+  truncaba la lista**: la regla de «una búsqueda truncada no es una ausencia» aplicada a mí mismo. Lo
+  real eran **catorce de Esfinge** —desde la 2.68.0 del 17 de noviembre— **más uno de Apolo abierto el
+  27 de octubre**, o sea más de un mes sin que entre nada de esta cuenta. Se cuenta así, sin tope:
+  `gh pr list --repo microsoft/winget-pkgs --author webcafeina --state open --limit 100`.
+- **Por qué no se mueve**: ninguno está bloqueado por el CLA —está firmado y la etiqueta cayó—, todos
+  pasan las validaciones, y todos llevan **`New-Package`**. El propio bot lo dice en el de Apolo: «the
+  check-in policies require a moderator to approve PRs from the community». **Esfinge no ha entrado
+  nunca**: cero fusionados y `manifests/w/Webcafeina` no existe.
+- **Cerrados los trece superados**, por decisión del cliente, dejando sólo el de la **2.79.1**
+  (#489160), cada uno con su motivo escrito y una línea en el que queda. **El de Apolo no se tocó**:
+  es otro proyecto. **Y queda una decisión**: el flujo abre un PR nuevo en cada versión, así que la
+  pila se rehace sola en la siguiente publicación.
 - **Su fork de winget estaba sin sincronizar** y eso tiró el canal en la 2.79.0: 901 commits por
   detrás y cero por delante, o sea un avance limpio. Sincronizado con `gh repo sync
   webcafeina/winget-pkgs` y reempujado el canal suelto. **Si vuelve a fallar por eso, es lo primero
   que hay que mirar.**
-- **Chocolatey sigue en 2.66.1**, como desde hace varias versiones.
+- **Chocolatey se ha desatascado y sirve la 2.79.1** (visto el 2026-11-27). Llevaba desde el
+  2026-11-16 clavada en la 2.66.1 por la moderación de la ficha en inglés; eso se puede dar por
+  cerrado. Homebrew también en 2.79.1.
 - **Homebrew ya sirve la 2.79.1** — lo que quedó a medias el día 23 se resolvió: el relanzamiento a
   mano acabó en verde.
 
