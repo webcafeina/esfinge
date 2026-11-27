@@ -558,6 +558,49 @@ test("la barra de título es una sola: el nombre sobre la lateral y los botones 
   await expect(page.locator(".barra-titulo")).toHaveCSS("pointer-events", "none");
 });
 
+test("la ventana se puede arrastrar por su cabecera", async ({ page }) => {
+  await enGnome(page);
+
+  // **Wails mira `--wails-draggable` en el elemento donde se pulsa**
+  // (`runtime/desktop/main.js`: `getComputedStyle(e.target)`), así que lo que
+  // decide si la ventana se mueve no es dónde está la barra sino qué contesta
+  // la pieza que hay debajo del puntero. Con el marco propio (ADR 0073) eso
+  // dejó de ser gratis: si ninguna de las piezas de la cabecera lo dice, **la
+  // ventana se queda clavada en la pantalla** — y eso es lo que pasó.
+  const donde = {
+    "la cabecera del contenido": ".herramientas",
+    "la capa de la barra de título": ".barra-titulo",
+    "el nombre de la aplicación": ".titulo-ventana",
+    "el título de la sección": ".contenido ~ * .titulo, .herramientas .titulo",
+    "la cabeza de la barra lateral": ".lateral .semaforos",
+  };
+  const valores: Record<string, string> = {};
+  for (const [nombre, sel] of Object.entries(donde)) {
+    const n = await page.locator(sel).count();
+    valores[nombre] =
+      n === 0
+        ? "(no existe)"
+        : await page
+            .locator(sel)
+            .first()
+            .evaluate((e) => getComputedStyle(e).getPropertyValue("--wails-draggable").trim());
+  }
+
+  // Los botones **no** arrastran: pulsar cerrar tiene que cerrar.
+  const botones = await page
+    .locator(".botones-ventana button")
+    .first()
+    .evaluate((e) => getComputedStyle(e).getPropertyValue("--wails-draggable").trim());
+
+  expect(valores, JSON.stringify(valores)).toMatchObject({
+    "la cabecera del contenido": "drag",
+    "la capa de la barra de título": "drag",
+    "el nombre de la aplicación": "drag",
+    "la cabeza de la barra lateral": "drag",
+  });
+  expect(botones, "los botones de ventana arrastran la ventana en vez de pulsarse").toBe("no-drag");
+});
+
 test("donde el sistema pone su barra de menús, el botón no existe", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/?sistema=darwin");

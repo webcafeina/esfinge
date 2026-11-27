@@ -158,15 +158,36 @@
  * que es la mitad del acuerdo: montarla sólo donde se usa rompería que el
  * marcado sea el mismo y la simulación por URL, que cambia de aspecto sin
  * recargar. */
-:root[data-sistema="linux"] .barra-titulo {
+:root[data-sistema="linux"]:not([data-barra="propia"]) .barra-titulo {
   display: none;
 }
 
-/* Y con marco del sistema **no hay que declarar zonas de arrastre**: la ventana
- * ya tiene de dónde agarrarse por su barra de título. */
-:root[data-sistema="linux"] .lateral,
-:root[data-sistema="linux"] .herramientas,
-:root[data-sistema="linux"] .portada {
+/* **De dónde se agarra la ventana.**
+ *
+ * Con el marco del sistema no hacía falta declarar nada: la ventana tenía su
+ * barra de título. Desde que lo dibuja Esfinge (ADR 0073) esto es justo lo que
+ * decide si la ventana **se puede mover o se queda clavada en la pantalla**, y
+ * lo primero que dijo el cliente al abrir la 2.80.0 fue que no la podía mover.
+ *
+ * Y el fallo no era que faltara declararlo: **estaba declarado al revés**, con
+ * la razón de esta mañana todavía escrita al lado. La capa de la barra de
+ * título sí decía `drag`, pero va con `pointer-events: none` para no tapar la
+ * cabeza de la lateral, así que **no es nunca el elemento donde se pulsa** — y
+ * Wails mira exactamente eso: `getComputedStyle(e.target)`. O sea que quien
+ * tiene que decirlo son las piezas de debajo.
+ *
+ * Los botones se desmarcan solos: la base ya pone `no-drag` en los de la barra
+ * lateral y en los de la cabecera. */
+:root[data-sistema="linux"][data-barra="propia"] .lateral,
+:root[data-sistema="linux"][data-barra="propia"] .herramientas,
+:root[data-sistema="linux"][data-barra="propia"] .portada {
+  --wails-draggable: drag;
+}
+
+/* Y donde el marco lo pone el escritorio, nada que declarar. */
+:root[data-sistema="linux"]:not([data-barra="propia"]) .lateral,
+:root[data-sistema="linux"]:not([data-barra="propia"]) .herramientas,
+:root[data-sistema="linux"]:not([data-barra="propia"]) .portada {
   --wails-draggable: no-drag;
 }
 
@@ -316,12 +337,37 @@
  * estrecha el panel es «compacto» sin que nadie lo haya pedido, así que
  * escondiendo sólo ése la barra desaparecería al estrechar y el ☰ llevaría a
  * «encima», que si no se viste se quedaría empujando el contenido. */
+:root[data-sistema="linux"] .ventana {
+  /* **Se anima el ancho de la columna**, con la curva de libadwaita y sus 200 ms.
+   * Sin esto, el botón de plegar se deslizaba —ese sí tiene transición— y al
+   * acabar **el contenido daba un salto** para ocupar el hueco. Lo vio el
+   * cliente con la 2.80.0: «cuando se termina la animación de plegado de la
+   * barra directamente se adapta con un salto». La regla global de
+   * `prefers-reduced-motion` la apaga entera. */
+  transition: grid-template-columns 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
 :root[data-sistema="linux"] .ventana[data-panel="compacto"] {
   grid-template-columns: 0 minmax(0, 1fr);
 }
 
+/* **Se esconde con `visibility`, no con `display`**, y eso no es un detalle:
+ * `display` no se puede animar, así que la barra desaparecía de golpe mientras
+ * la columna se encogía. Con `visibility` el contenido se recorta con la
+ * columna —la barra lleva `overflow-y: auto`— y **sale del orden de tabulación
+ * y del árbol de accesibilidad igual que con `display: none`**, que era lo que
+ * había que conservar: una fila que no se ve pero se tabula es peor que nada.
+ *
+ * El retraso de 200 ms es para que se vaya **al acabar** el encogido y no al
+ * empezar; al desplegar vuelve sin retraso. */
 :root[data-sistema="linux"] .ventana[data-panel="compacto"] .lateral {
-  display: none;
+  visibility: hidden;
+  transition: visibility 0s 200ms;
+}
+
+:root[data-sistema="linux"] .ventana:not([data-panel="compacto"]) .lateral {
+  visibility: visible;
+  transition: visibility 0s;
 }
 
 /* **Y el contenido se queda en su columna.** Sin esto, al sacar la barra lateral

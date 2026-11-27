@@ -1092,8 +1092,15 @@ export function BandaNovedad({
         ) : instalando ? (
           <span>
             Instalando Esfinge {novedad.version}.{" "}
-            {pedira && "Tu sistema te pedirá la contraseña. "}
-            La ventana se cerrará y volverá a abrirse…
+            {/* **Y que puede tardar, donde tarda.** Donde el sistema pide la
+                contraseña —Linux con paquete, ADR 0062— entre que se autoriza y
+                que la ventana se va pasan unos segundos **sin que nada se
+                mueva**, y el cliente lo leyó como que se había quedado colgada.
+                Donde la aplicación se reemplaza sola eso no pasa, así que
+                decirlo allí sería avisar de algo que no ocurre. */}
+            {pedira
+              ? "Tu sistema te pedirá la contraseña. Puede tardar unos segundos antes de que la ventana se cierre y vuelva a abrirse sola."
+              : "La ventana se cerrará y volverá a abrirse…"}
           </span>
         ) : lista ? (
           <span>
